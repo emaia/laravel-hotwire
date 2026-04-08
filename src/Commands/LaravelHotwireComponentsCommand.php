@@ -1,12 +1,12 @@
 <?php
 
-namespace VendorName\Skeleton\Commands;
+namespace Emaia\LaravelHotwireComponents\Commands;
 
 use Illuminate\Console\Command;
 
-class SkeletonCommand extends Command
+class LaravelHotwireComponentsCommand extends Command
 {
-    public $signature = 'skeleton';
+    public $signature = 'laravel-hotwire-components';
 
     public $description = 'My command';
 
