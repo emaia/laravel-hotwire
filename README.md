@@ -141,40 +141,56 @@ Altere o `prefix` para usar outro prefixo nos componentes Blade. Ex: `'prefix' =
 Controllers Stimulus sem componente Blade associado. Usados diretamente via `data-controller` e `data-action`.
 
 ```bash
-php artisan hwc:controllers autoselect autosubmit progressbar
+php artisan hwc:controllers autoselect autosubmit progress
 ```
+
+### Dialog
+
+| Controller                                          | Identifier      | Dependências | Docs                                           |
+|-----------------------------------------------------|-----------------|--------------|------------------------------------------------|
+| [Modal](docs/controllers/dialog/modal.md)           | `dialog--modal` | —            | [readme](docs/controllers/dialog/modal.md)     |
 
 ### Form
 
-| Controller                                                                | Identifier                     | Dependências | Docs                                                      |
-|---------------------------------------------------------------------------|--------------------------------|--------------|-----------------------------------------------------------|
-| [Autoselect](docs/controllers/form/autoselect.md)                         | `form--autoselect`             | —            | [readme](docs/controllers/form/autoselect.md)             |
-| [Autosubmit](docs/controllers/form/autosubmit.md)                         | `form--autosubmit`             | —            | [readme](docs/controllers/form/autosubmit.md)             |
-| [Clean Querystring](docs/controllers/form/clean-querystring.md)           | `form--clean-querystring`      | —            | [readme](docs/controllers/form/clean-querystring.md)      |
-| [Clear Input](docs/controllers/form/clearinput.md)                        | `form--clearinput`             | —            | [readme](docs/controllers/form/clearinput.md)             |
-| [Form](docs/controllers/form/form.md)                                     | `form--form`                   | —            | [readme](docs/controllers/form/form.md)                   |
-| [Form Reset Input Files](docs/controllers/form/form-reset-input-files.md) | `form--form-reset-input-files` | —            | [readme](docs/controllers/form/form-reset-input-files.md) |
-| [Textarea Autogrow](docs/controllers/form/textarea-autogrow.md)           | `form--textarea-autogrow`      | —            | [readme](docs/controllers/form/textarea-autogrow.md)      |
-| [Unsaved Changes](docs/controllers/form/unsaved-changes.md)               | `form--unsaved-changes`        | —            | [readme](docs/controllers/form/unsaved-changes.md)        |
+| Controller                                                          | Identifier                | Dependências | Docs                                                    |
+|---------------------------------------------------------------------|---------------------------|--------------|---------------------------------------------------------|
+| [Autoselect](docs/controllers/form/autoselect.md)                   | `form--autoselect`        | —            | [readme](docs/controllers/form/autoselect.md)           |
+| [Autosubmit](docs/controllers/form/autosubmit.md)                   | `form--autosubmit`        | —            | [readme](docs/controllers/form/autosubmit.md)           |
+| [Clean Querystring](docs/controllers/form/clean-querystring.md)     | `form--clean-querystring` | —            | [readme](docs/controllers/form/clean-querystring.md)    |
+| [Clear Input](docs/controllers/form/clear-input.md)                 | `form--clear-input`       | —            | [readme](docs/controllers/form/clear-input.md)          |
+| [Remote](docs/controllers/form/remote.md)                           | `form--remote`            | —            | [readme](docs/controllers/form/remote.md)               |
+| [Reset Files](docs/controllers/form/reset-files.md)                 | `form--reset-files`       | —            | [readme](docs/controllers/form/reset-files.md)          |
+| [Textarea Autogrow](docs/controllers/form/textarea-autogrow.md)     | `form--textarea-autogrow` | —            | [readme](docs/controllers/form/textarea-autogrow.md)    |
+| [Unsaved Changes](docs/controllers/form/unsaved-changes.md)         | `form--unsaved-changes`   | —            | [readme](docs/controllers/form/unsaved-changes.md)      |
 
 ### Frame
 
-| Controller                                                            | Identifier                     | Dependências      | Docs                                                   |
-|-----------------------------------------------------------------------|--------------------------------|-------------------|--------------------------------------------------------|
-| [Progressbar](docs/controllers/tf/progressbar.md)                     | `frame--progressbar`           | `@hotwired/turbo` | [readme](docs/controllers/tf/progressbar.md)           |
-| [Frame View Transition](docs/controllers/tf/frame-view-transition.md) | `frame--frame-view-transition` | —                 | [readme](docs/controllers/tf/frame-view-transition.md) |
-| [Refresh Turbo Frame](docs/controllers/tf/refresh-turbo-frame.md)     | `frame--refresh-turbo-frame`   | `@hotwired/turbo` | [readme](docs/controllers/tf/refresh-turbo-frame.md)   |
+| Controller                                                        | Identifier              | Dependências      | Docs                                                 |
+|-------------------------------------------------------------------|-------------------------|-------------------|------------------------------------------------------|
+| [Polling](docs/controllers/frame/polling.md)                      | `frame--polling`        | `@hotwired/turbo` | [readme](docs/controllers/frame/polling.md)          |
+| [Progress](docs/controllers/frame/progress.md)                    | `frame--progress`       | `@hotwired/turbo` | [readme](docs/controllers/frame/progress.md)         |
+| [View Transition](docs/controllers/frame/view-transition.md)      | `frame--view-transition`| —                 | [readme](docs/controllers/frame/view-transition.md)  |
 
-### Hwc
+### Dev
 
-| Controller                                             | Identifier           | Dependências | Docs                                            |
-|--------------------------------------------------------|----------------------|--------------|-------------------------------------------------|
-| [GTM](docs/controllers/hwc/gtm.md)                     | `hwc--gtm`           | —            | [readme](docs/controllers/hwc/gtm.md)           |
-| [Log](docs/controllers/hwc/log.md)                     | `hwc--log`           | —            | [readme](docs/controllers/hwc/log.md)           |
-| [Maska](docs/controllers/hwc/maska.md)                 | `hwc--maska`         | `maska`      | [readme](docs/controllers/hwc/maska.md)         |
-| [OEmbed](docs/controllers/hwc/oembed.md)               | `hwc--oembed`        | —            | [readme](docs/controllers/hwc/oembed.md)        |
-| [Pending Image](docs/controllers/hwc/pending-image.md) | `hwc--pending-image` | —            | [readme](docs/controllers/hwc/pending-image.md) |
-| [Tippy](docs/controllers/hwc/tippy.md)                 | `hwc--tippy`         | `tippy.js`   | [readme](docs/controllers/hwc/tippy.md)         |
+| Controller                                    | Identifier | Dependências | Docs                                       |
+|-----------------------------------------------|------------|--------------|--------------------------------------------|
+| [Log](docs/controllers/dev/log.md)            | `dev--log` | —            | [readme](docs/controllers/dev/log.md)      |
+
+### Lib
+
+| Controller                                    | Identifier   | Dependências | Docs                                         |
+|-----------------------------------------------|--------------|--------------|----------------------------------------------|
+| [GTM](docs/controllers/lib/gtm.md)            | `lib--gtm`   | —            | [readme](docs/controllers/lib/gtm.md)        |
+| [Maska](docs/controllers/lib/maska.md)        | `lib--maska` | `maska`      | [readme](docs/controllers/lib/maska.md)      |
+| [Tippy](docs/controllers/lib/tippy.md)        | `lib--tippy` | `tippy.js`   | [readme](docs/controllers/lib/tippy.md)      |
+
+### Media
+
+| Controller                                          | Identifier      | Dependências | Docs                                           |
+|-----------------------------------------------------|-----------------|--------------|------------------------------------------------|
+| [OEmbed](docs/controllers/media/oembed.md)          | `media--oembed` | —            | [readme](docs/controllers/media/oembed.md)     |
+| [Pending](docs/controllers/media/pending.md)        | `media--pending`| —            | [readme](docs/controllers/media/pending.md)    |
 
 ## Testing
 
