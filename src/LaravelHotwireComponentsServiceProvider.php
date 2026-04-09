@@ -15,7 +15,7 @@ class LaravelHotwireComponentsServiceProvider extends PackageServiceProvider
     public function configurePackage(Package $package): void
     {
         $package
-            ->name('hotwire-components')
+            ->name('hwc')
             ->hasConfigFile()
             ->hasViews()
             ->hasCommand(PublishControllersCommand::class);

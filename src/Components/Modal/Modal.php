@@ -22,6 +22,6 @@ class Modal extends Component
 
     public function render()
     {
-        return 'hotwire-components::components.modal.modal';
+        return 'hwc::components.modal.modal';
     }
 }
