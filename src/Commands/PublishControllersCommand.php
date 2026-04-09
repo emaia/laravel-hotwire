@@ -85,13 +85,13 @@ class PublishControllersCommand extends Command
 
         foreach ($selected as $name) {
             if (! isset($available[$name])) {
-                warning("Controller \"{$name}\" not found. Available: " . implode(', ', array_keys($available)));
+                warning("Controller \"{$name}\" not found. Available: ".implode(', ', array_keys($available)));
 
                 continue;
             }
 
             $controller = $available[$name];
-            $targetDir = $targetBase . '/' . $controller['relative_dir'];
+            $targetDir = $targetBase.'/'.$controller['relative_dir'];
 
             if ($this->files->isDirectory($targetDir) && ! $this->option('force')) {
                 if ($this->directoryContentsMatch($controller['source_dir'], $targetDir)) {
@@ -129,7 +129,7 @@ class PublishControllersCommand extends Command
         $sourceFiles = Finder::create()->files()->in($source)->sortByName();
 
         foreach ($sourceFiles as $file) {
-            $targetFile = $target . '/' . $file->getRelativePathname();
+            $targetFile = $target.'/'.$file->getRelativePathname();
 
             if (! $this->files->exists($targetFile)) {
                 return false;
@@ -146,7 +146,7 @@ class PublishControllersCommand extends Command
     /** @return array<string, array{identifier: string, relative_dir: string, source_dir: string, files: list<string>}> */
     private function availableControllers(): array
     {
-        $baseDir = realpath(__DIR__ . '/../../resources/js/controllers');
+        $baseDir = realpath(__DIR__.'/../../resources/js/controllers');
 
         if (! $baseDir || ! is_dir($baseDir)) {
             return [];
@@ -157,13 +157,13 @@ class PublishControllersCommand extends Command
 
         foreach ($controllerFiles as $file) {
             $name = str($file->getFilename())->before('_controller.js')->toString();
-            $relativeDir = str($file->getPath())->after($baseDir . '/')->toString();
+            $relativeDir = str($file->getPath())->after($baseDir.'/')->toString();
 
             $allFiles = Finder::create()->files()->in($file->getPath())->sortByName();
 
             $identifier = str($relativeDir)
                 ->replace('/', '--')
-                ->append('--' . $name)
+                ->append('--'.$name)
                 ->replace('_', '-')
                 ->toString();
 

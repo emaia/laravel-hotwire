@@ -88,9 +88,9 @@ Altere o `prefix` para usar outro prefixo nos componentes Blade. Ex: `'prefix' =
 
 ## Componentes
 
-| Componente | Blade | Stimulus Identifier | Docs |
-|------------|-------|---------------------|------|
-| [Modal](src/Components/Modal/readme.md) | `<x-hwc-modal>` | `dialog--modal` | [readme](src/Components/Modal/readme.md) |
+| Componente                               | Blade | Stimulus Identifier | Docs                                      |
+|------------------------------------------|-------|---------------------|-------------------------------------------|
+| [Modal](docs/components/modal/readme.md) | `<x-hwc-modal>` | `dialog--modal` | [readme](docs/components/modal/readme.md) |
 
 ## Testing
 

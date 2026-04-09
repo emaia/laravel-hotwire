@@ -2,9 +2,9 @@
 
 namespace Emaia\LaravelHotwireComponents\Tests;
 
+use Emaia\LaravelHotwireComponents\LaravelHotwireComponentsServiceProvider;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Orchestra\Testbench\TestCase as Orchestra;
-use Emaia\LaravelHotwireComponents\LaravelHotwireComponentsServiceProvider;
 
 class TestCase extends Orchestra
 {

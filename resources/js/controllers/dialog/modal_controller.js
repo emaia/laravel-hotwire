@@ -3,7 +3,15 @@ import { Controller } from "@hotwired/stimulus";
 export default class ModalController extends Controller {
     static targets = ["modal", "backdrop", "dialog", "dynamicContent", "loadingTemplate"];
 
-    static classes = ["hidden", "visible", "backdropHidden", "backdropVisible", "dialogHidden", "dialogVisible", "lockScroll"];
+    static classes = [
+        "hidden",
+        "visible",
+        "backdropHidden",
+        "backdropVisible",
+        "dialogHidden",
+        "dialogVisible",
+        "lockScroll",
+    ];
 
     static values = {
         openDuration: { type: Number, default: 300 },
@@ -23,14 +31,15 @@ export default class ModalController extends Controller {
     contentState = "";
     dismissedWhileLoading = false;
     lastClickedLink = null;
-    trackClickedLink = (event) => {
-        const link = event.target.closest('a[data-turbo-frame="modal"]');
-        this.lastClickedLink = link?.hasAttribute("data-loading-template") ? link : null;
-    };
 
     get isOpen() {
         return this.modalTarget.getAttribute("data-open") === "true";
     }
+
+    trackClickedLink = (event) => {
+        const link = event.target.closest('a[data-turbo-frame="modal"]');
+        this.lastClickedLink = link?.hasAttribute("data-loading-template") ? link : null;
+    };
 
     connect() {
         this.#initializeContentObserver();
