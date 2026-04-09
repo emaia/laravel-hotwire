@@ -23,7 +23,7 @@ it('lists available controllers', function () {
 
 it('shows interactive multiselect when no arguments given', function () {
     $this->artisan('hwc:controllers')
-        ->expectsChoice('Which controllers would you like to publish?', ['modal'], ['modal'])
+        ->expectsChoice('Which controllers would you like to publish?', ['modal'], ['modal', 'toast'])
         ->assertSuccessful();
 
     expect(File::exists($this->targetDir.'/dialog/modal_controller.js'))->toBeTrue();
@@ -31,7 +31,7 @@ it('shows interactive multiselect when no arguments given', function () {
 
 it('shows no selection message when multiselect returns empty', function () {
     $this->artisan('hwc:controllers')
-        ->expectsChoice('Which controllers would you like to publish?', [], ['modal'])
+        ->expectsChoice('Which controllers would you like to publish?', [], ['modal', 'toast'])
         ->assertSuccessful();
 
     expect(File::isDirectory($this->targetDir))->toBeFalse();
