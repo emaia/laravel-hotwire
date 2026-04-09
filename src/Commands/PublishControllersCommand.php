@@ -178,7 +178,7 @@ class PublishControllersCommand extends Command
 
             $allFiles = Finder::create()->files()->in($file->getPath())->sortByName();
 
-            $identifier = str($relativeDir !== '' ? "{$relativeDir}--{$name}" : $name)
+            $identifier = str("{$relativeDir}--{$name}")
                 ->replace('/', '--')
                 ->replace('_', '-')
                 ->toString();
