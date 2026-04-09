@@ -91,7 +91,9 @@ class PublishControllersCommand extends Command
             }
 
             $controller = $available[$name];
-            $targetDir = $targetBase.'/'.$controller['relative_dir'];
+            $targetDir = $controller['relative_dir'] !== ''
+                ? $targetBase.'/'.$controller['relative_dir']
+                : $targetBase;
 
             if ($this->files->isDirectory($targetDir) && ! $this->option('force')) {
                 if ($this->directoryContentsMatch($controller['source_dir'], $targetDir)) {
@@ -157,13 +159,12 @@ class PublishControllersCommand extends Command
 
         foreach ($controllerFiles as $file) {
             $name = str($file->getFilename())->before('_controller.js')->toString();
-            $relativeDir = str($file->getPath())->after($baseDir.'/')->toString();
+            $relativeDir = trim(str_replace('\\', '/', $file->getRelativePath()), '/');
 
             $allFiles = Finder::create()->files()->in($file->getPath())->sortByName();
 
-            $identifier = str($relativeDir)
+            $identifier = str($relativeDir !== '' ? "{$relativeDir}--{$name}" : $name)
                 ->replace('/', '--')
-                ->append('--'.$name)
                 ->replace('_', '-')
                 ->toString();
 
