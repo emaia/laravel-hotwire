@@ -64,7 +64,11 @@ class PublishControllersCommand extends Command
 
         $selected = multiselect(
             label: 'Which controllers would you like to publish?',
-            options: array_keys($available),
+            options: collect($available)->mapWithKeys(fn ($controller, $name) => [
+                $name => $controller['relative_dir'] !== ''
+                    ? "[{$controller['relative_dir']}] {$name}"
+                    : $name,
+            ])->toArray(),
         );
 
         if (empty($selected)) {
@@ -155,10 +159,13 @@ class PublishControllersCommand extends Command
         }
 
         $controllers = [];
-        $controllerFiles = Finder::create()->files()->name('*_controller.js')->in($baseDir);
+        $controllerFiles = Finder::create()->files()
+            ->name('*_controller.js')
+            ->name('*_controller.ts')
+            ->in($baseDir);
 
         foreach ($controllerFiles as $file) {
-            $name = str($file->getFilename())->before('_controller.js')->toString();
+            $name = preg_replace('/_controller\.(js|ts)$/', '', $file->getFilename());
             $relativeDir = trim(str_replace('\\', '/', $file->getRelativePath()), '/');
 
             $allFiles = Finder::create()->files()->in($file->getPath())->sortByName();
@@ -176,7 +183,11 @@ class PublishControllersCommand extends Command
             ];
         }
 
-        ksort($controllers);
+        uksort($controllers, function ($a, $b) use ($controllers) {
+            $cmp = strcmp($controllers[$a]['relative_dir'], $controllers[$b]['relative_dir']);
+
+            return $cmp !== 0 ? $cmp : strcmp($a, $b);
+        });
 
         return $controllers;
     }

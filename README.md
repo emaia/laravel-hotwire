@@ -93,6 +93,19 @@ registerControllers(Stimulus, controllers);
 
 ```
 
+### TailwindCSS (v4)
+
+Adicione essas configurações no seu entrypoint CSS `/resources/css/app.css`
+
+```css
+@source '../../vendor/emaia/laravel-hotwire-components/resources/views/**/*.blade.php';
+@custom-variant turbo-frame (turbo-frame[src] &);
+@custom-variant modal ([data-dialog--modal-target="dialog"] &);
+@custom-variant aria-busy (form[aria-busy="true"] &);
+@custom-variant self-aria-busy (html[aria-busy="true"] &);
+@custom-variant turbo-frame-aria-busy (turbo-frame[aria-busy="true"] &);
+```
+
 ### Customização de Views
 
 Para customizar o HTML/Tailwind dos componentes:
@@ -146,22 +159,22 @@ php artisan hwc:controllers autoselect autosubmit progressbar
 
 ### Frame
 
-| Controller                                                               | Identifier                     | Dependências      | Docs                                                      |
-|--------------------------------------------------------------------------|--------------------------------|-------------------|-----------------------------------------------------------|
-| [Progressbar](docs/controllers/frame/progressbar.md)                     | `frame--progressbar`           | `@hotwired/turbo` | [readme](docs/controllers/frame/progressbar.md)           |
-| [Frame View Transition](docs/controllers/frame/frame-view-transition.md) | `frame--frame-view-transition` | —                 | [readme](docs/controllers/frame/frame-view-transition.md) |
-| [Refresh Turbo Frame](docs/controllers/frame/refresh-turbo-frame.md)     | `frame--refresh-turbo-frame`   | `@hotwired/turbo` | [readme](docs/controllers/frame/refresh-turbo-frame.md)   |
+| Controller                                                            | Identifier                     | Dependências      | Docs                                                   |
+|-----------------------------------------------------------------------|--------------------------------|-------------------|--------------------------------------------------------|
+| [Progressbar](docs/controllers/tf/progressbar.md)                     | `frame--progressbar`           | `@hotwired/turbo` | [readme](docs/controllers/tf/progressbar.md)           |
+| [Frame View Transition](docs/controllers/tf/frame-view-transition.md) | `frame--frame-view-transition` | —                 | [readme](docs/controllers/tf/frame-view-transition.md) |
+| [Refresh Turbo Frame](docs/controllers/tf/refresh-turbo-frame.md)     | `frame--refresh-turbo-frame`   | `@hotwired/turbo` | [readme](docs/controllers/tf/refresh-turbo-frame.md)   |
 
 ### Hwc
 
-| Controller                                                        | Identifier           | Dependências | Docs                                               |
-|-------------------------------------------------------------------|----------------------|--------------|-----------------------------------------------------|
-| [GTM](docs/controllers/hwc/gtm.md)                               | `hwc--gtm`           | —            | [readme](docs/controllers/hwc/gtm.md)              |
-| [Log](docs/controllers/hwc/log.md)                                | `hwc--log`           | —            | [readme](docs/controllers/hwc/log.md)              |
-| [Maska](docs/controllers/hwc/maska.md)                            | `hwc--maska`         | `maska`      | [readme](docs/controllers/hwc/maska.md)            |
-| [OEmbed](docs/controllers/hwc/oembed.md)                          | `hwc--oembed`        | —            | [readme](docs/controllers/hwc/oembed.md)           |
-| [Pending Image](docs/controllers/hwc/pending-image.md)            | `hwc--pending-image` | —            | [readme](docs/controllers/hwc/pending-image.md)    |
-| [Tippy](docs/controllers/hwc/tippy.md)                            | `hwc--tippy`         | `tippy.js`   | [readme](docs/controllers/hwc/tippy.md)            |
+| Controller                                             | Identifier           | Dependências | Docs                                            |
+|--------------------------------------------------------|----------------------|--------------|-------------------------------------------------|
+| [GTM](docs/controllers/hwc/gtm.md)                     | `hwc--gtm`           | —            | [readme](docs/controllers/hwc/gtm.md)           |
+| [Log](docs/controllers/hwc/log.md)                     | `hwc--log`           | —            | [readme](docs/controllers/hwc/log.md)           |
+| [Maska](docs/controllers/hwc/maska.md)                 | `hwc--maska`         | `maska`      | [readme](docs/controllers/hwc/maska.md)         |
+| [OEmbed](docs/controllers/hwc/oembed.md)               | `hwc--oembed`        | —            | [readme](docs/controllers/hwc/oembed.md)        |
+| [Pending Image](docs/controllers/hwc/pending-image.md) | `hwc--pending-image` | —            | [readme](docs/controllers/hwc/pending-image.md) |
+| [Tippy](docs/controllers/hwc/tippy.md)                 | `hwc--tippy`         | `tippy.js`   | [readme](docs/controllers/hwc/tippy.md)         |
 
 ## Testing
 

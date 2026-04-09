@@ -9,11 +9,17 @@ beforeEach(function () {
     File::deleteDirectory($this->targetDir);
 
     $baseDir = realpath(__DIR__.'/../../resources/js/controllers');
-    $this->allControllerNames = collect(
-        Finder::create()->files()->name('*_controller.js')->in($baseDir)
-    )->map(fn ($f) => str($f->getFilename())->before('_controller.js')->toString())
-        ->sort()
-        ->values()
+    $files = collect(Finder::create()->files()->name('*_controller.js')->name('*_controller.ts')->in($baseDir));
+
+    $this->allControllerNames = $files->mapWithKeys(function ($f) {
+        $name = preg_replace('/_controller\.(js|ts)$/', '', $f->getFilename());
+        $relativeDir = trim(str_replace('\\', '/', $f->getRelativePath()), '/');
+        $label = $relativeDir !== '' ? "[{$relativeDir}] {$name}" : $name;
+
+        return [$name => ['relative_dir' => $relativeDir, 'label' => $label]];
+    })
+        ->sortBy(fn ($v, $name) => $v['relative_dir'].$name)
+        ->mapWithKeys(fn ($v, $name) => [$name => $v['label']])
         ->all();
 });
 
