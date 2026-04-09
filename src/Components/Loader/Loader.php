@@ -13,6 +13,6 @@ class Loader extends Component
 
     public function render()
     {
-        return view('hotwire-components::components.loader.loader');
+        return 'hotwire-components::components.loader.loader';
     }
 }

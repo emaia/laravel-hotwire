@@ -44,6 +44,6 @@ class FlashMessage extends Component
 
     public function render()
     {
-        return view('hotwire-components::components.flash-message.flash-message');
+        return 'hotwire-components::components.flash-message.flash-message';
     }
 }

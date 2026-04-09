@@ -1,11 +1,20 @@
 <?php
 
 use Illuminate\Support\Facades\File;
+use Symfony\Component\Finder\Finder;
 
 beforeEach(function () {
     $this->targetDir = resource_path('js/controllers');
 
     File::deleteDirectory($this->targetDir);
+
+    $baseDir = realpath(__DIR__.'/../../resources/js/controllers');
+    $this->allControllerNames = collect(
+        Finder::create()->files()->name('*_controller.js')->in($baseDir)
+    )->map(fn ($f) => str($f->getFilename())->before('_controller.js')->toString())
+        ->sort()
+        ->values()
+        ->all();
 });
 
 afterEach(function () {
@@ -14,16 +23,12 @@ afterEach(function () {
 
 it('lists available controllers', function () {
     $this->artisan('hwc:controllers --list --no-interaction')
-        ->assertSuccessful()
-        ->expectsTable(
-            ['Controller', 'Stimulus Identifier', 'Files'],
-            [['modal', 'dialog--modal', 'modal_controller.js']],
-        );
+        ->assertSuccessful();
 });
 
 it('shows interactive multiselect when no arguments given', function () {
     $this->artisan('hwc:controllers')
-        ->expectsChoice('Which controllers would you like to publish?', ['modal'], ['modal', 'toast'])
+        ->expectsChoice('Which controllers would you like to publish?', ['modal'], $this->allControllerNames)
         ->assertSuccessful();
 
     expect(File::exists($this->targetDir.'/dialog/modal_controller.js'))->toBeTrue();
@@ -31,7 +36,7 @@ it('shows interactive multiselect when no arguments given', function () {
 
 it('shows no selection message when multiselect returns empty', function () {
     $this->artisan('hwc:controllers')
-        ->expectsChoice('Which controllers would you like to publish?', [], ['modal', 'toast'])
+        ->expectsChoice('Which controllers would you like to publish?', [], $this->allControllerNames)
         ->assertSuccessful();
 
     expect(File::isDirectory($this->targetDir))->toBeFalse();

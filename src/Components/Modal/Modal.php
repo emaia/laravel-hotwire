@@ -22,6 +22,6 @@ class Modal extends Component
 
     public function render()
     {
-        return view('hotwire-components::components.modal.modal');
+        return 'hotwire-components::components.modal.modal';
     }
 }
