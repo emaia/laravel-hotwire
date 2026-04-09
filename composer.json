@@ -34,8 +34,7 @@
     },
     "autoload": {
         "psr-4": {
-            "Emaia\\LaravelHotwireComponents\\": "src/",
-            "Emaia\\LaravelHotwireComponents\\Database\\Factories\\": "database/factories/"
+            "Emaia\\LaravelHotwireComponents\\": "src/"
         }
     },
     "autoload-dev": {
@@ -63,10 +62,7 @@
         "laravel": {
             "providers": [
                 "Emaia\\LaravelHotwireComponents\\LaravelHotwireComponentsServiceProvider"
-            ],
-            "aliases": {
-                "LaravelHotwireComponents": "Emaia\\LaravelHotwireComponents\\Facades\\LaravelHotwireComponents"
-            }
+            ]
         }
     },
     "minimum-stability": "dev",
