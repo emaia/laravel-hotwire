@@ -14,9 +14,12 @@ beforeEach(function () {
     $this->allControllerNames = $files->mapWithKeys(function ($f) {
         $name = preg_replace('/_controller\.(js|ts)$/', '', $f->getFilename());
         $relativeDir = trim(str_replace('\\', '/', $f->getRelativePath()), '/');
-        $label = $relativeDir !== '' ? "[{$relativeDir}] {$name}" : $name;
 
-        return [$name => ['relative_dir' => $relativeDir, 'label' => $label]];
+        if ($relativeDir === '') {
+            return [];
+        }
+
+        return [$name => ['relative_dir' => $relativeDir, 'label' => "[{$relativeDir}] {$name}"]];
     })
         ->sortBy(fn ($v, $name) => $v['relative_dir'].$name)
         ->mapWithKeys(fn ($v, $name) => [$name => $v['label']])

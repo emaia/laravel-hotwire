@@ -86,6 +86,7 @@ class PublishControllersCommand extends Command
         $this->files->ensureDirectoryExists($targetBase);
 
         $published = 0;
+        $copiedDirs = [];
 
         foreach ($selected as $name) {
             if (! isset($available[$name])) {
@@ -99,7 +100,7 @@ class PublishControllersCommand extends Command
                 ? $targetBase.'/'.$controller['relative_dir']
                 : $targetBase;
 
-            if ($this->files->isDirectory($targetDir) && ! $this->option('force')) {
+            if (! in_array($targetDir, $copiedDirs) && $this->files->isDirectory($targetDir) && ! $this->option('force')) {
                 if ($this->directoryContentsMatch($controller['source_dir'], $targetDir)) {
                     info("Controller \"{$name}\" is already up to date.");
 
@@ -118,7 +119,10 @@ class PublishControllersCommand extends Command
             }
 
             $this->files->ensureDirectoryExists($targetDir);
-            $this->files->copyDirectory($controller['source_dir'], $targetDir);
+            if (! in_array($targetDir, $copiedDirs)) {
+                $this->files->copyDirectory($controller['source_dir'], $targetDir);
+                $copiedDirs[] = $targetDir;
+            }
             info("Published controller: {$name} -> {$targetDir}");
             $published++;
         }
@@ -167,6 +171,10 @@ class PublishControllersCommand extends Command
         foreach ($controllerFiles as $file) {
             $name = preg_replace('/_controller\.(js|ts)$/', '', $file->getFilename());
             $relativeDir = trim(str_replace('\\', '/', $file->getRelativePath()), '/');
+
+            if ($relativeDir === '') {
+                continue;
+            }
 
             $allFiles = Finder::create()->files()->in($file->getPath())->sortByName();
 
