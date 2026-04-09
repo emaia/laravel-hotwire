@@ -1,60 +1,96 @@
-# This is my package laravel-hotwire-components
-
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/emaia/laravel-hotwire-components.svg?style=flat-square)](https://packagist.org/packages/emaia/laravel-hotwire-components)
 [![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/emaia/laravel-hotwire-components/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/emaia/laravel-hotwire-components/actions?query=workflow%3Arun-tests+branch%3Amain)
 [![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/emaia/laravel-hotwire-components/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/emaia/laravel-hotwire-components/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
 [![Total Downloads](https://img.shields.io/packagist/dt/emaia/laravel-hotwire-components.svg?style=flat-square)](https://packagist.org/packages/emaia/laravel-hotwire-components)
 
-This is where your description should go. Limit it to a paragraph or two. Consider adding a small example.
+# Laravel Hotwire Components
 
-## Support us
+Componentes Blade reutilizáveis com Stimulus controllers para projetos Laravel + Hotwire.
 
-[<img src="https://github-ads.s3.eu-central-1.amazonaws.com/laravel-hotwire-components.jpg?t=1" width="419px" />](https://spatie.be/github-ad-click/laravel-hotwire-components)
+## Requisitos
 
-We invest a lot of resources into creating [best in class open source packages](https://spatie.be/open-source). You can support us by [buying one of our paid products](https://spatie.be/open-source/support-us).
+- PHP 8.4+
+- Laravel 11 ou 12
+- [Stimulus](https://stimulus.hotwired.dev/) com loader compatível com `import.meta.glob` (ex: [@emaia/stimulus-dynamic-loader](https://www.npmjs.com/package/@emaia/stimulus-dynamic-loader))
+- Tailwind CSS
 
-We highly appreciate you sending us a postcard from your hometown, mentioning which of our package(s) you are using. You'll find our address on [our contact page](https://spatie.be/about-us). We publish all received postcards on [our virtual postcard wall](https://spatie.be/open-source/postcards).
-
-## Installation
-
-You can install the package via composer:
+## Instalação
 
 ```bash
 composer require emaia/laravel-hotwire-components
 ```
 
-You can publish and run the migrations with:
+Publique o arquivo de configuração (opcional):
 
 ```bash
-php artisan vendor:publish --tag="laravel-hotwire-components-migrations"
-php artisan migrate
+php artisan vendor:publish --tag=hotwire-components-config
 ```
 
-You can publish the config file with:
+### Stimulus Controllers
+
+Os componentes dependem de Stimulus controllers que precisam ser publicados no seu projeto para serem descobertos pelo bundler (Vite).
+
+**Interativo** — selecione quais controllers publicar:
 
 ```bash
-php artisan vendor:publish --tag="laravel-hotwire-components-config"
+php artisan hwc:controllers
 ```
 
-This is the contents of the published config file:
+**Por nome:**
+
+```bash
+php artisan hwc:controllers modal
+```
+
+**Todos de uma vez:**
+
+```bash
+php artisan hwc:controllers --all
+```
+
+**Listar disponíveis (CI/scripts):**
+
+```bash
+php artisan hwc:controllers --list
+```
+
+**Sobrescrever existentes:**
+
+```bash
+php artisan hwc:controllers modal --force
+```
+
+Os controllers são copiados para `resources/js/controllers/` preservando a estrutura de pastas. A convenção de namespace Stimulus é usada: `dialog/modal_controller.js` → `data-controller="dialog--modal"`. O [@emaia/stimulus-dynamic-loader](https://www.npmjs.com/package/@emaia/stimulus-dynamic-loader) descobre e carrega automaticamente via `import.meta.glob`.
+
+> Se o controller já existir e for idêntico ao do pacote, o comando informa que está atualizado. Se diferir, pede confirmação antes de sobrescrever.
+
+### Customização de Views
+
+Para customizar o HTML/Tailwind dos componentes:
+
+```bash
+php artisan vendor:publish --tag=hotwire-components-views
+```
+
+As views publicadas em `resources/views/vendor/hotwire-components/` terão prioridade sobre as do pacote.
+
+## Configuração
 
 ```php
+// config/hotwire-components.php
+
 return [
+    'prefix' => 'hwc', // <x-hwc-modal>
 ];
 ```
 
-Optionally, you can publish the views using
+Altere o `prefix` para usar outro prefixo nos componentes Blade. Ex: `'prefix' => 'hotwire'` → `<x-hotwire-modal>`.
 
-```bash
-php artisan vendor:publish --tag="laravel-hotwire-components-views"
-```
+## Componentes
 
-## Usage
-
-```php
-$laravelHotwireComponents = new Emaia\LaravelHotwireComponents();
-echo $laravelHotwireComponents->echoPhrase('Hello, Emaia!');
-```
+| Componente | Blade | Stimulus Identifier | Docs |
+|------------|-------|---------------------|------|
+| [Modal](src/Components/Modal/readme.md) | `<x-hwc-modal>` | `dialog--modal` | [readme](src/Components/Modal/readme.md) |
 
 ## Testing
 

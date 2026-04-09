@@ -1,31 +1,23 @@
-@props([
-    'id' => uniqid('modal'),
-    'allowSmallWidth' => false,
-    'allowFullWidth' => true,
-    'class' => 'modal-body',
-    'closeButton' => true,
-    'fixedTop' => false,
-])
 <div
     id="{{ $id }}"
-    data-controller="modal"
-    data-modal-prevent-reopen-delay-value="1000"
-    data-modal-hidden-class="opacity-0 pointer-events-none"
-    data-modal-visible-class="opacity-100 pointer-events-auto"
-    data-modal-backdrop-hidden-class="opacity-0"
-    data-modal-backdrop-visible-class="opacity-100"
-    data-modal-dialog-hidden-class="scale-80 opacity-0"
-    data-modal-dialog-visible-class="scale-100 opacity-100"
-    data-modal-lock-scroll-class="overflow-hidden"
-    data-action="turbo:before-cache@window->modal#close"
+    data-controller="dialog--modal"
+    data-dialog--modal-prevent-reopen-delay-value="{{ $preventReopenDelay }}"
+    data-dialog--modal-hidden-class="opacity-0 pointer-events-none"
+    data-dialog--modal-visible-class="opacity-100 pointer-events-auto"
+    data-dialog--modal-backdrop-hidden-class="opacity-0"
+    data-dialog--modal-backdrop-visible-class="opacity-100"
+    data-dialog--modal-dialog-hidden-class="scale-80 opacity-0"
+    data-dialog--modal-dialog-visible-class="scale-100 opacity-100"
+    data-dialog--modal-lock-scroll-class="overflow-hidden"
+    data-action="turbo:before-cache@window->dialog--modal#close"
 >
     @if (isset($trigger))
         {{ $trigger }}
     @endif
 
     <div
-        data-modal-target="modal"
-        data-action="click->modal#clickOutside"
+        data-dialog--modal-target="modal"
+        data-action="click->dialog--modal#clickOutside"
         class="pointer-events-none fixed inset-0 z-50 flex flex-wrap items-center justify-center p-2 opacity-0 transition-opacity duration-200 ease-in-out md:p-10"
         role="dialog"
         aria-modal="true"
@@ -33,12 +25,12 @@
     >
         <!-- Backdrop -->
         <div
-            data-modal-target="backdrop"
+            data-dialog--modal-target="backdrop"
             class="absolute inset-0 bg-slate-600/80 backdrop-blur-sm transition-opacity duration-300 ease-out"
         ></div>
 
         <div
-            data-modal-target="dialog"
+            data-dialog--modal-target="dialog"
             @class([
                 'relative z-10 max-w-full scale-80 transition duration-200 ease-in-out',
                 'md:min-w-[50%]' => ! $allowSmallWidth,
@@ -55,7 +47,7 @@
             @if ($closeButton)
                 <button
                     class="absolute -top-4 -right-4 flex items-center rounded-full bg-gray-200 p-2 text-gray-700 transition-colors hover:bg-white hover:text-gray-600"
-                    data-action="modal#close"
+                    data-action="dialog--modal#close"
                     type="button"
                 >
                     <svg
@@ -76,7 +68,7 @@
             @endif
 
             @if (isset($loading_template))
-                <template data-modal-target="loadingTemplate">
+                <template data-dialog--modal-target="loadingTemplate">
                     {{ $loading_template }}
                 </template>
             @endif

@@ -16,7 +16,7 @@ class PublishControllersCommand extends Command
     public $signature = 'hwc:controllers
                         {controllers?* : Controller names to publish (e.g. modal)}
                         {--all : Publish all available controllers}
-                        {--force : Overwrite existing controllers}
+                        {--force : Overwrite existing files}
                         {--list : List available controllers}';
 
     public $description = 'Publish Stimulus controllers to your application';
@@ -51,8 +51,12 @@ class PublishControllersCommand extends Command
 
         if (! $this->input->isInteractive()) {
             $this->table(
-                ['Controller', 'File'],
-                collect($available)->map(fn ($controller, $name) => [$name, $controller['filename']])->toArray()
+                ['Controller', 'Stimulus Identifier', 'Files'],
+                collect($available)->map(fn ($controller, $name) => [
+                    $name,
+                    $controller['identifier'],
+                    implode(', ', array_map('basename', $controller['files'])),
+                ])->toArray()
             );
 
             return self::SUCCESS;
@@ -74,14 +78,12 @@ class PublishControllersCommand extends Command
 
     private function publishControllers(array $selected, array $available): int
     {
-        $targetDir = resource_path('js/controllers');
-        $this->files->ensureDirectoryExists($targetDir);
+        $targetBase = resource_path('js/controllers');
+        $this->files->ensureDirectoryExists($targetBase);
 
         $published = 0;
 
         foreach ($selected as $name) {
-            $name = str($name)->before('_controller')->toString();
-
             if (! isset($available[$name])) {
                 warning("Controller \"{$name}\" not found. Available: " . implode(', ', array_keys($available)));
 
@@ -89,10 +91,10 @@ class PublishControllersCommand extends Command
             }
 
             $controller = $available[$name];
-            $target = $targetDir . '/' . $controller['filename'];
+            $targetDir = $targetBase . '/' . $controller['relative_dir'];
 
-            if ($this->files->exists($target) && ! $this->option('force')) {
-                if ($this->files->get($controller['path']) === $this->files->get($target)) {
+            if ($this->files->isDirectory($targetDir) && ! $this->option('force')) {
+                if ($this->directoryContentsMatch($controller['source_dir'], $targetDir)) {
                     info("Controller \"{$name}\" is already up to date.");
 
                     continue;
@@ -109,8 +111,9 @@ class PublishControllersCommand extends Command
                 }
             }
 
-            $this->files->copy($controller['path'], $target);
-            info("Published controller: {$name} -> {$target}");
+            $this->files->ensureDirectoryExists($targetDir);
+            $this->files->copyDirectory($controller['source_dir'], $targetDir);
+            info("Published controller: {$name} -> {$targetDir}");
             $published++;
         }
 
@@ -121,23 +124,54 @@ class PublishControllersCommand extends Command
         return self::SUCCESS;
     }
 
-    /** @return array<string, array{path: string, filename: string}> name => controller info */
+    private function directoryContentsMatch(string $source, string $target): bool
+    {
+        $sourceFiles = Finder::create()->files()->in($source)->sortByName();
+
+        foreach ($sourceFiles as $file) {
+            $targetFile = $target . '/' . $file->getRelativePathname();
+
+            if (! $this->files->exists($targetFile)) {
+                return false;
+            }
+
+            if ($this->files->get($file->getRealPath()) !== $this->files->get($targetFile)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /** @return array<string, array{identifier: string, relative_dir: string, source_dir: string, files: list<string>}> */
     private function availableControllers(): array
     {
-        $dir = realpath(__DIR__ . '/../../resources/js/controllers');
+        $baseDir = realpath(__DIR__ . '/../../resources/js/controllers');
 
-        if (! $dir || ! is_dir($dir)) {
+        if (! $baseDir || ! is_dir($baseDir)) {
             return [];
         }
 
         $controllers = [];
-        $files = Finder::create()->files()->name('*_controller.js')->in($dir);
+        $controllerFiles = Finder::create()->files()->name('*_controller.js')->in($baseDir);
 
-        foreach ($files as $file) {
+        foreach ($controllerFiles as $file) {
             $name = str($file->getFilename())->before('_controller.js')->toString();
+            $relativeDir = str($file->getPath())->after($baseDir . '/')->toString();
+
+            $allFiles = Finder::create()->files()->in($file->getPath())->sortByName();
+
+            $identifier = str($relativeDir)
+                ->replace('/', '--')
+                ->append('--' . $name)
+                ->replace('_', '-')
+                ->toString();
+
             $controllers[$name] = [
-                'path' => $file->getRealPath(),
-                'filename' => $file->getFilename(),
+                'identifier' => $identifier,
+                'relative_dir' => $relativeDir,
+                'source_dir' => $file->getPath(),
+                'files' => array_values(array_map(fn ($f) => $f->getRealPath(), iterator_to_array($allFiles))),
             ];
         }
 
