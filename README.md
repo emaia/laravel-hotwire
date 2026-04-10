@@ -143,11 +143,12 @@ Change `prefix` to use a different prefix for Blade components. E.g. `'prefix' =
 
 ## Components
 
-| Component                                                | Blade                   | Stimulus Identifier                            | Docs                                              |
-|----------------------------------------------------------|-------------------------|------------------------------------------------|---------------------------------------------------|
-| [Modal](docs/components/modal/readme.md)                 | `<x-hwc-modal>`         | `dialog--modal`                                | [readme](docs/components/modal/readme.md)         |
-| [Flash Message](docs/components/flash-message/readme.md) | `<x-hwc-flash-message>` | `notification--toaster`, `notification--toast` | [readme](docs/components/flash-message/readme.md) |
-| [Loader](docs/components/loader/readme.md)               | `<x-hwc-loader>`        | —                                              | [readme](docs/components/loader/readme.md)        |
+| Component                                                      | Blade                   | Stimulus Identifier                            | Docs                                               |
+|----------------------------------------------------------------|-------------------------|------------------------------------------------|----------------------------------------------------|
+| [Modal](docs/components/modal/readme.md)                       | `<x-hwc-modal>`         | `dialog--modal`                                | [readme](docs/components/modal/readme.md)          |
+| [Confirm Dialog](docs/components/confirm-dialog/readme.md)     | `<x-hwc-confirm>`       | `dialog--confirm`                              | [readme](docs/components/confirm-dialog/readme.md) |
+| [Flash Message](docs/components/flash-message/readme.md)       | `<x-hwc-flash-message>` | `notification--toaster`, `notification--toast` | [readme](docs/components/flash-message/readme.md)  |
+| [Loader](docs/components/loader/readme.md)                     | `<x-hwc-loader>`        | —                                              | [readme](docs/components/loader/readme.md)         |
 
 ## Stimulus Controllers (standalone)
 
@@ -159,9 +160,10 @@ php artisan hotwire:controllers form/autoselect form/autosubmit frame/progress
 
 ### Dialog
 
-| Controller                                | Identifier      | Dependencies | Docs                                       |
-|-------------------------------------------|-----------------|--------------|--------------------------------------------|
-| [Modal](docs/controllers/dialog/modal.md) | `dialog--modal` | —            | [readme](docs/controllers/dialog/modal.md) |
+| Controller                                        | Identifier        | Dependencies | Docs                                             |
+|---------------------------------------------------|-------------------|--------------|--------------------------------------------------|
+| [Modal](docs/controllers/dialog/modal.md)         | `dialog--modal`   | —            | [readme](docs/controllers/dialog/modal.md)       |
+| [Confirm](docs/components/confirm-dialog/readme.md) | `dialog--confirm` | —            | [readme](docs/components/confirm-dialog/readme.md) |
 
 ### Form
 
