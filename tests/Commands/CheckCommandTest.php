@@ -209,7 +209,7 @@ it('accepts custom path to scan', function () {
     File::ensureDirectoryExists($customDir);
     File::put($customDir.'/page.blade.php', '<x-hwc-modal />');
 
-    $this->artisan('hotwire:check --path='.resource_path('views/custom').' --no-interaction')
+    $this->artisan('hotwire:check', ['--path' => [resource_path('views/custom')], '--no-interaction' => true])
         ->expectsOutputToContain('dialog--modal')
         ->assertExitCode(1); // controller not published → exit 1
 });
@@ -218,7 +218,7 @@ it('reports no components found when custom path has no blade files', function (
     $customDir = resource_path('views/empty');
     File::ensureDirectoryExists($customDir);
 
-    $this->artisan('hotwire:check --path='.resource_path('views/empty').' --no-interaction')
+    $this->artisan('hotwire:check', ['--path' => [resource_path('views/empty')], '--no-interaction' => true])
         ->expectsOutputToContain('No Hotwire components found')
         ->assertSuccessful();
 });
