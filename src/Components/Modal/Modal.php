@@ -2,9 +2,10 @@
 
 namespace Emaia\LaravelHotwire\Components\Modal;
 
+use Emaia\LaravelHotwire\Contracts\HasStimulusControllers;
 use Illuminate\View\Component;
 
-class Modal extends Component
+class Modal extends Component implements HasStimulusControllers
 {
     public function __construct(
         public string $id = '',
@@ -18,6 +19,11 @@ class Modal extends Component
         if ($this->id === '') {
             $this->id = uniqid('modal-');
         }
+    }
+
+    public static function stimulusControllers(): array
+    {
+        return ['dialog--modal'];
     }
 
     public function render()

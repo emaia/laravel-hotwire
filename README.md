@@ -62,7 +62,7 @@ php artisan hotwire:controllers form dialog/modal
 php artisan hotwire:controllers --all
 ```
 
-**List available controllers:**
+**List available controllers (with publish status):**
 
 ```bash
 php artisan hotwire:controllers --list
@@ -82,6 +82,14 @@ them automatically via `import.meta.glob`.
 
 > If a controller already exists and is identical to the package version, the command reports it as up to date. If it
 > differs, it asks for confirmation before overwriting.
+
+**List components and their required controllers:**
+
+```bash
+php artisan hotwire:components
+```
+
+Shows each Blade component, its tag, and the Stimulus controllers it depends on — with publish status for each.
 
 #### Project setup (using Vite)
 
@@ -143,12 +151,12 @@ Change `prefix` to use a different prefix for Blade components. E.g. `'prefix' =
 
 ## Components
 
-| Component                                                      | Blade                   | Stimulus Identifier                            | Docs                                               |
-|----------------------------------------------------------------|-------------------------|------------------------------------------------|----------------------------------------------------|
-| [Modal](docs/components/modal/readme.md)                       | `<x-hwc-modal>`         | `dialog--modal`                                | [readme](docs/components/modal/readme.md)          |
-| [Confirm Dialog](docs/components/confirm-dialog/readme.md)     | `<x-hwc-confirm>`       | `dialog--confirm`                              | [readme](docs/components/confirm-dialog/readme.md) |
-| [Flash Message](docs/components/flash-message/readme.md)       | `<x-hwc-flash-message>` | `notification--toaster`, `notification--toast` | [readme](docs/components/flash-message/readme.md)  |
-| [Loader](docs/components/loader/readme.md)                     | `<x-hwc-loader>`        | —                                              | [readme](docs/components/loader/readme.md)         |
+| Component                                                  | Blade                   | Stimulus Identifier                            | Docs                                               |
+|------------------------------------------------------------|-------------------------|------------------------------------------------|----------------------------------------------------|
+| [Modal](docs/components/modal/readme.md)                   | `<x-hwc-modal>`         | `dialog--modal`                                | [readme](docs/components/modal/readme.md)          |
+| [Confirm Dialog](docs/components/confirm-dialog/readme.md) | `<x-hwc-confirm>`       | `dialog--confirm`                              | [readme](docs/components/confirm-dialog/readme.md) |
+| [Flash Message](docs/components/flash-message/readme.md)   | `<x-hwc-flash-message>` | `notification--toaster`, `notification--toast` | [readme](docs/components/flash-message/readme.md)  |
+| [Loader](docs/components/loader/readme.md)                 | `<x-hwc-loader>`        | —                                              | [readme](docs/components/loader/readme.md)         |
 
 ## Stimulus Controllers (standalone)
 
@@ -160,9 +168,9 @@ php artisan hotwire:controllers form/autoselect form/autosubmit frame/progress
 
 ### Dialog
 
-| Controller                                        | Identifier        | Dependencies | Docs                                             |
-|---------------------------------------------------|-------------------|--------------|--------------------------------------------------|
-| [Modal](docs/controllers/dialog/modal.md)         | `dialog--modal`   | —            | [readme](docs/controllers/dialog/modal.md)       |
+| Controller                                          | Identifier        | Dependencies | Docs                                               |
+|-----------------------------------------------------|-------------------|--------------|----------------------------------------------------|
+| [Modal](docs/controllers/dialog/modal.md)           | `dialog--modal`   | —            | [readme](docs/controllers/dialog/modal.md)         |
 | [Confirm](docs/components/confirm-dialog/readme.md) | `dialog--confirm` | —            | [readme](docs/components/confirm-dialog/readme.md) |
 
 ### Form

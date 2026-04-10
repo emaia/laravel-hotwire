@@ -2,6 +2,7 @@
 
 namespace Emaia\LaravelHotwire;
 
+use Emaia\LaravelHotwire\Commands\ListComponentsCommand;
 use Emaia\LaravelHotwire\Commands\PublishControllersCommand;
 use Emaia\LaravelHotwire\Components\ConfirmDialog\ConfirmDialog;
 use Emaia\LaravelHotwire\Components\FlashMessage\FlashMessage;
@@ -13,22 +14,29 @@ use Spatie\LaravelPackageTools\PackageServiceProvider;
 
 class LaravelHotwireServiceProvider extends PackageServiceProvider
 {
+    /** @var array<string, class-string> */
+    public const array COMPONENTS = [
+        'modal' => Modal::class,
+        'confirm' => ConfirmDialog::class,
+        'flash-message' => FlashMessage::class,
+        'loader' => Loader::class,
+    ];
+
     public function configurePackage(Package $package): void
     {
         $package
             ->name('hotwire')
             ->hasConfigFile()
             ->hasViews()
-            ->hasCommand(PublishControllersCommand::class);
+            ->hasCommands([PublishControllersCommand::class, ListComponentsCommand::class]);
     }
 
     public function packageBooted(): void
     {
         $prefix = config('hotwire.prefix', 'hwc');
 
-        Blade::component("{$prefix}-modal", Modal::class);
-        Blade::component("{$prefix}-confirm", ConfirmDialog::class);
-        Blade::component("{$prefix}-flash-message", FlashMessage::class);
-        Blade::component("{$prefix}-loader", Loader::class);
+        foreach (self::COMPONENTS as $key => $class) {
+            Blade::component("{$prefix}-{$key}", $class);
+        }
     }
 }

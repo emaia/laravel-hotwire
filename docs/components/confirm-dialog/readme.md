@@ -56,7 +56,7 @@ Use `confirm-class` to style the confirm button for destructive actions:
 
 ## With custom content
 
-Use the default slot for additional content inside the dialog:
+Use the default slot for additional content inside the dialog card:
 
 ```html
 <x-hwc-confirm title="Archive project?">
@@ -92,7 +92,7 @@ Use the default slot for additional content inside the dialog:
 
 The controller wraps the `trigger` slot in a click-intercept zone. When the user clicks anything inside, the click is cancelled and the confirmation dialog opens. If the user clicks **Confirm**, the original click is re-fired on the same element (bypassing the intercept). If the user clicks **Cancel** or presses `Escape`, the dialog closes and nothing happens.
 
-This means the trigger element needs no special attributes — just place it in the `trigger` slot.
+The trigger element needs no special attributes — just place it in the `trigger` slot.
 
 ## Stimulus Values
 
@@ -102,6 +102,20 @@ Configurable via `data-dialog--confirm-*-value` on the root element:
 |-------|------|---------|-------------|
 | `open-duration` | `Number` | `200` | Opening animation duration (ms) |
 | `close-duration` | `Number` | `200` | Closing animation duration (ms) |
+| `lock-scroll` | `Boolean` | `true` | Locks body scroll when the dialog is open |
+| `close-on-click-outside` | `Boolean` | `true` | Closes when clicking the backdrop |
+
+Example — disable scroll lock and click-outside:
+
+```html
+<x-hwc-confirm
+    title="Are you sure?"
+    data-dialog--confirm-lock-scroll-value="false"
+    data-dialog--confirm-close-on-click-outside-value="false"
+>
+    ...
+</x-hwc-confirm>
+```
 
 ## Actions
 
@@ -110,6 +124,15 @@ Configurable via `data-dialog--confirm-*-value` on the root element:
 | `dialog--confirm#intercept` | Intercepts a click and opens the dialog |
 | `dialog--confirm#confirm` | Confirms and re-fires the intercepted action |
 | `dialog--confirm#cancel` | Cancels and closes the dialog |
+
+## Accessibility
+
+- `role="dialog"` and `aria-modal="true"` on the overlay
+- Focus trap: Tab/Shift+Tab cycle through focusable elements inside the dialog
+- Focus returns to the trigger element on close
+- Closes on `Escape` key
+- Closes on backdrop click (configurable via `close-on-click-outside`)
+- Body scroll is locked while open (configurable via `lock-scroll`)
 
 ## Turbo integration
 
