@@ -3,17 +3,19 @@
 [![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/emaia/laravel-hotwire/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/emaia/laravel-hotwire/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
 [![Total Downloads](https://img.shields.io/packagist/dt/emaia/laravel-hotwire.svg?style=flat-square)](https://packagist.org/packages/emaia/laravel-hotwire)
 
-# Laravel Hotwire Components
+# Laravel Hotwire
 
-Reusable Blade components with Stimulus controllers for Laravel + Hotwire projects.
+Blade components and Stimulus controllers for building interactive Laravel applications with Hotwire — no JavaScript
+framework required.
 
 ## Requirements
 
-- PHP 8.4+
-- Laravel 11 or 12
+- PHP 8.3+
+- Laravel 12+
 - [Stimulus](https://stimulus.hotwired.dev/) with a loader compatible with `import.meta.glob` (
   e.g. [@emaia/stimulus-dynamic-loader](https://www.npmjs.com/package/@emaia/stimulus-dynamic-loader))
 - Tailwind CSS
+- Vite.js
 
 ## Installation
 
@@ -97,7 +99,8 @@ Shows each Blade component, its tag, and the Stimulus controllers it depends on 
 php artisan hotwire:check
 ```
 
-Scans `resources/views` for Hotwire components, checks whether their required Stimulus controllers are published, and reports any missing or outdated ones. Exits with code `1` if attention is needed (useful for CI).
+Scans `resources/views` for Hotwire components, checks whether their required Stimulus controllers are published, and
+reports any missing or outdated ones. Exits with code `1` if attention is needed (useful for CI).
 
 ```bash
 # Auto-publish missing/outdated controllers without prompting
