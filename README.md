@@ -91,6 +91,22 @@ php artisan hotwire:components
 
 Shows each Blade component, its tag, and the Stimulus controllers it depends on — with publish status for each.
 
+**Check controllers for components used in your views:**
+
+```bash
+php artisan hotwire:check
+```
+
+Scans `resources/views` for Hotwire components, checks whether their required Stimulus controllers are published, and reports any missing or outdated ones. Exits with code `1` if attention is needed (useful for CI).
+
+```bash
+# Auto-publish missing/outdated controllers without prompting
+php artisan hotwire:check --fix
+
+# Scan a custom path
+php artisan hotwire:check --path=resources/views/app
+```
+
 #### Project setup (using Vite)
 
 ```js
