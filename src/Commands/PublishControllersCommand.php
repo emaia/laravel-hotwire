@@ -14,7 +14,7 @@ use function Laravel\Prompts\warning;
 class PublishControllersCommand extends Command
 {
     public $signature = 'hwc:controllers
-                        {controllers?* : Controller names to publish (e.g. modal)}
+                        {controllers?* : Namespace or namespace/name to publish (e.g. form, form/autoselect)}
                         {--all : Publish all available controllers}
                         {--force : Overwrite existing files}
                         {--list : List available controllers}';
@@ -36,7 +36,7 @@ class PublishControllersCommand extends Command
 
         $selected = $this->option('all')
             ? array_keys($available)
-            : $this->argument('controllers');
+            : $this->resolveArguments($this->argument('controllers'), $available);
 
         return $this->publishControllers($selected, $available);
     }
@@ -49,26 +49,33 @@ class PublishControllersCommand extends Command
             return self::SUCCESS;
         }
 
-        if (! $this->input->isInteractive()) {
+        if ($this->option('list') || ! $this->input->isInteractive()) {
             $this->table(
-                ['Controller', 'Stimulus Identifier', 'Files'],
-                collect($available)->map(fn ($controller, $name) => [
-                    $name,
+                ['Namespace', 'Controller', 'Stimulus Identifier', 'Files'],
+                collect($available)->map(fn ($controller, $key) => [
+                    $controller['relative_dir'],
+                    $controller['name'],
                     $controller['identifier'],
                     implode(', ', array_map('basename', $controller['files'])),
                 ])->toArray()
             );
+
+            if ($this->option('list')) {
+                $this->line('');
+                $this->line('To publish controllers, run:');
+                $this->line('  php artisan hwc:controllers                  Interactive mode');
+                $this->line('  php artisan hwc:controllers {namespace}      Publish all controllers in a namespace');
+                $this->line('  php artisan hwc:controllers {namespace/name} Publish a specific controller');
+                $this->line('  php artisan hwc:controllers --all            Publish all controllers');
+                $this->line('  php artisan hwc:controllers --force          Overwrite existing files');
+            }
 
             return self::SUCCESS;
         }
 
         $selected = multiselect(
             label: 'Which controllers would you like to publish?',
-            options: collect($available)->mapWithKeys(fn ($controller, $name) => [
-                $name => $controller['relative_dir'] !== ''
-                    ? "[{$controller['relative_dir']}] {$name}"
-                    : $name,
-            ])->toArray(),
+            options: collect($available)->mapWithKeys(fn ($controller, $key) => [$key => $key])->toArray(),
         );
 
         if (empty($selected)) {
@@ -83,47 +90,42 @@ class PublishControllersCommand extends Command
     private function publishControllers(array $selected, array $available): int
     {
         $targetBase = resource_path('js/controllers');
-        $this->files->ensureDirectoryExists($targetBase);
 
         $published = 0;
-        $copiedDirs = [];
 
-        foreach ($selected as $name) {
-            if (! isset($available[$name])) {
-                warning("Controller \"{$name}\" not found. Available: ".implode(', ', array_keys($available)));
+        foreach ($selected as $key) {
+            if (! isset($available[$key])) {
+                warning("Controller \"{$key}\" not found. Run --list to see available controllers.");
 
                 continue;
             }
 
-            $controller = $available[$name];
-            $targetDir = $controller['relative_dir'] !== ''
-                ? $targetBase.'/'.$controller['relative_dir']
-                : $targetBase;
+            $controller = $available[$key];
+            $targetDir = $targetBase.'/'.$controller['relative_dir'];
+            $targetFile = $targetDir.'/'.$controller['filename'];
 
-            if (! in_array($targetDir, $copiedDirs) && $this->files->isDirectory($targetDir) && ! $this->option('force')) {
-                if ($this->directoryContentsMatch($controller['source_dir'], $targetDir)) {
-                    info("Controller \"{$name}\" is already up to date.");
+            if ($this->files->exists($targetFile) && ! $this->option('force')) {
+                if ($this->fileContentsMatch($controller['source_file'], $targetFile)) {
+                    info("Controller \"{$key}\" is already up to date.");
 
                     continue;
                 }
 
                 if (! $this->input->isInteractive()) {
-                    warning("Controller \"{$name}\" already exists. Use --force to overwrite.");
+                    warning("Controller \"{$key}\" already exists. Use --force to overwrite.");
 
                     continue;
                 }
 
-                if (! confirm("Controller \"{$name}\" already exists and differs from the package version. Overwrite?")) {
+                if (! confirm("Controller \"{$key}\" already exists and differs from the package version. Overwrite?")) {
                     continue;
                 }
             }
 
             $this->files->ensureDirectoryExists($targetDir);
-            if (! in_array($targetDir, $copiedDirs)) {
-                $this->files->copyDirectory($controller['source_dir'], $targetDir);
-                $copiedDirs[] = $targetDir;
-            }
-            info("Published controller: {$name} -> {$targetDir}");
+            $this->files->copy($controller['source_file'], $targetFile);
+
+            info("Published controller: {$key} -> {$targetFile}");
             $published++;
         }
 
@@ -134,26 +136,38 @@ class PublishControllersCommand extends Command
         return self::SUCCESS;
     }
 
-    private function directoryContentsMatch(string $source, string $target): bool
+    /** @param string[] $args */
+    private function resolveArguments(array $args, array $available): array
     {
-        $sourceFiles = Finder::create()->files()->in($source)->sortByName();
+        $selected = [];
 
-        foreach ($sourceFiles as $file) {
-            $targetFile = $target.'/'.$file->getRelativePathname();
+        foreach ($args as $arg) {
+            if (str_contains($arg, '/')) {
+                $selected[] = $arg;
+            } else {
+                $matched = array_keys(array_filter($available, fn ($c) => $c['relative_dir'] === $arg));
 
-            if (! $this->files->exists($targetFile)) {
-                return false;
-            }
-
-            if ($this->files->get($file->getRealPath()) !== $this->files->get($targetFile)) {
-                return false;
+                if (empty($matched)) {
+                    warning("Namespace \"{$arg}\" not found. Run --list to see available controllers.");
+                } else {
+                    array_push($selected, ...$matched);
+                }
             }
         }
 
-        return true;
+        return $selected;
     }
 
-    /** @return array<string, array{identifier: string, relative_dir: string, source_dir: string, files: list<string>}> */
+    private function fileContentsMatch(string $sourceFile, string $targetFile): bool
+    {
+        if (! $this->files->exists($targetFile)) {
+            return false;
+        }
+
+        return $this->files->get($sourceFile) === $this->files->get($targetFile);
+    }
+
+    /** @return array<string, array{name: string, identifier: string, relative_dir: string, source_file: string, filename: string, files: list<string>}> */
     private function availableControllers(): array
     {
         $baseDir = realpath(__DIR__.'/../../resources/js/controllers');
@@ -163,6 +177,7 @@ class PublishControllersCommand extends Command
         }
 
         $controllers = [];
+
         $controllerFiles = Finder::create()->files()
             ->name('*_controller.js')
             ->name('*_controller.ts')
@@ -176,18 +191,20 @@ class PublishControllersCommand extends Command
                 continue;
             }
 
-            $allFiles = Finder::create()->files()->in($file->getPath())->sortByName();
-
             $identifier = str("{$relativeDir}--{$name}")
                 ->replace('/', '--')
                 ->replace('_', '-')
                 ->toString();
 
-            $controllers[$name] = [
+            $key = "{$relativeDir}/{$name}";
+
+            $controllers[$key] = [
+                'name' => $name,
                 'identifier' => $identifier,
                 'relative_dir' => $relativeDir,
-                'source_dir' => $file->getPath(),
-                'files' => array_values(array_map(fn ($f) => $f->getRealPath(), iterator_to_array($allFiles))),
+                'source_file' => $file->getRealPath(),
+                'filename' => $file->getFilename(),
+                'files' => [$file->getFilename()],
             ];
         }
 

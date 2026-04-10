@@ -7,7 +7,7 @@ The component automatically reads from the Laravel session (`success`, `error`, 
 ## Requirements
 
 - `@emaia/sonner` installed in the project (`bun add @emaia/sonner`)
-- Controllers published: `php artisan hwc:controllers toast toaster`
+- Controllers published: `php artisan hwc:controllers notification`
 
 ## Setup
 

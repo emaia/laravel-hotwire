@@ -102,7 +102,7 @@ it('applies custom class', function () {
 });
 
 it('registers with custom prefix', function () {
-    config()->set('hotwire-components.prefix', 'custom');
+    config()->set('hwc.prefix', 'custom');
 
     // Re-boot to pick up new prefix
     $provider = new LaravelHotwireComponentsServiceProvider($this->app);

@@ -9,9 +9,13 @@ beforeEach(function () {
     File::deleteDirectory($this->targetDir);
 
     $baseDir = realpath(__DIR__.'/../../resources/js/controllers');
-    $files = collect(Finder::create()->files()->name('*_controller.js')->name('*_controller.ts')->in($baseDir));
 
-    $this->allControllerNames = $files->mapWithKeys(function ($f) {
+    $this->allControllerOptions = collect(
+        Finder::create()->files()
+            ->name('*_controller.js')
+            ->name('*_controller.ts')
+            ->in($baseDir)
+    )->mapWithKeys(function ($f) {
         $name = preg_replace('/_controller\.(js|ts)$/', '', $f->getFilename());
         $relativeDir = trim(str_replace('\\', '/', $f->getRelativePath()), '/');
 
@@ -19,25 +23,28 @@ beforeEach(function () {
             return [];
         }
 
-        return [$name => ['relative_dir' => $relativeDir, 'label' => "[{$relativeDir}] {$name}"]];
-    })
-        ->sortBy(fn ($v, $name) => $v['relative_dir'].$name)
-        ->mapWithKeys(fn ($v, $name) => [$name => $v['label']])
-        ->all();
+        $key = "$relativeDir/$name";
+
+        return [$key => $key];
+    })->sort()->all();
 });
 
 afterEach(function () {
     File::deleteDirectory($this->targetDir);
 });
 
+// --- --list ---
+
 it('lists available controllers', function () {
     $this->artisan('hwc:controllers --list --no-interaction')
         ->assertSuccessful();
 });
 
+// --- Interactive mode ---
+
 it('shows interactive multiselect when no arguments given', function () {
     $this->artisan('hwc:controllers')
-        ->expectsChoice('Which controllers would you like to publish?', ['modal'], $this->allControllerNames)
+        ->expectsChoice('Which controllers would you like to publish?', ['dialog/modal'], $this->allControllerOptions)
         ->assertSuccessful();
 
     expect(File::exists($this->targetDir.'/dialog/modal_controller.js'))->toBeTrue();
@@ -45,67 +52,111 @@ it('shows interactive multiselect when no arguments given', function () {
 
 it('shows no selection message when multiselect returns empty', function () {
     $this->artisan('hwc:controllers')
-        ->expectsChoice('Which controllers would you like to publish?', [], $this->allControllerNames)
+        ->expectsChoice('Which controllers would you like to publish?', [], $this->allControllerOptions)
         ->assertSuccessful();
 
     expect(File::isDirectory($this->targetDir))->toBeFalse();
 });
 
-it('publishes a controller by name', function () {
-    $this->artisan('hwc:controllers', ['controllers' => ['modal']])
+// --- Namespace argument ---
+
+it('publishes all controllers in a namespace', function () {
+    $this->artisan('hwc:controllers', ['controllers' => ['dialog']])
         ->assertSuccessful();
 
-    $published = $this->targetDir.'/dialog/modal_controller.js';
+    expect(File::exists($this->targetDir.'/dialog/modal_controller.js'))->toBeTrue();
+});
 
-    expect(File::exists($published))->toBeTrue();
+it('publishes only controllers within the requested namespace', function () {
+    $this->artisan('hwc:controllers', ['controllers' => ['dialog']])
+        ->assertSuccessful();
 
-    $source = realpath(__DIR__.'/../../resources/js/controllers/dialog/modal_controller.js');
+    expect(File::isDirectory($this->targetDir.'/form'))->toBeFalse();
+});
 
-    expect(File::get($published))->toBe(File::get($source));
+// --- namespace/name notation ---
+
+it('publishes a specific controller using namespace/name notation', function () {
+    $this->artisan('hwc:controllers', ['controllers' => ['form/autoselect']])
+        ->assertSuccessful();
+
+    $published = $this->targetDir.'/form/autoselect_controller.js';
+    $source = realpath(__DIR__.'/../../resources/js/controllers/form/autoselect_controller.js');
+
+    expect(File::exists($published))->toBeTrue()
+        ->and(File::get($published))->toBe(File::get($source));
+});
+
+it('publishes only the requested controller, not the entire namespace', function () {
+    $this->artisan('hwc:controllers', ['controllers' => ['form/autoselect']])
+        ->assertSuccessful();
+
+    expect(File::exists($this->targetDir.'/form/autoselect_controller.js'))->toBeTrue()
+        ->and(File::exists($this->targetDir.'/form/autosubmit_controller.js'))->toBeFalse();
+});
+
+it('publishes multiple controllers with mixed notation', function () {
+    $this->artisan('hwc:controllers', ['controllers' => ['form/autoselect', 'dialog/modal']])
+        ->assertSuccessful();
+
+    expect(File::exists($this->targetDir.'/form/autoselect_controller.js'))->toBeTrue()
+        ->and(File::exists($this->targetDir.'/dialog/modal_controller.js'))->toBeTrue();
 });
 
 it('publishes all controllers with --all', function () {
     $this->artisan('hwc:controllers', ['--all' => true])
         ->assertSuccessful();
 
-    expect(File::exists($this->targetDir.'/dialog/modal_controller.js'))->toBeTrue();
+    expect(File::exists($this->targetDir.'/dialog/modal_controller.js'))->toBeTrue()
+        ->and(File::exists($this->targetDir.'/form/autoselect_controller.js'))->toBeTrue();
 });
 
-it('warns when controller name is not found', function () {
+// --- Error cases ---
+
+it('warns when namespace does not exist', function () {
     $this->artisan('hwc:controllers', ['controllers' => ['nonexistent']])
         ->assertSuccessful();
 
-    expect(File::exists($this->targetDir.'/nonexistent'))->toBeFalse();
+    expect(File::isDirectory($this->targetDir.'/nonexistent'))->toBeFalse();
 });
 
-it('skips when controller is already up to date', function () {
-    $this->artisan('hwc:controllers', ['controllers' => ['modal']]);
+it('warns when specific controller does not exist within a namespace', function () {
+    $this->artisan('hwc:controllers', ['controllers' => ['form/nonexistent']])
+        ->assertSuccessful();
 
-    $this->artisan('hwc:controllers', ['controllers' => ['modal']])
+    expect(File::exists($this->targetDir.'/form/nonexistent_controller.js'))->toBeFalse();
+});
+
+// --- Up to date / overwrite ---
+
+it('skips when controller is already up to date', function () {
+    $this->artisan('hwc:controllers', ['controllers' => ['dialog/modal']]);
+
+    $this->artisan('hwc:controllers', ['controllers' => ['dialog/modal']])
         ->assertSuccessful();
 });
 
 it('warns when controller exists and differs without --force in non-interactive mode', function () {
-    $this->artisan('hwc:controllers', ['controllers' => ['modal']]);
+    $this->artisan('hwc:controllers', ['controllers' => ['dialog/modal']]);
 
     $published = $this->targetDir.'/dialog/modal_controller.js';
     File::put($published, '// modified');
 
-    $this->artisan('hwc:controllers modal --no-interaction')
+    $this->artisan('hwc:controllers dialog/modal --no-interaction')
         ->assertSuccessful();
 
     expect(File::get($published))->toBe('// modified');
 });
 
 it('prompts for confirmation when controller differs in interactive mode', function () {
-    $this->artisan('hwc:controllers', ['controllers' => ['modal']]);
+    $this->artisan('hwc:controllers', ['controllers' => ['dialog/modal']]);
 
     $published = $this->targetDir.'/dialog/modal_controller.js';
     File::put($published, '// modified');
 
-    $this->artisan('hwc:controllers', ['controllers' => ['modal']])
+    $this->artisan('hwc:controllers', ['controllers' => ['dialog/modal']])
         ->expectsConfirmation(
-            'Controller "modal" already exists and differs from the package version. Overwrite?',
+            'Controller "dialog/modal" already exists and differs from the package version. Overwrite?',
             'no',
         )
         ->assertSuccessful();
@@ -114,55 +165,50 @@ it('prompts for confirmation when controller differs in interactive mode', funct
 });
 
 it('overwrites when user confirms in interactive mode', function () {
-    $this->artisan('hwc:controllers', ['controllers' => ['modal']]);
+    $this->artisan('hwc:controllers', ['controllers' => ['dialog/modal']]);
 
     $published = $this->targetDir.'/dialog/modal_controller.js';
     File::put($published, '// modified');
 
-    $this->artisan('hwc:controllers', ['controllers' => ['modal']])
+    $this->artisan('hwc:controllers', ['controllers' => ['dialog/modal']])
         ->expectsConfirmation(
-            'Controller "modal" already exists and differs from the package version. Overwrite?',
+            'Controller "dialog/modal" already exists and differs from the package version. Overwrite?',
             'yes',
         )
         ->assertSuccessful();
 
     $source = realpath(__DIR__.'/../../resources/js/controllers/dialog/modal_controller.js');
-
     expect(File::get($published))->toBe(File::get($source));
 });
 
 it('overwrites when controller exists and --force is used', function () {
-    $this->artisan('hwc:controllers', ['controllers' => ['modal']]);
+    $this->artisan('hwc:controllers', ['controllers' => ['dialog/modal']]);
 
     $published = $this->targetDir.'/dialog/modal_controller.js';
     File::put($published, '// modified');
 
-    $this->artisan('hwc:controllers', ['controllers' => ['modal'], '--force' => true])
+    $this->artisan('hwc:controllers', ['controllers' => ['dialog/modal'], '--force' => true])
         ->assertSuccessful();
 
     $source = realpath(__DIR__.'/../../resources/js/controllers/dialog/modal_controller.js');
-
     expect(File::get($published))->toBe(File::get($source));
 });
 
-it('preserves directory structure when publishing', function () {
-    $this->artisan('hwc:controllers', ['controllers' => ['modal']]);
+// --- Directory structure ---
 
-    expect(File::isDirectory($this->targetDir.'/dialog'))->toBeTrue();
-    expect(File::exists($this->targetDir.'/dialog/modal_controller.js'))->toBeTrue();
+it('preserves directory structure when publishing', function () {
+    $this->artisan('hwc:controllers', ['controllers' => ['dialog/modal']]);
+
+    expect(File::isDirectory($this->targetDir.'/dialog'))->toBeTrue()
+        ->and(File::exists($this->targetDir.'/dialog/modal_controller.js'))->toBeTrue();
 });
 
-it('detects missing file in target directory as not up to date', function () {
-    $this->artisan('hwc:controllers', ['controllers' => ['modal']]);
+it('republishes without prompt when file was deleted but directory remains', function () {
+    $this->artisan('hwc:controllers', ['controllers' => ['dialog/modal']]);
 
-    // Remove the file but keep the directory
     File::delete($this->targetDir.'/dialog/modal_controller.js');
 
-    $this->artisan('hwc:controllers', ['controllers' => ['modal']])
-        ->expectsConfirmation(
-            'Controller "modal" already exists and differs from the package version. Overwrite?',
-            'yes',
-        )
+    $this->artisan('hwc:controllers', ['controllers' => ['dialog/modal']])
         ->assertSuccessful();
 
     expect(File::exists($this->targetDir.'/dialog/modal_controller.js'))->toBeTrue();

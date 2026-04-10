@@ -23,7 +23,7 @@ class LaravelHotwireComponentsServiceProvider extends PackageServiceProvider
 
     public function packageBooted(): void
     {
-        $prefix = config('hotwire-components.prefix', 'hwc');
+        $prefix = config('hwc.prefix', 'hwc');
 
         Blade::component("{$prefix}-modal", Modal::class);
         Blade::component("{$prefix}-flash-message", FlashMessage::class);
