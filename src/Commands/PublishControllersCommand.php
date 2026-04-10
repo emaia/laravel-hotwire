@@ -51,12 +51,12 @@ class PublishControllersCommand extends Command
 
         if ($this->option('list') || ! $this->input->isInteractive()) {
             $this->table(
-                ['Namespace', 'Controller', 'Stimulus Identifier', 'Files'],
-                collect($available)->map(fn ($controller, $key) => [
+                ['Namespace', 'Controller', 'Stimulus Identifier', 'File'],
+                collect($available)->map(fn ($controller) => [
                     $controller['relative_dir'],
                     $controller['name'],
                     $controller['identifier'],
-                    implode(', ', array_map('basename', $controller['files'])),
+                    $controller['filename'],
                 ])->toArray()
             );
 
@@ -105,7 +105,7 @@ class PublishControllersCommand extends Command
             $targetFile = $targetDir.'/'.$controller['filename'];
 
             if ($this->files->exists($targetFile) && ! $this->option('force')) {
-                if ($this->fileContentsMatch($controller['source_file'], $targetFile)) {
+                if ($this->files->hash($controller['source_file']) === $this->files->hash($targetFile)) {
                     info("Controller \"{$key}\" is already up to date.");
 
                     continue;
@@ -143,7 +143,11 @@ class PublishControllersCommand extends Command
 
         foreach ($args as $arg) {
             if (str_contains($arg, '/')) {
-                $selected[] = $arg;
+                if (! isset($available[$arg])) {
+                    warning("Controller \"{$arg}\" not found. Run --list to see available controllers.");
+                } else {
+                    $selected[] = $arg;
+                }
             } else {
                 $matched = array_keys(array_filter($available, fn ($c) => $c['relative_dir'] === $arg));
 
@@ -158,16 +162,7 @@ class PublishControllersCommand extends Command
         return $selected;
     }
 
-    private function fileContentsMatch(string $sourceFile, string $targetFile): bool
-    {
-        if (! $this->files->exists($targetFile)) {
-            return false;
-        }
-
-        return $this->files->get($sourceFile) === $this->files->get($targetFile);
-    }
-
-    /** @return array<string, array{name: string, identifier: string, relative_dir: string, source_file: string, filename: string, files: list<string>}> */
+    /** @return array<string, array{name: string, identifier: string, relative_dir: string, source_file: string, filename: string}> */
     private function availableControllers(): array
     {
         $baseDir = realpath(__DIR__.'/../../resources/js/controllers');
@@ -204,7 +199,6 @@ class PublishControllersCommand extends Command
                 'relative_dir' => $relativeDir,
                 'source_file' => $file->getRealPath(),
                 'filename' => $file->getFilename(),
-                'files' => [$file->getFilename()],
             ];
         }
 
