@@ -24,7 +24,7 @@ composer require emaia/laravel-hotwire-components
 Publish the configuration file (optional):
 
 ```bash
-php artisan vendor:publish --tag=hwc-config
+php artisan vendor:publish --tag=hotwire-config
 ```
 
 ### Stimulus Controllers
@@ -35,43 +35,43 @@ bundler (Vite).
 **Interactive** — select which controllers to publish:
 
 ```bash
-php artisan hwc:controllers
+php artisan hotwire:controllers
 ```
 
 **By namespace** — publish all controllers in a namespace:
 
 ```bash
-php artisan hwc:controllers form
+php artisan hotwire:controllers form
 ```
 
 **By specific controller** — `namespace/name` notation:
 
 ```bash
-php artisan hwc:controllers form/autoselect
+php artisan hotwire:controllers form/autoselect
 ```
 
 **Multiple arguments** — mix namespaces and specific controllers:
 
 ```bash
-php artisan hwc:controllers form dialog/modal
+php artisan hotwire:controllers form dialog/modal
 ```
 
 **All at once:**
 
 ```bash
-php artisan hwc:controllers --all
+php artisan hotwire:controllers --all
 ```
 
 **List available controllers:**
 
 ```bash
-php artisan hwc:controllers --list
+php artisan hotwire:controllers --list
 ```
 
 **Overwrite existing files:**
 
 ```bash
-php artisan hwc:controllers form/autoselect --force
+php artisan hotwire:controllers form/autoselect --force
 ```
 
 Controllers are copied to `resources/js/controllers/` preserving the folder structure. The `namespace/name` argument
@@ -124,15 +124,15 @@ Add these settings to your CSS entrypoint `/resources/css/app.css`:
 To customize the HTML/Tailwind of the components:
 
 ```bash
-php artisan vendor:publish --tag=hwc-views
+php artisan vendor:publish --tag=hotwire-views
 ```
 
-Views published to `resources/views/vendor/hwc/` will take precedence over the package defaults.
+Views published to `resources/views/vendor/hotwire/` will take precedence over the package defaults.
 
 ## Configuration
 
 ```php
-// config/hwc.php
+// config/hotwire.php
 
 return [
     'prefix' => 'hwc', // <x-hwc-modal>
@@ -154,7 +154,7 @@ Change `prefix` to use a different prefix for Blade components. E.g. `'prefix' =
 Stimulus controllers without an associated Blade component. Used directly via `data-controller` and `data-action`.
 
 ```bash
-php artisan hwc:controllers form/autoselect form/autosubmit frame/progress
+php artisan hotwire:controllers form/autoselect form/autosubmit frame/progress
 ```
 
 ### Dialog

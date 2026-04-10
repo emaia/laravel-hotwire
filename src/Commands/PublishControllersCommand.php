@@ -13,7 +13,7 @@ use function Laravel\Prompts\warning;
 
 class PublishControllersCommand extends Command
 {
-    public $signature = 'hwc:controllers
+    public $signature = 'hotwire:controllers
                         {controllers?* : Namespace or namespace/name to publish (e.g. form, form/autoselect)}
                         {--all : Publish all available controllers}
                         {--force : Overwrite existing files}
@@ -63,11 +63,11 @@ class PublishControllersCommand extends Command
             if ($this->option('list')) {
                 $this->line('');
                 $this->line('To publish controllers, run:');
-                $this->line('  php artisan hwc:controllers                  Interactive mode');
-                $this->line('  php artisan hwc:controllers {namespace}      Publish all controllers in a namespace');
-                $this->line('  php artisan hwc:controllers {namespace/name} Publish a specific controller');
-                $this->line('  php artisan hwc:controllers --all            Publish all controllers');
-                $this->line('  php artisan hwc:controllers --force          Overwrite existing files');
+                $this->line('  php artisan hotwire:controllers                  Interactive mode');
+                $this->line('  php artisan hotwire:controllers {namespace}      Publish all controllers in a namespace');
+                $this->line('  php artisan hotwire:controllers {namespace/name} Publish a specific controller');
+                $this->line('  php artisan hotwire:controllers --all            Publish all controllers');
+                $this->line('  php artisan hotwire:controllers --force          Overwrite existing files');
             }
 
             return self::SUCCESS;
