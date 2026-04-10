@@ -50,14 +50,27 @@ class PublishControllersCommand extends Command
         }
 
         if ($this->option('list') || ! $this->input->isInteractive()) {
+            $targetBase = resource_path('js/controllers');
+
             $this->table(
-                ['Namespace', 'Controller', 'Stimulus Identifier', 'File'],
-                collect($available)->map(fn ($controller) => [
-                    $controller['relative_dir'],
-                    $controller['name'],
-                    $controller['identifier'],
-                    $controller['filename'],
-                ])->toArray()
+                ['Namespace', 'Controller', 'Stimulus Identifier', 'File', 'Status'],
+                collect($available)->map(function ($controller) use ($targetBase) {
+                    $targetFile = $targetBase.'/'.$controller['relative_dir'].'/'.$controller['filename'];
+
+                    $status = match (true) {
+                        ! $this->files->exists($targetFile) => '-',
+                        $this->files->hash($controller['source_file']) === $this->files->hash($targetFile) => 'up to date',
+                        default => 'outdated',
+                    };
+
+                    return [
+                        $controller['relative_dir'],
+                        $controller['name'],
+                        $controller['identifier'],
+                        $controller['filename'],
+                        $status,
+                    ];
+                })->toArray()
             );
 
             if ($this->option('list')) {
