@@ -1,6 +1,6 @@
 <?php
 
-namespace Emaia\LaravelHotwireComponents\Commands;
+namespace Emaia\LaravelHotwire\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;

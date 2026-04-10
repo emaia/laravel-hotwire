@@ -1,6 +1,6 @@
 <?php
 
-namespace Emaia\LaravelHotwireComponents\Components\FlashMessage;
+namespace Emaia\LaravelHotwire\Components\FlashMessage;
 
 use Illuminate\Support\Facades\Session;
 use Illuminate\View\Component;

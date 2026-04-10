@@ -1,7 +1,7 @@
-[![Latest Version on Packagist](https://img.shields.io/packagist/v/emaia/laravel-hotwire-components.svg?style=flat-square)](https://packagist.org/packages/emaia/laravel-hotwire-components)
-[![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/emaia/laravel-hotwire-components/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/emaia/laravel-hotwire-components/actions?query=workflow%3Arun-tests+branch%3Amain)
-[![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/emaia/laravel-hotwire-components/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/emaia/laravel-hotwire-components/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
-[![Total Downloads](https://img.shields.io/packagist/dt/emaia/laravel-hotwire-components.svg?style=flat-square)](https://packagist.org/packages/emaia/laravel-hotwire-components)
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/emaia/laravel-hotwire.svg?style=flat-square)](https://packagist.org/packages/emaia/laravel-hotwire)
+[![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/emaia/laravel-hotwire/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/emaia/laravel-hotwire/actions?query=workflow%3Arun-tests+branch%3Amain)
+[![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/emaia/laravel-hotwire/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/emaia/laravel-hotwire/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
+[![Total Downloads](https://img.shields.io/packagist/dt/emaia/laravel-hotwire.svg?style=flat-square)](https://packagist.org/packages/emaia/laravel-hotwire)
 
 # Laravel Hotwire Components
 
@@ -18,7 +18,7 @@ Reusable Blade components with Stimulus controllers for Laravel + Hotwire projec
 ## Installation
 
 ```bash
-composer require emaia/laravel-hotwire-components
+composer require emaia/laravel-hotwire
 ```
 
 Publish the configuration file (optional):
@@ -111,7 +111,7 @@ registerControllers(Stimulus, controllers);
 Add these settings to your CSS entrypoint `/resources/css/app.css`:
 
 ```css
-@source '../../vendor/emaia/laravel-hotwire-components/resources/views/**/*.blade.php';
+@source '../../vendor/emaia/laravel-hotwire/resources/views/**/*.blade.php';
 @custom-variant turbo-frame (turbo-frame[src] &);
 @custom-variant modal ([data-dialog--modal-target="dialog"] &);
 @custom-variant aria-busy (form[aria-busy="true"] &);

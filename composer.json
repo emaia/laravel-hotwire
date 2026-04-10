@@ -1,12 +1,14 @@
 {
-    "name": "emaia/laravel-hotwire-components",
-    "description": "This is my package laravel-hotwire-components",
+    "name": "emaia/laravel-hotwire",
+    "description": "This is my package laravel-hotwire",
     "keywords": [
         "emaia",
         "laravel",
-        "laravel-hotwire-components"
+        "hotwire",
+        "stimullus",
+        "turbo"
     ],
-    "homepage": "https://github.com/emaia/laravel-hotwire-components",
+    "homepage": "https://github.com/emaia/laravel-hotwire",
     "license": "MIT",
     "authors": [
         {
@@ -35,12 +37,12 @@
     },
     "autoload": {
         "psr-4": {
-            "Emaia\\LaravelHotwireComponents\\": "src/"
+            "Emaia\\LaravelHotwire\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Emaia\\LaravelHotwireComponents\\Tests\\": "tests/",
+            "Emaia\\LaravelHotwire\\Tests\\": "tests/",
             "Workbench\\App\\": "workbench/app/"
         }
     },
@@ -62,7 +64,7 @@
     "extra": {
         "laravel": {
             "providers": [
-                "Emaia\\LaravelHotwireComponents\\LaravelHotwireComponentsServiceProvider"
+                "Emaia\\LaravelHotwire\\LaravelHotwireServiceProvider"
             ]
         }
     },

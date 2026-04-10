@@ -1,6 +1,6 @@
 <?php
 
-namespace Emaia\LaravelHotwireComponents\Components\Loader;
+namespace Emaia\LaravelHotwire\Components\Loader;
 
 use Illuminate\View\Component;
 

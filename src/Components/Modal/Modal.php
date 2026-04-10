@@ -1,6 +1,6 @@
 <?php
 
-namespace Emaia\LaravelHotwireComponents\Components\Modal;
+namespace Emaia\LaravelHotwire\Components\Modal;
 
 use Illuminate\View\Component;
 

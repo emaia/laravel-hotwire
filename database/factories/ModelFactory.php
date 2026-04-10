@@ -1,8 +1,6 @@
 <?php
 
-namespace Emaia\LaravelHotwireComponents\Database\Factories;
-
-use Illuminate\Database\Eloquent\Factories\Factory;
+namespace Emaia\LaravelHotwire\Database\Factories;
 
 /*
 class ModelFactory extends Factory

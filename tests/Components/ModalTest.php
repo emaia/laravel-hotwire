@@ -1,7 +1,7 @@
 <?php
 
-use Emaia\LaravelHotwireComponents\Components\Modal\Modal;
-use Emaia\LaravelHotwireComponents\LaravelHotwireComponentsServiceProvider;
+use Emaia\LaravelHotwire\Components\Modal\Modal;
+use Emaia\LaravelHotwire\LaravelHotwireServiceProvider;
 use Illuminate\Support\Facades\Blade;
 
 it('renders with default props', function () {
@@ -105,7 +105,7 @@ it('registers with custom prefix', function () {
     config()->set('hotwire.prefix', 'custom');
 
     // Re-boot to pick up new prefix
-    $provider = new LaravelHotwireComponentsServiceProvider($this->app);
+    $provider = new LaravelHotwireServiceProvider($this->app);
     $provider->packageBooted();
 
     $resolved = Blade::getClassComponentAliases();

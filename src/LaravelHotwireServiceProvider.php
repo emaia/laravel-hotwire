@@ -1,16 +1,16 @@
 <?php
 
-namespace Emaia\LaravelHotwireComponents;
+namespace Emaia\LaravelHotwire;
 
-use Emaia\LaravelHotwireComponents\Commands\PublishControllersCommand;
-use Emaia\LaravelHotwireComponents\Components\FlashMessage\FlashMessage;
-use Emaia\LaravelHotwireComponents\Components\Loader\Loader;
-use Emaia\LaravelHotwireComponents\Components\Modal\Modal;
+use Emaia\LaravelHotwire\Commands\PublishControllersCommand;
+use Emaia\LaravelHotwire\Components\FlashMessage\FlashMessage;
+use Emaia\LaravelHotwire\Components\Loader\Loader;
+use Emaia\LaravelHotwire\Components\Modal\Modal;
 use Illuminate\Support\Facades\Blade;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
-class LaravelHotwireComponentsServiceProvider extends PackageServiceProvider
+class LaravelHotwireServiceProvider extends PackageServiceProvider
 {
     public function configurePackage(Package $package): void
     {

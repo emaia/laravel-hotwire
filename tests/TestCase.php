@@ -1,8 +1,8 @@
 <?php
 
-namespace Emaia\LaravelHotwireComponents\Tests;
+namespace Emaia\LaravelHotwire\Tests;
 
-use Emaia\LaravelHotwireComponents\LaravelHotwireComponentsServiceProvider;
+use Emaia\LaravelHotwire\LaravelHotwireServiceProvider;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Orchestra\Testbench\TestCase as Orchestra;
 
@@ -13,14 +13,14 @@ class TestCase extends Orchestra
         parent::setUp();
 
         Factory::guessFactoryNamesUsing(
-            fn (string $modelName) => 'Emaia\\LaravelHotwireComponents\\Database\\Factories\\'.class_basename($modelName).'Factory'
+            fn (string $modelName) => 'Emaia\\LaravelHotwire\\Database\\Factories\\'.class_basename($modelName).'Factory'
         );
     }
 
     protected function getPackageProviders($app)
     {
         return [
-            LaravelHotwireComponentsServiceProvider::class,
+            LaravelHotwireServiceProvider::class,
         ];
     }
 
