@@ -17,6 +17,7 @@ framework required.
   - [View Customization](#view-customization)
   - [Manual Installation](#manual-installation)
 - [Configuration](#configuration)
+- [Turbo](#turbo)
 - [Components](#components)
 - [Stimulus Controllers (standalone)](#stimulus-controllers-standalone)
   - [Dialog](#dialog)
@@ -228,6 +229,27 @@ return [
 ```
 
 Change `prefix` to use a different prefix for Blade components. E.g. `'prefix' => 'hotwire'` → `<x-hotwire-modal>`.
+
+## Turbo
+
+This package includes [emaia/laravel-hotwire-turbo](https://github.com/emaia/laravel-hotwire-turbo) as a dependency, providing full Turbo integration for Laravel:
+
+- **Turbo Streams** — fluent builder for append, prepend, replace, update, remove, morph, refresh and more
+- **Turbo Frames** — `<x-turbo::frame>` Blade component with lazy loading support
+- **DOM helpers** — `dom_id()` and `dom_class()` for consistent element identification
+- **Request detection** — `wantsTurboStream()` and `wasFromTurboFrame()` macros
+- **Blade directives** — `@turboNocache`, `@turboRefreshMethod('morph')`, etc.
+- **Testing utilities** — `InteractsWithTurbo` trait with `assertTurboStream()` assertions
+
+```php
+// Example: responding with Turbo Streams
+return turbo_stream()
+    ->append('messages', view('messages.item', compact('message')))
+    ->remove('modal')
+    ->respond();
+```
+
+See the full documentation at [emaia/laravel-hotwire-turbo](https://github.com/emaia/laravel-hotwire-turbo).
 
 ## Components
 
