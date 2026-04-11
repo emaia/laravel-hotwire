@@ -1,11 +1,11 @@
 {
     "name": "emaia/laravel-hotwire",
-    "description": "This is my package laravel-hotwire",
+    "description": "The complete Hotwire stack for Laravel — Turbo Drive, Turbo Streams, Stimulus controllers and Blade components out of the box.",
     "keywords": [
         "emaia",
         "laravel",
         "hotwire",
-        "stimullus",
+        "stimulus",
         "turbo"
     ],
     "homepage": "https://github.com/emaia/laravel-hotwire",

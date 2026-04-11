@@ -5,8 +5,7 @@
 
 # Laravel Hotwire
 
-Blade components and Stimulus controllers for building interactive Laravel applications with Hotwire — no JavaScript
-framework required.
+The complete Hotwire stack for Laravel — Turbo Drive, Turbo Streams, Stimulus controllers and Blade components out of the box.
 
 ## Table of Contents
 
