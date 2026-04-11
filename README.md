@@ -8,6 +8,30 @@
 Blade components and Stimulus controllers for building interactive Laravel applications with Hotwire — no JavaScript
 framework required.
 
+## Table of Contents
+
+- [Requirements](#requirements)
+- [Installation](#installation)
+  - [Quick Start](#quick-start)
+  - [Stimulus Controllers](#stimulus-controllers)
+  - [View Customization](#view-customization)
+  - [Manual Installation](#manual-installation)
+- [Configuration](#configuration)
+- [Components](#components)
+- [Stimulus Controllers (standalone)](#stimulus-controllers-standalone)
+  - [Dialog](#dialog)
+  - [Form](#form)
+  - [Frame](#frame)
+  - [Dev](#dev)
+  - [Lib](#lib)
+  - [Media](#media)
+- [Testing](#testing)
+- [Changelog](#changelog)
+- [Contributing](#contributing)
+- [Security Vulnerabilities](#security-vulnerabilities)
+- [Credits](#credits)
+- [License](#license)
+
 ## Requirements
 
 - PHP 8.3+
@@ -28,6 +52,34 @@ Publish the configuration file (optional):
 ```bash
 php artisan vendor:publish --tag=hotwire-config
 ```
+
+### Quick Start
+
+The install command scaffolds the Hotwire setup in your Laravel application — JS entry points, Stimulus loader,
+Turbo imports and CSS custom variants:
+
+```bash
+php artisan hotwire:install
+```
+
+This will:
+1. Copy JS and CSS scaffolding to `resources/`
+2. Add `@hotwired/stimulus`, `@hotwired/turbo` and `@emaia/stimulus-dynamic-loader` to your `package.json`
+3. Show instructions for the next steps
+
+Options:
+
+```bash
+# Overwrite existing files without prompting
+php artisan hotwire:install --force
+
+# Install only JS or CSS scaffolding
+php artisan hotwire:install --only=js
+php artisan hotwire:install --only=css
+```
+
+> If a target file already exists and is identical, it is skipped. If it differs, the command asks for confirmation
+> before overwriting (unless `--force` is used).
 
 ### Stimulus Controllers
 
@@ -110,6 +162,20 @@ php artisan hotwire:check --fix
 php artisan hotwire:check --path=resources/views/app
 ```
 
+### View Customization
+
+To customize the HTML/Tailwind of the components:
+
+```bash
+php artisan vendor:publish --tag=hotwire-views
+```
+
+Views published to `resources/views/vendor/hotwire/` will take precedence over the package defaults.
+
+### Manual Installation
+
+If you prefer to set things up manually instead of using `hotwire:install`, follow the steps below.
+
 #### Project setup (using Vite)
 
 ```js
@@ -130,12 +196,17 @@ const controllers = import.meta.glob("./**/*_controller.{js,ts}", {
 });
 
 registerControllers(Stimulus, controllers);
-
 ```
 
-### TailwindCSS (v4)
+Install the required js dependencies:
 
-Add these settings to your CSS entrypoint `/resources/css/app.css`:
+```bash
+bun install @hotwired/stimulus @hotwired/turbo @emaia/stimulus-dynamic-loader
+```
+
+#### TailwindCSS (v4)
+
+Add these settings to your CSS entrypoint `resources/css/app.css`:
 
 ```css
 @source '../../vendor/emaia/laravel-hotwire/resources/views/**/*.blade.php';
@@ -145,16 +216,6 @@ Add these settings to your CSS entrypoint `/resources/css/app.css`:
 @custom-variant self-aria-busy (html[aria-busy="true"] &);
 @custom-variant turbo-frame-aria-busy (turbo-frame[aria-busy="true"] &);
 ```
-
-### View Customization
-
-To customize the HTML/Tailwind of the components:
-
-```bash
-php artisan vendor:publish --tag=hotwire-views
-```
-
-Views published to `resources/views/vendor/hotwire/` will take precedence over the package defaults.
 
 ## Configuration
 
