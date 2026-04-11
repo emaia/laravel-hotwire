@@ -5,6 +5,7 @@ namespace Emaia\LaravelHotwire;
 use Emaia\LaravelHotwire\Commands\CheckCommand;
 use Emaia\LaravelHotwire\Commands\InstallCommand;
 use Emaia\LaravelHotwire\Commands\ListComponentsCommand;
+use Emaia\LaravelHotwire\Commands\MakeControllerCommand;
 use Emaia\LaravelHotwire\Commands\PublishControllersCommand;
 use Emaia\LaravelHotwire\Components\ConfirmDialog\ConfirmDialog;
 use Emaia\LaravelHotwire\Components\FlashMessage\FlashMessage;
@@ -30,7 +31,13 @@ class LaravelHotwireServiceProvider extends PackageServiceProvider
             ->name('hotwire')
             ->hasConfigFile()
             ->hasViews()
-            ->hasCommands([InstallCommand::class, PublishControllersCommand::class, ListComponentsCommand::class, CheckCommand::class]);
+            ->hasCommands([
+                InstallCommand::class,
+                MakeControllerCommand::class,
+                PublishControllersCommand::class,
+                ListComponentsCommand::class,
+                CheckCommand::class,
+            ]);
     }
 
     public function packageBooted(): void
