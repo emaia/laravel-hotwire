@@ -1,6 +1,6 @@
 <?php
 
-use Emaia\LaravelHotwire\Components\FlashMessage\FlashMessage;
+use Emaia\LaravelHotwire\Components\FlashMessage;
 use Illuminate\Support\MessageBag;
 
 it('renders with explicit message', function () {

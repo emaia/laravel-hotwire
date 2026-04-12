@@ -1,6 +1,6 @@
 <?php
 
-namespace Emaia\LaravelHotwire\Components\FlashMessage;
+namespace Emaia\LaravelHotwire\Components;
 
 use Emaia\LaravelHotwire\Contracts\HasStimulusControllers;
 use Illuminate\Support\Facades\Session;

@@ -1,6 +1,6 @@
 <?php
 
-use Emaia\LaravelHotwire\Components\ConfirmDialog\ConfirmDialog;
+use Emaia\LaravelHotwire\Components\ConfirmDialog;
 use Emaia\LaravelHotwire\LaravelHotwireServiceProvider;
 use Illuminate\Support\Facades\Blade;
 

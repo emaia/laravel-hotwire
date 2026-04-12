@@ -1,6 +1,6 @@
 <?php
 
-use Emaia\LaravelHotwire\Components\Modal\Modal;
+use Emaia\LaravelHotwire\Components\Modal;
 use Emaia\LaravelHotwire\LaravelHotwireServiceProvider;
 use Illuminate\Support\Facades\Blade;
 

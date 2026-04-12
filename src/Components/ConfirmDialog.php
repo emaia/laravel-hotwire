@@ -1,6 +1,6 @@
 <?php
 
-namespace Emaia\LaravelHotwire\Components\ConfirmDialog;
+namespace Emaia\LaravelHotwire\Components;
 
 use Emaia\LaravelHotwire\Contracts\HasStimulusControllers;
 use Illuminate\View\Component;
