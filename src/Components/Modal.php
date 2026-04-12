@@ -28,6 +28,6 @@ class Modal extends Component implements HasStimulusControllers
 
     public function render()
     {
-        return 'hotwire::components.modal.modal';
+        return view('hotwire::components.modal.modal');
     }
 }

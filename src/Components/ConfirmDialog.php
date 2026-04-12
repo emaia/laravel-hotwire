@@ -27,6 +27,6 @@ class ConfirmDialog extends Component implements HasStimulusControllers
 
     public function render()
     {
-        return 'hotwire::components.confirm-dialog.confirm-dialog';
+        return view('hotwire::components.confirm-dialog.confirm-dialog');
     }
 }

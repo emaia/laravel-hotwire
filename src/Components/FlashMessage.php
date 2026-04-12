@@ -50,6 +50,6 @@ class FlashMessage extends Component implements HasStimulusControllers
 
     public function render()
     {
-        return 'hotwire::components.flash-message.flash-message';
+        return view('hotwire::components.flash-message.flash-message');
     }
 }
