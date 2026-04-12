@@ -5,26 +5,27 @@
 
 # Laravel Hotwire
 
-The complete Hotwire stack for Laravel — Turbo Drive, Turbo Streams, Stimulus controllers and Blade components out of the box.
+The complete Hotwire stack for Laravel — Turbo Drive, Turbo Streams, Stimulus controllers and Blade components out of
+the box.
 
 ## Table of Contents
 
 - [Requirements](#requirements)
 - [Installation](#installation)
-  - [Quick Start](#quick-start)
-  - [Stimulus Controllers](#stimulus-controllers)
-  - [View Customization](#view-customization)
-  - [Manual Installation](#manual-installation)
+    - [Quick Start](#quick-start)
+    - [Stimulus Controllers](#stimulus-controllers)
+    - [View Customization](#view-customization)
+    - [Manual Installation](#manual-installation)
 - [Configuration](#configuration)
 - [Turbo](#turbo)
 - [Components](#components)
 - [Stimulus Controllers (standalone)](#stimulus-controllers-standalone)
-  - [Dialog](#dialog)
-  - [Form](#form)
-  - [Frame](#frame)
-  - [Dev](#dev)
-  - [Lib](#lib)
-  - [Media](#media)
+    - [Dialog](#dialog)
+    - [Form](#form)
+    - [Frame](#frame)
+    - [Dev](#dev)
+    - [Lib](#lib)
+    - [Media](#media)
 - [Testing](#testing)
 - [Changelog](#changelog)
 - [Contributing](#contributing)
@@ -63,6 +64,7 @@ php artisan hotwire:install
 ```
 
 This will:
+
 1. Copy JS and CSS scaffolding to `resources/`
 2. Add `@hotwired/stimulus`, `@hotwired/turbo` and `@emaia/stimulus-dynamic-loader` to your `package.json`
 3. Show instructions for the next steps
@@ -231,7 +233,8 @@ Change `prefix` to use a different prefix for Blade components. E.g. `'prefix' =
 
 ## Turbo
 
-This package includes [emaia/laravel-hotwire-turbo](https://github.com/emaia/laravel-hotwire-turbo) as a dependency, providing full Turbo integration for Laravel:
+This package includes [emaia/laravel-hotwire-turbo](https://github.com/emaia/laravel-hotwire-turbo) as a dependency,
+providing full Turbo integration for Laravel:
 
 - **Turbo Streams** — fluent builder for append, prepend, replace, update, remove, morph, refresh and more
 - **Turbo Frames** — `<x-turbo::frame>` Blade component with lazy loading support
@@ -241,23 +244,22 @@ This package includes [emaia/laravel-hotwire-turbo](https://github.com/emaia/lar
 - **Testing utilities** — `InteractsWithTurbo` trait with `assertTurboStream()` assertions
 
 ```php
-// Example: responding with Turbo Streams
+// Example: return Turbo Streams
 return turbo_stream()
     ->append('messages', view('messages.item', compact('message')))
-    ->remove('modal')
-    ->respond();
+    ->remove('modal');
 ```
 
 See the full documentation at [emaia/laravel-hotwire-turbo](https://github.com/emaia/laravel-hotwire-turbo).
 
 ## Components
 
-| Component                                                  | Blade                        | Stimulus Identifier                            | Docs                                               |
-|------------------------------------------------------------|------------------------------|------------------------------------------------|----------------------------------------------------|
-| [Modal](docs/components/modal/readme.md)                   | `<x-hwc::modal>`             | `dialog--modal`                                | [readme](docs/components/modal/readme.md)          |
-| [Confirm Dialog](docs/components/confirm-dialog/readme.md) | `<x-hwc::confirm-dialog>`    | `dialog--confirm`                              | [readme](docs/components/confirm-dialog/readme.md) |
-| [Flash Message](docs/components/flash-message/readme.md)   | `<x-hwc::flash-message>`     | `notification--toaster`, `notification--toast` | [readme](docs/components/flash-message/readme.md)  |
-| [Loader](docs/components/loader/readme.md)                 | `<x-hwc::loader>`            | —                                              | [readme](docs/components/loader/readme.md)         |
+| Component                                                  | Blade                     | Stimulus Identifier                            | Docs                                               |
+|------------------------------------------------------------|---------------------------|------------------------------------------------|----------------------------------------------------|
+| [Modal](docs/components/modal/readme.md)                   | `<x-hwc::modal>`          | `dialog--modal`                                | [readme](docs/components/modal/readme.md)          |
+| [Confirm Dialog](docs/components/confirm-dialog/readme.md) | `<x-hwc::confirm-dialog>` | `dialog--confirm`                              | [readme](docs/components/confirm-dialog/readme.md) |
+| [Flash Message](docs/components/flash-message/readme.md)   | `<x-hwc::flash-message>`  | `notification--toaster`, `notification--toast` | [readme](docs/components/flash-message/readme.md)  |
+| [Loader](docs/components/loader/readme.md)                 | `<x-hwc::loader>`         | —                                              | [readme](docs/components/loader/readme.md)         |
 
 ## Stimulus Controllers (standalone)
 
