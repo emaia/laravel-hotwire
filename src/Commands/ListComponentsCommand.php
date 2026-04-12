@@ -27,7 +27,7 @@ class ListComponentsCommand extends Command
         $rows = [];
 
         foreach (LaravelHotwireServiceProvider::COMPONENTS as $key => $class) {
-            $bladeTag = "<x-{$prefix}-{$key}>";
+            $bladeTag = "<x-{$prefix}::{$key}>";
             $componentName = $this->componentName($key);
 
             if (is_a($class, HasStimulusControllers::class, true)) {

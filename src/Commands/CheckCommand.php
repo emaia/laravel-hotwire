@@ -86,7 +86,7 @@ class CheckCommand extends Command
      */
     private function detectUsedComponents(array $paths, string $prefix, int &$totalFiles): array
     {
-        $pattern = '/<x-'.preg_quote($prefix, '/').'-([a-z][a-z0-9-]*)[\s\/>]/';
+        $pattern = '/<x-'.preg_quote($prefix, '/').'::([a-z][a-z0-9-]*)[\s\/>]/';
         $found = [];
 
         foreach ($paths as $path) {
@@ -121,7 +121,7 @@ class CheckCommand extends Command
 
         foreach ($usedKeys as $key) {
             $class = LaravelHotwireServiceProvider::COMPONENTS[$key] ?? null;
-            $tag = "<x-{$prefix}-{$key}>";
+            $tag = "<x-{$prefix}::{$key}>";
 
             if ($class === null) {
                 continue;

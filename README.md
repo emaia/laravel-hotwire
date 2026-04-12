@@ -223,11 +223,11 @@ Add these settings to your CSS entrypoint `resources/css/app.css`:
 // config/hotwire.php
 
 return [
-    'prefix' => 'hwc', // <x-hwc-modal>
+    'prefix' => 'hwc', // <x-hwc::modal>
 ];
 ```
 
-Change `prefix` to use a different prefix for Blade components. E.g. `'prefix' => 'hotwire'` → `<x-hotwire-modal>`.
+Change `prefix` to use a different prefix for Blade components. E.g. `'prefix' => 'hotwire'` → `<x-hotwire::modal>`.
 
 ## Turbo
 
@@ -252,12 +252,12 @@ See the full documentation at [emaia/laravel-hotwire-turbo](https://github.com/e
 
 ## Components
 
-| Component                                                  | Blade                   | Stimulus Identifier                            | Docs                                               |
-|------------------------------------------------------------|-------------------------|------------------------------------------------|----------------------------------------------------|
-| [Modal](docs/components/modal/readme.md)                   | `<x-hwc-modal>`         | `dialog--modal`                                | [readme](docs/components/modal/readme.md)          |
-| [Confirm Dialog](docs/components/confirm-dialog/readme.md) | `<x-hwc-confirm>`       | `dialog--confirm`                              | [readme](docs/components/confirm-dialog/readme.md) |
-| [Flash Message](docs/components/flash-message/readme.md)   | `<x-hwc-flash-message>` | `notification--toaster`, `notification--toast` | [readme](docs/components/flash-message/readme.md)  |
-| [Loader](docs/components/loader/readme.md)                 | `<x-hwc-loader>`        | —                                              | [readme](docs/components/loader/readme.md)         |
+| Component                                                  | Blade                        | Stimulus Identifier                            | Docs                                               |
+|------------------------------------------------------------|------------------------------|------------------------------------------------|----------------------------------------------------|
+| [Modal](docs/components/modal/readme.md)                   | `<x-hwc::modal>`             | `dialog--modal`                                | [readme](docs/components/modal/readme.md)          |
+| [Confirm Dialog](docs/components/confirm-dialog/readme.md) | `<x-hwc::confirm-dialog>`    | `dialog--confirm`                              | [readme](docs/components/confirm-dialog/readme.md) |
+| [Flash Message](docs/components/flash-message/readme.md)   | `<x-hwc::flash-message>`     | `notification--toaster`, `notification--toast` | [readme](docs/components/flash-message/readme.md)  |
+| [Loader](docs/components/loader/readme.md)                 | `<x-hwc::loader>`            | —                                              | [readme](docs/components/loader/readme.md)         |
 
 ## Stimulus Controllers (standalone)
 

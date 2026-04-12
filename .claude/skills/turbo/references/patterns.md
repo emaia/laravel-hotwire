@@ -122,7 +122,7 @@ Each tab route returns a full page with a matching frame:
 
 ## Modal Dialog
 
-Load modal content via frame. Uses the package's `<x-hwc-modal>` component with the `dialog--modal` controller.
+Load modal content via frame. Uses the package's `<x-hwc::modal>` component with the `dialog--modal` controller.
 
 ```blade
 {{-- Empty modal frame --}}
@@ -138,7 +138,7 @@ Load modal content via frame. Uses the package's `<x-hwc-modal>` component with 
 ```blade
 {{-- resources/views/items/delete-confirm.blade.php --}}
 <x-turbo::frame id="modal">
-    <x-hwc-modal>
+    <x-hwc::modal>
         <h2>Confirm Delete</h2>
         <p>Delete "{{ $item->name }}"?</p>
 
@@ -146,7 +146,7 @@ Load modal content via frame. Uses the package's `<x-hwc-modal>` component with 
             @csrf @method('DELETE')
             <button type="submit">Delete</button>
         </form>
-    </x-hwc-modal>
+    </x-hwc::modal>
 </x-turbo::frame>
 ```
 
@@ -254,7 +254,7 @@ public function destroy(Item $item)
 
 ## Flash Messages with Streams
 
-Uses the package's `<x-hwc-flash-message>` component.
+Uses the package's `<x-hwc::flash-message>` component.
 
 ```php
 // Controller: redirect with session flash (Turbo Drive)

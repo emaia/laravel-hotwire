@@ -13,13 +13,13 @@ The complete Hotwire stack for Laravel — Turbo Drive, Turbo Streams, Stimulus 
 
 ## Artisan Commands
 
-| Command | Description |
-|---------|-------------|
-| `hotwire:install` | Scaffold JS/CSS setup, add npm deps to package.json |
-| `hotwire:make-controller` | Create a new Stimulus controller (interactive scaffolding) |
-| `hotwire:controllers` | Publish package Stimulus controllers to the app |
-| `hotwire:components` | List available Blade components and their controller dependencies |
-| `hotwire:check` | Verify required controllers are published (CI-friendly) |
+| Command                   | Description                                                       |
+|---------------------------|-------------------------------------------------------------------|
+| `hotwire:install`         | Scaffold JS/CSS setup, add npm deps to package.json               |
+| `hotwire:make-controller` | Create a new Stimulus controller (interactive scaffolding)        |
+| `hotwire:controllers`     | Publish package Stimulus controllers to the app                   |
+| `hotwire:components`      | List available Blade components and their controller dependencies |
+| `hotwire:check`           | Verify required controllers are published (CI-friendly)           |
 
 ## Conventions
 
@@ -33,7 +33,7 @@ The complete Hotwire stack for Laravel — Turbo Drive, Turbo Streams, Stimulus 
 ### Blade Components
 
 - Registered with configurable prefix (default: `hwc`)
-- Usage: `<x-hwc-modal>`, `<x-hwc-confirm>`, `<x-hwc-flash-message>`, `<x-hwc-loader>`
+- Usage: `<x-hwc::modal>`, `<x-hwc::confirm>`, `<x-hwc::flash-message>`, `<x-hwc::loader>`
 - Components that need JS declare their controllers via `HasStimulusControllers` interface
 
 ### Turbo
@@ -62,11 +62,13 @@ Follow test-driven development: write tests first, then implement.
 5. **Repeat** for the next behavior
 
 Conventions:
+
 - Test files mirror `src/` structure: `src/Commands/FooCommand.php` → `tests/Commands/FooCommandTest.php`
 - Use Pest syntax (`it()`, `test()`, `expect()`) — no PHPUnit classes
 - Group related tests with comment headers: `// --- Section name ---`
 - Use `beforeEach`/`afterEach` for shared setup and cleanup (temp files, directories)
-- For artisan commands: use `$this->artisan('command')->assertSuccessful()` and `expectsQuestion`/`expectsChoice`/`expectsOutput` for interactive flows
+- For artisan commands: use `$this->artisan('command')->assertSuccessful()` and `expectsQuestion`/`expectsChoice`/
+  `expectsOutput` for interactive flows
 - Always run `composer test` at the end to ensure nothing else broke
 
 ## Dependencies

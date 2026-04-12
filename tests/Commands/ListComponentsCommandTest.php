@@ -26,10 +26,10 @@ it('lists all registered components', function () {
 
 it('shows blade tags with current prefix', function () {
     $this->artisan('hotwire:components')
-        ->expectsOutputToContain('<x-hwc-modal>')
-        ->expectsOutputToContain('<x-hwc-confirm>')
-        ->expectsOutputToContain('<x-hwc-flash-message>')
-        ->expectsOutputToContain('<x-hwc-loader>')
+        ->expectsOutputToContain('<x-hwc::modal>')
+        ->expectsOutputToContain('<x-hwc::confirm-dialog>')
+        ->expectsOutputToContain('<x-hwc::flash-message>')
+        ->expectsOutputToContain('<x-hwc::loader>')
         ->assertSuccessful();
 });
 
@@ -37,7 +37,7 @@ it('shows blade tags respecting custom prefix', function () {
     config()->set('hotwire.prefix', 'h');
 
     $this->artisan('hotwire:components')
-        ->expectsOutputToContain('<x-h-modal>')
+        ->expectsOutputToContain('<x-h::modal>')
         ->assertSuccessful();
 });
 

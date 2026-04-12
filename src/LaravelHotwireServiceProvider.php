@@ -20,7 +20,7 @@ class LaravelHotwireServiceProvider extends PackageServiceProvider
     /** @var array<string, class-string> */
     public const array COMPONENTS = [
         'modal' => Modal::class,
-        'confirm' => ConfirmDialog::class,
+        'confirm-dialog' => ConfirmDialog::class,
         'flash-message' => FlashMessage::class,
         'loader' => Loader::class,
     ];
@@ -44,8 +44,7 @@ class LaravelHotwireServiceProvider extends PackageServiceProvider
     {
         $prefix = config('hotwire.prefix', 'hwc');
 
-        foreach (self::COMPONENTS as $key => $class) {
-            Blade::component("{$prefix}-{$key}", $class);
-        }
+        Blade::componentNamespace('Emaia\\LaravelHotwire\\Components', $prefix);
+
     }
 }
