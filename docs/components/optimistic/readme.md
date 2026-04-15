@@ -1,18 +1,42 @@
 # Optimistic
 
-Declare an optimistic Turbo Stream action inline, next to the element it should mutate. Pairs with the
-`form--optimistic` Stimulus controller on the enclosing `<form>`.
+Declare an optimistic Turbo Stream action inline, next to the element it should
+mutate. Works with **any** Turbo trigger — form submissions, frame links,
+method links — by pairing the `optimistic--dispatch` core controller with the
+trigger wrapper of your choice.
 
 ## Why
 
-Server-rendered UIs wait for a round-trip before reflecting user intent — typically 150–300ms even on fast networks,
-which is past the "feels instant" threshold. For actions whose outcome is predictable (toggles, inserts, deletes),
-we can pre-render the success state client-side and let the server *reconcile* via a Turbo 8 morph on the real response.
+Server-rendered UIs wait for a round-trip before reflecting user intent —
+typically 150–300ms even on fast networks, which is past the "feels instant"
+threshold. For actions whose outcome is predictable (toggles, inserts, deletes,
+navigations), we can pre-render the success state client-side and let the
+server *reconcile* via a Turbo 8 morph on the real response.
 
-## Basic usage
+## Architecture
+
+```
+<x-hwc::optimistic>            ← emits <template data-optimistic-stream …>
+        ↑ (declares dependency)
+optimistic--dispatch           ← scans templates, materialises <turbo-stream>
+        ↑ dispatch()
+   ┌────┴─────────┐
+form--optimistic   link--optimistic
+(turbo:submit-start)   (click)
+```
+
+The component declares only the **core** controller as its dependency. You add
+the **trigger wrapper** (`form--optimistic` or `link--optimistic`) to the host
+element manually, in the same `data-controller` attribute as the core.
+
+## Basic usage — form submission
 
 ```html
-<form data-controller="form--optimistic" action="/posts/1/favorite" method="post">
+<form
+    data-controller="optimistic--dispatch form--optimistic"
+    action="/posts/1/favorite"
+    method="post"
+>
     @csrf
 
     <x-hwc::optimistic target="post_1_favorite">
@@ -25,8 +49,23 @@ we can pre-render the success state client-side and let the server *reconcile* v
 </form>
 ```
 
-1. On submit, the component's `<template>` is cloned into `document.body` as a `<turbo-stream action="replace">` and executed **before** the network request.
-2. The server responds with a morph-friendly `turbo-stream refresh` (or explicit replace) that reconciles to the authoritative state.
+## Basic usage — frame link with skeleton
+
+```html
+<a
+    href="/posts/42"
+    data-turbo-frame="detail"
+    data-controller="optimistic--dispatch link--optimistic"
+>
+    Ver detalhes
+
+    <x-hwc::optimistic target="detail" action="update">
+        <div class="animate-pulse p-4">Carregando…</div>
+    </x-hwc::optimistic>
+</a>
+
+<turbo-frame id="detail"></turbo-frame>
+```
 
 ## Props
 
@@ -38,11 +77,13 @@ we can pre-render the success state client-side and let the server *reconcile* v
 
 ## Slot
 
-The default slot is the HTML payload rendered by the Turbo Stream action. For `remove` and `refresh` the slot can be empty.
+The default slot is the HTML payload rendered by the Turbo Stream action. For
+`remove` and `refresh` the slot can be empty.
 
 ## Complete example: toggleable favorite with reconciliation
 
-A realistic end-to-end flow: form, controller, morph-driven reconciliation and error feedback.
+A realistic end-to-end flow: form, controller, morph-driven reconciliation and
+error feedback.
 
 ### Blade
 
@@ -52,14 +93,14 @@ A realistic end-to-end flow: form, controller, morph-driven reconciliation and e
 
 <div id="{{ dom_id($post, 'favorite') }}" class="inline-flex items-center gap-2">
     <form
-        data-controller="form--optimistic"
+        data-controller="optimistic--dispatch form--optimistic"
         action="{{ route('posts.favorite.toggle', $post) }}"
         method="post"
     >
         @csrf
         @method($post->isFavoritedBy(auth()->user()) ? 'DELETE' : 'POST')
 
-        {{-- The optimistic action: replace the whole wrapper with the inverted state --}}
+        {{-- Optimistic action: replace the whole wrapper with the inverted state --}}
         <x-hwc::optimistic :target="dom_id($post, 'favorite')">
             <div id="{{ dom_id($post, 'favorite') }}" class="inline-flex items-center gap-2">
                 @if ($post->isFavoritedBy(auth()->user()))
@@ -114,9 +155,9 @@ class PostFavoriteController
 
 ### Morph-friendly layout
 
-Add `<meta name="turbo-refresh-method" content="morph">` to the layout (or return `data-turbo-action="morph"` on the
-response) so Turbo reconciles via morph instead of full replacement. This keeps the optimistic node in place and
-preserves focus, selection and scroll.
+Add the meta tags so Turbo reconciles via morph instead of full replacement.
+This keeps the optimistic node in place and preserves focus, selection and
+scroll.
 
 ```blade
 {{-- resources/views/layouts/app.blade.php --}}
@@ -129,8 +170,9 @@ preserves focus, selection and scroll.
 
 ### Error feedback
 
-If the server rejects the action (e.g. validation, authorization), respond with a refresh **plus** a flash toast. The
-morph reverts the optimistic DOM back to the real state, and the toast tells the user why:
+If the server rejects the action, respond with a refresh **plus** a flash
+toast. The morph reverts the optimistic DOM back to the real state, and the
+toast tells the user why:
 
 ```php
 public function store(Request $request, Post $post)
@@ -153,10 +195,15 @@ public function store(Request $request, Post $post)
 
 ## Multiple optimistic actions per submit
 
-Drop several `<x-hwc::optimistic>` siblings into the same form — each becomes its own Turbo Stream, dispatched in order.
+Drop several `<x-hwc::optimistic>` siblings into the same form — each becomes
+its own Turbo Stream, dispatched in order.
 
 ```blade
-<form data-controller="form--optimistic" action="/todos/{{ $todo->id }}" method="post">
+<form
+    data-controller="optimistic--dispatch form--optimistic"
+    action="/todos/{{ $todo->id }}"
+    method="post"
+>
     @csrf
     @method('DELETE')
 
@@ -174,15 +221,22 @@ Drop several `<x-hwc::optimistic>` siblings into the same form — each becomes 
 
 ## Tips
 
-- **Use `dom_id()`** (from `emaia/laravel-hotwire-turbo`) to generate stable target ids. Never build them from user input.
-- **Client-generated ULIDs** let you render optimistic *inserts* with ids that match the server-persisted record once the response lands.
-- **Combine with `frame--view-transition`** for smooth cross-fades between optimistic and reconciled state.
-- **Publish the controller** with `php artisan hotwire:controllers form/optimistic` before using it.
+- **Use `dom_id()`** (from `emaia/laravel-hotwire-turbo`) to generate stable
+  target ids. Never build them from user input.
+- **Combine with `frame--view-transition`** for smooth cross-fades between
+  optimistic and reconciled state.
+- **Publish the controllers** before using:
+  `php artisan hotwire:controllers optimistic/dispatch form/optimistic link/optimistic`
+- For roadmap items (rollback opt-in, ULID inserts, Sortable persist,
+  prefetch+optimistic, broadcast-aware dispatch) see
+  [`docs/roadmap.md`](../../roadmap.md).
 
 ## Dependencies
 
 Declared via `HasStimulusControllers`:
 
-- `form--optimistic`
+- `optimistic--dispatch` (core)
 
-Run `php artisan hotwire:check` to ensure the controller is published in your app.
+The trigger wrapper (`form--optimistic` or `link--optimistic`) is added by you
+on the host element. Run `php artisan hotwire:check` to ensure the core
+dispatcher is published.

@@ -5,7 +5,7 @@ use Emaia\LaravelHotwire\Components\Optimistic;
 it('renders a template with the replace action by default', function () {
     $view = $this->blade('<x-hwc::optimistic target="post_1_favorite">OK</x-hwc::optimistic>');
 
-    $view->assertSee('data-form--optimistic-target="stream"', false);
+    $view->assertSee('data-optimistic-stream', false);
     $view->assertSee('data-optimistic-action="replace"', false);
     $view->assertSee('data-optimistic-target-id="post_1_favorite"', false);
     $view->assertSee('OK');
@@ -48,6 +48,6 @@ it('escapes target id to prevent attribute injection', function () {
     $view->assertDontSee('<script>alert(1)</script>', false);
 });
 
-it('declares the stimulus controller dependency', function () {
-    expect(Optimistic::stimulusControllers())->toBe(['form--optimistic']);
+it('declares the dispatch core controller as its only dependency', function () {
+    expect(Optimistic::stimulusControllers())->toBe(['optimistic--dispatch']);
 });

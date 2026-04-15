@@ -15,7 +15,7 @@ class Optimistic extends Component implements HasStimulusControllers
 
     public static function stimulusControllers(): array
     {
-        return ['form--optimistic'];
+        return ['optimistic--dispatch'];
     }
 
     public function render()
