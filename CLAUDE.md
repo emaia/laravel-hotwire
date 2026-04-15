@@ -39,7 +39,7 @@ The complete Hotwire stack for Laravel — Turbo Drive, Turbo Streams, Stimulus 
 ### Turbo
 
 - Provided by `emaia/laravel-hotwire-turbo` dependency
-- Fluent stream builder: `turbo_stream()->append(...)->respond()`
+- Fluent stream builder: `turbo_stream()->append(...)` (the builder is `Responsable` — return it directly from the controller; `->respond()` was removed in v0.8)
 - Request detection: `request()->wantsTurboStream()`, `request()->wasFromTurboFrame()`
 - DOM helpers: `dom_id($model)`, `dom_class($model)`
 
