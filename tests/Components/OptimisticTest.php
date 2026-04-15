@@ -51,3 +51,17 @@ it('escapes target id to prevent attribute injection', function () {
 it('declares the dispatch core controller as its only dependency', function () {
     expect(Optimistic::stimulusControllers())->toBe(['optimistic--dispatch']);
 });
+
+it('preserves data-field markers in the slot for client-side population', function () {
+    $view = $this->blade('
+        <x-hwc::optimistic target="messages" action="append">
+            <article>
+                <p data-field="content"></p>
+                <small>Sending…</small>
+            </article>
+        </x-hwc::optimistic>
+    ');
+
+    $view->assertSee('data-field="content"', false);
+    $view->assertSee('Sending…');
+});

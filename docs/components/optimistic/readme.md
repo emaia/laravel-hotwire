@@ -193,6 +193,107 @@ public function store(Request $request, Post $post)
 }
 ```
 
+## Populating optimistic HTML from form data
+
+When the optimistic fragment needs dynamic content that the server cannot
+pre-render (e.g. the text the user just typed), mark elements inside the slot
+with `data-field="<input-name>"`. On submit, the dispatcher copies the matching
+value from the form's `FormData` into the element's `textContent`.
+
+```blade
+<form
+    data-controller="optimistic--dispatch form--optimistic"
+    data-form--optimistic-reset-value="true"
+    action="{{ route('messages.store') }}"
+    method="post"
+>
+    @csrf
+    <textarea name="content" placeholder="Write a message…" required></textarea>
+    <button type="submit">Send</button>
+
+    <x-hwc::optimistic target="messages" action="append">
+        <article class="message">
+            <p data-field="content"></p>
+            <small>Sending…</small>
+        </article>
+    </x-hwc::optimistic>
+</form>
+
+<div id="messages">
+    {{-- server-rendered messages --}}
+</div>
+```
+
+The `data-form--optimistic-reset-value="true"` attribute resets the form after
+a successful submission — the user can immediately type the next message.
+
+### Security
+
+Field population uses `textContent` exclusively — **never** `innerHTML`. Any
+HTML in the user input is rendered literally, not executed. Rich formatting
+(markdown, mentions, autolinks, etc.) should remain a server concern; it
+lands on the next morph.
+
+## Styling the optimistic state
+
+Every top-level element inside a dispatched payload is tagged automatically
+with `data-optimistic`. Use it as a pure-CSS hook to visually differentiate
+the provisional state:
+
+```css
+[data-optimistic] {
+    opacity: 0.6;
+    transition: opacity 150ms ease;
+}
+[data-optimistic] .spinner { display: inline-block; }
+```
+
+When the server response arrives and Turbo morphs in the authoritative HTML,
+the attribute is gone and the styling returns to normal.
+
+## Caveats
+
+Optimistic UI has well-known pitfalls. Here's how each maps to this stack:
+
+- **Rollback.** Traditionally the hardest part — you apply an optimistic
+  change, the server rejects it, and you must undo. Our default relies on the
+  server returning `turbo_stream()->refresh(method: 'morph')`, which makes the
+  morph algorithm the rollback mechanism. No manual snapshot needed in the
+  happy path.
+
+- **Cache invalidation.** Not an issue here — the server is the single source
+  of truth for DOM state. There is no client-side cache to keep in sync with
+  page props.
+
+- **Race conditions.** Rapid-fire submissions can land out of order. Use
+  `turbo_stream()->refresh(requestId: 'unique-id')` to let Turbo 8 debounce
+  duplicate refreshes per request id.
+
+- **Back-button betrayal.** Turbo Drive can restore a *previous* page from
+  cache, including a DOM that still has your optimistic mutation applied. To
+  prevent stale optimistic content from appearing on back navigation, tag the
+  fragment as temporary so Turbo strips it from the cached snapshot:
+
+  ```blade
+  <div id="messages" data-turbo-temporary>
+      {{-- optimistic additions here will not survive Turbo's cache --}}
+  </div>
+  ```
+
+  Or, at the page level, opt out of preview caching on views where
+  optimistic state is sensitive:
+
+  ```blade
+  <meta name="turbo-cache-control" content="no-preview">
+  ```
+
+- **Server/client formatting mismatch.** If the server renders the content
+  through a helper (`Str::markdown`, `simple_format`, autolinks) and the
+  optimistic HTML is plain text, the morph will visibly "reformat" the
+  fragment when the response lands. For rich content, keep the optimistic
+  render intentionally simple (e.g. plain paragraph, "Sending…" footer) so
+  the transition reads as *adding detail* rather than as a flicker.
+
 ## Multiple optimistic actions per submit
 
 Drop several `<x-hwc::optimistic>` siblings into the same form — each becomes

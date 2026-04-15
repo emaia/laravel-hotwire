@@ -36,6 +36,30 @@ yourself on the host element (`<form>` or `<a>`).
 
 Most users emit these via `<x-hwc::optimistic>` instead of writing them by hand.
 
+## Field population (from FormData)
+
+Descendants with `data-field="<name>"` inside the payload template are
+populated with the matching value from the `FormData` passed to `dispatch()`.
+Uses `textContent` (never `innerHTML`) to keep the path XSS-safe.
+
+```html
+<template data-optimistic-stream data-optimistic-action="append" data-optimistic-target-id="messages">
+    <article>
+        <p data-field="content"></p>
+        <small>Sending…</small>
+    </article>
+</template>
+```
+
+If no `FormData` is provided (e.g. `link--optimistic`), population is skipped.
+
+## Automatic `data-optimistic` marker
+
+Every top-level element inside a dispatched payload is tagged with
+`data-optimistic` so apps can style the provisional state via CSS
+(`[data-optimistic] { opacity: .6 }`). The attribute disappears once the
+server morph replaces the fragment with authoritative HTML.
+
 ## Direct usage (advanced)
 
 If neither `form--optimistic` nor `link--optimistic` fits, you can call the
@@ -46,7 +70,9 @@ const dispatcher = this.application.getControllerForElementAndIdentifier(
     this.element,
     "optimistic--dispatch",
 );
-dispatcher?.dispatch();
+
+// Optionally pass FormData to populate [data-field] elements
+dispatcher?.dispatch({ formData: new FormData(formEl) });
 ```
 
 ## Reconciliation

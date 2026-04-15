@@ -35,11 +35,30 @@ On `turbo:submit-start`, this controller invokes `optimistic--dispatch#dispatch(
 which materialises every `<x-hwc::optimistic>` template inside the form as a
 live `<turbo-stream>`.
 
+## Values
+
+| Value   | Type      | Default | Description                                                                 |
+|---------|-----------|---------|-----------------------------------------------------------------------------|
+| `reset` | `Boolean` | `false` | When `true`, resets the form after a successful submission (`turbo:submit-end` with `success=true`). |
+
+```html
+<form
+    data-controller="optimistic--dispatch form--optimistic"
+    data-form--optimistic-reset-value="true"
+    action="/messages"
+    method="post"
+>
+    …
+</form>
+```
+
 ## Behaviour
 
 - Reacts only to submissions originating from its own `<form>` (`event.target === this.element`).
 - Fires before the network request (instant DOM update).
-- Removes its listener on `disconnect()` (Turbo cache friendly).
+- Passes the form's `FormData` to `optimistic--dispatch` so templates can populate `[data-field]` descendants with user input.
+- Optionally resets the form on successful submission.
+- Removes its listeners on `disconnect()` (Turbo cache friendly).
 
 ## Notes
 
