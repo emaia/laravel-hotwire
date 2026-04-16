@@ -43,8 +43,8 @@ class MakeControllerCommand extends Command
             return self::FAILURE;
         }
 
-        if (! preg_match('#^[a-z][a-z0-9-]*(/[a-z][a-z0-9-]*)+$#', $name)) {
-            warning('Name must contain only lowercase letters, numbers, and hyphens (e.g. form/autosave).');
+        if (! preg_match('#^[a-z][a-z0-9_-]*(/[a-z][a-z0-9_-]*)+$#', $name)) {
+            warning('Name must contain only lowercase letters, numbers, hyphens, and underscores (e.g. form/autosave, dialog/close_modal).');
 
             return self::FAILURE;
         }
