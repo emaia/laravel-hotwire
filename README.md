@@ -23,6 +23,7 @@ the box.
     - [Dialog](#dialog)
     - [Form](#form)
     - [Frame](#frame)
+    - [Optimistic](#optimistic)
     - [Dev](#dev)
     - [Lib](#lib)
     - [Media](#media)
@@ -260,6 +261,7 @@ See the full documentation at [emaia/laravel-hotwire-turbo](https://github.com/e
 | [Confirm Dialog](docs/components/confirm-dialog/readme.md) | `<x-hwc::confirm-dialog>` | `dialog--confirm`                              | [readme](docs/components/confirm-dialog/readme.md) |
 | [Flash Message](docs/components/flash-message/readme.md)   | `<x-hwc::flash-message>`  | `notification--toaster`, `notification--toast` | [readme](docs/components/flash-message/readme.md)  |
 | [Loader](docs/components/loader/readme.md)                 | `<x-hwc::loader>`         | —                                              | [readme](docs/components/loader/readme.md)         |
+| [Optimistic](docs/components/optimistic/readme.md)         | `<x-hwc::optimistic>`     | —                                              | [readme](docs/components/optimistic/readme.md)     |
 
 ## Stimulus Controllers (standalone)
 
@@ -296,6 +298,14 @@ php artisan hotwire:controllers form/autoselect form/autosubmit frame/progress
 | [Polling](docs/controllers/frame/polling.md)                 | `frame--polling`         | `@hotwired/turbo` | [readme](docs/controllers/frame/polling.md)         |
 | [Progress](docs/controllers/frame/progress.md)               | `frame--progress`        | `@hotwired/turbo` | [readme](docs/controllers/frame/progress.md)        |
 | [View Transition](docs/controllers/frame/view-transition.md) | `frame--view-transition` | —                 | [readme](docs/controllers/frame/view-transition.md) |
+
+### Optimistic
+
+| Controller                                          | Identifier             | Dependencies      | Docs                                              |
+|-----------------------------------------------------|------------------------|-------------------|---------------------------------------------------|
+| [Form](docs/controllers/optimistic/form.md)         | `optimistic--form`     | `@hotwired/turbo` | [readme](docs/controllers/optimistic/form.md)     |
+| [Link](docs/controllers/optimistic/link.md)         | `optimistic--link`     | `@hotwired/turbo` | [readme](docs/controllers/optimistic/link.md)     |
+| [Dispatch](docs/controllers/optimistic/dispatch.md) | `optimistic--dispatch` | `@hotwired/turbo` | [readme](docs/controllers/optimistic/dispatch.md) |
 
 ### Dev
 

@@ -1,15 +1,6 @@
 import { Controller } from "@hotwired/stimulus";
 import { dispatchOptimistic } from "./_dispatch";
 
-// Dispatches optimistic UI when a Turbo form is submitted.
-//
-//   <form data-controller="optimistic--form" ...>
-//       <x-hwc::optimistic target="...">…</x-hwc::optimistic>
-//   </form>
-//
-// Optional values:
-//   data-optimistic--form-reset-value="true"  — resets the form after a
-//   successful submission (handy for chat/comment inputs).
 export default class extends Controller {
     static values = {
         reset: { type: Boolean, default: false },

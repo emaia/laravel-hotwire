@@ -1,15 +1,6 @@
 import { Controller } from "@hotwired/stimulus";
 import { dispatchOptimistic } from "./_dispatch";
 
-// Dispatches optimistic UI when a Turbo-driven link is clicked.
-//
-//   <a data-controller="optimistic--link"
-//      data-turbo-frame="detail" href="/posts/42">
-//       <x-hwc::optimistic target="detail" action="update">…</x-hwc::optimistic>
-//   </a>
-//
-// Skips the dispatch when the click won't be handled by Turbo (modifier keys,
-// middle-click, target=_blank, data-turbo="false", or already-prevented).
 export default class extends Controller {
     connect() {
         this.onClick = this.onClick.bind(this);
@@ -33,8 +24,6 @@ export default class extends Controller {
 
         const link = this.element;
         if (link.dataset.turbo === "false") return false;
-        if (link.target && link.target !== "" && link.target !== "_self") return false;
-
-        return true;
+        return !(link.target && link.target !== "" && link.target !== "_self");
     }
 }
