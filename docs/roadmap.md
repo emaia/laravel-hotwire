@@ -6,8 +6,8 @@ contributors and users can weigh in.
 
 ## Optimistic UI extensions
 
-The current Optimistic UI surface (`optimistic--dispatch` + `form--optimistic`
-+ `link--optimistic` + `<x-hwc::optimistic>`) covers the most common cases:
+The current Optimistic UI surface (`optimistic--form` + `optimistic--link`
++ `optimistic--dispatch` + `<x-hwc::optimistic>`) covers the most common cases:
 forms, frame links and method links reconciled via Turbo 8 morph. The items
 below extend the same model.
 
@@ -82,7 +82,7 @@ SortableJS becomes an optional peer dependency.
 already brings the destination HTML before the click. Optimistic UI complements
 it: paint the target state on hover *intent*, navigate on click.
 
-**Proposed shape.** A `link--optimistic-on-hover` variant that fires
+**Proposed shape.** An `optimistic--link-on-hover` variant that fires
 `dispatch()` on `mouseenter` after a configurable intent delay, and rolls back
 if the click does not happen within a window.
 

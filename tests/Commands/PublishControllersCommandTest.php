@@ -203,6 +203,25 @@ it('preserves directory structure when publishing', function () {
         ->and(File::exists($this->targetDir.'/dialog/modal_controller.js'))->toBeTrue();
 });
 
+// --- Shared dependencies ---
+
+it('publishes shared dependencies alongside controllers that import them', function () {
+    $this->artisan('hotwire:controllers', ['controllers' => ['optimistic/form']])
+        ->assertSuccessful();
+
+    expect(File::exists($this->targetDir.'/optimistic/form_controller.js'))->toBeTrue()
+        ->and(File::exists($this->targetDir.'/optimistic/_dispatch.js'))->toBeTrue();
+});
+
+it('does not duplicate shared dependency when publishing multiple controllers from same namespace', function () {
+    $this->artisan('hotwire:controllers', ['controllers' => ['optimistic/form', 'optimistic/link']])
+        ->assertSuccessful();
+
+    expect(File::exists($this->targetDir.'/optimistic/_dispatch.js'))->toBeTrue()
+        ->and(File::exists($this->targetDir.'/optimistic/form_controller.js'))->toBeTrue()
+        ->and(File::exists($this->targetDir.'/optimistic/link_controller.js'))->toBeTrue();
+});
+
 it('republishes without prompt when file was deleted but directory remains', function () {
     $this->artisan('hotwire:controllers', ['controllers' => ['dialog/modal']]);
 

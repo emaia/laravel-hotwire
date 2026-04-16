@@ -2,8 +2,7 @@
 
 Declare an optimistic Turbo Stream action inline, next to the element it should
 mutate. Works with **any** Turbo trigger — form submissions, frame links,
-method links — by pairing the `optimistic--dispatch` core controller with the
-trigger wrapper of your choice.
+method links — with a single `data-controller` attribute.
 
 ## Why
 
@@ -17,35 +16,38 @@ server *reconcile* via a Turbo 8 morph on the real response.
 
 ```
 <x-hwc::optimistic>            ← emits <template data-optimistic-stream …>
-        ↑ (declares dependency)
-optimistic--dispatch           ← scans templates, materialises <turbo-stream>
-        ↑ dispatch()
-   ┌────┴─────────┐
-form--optimistic   link--optimistic
-(turbo:submit-start)   (click)
+
+optimistic--form               ← turbo:submit-start → dispatch
+optimistic--link               ← click → dispatch
+optimistic--dispatch           ← escape hatch for custom triggers
+        └── all import _dispatch.js (shared scan + emit logic)
 ```
 
-The component declares only the **core** controller as its dependency. You add
-the **trigger wrapper** (`form--optimistic` or `link--optimistic`) to the host
-element manually, in the same `data-controller` attribute as the core.
+Add **one** controller to the host element:
+- `optimistic--form` on a `<form>`
+- `optimistic--link` on an `<a>`
+- `optimistic--dispatch` for anything else
+
+The component itself declares **no** controller dependency — the trigger
+choice is yours.
 
 ## Basic usage — form submission
 
 ```html
 <form
-    data-controller="optimistic--dispatch form--optimistic"
+    data-controller="optimistic--form"
     action="/posts/1/favorite"
     method="post"
 >
     @csrf
 
-    <x-hwc::optimistic target="post_1_favorite">
-        <button class="favorited">❤️ Favorited</button>
+    <x-hwc::optimistic target="post_1_favorite" action="update">
+        ❤️ Favorited
     </x-hwc::optimistic>
 
-    <div id="post_1_favorite">
-        <button>🤍 Favorite</button>
-    </div>
+    <button type="submit" id="post_1_favorite">
+        🤍 Favorite
+    </button>
 </form>
 ```
 
@@ -55,7 +57,7 @@ element manually, in the same `data-controller` attribute as the core.
 <a
     href="/posts/42"
     data-turbo-frame="detail"
-    data-controller="optimistic--dispatch link--optimistic"
+    data-controller="optimistic--link"
 >
     Ver detalhes
 
@@ -91,35 +93,38 @@ error feedback.
 {{-- resources/views/posts/_favorite.blade.php --}}
 @props(['post'])
 
-<div id="{{ dom_id($post, 'favorite') }}" class="inline-flex items-center gap-2">
-    <form
-        data-controller="optimistic--dispatch form--optimistic"
-        action="{{ route('posts.favorite.toggle', $post) }}"
-        method="post"
-    >
-        @csrf
-        @method($post->isFavoritedBy(auth()->user()) ? 'DELETE' : 'POST')
+@php
+    $isFavorited = $post->isFavoritedBy(auth()->user());
+@endphp
 
-        {{-- Optimistic action: replace the whole wrapper with the inverted state --}}
-        <x-hwc::optimistic :target="dom_id($post, 'favorite')">
-            <div id="{{ dom_id($post, 'favorite') }}" class="inline-flex items-center gap-2">
-                @if ($post->isFavoritedBy(auth()->user()))
-                    <button type="button" class="text-slate-400">🤍 Favorite</button>
-                @else
-                    <button type="button" class="text-rose-500">❤️ Favorited</button>
-                @endif
-                <span class="text-sm text-slate-500">
-                    {{ $post->favorites_count + ($post->isFavoritedBy(auth()->user()) ? -1 : 1) }}
-                </span>
-            </div>
-        </x-hwc::optimistic>
+<form
+    data-controller="optimistic--form"
+    action="{{ route('posts.favorite.toggle', $post) }}"
+    method="post"
+    class="inline-flex items-center gap-2"
+>
+    @csrf
+    @method($isFavorited ? 'DELETE' : 'POST')
 
-        <button type="submit" class="{{ $post->isFavoritedBy(auth()->user()) ? 'text-rose-500' : 'text-slate-400' }}">
-            {{ $post->isFavoritedBy(auth()->user()) ? '❤️ Favorited' : '🤍 Favorite' }}
-        </button>
+    {{-- Optimistic action: update button contents, keeping the form intact --}}
+    <x-hwc::optimistic :target="dom_id($post, 'favorite_status')" action="update">
+        @if ($isFavorited)
+            <span class="text-slate-400">🤍 Favorite</span>
+        @else
+            <span class="text-rose-500">❤️ Favorited</span>
+        @endif
+        <span class="text-sm text-slate-500">
+            {{ $post->favorites_count + ($isFavorited ? -1 : 1) }}
+        </span>
+    </x-hwc::optimistic>
+
+    <button type="submit" id="{{ dom_id($post, 'favorite_status') }}" class="inline-flex items-center gap-2">
+        <span class="{{ $isFavorited ? 'text-rose-500' : 'text-slate-400' }}">
+            {{ $isFavorited ? '❤️ Favorited' : '🤍 Favorite' }}
+        </span>
         <span class="text-sm text-slate-500">{{ $post->favorites_count }}</span>
-    </form>
-</div>
+    </button>
+</form>
 ```
 
 ### Controller
@@ -202,8 +207,8 @@ value from the form's `FormData` into the element's `textContent`.
 
 ```blade
 <form
-    data-controller="optimistic--dispatch form--optimistic"
-    data-form--optimistic-reset-value="true"
+    data-controller="optimistic--form"
+    data-optimistic--form-reset-value="true"
     action="{{ route('messages.store') }}"
     method="post"
 >
@@ -224,7 +229,7 @@ value from the form's `FormData` into the element's `textContent`.
 </div>
 ```
 
-The `data-form--optimistic-reset-value="true"` attribute resets the form after
+The `data-optimistic--form-reset-value="true"` attribute resets the form after
 a successful submission — the user can immediately type the next message.
 
 ### Security
@@ -301,7 +306,7 @@ its own Turbo Stream, dispatched in order.
 
 ```blade
 <form
-    data-controller="optimistic--dispatch form--optimistic"
+    data-controller="optimistic--form"
     action="/todos/{{ $todo->id }}"
     method="post"
 >
@@ -327,17 +332,22 @@ its own Turbo Stream, dispatched in order.
 - **Combine with `frame--view-transition`** for smooth cross-fades between
   optimistic and reconciled state.
 - **Publish the controllers** before using:
-  `php artisan hotwire:controllers optimistic/dispatch form/optimistic link/optimistic`
+  `php artisan hotwire:controllers optimistic` (publishes all: form, link,
+  dispatch, and the shared `_dispatch.js`).
 - For roadmap items (rollback opt-in, ULID inserts, Sortable persist,
   prefetch+optimistic, broadcast-aware dispatch) see
   [`docs/roadmap.md`](../../roadmap.md).
 
 ## Dependencies
 
-Declared via `HasStimulusControllers`:
+The component declares no Stimulus controller dependencies — the trigger
+choice is yours. Publish the controller you need:
 
-- `optimistic--dispatch` (core)
+```bash
+php artisan hotwire:controllers optimistic/form   # for forms
+php artisan hotwire:controllers optimistic/link   # for links
+php artisan hotwire:controllers optimistic        # all (including escape hatch)
+```
 
-The trigger wrapper (`form--optimistic` or `link--optimistic`) is added by you
-on the host element. Run `php artisan hotwire:check` to ensure the core
-dispatcher is published.
+Shared dependencies (`_dispatch.js`) are published automatically alongside
+whichever controller you select.

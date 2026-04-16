@@ -1,31 +1,35 @@
-# Optimistic Dispatch (core)
+# Optimistic Dispatch (escape hatch)
 
-Core dispatcher for Optimistic UI. Scans its element subtree for
-`<template data-optimistic-stream>` nodes and converts each into a live
-`<turbo-stream>` that Turbo executes synchronously, updating the DOM
-**before** any network round-trip.
-
-This controller does **not** bind to any event by itself. It exposes a single
-public method, `dispatch()`, called by *trigger wrappers* (`form--optimistic`,
-`link--optimistic`) that decide *when* to fire the optimistic update.
+Thin Stimulus controller wrapping the shared `_dispatch.js` module. Exposes a
+single `dispatch()` action for triggers that don't fit `optimistic--form` or
+`optimistic--link`.
 
 **Identifier:** `optimistic--dispatch`
 
-## Architecture
+## When to use
 
+Most apps only need `optimistic--form` or `optimistic--link`. Use
+`optimistic--dispatch` when you have a custom Stimulus controller and want to
+trigger the optimistic update in response to an arbitrary event:
+
+```html
+<div data-controller="optimistic--dispatch my-custom"
+     data-action="my-custom:complete->optimistic--dispatch#dispatch">
+    <template data-optimistic-stream data-optimistic-action="replace"
+              data-optimistic-target-id="x">…</template>
+</div>
 ```
-optimistic--dispatch  ← scans <template data-optimistic-stream> and emits <turbo-stream>
-        ↑ dispatch()
-   ┌────┴─────────┐
-form--optimistic   link--optimistic
-(turbo:submit-start)   (click)
+
+Or call the shared module directly in your own controller:
+
+```js
+import { dispatchOptimistic } from "./optimistic/_dispatch";
+
+// Inside any Stimulus controller
+dispatchOptimistic(this.element, { formData });
 ```
 
-The Blade component `<x-hwc::optimistic>` declares a dependency on
-`optimistic--dispatch` only — the trigger wrapper is your choice and you add it
-yourself on the host element (`<form>` or `<a>`).
-
-## Template attributes (read by `dispatch()`)
+## Template attributes
 
 | Attribute                      | Description                                                              |
 |--------------------------------|--------------------------------------------------------------------------|
@@ -34,50 +38,15 @@ yourself on the host element (`<form>` or `<a>`).
 | `data-optimistic-target-id`    | DOM id of the element to act on                                          |
 | `data-optimistic-targets`      | CSS selector (alternative to `target-id`)                                |
 
-Most users emit these via `<x-hwc::optimistic>` instead of writing them by hand.
+## Features
 
-## Field population (from FormData)
-
-Descendants with `data-field="<name>"` inside the payload template are
-populated with the matching value from the `FormData` passed to `dispatch()`.
-Uses `textContent` (never `innerHTML`) to keep the path XSS-safe.
-
-```html
-<template data-optimistic-stream data-optimistic-action="append" data-optimistic-target-id="messages">
-    <article>
-        <p data-field="content"></p>
-        <small>Sending…</small>
-    </article>
-</template>
-```
-
-If no `FormData` is provided (e.g. `link--optimistic`), population is skipped.
-
-## Automatic `data-optimistic` marker
-
-Every top-level element inside a dispatched payload is tagged with
-`data-optimistic` so apps can style the provisional state via CSS
-(`[data-optimistic] { opacity: .6 }`). The attribute disappears once the
-server morph replaces the fragment with authoritative HTML.
-
-## Direct usage (advanced)
-
-If neither `form--optimistic` nor `link--optimistic` fits, you can call the
-dispatcher manually from your own Stimulus controller:
-
-```js
-const dispatcher = this.application.getControllerForElementAndIdentifier(
-    this.element,
-    "optimistic--dispatch",
-);
-
-// Optionally pass FormData to populate [data-field] elements
-dispatcher?.dispatch({ formData: new FormData(formEl) });
-```
+- **`[data-field]` population** — when `formData` is provided, descendants
+  with `data-field="<name>"` are populated via `textContent` (XSS-safe).
+- **`data-optimistic` marker** — automatically added to every top-level
+  payload element for CSS styling hooks.
 
 ## Reconciliation
 
-The optimistic mutation is provisional. The server's Turbo Stream response
-reconciles the DOM. Use `turbo_stream()->refresh(method: 'morph')` so the morph
-algorithm converges to the authoritative state on success **and** reverts on
-failure — no manual rollback.
+The server's Turbo Stream response reconciles the DOM.
+`turbo_stream()->refresh(method: 'morph')` works best — the morph converges to
+the authoritative state on success **and** reverts on failure.

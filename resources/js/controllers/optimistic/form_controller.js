@@ -1,12 +1,14 @@
 import { Controller } from "@hotwired/stimulus";
+import { dispatchOptimistic } from "./_dispatch";
 
-// Trigger wrapper: dispatches optimistic UI when the form is submitted.
+// Dispatches optimistic UI when a Turbo form is submitted.
 //
-// Pair on the same <form> with the optimistic--dispatch core controller:
-//   <form data-controller="optimistic--dispatch form--optimistic" ...>
+//   <form data-controller="optimistic--form" ...>
+//       <x-hwc::optimistic target="...">…</x-hwc::optimistic>
+//   </form>
 //
 // Optional values:
-//   data-form--optimistic-reset-value="true"  — resets the form after a
+//   data-optimistic--form-reset-value="true"  — resets the form after a
 //   successful submission (handy for chat/comment inputs).
 export default class extends Controller {
     static values = {
@@ -28,14 +30,9 @@ export default class extends Controller {
     onSubmitStart(event) {
         if (event.target !== this.element) return;
 
-        const dispatcher = this.application.getControllerForElementAndIdentifier(
-            this.element,
-            "optimistic--dispatch",
-        );
-        if (!dispatcher) return;
-
-        const formData = new FormData(this.element);
-        dispatcher.dispatch({ formData });
+        dispatchOptimistic(this.element, {
+            formData: new FormData(this.element),
+        });
     }
 
     onSubmitEnd(event) {

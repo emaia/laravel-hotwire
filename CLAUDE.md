@@ -10,6 +10,7 @@ The complete Hotwire stack for Laravel — Turbo Drive, Turbo Streams, Stimulus 
 - `stubs/resources/` — Scaffolding files copied by `hotwire:install`
 - `config/hotwire.php` — Package configuration (component prefix)
 - `tests/` — Pest PHP tests with Orchestra Testbench
+- `docs/` — Documentation
 
 ## Artisan Commands
 
