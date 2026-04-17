@@ -105,6 +105,7 @@ class PublishControllersCommand extends Command
         $targetBase = resource_path('js/controllers');
 
         $published = 0;
+        $publishedDeps = [];
 
         foreach ($selected as $key) {
             if (! isset($available[$key])) {
@@ -120,6 +121,8 @@ class PublishControllersCommand extends Command
             if ($this->files->exists($targetFile) && ! $this->option('force')) {
                 if ($this->files->hash($controller['source_file']) === $this->files->hash($targetFile)) {
                     info("Controller \"{$key}\" is already up to date.");
+
+                    $this->publishSharedDeps($controller, $targetBase, $publishedDeps);
 
                     continue;
                 }
@@ -140,6 +143,8 @@ class PublishControllersCommand extends Command
 
             info("Published controller: {$key} -> {$targetFile}");
             $published++;
+
+            $published += $this->publishSharedDeps($controller, $targetBase, $publishedDeps);
         }
 
         if ($published > 0) {
@@ -147,6 +152,49 @@ class PublishControllersCommand extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    /** @param array<string, bool> $alreadyPublished */
+    private function publishSharedDeps(array $controller, string $targetBase, array &$alreadyPublished): int
+    {
+        $sourceDir = dirname($controller['source_file']);
+        $deps = glob($sourceDir.'/_*.js') ?: [];
+        $deps = array_merge($deps, glob($sourceDir.'/_*.ts') ?: []);
+
+        $count = 0;
+
+        foreach ($deps as $depPath) {
+            $depFilename = basename($depPath);
+            $depKey = $controller['relative_dir'].'/'.$depFilename;
+
+            if (isset($alreadyPublished[$depKey])) {
+                continue;
+            }
+
+            $targetDir = $targetBase.'/'.$controller['relative_dir'];
+            $targetFile = $targetDir.'/'.$depFilename;
+
+            if ($this->files->exists($targetFile) && ! $this->option('force')) {
+                if ($this->files->hash($depPath) === $this->files->hash($targetFile)) {
+                    $alreadyPublished[$depKey] = true;
+
+                    continue;
+                }
+
+                if (! $this->input->isInteractive()) {
+                    continue;
+                }
+            }
+
+            $this->files->ensureDirectoryExists($targetDir);
+            $this->files->copy($depPath, $targetFile);
+
+            info("Published dependency: {$depFilename} -> {$targetFile}");
+            $alreadyPublished[$depKey] = true;
+            $count++;
+        }
+
+        return $count;
     }
 
     /** @param string[] $args */

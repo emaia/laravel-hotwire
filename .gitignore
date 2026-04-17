@@ -30,3 +30,4 @@ phpstan.neon
 /coverage
 
 .claude/settings.local.json
+.codex

@@ -1,6 +1,6 @@
 # Remote
 
-Utility controller for common form operations: remote submit and reset.
+Proxy controller for form submissions that need to be triggered from a decoupled element.
 
 **Identifier:** `form--remote`
 
@@ -10,66 +10,48 @@ Utility controller for common form operations: remote submit and reset.
 
 ## Targets
 
-| Target      | Description            |
-|-------------|------------------------|
-| `submitBtn` | The form submit button |
+| Target      | Description                                                    |
+|-------------|----------------------------------------------------------------|
+| `submitBtn` | The real submit button that should be clicked programmatically |
 
 ## Actions
 
-| Action                      | Description                               |
-|-----------------------------|-------------------------------------------|
-| `form--remote#remoteSubmit` | Programmatically clicks the submit button |
-| `form--remote#reset`        | Resets the form to its initial state      |
+| Action                      | Description                              |
+|-----------------------------|------------------------------------------|
+| `form--remote#remoteSubmit` | Clicks the configured `submitBtn` target |
 
 ## Remote submit
 
-Useful when the submit button is outside the form or when another element needs to trigger the submission:
+Use `remoteSubmit` when a visible trigger should submit through a real submit button that carries the actual form
+metadata, such as `formaction`, `formmethod` or `data-turbo-frame`.
 
 ```html
 
-<form data-controller="form--remote">
-    <input type="text" name="title"/>
+<div data-controller="form--remote">
+    <select name="content_type" data-action="change->form--remote#remoteSubmit">
+        <option value="">Choose a content type</option>
+        <option value="article">Article</option>
+        <option value="video">Video</option>
+    </select>
 
-    <button type="submit" data-form--remote-target="submitBtn">Save</button>
-</form>
-
-<!-- External button that triggers the submit -->
-<button data-action="form--remote#remoteSubmit">Save from outside</button>
-```
-
-## Form reset
-
-```html
-
-<form data-controller="form--remote">
-    <input type="text" name="search"/>
-
-    <button type="submit">Search</button>
-    <button type="button" data-action="form--remote#reset">Clear</button>
-</form>
-```
-
-## Usage in modal with Turbo Frame
-
-```html
-
-<x-hwc::modal>
-    <x-slot:trigger>
-        <button data-action="dialog--modal#open" type="button">New item</button>
-    </x-slot:trigger>
-
-    <form
-        data-controller="form--remote"
-        action="/items"
-        method="post"
-    >
+    <form method="post">
         @csrf
-        <input type="text" name="title"/>
 
-        <footer>
-            <button type="button" data-action="dialog--modal#close">Cancel</button>
-            <button type="submit" data-form--remote-target="submitBtn">Create</button>
-        </footer>
+        <button
+            type="submit"
+            class="hidden"
+            data-form--remote-target="submitBtn"
+            data-turbo-frame="content-type-frame"
+            formaction="/content-types/preview"
+        >
+            Load content type
+        </button>
     </form>
-</x-hwc::modal>
+</div>
+
+<turbo-frame id="content-type-frame"></turbo-frame>
 ```
+
+The select is only the trigger. The hidden submit button is the real request source, so Turbo sees its
+`data-turbo-frame` and the browser uses its `formaction`. The trigger and `submitBtn` target must be inside the same
+`form--remote` controller scope.

@@ -1,6 +1,7 @@
 # Toast
 
-Fires a toast via [Sonner](https://sonner.emilkowal.ski/) on connect and removes the element from the DOM. Designed to be rendered by Turbo Stream, enabling flash messages without additional JavaScript.
+Fires a toast via [Sonner](https://sonner.emilkowal.ski/) on connect and removes the element from the DOM. This is the
+low-level controller used by `<x-hwc::flash-message>` and can also be rendered directly when needed.
 
 **Identifier:** `notification--toast`
 
@@ -31,7 +32,7 @@ The element is removed from the DOM immediately after the toast fires.
 
 ## With Turbo Stream
 
-The typical usage is via Turbo Stream at the end of a Laravel controller action:
+Add the toaster container once in the application layout:
 
 ```html
 <!-- resources/views/layouts/app.blade.php -->
@@ -45,21 +46,21 @@ The typical usage is via Turbo Stream at the end of a Laravel controller action:
 </body>
 ```
 
+Then append a toast element from a Turbo Stream response:
+
 ```php
-// In the Laravel controller, after saving:
-return redirect()->back()->with('toast', ['message' => 'Saved!', 'type' => 'success']);
+return turbo_stream()
+    ->append('flash-container', <<<'HTML'
+        <div
+            data-controller="notification--toast"
+            data-notification--toast-message-value="Saved!"
+            data-notification--toast-type-value="success"
+        ></div>
+    HTML);
 ```
 
-```html
-<!-- resources/views/partials/toast.blade.php -->
-@if (session('toast'))
-    <div
-        data-controller="notification--toast"
-        data-notification--toast-message-value="{{ session('toast.message') }}"
-        data-notification--toast-type-value="{{ session('toast.type', 'default') }}"
-    ></div>
-@endif
-```
+For session flash messages, use [`<x-hwc::flash-message>`](../../components/flash-message/readme.md), which reads the
+supported Laravel session keys and renders this controller for you.
 
 ## Available types
 

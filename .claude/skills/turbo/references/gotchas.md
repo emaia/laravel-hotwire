@@ -116,7 +116,7 @@ return redirect()->route('items.index');
 
 // ✅ Check if request wants Turbo Stream and respond accordingly
 if (request()->wantsTurboStream()) {
-    return turbo_stream()->append('items', view('items._item', compact('item')))->respond();
+    return turbo_stream()->append('items', view('items._item', compact('item')));
 }
 
 return redirect()->route('items.index');
@@ -213,7 +213,7 @@ export default class extends Controller {
 
 ### Stream Not Processing
 
-Check Content-Type header. It must be `text/vnd.turbo-stream.html`. The `turbo_stream()->respond()` helper and `response()->turboStream()` macro set this automatically. If building manually, ensure the header is set.
+Check Content-Type header. It must be `text/vnd.turbo-stream.html`. Returning `turbo_stream()` directly or using the `response()->turboStream()` macro sets this automatically. If building manually, ensure the header is set.
 
 ### Target Not Found
 
@@ -235,8 +235,7 @@ Check Content-Type header. It must be `text/vnd.turbo-stream.html`. The `turbo_s
 return turbo_stream()
     ->append('items', view('items._item', compact('item')))
     ->update('count', '<span>42</span>')
-    ->remove('empty-state')
-    ->respond();
+    ->remove('empty-state');
 ```
 
 Or in Blade:
@@ -321,10 +320,10 @@ Workaround:
 
 ```php
 // ❌ Sending entire list
-turbo_stream()->replace('items', view('items.index', compact('allItems')))->respond();
+turbo_stream()->replace('items', view('items.index', compact('allItems')));
 
 // ✅ Send only the new item
-turbo_stream()->append('items', view('items._item', compact('item')))->respond();
+turbo_stream()->append('items', view('items._item', compact('item')));
 ```
 
 ### Preload Critical Pages

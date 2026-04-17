@@ -10,6 +10,7 @@ The complete Hotwire stack for Laravel — Turbo Drive, Turbo Streams, Stimulus 
 - `stubs/resources/` — Scaffolding files copied by `hotwire:install`
 - `config/hotwire.php` — Package configuration (component prefix)
 - `tests/` — Pest PHP tests with Orchestra Testbench
+- `docs/` — Documentation
 
 ## Artisan Commands
 
@@ -33,13 +34,13 @@ The complete Hotwire stack for Laravel — Turbo Drive, Turbo Streams, Stimulus 
 ### Blade Components
 
 - Registered with configurable prefix (default: `hwc`)
-- Usage: `<x-hwc::modal>`, `<x-hwc::confirm>`, `<x-hwc::flash-message>`, `<x-hwc::loader>`
+- Usage: `<x-hwc::modal>`, `<x-hwc::confirm-dialog>`, `<x-hwc::flash-message>`, `<x-hwc::loader>`
 - Components that need JS declare their controllers via `HasStimulusControllers` interface
 
 ### Turbo
 
 - Provided by `emaia/laravel-hotwire-turbo` dependency
-- Fluent stream builder: `turbo_stream()->append(...)->respond()`
+- Fluent stream builder: `turbo_stream()->append(...)` (the builder is `Responsable` — return it directly from the controller; use `->withResponse(...)` when you need a custom status or headers)
 - Request detection: `request()->wantsTurboStream()`, `request()->wasFromTurboFrame()`
 - DOM helpers: `dom_id($model)`, `dom_class($model)`
 

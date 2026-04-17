@@ -96,27 +96,26 @@ use Emaia\LaravelHotwireTurbo\Turbo;
 return turbo_stream()
     ->append('messages', view('messages.item', compact('message')))
     ->remove('modal')
-    ->update('counter', '<span>42</span>')
-    ->respond();
+    ->update('counter', '<span>42</span>');
 
 // With custom status code (e.g. validation errors)
 return turbo_stream()
     ->replace('form', view('form', ['errors' => $errors]))
-    ->respond(422);
+    ->withResponse(422);
 ```
 
 ### Conditional Response
 
 ```php
 if (request()->wantsTurboStream()) {
-    return turbo_stream()->remove(dom_id($message))->respond();
+    return turbo_stream()->remove(dom_id($message));
 }
 
 return redirect()->route('messages.index');
 
 // Scoped to a specific frame
 if (request()->wasFromTurboFrame('modal') && request()->wantsTurboStream()) {
-    return turbo_stream()->update('modal-content', view('messages.edit', compact('message')))->respond();
+    return turbo_stream()->update('modal-content', view('messages.edit', compact('message')));
 }
 
 return view('messages.edit', compact('message'));
@@ -217,8 +216,7 @@ class MessageController extends Controller
             return turbo_stream()
                 ->append('messages', view('messages.item', compact('message')))
                 ->update('message-form', view('messages.form'))
-                ->update('message-count', '<span>' . Message::count() . '</span>')
-                ->respond();
+                ->update('message-count', '<span>' . Message::count() . '</span>');
         }
 
         return redirect()->route('messages.index');
@@ -229,7 +227,7 @@ class MessageController extends Controller
         $message->delete();
 
         if (request()->wantsTurboStream()) {
-            return turbo_stream()->remove(dom_id($message))->respond();
+            return turbo_stream()->remove(dom_id($message));
         }
 
         return redirect()->route('messages.index');

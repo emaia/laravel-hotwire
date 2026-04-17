@@ -1,4 +1,4 @@
-# Clean Querystring
+# Clean Query String
 
 Removes empty parameters from the query string before submitting a GET form, avoiding polluted URLs like `?q=&category=&page=`.
 
@@ -21,7 +21,6 @@ Removes empty parameters from the query string before submitting a GET form, avo
     method="get"
     action="/items"
     data-controller="form--clean-querystring"
-    data-action="submit->form--clean-querystring#submit"
 >
     <input type="search" name="q" placeholder="Search..." />
 
@@ -30,9 +29,12 @@ Removes empty parameters from the query string before submitting a GET form, avo
         <option value="news">News</option>
     </select>
 
-    <button type="submit">Filter</button>
+    <button type="button" data-action="form--clean-querystring#submit">Filter</button>
 </form>
 ```
+
+Attach `form--clean-querystring#submit` to the control that should trigger the filtered submit. The action registers a
+`formdata` hook, removes empty values, and then submits the form.
 
 If the user submits without filling anything, the URL will be `/items` instead of `/items?q=&category=`.
 
