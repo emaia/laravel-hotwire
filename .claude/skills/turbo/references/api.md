@@ -215,8 +215,7 @@ Response must contain a `<turbo-frame>` with matching `id`:
 ```php
 // Fluent builder
 return turbo_stream()
-    ->append('items', view('items._item', compact('item')))
-    ->respond();
+    ->append('items', view('items._item', compact('item')));
 
 // Stream view
 return turbo_stream_view('items.streams.created', compact('item'));
@@ -249,7 +248,7 @@ Stream responses must have:
 Content-Type: text/vnd.turbo-stream.html
 ```
 
-The `turbo_stream()->respond()` helper and `response()->turboStream()` macro set this automatically.
+Returning `turbo_stream()` directly or using the `response()->turboStream()` macro sets this automatically.
 
 ---
 

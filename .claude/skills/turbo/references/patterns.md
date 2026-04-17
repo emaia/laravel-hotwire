@@ -58,7 +58,7 @@ public function update(Request $request, Task $task)
     $task->update($request->validated());
 
     if (request()->wantsTurboStream()) {
-        return turbo_stream()->replace(dom_id($task), view('tasks._task_frame', compact('task')))->respond();
+        return turbo_stream()->replace(dom_id($task), view('tasks._task_frame', compact('task')));
     }
 
     return redirect()->route('tasks.index');
@@ -187,8 +187,7 @@ public function store(Request $request)
         return turbo_stream()
             ->append('comments', view('comments._comment', compact('comment')))
             ->update('comment-count', '<span>' . Comment::count() . '</span>')
-            ->replace('comment-form', view('comments._form'))
-            ->respond();
+            ->replace('comment-form', view('comments._form'));
     }
 
     return redirect()->route('comments.index');
@@ -243,7 +242,7 @@ public function destroy(Item $item)
     $item->delete();
 
     if (request()->wantsTurboStream()) {
-        return turbo_stream()->remove(dom_id($item))->respond();
+        return turbo_stream()->remove(dom_id($item));
     }
 
     return redirect()->route('items.index');
@@ -262,8 +261,7 @@ return redirect()->route('items.index')->with('success', 'Item saved!');
 
 // Or via stream for frame/stream responses
 return turbo_stream()
-    ->append('flash-container', view('components.flash', ['message' => 'Saved!', 'type' => 'success']))
-    ->respond();
+    ->append('flash-container', view('components.flash', ['message' => 'Saved!', 'type' => 'success']));
 ```
 
 ---
@@ -324,7 +322,7 @@ public function store(Request $request)
     $item = Item::create($validated);
 
     if (request()->wantsTurboStream()) {
-        return turbo_stream()->append('items', view('items._item', compact('item')))->respond();
+        return turbo_stream()->append('items', view('items._item', compact('item')));
     }
 
     return redirect()->route('items.index');
