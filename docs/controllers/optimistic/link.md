@@ -10,10 +10,10 @@ controller on the `<a>` — no extra dispatch controller needed.
 ```html
 <a href="/posts/42" data-turbo-frame="detail"
    data-controller="optimistic--link">
-    Ver detalhes
+    View details
 
     <x-hwc::optimistic target="detail" action="update">
-        <div class="animate-pulse p-4">Carregando…</div>
+        <div class="animate-pulse p-4">Loading...</div>
     </x-hwc::optimistic>
 </a>
 
@@ -34,7 +34,7 @@ The `remove` target should be the list item wrapper, **not** the link itself:
     <a href="/notifications/{{ $n->id }}/dismiss"
        data-turbo-method="delete"
        data-controller="optimistic--link">
-        Dispensar
+        Dismiss
 
         <x-hwc::optimistic :target="dom_id($n)" action="remove" />
     </a>

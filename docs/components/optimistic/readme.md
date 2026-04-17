@@ -59,10 +59,10 @@ choice is yours.
     data-turbo-frame="detail"
     data-controller="optimistic--link"
 >
-    Ver detalhes
+    View details
 
     <x-hwc::optimistic target="detail" action="update">
-        <div class="animate-pulse p-4">Carregando…</div>
+        <div class="animate-pulse p-4">Loading...</div>
     </x-hwc::optimistic>
 </a>
 
@@ -187,7 +187,7 @@ public function store(Request $request, Post $post)
     } catch (\Throwable $e) {
         return turbo_stream()
             ->refresh(method: 'morph')
-            ->append('toasts', view('components.hwc.flash-message', [
+            ->append('flash-container', view('partials.flash-message', [
                 'message' => 'Could not favorite this post.',
                 'type' => 'error',
             ]))
@@ -334,9 +334,6 @@ its own Turbo Stream, dispatched in order.
 - **Publish the controllers** before using:
   `php artisan hotwire:controllers optimistic` (publishes all: form, link,
   dispatch, and the shared `_dispatch.js`).
-- For roadmap items (rollback opt-in, ULID inserts, Sortable persist,
-  prefetch+optimistic, broadcast-aware dispatch) see
-  [`docs/roadmap.md`](../../roadmap.md).
 
 ## Dependencies
 

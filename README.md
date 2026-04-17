@@ -204,7 +204,7 @@ registerControllers(Stimulus, controllers);
 Install the required js dependencies:
 
 ```bash
-bun install @hotwired/stimulus @hotwired/turbo @emaia/stimulus-dynamic-loader
+bun add @hotwired/stimulus @hotwired/turbo @emaia/stimulus-dynamic-loader
 ```
 
 #### TailwindCSS (v4)
@@ -284,7 +284,7 @@ php artisan hotwire:controllers form/autoselect form/autosubmit frame/progress
 |-----------------------------------------------------------------|---------------------------|--------------|------------------------------------------------------|
 | [Autoselect](docs/controllers/form/autoselect.md)               | `form--autoselect`        | —            | [readme](docs/controllers/form/autoselect.md)        |
 | [Autosubmit](docs/controllers/form/autosubmit.md)               | `form--autosubmit`        | —            | [readme](docs/controllers/form/autosubmit.md)        |
-| [Clean Querystring](docs/controllers/form/clean-querystring.md) | `form--clean-querystring` | —            | [readme](docs/controllers/form/clean-querystring.md) |
+| [Clean Query String](docs/controllers/form/clean-querystring.md) | `form--clean-querystring` | —            | [readme](docs/controllers/form/clean-querystring.md) |
 | [Clear Input](docs/controllers/form/clear-input.md)             | `form--clear-input`       | —            | [readme](docs/controllers/form/clear-input.md)       |
 | [Remote](docs/controllers/form/remote.md)                       | `form--remote`            | —            | [readme](docs/controllers/form/remote.md)            |
 | [Reset Files](docs/controllers/form/reset-files.md)             | `form--reset-files`       | —            | [readme](docs/controllers/form/reset-files.md)       |
@@ -340,16 +340,16 @@ Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed re
 
 ## Contributing
 
-Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
+Contributions are welcome via pull requests.
 
 ## Security Vulnerabilities
 
-Please review [our security policy](../../security/policy) on how to report security vulnerabilities.
+Please review [our security policy](https://github.com/emaia/laravel-hotwire/security/policy) on how to report security vulnerabilities.
 
 ## Credits
 
 - [Ednilson Maia](https://github.com/emaia)
-- [All Contributors](../../contributors)
+- [All Contributors](https://github.com/emaia/laravel-hotwire/graphs/contributors)
 
 ## License
 
