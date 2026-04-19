@@ -8,7 +8,6 @@ use Symfony\Component\Finder\Finder;
 
 use function Laravel\Prompts\confirm;
 use function Laravel\Prompts\info;
-use function Laravel\Prompts\multiselect;
 use function Laravel\Prompts\warning;
 
 class InstallCommand extends Command
@@ -116,7 +115,7 @@ class InstallCommand extends Command
     }
 
     /** @return array<string, string> */
-    private function packageDependencies(): array
+    private function coreDependencies(): array
     {
         $path = realpath(__DIR__.'/../../package.json');
 
@@ -125,45 +124,9 @@ class InstallCommand extends Command
         }
 
         $json = json_decode(file_get_contents($path), true);
+        $all = $json['dependencies'] ?? [];
 
-        return $json['dependencies'] ?? [];
-    }
-
-    /** @return array<string, string> */
-    private function selectDependencies(): array
-    {
-        $all = $this->packageDependencies();
-
-        if (empty($all)) {
-            return [];
-        }
-
-        $core = [];
-        $optional = [];
-
-        foreach ($all as $package => $version) {
-            if (in_array($package, self::CORE_DEPENDENCIES)) {
-                $core[$package] = $version;
-            } else {
-                $optional[$package] = $version;
-            }
-        }
-
-        if (empty($optional) || ! $this->input->isInteractive()) {
-            return $core;
-        }
-
-        $options = collect($optional)->mapWithKeys(
-            fn (string $version, string $package) => [$package => "{$package} {$version}"]
-        )->toArray();
-
-        $selected = multiselect(
-            label: 'Which optional npm dependencies would you like to install?',
-            options: $options,
-            hint: 'Core dependencies (@hotwired/stimulus, @hotwired/turbo, @emaia/stimulus-dynamic-loader) are always installed.',
-        );
-
-        return array_merge($core, array_intersect_key($optional, array_flip($selected)));
+        return array_intersect_key($all, array_flip(self::CORE_DEPENDENCIES));
     }
 
     private function addNpmDependencies(): int
@@ -176,7 +139,7 @@ class InstallCommand extends Command
             return 0;
         }
 
-        $dependencies = $this->selectDependencies();
+        $dependencies = $this->coreDependencies();
 
         if (empty($dependencies)) {
             return 0;
@@ -244,5 +207,14 @@ class InstallCommand extends Command
         $this->line('Next steps:');
         $this->line("  1. Run `{$pm} install` to install dependencies");
         $this->line("  2. Run `{$pm} run dev` to compile assets");
+        $this->newLine();
+        $this->line('Discover what ships with Hotwire:');
+        $this->line('  • `php artisan hotwire:components`         list Blade components and their controllers');
+        $this->line('  • `php artisan hotwire:controllers --list` list every available Stimulus controller');
+        $this->newLine();
+        $this->line('Publishing what you need:');
+        $this->line('  • Components in your views → `php artisan hotwire:check --fix`');
+        $this->line('    (publishes required controllers and adds any missing npm packages)');
+        $this->line('  • Standalone controller    → `php artisan hotwire:controllers <namespace/name>`');
     }
 }

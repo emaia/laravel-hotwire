@@ -70,6 +70,10 @@ This will:
 2. Add `@hotwired/stimulus`, `@hotwired/turbo` and `@emaia/stimulus-dynamic-loader` to your `package.json`
 3. Show instructions for the next steps
 
+> Only the three core dependencies above are added at install time. Extra npm packages required by specific
+> components (e.g. `maska`, `tippy.js`, `@emaia/sonner`) are published on demand by
+> [`hotwire:check`](#stimulus-controllers) once you actually use a component that depends on them.
+
 Options:
 
 ```bash

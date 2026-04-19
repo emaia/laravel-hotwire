@@ -14,18 +14,6 @@ beforeEach(function () {
     $this->originalPackageJson = File::exists($this->packageJsonPath)
         ? File::get($this->packageJsonPath)
         : null;
-
-    // Build optional deps options for interactive tests
-    $packageJson = json_decode(file_get_contents(__DIR__.'/../../package.json'), true);
-    $allDeps = $packageJson['dependencies'] ?? [];
-    $coreDeps = ['@emaia/stimulus-dynamic-loader', '@hotwired/stimulus', '@hotwired/turbo'];
-
-    $this->optionalDepsOptions = [];
-    foreach ($allDeps as $pkg => $version) {
-        if (! in_array($pkg, $coreDeps)) {
-            $this->optionalDepsOptions[$pkg] = "{$pkg} {$version}";
-        }
-    }
 });
 
 afterEach(function () {
@@ -110,11 +98,6 @@ it('prompts when file differs in interactive mode and user declines', function (
             'File "js/app.js" already exists and differs. Overwrite?',
             'no',
         )
-        ->expectsChoice(
-            'Which optional npm dependencies would you like to install?',
-            [],
-            $this->optionalDepsOptions,
-        )
         ->assertSuccessful();
 
     expect(File::get(resource_path('js/app.js')))->toBe('// modified');
@@ -131,11 +114,6 @@ it('overwrites when user confirms in interactive mode', function () {
         ->expectsConfirmation(
             'File "js/app.js" already exists and differs. Overwrite?',
             'yes',
-        )
-        ->expectsChoice(
-            'Which optional npm dependencies would you like to install?',
-            [],
-            $this->optionalDepsOptions,
         )
         ->assertSuccessful();
 
@@ -209,29 +187,24 @@ it('reads dependency versions from the package own package.json', function () {
     }
 });
 
-it('shows multiselect for optional dependencies in interactive mode', function () {
+it('never installs optional (non-core) dependencies', function () {
     File::put($this->packageJsonPath, json_encode([
         'name' => 'test',
         'devDependencies' => new stdClass,
     ], JSON_PRETTY_PRINT));
 
-    $selectedKey = array_key_first($this->optionalDepsOptions);
-
     $this->artisan('hotwire:install')
-        ->expectsChoice(
-            'Which optional npm dependencies would you like to install?',
-            [$selectedKey],
-            $this->optionalDepsOptions,
-        )
         ->assertSuccessful();
 
     $json = json_decode(File::get($this->packageJsonPath), true);
 
-    // Core deps always installed
-    expect($json['devDependencies'])->toHaveKey('@hotwired/stimulus');
-
-    // Selected optional dep installed
-    expect($json['devDependencies'])->toHaveKey($selectedKey);
+    expect($json['devDependencies'])
+        ->toHaveKey('@hotwired/stimulus')
+        ->toHaveKey('@hotwired/turbo')
+        ->toHaveKey('@emaia/stimulus-dynamic-loader')
+        ->not->toHaveKey('maska')
+        ->not->toHaveKey('tippy.js')
+        ->not->toHaveKey('@emaia/sonner');
 });
 
 it('preserves existing dependencies in package.json', function () {
@@ -344,5 +317,16 @@ it('shows summary of actions taken', function () {
 
     $this->artisan('hotwire:install --no-interaction')
         ->expectsOutputToContain('Hotwire installed successfully')
+        ->assertSuccessful();
+});
+
+it('points users to discovery and publishing commands', function () {
+    File::put($this->packageJsonPath, json_encode(['name' => 'test'], JSON_PRETTY_PRINT));
+
+    $this->artisan('hotwire:install --no-interaction')
+        ->expectsOutputToContain('hotwire:components')
+        ->expectsOutputToContain('hotwire:controllers --list')
+        ->expectsOutputToContain('hotwire:check --fix')
+        ->expectsOutputToContain('hotwire:controllers <namespace/name>')
         ->assertSuccessful();
 });
