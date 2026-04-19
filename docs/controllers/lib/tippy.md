@@ -8,6 +8,9 @@ Adds tooltips to any element using [Tippy.js](https://atomiks.github.io/tippyjs/
 
 - `tippy.js` (`bun add tippy.js`)
 
+> If any component in your views pulls this controller in, `php artisan hotwire:check --fix` will add `tippy.js` to your
+> `package.json` `devDependencies` automatically.
+
 ## Stimulus Values
 
 | Value | Type | Default | Description |

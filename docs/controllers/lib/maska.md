@@ -8,6 +8,9 @@ Applies input masks using [Maska](https://beholdr.github.io/maska/). Supports st
 
 - `maska` (`bun add maska`)
 
+> If any component in your views pulls this controller in, `php artisan hotwire:check --fix` will add `maska` to your
+> `package.json` `devDependencies` automatically.
+
 ## Stimulus Values
 
 | Value | Type | Default | Description |

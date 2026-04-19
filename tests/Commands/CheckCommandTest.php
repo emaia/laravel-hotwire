@@ -5,6 +5,10 @@ use Illuminate\Support\Facades\File;
 beforeEach(function () {
     $this->targetDir = resource_path('js/controllers');
     $this->viewsDir = resource_path('views');
+    $this->packageJsonPath = base_path('package.json');
+    $this->originalPackageJson = File::exists($this->packageJsonPath)
+        ? File::get($this->packageJsonPath)
+        : null;
 
     File::deleteDirectory($this->targetDir);
     File::deleteDirectory($this->viewsDir);
@@ -14,6 +18,12 @@ beforeEach(function () {
 afterEach(function () {
     File::deleteDirectory($this->targetDir);
     File::deleteDirectory($this->viewsDir);
+
+    if ($this->originalPackageJson !== null) {
+        File::put($this->packageJsonPath, $this->originalPackageJson);
+    } elseif (File::exists($this->packageJsonPath)) {
+        File::delete($this->packageJsonPath);
+    }
 });
 
 // --- Helpers ---
@@ -33,6 +43,16 @@ function publishController(string $identifier, string $targetDir): void
     $target = "{$targetDir}/{$dir}/{$name}_controller.js";
     File::ensureDirectoryExists(dirname($target));
     File::copy($source, $target);
+}
+
+function writePackageJson(array $data): void
+{
+    File::put(base_path('package.json'), json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)."\n");
+}
+
+function readPackageJson(): array
+{
+    return json_decode(File::get(base_path('package.json')), true);
 }
 
 // --- Basic ---
@@ -95,6 +115,33 @@ it('respects custom prefix', function () {
     $this->artisan('hotwire:check --no-interaction')
         ->expectsOutputToContain('dialog--modal')
         ->assertExitCode(1); // controller not published → exit 1
+});
+
+it('detects components using hotwire:: alias', function () {
+    writeView('page.blade.php', '<x-hotwire::modal />');
+
+    $this->artisan('hotwire:check --no-interaction')
+        ->expectsOutputToContain('dialog--modal')
+        ->assertExitCode(1);
+});
+
+it('detects both hwc:: and hotwire:: prefixes in the same codebase', function () {
+    writeView('a.blade.php', '<x-hwc::modal />');
+    writeView('b.blade.php', '<x-hotwire::confirm-dialog title="x" />');
+
+    $this->artisan('hotwire:check --no-interaction')
+        ->expectsOutputToContain('dialog--modal')
+        ->expectsOutputToContain('dialog--confirm')
+        ->assertExitCode(1);
+});
+
+it('detects hotwire:: alias when a custom prefix is set', function () {
+    config()->set('hotwire.prefix', 'h');
+    writeView('page.blade.php', '<x-hotwire::modal />');
+
+    $this->artisan('hotwire:check --no-interaction')
+        ->expectsOutputToContain('dialog--modal')
+        ->assertExitCode(1);
 });
 
 it('ignores components from other packages', function () {
@@ -221,4 +268,140 @@ it('reports no components found when custom path has no blade files', function (
     $this->artisan('hotwire:check', ['--path' => [resource_path('views/empty')], '--no-interaction' => true])
         ->expectsOutputToContain('No Hotwire components found')
         ->assertSuccessful();
+});
+
+// --- NPM dependencies ---
+
+it('lists required npm dependencies for used controllers', function () {
+    writePackageJson(['name' => 'app', 'devDependencies' => []]);
+    writeView('page.blade.php', '<x-hwc::flash-message />');
+
+    $this->artisan('hotwire:check --no-interaction')
+        ->expectsOutputToContain('Required npm dependencies')
+        ->expectsOutputToContain('@emaia/sonner')
+        ->assertExitCode(1);
+});
+
+it('marks dependency as present when listed in dependencies', function () {
+    writePackageJson(['name' => 'app', 'dependencies' => ['@emaia/sonner' => '^2.1.0']]);
+    publishController('notification--toast', $this->targetDir);
+    publishController('notification--toaster', $this->targetDir);
+    writeView('page.blade.php', '<x-hwc::flash-message />');
+
+    $this->artisan('hotwire:check --no-interaction')
+        ->doesntExpectOutputToContain('missing from package.json')
+        ->assertSuccessful();
+});
+
+it('marks dependency as present when listed in devDependencies', function () {
+    writePackageJson(['name' => 'app', 'devDependencies' => ['@emaia/sonner' => '^2.1.0']]);
+    publishController('notification--toast', $this->targetDir);
+    publishController('notification--toaster', $this->targetDir);
+    writeView('page.blade.php', '<x-hwc::flash-message />');
+
+    $this->artisan('hotwire:check --no-interaction')
+        ->doesntExpectOutputToContain('missing from package.json')
+        ->assertSuccessful();
+});
+
+it('marks dependency as missing when absent from package.json', function () {
+    writePackageJson(['name' => 'app', 'devDependencies' => []]);
+    publishController('notification--toast', $this->targetDir);
+    publishController('notification--toaster', $this->targetDir);
+    writeView('page.blade.php', '<x-hwc::flash-message />');
+
+    $this->artisan('hotwire:check --no-interaction')
+        ->expectsOutputToContain('@emaia/sonner')
+        ->expectsOutputToContain('missing from package.json')
+        ->assertExitCode(1);
+});
+
+it('normalizes scoped subpath imports', function () {
+    // @emaia/sonner/vanilla must be reported as @emaia/sonner
+    writePackageJson(['name' => 'app', 'devDependencies' => ['@emaia/sonner' => '^2.1.0']]);
+    publishController('notification--toast', $this->targetDir);
+    publishController('notification--toaster', $this->targetDir);
+    writeView('page.blade.php', '<x-hwc::flash-message />');
+
+    $this->artisan('hotwire:check --no-interaction')
+        ->doesntExpectOutputToContain('@emaia/sonner/vanilla')
+        ->assertSuccessful();
+});
+
+it('ignores core dependencies', function () {
+    writePackageJson(['name' => 'app', 'devDependencies' => []]);
+    writeView('page.blade.php', '<x-hwc::flash-message />');
+
+    $this->artisan('hotwire:check --no-interaction')
+        ->doesntExpectOutputToContain('@hotwired/stimulus')
+        ->doesntExpectOutputToContain('@hotwired/turbo')
+        ->doesntExpectOutputToContain('@emaia/stimulus-dynamic-loader');
+});
+
+it('deduplicates dependencies used by multiple controllers', function () {
+    // notification--toast and notification--toaster both use @emaia/sonner
+    writePackageJson(['name' => 'app', 'devDependencies' => []]);
+    writeView('page.blade.php', '<x-hwc::flash-message />');
+
+    Artisan::call('hotwire:check --no-interaction');
+    $output = Artisan::output();
+
+    expect(substr_count($output, '@emaia/sonner'))->toBe(1);
+});
+
+it('exits with 1 when a dependency is missing', function () {
+    writePackageJson(['name' => 'app', 'devDependencies' => []]);
+    publishController('notification--toast', $this->targetDir);
+    publishController('notification--toaster', $this->targetDir);
+    writeView('page.blade.php', '<x-hwc::flash-message />');
+
+    $this->artisan('hotwire:check --no-interaction')
+        ->assertExitCode(1);
+});
+
+it('adds missing npm dependencies to devDependencies with --fix', function () {
+    writePackageJson(['name' => 'app', 'devDependencies' => []]);
+    writeView('page.blade.php', '<x-hwc::flash-message />');
+
+    $this->artisan('hotwire:check --fix --no-interaction')
+        ->assertSuccessful();
+
+    $json = readPackageJson();
+    expect($json['devDependencies'])->toHaveKey('@emaia/sonner');
+});
+
+it('does not duplicate a dependency already present when --fix runs', function () {
+    writePackageJson(['name' => 'app', 'dependencies' => ['@emaia/sonner' => '^2.1.0'], 'devDependencies' => []]);
+    publishController('notification--toast', $this->targetDir);
+    publishController('notification--toaster', $this->targetDir);
+    writeView('page.blade.php', '<x-hwc::flash-message />');
+
+    $this->artisan('hotwire:check --fix --no-interaction')
+        ->assertSuccessful();
+
+    $json = readPackageJson();
+    expect($json['dependencies'])->toHaveKey('@emaia/sonner');
+    expect($json['devDependencies'] ?? [])->not->toHaveKey('@emaia/sonner');
+});
+
+it('warns and skips npm check when package.json does not exist', function () {
+    if (File::exists($this->packageJsonPath)) {
+        File::delete($this->packageJsonPath);
+    }
+    publishController('notification--toast', $this->targetDir);
+    publishController('notification--toaster', $this->targetDir);
+    writeView('page.blade.php', '<x-hwc::flash-message />');
+
+    $this->artisan('hotwire:check --no-interaction')
+        ->expectsOutputToContain('package.json not found')
+        ->assertSuccessful();
+});
+
+it('reports npm deps even when controllers are not yet published', function () {
+    writePackageJson(['name' => 'app', 'devDependencies' => []]);
+    writeView('page.blade.php', '<x-hwc::flash-message />');
+
+    $this->artisan('hotwire:check --no-interaction')
+        ->expectsOutputToContain('@emaia/sonner')
+        ->assertExitCode(1);
 });

@@ -12,6 +12,9 @@ and removes the element from the DOM.
 - `@emaia/sonner` installed in the project (`bun add @emaia/sonner`)
 - Controllers published: `php artisan hotwire:controllers notification`
 
+> `php artisan hotwire:check` detects both requirements automatically — and `--fix` publishes the missing controllers
+> and adds `@emaia/sonner` to your `package.json` `devDependencies` in one go.
+
 ## Setup
 
 The flash message system uses two Stimulus controllers that work together:

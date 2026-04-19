@@ -154,16 +154,38 @@ Shows each Blade component, its tag, and the Stimulus controllers it depends on 
 php artisan hotwire:check
 ```
 
-Scans `resources/views` for Hotwire components, checks whether their required Stimulus controllers are published, and
-reports any missing or outdated ones. Exits with code `1` if attention is needed (useful for CI).
+Scans `resources/views` for Hotwire components, then verifies two things:
+
+1. **Stimulus controllers** — every controller required by a used component is published and up to date.
+2. **npm dependencies** — every external package imported by those controllers (e.g. `@emaia/sonner`, `tippy.js`, `maska`)
+   is declared in your `package.json` (`dependencies` or `devDependencies`).
+
+Exits with code `1` if either has pending items (useful for CI).
+
+Both the configured prefix (`hwc` by default) and the literal `hotwire` alias are recognized, so views like
+`<x-hwc::flash-message />` and `<x-hotwire::flash-message />` are detected equally.
 
 ```bash
-# Auto-publish missing/outdated controllers without prompting
+# Auto-publish missing/outdated controllers AND add missing npm deps to devDependencies
 php artisan hotwire:check --fix
 
 # Scan a custom path
 php artisan hotwire:check --path=resources/views/app
 ```
+
+Example output:
+
+```
+  ✓  notification--toast    up to date  (used by <x-hwc::flash-message>)
+  ✓  notification--toaster  up to date  (used by <x-hwc::flash-message>)
+
+Required npm dependencies:
+  ✓  @emaia/sonner ^2.1.0  (used by notification--toast, notification--toaster)
+  ✗  tippy.js ^6.3.7       missing from package.json (used by lib--tippy)
+```
+
+> When `--fix` adds packages to `devDependencies`, run your package manager's install command afterwards
+> (`bun install`, `pnpm install`, etc.) to actually fetch them.
 
 ### View Customization
 
