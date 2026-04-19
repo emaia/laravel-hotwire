@@ -3,13 +3,21 @@
 Displays Laravel session flash messages as toast notifications
 via [@emaia/sonner](https://www.npmjs.com/package/@emaia/sonner).
 
-The component automatically reads from the Laravel session (`success`, `error`, `errors`, `warning`, `info`) or accepts
-an explicit message via props. Uses the `notification--toast` Stimulus controller which fires the toast on `connect()`
-and removes the element from the DOM.
+The flash system is composed of **two** Blade components:
+
+- `<x-hwc::flash-container />` — initializes Sonner once per page, persists across Turbo Drive navigations.
+- `<x-hwc::flash-message />` — fires a single toast, reading from the Laravel session or from explicit props.
+
+Internally each maps to a dedicated Stimulus controller:
+
+| Controller              | Identifier              | Used by                    | Responsibility                                               |
+|-------------------------|-------------------------|----------------------------|--------------------------------------------------------------|
+| `toaster_controller.js` | `notification--toaster` | `<x-hwc::flash-container>` | Initializes the Sonner container (once)                      |
+| `toast_controller.js`   | `notification--toast`   | `<x-hwc::flash-message>`   | Fires individual toasts and removes the element from the DOM |
 
 ## Requirements
 
-- `@emaia/sonner` installed in the project (`bun add @emaia/sonner`)
+- `@emaia/sonner` installed in the project
 - Controllers published: `php artisan hotwire:controllers notification`
 
 > `php artisan hotwire:check` detects both requirements automatically — and `--fix` publishes the missing controllers
@@ -17,33 +25,8 @@ and removes the element from the DOM.
 
 ## Setup
 
-The flash message system uses two Stimulus controllers that work together:
-
-| Controller              | Identifier              | Responsibility                                               |
-|-------------------------|-------------------------|--------------------------------------------------------------|
-| `toaster_controller.js` | `notification--toaster` | Initializes the Sonner container (once)                      |
-| `toast_controller.js`   | `notification--toast`   | Fires individual toasts and removes the element from the DOM |
-
-### 1. Toaster container
-
-Add the container in the main layout (typically before `</body>`). The `data-turbo-permanent` attribute ensures the
-container persists across Turbo Drive navigations, preventing reinitialization:
-
-```html
-
-<div id="flash-container" data-controller="notification--toaster" data-turbo-permanent></div>
-```
-
-### 2. Flash Message component
-
-Include the Blade component inside `<body>`, after the toaster container:
-
-```html
-
-<x-hwc::flash-message/>
-```
-
-### Full layout
+Add the container once in your main layout (typically before `</body>`), then render `<x-hwc::flash-message />`
+after it:
 
 ```html
 <!DOCTYPE html>
@@ -52,15 +35,25 @@ Include the Blade component inside `<body>`, after the toaster container:
 <body>
 {{ $slot }}
 
-<div id="flash-container" data-controller="notification--toaster" data-turbo-permanent></div>
-<x-hwc::flash-message/>
+<x-hwc::flash-container />
+<x-hwc::flash-message />
 </body>
 </html>
 ```
 
+The container defaults to `id="flash-container"` and ships with `data-turbo-permanent`, so it survives Turbo Drive
+navigations and keeps the Sonner instance alive. The default id also lets you target it from Turbo Streams:
+
+```php
+return turbo_stream()->append('flash-container', view('partials.flash-message', [
+    'message' => 'Saved!',
+    'type' => 'success',
+]));
+```
+
 ## Usage via session
 
-The component renders automatically when the session contains a flash message:
+The `<x-hwc::flash-message />` component renders automatically when the session contains a flash message:
 
 ```php
 // Controller
@@ -86,14 +79,12 @@ $request->validate([
 ## Explicit message
 
 ```html
-
 <x-hwc::flash-message message="Operation completed" type="success"/>
 ```
 
 ## With description
 
 ```html
-
 <x-hwc::flash-message
     message="Failed to save"
     description="Please check the required fields"
@@ -101,7 +92,7 @@ $request->validate([
 />
 ```
 
-## Props
+## `<x-hwc::flash-message />` props
 
 | Prop          | Type      | Default | Description                                                                                    |
 |---------------|-----------|---------|------------------------------------------------------------------------------------------------|
@@ -109,7 +100,7 @@ $request->validate([
 | `description` | `?string` | `null`  | Additional description shown below the message                                                 |
 | `type`        | `?string` | `null`  | Toast type: `success`, `error`, `warning`, `info`, `default`. If `null`, detected from session |
 
-## Supported session keys
+### Supported session keys
 
 | Session key           | Toast type                     |
 |-----------------------|--------------------------------|
@@ -121,47 +112,83 @@ $request->validate([
 
 Explicit props take priority over the session.
 
-## Toaster — Stimulus Values
+## `<x-hwc::flash-container />` props
 
-Configurable via `data-notification--toaster-*-value` on the container:
+Props below map to Sonner's [`ToasterConfig`](https://github.com/emilkowalski/sonner). Nullable props are only
+emitted when you set them, so Sonner's own defaults still apply.
 
-| Value             | Type      | Default           | Description                                                                                     |
-|-------------------|-----------|-------------------|-------------------------------------------------------------------------------------------------|
-| `close-button`    | `Boolean` | `true`            | Shows close button on each toast                                                                |
-| `duration`        | `Number`  | `4000`            | Duration (ms) before the toast disappears                                                       |
-| `expand`          | `Boolean` | `false`           | Toasts expanded by default                                                                      |
-| `invert`          | `Boolean` | `false`           | Inverts the color scheme                                                                        |
-| `position`        | `String`  | `"bottom-center"` | Position: `top-left`, `top-center`, `top-right`, `bottom-left`, `bottom-center`, `bottom-right` |
-| `rich-colors`     | `Boolean` | `true`            | Uses rich colors for types (success, error, etc.)                                               |
-| `theme`           | `String`  | `"light"`         | Theme: `light`, `dark`, `system`                                                                |
-| `visible-toasts`  | `Number`  | `3`               | Maximum number of toasts visible at once                                                        |
-| `auto-disconnect` | `Boolean` | `false`           | Destroys the toaster when the controller disconnects                                            |
+| Prop                   | Type      | Default           | Description                                                                                     |
+|------------------------|-----------|-------------------|-------------------------------------------------------------------------------------------------|
+| `id`                   | `string`  | `flash-container` | Element id — also used as the default target for Turbo Stream appends                           |
+| `position`             | `string`  | `bottom-center`   | `top-left`, `top-center`, `top-right`, `bottom-left`, `bottom-center`, `bottom-right`           |
+| `theme`                | `string`  | `light`           | `light`, `dark`, `system`                                                                       |
+| `duration`             | `int`     | `4000`            | Duration in ms before the toast disappears                                                      |
+| `visible-toasts`       | `int`     | `3`               | Maximum number of toasts visible at once                                                        |
+| `close-button`         | `bool`    | `true`            | Shows close button on each toast                                                                |
+| `rich-colors`          | `bool`    | `true`            | Uses rich colors for types (success, error, etc.)                                               |
+| `expand`               | `bool`    | `false`           | Toasts expanded by default                                                                      |
+| `invert`               | `bool`    | `false`           | Inverts the color scheme                                                                        |
+| `auto-disconnect`      | `bool`    | `false`           | Destroys the toaster when the controller disconnects                                            |
+| `turbo-permanent`      | `bool`    | `true`            | Renders `data-turbo-permanent` on the container                                                 |
+| `class`                | `string`  | `''`              | CSS class applied to the container `<div>` itself                                               |
+| `gap`                  | `?int`    | `null`            | Vertical gap between toasts (px)                                                                |
+| `hotkey`               | `?string` | `null`            | Keyboard shortcut to focus toasts (e.g. `alt+T`, `alt+KeyT`) — comma/space separated            |
+| `dir`                  | `?string` | `null`            | `ltr`, `rtl`, `auto`                                                                            |
+| `offset`               | `?string` | `null`            | Edge offset — `"16px"` or JSON like `{"top":"20px"}`                                            |
+| `mobile-offset`        | `?string` | `null`            | Same shape as `offset`, applied on mobile                                                       |
+| `swipe-directions`     | `?string` | `null`            | Allowed swipe-to-dismiss directions — comma separated (`left,right,top,bottom`)                 |
+| `class-name`           | `?string` | `null`            | Forwarded to Sonner's `className` (applied to the toast list)                                   |
+| `container-aria-label` | `?string` | `null`            | `aria-label` on the Sonner container                                                            |
+| `custom-aria-label`    | `?string` | `null`            | `aria-label` used for each toast                                                                |
 
 ### Customization examples
 
-Toasts at the top right with dark theme and 5 second duration:
+Top-right, dark theme, 5s duration:
 
 ```html
+<x-hwc::flash-container
+    position="top-right"
+    theme="dark"
+    :duration="5000"
+/>
+```
 
+Expanded toasts, no close button:
+
+```html
+<x-hwc::flash-container
+    :close-button="false"
+    :expand="true"
+/>
+```
+
+Offset tuning with hotkey and swipe directions:
+
+```html
+<x-hwc::flash-container
+    offset='{"top":"20px","right":"20px"}'
+    mobile-offset="12px"
+    hotkey="alt+T"
+    swipe-directions="left,right"
+/>
+```
+
+Custom id (useful if you need more than one target, or want a different Turbo Stream anchor):
+
+```html
+<x-hwc::flash-container id="my-toaster" />
+```
+
+### Escape hatch
+
+If you need a Sonner option that isn't exposed as a prop, drop down to the controller directly — the component
+is just a thin wrapper:
+
+```html
 <div
     id="flash-container"
     data-controller="notification--toaster"
     data-notification--toaster-position-value="top-right"
-    data-notification--toaster-theme-value="dark"
-    data-notification--toaster-duration-value="5000"
-    data-turbo-permanent
-></div>
-```
-
-Without close button and with expanded toasts:
-
-```html
-
-<div
-    id="flash-container"
-    data-controller="notification--toaster"
-    data-notification--toaster-close-button-value="false"
-    data-notification--toaster-expand-value="true"
     data-turbo-permanent
 ></div>
 ```
@@ -175,6 +202,8 @@ maintains no state or listeners.
 
 ## Turbo integration
 
-- The container uses `data-turbo-permanent` to persist across navigations, keeping Sonner initialized.
-- The `<x-hwc::flash-message>` component uses `data-turbo-temporary` to be removed from the Turbo Drive cache,
-  preventing duplicate toasts on navigation.
+- `<x-hwc::flash-container />` uses `data-turbo-permanent` by default — Sonner keeps initialized across Turbo Drive
+  navigations.
+- `<x-hwc::flash-message />` uses `data-turbo-temporary`, so cached pages don't replay toasts on back/forward.
+- Turbo Streams can append rendered `<x-hwc::flash-message />` partials to the container:
+  `turbo_stream()->append('flash-container', view('partials.flash-message', [...]))`.

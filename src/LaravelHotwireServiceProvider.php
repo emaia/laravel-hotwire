@@ -8,6 +8,7 @@ use Emaia\LaravelHotwire\Commands\ListComponentsCommand;
 use Emaia\LaravelHotwire\Commands\MakeControllerCommand;
 use Emaia\LaravelHotwire\Commands\PublishControllersCommand;
 use Emaia\LaravelHotwire\Components\ConfirmDialog;
+use Emaia\LaravelHotwire\Components\FlashContainer;
 use Emaia\LaravelHotwire\Components\FlashMessage;
 use Emaia\LaravelHotwire\Components\Loader;
 use Emaia\LaravelHotwire\Components\Modal;
@@ -22,6 +23,7 @@ class LaravelHotwireServiceProvider extends PackageServiceProvider
     public const array COMPONENTS = [
         'modal' => Modal::class,
         'confirm-dialog' => ConfirmDialog::class,
+        'flash-container' => FlashContainer::class,
         'flash-message' => FlashMessage::class,
         'loader' => Loader::class,
         'optimistic' => Optimistic::class,

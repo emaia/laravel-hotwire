@@ -180,11 +180,11 @@ php artisan hotwire:check --path=resources/views/app
 Example output:
 
 ```
+  ✓  notification--toaster  up to date  (used by <x-hwc::flash-container>)
   ✓  notification--toast    up to date  (used by <x-hwc::flash-message>)
-  ✓  notification--toaster  up to date  (used by <x-hwc::flash-message>)
 
 Required npm dependencies:
-  ✓  @emaia/sonner ^2.1.0  (used by notification--toast, notification--toaster)
+  ✓  @emaia/sonner ^2.1.0  (used by notification--toaster, notification--toast)
   ✗  tippy.js ^6.3.7       missing from package.json (used by lib--tippy)
 ```
 
@@ -283,11 +283,12 @@ See the full documentation at [emaia/laravel-hotwire-turbo](https://github.com/e
 
 | Component                                                  | Blade                     | Stimulus Identifier                            | Docs                                               |
 |------------------------------------------------------------|---------------------------|------------------------------------------------|----------------------------------------------------|
-| [Modal](docs/components/modal/readme.md)                   | `<x-hwc::modal>`          | `dialog--modal`                                | [readme](docs/components/modal/readme.md)          |
-| [Confirm Dialog](docs/components/confirm-dialog/readme.md) | `<x-hwc::confirm-dialog>` | `dialog--confirm`                              | [readme](docs/components/confirm-dialog/readme.md) |
-| [Flash Message](docs/components/flash-message/readme.md)   | `<x-hwc::flash-message>`  | `notification--toaster`, `notification--toast` | [readme](docs/components/flash-message/readme.md)  |
-| [Loader](docs/components/loader/readme.md)                 | `<x-hwc::loader>`         | —                                              | [readme](docs/components/loader/readme.md)         |
-| [Optimistic](docs/components/optimistic/readme.md)         | `<x-hwc::optimistic>`     | —                                              | [readme](docs/components/optimistic/readme.md)     |
+| [Modal](docs/components/modal/readme.md)                    | `<x-hwc::modal>`           | `dialog--modal`         | [readme](docs/components/modal/readme.md)          |
+| [Confirm Dialog](docs/components/confirm-dialog/readme.md)  | `<x-hwc::confirm-dialog>`  | `dialog--confirm`       | [readme](docs/components/confirm-dialog/readme.md) |
+| [Flash Container](docs/components/flash-message/readme.md)  | `<x-hwc::flash-container>` | `notification--toaster` | [readme](docs/components/flash-message/readme.md)  |
+| [Flash Message](docs/components/flash-message/readme.md)    | `<x-hwc::flash-message>`   | `notification--toast`   | [readme](docs/components/flash-message/readme.md)  |
+| [Loader](docs/components/loader/readme.md)                  | `<x-hwc::loader>`          | —                       | [readme](docs/components/loader/readme.md)         |
+| [Optimistic](docs/components/optimistic/readme.md)          | `<x-hwc::optimistic>`      | —                       | [readme](docs/components/optimistic/readme.md)     |
 
 ## Stimulus Controllers (standalone)
 

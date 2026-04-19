@@ -40,7 +40,7 @@ class FlashMessage extends Component implements HasStimulusControllers
 
     public static function stimulusControllers(): array
     {
-        return ['notification--toast', 'notification--toaster'];
+        return ['notification--toast'];
     }
 
     public function shouldRender(): bool
