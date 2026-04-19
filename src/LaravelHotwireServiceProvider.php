@@ -48,5 +48,9 @@ class LaravelHotwireServiceProvider extends PackageServiceProvider
 
         Blade::componentNamespace('Emaia\\LaravelHotwire\\Components', $prefix);
 
+        if ($prefix !== 'hotwire') {
+            Blade::componentNamespace('Emaia\\LaravelHotwire\\Components', 'hotwire');
+        }
+
     }
 }

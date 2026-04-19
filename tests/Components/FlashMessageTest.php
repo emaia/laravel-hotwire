@@ -109,3 +109,11 @@ it('renders using :: namespace syntax', function () {
     $view->assertSee('data-notification--toast-message-value="Done!"', false);
     $view->assertSee('data-notification--toast-type-value="success"', false);
 });
+
+it('renders with hotwire:: prefix alias', function () {
+    $view = $this->blade('<x-hotwire::flash-message message="Done!" type="success" />');
+
+    $view->assertSee('data-controller="notification--toast"', false);
+    $view->assertSee('data-notification--toast-message-value="Done!"', false);
+    $view->assertSee('data-notification--toast-type-value="success"', false);
+});
