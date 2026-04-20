@@ -14,7 +14,7 @@ use function Laravel\Prompts\warning;
 class PublishControllersCommand extends Command
 {
     public $signature = 'hotwire:controllers
-                        {controllers?* : Namespace or namespace/name to publish (e.g. form, form/autoselect)}
+                        {controllers?* : Controller name (e.g. dialog) or substrate/name (e.g. turbo/progress)}
                         {--all : Publish all available controllers}
                         {--force : Overwrite existing files}
                         {--list : List available controllers}';
@@ -55,7 +55,7 @@ class PublishControllersCommand extends Command
             $this->table(
                 ['Namespace', 'Controller', 'Stimulus Identifier', 'File', 'Status'],
                 collect($available)->map(function ($controller) use ($targetBase) {
-                    $targetFile = $targetBase.'/'.$controller['relative_dir'].'/'.$controller['filename'];
+                    $targetFile = $this->targetFile($targetBase, $controller);
 
                     $status = match (true) {
                         ! $this->files->exists($targetFile) => '-',
@@ -64,7 +64,7 @@ class PublishControllersCommand extends Command
                     };
 
                     return [
-                        $controller['relative_dir'],
+                        $controller['relative_dir'] ?: '(top-level)',
                         $controller['name'],
                         $controller['identifier'],
                         $controller['filename'],
@@ -77,8 +77,9 @@ class PublishControllersCommand extends Command
                 $this->line('');
                 $this->line('To publish controllers, run:');
                 $this->line('  php artisan hotwire:controllers                  Interactive mode');
-                $this->line('  php artisan hotwire:controllers {namespace}      Publish all controllers in a namespace');
-                $this->line('  php artisan hotwire:controllers {namespace/name} Publish a specific controller');
+                $this->line('  php artisan hotwire:controllers {name}           Publish a top-level controller (e.g. dialog)');
+                $this->line('  php artisan hotwire:controllers {substrate}      Publish all controllers in a substrate folder (e.g. turbo)');
+                $this->line('  php artisan hotwire:controllers {substrate/name} Publish a specific substrate controller');
                 $this->line('  php artisan hotwire:controllers --all            Publish all controllers');
                 $this->line('  php artisan hotwire:controllers --force          Overwrite existing files');
             }
@@ -115,8 +116,8 @@ class PublishControllersCommand extends Command
             }
 
             $controller = $available[$key];
-            $targetDir = $targetBase.'/'.$controller['relative_dir'];
-            $targetFile = $targetDir.'/'.$controller['filename'];
+            $targetFile = $this->targetFile($targetBase, $controller);
+            $targetDir = dirname($targetFile);
 
             if ($this->files->exists($targetFile) && ! $this->option('force')) {
                 if ($this->files->hash($controller['source_file']) === $this->files->hash($targetFile)) {
@@ -165,13 +166,15 @@ class PublishControllersCommand extends Command
 
         foreach ($deps as $depPath) {
             $depFilename = basename($depPath);
-            $depKey = $controller['relative_dir'].'/'.$depFilename;
+            $depKey = ($controller['relative_dir'] === '' ? '' : $controller['relative_dir'].'/').$depFilename;
 
             if (isset($alreadyPublished[$depKey])) {
                 continue;
             }
 
-            $targetDir = $targetBase.'/'.$controller['relative_dir'];
+            $targetDir = $controller['relative_dir'] === ''
+                ? $targetBase
+                : $targetBase.'/'.$controller['relative_dir'];
             $targetFile = $targetDir.'/'.$depFilename;
 
             if ($this->files->exists($targetFile) && ! $this->option('force')) {
@@ -209,18 +212,34 @@ class PublishControllersCommand extends Command
                 } else {
                     $selected[] = $arg;
                 }
-            } else {
-                $matched = array_keys(array_filter($available, fn ($c) => $c['relative_dir'] === $arg));
 
-                if (empty($matched)) {
-                    warning("Namespace \"{$arg}\" not found. Run --list to see available controllers.");
-                } else {
-                    array_push($selected, ...$matched);
-                }
+                continue;
+            }
+
+            if (isset($available[$arg])) {
+                $selected[] = $arg;
+
+                continue;
+            }
+
+            $matched = array_keys(array_filter($available, fn ($c) => $c['relative_dir'] === $arg));
+
+            if (empty($matched)) {
+                warning("Controller or substrate \"{$arg}\" not found. Run --list to see available controllers.");
+            } else {
+                array_push($selected, ...$matched);
             }
         }
 
         return $selected;
+    }
+
+    /** @param array{relative_dir: string, filename: string} $controller */
+    private function targetFile(string $targetBase, array $controller): string
+    {
+        return $controller['relative_dir'] === ''
+            ? $targetBase.'/'.$controller['filename']
+            : $targetBase.'/'.$controller['relative_dir'].'/'.$controller['filename'];
     }
 
     /** @return array<string, array{name: string, identifier: string, relative_dir: string, source_file: string, filename: string}> */
@@ -243,16 +262,11 @@ class PublishControllersCommand extends Command
             $name = preg_replace('/_controller\.(js|ts)$/', '', $file->getFilename());
             $relativeDir = trim(str_replace('\\', '/', $file->getRelativePath()), '/');
 
-            if ($relativeDir === '') {
-                continue;
-            }
+            $identifier = $relativeDir === ''
+                ? str($name)->replace('_', '-')->toString()
+                : str("{$relativeDir}--{$name}")->replace('/', '--')->replace('_', '-')->toString();
 
-            $identifier = str("{$relativeDir}--{$name}")
-                ->replace('/', '--')
-                ->replace('_', '-')
-                ->toString();
-
-            $key = "{$relativeDir}/{$name}";
+            $key = $relativeDir === '' ? $name : "{$relativeDir}/{$name}";
 
             $controllers[$key] = [
                 'name' => $name,

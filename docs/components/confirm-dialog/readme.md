@@ -105,7 +105,7 @@ The trigger element needs no special attributes — just place it in the `trigge
 
 ## Stimulus Values
 
-Configurable via `data-dialog--confirm-*-value` on the root element:
+Configurable via `data-confirm-dialog-*-value` on the root element:
 
 | Value                    | Type      | Default | Description                               |
 |--------------------------|-----------|---------|-------------------------------------------|
@@ -120,8 +120,8 @@ Example — disable scroll lock and click-outside:
 
 <x-hwc::confirm-dialog
     title="Are you sure?"
-    data-dialog--confirm-lock-scroll-value="false"
-    data-dialog--confirm-close-on-click-outside-value="false"
+    data-confirm-dialog-lock-scroll-value="false"
+    data-confirm-dialog-close-on-click-outside-value="false"
 >
     ...
 </x-hwc::confirm-dialog>
@@ -131,9 +131,9 @@ Example — disable scroll lock and click-outside:
 
 | Action                      | Description                                  |
 |-----------------------------|----------------------------------------------|
-| `dialog--confirm#intercept` | Intercepts a click and opens the dialog      |
-| `dialog--confirm#confirm`   | Confirms and re-fires the intercepted action |
-| `dialog--confirm#cancel`    | Cancels and closes the dialog                |
+| `confirm-dialog#intercept` | Intercepts a click and opens the dialog      |
+| `confirm-dialog#confirm`   | Confirms and re-fires the intercepted action |
+| `confirm-dialog#cancel`    | Cancels and closes the dialog                |
 
 ## Accessibility
 

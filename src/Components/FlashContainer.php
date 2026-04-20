@@ -33,7 +33,7 @@ class FlashContainer extends Component implements HasStimulusControllers
 
     public static function stimulusControllers(): array
     {
-        return ['notification--toaster'];
+        return ['toaster'];
     }
 
     public function render()

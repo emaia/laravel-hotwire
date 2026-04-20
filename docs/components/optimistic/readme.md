@@ -329,7 +329,7 @@ its own Turbo Stream, dispatched in order.
 
 - **Use `dom_id()`** (from `emaia/laravel-hotwire-turbo`) to generate stable
   target ids. Never build them from user input.
-- **Combine with `frame--view-transition`** for smooth cross-fades between
+- **Combine with `view-transition`** for smooth cross-fades between
   optimistic and reconciled state.
 - **Publish the controllers** before using:
   `php artisan hotwire:controllers optimistic` (publishes all: form, link,

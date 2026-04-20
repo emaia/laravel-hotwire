@@ -8,10 +8,10 @@ use Emaia\LaravelHotwire\Commands\ListComponentsCommand;
 use Emaia\LaravelHotwire\Commands\MakeControllerCommand;
 use Emaia\LaravelHotwire\Commands\PublishControllersCommand;
 use Emaia\LaravelHotwire\Components\ConfirmDialog;
+use Emaia\LaravelHotwire\Components\Dialog;
 use Emaia\LaravelHotwire\Components\FlashContainer;
 use Emaia\LaravelHotwire\Components\FlashMessage;
 use Emaia\LaravelHotwire\Components\Loader;
-use Emaia\LaravelHotwire\Components\Modal;
 use Emaia\LaravelHotwire\Components\Optimistic;
 use Emaia\LaravelHotwire\Components\Timeago;
 use Illuminate\Support\Facades\Blade;
@@ -22,7 +22,7 @@ class LaravelHotwireServiceProvider extends PackageServiceProvider
 {
     /** @var array<string, class-string> */
     public const array COMPONENTS = [
-        'modal' => Modal::class,
+        'dialog' => Dialog::class,
         'confirm-dialog' => ConfirmDialog::class,
         'flash-container' => FlashContainer::class,
         'flash-message' => FlashMessage::class,

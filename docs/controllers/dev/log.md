@@ -2,7 +2,7 @@
 
 Utility controller for debugging. Logs Stimulus events to the browser console.
 
-**Identifier:** `dev--log`
+**Identifier:** `log`
 
 ## Requirements
 
@@ -12,14 +12,14 @@ Utility controller for debugging. Logs Stimulus events to the browser console.
 
 | Action | Description |
 |--------|-------------|
-| `dev--log#log` | Logs the event to `console.log` |
+| `log#log` | Logs the event to `console.log` |
 
 ## Usage — click debug
 
 ```html
 <button
-    data-controller="dev--log"
-    data-action="click->dev--log#log"
+    data-controller="log"
+    data-action="click->log#log"
 >
     Click to see in console
 </button>
@@ -30,8 +30,8 @@ Utility controller for debugging. Logs Stimulus events to the browser console.
 ```html
 <turbo-frame
     id="my-frame"
-    data-controller="dev--log"
-    data-action="turbo:before-fetch-request->dev--log#log turbo:frame-render->dev--log#log"
+    data-controller="log"
+    data-action="turbo:before-fetch-request->log#log turbo:frame-render->log#log"
 >
     ...
 </turbo-frame>
@@ -42,8 +42,8 @@ Utility controller for debugging. Logs Stimulus events to the browser console.
 ```html
 <input
     type="text"
-    data-controller="dev--log"
-    data-action="input->dev--log#log focus->dev--log#log blur->dev--log#log"
+    data-controller="log"
+    data-action="input->log#log focus->log#log blur->log#log"
 />
 ```
 

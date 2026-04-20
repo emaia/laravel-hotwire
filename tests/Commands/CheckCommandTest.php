@@ -37,13 +37,20 @@ function writeView(string $name, string $content): void
 
 function publishController(string $identifier, string $targetDir): void
 {
-    [$dir, $name] = explode('--', $identifier, 2);
+    if (str_contains($identifier, '--')) {
+        [$dir, $name] = explode('--', $identifier, 2);
+    } else {
+        $dir = '';
+        $name = $identifier;
+    }
+
     $name = str_replace('-', '_', $name);
-    $base = realpath(__DIR__."/../../resources/js/controllers/{$dir}");
+    $base = realpath(__DIR__.'/../../resources/js/controllers');
+    $searchBase = $dir === '' ? $base : "{$base}/{$dir}";
     $source = null;
 
     foreach (['.js', '.ts'] as $ext) {
-        $candidate = "{$base}/{$name}_controller{$ext}";
+        $candidate = "{$searchBase}/{$name}_controller{$ext}";
         if (file_exists($candidate)) {
             $source = $candidate;
             break;
@@ -51,11 +58,14 @@ function publishController(string $identifier, string $targetDir): void
     }
 
     if ($source === null) {
-        throw new \RuntimeException("Controller source not found for {$identifier}");
+        throw new RuntimeException("Controller source not found for {$identifier}");
     }
 
     $ext = pathinfo($source, PATHINFO_EXTENSION);
-    $target = "{$targetDir}/{$dir}/{$name}_controller.{$ext}";
+    $target = $dir === ''
+        ? "{$targetDir}/{$name}_controller.{$ext}"
+        : "{$targetDir}/{$dir}/{$name}_controller.{$ext}";
+
     File::ensureDirectoryExists(dirname($target));
     File::copy($source, $target);
 }
@@ -88,74 +98,77 @@ it('reports all ok when no hotwire components used', function () {
 // --- Detection ---
 
 it('detects component used in a blade file', function () {
-    writeView('page.blade.php', '<x-hwc::modal />');
+    writeView('page.blade.php', '<x-hwc::dialog />');
 
     $this->artisan('hotwire:check --no-interaction')
-        ->expectsOutputToContain('dialog--modal')
-        ->assertExitCode(1); // controller not published → exit 1
+        ->expectsOutputToContain('dialog')
+        ->assertExitCode(1);
 });
 
 it('detects component with attributes', function () {
     writeView('page.blade.php', '<x-hwc::confirm-dialog title="Delete?" message="Sure?"><x-slot:trigger><button>x</button></x-slot:trigger></x-hwc::confirm-dialog>');
 
     $this->artisan('hotwire:check --no-interaction')
-        ->expectsOutputToContain('dialog--confirm')
-        ->assertExitCode(1); // controller not published → exit 1
+        ->expectsOutputToContain('confirm-dialog')
+        ->assertExitCode(1);
 });
 
 it('detects components across multiple files', function () {
-    writeView('a.blade.php', '<x-hwc::modal />');
+    writeView('a.blade.php', '<x-hwc::dialog />');
     writeView('b.blade.php', '<x-hwc::confirm-dialog title="x" />');
 
-    $this->artisan('hotwire:check --no-interaction')
-        ->expectsOutputToContain('dialog--modal')
-        ->expectsOutputToContain('dialog--confirm')
-        ->assertExitCode(1); // controllers not published → exit 1
+    $exit = Artisan::call('hotwire:check --no-interaction');
+    $output = Artisan::output();
+
+    expect($exit)->toBe(1)
+        ->and($output)->toContain('<x-hwc::dialog>')
+        ->and($output)->toContain('<x-hwc::confirm-dialog>');
 });
 
 it('deduplicates components used in multiple files', function () {
-    writeView('a.blade.php', '<x-hwc::modal />');
-    writeView('b.blade.php', '<x-hwc::modal />');
+    writeView('a.blade.php', '<x-hwc::dialog />');
+    writeView('b.blade.php', '<x-hwc::dialog />');
 
-    // dialog--modal should appear once in output
     Artisan::call('hotwire:check --no-interaction');
     $output = Artisan::output();
-    expect(substr_count($output, 'dialog--modal'))->toBe(1);
+    expect(substr_count($output, 'x-hwc::dialog'))->toBe(1);
 });
 
 it('respects custom prefix', function () {
     config()->set('hotwire.prefix', 'h');
-    writeView('page.blade.php', '<x-h::modal />');
+    writeView('page.blade.php', '<x-h::dialog />');
 
     $this->artisan('hotwire:check --no-interaction')
-        ->expectsOutputToContain('dialog--modal')
-        ->assertExitCode(1); // controller not published → exit 1
+        ->expectsOutputToContain('dialog')
+        ->assertExitCode(1);
 });
 
 it('detects components using hotwire:: alias', function () {
-    writeView('page.blade.php', '<x-hotwire::modal />');
+    writeView('page.blade.php', '<x-hotwire::dialog />');
 
     $this->artisan('hotwire:check --no-interaction')
-        ->expectsOutputToContain('dialog--modal')
+        ->expectsOutputToContain('dialog')
         ->assertExitCode(1);
 });
 
 it('detects both hwc:: and hotwire:: prefixes in the same codebase', function () {
-    writeView('a.blade.php', '<x-hwc::modal />');
+    writeView('a.blade.php', '<x-hwc::dialog />');
     writeView('b.blade.php', '<x-hotwire::confirm-dialog title="x" />');
 
-    $this->artisan('hotwire:check --no-interaction')
-        ->expectsOutputToContain('dialog--modal')
-        ->expectsOutputToContain('dialog--confirm')
-        ->assertExitCode(1);
+    $exit = Artisan::call('hotwire:check --no-interaction');
+    $output = Artisan::output();
+
+    expect($exit)->toBe(1)
+        ->and($output)->toContain('<x-hwc::dialog>')
+        ->and($output)->toContain('<x-hwc::confirm-dialog>');
 });
 
 it('detects hotwire:: alias when a custom prefix is set', function () {
     config()->set('hotwire.prefix', 'h');
-    writeView('page.blade.php', '<x-hotwire::modal />');
+    writeView('page.blade.php', '<x-hotwire::dialog />');
 
     $this->artisan('hotwire:check --no-interaction')
-        ->expectsOutputToContain('dialog--modal')
+        ->expectsOutputToContain('dialog')
         ->assertExitCode(1);
 });
 
@@ -170,7 +183,7 @@ it('ignores components from other packages', function () {
 // --- Status reporting ---
 
 it('shows not published when controller is missing', function () {
-    writeView('page.blade.php', '<x-hwc::modal />');
+    writeView('page.blade.php', '<x-hwc::dialog />');
 
     $this->artisan('hotwire:check --no-interaction')
         ->expectsOutputToContain('not published')
@@ -178,8 +191,8 @@ it('shows not published when controller is missing', function () {
 });
 
 it('shows up to date when controller matches package version', function () {
-    publishController('dialog--modal', $this->targetDir);
-    writeView('page.blade.php', '<x-hwc::modal />');
+    publishController('dialog', $this->targetDir);
+    writeView('page.blade.php', '<x-hwc::dialog />');
 
     $this->artisan('hotwire:check --no-interaction')
         ->expectsOutputToContain('up to date')
@@ -187,10 +200,10 @@ it('shows up to date when controller matches package version', function () {
 });
 
 it('shows outdated when controller differs from package version', function () {
-    $target = $this->targetDir.'/dialog/modal_controller.js';
+    $target = $this->targetDir.'/dialog_controller.js';
     File::ensureDirectoryExists(dirname($target));
     File::put($target, '// modified');
-    writeView('page.blade.php', '<x-hwc::modal />');
+    writeView('page.blade.php', '<x-hwc::dialog />');
 
     $this->artisan('hotwire:check --no-interaction')
         ->expectsOutputToContain('outdated')
@@ -198,11 +211,11 @@ it('shows outdated when controller differs from package version', function () {
 });
 
 it('shows which component requires each controller', function () {
-    writeView('page.blade.php', '<x-hwc::modal />');
+    writeView('page.blade.php', '<x-hwc::dialog />');
 
     $this->artisan('hotwire:check --no-interaction')
-        ->expectsOutputToContain('x-hwc::modal')
-        ->assertExitCode(1); // controller not published → exit 1
+        ->expectsOutputToContain('x-hwc::dialog')
+        ->assertExitCode(1);
 });
 
 it('shows dash for component without controller dependency', function () {
@@ -216,25 +229,25 @@ it('shows dash for component without controller dependency', function () {
 // --- Exit code ---
 
 it('exits with 0 when all controllers are up to date', function () {
-    publishController('dialog--modal', $this->targetDir);
-    writeView('page.blade.php', '<x-hwc::modal />');
+    publishController('dialog', $this->targetDir);
+    writeView('page.blade.php', '<x-hwc::dialog />');
 
     $this->artisan('hotwire:check --no-interaction')
         ->assertExitCode(0);
 });
 
 it('exits with 1 when a controller is not published', function () {
-    writeView('page.blade.php', '<x-hwc::modal />');
+    writeView('page.blade.php', '<x-hwc::dialog />');
 
     $this->artisan('hotwire:check --no-interaction')
         ->assertExitCode(1);
 });
 
 it('exits with 1 when a controller is outdated', function () {
-    $target = $this->targetDir.'/dialog/modal_controller.js';
+    $target = $this->targetDir.'/dialog_controller.js';
     File::ensureDirectoryExists(dirname($target));
     File::put($target, '// modified');
-    writeView('page.blade.php', '<x-hwc::modal />');
+    writeView('page.blade.php', '<x-hwc::dialog />');
 
     $this->artisan('hotwire:check --no-interaction')
         ->assertExitCode(1);
@@ -243,24 +256,24 @@ it('exits with 1 when a controller is outdated', function () {
 // --- --fix flag ---
 
 it('publishes missing controllers with --fix', function () {
-    writeView('page.blade.php', '<x-hwc::modal />');
+    writeView('page.blade.php', '<x-hwc::dialog />');
 
     $this->artisan('hotwire:check --fix --no-interaction')
         ->assertSuccessful();
 
-    expect(File::exists($this->targetDir.'/dialog/modal_controller.js'))->toBeTrue();
+    expect(File::exists($this->targetDir.'/dialog_controller.js'))->toBeTrue();
 });
 
 it('updates outdated controllers with --fix', function () {
-    $target = $this->targetDir.'/dialog/modal_controller.js';
+    $target = $this->targetDir.'/dialog_controller.js';
     File::ensureDirectoryExists(dirname($target));
     File::put($target, '// modified');
-    writeView('page.blade.php', '<x-hwc::modal />');
+    writeView('page.blade.php', '<x-hwc::dialog />');
 
     $this->artisan('hotwire:check --fix --no-interaction')
         ->assertSuccessful();
 
-    $source = realpath(__DIR__.'/../../resources/js/controllers/dialog/modal_controller.js');
+    $source = realpath(__DIR__.'/../../resources/js/controllers/dialog_controller.js');
     expect(File::hash($target))->toBe(File::hash($source));
 });
 
@@ -272,13 +285,13 @@ it('shows not published for a ts controller', function () {
     $exitCode = Artisan::call('hotwire:check', ['--no-interaction' => true]);
     $output = Artisan::output();
 
-    expect($output)->toContain('utils--timeago');
+    expect($output)->toContain('timeago');
     expect($output)->toContain('not published');
     expect($exitCode)->toBe(1);
 });
 
 it('shows up to date when ts controller matches package version', function () {
-    publishController('utils--timeago', $this->targetDir);
+    publishController('timeago', $this->targetDir);
     writeView('page.blade.php', '<x-hwc::timeago :datetime="now()" />');
 
     $this->artisan('hotwire:check --no-interaction')
@@ -287,7 +300,7 @@ it('shows up to date when ts controller matches package version', function () {
 });
 
 it('shows outdated when ts controller differs from package version', function () {
-    $target = $this->targetDir.'/utils/timeago_controller.ts';
+    $target = $this->targetDir.'/timeago_controller.ts';
     File::ensureDirectoryExists(dirname($target));
     File::put($target, '// modified');
     writeView('page.blade.php', '<x-hwc::timeago :datetime="now()" />');
@@ -303,11 +316,11 @@ it('publishes missing ts controllers with --fix', function () {
     $this->artisan('hotwire:check --fix --no-interaction')
         ->assertSuccessful();
 
-    expect(File::exists($this->targetDir.'/utils/timeago_controller.ts'))->toBeTrue();
+    expect(File::exists($this->targetDir.'/timeago_controller.ts'))->toBeTrue();
 });
 
 it('updates outdated ts controllers with --fix', function () {
-    $target = $this->targetDir.'/utils/timeago_controller.ts';
+    $target = $this->targetDir.'/timeago_controller.ts';
     File::ensureDirectoryExists(dirname($target));
     File::put($target, '// modified');
     writeView('page.blade.php', '<x-hwc::timeago :datetime="now()" />');
@@ -315,7 +328,7 @@ it('updates outdated ts controllers with --fix', function () {
     $this->artisan('hotwire:check --fix --no-interaction')
         ->assertSuccessful();
 
-    $source = realpath(__DIR__.'/../../resources/js/controllers/utils/timeago_controller.ts');
+    $source = realpath(__DIR__.'/../../resources/js/controllers/timeago_controller.ts');
     expect(File::hash($target))->toBe(File::hash($source));
 });
 
@@ -324,11 +337,11 @@ it('updates outdated ts controllers with --fix', function () {
 it('accepts custom path to scan', function () {
     $customDir = resource_path('views/custom');
     File::ensureDirectoryExists($customDir);
-    File::put($customDir.'/page.blade.php', '<x-hwc::modal />');
+    File::put($customDir.'/page.blade.php', '<x-hwc::dialog />');
 
     $this->artisan('hotwire:check', ['--path' => [resource_path('views/custom')], '--no-interaction' => true])
-        ->expectsOutputToContain('dialog--modal')
-        ->assertExitCode(1); // controller not published → exit 1
+        ->expectsOutputToContain('dialog')
+        ->assertExitCode(1);
 });
 
 it('reports no components found when custom path has no blade files', function () {
@@ -354,8 +367,8 @@ it('lists required npm dependencies for used controllers', function () {
 
 it('marks dependency as present when listed in dependencies', function () {
     writePackageJson(['name' => 'app', 'dependencies' => ['@emaia/sonner' => '^2.1.0']]);
-    publishController('notification--toast', $this->targetDir);
-    publishController('notification--toaster', $this->targetDir);
+    publishController('toast', $this->targetDir);
+    publishController('toaster', $this->targetDir);
     writeView('page.blade.php', '<x-hwc::flash-message />');
 
     $this->artisan('hotwire:check --no-interaction')
@@ -365,8 +378,8 @@ it('marks dependency as present when listed in dependencies', function () {
 
 it('marks dependency as present when listed in devDependencies', function () {
     writePackageJson(['name' => 'app', 'devDependencies' => ['@emaia/sonner' => '^2.1.0']]);
-    publishController('notification--toast', $this->targetDir);
-    publishController('notification--toaster', $this->targetDir);
+    publishController('toast', $this->targetDir);
+    publishController('toaster', $this->targetDir);
     writeView('page.blade.php', '<x-hwc::flash-message />');
 
     $this->artisan('hotwire:check --no-interaction')
@@ -376,8 +389,8 @@ it('marks dependency as present when listed in devDependencies', function () {
 
 it('marks dependency as missing when absent from package.json', function () {
     writePackageJson(['name' => 'app', 'devDependencies' => []]);
-    publishController('notification--toast', $this->targetDir);
-    publishController('notification--toaster', $this->targetDir);
+    publishController('toast', $this->targetDir);
+    publishController('toaster', $this->targetDir);
     writeView('page.blade.php', '<x-hwc::flash-message />');
 
     $this->artisan('hotwire:check --no-interaction')
@@ -387,10 +400,9 @@ it('marks dependency as missing when absent from package.json', function () {
 });
 
 it('normalizes scoped subpath imports', function () {
-    // @emaia/sonner/vanilla must be reported as @emaia/sonner
     writePackageJson(['name' => 'app', 'devDependencies' => ['@emaia/sonner' => '^2.1.0']]);
-    publishController('notification--toast', $this->targetDir);
-    publishController('notification--toaster', $this->targetDir);
+    publishController('toast', $this->targetDir);
+    publishController('toaster', $this->targetDir);
     writeView('page.blade.php', '<x-hwc::flash-message />');
 
     $this->artisan('hotwire:check --no-interaction')
@@ -409,7 +421,6 @@ it('ignores core dependencies', function () {
 });
 
 it('deduplicates dependencies used by multiple controllers', function () {
-    // notification--toast and notification--toaster both use @emaia/sonner
     writePackageJson(['name' => 'app', 'devDependencies' => []]);
     writeView('page.blade.php', '<x-hwc::flash-message />');
 
@@ -421,8 +432,8 @@ it('deduplicates dependencies used by multiple controllers', function () {
 
 it('exits with 1 when a dependency is missing', function () {
     writePackageJson(['name' => 'app', 'devDependencies' => []]);
-    publishController('notification--toast', $this->targetDir);
-    publishController('notification--toaster', $this->targetDir);
+    publishController('toast', $this->targetDir);
+    publishController('toaster', $this->targetDir);
     writeView('page.blade.php', '<x-hwc::flash-message />');
 
     $this->artisan('hotwire:check --no-interaction')
@@ -442,8 +453,8 @@ it('adds missing npm dependencies to devDependencies with --fix', function () {
 
 it('does not duplicate a dependency already present when --fix runs', function () {
     writePackageJson(['name' => 'app', 'dependencies' => ['@emaia/sonner' => '^2.1.0'], 'devDependencies' => []]);
-    publishController('notification--toast', $this->targetDir);
-    publishController('notification--toaster', $this->targetDir);
+    publishController('toast', $this->targetDir);
+    publishController('toaster', $this->targetDir);
     writeView('page.blade.php', '<x-hwc::flash-message />');
 
     $this->artisan('hotwire:check --fix --no-interaction')
@@ -458,8 +469,8 @@ it('warns and skips npm check when package.json does not exist', function () {
     if (File::exists($this->packageJsonPath)) {
         File::delete($this->packageJsonPath);
     }
-    publishController('notification--toast', $this->targetDir);
-    publishController('notification--toaster', $this->targetDir);
+    publishController('toast', $this->targetDir);
+    publishController('toaster', $this->targetDir);
     writeView('page.blade.php', '<x-hwc::flash-message />');
 
     $this->artisan('hotwire:check --no-interaction')

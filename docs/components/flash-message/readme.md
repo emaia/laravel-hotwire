@@ -12,8 +12,8 @@ Internally each maps to a dedicated Stimulus controller:
 
 | Controller              | Identifier              | Used by                    | Responsibility                                               |
 |-------------------------|-------------------------|----------------------------|--------------------------------------------------------------|
-| `toaster_controller.js` | `notification--toaster` | `<x-hwc::flash-container>` | Initializes the Sonner container (once)                      |
-| `toast_controller.js`   | `notification--toast`   | `<x-hwc::flash-message>`   | Fires individual toasts and removes the element from the DOM |
+| `toaster_controller.js` | `toaster` | `<x-hwc::flash-container>` | Initializes the Sonner container (once)                      |
+| `toast_controller.js`   | `toast`   | `<x-hwc::flash-message>`   | Fires individual toasts and removes the element from the DOM |
 
 ## Requirements
 
@@ -187,15 +187,15 @@ is just a thin wrapper:
 ```html
 <div
     id="flash-container"
-    data-controller="notification--toaster"
-    data-notification--toaster-position-value="top-right"
+    data-controller="toaster"
+    data-toaster-position-value="top-right"
     data-turbo-permanent
 ></div>
 ```
 
 ## Toast — Stimulus Controller
 
-**Identifier:** `notification--toast`
+**Identifier:** `toast`
 
 The controller calls `toast()` from `@emaia/sonner/vanilla` on connect and removes the element from the DOM. It
 maintains no state or listeners.

@@ -5,41 +5,41 @@
     id="{{ $id }}"
     @if ($turboPermanent) data-turbo-permanent @endif
     @if ($class !== '') class="{{ $class }}" @endif
-    data-controller="notification--toaster"
-    data-notification--toaster-position-value="{{ $position }}"
-    data-notification--toaster-theme-value="{{ $theme }}"
-    data-notification--toaster-duration-value="{{ $duration }}"
-    data-notification--toaster-visible-toasts-value="{{ $visibleToasts }}"
-    data-notification--toaster-close-button-value="{{ $bool($closeButton) }}"
-    data-notification--toaster-rich-colors-value="{{ $bool($richColors) }}"
-    data-notification--toaster-expand-value="{{ $bool($expand) }}"
-    data-notification--toaster-invert-value="{{ $bool($invert) }}"
-    data-notification--toaster-auto-disconnect-value="{{ $bool($autoDisconnect) }}"
+    data-controller="toaster"
+    data-toaster-position-value="{{ $position }}"
+    data-toaster-theme-value="{{ $theme }}"
+    data-toaster-duration-value="{{ $duration }}"
+    data-toaster-visible-toasts-value="{{ $visibleToasts }}"
+    data-toaster-close-button-value="{{ $bool($closeButton) }}"
+    data-toaster-rich-colors-value="{{ $bool($richColors) }}"
+    data-toaster-expand-value="{{ $bool($expand) }}"
+    data-toaster-invert-value="{{ $bool($invert) }}"
+    data-toaster-auto-disconnect-value="{{ $bool($autoDisconnect) }}"
     @if (! is_null($gap))
-        data-notification--toaster-gap-value="{{ $gap }}"
+        data-toaster-gap-value="{{ $gap }}"
     @endif
     @if (! is_null($hotkey))
-        data-notification--toaster-hotkey-value="{{ $hotkey }}"
+        data-toaster-hotkey-value="{{ $hotkey }}"
     @endif
     @if (! is_null($dir))
-        data-notification--toaster-dir-value="{{ $dir }}"
+        data-toaster-dir-value="{{ $dir }}"
     @endif
     @if (! is_null($offset))
-        data-notification--toaster-offset-value="{{ $offset }}"
+        data-toaster-offset-value="{{ $offset }}"
     @endif
     @if (! is_null($mobileOffset))
-        data-notification--toaster-mobile-offset-value="{{ $mobileOffset }}"
+        data-toaster-mobile-offset-value="{{ $mobileOffset }}"
     @endif
     @if (! is_null($swipeDirections))
-        data-notification--toaster-swipe-directions-value="{{ $swipeDirections }}"
+        data-toaster-swipe-directions-value="{{ $swipeDirections }}"
     @endif
     @if (! is_null($className))
-        data-notification--toaster-class-name-value="{{ $className }}"
+        data-toaster-class-name-value="{{ $className }}"
     @endif
     @if (! is_null($containerAriaLabel))
-        data-notification--toaster-container-aria-label-value="{{ $containerAriaLabel }}"
+        data-toaster-container-aria-label-value="{{ $containerAriaLabel }}"
     @endif
     @if (! is_null($customAriaLabel))
-        data-notification--toaster-custom-aria-label-value="{{ $customAriaLabel }}"
+        data-toaster-custom-aria-label-value="{{ $customAriaLabel }}"
     @endif
 ></div>

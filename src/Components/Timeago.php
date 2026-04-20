@@ -29,7 +29,7 @@ class Timeago extends Component implements HasStimulusControllers
 
     public static function stimulusControllers(): array
     {
-        return ['utils--timeago'];
+        return ['timeago'];
     }
 
     public function render()

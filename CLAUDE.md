@@ -26,15 +26,19 @@ The complete Hotwire stack for Laravel — Turbo Drive, Turbo Streams, Stimulus 
 
 ### Stimulus Controllers
 
-- File naming: `{namespace}/{name}_controller.{js|ts}` (snake_case)
-- Identifier: `{namespace}--{name}` (hyphens, `--` as namespace separator)
-- Example: `form/autosubmit_controller.js` → `data-controller="form--autosubmit"`
-- Loaded via `@emaia/stimulus-dynamic-loader` with Vite's `import.meta.glob`
+- **Flat layout** at the top level. File naming: `{name}_controller.{js|ts}` (snake_case).
+- **Identifier** matches the file name converted to kebab-case: `auto_submit_controller.js` → `data-controller="auto-submit"`.
+- **Substrate folders** (`turbo/`, `optimistic/`, `dev/`) group controllers tied to a specific technical layer.
+  Files inside keep Stimulus' `--` separator in the identifier: `turbo/progress_controller.js` → `data-controller="turbo--progress"`.
+- **No UI-role folders** (no `form/`, `dialog/`, `utils/`, `lib/`, `media/`, `notification/`). Names themselves
+  describe intent — prefer compound names (`copy-to-clipboard`, `lazy-image`, `input-mask`) over namespace buckets.
+- Loaded via `@emaia/stimulus-dynamic-loader` with Vite's `import.meta.glob`.
+- Full naming rules and the rename history live in `docs/rfcs/0001-flat-controller-naming.md`.
 
 ### Blade Components
 
 - Registered with configurable prefix (default: `hwc`)
-- Usage: `<x-hwc::modal>`, `<x-hwc::confirm-dialog>`, `<x-hwc::flash-message>`, `<x-hwc::loader>`
+- Usage: `<x-hwc::dialog>`, `<x-hwc::confirm-dialog>`, `<x-hwc::flash-message>`, `<x-hwc::loader>`, `<x-hwc::timeago>`
 - Components that need JS declare their controllers via `HasStimulusControllers` interface
 
 ### Turbo

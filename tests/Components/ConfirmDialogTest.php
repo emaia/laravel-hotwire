@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Blade;
 it('renders with default props', function () {
     $view = $this->blade('<x-hwc::confirm-dialog title="Delete item?">Content</x-hwc::confirm-dialog>');
 
-    $view->assertSee('data-controller="dialog--confirm"', false);
+    $view->assertSee('data-controller="confirm-dialog"', false);
     $view->assertSee('Delete item?');
     $view->assertSee('role="dialog"', false);
     $view->assertSee('aria-modal="true"', false);
@@ -23,7 +23,7 @@ it('renders the trigger slot', function () {
         </x-hwc::confirm>
     ');
 
-    $view->assertSee('data-action="click->dialog--confirm#intercept"', false);
+    $view->assertSee('data-action="click->confirm-dialog#intercept"', false);
     $view->assertSee('Delete');
 });
 
@@ -83,12 +83,12 @@ it('registers with custom prefix', function () {
 it('renders using :: namespace syntax', function () {
     $view = $this->blade('<x-hwc::confirm-dialog title="Delete item?">Content</x-hwc::confirm-dialog>');
 
-    $view->assertSee('data-controller="dialog--confirm"', false);
+    $view->assertSee('data-controller="confirm-dialog"', false);
     $view->assertSee('Content');
 });
 
 it('renders turbo cache action', function () {
     $view = $this->blade('<x-hwc::confirm-dialog title="Delete?">Content</x-hwc::confirm>');
 
-    $view->assertSee('turbo:before-cache@window->dialog--confirm#cancel', false);
+    $view->assertSee('turbo:before-cache@window->confirm-dialog#cancel', false);
 });

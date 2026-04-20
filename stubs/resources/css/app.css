@@ -3,7 +3,7 @@
 @source '../../vendor/emaia/laravel-hotwire/resources/views/**/*.blade.php';
 
 @custom-variant turbo-frame (turbo-frame[src] &);
-@custom-variant modal ([data-dialog--modal-target="dialog"] &);
+@custom-variant modal ([data-dialog-target="dialog"] &);
 @custom-variant aria-busy (form[aria-busy="true"] &);
 @custom-variant self-aria-busy (html[aria-busy="true"] &);
 @custom-variant turbo-frame-aria-busy (turbo-frame[aria-busy="true"] &);

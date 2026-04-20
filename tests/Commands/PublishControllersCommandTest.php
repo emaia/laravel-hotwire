@@ -19,11 +19,7 @@ beforeEach(function () {
         $name = preg_replace('/_controller\.(js|ts)$/', '', $f->getFilename());
         $relativeDir = trim(str_replace('\\', '/', $f->getRelativePath()), '/');
 
-        if ($relativeDir === '') {
-            return [];
-        }
-
-        $key = "$relativeDir/$name";
+        $key = $relativeDir === '' ? $name : "$relativeDir/$name";
 
         return [$key => $key];
     })->sort()->all();
@@ -32,6 +28,30 @@ beforeEach(function () {
 afterEach(function () {
     File::deleteDirectory($this->targetDir);
 });
+
+// --- Helpers ---
+
+function sourceFor(string $key): string
+{
+    $base = realpath(__DIR__.'/../../resources/js/controllers');
+
+    foreach (['.js', '.ts'] as $ext) {
+        $candidate = "{$base}/{$key}_controller{$ext}";
+        if (file_exists($candidate)) {
+            return $candidate;
+        }
+    }
+
+    throw new RuntimeException("No source file for {$key}");
+}
+
+function targetFor(string $baseDir, string $key): string
+{
+    $source = sourceFor($key);
+    $ext = pathinfo($source, PATHINFO_EXTENSION);
+
+    return "{$baseDir}/{$key}_controller.{$ext}";
+}
 
 // --- --list ---
 
@@ -44,10 +64,10 @@ it('lists available controllers', function () {
 
 it('shows interactive multiselect when no arguments given', function () {
     $this->artisan('hotwire:controllers')
-        ->expectsChoice('Which controllers would you like to publish?', ['dialog/modal'], $this->allControllerOptions)
+        ->expectsChoice('Which controllers would you like to publish?', ['dialog'], $this->allControllerOptions)
         ->assertSuccessful();
 
-    expect(File::exists($this->targetDir.'/dialog/modal_controller.js'))->toBeTrue();
+    expect(File::exists(targetFor($this->targetDir, 'dialog')))->toBeTrue();
 });
 
 it('shows no selection message when multiselect returns empty', function () {
@@ -58,57 +78,70 @@ it('shows no selection message when multiselect returns empty', function () {
     expect(File::isDirectory($this->targetDir))->toBeFalse();
 });
 
-// --- Namespace argument ---
+// --- Substrate namespace argument ---
 
-it('publishes all controllers in a namespace', function () {
-    $this->artisan('hotwire:controllers', ['controllers' => ['dialog']])
+it('publishes all controllers in a substrate namespace', function () {
+    $this->artisan('hotwire:controllers', ['controllers' => ['turbo']])
         ->assertSuccessful();
 
-    expect(File::exists($this->targetDir.'/dialog/modal_controller.js'))->toBeTrue();
+    expect(File::exists(targetFor($this->targetDir, 'turbo/progress')))->toBeTrue();
 });
 
-it('publishes only controllers within the requested namespace', function () {
-    $this->artisan('hotwire:controllers', ['controllers' => ['dialog']])
+it('publishes only controllers within the requested substrate', function () {
+    $this->artisan('hotwire:controllers', ['controllers' => ['turbo']])
         ->assertSuccessful();
 
-    expect(File::isDirectory($this->targetDir.'/form'))->toBeFalse();
+    expect(File::isDirectory($this->targetDir.'/optimistic'))->toBeFalse()
+        ->and(File::exists(targetFor($this->targetDir, 'dialog')))->toBeFalse();
 });
 
-// --- namespace/name notation ---
+// --- Top-level and substrate/name notation ---
 
-it('publishes a specific controller using namespace/name notation', function () {
-    $this->artisan('hotwire:controllers', ['controllers' => ['form/autoselect']])
+it('publishes a specific top-level controller by name', function () {
+    $this->artisan('hotwire:controllers', ['controllers' => ['autoselect']])
         ->assertSuccessful();
 
-    $published = $this->targetDir.'/form/autoselect_controller.js';
-    $source = realpath(__DIR__.'/../../resources/js/controllers/form/autoselect_controller.js');
+    $published = targetFor($this->targetDir, 'autoselect');
+    $source = sourceFor('autoselect');
 
     expect(File::exists($published))->toBeTrue()
         ->and(File::get($published))->toBe(File::get($source));
 });
 
-it('publishes only the requested controller, not the entire namespace', function () {
-    $this->artisan('hotwire:controllers', ['controllers' => ['form/autoselect']])
+it('publishes a specific substrate controller using substrate/name notation', function () {
+    $this->artisan('hotwire:controllers', ['controllers' => ['turbo/progress']])
         ->assertSuccessful();
 
-    expect(File::exists($this->targetDir.'/form/autoselect_controller.js'))->toBeTrue()
-        ->and(File::exists($this->targetDir.'/form/autosubmit_controller.js'))->toBeFalse();
+    $published = targetFor($this->targetDir, 'turbo/progress');
+    $source = sourceFor('turbo/progress');
+
+    expect(File::exists($published))->toBeTrue()
+        ->and(File::get($published))->toBe(File::get($source));
+});
+
+it('publishes only the requested controller, not the entire substrate', function () {
+    $this->artisan('hotwire:controllers', ['controllers' => ['turbo/progress']])
+        ->assertSuccessful();
+
+    expect(File::exists(targetFor($this->targetDir, 'turbo/progress')))->toBeTrue()
+        ->and(File::exists(targetFor($this->targetDir, 'turbo/polling')))->toBeFalse();
 });
 
 it('publishes multiple controllers with mixed notation', function () {
-    $this->artisan('hotwire:controllers', ['controllers' => ['form/autoselect', 'dialog/modal']])
+    $this->artisan('hotwire:controllers', ['controllers' => ['autoselect', 'turbo/progress']])
         ->assertSuccessful();
 
-    expect(File::exists($this->targetDir.'/form/autoselect_controller.js'))->toBeTrue()
-        ->and(File::exists($this->targetDir.'/dialog/modal_controller.js'))->toBeTrue();
+    expect(File::exists(targetFor($this->targetDir, 'autoselect')))->toBeTrue()
+        ->and(File::exists(targetFor($this->targetDir, 'turbo/progress')))->toBeTrue();
 });
 
 it('publishes all controllers with --all', function () {
     $this->artisan('hotwire:controllers', ['--all' => true])
         ->assertSuccessful();
 
-    expect(File::exists($this->targetDir.'/dialog/modal_controller.js'))->toBeTrue()
-        ->and(File::exists($this->targetDir.'/form/autoselect_controller.js'))->toBeTrue();
+    expect(File::exists(targetFor($this->targetDir, 'dialog')))->toBeTrue()
+        ->and(File::exists(targetFor($this->targetDir, 'autoselect')))->toBeTrue()
+        ->and(File::exists(targetFor($this->targetDir, 'turbo/progress')))->toBeTrue();
 });
 
 // --- Error cases ---
@@ -120,43 +153,43 @@ it('warns when namespace does not exist', function () {
     expect(File::isDirectory($this->targetDir.'/nonexistent'))->toBeFalse();
 });
 
-it('warns when specific controller does not exist within a namespace', function () {
-    $this->artisan('hotwire:controllers', ['controllers' => ['form/nonexistent']])
+it('warns when specific controller does not exist within a substrate', function () {
+    $this->artisan('hotwire:controllers', ['controllers' => ['turbo/nonexistent']])
         ->assertSuccessful();
 
-    expect(File::exists($this->targetDir.'/form/nonexistent_controller.js'))->toBeFalse();
+    expect(File::exists($this->targetDir.'/turbo/nonexistent_controller.js'))->toBeFalse();
 });
 
 // --- Up to date / overwrite ---
 
 it('skips when controller is already up to date', function () {
-    $this->artisan('hotwire:controllers', ['controllers' => ['dialog/modal']]);
+    $this->artisan('hotwire:controllers', ['controllers' => ['dialog']]);
 
-    $this->artisan('hotwire:controllers', ['controllers' => ['dialog/modal']])
+    $this->artisan('hotwire:controllers', ['controllers' => ['dialog']])
         ->assertSuccessful();
 });
 
 it('warns when controller exists and differs without --force in non-interactive mode', function () {
-    $this->artisan('hotwire:controllers', ['controllers' => ['dialog/modal']]);
+    $this->artisan('hotwire:controllers', ['controllers' => ['dialog']]);
 
-    $published = $this->targetDir.'/dialog/modal_controller.js';
+    $published = targetFor($this->targetDir, 'dialog');
     File::put($published, '// modified');
 
-    $this->artisan('hotwire:controllers dialog/modal --no-interaction')
+    $this->artisan('hotwire:controllers dialog --no-interaction')
         ->assertSuccessful();
 
     expect(File::get($published))->toBe('// modified');
 });
 
 it('prompts for confirmation when controller differs in interactive mode', function () {
-    $this->artisan('hotwire:controllers', ['controllers' => ['dialog/modal']]);
+    $this->artisan('hotwire:controllers', ['controllers' => ['dialog']]);
 
-    $published = $this->targetDir.'/dialog/modal_controller.js';
+    $published = targetFor($this->targetDir, 'dialog');
     File::put($published, '// modified');
 
-    $this->artisan('hotwire:controllers', ['controllers' => ['dialog/modal']])
+    $this->artisan('hotwire:controllers', ['controllers' => ['dialog']])
         ->expectsConfirmation(
-            'Controller "dialog/modal" already exists and differs from the package version. Overwrite?',
+            'Controller "dialog" already exists and differs from the package version. Overwrite?',
             'no',
         )
         ->assertSuccessful();
@@ -165,42 +198,50 @@ it('prompts for confirmation when controller differs in interactive mode', funct
 });
 
 it('overwrites when user confirms in interactive mode', function () {
-    $this->artisan('hotwire:controllers', ['controllers' => ['dialog/modal']]);
+    $this->artisan('hotwire:controllers', ['controllers' => ['dialog']]);
 
-    $published = $this->targetDir.'/dialog/modal_controller.js';
+    $published = targetFor($this->targetDir, 'dialog');
     File::put($published, '// modified');
 
-    $this->artisan('hotwire:controllers', ['controllers' => ['dialog/modal']])
+    $this->artisan('hotwire:controllers', ['controllers' => ['dialog']])
         ->expectsConfirmation(
-            'Controller "dialog/modal" already exists and differs from the package version. Overwrite?',
+            'Controller "dialog" already exists and differs from the package version. Overwrite?',
             'yes',
         )
         ->assertSuccessful();
 
-    $source = realpath(__DIR__.'/../../resources/js/controllers/dialog/modal_controller.js');
+    $source = sourceFor('dialog');
     expect(File::get($published))->toBe(File::get($source));
 });
 
 it('overwrites when controller exists and --force is used', function () {
-    $this->artisan('hotwire:controllers', ['controllers' => ['dialog/modal']]);
+    $this->artisan('hotwire:controllers', ['controllers' => ['dialog']]);
 
-    $published = $this->targetDir.'/dialog/modal_controller.js';
+    $published = targetFor($this->targetDir, 'dialog');
     File::put($published, '// modified');
 
-    $this->artisan('hotwire:controllers', ['controllers' => ['dialog/modal'], '--force' => true])
+    $this->artisan('hotwire:controllers', ['controllers' => ['dialog'], '--force' => true])
         ->assertSuccessful();
 
-    $source = realpath(__DIR__.'/../../resources/js/controllers/dialog/modal_controller.js');
+    $source = sourceFor('dialog');
     expect(File::get($published))->toBe(File::get($source));
 });
 
 // --- Directory structure ---
 
-it('preserves directory structure when publishing', function () {
-    $this->artisan('hotwire:controllers', ['controllers' => ['dialog/modal']]);
+it('publishes top-level controllers flat', function () {
+    $this->artisan('hotwire:controllers', ['controllers' => ['dialog']]);
 
-    expect(File::isDirectory($this->targetDir.'/dialog'))->toBeTrue()
-        ->and(File::exists($this->targetDir.'/dialog/modal_controller.js'))->toBeTrue();
+    expect(File::isDirectory($this->targetDir))->toBeTrue()
+        ->and(File::exists($this->targetDir.'/dialog_controller.js'))->toBeTrue()
+        ->and(File::isDirectory($this->targetDir.'/dialog'))->toBeFalse();
+});
+
+it('preserves substrate directory structure when publishing', function () {
+    $this->artisan('hotwire:controllers', ['controllers' => ['turbo/progress']]);
+
+    expect(File::isDirectory($this->targetDir.'/turbo'))->toBeTrue()
+        ->and(File::exists($this->targetDir.'/turbo/progress_controller.js'))->toBeTrue();
 });
 
 // --- Shared dependencies ---
@@ -223,12 +264,13 @@ it('does not duplicate shared dependency when publishing multiple controllers fr
 });
 
 it('republishes without prompt when file was deleted but directory remains', function () {
-    $this->artisan('hotwire:controllers', ['controllers' => ['dialog/modal']]);
+    $this->artisan('hotwire:controllers', ['controllers' => ['dialog']]);
 
-    File::delete($this->targetDir.'/dialog/modal_controller.js');
+    $published = targetFor($this->targetDir, 'dialog');
+    File::delete($published);
 
-    $this->artisan('hotwire:controllers', ['controllers' => ['dialog/modal']])
+    $this->artisan('hotwire:controllers', ['controllers' => ['dialog']])
         ->assertSuccessful();
 
-    expect(File::exists($this->targetDir.'/dialog/modal_controller.js'))->toBeTrue();
+    expect(File::exists($published))->toBeTrue();
 });

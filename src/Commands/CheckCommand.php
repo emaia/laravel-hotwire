@@ -156,7 +156,9 @@ class CheckCommand extends Command
                 $sourceFile = $this->resolveSourceFile($sourceBase, $dir, $name);
                 $ext = pathinfo($sourceFile, PATHINFO_EXTENSION);
                 $filename = "{$name}_controller.{$ext}";
-                $targetFile = "{$targetBase}/{$dir}/{$filename}";
+                $targetFile = $dir === ''
+                    ? "{$targetBase}/{$filename}"
+                    : "{$targetBase}/{$dir}/{$filename}";
 
                 $sources[$identifier] = $sourceFile;
 
@@ -402,23 +404,28 @@ class CheckCommand extends Command
 
     private function resolveSourceFile(string $sourceBase, string $dir, string $name): string
     {
+        $base = $dir === '' ? $sourceBase : "{$sourceBase}/{$dir}";
+
         foreach (['.js', '.ts'] as $ext) {
-            $path = "{$sourceBase}/{$dir}/{$name}_controller{$ext}";
+            $path = "{$base}/{$name}_controller{$ext}";
             if ($this->files->exists($path)) {
                 return $path;
             }
         }
 
-        return "{$sourceBase}/{$dir}/{$name}_controller.js";
+        return "{$base}/{$name}_controller.js";
     }
 
     /** @return array{string, string} [relative_dir, name] */
     private function identifierToParts(string $identifier): array
     {
-        $parts = explode('--', $identifier, 2);
-        $dir = str_replace('--', '/', $parts[0]);
-        $name = str_replace('-', '_', $parts[1] ?? '');
+        if (str_contains($identifier, '--')) {
+            [$dir, $name] = explode('--', $identifier, 2);
+        } else {
+            $dir = '';
+            $name = $identifier;
+        }
 
-        return [$dir, $name];
+        return [$dir, str_replace('-', '_', $name)];
     }
 }
