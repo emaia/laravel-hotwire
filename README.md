@@ -27,6 +27,7 @@ the box.
     - [Dev](#dev)
     - [Lib](#lib)
     - [Media](#media)
+    - [Utils](#utils)
 - [Testing](#testing)
 - [Changelog](#changelog)
 - [Contributing](#contributing)
@@ -309,14 +310,16 @@ php artisan hotwire:controllers form/autoselect form/autosubmit frame/progress
 
 | Controller                                                      | Identifier                | Dependencies | Docs                                                 |
 |-----------------------------------------------------------------|---------------------------|--------------|------------------------------------------------------|
-| [Autoselect](docs/controllers/form/autoselect.md)               | `form--autoselect`        | —            | [readme](docs/controllers/form/autoselect.md)        |
-| [Autosubmit](docs/controllers/form/autosubmit.md)               | `form--autosubmit`        | —            | [readme](docs/controllers/form/autosubmit.md)        |
-| [Clean Query String](docs/controllers/form/clean-querystring.md) | `form--clean-querystring` | —            | [readme](docs/controllers/form/clean-querystring.md) |
-| [Clear Input](docs/controllers/form/clear-input.md)             | `form--clear-input`       | —            | [readme](docs/controllers/form/clear-input.md)       |
-| [Remote](docs/controllers/form/remote.md)                       | `form--remote`            | —            | [readme](docs/controllers/form/remote.md)            |
-| [Reset Files](docs/controllers/form/reset-files.md)             | `form--reset-files`       | —            | [readme](docs/controllers/form/reset-files.md)       |
-| [Textarea Autogrow](docs/controllers/form/textarea-autogrow.md) | `form--textarea-autogrow` | —            | [readme](docs/controllers/form/textarea-autogrow.md) |
-| [Unsaved Changes](docs/controllers/form/unsaved-changes.md)     | `form--unsaved-changes`   | —            | [readme](docs/controllers/form/unsaved-changes.md)   |
+| [Autoselect](docs/controllers/form/autoselect.md)                       | `form--autoselect`          | —            | [readme](docs/controllers/form/autoselect.md)            |
+| [Autosubmit](docs/controllers/form/autosubmit.md)                       | `form--autosubmit`          | —            | [readme](docs/controllers/form/autosubmit.md)            |
+| [Char Counter](docs/controllers/form/char-counter.md)                   | `form--char-counter`        | —            | [readme](docs/controllers/form/char-counter.md)          |
+| [Checkbox Select All](docs/controllers/form/checkbox-select-all.md)     | `form--checkbox-select-all` | —            | [readme](docs/controllers/form/checkbox-select-all.md)   |
+| [Clean Query String](docs/controllers/form/clean-querystring.md)        | `form--clean-querystring`   | —            | [readme](docs/controllers/form/clean-querystring.md)     |
+| [Clear Input](docs/controllers/form/clear-input.md)                     | `form--clear-input`         | —            | [readme](docs/controllers/form/clear-input.md)           |
+| [Remote](docs/controllers/form/remote.md)                               | `form--remote`              | —            | [readme](docs/controllers/form/remote.md)                |
+| [Reset Files](docs/controllers/form/reset-files.md)                     | `form--reset-files`         | —            | [readme](docs/controllers/form/reset-files.md)           |
+| [Textarea Autogrow](docs/controllers/form/textarea-autogrow.md)         | `form--textarea-autogrow`   | —            | [readme](docs/controllers/form/textarea-autogrow.md)     |
+| [Unsaved Changes](docs/controllers/form/unsaved-changes.md)             | `form--unsaved-changes`     | —            | [readme](docs/controllers/form/unsaved-changes.md)       |
 
 ### Frame
 
@@ -354,6 +357,15 @@ php artisan hotwire:controllers form/autoselect form/autosubmit frame/progress
 |----------------------------------------------|------------------|--------------|---------------------------------------------|
 | [OEmbed](docs/controllers/media/oembed.md)   | `media--oembed`  | —            | [readme](docs/controllers/media/oembed.md)  |
 | [Pending](docs/controllers/media/pending.md) | `media--pending` | —            | [readme](docs/controllers/media/pending.md) |
+
+### Utils
+
+| Controller                                                               | Identifier                | Dependencies | Docs                                                       |
+|--------------------------------------------------------------------------|---------------------------|--------------|------------------------------------------------------------|
+| [Animated Number](docs/controllers/utils/animated-number.md)            | `utils--animated-number`  | —            | [readme](docs/controllers/utils/animated-number.md)        |
+| [Clipboard](docs/controllers/utils/clipboard.md)                        | `utils--clipboard`        | —            | [readme](docs/controllers/utils/clipboard.md)              |
+| [Hotkey](docs/controllers/utils/hotkey.md)                              | `utils--hotkey`           | —            | [readme](docs/controllers/utils/hotkey.md)                 |
+| [Timeago](docs/controllers/utils/timeago.md)                            | `utils--timeago`          | `date-fns`   | [readme](docs/controllers/utils/timeago.md)                |
 
 ## Testing
 

@@ -3,19 +3,22 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "devDependencies": {
+      "dependencies": {
         "@emaia/sonner": "^2.1.0",
         "@emaia/stimulus-dynamic-loader": "^1.0.2",
         "@hotwired/stimulus": "^3.2.2",
         "@hotwired/turbo": "^8.0.23",
+        "date-fns": "^4.1.0",
+        "maska": "^3.2.0",
+        "tippy.js": "^6.3.7",
+      },
+      "devDependencies": {
         "@types/bun": "^1.3.11",
         "happy-dom": "^20.8.9",
-        "maska": "^3.2.0",
         "playwright": "^1.59.1",
         "prettier": "^3.8.1",
         "prettier-plugin-blade": "^2.1.21",
         "prettier-plugin-tailwindcss": "^0.7.2",
-        "tippy.js": "^6.3.7",
         "vite": "^8.0.6",
       },
     },
@@ -84,6 +87,8 @@
     "@types/ws": ["@types/ws@8.18.1", "", { "dependencies": { "@types/node": "*" } }, "sha512-ThVF6DCVhA8kUGy+aazFQ4kXQ7E1Ty7A3ypFOe0IcJV8O/M511G99AW24irKrW56Wt44yG9+ij8FaqoBGkuBXg=="],
 
     "bun-types": ["bun-types@1.3.11", "", { "dependencies": { "@types/node": "*" } }, "sha512-1KGPpoxQWl9f6wcZh57LvrPIInQMn2TQ7jsgxqpRzg+l0QPOFvJVH7HmvHo/AiPgwXy+/Thf6Ov3EdVn1vOabg=="],
+
+    "date-fns": ["date-fns@4.1.0", "", {}, "sha512-Ukq0owbQXxa/U3EGtsdVBkR1w7KOQ5gIBqdH2hkvknzZPYvBxb/aa6E8L7tmjFtkwZBu3UXBbjIgPo/Ez4xaNg=="],
 
     "detect-libc": ["detect-libc@2.1.2", "", {}, "sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ=="],
 

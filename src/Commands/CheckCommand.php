@@ -153,9 +153,10 @@ class CheckCommand extends Command
 
             foreach ($class::stimulusControllers() as $identifier) {
                 [$dir, $name] = $this->identifierToParts($identifier);
-                $filename = "{$name}_controller.js";
+                $sourceFile = $this->resolveSourceFile($sourceBase, $dir, $name);
+                $ext = pathinfo($sourceFile, PATHINFO_EXTENSION);
+                $filename = "{$name}_controller.{$ext}";
                 $targetFile = "{$targetBase}/{$dir}/{$filename}";
-                $sourceFile = "{$sourceBase}/{$dir}/{$filename}";
 
                 $sources[$identifier] = $sourceFile;
 
@@ -397,6 +398,18 @@ class CheckCommand extends Command
 
         $this->line('');
         $this->line('<comment>Run your package manager install command to fetch the new dependencies.</comment>');
+    }
+
+    private function resolveSourceFile(string $sourceBase, string $dir, string $name): string
+    {
+        foreach (['.js', '.ts'] as $ext) {
+            $path = "{$sourceBase}/{$dir}/{$name}_controller{$ext}";
+            if ($this->files->exists($path)) {
+                return $path;
+            }
+        }
+
+        return "{$sourceBase}/{$dir}/{$name}_controller.js";
     }
 
     /** @return array{string, string} [relative_dir, name] */

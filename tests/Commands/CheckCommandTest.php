@@ -39,8 +39,23 @@ function publishController(string $identifier, string $targetDir): void
 {
     [$dir, $name] = explode('--', $identifier, 2);
     $name = str_replace('-', '_', $name);
-    $source = realpath(__DIR__."/../../resources/js/controllers/{$dir}/{$name}_controller.js");
-    $target = "{$targetDir}/{$dir}/{$name}_controller.js";
+    $base = realpath(__DIR__."/../../resources/js/controllers/{$dir}");
+    $source = null;
+
+    foreach (['.js', '.ts'] as $ext) {
+        $candidate = "{$base}/{$name}_controller{$ext}";
+        if (file_exists($candidate)) {
+            $source = $candidate;
+            break;
+        }
+    }
+
+    if ($source === null) {
+        throw new \RuntimeException("Controller source not found for {$identifier}");
+    }
+
+    $ext = pathinfo($source, PATHINFO_EXTENSION);
+    $target = "{$targetDir}/{$dir}/{$name}_controller.{$ext}";
     File::ensureDirectoryExists(dirname($target));
     File::copy($source, $target);
 }
@@ -246,6 +261,61 @@ it('updates outdated controllers with --fix', function () {
         ->assertSuccessful();
 
     $source = realpath(__DIR__.'/../../resources/js/controllers/dialog/modal_controller.js');
+    expect(File::hash($target))->toBe(File::hash($source));
+});
+
+// --- TypeScript (.ts) controllers ---
+
+it('shows not published for a ts controller', function () {
+    writeView('page.blade.php', '<x-hwc::timeago :datetime="now()" />');
+
+    $exitCode = Artisan::call('hotwire:check', ['--no-interaction' => true]);
+    $output = Artisan::output();
+
+    expect($output)->toContain('utils--timeago');
+    expect($output)->toContain('not published');
+    expect($exitCode)->toBe(1);
+});
+
+it('shows up to date when ts controller matches package version', function () {
+    publishController('utils--timeago', $this->targetDir);
+    writeView('page.blade.php', '<x-hwc::timeago :datetime="now()" />');
+
+    $this->artisan('hotwire:check --no-interaction')
+        ->expectsOutputToContain('up to date')
+        ->assertSuccessful();
+});
+
+it('shows outdated when ts controller differs from package version', function () {
+    $target = $this->targetDir.'/utils/timeago_controller.ts';
+    File::ensureDirectoryExists(dirname($target));
+    File::put($target, '// modified');
+    writeView('page.blade.php', '<x-hwc::timeago :datetime="now()" />');
+
+    $this->artisan('hotwire:check --no-interaction')
+        ->expectsOutputToContain('outdated')
+        ->assertExitCode(1);
+});
+
+it('publishes missing ts controllers with --fix', function () {
+    writeView('page.blade.php', '<x-hwc::timeago :datetime="now()" />');
+
+    $this->artisan('hotwire:check --fix --no-interaction')
+        ->assertSuccessful();
+
+    expect(File::exists($this->targetDir.'/utils/timeago_controller.ts'))->toBeTrue();
+});
+
+it('updates outdated ts controllers with --fix', function () {
+    $target = $this->targetDir.'/utils/timeago_controller.ts';
+    File::ensureDirectoryExists(dirname($target));
+    File::put($target, '// modified');
+    writeView('page.blade.php', '<x-hwc::timeago :datetime="now()" />');
+
+    $this->artisan('hotwire:check --fix --no-interaction')
+        ->assertSuccessful();
+
+    $source = realpath(__DIR__.'/../../resources/js/controllers/utils/timeago_controller.ts');
     expect(File::hash($target))->toBe(File::hash($source));
 });
 
