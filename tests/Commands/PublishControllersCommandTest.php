@@ -5,8 +5,10 @@ use Symfony\Component\Finder\Finder;
 
 beforeEach(function () {
     $this->targetDir = resource_path('js/controllers');
+    $this->fixturesDir = realpath(__DIR__.'/../../resources/js/controllers').'/__fixtures';
 
     File::deleteDirectory($this->targetDir);
+    File::deleteDirectory($this->fixturesDir);
 
     $baseDir = realpath(__DIR__.'/../../resources/js/controllers');
 
@@ -27,6 +29,7 @@ beforeEach(function () {
 
 afterEach(function () {
     File::deleteDirectory($this->targetDir);
+    File::deleteDirectory($this->fixturesDir);
 });
 
 // --- Helpers ---
@@ -51,6 +54,16 @@ function targetFor(string $baseDir, string $key): string
     $ext = pathinfo($source, PATHINFO_EXTENSION);
 
     return "{$baseDir}/{$key}_controller.{$ext}";
+}
+
+function writeFixture(string $relativePath, string $content): string
+{
+    $base = realpath(__DIR__.'/../../resources/js/controllers').'/__fixtures';
+    $path = "{$base}/{$relativePath}";
+    File::ensureDirectoryExists(dirname($path));
+    File::put($path, $content);
+
+    return $path;
 }
 
 // --- --list ---
@@ -273,4 +286,120 @@ it('republishes without prompt when file was deleted but directory remains', fun
         ->assertSuccessful();
 
     expect(File::exists($published))->toBeTrue();
+});
+
+// --- --list status ---
+
+it('shows up to date and outdated statuses in --list', function () {
+    $this->artisan('hotwire:controllers', ['controllers' => ['dialog']]);
+
+    $outdated = targetFor($this->targetDir, 'autoselect');
+    File::ensureDirectoryExists(dirname($outdated));
+    File::put($outdated, '// modified');
+
+    $this->artisan('hotwire:controllers --list')
+        ->expectsOutputToContain('up to date')
+        ->expectsOutputToContain('outdated')
+        ->assertSuccessful();
+});
+
+// --- Shared dep lifecycle ---
+
+it('leaves shared dep untouched when already up to date on re-run', function () {
+    $this->artisan('hotwire:controllers', ['controllers' => ['optimistic/form']]);
+
+    $dep = $this->targetDir.'/optimistic/_dispatch.js';
+    $before = hash_file('sha256', $dep);
+
+    $this->artisan('hotwire:controllers', ['controllers' => ['optimistic/form']])
+        ->assertSuccessful();
+
+    expect(hash_file('sha256', $dep))->toBe($before);
+});
+
+it('does not overwrite modified shared dep in non-interactive mode', function () {
+    $this->artisan('hotwire:controllers', ['controllers' => ['optimistic/form']]);
+
+    $dep = $this->targetDir.'/optimistic/_dispatch.js';
+    File::put($dep, '// user-modified');
+
+    $this->artisan('hotwire:controllers optimistic/form --no-interaction')
+        ->assertSuccessful();
+
+    expect(File::get($dep))->toBe('// user-modified');
+});
+
+// --- Import resolver ---
+
+it('follows transitive relative imports', function () {
+    writeFixture('_deep.js', "export const deep = 1;\n");
+    writeFixture('_helper.js', "import { deep } from './_deep';\nexport const helper = deep + 1;\n");
+    writeFixture(
+        'chained_controller.js',
+        "import { Controller } from '@hotwired/stimulus';\n".
+        "import { helper } from './_helper';\n".
+        "import { deep } from './_deep';\n".
+        "export default class extends Controller {}\n"
+    );
+
+    $this->artisan('hotwire:controllers', ['controllers' => ['__fixtures/chained']])
+        ->assertSuccessful();
+
+    expect(File::exists($this->targetDir.'/__fixtures/_helper.js'))->toBeTrue()
+        ->and(File::exists($this->targetDir.'/__fixtures/_deep.js'))->toBeTrue();
+});
+
+it('ignores imports that do not resolve or point outside the package', function () {
+    writeFixture(
+        'external_controller.js',
+        "import { Controller } from '@hotwired/stimulus';\n".
+        "import './_missing';\n".
+        "export default class extends Controller {}\n"
+    );
+
+    $this->artisan('hotwire:controllers', ['controllers' => ['__fixtures/external']])
+        ->assertSuccessful();
+
+    expect(File::exists($this->targetDir.'/__fixtures/external_controller.js'))->toBeTrue()
+        ->and(File::exists($this->targetDir.'/__fixtures/_missing.js'))->toBeFalse();
+});
+
+it('does not publish other controllers as dependencies', function () {
+    writeFixture(
+        'importer_controller.js',
+        "import Sibling from './sibling_controller';\nexport default class {}\n"
+    );
+    writeFixture('sibling_controller.js', "export default class {}\n");
+
+    $this->artisan('hotwire:controllers', ['controllers' => ['__fixtures/importer']])
+        ->assertSuccessful();
+
+    expect(File::exists($this->targetDir.'/__fixtures/importer_controller.js'))->toBeTrue()
+        ->and(File::exists($this->targetDir.'/__fixtures/sibling_controller.js'))->toBeFalse();
+});
+
+it('resolves directory imports to index files', function () {
+    writeFixture('utils/index.js', "export const ok = true;\n");
+    writeFixture(
+        'indexed_controller.js',
+        "import { ok } from './utils';\nexport default class {}\n"
+    );
+
+    $this->artisan('hotwire:controllers', ['controllers' => ['__fixtures/indexed']])
+        ->assertSuccessful();
+
+    expect(File::exists($this->targetDir.'/__fixtures/utils/index.js'))->toBeTrue();
+});
+
+it('publishes CSS imported by a controller', function () {
+    writeFixture('styled.css', ".styled { color: red; }\n");
+    writeFixture(
+        'styled_controller.js',
+        "import './styled.css';\nexport default class {}\n"
+    );
+
+    $this->artisan('hotwire:controllers', ['controllers' => ['__fixtures/styled']])
+        ->assertSuccessful();
+
+    expect(File::exists($this->targetDir.'/__fixtures/styled.css'))->toBeTrue();
 });
