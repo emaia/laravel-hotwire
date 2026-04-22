@@ -2,6 +2,19 @@
 
 All notable changes to `laravel-hotwire-components` will be documented in this file.
 
+## 0.8.0 - 2026-04-22
+
+### What's Changed
+
+* Move controllers to flat structure by @emaia in https://github.com/emaia/laravel-hotwire/pull/3
+* Bump dependabot/fetch-metadata from 3.0.0 to 3.1.0 by @dependabot[bot] in https://github.com/emaia/laravel-hotwire/pull/4
+
+### New Contributors
+
+* @dependabot[bot] made their first contribution in https://github.com/emaia/laravel-hotwire/pull/4
+
+**Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/0.7.6...0.8.0
+
 ## Unreleased
 
 ### Added
