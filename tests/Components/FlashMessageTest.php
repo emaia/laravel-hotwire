@@ -6,15 +6,15 @@ use Illuminate\Support\MessageBag;
 it('renders with explicit message', function () {
     $view = $this->blade('<x-hwc::flash-message message="Done!" type="success" />');
 
-    $view->assertSee('data-controller="notification--toast"', false);
-    $view->assertSee('data-notification--toast-message-value="Done!"', false);
-    $view->assertSee('data-notification--toast-type-value="success"', false);
+    $view->assertSee('data-controller="toast"', false);
+    $view->assertSee('data-toast-message-value="Done!"', false);
+    $view->assertSee('data-toast-type-value="success"', false);
 });
 
 it('renders with description', function () {
     $view = $this->blade('<x-hwc::flash-message message="Saved" description="Record updated" type="success" />');
 
-    $view->assertSee('data-notification--toast-description-value="Record updated"', false);
+    $view->assertSee('data-toast-description-value="Record updated"', false);
 });
 
 it('does not render description attribute when not provided', function () {
@@ -34,8 +34,8 @@ it('reads success from session', function () {
 
     $view = $this->blade('<x-hwc::flash-message />');
 
-    $view->assertSee('data-notification--toast-message-value="Item created"', false);
-    $view->assertSee('data-notification--toast-type-value="success"', false);
+    $view->assertSee('data-toast-message-value="Item created"', false);
+    $view->assertSee('data-toast-type-value="success"', false);
 });
 
 it('reads error from session', function () {
@@ -43,8 +43,8 @@ it('reads error from session', function () {
 
     $view = $this->blade('<x-hwc::flash-message />');
 
-    $view->assertSee('data-notification--toast-message-value="Something failed"', false);
-    $view->assertSee('data-notification--toast-type-value="error"', false);
+    $view->assertSee('data-toast-message-value="Something failed"', false);
+    $view->assertSee('data-toast-type-value="error"', false);
 });
 
 it('reads first validation error from session', function () {
@@ -53,8 +53,8 @@ it('reads first validation error from session', function () {
 
     $view = $this->blade('<x-hwc::flash-message />');
 
-    $view->assertSee('data-notification--toast-message-value="Field is required"', false);
-    $view->assertSee('data-notification--toast-type-value="error"', false);
+    $view->assertSee('data-toast-message-value="Field is required"', false);
+    $view->assertSee('data-toast-type-value="error"', false);
 });
 
 it('reads warning from session', function () {
@@ -62,8 +62,8 @@ it('reads warning from session', function () {
 
     $view = $this->blade('<x-hwc::flash-message />');
 
-    $view->assertSee('data-notification--toast-message-value="Watch out"', false);
-    $view->assertSee('data-notification--toast-type-value="warning"', false);
+    $view->assertSee('data-toast-message-value="Watch out"', false);
+    $view->assertSee('data-toast-type-value="warning"', false);
 });
 
 it('reads info from session', function () {
@@ -71,8 +71,8 @@ it('reads info from session', function () {
 
     $view = $this->blade('<x-hwc::flash-message />');
 
-    $view->assertSee('data-notification--toast-message-value="FYI"', false);
-    $view->assertSee('data-notification--toast-type-value="info"', false);
+    $view->assertSee('data-toast-message-value="FYI"', false);
+    $view->assertSee('data-toast-type-value="info"', false);
 });
 
 it('explicit message overrides session', function () {
@@ -80,7 +80,7 @@ it('explicit message overrides session', function () {
 
     $view = $this->blade('<x-hwc::flash-message message="From prop" />');
 
-    $view->assertSee('data-notification--toast-message-value="From prop"', false);
+    $view->assertSee('data-toast-message-value="From prop"', false);
 });
 
 it('explicit type overrides session type', function () {
@@ -88,7 +88,7 @@ it('explicit type overrides session type', function () {
 
     $view = $this->blade('<x-hwc::flash-message type="warning" />');
 
-    $view->assertSee('data-notification--toast-type-value="warning"', false);
+    $view->assertSee('data-toast-type-value="warning"', false);
 });
 
 it('defaults type to default when no session and no prop', function () {
@@ -106,14 +106,14 @@ it('has data-turbo-temporary attribute', function () {
 it('renders using :: namespace syntax', function () {
     $view = $this->blade('<x-hwc::flash-message message="Done!" type="success" />');
 
-    $view->assertSee('data-notification--toast-message-value="Done!"', false);
-    $view->assertSee('data-notification--toast-type-value="success"', false);
+    $view->assertSee('data-toast-message-value="Done!"', false);
+    $view->assertSee('data-toast-type-value="success"', false);
 });
 
 it('renders with hotwire:: prefix alias', function () {
     $view = $this->blade('<x-hotwire::flash-message message="Done!" type="success" />');
 
-    $view->assertSee('data-controller="notification--toast"', false);
-    $view->assertSee('data-notification--toast-message-value="Done!"', false);
-    $view->assertSee('data-notification--toast-type-value="success"', false);
+    $view->assertSee('data-controller="toast"', false);
+    $view->assertSee('data-toast-message-value="Done!"', false);
+    $view->assertSee('data-toast-type-value="success"', false);
 });

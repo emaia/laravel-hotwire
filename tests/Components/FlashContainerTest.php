@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Blade;
 it('renders with default props', function () {
     $view = $this->blade('<x-hwc::flash-container />');
 
-    $view->assertSee('data-controller="notification--toaster"', false);
+    $view->assertSee('data-controller="toaster"', false);
     $view->assertSee('id="flash-container"', false);
     $view->assertSee('data-turbo-permanent', false);
 });
@@ -17,15 +17,15 @@ it('renders with default props', function () {
 it('emits default stimulus values', function () {
     $view = $this->blade('<x-hwc::flash-container />');
 
-    $view->assertSee('data-notification--toaster-position-value="bottom-center"', false);
-    $view->assertSee('data-notification--toaster-theme-value="light"', false);
-    $view->assertSee('data-notification--toaster-duration-value="4000"', false);
-    $view->assertSee('data-notification--toaster-visible-toasts-value="3"', false);
-    $view->assertSee('data-notification--toaster-close-button-value="true"', false);
-    $view->assertSee('data-notification--toaster-rich-colors-value="true"', false);
-    $view->assertSee('data-notification--toaster-expand-value="false"', false);
-    $view->assertSee('data-notification--toaster-invert-value="false"', false);
-    $view->assertSee('data-notification--toaster-auto-disconnect-value="false"', false);
+    $view->assertSee('data-toaster-position-value="bottom-center"', false);
+    $view->assertSee('data-toaster-theme-value="light"', false);
+    $view->assertSee('data-toaster-duration-value="4000"', false);
+    $view->assertSee('data-toaster-visible-toasts-value="3"', false);
+    $view->assertSee('data-toaster-close-button-value="true"', false);
+    $view->assertSee('data-toaster-rich-colors-value="true"', false);
+    $view->assertSee('data-toaster-expand-value="false"', false);
+    $view->assertSee('data-toaster-invert-value="false"', false);
+    $view->assertSee('data-toaster-auto-disconnect-value="false"', false);
 });
 
 // --- Identity and Turbo integration ---
@@ -76,10 +76,10 @@ it('emits custom position, theme, duration, and visible toasts', function () {
         />
     ');
 
-    $view->assertSee('data-notification--toaster-position-value="top-right"', false);
-    $view->assertSee('data-notification--toaster-theme-value="dark"', false);
-    $view->assertSee('data-notification--toaster-duration-value="5000"', false);
-    $view->assertSee('data-notification--toaster-visible-toasts-value="5"', false);
+    $view->assertSee('data-toaster-position-value="top-right"', false);
+    $view->assertSee('data-toaster-theme-value="dark"', false);
+    $view->assertSee('data-toaster-duration-value="5000"', false);
+    $view->assertSee('data-toaster-visible-toasts-value="5"', false);
 });
 
 it('emits boolean props as true/false strings', function () {
@@ -93,11 +93,11 @@ it('emits boolean props as true/false strings', function () {
         />
     ');
 
-    $view->assertSee('data-notification--toaster-close-button-value="false"', false);
-    $view->assertSee('data-notification--toaster-rich-colors-value="false"', false);
-    $view->assertSee('data-notification--toaster-expand-value="true"', false);
-    $view->assertSee('data-notification--toaster-invert-value="true"', false);
-    $view->assertSee('data-notification--toaster-auto-disconnect-value="true"', false);
+    $view->assertSee('data-toaster-close-button-value="false"', false);
+    $view->assertSee('data-toaster-rich-colors-value="false"', false);
+    $view->assertSee('data-toaster-expand-value="true"', false);
+    $view->assertSee('data-toaster-invert-value="true"', false);
+    $view->assertSee('data-toaster-auto-disconnect-value="true"', false);
 });
 
 it('emits optional advanced props when provided', function () {
@@ -115,21 +115,21 @@ it('emits optional advanced props when provided', function () {
         />
     ');
 
-    $view->assertSee('data-notification--toaster-gap-value="10"', false);
-    $view->assertSee('data-notification--toaster-hotkey-value="alt+T"', false);
-    $view->assertSee('data-notification--toaster-dir-value="rtl"', false);
-    $view->assertSee('data-notification--toaster-offset-value="16px"', false);
-    $view->assertSee('data-notification--toaster-mobile-offset-value="8px"', false);
-    $view->assertSee('data-notification--toaster-class-name-value="my-toast-list"', false);
-    $view->assertSee('data-notification--toaster-container-aria-label-value="Notifications"', false);
-    $view->assertSee('data-notification--toaster-custom-aria-label-value="Alert"', false);
-    $view->assertSee('data-notification--toaster-swipe-directions-value="left,right"', false);
+    $view->assertSee('data-toaster-gap-value="10"', false);
+    $view->assertSee('data-toaster-hotkey-value="alt+T"', false);
+    $view->assertSee('data-toaster-dir-value="rtl"', false);
+    $view->assertSee('data-toaster-offset-value="16px"', false);
+    $view->assertSee('data-toaster-mobile-offset-value="8px"', false);
+    $view->assertSee('data-toaster-class-name-value="my-toast-list"', false);
+    $view->assertSee('data-toaster-container-aria-label-value="Notifications"', false);
+    $view->assertSee('data-toaster-custom-aria-label-value="Alert"', false);
+    $view->assertSee('data-toaster-swipe-directions-value="left,right"', false);
 });
 
 // --- Stimulus controller declaration ---
 
 it('declares only the toaster stimulus controller', function () {
-    expect(FlashContainer::stimulusControllers())->toBe(['notification--toaster']);
+    expect(FlashContainer::stimulusControllers())->toBe(['toaster']);
 });
 
 // --- Namespace registration ---
@@ -137,7 +137,7 @@ it('declares only the toaster stimulus controller', function () {
 it('renders with hotwire:: prefix alias', function () {
     $view = $this->blade('<x-hotwire::flash-container />');
 
-    $view->assertSee('data-controller="notification--toaster"', false);
+    $view->assertSee('data-controller="toaster"', false);
     $view->assertSee('id="flash-container"', false);
 });
 

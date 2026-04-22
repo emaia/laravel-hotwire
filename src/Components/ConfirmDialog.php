@@ -22,7 +22,7 @@ class ConfirmDialog extends Component implements HasStimulusControllers
 
     public static function stimulusControllers(): array
     {
-        return ['dialog--confirm'];
+        return ['confirm-dialog'];
     }
 
     public function render()

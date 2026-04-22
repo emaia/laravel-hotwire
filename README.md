@@ -20,13 +20,10 @@ the box.
 - [Turbo](#turbo)
 - [Components](#components)
 - [Stimulus Controllers (standalone)](#stimulus-controllers-standalone)
-    - [Dialog](#dialog)
-    - [Form](#form)
-    - [Frame](#frame)
+    - [Top-level controllers](#top-level-controllers)
+    - [Turbo](#turbo-1)
     - [Optimistic](#optimistic)
     - [Dev](#dev)
-    - [Lib](#lib)
-    - [Media](#media)
 - [Testing](#testing)
 - [Changelog](#changelog)
 - [Contributing](#contributing)
@@ -99,22 +96,22 @@ bundler (Vite).
 php artisan hotwire:controllers
 ```
 
-**By namespace** — publish all controllers in a namespace:
+**By name** — publish a specific controller:
 
 ```bash
-php artisan hotwire:controllers form
+php artisan hotwire:controllers autoselect
 ```
 
-**By specific controller** — `namespace/name` notation:
+**Substrate namespace** — publish every controller under a substrate folder (`turbo`, `optimistic`, `dev`):
 
 ```bash
-php artisan hotwire:controllers form/autoselect
+php artisan hotwire:controllers turbo
 ```
 
-**Multiple arguments** — mix namespaces and specific controllers:
+**Multiple arguments** — mix names and substrate namespaces:
 
 ```bash
-php artisan hotwire:controllers form dialog/modal
+php artisan hotwire:controllers dialog turbo/progress auto-submit
 ```
 
 **All at once:**
@@ -132,12 +129,13 @@ php artisan hotwire:controllers --list
 **Overwrite existing files:**
 
 ```bash
-php artisan hotwire:controllers form/autoselect --force
+php artisan hotwire:controllers autoselect --force
 ```
 
-Controllers are copied to `resources/js/controllers/` preserving the folder structure. The `namespace/name` argument
-mirrors the directory structure: `form/autoselect` → `resources/js/controllers/form/autoselect_controller.js`.
-The Stimulus identifier follows the same convention: `dialog/modal` → `data-controller="dialog--modal"`.
+Top-level controllers are copied flat to `resources/js/controllers/` (e.g. `dialog` →
+`resources/js/controllers/dialog_controller.js`, identifier `dialog`). Controllers under a substrate folder preserve
+that folder and use Stimulus' `--` separator (e.g. `turbo/progress` →
+`resources/js/controllers/turbo/progress_controller.js`, identifier `turbo--progress`).
 [@emaia/stimulus-dynamic-loader](https://www.npmjs.com/package/@emaia/stimulus-dynamic-loader) discovers and loads
 them automatically via `import.meta.glob`.
 
@@ -180,12 +178,12 @@ php artisan hotwire:check --path=resources/views/app
 Example output:
 
 ```
-  ✓  notification--toaster  up to date  (used by <x-hwc::flash-container>)
-  ✓  notification--toast    up to date  (used by <x-hwc::flash-message>)
+  ✓  toaster  up to date  (used by <x-hwc::flash-container>)
+  ✓  toast    up to date  (used by <x-hwc::flash-message>)
 
 Required npm dependencies:
-  ✓  @emaia/sonner ^2.1.0  (used by notification--toaster, notification--toast)
-  ✗  tippy.js ^6.3.7       missing from package.json (used by lib--tippy)
+  ✓  @emaia/sonner ^2.1.0  (used by toaster, toast)
+  ✗  tippy.js ^6.3.7       missing from package.json (used by tooltip)
 ```
 
 > When `--fix` adds packages to `devDependencies`, run your package manager's install command afterwards
@@ -240,7 +238,7 @@ Add these settings to your CSS entrypoint `resources/css/app.css`:
 ```css
 @source '../../vendor/emaia/laravel-hotwire/resources/views/**/*.blade.php';
 @custom-variant turbo-frame (turbo-frame[src] &);
-@custom-variant modal ([data-dialog--modal-target="dialog"] &);
+@custom-variant modal ([data-dialog-target="dialog"] &);
 @custom-variant aria-busy (form[aria-busy="true"] &);
 @custom-variant self-aria-busy (html[aria-busy="true"] &);
 @custom-variant turbo-frame-aria-busy (turbo-frame[aria-busy="true"] &);
@@ -252,11 +250,11 @@ Add these settings to your CSS entrypoint `resources/css/app.css`:
 // config/hotwire.php
 
 return [
-    'prefix' => 'hwc', // <x-hwc::modal>
+    'prefix' => 'hwc', // <x-hwc::dialog>
 ];
 ```
 
-Change `prefix` to use a different prefix for Blade components. E.g. `'prefix' => 'hotwire'` → `<x-hotwire::modal>`.
+Change `prefix` to use a different prefix for Blade components. E.g. `'prefix' => 'hotwire'` → `<x-hotwire::dialog>`.
 
 ## Turbo
 
@@ -281,79 +279,78 @@ See the full documentation at [emaia/laravel-hotwire-turbo](https://github.com/e
 
 ## Components
 
-| Component                                                  | Blade                     | Stimulus Identifier                            | Docs                                               |
-|------------------------------------------------------------|---------------------------|------------------------------------------------|----------------------------------------------------|
-| [Modal](docs/components/modal/readme.md)                    | `<x-hwc::modal>`           | `dialog--modal`         | [readme](docs/components/modal/readme.md)          |
-| [Confirm Dialog](docs/components/confirm-dialog/readme.md)  | `<x-hwc::confirm-dialog>`  | `dialog--confirm`       | [readme](docs/components/confirm-dialog/readme.md) |
-| [Flash Container](docs/components/flash-message/readme.md)  | `<x-hwc::flash-container>` | `notification--toaster` | [readme](docs/components/flash-message/readme.md)  |
-| [Flash Message](docs/components/flash-message/readme.md)    | `<x-hwc::flash-message>`   | `notification--toast`   | [readme](docs/components/flash-message/readme.md)  |
-| [Loader](docs/components/loader/readme.md)                  | `<x-hwc::loader>`          | —                       | [readme](docs/components/loader/readme.md)         |
-| [Optimistic](docs/components/optimistic/readme.md)          | `<x-hwc::optimistic>`      | —                       | [readme](docs/components/optimistic/readme.md)     |
+| Component                                                  | Blade                      | Stimulus Identifier | Docs                                               |
+|------------------------------------------------------------|----------------------------|---------------------|----------------------------------------------------|
+| [Dialog](docs/components/dialog/readme.md)                 | `<x-hwc::dialog>`          | `dialog`            | [readme](docs/components/dialog/readme.md)         |
+| [Confirm Dialog](docs/components/confirm-dialog/readme.md) | `<x-hwc::confirm-dialog>`  | `confirm-dialog`    | [readme](docs/components/confirm-dialog/readme.md) |
+| [Flash Container](docs/components/flash-message/readme.md) | `<x-hwc::flash-container>` | `toaster`           | [readme](docs/components/flash-message/readme.md)  |
+| [Flash Message](docs/components/flash-message/readme.md)   | `<x-hwc::flash-message>`   | `toast`             | [readme](docs/components/flash-message/readme.md)  |
+| [Loader](docs/components/loader/readme.md)                 | `<x-hwc::loader>`          | —                   | [readme](docs/components/loader/readme.md)         |
+| [Optimistic](docs/components/optimistic/readme.md)         | `<x-hwc::optimistic>`      | —                   | [readme](docs/components/optimistic/readme.md)     |
+| [Timeago](docs/controllers/timeago.md)                     | `<x-hwc::timeago>`         | `timeago`           | [readme](docs/controllers/timeago.md)              |
 
 ## Stimulus Controllers (standalone)
 
 Stimulus controllers without an associated Blade component. Used directly via `data-controller` and `data-action`.
 
+Controllers live flat at the top level (`resources/js/controllers/<name>_controller.{js,ts}`). Substrate folders
+(`turbo/`, `optimistic/`, `dev/`) group controllers tied to a specific technical layer and use Stimulus' `--` separator
+in the identifier.
+
 ```bash
-php artisan hotwire:controllers form/autoselect form/autosubmit frame/progress
+php artisan hotwire:controllers autoselect auto-submit turbo/progress
 ```
 
-### Dialog
+### Top-level controllers
 
-| Controller                                          | Identifier        | Dependencies | Docs                                               |
-|-----------------------------------------------------|-------------------|--------------|----------------------------------------------------|
-| [Modal](docs/controllers/dialog/modal.md)           | `dialog--modal`   | —            | [readme](docs/controllers/dialog/modal.md)         |
-| [Confirm](docs/components/confirm-dialog/readme.md) | `dialog--confirm` | —            | [readme](docs/components/confirm-dialog/readme.md) |
+| Controller                                                     | Identifier            | Dependencies    | Docs                                              |
+|----------------------------------------------------------------|-----------------------|-----------------|---------------------------------------------------|
+| [Animated Number](docs/controllers/animated-number.md)         | `animated-number`     | —               | [readme](docs/controllers/animated-number.md)     |
+| [Autoresize](docs/controllers/autoresize.md)                   | `autoresize`          | —               | [readme](docs/controllers/autoresize.md)          |
+| [Autoselect](docs/controllers/autoselect.md)                   | `autoselect`          | —               | [readme](docs/controllers/autoselect.md)          |
+| [Auto Submit](docs/controllers/auto-submit.md)                 | `auto-submit`         | —               | [readme](docs/controllers/auto-submit.md)         |
+| [Char Counter](docs/controllers/char-counter.md)               | `char-counter`        | —               | [readme](docs/controllers/char-counter.md)        |
+| [Checkbox Select All](docs/controllers/checkbox-select-all.md) | `checkbox-select-all` | —               | [readme](docs/controllers/checkbox-select-all.md) |
+| [Clean Query Params](docs/controllers/clean-query-params.md)   | `clean-query-params`  | —               | [readme](docs/controllers/clean-query-params.md)  |
+| [Clear Input](docs/controllers/clear-input.md)                 | `clear-input`         | —               | [readme](docs/controllers/clear-input.md)         |
+| [Copy To Clipboard](docs/controllers/copy-to-clipboard.md)     | `copy-to-clipboard`   | —               | [readme](docs/controllers/copy-to-clipboard.md)   |
+| [Dialog](docs/controllers/dialog.md)                           | `dialog`              | —               | [readme](docs/controllers/dialog.md)              |
+| [GTM](docs/controllers/gtm.md)                                 | `gtm`                 | —               | [readme](docs/controllers/gtm.md)                 |
+| [Hotkey](docs/controllers/hotkey.md)                           | `hotkey`              | —               | [readme](docs/controllers/hotkey.md)              |
+| [Input Mask](docs/controllers/input-mask.md)                   | `input-mask`          | `maska`         | [readme](docs/controllers/input-mask.md)          |
+| [Lazy Image](docs/controllers/lazy-image.md)                   | `lazy-image`          | —               | [readme](docs/controllers/lazy-image.md)          |
+| [OEmbed](docs/controllers/oembed.md)                           | `oembed`              | —               | [readme](docs/controllers/oembed.md)              |
+| [Remote Form](docs/controllers/remote-form.md)                 | `remote-form`         | —               | [readme](docs/controllers/remote-form.md)         |
+| [Reset Files](docs/controllers/reset-files.md)                 | `reset-files`         | —               | [readme](docs/controllers/reset-files.md)         |
+| [Timeago](docs/controllers/timeago.md)                         | `timeago`             | `date-fns`      | [readme](docs/controllers/timeago.md)             |
+| [Toast](docs/controllers/toast.md)                             | `toast`               | `@emaia/sonner` | [readme](docs/controllers/toast.md)               |
+| [Toaster](docs/controllers/toaster.md)                         | `toaster`             | `@emaia/sonner` | [readme](docs/controllers/toaster.md)             |
+| [Tooltip](docs/controllers/tooltip.md)                         | `tooltip`             | `tippy.js`      | [readme](docs/controllers/tooltip.md)             |
+| [Unsaved Changes](docs/controllers/unsaved-changes.md)         | `unsaved-changes`     | —               | [readme](docs/controllers/unsaved-changes.md)     |
 
-### Form
+### Turbo
 
-| Controller                                                      | Identifier                | Dependencies | Docs                                                 |
-|-----------------------------------------------------------------|---------------------------|--------------|------------------------------------------------------|
-| [Autoselect](docs/controllers/form/autoselect.md)               | `form--autoselect`        | —            | [readme](docs/controllers/form/autoselect.md)        |
-| [Autosubmit](docs/controllers/form/autosubmit.md)               | `form--autosubmit`        | —            | [readme](docs/controllers/form/autosubmit.md)        |
-| [Clean Query String](docs/controllers/form/clean-querystring.md) | `form--clean-querystring` | —            | [readme](docs/controllers/form/clean-querystring.md) |
-| [Clear Input](docs/controllers/form/clear-input.md)             | `form--clear-input`       | —            | [readme](docs/controllers/form/clear-input.md)       |
-| [Remote](docs/controllers/form/remote.md)                       | `form--remote`            | —            | [readme](docs/controllers/form/remote.md)            |
-| [Reset Files](docs/controllers/form/reset-files.md)             | `form--reset-files`       | —            | [readme](docs/controllers/form/reset-files.md)       |
-| [Textarea Autogrow](docs/controllers/form/textarea-autogrow.md) | `form--textarea-autogrow` | —            | [readme](docs/controllers/form/textarea-autogrow.md) |
-| [Unsaved Changes](docs/controllers/form/unsaved-changes.md)     | `form--unsaved-changes`   | —            | [readme](docs/controllers/form/unsaved-changes.md)   |
-
-### Frame
+Controllers tied to Turbo Drive / Turbo Frames.
 
 | Controller                                                   | Identifier               | Dependencies      | Docs                                                |
 |--------------------------------------------------------------|--------------------------|-------------------|-----------------------------------------------------|
-| [Polling](docs/controllers/frame/polling.md)                 | `frame--polling`         | `@hotwired/turbo` | [readme](docs/controllers/frame/polling.md)         |
-| [Progress](docs/controllers/frame/progress.md)               | `frame--progress`        | `@hotwired/turbo` | [readme](docs/controllers/frame/progress.md)        |
-| [View Transition](docs/controllers/frame/view-transition.md) | `frame--view-transition` | —                 | [readme](docs/controllers/frame/view-transition.md) |
+| [Polling](docs/controllers/turbo/polling.md)                 | `turbo--polling`         | `@hotwired/turbo` | [readme](docs/controllers/turbo/polling.md)         |
+| [Progress](docs/controllers/turbo/progress.md)               | `turbo--progress`        | `@hotwired/turbo` | [readme](docs/controllers/turbo/progress.md)        |
+| [View Transition](docs/controllers/turbo/view-transition.md) | `turbo--view-transition` | —                 | [readme](docs/controllers/turbo/view-transition.md) |
 
 ### Optimistic
 
 | Controller                                          | Identifier             | Dependencies      | Docs                                              |
 |-----------------------------------------------------|------------------------|-------------------|---------------------------------------------------|
+| [Dispatch](docs/controllers/optimistic/dispatch.md) | `optimistic--dispatch` | `@hotwired/turbo` | [readme](docs/controllers/optimistic/dispatch.md) |
 | [Form](docs/controllers/optimistic/form.md)         | `optimistic--form`     | `@hotwired/turbo` | [readme](docs/controllers/optimistic/form.md)     |
 | [Link](docs/controllers/optimistic/link.md)         | `optimistic--link`     | `@hotwired/turbo` | [readme](docs/controllers/optimistic/link.md)     |
-| [Dispatch](docs/controllers/optimistic/dispatch.md) | `optimistic--dispatch` | `@hotwired/turbo` | [readme](docs/controllers/optimistic/dispatch.md) |
 
 ### Dev
 
 | Controller                         | Identifier | Dependencies | Docs                                  |
 |------------------------------------|------------|--------------|---------------------------------------|
 | [Log](docs/controllers/dev/log.md) | `dev--log` | —            | [readme](docs/controllers/dev/log.md) |
-
-### Lib
-
-| Controller                             | Identifier   | Dependencies | Docs                                    |
-|----------------------------------------|--------------|--------------|-----------------------------------------|
-| [GTM](docs/controllers/lib/gtm.md)     | `lib--gtm`   | —            | [readme](docs/controllers/lib/gtm.md)   |
-| [Maska](docs/controllers/lib/maska.md) | `lib--maska` | `maska`      | [readme](docs/controllers/lib/maska.md) |
-| [Tippy](docs/controllers/lib/tippy.md) | `lib--tippy` | `tippy.js`   | [readme](docs/controllers/lib/tippy.md) |
-
-### Media
-
-| Controller                                   | Identifier       | Dependencies | Docs                                        |
-|----------------------------------------------|------------------|--------------|---------------------------------------------|
-| [OEmbed](docs/controllers/media/oembed.md)   | `media--oembed`  | —            | [readme](docs/controllers/media/oembed.md)  |
-| [Pending](docs/controllers/media/pending.md) | `media--pending` | —            | [readme](docs/controllers/media/pending.md) |
 
 ## Testing
 

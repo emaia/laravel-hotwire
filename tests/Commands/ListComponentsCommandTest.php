@@ -16,17 +16,19 @@ it('runs successfully', function () {
 });
 
 it('lists all registered components', function () {
-    $this->artisan('hotwire:components')
-        ->expectsOutputToContain('Modal')
-        ->expectsOutputToContain('Confirm')
-        ->expectsOutputToContain('Flash Message')
-        ->expectsOutputToContain('Loader')
-        ->assertSuccessful();
+    Artisan::call('hotwire:components');
+    $output = Artisan::output();
+
+    expect($output)->toContain('Dialog')
+        ->and($output)->toContain('Confirm Dialog')
+        ->and($output)->toContain('Flash Container')
+        ->and($output)->toContain('Flash Message')
+        ->and($output)->toContain('Loader');
 });
 
 it('shows blade tags with current prefix', function () {
     $this->artisan('hotwire:components')
-        ->expectsOutputToContain('<x-hwc::modal>')
+        ->expectsOutputToContain('<x-hwc::dialog>')
         ->expectsOutputToContain('<x-hwc::confirm-dialog>')
         ->expectsOutputToContain('<x-hwc::flash-message>')
         ->expectsOutputToContain('<x-hwc::loader>')
@@ -37,16 +39,16 @@ it('shows blade tags respecting custom prefix', function () {
     config()->set('hotwire.prefix', 'h');
 
     $this->artisan('hotwire:components')
-        ->expectsOutputToContain('<x-h::modal>')
+        ->expectsOutputToContain('<x-h::dialog>')
         ->assertSuccessful();
 });
 
 it('shows stimulus controller identifiers', function () {
     $this->artisan('hotwire:components')
-        ->expectsOutputToContain('dialog--modal')
-        ->expectsOutputToContain('dialog--confirm')
-        ->expectsOutputToContain('notification--toaster') // before toast: toaster ⊃ toast in Mockery matching
-        ->expectsOutputToContain('notification--toast')
+        ->expectsOutputToContain('confirm-dialog')
+        ->expectsOutputToContain('toaster') // before toast: toaster ⊃ toast in Mockery matching
+        ->expectsOutputToContain('toast')
+        ->expectsOutputToContain('timeago')
         ->assertSuccessful();
 });
 
@@ -63,8 +65,8 @@ it('shows not published when controller file is absent', function () {
 });
 
 it('shows up to date when installed controller matches package version', function () {
-    $source = realpath(__DIR__.'/../../resources/js/controllers/dialog/modal_controller.js');
-    $target = $this->targetDir.'/dialog/modal_controller.js';
+    $source = realpath(__DIR__.'/../../resources/js/controllers/dialog_controller.js');
+    $target = $this->targetDir.'/dialog_controller.js';
     File::ensureDirectoryExists(dirname($target));
     File::copy($source, $target);
 
@@ -74,7 +76,7 @@ it('shows up to date when installed controller matches package version', functio
 });
 
 it('shows outdated when installed controller differs from package version', function () {
-    $target = $this->targetDir.'/dialog/modal_controller.js';
+    $target = $this->targetDir.'/dialog_controller.js';
     File::ensureDirectoryExists(dirname($target));
     File::put($target, '// modified');
 
@@ -83,14 +85,14 @@ it('shows outdated when installed controller differs from package version', func
         ->assertSuccessful();
 });
 
-it('shows multiple controller rows for flash message', function () {
+it('lists the flash container and flash message controllers', function () {
     $this->artisan('hotwire:components')
-        ->expectsOutputToContain('notification--toaster') // before toast: toaster ⊃ toast in Mockery matching
-        ->expectsOutputToContain('notification--toast')
+        ->expectsOutputToContain('toaster') // before toast: toaster ⊃ toast in Mockery matching
+        ->expectsOutputToContain('toast')
         ->assertSuccessful();
 });
 
-it('shows component name only on first controller row for multi-controller components', function () {
+it('shows component name only on first row for each component', function () {
     // Artisan::call() captures output in Artisan::output(); $this->artisan() uses its own buffer
     Artisan::call('hotwire:components');
     $text = Artisan::output();

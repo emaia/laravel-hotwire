@@ -67,9 +67,12 @@ class ListComponentsCommand extends Command
     {
         [$dir, $name] = $this->identifierToParts($identifier);
 
-        $filename = "{$name}_controller.js";
-        $targetFile = "{$targetBase}/{$dir}/{$filename}";
-        $sourceFile = "{$sourceBase}/{$dir}/{$filename}";
+        $sourceFile = $this->resolveSourceFile($sourceBase, $dir, $name);
+        $ext = pathinfo($sourceFile, PATHINFO_EXTENSION);
+        $filename = "{$name}_controller.{$ext}";
+        $targetFile = $dir === ''
+            ? "{$targetBase}/{$filename}"
+            : "{$targetBase}/{$dir}/{$filename}";
 
         if (! $this->files->exists($targetFile)) {
             return 'not published';
@@ -84,15 +87,30 @@ class ListComponentsCommand extends Command
             : 'outdated';
     }
 
+    private function resolveSourceFile(string $sourceBase, string $dir, string $name): string
+    {
+        $base = $dir === '' ? $sourceBase : "{$sourceBase}/{$dir}";
+
+        foreach (['.js', '.ts'] as $ext) {
+            $path = "{$base}/{$name}_controller{$ext}";
+            if ($this->files->exists($path)) {
+                return $path;
+            }
+        }
+
+        return "{$base}/{$name}_controller.js";
+    }
+
     /** @return array{string, string} [relative_dir, name] */
     private function identifierToParts(string $identifier): array
     {
-        // 'dialog--modal' → dir='dialog', name='modal'
-        // 'notification--toast' → dir='notification', name='toast'
-        $parts = explode('--', $identifier, 2);
-        $dir = str_replace('--', '/', $parts[0]);
-        $name = str_replace('-', '_', $parts[1] ?? '');
+        if (str_contains($identifier, '--')) {
+            [$dir, $name] = explode('--', $identifier, 2);
+        } else {
+            $dir = '';
+            $name = $identifier;
+        }
 
-        return [$dir, $name];
+        return [$dir, str_replace('-', '_', $name)];
     }
 }
