@@ -306,6 +306,7 @@ php artisan hotwire:controllers autoselect auto-submit turbo/progress
 | Controller                                                     | Identifier            | Dependencies    | Docs                                              |
 |----------------------------------------------------------------|-----------------------|-----------------|---------------------------------------------------|
 | [Animated Number](docs/controllers/animated-number.md)         | `animated-number`     | —               | [readme](docs/controllers/animated-number.md)     |
+| [Auto Save](docs/controllers/auto-save.md)                     | `auto-save`           | —               | [readme](docs/controllers/auto-save.md)           |
 | [Autoresize](docs/controllers/autoresize.md)                   | `autoresize`          | —               | [readme](docs/controllers/autoresize.md)          |
 | [Autoselect](docs/controllers/autoselect.md)                   | `autoselect`          | —               | [readme](docs/controllers/autoselect.md)          |
 | [Auto Submit](docs/controllers/auto-submit.md)                 | `auto-submit`         | —               | [readme](docs/controllers/auto-submit.md)         |
