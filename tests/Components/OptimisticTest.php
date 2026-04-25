@@ -48,10 +48,6 @@ it('escapes target id to prevent attribute injection', function () {
     $view->assertDontSee('<script>alert(1)</script>', false);
 });
 
-it('declares no stimulus controller dependencies (trigger is the host responsibility)', function () {
-    expect(Optimistic::stimulusControllers())->toBe([]);
-});
-
 it('preserves data-field markers in the slot for client-side population', function () {
     $view = $this->blade('
         <x-hwc::optimistic target="messages" action="append">

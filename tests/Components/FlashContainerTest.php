@@ -126,12 +126,6 @@ it('emits optional advanced props when provided', function () {
     $view->assertSee('data-toaster-swipe-directions-value="left,right"', false);
 });
 
-// --- Stimulus controller declaration ---
-
-it('declares only the toaster stimulus controller', function () {
-    expect(FlashContainer::stimulusControllers())->toBe(['toaster']);
-});
-
 // --- Namespace registration ---
 
 it('renders with hotwire:: prefix alias', function () {

@@ -3,10 +3,9 @@
 namespace Emaia\LaravelHotwire\Components;
 
 use DateTimeInterface;
-use Emaia\LaravelHotwire\Contracts\HasStimulusControllers;
 use Illuminate\View\Component;
 
-class Timeago extends Component implements HasStimulusControllers
+class Timeago extends Component
 {
     public string $iso;
 
@@ -25,11 +24,6 @@ class Timeago extends Component implements HasStimulusControllers
 
         $this->iso = $date->format(DateTimeInterface::ATOM);
         $this->formattedTitle = $date->format($titleFormat);
-    }
-
-    public static function stimulusControllers(): array
-    {
-        return ['timeago'];
     }
 
     public function render()

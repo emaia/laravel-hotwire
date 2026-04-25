@@ -2,10 +2,9 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
-use Emaia\LaravelHotwire\Contracts\HasStimulusControllers;
 use Illuminate\View\Component;
 
-class FlashContainer extends Component implements HasStimulusControllers
+class FlashContainer extends Component
 {
     public function __construct(
         public string $id = 'flash-container',
@@ -30,11 +29,6 @@ class FlashContainer extends Component implements HasStimulusControllers
         public ?string $containerAriaLabel = null,
         public ?string $customAriaLabel = null,
     ) {}
-
-    public static function stimulusControllers(): array
-    {
-        return ['toaster'];
-    }
 
     public function render()
     {

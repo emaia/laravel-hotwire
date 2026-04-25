@@ -2,11 +2,10 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
-use Emaia\LaravelHotwire\Contracts\HasStimulusControllers;
 use Illuminate\Support\Facades\Session;
 use Illuminate\View\Component;
 
-class FlashMessage extends Component implements HasStimulusControllers
+class FlashMessage extends Component
 {
     public string $finalType;
 
@@ -36,11 +35,6 @@ class FlashMessage extends Component implements HasStimulusControllers
 
         $this->finalType = $this->type ?? $sessionType ?? 'default';
         $this->finalMessage = $this->message ?? $sessionMessage;
-    }
-
-    public static function stimulusControllers(): array
-    {
-        return ['toast'];
     }
 
     public function shouldRender(): bool
