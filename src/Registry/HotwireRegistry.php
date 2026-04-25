@@ -141,7 +141,7 @@ final class HotwireRegistry
     {
         $aliases = [];
 
-        foreach ($this->components as $component) {
+        foreach ($this->components() as $component) {
             $aliases["{$prefix}::{$component->key}"] = $component->class;
         }
 
