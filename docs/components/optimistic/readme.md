@@ -180,6 +180,8 @@ toast. The morph reverts the optimistic DOM back to the real state, and the
 toast tells the user why:
 
 ```php
+use Illuminate\Support\Facades\Blade;
+
 public function store(Request $request, Post $post)
 {
     try {
@@ -187,10 +189,10 @@ public function store(Request $request, Post $post)
     } catch (\Throwable $e) {
         return turbo_stream()
             ->refresh(method: 'morph')
-            ->append('flash-container', view('partials.flash-message', [
-                'message' => 'Could not favorite this post.',
-                'type' => 'error',
-            ]))
+            ->append('flash-container', Blade::render(
+                '<x-hwc::flash-message :message="$message" type="error" />',
+                ['message' => 'Could not favorite this post.'],
+            ))
             ->withResponse(403);
     }
 

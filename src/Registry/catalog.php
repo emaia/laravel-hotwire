@@ -27,7 +27,7 @@ return [
         'flash-container' => [
             'class' => FlashContainer::class,
             'view' => 'hotwire::components.flash-container.flash-container',
-            'docs' => 'docs/components/flash-message/readme.md',
+            'docs' => 'docs/components/flash-container/readme.md',
             'category' => 'feedback',
             'controllers' => ['toaster'],
         ],
@@ -55,7 +55,7 @@ return [
         'timeago' => [
             'class' => Timeago::class,
             'view' => 'hotwire::components.timeago.timeago',
-            'docs' => 'docs/controllers/timeago.md',
+            'docs' => 'docs/components/timeago/readme.md',
             'category' => 'utility',
             'controllers' => ['timeago'],
         ],

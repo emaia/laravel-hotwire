@@ -280,15 +280,15 @@ See the full documentation at [emaia/laravel-hotwire-turbo](https://github.com/e
 
 ## Components
 
-| Component                                                  | Blade                      | Stimulus Identifier | Docs                                               |
-|------------------------------------------------------------|----------------------------|---------------------|----------------------------------------------------|
-| [Dialog](docs/components/dialog/readme.md)                 | `<x-hwc::dialog>`          | `dialog`            | [readme](docs/components/dialog/readme.md)         |
-| [Confirm Dialog](docs/components/confirm-dialog/readme.md) | `<x-hwc::confirm-dialog>`  | `confirm-dialog`    | [readme](docs/components/confirm-dialog/readme.md) |
-| [Flash Container](docs/components/flash-message/readme.md) | `<x-hwc::flash-container>` | `toaster`           | [readme](docs/components/flash-message/readme.md)  |
-| [Flash Message](docs/components/flash-message/readme.md)   | `<x-hwc::flash-message>`   | `toast`             | [readme](docs/components/flash-message/readme.md)  |
-| [Loader](docs/components/loader/readme.md)                 | `<x-hwc::loader>`          | —                   | [readme](docs/components/loader/readme.md)         |
-| [Optimistic](docs/components/optimistic/readme.md)         | `<x-hwc::optimistic>`      | —                   | [readme](docs/components/optimistic/readme.md)     |
-| [Timeago](docs/controllers/timeago.md)                     | `<x-hwc::timeago>`         | `timeago`           | [readme](docs/controllers/timeago.md)              |
+| Component                                                    | Blade                      | Stimulus Identifier | Docs                                                |
+|--------------------------------------------------------------|----------------------------|---------------------|-----------------------------------------------------|
+| [Dialog](docs/components/dialog/readme.md)                   | `<x-hwc::dialog>`          | `dialog`            | [readme](docs/components/dialog/readme.md)          |
+| [Confirm Dialog](docs/components/confirm-dialog/readme.md)   | `<x-hwc::confirm-dialog>`  | `confirm-dialog`    | [readme](docs/components/confirm-dialog/readme.md)  |
+| [Flash Container](docs/components/flash-container/readme.md) | `<x-hwc::flash-container>` | `toaster`           | [readme](docs/components/flash-container/readme.md) |
+| [Flash Message](docs/components/flash-message/readme.md)     | `<x-hwc::flash-message>`   | `toast`             | [readme](docs/components/flash-message/readme.md)   |
+| [Loader](docs/components/loader/readme.md)                   | `<x-hwc::loader>`          | —                   | [readme](docs/components/loader/readme.md)          |
+| [Optimistic](docs/components/optimistic/readme.md)           | `<x-hwc::optimistic>`      | —                   | [readme](docs/components/optimistic/readme.md)      |
+| [Timeago](docs/components/timeago/readme.md)                 | `<x-hwc::timeago>`         | `timeago`           | [readme](docs/components/timeago/readme.md)         |
 
 ## Stimulus Controllers (standalone)
 
