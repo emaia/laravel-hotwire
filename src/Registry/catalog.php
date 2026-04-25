@@ -42,7 +42,7 @@ return [
             'class' => Loader::class,
             'view' => 'hotwire::components.loader.loader',
             'docs' => 'docs/components/loader/readme.md',
-            'category' => 'forms',
+            'category' => 'feedback',
             'controllers' => [],
         ],
         'optimistic' => [

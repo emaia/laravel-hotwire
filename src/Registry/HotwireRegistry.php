@@ -151,14 +151,9 @@ final class HotwireRegistry
     /** @return array<string, ControllerDefinition> */
     public function publishableControllers(): array
     {
-        $controllers = array_filter(
-            $this->controllers,
-            fn (ControllerDefinition $controller) => ! $controller->internal,
-        );
-
         $byPublishKey = [];
 
-        foreach ($controllers as $controller) {
+        foreach ($this->controllers() as $controller) {
             $byPublishKey[$controller->publishKey()] = $controller;
         }
 
