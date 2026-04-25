@@ -4,6 +4,14 @@ namespace Emaia\LaravelHotwire\Registry;
 
 final readonly class ControllerDefinition
 {
+    private string $relativeDir;
+
+    private string $filename;
+
+    private string $name;
+
+    private string $publishKey;
+
     /** @param  array<string, string>  $npm */
     public function __construct(
         public string $identifier,
@@ -11,7 +19,13 @@ final readonly class ControllerDefinition
         public string $docs,
         public string $category,
         public array $npm = [],
-    ) {}
+    ) {
+        $relative = (string) preg_replace('#^resources/js/controllers/#', '', $this->source);
+        $this->relativeDir = trim(str_replace('\\', '/', dirname($relative)), './');
+        $this->filename = basename($this->source);
+        $this->name = (string) preg_replace('/_controller\.(js|ts)$/', '', $this->filename);
+        $this->publishKey = $this->relativeDir === '' ? $this->name : "{$this->relativeDir}/{$this->name}";
+    }
 
     public function sourcePath(string $basePath): string
     {
@@ -20,25 +34,21 @@ final readonly class ControllerDefinition
 
     public function relativeDir(): string
     {
-        $relative = preg_replace('#^resources/js/controllers/#', '', $this->source);
-
-        return trim(str_replace('\\', '/', dirname($relative)), './');
+        return $this->relativeDir;
     }
 
     public function name(): string
     {
-        return preg_replace('/_controller\.(js|ts)$/', '', basename($this->source));
+        return $this->name;
     }
 
     public function filename(): string
     {
-        return basename($this->source);
+        return $this->filename;
     }
 
     public function publishKey(): string
     {
-        $dir = $this->relativeDir();
-
-        return $dir === '' ? $this->name() : "{$dir}/{$this->name()}";
+        return $this->publishKey;
     }
 }
