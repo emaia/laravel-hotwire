@@ -139,3 +139,57 @@ Elements outside the dialog that should not close the modal can use `data-modal-
 ## Turbo integration
 
 The modal closes automatically on `turbo:before-cache`, preventing ghost modals when navigating with Turbo Drive.
+
+### Closing a dialog from the server
+
+For dialogs driven by a Turbo Frame, clearing the frame closes them via the content observer:
+
+```php
+return turbo_stream()->update('dialog-modal-content', '');
+```
+
+For **static** dialogs (no Turbo Frame), append the [`dialog-auto-close`](../../controllers/dialog-auto-close.md)
+controller to an open dialog by id:
+
+```php
+return turbo_stream()->append('edit-post', '<span data-controller="dialog-auto-close"></span>');
+```
+
+Make sure the dialog declares the same id you target:
+
+```blade
+<x-hwc::dialog id="edit-post">
+    {{-- ... --}}
+</x-hwc::dialog>
+```
+
+### Convenience macro
+
+`TurboStreamBuilder` is `Macroable` — register a `closeDialog()` shortcut once in a service provider:
+
+```php
+// app/Providers/AppServiceProvider.php
+use Emaia\LaravelHotwireTurbo\TurboStreamBuilder;
+
+public function boot(): void
+{
+    TurboStreamBuilder::macro('closeDialog', function (string $id) {
+        return $this->append($id, '<span data-controller="dialog-auto-close"></span>');
+    });
+}
+```
+
+Then any controller becomes a one-liner:
+
+```php
+return turbo_stream()->closeDialog('edit-post');
+
+// or chained with a flash and a refresh
+return turbo_stream()
+    ->refresh(method: 'morph')
+    ->closeDialog('edit-post')
+    ->flash('success', 'Post updated');
+```
+
+> Requires the [`dialog-auto-close`](../../controllers/dialog-auto-close.md) controller to be published —
+> `php artisan hotwire:controllers dialog-auto-close`.

@@ -126,6 +126,11 @@ return [
             'docs' => 'docs/controllers/dialog.md',
             'category' => 'overlay',
         ],
+        'dialog-auto-close' => [
+            'source' => 'resources/js/controllers/dialog_auto_close_controller.js',
+            'docs' => 'docs/controllers/dialog-auto-close.md',
+            'category' => 'overlay',
+        ],
         'gtm' => [
             'source' => 'resources/js/controllers/gtm_controller.js',
             'docs' => 'docs/controllers/gtm.md',
