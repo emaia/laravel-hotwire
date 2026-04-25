@@ -24,6 +24,7 @@ the box.
     - [Turbo](#turbo-1)
     - [Optimistic](#optimistic)
     - [Dev](#dev)
+- [Extending](#extending-the-package)
 - [Testing](#testing)
 - [Changelog](#changelog)
 - [Contributing](#contributing)
@@ -352,6 +353,44 @@ Controllers tied to Turbo Drive / Turbo Frames.
 | Controller                         | Identifier | Dependencies | Docs                                  |
 |------------------------------------|------------|--------------|---------------------------------------|
 | [Log](docs/controllers/dev/log.md) | `dev--log` | —            | [readme](docs/controllers/dev/log.md) |
+
+## Extending the package
+
+Laravel Hotwire uses a single registry as the source of truth for:
+
+- Blade components
+- Stimulus controllers
+- external npm dependencies
+- docs paths
+- public categories
+
+When adding a new component or controller to this package, update the registry entry in
+[`src/Registry/catalog.php`](src/Registry/catalog.php).
+
+Example component entry:
+
+```php
+'dialog' => [
+    'class' => \Emaia\LaravelHotwire\Components\Dialog::class,
+    'view' => 'hotwire::components.dialog.dialog',
+    'docs' => 'docs/components/dialog/readme.md',
+    'category' => 'overlay',
+    'controllers' => ['dialog'],
+],
+```
+
+Example controller entry:
+
+```php
+'tooltip' => [
+    'source' => 'resources/js/controllers/tooltip_controller.js',
+    'docs' => 'docs/controllers/tooltip.md',
+    'category' => 'utility',
+    'npm' => ['tippy.js' => '^6.3.7'],
+],
+```
+
+More details: [docs/registry.md](docs/registry.md)
 
 ## Testing
 
