@@ -41,3 +41,15 @@ it('points every registered component class, docs and controller source to a rea
         }
     }
 });
+
+it('points every registered controller source and docs path to a real file', function () {
+    $registry = HotwireRegistry::make();
+    $basePath = $registry->basePath();
+    $validCategories = ['overlay', 'feedback', 'forms', 'turbo', 'utility', 'dev'];
+
+    foreach ($registry->controllers() as $controller) {
+        expect(file_exists($controller->sourcePath($basePath)))->toBeTrue();
+        expect(file_exists($basePath.'/'.$controller->docs))->toBeTrue();
+        expect($controller->category)->toBeIn($validCategories);
+    }
+});

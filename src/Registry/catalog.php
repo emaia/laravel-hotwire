@@ -108,7 +108,7 @@ return [
         ],
         'confirm-dialog' => [
             'source' => 'resources/js/controllers/confirm_dialog_controller.js',
-            'docs' => 'docs/controllers/dialog.md',
+            'docs' => 'docs/controllers/confirm-dialog.md',
             'category' => 'overlay',
         ],
         'copy-to-clipboard' => [
