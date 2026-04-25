@@ -2,10 +2,9 @@
 
 namespace Emaia\LaravelHotwire\Commands;
 
-use Emaia\LaravelHotwire\Contracts\HasStimulusControllers;
-use Emaia\LaravelHotwire\LaravelHotwireServiceProvider;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
+use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 
 class ListComponentsCommand extends Command
 {
@@ -22,32 +21,31 @@ class ListComponentsCommand extends Command
     {
         $prefix = config('hotwire.prefix', 'hwc');
         $targetBase = resource_path('js/controllers');
-        $sourceBase = realpath(__DIR__.'/../../resources/js/controllers');
+        $registry = HotwireRegistry::make();
 
         $rows = [];
 
-        foreach (LaravelHotwireServiceProvider::COMPONENTS as $key => $class) {
-            $bladeTag = "<x-{$prefix}::{$key}>";
-            $componentName = $this->componentName($key);
+        foreach ($registry->components() as $component) {
+            $bladeTag = $component->tag($prefix);
+            $controllers = $registry->controllersForComponent($component);
 
-            if (is_a($class, HasStimulusControllers::class, true)) {
-                $controllers = $class::stimulusControllers();
-                $firstRow = true;
+            if ($controllers === []) {
+                $rows[] = [$component->displayName(), $bladeTag, '—', '—'];
 
-                foreach ($controllers as $identifier) {
-                    $status = $this->resolveStatus($identifier, $targetBase, $sourceBase);
+                continue;
+            }
 
-                    $rows[] = [
-                        $firstRow ? $componentName : '',
-                        $firstRow ? $bladeTag : '',
-                        $identifier,
-                        $status,
-                    ];
+            $firstRow = true;
 
-                    $firstRow = false;
-                }
-            } else {
-                $rows[] = [$componentName, $bladeTag, '—', '—'];
+            foreach ($controllers as $controller) {
+                $rows[] = [
+                    $firstRow ? $component->displayName() : '',
+                    $firstRow ? $bladeTag : '',
+                    $controller->identifier,
+                    $this->resolveStatus($controller, $targetBase, $registry->basePath()),
+                ];
+
+                $firstRow = false;
             }
         }
 
@@ -56,23 +54,12 @@ class ListComponentsCommand extends Command
         return self::SUCCESS;
     }
 
-    private function componentName(string $key): string
+    private function resolveStatus($controller, string $targetBase, string $basePath): string
     {
-        return collect(explode('-', $key))
-            ->map(fn ($word) => ucfirst($word))
-            ->implode(' ');
-    }
-
-    private function resolveStatus(string $identifier, string $targetBase, string $sourceBase): string
-    {
-        [$dir, $name] = $this->identifierToParts($identifier);
-
-        $sourceFile = $this->resolveSourceFile($sourceBase, $dir, $name);
-        $ext = pathinfo($sourceFile, PATHINFO_EXTENSION);
-        $filename = "{$name}_controller.{$ext}";
-        $targetFile = $dir === ''
-            ? "{$targetBase}/{$filename}"
-            : "{$targetBase}/{$dir}/{$filename}";
+        $sourceFile = $controller->sourcePath($basePath);
+        $targetFile = $controller->relativeDir() === ''
+            ? "{$targetBase}/{$controller->filename()}"
+            : "{$targetBase}/{$controller->relativeDir()}/{$controller->filename()}";
 
         if (! $this->files->exists($targetFile)) {
             return 'not published';
@@ -85,32 +72,5 @@ class ListComponentsCommand extends Command
         return $this->files->hash($sourceFile) === $this->files->hash($targetFile)
             ? 'up to date'
             : 'outdated';
-    }
-
-    private function resolveSourceFile(string $sourceBase, string $dir, string $name): string
-    {
-        $base = $dir === '' ? $sourceBase : "{$sourceBase}/{$dir}";
-
-        foreach (['.js', '.ts'] as $ext) {
-            $path = "{$base}/{$name}_controller{$ext}";
-            if ($this->files->exists($path)) {
-                return $path;
-            }
-        }
-
-        return "{$base}/{$name}_controller.js";
-    }
-
-    /** @return array{string, string} [relative_dir, name] */
-    private function identifierToParts(string $identifier): array
-    {
-        if (str_contains($identifier, '--')) {
-            [$dir, $name] = explode('--', $identifier, 2);
-        } else {
-            $dir = '';
-            $name = $identifier;
-        }
-
-        return [$dir, str_replace('-', '_', $name)];
     }
 }

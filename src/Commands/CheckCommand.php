@@ -2,8 +2,9 @@
 
 namespace Emaia\LaravelHotwire\Commands;
 
-use Emaia\LaravelHotwire\Contracts\HasStimulusControllers;
-use Emaia\LaravelHotwire\LaravelHotwireServiceProvider;
+use Emaia\LaravelHotwire\Registry\ComponentDefinition;
+use Emaia\LaravelHotwire\Registry\ControllerDefinition;
+use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
 use Symfony\Component\Finder\Finder;
@@ -19,12 +20,6 @@ class CheckCommand extends Command
 
     public $description = 'Check that Stimulus controllers for used Hotwire components are published';
 
-    private const array CORE_NPM_PACKAGES = [
-        '@hotwired/stimulus',
-        '@hotwired/turbo',
-        '@emaia/stimulus-dynamic-loader',
-    ];
-
     public function __construct(private Filesystem $files)
     {
         parent::__construct();
@@ -35,7 +30,7 @@ class CheckCommand extends Command
         $prefix = config('hotwire.prefix', 'hwc');
         $paths = $this->scanPaths();
         $targetBase = resource_path('js/controllers');
-        $sourceBase = realpath(__DIR__.'/../../resources/js/controllers');
+        $registry = HotwireRegistry::make();
 
         $totalFiles = 0;
         $usedKeys = $this->detectUsedComponents($paths, $prefix, $totalFiles);
@@ -49,9 +44,9 @@ class CheckCommand extends Command
             return self::SUCCESS;
         }
 
-        ['issues' => $issues, 'sources' => $sources] = $this->reportStatus($usedKeys, $prefix, $targetBase, $sourceBase);
+        ['issues' => $issues, 'controllers' => $controllers] = $this->reportStatus($usedKeys, $prefix, $targetBase, $registry);
 
-        $required = $this->collectRequiredDependencies($sources);
+        $required = $this->collectRequiredDependencies($controllers);
         $missingDeps = $this->reportDependencies($required);
 
         $this->line('');
@@ -127,48 +122,44 @@ class CheckCommand extends Command
 
     /**
      * Print the per-controller status and return both the issues list and a map
-     * of identifier → source file (used later for npm dependency extraction).
+     * of identifier → controller definition (used later for npm dependency checks).
      *
      * @param  string[]  $usedKeys
-     * @return array{issues: array<int, array{identifier: string, source_file: string, target_file: string}>, sources: array<string, string>}
+     * @return array{issues: array<int, array{identifier: string, source_file: string, target_file: string}>, controllers: array<string, ControllerDefinition>}
      */
-    private function reportStatus(array $usedKeys, string $prefix, string $targetBase, string $sourceBase): array
+    private function reportStatus(array $usedKeys, string $prefix, string $targetBase, HotwireRegistry $registry): array
     {
         $issues = [];
-        $sources = [];
+        $controllers = [];
 
         foreach ($usedKeys as $key) {
-            $class = LaravelHotwireServiceProvider::COMPONENTS[$key] ?? null;
+            $component = $registry->component($key);
             $tag = "<x-{$prefix}::{$key}>";
 
-            if ($class === null) {
+            if ($component === null) {
                 continue;
             }
 
-            if (! is_a($class, HasStimulusControllers::class, true)) {
+            if ($component->controllers === []) {
                 $this->line("  <info>✓</info>  {$tag}  No controllers required");
 
                 continue;
             }
 
-            foreach ($class::stimulusControllers() as $identifier) {
-                [$dir, $name] = $this->identifierToParts($identifier);
-                $sourceFile = $this->resolveSourceFile($sourceBase, $dir, $name);
-                $ext = pathinfo($sourceFile, PATHINFO_EXTENSION);
-                $filename = "{$name}_controller.{$ext}";
-                $targetFile = $dir === ''
-                    ? "{$targetBase}/{$filename}"
-                    : "{$targetBase}/{$dir}/{$filename}";
+            foreach ($registry->controllersForComponent($component) as $controller) {
+                $sourceFile = $controller->sourcePath($registry->basePath());
+                $targetFile = $controller->relativeDir() === ''
+                    ? "{$targetBase}/{$controller->filename()}"
+                    : "{$targetBase}/{$controller->relativeDir()}/{$controller->filename()}";
 
-                $sources[$identifier] = $sourceFile;
-
+                $controllers[$controller->identifier] = $controller;
                 [$status, $symbol, $color] = $this->resolveStatus($targetFile, $sourceFile);
 
-                $this->line("  <{$color}>{$symbol}</{$color}>  {$identifier}  {$status}  <fg=gray>(used by {$tag})</>");
+                $this->line("  <{$color}>{$symbol}</{$color}>  {$controller->identifier}  {$status}  <fg=gray>(used by {$tag})</>");
 
                 if ($status !== 'up to date') {
                     $issues[] = [
-                        'identifier' => $identifier,
+                        'identifier' => $controller->identifier,
                         'source_file' => $sourceFile,
                         'target_file' => $targetFile,
                     ];
@@ -176,7 +167,7 @@ class CheckCommand extends Command
             }
         }
 
-        return ['issues' => $issues, 'sources' => $sources];
+        return ['issues' => $issues, 'controllers' => $controllers];
     }
 
     /** @return array{string, string, string} [status, symbol, color] */
@@ -194,30 +185,21 @@ class CheckCommand extends Command
     }
 
     /**
-     * Parse controller source files and aggregate their non-core npm packages,
-     * annotated with the identifiers that require each one.
+     * Aggregate npm package requirements from the registry and annotate them
+     * with the identifiers that require each one.
      *
-     * @param  array<string, string>  $sources  identifier => source file path
+     * @param  array<string, ControllerDefinition>  $controllers  identifier => controller definition
      * @return array<string, array{version: string, used_by: string[]}>
      */
-    private function collectRequiredDependencies(array $sources): array
+    private function collectRequiredDependencies(array $controllers): array
     {
-        $packageVersions = $this->ownPackageDependencies();
         $collected = [];
 
-        foreach ($sources as $identifier => $sourceFile) {
-            if (! $this->files->exists($sourceFile)) {
-                continue;
-            }
-
-            foreach ($this->extractPackages($this->files->get($sourceFile)) as $package) {
-                if (in_array($package, self::CORE_NPM_PACKAGES, true)) {
-                    continue;
-                }
-
+        foreach ($controllers as $identifier => $controller) {
+            foreach ($controller->npm as $package => $version) {
                 if (! isset($collected[$package])) {
                     $collected[$package] = [
-                        'version' => $packageVersions[$package] ?? '*',
+                        'version' => $version,
                         'used_by' => [],
                     ];
                 }
@@ -231,52 +213,6 @@ class CheckCommand extends Command
         ksort($collected);
 
         return $collected;
-    }
-
-    /** @return string[] */
-    private function extractPackages(string $content): array
-    {
-        preg_match_all('/(?:from|import)\s+["\']([^"\']+)["\']/', $content, $matches);
-
-        $packages = [];
-
-        foreach ($matches[1] as $spec) {
-            if (str_starts_with($spec, '.') || str_starts_with($spec, '/')) {
-                continue;
-            }
-
-            $packages[$this->packageBaseName($spec)] = true;
-        }
-
-        return array_keys($packages);
-    }
-
-    private function packageBaseName(string $spec): string
-    {
-        if (str_starts_with($spec, '@')) {
-            $parts = explode('/', $spec, 3);
-
-            return isset($parts[1]) ? $parts[0].'/'.$parts[1] : $parts[0];
-        }
-
-        return explode('/', $spec, 2)[0];
-    }
-
-    /** @return array<string, string> */
-    private function ownPackageDependencies(): array
-    {
-        $path = realpath(__DIR__.'/../../package.json');
-
-        if (! $path) {
-            return [];
-        }
-
-        $json = json_decode((string) file_get_contents($path), true) ?: [];
-
-        return array_merge(
-            $json['dependencies'] ?? [],
-            $json['devDependencies'] ?? []
-        );
     }
 
     /**
@@ -400,32 +336,5 @@ class CheckCommand extends Command
 
         $this->line('');
         $this->line('<comment>Run your package manager install command to fetch the new dependencies.</comment>');
-    }
-
-    private function resolveSourceFile(string $sourceBase, string $dir, string $name): string
-    {
-        $base = $dir === '' ? $sourceBase : "{$sourceBase}/{$dir}";
-
-        foreach (['.js', '.ts'] as $ext) {
-            $path = "{$base}/{$name}_controller{$ext}";
-            if ($this->files->exists($path)) {
-                return $path;
-            }
-        }
-
-        return "{$base}/{$name}_controller.js";
-    }
-
-    /** @return array{string, string} [relative_dir, name] */
-    private function identifierToParts(string $identifier): array
-    {
-        if (str_contains($identifier, '--')) {
-            [$dir, $name] = explode('--', $identifier, 2);
-        } else {
-            $dir = '';
-            $name = $identifier;
-        }
-
-        return [$dir, str_replace('-', '_', $name)];
     }
 }

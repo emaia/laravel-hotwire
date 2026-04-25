@@ -147,5 +147,5 @@ it('registers with custom prefix', function () {
     $provider = new LaravelHotwireServiceProvider($this->app);
     $provider->packageBooted();
 
-    expect(Blade::getClassComponentNamespaces())->toHaveKey('custom');
+    expect(Blade::getClassComponentAliases())->toHaveKey('custom::flash-container');
 });

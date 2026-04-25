@@ -2,6 +2,8 @@
 
 namespace Emaia\LaravelHotwire\Commands;
 
+use Emaia\LaravelHotwire\Registry\ControllerDefinition;
+use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
 use Symfony\Component\Finder\Finder;
@@ -298,9 +300,20 @@ class PublishControllersCommand extends Command
     /** @return array<string, array{name: string, identifier: string, relative_dir: string, source_file: string, filename: string}> */
     private function availableControllers(): array
     {
-        $baseDir = (string) realpath(__DIR__.'/../../resources/js/controllers');
-
         $controllers = [];
+        $registry = HotwireRegistry::make();
+        $basePath = $registry->basePath();
+        $baseDir = $basePath.'/resources/js/controllers';
+
+        foreach ($registry->publishableControllers() as $key => $controller) {
+            $controllers[$key] = [
+                'name' => $controller->name(),
+                'identifier' => $controller->identifier,
+                'relative_dir' => $controller->relativeDir(),
+                'source_file' => $controller->sourcePath($basePath),
+                'filename' => $controller->filename(),
+            ];
+        }
 
         $controllerFiles = Finder::create()->files()
             ->name('*_controller.js')
@@ -310,12 +323,15 @@ class PublishControllersCommand extends Command
         foreach ($controllerFiles as $file) {
             $name = preg_replace('/_controller\.(js|ts)$/', '', $file->getFilename());
             $relativeDir = trim(str_replace('\\', '/', $file->getRelativePath()), '/');
+            $key = $relativeDir === '' ? $name : "{$relativeDir}/{$name}";
+
+            if (isset($controllers[$key])) {
+                continue;
+            }
 
             $identifier = $relativeDir === ''
                 ? str($name)->replace('_', '-')->toString()
                 : str("{$relativeDir}--{$name}")->replace('/', '--')->replace('_', '-')->toString();
-
-            $key = $relativeDir === '' ? $name : "{$relativeDir}/{$name}";
 
             $controllers[$key] = [
                 'name' => $name,
