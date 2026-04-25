@@ -4,10 +4,7 @@ namespace Emaia\LaravelHotwire\Registry;
 
 final readonly class ComponentDefinition
 {
-    /**
-     * @param  string[]  $controllers
-     * @param  string[]  $aliases
-     */
+    /** @param  string[]  $controllers */
     public function __construct(
         public string $key,
         public string $class,
@@ -15,9 +12,6 @@ final readonly class ComponentDefinition
         public string $docs,
         public string $category,
         public array $controllers = [],
-        public array $aliases = [],
-        public bool $experimental = false,
-        public bool $deprecated = false,
     ) {}
 
     public function tag(string $prefix): string

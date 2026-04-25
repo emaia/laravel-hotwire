@@ -4,20 +4,13 @@ namespace Emaia\LaravelHotwire\Registry;
 
 final readonly class ControllerDefinition
 {
-    /**
-     * @param  array<string, string>  $npm
-     * @param  string[]  $aliases
-     */
+    /** @param  array<string, string>  $npm */
     public function __construct(
         public string $identifier,
         public string $source,
         public string $docs,
         public string $category,
         public array $npm = [],
-        public array $aliases = [],
-        public bool $internal = false,
-        public bool $experimental = false,
-        public bool $deprecated = false,
     ) {}
 
     public function sourcePath(string $basePath): string

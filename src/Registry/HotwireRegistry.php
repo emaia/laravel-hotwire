@@ -62,9 +62,6 @@ final class HotwireRegistry
                 docs: $component['docs'],
                 category: $component['category'],
                 controllers: $component['controllers'] ?? [],
-                aliases: $component['aliases'] ?? [],
-                experimental: $component['experimental'] ?? false,
-                deprecated: $component['deprecated'] ?? false,
             );
         }
 
@@ -77,10 +74,6 @@ final class HotwireRegistry
                 docs: $controller['docs'],
                 category: $controller['category'],
                 npm: $controller['npm'] ?? [],
-                aliases: $controller['aliases'] ?? [],
-                internal: $controller['internal'] ?? false,
-                experimental: $controller['experimental'] ?? false,
-                deprecated: $controller['deprecated'] ?? false,
             );
         }
 
