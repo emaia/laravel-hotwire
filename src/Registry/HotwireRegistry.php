@@ -39,6 +39,16 @@ final class HotwireRegistry
         return self::$instance = self::fromCatalog($catalog, $basePath);
     }
 
+    public static function swap(self $instance): void
+    {
+        self::$instance = $instance;
+    }
+
+    public static function reset(): void
+    {
+        self::$instance = null;
+    }
+
     /** @param  array{components: array<string, array<string, mixed>>, controllers: array<string, array<string, mixed>>}  $catalog */
     public static function fromCatalog(array $catalog, string $basePath): self
     {
