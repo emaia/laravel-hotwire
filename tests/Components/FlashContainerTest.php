@@ -1,6 +1,5 @@
 <?php
 
-use Emaia\LaravelHotwire\Components\FlashContainer;
 use Emaia\LaravelHotwire\LaravelHotwireServiceProvider;
 use Illuminate\Support\Facades\Blade;
 

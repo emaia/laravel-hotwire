@@ -44,7 +44,7 @@ final class HotwireRegistry
     {
         $components = [];
 
-        foreach ($catalog['components'] ?? [] as $key => $component) {
+        foreach ($catalog['components'] as $key => $component) {
             $components[$key] = new ComponentDefinition(
                 key: $key,
                 class: $component['class'],
@@ -60,7 +60,7 @@ final class HotwireRegistry
 
         $controllers = [];
 
-        foreach ($catalog['controllers'] ?? [] as $identifier => $controller) {
+        foreach ($catalog['controllers'] as $identifier => $controller) {
             $controllers[$identifier] = new ControllerDefinition(
                 identifier: $identifier,
                 source: $controller['source'],

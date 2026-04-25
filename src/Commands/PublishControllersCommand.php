@@ -2,7 +2,6 @@
 
 namespace Emaia\LaravelHotwire\Commands;
 
-use Emaia\LaravelHotwire\Registry\ControllerDefinition;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;

@@ -1,7 +1,5 @@
 <?php
 
-use Emaia\LaravelHotwire\Components\Optimistic;
-
 it('renders a template with the replace action by default', function () {
     $view = $this->blade('<x-hwc::optimistic target="post_1_favorite">OK</x-hwc::optimistic>');
 
