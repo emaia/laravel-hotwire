@@ -97,7 +97,8 @@ Accessible modal with backdrop, animations, focus trap and dynamic content suppo
 
 Stimulus actions are delegated by ancestry — the trigger must live inside the
 `[data-controller="modal"]` element so the click reaches the controller. The Blade component
-handles this for you via the `trigger` slot.
+handles this for you via the `trigger` slot. Root attributes like `data-modal-close-on-escape-value`
+or `aria-labelledby` belong on that same controller element.
 
 ## With dynamic content via Turbo Frame
 
@@ -135,13 +136,14 @@ is in flight.
 ### Lifecycle
 
 1. User clicks `<a data-turbo-frame="<frame id>">` — anywhere on the page.
-2. The controller resolves a template, injects it into the `dynamicContent` target, and opens the
-   modal.
-3. The frame response arrives → its content replaces the template.
+2. The controller resolves a template and injects it into the `dynamicContent` target.
+3. The content observer sees the inserted markup and opens the modal.
+4. The frame response arrives → its content replaces the template.
 
 The injection is deferred to the next tick. If `turbo:before-fetch-response` fires first (very fast
 responses), the controller skips the injection — the modal opens straight to the final content
-without flashing the template.
+without flashing the template. If no template resolves at all, the controller shows no loading
+state and waits for the real frame content.
 
 ### Default template (target)
 
@@ -163,7 +165,7 @@ trigger:
 ### Per-link template (`data-loading-template`)
 
 A trigger can point to its own template via `data-loading-template="<selector>"`. Resolution order
-is: per-link template → modal's `loadingTemplate` target → nothing (empty dynamic content):
+is: per-link template → modal's `loadingTemplate` target → no loading template:
 
 ```html
 <a href="/posts/1/edit"

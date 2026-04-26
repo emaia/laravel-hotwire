@@ -1,15 +1,19 @@
 <div
-    id="{{ $id }}"
-    data-controller="modal"
-    data-modal-prevent-reopen-delay-value="{{ $preventReopenDelay }}"
-    data-modal-hidden-class="opacity-0 pointer-events-none"
-    data-modal-visible-class="opacity-100 pointer-events-auto"
-    data-modal-backdrop-hidden-class="opacity-0"
-    data-modal-backdrop-visible-class="opacity-100"
-    data-modal-dialog-hidden-class="scale-80 opacity-0"
-    data-modal-dialog-visible-class="scale-100 opacity-100"
-    data-modal-lock-scroll-class="overflow-hidden"
-    data-action="turbo:before-cache@window->modal#close"
+    {{
+        $attributes->merge([
+            'id' => $id,
+            'data-controller' => 'modal',
+            'data-modal-prevent-reopen-delay-value' => $preventReopenDelay,
+            'data-modal-hidden-class' => 'opacity-0 pointer-events-none',
+            'data-modal-visible-class' => 'opacity-100 pointer-events-auto',
+            'data-modal-backdrop-hidden-class' => 'opacity-0',
+            'data-modal-backdrop-visible-class' => 'opacity-100',
+            'data-modal-dialog-hidden-class' => 'scale-80 opacity-0',
+            'data-modal-dialog-visible-class' => 'scale-100 opacity-100',
+            'data-modal-lock-scroll-class' => 'overflow-hidden',
+            'data-action' => 'turbo:before-cache@window->modal#close',
+        ])
+    }}
 >
     @if (isset($trigger))
         {{ $trigger }}
@@ -49,6 +53,7 @@
                     class="absolute -top-4 -right-4 flex items-center rounded-full bg-gray-200 p-2 text-gray-700 transition-colors hover:bg-white hover:text-gray-600"
                     data-action="modal#close"
                     type="button"
+                    aria-label="Close modal"
                 >
                     <svg
                         xmlns="http://www.w3.org/2000/svg"

@@ -45,6 +45,21 @@ The X button is shown by default (`close-button` is `true`). To hide it:
 | `fixed-top`            | `bool`   | `false`            | Pins the modal to the top with a margin         |
 | `prevent-reopen-delay` | `int`    | `1000`             | Delay (ms) before allowing reopen after closing |
 
+## Root attributes
+
+Arbitrary attributes are forwarded to the root modal element. This is the escape hatch for custom
+Stimulus values, ARIA attributes, ids, and data hooks:
+
+```blade
+<x-hwc::modal
+    data-modal-close-on-escape-value="false"
+    aria-labelledby="edit-post-title"
+    data-test-id="edit-post-modal"
+>
+    ...
+</x-hwc::modal>
+```
+
 ## Slots
 
 | Slot               | Description                                |
@@ -89,11 +104,14 @@ The `loading_template` slot defines what fills the dynamic content while the Tur
 in flight. The lifecycle:
 
 1. User clicks `<a data-turbo-frame="<frame id>">` — anywhere on the page.
-2. The modal injects the loading template into its `dynamicContent` target and opens.
-3. The frame response arrives → its content replaces the loading template.
+2. The modal injects the loading template into its `dynamicContent` target.
+3. The content observer sees the inserted markup and opens the modal.
+4. The frame response arrives → its content replaces the loading template.
 
 The injection only happens if the response hasn't already arrived. For very fast responses, the
-loading template never flashes — the modal opens straight to the final content.
+loading template never flashes — the modal opens straight to the final content. If no per-link or
+slot template exists, there is no loading state; the modal waits for the real frame content and
+opens when that content arrives.
 
 ### Default template
 
@@ -147,8 +165,8 @@ example):
 </template>
 ```
 
-Resolution order: per-link `data-loading-template` → modal's `loading_template` slot → nothing
-(the modal opens with empty dynamic content).
+Resolution order: per-link `data-loading-template` → modal's `loading_template` slot → no loading
+template. Without a loading template, the modal stays closed until the real frame content arrives.
 
 ## Stimulus Values
 

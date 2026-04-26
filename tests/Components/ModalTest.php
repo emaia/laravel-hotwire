@@ -101,6 +101,28 @@ it('applies custom class', function () {
     $view->assertSee('p-8 bg-gray-50', false);
 });
 
+it('forwards arbitrary attributes to the root element', function () {
+    $view = $this->blade('
+        <x-hwc::modal
+            data-modal-close-on-escape-value="false"
+            aria-labelledby="modal-title"
+            data-test-id="modal-root"
+        >
+            Content
+        </x-hwc::modal>
+    ');
+
+    $view->assertSee('data-modal-close-on-escape-value="false"', false);
+    $view->assertSee('aria-labelledby="modal-title"', false);
+    $view->assertSee('data-test-id="modal-root"', false);
+});
+
+it('renders an accessible label on the close button', function () {
+    $view = $this->blade('<x-hwc::modal>Content</x-hwc::modal>');
+
+    $view->assertSee('aria-label="Close modal"', false);
+});
+
 it('registers with custom prefix', function () {
     config()->set('hotwire.prefix', 'custom');
 
