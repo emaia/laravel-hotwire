@@ -40,12 +40,12 @@ Do not put business logic in the registry.
 ## Component entry
 
 ```php
-'dialog' => [
-    'class' => \Emaia\LaravelHotwire\Components\Dialog::class,
-    'view' => 'hotwire::components.dialog.dialog',
-    'docs' => 'docs/components/dialog/readme.md',
+'modal' => [
+    'class' => \Emaia\LaravelHotwire\Components\Modal::class,
+    'view' => 'hotwire::components.modal.modal',
+    'docs' => 'docs/components/modal/readme.md',
     'category' => 'overlay',
-    'controllers' => ['dialog'],
+    'controllers' => ['modal'],
 ],
 ```
 

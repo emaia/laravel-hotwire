@@ -2,7 +2,7 @@
 
 Describe a complete UI transition in a single response by chaining Turbo Stream operations.
 Combined with the [`flash`](../components/flash-message/readme.md#convenience-macro) and
-[`closeDialog`](../components/dialog/readme.md#convenience-macro) macros, controller actions stay
+[`closeModal`](../components/modal/readme.md#convenience-macro) macros, controller actions stay
 small and declarative.
 
 ## The macros
@@ -20,8 +20,8 @@ TurboStreamBuilder::macro('flash', function (string $type, string $message, ?str
     ));
 });
 
-TurboStreamBuilder::macro('closeDialog', function (string $id) {
-    return $this->append($id, '<span data-controller="dialog-auto-close"></span>');
+TurboStreamBuilder::macro('closeModal', function (string $id) {
+    return $this->append($id, '<span data-controller="modal-auto-close"></span>');
 });
 ```
 
@@ -39,13 +39,13 @@ public function update(Request $request, Post $post)
 
     return turbo_stream()
         ->refresh(method: 'morph')
-        ->closeDialog('modal')
+        ->closeModal('modal')
         ->flash('success', 'Post updated');
 }
 ```
 
 Order matters less than you might think — Turbo applies streams in order, but `refresh` morphs the
-DOM in place, the dialog close runs on the morphed dialog, and the flash appends to the persistent
+DOM in place, the modal close runs on the morphed modal, and the flash appends to the persistent
 flash container.
 
 ### Optimistic action rejected → revert + explain
@@ -105,6 +105,6 @@ public function store(Request $request)
 ## See also
 
 - [`flash` macro](../components/flash-message/readme.md#convenience-macro)
-- [`closeDialog` macro](../components/dialog/readme.md#convenience-macro)
-- [Server-driven dialogs](./server-driven-dialogs.md)
+- [`closeModal` macro](../components/modal/readme.md#convenience-macro)
+- [Server-driven modals](./server-driven-modals.md)
 - [Frame-or-page views](./frame-or-page.md)

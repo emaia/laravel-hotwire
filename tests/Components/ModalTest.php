@@ -1,13 +1,13 @@
 <?php
 
-use Emaia\LaravelHotwire\Components\Dialog;
+use Emaia\LaravelHotwire\Components\Modal;
 use Emaia\LaravelHotwire\LaravelHotwireServiceProvider;
 use Illuminate\Support\Facades\Blade;
 
 it('renders with default props', function () {
-    $view = $this->blade('<x-hwc::dialog>Content</x-hwc::dialog>');
+    $view = $this->blade('<x-hwc::modal>Content</x-hwc::modal>');
 
-    $view->assertSee('data-controller="dialog"', false);
+    $view->assertSee('data-controller="modal"', false);
     $view->assertSee('Content');
     $view->assertSee('role="dialog"', false);
     $view->assertSee('aria-modal="true"', false);
@@ -15,88 +15,88 @@ it('renders with default props', function () {
 
 it('renders the trigger slot', function () {
     $view = $this->blade('
-        <x-hwc::dialog>
+        <x-hwc::modal>
             <x-slot:trigger>
-                <button data-action="dialog#open">Open</button>
+                <button data-action="modal#open">Open</button>
             </x-slot:trigger>
             Content
-        </x-hwc::dialog>
+        </x-hwc::modal>
     ');
 
-    $view->assertSee('data-action="dialog#open"', false);
+    $view->assertSee('data-action="modal#open"', false);
     $view->assertSee('Open');
 });
 
 it('renders close button by default', function () {
-    $view = $this->blade('<x-hwc::dialog>Content</x-hwc::dialog>');
+    $view = $this->blade('<x-hwc::modal>Content</x-hwc::modal>');
 
-    $view->assertSee('data-action="dialog#close"', false);
+    $view->assertSee('data-action="modal#close"', false);
 });
 
 it('hides close button when disabled', function () {
-    $view = $this->blade('<x-hwc::dialog :close-button="false">Content</x-hwc::dialog>');
+    $view = $this->blade('<x-hwc::modal :close-button="false">Content</x-hwc::modal>');
 
-    $view->assertDontSee('data-action="dialog#close"', false);
+    $view->assertDontSee('data-action="modal#close"', false);
 });
 
 it('renders loading template slot', function () {
     $view = $this->blade('
-        <x-hwc::dialog>
+        <x-hwc::modal>
             <x-slot:loading_template>
                 <div class="loading-spinner">Loading...</div>
             </x-slot:loading_template>
             Content
-        </x-hwc::dialog>
+        </x-hwc::modal>
     ');
 
-    $view->assertSee('data-dialog-target="loadingTemplate"', false);
+    $view->assertSee('data-modal-target="loadingTemplate"', false);
     $view->assertSee('Loading...');
 });
 
 it('sets custom id', function () {
-    $view = $this->blade('<x-hwc::dialog id="my-dialog">Content</x-hwc::dialog>');
+    $view = $this->blade('<x-hwc::modal id="my-modal">Content</x-hwc::modal>');
 
-    $view->assertSee('id="my-dialog"', false);
+    $view->assertSee('id="my-modal"', false);
 });
 
 it('generates unique id when not provided', function () {
-    $component = new Dialog;
+    $component = new Modal;
 
-    expect($component->id)->toStartWith('dialog-');
+    expect($component->id)->toStartWith('modal-');
 });
 
 it('applies fixed-top classes', function () {
-    $view = $this->blade('<x-hwc::dialog :fixed-top="true">Content</x-hwc::dialog>');
+    $view = $this->blade('<x-hwc::modal :fixed-top="true">Content</x-hwc::modal>');
 
     $view->assertSee('mt-14 self-start', false);
 });
 
 it('applies custom prevent-reopen-delay', function () {
-    $view = $this->blade('<x-hwc::dialog :prevent-reopen-delay="2000">Content</x-hwc::dialog>');
+    $view = $this->blade('<x-hwc::modal :prevent-reopen-delay="2000">Content</x-hwc::modal>');
 
-    $view->assertSee('data-dialog-prevent-reopen-delay-value="2000"', false);
+    $view->assertSee('data-modal-prevent-reopen-delay-value="2000"', false);
 });
 
 it('applies allow-small-width constraint', function () {
-    $view = $this->blade('<x-hwc::dialog>Content</x-hwc::dialog>');
+    $view = $this->blade('<x-hwc::modal>Content</x-hwc::modal>');
 
     $view->assertSee('md:min-w-[50%]', false);
 });
 
 it('removes min-width constraint when allow-small-width is true', function () {
-    $view = $this->blade('<x-hwc::dialog :allow-small-width="true">Content</x-hwc::dialog>');
+    $view = $this->blade('<x-hwc::modal :allow-small-width="true">Content</x-hwc::modal>');
 
     $view->assertDontSee('md:min-w-[50%]', false);
 });
 
 it('applies max-width constraint when allow-full-width is false', function () {
-    $view = $this->blade('<x-hwc::dialog :allow-full-width="false">Content</x-hwc::dialog>');
+    $view = $this->blade('<x-hwc::modal :allow-full-width="false">Content</x-hwc::modal>');
 
     $view->assertSee('md:max-w-[50%]', false);
 });
 
 it('applies custom class', function () {
-    $view = $this->blade('<x-hwc::dialog class="p-8 bg-gray-50">Content</x-hwc::dialog>');
+    $view = $this->blade('<x-hwc::modal class="p-8 bg-gray-50">Content</x-hwc::modal>');
 
     $view->assertSee('p-8 bg-gray-50', false);
 });
@@ -107,12 +107,12 @@ it('registers with custom prefix', function () {
     $provider = new LaravelHotwireServiceProvider($this->app);
     $provider->packageBooted();
 
-    expect(Blade::getClassComponentAliases())->toHaveKey('custom::dialog');
+    expect(Blade::getClassComponentAliases())->toHaveKey('custom::modal');
 });
 
 it('renders using :: namespace syntax', function () {
-    $view = $this->blade('<x-hwc::dialog>Content</x-hwc::dialog>');
+    $view = $this->blade('<x-hwc::modal>Content</x-hwc::modal>');
 
-    $view->assertSee('data-controller="dialog"', false);
+    $view->assertSee('data-controller="modal"', false);
     $view->assertSee('Content');
 });

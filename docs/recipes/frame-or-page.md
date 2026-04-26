@@ -67,14 +67,14 @@ The view itself doesn't know — and doesn't care — whether it's rendered as a
     <header>...</header>
     <main>{{ $slot }}</main>
 
-    <x-hwc::dialog id="modal">
-        <turbo-frame id="modal" data-dialog-target="dynamicContent"></turbo-frame>
+    <x-hwc::modal id="modal">
+        <turbo-frame id="modal" data-modal-target="dynamicContent"></turbo-frame>
         <x-slot:loading_template>
             <div class="flex items-center justify-center p-12">
                 <span>Loading...</span>
             </div>
         </x-slot:loading_template>
-    </x-hwc::dialog>
+    </x-hwc::modal>
 
     <x-hwc::flash-container />
     <x-hwc::flash-message />
@@ -82,25 +82,27 @@ The view itself doesn't know — and doesn't care — whether it's rendered as a
 </html>
 ```
 
-The dialog host lives in the dashboard layout — available on every page. Its `dynamicContent` target
+The modal host lives in the dashboard layout — available on every page. Its `dynamicContent` target
 is the same `<turbo-frame id="modal">` the layout component wraps content with. When the frame
-receives content, the dialog's content observer opens it automatically.
+receives content, the modal's content observer opens it automatically.
 
 ### 4. Links choose the experience
 
 Trigger the modal:
 
 ```blade
-<a href="{{ route('users.edit', $user) }}"
-   data-turbo-frame="modal"
-   data-action="dialog#showLoading">
+<a href="{{ route('users.edit', $user) }}" data-turbo-frame="modal">
     Change password
 </a>
 ```
 
 `data-turbo-frame="modal"` makes Turbo issue the request scoped to the frame, sending the
 `Turbo-Frame: modal` header. The layout sees it and renders only the frame content. The dashboard's
-`<turbo-frame id="modal">` receives the response, the dialog observer fires, and the modal opens.
+`<turbo-frame id="modal">` receives the response, the modal observer fires, and the modal opens.
+
+The modal controller listens globally for clicks on `a[data-turbo-frame="<its frame id>"]`, so the
+loading template fires automatically — no `data-action` required, even when the link lives outside
+the modal element.
 
 Trigger the full page (no frame attribute):
 
@@ -124,12 +126,12 @@ public function update(Request $request, User $user)
 
     return turbo_stream()
         ->refresh(method: 'morph')
-        ->closeDialog('modal')
+        ->closeModal('modal')
         ->flash('success', 'Password updated');
 }
 ```
 
-Requires the [`closeDialog` macro](../components/dialog/readme.md#convenience-macro) and the
+Requires the [`closeModal` macro](../components/modal/readme.md#convenience-macro) and the
 [`flash` macro](../components/flash-message/readme.md#convenience-macro) registered in your service
 provider.
 
@@ -145,7 +147,7 @@ provider.
 
 ## Trade-offs
 
-- The dialog and frame must be present on **every** page that triggers modals — typically by living in
+- The modal and frame must be present on **every** page that triggers modals — typically by living in
   the shared layout.
 - `data-turbo-frame="modal"` must be set on every link/form that should open as a modal. Easy to forget.
 - The frame id is global — you can't have two modal frames on the same page without renaming. (You
@@ -153,8 +155,8 @@ provider.
 
 ## See also
 
-- [`<x-hwc::dialog>`](../components/dialog/readme.md) — the modal primitive.
-- [`dialog` controller](../controllers/dialog.md) — `dynamicContent` target and content observer.
-- [Server-driven dialogs](./server-driven-dialogs.md) — closing and replacing content from the server.
-- [Composing streams](./composing-streams.md) — chain `refresh + closeDialog + flash` for clean
+- [`<x-hwc::modal>`](../components/modal/readme.md) — the modal primitive.
+- [`modal` controller](../controllers/modal.md) — `dynamicContent` target and content observer.
+- [Server-driven modals](./server-driven-modals.md) — closing and replacing content from the server.
+- [Composing streams](./composing-streams.md) — chain `refresh + closeModal + flash` for clean
   success responses.

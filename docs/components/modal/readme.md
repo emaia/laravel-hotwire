@@ -8,7 +8,7 @@ Accessible modal with backdrop, animations, focus trap and Turbo integration.
 
 <x-hwc::modal>
     <x-slot:trigger>
-        <button data-action="dialog#open" type="button">Open modal</button>
+        <button data-action="modal#open" type="button">Open modal</button>
     </x-slot:trigger>
 
     <div class="p-6">
@@ -26,7 +26,7 @@ The X button is shown by default (`close-button` is `true`). To hide it:
 
 <x-hwc::modal :close-button="false">
     <x-slot:trigger>
-        <button data-action="dialog#open" type="button">Open</button>
+        <button data-action="modal#open" type="button">Open</button>
     </x-slot:trigger>
 
     <p class="p-6">Modal without X button.</p>
@@ -62,16 +62,12 @@ and opens/closes automatically:
 
 <x-hwc::modal>
     <x-slot:trigger>
-        <a
-            href="/items/1/edit"
-            data-action="dialog#showLoading"
-            data-turbo-frame="dialog-modal-content"
-        >
+        <a href="/items/1/edit" data-turbo-frame="modal-content">
             Edit
         </a>
     </x-slot:trigger>
 
-    <turbo-frame id="dialog-modal-content" data-dialog-target="dynamicContent">
+    <turbo-frame id="modal-content" data-modal-target="dynamicContent">
     </turbo-frame>
 
     <x-slot:loading_template>
@@ -82,11 +78,81 @@ and opens/closes automatically:
 </x-hwc::modal>
 ```
 
-When the Turbo Frame receives content, the modal opens automatically. When the content is removed, it closes.
+When the Turbo Frame receives content, the modal opens automatically. When the content is removed,
+it closes. The modal also listens globally for clicks on `a[data-turbo-frame="<its frame id>"]`, so
+the loading template fires even when the trigger lives outside the modal element (typical when the
+modal sits in a shared layout).
+
+## Loading template
+
+The `loading_template` slot defines what fills the dynamic content while the Turbo Frame request is
+in flight. The lifecycle:
+
+1. User clicks `<a data-turbo-frame="<frame id>">` — anywhere on the page.
+2. The modal injects the loading template into its `dynamicContent` target and opens.
+3. The frame response arrives → its content replaces the loading template.
+
+The injection only happens if the response hasn't already arrived. For very fast responses, the
+loading template never flashes — the modal opens straight to the final content.
+
+### Default template
+
+Provided once via the slot — used for every trigger:
+
+```blade
+<x-hwc::modal>
+    <turbo-frame id="modal-content" data-modal-target="dynamicContent"></turbo-frame>
+
+    <x-slot:loading_template>
+        <div class="flex items-center justify-center p-12">
+            <span class="animate-spin">⏳</span>
+            <span>Loading...</span>
+        </div>
+    </x-slot:loading_template>
+</x-hwc::modal>
+```
+
+### Per-link template override
+
+A trigger can point to its own template via `data-loading-template="<selector>"`. Useful when
+different actions need different loading skeletons (a form skeleton vs. a list skeleton, for
+example):
+
+```blade
+<a href="/posts/1/edit"
+   data-turbo-frame="modal-content"
+   data-loading-template="#form-skeleton">
+    Edit post
+</a>
+
+<a href="/posts/1/comments"
+   data-turbo-frame="modal-content"
+   data-loading-template="#list-skeleton">
+    View comments
+</a>
+
+<template id="form-skeleton">
+    <div class="space-y-3 p-6">
+        <div class="h-6 w-1/3 animate-pulse rounded bg-gray-200"></div>
+        <div class="h-32 w-full animate-pulse rounded bg-gray-200"></div>
+    </div>
+</template>
+
+<template id="list-skeleton">
+    <ul class="divide-y p-6">
+        @for ($i = 0; $i < 5; $i++)
+            <li class="h-12 animate-pulse bg-gray-100"></li>
+        @endfor
+    </ul>
+</template>
+```
+
+Resolution order: per-link `data-loading-template` → modal's `loading_template` slot → nothing
+(the modal opens with empty dynamic content).
 
 ## Stimulus Values
 
-Configurable via `data-dialog-*-value` on the root element:
+Configurable via `data-modal-*-value` on the root element:
 
 | Value                    | Type      | Default | Description                              |
 |--------------------------|-----------|---------|------------------------------------------|
@@ -94,16 +160,16 @@ Configurable via `data-dialog-*-value` on the root element:
 | `close-duration`         | `Number`  | `300`   | Closing animation duration (ms)          |
 | `lock-scroll`            | `Boolean` | `true`  | Locks body scroll when open              |
 | `close-on-escape`        | `Boolean` | `true`  | Closes on Escape key                     |
-| `close-on-click-outside` | `Boolean` | `true`  | Closes when clicking outside the dialog  |
+| `close-on-click-outside` | `Boolean` | `true`  | Closes when clicking outside the modal   |
 | `prevent-reopen-delay`   | `Number`  | `300`   | Anti-bounce delay in the controller (ms) |
 
 ## Actions
 
-| Action                      | Description                                                |
-|-----------------------------|------------------------------------------------------------|
-| `dialog#open`        | Opens the modal                                            |
-| `dialog#close`       | Closes the modal                                           |
-| `dialog#showLoading` | Shows the loading template while awaiting a Turbo response |
+| Action               | Description                                                |
+|----------------------|------------------------------------------------------------|
+| `modal#open`         | Opens the modal                                            |
+| `modal#close`        | Closes the modal                                           |
+| `modal#showLoading`  | Shows the loading template while awaiting a Turbo response |
 
 ## Events
 
@@ -127,7 +193,7 @@ element.addEventListener("modal:opened", (event) => {
 
 ## Ignore outside click
 
-Elements outside the dialog that should not close the modal can use `data-modal-ignore`:
+Elements outside the modal that should not close it can use `data-modal-ignore`:
 
 ```html
 
@@ -140,32 +206,32 @@ Elements outside the dialog that should not close the modal can use `data-modal-
 
 The modal closes automatically on `turbo:before-cache`, preventing ghost modals when navigating with Turbo Drive.
 
-### Closing a dialog from the server
+### Closing a modal from the server
 
-For dialogs driven by a Turbo Frame, clearing the frame closes them via the content observer:
-
-```php
-return turbo_stream()->update('dialog-modal-content', '');
-```
-
-For **static** dialogs (no Turbo Frame), append the [`dialog-auto-close`](../../controllers/dialog-auto-close.md)
-controller to an open dialog by id:
+For modals driven by a Turbo Frame, clearing the frame closes them via the content observer:
 
 ```php
-return turbo_stream()->append('edit-post', '<span data-controller="dialog-auto-close"></span>');
+return turbo_stream()->update('modal-content', '');
 ```
 
-Make sure the dialog declares the same id you target:
+For **static** modals (no Turbo Frame), append the [`modal-auto-close`](../../controllers/modal-auto-close.md)
+controller to an open modal by id:
+
+```php
+return turbo_stream()->append('edit-post', '<span data-controller="modal-auto-close"></span>');
+```
+
+Make sure the modal declares the same id you target:
 
 ```blade
-<x-hwc::dialog id="edit-post">
+<x-hwc::modal id="edit-post">
     {{-- ... --}}
-</x-hwc::dialog>
+</x-hwc::modal>
 ```
 
 ### Convenience macro
 
-`TurboStreamBuilder` is `Macroable` — register a `closeDialog()` shortcut once in a service provider:
+`TurboStreamBuilder` is `Macroable` — register a `closeModal()` shortcut once in a service provider:
 
 ```php
 // app/Providers/AppServiceProvider.php
@@ -173,8 +239,8 @@ use Emaia\LaravelHotwireTurbo\TurboStreamBuilder;
 
 public function boot(): void
 {
-    TurboStreamBuilder::macro('closeDialog', function (string $id) {
-        return $this->append($id, '<span data-controller="dialog-auto-close"></span>');
+    TurboStreamBuilder::macro('closeModal', function (string $id) {
+        return $this->append($id, '<span data-controller="modal-auto-close"></span>');
     });
 }
 ```
@@ -182,14 +248,14 @@ public function boot(): void
 Then any controller becomes a one-liner:
 
 ```php
-return turbo_stream()->closeDialog('edit-post');
+return turbo_stream()->closeModal('edit-post');
 
 // or chained with a flash and a refresh
 return turbo_stream()
     ->refresh(method: 'morph')
-    ->closeDialog('edit-post')
+    ->closeModal('edit-post')
     ->flash('success', 'Post updated');
 ```
 
-> Requires the [`dialog-auto-close`](../../controllers/dialog-auto-close.md) controller to be published —
-> `php artisan hotwire:controllers dialog-auto-close`.
+> Requires the [`modal-auto-close`](../../controllers/modal-auto-close.md) controller to be published —
+> `php artisan hotwire:controllers modal-auto-close`.

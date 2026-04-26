@@ -112,7 +112,7 @@ php artisan hotwire:controllers turbo
 **Multiple arguments** — mix names and substrate namespaces:
 
 ```bash
-php artisan hotwire:controllers dialog turbo/progress auto-submit
+php artisan hotwire:controllers modal turbo/progress auto-submit
 ```
 
 **All at once:**
@@ -133,8 +133,8 @@ php artisan hotwire:controllers --list
 php artisan hotwire:controllers autoselect --force
 ```
 
-Top-level controllers are copied flat to `resources/js/controllers/` (e.g. `dialog` →
-`resources/js/controllers/dialog_controller.js`, identifier `dialog`). Controllers under a substrate folder preserve
+Top-level controllers are copied flat to `resources/js/controllers/` (e.g. `modal` →
+`resources/js/controllers/modal_controller.js`, identifier `modal`). Controllers under a substrate folder preserve
 that folder and use Stimulus' `--` separator (e.g. `turbo/progress` →
 `resources/js/controllers/turbo/progress_controller.js`, identifier `turbo--progress`).
 [@emaia/stimulus-dynamic-loader](https://www.npmjs.com/package/@emaia/stimulus-dynamic-loader) discovers and loads
@@ -239,7 +239,7 @@ Add these settings to your CSS entrypoint `resources/css/app.css`:
 ```css
 @source '../../vendor/emaia/laravel-hotwire/resources/views/**/*.blade.php';
 @custom-variant turbo-frame (turbo-frame[src] &);
-@custom-variant modal ([data-dialog-target="dialog"] &);
+@custom-variant modal ([data-modal-target="dialog"] &);
 @custom-variant aria-busy (form[aria-busy="true"] &);
 @custom-variant self-aria-busy (html[aria-busy="true"] &);
 @custom-variant turbo-frame-aria-busy (turbo-frame[aria-busy="true"] &);
@@ -251,11 +251,11 @@ Add these settings to your CSS entrypoint `resources/css/app.css`:
 // config/hotwire.php
 
 return [
-    'prefix' => 'hwc', // <x-hwc::dialog>
+    'prefix' => 'hwc', // <x-hwc::modal>
 ];
 ```
 
-Change `prefix` to use a different prefix for Blade components. E.g. `'prefix' => 'hotwire'` → `<x-hotwire::dialog>`.
+Change `prefix` to use a different prefix for Blade components. E.g. `'prefix' => 'hotwire'` → `<x-hotwire::modal>`.
 
 ## Turbo
 
@@ -282,7 +282,7 @@ See the full documentation at [emaia/laravel-hotwire-turbo](https://github.com/e
 
 | Component                                                    | Blade                      | Stimulus Identifier | Docs                                                |
 |--------------------------------------------------------------|----------------------------|---------------------|-----------------------------------------------------|
-| [Dialog](docs/components/dialog/readme.md)                   | `<x-hwc::dialog>`          | `dialog`            | [readme](docs/components/dialog/readme.md)          |
+| [Modal](docs/components/modal/readme.md)                     | `<x-hwc::modal>`           | `modal`             | [readme](docs/components/modal/readme.md)           |
 | [Confirm Dialog](docs/components/confirm-dialog/readme.md)   | `<x-hwc::confirm-dialog>`  | `confirm-dialog`    | [readme](docs/components/confirm-dialog/readme.md)  |
 | [Flash Container](docs/components/flash-container/readme.md) | `<x-hwc::flash-container>` | `toaster`           | [readme](docs/components/flash-container/readme.md) |
 | [Flash Message](docs/components/flash-message/readme.md)     | `<x-hwc::flash-message>`   | `toast`             | [readme](docs/components/flash-message/readme.md)   |
@@ -316,7 +316,7 @@ php artisan hotwire:controllers autoselect auto-submit turbo/progress
 | [Clean Query Params](docs/controllers/clean-query-params.md)   | `clean-query-params`  | —               | [readme](docs/controllers/clean-query-params.md)  |
 | [Clear Input](docs/controllers/clear-input.md)                 | `clear-input`         | —               | [readme](docs/controllers/clear-input.md)         |
 | [Copy To Clipboard](docs/controllers/copy-to-clipboard.md)     | `copy-to-clipboard`   | —               | [readme](docs/controllers/copy-to-clipboard.md)   |
-| [Dialog](docs/controllers/dialog.md)                           | `dialog`              | —               | [readme](docs/controllers/dialog.md)              |
+| [Modal](docs/controllers/modal.md)                             | `modal`               | —               | [readme](docs/controllers/modal.md)               |
 | [GTM](docs/controllers/gtm.md)                                 | `gtm`                 | —               | [readme](docs/controllers/gtm.md)                 |
 | [Hotkey](docs/controllers/hotkey.md)                           | `hotkey`              | —               | [readme](docs/controllers/hotkey.md)              |
 | [Input Mask](docs/controllers/input-mask.md)                   | `input-mask`          | `maska`         | [readme](docs/controllers/input-mask.md)          |
@@ -370,12 +370,12 @@ When adding a new component or controller to this package, update the registry e
 Example component entry:
 
 ```php
-'dialog' => [
-    'class' => \Emaia\LaravelHotwire\Components\Dialog::class,
-    'view' => 'hotwire::components.dialog.dialog',
-    'docs' => 'docs/components/dialog/readme.md',
+'modal' => [
+    'class' => \Emaia\LaravelHotwire\Components\Modal::class,
+    'view' => 'hotwire::components.modal.modal',
+    'docs' => 'docs/components/modal/readme.md',
     'category' => 'overlay',
-    'controllers' => ['dialog'],
+    'controllers' => ['modal'],
 ],
 ```
 

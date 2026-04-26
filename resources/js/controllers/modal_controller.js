@@ -37,8 +37,18 @@ export default class ModalController extends Controller {
     }
 
     trackClickedLink = (event) => {
-        const link = event.target.closest('a[data-turbo-frame="modal"]');
-        this.lastClickedLink = link?.hasAttribute("data-loading-template") ? link : null;
+        if (!this.hasDynamicContentTarget) return;
+        const frameId = this.dynamicContentTarget.id;
+        if (!frameId) return;
+
+        const link = event.target.closest("a[data-turbo-frame]");
+        if (!link || link.getAttribute("data-turbo-frame") !== frameId) {
+            this.lastClickedLink = null;
+            return;
+        }
+
+        this.lastClickedLink = link.hasAttribute("data-loading-template") ? link : null;
+        this.showLoading();
     };
 
     connect() {

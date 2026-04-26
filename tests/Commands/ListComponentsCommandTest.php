@@ -19,7 +19,7 @@ it('lists all registered components', function () {
     Artisan::call('hotwire:components');
     $output = Artisan::output();
 
-    expect($output)->toContain('Dialog')
+    expect($output)->toContain('Modal')
         ->and($output)->toContain('Confirm Dialog')
         ->and($output)->toContain('Flash Container')
         ->and($output)->toContain('Flash Message')
@@ -28,7 +28,7 @@ it('lists all registered components', function () {
 
 it('shows blade tags with current prefix', function () {
     $this->artisan('hotwire:components')
-        ->expectsOutputToContain('<x-hwc::dialog>')
+        ->expectsOutputToContain('<x-hwc::modal>')
         ->expectsOutputToContain('<x-hwc::confirm-dialog>')
         ->expectsOutputToContain('<x-hwc::flash-message>')
         ->expectsOutputToContain('<x-hwc::loader>')
@@ -39,7 +39,7 @@ it('shows blade tags respecting custom prefix', function () {
     config()->set('hotwire.prefix', 'h');
 
     $this->artisan('hotwire:components')
-        ->expectsOutputToContain('<x-h::dialog>')
+        ->expectsOutputToContain('<x-h::modal>')
         ->assertSuccessful();
 });
 
@@ -65,8 +65,8 @@ it('shows not published when controller file is absent', function () {
 });
 
 it('shows up to date when installed controller matches package version', function () {
-    $source = realpath(__DIR__.'/../../resources/js/controllers/dialog_controller.js');
-    $target = $this->targetDir.'/dialog_controller.js';
+    $source = realpath(__DIR__.'/../../resources/js/controllers/modal_controller.js');
+    $target = $this->targetDir.'/modal_controller.js';
     File::ensureDirectoryExists(dirname($target));
     File::copy($source, $target);
 
@@ -76,7 +76,7 @@ it('shows up to date when installed controller matches package version', functio
 });
 
 it('shows outdated when installed controller differs from package version', function () {
-    $target = $this->targetDir.'/dialog_controller.js';
+    $target = $this->targetDir.'/modal_controller.js';
     File::ensureDirectoryExists(dirname($target));
     File::put($target, '// modified');
 

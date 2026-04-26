@@ -14,7 +14,7 @@ use function Laravel\Prompts\warning;
 class PublishControllersCommand extends Command
 {
     public $signature = 'hotwire:controllers
-                        {controllers?* : Controller name (e.g. dialog) or substrate/name (e.g. turbo/progress)}
+                        {controllers?* : Controller name (e.g. modal) or substrate/name (e.g. turbo/progress)}
                         {--all : Publish all available controllers}
                         {--force : Overwrite existing files}
                         {--list : List available controllers}';
@@ -71,7 +71,7 @@ class PublishControllersCommand extends Command
                 $this->line('');
                 $this->line('To publish controllers, run:');
                 $this->line('  php artisan hotwire:controllers                  Interactive mode');
-                $this->line('  php artisan hotwire:controllers {name}           Publish a top-level controller (e.g. dialog)');
+                $this->line('  php artisan hotwire:controllers {name}           Publish a top-level controller (e.g. modal)');
                 $this->line('  php artisan hotwire:controllers {substrate}      Publish all controllers in a substrate folder (e.g. turbo)');
                 $this->line('  php artisan hotwire:controllers {substrate/name} Publish a specific substrate controller');
                 $this->line('  php artisan hotwire:controllers --all            Publish all controllers');
