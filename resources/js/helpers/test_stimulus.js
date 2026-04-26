@@ -54,6 +54,10 @@ function installGlobals(testWindow) {
     globalThis.Element = testWindow.Element;
     globalThis.FormData = testWindow.FormData;
     globalThis.HTMLElement = testWindow.HTMLElement;
+    globalThis.KeyboardEvent = testWindow.KeyboardEvent;
+    globalThis.MouseEvent = testWindow.MouseEvent;
     globalThis.MutationObserver = testWindow.MutationObserver;
     globalThis.Node = testWindow.Node;
+    globalThis.requestAnimationFrame = testWindow.requestAnimationFrame.bind(testWindow);
+    globalThis.cancelAnimationFrame = testWindow.cancelAnimationFrame.bind(testWindow);
 }
