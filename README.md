@@ -321,6 +321,7 @@ php artisan hotwire:controllers auto-select auto-submit turbo/progress
 | [Hotkey](docs/controllers/hotkey.md)                           | `hotkey`              | —               | [readme](docs/controllers/hotkey.md)              |
 | [Input Mask](docs/controllers/input-mask.md)                   | `input-mask`          | `maska`         | [readme](docs/controllers/input-mask.md)          |
 | [Lazy Image](docs/controllers/lazy-image.md)                   | `lazy-image`          | —               | [readme](docs/controllers/lazy-image.md)          |
+| [Money Input](docs/controllers/money-input.md)                 | `money-input`         | `maska`         | [readme](docs/controllers/money-input.md)         |
 | [OEmbed](docs/controllers/oembed.md)                           | `oembed`              | —               | [readme](docs/controllers/oembed.md)              |
 | [Remote Form](docs/controllers/remote-form.md)                 | `remote-form`         | —               | [readme](docs/controllers/remote-form.md)         |
 | [Reset Files](docs/controllers/reset-files.md)                 | `reset-files`         | —               | [readme](docs/controllers/reset-files.md)         |

@@ -5,42 +5,98 @@ export default class extends Controller {
     static values = {
         mask: String,
         reversed: Boolean,
-        isMoney: {
-            type: Boolean,
-            default: false,
-        },
+        eager: Boolean,
+        tokens: String,
+        tokensReplace: Boolean,
     };
 
     connect() {
-        this.element.addEventListener("maska", this.onMaska);
+        this.mask = new MaskInput(this.element, this.#options());
+    }
 
-        let mask = null;
+    disconnect() {
+        this.mask?.destroy();
+        this.mask = null;
+    }
 
-        try {
-            mask = JSON.parse(this.maskValue);
-        } catch (e) {
-            mask = this.maskValue;
+    maskValueChanged() {
+        this.mask?.update(this.#options());
+    }
+
+    reversedValueChanged() {
+        this.mask?.update(this.#options());
+    }
+
+    eagerValueChanged() {
+        this.mask?.update(this.#options());
+    }
+
+    tokensValueChanged() {
+        this.mask?.update(this.#options());
+    }
+
+    tokensReplaceValueChanged() {
+        this.mask?.update(this.#options());
+    }
+
+    #options() {
+        const options = {
+            mask: this.#resolveMask(),
+            reversed: this.reversedValue,
+            eager: this.eagerValue,
+        };
+
+        const tokens = this.#resolveTokens();
+
+        if (tokens) {
+            options.tokens = tokens;
+            options.tokensReplace = this.tokensReplaceValue;
         }
 
-        new MaskInput(this.element, {
-            mask: mask,
-            reversed: !!this.reversedValue,
-            tokens: {
-                9: { pattern: /9/ },
-                S: { pattern: /[a-zA-ZÀ-ÿ\u00C0-\u00FF\s]/, repeated: true },
-            },
-            preProcess: (val) => {
-                if (this.isMoneyValue) {
-                    // return val.replace("R$ ", "");
-                }
-                return val;
-            },
-            postProcess: (val) => {
-                if (this.isMoneyValue) {
-                    // return val.replace("R$ ", "");
-                }
-                return val;
-            },
-        });
+        return options;
+    }
+
+    #resolveMask() {
+        const raw = this.maskValue;
+
+        if (raw.startsWith("[") && raw.endsWith("]")) {
+            try {
+                return JSON.parse(raw);
+            } catch {
+                return raw;
+            }
+        }
+
+        return raw;
+    }
+
+    #resolveTokens() {
+        if (!this.hasTokensValue) {
+            return null;
+        }
+
+        try {
+            const parsed = JSON.parse(this.tokensValue);
+            return this.#materializeTokens(parsed);
+        } catch {
+            return null;
+        }
+    }
+
+    #materializeTokens(parsed) {
+        const tokens = {};
+
+        for (const [key, definition] of Object.entries(parsed)) {
+            if (!definition || typeof definition.pattern !== "string") {
+                continue;
+            }
+
+            tokens[key] = {
+                ...definition,
+                pattern: new RegExp(definition.pattern),
+            };
+        }
+
+        return tokens;
     }
 }

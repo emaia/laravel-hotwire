@@ -152,6 +152,12 @@ return [
             'docs' => 'docs/controllers/modal-auto-close.md',
             'category' => 'overlay',
         ],
+        'money-input' => [
+            'source' => 'resources/js/controllers/money_input_controller.js',
+            'docs' => 'docs/controllers/money-input.md',
+            'category' => 'forms',
+            'npm' => ['maska' => '^3.2.0'],
+        ],
         'oembed' => [
             'source' => 'resources/js/controllers/oembed_controller.js',
             'docs' => 'docs/controllers/oembed.md',
