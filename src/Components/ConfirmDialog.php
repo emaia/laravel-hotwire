@@ -12,7 +12,12 @@ class ConfirmDialog extends Component
         public string $confirmLabel = 'Confirm',
         public string $cancelLabel = 'Cancel',
         public string $confirmClass = '',
+        public string $cancelClass = '',
         public string $id = '',
+        public int $openDuration = 200,
+        public int $closeDuration = 200,
+        public bool $lockScroll = true,
+        public bool $closeOnClickOutside = true,
     ) {
         if ($this->id === '') {
             $this->id = uniqid('confirm-');

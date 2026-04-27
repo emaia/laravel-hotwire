@@ -106,7 +106,7 @@ it('detects component used in a blade file', function () {
 });
 
 it('detects component with attributes', function () {
-    writeView('page.blade.php', '<x-hwc::confirm-dialog title="Delete?" message="Sure?"><x-slot:trigger><button>x</button></x-slot:trigger></x-hwc::confirm-dialog>');
+    writeView('page.blade.php', '<x-hwc::confirm-dialog title="Delete?" message="Sure?"><button>x</button></x-hwc::confirm-dialog>');
 
     $this->artisan('hotwire:check --no-interaction')
         ->expectsOutputToContain('confirm-dialog')
