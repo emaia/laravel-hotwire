@@ -109,6 +109,42 @@ return turbo_stream()->append('flash-container', Blade::render(
 ));
 ```
 
+### Convenience macro
+
+`TurboStreamBuilder` is `Macroable` — register a `flash()` shortcut once in a service provider and reuse
+it everywhere:
+
+```php
+// app/Providers/AppServiceProvider.php
+use Emaia\LaravelHotwireTurbo\TurboStreamBuilder;
+use Illuminate\Support\Facades\Blade;
+
+public function boot(): void
+{
+    TurboStreamBuilder::macro('flash', function (string $type, string $message, ?string $description = null) {
+        return $this->append('flash-container', Blade::render(
+            '<x-hwc::flash-message :type="$type" :message="$message" :description="$description" />',
+            compact('type', 'message', 'description'),
+        ));
+    });
+}
+```
+
+Then any controller or stream chain becomes a one-liner:
+
+```php
+return turbo_stream()->flash('success', 'Saved!');
+
+// with an optional description
+return turbo_stream()->flash('error', 'Failed to save', 'Check the required fields');
+
+// or chained with other streams
+return turbo_stream()
+    ->refresh(method: 'morph')
+    ->flash('error', 'Could not favorite this post.')
+    ->withResponse(403);
+```
+
 ## See also
 
 - [`<x-hwc::flash-container />`](../flash-container/readme.md) — hosts the Sonner instance and exposes its config

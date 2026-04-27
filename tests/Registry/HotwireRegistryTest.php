@@ -5,7 +5,7 @@ use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 it('loads the component catalog', function () {
     $registry = HotwireRegistry::make();
 
-    expect($registry->component('dialog'))->not->toBeNull()
+    expect($registry->component('modal'))->not->toBeNull()
         ->and($registry->component('flash-message'))->not->toBeNull()
         ->and($registry->component('loader'))->not->toBeNull();
 });
@@ -13,7 +13,7 @@ it('loads the component catalog', function () {
 it('loads the controller catalog', function () {
     $registry = HotwireRegistry::make();
 
-    expect($registry->controller('dialog'))->not->toBeNull()
+    expect($registry->controller('modal'))->not->toBeNull()
         ->and($registry->controller('tooltip'))->not->toBeNull()
         ->and($registry->controller('turbo--progress'))->not->toBeNull();
 });

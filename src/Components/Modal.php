@@ -4,7 +4,7 @@ namespace Emaia\LaravelHotwire\Components;
 
 use Illuminate\View\Component;
 
-class Dialog extends Component
+class Modal extends Component
 {
     public function __construct(
         public string $id = '',
@@ -16,12 +16,12 @@ class Dialog extends Component
         public int $preventReopenDelay = 1000,
     ) {
         if ($this->id === '') {
-            $this->id = uniqid('dialog-');
+            $this->id = uniqid('modal-');
         }
     }
 
     public function render()
     {
-        return view('hotwire::components.dialog.dialog');
+        return view('hotwire::components.modal.modal');
     }
 }

@@ -98,10 +98,10 @@ it('reports all ok when no hotwire components used', function () {
 // --- Detection ---
 
 it('detects component used in a blade file', function () {
-    writeView('page.blade.php', '<x-hwc::dialog />');
+    writeView('page.blade.php', '<x-hwc::modal />');
 
     $this->artisan('hotwire:check --no-interaction')
-        ->expectsOutputToContain('dialog')
+        ->expectsOutputToContain('modal')
         ->assertExitCode(1);
 });
 
@@ -114,61 +114,61 @@ it('detects component with attributes', function () {
 });
 
 it('detects components across multiple files', function () {
-    writeView('a.blade.php', '<x-hwc::dialog />');
+    writeView('a.blade.php', '<x-hwc::modal />');
     writeView('b.blade.php', '<x-hwc::confirm-dialog title="x" />');
 
     $exit = Artisan::call('hotwire:check --no-interaction');
     $output = Artisan::output();
 
     expect($exit)->toBe(1)
-        ->and($output)->toContain('<x-hwc::dialog>')
+        ->and($output)->toContain('<x-hwc::modal>')
         ->and($output)->toContain('<x-hwc::confirm-dialog>');
 });
 
 it('deduplicates components used in multiple files', function () {
-    writeView('a.blade.php', '<x-hwc::dialog />');
-    writeView('b.blade.php', '<x-hwc::dialog />');
+    writeView('a.blade.php', '<x-hwc::modal />');
+    writeView('b.blade.php', '<x-hwc::modal />');
 
     Artisan::call('hotwire:check --no-interaction');
     $output = Artisan::output();
-    expect(substr_count($output, 'x-hwc::dialog'))->toBe(1);
+    expect(substr_count($output, 'x-hwc::modal'))->toBe(1);
 });
 
 it('respects custom prefix', function () {
     config()->set('hotwire.prefix', 'h');
-    writeView('page.blade.php', '<x-h::dialog />');
+    writeView('page.blade.php', '<x-h::modal />');
 
     $this->artisan('hotwire:check --no-interaction')
-        ->expectsOutputToContain('dialog')
+        ->expectsOutputToContain('modal')
         ->assertExitCode(1);
 });
 
 it('detects components using hotwire:: alias', function () {
-    writeView('page.blade.php', '<x-hotwire::dialog />');
+    writeView('page.blade.php', '<x-hotwire::modal />');
 
     $this->artisan('hotwire:check --no-interaction')
-        ->expectsOutputToContain('dialog')
+        ->expectsOutputToContain('modal')
         ->assertExitCode(1);
 });
 
 it('detects both hwc:: and hotwire:: prefixes in the same codebase', function () {
-    writeView('a.blade.php', '<x-hwc::dialog />');
+    writeView('a.blade.php', '<x-hwc::modal />');
     writeView('b.blade.php', '<x-hotwire::confirm-dialog title="x" />');
 
     $exit = Artisan::call('hotwire:check --no-interaction');
     $output = Artisan::output();
 
     expect($exit)->toBe(1)
-        ->and($output)->toContain('<x-hwc::dialog>')
+        ->and($output)->toContain('<x-hwc::modal>')
         ->and($output)->toContain('<x-hwc::confirm-dialog>');
 });
 
 it('detects hotwire:: alias when a custom prefix is set', function () {
     config()->set('hotwire.prefix', 'h');
-    writeView('page.blade.php', '<x-hotwire::dialog />');
+    writeView('page.blade.php', '<x-hotwire::modal />');
 
     $this->artisan('hotwire:check --no-interaction')
-        ->expectsOutputToContain('dialog')
+        ->expectsOutputToContain('modal')
         ->assertExitCode(1);
 });
 
@@ -183,7 +183,7 @@ it('ignores components from other packages', function () {
 // --- Status reporting ---
 
 it('shows not published when controller is missing', function () {
-    writeView('page.blade.php', '<x-hwc::dialog />');
+    writeView('page.blade.php', '<x-hwc::modal />');
 
     $this->artisan('hotwire:check --no-interaction')
         ->expectsOutputToContain('not published')
@@ -191,8 +191,8 @@ it('shows not published when controller is missing', function () {
 });
 
 it('shows up to date when controller matches package version', function () {
-    publishController('dialog', $this->targetDir);
-    writeView('page.blade.php', '<x-hwc::dialog />');
+    publishController('modal', $this->targetDir);
+    writeView('page.blade.php', '<x-hwc::modal />');
 
     $this->artisan('hotwire:check --no-interaction')
         ->expectsOutputToContain('up to date')
@@ -200,10 +200,10 @@ it('shows up to date when controller matches package version', function () {
 });
 
 it('shows outdated when controller differs from package version', function () {
-    $target = $this->targetDir.'/dialog_controller.js';
+    $target = $this->targetDir.'/modal_controller.js';
     File::ensureDirectoryExists(dirname($target));
     File::put($target, '// modified');
-    writeView('page.blade.php', '<x-hwc::dialog />');
+    writeView('page.blade.php', '<x-hwc::modal />');
 
     $this->artisan('hotwire:check --no-interaction')
         ->expectsOutputToContain('outdated')
@@ -211,10 +211,10 @@ it('shows outdated when controller differs from package version', function () {
 });
 
 it('shows which component requires each controller', function () {
-    writeView('page.blade.php', '<x-hwc::dialog />');
+    writeView('page.blade.php', '<x-hwc::modal />');
 
     $this->artisan('hotwire:check --no-interaction')
-        ->expectsOutputToContain('x-hwc::dialog')
+        ->expectsOutputToContain('x-hwc::modal')
         ->assertExitCode(1);
 });
 
@@ -229,25 +229,25 @@ it('shows dash for component without controller dependency', function () {
 // --- Exit code ---
 
 it('exits with 0 when all controllers are up to date', function () {
-    publishController('dialog', $this->targetDir);
-    writeView('page.blade.php', '<x-hwc::dialog />');
+    publishController('modal', $this->targetDir);
+    writeView('page.blade.php', '<x-hwc::modal />');
 
     $this->artisan('hotwire:check --no-interaction')
         ->assertExitCode(0);
 });
 
 it('exits with 1 when a controller is not published', function () {
-    writeView('page.blade.php', '<x-hwc::dialog />');
+    writeView('page.blade.php', '<x-hwc::modal />');
 
     $this->artisan('hotwire:check --no-interaction')
         ->assertExitCode(1);
 });
 
 it('exits with 1 when a controller is outdated', function () {
-    $target = $this->targetDir.'/dialog_controller.js';
+    $target = $this->targetDir.'/modal_controller.js';
     File::ensureDirectoryExists(dirname($target));
     File::put($target, '// modified');
-    writeView('page.blade.php', '<x-hwc::dialog />');
+    writeView('page.blade.php', '<x-hwc::modal />');
 
     $this->artisan('hotwire:check --no-interaction')
         ->assertExitCode(1);
@@ -256,24 +256,24 @@ it('exits with 1 when a controller is outdated', function () {
 // --- --fix flag ---
 
 it('publishes missing controllers with --fix', function () {
-    writeView('page.blade.php', '<x-hwc::dialog />');
+    writeView('page.blade.php', '<x-hwc::modal />');
 
     $this->artisan('hotwire:check --fix --no-interaction')
         ->assertSuccessful();
 
-    expect(File::exists($this->targetDir.'/dialog_controller.js'))->toBeTrue();
+    expect(File::exists($this->targetDir.'/modal_controller.js'))->toBeTrue();
 });
 
 it('updates outdated controllers with --fix', function () {
-    $target = $this->targetDir.'/dialog_controller.js';
+    $target = $this->targetDir.'/modal_controller.js';
     File::ensureDirectoryExists(dirname($target));
     File::put($target, '// modified');
-    writeView('page.blade.php', '<x-hwc::dialog />');
+    writeView('page.blade.php', '<x-hwc::modal />');
 
     $this->artisan('hotwire:check --fix --no-interaction')
         ->assertSuccessful();
 
-    $source = realpath(__DIR__.'/../../resources/js/controllers/dialog_controller.js');
+    $source = realpath(__DIR__.'/../../resources/js/controllers/modal_controller.js');
     expect(File::hash($target))->toBe(File::hash($source));
 });
 
@@ -337,10 +337,10 @@ it('updates outdated ts controllers with --fix', function () {
 it('accepts custom path to scan', function () {
     $customDir = resource_path('views/custom');
     File::ensureDirectoryExists($customDir);
-    File::put($customDir.'/page.blade.php', '<x-hwc::dialog />');
+    File::put($customDir.'/page.blade.php', '<x-hwc::modal />');
 
     $this->artisan('hotwire:check', ['--path' => [resource_path('views/custom')], '--no-interaction' => true])
-        ->expectsOutputToContain('dialog')
+        ->expectsOutputToContain('modal')
         ->assertExitCode(1);
 });
 

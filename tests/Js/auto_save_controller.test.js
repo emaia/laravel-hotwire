@@ -6,8 +6,8 @@ import {
     dispatchTurboSubmitStart,
     mountController,
     wait,
-} from "../helpers/test_stimulus.js";
-import AutoSaveController from "./auto_save_controller.js";
+} from "../../resources/js/helpers/test_stimulus.js";
+import AutoSaveController from "../../resources/js/controllers/auto_save_controller.js";
 
 let mounted;
 

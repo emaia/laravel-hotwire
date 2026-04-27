@@ -38,13 +38,13 @@ class MakeControllerCommand extends Command
         $name = $this->argument('name');
 
         if (! str_contains($name, '/')) {
-            warning('Name must include a namespace (e.g. form/autosave, dialog/confirm).');
+            warning('Name must include a namespace (e.g. form/autosave, modal/confirm).');
 
             return self::FAILURE;
         }
 
         if (! preg_match('#^[a-z][a-z0-9_-]*(/[a-z][a-z0-9_-]*)+$#', $name)) {
-            warning('Name must contain only lowercase letters, numbers, hyphens, and underscores (e.g. form/autosave, dialog/close_modal).');
+            warning('Name must contain only lowercase letters, numbers, hyphens, and underscores (e.g. form/autosave, modal/close_modal).');
 
             return self::FAILURE;
         }

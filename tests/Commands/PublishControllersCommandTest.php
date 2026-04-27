@@ -60,7 +60,7 @@ function writeFixture(string $relativePath, string $content): string
 /**
  * Register a fixture controller in the registry for the current test.
  *
- * @param  string  $publishKey  e.g. "__fixtures/chained" or "dialog"
+ * @param  string  $publishKey  e.g. "__fixtures/chained" or "modal"
  */
 function registerFixture(string $publishKey): void
 {
@@ -89,10 +89,10 @@ it('lists available controllers', function () {
 
 it('shows interactive multiselect when no arguments given', function () {
     $this->artisan('hotwire:controllers')
-        ->expectsChoice('Which controllers would you like to publish?', ['dialog'], $this->allControllerOptions)
+        ->expectsChoice('Which controllers would you like to publish?', ['modal'], $this->allControllerOptions)
         ->assertSuccessful();
 
-    expect(File::exists(targetFor($this->targetDir, 'dialog')))->toBeTrue();
+    expect(File::exists(targetFor($this->targetDir, 'modal')))->toBeTrue();
 });
 
 it('shows no selection message when multiselect returns empty', function () {
@@ -117,7 +117,7 @@ it('publishes only controllers within the requested substrate', function () {
         ->assertSuccessful();
 
     expect(File::isDirectory($this->targetDir.'/optimistic'))->toBeFalse()
-        ->and(File::exists(targetFor($this->targetDir, 'dialog')))->toBeFalse();
+        ->and(File::exists(targetFor($this->targetDir, 'modal')))->toBeFalse();
 });
 
 // --- Top-level and substrate/name notation ---
@@ -164,7 +164,7 @@ it('publishes all controllers with --all', function () {
     $this->artisan('hotwire:controllers', ['--all' => true])
         ->assertSuccessful();
 
-    expect(File::exists(targetFor($this->targetDir, 'dialog')))->toBeTrue()
+    expect(File::exists(targetFor($this->targetDir, 'modal')))->toBeTrue()
         ->and(File::exists(targetFor($this->targetDir, 'autoselect')))->toBeTrue()
         ->and(File::exists(targetFor($this->targetDir, 'turbo/progress')))->toBeTrue();
 });
@@ -188,33 +188,33 @@ it('warns when specific controller does not exist within a substrate', function 
 // --- Up to date / overwrite ---
 
 it('skips when controller is already up to date', function () {
-    $this->artisan('hotwire:controllers', ['controllers' => ['dialog']]);
+    $this->artisan('hotwire:controllers', ['controllers' => ['modal']]);
 
-    $this->artisan('hotwire:controllers', ['controllers' => ['dialog']])
+    $this->artisan('hotwire:controllers', ['controllers' => ['modal']])
         ->assertSuccessful();
 });
 
 it('warns when controller exists and differs without --force in non-interactive mode', function () {
-    $this->artisan('hotwire:controllers', ['controllers' => ['dialog']]);
+    $this->artisan('hotwire:controllers', ['controllers' => ['modal']]);
 
-    $published = targetFor($this->targetDir, 'dialog');
+    $published = targetFor($this->targetDir, 'modal');
     File::put($published, '// modified');
 
-    $this->artisan('hotwire:controllers dialog --no-interaction')
+    $this->artisan('hotwire:controllers modal --no-interaction')
         ->assertSuccessful();
 
     expect(File::get($published))->toBe('// modified');
 });
 
 it('prompts for confirmation when controller differs in interactive mode', function () {
-    $this->artisan('hotwire:controllers', ['controllers' => ['dialog']]);
+    $this->artisan('hotwire:controllers', ['controllers' => ['modal']]);
 
-    $published = targetFor($this->targetDir, 'dialog');
+    $published = targetFor($this->targetDir, 'modal');
     File::put($published, '// modified');
 
-    $this->artisan('hotwire:controllers', ['controllers' => ['dialog']])
+    $this->artisan('hotwire:controllers', ['controllers' => ['modal']])
         ->expectsConfirmation(
-            'Controller "dialog" already exists and differs from the package version. Overwrite?',
+            'Controller "modal" already exists and differs from the package version. Overwrite?',
             'no',
         )
         ->assertSuccessful();
@@ -223,43 +223,43 @@ it('prompts for confirmation when controller differs in interactive mode', funct
 });
 
 it('overwrites when user confirms in interactive mode', function () {
-    $this->artisan('hotwire:controllers', ['controllers' => ['dialog']]);
+    $this->artisan('hotwire:controllers', ['controllers' => ['modal']]);
 
-    $published = targetFor($this->targetDir, 'dialog');
+    $published = targetFor($this->targetDir, 'modal');
     File::put($published, '// modified');
 
-    $this->artisan('hotwire:controllers', ['controllers' => ['dialog']])
+    $this->artisan('hotwire:controllers', ['controllers' => ['modal']])
         ->expectsConfirmation(
-            'Controller "dialog" already exists and differs from the package version. Overwrite?',
+            'Controller "modal" already exists and differs from the package version. Overwrite?',
             'yes',
         )
         ->assertSuccessful();
 
-    $source = sourceFor('dialog');
+    $source = sourceFor('modal');
     expect(File::get($published))->toBe(File::get($source));
 });
 
 it('overwrites when controller exists and --force is used', function () {
-    $this->artisan('hotwire:controllers', ['controllers' => ['dialog']]);
+    $this->artisan('hotwire:controllers', ['controllers' => ['modal']]);
 
-    $published = targetFor($this->targetDir, 'dialog');
+    $published = targetFor($this->targetDir, 'modal');
     File::put($published, '// modified');
 
-    $this->artisan('hotwire:controllers', ['controllers' => ['dialog'], '--force' => true])
+    $this->artisan('hotwire:controllers', ['controllers' => ['modal'], '--force' => true])
         ->assertSuccessful();
 
-    $source = sourceFor('dialog');
+    $source = sourceFor('modal');
     expect(File::get($published))->toBe(File::get($source));
 });
 
 // --- Directory structure ---
 
 it('publishes top-level controllers flat', function () {
-    $this->artisan('hotwire:controllers', ['controllers' => ['dialog']]);
+    $this->artisan('hotwire:controllers', ['controllers' => ['modal']]);
 
     expect(File::isDirectory($this->targetDir))->toBeTrue()
-        ->and(File::exists($this->targetDir.'/dialog_controller.js'))->toBeTrue()
-        ->and(File::isDirectory($this->targetDir.'/dialog'))->toBeFalse();
+        ->and(File::exists($this->targetDir.'/modal_controller.js'))->toBeTrue()
+        ->and(File::isDirectory($this->targetDir.'/modal'))->toBeFalse();
 });
 
 it('preserves substrate directory structure when publishing', function () {
@@ -289,12 +289,12 @@ it('does not duplicate shared dependency when publishing multiple controllers fr
 });
 
 it('republishes without prompt when file was deleted but directory remains', function () {
-    $this->artisan('hotwire:controllers', ['controllers' => ['dialog']]);
+    $this->artisan('hotwire:controllers', ['controllers' => ['modal']]);
 
-    $published = targetFor($this->targetDir, 'dialog');
+    $published = targetFor($this->targetDir, 'modal');
     File::delete($published);
 
-    $this->artisan('hotwire:controllers', ['controllers' => ['dialog']])
+    $this->artisan('hotwire:controllers', ['controllers' => ['modal']])
         ->assertSuccessful();
 
     expect(File::exists($published))->toBeTrue();
@@ -303,7 +303,7 @@ it('republishes without prompt when file was deleted but directory remains', fun
 // --- --list status ---
 
 it('shows up to date and outdated statuses in --list', function () {
-    $this->artisan('hotwire:controllers', ['controllers' => ['dialog']]);
+    $this->artisan('hotwire:controllers', ['controllers' => ['modal']]);
 
     $outdated = targetFor($this->targetDir, 'autoselect');
     File::ensureDirectoryExists(dirname($outdated));

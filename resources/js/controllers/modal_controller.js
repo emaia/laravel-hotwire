@@ -37,8 +37,18 @@ export default class ModalController extends Controller {
     }
 
     trackClickedLink = (event) => {
-        const link = event.target.closest('a[data-turbo-frame="modal"]');
-        this.lastClickedLink = link?.hasAttribute("data-loading-template") ? link : null;
+        if (!this.hasDynamicContentTarget) return;
+        const frameId = this.dynamicContentTarget.id;
+        if (!frameId) return;
+
+        const link = event.target.closest("a[data-turbo-frame]");
+        if (!link || link.getAttribute("data-turbo-frame") !== frameId) {
+            this.lastClickedLink = null;
+            return;
+        }
+
+        this.lastClickedLink = link.hasAttribute("data-loading-template") ? link : null;
+        this.showLoading();
     };
 
     connect() {
@@ -164,17 +174,21 @@ export default class ModalController extends Controller {
     }
 
     showLoading() {
-        if (!this.modalTarget.hidden) return;
+        if (!this.modalTarget.hidden || !this.hasDynamicContentTarget) return;
 
         this.dismissedWhileLoading = false;
 
         let isNeedingLoadingIndicator = true;
-        const handleFetchResponse = () => (isNeedingLoadingIndicator = false);
+        const handleFetchResponse = (event) => {
+            if (this.#isResponseForDynamicFrame(event)) {
+                isNeedingLoadingIndicator = false;
+            }
+        };
 
-        document.addEventListener("turbo:before-fetch-response", handleFetchResponse, { once: true });
+        document.addEventListener("turbo:before-fetch-response", handleFetchResponse);
 
         setTimeout(() => {
-            if (isNeedingLoadingIndicator && this.hasDynamicContentTarget) {
+            if (isNeedingLoadingIndicator) {
                 const templateHtml = this.#resolveLoadingTemplate();
                 if (templateHtml) {
                     this.dynamicContentTarget.innerHTML = templateHtml;
@@ -204,6 +218,19 @@ export default class ModalController extends Controller {
         if (this.lastClickedLink) return this.lastClickedLink;
 
         return null;
+    }
+
+    #isResponseForDynamicFrame(event) {
+        if (!this.hasDynamicContentTarget) return false;
+
+        const frame = this.dynamicContentTarget;
+        const target = event?.target;
+
+        if (target === frame) {
+            return true;
+        }
+
+        return target?.closest?.("turbo-frame") === frame;
     }
 
     #dispatchEvent(name) {
@@ -238,21 +265,12 @@ export default class ModalController extends Controller {
                 const contentChanged = currentHash !== this.contentState;
 
                 if (hasContent && contentChanged && !this.isOpen && !this.isOpening && !this.dismissedWhileLoading) {
-                    console.debug("Content changed, opening modal", {
-                        previous: this.contentState,
-                        current: currentHash,
-                    });
                     this.contentState = currentHash;
                     this.open();
                 } else if (!hasContent && this.isOpen && !this.isClosing) {
-                    console.debug("Content removed, closing modal");
                     this.contentState = currentHash;
                     this.close();
                 } else if (contentChanged) {
-                    console.debug("Content changed but no action needed", {
-                        previous: this.contentState,
-                        current: currentHash,
-                    });
                     this.contentState = currentHash;
                 }
             });

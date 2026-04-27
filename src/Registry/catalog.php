@@ -1,10 +1,10 @@
 <?php
 
 use Emaia\LaravelHotwire\Components\ConfirmDialog;
-use Emaia\LaravelHotwire\Components\Dialog;
 use Emaia\LaravelHotwire\Components\FlashContainer;
 use Emaia\LaravelHotwire\Components\FlashMessage;
 use Emaia\LaravelHotwire\Components\Loader;
+use Emaia\LaravelHotwire\Components\Modal;
 use Emaia\LaravelHotwire\Components\Optimistic;
 use Emaia\LaravelHotwire\Components\Timeago;
 
@@ -16,13 +16,6 @@ return [
             'docs' => 'docs/components/confirm-dialog/readme.md',
             'category' => 'overlay',
             'controllers' => ['confirm-dialog'],
-        ],
-        'dialog' => [
-            'class' => Dialog::class,
-            'view' => 'hotwire::components.dialog.dialog',
-            'docs' => 'docs/components/dialog/readme.md',
-            'category' => 'overlay',
-            'controllers' => ['dialog'],
         ],
         'flash-container' => [
             'class' => FlashContainer::class,
@@ -44,6 +37,13 @@ return [
             'docs' => 'docs/components/loader/readme.md',
             'category' => 'feedback',
             'controllers' => [],
+        ],
+        'modal' => [
+            'class' => Modal::class,
+            'view' => 'hotwire::components.modal.modal',
+            'docs' => 'docs/components/modal/readme.md',
+            'category' => 'overlay',
+            'controllers' => ['modal'],
         ],
         'optimistic' => [
             'class' => Optimistic::class,
@@ -121,11 +121,6 @@ return [
             'docs' => 'docs/controllers/dev/log.md',
             'category' => 'dev',
         ],
-        'dialog' => [
-            'source' => 'resources/js/controllers/dialog_controller.js',
-            'docs' => 'docs/controllers/dialog.md',
-            'category' => 'overlay',
-        ],
         'gtm' => [
             'source' => 'resources/js/controllers/gtm_controller.js',
             'docs' => 'docs/controllers/gtm.md',
@@ -146,6 +141,16 @@ return [
             'source' => 'resources/js/controllers/lazy_image_controller.js',
             'docs' => 'docs/controllers/lazy-image.md',
             'category' => 'utility',
+        ],
+        'modal' => [
+            'source' => 'resources/js/controllers/modal_controller.js',
+            'docs' => 'docs/controllers/modal.md',
+            'category' => 'overlay',
+        ],
+        'modal-auto-close' => [
+            'source' => 'resources/js/controllers/modal_auto_close_controller.js',
+            'docs' => 'docs/controllers/modal-auto-close.md',
+            'category' => 'overlay',
         ],
         'oembed' => [
             'source' => 'resources/js/controllers/oembed_controller.js',

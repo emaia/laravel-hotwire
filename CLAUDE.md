@@ -30,14 +30,14 @@ The complete Hotwire stack for Laravel — Turbo Drive, Turbo Streams, Stimulus 
 - **Identifier** matches the file name converted to kebab-case: `auto_submit_controller.js` → `data-controller="auto-submit"`.
 - **Substrate folders** (`turbo/`, `optimistic/`, `dev/`) group controllers tied to a specific technical layer.
   Files inside keep Stimulus' `--` separator in the identifier: `turbo/progress_controller.js` → `data-controller="turbo--progress"`.
-- **No UI-role folders** (no `form/`, `dialog/`, `utils/`, `lib/`, `media/`, `notification/`). Names themselves
+- **No UI-role folders** (no `form/`, `modal/`, `utils/`, `lib/`, `media/`, `notification/`). Names themselves
   describe intent — prefer compound names (`copy-to-clipboard`, `lazy-image`, `input-mask`) over namespace buckets.
 - Loaded via `@emaia/stimulus-dynamic-loader` with Vite's `import.meta.glob`.
 
 ### Blade Components
 
 - Registered with configurable prefix (default: `hwc`)
-- Usage: `<x-hwc::dialog>`, `<x-hwc::confirm-dialog>`, `<x-hwc::flash-message>`, `<x-hwc::loader>`, `<x-hwc::timeago>`
+- Usage: `<x-hwc::modal>`, `<x-hwc::confirm-dialog>`, `<x-hwc::flash-message>`, `<x-hwc::loader>`, `<x-hwc::timeago>`
 - Components and Controllers needs to be registered in Registry catalog `src/Registry/catalog.php`
 
 ### Turbo
