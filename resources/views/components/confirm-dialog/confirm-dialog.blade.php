@@ -1,6 +1,10 @@
 <div
     id="{{ $id }}"
     data-controller="confirm-dialog"
+    data-confirm-dialog-open-duration-value="{{ $openDuration }}"
+    data-confirm-dialog-close-duration-value="{{ $closeDuration }}"
+    data-confirm-dialog-lock-scroll-value="{{ $lockScroll ? 'true' : 'false' }}"
+    data-confirm-dialog-close-on-click-outside-value="{{ $closeOnClickOutside ? 'true' : 'false' }}"
     data-confirm-dialog-hidden-class="opacity-0 pointer-events-none"
     data-confirm-dialog-visible-class="opacity-100 pointer-events-auto"
     data-confirm-dialog-backdrop-hidden-class="opacity-0"
@@ -10,11 +14,9 @@
     data-confirm-dialog-lock-scroll-class="overflow-hidden"
     data-action="turbo:before-cache@window->confirm-dialog#cancel"
 >
-    @if (isset($trigger))
-        <div data-action="click->confirm-dialog#intercept">
-            {{ $trigger }}
-        </div>
-    @endif
+    <div data-action="click->confirm-dialog#intercept">
+        {{ $slot }}
+    </div>
 
     <div
         data-confirm-dialog-target="modal"
@@ -42,14 +44,19 @@
                     <p class="text-sm text-wrap text-gray-600" style="text-wrap-mode: wrap">{{ $message }}</p>
                 @endif
 
-                {{ $slot }}
+                @isset($body)
+                    {{ $body }}
+                @endisset
             </div>
 
             <div class="flex justify-end gap-3 px-6 pb-6">
                 <button
                     type="button"
                     data-action="confirm-dialog#cancel"
-                    class="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                    @class([
+                        'rounded-md px-4 py-2 text-sm font-medium transition-colors',
+                        $cancelClass ?: 'border border-gray-300 text-gray-700 hover:bg-gray-50',
+                    ])
                 >
                     {{ $cancelLabel }}
                 </button>
@@ -58,7 +65,7 @@
                     data-action="confirm-dialog#confirm"
                     @class([
                         'rounded-md px-4 py-2 text-sm font-medium transition-colors',
-                        $confirmClass ?: 'bg-indigo-600 text-white hover:bg-indigo-700',
+                        $confirmClass ?: 'bg-red-600 text-white hover:bg-red-700',
                     ])
                 >
                     {{ $confirmLabel }}
