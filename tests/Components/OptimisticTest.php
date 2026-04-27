@@ -1,7 +1,5 @@
 <?php
 
-use Emaia\LaravelHotwire\Components\Optimistic;
-
 it('renders a template with the replace action by default', function () {
     $view = $this->blade('<x-hwc::optimistic target="post_1_favorite">OK</x-hwc::optimistic>');
 
@@ -46,10 +44,6 @@ it('escapes target id to prevent attribute injection', function () {
     ]);
 
     $view->assertDontSee('<script>alert(1)</script>', false);
-});
-
-it('declares no stimulus controller dependencies (trigger is the host responsibility)', function () {
-    expect(Optimistic::stimulusControllers())->toBe([]);
 });
 
 it('preserves data-field markers in the slot for client-side population', function () {

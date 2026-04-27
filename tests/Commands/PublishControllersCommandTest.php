@@ -1,7 +1,7 @@
 <?php
 
+use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Illuminate\Support\Facades\File;
-use Symfony\Component\Finder\Finder;
 
 beforeEach(function () {
     $this->targetDir = resource_path('js/controllers');
@@ -10,26 +10,17 @@ beforeEach(function () {
     File::deleteDirectory($this->targetDir);
     File::deleteDirectory($this->fixturesDir);
 
-    $baseDir = realpath(__DIR__.'/../../resources/js/controllers');
+    HotwireRegistry::reset();
 
-    $this->allControllerOptions = collect(
-        Finder::create()->files()
-            ->name('*_controller.js')
-            ->name('*_controller.ts')
-            ->in($baseDir)
-    )->mapWithKeys(function ($f) {
-        $name = preg_replace('/_controller\.(js|ts)$/', '', $f->getFilename());
-        $relativeDir = trim(str_replace('\\', '/', $f->getRelativePath()), '/');
-
-        $key = $relativeDir === '' ? $name : "$relativeDir/$name";
-
-        return [$key => $key];
-    })->sort()->all();
+    $this->allControllerOptions = collect(HotwireRegistry::make()->publishableControllers())
+        ->mapWithKeys(fn ($_, $key) => [$key => $key])
+        ->all();
 });
 
 afterEach(function () {
     File::deleteDirectory($this->targetDir);
     File::deleteDirectory($this->fixturesDir);
+    HotwireRegistry::reset();
 });
 
 // --- Helpers ---
@@ -64,6 +55,27 @@ function writeFixture(string $relativePath, string $content): string
     File::put($path, $content);
 
     return $path;
+}
+
+/**
+ * Register a fixture controller in the registry for the current test.
+ *
+ * @param  string  $publishKey  e.g. "__fixtures/chained" or "dialog"
+ */
+function registerFixture(string $publishKey): void
+{
+    $basePath = realpath(__DIR__.'/../..');
+    $catalog = require $basePath.'/src/Registry/catalog.php';
+
+    $extension = file_exists("{$basePath}/resources/js/controllers/{$publishKey}_controller.ts") ? 'ts' : 'js';
+
+    $catalog['controllers'][str_replace('/', '--', $publishKey)] = [
+        'source' => "resources/js/controllers/{$publishKey}_controller.{$extension}",
+        'docs' => 'README.md',
+        'category' => 'fixture',
+    ];
+
+    HotwireRegistry::swap(HotwireRegistry::fromCatalog($catalog, $basePath));
 }
 
 // --- --list ---
@@ -341,6 +353,7 @@ it('follows transitive relative imports', function () {
         "import { deep } from './_deep';\n".
         "export default class extends Controller {}\n"
     );
+    registerFixture('__fixtures/chained');
 
     $this->artisan('hotwire:controllers', ['controllers' => ['__fixtures/chained']])
         ->assertSuccessful();
@@ -356,6 +369,7 @@ it('ignores imports that do not resolve or point outside the package', function 
         "import './_missing';\n".
         "export default class extends Controller {}\n"
     );
+    registerFixture('__fixtures/external');
 
     $this->artisan('hotwire:controllers', ['controllers' => ['__fixtures/external']])
         ->assertSuccessful();
@@ -370,6 +384,7 @@ it('does not publish other controllers as dependencies', function () {
         "import Sibling from './sibling_controller';\nexport default class {}\n"
     );
     writeFixture('sibling_controller.js', "export default class {}\n");
+    registerFixture('__fixtures/importer');
 
     $this->artisan('hotwire:controllers', ['controllers' => ['__fixtures/importer']])
         ->assertSuccessful();
@@ -384,6 +399,7 @@ it('resolves directory imports to index files', function () {
         'indexed_controller.js',
         "import { ok } from './utils';\nexport default class {}\n"
     );
+    registerFixture('__fixtures/indexed');
 
     $this->artisan('hotwire:controllers', ['controllers' => ['__fixtures/indexed']])
         ->assertSuccessful();
@@ -397,6 +413,7 @@ it('publishes CSS imported by a controller', function () {
         'styled_controller.js',
         "import './styled.css';\nexport default class {}\n"
     );
+    registerFixture('__fixtures/styled');
 
     $this->artisan('hotwire:controllers', ['controllers' => ['__fixtures/styled']])
         ->assertSuccessful();

@@ -7,30 +7,13 @@ use Emaia\LaravelHotwire\Commands\InstallCommand;
 use Emaia\LaravelHotwire\Commands\ListComponentsCommand;
 use Emaia\LaravelHotwire\Commands\MakeControllerCommand;
 use Emaia\LaravelHotwire\Commands\PublishControllersCommand;
-use Emaia\LaravelHotwire\Components\ConfirmDialog;
-use Emaia\LaravelHotwire\Components\Dialog;
-use Emaia\LaravelHotwire\Components\FlashContainer;
-use Emaia\LaravelHotwire\Components\FlashMessage;
-use Emaia\LaravelHotwire\Components\Loader;
-use Emaia\LaravelHotwire\Components\Optimistic;
-use Emaia\LaravelHotwire\Components\Timeago;
+use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Illuminate\Support\Facades\Blade;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
 class LaravelHotwireServiceProvider extends PackageServiceProvider
 {
-    /** @var array<string, class-string> */
-    public const array COMPONENTS = [
-        'dialog' => Dialog::class,
-        'confirm-dialog' => ConfirmDialog::class,
-        'flash-container' => FlashContainer::class,
-        'flash-message' => FlashMessage::class,
-        'loader' => Loader::class,
-        'optimistic' => Optimistic::class,
-        'timeago' => Timeago::class,
-    ];
-
     public function configurePackage(Package $package): void
     {
         $package
@@ -49,12 +32,16 @@ class LaravelHotwireServiceProvider extends PackageServiceProvider
     public function packageBooted(): void
     {
         $prefix = config('hotwire.prefix', 'hwc');
+        $registry = HotwireRegistry::make();
 
-        Blade::componentNamespace('Emaia\\LaravelHotwire\\Components', $prefix);
-
-        if ($prefix !== 'hotwire') {
-            Blade::componentNamespace('Emaia\\LaravelHotwire\\Components', 'hotwire');
+        foreach ($registry->bladeComponentAliases($prefix) as $alias => $class) {
+            Blade::component($class, $alias);
         }
 
+        if ($prefix !== 'hotwire') {
+            foreach ($registry->bladeComponentAliases('hotwire') as $alias => $class) {
+                Blade::component($class, $alias);
+            }
+        }
     }
 }

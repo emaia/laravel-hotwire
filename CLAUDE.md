@@ -33,13 +33,12 @@ The complete Hotwire stack for Laravel — Turbo Drive, Turbo Streams, Stimulus 
 - **No UI-role folders** (no `form/`, `dialog/`, `utils/`, `lib/`, `media/`, `notification/`). Names themselves
   describe intent — prefer compound names (`copy-to-clipboard`, `lazy-image`, `input-mask`) over namespace buckets.
 - Loaded via `@emaia/stimulus-dynamic-loader` with Vite's `import.meta.glob`.
-- Full naming rules and the rename history live in `docs/rfcs/0001-flat-controller-naming.md`.
 
 ### Blade Components
 
 - Registered with configurable prefix (default: `hwc`)
 - Usage: `<x-hwc::dialog>`, `<x-hwc::confirm-dialog>`, `<x-hwc::flash-message>`, `<x-hwc::loader>`, `<x-hwc::timeago>`
-- Components that need JS declare their controllers via `HasStimulusControllers` interface
+- Components and Controllers needs to be registered in Registry catalog `src/Registry/catalog.php`
 
 ### Turbo
 

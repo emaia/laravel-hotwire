@@ -2,10 +2,9 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
-use Emaia\LaravelHotwire\Contracts\HasStimulusControllers;
 use Illuminate\View\Component;
 
-class Dialog extends Component implements HasStimulusControllers
+class Dialog extends Component
 {
     public function __construct(
         public string $id = '',
@@ -19,11 +18,6 @@ class Dialog extends Component implements HasStimulusControllers
         if ($this->id === '') {
             $this->id = uniqid('dialog-');
         }
-    }
-
-    public static function stimulusControllers(): array
-    {
-        return ['dialog'];
     }
 
     public function render()

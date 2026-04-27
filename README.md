@@ -24,6 +24,7 @@ the box.
     - [Turbo](#turbo-1)
     - [Optimistic](#optimistic)
     - [Dev](#dev)
+- [Extending](#extending-the-package)
 - [Testing](#testing)
 - [Changelog](#changelog)
 - [Contributing](#contributing)
@@ -279,15 +280,15 @@ See the full documentation at [emaia/laravel-hotwire-turbo](https://github.com/e
 
 ## Components
 
-| Component                                                  | Blade                      | Stimulus Identifier | Docs                                               |
-|------------------------------------------------------------|----------------------------|---------------------|----------------------------------------------------|
-| [Dialog](docs/components/dialog/readme.md)                 | `<x-hwc::dialog>`          | `dialog`            | [readme](docs/components/dialog/readme.md)         |
-| [Confirm Dialog](docs/components/confirm-dialog/readme.md) | `<x-hwc::confirm-dialog>`  | `confirm-dialog`    | [readme](docs/components/confirm-dialog/readme.md) |
-| [Flash Container](docs/components/flash-message/readme.md) | `<x-hwc::flash-container>` | `toaster`           | [readme](docs/components/flash-message/readme.md)  |
-| [Flash Message](docs/components/flash-message/readme.md)   | `<x-hwc::flash-message>`   | `toast`             | [readme](docs/components/flash-message/readme.md)  |
-| [Loader](docs/components/loader/readme.md)                 | `<x-hwc::loader>`          | —                   | [readme](docs/components/loader/readme.md)         |
-| [Optimistic](docs/components/optimistic/readme.md)         | `<x-hwc::optimistic>`      | —                   | [readme](docs/components/optimistic/readme.md)     |
-| [Timeago](docs/controllers/timeago.md)                     | `<x-hwc::timeago>`         | `timeago`           | [readme](docs/controllers/timeago.md)              |
+| Component                                                    | Blade                      | Stimulus Identifier | Docs                                                |
+|--------------------------------------------------------------|----------------------------|---------------------|-----------------------------------------------------|
+| [Dialog](docs/components/dialog/readme.md)                   | `<x-hwc::dialog>`          | `dialog`            | [readme](docs/components/dialog/readme.md)          |
+| [Confirm Dialog](docs/components/confirm-dialog/readme.md)   | `<x-hwc::confirm-dialog>`  | `confirm-dialog`    | [readme](docs/components/confirm-dialog/readme.md)  |
+| [Flash Container](docs/components/flash-container/readme.md) | `<x-hwc::flash-container>` | `toaster`           | [readme](docs/components/flash-container/readme.md) |
+| [Flash Message](docs/components/flash-message/readme.md)     | `<x-hwc::flash-message>`   | `toast`             | [readme](docs/components/flash-message/readme.md)   |
+| [Loader](docs/components/loader/readme.md)                   | `<x-hwc::loader>`          | —                   | [readme](docs/components/loader/readme.md)          |
+| [Optimistic](docs/components/optimistic/readme.md)           | `<x-hwc::optimistic>`      | —                   | [readme](docs/components/optimistic/readme.md)      |
+| [Timeago](docs/components/timeago/readme.md)                 | `<x-hwc::timeago>`         | `timeago`           | [readme](docs/components/timeago/readme.md)         |
 
 ## Stimulus Controllers (standalone)
 
@@ -352,6 +353,44 @@ Controllers tied to Turbo Drive / Turbo Frames.
 | Controller                         | Identifier | Dependencies | Docs                                  |
 |------------------------------------|------------|--------------|---------------------------------------|
 | [Log](docs/controllers/dev/log.md) | `dev--log` | —            | [readme](docs/controllers/dev/log.md) |
+
+## Extending the package
+
+Laravel Hotwire uses a single registry as the source of truth for:
+
+- Blade components
+- Stimulus controllers
+- external npm dependencies
+- docs paths
+- public categories
+
+When adding a new component or controller to this package, update the registry entry in
+[`src/Registry/catalog.php`](src/Registry/catalog.php).
+
+Example component entry:
+
+```php
+'dialog' => [
+    'class' => \Emaia\LaravelHotwire\Components\Dialog::class,
+    'view' => 'hotwire::components.dialog.dialog',
+    'docs' => 'docs/components/dialog/readme.md',
+    'category' => 'overlay',
+    'controllers' => ['dialog'],
+],
+```
+
+Example controller entry:
+
+```php
+'tooltip' => [
+    'source' => 'resources/js/controllers/tooltip_controller.js',
+    'docs' => 'docs/controllers/tooltip.md',
+    'category' => 'utility',
+    'npm' => ['tippy.js' => '^6.3.7'],
+],
+```
+
+More details: [docs/registry.md](docs/registry.md)
 
 ## Testing
 

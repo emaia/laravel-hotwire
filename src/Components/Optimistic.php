@@ -2,21 +2,15 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
-use Emaia\LaravelHotwire\Contracts\HasStimulusControllers;
 use Illuminate\View\Component;
 
-class Optimistic extends Component implements HasStimulusControllers
+class Optimistic extends Component
 {
     public function __construct(
         public string $target = '',
         public string $targets = '',
         public string $action = 'replace',
     ) {}
-
-    public static function stimulusControllers(): array
-    {
-        return [];
-    }
 
     public function render()
     {

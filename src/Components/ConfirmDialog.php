@@ -2,10 +2,9 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
-use Emaia\LaravelHotwire\Contracts\HasStimulusControllers;
 use Illuminate\View\Component;
 
-class ConfirmDialog extends Component implements HasStimulusControllers
+class ConfirmDialog extends Component
 {
     public function __construct(
         public string $title = '',
@@ -18,11 +17,6 @@ class ConfirmDialog extends Component implements HasStimulusControllers
         if ($this->id === '') {
             $this->id = uniqid('confirm-');
         }
-    }
-
-    public static function stimulusControllers(): array
-    {
-        return ['confirm-dialog'];
     }
 
     public function render()

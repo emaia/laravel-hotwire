@@ -1,6 +1,5 @@
 <?php
 
-use Emaia\LaravelHotwire\Components\FlashContainer;
 use Emaia\LaravelHotwire\LaravelHotwireServiceProvider;
 use Illuminate\Support\Facades\Blade;
 
@@ -126,12 +125,6 @@ it('emits optional advanced props when provided', function () {
     $view->assertSee('data-toaster-swipe-directions-value="left,right"', false);
 });
 
-// --- Stimulus controller declaration ---
-
-it('declares only the toaster stimulus controller', function () {
-    expect(FlashContainer::stimulusControllers())->toBe(['toaster']);
-});
-
 // --- Namespace registration ---
 
 it('renders with hotwire:: prefix alias', function () {
@@ -147,5 +140,5 @@ it('registers with custom prefix', function () {
     $provider = new LaravelHotwireServiceProvider($this->app);
     $provider->packageBooted();
 
-    expect(Blade::getClassComponentNamespaces())->toHaveKey('custom');
+    expect(Blade::getClassComponentAliases())->toHaveKey('custom::flash-container');
 });

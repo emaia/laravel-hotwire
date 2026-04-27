@@ -2,9 +2,9 @@
 
 namespace Emaia\LaravelHotwire\Commands;
 
+use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
-use Symfony\Component\Finder\Finder;
 
 use function Laravel\Prompts\confirm;
 use function Laravel\Prompts\info;
@@ -298,39 +298,20 @@ class PublishControllersCommand extends Command
     /** @return array<string, array{name: string, identifier: string, relative_dir: string, source_file: string, filename: string}> */
     private function availableControllers(): array
     {
-        $baseDir = (string) realpath(__DIR__.'/../../resources/js/controllers');
+        $registry = HotwireRegistry::make();
+        $basePath = $registry->basePath();
 
         $controllers = [];
 
-        $controllerFiles = Finder::create()->files()
-            ->name('*_controller.js')
-            ->name('*_controller.ts')
-            ->in($baseDir);
-
-        foreach ($controllerFiles as $file) {
-            $name = preg_replace('/_controller\.(js|ts)$/', '', $file->getFilename());
-            $relativeDir = trim(str_replace('\\', '/', $file->getRelativePath()), '/');
-
-            $identifier = $relativeDir === ''
-                ? str($name)->replace('_', '-')->toString()
-                : str("{$relativeDir}--{$name}")->replace('/', '--')->replace('_', '-')->toString();
-
-            $key = $relativeDir === '' ? $name : "{$relativeDir}/{$name}";
-
+        foreach ($registry->publishableControllers() as $key => $controller) {
             $controllers[$key] = [
-                'name' => $name,
-                'identifier' => $identifier,
-                'relative_dir' => $relativeDir,
-                'source_file' => $file->getRealPath(),
-                'filename' => $file->getFilename(),
+                'name' => $controller->name(),
+                'identifier' => $controller->identifier,
+                'relative_dir' => $controller->relativeDir(),
+                'source_file' => $controller->sourcePath($basePath),
+                'filename' => $controller->filename(),
             ];
         }
-
-        uksort($controllers, function ($a, $b) use ($controllers) {
-            $cmp = strcmp($controllers[$a]['relative_dir'], $controllers[$b]['relative_dir']);
-
-            return $cmp !== 0 ? $cmp : strcmp($a, $b);
-        });
 
         return $controllers;
     }
