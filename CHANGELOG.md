@@ -2,6 +2,16 @@
 
 All notable changes to `laravel-hotwire-components` will be documented in this file.
 
+## 0.9.0 - 2026-04-27
+
+### What's Changed
+
+* Add global registry for components/controllers by @emaia in https://github.com/emaia/laravel-hotwire/pull/5
+* Modal refactor by @emaia in https://github.com/emaia/laravel-hotwire/pull/6
+* Confirm dialog refactor by @emaia in https://github.com/emaia/laravel-hotwire/pull/7
+
+**Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/0.8.0...0.9.0
+
 ## 0.8.0 - 2026-04-22
 
 ### What's Changed
