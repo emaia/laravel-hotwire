@@ -61,7 +61,7 @@ elements that Turbo executes immediately.
 
 - Reconciliation is the server's job:
   `turbo_stream()->refresh(method: 'morph', scroll: 'preserve')`.
-- See [`<x-hwc::optimistic>`](../../components/optimistic/readme.md) for the
+- See [`<x-hwc::optimistic>`](../../components/optimistic.md) for the
   Blade component reference and a complete worked example.
 - For link triggers use [`optimistic--link`](link.md).
 - For custom triggers use [`optimistic--dispatch`](dispatch.md) or import

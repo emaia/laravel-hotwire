@@ -100,7 +100,7 @@ php artisan hotwire:controllers
 **By name** — publish a specific controller:
 
 ```bash
-php artisan hotwire:controllers autoselect
+php artisan hotwire:controllers auto-select
 ```
 
 **Substrate namespace** — publish every controller under a substrate folder (`turbo`, `optimistic`, `dev`):
@@ -130,7 +130,7 @@ php artisan hotwire:controllers --list
 **Overwrite existing files:**
 
 ```bash
-php artisan hotwire:controllers autoselect --force
+php artisan hotwire:controllers auto-select --force
 ```
 
 Top-level controllers are copied flat to `resources/js/controllers/` (e.g. `modal` →
@@ -280,15 +280,15 @@ See the full documentation at [emaia/laravel-hotwire-turbo](https://github.com/e
 
 ## Components
 
-| Component                                                    | Blade                      | Stimulus Identifier | Docs                                                |
-|--------------------------------------------------------------|----------------------------|---------------------|-----------------------------------------------------|
-| [Modal](docs/components/modal/readme.md)                     | `<x-hwc::modal>`           | `modal`             | [readme](docs/components/modal/readme.md)           |
-| [Confirm Dialog](docs/components/confirm-dialog/readme.md)   | `<x-hwc::confirm-dialog>`  | `confirm-dialog`    | [readme](docs/components/confirm-dialog/readme.md)  |
-| [Flash Container](docs/components/flash-container/readme.md) | `<x-hwc::flash-container>` | `toaster`           | [readme](docs/components/flash-container/readme.md) |
-| [Flash Message](docs/components/flash-message/readme.md)     | `<x-hwc::flash-message>`   | `toast`             | [readme](docs/components/flash-message/readme.md)   |
-| [Loader](docs/components/loader/readme.md)                   | `<x-hwc::loader>`          | —                   | [readme](docs/components/loader/readme.md)          |
-| [Optimistic](docs/components/optimistic/readme.md)           | `<x-hwc::optimistic>`      | —                   | [readme](docs/components/optimistic/readme.md)      |
-| [Timeago](docs/components/timeago/readme.md)                 | `<x-hwc::timeago>`         | `timeago`           | [readme](docs/components/timeago/readme.md)         |
+| Component                                             | Blade                      | Stimulus Identifier | Docs                                         |
+|-------------------------------------------------------|----------------------------|---------------------|----------------------------------------------|
+| [Modal](docs/components/modal.md)                     | `<x-hwc::modal>`           | `modal`             | [readme](docs/components/modal.md)           |
+| [Confirm Dialog](docs/components/confirm-dialog.md)   | `<x-hwc::confirm-dialog>`  | `confirm-dialog`    | [readme](docs/components/confirm-dialog.md)  |
+| [Flash Container](docs/components/flash-container.md) | `<x-hwc::flash-container>` | `toaster`           | [readme](docs/components/flash-container.md) |
+| [Flash Message](docs/components/flash-message.md)     | `<x-hwc::flash-message>`   | `toast`             | [readme](docs/components/flash-message.md)   |
+| [Loader](docs/components/loader.md)                   | `<x-hwc::loader>`          | —                   | [readme](docs/components/loader.md)          |
+| [Optimistic](docs/components/optimistic.md)           | `<x-hwc::optimistic>`      | —                   | [readme](docs/components/optimistic.md)      |
+| [Timeago](docs/components/timeago.md)                 | `<x-hwc::timeago>`         | `timeago`           | [readme](docs/components/timeago.md)         |
 
 ## Stimulus Controllers (standalone)
 
@@ -299,7 +299,7 @@ Controllers live flat at the top level (`resources/js/controllers/<name>_control
 in the identifier.
 
 ```bash
-php artisan hotwire:controllers autoselect auto-submit turbo/progress
+php artisan hotwire:controllers auto-select auto-submit turbo/progress
 ```
 
 ### Top-level controllers
@@ -308,8 +308,8 @@ php artisan hotwire:controllers autoselect auto-submit turbo/progress
 |----------------------------------------------------------------|-----------------------|-----------------|---------------------------------------------------|
 | [Animated Number](docs/controllers/animated-number.md)         | `animated-number`     | —               | [readme](docs/controllers/animated-number.md)     |
 | [Auto Save](docs/controllers/auto-save.md)                     | `auto-save`           | —               | [readme](docs/controllers/auto-save.md)           |
-| [Autoresize](docs/controllers/autoresize.md)                   | `autoresize`          | —               | [readme](docs/controllers/autoresize.md)          |
-| [Autoselect](docs/controllers/autoselect.md)                   | `autoselect`          | —               | [readme](docs/controllers/autoselect.md)          |
+| [Auto Resize](docs/controllers/auto-resize.md)                | `auto-resize`         | —               | [readme](docs/controllers/auto-resize.md)         |
+| [Auto Select](docs/controllers/auto-select.md)                | `auto-select`         | —               | [readme](docs/controllers/auto-select.md)         |
 | [Auto Submit](docs/controllers/auto-submit.md)                 | `auto-submit`         | —               | [readme](docs/controllers/auto-submit.md)         |
 | [Char Counter](docs/controllers/char-counter.md)               | `char-counter`        | —               | [readme](docs/controllers/char-counter.md)        |
 | [Checkbox Select All](docs/controllers/checkbox-select-all.md) | `checkbox-select-all` | —               | [readme](docs/controllers/checkbox-select-all.md) |
@@ -373,7 +373,7 @@ Example component entry:
 'modal' => [
     'class' => \Emaia\LaravelHotwire\Components\Modal::class,
     'view' => 'hotwire::components.modal.modal',
-    'docs' => 'docs/components/modal/readme.md',
+    'docs' => 'docs/components/modal.md',
     'category' => 'overlay',
     'controllers' => ['modal'],
 ],

@@ -18,7 +18,7 @@ Two round-trips, zero client-side conditional logic.
 
 | Scenario                                                              | Use                                              |
 |-----------------------------------------------------------------------|--------------------------------------------------|
-| "Are you sure?" with no extra context                                 | [`confirm-dialog`](../components/confirm-dialog/readme.md) (one round-trip) |
+| "Are you sure?" with no extra context                                 | [`confirm-dialog`](../components/confirm-dialog.md) (one round-trip) |
 | Confirmation copy depends on server data (counts, related records)    | This recipe                                      |
 | Server decides *whether* confirmation is needed (policy, thresholds)  | This recipe                                      |
 | Audit/security: the decision must be re-validated server-side         | This recipe                                      |
@@ -191,7 +191,7 @@ real route, and the response is a Turbo Stream that Turbo Drive applies to the p
 
 ## See also
 
-- [`<x-hwc::confirm-dialog>`](../components/confirm-dialog/readme.md) — client-side confirmation for
+- [`<x-hwc::confirm-dialog>`](../components/confirm-dialog.md) — client-side confirmation for
   the trivial case.
 - [Modal patterns](./modal-patterns.md) — the layout-shared setup this recipe builds on.
 - [Frame-or-page views](./frame-or-page.md) — the layout that makes the confirmation view dual-mode.

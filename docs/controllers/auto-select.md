@@ -1,8 +1,8 @@
-# Autoselect
+# Auto Select
 
 Automatically selects all content of an input when it receives focus.
 
-**Identifier:** `autoselect`
+**Identifier:** `auto-select`
 
 ## Requirements
 
@@ -14,7 +14,7 @@ Automatically selects all content of an input when it receives focus.
 <input
     type="text"
     value="selectable text"
-    data-controller="autoselect"
+    data-controller="auto-select"
 />
 ```
 
@@ -26,7 +26,7 @@ When clicking or tabbing into the input, all text is automatically selected. Use
 <input
     type="text"
     value="https://mysite.com/invite/abc123"
-    data-controller="autoselect"
+    data-controller="auto-select"
     readonly
 />
 ```

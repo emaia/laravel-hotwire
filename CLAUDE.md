@@ -10,6 +10,7 @@ The complete Hotwire stack for Laravel — Turbo Drive, Turbo Streams, Stimulus 
 - `stubs/resources/` — Scaffolding files copied by `hotwire:install`
 - `config/hotwire.php` — Package configuration (component prefix)
 - `tests/` — Pest PHP tests with Orchestra Testbench
+- `tests/Js` — Bun JS tests
 - `docs/` — Documentation
 
 ## Artisan Commands
@@ -27,9 +28,11 @@ The complete Hotwire stack for Laravel — Turbo Drive, Turbo Streams, Stimulus 
 ### Stimulus Controllers
 
 - **Flat layout** at the top level. File naming: `{name}_controller.{js|ts}` (snake_case).
-- **Identifier** matches the file name converted to kebab-case: `auto_submit_controller.js` → `data-controller="auto-submit"`.
+- **Identifier** matches the file name converted to kebab-case: `auto_submit_controller.js` →
+  `data-controller="auto-submit"`.
 - **Substrate folders** (`turbo/`, `optimistic/`, `dev/`) group controllers tied to a specific technical layer.
-  Files inside keep Stimulus' `--` separator in the identifier: `turbo/progress_controller.js` → `data-controller="turbo--progress"`.
+  Files inside keep Stimulus' `--` separator in the identifier: `turbo/progress_controller.js` →
+  `data-controller="turbo--progress"`.
 - **No UI-role folders** (no `form/`, `modal/`, `utils/`, `lib/`, `media/`, `notification/`). Names themselves
   describe intent — prefer compound names (`copy-to-clipboard`, `lazy-image`, `input-mask`) over namespace buckets.
 - Loaded via `@emaia/stimulus-dynamic-loader` with Vite's `import.meta.glob`.
@@ -43,7 +46,8 @@ The complete Hotwire stack for Laravel — Turbo Drive, Turbo Streams, Stimulus 
 ### Turbo
 
 - Provided by `emaia/laravel-hotwire-turbo` dependency
-- Fluent stream builder: `turbo_stream()->append(...)` (the builder is `Responsable` — return it directly from the controller; use `->withResponse(...)` when you need a custom status or headers)
+- Fluent stream builder: `turbo_stream()->append(...)` (the builder is `Responsable` — return it directly from the
+  controller; use `->withResponse(...)` when you need a custom status or headers)
 - Request detection: `request()->wantsTurboStream()`, `request()->wasFromTurboFrame()`
 - DOM helpers: `dom_id($model)`, `dom_class($model)`
 

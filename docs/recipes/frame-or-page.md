@@ -131,8 +131,8 @@ public function update(Request $request, User $user)
 }
 ```
 
-Requires the [`closeModal` macro](../components/modal/readme.md#convenience-macro) and the
-[`flash` macro](../components/flash-message/readme.md#convenience-macro) registered in your service
+Requires the [`closeModal` macro](../components/modal.md#convenience-macro) and the
+[`flash` macro](../components/flash-message.md#convenience-macro) registered in your service
 provider.
 
 ## Why this works well
@@ -155,7 +155,7 @@ provider.
 
 ## See also
 
-- [`<x-hwc::modal>`](../components/modal/readme.md) — the modal primitive.
+- [`<x-hwc::modal>`](../components/modal.md) — the modal primitive.
 - [`modal` controller](../controllers/modal.md) — `dynamicContent` target and content observer.
 - [Server-driven modals](./server-driven-modals.md) — closing and replacing content from the server.
 - [Composing streams](./composing-streams.md) — chain `refresh + closeModal + flash` for clean

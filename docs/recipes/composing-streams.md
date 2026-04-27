@@ -1,8 +1,8 @@
 # Composing streams
 
 Describe a complete UI transition in a single response by chaining Turbo Stream operations.
-Combined with the [`flash`](../components/flash-message/readme.md#convenience-macro) and
-[`closeModal`](../components/modal/readme.md#convenience-macro) macros, controller actions stay
+Combined with the [`flash`](../components/flash-message.md#convenience-macro) and
+[`closeModal`](../components/modal.md#convenience-macro) macros, controller actions stay
 small and declarative.
 
 ## The macros
@@ -73,7 +73,7 @@ public function favorite(Request $request, Post $post)
 
 Don't compose anything special — return a normal redirect/error response. The Turbo Frame holding
 the form re-renders with the validation errors inside, the modal stays open, and the
-[`<x-hwc::flash-message>`](../components/flash-message/readme.md) component picks up the first
+[`<x-hwc::flash-message>`](../components/flash-message.md) component picks up the first
 validation error from the session and shows a toast.
 
 ### Append a row → highlight it → toast
@@ -104,7 +104,7 @@ public function store(Request $request)
 
 ## See also
 
-- [`flash` macro](../components/flash-message/readme.md#convenience-macro)
-- [`closeModal` macro](../components/modal/readme.md#convenience-macro)
+- [`flash` macro](../components/flash-message.md#convenience-macro)
+- [`closeModal` macro](../components/modal.md#convenience-macro)
 - [Server-driven modals](./server-driven-modals.md)
 - [Frame-or-page views](./frame-or-page.md)

@@ -43,7 +43,7 @@ Do not put business logic in the registry.
 'modal' => [
     'class' => \Emaia\LaravelHotwire\Components\Modal::class,
     'view' => 'hotwire::components.modal.modal',
-    'docs' => 'docs/components/modal/readme.md',
+    'docs' => 'docs/components/modal.md',
     'category' => 'overlay',
     'controllers' => ['modal'],
 ],

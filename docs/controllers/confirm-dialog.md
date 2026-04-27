@@ -1,7 +1,7 @@
 # Confirm Dialog
 
 Intercepts clicks, opens a confirmation modal, and re-fires the original action only after the user confirms. This is
-the low-level Stimulus controller used by [`<x-hwc::confirm-dialog>`](../components/confirm-dialog/readme.md).
+the low-level Stimulus controller used by [`<x-hwc::confirm-dialog>`](../components/confirm-dialog.md).
 
 **Identifier:** `confirm-dialog`
 
@@ -135,5 +135,5 @@ Cancel the dialog on `turbo:before-cache` to avoid restoring an open modal from 
 ## Use the Blade component when possible
 
 If you want the full markup, default classes, labels, and slots already wired, use
-[`<x-hwc::confirm-dialog>`](../components/confirm-dialog/readme.md). Use the controller directly when you need custom
+[`<x-hwc::confirm-dialog>`](../components/confirm-dialog.md). Use the controller directly when you need custom
 HTML structure or custom styling.

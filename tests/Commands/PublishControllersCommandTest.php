@@ -28,9 +28,10 @@ afterEach(function () {
 function sourceFor(string $key): string
 {
     $base = realpath(__DIR__.'/../../resources/js/controllers');
+    $path = str_replace('-', '_', $key);
 
     foreach (['.js', '.ts'] as $ext) {
-        $candidate = "{$base}/{$key}_controller{$ext}";
+        $candidate = "{$base}/{$path}_controller{$ext}";
         if (file_exists($candidate)) {
             return $candidate;
         }
@@ -43,8 +44,9 @@ function targetFor(string $baseDir, string $key): string
 {
     $source = sourceFor($key);
     $ext = pathinfo($source, PATHINFO_EXTENSION);
+    $path = str_replace('-', '_', $key);
 
-    return "{$baseDir}/{$key}_controller.{$ext}";
+    return "{$baseDir}/{$path}_controller.{$ext}";
 }
 
 function writeFixture(string $relativePath, string $content): string
@@ -123,11 +125,11 @@ it('publishes only controllers within the requested substrate', function () {
 // --- Top-level and substrate/name notation ---
 
 it('publishes a specific top-level controller by name', function () {
-    $this->artisan('hotwire:controllers', ['controllers' => ['autoselect']])
+    $this->artisan('hotwire:controllers', ['controllers' => ['auto-select']])
         ->assertSuccessful();
 
-    $published = targetFor($this->targetDir, 'autoselect');
-    $source = sourceFor('autoselect');
+    $published = targetFor($this->targetDir, 'auto-select');
+    $source = sourceFor('auto-select');
 
     expect(File::exists($published))->toBeTrue()
         ->and(File::get($published))->toBe(File::get($source));
@@ -153,10 +155,10 @@ it('publishes only the requested controller, not the entire substrate', function
 });
 
 it('publishes multiple controllers with mixed notation', function () {
-    $this->artisan('hotwire:controllers', ['controllers' => ['autoselect', 'turbo/progress']])
+    $this->artisan('hotwire:controllers', ['controllers' => ['auto-select', 'turbo/progress']])
         ->assertSuccessful();
 
-    expect(File::exists(targetFor($this->targetDir, 'autoselect')))->toBeTrue()
+    expect(File::exists(targetFor($this->targetDir, 'auto-select')))->toBeTrue()
         ->and(File::exists(targetFor($this->targetDir, 'turbo/progress')))->toBeTrue();
 });
 
@@ -165,7 +167,7 @@ it('publishes all controllers with --all', function () {
         ->assertSuccessful();
 
     expect(File::exists(targetFor($this->targetDir, 'modal')))->toBeTrue()
-        ->and(File::exists(targetFor($this->targetDir, 'autoselect')))->toBeTrue()
+        ->and(File::exists(targetFor($this->targetDir, 'auto-select')))->toBeTrue()
         ->and(File::exists(targetFor($this->targetDir, 'turbo/progress')))->toBeTrue();
 });
 
@@ -305,7 +307,7 @@ it('republishes without prompt when file was deleted but directory remains', fun
 it('shows up to date and outdated statuses in --list', function () {
     $this->artisan('hotwire:controllers', ['controllers' => ['modal']]);
 
-    $outdated = targetFor($this->targetDir, 'autoselect');
+    $outdated = targetFor($this->targetDir, 'auto-select');
     File::ensureDirectoryExists(dirname($outdated));
     File::put($outdated, '// modified');
 

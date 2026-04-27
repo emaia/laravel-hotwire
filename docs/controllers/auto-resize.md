@@ -1,8 +1,8 @@
-# Autoresize
+# Auto Resize
 
 Automatically resizes a `<textarea>` to fit its content, eliminating scroll bars.
 
-**Identifier:** `autoresize`
+**Identifier:** `auto-resize`
 
 ## Requirements
 
@@ -18,7 +18,7 @@ Automatically resizes a `<textarea>` to fit its content, eliminating scroll bars
 
 ```html
 <textarea
-    data-controller="autoresize"
+    data-controller="auto-resize"
     name="description"
     rows="3"
     placeholder="Describe..."
@@ -31,8 +31,8 @@ The textarea grows automatically as the user types and shrinks when text is dele
 
 ```html
 <textarea
-    data-controller="autoresize"
-    data-autoresize-resize-debounce-delay-value="200"
+    data-controller="auto-resize"
+    data-auto-resize-resize-debounce-delay-value="200"
     name="content"
 ></textarea>
 ```
@@ -41,8 +41,8 @@ The textarea grows automatically as the user types and shrinks when text is dele
 
 ```html
 <textarea
-    data-controller="autoresize"
-    data-autoresize-resize-debounce-delay-value="0"
+    data-controller="auto-resize"
+    data-auto-resize-resize-debounce-delay-value="0"
     name="notes"
 ></textarea>
 ```
@@ -53,7 +53,7 @@ The textarea automatically adjusts its height on connect, even with pre-existing
 
 ```html
 <textarea
-    data-controller="autoresize"
+    data-controller="auto-resize"
     name="bio"
 >{{ $user->bio }}</textarea>
 ```

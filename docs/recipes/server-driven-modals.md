@@ -54,7 +54,7 @@ For modals that don't have a Turbo Frame inside, append a self-removing
 return turbo_stream()->append('edit-post', '<span data-controller="modal-auto-close"></span>');
 ```
 
-Or use the [`closeModal` macro](../components/modal/readme.md#convenience-macro) for the same
+Or use the [`closeModal` macro](../components/modal.md#convenience-macro) for the same
 effect with better DX:
 
 ```php
@@ -71,7 +71,7 @@ needs to do — refresh the underlying list, fire a toast, etc. See
 
 ## See also
 
-- [`<x-hwc::modal>`](../components/modal/readme.md) — the modal component.
+- [`<x-hwc::modal>`](../components/modal.md) — the modal component.
 - [`modal-auto-close`](../controllers/modal-auto-close.md) — the controller that powers
   `closeModal()`.
 - [Frame-or-page views](./frame-or-page.md) — the canonical pattern for opening modals with server

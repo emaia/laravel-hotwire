@@ -59,7 +59,7 @@ return turbo_stream()
     HTML);
 ```
 
-For session flash messages, use [`<x-hwc::flash-message>`](../../components/flash-message/readme.md), which reads the
+For session flash messages, use [`<x-hwc::flash-message>`](../../components/flash-message.md), which reads the
 supported Laravel session keys and renders this controller for you.
 
 ## Available types

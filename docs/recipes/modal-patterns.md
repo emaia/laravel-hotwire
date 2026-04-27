@@ -126,7 +126,7 @@ No Turbo Frame, no dynamic content. The modal body is rendered server-side once 
 acceptance, embedded media).
 
 **Closing from the server:** if the static modal is opened by user action and closed by a form
-submission elsewhere, use the [`closeModal` macro](../components/modal/readme.md#convenience-macro)
+submission elsewhere, use the [`closeModal` macro](../components/modal.md#convenience-macro)
 plus the [`modal-auto-close`](../controllers/modal-auto-close.md) controller.
 
 ## Component vs raw controller
@@ -147,7 +147,7 @@ component already exposes props or Stimulus values — no need to drop down.
 
 ## See also
 
-- [`<x-hwc::modal>`](../components/modal/readme.md) — component reference.
+- [`<x-hwc::modal>`](../components/modal.md) — component reference.
 - [`modal` controller](../controllers/modal.md) — raw controller reference.
 - [Frame-or-page views](./frame-or-page.md) — render the same view as a page or as a modal.
 - [Server-driven modals](./server-driven-modals.md) — open and close from controller responses.

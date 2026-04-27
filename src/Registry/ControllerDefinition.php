@@ -23,7 +23,11 @@ final readonly class ControllerDefinition
         $relative = (string) preg_replace('#^resources/js/controllers/#', '', $this->source);
         $this->relativeDir = trim(str_replace('\\', '/', dirname($relative)), './');
         $this->filename = basename($this->source);
-        $this->name = (string) preg_replace('/_controller\.(js|ts)$/', '', $this->filename);
+        $this->name = str_replace(
+            '_',
+            '-',
+            (string) preg_replace('/_controller\.(js|ts)$/', '', $this->filename)
+        );
         $this->publishKey = $this->relativeDir === '' ? $this->name : "{$this->relativeDir}/{$this->name}";
     }
 

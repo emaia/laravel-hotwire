@@ -5,7 +5,7 @@ open `<x-hwc::modal>` via Turbo Stream so the server can dismiss the modal after
 
 **Identifier:** `modal-auto-close`
 
-> Pairs naturally with the [`closeModal` macro](../components/modal/readme.md#convenience-macro) on
+> Pairs naturally with the [`closeModal` macro](../components/modal.md#convenience-macro) on
 > `TurboStreamBuilder`. Use the macro in controllers and let this controller handle the client-side close.
 
 ## Requirements
