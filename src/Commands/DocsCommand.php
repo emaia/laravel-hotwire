@@ -2,9 +2,8 @@
 
 namespace Emaia\LaravelHotwire\Commands;
 
-use Emaia\LaravelHotwire\Registry\ComponentDefinition;
-use Emaia\LaravelHotwire\Registry\ControllerDefinition;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
+use Emaia\LaravelHotwire\Support\DocSearchIndex;
 use Emaia\LaravelHotwire\Support\MarkdownRenderer;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
@@ -16,8 +15,8 @@ class DocsCommand extends Command
 {
     public $signature = 'hotwire:docs
                         {name? : Controller or component name (e.g. auto-submit, turbo/progress, modal)}
-                        {--controller : Look up in controllers only}
-                        {--component : Look up in components only}';
+                        {--controller : Search controllers only}
+                        {--component : Search components only}';
 
     public $description = 'Display documentation for a Hotwire controller or component';
 
@@ -28,6 +27,12 @@ class DocsCommand extends Command
 
     public function handle(): int
     {
+        if ($this->option('controller') && $this->option('component')) {
+            $this->error('--controller and --component are mutually exclusive.');
+
+            return self::FAILURE;
+        }
+
         $registry = HotwireRegistry::make();
 
         $docPath = $this->argument('name')
@@ -82,10 +87,32 @@ class DocsCommand extends Command
             return null;
         }
 
-        $entries = $this->buildSearchEntries($registry);
+        $onlyControllers = $this->option('controller');
+        $onlyComponents = $this->option('component');
+
+        $label = match (true) {
+            $onlyControllers => 'Search controllers',
+            $onlyComponents => 'Search components',
+            default => 'Search controllers and components',
+        };
+
+        $hint = match (true) {
+            $onlyControllers => 'controllers',
+            $onlyComponents => 'components',
+            default => 'controllers and components',
+        };
+
+        $prefix = config('hotwire.prefix', 'hwc');
+
+        $entries = (new DocSearchIndex)->build(
+            $registry,
+            includeControllers: ! $onlyComponents,
+            includeComponents: ! $onlyControllers,
+            prefix: $prefix,
+        );
 
         $chosen = search(
-            label: 'Search controllers and components',
+            label: $label,
             options: function (string $query) use ($entries): array {
                 if ($query === '') {
                     return array_column($entries, 'label');
@@ -99,62 +126,12 @@ class DocsCommand extends Command
                 );
             },
             placeholder: 'Type a name, category or keyword…',
-            hint: 'controllers and components',
+            hint: $hint,
         );
 
         $entry = $entries[array_search($chosen, array_column($entries, 'label'), true)];
 
         return $registry->basePath().'/'.$entry['docs'];
-    }
-
-    /** @return array<int, array{label: string, search: string, docs: string}> */
-    private function buildSearchEntries(HotwireRegistry $registry): array
-    {
-        $entries = [];
-
-        foreach ($registry->controllers() as $controller) {
-            $entries[] = $this->controllerEntry($controller);
-        }
-
-        foreach ($registry->components() as $component) {
-            $entries[] = $this->componentEntry($component);
-        }
-
-        return $entries;
-    }
-
-    /** @return array{label: string, search: string, docs: string} */
-    private function controllerEntry(ControllerDefinition $controller): array
-    {
-        $label = sprintf(
-            '%-26s %-10s  %s',
-            $controller->identifier,
-            "[{$controller->category}]",
-            $controller->description,
-        );
-
-        return [
-            'label' => $label,
-            'search' => strtolower("{$controller->identifier} {$controller->category} {$controller->description} controller"),
-            'docs' => $controller->docs,
-        ];
-    }
-
-    /** @return array{label: string, search: string, docs: string} */
-    private function componentEntry(ComponentDefinition $component): array
-    {
-        $label = sprintf(
-            '%-26s %-10s  %s',
-            "<x-hwc::{$component->key}>",
-            "[{$component->category}]",
-            $component->description,
-        );
-
-        return [
-            'label' => $label,
-            'search' => strtolower("{$component->key} {$component->category} {$component->description} component"),
-            'docs' => $component->docs,
-        ];
     }
 
     private function resolveAmbiguity(string $name, HotwireRegistry $registry, string $key): ?string
