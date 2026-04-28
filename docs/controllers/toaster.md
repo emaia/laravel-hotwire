@@ -2,7 +2,7 @@
 
 Initializes the [Sonner](https://sonner.emilkowal.ski/) container once on the page. Should be added to the global layout so the `toast` controller can fire toasts.
 
-**Identifier:** `toaster`
+**Identifier:** `toaster`  
 **Install:** `php artisan hotwire:controllers toaster`
 
 ## Requirements

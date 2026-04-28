@@ -2,7 +2,7 @@
 
 Polls an image URL until it becomes available, then displays it automatically. Useful for asynchronously generated images (thumbnails, conversions, background processing).
 
-**Identifier:** `lazy-image`
+**Identifier:** `lazy-image`  
 **Install:** `php artisan hotwire:controllers lazy-image`
 
 ## Requirements

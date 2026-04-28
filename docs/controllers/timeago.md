@@ -2,7 +2,7 @@
 
 Converts a datetime into a human-readable relative string (e.g. "3 minutes ago"). Supports automatic refresh and localization.
 
-**Identifier:** `timeago`
+**Identifier:** `timeago`  
 **Install:** `php artisan hotwire:controllers timeago`
 
 > Looking for the Blade component? See [`<x-hwc::timeago />`](../components/timeago.md).

@@ -2,7 +2,7 @@
 
 Adds tooltips to any element using [Tippy.js](https://atomiks.github.io/tippyjs/).
 
-**Identifier:** `tooltip`
+**Identifier:** `tooltip`  
 **Install:** `php artisan hotwire:controllers tooltip`
 
 ## Requirements

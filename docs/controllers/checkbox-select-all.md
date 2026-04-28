@@ -2,7 +2,7 @@
 
 Adds a "select all" checkbox that controls a group of checkboxes. Supports indeterminate state to indicate partial selection.
 
-**Identifier:** `checkbox-select-all`
+**Identifier:** `checkbox-select-all`  
 **Install:** `php artisan hotwire:controllers checkbox-select-all`
 
 ## Requirements

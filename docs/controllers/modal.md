@@ -2,7 +2,7 @@
 
 Accessible modal with backdrop, animations, focus trap and dynamic content support via Turbo.
 
-**Identifier:** `modal`
+**Identifier:** `modal`  
 **Install:** `php artisan hotwire:controllers modal`
 
 ## Requirements

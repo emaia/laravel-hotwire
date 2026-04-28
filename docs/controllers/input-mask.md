@@ -2,7 +2,7 @@
 
 Applies input masks using [Maska](https://beholdr.github.io/maska/). Supports static, dynamic (array) and reverse masks.
 
-**Identifier:** `input-mask`
+**Identifier:** `input-mask`  
 **Install:** `php artisan hotwire:controllers input-mask`
 
 ## Requirements

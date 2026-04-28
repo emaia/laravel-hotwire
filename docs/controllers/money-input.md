@@ -3,7 +3,7 @@
 Formats inputs as locale-aware currency or numeric values using [Maska](https://beholdr.github.io/maska/).
 Handles digit grouping, decimals and prefix/suffix derived from a currency code.
 
-**Identifier:** `money-input`
+**Identifier:** `money-input`  
 **Install:** `php artisan hotwire:controllers money-input`
 
 ## Requirements
