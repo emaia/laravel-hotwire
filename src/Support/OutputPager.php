@@ -23,7 +23,7 @@ class OutputPager
 
         $stream = $output->getStream();
 
-        if (! $force && ! @stream_isatty($stream)) {
+        if (! @stream_isatty($stream)) {
             return false;
         }
 
