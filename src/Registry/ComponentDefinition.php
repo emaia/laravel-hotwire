@@ -11,6 +11,7 @@ final readonly class ComponentDefinition
         public string $view,
         public string $docs,
         public string $category,
+        public string $description = '',
         public array $controllers = [],
     ) {}
 

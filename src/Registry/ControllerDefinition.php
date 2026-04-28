@@ -18,6 +18,7 @@ final readonly class ControllerDefinition
         public string $source,
         public string $docs,
         public string $category,
+        public string $description = '',
         public array $npm = [],
     ) {
         $relative = (string) preg_replace('#^resources/js/controllers/#', '', $this->source);
