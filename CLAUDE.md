@@ -22,6 +22,7 @@ The complete Hotwire stack for Laravel — Turbo Drive, Turbo Streams, Stimulus 
 | `hotwire:controllers`     | Publish package Stimulus controllers to the app (`--outdated` to update only published+changed ones) |
 | `hotwire:components`      | List available Blade components and their controller dependencies |
 | `hotwire:check`           | Verify required controllers are published (CI-friendly)           |
+| `hotwire:docs`            | Browse and read controller/component docs in the terminal         |
 
 ## Conventions
 

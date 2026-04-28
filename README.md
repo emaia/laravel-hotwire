@@ -201,6 +201,41 @@ Required npm dependencies:
 > When `--fix` adds packages to `devDependencies`, run your package manager's install command afterwards
 > (`bun install`, `pnpm install`, etc.) to actually fetch them.
 
+**Browse and read documentation in the terminal:**
+
+```bash
+php artisan hotwire:docs
+```
+
+Opens an interactive search across all controllers and components. Type a name, category, or keyword to filter:
+
+```
+ ┌ Search controllers and components ───────────────────────────────┐
+ │ form                                                              │
+ ├───────────────────────────────────────────────────────────────────┤
+ │   auto-save           [forms]    Automatically saves a form…      │
+ │ › auto-submit         [forms]    Submits a form automatically…    │
+ │   clean-query-params  [forms]    Strips empty fields from the…    │
+ │   optimistic--form    [turbo]    Dispatches optimistic UI…        │
+ └───────────────────────────────────────────────────────────────────┘
+```
+
+**Read a specific controller or component directly:**
+
+```bash
+php artisan hotwire:docs auto-submit
+php artisan hotwire:docs turbo/progress
+php artisan hotwire:docs modal --component
+```
+
+**List everything with category and description:**
+
+```bash
+php artisan hotwire:docs --list
+php artisan hotwire:docs --list --controller
+php artisan hotwire:docs --list --component
+```
+
 ### View Customization
 
 To customize the HTML/Tailwind of the components:
