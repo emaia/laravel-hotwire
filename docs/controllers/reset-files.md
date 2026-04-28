@@ -2,7 +2,8 @@
 
 Clears file inputs (`<input type="file">`) automatically after a successful Turbo morph.
 
-**Identifier:** `reset-files`
+**Identifier:** `reset-files`  
+**Install:** `php artisan hotwire:controllers reset-files`
 
 ## Requirements
 

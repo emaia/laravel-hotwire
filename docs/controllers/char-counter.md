@@ -2,7 +2,8 @@
 
 Displays a live character count for an input or textarea. Supports both count-up and countdown modes.
 
-**Identifier:** `char-counter`
+**Identifier:** `char-counter`  
+**Install:** `php artisan hotwire:controllers char-counter`
 
 ## Requirements
 

@@ -3,7 +3,8 @@
 Automatically saves a form after the user changes it. Designed for draft editors, settings screens and inline edit
 forms where saving should feel native and unobtrusive.
 
-**Identifier:** `auto-save`
+**Identifier:** `auto-save`  
+**Install:** `php artisan hotwire:controllers auto-save`
 
 ## Requirements
 

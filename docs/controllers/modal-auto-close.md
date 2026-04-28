@@ -3,7 +3,8 @@
 Self-removing controller that closes the nearest `modal` ancestor on connect. Designed to be appended to an
 open `<x-hwc::modal>` via Turbo Stream so the server can dismiss the modal after a successful action.
 
-**Identifier:** `modal-auto-close`
+**Identifier:** `modal-auto-close`  
+**Install:** `php artisan hotwire:controllers modal-auto-close`
 
 > Pairs naturally with the [`closeModal` macro](../components/modal.md#convenience-macro) on
 > `TurboStreamBuilder`. Use the macro in controllers and let this controller handle the client-side close.

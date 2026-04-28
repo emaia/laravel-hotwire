@@ -3,7 +3,8 @@
 Intercepts clicks, opens a confirmation modal, and re-fires the original action only after the user confirms. This is
 the low-level Stimulus controller used by [`<x-hwc::confirm-dialog>`](../components/confirm-dialog.md).
 
-**Identifier:** `confirm-dialog`
+**Identifier:** `confirm-dialog`  
+**Install:** `php artisan hotwire:controllers confirm-dialog`
 
 ## Requirements
 

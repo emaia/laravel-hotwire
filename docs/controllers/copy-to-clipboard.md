@@ -2,7 +2,8 @@
 
 Copies text to the clipboard when a button is clicked. Temporarily replaces the button label with a success message after copying.
 
-**Identifier:** `copy-to-clipboard`
+**Identifier:** `copy-to-clipboard`  
+**Install:** `php artisan hotwire:controllers copy-to-clipboard`
 
 ## Requirements
 

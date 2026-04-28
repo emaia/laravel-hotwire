@@ -2,7 +2,8 @@
 
 Submits the form automatically in response to events, with debounce support.
 
-**Identifier:** `auto-submit`
+**Identifier:** `auto-submit`  
+**Install:** `php artisan hotwire:controllers auto-submit`
 
 ## Requirements
 

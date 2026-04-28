@@ -3,6 +3,7 @@
 Automatically reloads a Turbo Frame at regular intervals. Useful for dashboards, feeds and areas that need up-to-date data without user interaction.
 
 **Identifier:** `polling`
+**Install:** `php artisan hotwire:controllers turbo/polling`
 
 ## Requirements
 
