@@ -81,6 +81,12 @@ it('fails with a clear error when --controller and --component are both given', 
         ->assertFailed();
 });
 
+it('fails with a clear error when --pager and --no-pager are both given', function () {
+    $this->artisan('hotwire:docs modal --pager --no-pager')
+        ->expectsOutputToContain('mutually exclusive')
+        ->assertFailed();
+});
+
 // --- No argument ---
 
 it('fails with an error when no argument is given in non-interactive mode', function () {

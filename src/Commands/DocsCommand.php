@@ -5,6 +5,7 @@ namespace Emaia\LaravelHotwire\Commands;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\DocSearchIndex;
 use Emaia\LaravelHotwire\Support\MarkdownRenderer;
+use Emaia\LaravelHotwire\Support\OutputPager;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Arr;
@@ -17,13 +18,17 @@ class DocsCommand extends Command
     public $signature = 'hotwire:docs
                         {name? : Controller or component name (e.g. auto-submit, turbo/progress, modal)}
                         {--list : List available docs entries instead of rendering one}
+                        {--pager : Force display through a pager}
+                        {--no-pager : Disable pager and print directly}
                         {--controller : Search controllers only}
                         {--component : Search components only}';
 
     public $description = 'Display documentation for a Hotwire controller or component';
 
-    public function __construct(private Filesystem $files)
-    {
+    public function __construct(
+        private Filesystem $files,
+        private OutputPager $pager,
+    ) {
         parent::__construct();
     }
 
@@ -31,6 +36,12 @@ class DocsCommand extends Command
     {
         if ($this->option('controller') && $this->option('component')) {
             $this->error('--controller and --component are mutually exclusive.');
+
+            return self::FAILURE;
+        }
+
+        if ($this->option('pager') && $this->option('no-pager')) {
+            $this->error('--pager and --no-pager are mutually exclusive.');
 
             return self::FAILURE;
         }
@@ -63,9 +74,19 @@ class DocsCommand extends Command
             return self::FAILURE;
         }
 
-        $this->renderMetadataHeader($entry);
+        $lines = [
+            ...$this->metadataHeaderLines($entry),
+            ...(new MarkdownRenderer)->render($this->files->get($docPath)),
+        ];
 
-        foreach ((new MarkdownRenderer)->render($this->files->get($docPath)) as $line) {
+        $usePager = ! $this->option('no-pager');
+        $forcePager = $this->option('pager');
+
+        if ($usePager && $this->pager->page($lines, $this->output, $this->input->isInteractive(), $forcePager)) {
+            return self::SUCCESS;
+        }
+
+        foreach ($lines as $line) {
             $this->line($line);
         }
 
@@ -263,33 +284,37 @@ class DocsCommand extends Command
      *     controllers?: string[]
      * }  $entry
      */
-    private function renderMetadataHeader(array $entry): void
+    private function metadataHeaderLines(array $entry): array
     {
-        $this->newLine();
-        $this->line(sprintf('<options=bold>%s</>', $entry['title']));
-        $this->line(sprintf('Type: <fg=yellow>%s</>', $entry['type']));
-        $this->line(sprintf('Category: <fg=yellow>%s</>', $entry['category']));
+        $lines = [
+            '',
+            sprintf('<options=bold>%s</>', $entry['title']),
+            sprintf('Type: <fg=yellow>%s</>', $entry['type']),
+            sprintf('Category: <fg=yellow>%s</>', $entry['category']),
+        ];
 
         if ($entry['type'] === 'controller') {
-            $this->line(sprintf('Identifier: <fg=yellow>%s</>', $entry['key']));
+            $lines[] = sprintf('Identifier: <fg=yellow>%s</>', $entry['key']);
 
             $packages = Arr::get($entry, 'npm', []);
 
             if ($packages !== []) {
-                $this->line(sprintf('NPM: <fg=yellow>%s</>', implode(', ', array_keys($packages))));
+                $lines[] = sprintf('NPM: <fg=yellow>%s</>', implode(', ', array_keys($packages)));
             }
         }
 
         if ($entry['type'] === 'component') {
-            $this->line(sprintf('Blade: <fg=yellow>%s</>', $entry['tag']));
+            $lines[] = sprintf('Blade: <fg=yellow>%s</>', $entry['tag']);
 
             $controllers = Arr::get($entry, 'controllers', []);
 
             if ($controllers !== []) {
-                $this->line(sprintf('Controllers: <fg=yellow>%s</>', implode(', ', $controllers)));
+                $lines[] = sprintf('Controllers: <fg=yellow>%s</>', implode(', ', $controllers));
             }
         }
 
-        $this->newLine();
+        $lines[] = '';
+
+        return $lines;
     }
 }
