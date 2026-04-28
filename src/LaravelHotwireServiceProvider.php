@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire;
 
 use Emaia\LaravelHotwire\Commands\CheckCommand;
+use Emaia\LaravelHotwire\Commands\DocsCommand;
 use Emaia\LaravelHotwire\Commands\InstallCommand;
 use Emaia\LaravelHotwire\Commands\ListComponentsCommand;
 use Emaia\LaravelHotwire\Commands\MakeControllerCommand;
@@ -26,6 +27,7 @@ class LaravelHotwireServiceProvider extends PackageServiceProvider
                 PublishControllersCommand::class,
                 ListComponentsCommand::class,
                 CheckCommand::class,
+                DocsCommand::class,
             ]);
     }
 
