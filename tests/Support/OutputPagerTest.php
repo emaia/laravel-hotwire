@@ -60,5 +60,7 @@ it('builds a shell command line with the target file', function () {
         }
     };
 
-    expect($pager->command('less -R', '/tmp/docs file.txt'))->toBe("less -R '/tmp/docs file.txt'");
+    $file = '/tmp/docs file.txt';
+
+    expect($pager->command('less -R', $file))->toBe('less -R '.escapeshellarg($file));
 });
