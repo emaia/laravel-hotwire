@@ -7,6 +7,9 @@ use Emaia\LaravelHotwire\Support\DocSearchIndex;
 
 it('displays docs for a top-level controller', function () {
     $this->artisan('hotwire:docs auto-submit')
+        ->expectsOutputToContain('Type: controller')
+        ->expectsOutputToContain('Category: forms')
+        ->expectsOutputToContain('Identifier: auto-submit')
         ->expectsOutputToContain('Auto Submit')
         ->assertSuccessful();
 });
@@ -19,6 +22,9 @@ it('displays docs for a substrate controller using slash notation', function () 
 
 it('displays docs for a component', function () {
     $this->artisan('hotwire:docs flash-message --component')
+        ->expectsOutputToContain('Type: component')
+        ->expectsOutputToContain('Blade: <x-hwc::flash-message>')
+        ->expectsOutputToContain('Controllers: toast')
         ->expectsOutputToContain('Flash Message')
         ->assertSuccessful();
 });
@@ -80,6 +86,56 @@ it('fails with a clear error when --controller and --component are both given', 
 it('fails with an error when no argument is given in non-interactive mode', function () {
     $this->artisan('hotwire:docs --no-interaction')
         ->expectsOutputToContain('interactive mode')
+        ->assertFailed();
+});
+
+// --- List mode ---
+
+it('lists both controllers and components with --list', function () {
+    $entries = (new DocSearchIndex)->build(HotwireRegistry::make(), true, true, 'hwc');
+    $rows = array_map(fn (array $entry) => [
+        ucfirst($entry['type']),
+        $entry['type'] === 'component' ? $entry['tag'] : $entry['key'],
+        $entry['category'],
+        $entry['description'],
+    ], $entries);
+
+    $this->artisan('hotwire:docs --list')
+        ->expectsTable(['Type', 'Name', 'Category', 'Description'], $rows)
+        ->assertSuccessful();
+});
+
+it('lists only controllers with --list --controller', function () {
+    $entries = (new DocSearchIndex)->build(HotwireRegistry::make(), true, false, 'hwc');
+    $rows = array_map(fn (array $entry) => [
+        ucfirst($entry['type']),
+        $entry['key'],
+        $entry['category'],
+        $entry['description'],
+    ], $entries);
+
+    $this->artisan('hotwire:docs --list --controller')
+        ->expectsTable(['Type', 'Name', 'Category', 'Description'], $rows)
+        ->assertSuccessful();
+});
+
+it('lists only components with --list --component', function () {
+    $entries = (new DocSearchIndex)->build(HotwireRegistry::make(), false, true, 'hwc');
+    $rows = array_map(fn (array $entry) => [
+        ucfirst($entry['type']),
+        $entry['tag'],
+        $entry['category'],
+        $entry['description'],
+    ], $entries);
+
+    $this->artisan('hotwire:docs --list --component')
+        ->expectsTable(['Type', 'Name', 'Category', 'Description'], $rows)
+        ->assertSuccessful();
+});
+
+it('fails when name is combined with --list', function () {
+    $this->artisan('hotwire:docs modal --list')
+        ->expectsOutputToContain('cannot be used together with --list')
         ->assertFailed();
 });
 

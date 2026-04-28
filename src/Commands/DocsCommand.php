@@ -7,6 +7,7 @@ use Emaia\LaravelHotwire\Support\DocSearchIndex;
 use Emaia\LaravelHotwire\Support\MarkdownRenderer;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
+use Illuminate\Support\Arr;
 
 use function Laravel\Prompts\search;
 use function Laravel\Prompts\select;
@@ -15,6 +16,7 @@ class DocsCommand extends Command
 {
     public $signature = 'hotwire:docs
                         {name? : Controller or component name (e.g. auto-submit, turbo/progress, modal)}
+                        {--list : List available docs entries instead of rendering one}
                         {--controller : Search controllers only}
                         {--component : Search components only}';
 
@@ -33,21 +35,35 @@ class DocsCommand extends Command
             return self::FAILURE;
         }
 
+        if ($this->option('list')) {
+            if ($this->argument('name')) {
+                $this->error('The name argument cannot be used together with --list.');
+
+                return self::FAILURE;
+            }
+
+            return $this->renderList(HotwireRegistry::make());
+        }
+
         $registry = HotwireRegistry::make();
 
-        $docPath = $this->argument('name')
+        $entry = $this->argument('name')
             ? $this->resolveByName($registry)
             : $this->resolveBySearch($registry);
 
-        if ($docPath === null) {
+        if ($entry === null) {
             return self::FAILURE;
         }
+
+        $docPath = $registry->basePath().'/'.$entry['docs'];
 
         if (! $this->files->exists($docPath)) {
             $this->error("Documentation file not found: {$docPath}");
 
             return self::FAILURE;
         }
+
+        $this->renderMetadataHeader($entry);
 
         foreach ((new MarkdownRenderer)->render($this->files->get($docPath)) as $line) {
             $this->line($line);
@@ -56,10 +72,27 @@ class DocsCommand extends Command
         return self::SUCCESS;
     }
 
-    private function resolveByName(HotwireRegistry $registry): ?string
+    /**
+     * @return array{
+     *     type: 'controller'|'component',
+     *     key: string,
+     *     title: string,
+     *     label: string,
+     *     search: string,
+     *     docs: string,
+     *     category: string,
+     *     description: string,
+     *     tag?: string,
+     *     npm?: array<string, string>,
+     *     controllers?: string[]
+     * }|null
+     */
+    private function resolveByName(HotwireRegistry $registry): ?array
     {
         $name = $this->argument('name');
         $key = str_replace('/', '--', $name);
+        $prefix = config('hotwire.prefix', 'hwc');
+        $index = new DocSearchIndex;
 
         $controller = ! $this->option('component') ? $registry->controller($key) : null;
         $component = ! $this->option('controller') ? $registry->component($key) : null;
@@ -74,12 +107,29 @@ class DocsCommand extends Command
             return $this->resolveAmbiguity($name, $registry, $key);
         }
 
-        $entry = $controller ?? $component;
+        if ($controller !== null) {
+            return $index->forController($controller);
+        }
 
-        return $registry->basePath().'/'.$entry->docs;
+        return $index->forComponent($component, $prefix);
     }
 
-    private function resolveBySearch(HotwireRegistry $registry): ?string
+    /**
+     * @return array{
+     *     type: 'controller'|'component',
+     *     key: string,
+     *     title: string,
+     *     label: string,
+     *     search: string,
+     *     docs: string,
+     *     category: string,
+     *     description: string,
+     *     tag?: string,
+     *     npm?: array<string, string>,
+     *     controllers?: string[]
+     * }|null
+     */
+    private function resolveBySearch(HotwireRegistry $registry): ?array
     {
         if (! $this->input->isInteractive()) {
             $this->error('Provide a name argument or run in interactive mode.');
@@ -129,12 +179,25 @@ class DocsCommand extends Command
             hint: $hint,
         );
 
-        $entry = $entries[array_search($chosen, array_column($entries, 'label'), true)];
-
-        return $registry->basePath().'/'.$entry['docs'];
+        return $entries[array_search($chosen, array_column($entries, 'label'), true)] ?? null;
     }
 
-    private function resolveAmbiguity(string $name, HotwireRegistry $registry, string $key): ?string
+    /**
+     * @return array{
+     *     type: 'controller'|'component',
+     *     key: string,
+     *     title: string,
+     *     label: string,
+     *     search: string,
+     *     docs: string,
+     *     category: string,
+     *     description: string,
+     *     tag?: string,
+     *     npm?: array<string, string>,
+     *     controllers?: string[]
+     * }|null
+     */
+    private function resolveAmbiguity(string $name, HotwireRegistry $registry, string $key): ?array
     {
         if (! $this->input->isInteractive()) {
             $this->error("Ambiguous name \"{$name}\": exists as both a controller and a component. Use --controller or --component.");
@@ -147,10 +210,86 @@ class DocsCommand extends Command
             options: ['controller', 'component'],
         );
 
-        $entry = $choice === 'controller'
-            ? $registry->controller($key)
-            : $registry->component($key);
+        $prefix = config('hotwire.prefix', 'hwc');
 
-        return $registry->basePath().'/'.$entry->docs;
+        $index = new DocSearchIndex;
+
+        if ($choice === 'controller') {
+            return $index->forController($registry->requireController($key));
+        }
+
+        return $index->forComponent($registry->component($key), $prefix);
+    }
+
+    private function renderList(HotwireRegistry $registry): int
+    {
+        $onlyControllers = $this->option('controller');
+        $onlyComponents = $this->option('component');
+        $prefix = config('hotwire.prefix', 'hwc');
+
+        $entries = (new DocSearchIndex)->build(
+            $registry,
+            includeControllers: ! $onlyComponents,
+            includeComponents: ! $onlyControllers,
+            prefix: $prefix,
+        );
+
+        $rows = array_map(function (array $entry): array {
+            return [
+                ucfirst($entry['type']),
+                $entry['type'] === 'component' ? $entry['tag'] : $entry['key'],
+                $entry['category'],
+                $entry['description'],
+            ];
+        }, $entries);
+
+        $this->table(['Type', 'Name', 'Category', 'Description'], $rows);
+
+        return self::SUCCESS;
+    }
+
+    /**
+     * @param  array{
+     *     type: 'controller'|'component',
+     *     key: string,
+     *     title: string,
+     *     label: string,
+     *     search: string,
+     *     docs: string,
+     *     category: string,
+     *     description: string,
+     *     tag?: string,
+     *     npm?: array<string, string>,
+     *     controllers?: string[]
+     * }  $entry
+     */
+    private function renderMetadataHeader(array $entry): void
+    {
+        $this->newLine();
+        $this->line(sprintf('<options=bold>%s</>', $entry['title']));
+        $this->line(sprintf('Type: <fg=yellow>%s</>', $entry['type']));
+        $this->line(sprintf('Category: <fg=yellow>%s</>', $entry['category']));
+
+        if ($entry['type'] === 'controller') {
+            $this->line(sprintf('Identifier: <fg=yellow>%s</>', $entry['key']));
+
+            $packages = Arr::get($entry, 'npm', []);
+
+            if ($packages !== []) {
+                $this->line(sprintf('NPM: <fg=yellow>%s</>', implode(', ', array_keys($packages))));
+            }
+        }
+
+        if ($entry['type'] === 'component') {
+            $this->line(sprintf('Blade: <fg=yellow>%s</>', $entry['tag']));
+
+            $controllers = Arr::get($entry, 'controllers', []);
+
+            if ($controllers !== []) {
+                $this->line(sprintf('Controllers: <fg=yellow>%s</>', implode(', ', $controllers)));
+            }
+        }
+
+        $this->newLine();
     }
 }
