@@ -4,6 +4,7 @@ Warns the user when attempting to leave a page with unsaved form changes. Integr
 in-app navigations.
 
 **Identifier:** `unsaved-changes`
+**Install:** `php artisan hotwire:controllers unsaved-changes`
 
 ## Requirements
 

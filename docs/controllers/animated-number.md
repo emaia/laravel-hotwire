@@ -3,6 +3,7 @@
 Animates a number from a start value to an end value over a given duration. Supports lazy mode — the animation only starts when the element scrolls into view.
 
 **Identifier:** `animated-number`
+**Install:** `php artisan hotwire:controllers animated-number`
 
 ## Requirements
 

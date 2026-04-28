@@ -3,6 +3,7 @@
 Binds keyboard shortcuts to click or focus an element. Automatically ignores keystrokes typed inside inputs, textareas, and rich-text editors.
 
 **Identifier:** `hotkey`
+**Install:** `php artisan hotwire:controllers hotkey`
 
 ## Requirements
 

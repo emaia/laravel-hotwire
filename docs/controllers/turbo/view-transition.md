@@ -3,6 +3,7 @@
 Applies the [View Transitions API](https://developer.mozilla.org/en-US/docs/Web/API/Document/startViewTransition) when rendering Turbo Frame content, adding native browser transition animations.
 
 **Identifier:** `view-transition`
+**Install:** `php artisan hotwire:controllers turbo/view-transition`
 
 ## Requirements
 

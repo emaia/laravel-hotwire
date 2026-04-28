@@ -3,6 +3,7 @@
 Automatically selects all content of an input when it receives focus.
 
 **Identifier:** `auto-select`
+**Install:** `php artisan hotwire:controllers auto-select`
 
 ## Requirements
 

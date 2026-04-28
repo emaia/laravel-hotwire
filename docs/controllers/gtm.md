@@ -3,6 +3,7 @@
 Loads Google Tag Manager with lazy loading support (loads only after the first user interaction) and fires custom events via `data-action`.
 
 **Identifier:** `gtm`
+**Install:** `php artisan hotwire:controllers gtm`
 
 ## Requirements
 

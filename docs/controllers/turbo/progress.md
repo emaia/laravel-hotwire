@@ -3,6 +3,7 @@
 Shows the native Turbo Drive progress bar during Turbo Frame and Stream requests, which by default only appears on full-page navigations.
 
 **Identifier:** `progress`
+**Install:** `php artisan hotwire:controllers turbo/progress`
 
 ## Requirements
 

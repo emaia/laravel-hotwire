@@ -4,6 +4,7 @@ Fires a toast via [Sonner](https://sonner.emilkowal.ski/) on connect and removes
 low-level controller used by `<x-hwc::flash-message>` and can also be rendered directly when needed.
 
 **Identifier:** `toast`
+**Install:** `php artisan hotwire:controllers toast`
 
 ## Requirements
 

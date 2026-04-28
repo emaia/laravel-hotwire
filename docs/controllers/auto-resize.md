@@ -3,6 +3,7 @@
 Automatically resizes a `<textarea>` to fit its content, eliminating scroll bars.
 
 **Identifier:** `auto-resize`
+**Install:** `php artisan hotwire:controllers auto-resize`
 
 ## Requirements
 

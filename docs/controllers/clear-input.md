@@ -3,6 +3,7 @@
 Adds an "X" button to clear an input value. The button appears automatically when the field has a value and hides when it is empty.
 
 **Identifier:** `clear-input`
+**Install:** `php artisan hotwire:controllers clear-input`
 
 ## Requirements
 

@@ -4,6 +4,7 @@ Formats inputs as locale-aware currency or numeric values using [Maska](https://
 Handles digit grouping, decimals and prefix/suffix derived from a currency code.
 
 **Identifier:** `money-input`
+**Install:** `php artisan hotwire:controllers money-input`
 
 ## Requirements
 

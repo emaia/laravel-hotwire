@@ -3,6 +3,7 @@
 Proxy controller for form submissions that need to be triggered from a decoupled element.
 
 **Identifier:** `remote-form`
+**Install:** `php artisan hotwire:controllers remote-form`
 
 ## Requirements
 
