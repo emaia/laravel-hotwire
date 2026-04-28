@@ -1,6 +1,6 @@
 # Registry
 
-Laravel Hotwire keeps its public catalog in a single registry:
+The registry is the single source of truth for everything the package exposes publicly:
 
 - Blade components
 - Stimulus controllers
@@ -8,127 +8,75 @@ Laravel Hotwire keeps its public catalog in a single registry:
 - documentation paths
 - categories
 
-The registry lives in [`src/Registry/catalog.php`](../src/Registry/catalog.php).
+It lives in [`src/Registry/catalog.php`](../src/Registry/catalog.php) and is consumed by every command and the service provider — so editing the catalog is the only change needed to register a new component or controller.
 
-## Why it exists
+## Catalog entries
 
-The package needs the same metadata in multiple places:
-
-- `hotwire:components`
-- `hotwire:check`
-- `hotwire:controllers --list`
-- Blade component registration
-- documentation integrity tests
-
-Before the registry, that information was spread across multiple files and command implementations. Now the package has
-one source of truth.
-
-## What belongs in the registry
-
-Use the registry for **public package metadata**, not behavior.
-
-Good fit:
-
-- component key and class
-- controller identifier and source file
-- external npm dependencies
-- docs path
-- category
-
-Do not put business logic in the registry.
-
-## Component entry
+### Component
 
 ```php
 'modal' => [
-    'class' => \Emaia\LaravelHotwire\Components\Modal::class,
-    'view' => 'hotwire::components.modal.modal',
-    'docs' => 'docs/components/modal.md',
-    'category' => 'overlay',
+    'class'       => \Emaia\LaravelHotwire\Components\Modal::class,
+    'view'        => 'hotwire::components.modal.modal',
+    'docs'        => 'docs/components/modal.md',
+    'category'    => 'overlay',
     'controllers' => ['modal'],
 ],
 ```
 
-## Controller entry
+| Key | Description |
+|---|---|
+| `class` | PHP component class |
+| `view` | Blade view name |
+| `docs` | Relative path to the component's doc file |
+| `category` | Public category (see [Categories](#categories)) |
+| `controllers` | Controller keys required by this component |
+
+### Controller
 
 ```php
 'tooltip' => [
-    'source' => 'resources/js/controllers/tooltip_controller.js',
-    'docs' => 'docs/controllers/tooltip.md',
+    'source'   => 'resources/js/controllers/tooltip_controller.js',
+    'docs'     => 'docs/controllers/tooltip.md',
     'category' => 'utility',
-    'npm' => ['tippy.js' => '^6.3.7'],
+    'npm'      => ['tippy.js' => '^6.3.7'],
 ],
 ```
 
-## How to use it when working on the package
+| Key | Description |
+|---|---|
+| `source` | Path to the controller file, relative to the package root |
+| `docs` | Relative path to the controller's doc file |
+| `category` | Public category |
+| `npm` | External npm packages required at runtime (package → version constraint) |
 
-When you add a new component:
+Controllers inside substrate folders use `/` in the key: `'turbo/progress'`.  
+The identifier is derived automatically: `/` → `--`, `_` → `-`.
 
-1. Create the PHP component and Blade view.
-2. Add the component entry to `src/Registry/catalog.php`.
-3. Add every required Stimulus controller to the same catalog.
-4. Add docs for the component and controllers.
-5. Run:
+## Adding a new component
 
-```bash
-composer test
-php artisan hotwire:components
-php artisan hotwire:controllers --list
-```
+1. Create the PHP class in `src/Components/` and the Blade view in `resources/views/components/`.
+2. Add the component entry to `catalog.php`. Reference every required Stimulus controller by key.
+3. If new controllers are needed, add their entries too (see [Adding a new controller](#adding-a-new-controller)).
+4. Create `tests/Components/<Name>Test.php` covering rendering and props (follow `tests/Components/ModalTest.php` as reference).
+5. Create `docs/components/<name>.md`.
+6. Run `composer test`.
 
-When you add a new standalone Stimulus controller:
+## Adding a new controller
 
-1. Create the controller file in `resources/js/controllers`.
-2. Add it to `src/Registry/catalog.php`.
-3. Declare external npm packages in the controller entry.
-4. Add docs.
-5. Verify with:
-
-```bash
-php artisan hotwire:controllers --list
-php artisan hotwire:check --path=resources/views
-```
-
-## How apps benefit from the registry
-
-Application code does not interact with the registry directly. Instead, use the public commands:
-
-```bash
-# See every Hotwire Blade component and the controllers it needs
-php artisan hotwire:components
-
-# See every publishable controller and its publish status
-php artisan hotwire:controllers --list
-
-# Check the components used in your views and fix missing pieces
-php artisan hotwire:check --fix
-```
-
-Example:
-
-```blade
-<x-hwc::flash-container />
-<x-hwc::flash-message />
-```
-
-Then:
-
-```bash
-php artisan hotwire:check --fix
-```
-
-This will:
-
-- publish `toast` and `toaster` if needed
-- add `@emaia/sonner` to `package.json` if missing
+1. Create the controller file in `resources/js/controllers/` (`{name}_controller.{js|ts}`).
+2. Add the controller entry to `catalog.php`. Declare any external npm packages in `npm`.
+3. Create `tests/Controllers/<name>_controller.test.js` covering the controller's behavior (follow `tests/Controllers/auto_save_controller.test.js` as reference).
+4. Create `docs/controllers/<name>.md`.
+5. Run `bun test`.
 
 ## Categories
 
-Current public categories:
-
-- `overlay`
-- `feedback`
-- `forms`
-- `turbo`
-- `utility`
-- `dev`
+| Category | Used for |
+|---|---|
+| `overlay` | Components that layer over the page (modals, dialogs) |
+| `feedback` | User notifications and status (flash, loaders) |
+| `forms` | Form behavior (submit, save, masks, validation UX) |
+| `turbo` | Controllers tied to Turbo Drive / Turbo Frames |
+| `utility` | General-purpose DOM helpers |
+| `dev` | Development-only tools |

@@ -127,6 +127,17 @@ php artisan hotwire:controllers --all
 php artisan hotwire:controllers --list
 ```
 
+**Update only controllers that are already published but differ from the package source:**
+
+```bash
+php artisan hotwire:controllers --outdated
+
+# Non-interactive — useful after composer update in CI or deploy scripts
+php artisan hotwire:controllers --outdated --force
+```
+
+`--outdated` never installs controllers that haven't been published yet, and skips those that are already up to date.
+
 **Overwrite existing files:**
 
 ```bash

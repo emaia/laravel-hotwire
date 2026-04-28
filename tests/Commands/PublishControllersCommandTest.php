@@ -422,3 +422,77 @@ it('publishes CSS imported by a controller', function () {
 
     expect(File::exists($this->targetDir.'/__fixtures/styled.css'))->toBeTrue();
 });
+
+// --- --outdated ---
+
+it('does nothing when no controllers are installed when using --outdated', function () {
+    $this->artisan('hotwire:controllers --outdated --no-interaction')
+        ->assertSuccessful();
+
+    expect(File::isDirectory($this->targetDir))->toBeFalse();
+});
+
+it('skips controllers that are already up to date when using --outdated', function () {
+    $this->artisan('hotwire:controllers', ['controllers' => ['modal']]);
+
+    $published = targetFor($this->targetDir, 'modal');
+    $before = File::get($published);
+
+    $this->artisan('hotwire:controllers --outdated --force --no-interaction')
+        ->assertSuccessful();
+
+    expect(File::get($published))->toBe($before);
+});
+
+it('updates only outdated published controllers, ignoring not-published ones', function () {
+    $this->artisan('hotwire:controllers', ['controllers' => ['modal', 'auto-select']]);
+
+    $modal = targetFor($this->targetDir, 'modal');
+    $autoSelect = targetFor($this->targetDir, 'auto-select');
+
+    File::put($modal, '// outdated');
+
+    $this->artisan('hotwire:controllers --outdated --force --no-interaction')
+        ->assertSuccessful();
+
+    $source = sourceFor('modal');
+    expect(File::get($modal))->toBe(File::get($source))
+        ->and(File::get($autoSelect))->toBe(File::get(sourceFor('auto-select')));
+});
+
+it('does not publish controllers that are not yet installed when using --outdated', function () {
+    $this->artisan('hotwire:controllers', ['controllers' => ['modal']]);
+
+    File::put(targetFor($this->targetDir, 'modal'), '// outdated');
+
+    $this->artisan('hotwire:controllers --outdated --force --no-interaction')
+        ->assertSuccessful();
+
+    expect(File::exists(targetFor($this->targetDir, 'auto-select')))->toBeFalse();
+});
+
+it('prompts per controller when --outdated is used interactively without --force', function () {
+    $this->artisan('hotwire:controllers', ['controllers' => ['modal']]);
+
+    File::put(targetFor($this->targetDir, 'modal'), '// outdated');
+
+    $this->artisan('hotwire:controllers --outdated')
+        ->expectsConfirmation(
+            'Controller "modal" already exists and differs from the package version. Overwrite?',
+            'yes',
+        )
+        ->assertSuccessful();
+
+    expect(File::get(targetFor($this->targetDir, 'modal')))->toBe(File::get(sourceFor('modal')));
+});
+
+it('warns and skips outdated controllers in non-interactive mode without --force', function () {
+    $this->artisan('hotwire:controllers', ['controllers' => ['modal']]);
+
+    File::put(targetFor($this->targetDir, 'modal'), '// outdated');
+
+    $this->artisan('hotwire:controllers --outdated --no-interaction')
+        ->assertSuccessful();
+
+    expect(File::get(targetFor($this->targetDir, 'modal')))->toBe('// outdated');
+});

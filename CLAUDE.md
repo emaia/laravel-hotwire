@@ -10,7 +10,7 @@ The complete Hotwire stack for Laravel — Turbo Drive, Turbo Streams, Stimulus 
 - `stubs/resources/` — Scaffolding files copied by `hotwire:install`
 - `config/hotwire.php` — Package configuration (component prefix)
 - `tests/` — Pest PHP tests with Orchestra Testbench
-- `tests/Js` — Bun JS tests
+- `tests/Controllers/` — Bun JS tests for Stimulus controllers
 - `docs/` — Documentation
 
 ## Artisan Commands
@@ -19,7 +19,7 @@ The complete Hotwire stack for Laravel — Turbo Drive, Turbo Streams, Stimulus 
 |---------------------------|-------------------------------------------------------------------|
 | `hotwire:install`         | Scaffold JS/CSS setup, add npm deps to package.json               |
 | `hotwire:make-controller` | Create a new Stimulus controller (interactive scaffolding)        |
-| `hotwire:controllers`     | Publish package Stimulus controllers to the app                   |
+| `hotwire:controllers`     | Publish package Stimulus controllers to the app (`--outdated` to update only published+changed ones) |
 | `hotwire:components`      | List available Blade components and their controller dependencies |
 | `hotwire:check`           | Verify required controllers are published (CI-friendly)           |
 
@@ -63,13 +63,22 @@ composer format        # Run Pint code formatter
 
 Follow test-driven development: write tests first, then implement.
 
-1. **Write the failing test** in `tests/` using Pest + Orchestra Testbench
-2. **Run only that test** to confirm it fails: `vendor/bin/pest --filter='test name'`
+There are two test suites:
+
+- **PHP** (`composer test`) — Pest + Orchestra Testbench. Covers commands, components, registry.
+- **JS** (`bun test`) — Bun test runner + happy-dom. Covers Stimulus controllers in `tests/Controllers/*.test.js`.
+
+TDD flow:
+
+1. **Write the failing test** in the appropriate suite
+2. **Run only that test** to confirm it fails:
+   - PHP: `vendor/bin/pest --filter='test name'`
+   - JS: `bun test tests/Controllers/<name>_controller.test.js`
 3. **Implement** the minimum code to make it pass
 4. **Run the test again** to confirm it passes
 5. **Repeat** for the next behavior
 
-Conventions:
+PHP conventions:
 
 - Test files mirror `src/` structure: `src/Commands/FooCommand.php` → `tests/Commands/FooCommandTest.php`
 - Use Pest syntax (`it()`, `test()`, `expect()`) — no PHPUnit classes
@@ -78,6 +87,13 @@ Conventions:
 - For artisan commands: use `$this->artisan('command')->assertSuccessful()` and `expectsQuestion`/`expectsChoice`/
   `expectsOutput` for interactive flows
 - Always run `composer test` at the end to ensure nothing else broke
+
+JS conventions:
+
+- One test file per controller: `tests/Controllers/<name>_controller.test.js`
+- Use `mountController` from `resources/js/helpers/test_stimulus.js` to set up the DOM and Stimulus
+- Always call `mounted?.cleanup()` in `afterEach`
+- Always run `bun test` at the end to ensure nothing else broke
 
 ## Dependencies
 

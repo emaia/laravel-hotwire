@@ -16,6 +16,7 @@ class PublishControllersCommand extends Command
     public $signature = 'hotwire:controllers
                         {controllers?* : Controller name (e.g. modal) or substrate/name (e.g. turbo/progress)}
                         {--all : Publish all available controllers}
+                        {--outdated : Update only controllers that are already published but differ from the package source}
                         {--force : Overwrite existing files}
                         {--list : List available controllers}';
 
@@ -30,13 +31,15 @@ class PublishControllersCommand extends Command
     {
         $available = $this->availableControllers();
 
-        if ($this->option('list') || (empty($this->argument('controllers')) && ! $this->option('all'))) {
+        if ($this->option('list') || (empty($this->argument('controllers')) && ! $this->option('all') && ! $this->option('outdated'))) {
             return $this->listOrSelect($available);
         }
 
-        $selected = $this->option('all')
-            ? array_keys($available)
-            : $this->resolveArguments($this->argument('controllers'), $available);
+        $selected = match (true) {
+            $this->option('all') => array_keys($available),
+            $this->option('outdated') => $this->resolveOutdated($available),
+            default => $this->resolveArguments($this->argument('controllers'), $available),
+        };
 
         return $this->publishControllers($selected, $available);
     }
@@ -251,6 +254,19 @@ class PublishControllersCommand extends Command
         }
 
         return null;
+    }
+
+    /** @return string[] */
+    private function resolveOutdated(array $available): array
+    {
+        $targetBase = resource_path('js/controllers');
+
+        return array_keys(array_filter($available, function (array $controller) use ($targetBase): bool {
+            $targetFile = $this->targetFile($targetBase, $controller);
+
+            return $this->files->exists($targetFile)
+                && $this->files->hash($controller['source_file']) !== $this->files->hash($targetFile);
+        }));
     }
 
     /** @param string[] $args */
