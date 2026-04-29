@@ -1,8 +1,8 @@
 <div
+    data-controller="modal"
     {{
-        $attributes->merge([
+        $attributes->except('data-controller')->merge([
             'id' => $id,
-            'data-controller' => 'modal',
             'data-modal-prevent-reopen-delay-value' => $preventReopenDelay,
             'data-modal-hidden-class' => 'opacity-0 pointer-events-none',
             'data-modal-visible-class' => 'opacity-100 pointer-events-auto',

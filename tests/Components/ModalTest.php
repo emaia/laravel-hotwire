@@ -117,6 +117,13 @@ it('forwards arbitrary attributes to the root element', function () {
     $view->assertSee('data-test-id="modal-root"', false);
 });
 
+it('keeps the modal controller fixed when arbitrary attributes are forwarded', function () {
+    $view = $this->blade('<x-hwc::modal data-controller="custom">Content</x-hwc::modal>');
+
+    $view->assertSee('data-controller="modal"', false);
+    $view->assertDontSee('data-controller="custom"', false);
+});
+
 it('renders an accessible label on the close button', function () {
     $view = $this->blade('<x-hwc::modal>Content</x-hwc::modal>');
 
