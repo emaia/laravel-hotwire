@@ -328,6 +328,9 @@ Both the configured prefix (`hwc` by default) and the literal `hotwire` alias ar
 # Auto-publish missing/outdated controllers AND add missing npm deps to devDependencies
 php artisan hotwire:check --fix
 
+# Also run the detected package manager install command after adding deps
+php artisan hotwire:check --fix --install
+
 # Scan a custom path
 php artisan hotwire:check --path=resources/views/app
 ```
@@ -343,8 +346,8 @@ Required npm dependencies:
   ✗  tippy.js ^6.3.7       missing from package.json (used by tooltip)
 ```
 
-> When `--fix` adds packages to `devDependencies`, run your package manager's install command afterwards
-> (`bun install`, `pnpm install`, etc.) to actually fetch them.
+> In interactive mode, `hotwire:check` asks whether to run the detected package manager install command after adding
+> dependencies. In non-interactive scripts, use `--fix --install` to run it automatically.
 
 ## Configuration
 

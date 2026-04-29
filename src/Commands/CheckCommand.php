@@ -4,6 +4,7 @@ namespace Emaia\LaravelHotwire\Commands;
 
 use Emaia\LaravelHotwire\Registry\ControllerDefinition;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
+use Emaia\LaravelHotwire\Support\PackageInstaller;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
 use Symfony\Component\Finder\Finder;
@@ -15,12 +16,15 @@ class CheckCommand extends Command
 {
     public $signature = 'hotwire:check
                         {--path=* : Paths to scan for blade files (default: resources/views)}
-                        {--fix   : Publish missing/outdated controllers without prompting}';
+                        {--fix   : Publish missing/outdated controllers and add missing npm deps without prompting}
+                        {--install : Run package manager install after adding missing npm deps}';
 
     public $description = 'Check that Stimulus controllers for used Hotwire components are published';
 
-    public function __construct(private Filesystem $files)
-    {
+    public function __construct(
+        private readonly Filesystem $files,
+        private readonly PackageInstaller $packageInstaller,
+    ) {
         parent::__construct();
     }
 
@@ -34,7 +38,7 @@ class CheckCommand extends Command
         $totalFiles = 0;
         $usedKeys = $this->detectUsedComponents($paths, $prefix, $totalFiles);
 
-        $this->line('Scanning '.implode(', ', array_map('basename', $paths))." ({$totalFiles} files)...");
+        $this->line('Scanning '.implode(', ', array_map('basename', $paths))." ($totalFiles files)...");
         $this->line('');
 
         if (empty($usedKeys)) {
@@ -63,7 +67,16 @@ class CheckCommand extends Command
 
         if ($this->shouldFix()) {
             $this->publishIssues($issues);
-            $this->writeMissingDependencies($missingDeps);
+            $depsAdded = $this->writeMissingDependencies($missingDeps);
+
+            if ($depsAdded > 0) {
+                if ($this->shouldInstallDependencies()) {
+                    return $this->installDependencies();
+                }
+
+                $this->line('');
+                $this->line('<comment>Run your package manager install command to fetch the new dependencies.</comment>');
+            }
 
             return self::SUCCESS;
         }
@@ -133,14 +146,14 @@ class CheckCommand extends Command
 
         foreach ($usedKeys as $key) {
             $component = $registry->component($key);
-            $tag = "<x-{$prefix}::{$key}>";
+            $tag = "<x-$prefix::$key>";
 
             if ($component === null) {
                 continue;
             }
 
             if ($component->controllers === []) {
-                $this->line("  <info>✓</info>  {$tag}  No controllers required");
+                $this->line("  <info>✓</info>  $tag  No controllers required");
 
                 continue;
             }
@@ -148,13 +161,13 @@ class CheckCommand extends Command
             foreach ($registry->controllersForComponent($component) as $controller) {
                 $sourceFile = $controller->sourcePath($registry->basePath());
                 $targetFile = $controller->relativeDir() === ''
-                    ? "{$targetBase}/{$controller->filename()}"
-                    : "{$targetBase}/{$controller->relativeDir()}/{$controller->filename()}";
+                    ? "$targetBase/{$controller->filename()}"
+                    : "$targetBase/{$controller->relativeDir()}/{$controller->filename()}";
 
                 $controllers[$controller->identifier] = $controller;
                 [$status, $symbol, $color] = $this->resolveStatus($targetFile, $sourceFile);
 
-                $this->line("  <{$color}>{$symbol}</{$color}>  {$controller->identifier}  {$status}  <fg=gray>(used by {$tag})</>");
+                $this->line("  <$color>$symbol</$color>  $controller->identifier  $status  <fg=gray>(used by $tag)</>");
 
                 if ($status !== 'up to date') {
                     $issues[] = [
@@ -250,12 +263,12 @@ class CheckCommand extends Command
             $usedBy = implode(', ', $info['used_by']);
 
             if (array_key_exists($package, $installed)) {
-                $this->line("  <info>✓</info>  {$package} {$info['version']}  <fg=gray>(used by {$usedBy})</>");
+                $this->line("  <info>✓</info>  $package {$info['version']}  <fg=gray>(used by $usedBy)</>");
 
                 continue;
             }
 
-            $this->line("  <error>✗</error>  {$package} {$info['version']}  <fg=gray>missing from package.json (used by {$usedBy})</>");
+            $this->line("  <error>✗</error>  $package {$info['version']}  <fg=gray>missing from package.json (used by $usedBy)</>");
             $missing[$package] = $info['version'];
         }
 
@@ -270,12 +283,12 @@ class CheckCommand extends Command
     {
         if (! empty($issues)) {
             $count = count($issues);
-            $this->line("<comment>{$count} controller(s) need attention.</comment>");
+            $this->line("<comment>$count controller(s) need attention.</comment>");
         }
 
         if (! empty($missingDeps)) {
             $count = count($missingDeps);
-            $this->line("<comment>{$count} npm dependency(ies) missing from package.json.</comment>");
+            $this->line("<comment>$count npm dependency(ies) missing from package.json.</comment>");
         }
 
         $this->line('');
@@ -291,7 +304,7 @@ class CheckCommand extends Command
             return false;
         }
 
-        return confirm('Publish missing/outdated controllers and add missing npm deps?', default: true);
+        return confirm('Publish missing/outdated controllers and add missing npm deps?');
     }
 
     /** @param array<int, array{identifier: string, source_file: string, target_file: string}> $issues */
@@ -306,16 +319,16 @@ class CheckCommand extends Command
     }
 
     /** @param array<string, string> $missingDeps package name => version */
-    private function writeMissingDependencies(array $missingDeps): void
+    private function writeMissingDependencies(array $missingDeps): int
     {
         if (empty($missingDeps)) {
-            return;
+            return 0;
         }
 
         $packageJsonPath = base_path('package.json');
 
         if (! $this->files->exists($packageJsonPath)) {
-            return;
+            return 0;
         }
 
         $json = json_decode($this->files->get($packageJsonPath), true) ?: [];
@@ -323,7 +336,7 @@ class CheckCommand extends Command
 
         foreach ($missingDeps as $package => $version) {
             $devDeps[$package] = $version;
-            info("Added to devDependencies: {$package} {$version}");
+            info("Added to devDependencies: $package $version");
         }
 
         $json['devDependencies'] = $devDeps;
@@ -333,7 +346,42 @@ class CheckCommand extends Command
             json_encode($json, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)."\n"
         );
 
+        return count($missingDeps);
+    }
+
+    private function shouldInstallDependencies(): bool
+    {
+        if ($this->option('install')) {
+            return true;
+        }
+
+        if (! $this->input->isInteractive()) {
+            return false;
+        }
+
+        $manager = $this->packageInstaller->detect($this->files);
+
+        return confirm("Run $manager install now?");
+    }
+
+    private function installDependencies(): int
+    {
+        $manager = $this->packageInstaller->detect($this->files);
+        $command = implode(' ', $this->packageInstaller->command($manager));
+
         $this->line('');
-        $this->line('<comment>Run your package manager install command to fetch the new dependencies.</comment>');
+        info("Running $command...");
+
+        $exitCode = $this->packageInstaller->install($manager, $this);
+
+        if ($exitCode !== self::SUCCESS) {
+            $this->components->error("$command failed.");
+
+            return self::FAILURE;
+        }
+
+        info("$command completed.");
+
+        return self::SUCCESS;
     }
 }

@@ -1,6 +1,32 @@
 <?php
 
+use Emaia\LaravelHotwire\Support\PackageInstaller;
+use Illuminate\Console\Command;
+use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\File;
+
+class FakePackageInstaller extends PackageInstaller
+{
+    /** @var string[] */
+    public array $installed = [];
+
+    public function __construct(
+        public string $manager = 'bun',
+        public int $exitCode = 0,
+    ) {}
+
+    public function detect(Filesystem $files): string
+    {
+        return $this->manager;
+    }
+
+    public function install(string $manager, Command $command): int
+    {
+        $this->installed[] = $manager;
+
+        return $this->exitCode;
+    }
+}
 
 beforeEach(function () {
     $this->targetDir = resource_path('js/controllers');
@@ -78,6 +104,14 @@ function writePackageJson(array $data): void
 function readPackageJson(): array
 {
     return json_decode(File::get(base_path('package.json')), true);
+}
+
+function fakePackageInstaller(string $manager = 'bun', int $exitCode = 0): FakePackageInstaller
+{
+    $fake = new FakePackageInstaller($manager, $exitCode);
+    app()->instance(PackageInstaller::class, $fake);
+
+    return $fake;
 }
 
 // --- Basic ---
@@ -449,6 +483,69 @@ it('adds missing npm dependencies to devDependencies with --fix', function () {
 
     $json = readPackageJson();
     expect($json['devDependencies'])->toHaveKey('@emaia/sonner');
+});
+
+it('does not run package manager install in non-interactive fix mode by default', function () {
+    $installer = fakePackageInstaller('bun');
+    writePackageJson(['name' => 'app', 'devDependencies' => []]);
+    writeView('page.blade.php', '<x-hwc::flash-message />');
+
+    $this->artisan('hotwire:check --fix --no-interaction')
+        ->expectsOutputToContain('Run your package manager install command')
+        ->assertSuccessful();
+
+    expect($installer->installed)->toBe([]);
+});
+
+it('runs package manager install when requested explicitly', function () {
+    $installer = fakePackageInstaller('bun');
+    writePackageJson(['name' => 'app', 'devDependencies' => []]);
+    writeView('page.blade.php', '<x-hwc::flash-message />');
+
+    $this->artisan('hotwire:check --fix --install --no-interaction')
+        ->expectsOutputToContain('Running bun install')
+        ->expectsOutputToContain('bun install completed')
+        ->assertSuccessful();
+
+    expect($installer->installed)->toBe(['bun']);
+});
+
+it('prompts to run package manager install after interactive fix adds dependencies', function () {
+    $installer = fakePackageInstaller('pnpm');
+    writePackageJson(['name' => 'app', 'devDependencies' => []]);
+    writeView('page.blade.php', '<x-hwc::flash-message />');
+
+    $this->artisan('hotwire:check')
+        ->expectsConfirmation('Publish missing/outdated controllers and add missing npm deps?', 'yes')
+        ->expectsConfirmation('Run pnpm install now?', 'yes')
+        ->expectsOutputToContain('Running pnpm install')
+        ->assertSuccessful();
+
+    expect($installer->installed)->toBe(['pnpm']);
+});
+
+it('does not run package manager install when no dependencies were added', function () {
+    $installer = fakePackageInstaller('bun');
+    writePackageJson(['name' => 'app', 'devDependencies' => []]);
+    writeView('page.blade.php', '<x-hwc::modal />');
+
+    $this->artisan('hotwire:check --fix --install --no-interaction')
+        ->doesntExpectOutputToContain('Running bun install')
+        ->assertSuccessful();
+
+    expect($installer->installed)->toBe([]);
+});
+
+it('fails when requested package manager install fails', function () {
+    $installer = fakePackageInstaller('npm', 1);
+    writePackageJson(['name' => 'app', 'devDependencies' => []]);
+    writeView('page.blade.php', '<x-hwc::flash-message />');
+
+    $this->artisan('hotwire:check --fix --install --no-interaction')
+        ->expectsOutputToContain('npm install failed')
+        ->assertFailed();
+
+    expect($installer->installed)->toBe(['npm']);
 });
 
 it('does not duplicate a dependency already present when --fix runs', function () {
