@@ -61,6 +61,7 @@ final class HotwireRegistry
                 view: $component['view'],
                 docs: $component['docs'],
                 category: $component['category'],
+                description: $component['description'] ?? '',
                 controllers: $component['controllers'] ?? [],
             );
         }
@@ -73,6 +74,7 @@ final class HotwireRegistry
                 source: $controller['source'],
                 docs: $controller['docs'],
                 category: $controller['category'],
+                description: $controller['description'] ?? '',
                 npm: $controller['npm'] ?? [],
             );
         }

@@ -53,3 +53,17 @@ it('points every registered controller source and docs path to a real file', fun
         expect($controller->category)->toBeIn($validCategories);
     }
 });
+
+it('every controller and component has a non-empty description', function () {
+    $registry = HotwireRegistry::make();
+
+    foreach ($registry->controllers() as $identifier => $controller) {
+        expect($controller->description)
+            ->not->toBeEmpty("Controller \"{$identifier}\" is missing a description");
+    }
+
+    foreach ($registry->components() as $key => $component) {
+        expect($component->description)
+            ->not->toBeEmpty("Component \"{$key}\" is missing a description");
+    }
+});

@@ -13,19 +13,21 @@ the box.
 - [Requirements](#requirements)
 - [Installation](#installation)
     - [Quick Start](#quick-start)
-    - [Stimulus Controllers](#stimulus-controllers)
-    - [View Customization](#view-customization)
-    - [Manual Installation](#manual-installation)
-- [Configuration](#configuration)
+    - [Explore the Docs](#explore-the-docs)
 - [Turbo](#turbo)
-- [Components](#components)
-- [Stimulus Controllers (standalone)](#stimulus-controllers-standalone)
-    - [Top-level controllers](#top-level-controllers)
-    - [Turbo](#turbo-1)
-    - [Optimistic](#optimistic)
-    - [Dev](#dev)
+- [Blade Components](#blade-components)
+- [Stimulus Controllers](#stimulus-controllers-standalone)
+    - [Publish Controllers](#publish-stimulus-controllers)
+      - [Top-level controllers](#top-level-controllers)
+      - [Turbo](#turbo-1)
+      - [Optimistic](#optimistic)
+      - [Dev](#dev)
+- [Verify Your Setup](#verify-your-setup)
+- [Configuration](#configuration)
+- [View Customization](#view-customization)
 - [Extending](#extending-the-package)
 - [Testing](#testing)
+- [Manual Installation](#manual-installation)
 - [Changelog](#changelog)
 - [Contributing](#contributing)
 - [Security Vulnerabilities](#security-vulnerabilities)
@@ -70,7 +72,7 @@ This will:
 
 > Only the three core dependencies above are added at install time. Extra npm packages required by specific
 > components (e.g. `maska`, `tippy.js`, `@emaia/sonner`) are published on demand by
-> [`hotwire:check`](#stimulus-controllers) once you actually use a component that depends on them.
+> [`hotwire:check`](#verify-your-setup) once you actually use a component that depends on them.
 
 Options:
 
@@ -86,10 +88,97 @@ php artisan hotwire:install --only=css
 > If a target file already exists and is identical, it is skipped. If it differs, the command asks for confirmation
 > before overwriting (unless `--force` is used).
 
-### Stimulus Controllers
+After installation, a good next step is:
 
-The components depend on Stimulus controllers that must be published to your project so they can be discovered by the
-bundler (Vite).
+1. Browse the package docs in the terminal to see what is available
+2. Publish the Stimulus controllers you actually want to use
+3. Run `hotwire:check` to verify controllers and npm dependencies used by your views
+
+### Explore the Docs
+
+You can browse the package docs directly in the terminal:
+
+```bash
+php artisan hotwire:docs
+```
+
+This opens an interactive search across all controllers and components. Type a name, category, or keyword to filter:
+
+```
+ ┌ Search controllers and components ───────────────────────────────┐
+ │ form                                                              │
+ ├───────────────────────────────────────────────────────────────────┤
+ │   auto-save           [forms]    Automatically saves a form…      │
+ │ › auto-submit         [forms]    Submits a form automatically…    │
+ │   clean-query-params  [forms]    Strips empty fields from the…    │
+ │   optimistic--form    [turbo]    Dispatches optimistic UI…        │
+ └───────────────────────────────────────────────────────────────────┘
+```
+
+Read a specific controller or component directly:
+
+```bash
+php artisan hotwire:docs auto-submit
+php artisan hotwire:docs turbo/progress
+php artisan hotwire:docs modal --component
+```
+
+List everything with category and description:
+
+```bash
+php artisan hotwire:docs --list
+php artisan hotwire:docs --list --controller
+php artisan hotwire:docs --list --component
+```
+
+## Turbo
+
+This package includes [emaia/laravel-hotwire-turbo](https://github.com/emaia/laravel-hotwire-turbo) as a dependency,
+providing full Turbo integration for Laravel:
+
+- **Turbo Streams** — fluent builder for append, prepend, replace, update, remove, morph, refresh and more
+- **Turbo Frames** — `<x-turbo::frame>` Blade component with lazy loading support
+- **DOM helpers** — `dom_id()` and `dom_class()` for consistent element identification
+- **Request detection** — `wantsTurboStream()` and `wasFromTurboFrame()` macros
+- **Blade directives** — `@turboNocache`, `@turboRefreshMethod('morph')`, etc.
+- **Testing utilities** — `InteractsWithTurbo` trait with `assertTurboStream()` assertions
+
+```php
+// Example: return Turbo Streams
+return turbo_stream()
+    ->append('messages', view('messages.item', compact('message')))
+    ->remove('modal');
+```
+
+See the full documentation at [emaia/laravel-hotwire-turbo](https://github.com/emaia/laravel-hotwire-turbo).
+
+## Blade Components
+
+| Component                                             | Blade                      | Stimulus Identifier | Docs                                         |
+|-------------------------------------------------------|----------------------------|---------------------|----------------------------------------------|
+| [Modal](docs/components/modal.md)                     | `<x-hwc::modal>`           | `modal`             | [readme](docs/components/modal.md)           |
+| [Confirm Dialog](docs/components/confirm-dialog.md)   | `<x-hwc::confirm-dialog>`  | `confirm-dialog`    | [readme](docs/components/confirm-dialog.md)  |
+| [Flash Container](docs/components/flash-container.md) | `<x-hwc::flash-container>` | `toaster`           | [readme](docs/components/flash-container.md) |
+| [Flash Message](docs/components/flash-message.md)     | `<x-hwc::flash-message>`   | `toast`             | [readme](docs/components/flash-message.md)   |
+| [Loader](docs/components/loader.md)                   | `<x-hwc::loader>`          | —                   | [readme](docs/components/loader.md)          |
+| [Optimistic](docs/components/optimistic.md)           | `<x-hwc::optimistic>`      | —                   | [readme](docs/components/optimistic.md)      |
+| [Timeago](docs/components/timeago.md)                 | `<x-hwc::timeago>`         | `timeago`           | [readme](docs/components/timeago.md)         |
+
+## Stimulus Controllers (standalone)
+
+Stimulus controllers without an associated Blade component. Used directly via `data-controller` and `data-action`.
+
+Controllers live flat at the top level (`resources/js/controllers/<name>_controller.{js,ts}`). Substrate folders
+(`turbo/`, `optimistic/`, `dev/`) group controllers tied to a specific technical layer and use Stimulus' `--` separator
+in the identifier.
+
+```bash
+php artisan hotwire:controllers auto-select auto-submit turbo/progress
+```
+
+### Publish Stimulus Controllers
+
+Publish the controllers you want to use in your app so they can be discovered by the bundler (Vite).
 
 **Interactive** — select which controllers to publish:
 
@@ -154,165 +243,6 @@ them automatically via `import.meta.glob`.
 > If a controller already exists and is identical to the package version, the command reports it as up to date. If it
 > differs, it asks for confirmation before overwriting.
 
-**List components and their required controllers:**
-
-```bash
-php artisan hotwire:components
-```
-
-Shows each Blade component, its tag, and the Stimulus controllers it depends on — with publish status for each.
-
-**Check controllers for components used in your views:**
-
-```bash
-php artisan hotwire:check
-```
-
-Scans `resources/views` for Hotwire components, then verifies two things:
-
-1. **Stimulus controllers** — every controller required by a used component is published and up to date.
-2. **npm dependencies** — every external package imported by those controllers (e.g. `@emaia/sonner`, `tippy.js`, `maska`)
-   is declared in your `package.json` (`dependencies` or `devDependencies`).
-
-Exits with code `1` if either has pending items (useful for CI).
-
-Both the configured prefix (`hwc` by default) and the literal `hotwire` alias are recognized, so views like
-`<x-hwc::flash-message />` and `<x-hotwire::flash-message />` are detected equally.
-
-```bash
-# Auto-publish missing/outdated controllers AND add missing npm deps to devDependencies
-php artisan hotwire:check --fix
-
-# Scan a custom path
-php artisan hotwire:check --path=resources/views/app
-```
-
-Example output:
-
-```
-  ✓  toaster  up to date  (used by <x-hwc::flash-container>)
-  ✓  toast    up to date  (used by <x-hwc::flash-message>)
-
-Required npm dependencies:
-  ✓  @emaia/sonner ^2.1.0  (used by toaster, toast)
-  ✗  tippy.js ^6.3.7       missing from package.json (used by tooltip)
-```
-
-> When `--fix` adds packages to `devDependencies`, run your package manager's install command afterwards
-> (`bun install`, `pnpm install`, etc.) to actually fetch them.
-
-### View Customization
-
-To customize the HTML/Tailwind of the components:
-
-```bash
-php artisan vendor:publish --tag=hotwire-views
-```
-
-Views published to `resources/views/vendor/hotwire/` will take precedence over the package defaults.
-
-### Manual Installation
-
-If you prefer to set things up manually instead of using `hotwire:install`, follow the steps below.
-
-#### Project setup (using Vite)
-
-```js
-// resources/js/app.js
-import "./libs";
-
-// resources/js/libs/index.js
-import "./turbo";
-import "./stimulus";
-import "../controllers";
-
-// resources/js/controllers/index.js
-import {Stimulus} from "../libs/stimulus";
-import {registerControllers} from "@emaia/stimulus-dynamic-loader";
-
-const controllers = import.meta.glob("./**/*_controller.{js,ts}", {
-    eager: false,
-});
-
-registerControllers(Stimulus, controllers);
-```
-
-Install the required js dependencies:
-
-```bash
-bun add @hotwired/stimulus @hotwired/turbo @emaia/stimulus-dynamic-loader
-```
-
-#### TailwindCSS (v4)
-
-Add these settings to your CSS entrypoint `resources/css/app.css`:
-
-```css
-@source '../../vendor/emaia/laravel-hotwire/resources/views/**/*.blade.php';
-@custom-variant turbo-frame (turbo-frame[src] &);
-@custom-variant modal ([data-modal-target="dialog"] &);
-@custom-variant aria-busy (form[aria-busy="true"] &);
-@custom-variant self-aria-busy (html[aria-busy="true"] &);
-@custom-variant turbo-frame-aria-busy (turbo-frame[aria-busy="true"] &);
-```
-
-## Configuration
-
-```php
-// config/hotwire.php
-
-return [
-    'prefix' => 'hwc', // <x-hwc::modal>
-];
-```
-
-Change `prefix` to use a different prefix for Blade components. E.g. `'prefix' => 'hotwire'` → `<x-hotwire::modal>`.
-
-## Turbo
-
-This package includes [emaia/laravel-hotwire-turbo](https://github.com/emaia/laravel-hotwire-turbo) as a dependency,
-providing full Turbo integration for Laravel:
-
-- **Turbo Streams** — fluent builder for append, prepend, replace, update, remove, morph, refresh and more
-- **Turbo Frames** — `<x-turbo::frame>` Blade component with lazy loading support
-- **DOM helpers** — `dom_id()` and `dom_class()` for consistent element identification
-- **Request detection** — `wantsTurboStream()` and `wasFromTurboFrame()` macros
-- **Blade directives** — `@turboNocache`, `@turboRefreshMethod('morph')`, etc.
-- **Testing utilities** — `InteractsWithTurbo` trait with `assertTurboStream()` assertions
-
-```php
-// Example: return Turbo Streams
-return turbo_stream()
-    ->append('messages', view('messages.item', compact('message')))
-    ->remove('modal');
-```
-
-See the full documentation at [emaia/laravel-hotwire-turbo](https://github.com/emaia/laravel-hotwire-turbo).
-
-## Components
-
-| Component                                             | Blade                      | Stimulus Identifier | Docs                                         |
-|-------------------------------------------------------|----------------------------|---------------------|----------------------------------------------|
-| [Modal](docs/components/modal.md)                     | `<x-hwc::modal>`           | `modal`             | [readme](docs/components/modal.md)           |
-| [Confirm Dialog](docs/components/confirm-dialog.md)   | `<x-hwc::confirm-dialog>`  | `confirm-dialog`    | [readme](docs/components/confirm-dialog.md)  |
-| [Flash Container](docs/components/flash-container.md) | `<x-hwc::flash-container>` | `toaster`           | [readme](docs/components/flash-container.md) |
-| [Flash Message](docs/components/flash-message.md)     | `<x-hwc::flash-message>`   | `toast`             | [readme](docs/components/flash-message.md)   |
-| [Loader](docs/components/loader.md)                   | `<x-hwc::loader>`          | —                   | [readme](docs/components/loader.md)          |
-| [Optimistic](docs/components/optimistic.md)           | `<x-hwc::optimistic>`      | —                   | [readme](docs/components/optimistic.md)      |
-| [Timeago](docs/components/timeago.md)                 | `<x-hwc::timeago>`         | `timeago`           | [readme](docs/components/timeago.md)         |
-
-## Stimulus Controllers (standalone)
-
-Stimulus controllers without an associated Blade component. Used directly via `data-controller` and `data-action`.
-
-Controllers live flat at the top level (`resources/js/controllers/<name>_controller.{js,ts}`). Substrate folders
-(`turbo/`, `optimistic/`, `dev/`) group controllers tied to a specific technical layer and use Stimulus' `--` separator
-in the identifier.
-
-```bash
-php artisan hotwire:controllers auto-select auto-submit turbo/progress
-```
-
 ### Top-level controllers
 
 | Controller                                                     | Identifier            | Dependencies    | Docs                                              |
@@ -366,6 +296,77 @@ Controllers tied to Turbo Drive / Turbo Frames.
 |------------------------------------|------------|--------------|---------------------------------------|
 | [Log](docs/controllers/dev/log.md) | `dev--log` | —            | [readme](docs/controllers/dev/log.md) |
 
+## Verify Your Setup
+
+**List components and their required controllers:**
+
+```bash
+php artisan hotwire:components
+```
+
+Shows each Blade component, its tag, and the Stimulus controllers it depends on — with publish status for each.
+
+**Check controllers for components used in your views:**
+
+```bash
+php artisan hotwire:check
+```
+
+Scans `resources/views` for Hotwire components, then verifies two things:
+
+1. **Stimulus controllers** — every controller required by a used component is published and up to date.
+2. **npm dependencies** — every external package imported by those controllers (e.g. `@emaia/sonner`, `tippy.js`, `maska`)
+   is declared in your `package.json` (`dependencies` or `devDependencies`).
+
+Exits with code `1` if either has pending items (useful for CI).
+
+Both the configured prefix (`hwc` by default) and the literal `hotwire` alias are recognized, so views like
+`<x-hwc::flash-message />` and `<x-hotwire::flash-message />` are detected equally.
+
+```bash
+# Auto-publish missing/outdated controllers AND add missing npm deps to devDependencies
+php artisan hotwire:check --fix
+
+# Scan a custom path
+php artisan hotwire:check --path=resources/views/app
+```
+
+Example output:
+
+```
+  ✓  toaster  up to date  (used by <x-hwc::flash-container>)
+  ✓  toast    up to date  (used by <x-hwc::flash-message>)
+
+Required npm dependencies:
+  ✓  @emaia/sonner ^2.1.0  (used by toaster, toast)
+  ✗  tippy.js ^6.3.7       missing from package.json (used by tooltip)
+```
+
+> When `--fix` adds packages to `devDependencies`, run your package manager's install command afterwards
+> (`bun install`, `pnpm install`, etc.) to actually fetch them.
+
+## Configuration
+
+```php
+// config/hotwire.php
+
+return [
+    'prefix' => 'hwc', // <x-hwc::modal>
+];
+```
+
+Change `prefix` to use a different prefix for Blade components. E.g. `'prefix' => 'hotwire'` → `<x-hotwire::modal>`.
+
+## View Customization
+
+To customize the HTML/Tailwind of the components:
+
+```bash
+php artisan vendor:publish --tag=hotwire-views
+```
+
+Views published to `resources/views/vendor/hotwire/` will take precedence over the package defaults.
+
 ## Extending the package
 
 Laravel Hotwire uses a single registry as the source of truth for:
@@ -408,6 +409,51 @@ More details: [docs/registry.md](docs/registry.md)
 
 ```bash
 composer test
+```
+
+## Manual Installation
+
+If you prefer to set things up manually instead of using `hotwire:install`, follow the steps below.
+
+### Project setup (using Vite)
+
+```js
+// resources/js/app.js
+import "./libs";
+
+// resources/js/libs/index.js
+import "./turbo";
+import "./stimulus";
+import "../controllers";
+
+// resources/js/controllers/index.js
+import {Stimulus} from "../libs/stimulus";
+import {registerControllers} from "@emaia/stimulus-dynamic-loader";
+
+const controllers = import.meta.glob("./**/*_controller.{js,ts}", {
+    eager: false,
+});
+
+registerControllers(Stimulus, controllers);
+```
+
+Install the required js dependencies:
+
+```bash
+bun add @hotwired/stimulus @hotwired/turbo @emaia/stimulus-dynamic-loader
+```
+
+### TailwindCSS (v4)
+
+Add these settings to your CSS entrypoint `resources/css/app.css`:
+
+```css
+@source '../../vendor/emaia/laravel-hotwire/resources/views/**/*.blade.php';
+@custom-variant turbo-frame (turbo-frame[src] &);
+@custom-variant modal ([data-modal-target="dialog"] &);
+@custom-variant aria-busy (form[aria-busy="true"] &);
+@custom-variant self-aria-busy (html[aria-busy="true"] &);
+@custom-variant turbo-frame-aria-busy (turbo-frame[aria-busy="true"] &);
 ```
 
 ## Changelog
