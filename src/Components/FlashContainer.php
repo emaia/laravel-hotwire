@@ -32,10 +32,6 @@ class FlashContainer extends Component
 
     public function render()
     {
-        if (view()->exists('hotwire::components.flash-container.flash-container')) {
-            return view('hotwire::components.flash-container.flash-container');
-        }
-
         return view('hotwire::component-views.flash-container');
     }
 }

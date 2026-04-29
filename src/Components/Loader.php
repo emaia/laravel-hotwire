@@ -13,10 +13,6 @@ class Loader extends Component
 
     public function render()
     {
-        if (view()->exists('hotwire::components.loader.loader')) {
-            return view('hotwire::components.loader.loader');
-        }
-
         return view('hotwire::component-views.loader');
     }
 }

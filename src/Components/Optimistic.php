@@ -14,10 +14,6 @@ class Optimistic extends Component
 
     public function render()
     {
-        if (view()->exists('hotwire::components.optimistic.optimistic')) {
-            return view('hotwire::components.optimistic.optimistic');
-        }
-
         return view('hotwire::component-views.optimistic');
     }
 }

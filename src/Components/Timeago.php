@@ -28,10 +28,6 @@ class Timeago extends Component
 
     public function render()
     {
-        if (view()->exists('hotwire::components.timeago.timeago')) {
-            return view('hotwire::components.timeago.timeago');
-        }
-
         return view('hotwire::component-views.timeago');
     }
 }

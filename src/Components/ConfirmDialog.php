@@ -26,10 +26,6 @@ class ConfirmDialog extends Component
 
     public function render()
     {
-        if (view()->exists('hotwire::components.confirm-dialog.confirm-dialog')) {
-            return view('hotwire::components.confirm-dialog.confirm-dialog');
-        }
-
         return view('hotwire::component-views.confirm-dialog');
     }
 }
