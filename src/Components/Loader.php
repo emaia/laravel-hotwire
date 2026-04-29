@@ -2,7 +2,9 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
-class Loader extends HotwireComponent
+use Illuminate\View\Component;
+
+class Loader extends Component
 {
     public function __construct(
         public string $size = 'size-5 lg:size-4',
@@ -11,6 +13,10 @@ class Loader extends HotwireComponent
 
     public function render()
     {
-        return $this->renderComponentView('loader');
+        if (view()->exists('hotwire::components.loader.loader')) {
+            return view('hotwire::components.loader.loader');
+        }
+
+        return view('hotwire::component-views.loader');
     }
 }
