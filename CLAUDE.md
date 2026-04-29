@@ -43,6 +43,8 @@ The complete Hotwire stack for Laravel — Turbo Drive, Turbo Streams, Stimulus 
 - Registered with configurable prefix (default: `hwc`)
 - Usage: `<x-hwc::modal>`, `<x-hwc::confirm-dialog>`, `<x-hwc::flash-message>`, `<x-hwc::loader>`, `<x-hwc::scroll-progress>`, `<x-hwc::timeago>`
 - Components and Controllers needs to be registered in Registry catalog `src/Registry/catalog.php`
+- Components that encapsulate a Stimulus controller must not merge user-provided `data-controller`, `data-action`, or
+  `data-{identifier}-*` attributes. Expose supported controller configuration as explicit Blade props instead.
 
 ### Turbo
 
@@ -57,6 +59,8 @@ The complete Hotwire stack for Laravel — Turbo Drive, Turbo Streams, Stimulus 
 ```bash
 composer test          # Run Pest tests
 composer analyse       # Run PHPStan
+bun test               # Run JS unit tests (Bun + happy-dom)
+bun run test:browser   # Run browser tests (Playwright)
 composer format        # Run Pint code formatter
 ```
 
@@ -64,10 +68,12 @@ composer format        # Run Pint code formatter
 
 Follow test-driven development: write tests first, then implement.
 
-There are two test suites:
+There are three test suites:
 
 - **PHP** (`composer test`) — Pest + Orchestra Testbench. Covers commands, components, registry.
 - **JS** (`bun test`) — Bun test runner + happy-dom. Covers Stimulus controllers in `tests/Controllers/*.test.js`.
+- **Browser JS** (`bun run test:browser`) — Playwright. Covers browser-dependent Stimulus behavior in
+  `tests/Browser/*.pw.js`.
 
 TDD flow:
 
@@ -75,6 +81,7 @@ TDD flow:
 2. **Run only that test** to confirm it fails:
    - PHP: `vendor/bin/pest --filter='test name'`
    - JS: `bun test tests/Controllers/<name>_controller.test.js`
+   - Browser JS: `bun run test:browser -- tests/Browser/<name>.pw.js`
 3. **Implement** the minimum code to make it pass
 4. **Run the test again** to confirm it passes
 5. **Repeat** for the next behavior
@@ -95,6 +102,10 @@ JS conventions:
 - Use `mountController` from `resources/js/helpers/test_stimulus.js` to set up the DOM and Stimulus
 - Always call `mounted?.cleanup()` in `afterEach`
 - Always run `bun test` at the end to ensure nothing else broke
+- Use Playwright (`tests/Browser/*.pw.js`) for controller behavior that depends on real browser semantics:
+  `MutationObserver`, focus, `requestAnimationFrame`, layout, Turbo frame-like DOM changes or other complex event timing.
+- Keep Playwright tests focused and few; prefer `bun test` for deterministic controller unit behavior.
+- Run `bun run test:browser` after changing browser-dependent behavior.
 
 ## Dependencies
 

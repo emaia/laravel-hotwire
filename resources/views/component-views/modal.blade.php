@@ -1,17 +1,20 @@
 <div
     data-controller="modal"
+    data-modal-prevent-reopen-delay-value="{{ $preventReopenDelay }}"
+    data-modal-hidden-class="opacity-0 pointer-events-none"
+    data-modal-visible-class="opacity-100 pointer-events-auto"
+    data-modal-backdrop-hidden-class="opacity-0"
+    data-modal-backdrop-visible-class="opacity-100"
+    data-modal-dialog-hidden-class="scale-80 opacity-0"
+    data-modal-dialog-visible-class="scale-100 opacity-100"
+    data-modal-lock-scroll-class="overflow-hidden"
+    data-action="turbo:before-cache@window->modal#close"
     {{
-        $attributes->except('data-controller')->merge([
+        $attributes
+            ->except(['data-controller', 'data-action'])
+            ->whereDoesntStartWith('data-modal-')
+            ->merge([
             'id' => $id,
-            'data-modal-prevent-reopen-delay-value' => $preventReopenDelay,
-            'data-modal-hidden-class' => 'opacity-0 pointer-events-none',
-            'data-modal-visible-class' => 'opacity-100 pointer-events-auto',
-            'data-modal-backdrop-hidden-class' => 'opacity-0',
-            'data-modal-backdrop-visible-class' => 'opacity-100',
-            'data-modal-dialog-hidden-class' => 'scale-80 opacity-0',
-            'data-modal-dialog-visible-class' => 'scale-100 opacity-100',
-            'data-modal-lock-scroll-class' => 'overflow-hidden',
-            'data-action' => 'turbo:before-cache@window->modal#close',
         ])
     }}
 >

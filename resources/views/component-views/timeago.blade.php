@@ -1,10 +1,13 @@
 <time
     data-controller="timeago"
+    data-timeago-datetime-value="{{ $iso }}"
+    data-timeago-add-suffix-value="{{ $addSuffix ? 'true' : 'false' }}"
+    data-timeago-include-seconds-value="{{ $includeSeconds ? 'true' : 'false' }}"
     {{
-        $attributes->except('data-controller')->merge([
-            'data-timeago-datetime-value' => $iso,
-            'data-timeago-add-suffix-value' => $addSuffix ? 'true' : 'false',
-            'data-timeago-include-seconds-value' => $includeSeconds ? 'true' : 'false',
+        $attributes
+            ->except(['data-controller', 'data-action'])
+            ->whereDoesntStartWith('data-timeago-')
+            ->merge([
             'title' => $formattedTitle,
         ])
     }}

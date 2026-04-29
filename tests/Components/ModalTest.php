@@ -104,7 +104,6 @@ it('applies custom class', function () {
 it('forwards arbitrary attributes to the root element', function () {
     $view = $this->blade('
         <x-hwc::modal
-            data-modal-close-on-escape-value="false"
             aria-labelledby="modal-title"
             data-test-id="modal-root"
         >
@@ -112,16 +111,26 @@ it('forwards arbitrary attributes to the root element', function () {
         </x-hwc::modal>
     ');
 
-    $view->assertSee('data-modal-close-on-escape-value="false"', false);
     $view->assertSee('aria-labelledby="modal-title"', false);
     $view->assertSee('data-test-id="modal-root"', false);
 });
 
-it('keeps the modal controller fixed when arbitrary attributes are forwarded', function () {
-    $view = $this->blade('<x-hwc::modal data-controller="custom">Content</x-hwc::modal>');
+it('does not forward modal stimulus attributes from arbitrary attributes', function () {
+    $view = $this->blade('
+        <x-hwc::modal
+            data-controller="custom"
+            data-action="click->custom#run"
+            data-modal-close-on-escape-value="false"
+        >
+            Content
+        </x-hwc::modal>
+    ');
 
     $view->assertSee('data-controller="modal"', false);
+    $view->assertSee('data-action="turbo:before-cache@window->modal#close"', false);
     $view->assertDontSee('data-controller="custom"', false);
+    $view->assertDontSee('data-action="click-&gt;custom#run"', false);
+    $view->assertDontSee('data-modal-close-on-escape-value="false"', false);
 });
 
 it('renders an accessible label on the close button', function () {
