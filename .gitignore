@@ -28,6 +28,7 @@ _ide_helper_models.php
 phpunit.xml
 phpstan.neon
 /coverage
+test-results
 
 .claude/settings.local.json
 .codex

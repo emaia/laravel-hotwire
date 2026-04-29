@@ -6,6 +6,7 @@
         "build": "vite build",
         "dev": "vite",
         "test": "bun test",
+        "test:browser": "playwright test",
         "test:watch": "bun test --watch"
     },
     "dependencies": {
@@ -18,12 +19,12 @@
         "tippy.js": "^6.3.7"
     },
     "devDependencies": {
-        "@types/bun": "^1.3.11",
-        "happy-dom": "^20.8.9",
-        "playwright": "^1.59.1",
-        "prettier": "^3.8.1",
+        "@playwright/test": "^1.59.1",
+        "@types/bun": "^1.3.13",
+        "happy-dom": "^20.9.0",
+        "prettier": "^3.8.3",
         "prettier-plugin-blade": "^2.1.21",
-        "prettier-plugin-tailwindcss": "^0.7.2",
-        "vite": "^8.0.6"
+        "prettier-plugin-tailwindcss": "^0.7.4",
+        "vite": "^8.0.10"
     }
 }
