@@ -2,6 +2,14 @@
 
 All notable changes to `laravel-hotwire-components` will be documented in this file.
 
+## 0.9.2 - 2026-04-29
+
+### What's Changed
+
+* Add docs cli by @emaia in https://github.com/emaia/laravel-hotwire/pull/8
+
+**Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/0.9.1...0.9.2
+
 ## 0.9.1 - 2026-04-28
 
 **Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/0.9.0...0.9.1
