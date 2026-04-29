@@ -3,7 +3,7 @@ import { formatDistanceToNow, FormatDistanceToNowOptions, Locale } from "date-fn
 
 export default class Timeago extends Controller<HTMLTimeElement> {
     declare isValid: boolean;
-    declare refreshTimer: number;
+    declare refreshTimer?: ReturnType<typeof setInterval>;
     declare locale: Pick<Locale, "formatDistance">;
 
     declare hasRefreshIntervalValue: boolean;
@@ -44,7 +44,7 @@ export default class Timeago extends Controller<HTMLTimeElement> {
             locale: this.locale,
         };
 
-        if (Number.isNaN(date)) {
+        if (date !== date) {
             this.isValid = false;
 
             console.error(
@@ -57,7 +57,6 @@ export default class Timeago extends Controller<HTMLTimeElement> {
     }
 
     startRefreshing(): void {
-        // @ts-ignore
         this.refreshTimer = setInterval(() => {
             this.load();
         }, this.refreshIntervalValue);
