@@ -181,8 +181,7 @@ return [
             'source' => 'resources/js/controllers/money_input_controller.js',
             'docs' => 'docs/controllers/money-input.md',
             'category' => 'forms',
-            'description' => 'Formats a number input as currency using Maska',
-            'npm' => ['maska' => '^3.2.0'],
+            'description' => 'Classic money input with locale-aware formatting and right-aligned fractional entry',
         ],
         'oembed' => [
             'source' => 'resources/js/controllers/oembed_controller.js',

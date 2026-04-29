@@ -71,7 +71,7 @@ This will:
 3. Show instructions for the next steps
 
 > Only the three core dependencies above are added at install time. Extra npm packages required by specific
-> components (e.g. `maska`, `tippy.js`, `@emaia/sonner`) are published on demand by
+> components (e.g. `tippy.js`, `@emaia/sonner`) are published on demand by
 > [`hotwire:check`](#verify-your-setup) once you actually use a component that depends on them.
 
 Options:
@@ -262,7 +262,7 @@ them automatically via `import.meta.glob`.
 | [Hotkey](docs/controllers/hotkey.md)                           | `hotkey`              | —               | [readme](docs/controllers/hotkey.md)              |
 | [Input Mask](docs/controllers/input-mask.md)                   | `input-mask`          | `maska`         | [readme](docs/controllers/input-mask.md)          |
 | [Lazy Image](docs/controllers/lazy-image.md)                   | `lazy-image`          | —               | [readme](docs/controllers/lazy-image.md)          |
-| [Money Input](docs/controllers/money-input.md)                 | `money-input`         | `maska`         | [readme](docs/controllers/money-input.md)         |
+| [Money Input](docs/controllers/money-input.md)                 | `money-input`         | —               | [readme](docs/controllers/money-input.md)         |
 | [OEmbed](docs/controllers/oembed.md)                           | `oembed`              | —               | [readme](docs/controllers/oembed.md)              |
 | [Remote Form](docs/controllers/remote-form.md)                 | `remote-form`         | —               | [readme](docs/controllers/remote-form.md)         |
 | [Reset Files](docs/controllers/reset-files.md)                 | `reset-files`         | —               | [readme](docs/controllers/reset-files.md)         |
@@ -315,7 +315,7 @@ php artisan hotwire:check
 Scans `resources/views` for Hotwire components, then verifies two things:
 
 1. **Stimulus controllers** — every controller required by a used component is published and up to date.
-2. **npm dependencies** — every external package imported by those controllers (e.g. `@emaia/sonner`, `tippy.js`, `maska`)
+2. **npm dependencies** — every external package imported by those controllers (e.g. `@emaia/sonner`, `tippy.js`)
    is declared in your `package.json` (`dependencies` or `devDependencies`).
 
 Exits with code `1` if either has pending items (useful for CI).
