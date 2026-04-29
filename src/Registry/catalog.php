@@ -6,6 +6,7 @@ use Emaia\LaravelHotwire\Components\FlashMessage;
 use Emaia\LaravelHotwire\Components\Loader;
 use Emaia\LaravelHotwire\Components\Modal;
 use Emaia\LaravelHotwire\Components\Optimistic;
+use Emaia\LaravelHotwire\Components\ScrollProgress;
 use Emaia\LaravelHotwire\Components\Timeago;
 
 return [
@@ -57,6 +58,14 @@ return [
             'category' => 'turbo',
             'description' => 'Declares an inline optimistic Turbo Stream action for any Turbo trigger',
             'controllers' => [],
+        ],
+        'scroll-progress' => [
+            'class' => ScrollProgress::class,
+            'view' => 'hotwire::component-views.scroll-progress',
+            'docs' => 'docs/components/scroll-progress.md',
+            'category' => 'utility',
+            'description' => 'Fixed scroll progress bar that fills as the page scrolls',
+            'controllers' => ['scroll-progress'],
         ],
         'timeago' => [
             'class' => Timeago::class,
@@ -218,6 +227,12 @@ return [
             'docs' => 'docs/controllers/reset-files.md',
             'category' => 'forms',
             'description' => 'Clears file inputs automatically after a successful Turbo morph',
+        ],
+        'scroll-progress' => [
+            'source' => 'resources/js/controllers/scroll_progress_controller.js',
+            'docs' => 'docs/controllers/scroll-progress.md',
+            'category' => 'utility',
+            'description' => 'Displays a progress bar that follows the scroll position',
         ],
         'timeago' => [
             'source' => 'resources/js/controllers/timeago_controller.ts',

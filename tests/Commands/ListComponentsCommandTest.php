@@ -23,7 +23,8 @@ it('lists all registered components', function () {
         ->and($output)->toContain('Confirm Dialog')
         ->and($output)->toContain('Flash Container')
         ->and($output)->toContain('Flash Message')
-        ->and($output)->toContain('Loader');
+        ->and($output)->toContain('Loader')
+        ->and($output)->toContain('Scroll Progress');
 });
 
 it('shows blade tags with current prefix', function () {
@@ -32,6 +33,7 @@ it('shows blade tags with current prefix', function () {
         ->expectsOutputToContain('<x-hwc::confirm-dialog>')
         ->expectsOutputToContain('<x-hwc::flash-message>')
         ->expectsOutputToContain('<x-hwc::loader>')
+        ->expectsOutputToContain('<x-hwc::scroll-progress>')
         ->assertSuccessful();
 });
 
@@ -46,8 +48,9 @@ it('shows blade tags respecting custom prefix', function () {
 it('shows stimulus controller identifiers', function () {
     $this->artisan('hotwire:components')
         ->expectsOutputToContain('confirm-dialog')
-        ->expectsOutputToContain('toaster') // before toast: toaster ⊃ toast in Mockery matching
+        ->expectsOutputToContain('toaster')
         ->expectsOutputToContain('toast')
+        ->expectsOutputToContain('scroll-progress')
         ->expectsOutputToContain('timeago')
         ->assertSuccessful();
 });
@@ -87,7 +90,7 @@ it('shows outdated when installed controller differs from package version', func
 
 it('lists the flash container and flash message controllers', function () {
     $this->artisan('hotwire:components')
-        ->expectsOutputToContain('toaster') // before toast: toaster ⊃ toast in Mockery matching
+        ->expectsOutputToContain('toaster')
         ->expectsOutputToContain('toast')
         ->assertSuccessful();
 });

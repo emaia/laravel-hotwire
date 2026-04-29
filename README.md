@@ -162,6 +162,7 @@ See the full documentation at [emaia/laravel-hotwire-turbo](https://github.com/e
 | [Flash Message](docs/components/flash-message.md)     | `<x-hwc::flash-message>`   | `toast`             | [readme](docs/components/flash-message.md)   |
 | [Loader](docs/components/loader.md)                   | `<x-hwc::loader>`          | —                   | [readme](docs/components/loader.md)          |
 | [Optimistic](docs/components/optimistic.md)           | `<x-hwc::optimistic>`      | —                   | [readme](docs/components/optimistic.md)      |
+| [Scroll Progress](docs/components/scroll-progress.md) | `<x-hwc::scroll-progress>` | `scroll-progress`   | [readme](docs/components/scroll-progress.md) |
 | [Timeago](docs/components/timeago.md)                 | `<x-hwc::timeago>`         | `timeago`           | [readme](docs/components/timeago.md)         |
 
 ## Stimulus Controllers (standalone)

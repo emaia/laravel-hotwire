@@ -41,7 +41,7 @@ The complete Hotwire stack for Laravel — Turbo Drive, Turbo Streams, Stimulus 
 ### Blade Components
 
 - Registered with configurable prefix (default: `hwc`)
-- Usage: `<x-hwc::modal>`, `<x-hwc::confirm-dialog>`, `<x-hwc::flash-message>`, `<x-hwc::loader>`, `<x-hwc::timeago>`
+- Usage: `<x-hwc::modal>`, `<x-hwc::confirm-dialog>`, `<x-hwc::flash-message>`, `<x-hwc::loader>`, `<x-hwc::scroll-progress>`, `<x-hwc::timeago>`
 - Components and Controllers needs to be registered in Registry catalog `src/Registry/catalog.php`
 
 ### Turbo
