@@ -3,9 +3,8 @@
 namespace Emaia\LaravelHotwire\Components;
 
 use DateTimeInterface;
-use Illuminate\View\Component;
 
-class Timeago extends Component
+class Timeago extends HotwireComponent
 {
     public string $iso;
 
@@ -28,6 +27,6 @@ class Timeago extends Component
 
     public function render()
     {
-        return view('hotwire::components.timeago.timeago');
+        return $this->renderComponentView('timeago');
     }
 }

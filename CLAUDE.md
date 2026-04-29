@@ -6,7 +6,7 @@ The complete Hotwire stack for Laravel — Turbo Drive, Turbo Streams, Stimulus 
 
 - `src/` — PHP source (commands, components, service provider)
 - `resources/js/controllers/` — Stimulus controllers shipped with the package (published to user's app)
-- `resources/views/components/` — Blade component views
+- `resources/views/component-views/` — Blade component views
 - `stubs/resources/` — Scaffolding files copied by `hotwire:install`
 - `config/hotwire.php` — Package configuration (component prefix)
 - `tests/` — Pest PHP tests with Orchestra Testbench

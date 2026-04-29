@@ -2,9 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
-use Illuminate\View\Component;
-
-class FlashContainer extends Component
+class FlashContainer extends HotwireComponent
 {
     public function __construct(
         public string $id = 'flash-container',
@@ -32,6 +30,6 @@ class FlashContainer extends Component
 
     public function render()
     {
-        return view('hotwire::components.flash-container.flash-container');
+        return $this->renderComponentView('flash-container');
     }
 }

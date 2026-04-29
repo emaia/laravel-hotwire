@@ -12,7 +12,7 @@ return [
     'components' => [
         'confirm-dialog' => [
             'class' => ConfirmDialog::class,
-            'view' => 'hotwire::components.confirm-dialog.confirm-dialog',
+            'view' => 'hotwire::component-views.confirm-dialog',
             'docs' => 'docs/components/confirm-dialog.md',
             'category' => 'overlay',
             'description' => 'Accessible confirmation dialog that intercepts clicks before proceeding',
@@ -20,7 +20,7 @@ return [
         ],
         'flash-container' => [
             'class' => FlashContainer::class,
-            'view' => 'hotwire::components.flash-container.flash-container',
+            'view' => 'hotwire::component-views.flash-container',
             'docs' => 'docs/components/flash-container.md',
             'category' => 'feedback',
             'description' => 'Hosts the Sonner toaster instance and persists it across Turbo Drive navigations',
@@ -28,7 +28,7 @@ return [
         ],
         'flash-message' => [
             'class' => FlashMessage::class,
-            'view' => 'hotwire::components.flash-message.flash-message',
+            'view' => 'hotwire::component-views.flash-message',
             'docs' => 'docs/components/flash-message.md',
             'category' => 'feedback',
             'description' => 'Fires a toast notification from the Laravel session or from explicit props',
@@ -36,7 +36,7 @@ return [
         ],
         'loader' => [
             'class' => Loader::class,
-            'view' => 'hotwire::components.loader.loader',
+            'view' => 'hotwire::component-views.loader',
             'docs' => 'docs/components/loader.md',
             'category' => 'feedback',
             'description' => 'Animated SVG spinner — no JavaScript required',
@@ -44,7 +44,7 @@ return [
         ],
         'modal' => [
             'class' => Modal::class,
-            'view' => 'hotwire::components.modal.modal',
+            'view' => 'hotwire::component-views.modal',
             'docs' => 'docs/components/modal.md',
             'category' => 'overlay',
             'description' => 'Accessible modal with backdrop, animations, focus trap and Turbo integration',
@@ -52,7 +52,7 @@ return [
         ],
         'optimistic' => [
             'class' => Optimistic::class,
-            'view' => 'hotwire::components.optimistic.optimistic',
+            'view' => 'hotwire::component-views.optimistic',
             'docs' => 'docs/components/optimistic.md',
             'category' => 'turbo',
             'description' => 'Declares an inline optimistic Turbo Stream action for any Turbo trigger',
@@ -60,7 +60,7 @@ return [
         ],
         'timeago' => [
             'class' => Timeago::class,
-            'view' => 'hotwire::components.timeago.timeago',
+            'view' => 'hotwire::component-views.timeago',
             'docs' => 'docs/components/timeago.md',
             'category' => 'utility',
             'description' => 'Self-refreshing relative timestamp element wrapping the timeago controller',

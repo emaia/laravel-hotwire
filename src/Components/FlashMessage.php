@@ -3,9 +3,8 @@
 namespace Emaia\LaravelHotwire\Components;
 
 use Illuminate\Support\Facades\Session;
-use Illuminate\View\Component;
 
-class FlashMessage extends Component
+class FlashMessage extends HotwireComponent
 {
     public string $finalType;
 
@@ -44,6 +43,6 @@ class FlashMessage extends Component
 
     public function render()
     {
-        return view('hotwire::components.flash-message.flash-message');
+        return $this->renderComponentView('flash-message');
     }
 }

@@ -2,9 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
-use Illuminate\View\Component;
-
-class ConfirmDialog extends Component
+class ConfirmDialog extends HotwireComponent
 {
     public function __construct(
         public string $title = '',
@@ -26,6 +24,6 @@ class ConfirmDialog extends Component
 
     public function render()
     {
-        return view('hotwire::components.confirm-dialog.confirm-dialog');
+        return $this->renderComponentView('confirm-dialog');
     }
 }

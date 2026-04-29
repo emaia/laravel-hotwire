@@ -2,9 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
-use Illuminate\View\Component;
-
-class Optimistic extends Component
+class Optimistic extends HotwireComponent
 {
     public function __construct(
         public string $target = '',
@@ -14,6 +12,6 @@ class Optimistic extends Component
 
     public function render()
     {
-        return view('hotwire::components.optimistic.optimistic');
+        return $this->renderComponentView('optimistic');
     }
 }

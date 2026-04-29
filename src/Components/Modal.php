@@ -2,9 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
-use Illuminate\View\Component;
-
-class Modal extends Component
+class Modal extends HotwireComponent
 {
     public function __construct(
         public string $id = '',
@@ -22,6 +20,6 @@ class Modal extends Component
 
     public function render()
     {
-        return view('hotwire::components.modal.modal');
+        return $this->renderComponentView('modal');
     }
 }

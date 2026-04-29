@@ -17,7 +17,7 @@ It lives in [`src/Registry/catalog.php`](../src/Registry/catalog.php) and is con
 ```php
 'modal' => [
     'class'       => \Emaia\LaravelHotwire\Components\Modal::class,
-    'view'        => 'hotwire::components.modal.modal',
+    'view'        => 'hotwire::component-views.modal',
     'docs'        => 'docs/components/modal.md',
     'category'    => 'overlay',
     'controllers' => ['modal'],
@@ -55,7 +55,7 @@ The identifier is derived automatically: `/` → `--`, `_` → `-`.
 
 ## Adding a new component
 
-1. Create the PHP class in `src/Components/` and the Blade view in `resources/views/components/`.
+1. Create the PHP class in `src/Components/` and the Blade view in `resources/views/component-views/`.
 2. Add the component entry to `catalog.php`. Reference every required Stimulus controller by key.
 3. If new controllers are needed, add their entries too (see [Adding a new controller](#adding-a-new-controller)).
 4. Create `tests/Components/<Name>Test.php` covering rendering and props (follow `tests/Components/ModalTest.php` as reference).

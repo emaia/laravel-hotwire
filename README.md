@@ -385,7 +385,7 @@ Example component entry:
 ```php
 'modal' => [
     'class' => \Emaia\LaravelHotwire\Components\Modal::class,
-    'view' => 'hotwire::components.modal.modal',
+    'view' => 'hotwire::component-views.modal',
     'docs' => 'docs/components/modal.md',
     'category' => 'overlay',
     'controllers' => ['modal'],

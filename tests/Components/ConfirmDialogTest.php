@@ -3,6 +3,7 @@
 use Emaia\LaravelHotwire\Components\ConfirmDialog;
 use Emaia\LaravelHotwire\LaravelHotwireServiceProvider;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\File;
 
 it('renders with default props', function () {
     $view = $this->blade('<x-hwc::confirm-dialog title="Delete item?"><button>x</button></x-hwc::confirm-dialog>');
@@ -130,6 +131,32 @@ it('registers with custom prefix', function () {
     $provider->packageBooted();
 
     expect(Blade::getClassComponentAliases())->toHaveKey('custom::confirm-dialog');
+});
+
+it('registers literal component namespaces for static analysis', function () {
+    expect(Blade::getClassComponentNamespaces())
+        ->toHaveKey('hwc', 'Emaia\\LaravelHotwire\\Components')
+        ->toHaveKey('hotwire', 'Emaia\\LaravelHotwire\\Components');
+});
+
+it('does not expose internal view paths as anonymous components', function () {
+    $this->blade('<x-hotwire::confirm-dialog.confirm-dialog title="Nested"><button>x</button></x-hotwire::confirm-dialog.confirm-dialog>');
+})->throws(InvalidArgumentException::class);
+
+it('keeps legacy published view overrides working', function () {
+    $path = resource_path('views/vendor/hotwire/components/confirm-dialog/confirm-dialog.blade.php');
+
+    File::ensureDirectoryExists(dirname($path));
+    File::put($path, '<div data-test="legacy-confirm">{{ $title }}</div>');
+
+    try {
+        $view = $this->blade('<x-hwc::confirm-dialog title="Legacy override"><button>x</button></x-hwc::confirm-dialog>');
+
+        $view->assertSee('data-test="legacy-confirm"', false);
+        $view->assertSee('Legacy override');
+    } finally {
+        File::delete($path);
+    }
 });
 
 it('renders using :: namespace syntax', function () {

@@ -15,6 +15,8 @@ use Spatie\LaravelPackageTools\PackageServiceProvider;
 
 class LaravelHotwireServiceProvider extends PackageServiceProvider
 {
+    private const string COMPONENT_NAMESPACE = 'Emaia\\LaravelHotwire\\Components';
+
     public function configurePackage(Package $package): void
     {
         $package
@@ -36,11 +38,17 @@ class LaravelHotwireServiceProvider extends PackageServiceProvider
         $prefix = config('hotwire.prefix', 'hwc');
         $registry = HotwireRegistry::make();
 
+        if ($prefix === 'hwc') {
+            Blade::componentNamespace(self::COMPONENT_NAMESPACE, 'hwc');
+        }
+
         foreach ($registry->bladeComponentAliases($prefix) as $alias => $class) {
             Blade::component($class, $alias);
         }
 
         if ($prefix !== 'hotwire') {
+            Blade::componentNamespace(self::COMPONENT_NAMESPACE, 'hotwire');
+
             foreach ($registry->bladeComponentAliases('hotwire') as $alias => $class) {
                 Blade::component($class, $alias);
             }
