@@ -28,4 +28,17 @@ class Error extends Component
     {
         return view('hotwire::component-views.error');
     }
+
+    public function data(): array
+    {
+        $data = parent::data();
+
+        foreach (['name', 'errorKey', 'id'] as $key) {
+            if (($data[$key] ?? null) === null) {
+                unset($data[$key]);
+            }
+        }
+
+        return $data;
+    }
 }

@@ -10,7 +10,7 @@
 
 <label
     @if ($resolvedFor) for="{{ $resolvedFor }}" @endif
-    {{ $attributes->class(['hwc-label', $class])->only('class') }}
+    {{ $attributes->class(['hwc-label', $class]) }}
 >
     {{ trim($slot) !== '' ? $slot : $value }}
 

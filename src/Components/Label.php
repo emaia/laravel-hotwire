@@ -21,4 +21,17 @@ class Label extends Component
     {
         return view('hotwire::component-views.label');
     }
+
+    public function data(): array
+    {
+        $data = parent::data();
+
+        foreach (['name', 'for'] as $key) {
+            if (($data[$key] ?? null) === null) {
+                unset($data[$key]);
+            }
+        }
+
+        return $data;
+    }
 }
