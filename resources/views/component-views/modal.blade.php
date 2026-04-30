@@ -47,7 +47,13 @@
         >
             <div @class(['overflow-hidden rounded-lg bg-white shadow-xl', $class])>
                 <div class="max-h-[calc(100vh-80px)] w-full overflow-y-auto">
-                    {{ $slot }}
+                    @if ($frame !== null)
+                        <turbo-frame id="{{ $frame }}" data-modal-target="dynamicContent">
+                            {{ $slot }}
+                        </turbo-frame>
+                    @else
+                        {{ $slot }}
+                    @endif
                 </div>
             </div>
 

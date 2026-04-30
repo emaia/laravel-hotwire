@@ -30,8 +30,8 @@ server-driven path only when the confirmation itself needs server context.
 ## Setup
 
 Assumes the [layout-shared modal](./modal-patterns.md#pattern-2--layout-shared-modal) and
-[frame-or-page](./frame-or-page.md) recipes — one `<x-hwc::modal id="modal">` in the layout, one
-`<turbo-frame id="modal">` inside it.
+[frame-or-page](./frame-or-page.md) recipes — one `<x-hwc::modal frame="modal">` host in the
+layout.
 
 ### 1. Routes
 
@@ -99,9 +99,10 @@ public function confirmDestroy(Task $task)
 </x-layouts.modal-base>
 ```
 
-The `modal-base` layout (from the [frame-or-page recipe](./frame-or-page.md)) wraps the content in a
-`<turbo-frame id="modal">` when called via Turbo Frame, or in the dashboard layout otherwise. The
-confirmation page is bookmarkable — refreshing it shows a standalone confirmation page.
+The `modal-base` layout (from the [frame-or-page recipe](./frame-or-page.md)) wraps the response in
+`<turbo-frame id="modal">` when called via Turbo Frame. That response lands in the frame rendered by
+`<x-hwc::modal frame="modal">`. Otherwise, the same view renders in the dashboard layout and stays
+bookmarkable.
 
 ### 5. The destroy action
 
@@ -114,7 +115,7 @@ public function destroy(Task $task)
 
     return turbo_stream()
         ->remove(dom_id($task))
-        ->closeModal('modal')
+        ->update('modal')
         ->flash('success', 'Task deleted');
 }
 ```
@@ -196,4 +197,4 @@ real route, and the response is a Turbo Stream that Turbo Drive applies to the p
 - [Modal patterns](./modal-patterns.md) — the layout-shared setup this recipe builds on.
 - [Frame-or-page views](./frame-or-page.md) — the layout that makes the confirmation view dual-mode.
 - [Server-driven modals](./server-driven-modals.md) — opening and closing modals from the server.
-- [Composing streams](./composing-streams.md) — chaining `remove + closeModal + flash`.
+- [Composing streams](./composing-streams.md) — chaining `remove + update + flash`.

@@ -17,7 +17,7 @@ Each recipe is self-contained — pick the one that matches your use case.
   guards).
 - [Multi-stage forms](./multi-stage-forms.md) — wizards built on a persistent draft model and a
   single Turbo Frame. Per-step validation, browser back, resume-where-you-left-off, no client state.
-- [Composing streams](./composing-streams.md) — chain `refresh`, `closeModal`, `flash` and friends to
+- [Composing streams](./composing-streams.md) — chain `refresh`, `update`, `flash` and friends to
   describe the full UI transition in a single response.
 
 ## See also
