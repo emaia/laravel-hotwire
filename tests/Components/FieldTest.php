@@ -17,17 +17,17 @@ beforeEach(function () {
 
 // --- Wrapper structure ---
 
-it('renders a wrapper div with hwc-field class', function () {
+it('renders a wrapper div with field class', function () {
     $view = $this->blade('<x-hwc::field name="email"><span>x</span></x-hwc::field>');
 
-    $view->assertSee('hwc-field', false);
+    $view->assertSee('field', false);
     $view->assertSee('<span>x</span>', false);
 });
 
 it('merges custom class on wrapper', function () {
     $view = $this->blade('<x-hwc::field name="email" class="space-y-1"><span>x</span></x-hwc::field>');
 
-    $view->assertSee('hwc-field', false);
+    $view->assertSee('field', false);
     $view->assertSee('space-y-1', false);
 });
 
@@ -88,7 +88,7 @@ it('propagates required to nested label and input', function () {
         </x-hwc::field>
     ');
 
-    $view->assertSee('hwc-required', false);
+    $view->assertSee('required', false);
     $view->assertSee('aria-required="true"', false);
 });
 

@@ -48,7 +48,7 @@ it('prefers slot over value when both provided', function () {
 it('renders required marker when required', function () {
     $view = $this->blade('<x-hwc::label for="email" required>E-mail</x-hwc::label>');
 
-    $view->assertSee('hwc-required', false);
+    $view->assertSee('required', false);
     $view->assertSee('*');
     $view->assertSee('aria-hidden="true"', false);
 });
@@ -62,7 +62,7 @@ it('uses custom required label', function () {
 it('does not render required marker by default', function () {
     $view = $this->blade('<x-hwc::label for="email">E-mail</x-hwc::label>');
 
-    $view->assertDontSee('hwc-required', false);
+    $view->assertDontSee('required', false);
 });
 
 // --- Optional marker ---
@@ -70,15 +70,15 @@ it('does not render required marker by default', function () {
 it('renders optional marker when optional', function () {
     $view = $this->blade('<x-hwc::label for="email" optional>E-mail</x-hwc::label>');
 
-    $view->assertSee('hwc-optional', false);
+    $view->assertSee('optional', false);
     $view->assertSee('(opcional)');
 });
 
 it('does not render optional when required is set', function () {
     $view = $this->blade('<x-hwc::label for="email" required optional>E-mail</x-hwc::label>');
 
-    $view->assertSee('hwc-required', false);
-    $view->assertDontSee('hwc-optional', false);
+    $view->assertSee('required', false);
+    $view->assertDontSee('optional', false);
 });
 
 // --- Info tooltip ---
@@ -98,10 +98,10 @@ it('does not render info when not provided', function () {
 
 // --- Class merge ---
 
-it('merges custom class with hwc-label', function () {
+it('merges custom class with label', function () {
     $view = $this->blade('<x-hwc::label for="email" class="text-sm font-bold">E-mail</x-hwc::label>');
 
-    $view->assertSee('hwc-label', false);
+    $view->assertSee('label', false);
     $view->assertSee('text-sm font-bold', false);
 });
 
