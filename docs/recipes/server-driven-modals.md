@@ -6,18 +6,28 @@ Open and close `<x-hwc::modal>` instances from controller responses, without wri
 
 | Scenario                                                | Recommended path                                      |
 |---------------------------------------------------------|-------------------------------------------------------|
-| User clicks a link → open modal with server content     | Turbo Frame + modal `dynamicContent` observer         |
-| Form submission → close the open modal                  | `turbo_stream()->closeModal($id)`                     |
-| Form submission → close + refresh underlying page       | `turbo_stream()->refresh(...)->closeModal($id)`       |
+| User clicks a link → open modal with server content     | `<x-hwc::modal frame="modal">` + Turbo Frame link     |
+| Form submission → close the open frame-driven modal     | `turbo_stream()->update('modal', '')`                 |
+| Form submission → close + refresh underlying page       | `turbo_stream()->refresh(...)->update('modal', '')`   |
 | Frame content cleared → modal closes itself             | `turbo_stream()->update($frameId, '')`                |
 
 ## Opening: Turbo Frame as the natural path
 
-The modal component watches its `dynamicContent` target for changes. When a Turbo Frame inside that
-target receives content, the modal opens automatically. When the content is cleared, it closes.
+The modal component watches the Turbo Frame rendered by `frame="modal"`. When that frame receives
+content, the modal opens automatically. When the content is cleared, it closes.
 
 This is the path you want for most "open with content" flows. See the
 [frame-or-page recipe](./frame-or-page.md) for the full setup.
+
+```blade
+<x-hwc::modal frame="modal">
+    <x-slot:loading_template>
+        <div class="flex items-center justify-center p-12">
+            <span>Loading...</span>
+        </div>
+    </x-slot:loading_template>
+</x-hwc::modal>
+```
 
 ```blade
 <a href="{{ route('posts.edit', $post) }}" data-turbo-frame="modal">
@@ -39,29 +49,37 @@ Two equivalent paths, depending on whether the modal is frame-driven or static.
 ### Frame-driven modal — clear the frame
 
 ```php
-return turbo_stream()->update('modal', '');
+return turbo_stream()->update('modal');
 ```
 
-The `dynamicContent` observer sees the empty frame and closes the modal. Cleanest option when the
-modal is content-driven.
+The modal closes with its transition, then the frame is cleared. Cleanest option when the modal is
+content-driven.
 
-### Static modal — append the auto-close controller
+### Remove an open modal root after closing
 
-For modals that don't have a Turbo Frame inside, append a self-removing
+If the stream targets the modal root with empty content, the modal controller lets the close
+animation run before Turbo clears the element:
+
+```php
+return turbo_stream()->update('edit-post');
+```
+
+Use this when the modal markup is disposable. For reusable layout modals, clear the frame instead.
+
+### Static modal — close without removing markup
+
+For modals that don't have a Turbo Frame inside and should stay in the DOM, append a self-removing
 [`modal-auto-close`](../controllers/modal-auto-close.md) marker:
 
 ```php
 return turbo_stream()->append('edit-post', '<span data-controller="modal-auto-close"></span>');
 ```
 
-Or use the [`closeModal` macro](../components/modal.md#convenience-macro) for the same
-effect with better DX:
+For disposable static modal markup, you can also target the modal root with an empty update:
 
 ```php
-return turbo_stream()->closeModal('edit-post');
+return turbo_stream()->update('edit-post');
 ```
-
-The macro handles the `<span>` boilerplate and accepts the modal id directly.
 
 ## Combining with other streams
 
@@ -72,7 +90,7 @@ needs to do — refresh the underlying list, fire a toast, etc. See
 ## See also
 
 - [`<x-hwc::modal>`](../components/modal.md) — the modal component.
-- [`modal-auto-close`](../controllers/modal-auto-close.md) — the controller that powers
-  `closeModal()`.
+- [`modal-auto-close`](../controllers/modal-auto-close.md) — closes reusable static modals without
+  removing their markup.
 - [Frame-or-page views](./frame-or-page.md) — the canonical pattern for opening modals with server
   content.

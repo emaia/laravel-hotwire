@@ -325,6 +325,7 @@ it('shows not published for a ts controller', function () {
 });
 
 it('shows up to date when ts controller matches package version', function () {
+    writePackageJson(['name' => 'app', 'devDependencies' => ['date-fns' => '^4.1.0']]);
     publishController('timeago', $this->targetDir);
     writeView('page.blade.php', '<x-hwc::timeago :datetime="now()" />');
 

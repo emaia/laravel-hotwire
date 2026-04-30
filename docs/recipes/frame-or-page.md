@@ -11,7 +11,7 @@ A typical CRUD flow has two ways to open a record's "edit" form:
 - From a direct link / bookmark / refresh → users expect a **standalone page** (URL is shareable,
   back button works, refresh keeps you on the form).
 
-Naïvely, that's two views and two controllers — or one view with branching logic at every level.
+Natively, that's two views and two controllers — or one view with branching logic at every level.
 
 ## The pattern
 
@@ -67,8 +67,7 @@ The view itself doesn't know — and doesn't care — whether it's rendered as a
     <header>...</header>
     <main>{{ $slot }}</main>
 
-    <x-hwc::modal id="modal">
-        <turbo-frame id="modal" data-modal-target="dynamicContent"></turbo-frame>
+    <x-hwc::modal frame="modal">
         <x-slot:loading_template>
             <div class="flex items-center justify-center p-12">
                 <span>Loading...</span>
@@ -82,9 +81,9 @@ The view itself doesn't know — and doesn't care — whether it's rendered as a
 </html>
 ```
 
-The modal host lives in the dashboard layout — available on every page. Its `dynamicContent` target
-is the same `<turbo-frame id="modal">` the layout component wraps content with. When the frame
-receives content, the modal's content observer opens it automatically.
+The modal host lives in the dashboard layout — available on every page. `frame="modal"` renders the
+receiving `<turbo-frame id="modal" data-modal-target="dynamicContent">`. When the frame receives
+content, the modal's content observer opens it automatically.
 
 ### 4. Links choose the experience
 
@@ -97,8 +96,9 @@ Trigger the modal:
 ```
 
 `data-turbo-frame="modal"` makes Turbo issue the request scoped to the frame, sending the
-`Turbo-Frame: modal` header. The layout sees it and renders only the frame content. The dashboard's
-`<turbo-frame id="modal">` receives the response, the modal observer fires, and the modal opens.
+`Turbo-Frame: modal` header. The layout sees it and renders only the frame content. The frame
+rendered by `<x-hwc::modal frame="modal">` receives the response, the modal observer fires, and the
+modal opens.
 
 The modal controller listens globally for clicks on `a[data-turbo-frame="<its frame id>"]`, so the
 loading template fires automatically — no `data-action` required, even when the link lives outside
@@ -126,14 +126,13 @@ public function update(Request $request, User $user)
 
     return turbo_stream()
         ->refresh(method: 'morph')
-        ->closeModal('modal')
+        ->update('modal')
         ->flash('success', 'Password updated');
 }
 ```
 
-Requires the [`closeModal` macro](../components/modal.md#convenience-macro) and the
-[`flash` macro](../components/flash-message.md#convenience-macro) registered in your service
-provider.
+Requires the [`flash` macro](../components/flash-message.md#convenience-macro) registered in your
+service provider.
 
 ## Why this works well
 
@@ -156,7 +155,7 @@ provider.
 ## See also
 
 - [`<x-hwc::modal>`](../components/modal.md) — the modal primitive.
-- [`modal` controller](../controllers/modal.md) — `dynamicContent` target and content observer.
+- [`modal` controller](../controllers/modal.md) — dynamic content observer internals.
 - [Server-driven modals](./server-driven-modals.md) — closing and replacing content from the server.
-- [Composing streams](./composing-streams.md) — chain `refresh + closeModal + flash` for clean
+- [Composing streams](./composing-streams.md) — chain `refresh + update + flash` for clean
   success responses.

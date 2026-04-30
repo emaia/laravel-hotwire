@@ -1,9 +1,8 @@
 # Composing streams
 
 Describe a complete UI transition in a single response by chaining Turbo Stream operations.
-Combined with the [`flash`](../components/flash-message.md#convenience-macro) and
-[`closeModal`](../components/modal.md#convenience-macro) macros, controller actions stay
-small and declarative.
+Combined with the [`flash`](../components/flash-message.md#convenience-macro) macro, controller
+actions stay small and declarative.
 
 ## The macros
 
@@ -20,9 +19,6 @@ TurboStreamBuilder::macro('flash', function (string $type, string $message, ?str
     ));
 });
 
-TurboStreamBuilder::macro('closeModal', function (string $id) {
-    return $this->append($id, '<span data-controller="modal-auto-close"></span>');
-});
 ```
 
 ## Common compositions
@@ -39,14 +35,13 @@ public function update(Request $request, Post $post)
 
     return turbo_stream()
         ->refresh(method: 'morph')
-        ->closeModal('modal')
+        ->update('modal')
         ->flash('success', 'Post updated');
 }
 ```
 
 Order matters less than you might think — Turbo applies streams in order, but `refresh` morphs the
-DOM in place, the modal close runs on the morphed modal, and the flash appends to the persistent
-flash container.
+DOM in place, the modal frame is cleared, and the flash appends to the persistent flash container.
 
 ### Optimistic action rejected → revert + explain
 
@@ -105,6 +100,5 @@ public function store(Request $request)
 ## See also
 
 - [`flash` macro](../components/flash-message.md#convenience-macro)
-- [`closeModal` macro](../components/modal.md#convenience-macro)
 - [Server-driven modals](./server-driven-modals.md)
 - [Frame-or-page views](./frame-or-page.md)

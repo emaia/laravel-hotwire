@@ -31,8 +31,11 @@ export default class ModalController extends Controller {
     contentState = "";
     dismissedWhileLoading = false;
     lastClickedLink = null;
+    pendingEmptyStreamRender = null;
 
     get isOpen() {
+        if (!this.hasModalTarget) return false;
+
         return this.modalTarget.getAttribute("data-open") === "true";
     }
 
@@ -59,6 +62,7 @@ export default class ModalController extends Controller {
         document.addEventListener("keydown", this.handleFocusTrap);
         document.addEventListener("keydown", this.handleEscapeKey);
         document.addEventListener("click", this.trackClickedLink, true);
+        document.addEventListener("turbo:before-stream-render", this.handleBeforeStreamRender);
 
         if (this.isOpen) {
             this.lockScrollClasses.forEach((cls) => document.body.classList.toggle(cls, this.lockScrollValue));
@@ -135,7 +139,11 @@ export default class ModalController extends Controller {
             this.modalTarget.hidden = true;
             this.isClosing = false;
 
+            const pendingEmptyStreamRender = this.pendingEmptyStreamRender;
+            this.pendingEmptyStreamRender = null;
+
             this.#dispatchEvent("modal:closed");
+            pendingEmptyStreamRender?.();
             this.clearContent();
         }, this.closeDurationValue);
 
@@ -296,7 +304,25 @@ export default class ModalController extends Controller {
         document.removeEventListener("keydown", this.handleFocusTrap);
         document.removeEventListener("keydown", this.handleEscapeKey);
         document.removeEventListener("click", this.trackClickedLink, true);
+        document.removeEventListener("turbo:before-stream-render", this.handleBeforeStreamRender);
     }
+
+    handleBeforeStreamRender = (event) => {
+        const stream = event.target;
+
+        if (!this.#isEmptyStreamForModalCloseTarget(stream) || (!this.isOpen && !this.isClosing)) {
+            return;
+        }
+
+        event.preventDefault();
+        this.pendingEmptyStreamRender = () => this.#renderStream(event);
+
+        if (this.isClosing) {
+            return;
+        }
+
+        this.close();
+    };
 
     #isClickInside(event, element) {
         if (!element) return false;
@@ -333,7 +359,7 @@ export default class ModalController extends Controller {
     }
 
     handleFocusTrap(event) {
-        if (event.key !== "Tab" || this.modalTarget.hidden || !this.isOpen) return;
+        if (event.key !== "Tab" || !this.hasModalTarget || this.modalTarget.hidden || !this.isOpen) return;
 
         const focusableElements = this.#getFocusableElements();
         if (focusableElements.length === 0) return;
@@ -364,5 +390,37 @@ export default class ModalController extends Controller {
                 "select:not([disabled]), textarea:not([disabled]), " +
                 'button:not([disabled]), [tabindex]:not([tabindex="-1"])',
         );
+    }
+
+    #isEmptyStreamForModalCloseTarget(stream) {
+        if (!stream) return false;
+
+        const action = stream.getAttribute("action");
+        const target = stream.getAttribute("target");
+
+        if (!["update", "replace"].includes(action) || !this.#isModalCloseTarget(target)) {
+            return false;
+        }
+
+        const template = stream.querySelector("template");
+        if (!template) return true;
+
+        return template.innerHTML.trim() === "";
+    }
+
+    #isModalCloseTarget(target) {
+        if (!target) return false;
+        if (this.element.id && target === this.element.id) return true;
+
+        return this.hasDynamicContentTarget && this.dynamicContentTarget.id && target === this.dynamicContentTarget.id;
+    }
+
+    #renderStream(event) {
+        if (typeof event.detail?.render === "function") {
+            event.detail.render(event.target);
+            return;
+        }
+
+        event.target.performAction?.();
     }
 }

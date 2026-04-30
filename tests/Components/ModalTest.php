@@ -3,6 +3,7 @@
 use Emaia\LaravelHotwire\Components\Modal;
 use Emaia\LaravelHotwire\LaravelHotwireServiceProvider;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\View\ViewException;
 
 it('renders with default props', function () {
     $view = $this->blade('<x-hwc::modal>Content</x-hwc::modal>');
@@ -52,6 +53,24 @@ it('renders loading template slot', function () {
     $view->assertSee('data-modal-target="loadingTemplate"', false);
     $view->assertSee('Loading...');
 });
+
+it('renders a dynamic turbo frame when frame is provided', function () {
+    $view = $this->blade('<x-hwc::modal id="modal-shell" frame="modal">Content</x-hwc::modal>');
+
+    $view->assertSee('<turbo-frame id="modal" data-modal-target="dynamicContent">', false);
+    $view->assertSee('Content');
+});
+
+it('does not render a dynamic turbo frame when frame is empty', function () {
+    $view = $this->blade('<x-hwc::modal frame="">Content</x-hwc::modal>');
+
+    $view->assertDontSee('<turbo-frame', false);
+    $view->assertSee('Content');
+});
+
+it('rejects matching modal id and frame id', function () {
+    $this->blade('<x-hwc::modal id="modal" frame="modal">Content</x-hwc::modal>')->render();
+})->throws(ViewException::class, 'The modal root id and frame id must be different.');
 
 it('sets custom id', function () {
     $view = $this->blade('<x-hwc::modal id="my-modal">Content</x-hwc::modal>');

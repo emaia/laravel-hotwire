@@ -40,9 +40,7 @@ makes sense (list rows, navigation, deep in a partial) — Stimulus picks it up 
     <header>...</header>
     <main>{{ $slot }}</main>
 
-    <x-hwc::modal id="modal">
-        <turbo-frame id="modal" data-modal-target="dynamicContent"></turbo-frame>
-
+    <x-hwc::modal frame="modal">
         <x-slot:loading_template>
             <div class="flex items-center justify-center p-12">
                 <span>Loading...</span>
@@ -66,9 +64,9 @@ makes sense (list rows, navigation, deep in a partial) — Stimulus picks it up 
 @endforeach
 ```
 
-The link clicks issues a frame-scoped request → response lands in the layout's `<turbo-frame
-id="modal">` → the modal's content observer opens it. The `showLoading` action fires automatically
-because the controller listens globally for `a[data-turbo-frame="modal"]` clicks.
+The link click issues a frame-scoped request → the response lands in the `<turbo-frame id="modal">`
+rendered by `frame="modal"` → the modal's content observer opens it. The `showLoading` action fires
+automatically because the controller listens globally for `a[data-turbo-frame="modal"]` clicks.
 
 **When to use:** CRUD lists, dashboards with multiple modal-driven actions, anywhere you want
 modals without duplicating markup.
@@ -126,8 +124,11 @@ No Turbo Frame, no dynamic content. The modal body is rendered server-side once 
 acceptance, embedded media).
 
 **Closing from the server:** if the static modal is opened by user action and closed by a form
-submission elsewhere, use the [`closeModal` macro](../components/modal.md#convenience-macro)
-plus the [`modal-auto-close`](../controllers/modal-auto-close.md) controller.
+submission elsewhere, use an empty update against the modal root:
+
+```php
+return turbo_stream()->update('welcome-modal');
+```
 
 ## Component vs raw controller
 
@@ -151,4 +152,4 @@ component already exposes props or Stimulus values — no need to drop down.
 - [`modal` controller](../controllers/modal.md) — raw controller reference.
 - [Frame-or-page views](./frame-or-page.md) — render the same view as a page or as a modal.
 - [Server-driven modals](./server-driven-modals.md) — open and close from controller responses.
-- [Composing streams](./composing-streams.md) — chain `refresh + closeModal + flash`.
+- [Composing streams](./composing-streams.md) — chain `refresh + update + flash`.

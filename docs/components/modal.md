@@ -35,15 +35,16 @@ The X button is shown by default (`close-button` is `true`). To hide it:
 
 ## Props
 
-| Prop                   | Type     | Default            | Description                                     |
-|------------------------|----------|--------------------|-------------------------------------------------|
-| `id`                   | `string` | `uniqid('modal-')` | Root element ID                                 |
-| `allow-small-width`    | `bool`   | `false`            | Allows width smaller than 50% on `md+` screens  |
-| `allow-full-width`     | `bool`   | `true`             | Allows full width (no `max-w-[50%]`)            |
-| `class`                | `string` | `''`               | Additional CSS classes on the content container |
-| `close-button`         | `bool`   | `true`             | Shows X button to close                         |
-| `fixed-top`            | `bool`   | `false`            | Pins the modal to the top with a margin         |
-| `prevent-reopen-delay` | `int`    | `1000`             | Delay (ms) before allowing reopen after closing |
+| Prop                   | Type      | Default            | Description                                     |
+|------------------------|-----------|--------------------|-------------------------------------------------|
+| `id`                   | `string`  | `uniqid('modal-')` | Root element ID                                 |
+| `allow-small-width`    | `bool`    | `false`            | Allows width smaller than 50% on `md+` screens  |
+| `allow-full-width`     | `bool`    | `true`             | Allows full width (no `max-w-[50%]`)            |
+| `class`                | `string`  | `''`               | Additional CSS classes on the content container |
+| `close-button`         | `bool`    | `true`             | Shows X button to close                         |
+| `fixed-top`            | `bool`    | `false`            | Pins the modal to the top with a margin         |
+| `frame`                | `?string` | `null`             | Renders a Turbo Frame dynamic content target    |
+| `prevent-reopen-delay` | `int`     | `1000`             | Delay (ms) before allowing reopen after closing |
 
 ## Root attributes
 
@@ -70,27 +71,33 @@ Stimulus values, ARIA attributes, ids, and data hooks:
 
 ## Dynamic content with Turbo Frames
 
-The modal supports content loaded via Turbo Frame. Use the `dynamicContent` target so the controller observes changes
-and opens/closes automatically:
+The modal supports content loaded via Turbo Frame. Use the `frame` prop to render a dynamic content
+target that the controller observes and opens/closes automatically:
 
-```html
+```blade
+<a href="/items/1/edit" data-turbo-frame="modal">
+    Edit
+</a>
 
-<x-hwc::modal>
-    <x-slot:trigger>
-        <a href="/items/1/edit" data-turbo-frame="modal-content">
-            Edit
-        </a>
-    </x-slot:trigger>
-
-    <turbo-frame id="modal-content" data-modal-target="dynamicContent">
-    </turbo-frame>
-
+<x-hwc::modal frame="modal">
     <x-slot:loading_template>
         <div class="flex items-center justify-center p-12">
             <span>Loading...</span>
         </div>
     </x-slot:loading_template>
 </x-hwc::modal>
+```
+
+`frame="modal"` renders this frame inside the modal body:
+
+```html
+<turbo-frame id="modal" data-modal-target="dynamicContent"></turbo-frame>
+```
+
+Use a different root `id` if you set one manually:
+
+```blade
+<x-hwc::modal id="modal-shell" frame="modal" />
 ```
 
 When the Turbo Frame receives content, the modal opens automatically. When the content is removed,
@@ -118,9 +125,7 @@ opens when that content arrives.
 Provided once via the slot — used for every trigger:
 
 ```blade
-<x-hwc::modal>
-    <turbo-frame id="modal-content" data-modal-target="dynamicContent"></turbo-frame>
-
+<x-hwc::modal frame="modal">
     <x-slot:loading_template>
         <div class="flex items-center justify-center p-12">
             <span class="animate-spin">⏳</span>
@@ -138,13 +143,13 @@ example):
 
 ```blade
 <a href="/posts/1/edit"
-   data-turbo-frame="modal-content"
+   data-turbo-frame="modal"
    data-loading-template="#form-skeleton">
     Edit post
 </a>
 
 <a href="/posts/1/comments"
-   data-turbo-frame="modal-content"
+   data-turbo-frame="modal"
    data-loading-template="#list-skeleton">
     View comments
 </a>
@@ -229,22 +234,7 @@ The modal closes automatically on `turbo:before-cache`, preventing ghost modals 
 For modals driven by a Turbo Frame, clearing the frame closes them via the content observer:
 
 ```php
-return turbo_stream()->update('modal-content', '');
-```
-
-For **static** modals (no Turbo Frame), append the [`modal-auto-close`](../../controllers/modal-auto-close.md)
-controller to an open modal by id:
-
-```php
-return turbo_stream()->append('edit-post', '<span data-controller="modal-auto-close"></span>');
-```
-
-Make sure the modal declares the same id you target:
-
-```blade
-<x-hwc::modal id="edit-post">
-    {{-- ... --}}
-</x-hwc::modal>
+return turbo_stream()->update('modal');
 ```
 
 ### Convenience macro
@@ -257,8 +247,8 @@ use Emaia\LaravelHotwireTurbo\TurboStreamBuilder;
 
 public function boot(): void
 {
-    TurboStreamBuilder::macro('closeModal', function (string $id) {
-        return $this->append($id, '<span data-controller="modal-auto-close"></span>');
+    TurboStreamBuilder::macro('closeModal', function (string $id = 'modal') {
+        return $this->update($id);
     });
 }
 ```
@@ -266,14 +256,12 @@ public function boot(): void
 Then any controller becomes a one-liner:
 
 ```php
-return turbo_stream()->closeModal('edit-post');
+return turbo_stream()->closeModal();
+return turbo_stream()->closeModal('edit-users');
 
 // or chained with a flash and a refresh
 return turbo_stream()
     ->refresh(method: 'morph')
-    ->closeModal('edit-post')
+    ->closeModal()
     ->flash('success', 'Post updated');
 ```
-
-> Requires the [`modal-auto-close`](../../controllers/modal-auto-close.md) controller to be published —
-> `php artisan hotwire:controllers modal-auto-close`.
