@@ -42,12 +42,15 @@ class LaravelHotwireServiceProvider extends PackageServiceProvider
             Blade::componentNamespace(self::COMPONENT_NAMESPACE, 'hwc');
         }
 
+        Blade::anonymousComponentNamespace('hotwire::components', $prefix);
+
         foreach ($registry->bladeComponentAliases($prefix) as $alias => $class) {
             Blade::component($class, $alias);
         }
 
         if ($prefix !== 'hotwire') {
             Blade::componentNamespace(self::COMPONENT_NAMESPACE, 'hotwire');
+            Blade::anonymousComponentNamespace('hotwire::components', 'hotwire');
 
             foreach ($registry->bladeComponentAliases('hotwire') as $alias => $class) {
                 Blade::component($class, $alias);

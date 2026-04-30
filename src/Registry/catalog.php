@@ -1,8 +1,11 @@
 <?php
 
 use Emaia\LaravelHotwire\Components\ConfirmDialog;
+use Emaia\LaravelHotwire\Components\Error;
 use Emaia\LaravelHotwire\Components\FlashContainer;
 use Emaia\LaravelHotwire\Components\FlashMessage;
+use Emaia\LaravelHotwire\Components\Input;
+use Emaia\LaravelHotwire\Components\Label;
 use Emaia\LaravelHotwire\Components\Loader;
 use Emaia\LaravelHotwire\Components\Modal;
 use Emaia\LaravelHotwire\Components\Optimistic;
@@ -19,6 +22,14 @@ return [
             'description' => 'Accessible confirmation dialog that intercepts clicks before proceeding',
             'controllers' => ['confirm-dialog'],
         ],
+        'error' => [
+            'class' => Error::class,
+            'view' => 'hotwire::component-views.error',
+            'docs' => 'docs/components/error.md',
+            'category' => 'forms',
+            'description' => 'Always-present error container bound to a form field via name/errorKey',
+            'controllers' => [],
+        ],
         'flash-container' => [
             'class' => FlashContainer::class,
             'view' => 'hotwire::component-views.flash-container',
@@ -34,6 +45,22 @@ return [
             'category' => 'feedback',
             'description' => 'Fires a toast notification from the Laravel session or from explicit props',
             'controllers' => ['toast'],
+        ],
+        'input' => [
+            'class' => Input::class,
+            'view' => 'hotwire::component-views.input',
+            'docs' => 'docs/components/input.md',
+            'category' => 'forms',
+            'description' => 'Form input with auto id/errorKey, ARIA, optional mask/clear/counter/auto-select',
+            'controllers' => ['auto-select', 'clear-input', 'char-counter', 'input-mask'],
+        ],
+        'label' => [
+            'class' => Label::class,
+            'view' => 'hotwire::component-views.label',
+            'docs' => 'docs/components/label.md',
+            'category' => 'forms',
+            'description' => 'Form label with required/optional markers and optional tooltip',
+            'controllers' => [],
         ],
         'loader' => [
             'class' => Loader::class,
