@@ -25,6 +25,13 @@ afterEach(function () {
     } elseif (File::exists($this->packageJsonPath)) {
         File::delete($this->packageJsonPath);
     }
+
+    foreach (['bun.lock', 'pnpm-lock.yaml', 'yarn.lock', 'package-lock.json'] as $lock) {
+        $path = base_path($lock);
+        if (File::exists($path)) {
+            File::delete($path);
+        }
+    }
 });
 
 // --- Helpers ---
