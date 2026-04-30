@@ -185,43 +185,7 @@ it('renders clear button with type=button', function () {
     $view->assertSee('type="button"', false);
 });
 
-// --- Wrapper: counter ---
-
-it('renders wrapper with char-counter controller when counter is set', function () {
-    $view = $this->blade('<x-hwc::input name="title" :counter="80" />');
-
-    $view->assertSee('data-controller="char-counter"', false);
-    $view->assertSee('data-char-counter-target="input"', false);
-    $view->assertSee('data-char-counter-target="counter"', false);
-});
-
-it('sets maxlength when counter is set', function () {
-    $view = $this->blade('<x-hwc::input name="title" :counter="80" />');
-
-    $view->assertSee('maxlength="80"', false);
-});
-
-it('sets countdown value when countdown is true', function () {
-    $view = $this->blade('<x-hwc::input name="title" :counter="80" countdown />');
-
-    $view->assertSee('data-char-counter-countdown-value="true"', false);
-});
-
-it('counter container has aria-live polite', function () {
-    $view = $this->blade('<x-hwc::input name="title" :counter="80" />');
-
-    $view->assertSee('aria-live="polite"', false);
-});
-
 // --- Wrapper: combination ---
-
-it('combines clearable and counter controllers on wrapper', function () {
-    $view = $this->blade('<x-hwc::input name="q" clearable :counter="50" />');
-
-    $view->assertSee('data-controller="clear-input char-counter"', false);
-    $view->assertSee('data-clear-input-target="input"', false);
-    $view->assertSee('data-char-counter-target="input"', false);
-});
 
 it('combines element + wrapper controllers correctly', function () {
     $view = $this->blade('<x-hwc::input name="q" clearable mask="cpf" auto-select />');

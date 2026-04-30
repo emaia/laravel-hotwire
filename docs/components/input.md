@@ -1,6 +1,6 @@
 # Input
 
-Form input with auto-derived `id`/`errorKey` from `name`, automatic `old()` merge, ARIA wiring, and optional Stimulus behaviors (`mask`, `clearable`, `auto-select`, `counter`).
+Form input with auto-derived `id`/`errorKey` from `name`, automatic `old()` merge, ARIA wiring, and optional Stimulus behaviors (`mask`, `clearable`, `auto-select`).
 
 ## Quick example
 
@@ -29,8 +29,6 @@ Renders an `<input>` with:
 | `clearable`     | `bool`         | `false`                        | Wrapper + clear button (controller `clear-input`)                 |
 | `auto-select`   | `bool`         | `false`                        | Selects content on focus (controller `auto-select`)               |
 | `mask`          | `string\|null` | `null`                         | Preset (`cpf`, `phone-br`, ...) or raw Maska string               |
-| `counter`       | `int\|null`    | `null`                         | Enables char counter and sets `maxlength`                         |
-| `countdown`     | `bool`         | `false`                        | Counter shows remaining instead of used                           |
 | `class`         | `string`       | `""`                           | Merged on `<input>`                                               |
 | `wrapper-class` | `string`       | `""`                           | Merged on the wrapper when one is present                         |
 
@@ -66,14 +64,18 @@ Unknown presets pass through as raw Maska strings.
 
 ## Inheriting from `<x-hwc::field>`
 
-When wrapped in `<x-hwc::field>`, `name`, `id`, `errorKey`, and `required` are inherited automatically:
+`<x-hwc::field>` is a thin context wrapper: it propagates `name`, `errorKey`, and `required` to nested `<x-hwc::label>`, `<x-hwc::input>`, and `<x-hwc::error>` via `@aware`. It does not auto-render any markup — you compose the children yourself:
 
 ```blade
-<x-hwc::field name="email" label="E-mail" required>
+<x-hwc::field name="email" required>
+    <x-hwc::label>E-mail</x-hwc::label>
     <x-hwc::input type="email" auto-select />
+    <x-hwc::error />
 </x-hwc::field>
 ```
 
+> **ARIA contract:** the input always emits `aria-describedby="{id}-error"`. For screen readers to find the description, you must render `<x-hwc::error>` inside the field. Forgetting it makes the reference dangle silently.
+
 ## Required controllers
 
-`hotwire:check` looks for `auto-select`, `clear-input`, `char-counter`, and `input-mask`. Only the ones you actually use need to be published.
+`hotwire:check` looks for `auto-select`, `clear-input`, and `input-mask`. Only the ones you actually use need to be published.

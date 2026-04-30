@@ -16,24 +16,17 @@
 
     $resolvedMask = $mask !== null ? MaskPresets::resolve($mask) : null;
 
-    $needsWrapper = $clearable || $counter !== null;
-
     $elementController = implode(' ', array_filter([
         $autoSelect ? 'auto-select' : null,
         $mask !== null ? 'input-mask' : null,
-    ]));
-
-    $wrapperController = implode(' ', array_filter([
-        $clearable ? 'clear-input' : null,
-        $counter !== null ? 'char-counter' : null,
     ]));
 
     $hasErrors = $resolvedErrorKey !== '' && $errors->has($resolvedErrorKey);
     $isRequired = ($attributes->has('required') && $attributes->get('required') !== false) || $required;
 @endphp
 
-@if ($needsWrapper)
-<span @class(['hwc-input', $wrapperClass]) data-controller="{{ $wrapperController }}" @if ($countdown) data-char-counter-countdown-value="true" @endif>
+@if ($clearable)
+<span @class(['hwc-input flex flex-col justify-center items-center relative', $wrapperClass]) data-controller="clear-input">
 @endif
 
 <input
@@ -47,27 +40,16 @@
     @if ($elementController !== '') data-controller="{{ $elementController }}" @endif
     @if ($mask !== null) data-input-mask-mask-value="{{ $resolvedMask }}" @endif
     @if ($clearable) data-clear-input-target="input" @endif
-    @if ($counter !== null) data-char-counter-target="input" maxlength="{{ $counter }}" @endif
-    {{ $attributes->class([$class])->whereDoesntStartWith(['data-controller', 'data-clear-input-', 'data-char-counter-', 'data-input-mask-'])->except(['required']) }}
+    {{ $attributes->class([$class])->whereDoesntStartWith(['data-controller', 'data-clear-input-', 'data-input-mask-'])->except(['required']) }}
 />
 
-@if ($needsWrapper)
-    @if ($clearable)
-        <button
-            type="button"
-            data-clear-input-target="clearButton"
-            class="clear-input-button"
-            tabindex="0"
-            aria-label="Clear"
-        >&times;</button>
-    @endif
-
-    @if ($counter !== null)
-        @isset($counterSlot)
-            {{ $counterSlot }}
-        @else
-            <small data-char-counter-target="counter" aria-live="polite"></small>
-        @endisset
-    @endif
+@if ($clearable)
+    <button
+        type="button"
+        data-clear-input-target="clearButton"
+        class="clear-input-button absolute inset-y-0- right-3 hidden items-center px-1 pb-0.5 rounded-full"
+        tabindex="0"
+        aria-label="Clear"
+    >&times;</button>
 </span>
 @endif

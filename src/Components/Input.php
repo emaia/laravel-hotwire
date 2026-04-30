@@ -16,8 +16,6 @@ class Input extends Component
         public bool $clearable = false,
         public bool $autoSelect = false,
         public ?string $mask = null,
-        public ?int $counter = null,
-        public bool $countdown = false,
         public string $class = '',
         public string $wrapperClass = '',
     ) {}

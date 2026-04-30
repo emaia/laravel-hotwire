@@ -51,8 +51,8 @@ return [
             'view' => 'hotwire::component-views.input',
             'docs' => 'docs/components/input.md',
             'category' => 'forms',
-            'description' => 'Form input with auto id/errorKey, ARIA, optional mask/clear/counter/auto-select',
-            'controllers' => ['auto-select', 'clear-input', 'char-counter', 'input-mask'],
+            'description' => 'Form input with auto id/errorKey, ARIA, optional mask/clear/auto-select',
+            'controllers' => ['auto-select', 'clear-input', 'input-mask'],
         ],
         'label' => [
             'class' => Label::class,

@@ -10,7 +10,7 @@ class Label extends Component
         public ?string $for = null,
         public ?string $name = null,
         public ?string $value = null,
-        public bool $required = false,
+        public ?bool $required = null,
         public string $requiredLabel = '*',
         public bool $optional = false,
         public ?string $info = null,
@@ -26,7 +26,7 @@ class Label extends Component
     {
         $data = parent::data();
 
-        foreach (['name', 'for'] as $key) {
+        foreach (['name', 'for', 'required'] as $key) {
             if (($data[$key] ?? null) === null) {
                 unset($data[$key]);
             }

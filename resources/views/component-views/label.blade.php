@@ -10,14 +10,14 @@
 
 <label
     @if ($resolvedFor) for="{{ $resolvedFor }}" @endif
-    {{ $attributes->class(['hwc-label', $class]) }}
+    {{ $attributes->class(['label', $class]) }}
 >
     {{ trim($slot) !== '' ? $slot : $value }}
 
     @if ($required)
-        <span class="hwc-required" aria-hidden="true">{{ $requiredLabel }}</span>
+        <span class="label-required" aria-hidden="true">{{ $requiredLabel }}</span>
     @elseif ($optional)
-        <span class="hwc-optional">(opcional)</span>
+        <span class="label-optional">(opcional)</span>
     @endif
 
     @if ($info)
