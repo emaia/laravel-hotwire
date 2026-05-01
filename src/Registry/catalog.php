@@ -3,6 +3,8 @@
 use Emaia\LaravelHotwire\Components\ConfirmDialog;
 use Emaia\LaravelHotwire\Components\Error;
 use Emaia\LaravelHotwire\Components\FlashContainer;
+use Emaia\LaravelHotwire\Components\CheckboxGroup;
+use Emaia\LaravelHotwire\Components\Form;
 use Emaia\LaravelHotwire\Components\FlashMessage;
 use Emaia\LaravelHotwire\Components\Input;
 use Emaia\LaravelHotwire\Components\Label;
@@ -10,6 +12,8 @@ use Emaia\LaravelHotwire\Components\Loader;
 use Emaia\LaravelHotwire\Components\Modal;
 use Emaia\LaravelHotwire\Components\Optimistic;
 use Emaia\LaravelHotwire\Components\ScrollProgress;
+use Emaia\LaravelHotwire\Components\Select;
+use Emaia\LaravelHotwire\Components\Textarea;
 use Emaia\LaravelHotwire\Components\Timeago;
 
 return [
@@ -21,6 +25,22 @@ return [
             'category' => 'overlay',
             'description' => 'Accessible confirmation dialog that intercepts clicks before proceeding',
             'controllers' => ['confirm-dialog'],
+        ],
+        'form' => [
+            'class' => Form::class,
+            'view' => 'hotwire::component-views.form',
+            'docs' => 'docs/components/form.md',
+            'category' => 'forms',
+            'description' => 'Form wrapper with optional Stimulus behaviors: auto-submit, unsaved-changes, clean-query-params, remote',
+            'controllers' => ['auto-submit', 'unsaved-changes', 'clean-query-params', 'remote-form'],
+        ],
+        'checkbox-group' => [
+            'class' => CheckboxGroup::class,
+            'view' => 'hotwire::component-views.checkbox-group',
+            'docs' => 'docs/components/checkbox-group.md',
+            'category' => 'forms',
+            'description' => 'Checkbox group with optional select-all master checkbox',
+            'controllers' => ['checkbox-select-all'],
         ],
         'error' => [
             'class' => Error::class,
@@ -61,6 +81,22 @@ return [
             'category' => 'forms',
             'description' => 'Form label with required/optional markers and optional tooltip',
             'controllers' => [],
+        ],
+        'select' => [
+            'class' => Select::class,
+            'view' => 'hotwire::component-views.select',
+            'docs' => 'docs/components/select.md',
+            'category' => 'forms',
+            'description' => 'Select dropdown with auto id/errorKey, ARIA, old() merge and placeholder support',
+            'controllers' => [],
+        ],
+        'textarea' => [
+            'class' => Textarea::class,
+            'view' => 'hotwire::component-views.textarea',
+            'docs' => 'docs/components/textarea.md',
+            'category' => 'forms',
+            'description' => 'Textarea with auto-resize and optional char counter',
+            'controllers' => ['auto-resize', 'char-counter'],
         ],
         'loader' => [
             'class' => Loader::class,

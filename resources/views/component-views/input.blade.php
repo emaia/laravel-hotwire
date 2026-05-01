@@ -16,9 +16,17 @@
 
     $resolvedMask = $mask !== null ? MaskPresets::resolve($mask) : null;
 
-    $elementController = implode(' ', array_filter([
+    $userController = trim($attributes->get('data-controller', ''));
+
+    $elementController = trim(implode(' ', array_filter([
+        $userController,
         $autoSelect ? 'auto-select' : null,
         $mask !== null ? 'input-mask' : null,
+    ])));
+
+    $internalPrefixes = array_values(array_filter([
+        $clearable ? 'data-clear-input-' : null,
+        $mask !== null ? 'data-input-mask-' : null,
     ]));
 
     $hasErrors = $resolvedErrorKey !== '' && $errors->has($resolvedErrorKey);
@@ -40,7 +48,7 @@
     @if ($elementController !== '') data-controller="{{ $elementController }}" @endif
     @if ($mask !== null) data-input-mask-mask-value="{{ $resolvedMask }}" @endif
     @if ($clearable) data-clear-input-target="input" @endif
-    {{ $attributes->class([$class])->whereDoesntStartWith(['data-controller', 'data-clear-input-', 'data-input-mask-'])->except(['required']) }}
+    {{ $attributes->class([$class])->whereDoesntStartWith(array_merge(['data-controller'], $internalPrefixes))->except(['required']) }}
 />
 
 @if ($clearable)

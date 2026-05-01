@@ -210,6 +210,45 @@ it('merges wrapper-class on wrapper when present', function () {
     $view->assertSee('relative', false);
 });
 
+// --- User data-controller merge ---
+
+it('merges user data-controller with element controllers on input', function () {
+    $view = $this->blade('<x-hwc::input name="q" data-controller="foo" auto-select mask="cpf" />');
+
+    $view->assertSee('data-controller="foo auto-select input-mask"', false);
+});
+
+it('merges user data-controller onto the input element with wrapper', function () {
+    $view = $this->blade('<x-hwc::input name="q" data-controller="auto-select" clearable />');
+
+    $view->assertSee('data-controller="auto-select"', false);
+});
+
+it('passes user data-identifier-* when the controller is not internal', function () {
+    $view = $this->blade('<x-hwc::input name="email" data-controller="foo" data-foo-value="bar" />');
+
+    $view->assertSee('data-foo-value="bar"', false);
+});
+
+it('filters internal data-clear-input-* regardless of user merge', function () {
+    $view = $this->blade('<x-hwc::input name="q" data-controller="foo" data-clear-input-target="override" clearable />');
+
+    $view->assertSee('data-controller="foo"', false);
+    $view->assertDontSee('data-clear-input-target="override"', false);
+});
+
+it('filters data-input-mask-* only when mask is active', function () {
+    $view = $this->blade('<x-hwc::input name="phone" data-input-mask-mask-value="override" />');
+
+    $view->assertSee('data-input-mask-mask-value="override"', false);
+});
+
+it('filters data-input-mask-* when mask is active', function () {
+    $view = $this->blade('<x-hwc::input name="phone" mask="cpf" data-input-mask-mask-value="override" />');
+
+    $view->assertDontSee('data-input-mask-mask-value="override"', false);
+});
+
 // --- Pass-through ---
 
 it('passes through arbitrary attributes', function () {
