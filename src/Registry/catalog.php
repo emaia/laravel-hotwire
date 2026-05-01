@@ -1,11 +1,11 @@
 <?php
 
+use Emaia\LaravelHotwire\Components\CheckboxGroup;
 use Emaia\LaravelHotwire\Components\ConfirmDialog;
 use Emaia\LaravelHotwire\Components\Error;
 use Emaia\LaravelHotwire\Components\FlashContainer;
-use Emaia\LaravelHotwire\Components\CheckboxGroup;
-use Emaia\LaravelHotwire\Components\Form;
 use Emaia\LaravelHotwire\Components\FlashMessage;
+use Emaia\LaravelHotwire\Components\Form;
 use Emaia\LaravelHotwire\Components\Input;
 use Emaia\LaravelHotwire\Components\Label;
 use Emaia\LaravelHotwire\Components\Loader;

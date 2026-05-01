@@ -1,7 +1,9 @@
 <?php
 
+use Illuminate\Support\ViewErrorBag;
+
 beforeEach(function () {
-    view()->share('errors', new \Illuminate\Support\ViewErrorBag);
+    view()->share('errors', new ViewErrorBag);
 });
 
 // --- Basic render ---

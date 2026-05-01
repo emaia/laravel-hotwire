@@ -43,8 +43,10 @@ The complete Hotwire stack for Laravel — Turbo Drive, Turbo Streams, Stimulus 
 - Registered with configurable prefix (default: `hwc`)
 - Usage: `<x-hwc::modal>`, `<x-hwc::confirm-dialog>`, `<x-hwc::flash-message>`, `<x-hwc::loader>`, `<x-hwc::scroll-progress>`, `<x-hwc::timeago>`
 - Components and Controllers needs to be registered in Registry catalog `src/Registry/catalog.php`
-- Components that encapsulate a Stimulus controller must not merge user-provided `data-controller`, `data-action`, or
-  `data-{identifier}-*` attributes. Expose supported controller configuration as explicit Blade props instead.
+- Components that encapsulate a Stimulus controller merge user-provided `data-controller` with internal controllers
+  on the element. User-provided `data-{identifier}-*` for internal controllers active via props is filtered to prevent
+  conflicts; for other controllers these pass through freely. Expose supported controller configuration as explicit
+  Blade props instead of relying on user-provided `data-*` attributes.
 
 ### Turbo
 
