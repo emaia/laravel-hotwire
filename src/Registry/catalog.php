@@ -1,6 +1,10 @@
 <?php
 
+<<<<<<< Updated upstream
 use Emaia\LaravelHotwire\Components\CheckboxGroup;
+=======
+use Emaia\LaravelHotwire\Components\Combobox;
+>>>>>>> Stashed changes
 use Emaia\LaravelHotwire\Components\ConfirmDialog;
 use Emaia\LaravelHotwire\Components\Error;
 use Emaia\LaravelHotwire\Components\FlashContainer;
@@ -18,6 +22,14 @@ use Emaia\LaravelHotwire\Components\Timeago;
 
 return [
     'components' => [
+        'combobox' => [
+            'class' => Combobox::class,
+            'view' => 'hotwire::component-views.combobox',
+            'docs' => 'docs/components/combobox.md',
+            'category' => 'forms',
+            'description' => 'Custom select/combobox with search, keyboard navigation and groups',
+            'controllers' => ['combobox'],
+        ],
         'confirm-dialog' => [
             'class' => ConfirmDialog::class,
             'view' => 'hotwire::component-views.confirm-dialog',
@@ -296,6 +308,12 @@ return [
             'docs' => 'docs/controllers/scroll-progress.md',
             'category' => 'utility',
             'description' => 'Displays a progress bar that follows the scroll position',
+        ],
+        'combobox' => [
+            'source' => 'resources/js/controllers/combobox_controller.js',
+            'docs' => 'docs/controllers/combobox.md',
+            'category' => 'forms',
+            'description' => 'Custom combobox/select menu with search, keyboard navigation and groups',
         ],
         'timeago' => [
             'source' => 'resources/js/controllers/timeago_controller.ts',
