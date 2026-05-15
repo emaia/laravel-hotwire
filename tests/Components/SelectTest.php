@@ -131,6 +131,14 @@ it('does not set disabled on placeholder so it is re-selectable', function () {
     $view->assertDontSee('disabled', false);
 });
 
+it('keeps placeholder selected when options have integer key 0 and nothing is chosen', function () {
+    $view = $this->blade('<x-hwc::select name="status" placeholder="-- Selecione --" :options="[\'Aberto\', \'Fechado\']" />');
+
+    // Only the placeholder option should be marked selected.
+    expect(substr_count((string) $view, 'selected'))->toBe(1);
+    $view->assertSee('-- Selecione --');
+});
+
 it('does not select placeholder when a value is selected', function () {
     $view = $this->blade('<x-hwc::select name="status" :options="[1 => \'Active\']" placeholder="Choose..." :selected="1" />');
 

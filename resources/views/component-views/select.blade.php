@@ -32,6 +32,6 @@
     @endif
 
     @foreach ($options as $value => $label)
-        <option value="{{ $value }}"@if ($resolvedSelected == $value) selected @endif>{{ $label }}</option>
+        <option value="{{ $value }}"@if (! $placeholderSelected && (string) $resolvedSelected === (string) $value) selected @endif>{{ $label }}</option>
     @endforeach
 </select>

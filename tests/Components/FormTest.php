@@ -55,12 +55,6 @@ it('adds clean-query-params controller when clean-query-params is true', functio
     $view->assertSee('data-controller="clean-query-params"', false);
 });
 
-it('adds remote-form controller when remote is true', function () {
-    $view = $this->blade('<x-hwc::form remote><span>x</span></x-hwc::form>');
-
-    $view->assertSee('data-controller="remote-form"', false);
-});
-
 it('combines multiple controllers separated by space', function () {
     $view = $this->blade('<x-hwc::form auto-submit unsaved-changes><span>x</span></x-hwc::form>');
 
@@ -68,9 +62,9 @@ it('combines multiple controllers separated by space', function () {
 });
 
 it('combines all controllers', function () {
-    $view = $this->blade('<x-hwc::form auto-submit unsaved-changes clean-query-params remote><span>x</span></x-hwc::form>');
+    $view = $this->blade('<x-hwc::form auto-submit unsaved-changes clean-query-params><span>x</span></x-hwc::form>');
 
-    $view->assertSee('data-controller="auto-submit unsaved-changes clean-query-params remote-form"', false);
+    $view->assertSee('data-controller="auto-submit unsaved-changes clean-query-params"', false);
 });
 
 it('merges user data-controller with internal controllers', function () {

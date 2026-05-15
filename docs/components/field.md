@@ -1,6 +1,6 @@
 # Field
 
-Thin context wrapper that propagates `name`, `errorKey`, and `required` to nested `<x-hwc::label>`, `<x-hwc::input>`, and `<x-hwc::error>` via `@aware`. Does not auto-render any markup — you compose the children explicitly.
+Thin context wrapper that propagates `name`, `errorKey`, and `required` to nested `<x-hwc::label>`, `<x-hwc::input>`, and `<x-hwc::error>` via `@aware`. Auto-renders `<x-hwc::error>` at the end of the field when `name` is set (opt-out with `:error="false"`).
 
 ## Quick example
 
@@ -8,11 +8,10 @@ Thin context wrapper that propagates `name`, `errorKey`, and `required` to neste
 <x-hwc::field name="email" required>
     <x-hwc::label>E-mail</x-hwc::label>
     <x-hwc::input type="email" />
-    <x-hwc::error />
 </x-hwc::field>
 ```
 
-The label gets `for="email"` + required marker, the input gets `id="email"` + `name="email"` + `aria-required` + `aria-describedby="email-error"`, and the error renders with `id="email-error"`.
+The label gets `for="email"` + required marker, the input gets `id="email"` + `name="email"` + `aria-required` + `aria-describedby="email-error"`, and an `<x-hwc::error>` with `id="email-error"` is rendered automatically after the slot.
 
 ## Props
 
@@ -21,20 +20,19 @@ The label gets `for="email"` + required marker, the input gets `id="email"` + `n
 | `name`     | `string\|null` | `null`    | Field name. Propagated to children — derives `id`, `for`, and `errorKey`. |
 | `errorKey` | `string\|null` | `null`    | Override the validation key when HTML `name` ≠ Laravel error key.          |
 | `required` | `bool\|null`   | `null`    | Marks the field required. Propagated to label (marker) and input (ARIA).   |
+| `error`    | `bool`         | `true`    | Auto-render `<x-hwc::error>` after the slot. Set `:error="false"` to opt out and render it manually elsewhere. |
 | `class`    | `string`       | `""`      | Merged on the wrapper `<div>`.                                             |
 
 ## ARIA contract
 
-`<x-hwc::input>` always emits `aria-describedby="{id}-error"`. The matching error container must exist in the DOM, so **you must render `<x-hwc::error>` inside the field**. Forgetting it makes the ARIA reference dangle silently — screen readers won't announce the validation message even though the input still gets `aria-invalid`.
+`<x-hwc::input>` always emits `aria-describedby="{id}-error"`. The matching error container must exist in the DOM — the field auto-renders one for you when `name` is set, so the contract holds by default. If you opt out via `:error="false"`, you must render `<x-hwc::error>` somewhere in the slot yourself.
 
-A future `hotwire:check` lint pass will catch this at build time. For now, treat it as a hand-enforced convention.
+## Custom error placement or styling
 
-## Custom layout
-
-The field is just a `<div class="hwc-field">` plus context. You can compose any layout inside:
+The auto-rendered error sits at the bottom of the field with default styling. Opt out with `:error="false"` and place a custom `<x-hwc::error>` anywhere in the slot:
 
 ```blade
-<x-hwc::field name="documento" required class="mb-4">
+<x-hwc::field name="documento" required :error="false" class="mb-4">
     <x-hwc::label class="label">Documento</x-hwc::label>
     <p class="text-xs text-gray-500">CPF ou CNPJ</p>
     <x-hwc::input class="input w-full" clearable mask="cpf-cnpj" />

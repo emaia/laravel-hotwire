@@ -11,6 +11,7 @@ class Input extends Component
         public ?string $id = null,
         public string $type = 'text',
         public mixed $value = null,
+        public bool $checked = false,
         public ?string $errorKey = null,
         public bool $old = true,
         public bool $clearable = false,

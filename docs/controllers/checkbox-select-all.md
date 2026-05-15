@@ -105,3 +105,7 @@ In this mode the master checkbox is only checked when every item is checked; it 
 ```
 
 > The controller element must be an ancestor of both `checkboxAll` and `checkbox` targets. In the table example the controller lives on `<tr>` inside `<thead>`, but the `checkbox` targets are in `<tbody>` — this works because `data-controller` looks up descendants at any depth.
+
+## Turbo morph support
+
+The controller re-syncs the master's `checked` and `indeterminate` state on every `turbo:render`. Under morph (`@turboRefreshMethod('morph')` or `data-turbo-action="morph"`), idiomorph updates the children's checked attributes but does not fire `targetConnected` — so the master would otherwise stay stale.

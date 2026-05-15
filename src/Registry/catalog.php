@@ -1,7 +1,6 @@
 <?php
 
 use Emaia\LaravelHotwire\Components\CheckboxGroup;
-use Emaia\LaravelHotwire\Components\Combobox;
 use Emaia\LaravelHotwire\Components\ConfirmDialog;
 use Emaia\LaravelHotwire\Components\Error;
 use Emaia\LaravelHotwire\Components\FlashContainer;
@@ -11,7 +10,6 @@ use Emaia\LaravelHotwire\Components\Input;
 use Emaia\LaravelHotwire\Components\Label;
 use Emaia\LaravelHotwire\Components\Modal;
 use Emaia\LaravelHotwire\Components\Optimistic;
-use Emaia\LaravelHotwire\Components\Popover;
 use Emaia\LaravelHotwire\Components\ScrollProgress;
 use Emaia\LaravelHotwire\Components\Select;
 use Emaia\LaravelHotwire\Components\Spinner;
@@ -20,14 +18,6 @@ use Emaia\LaravelHotwire\Components\Timeago;
 
 return [
     'components' => [
-        'combobox' => [
-            'class' => Combobox::class,
-            'view' => 'hotwire::component-views.combobox',
-            'docs' => 'docs/components/combobox.md',
-            'category' => 'forms',
-            'description' => 'Custom select/combobox with search, keyboard navigation and groups',
-            'controllers' => ['combobox'],
-        ],
         'confirm-dialog' => [
             'class' => ConfirmDialog::class,
             'view' => 'hotwire::component-views.confirm-dialog',
@@ -41,8 +31,8 @@ return [
             'view' => 'hotwire::component-views.form',
             'docs' => 'docs/components/form.md',
             'category' => 'forms',
-            'description' => 'Form wrapper with optional Stimulus behaviors: auto-submit, unsaved-changes, clean-query-params, remote',
-            'controllers' => ['auto-submit', 'unsaved-changes', 'clean-query-params', 'remote-form'],
+            'description' => 'Form wrapper with optional Stimulus behaviors: auto-submit, unsaved-changes, clean-query-params',
+            'controllers' => ['auto-submit', 'unsaved-changes', 'clean-query-params'],
         ],
         'checkbox-group' => [
             'class' => CheckboxGroup::class,
@@ -110,7 +100,7 @@ return [
         ],
         'spinner' => [
             'class' => Spinner::class,
-            'view' => 'hotwire::component-views.loader',
+            'view' => 'hotwire::component-views.spinner',
             'docs' => 'docs/components/spinner.md',
             'category' => 'feedback',
             'description' => 'Animated SVG spinner — no JavaScript required',
@@ -131,14 +121,6 @@ return [
             'category' => 'turbo',
             'description' => 'Declares an inline optimistic Turbo Stream action for any Turbo trigger',
             'controllers' => [],
-        ],
-        'popover' => [
-            'class' => Popover::class,
-            'view' => 'hotwire::component-views.popover',
-            'docs' => 'docs/components/popover.md',
-            'category' => 'overlay',
-            'description' => 'Anchored dialog toggled by a trigger, with click-outside and Escape to dismiss',
-            'controllers' => ['popover'],
         ],
         'scroll-progress' => [
             'class' => ScrollProgress::class,
@@ -297,12 +279,6 @@ return [
             'category' => 'turbo',
             'description' => 'Dispatches optimistic UI updates immediately when a Turbo-driven link is clicked',
         ],
-        'popover' => [
-            'source' => 'resources/js/controllers/popover_controller.js',
-            'docs' => 'docs/controllers/popover.md',
-            'category' => 'overlay',
-            'description' => 'Toggles an anchored dialog from a trigger, closing on click-outside, Escape and other popovers',
-        ],
         'remote-form' => [
             'source' => 'resources/js/controllers/remote_form_controller.js',
             'docs' => 'docs/controllers/remote-form.md',
@@ -320,12 +296,6 @@ return [
             'docs' => 'docs/controllers/scroll-progress.md',
             'category' => 'utility',
             'description' => 'Displays a progress bar that follows the scroll position',
-        ],
-        'combobox' => [
-            'source' => 'resources/js/controllers/combobox_controller.js',
-            'docs' => 'docs/controllers/combobox.md',
-            'category' => 'forms',
-            'description' => 'Custom combobox/select menu with search, keyboard navigation and groups',
         ],
         'timeago' => [
             'source' => 'resources/js/controllers/timeago_controller.ts',

@@ -1,65 +1,33 @@
-# Loader
+# Spinner
 
-Animated SVG spinner to indicate loading. Pure HTML/CSS, no JavaScript.
+Animated SVG spinner. Pure HTML/CSS, no JavaScript.
 
 ## Basic usage
 
-```html
-
-<x-hwc::loader/>
+```blade
+<x-hwc::spinner/>
 ```
-
-The loader is `hidden` by default and appears via `aria-busy:block` — combine with `aria-busy` on the parent element:
-
-```html
-
-<button type="submit" aria-busy="false">
-    Save
-    <x-hwc::loader/>
-</button>
-```
-
-## With Turbo Forms
-
-Turbo automatically adds `aria-busy="true"` to forms during submission:
-
-```html
-
-<form method="POST" action="/items">
-    @csrf
-    <button type="submit">
-        Save
-        <x-hwc::loader/>
-    </button>
-</form>
-```
-
-The spinner appears during submit and disappears when the response arrives.
-
-## Props
-
-| Prop              | Type     | Default              | Description                                                                                               |
-|-------------------|----------|----------------------|-----------------------------------------------------------------------------------------------------------|
-| `size`            | `string` | `'size-5 lg:size-4'` | Tailwind size classes                                                                                     |
-| `aria-busy-class` | `string` | `'aria-busy:block'`  | Class that shows the loader. Use `group-aria-busy:block` to react to `aria-busy` on a parent with `group` |
 
 ## Attributes
 
-The component accepts extra attributes that are merged into the `<svg>`:
+The component renders an `<svg role="status" aria-label="Loading">` with `class="animate-spin"`. Any extra attribute is
+merged into the `<svg>`:
 
-```html
-
-<x-hwc::loader class="text-blue-500" id="my-loader"/>
+```blade
+<x-hwc::spinner class="text-blue-500 size-4" id="my-spinner"/>
 ```
 
-## Variant with `group`
+## Showing the spinner conditionally
 
-To show the loader based on `aria-busy` of a parent container:
+The spinner has no built-in visibility behavior — it always renders. Hide or show it with your own CSS, typically tied
+to `aria-busy` on a parent element:
 
-```html
-
-<div class="group" aria-busy="false">
-    <span>Processing...</span>
-    <x-hwc::loader aria-busy-class="group-aria-busy:block"/>
-</div>
+```blade
+<button type="submit" aria-busy="false">
+    Save
+    <x-hwc::spinner class="hidden aria-busy:block"/>
+</button>
 ```
+
+Turbo automatically toggles `aria-busy="true"` on forms during submission, so the spinner appears while the request is
+in flight and disappears when the response arrives.

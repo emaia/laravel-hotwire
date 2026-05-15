@@ -106,3 +106,7 @@ If the input already has a value when the page loads, the button appears immedia
     </button>
 </div>
 ```
+
+## Turbo morph support
+
+The controller re-syncs the `clear-input--touched` class on every `turbo:render`. With `@turboRefreshMethod('morph')` (or `data-turbo-action="morph"`), idiomorph rewrites the input's `class` attribute from server HTML — which does not contain the runtime-added class — so the clear button would no longer appear over `old()`-restored values. The listener re-applies (or removes) the class based on the current input value after the morph completes.

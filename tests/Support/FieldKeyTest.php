@@ -20,6 +20,10 @@ it('handles empty brackets deterministically as double dots', function () {
     expect(FieldKey::toErrorKey('users[][email]'))->toBe('users..email');
 });
 
+it('strips trailing [] so checkbox-group names map to bare error key', function () {
+    expect(FieldKey::toErrorKey('roles[]'))->toBe('roles');
+});
+
 it('handles deeply nested arrays', function () {
     expect(FieldKey::toErrorKey('a[b][c][d]'))->toBe('a.b.c.d');
 });
@@ -44,6 +48,10 @@ it('converts dot notation to dash notation for ids', function () {
 
 it('handles empty brackets deterministically as double dashes', function () {
     expect(FieldKey::toId('users[][email]'))->toBe('users--email');
+});
+
+it('strips trailing [] so checkbox-group names map to bare id', function () {
+    expect(FieldKey::toId('roles[]'))->toBe('roles');
 });
 
 it('handles deeply nested arrays for ids', function () {

@@ -58,3 +58,7 @@ The textarea automatically adjusts its height on connect, even with pre-existing
     name="bio"
 >{{ $user->bio }}</textarea>
 ```
+
+## Turbo morph support
+
+The controller re-syncs `overflow: hidden` and recomputes the height on every `turbo:render`. With `@turboRefreshMethod('morph')` (or `data-turbo-action="morph"`), idiomorph preserves the textarea element but wipes the inline `style` attribute set at runtime. The listener restores both pieces after the morph completes.

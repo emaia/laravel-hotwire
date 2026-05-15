@@ -23,6 +23,22 @@ Form `<label>` with optional required/optional markers and an inline tooltip.
 
 Additional HTML attributes pass through.
 
+## Implicit labeling (wrapping pattern)
+
+When the slot contains an `<input>`, `<select>`, or `<textarea>`, the component omits the `for` attribute and relies on HTML's implicit labeling: a labeled control that is a descendant of the label. This keeps the label clickable for checkbox/switch/radio wrap patterns where each item has a unique id (auto-derived for radio groups and array checkboxes):
+
+```blade
+<x-hwc::field name="size">
+    <x-hwc::label>
+        <x-hwc::input type="radio" name="size" value="default" />
+        Default
+    </x-hwc::label>
+    {{-- ... --}}
+</x-hwc::field>
+```
+
+Pass an explicit `for` (or `id` via `<x-hwc::label id="...">`-style ancestor) to override the detection. Pass `for=""` to disable explicitly.
+
 ## Inheriting from `<x-hwc::field>`
 
 When inside `<x-hwc::field>`, `for` is derived from the field's `name` automatically and `required` propagates:

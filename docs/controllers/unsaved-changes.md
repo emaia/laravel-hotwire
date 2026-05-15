@@ -73,3 +73,7 @@ The controller automatically sets up the required `data-action` on `connect()`:
 
 The current controller handles Turbo Drive navigation. Browser tab close and reload handling are outside this
 controller's documented behavior.
+
+## Turbo morph support
+
+The controller re-applies its `data-action` wiring on every `turbo:render`. Under morph (`@turboRefreshMethod('morph')` or `data-turbo-action="morph"`), idiomorph rewrites the form's `data-action` attribute from server HTML — without re-applying, the leave-warning and submit-allow actions would be lost after a morph. The "is changed" detection still compares `value` vs `defaultValue` per element, which idiomorph keeps in sync when it updates input attributes.

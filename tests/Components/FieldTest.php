@@ -31,12 +31,69 @@ it('merges custom class on wrapper', function () {
     $view->assertSee('space-y-1', false);
 });
 
-it('does not auto-render label, description or error', function () {
+it('does not auto-render label or description', function () {
     $view = $this->blade('<x-hwc::field name="email"><span>x</span></x-hwc::field>');
 
     $view->assertDontSee('<label', false);
     $view->assertDontSee('hwc-description', false);
-    $view->assertDontSee('hwc-error', false);
+});
+
+// --- Auto-rendered error ---
+
+it('auto-renders <x-hwc::error> at the end when name is set', function () {
+    $view = $this->blade('<x-hwc::field name="email"><span>x</span></x-hwc::field>');
+
+    $view->assertSee('id="email-error"', false);
+    $view->assertSee('role="alert"', false);
+});
+
+it('auto-renders error with the field error key when name has bracket notation', function () {
+    $view = $this->blade('<x-hwc::field name="variables[0][name]"><span>x</span></x-hwc::field>');
+
+    $view->assertSee('id="variables-0-name-error"', false);
+});
+
+it('auto-renders error showing the validation message for the field name', function () {
+    shareFieldErrors(['email' => ['Required']]);
+
+    $view = $this->blade('<x-hwc::field name="email"><span>x</span></x-hwc::field>');
+
+    $view->assertSee('Required');
+});
+
+it('does not auto-render error when name is not set', function () {
+    $view = $this->blade('<x-hwc::field><span>x</span></x-hwc::field>');
+
+    $view->assertDontSee('role="alert"', false);
+});
+
+it('does not auto-render error when :error="false"', function () {
+    $view = $this->blade('<x-hwc::field name="email" :error="false"><span>x</span></x-hwc::field>');
+
+    $view->assertDontSee('role="alert"', false);
+});
+
+it('does not duplicate the error node when slot already includes one', function () {
+    $view = $this->blade('
+        <x-hwc::field name="email" :error="false">
+            <x-hwc::input type="email" />
+            <x-hwc::error class="custom" />
+        </x-hwc::field>
+    ');
+
+    expect(substr_count((string) $view, 'id="email-error"'))->toBe(1);
+});
+
+it('auto-rendered error uses field error-key override', function () {
+    shareFieldErrors(['indicator.name' => ['Required']]);
+
+    $view = $this->blade('
+        <x-hwc::field name="variables[0][name]" error-key="indicator.name">
+            <x-hwc::input type="text" />
+        </x-hwc::field>
+    ');
+
+    $view->assertSee('Required');
 });
 
 // --- @aware propagation ---

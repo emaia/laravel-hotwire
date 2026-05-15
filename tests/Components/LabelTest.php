@@ -1,5 +1,11 @@
 <?php
 
+use Illuminate\Support\ViewErrorBag;
+
+beforeEach(function () {
+    view()->share('errors', new ViewErrorBag);
+});
+
 // --- for attribute ---
 
 it('uses explicit for attribute', function () {
@@ -26,6 +32,44 @@ it('does not render for attribute without name or for', function () {
 
     $view->assertDontSee('for=', false);
     $view->assertSee('Generic');
+});
+
+// --- Implicit-label wrap (label contains the control) ---
+
+it('omits for when the slot wraps an input (implicit labeling)', function () {
+    $view = $this->blade('<x-hwc::label name="switch"><input type="checkbox" />Airplane</x-hwc::label>');
+
+    $view->assertDontSee('for=', false);
+});
+
+it('omits for when the slot wraps an x-hwc::input', function () {
+    $view = $this->blade('<x-hwc::label name="switch"><x-hwc::input type="checkbox" name="switch" />Airplane</x-hwc::label>');
+
+    $view->assertDontSee('for=', false);
+});
+
+it('omits for when the slot wraps a select', function () {
+    $view = $this->blade('<x-hwc::label name="plan"><select><option>A</option></select> Plan</x-hwc::label>');
+
+    $view->assertDontSee('for=', false);
+});
+
+it('omits for when the slot wraps a textarea', function () {
+    $view = $this->blade('<x-hwc::label name="bio"><textarea></textarea> Bio</x-hwc::label>');
+
+    $view->assertDontSee('for=', false);
+});
+
+it('still emits for when slot has plain text (no wrapped control)', function () {
+    $view = $this->blade('<x-hwc::label name="email">E-mail</x-hwc::label>');
+
+    $view->assertSee('for="email"', false);
+});
+
+it('respects explicit for even when slot wraps a control', function () {
+    $view = $this->blade('<x-hwc::label for="custom"><input type="text" />Inner</x-hwc::label>');
+
+    $view->assertSee('for="custom"', false);
 });
 
 // --- Content via value vs slot ---

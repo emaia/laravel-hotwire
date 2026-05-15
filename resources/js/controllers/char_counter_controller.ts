@@ -15,10 +15,12 @@ export default class Char_counter_controller extends Controller {
     connect(): void {
         this.update()
         this.inputTarget.addEventListener("input", this.update)
+        document.addEventListener("turbo:render", this.update)
     }
 
     disconnect(): void {
         this.inputTarget.removeEventListener("input", this.update)
+        document.removeEventListener("turbo:render", this.update)
     }
 
     update(): void {

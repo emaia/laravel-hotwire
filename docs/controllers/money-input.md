@@ -209,3 +209,7 @@ $product->price = $request->integer('price') / 100;
 // using moneyphp/money or cknow/laravel-money
 $product->price = Money::BRL($request->input('price'));
 ```
+
+## Turbo morph support
+
+On every `turbo:render`, the controller re-seeds its internal digit buffer from the current element value and re-renders. Under morph, idiomorph rewrites the input value to the newly flashed minor-unit amount without firing an `input` event — so subsequent typing would otherwise operate on a stale buffer.

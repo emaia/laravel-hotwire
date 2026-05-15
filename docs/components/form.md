@@ -19,7 +19,6 @@ Form wrapper that composes optional Stimulus behaviors via boolean props. Render
 | `auto-submit`        | `bool`  | `false`  | Adds `auto-submit` controller (submit on input/change — requires `data-action` on fields) |
 | `unsaved-changes`    | `bool`  | `false`  | Warns before navigating away with unsaved changes                          |
 | `clean-query-params` | `bool`  | `false`  | Strips empty fields from GET query strings before submission                |
-| `remote`             | `bool`  | `false`  | Adds `remote-form` controller (trigger submit from decoupled element)      |
 
 Any other HTML attribute (`action`, `method`, `enctype`, `class`, `data-*`, `aria-*`) passes through to the `<form>` element. Method defaults to `post` unless overridden.
 
@@ -84,23 +83,6 @@ Removes empty parameters from the query string before submitting a GET form, avo
 
 See [clean-query-params controller](../controllers/clean-query-params.md).
 
-### remote
-
-Adds the `remote-form` controller for submitting a form through a decoupled trigger element. Requires a `data-remote-form-target="submitBtn"` on the real submit button.
-
-```blade
-<x-hwc::form action="/preview" method="post" remote>
-    <select data-action="change->remote-form#remoteSubmit" name="content_type">
-        ...
-    </select>
-    <button type="submit" class="hidden" data-remote-form-target="submitBtn">
-        Load
-    </button>
-</x-hwc::form>
-```
-
-See [remote-form controller](../controllers/remote-form.md).
-
 ## Required controllers
 
-`hotwire:check` looks for `auto-submit`, `unsaved-changes`, `clean-query-params`, and `remote-form`. Only the ones you use need to be published.
+`hotwire:check` looks for `auto-submit`, `unsaved-changes`, and `clean-query-params`. Only the ones you actually use need to be published — `hotwire:check` will warn for the others even if you do not enable them.

@@ -60,6 +60,27 @@ test.serial("applies the mask from right to left when reversed", async () => {
     expect(input.value).toBe("1.234.567");
 });
 
+test.serial("re-applies the mask after turbo:render (morph scenario)", async () => {
+    await setup(`
+        <input
+            data-controller="input-mask"
+            data-input-mask-mask-value="###.###.###-##"
+        />
+    `);
+
+    const input = document.querySelector("input");
+
+    // Simulate morph: idiomorph rewrites the input value from server HTML
+    // (e.g., old() flashed a new CPF). No input event fires, so Maska's
+    // cached state is stale.
+    input.value = "98765432100";
+
+    document.dispatchEvent(new Event("turbo:render", { bubbles: true }));
+    await wait(0);
+
+    expect(input.value).toBe("987.654.321-00");
+});
+
 test.serial("destroys the mask on disconnect", async () => {
     await setup(`<input data-controller="input-mask" data-input-mask-mask-value="###" />`);
 

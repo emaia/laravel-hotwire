@@ -10,7 +10,6 @@ class Form extends Component
         public bool $autoSubmit = false,
         public bool $unsavedChanges = false,
         public bool $cleanQueryParams = false,
-        public bool $remote = false,
     ) {}
 
     public function render()

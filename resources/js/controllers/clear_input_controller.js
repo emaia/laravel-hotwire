@@ -19,16 +19,26 @@ export default class extends Controller {
     }
 
     connect() {
-        if (this.inputTarget.value.length > 0) {
-            this.inputTarget.classList.add("clear-input--touched");
-        }
-
         this.handleButtonClick = this.handleButtonClick.bind(this);
         this.handleInputChange = this.handleInputChange.bind(this);
+        this.resyncAfterMorph = this.resyncAfterMorph.bind(this);
+
+        this.resyncAfterMorph();
 
         this.clearButtonTarget.addEventListener("click", this.handleButtonClick);
         this.inputTarget.addEventListener("input", this.handleInputChange);
         this.inputTarget.addEventListener("focus", this.handleInputChange);
+        document.addEventListener("turbo:render", this.resyncAfterMorph);
+    }
+
+    resyncAfterMorph() {
+        if (!this.hasInputTarget) return;
+
+        if (this.inputTarget.value.length > 0) {
+            this.inputTarget.classList.add("clear-input--touched");
+        } else {
+            this.inputTarget.classList.remove("clear-input--touched");
+        }
     }
 
     handleInputChange(event) {
@@ -58,5 +68,7 @@ export default class extends Controller {
             this.inputTarget.removeEventListener("input", this.handleInputChange);
             this.inputTarget.removeEventListener("focus", this.handleInputChange);
         }
+
+        document.removeEventListener("turbo:render", this.resyncAfterMorph);
     }
 }
