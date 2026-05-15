@@ -15,6 +15,7 @@ class Select extends Component
         public ?string $errorKey = null,
         public bool $old = true,
         public ?string $placeholder = null,
+        public bool $nullable = false,
         public string $class = '',
     ) {}
 

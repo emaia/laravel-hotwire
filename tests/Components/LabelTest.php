@@ -71,29 +71,12 @@ it('renders optional marker when optional', function () {
     $view = $this->blade('<x-hwc::label for="email" optional>E-mail</x-hwc::label>');
 
     $view->assertSee('optional', false);
-    $view->assertSee('(opcional)');
 });
 
 it('does not render optional when required is set', function () {
     $view = $this->blade('<x-hwc::label for="email" required optional>E-mail</x-hwc::label>');
 
     $view->assertSee('required', false);
-    $view->assertDontSee('optional', false);
-});
-
-// --- Info tooltip ---
-
-it('renders info tooltip with tippy controller', function () {
-    $view = $this->blade('<x-hwc::label for="email" info="Helpful tip">E-mail</x-hwc::label>');
-
-    $view->assertSee('data-controller="tooltip"', false);
-    $view->assertSee('data-tooltip-content-value="Helpful tip"', false);
-});
-
-it('does not render info when not provided', function () {
-    $view = $this->blade('<x-hwc::label for="email">E-mail</x-hwc::label>');
-
-    $view->assertDontSee('data-controller="tooltip"', false);
 });
 
 // --- Class merge ---

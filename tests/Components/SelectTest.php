@@ -122,14 +122,41 @@ it('renders placeholder option when provided', function () {
     $view = $this->blade('<x-hwc::select name="status" :options="[1 => \'Active\']" placeholder="Choose..." />');
 
     $view->assertSee('value=""', false);
-    $view->assertSee('disabled', false);
     $view->assertSee('Choose...');
+});
+
+it('does not set disabled on placeholder so it is re-selectable', function () {
+    $view = $this->blade('<x-hwc::select name="status" :options="[1 => \'Active\']" placeholder="Choose..." />');
+
+    $view->assertDontSee('disabled', false);
 });
 
 it('does not select placeholder when a value is selected', function () {
     $view = $this->blade('<x-hwc::select name="status" :options="[1 => \'Active\']" placeholder="Choose..." :selected="1" />');
 
     $view->assertSee('value="1" selected', false);
+});
+
+// --- Nullable ---
+
+it('renders blank option when nullable and no placeholder', function () {
+    $view = $this->blade('<x-hwc::select name="status" :options="[1 => \'Active\']" :nullable="true" />');
+
+    $view->assertSee('value=""', false);
+    $view->assertSee('selected', false);
+});
+
+it('does not select blank option when nullable and value is selected', function () {
+    $view = $this->blade('<x-hwc::select name="status" :options="[1 => \'Active\']" :nullable="true" :selected="1" />');
+
+    $view->assertSee('value="1" selected', false);
+});
+
+it('uses placeholder text when both nullable and placeholder are provided', function () {
+    $view = $this->blade('<x-hwc::select name="status" :options="[1 => \'Active\']" :nullable="true" placeholder="Choose..." />');
+
+    $view->assertSee('Choose...');
+    $view->assertDontSee('disabled', false);
 });
 
 // --- Error key + ARIA ---

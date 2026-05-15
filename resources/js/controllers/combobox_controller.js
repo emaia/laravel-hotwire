@@ -2,9 +2,8 @@ import { Controller } from "@hotwired/stimulus";
 
 export default class extends Controller {
     static targets = ["trigger", "selectedLabel", "popover", "listbox", "input", "filter"];
-    // footer é opcional, tratado com hasFooterTarget
+    static classes = ["active", "placeholder"];
 
-    // ─── Estado interno ───────────────────────────────────
     allOptions = [];
     options = [];
     activeIndex = -1;
@@ -33,9 +32,7 @@ export default class extends Controller {
         this.removeListeners();
     }
 
-    // ─── Getters computados ──────────────────────────────
     get visibleOptions() {
-        // Retorna as opções habilitadas e visíveis (sem aria-hidden true)
         return this.options.filter((opt) => opt.getAttribute("aria-hidden") !== "true");
     }
 
@@ -48,26 +45,24 @@ export default class extends Controller {
         return parseFloat(style.transitionDuration) > 0 || parseFloat(style.transitionDelay) > 0;
     }
 
-    // ─── Navegação visual ────────────────────────────────
     setActiveOption(index) {
-        const { options, activeIndex, triggerTarget: trigger } = this;
+        const { options, activeIndex, triggerTarget: trigger, activeClasses } = this;
 
-        if (activeIndex > -1 && options[activeIndex]) {
-            options[activeIndex].classList.remove("active");
+        if (activeIndex > -1 && options[activeIndex] && activeClasses.length) {
+            options[activeIndex].classList.remove(...activeClasses);
         }
 
         this.activeIndex = index;
 
         if (index > -1) {
             const opt = options[index];
-            opt.classList.add("active");
+            if (activeClasses.length) opt.classList.add(...activeClasses);
             trigger.setAttribute("aria-activedescendant", opt.id || "");
         } else {
             trigger.removeAttribute("aria-activedescendant");
         }
     }
 
-    // ─── Atualização do valor selecionado ────────────────
     updateValue(optionOrOptions, triggerEvent = true) {
         const {
             isMultiple,
@@ -86,12 +81,13 @@ export default class extends Controller {
             opts.forEach((opt) => selectedOptions.add(opt));
 
             const selected = options.filter((opt) => selectedOptions.has(opt));
+            const placeholderClasses = this.placeholderClasses;
             if (selected.length === 0) {
                 label.textContent = placeholder;
-                label.classList.add("text-muted-foreground");
+                if (placeholderClasses.length) label.classList.add(...placeholderClasses);
             } else {
                 label.textContent = selected.map((opt) => opt.dataset.label || opt.textContent.trim()).join(", ");
-                label.classList.remove("text-muted-foreground");
+                if (placeholderClasses.length) label.classList.remove(...placeholderClasses);
             }
 
             value = selected.map((opt) => this.getValue(opt));
@@ -121,19 +117,16 @@ export default class extends Controller {
             );
         }
 
-        // Atualiza visual do teclado (item ativo = último selecionado)
         if (!isMultiple) {
             const idx = options.indexOf(optionOrOptions);
             this.setActiveOption(idx >= 0 ? idx : -1);
         }
     }
 
-    // ─── Controle do popover ─────────────────────────────
     closePopover(focusOnTrigger = true, useTransition = true) {
         const popover = this.popoverTarget;
         if (popover.getAttribute("aria-hidden") === "true") return;
 
-        // Limpa o filtro (se existir)
         if (this.hasFilterTarget) {
             const filter = this.filterTarget;
             const resetFilter = () => {
@@ -148,97 +141,31 @@ export default class extends Controller {
             }
         }
 
-        // Limpa styles de overflow aplicados na abertura
-        this._resetOverflowStyles();
-
         if (focusOnTrigger) this.triggerTarget.focus();
         popover.setAttribute("aria-hidden", "true");
         this.triggerTarget.setAttribute("aria-expanded", "false");
         this.setActiveOption(-1);
     }
 
-    _resetOverflowStyles() {
-        const popover = this.popoverTarget;
-        popover.style.left = "";
-        popover.style.right = "";
-        popover.style.maxHeight = "";
-        this.listboxTarget.style.maxHeight = "";
-        this.listboxTarget.style.overflowY = "";
-    }
-
     openPopover() {
-        // Fecha outros popovers/seletores
         document.dispatchEvent(
             new CustomEvent("basecoat:popover", {
                 detail: { source: this.element },
             }),
         );
 
+        if (this.hasFilterTarget) {
+            const filter = this.filterTarget;
+            if (this._hasTransition) {
+                this.popoverTarget.addEventListener("transitionend", () => filter.focus(), { once: true });
+            } else {
+                filter.focus();
+            }
+        }
+
         this.popoverTarget.setAttribute("aria-hidden", "false");
         this.triggerTarget.setAttribute("aria-expanded", "true");
 
-        // ─── Overflow prevention ────────────────────────
-        this._applyOverflowPrevention();
-
-        // Foco no filtro (se existir) após transição
-        if (this.hasFilterTarget) {
-            const filter = this.filterTarget;
-            if (this._hasTransition) {
-                this.popoverTarget.addEventListener("transitionend", () => filter.focus(), { once: true });
-            } else {
-                filter.focus();
-            }
-        }
-
-        // Posiciona no item já selecionado
-        const selected = this.listboxTarget.querySelector('[role="option"][aria-selected="true"]');
-        if (selected) {
-            const idx = this.options.indexOf(selected);
-            this.setActiveOption(idx);
-            selected.scrollIntoView({ block: "nearest" });
-        }
-    }
-
-    _applyOverflowPrevention() {
-        const trigger = this.triggerTarget;
-        const popover = this.popoverTarget;
-        const listbox = this.listboxTarget;
-
-        this._resetOverflowStyles();
-
-        const vr = trigger.getBoundingClientRect();
-        const vw = window.innerWidth;
-        const vh = window.innerHeight;
-        const gap = 4;
-
-        // Horizontal: se popover ultrapassa viewport à direita
-        if (vr.left + popover.offsetWidth > vw) {
-            popover.style.left = "auto";
-            popover.style.right = gap + "px";
-        }
-
-        // Vertical: limita altura do listbox ao espaço disponível abaixo do trigger
-        const available = vh - vr.bottom - gap;
-        if (available < popover.offsetHeight) {
-            listbox.style.maxHeight = Math.max(available, 80) + "px";
-            listbox.style.overflowY = "auto";
-        }
-    }
-
-    // ─── Foco no filtro após transição ──────────────
-    _focusFilter() {
-        if (this.hasFilterTarget) {
-            const filter = this.filterTarget;
-            if (this._hasTransition) {
-                this.popoverTarget.addEventListener("transitionend", () => filter.focus(), { once: true });
-            } else {
-                filter.focus();
-            }
-        }
-    }
-
-    // ─── Posiciona scroll no item selecionado ───────
-    _scrollToSelected() {
         const selected = this.listboxTarget.querySelector('[role="option"][aria-selected="true"]');
         if (selected) {
             const idx = this.options.indexOf(selected);
@@ -255,7 +182,6 @@ export default class extends Controller {
         }
     };
 
-    // ─── Seleção programática ────────────────────────────
     selectValue(value) {
         if (this.isMultiple) {
             const opt = this.options.find((o) => this.getValue(o) === value && !this.selectedOptions.has(o));
@@ -272,7 +198,6 @@ export default class extends Controller {
         }
     }
 
-    // ─── Inicialização do valor atual ───────────────────
     initializeValue() {
         const { options, inputTarget: input } = this;
 
@@ -295,7 +220,6 @@ export default class extends Controller {
         }
     }
 
-    // ─── Filtro ──────────────────────────────────────────
     filterOptions = () => {
         const searchTerm = this.filterTarget.value.trim().toLowerCase();
         this.setActiveOption(-1);
@@ -316,7 +240,6 @@ export default class extends Controller {
         });
     };
 
-    // ─── Navegação por teclado ──────────────────────────
     handleKeyNavigation = (event) => {
         const isOpen = this.popoverTarget.getAttribute("aria-hidden") === "false";
 
@@ -392,7 +315,6 @@ export default class extends Controller {
         this.updateValue(options.filter((o) => selectedOptions.has(o)));
     };
 
-    // ─── Eventos de lista ────────────────────────────────
     onListboxClick = (event) => {
         const clicked = event.target.closest('[role="option"]');
         if (!clicked) return;
@@ -441,7 +363,6 @@ export default class extends Controller {
         if (event.detail.source !== this.element) this.closePopover(false);
     };
 
-    // ─── Gerenciamento de listeners ──────────────────────
     setupListeners() {
         this._onTriggerClick = this.togglePopover;
         this._onTriggerKeydown = this.handleKeyNavigation;

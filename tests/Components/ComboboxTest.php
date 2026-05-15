@@ -1,7 +1,10 @@
 <?php
 
+use Illuminate\Support\ViewErrorBag;
+
 beforeEach(function () {
-    view()->share('errors', new \Illuminate\Support\ViewErrorBag);
+    view()->share('errors', new ViewErrorBag);
+    app('request')->setLaravelSession(app('session.store'));
 });
 
 // --- Plain render ---
@@ -100,8 +103,14 @@ it('renders grouped options with headings', function () {
 
 // --- Id derivation ---
 
-it('auto-generates an id when not provided', function () {
+it('derives id from name when id is not provided', function () {
     $view = $this->blade('<x-hwc::combobox name="fruit" :options="[\'apple\' => \'Apple\']" />');
+
+    $view->assertSee('id="fruit"', false);
+});
+
+it('auto-generates an id when neither name nor id is provided', function () {
+    $view = $this->blade('<x-hwc::combobox :options="[\'apple\' => \'Apple\']" />');
 
     $view->assertSee('id="combobox-', false);
 });
@@ -149,10 +158,112 @@ it('merges trigger-class on the trigger button', function () {
     $view->assertSee('btn-outline', false);
 });
 
+// --- Stimulus class bindings ---
+
+it('exposes default active and placeholder classes via data attributes', function () {
+    $view = $this->blade('<x-hwc::combobox name="fruit" :options="[\'apple\' => \'Apple\']" />');
+
+    $view->assertSee('data-combobox-active-class="active"', false);
+    $view->assertSee('data-combobox-placeholder-class="text-muted-foreground"', false);
+});
+
+it('allows overriding active and placeholder classes', function () {
+    $view = $this->blade('<x-hwc::combobox name="fruit" :options="[\'apple\' => \'Apple\']" active-class="bg-accent" placeholder-class="opacity-60" />');
+
+    $view->assertSee('data-combobox-active-class="bg-accent"', false);
+    $view->assertSee('data-combobox-placeholder-class="opacity-60"', false);
+});
+
+// --- Placement ---
+
+it('defaults placement to left and emits the data-placement attribute', function () {
+    $view = $this->blade('<x-hwc::combobox name="fruit" :options="[\'apple\' => \'Apple\']" />');
+
+    $view->assertSee('data-placement="left"', false);
+});
+
+it('does not emit positioning inline styles for left placement', function () {
+    $view = $this->blade('<x-hwc::combobox name="fruit" :options="[\'apple\' => \'Apple\']" />');
+
+    $view->assertDontSee('right: 0', false);
+    $view->assertDontSee('left: auto', false);
+});
+
+it('emits inline style and data-placement when placement is right', function () {
+    $view = $this->blade('<x-hwc::combobox name="fruit" :options="[\'apple\' => \'Apple\']" placement="right" />');
+
+    $view->assertSee('data-placement="right"', false);
+    $view->assertSee('style="right: 0; left: auto;"', false);
+});
+
+it('falls back to left for an invalid placement value', function () {
+    $view = $this->blade('<x-hwc::combobox name="fruit" :options="[\'apple\' => \'Apple\']" placement="bogus" />');
+
+    $view->assertSee('data-placement="left"', false);
+    $view->assertDontSee('right: 0', false);
+});
+
 // --- Pass-through ---
 
 it('passes through arbitrary attributes on wrapper', function () {
     $view = $this->blade('<x-hwc::combobox name="fruit" :options="[\'apple\' => \'Apple\']" data-test="x" />');
 
     $view->assertSee('data-test="x"', false);
+});
+
+// --- old() / session restore ---
+
+it('restores old value from session after failed submit', function () {
+    session()->put('_old_input', ['fruit' => 'banana']);
+
+    $view = $this->blade('<x-hwc::combobox name="fruit" :options="[\'apple\' => \'Apple\', \'banana\' => \'Banana\']" value="apple" />');
+
+    $view->assertSee('<span data-combobox-target="selectedLabel">Banana</span>', false);
+});
+
+it('prefers old value over the explicit value prop', function () {
+    session()->put('_old_input', ['fruit' => 'banana']);
+
+    $view = $this->blade('<x-hwc::combobox name="fruit" :options="[\'apple\' => \'Apple\', \'banana\' => \'Banana\']" value="apple" />');
+
+    $view->assertSee('<span data-combobox-target="selectedLabel">Banana</span>', false);
+    $view->assertDontSee('<span data-combobox-target="selectedLabel">Apple</span>', false);
+});
+
+it('skips old() restore when old is false', function () {
+    session()->put('_old_input', ['fruit' => 'banana']);
+
+    $view = $this->blade('<x-hwc::combobox name="fruit" :options="[\'apple\' => \'Apple\', \'banana\' => \'Banana\']" value="apple" :old="false" />');
+
+    $view->assertSee('<span data-combobox-target="selectedLabel">Apple</span>', false);
+    $view->assertDontSee('<span data-combobox-target="selectedLabel">Banana</span>', false);
+});
+
+it('restores old value for array-notation field names', function () {
+    session()->put('_old_input', ['items' => [['category' => 'banana']]]);
+
+    $view = $this->blade('<x-hwc::combobox name="items[0][category]" :options="[\'apple\' => \'Apple\', \'banana\' => \'Banana\']" />');
+
+    $view->assertSee('<span data-combobox-target="selectedLabel">Banana</span>', false);
+});
+
+it('uses custom error-key for old() lookup', function () {
+    session()->put('_old_input', ['cat' => 'banana']);
+
+    $view = $this->blade('<x-hwc::combobox name="fruit" error-key="cat" :options="[\'apple\' => \'Apple\', \'banana\' => \'Banana\']" value="apple" />');
+
+    $view->assertSee('<span data-combobox-target="selectedLabel">Banana</span>', false);
+});
+
+it('derives a stable id from name when id is not provided', function () {
+    $view = $this->blade('<x-hwc::combobox name="fruit" :options="[\'apple\' => \'Apple\']" />');
+
+    $view->assertSee('id="fruit"', false);
+    $view->assertSee('id="fruit-trigger"', false);
+});
+
+it('derives id from array-notation name', function () {
+    $view = $this->blade('<x-hwc::combobox name="items[0][cat]" :options="[\'apple\' => \'Apple\']" />');
+
+    $view->assertSee('id="items-0-cat"', false);
 });

@@ -1,6 +1,6 @@
 import { afterEach, expect, test } from "bun:test";
 
-import { mountController, wait, dispatchEvent } from "../../resources/js/helpers/test_stimulus.js";
+import { mountController } from "../../resources/js/helpers/test_stimulus.js";
 import ComboboxController from "../../resources/js/controllers/combobox_controller.js";
 
 let mounted;
@@ -103,97 +103,98 @@ test.serial("toggles aria-hidden on open/close", async () => {
     expect(popover.getAttribute("aria-hidden")).toBe("true");
 });
 
-test.serial("sets left:auto and right when popover overflows viewport right edge", async () => {
-    mounted = await mountController("select", ComboboxController, `
-        <div data-controller="select">
-            <button type="button" data-select-target="trigger"><span data-select-target="selectedLabel">A</span></button>
-            <div data-select-target="popover">
-                <div data-select-target="listbox">
-                    <div role="option" data-value="a">Long option text</div>
+test.serial("setActiveOption applies and removes activeClass from data attribute", async () => {
+    mounted = await mountController(
+        "select",
+        ComboboxController,
+        `
+            <div data-controller="select" data-select-active-class="is-active highlight">
+                <button type="button" data-select-target="trigger"><span data-select-target="selectedLabel">A</span></button>
+                <div data-select-target="popover" aria-hidden="true">
+                    <div data-select-target="listbox">
+                        <div role="option" data-value="a" id="opt-a">A</div>
+                        <div role="option" data-value="b" id="opt-b">B</div>
+                    </div>
                 </div>
+                <input type="hidden" data-select-target="input" />
             </div>
-            <input type="hidden" data-select-target="input" />
-        </div>
-    `);
+        `,
+    );
 
     const ctrl = mounted.controller;
-    const popover = ctrl.popoverTarget;
+    const [a, b] = ctrl.options;
 
-    ctrl.triggerTarget.getBoundingClientRect = () => ({
-        x: 900, y: 100, width: 200, height: 40,
-        top: 100, right: 1100, bottom: 140, left: 900,
-        toJSON: () => ({}),
-    });
+    ctrl.setActiveOption(0);
+    expect(a.classList.contains("is-active")).toBe(true);
+    expect(a.classList.contains("highlight")).toBe(true);
 
-    Object.defineProperty(popover, "offsetWidth", { value: 300, configurable: true });
-
-    ctrl.openPopover();
-
-    expect(popover.style.left).toBe("auto");
-    expect(popover.style.right).toBe("4px");
+    ctrl.setActiveOption(1);
+    expect(a.classList.contains("is-active")).toBe(false);
+    expect(a.classList.contains("highlight")).toBe(false);
+    expect(b.classList.contains("is-active")).toBe(true);
+    expect(b.classList.contains("highlight")).toBe(true);
 });
 
-test.serial("limits listbox height when popover overflows viewport bottom", async () => {
-    mounted = await mountController("select", ComboboxController, `
-        <div data-controller="select">
-            <button type="button" data-select-target="trigger"><span data-select-target="selectedLabel">A</span></button>
-            <div data-select-target="popover">
-                <div data-select-target="listbox">
-                    <div role="option" data-value="a">Option</div>
+test.serial("updateValue toggles placeholderClass on the label in multiple mode", async () => {
+    mounted = await mountController(
+        "select",
+        ComboboxController,
+        `
+            <div
+                data-controller="select"
+                data-select-placeholder-class="muted"
+                data-placeholder="Pick some"
+            >
+                <button type="button" data-select-target="trigger">
+                    <span data-select-target="selectedLabel">Pick some</span>
+                </button>
+                <div data-select-target="popover" aria-hidden="true">
+                    <div data-select-target="listbox" aria-multiselectable="true">
+                        <div role="option" data-value="a">A</div>
+                        <div role="option" data-value="b">B</div>
+                    </div>
                 </div>
+                <input type="hidden" data-select-target="input" />
             </div>
-            <input type="hidden" data-select-target="input" />
-        </div>
-    `);
+        `,
+    );
 
     const ctrl = mounted.controller;
-    const popover = ctrl.popoverTarget;
-    const listbox = ctrl.listboxTarget;
+    const label = ctrl.selectedLabelTarget;
+    const [a] = ctrl.options;
 
-    ctrl.triggerTarget.getBoundingClientRect = () => ({
-        x: 100, y: 700, width: 200, height: 40,
-        top: 700, right: 300, bottom: 740, left: 100,
-        toJSON: () => ({}),
-    });
+    // Initial connect runs updateValue with no selection -> muted applied
+    expect(label.classList.contains("muted")).toBe(true);
 
-    Object.defineProperty(popover, "offsetHeight", { value: 200, configurable: true });
+    ctrl.updateValue([a]);
+    expect(label.classList.contains("muted")).toBe(false);
 
-    ctrl.openPopover();
-
-    expect(listbox.style.overflowY).toBe("auto");
-    expect(listbox.style.maxHeight).not.toBe("");
+    ctrl.updateValue([]);
+    expect(label.classList.contains("muted")).toBe(true);
 });
 
-test.serial("resets overflow styles on close", async () => {
-    mounted = await mountController("select", ComboboxController, `
-        <div data-controller="select">
-            <button type="button" data-select-target="trigger"><span data-select-target="selectedLabel">A</span></button>
-            <div data-select-target="popover" aria-hidden="true">
-                <div data-select-target="listbox">
-                    <div role="option" data-value="a">A</div>
+test.serial("setActiveOption is a no-op on classes when activeClass is not set", async () => {
+    mounted = await mountController(
+        "select",
+        ComboboxController,
+        `
+            <div data-controller="select">
+                <button type="button" data-select-target="trigger"><span data-select-target="selectedLabel">A</span></button>
+                <div data-select-target="popover" aria-hidden="true">
+                    <div data-select-target="listbox">
+                        <div role="option" data-value="a">A</div>
+                    </div>
                 </div>
+                <input type="hidden" data-select-target="input" />
             </div>
-            <input type="hidden" data-select-target="input" />
-        </div>
-    `);
+        `,
+    );
 
     const ctrl = mounted.controller;
-    const popover = ctrl.popoverTarget;
-    const listbox = ctrl.listboxTarget;
+    const [a] = ctrl.options;
+    const beforeLength = a.classList.length;
 
-    ctrl.triggerTarget.getBoundingClientRect = () => ({
-        x: 100, y: 700, width: 200, height: 40,
-        top: 700, right: 300, bottom: 740, left: 100,
-        toJSON: () => ({}),
-    });
-
-    Object.defineProperty(popover, "offsetHeight", { value: 200, configurable: true });
-    ctrl.openPopover();
-    expect(listbox.style.overflowY).toBe("auto");
-
-    ctrl.closePopover();
-
-    expect(listbox.style.overflowY).toBe("");
-    expect(popover.style.left).toBe("");
-    expect(popover.style.right).toBe("");
+    ctrl.setActiveOption(0);
+    expect(a.classList.length).toBe(beforeLength);
+    expect(ctrl.triggerTarget.getAttribute("aria-activedescendant")).toBe("");
 });

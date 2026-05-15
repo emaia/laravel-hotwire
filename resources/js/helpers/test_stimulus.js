@@ -60,4 +60,5 @@ function installGlobals(testWindow) {
     globalThis.Node = testWindow.Node;
     globalThis.requestAnimationFrame = testWindow.requestAnimationFrame.bind(testWindow);
     globalThis.cancelAnimationFrame = testWindow.cancelAnimationFrame.bind(testWindow);
+    globalThis.getComputedStyle = testWindow.getComputedStyle.bind(testWindow);
 }

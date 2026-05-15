@@ -27,10 +27,11 @@
     @if ($isRequired) aria-required="true" required @endif
     {{ $attributes->class([$class])->except(['required']) }}
 >
-@if ($placeholder)
-<option value="" disabled @if ($placeholderSelected) selected @endif>{{ $placeholder }}</option>
-@endif
-@foreach ($options as $value => $label)
-<option value="{{ $value }}"@if ($resolvedSelected == $value) selected @endif>{{ $label }}</option>
-@endforeach
+    @if ($placeholder || $nullable)
+        <option value="" @if ($placeholderSelected) selected @endif>{{ $placeholder ?? '' }}</option>
+    @endif
+
+    @foreach ($options as $value => $label)
+        <option value="{{ $value }}"@if ($resolvedSelected == $value) selected @endif>{{ $label }}</option>
+    @endforeach
 </select>

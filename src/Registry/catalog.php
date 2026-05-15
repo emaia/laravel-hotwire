@@ -1,10 +1,7 @@
 <?php
 
-<<<<<<< Updated upstream
 use Emaia\LaravelHotwire\Components\CheckboxGroup;
-=======
 use Emaia\LaravelHotwire\Components\Combobox;
->>>>>>> Stashed changes
 use Emaia\LaravelHotwire\Components\ConfirmDialog;
 use Emaia\LaravelHotwire\Components\Error;
 use Emaia\LaravelHotwire\Components\FlashContainer;
@@ -12,11 +9,12 @@ use Emaia\LaravelHotwire\Components\FlashMessage;
 use Emaia\LaravelHotwire\Components\Form;
 use Emaia\LaravelHotwire\Components\Input;
 use Emaia\LaravelHotwire\Components\Label;
-use Emaia\LaravelHotwire\Components\Loader;
 use Emaia\LaravelHotwire\Components\Modal;
 use Emaia\LaravelHotwire\Components\Optimistic;
+use Emaia\LaravelHotwire\Components\Popover;
 use Emaia\LaravelHotwire\Components\ScrollProgress;
 use Emaia\LaravelHotwire\Components\Select;
+use Emaia\LaravelHotwire\Components\Spinner;
 use Emaia\LaravelHotwire\Components\Textarea;
 use Emaia\LaravelHotwire\Components\Timeago;
 
@@ -92,7 +90,7 @@ return [
             'docs' => 'docs/components/label.md',
             'category' => 'forms',
             'description' => 'Form label with required/optional markers and optional tooltip',
-            'controllers' => [],
+            'controllers' => ['tooltip'],
         ],
         'select' => [
             'class' => Select::class,
@@ -110,10 +108,10 @@ return [
             'description' => 'Textarea with auto-resize and optional char counter',
             'controllers' => ['auto-resize', 'char-counter'],
         ],
-        'loader' => [
-            'class' => Loader::class,
+        'spinner' => [
+            'class' => Spinner::class,
             'view' => 'hotwire::component-views.loader',
-            'docs' => 'docs/components/loader.md',
+            'docs' => 'docs/components/spinner.md',
             'category' => 'feedback',
             'description' => 'Animated SVG spinner — no JavaScript required',
             'controllers' => [],
@@ -133,6 +131,14 @@ return [
             'category' => 'turbo',
             'description' => 'Declares an inline optimistic Turbo Stream action for any Turbo trigger',
             'controllers' => [],
+        ],
+        'popover' => [
+            'class' => Popover::class,
+            'view' => 'hotwire::component-views.popover',
+            'docs' => 'docs/components/popover.md',
+            'category' => 'overlay',
+            'description' => 'Anchored dialog toggled by a trigger, with click-outside and Escape to dismiss',
+            'controllers' => ['popover'],
         ],
         'scroll-progress' => [
             'class' => ScrollProgress::class,
@@ -290,6 +296,12 @@ return [
             'docs' => 'docs/controllers/optimistic/link.md',
             'category' => 'turbo',
             'description' => 'Dispatches optimistic UI updates immediately when a Turbo-driven link is clicked',
+        ],
+        'popover' => [
+            'source' => 'resources/js/controllers/popover_controller.js',
+            'docs' => 'docs/controllers/popover.md',
+            'category' => 'overlay',
+            'description' => 'Toggles an anchored dialog from a trigger, closing on click-outside, Escape and other popovers',
         ],
         'remote-form' => [
             'source' => 'resources/js/controllers/remote_form_controller.js',

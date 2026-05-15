@@ -18,10 +18,10 @@ the box.
 - [Blade Components](#blade-components)
 - [Stimulus Controllers](#stimulus-controllers-standalone)
     - [Publish Controllers](#publish-stimulus-controllers)
-      - [Top-level controllers](#top-level-controllers)
-      - [Turbo](#turbo-1)
-      - [Optimistic](#optimistic)
-      - [Dev](#dev)
+        - [Top-level controllers](#top-level-controllers)
+        - [Turbo](#turbo-1)
+        - [Optimistic](#optimistic)
+        - [Dev](#dev)
 - [Verify Your Setup](#verify-your-setup)
 - [Configuration](#configuration)
 - [View Customization](#view-customization)
@@ -250,8 +250,8 @@ them automatically via `import.meta.glob`.
 |----------------------------------------------------------------|-----------------------|-----------------|---------------------------------------------------|
 | [Animated Number](docs/controllers/animated-number.md)         | `animated-number`     | —               | [readme](docs/controllers/animated-number.md)     |
 | [Auto Save](docs/controllers/auto-save.md)                     | `auto-save`           | —               | [readme](docs/controllers/auto-save.md)           |
-| [Auto Resize](docs/controllers/auto-resize.md)                | `auto-resize`         | —               | [readme](docs/controllers/auto-resize.md)         |
-| [Auto Select](docs/controllers/auto-select.md)                | `auto-select`         | —               | [readme](docs/controllers/auto-select.md)         |
+| [Auto Resize](docs/controllers/auto-resize.md)                 | `auto-resize`         | —               | [readme](docs/controllers/auto-resize.md)         |
+| [Auto Select](docs/controllers/auto-select.md)                 | `auto-select`         | —               | [readme](docs/controllers/auto-select.md)         |
 | [Auto Submit](docs/controllers/auto-submit.md)                 | `auto-submit`         | —               | [readme](docs/controllers/auto-submit.md)         |
 | [Char Counter](docs/controllers/char-counter.md)               | `char-counter`        | —               | [readme](docs/controllers/char-counter.md)        |
 | [Checkbox Select All](docs/controllers/checkbox-select-all.md) | `checkbox-select-all` | —               | [readme](docs/controllers/checkbox-select-all.md) |
@@ -430,6 +430,18 @@ import "./turbo";
 import "./stimulus";
 import "../controllers";
 
+// resources/js/libs/turbo.js
+import * as Turbo from "@hotwired/turbo";
+
+export default Turbo;
+
+// resources/js/libs/stimulus.js
+import {Application} from '@hotwired/stimulus'
+
+const Stimulus = Application.start()
+window.Stimulus = Stimulus
+export {Stimulus}
+
 // resources/js/controllers/index.js
 import {Stimulus} from "../libs/stimulus";
 import {registerControllers} from "@emaia/stimulus-dynamic-loader";
@@ -453,11 +465,13 @@ Add these settings to your CSS entrypoint `resources/css/app.css`:
 
 ```css
 @source '../../vendor/emaia/laravel-hotwire/resources/views/**/*.blade.php';
-@custom-variant turbo-frame (turbo-frame[src] &);
+@custom-variant turbo-preview (html[data-turbo-preview] &);
+@custom-variant turbo-visit (html[aria-busy="true"] &);
+@custom-variant form-busy (form[aria-busy="true"] &);
+@custom-variant frame-busy (turbo-frame[busy] &);
+@custom-variant in-turbo-frame (turbo-frame &);
+@custom-variant in-remote-turbo-frame (turbo-frame[src] &);
 @custom-variant modal ([data-modal-target="dialog"] &);
-@custom-variant aria-busy (form[aria-busy="true"] &);
-@custom-variant self-aria-busy (html[aria-busy="true"] &);
-@custom-variant turbo-frame-aria-busy (turbo-frame[aria-busy="true"] &);
 ```
 
 ## Changelog
@@ -470,7 +484,8 @@ Contributions are welcome via pull requests.
 
 ## Security Vulnerabilities
 
-Please review [our security policy](https://github.com/emaia/laravel-hotwire/security/policy) on how to report security vulnerabilities.
+Please review [our security policy](https://github.com/emaia/laravel-hotwire/security/policy) on how to report security
+vulnerabilities.
 
 ## Credits
 

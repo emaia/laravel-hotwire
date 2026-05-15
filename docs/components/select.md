@@ -18,7 +18,8 @@ Select dropdown with auto-derived `id`/`errorKey` from `name`, automatic `old()`
 | `selected`    | `mixed`        | `null`                         | Selected value, merged with `old($errorKey, $selected)`            |
 | `errorKey`    | `string\|null` | derived from `name`            | Override for arrays where HTML `name` ≠ validation key            |
 | `old`         | `bool`         | `true`                         | Disable `old()` auto-merge                                        |
-| `placeholder` | `string\|null` | `null`                         | Disabled placeholder option as the first item                     |
+| `placeholder` | `string\|null` | `null`                         | Placeholder option as the first item (re-selectable)              |
+| `nullable`    | `bool`         | `false`                        | Render an empty first option even without a placeholder string    |
 | `class`       | `string`       | `""`                           | Merged on `<select>`                                              |
 
 Any other HTML attribute (`disabled`, `data-*`, `aria-*`) passes through.
@@ -38,7 +39,19 @@ Same convention as `<x-hwc::input>`:
 <x-hwc::select name="status" :options="$statuses" placeholder="Select a status..." />
 ```
 
-Renders a `<option value="" disabled selected>` as the first item. When a `selected` value is provided, the placeholder is rendered without `selected`.
+Renders a re-selectable `<option value="" selected>` as the first item. When a `selected` value is provided, the placeholder is rendered without `selected`. Users can return to the placeholder after making a selection — ideal for optional fields.
+
+## Nullable
+
+```blade
+<x-hwc::select name="status" :options="$statuses" :nullable="true" />
+```
+
+When no `placeholder` string is provided, renders an empty `<option value=""></option>` so no option is pre-selected. Combine with `placeholder` for a labeled empty choice:
+
+```blade
+<x-hwc::select name="status" :options="$statuses" :nullable="true" placeholder="No status" />
+```
 
 ## Inheriting from `<x-hwc::field>`
 

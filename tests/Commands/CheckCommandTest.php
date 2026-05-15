@@ -253,7 +253,7 @@ it('shows which component requires each controller', function () {
 });
 
 it('shows dash for component without controller dependency', function () {
-    writeView('page.blade.php', '<x-hwc::loader />');
+    writeView('page.blade.php', '<x-hwc::spinner />');
 
     $this->artisan('hotwire:check --no-interaction')
         ->expectsOutputToContain('No controllers required')

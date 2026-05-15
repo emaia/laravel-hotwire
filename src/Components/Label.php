@@ -12,8 +12,6 @@ class Label extends Component
         public ?string $value = null,
         public ?bool $required = null,
         public string $requiredLabel = '*',
-        public bool $optional = false,
-        public ?string $info = null,
         public string $class = '',
     ) {}
 

@@ -34,7 +34,7 @@
 @endphp
 
 @if ($clearable)
-<span @class(['hwc-input flex flex-col justify-center items-center relative', $wrapperClass]) data-controller="clear-input">
+<span @class(['inline-flex flex-col justify-center items-center relative', $wrapperClass]) data-controller="clear-input">
 @endif
 
 <input
@@ -55,9 +55,25 @@
     <button
         type="button"
         data-clear-input-target="clearButton"
-        class="clear-input-button absolute inset-y-0- right-3 hidden items-center px-1 pb-0.5 rounded-full"
+        class="clear-input-button absolute right-1.5 hidden items-center"
         tabindex="0"
         aria-label="Clear"
-    >&times;</button>
+    >
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24" height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="lucide lucide-circle-x-icon lucide-circle-x stroke-current w-4 h-4"
+        >
+            <circle cx="12" cy="12" r="10"/>
+            <path d="m15 9-6 6"/>
+            <path d="m9 9 6 6"/>
+        </svg>
+    </button>
 </span>
 @endif

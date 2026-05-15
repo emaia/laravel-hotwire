@@ -16,11 +16,5 @@
 
     @if ($required)
         <span class="label-required" aria-hidden="true">{{ $requiredLabel }}</span>
-    @elseif ($optional)
-        <span class="label-optional">(opcional)</span>
-    @endif
-
-    @if ($info)
-        <span data-controller="tooltip" data-tooltip-content-value="{{ $info }}"></span>
     @endif
 </label>

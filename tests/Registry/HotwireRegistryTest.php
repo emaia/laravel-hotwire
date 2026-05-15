@@ -7,7 +7,7 @@ it('loads the component catalog', function () {
 
     expect($registry->component('modal'))->not->toBeNull()
         ->and($registry->component('flash-message'))->not->toBeNull()
-        ->and($registry->component('loader'))->not->toBeNull();
+        ->and($registry->component('spinner'))->not->toBeNull();
 });
 
 it('loads the controller catalog', function () {
