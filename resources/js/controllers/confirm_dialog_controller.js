@@ -43,6 +43,14 @@ export default class ConfirmController extends Controller {
     }
 
     intercept(event) {
+        if (event.ctrlKey || event.metaKey || event.shiftKey) {
+            return;
+        }
+
+        if (event.button !== undefined && event.button !== 0) {
+            return;
+        }
+
         if (this.confirmed) {
             this.confirmed = false;
             return;

@@ -40,6 +40,9 @@ export default class ModalController extends Controller {
     }
 
     trackClickedLink = (event) => {
+        if (event.ctrlKey || event.metaKey || event.shiftKey) return;
+        if (event.button !== undefined && event.button !== 0) return;
+
         if (!this.hasDynamicContentTarget) return;
         const frameId = this.dynamicContentTarget.id;
         if (!frameId) return;
@@ -74,6 +77,14 @@ export default class ModalController extends Controller {
     }
 
     open(event) {
+        if (event && (event.ctrlKey || event.metaKey || event.shiftKey)) {
+            return;
+        }
+
+        if (event && event.button !== undefined && event.button !== 0) {
+            return;
+        }
+
         const currentTime = Date.now();
         const clickedElement = event?.target;
 
