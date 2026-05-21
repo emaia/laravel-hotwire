@@ -64,7 +64,7 @@ Customize the counter markup with the `counter` slot:
 ## Inheriting from `<x-hwc::field>`
 
 ```blade
-<x-hwc::field name="bio" required>
+<x-hwc::field name="bio" label="Bio" required>
     <x-hwc::textarea auto-resize />
 </x-hwc::field>
 ```

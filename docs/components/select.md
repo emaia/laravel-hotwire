@@ -56,7 +56,7 @@ When no `placeholder` string is provided, renders an empty `<option value=""></o
 ## Inheriting from `<x-hwc::field>`
 
 ```blade
-<x-hwc::field name="status" required>
+<x-hwc::field name="status" label="Status" required>
     <x-hwc::select :options="[1 => 'Active', 2 => 'Inactive']" />
 </x-hwc::field>
 ```

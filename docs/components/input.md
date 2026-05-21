@@ -89,7 +89,7 @@ When the page is re-rendered after a validation redirect (i.e. Laravel has flash
 
 `old()`-driven derivation kicks in only while flash data exists; on a fresh load it falls back to `:checked`. Pass `:old="false"` to opt out entirely.
 
-The `clearable`, `mask`, `auto-select`, and `:counter` props are no-ops for checkable types.
+The `clearable`, `mask`, and `auto-select` props are no-ops for checkable types.
 
 ### Automatic unique ids for groups
 
@@ -107,17 +107,15 @@ Passing an explicit `id` opts out of the auto-derivation: the component uses you
 
 ## Inheriting from `<x-hwc::field>`
 
-`<x-hwc::field>` is a thin context wrapper: it propagates `name`, `errorKey`, and `required` to nested `<x-hwc::label>`, `<x-hwc::input>`, and `<x-hwc::error>` via `@aware`. It does not auto-render any markup — you compose the children yourself:
+`<x-hwc::field>` propagates `name`, `errorKey`, and `required` to nested children via `@aware`. It auto-renders `<x-hwc::label>`, `<x-hwc::description>`, and `<x-hwc::error>` when the corresponding props are set:
 
 ```blade
-<x-hwc::field name="email" required>
-    <x-hwc::label>E-mail</x-hwc::label>
+<x-hwc::field name="email" label="E-mail" required>
     <x-hwc::input type="email" auto-select />
-    <x-hwc::error />
 </x-hwc::field>
 ```
 
-> **ARIA contract:** the input always emits `aria-describedby="{id}-error"`. For screen readers to find the description, you must render `<x-hwc::error>` inside the field. Forgetting it makes the reference dangle silently.
+> **ARIA contract:** the input always emits `aria-describedby="{id}-error"`. The field auto-renders `<x-hwc::error>` for you, so the reference is always satisfied by default. Opt out with `:error="false"` and render `<x-hwc::error>` manually if needed.
 
 ## Required controllers
 

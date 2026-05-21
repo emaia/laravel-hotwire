@@ -1,6 +1,6 @@
 # Label
 
-Form `<label>` with optional required/optional markers and an inline tooltip.
+Form `<label>` with optional required marker. When inside `<x-hwc::field>`, inherits `name` and `required` via `@aware`.
 
 ## Quick example
 
@@ -10,16 +10,14 @@ Form `<label>` with optional required/optional markers and an inline tooltip.
 
 ## Props
 
-| Prop             | Type           | Default | Description                                                    |
-|------------------|----------------|---------|----------------------------------------------------------------|
-| `for`            | `string\|null` | —       | Sets `<label for="...">`                                       |
-| `name`           | `string\|null` | —       | Derives `for` when `for` is omitted (handles bracket notation) |
-| `value`          | `string\|null` | —       | Label text (alternative to slot)                               |
-| `required`       | `bool`         | `false` | Renders required marker (decorative — does not set `required` on the input) |
-| `required-label` | `string`       | `"*"`   | Marker text                                                    |
-| `optional`       | `bool`         | `false` | Renders `(opcional)` marker                                    |
-| `info`           | `string\|null` | `null`  | Renders a tooltip (Stimulus `tooltip` controller)              |
-| `class`          | `string`       | `""`    | Merged                                                         |
+| Prop             | Type           | Default   | Description                                                    |
+|------------------|----------------|-----------|----------------------------------------------------------------|
+| `for`            | `string\|null` | —         | Sets `<label for="...">`                                       |
+| `name`           | `string\|null` | —         | Derives `for` when `for` is omitted (handles bracket notation) |
+| `value`          | `string\|null` | —         | Label text (alternative to slot)                               |
+| `required`       | `bool\|null`   | `null`    | Renders required marker when `true`. Inherited via `@aware` from `<x-hwc::field>`. |
+| `required-label` | `string`       | `"*"`     | Marker text                                                    |
+| `class`          | `string`       | `""`      | Merged                                                         |
 
 Additional HTML attributes pass through.
 
@@ -41,14 +39,17 @@ Pass an explicit `for` (or `id` via `<x-hwc::label id="...">`-style ancestor) to
 
 ## Inheriting from `<x-hwc::field>`
 
-When inside `<x-hwc::field>`, `for` is derived from the field's `name` automatically and `required` propagates:
+When inside `<x-hwc::field>`, `name` and `required` are inherited via `@aware`. The field's `label` prop auto-renders `<x-hwc::label>` with the right `for` and required marker — no need to write `<x-hwc::label>` manually for simple cases:
 
 ```blade
+{{-- Field auto-renders the label --}}
 <x-hwc::field name="email" label="E-mail" required>
-    {{-- Label and Input both pick up name + required via @aware --}}
+    <x-hwc::input type="email" />
+</x-hwc::field>
+
+{{-- Manual label — still works --}}
+<x-hwc::field name="email" required>
+    <x-hwc::label>E-mail</x-hwc::label>
+    <x-hwc::input type="email" />
 </x-hwc::field>
 ```
-
-## Info tooltip
-
-Renders `data-controller="tooltip"` only when `info` is provided. Requires the `tooltip` controller to be published (`php artisan hotwire:controllers tooltip`).

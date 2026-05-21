@@ -43,11 +43,12 @@ If multiple messages are present, they are wrapped in `<ul><li>` automatically.
 
 ## Inheriting from `<x-hwc::field>`
 
-When inside `<x-hwc::field>`, `name`, `errorKey` and `id` are inherited via `@aware`:
+When inside `<x-hwc::field>`, `name`, `errorKey`, and `id` are inherited via `@aware`. The field auto-renders `<x-hwc::error>` at the bottom when `name` is set — no need to write it manually:
 
 ```blade
 <x-hwc::field name="email" label="E-mail">
     <x-hwc::input type="email" />
-    {{-- Field renders <x-hwc::error /> automatically at the bottom --}}
 </x-hwc::field>
 ```
+
+Opt out with `:error="false"` and place `<x-hwc::error>` anywhere in the slot for custom positioning.
