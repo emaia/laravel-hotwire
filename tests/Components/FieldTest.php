@@ -96,6 +96,148 @@ it('auto-rendered error uses field error-key override', function () {
     $view->assertSee('Required');
 });
 
+// --- Auto-rendered label ---
+
+it('auto-renders label before slot when label prop is provided', function () {
+    $view = $this->blade('
+        <x-hwc::field name="email" label="E-mail">
+            <x-hwc::input type="email" />
+        </x-hwc::field>
+    ');
+
+    $view->assertSee('<label', false);
+    $view->assertSee('E-mail');
+    $view->assertSee('for="email"', false);
+});
+
+it('auto-rendered label uses required-label prop', function () {
+    $view = $this->blade('
+        <x-hwc::field name="email" label="E-mail" required required-label="(obrigatório)">
+            <x-hwc::input type="email" />
+        </x-hwc::field>
+    ');
+
+    $view->assertSee('(obrigatório)');
+    $view->assertDontSee('*', false);
+});
+
+it('auto-rendered label shows default asterisk when required', function () {
+    $view = $this->blade('
+        <x-hwc::field name="email" label="E-mail" required>
+            <x-hwc::input type="email" />
+        </x-hwc::field>
+    ');
+
+    $html = (string) $view;
+    // The label contains '*' but rendered via component, not as raw '*'
+    expect($html)->toContain('<span class="label-required"');
+});
+
+it('does not auto-render label when label prop is null', function () {
+    $view = $this->blade('
+        <x-hwc::field name="email">
+            <x-hwc::input type="email" />
+        </x-hwc::field>
+    ');
+
+    $view->assertDontSee('<label', false);
+});
+
+it('does not auto-render label when label prop is empty string', function () {
+    $view = $this->blade('
+        <x-hwc::field name="email" label="">
+            <x-hwc::input type="email" />
+        </x-hwc::field>
+    ');
+
+    $view->assertDontSee('<label', false);
+});
+
+it('auto-rendered label coexists with auto-rendered error', function () {
+    $view = $this->blade('
+        <x-hwc::field name="email" label="E-mail">
+            <x-hwc::input type="email" />
+        </x-hwc::field>
+    ');
+
+    $view->assertSee('for="email"', false);
+    $view->assertSee('id="email-error"', false);
+});
+
+it('auto-rendered label appears before slot content', function () {
+    $view = $this->blade('
+        <x-hwc::field name="email" label="E-mail">
+            <x-hwc::input type="email" value="test" />
+        </x-hwc::field>
+    ');
+
+    $html = (string) $view;
+    $labelPos = strpos($html, '<label');
+    $inputPos = strpos($html, 'value="test"');
+    expect($labelPos)->toBeLessThan($inputPos);
+});
+
+// --- Auto-rendered description ---
+
+it('auto-renders description between slot and error when description prop is provided', function () {
+    $view = $this->blade('
+        <x-hwc::field name="email" description="Enter your work email address.">
+            <x-hwc::input type="email" />
+        </x-hwc::field>
+    ');
+
+    $view->assertSee('hwc-description', false);
+    $view->assertSee('Enter your work email address.');
+});
+
+it('does not auto-render description when description prop is null', function () {
+    $view = $this->blade('
+        <x-hwc::field name="email">
+            <x-hwc::input type="email" />
+        </x-hwc::field>
+    ');
+
+    $view->assertDontSee('hwc-description', false);
+});
+
+it('does not auto-render description when description prop is empty string', function () {
+    $view = $this->blade('
+        <x-hwc::field name="email" description="">
+            <x-hwc::input type="email" />
+        </x-hwc::field>
+    ');
+
+    $view->assertDontSee('hwc-description', false);
+});
+
+it('auto-rendered description coexists with auto-rendered label', function () {
+    $view = $this->blade('
+        <x-hwc::field name="email" label="E-mail" description="We will never share your email.">
+            <x-hwc::input type="email" />
+        </x-hwc::field>
+    ');
+
+    $view->assertSee('<label', false);
+    $view->assertSee('E-mail');
+    $view->assertSee('hwc-description', false);
+    $view->assertSee('We will never share your email.');
+});
+
+it('auto-rendered description appears after slot and before error', function () {
+    $view = $this->blade('
+        <x-hwc::field name="email" description="Helper text.">
+            <x-hwc::input type="email" value="test" />
+        </x-hwc::field>
+    ');
+
+    $html = (string) $view;
+    $inputPos = strpos($html, 'value="test"');
+    $descPos = strpos($html, 'hwc-description');
+    $errorPos = strpos($html, 'id="email-error"');
+    expect($inputPos)->toBeLessThan($descPos);
+    expect($descPos)->toBeLessThan($errorPos);
+});
+
 // --- @aware propagation ---
 
 it('propagates name to nested input', function () {

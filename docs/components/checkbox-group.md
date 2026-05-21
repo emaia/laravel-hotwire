@@ -8,7 +8,6 @@ Renders a group of checkboxes from an `options` array, with optional "select-all
 <x-hwc::checkbox-group
     name="user_ids[]"
     :options="$users->pluck('name', 'id')->toArray()"
-    :selected="old('user_ids', [])"
     select-all
 />
 ```
@@ -23,6 +22,7 @@ Renders a group of checkboxes from an `options` array, with optional "select-all
 | `select-all`       | `bool`         | `false`       | Renders a master checkbox that toggles all items                |
 | `select-all-label` | `string\|null` | `"Select all"` | Custom label for the master checkbox                           |
 | `class`            | `string`       | `""`          | Merged on the wrapper `<div>`                                  |
+| `old`              | `bool`         | `true`        | When `true`, merges `old()` input over `selected`              |
 
 ## Without select-all
 
@@ -44,7 +44,6 @@ When `select-all` is enabled, the wrapper gets `data-controller="checkbox-select
 <x-hwc::checkbox-group
     name="tags[]"
     :options="[1 => 'Laravel', 2 => 'Hotwire', 3 => 'Stimulus']"
-    :selected="old('tags', [])"
     select-all
     select-all-label="All tags"
 />

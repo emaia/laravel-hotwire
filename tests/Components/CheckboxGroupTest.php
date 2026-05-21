@@ -1,9 +1,19 @@
 <?php
 
+use Illuminate\Support\MessageBag;
 use Illuminate\Support\ViewErrorBag;
+
+function shareCheckboxGroupErrors(array $errorsByKey): void
+{
+    $bag = new ViewErrorBag;
+    $bag->put('default', new MessageBag($errorsByKey));
+    view()->share('errors', $bag);
+}
 
 beforeEach(function () {
     view()->share('errors', new ViewErrorBag);
+    request()->setLaravelSession($this->app['session.store']);
+    session()->forget('_old_input');
 });
 
 // --- Basic render ---
@@ -25,6 +35,17 @@ it('renders a single checkbox', function () {
     $view->assertSee('Active');
 });
 
+// --- Non-associative options ---
+
+it('normalizes flat options array so keys equal values', function () {
+    $view = $this->blade('<x-hwc::checkbox-group name="branchs[]" :options="[\'main\', \'dev\', \'next\']" :selected="[\'main\', \'dev\']" />');
+
+    $view->assertSee('value="main"', false);
+    $view->assertSee('value="dev"', false);
+    $view->assertSee('value="next"', false);
+    $view->assertSee('checked', false);
+});
+
 // --- Selected ---
 
 it('checks selected values', function () {
@@ -43,6 +64,44 @@ it('does not check anything when selected is empty', function () {
     $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\', 2 => \'Two\']" />');
 
     $view->assertDontSee('checked', false);
+});
+
+// --- Value + old() ---
+
+it('merges selected with old() input', function () {
+    session()->put('_old_input', ['ids' => [2]]);
+
+    $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\', 2 => \'Two\']" :selected="[1]" />');
+
+    $html = (string) $view;
+    expect($html)->toContain('value="2"');
+    expect($html)->toContain('checked');
+    // Only one checkbox should be checked (old wins over selected)
+    $this->assertEquals(1, substr_count($html, 'checked'));
+});
+
+it('disables old() when :old=false', function () {
+    session()->put('_old_input', ['ids' => [2]]);
+
+    $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\', 2 => \'Two\']" :selected="[1]" :old="false" />');
+
+    $html = (string) $view;
+    // :old=false means selected [1] remains, old [2] is ignored
+    expect($html)->toContain('value="1"');
+    expect($html)->toContain('checked');
+    $this->assertEquals(1, substr_count($html, 'checked'));
+});
+
+it('casts old() scalar value to array', function () {
+    session()->put('_old_input', ['branch' => 'main']);
+
+    $view = $this->blade('<x-hwc::checkbox-group name="branch" :options="[\'main\' => \'Main\', \'dev\' => \'Dev\']" :selected="[\'dev\']" />');
+
+    $html = (string) $view;
+    // Old scalar 'main' should be cast to array and checked
+    expect($html)->toContain('value="main"');
+    expect($html)->toContain('checked');
+    $this->assertEquals(1, substr_count($html, 'checked'));
 });
 
 // --- Select all ---
@@ -141,4 +200,85 @@ it('field overrides name from @aware', function () {
     ');
 
     $view->assertSee('name="custom[]"', false);
+});
+
+// --- Id derivation ---
+
+it('generates unique ids per checkbox from name', function () {
+    $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\', 2 => \'Two\']" />');
+
+    $view->assertSee('id="ids-1"', false);
+    $view->assertSee('id="ids-2"', false);
+});
+
+it('generates id from single name without brackets', function () {
+    $view = $this->blade('<x-hwc::checkbox-group name="active" :options="[1 => \'Active\']" />');
+
+    $view->assertSee('id="active-1"', false);
+});
+
+it('uses explicit id as base for per-checkbox ids', function () {
+    $view = $this->blade('<x-hwc::checkbox-group name="branchs[]" id="my-group" :options="[\'main\' => \'Main\', \'dev\' => \'Dev\']" />');
+
+    $view->assertSee('id="my-group-main"', false);
+    $view->assertSee('id="my-group-dev"', false);
+});
+
+it('does not set id when no name and no explicit id', function () {
+    $view = $this->blade('<x-hwc::checkbox-group :options="[1 => \'One\']" />');
+
+    $view->assertDontSee('id="', false);
+});
+
+// --- ARIA ---
+
+it('always sets aria-describedby on checkboxes', function () {
+    $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\', 2 => \'Two\']" />');
+
+    $view->assertSee('aria-describedby="ids-error"', false);
+});
+
+it('sets aria-invalid and data-invalid when error present', function () {
+    shareCheckboxGroupErrors(['ids' => ['Required.']]);
+
+    $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\']" />');
+
+    $view->assertSee('aria-invalid="true"', false);
+    $view->assertSee('data-invalid', false);
+});
+
+it('does not set aria-invalid when no errors', function () {
+    $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\']" />');
+
+    $view->assertDontSee('aria-invalid="true"', false);
+    $view->assertDontSee('data-invalid', false);
+});
+
+it('uses derived error key from bracket notation', function () {
+    shareCheckboxGroupErrors(['variables.0.name' => ['Required.']]);
+
+    $view = $this->blade('<x-hwc::checkbox-group name="variables[0][name]" :options="[\'a\' => \'A\']" />');
+
+    $view->assertSee('aria-invalid="true"', false);
+});
+
+it('uses explicit error key override', function () {
+    shareCheckboxGroupErrors(['custom.path' => ['Required.']]);
+
+    $view = $this->blade('<x-hwc::checkbox-group name="ids[]" error-key="custom.path" :options="[1 => \'One\']" />');
+
+    $view->assertSee('aria-invalid="true"', false);
+});
+
+it('uses error key for error lookup, aria-describedby from name', function () {
+    shareCheckboxGroupErrors(['custom' => ['Required.']]);
+
+    $view = $this->blade('<x-hwc::checkbox-group name="ids[]" error-key="custom" :options="[1 => \'One\']" />');
+
+    // aria-describedby follows the name-derived id, not the error key
+    $view->assertSee('aria-describedby="ids-error"', false);
+    // Errors looked up on the explicit error key
+    $view->assertSee('aria-invalid="true"', false);
+    // error-key prop is consumed by component, not leaked as DOM attribute
+    $view->assertDontSee('error-key', false);
 });
