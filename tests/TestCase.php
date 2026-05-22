@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Tests;
 
 use Emaia\LaravelHotwire\LaravelHotwireServiceProvider;
+use Emaia\LaravelHotwireTurbo\TurboServiceProvider;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Orchestra\Testbench\TestCase as Orchestra;
 
@@ -21,6 +22,7 @@ class TestCase extends Orchestra
     {
         return [
             LaravelHotwireServiceProvider::class,
+            TurboServiceProvider::class,
         ];
     }
 

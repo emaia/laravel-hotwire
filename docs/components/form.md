@@ -19,8 +19,11 @@ Form wrapper that composes optional Stimulus behaviors via boolean props. Render
 | `auto-submit`        | `bool`  | `false`  | Adds `auto-submit` controller (submit on input/change — requires `data-action` on fields) |
 | `unsaved-changes`    | `bool`  | `false`  | Warns before navigating away with unsaved changes                          |
 | `clean-query-params` | `bool`  | `false`  | Strips empty fields from GET query strings before submission                |
+| `track-frame-src`    | `bool`  | `false`  | Includes a hidden `_turbo_frame_src` input for correct redirect resolution inside Turbo Frames |
 
 Any other HTML attribute (`action`, `method`, `enctype`, `class`, `data-*`, `aria-*`) passes through to the `<form>` element. Method defaults to `post` unless overridden.
+
+The component automatically includes `@csrf` for all non-GET methods.
 
 ## Controllers
 
@@ -82,6 +85,35 @@ Removes empty parameters from the query string before submitting a GET form, avo
 ```
 
 See [clean-query-params controller](../controllers/clean-query-params.md).
+
+### CSRF protection
+
+The component automatically includes `@csrf` for all non-GET methods. You don't need to add it manually inside the slot:
+
+```blade
+<x-hwc::form :action="route('posts.store')" method="post">
+    <x-hwc::input name="title" />
+    <button type="submit">Save</button>
+</x-hwc::form>
+{{-- @csrf is automatically included --}}
+```
+
+GET forms (search, filters) don't get a CSRF token since they don't modify state.
+
+### Frame redirect resolution
+
+When a form lives inside a Turbo Frame (`<turbo-frame>`), validation failures would historically break out of the frame context because Laravel's default redirect-back points to the wrong URL. The `track-frame-src` prop solves this by including a hidden `_turbo_frame_src` input with the current page URL:
+
+```blade
+<turbo-frame id="content" src="/posts/create">
+    <x-hwc::form :action="route('posts.store')" method="post" track-frame-src>
+        <x-hwc::input name="title" />
+        <button type="submit">Save</button>
+    </x-hwc::form>
+</turbo-frame>
+```
+
+On validation failure, the server reads this input and redirects back to the frame's source URL, keeping the frame context intact. For client-side header injection (alternative approach), publish the standalone `turbo--frame-src` controller. See [frame-src controller](../controllers/turbo/frame-src.md).
 
 ## Required controllers
 

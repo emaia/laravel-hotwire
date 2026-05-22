@@ -33,7 +33,7 @@ return [
             'view' => 'hotwire::component-views.form',
             'docs' => 'docs/components/form.md',
             'category' => 'forms',
-            'description' => 'Form wrapper with optional Stimulus behaviors: auto-submit, unsaved-changes, clean-query-params',
+            'description' => 'Form wrapper with optional Stimulus behaviors, CSRF, and Turbo Frame redirect support',
             'controllers' => ['auto-submit', 'unsaved-changes', 'clean-query-params'],
         ],
         'checkbox-group' => [
@@ -342,6 +342,12 @@ return [
             'category' => 'utility',
             'description' => 'Adds Tippy.js tooltips to any element via data attributes',
             'npm' => ['tippy.js' => '^6.3.7'],
+        ],
+        'turbo--frame-src' => [
+            'source' => 'resources/js/controllers/turbo/frame_src_controller.js',
+            'docs' => 'docs/controllers/turbo/frame-src.md',
+            'category' => 'turbo',
+            'description' => 'Injects the X-Turbo-Frame-Src header on Turbo Frame requests for correct redirect resolution',
         ],
         'turbo--polling' => [
             'source' => 'resources/js/controllers/turbo/polling_controller.js',

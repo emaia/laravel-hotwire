@@ -97,6 +97,50 @@ it('merges custom class on the form element', function () {
     $view->assertSee('class="space-y-4"', false);
 });
 
+// --- CSRF ---
+
+it('includes csrf by default with method=post', function () {
+    $view = $this->blade('<x-hwc::form><span>x</span></x-hwc::form>');
+
+    $view->assertSee('_token', false);
+});
+
+it('does not include csrf on GET forms', function () {
+    $view = $this->blade('<x-hwc::form method="get"><span>x</span></x-hwc::form>');
+
+    $view->assertDontSee('_token', false);
+});
+
+it('includes csrf on non-GET methods like put and delete', function () {
+    $view = $this->blade('<x-hwc::form method="put"><span>x</span></x-hwc::form>');
+
+    $view->assertSee('_token', false);
+
+    $view = $this->blade('<x-hwc::form method="delete"><span>x</span></x-hwc::form>');
+
+    $view->assertSee('_token', false);
+});
+
+// --- Track Frame Src ---
+
+it('outputs hidden _turbo_frame_src input when track-frame-src is true', function () {
+    $view = $this->blade('<x-hwc::form track-frame-src><span>x</span></x-hwc::form>');
+
+    $view->assertSee('_turbo_frame_src', false);
+});
+
+it('does not output _turbo_frame_src when track-frame-src is not set', function () {
+    $view = $this->blade('<x-hwc::form><span>x</span></x-hwc::form>');
+
+    $view->assertDontSee('_turbo_frame_src', false);
+});
+
+it('does not render track-frame-src as an html attribute', function () {
+    $view = $this->blade('<x-hwc::form track-frame-src><span>x</span></x-hwc::form>');
+
+    $view->assertDontSee('track-frame-src', false);
+});
+
 // --- Pass-through ---
 
 it('passes through arbitrary attributes', function () {
