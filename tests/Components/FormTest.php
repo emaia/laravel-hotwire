@@ -29,6 +29,22 @@ it('passes through action and method', function () {
     $view->assertSee('method="get"', false);
 });
 
+it('renders method exactly once when user overrides default', function () {
+    $view = $this->blade('<x-hwc::form action="/items" method="get"><span>x</span></x-hwc::form>');
+
+    $html = (string) $view;
+    expect(substr_count($html, 'method='))->toBe(1);
+    $view->assertDontSee('method="post"', false);
+});
+
+it('renders default method=post when user does not override', function () {
+    $view = $this->blade('<x-hwc::form action="/items"><span>x</span></x-hwc::form>');
+
+    $html = (string) $view;
+    expect(substr_count($html, 'method='))->toBe(1);
+    $view->assertSee('method="post"', false);
+});
+
 // --- Controllers ---
 
 it('does not add any controller by default', function () {

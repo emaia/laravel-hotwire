@@ -13,7 +13,19 @@
         ? old($resolvedErrorKey, $selected)
         : $selected;
 
-    $placeholderSelected = $resolvedSelected === '' || $resolvedSelected === null;
+    $isMultiple = $attributes->has('multiple') && $attributes->get('multiple') !== false;
+
+    if ($isMultiple) {
+        $resolvedSelected = match (true) {
+            is_array($resolvedSelected)                                    => $resolvedSelected,
+            $resolvedSelected === null || $resolvedSelected === ''         => [],
+            default                                                         => [$resolvedSelected],
+        };
+        $selectedSet = array_map('strval', $resolvedSelected);
+        $placeholderSelected = false;
+    } else {
+        $placeholderSelected = $resolvedSelected === '' || $resolvedSelected === null;
+    }
 
     $hasErrors = $resolvedErrorKey !== '' && $errors->has($resolvedErrorKey);
     $isRequired = ($attributes->has('required') && $attributes->get('required') !== false) || $required;
@@ -27,11 +39,16 @@
     @if ($isRequired) aria-required="true" required @endif
     {{ $attributes->class([$class])->except(['required']) }}
 >
-    @if ($placeholder || $nullable)
+    @if (! $isMultiple && ($placeholder || $nullable))
         <option value="" @if ($placeholderSelected) selected @endif>{{ $placeholder ?? '' }}</option>
     @endif
 
     @foreach ($options as $value => $label)
-        <option value="{{ $value }}"@if (! $placeholderSelected && (string) $resolvedSelected === (string) $value) selected @endif>{{ $label }}</option>
+        @php
+            $isSelected = $isMultiple
+                ? in_array((string) $value, $selectedSet, true)
+                : (! $placeholderSelected && (string) $resolvedSelected === (string) $value);
+        @endphp
+        <option value="{{ $value }}"@if ($isSelected) selected @endif>{{ $label }}</option>
     @endforeach
 </select>

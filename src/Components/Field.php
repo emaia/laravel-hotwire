@@ -5,26 +5,28 @@ namespace Emaia\LaravelHotwire\Components;
 use Emaia\LaravelHotwire\Components\Concerns\StripsNullProps;
 use Illuminate\View\Component;
 
-class Label extends Component
+class Field extends Component
 {
     use StripsNullProps;
 
     public function __construct(
-        public ?string $for = null,
         public ?string $name = null,
-        public ?string $value = null,
-        public ?bool $required = null,
+        public ?string $label = null,
+        public ?string $description = null,
         public string $requiredLabel = '*',
+        public ?string $errorKey = null,
+        public ?bool $required = null,
+        public bool $error = true,
         public string $class = '',
     ) {}
 
     public function render()
     {
-        return view('hotwire::component-views.label');
+        return view('hotwire::component-views.field');
     }
 
     public function data(): array
     {
-        return $this->stripNullProps(parent::data(), ['name', 'for', 'required']);
+        return $this->stripNullProps(parent::data(), ['name', 'errorKey', 'required']);
     }
 }

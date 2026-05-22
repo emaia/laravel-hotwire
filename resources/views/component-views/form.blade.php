@@ -10,9 +10,8 @@
 @endphp
 
 <form
-    method="post"
     @if ($controller !== '') data-controller="{{ $controller }}" @endif
-    {{ $attributes->except(['auto-submit', 'unsaved-changes', 'clean-query-params']) }}
+    {{ $attributes->merge(['method' => 'post'])->except(['auto-submit', 'unsaved-changes', 'clean-query-params']) }}
 >
     {{ $slot }}
 </form>

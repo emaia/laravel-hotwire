@@ -1,15 +1,10 @@
-@props([
-    'name' => null,
-    'label' => null,
-    'description' => null,
-    'requiredLabel' => '*',
-    'errorKey' => null,
-    'required' => null,
-    'error' => true,
-    'class' => '',
-])
+@php
+    $name = $name ?? null;
+    $errorKey = $errorKey ?? null;
+    $required = $required ?? null;
+@endphp
 
-<div {{ $attributes->class(['field', $class])->only('class') }}>
+<div {{ $attributes->class(['hwc-field', $class])->only('class') }}>
     @if ($label !== null && $label !== '')
         <x-hwc::label :required-label="$requiredLabel">{{ $label }}</x-hwc::label>
     @endif

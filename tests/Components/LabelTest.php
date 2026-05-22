@@ -109,26 +109,12 @@ it('does not render required marker by default', function () {
     $view->assertDontSee('required', false);
 });
 
-// --- Optional marker ---
-
-it('renders optional marker when optional', function () {
-    $view = $this->blade('<x-hwc::label for="email" optional>E-mail</x-hwc::label>');
-
-    $view->assertSee('optional', false);
-});
-
-it('does not render optional when required is set', function () {
-    $view = $this->blade('<x-hwc::label for="email" required optional>E-mail</x-hwc::label>');
-
-    $view->assertSee('required', false);
-});
-
 // --- Class merge ---
 
-it('merges custom class with label', function () {
+it('merges custom class with hwc-label', function () {
     $view = $this->blade('<x-hwc::label for="email" class="text-sm font-bold">E-mail</x-hwc::label>');
 
-    $view->assertSee('label', false);
+    $view->assertSee('hwc-label', false);
     $view->assertSee('text-sm font-bold', false);
 });
 

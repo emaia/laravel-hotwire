@@ -1,6 +1,6 @@
 # Label
 
-Form `<label>` with optional required marker. When inside `<x-hwc::field>`, inherits `name` and `required` via `@aware`.
+Form `<label>` with an optional required marker. When inside `<x-hwc::field>`, inherits `name` and `required` via `@aware`.
 
 ## Quick example
 

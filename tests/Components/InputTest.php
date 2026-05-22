@@ -403,6 +403,48 @@ it('checkable ignores :old=false and still derives checked from old()', function
     $view->assertDontSee(' checked', false);
 });
 
+// --- Checkable no-ops ---
+
+it('does not attach input-mask controller for checkbox', function () {
+    $view = $this->blade('<x-hwc::input type="checkbox" name="agree" mask="cpf" />');
+
+    $view->assertDontSee('data-controller="input-mask"', false);
+    $view->assertDontSee('data-input-mask-mask-value', false);
+});
+
+it('does not attach input-mask controller for radio', function () {
+    $view = $this->blade('<x-hwc::input type="radio" name="plan" value="pro" mask="cpf" />');
+
+    $view->assertDontSee('data-controller="input-mask"', false);
+    $view->assertDontSee('data-input-mask-mask-value', false);
+});
+
+it('does not attach auto-select controller for checkbox', function () {
+    $view = $this->blade('<x-hwc::input type="checkbox" name="agree" auto-select />');
+
+    $view->assertDontSee('data-controller="auto-select"', false);
+});
+
+it('does not attach auto-select controller for radio', function () {
+    $view = $this->blade('<x-hwc::input type="radio" name="plan" value="pro" auto-select />');
+
+    $view->assertDontSee('data-controller="auto-select"', false);
+});
+
+it('does not render clearable wrapper for checkbox', function () {
+    $view = $this->blade('<x-hwc::input type="checkbox" name="agree" clearable />');
+
+    $view->assertDontSee('data-controller="clear-input"', false);
+    $view->assertDontSee('data-clear-input-target', false);
+});
+
+it('does not render clearable wrapper for radio', function () {
+    $view = $this->blade('<x-hwc::input type="radio" name="plan" value="pro" clearable />');
+
+    $view->assertDontSee('data-controller="clear-input"', false);
+    $view->assertDontSee('data-clear-input-target', false);
+});
+
 // --- Pass-through ---
 
 it('passes through arbitrary attributes', function () {

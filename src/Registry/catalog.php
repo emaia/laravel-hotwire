@@ -2,7 +2,9 @@
 
 use Emaia\LaravelHotwire\Components\CheckboxGroup;
 use Emaia\LaravelHotwire\Components\ConfirmDialog;
+use Emaia\LaravelHotwire\Components\Description;
 use Emaia\LaravelHotwire\Components\Error;
+use Emaia\LaravelHotwire\Components\Field;
 use Emaia\LaravelHotwire\Components\FlashContainer;
 use Emaia\LaravelHotwire\Components\FlashMessage;
 use Emaia\LaravelHotwire\Components\Form;
@@ -42,12 +44,28 @@ return [
             'description' => 'Checkbox group with optional select-all master checkbox',
             'controllers' => ['checkbox-select-all'],
         ],
+        'description' => [
+            'class' => Description::class,
+            'view' => 'hotwire::component-views.description',
+            'docs' => 'docs/components/description.md',
+            'category' => 'forms',
+            'description' => 'Helper text for a form field — paragraph with the hwc-description hook',
+            'controllers' => [],
+        ],
         'error' => [
             'class' => Error::class,
             'view' => 'hotwire::component-views.error',
             'docs' => 'docs/components/error.md',
             'category' => 'forms',
             'description' => 'Always-present error container bound to a form field via name/errorKey',
+            'controllers' => [],
+        ],
+        'field' => [
+            'class' => Field::class,
+            'view' => 'hotwire::component-views.field',
+            'docs' => 'docs/components/field.md',
+            'category' => 'forms',
+            'description' => 'Wraps label, input, description and error — propagates name/errorKey/required via @aware',
             'controllers' => [],
         ],
         'flash-container' => [
@@ -79,8 +97,8 @@ return [
             'view' => 'hotwire::component-views.label',
             'docs' => 'docs/components/label.md',
             'category' => 'forms',
-            'description' => 'Form label with required/optional markers and optional tooltip',
-            'controllers' => ['tooltip'],
+            'description' => 'Form label with auto-derived for/id and optional required marker',
+            'controllers' => [],
         ],
         'select' => [
             'class' => Select::class,

@@ -6,6 +6,16 @@
 
     $hasName = $name !== null && $name !== '';
 
+    if ($hasName && ! str_ends_with($name, '[]')) {
+        if (config('app.debug', false) && ! app()->environment('testing')) {
+            trigger_error(
+                "<x-hwc::checkbox-group name=\"{$name}\">: appended [] for array submission. Use name=\"{$name}[]\" explicitly to silence this notice.",
+                E_USER_NOTICE
+            );
+        }
+        $name = $name.'[]';
+    }
+
     $baseId = $id ?: ($hasName ? FieldKey::toId($name) : null);
 
     $resolvedErrorKey = $errorKey ?: ($hasName ? FieldKey::toErrorKey($name) : '');
@@ -37,9 +47,10 @@
         @php
             $selectAllId = $baseId ? $baseId.'-all' : null;
         @endphp
-        <label>
+        <label class="hwc-label">
             <input
                 type="checkbox"
+                class="hwc-input"
                 data-checkbox-select-all-target="checkboxAll"
                 @if ($selectAllId) id="{{ $selectAllId }}" @endif
                 @if ($errorId) aria-describedby="{{ $errorId }}" @endif
@@ -53,9 +64,10 @@
         @php
             $resolvedId = $baseId ? $baseId.'-'.Str::slug((string) $value) : null;
         @endphp
-        <label>
+        <label class="hwc-label">
             <input
                 type="checkbox"
+                class="hwc-input"
                 @if ($name) name="{{ $name }}" @endif
                 value="{{ $value }}"
                 @if ($resolvedId) id="{{ $resolvedId }}" @endif

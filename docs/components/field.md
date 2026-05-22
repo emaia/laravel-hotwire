@@ -60,9 +60,9 @@ When you need more control — custom label content, label wrapping inputs, diff
 
 ```blade
 <x-hwc::field name="documento" required :error="false" class="mb-4">
-    <x-hwc::label class="label">Documento</x-hwc::label>
+    <x-hwc::label class="text-sm font-bold">Documento</x-hwc::label>
     <p class="text-xs text-gray-500">CPF ou CNPJ</p>
-    <x-hwc::input class="input w-full" clearable mask="cpf-cnpj" />
+    <x-hwc::input class="w-full" clearable mask="cpf-cnpj" />
     <x-hwc::error class="text-red-500 text-sm" />
 </x-hwc::field>
 ```

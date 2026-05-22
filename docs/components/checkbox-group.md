@@ -20,7 +20,7 @@ Flat (non-associative) options arrays are automatically normalized: `['main', 'd
 
 | Prop               | Type           | Default       | Description                                                    |
 |--------------------|----------------|---------------|----------------------------------------------------------------|
-| `name`             | `string\|null` | —             | Input name, typically `foo[]` for array submission              |
+| `name`             | `string\|null` | —             | Input name. Auto-normalized to `foo[]` if you pass `foo` (see below) |
 | `options`          | `array`        | `[]`          | `[value => label]` pairs                                       |
 | `selected`         | `array`        | `[]`          | Values that should be checked                                  |
 | `select-all`       | `bool`         | `false`       | Renders a master checkbox that toggles all items                |
@@ -29,6 +29,18 @@ Flat (non-associative) options arrays are automatically normalized: `['main', 'd
 | `old`              | `bool`         | `true`        | When `true`, merges `old()` input over `selected`              |
 | `id`               | `string\|null` | derived        | Base id for per-checkbox ids and error reference                |
 | `errorKey`         | `string\|null` | derived        | Override when HTML `name` ≠ Laravel validation key              |
+
+## Name auto-normalization
+
+Checkbox groups submit one HTTP field per checked item. PHP only collects them into an array when the `name` ends in `[]` — otherwise it silently keeps only the last submitted value. To prevent this footgun, the component appends `[]` automatically when missing:
+
+```blade
+{{-- These render identically --}}
+<x-hwc::checkbox-group name="ids" :options="$opts" />
+<x-hwc::checkbox-group name="ids[]" :options="$opts" />
+```
+
+Both produce `<input ... name="ids[]" ...>`. In debug mode (`APP_DEBUG=true`, non-testing env), passing `name="ids"` triggers an `E_USER_NOTICE` so you can tighten the call site. Validation keys and per-checkbox ids are unaffected — they're always derived from the unbracketed name (`ids`, `ids-1`, `ids-error`).
 
 ## ARIA
 

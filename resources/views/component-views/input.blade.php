@@ -12,6 +12,12 @@
 
     $isCheckable = in_array($type, ['checkbox', 'radio'], true);
 
+    if ($isCheckable) {
+        $autoSelect = false;
+        $mask = null;
+        $clearable = false;
+    }
+
     $isGroupInput = $isCheckable
         && $value !== null
         && $value !== ''

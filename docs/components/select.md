@@ -15,14 +15,14 @@ Select dropdown with auto-derived `id`/`errorKey` from `name`, automatic `old()`
 | `name`        | `string\|null` | —                              | Pass-through. Drives `id` and `errorKey` if those aren't set       |
 | `id`          | `string\|null` | derived from `name`            | Override the auto-derived id                                      |
 | `options`     | `array`        | `[]`                           | `[value => label]` pairs                                          |
-| `selected`    | `mixed`        | `null`                         | Selected value, merged with `old($errorKey, $selected)`            |
+| `selected`    | `mixed`        | `null`                         | Selected value (or array when `multiple` — see [Multiple](#multiple)), merged with `old($errorKey, $selected)` |
 | `errorKey`    | `string\|null` | derived from `name`            | Override for arrays where HTML `name` ≠ validation key            |
 | `old`         | `bool`         | `true`                         | Disable `old()` auto-merge                                        |
 | `placeholder` | `string\|null` | `null`                         | Placeholder option as the first item (re-selectable)              |
 | `nullable`    | `bool`         | `false`                        | Render an empty first option even without a placeholder string    |
 | `class`       | `string`       | `""`                           | Merged on `<select>`                                              |
 
-Any other HTML attribute (`disabled`, `data-*`, `aria-*`) passes through.
+Any other HTML attribute (`disabled`, `multiple`, `data-*`, `aria-*`) passes through. `multiple` changes how `selected` is interpreted — see [Multiple](#multiple).
 
 ## Auto-derivation
 
@@ -52,6 +52,16 @@ When no `placeholder` string is provided, renders an empty `<option value=""></o
 ```blade
 <x-hwc::select name="status" :options="$statuses" :nullable="true" placeholder="No status" />
 ```
+
+## Multiple
+
+```blade
+<x-hwc::select name="ids[]" :options="$users" :selected="[1, 3]" multiple />
+```
+
+When `multiple` is set, `selected` accepts an array and each matching option gets the `selected` attribute. The placeholder and nullable options are skipped (they don't apply to multi-select). Remember to use `name="ids[]"` — without `[]`, PHP only receives the last selected value.
+
+`old()` integrates naturally: after a validation redirect, the previously selected values are restored from the flashed array.
 
 ## Inheriting from `<x-hwc::field>`
 

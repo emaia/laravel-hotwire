@@ -2,10 +2,13 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Emaia\LaravelHotwire\Components\Concerns\StripsNullProps;
 use Illuminate\View\Component;
 
 class CheckboxGroup extends Component
 {
+    use StripsNullProps;
+
     /** @param  array<int|string, string>  $options */
     public function __construct(
         public ?string $name = null,
@@ -31,14 +34,6 @@ class CheckboxGroup extends Component
 
     public function data(): array
     {
-        $data = parent::data();
-
-        foreach (['name', 'id', 'errorKey'] as $key) {
-            if (($data[$key] ?? null) === null) {
-                unset($data[$key]);
-            }
-        }
-
-        return $data;
+        return $this->stripNullProps(parent::data(), ['name', 'id', 'errorKey']);
     }
 }

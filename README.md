@@ -154,16 +154,25 @@ See the full documentation at [emaia/laravel-hotwire-turbo](https://github.com/e
 
 ## Blade Components
 
-| Component                                             | Blade                      | Stimulus Identifier | Docs                                         |
-|-------------------------------------------------------|----------------------------|---------------------|----------------------------------------------|
-| [Modal](docs/components/modal.md)                     | `<x-hwc::modal>`           | `modal`             | [readme](docs/components/modal.md)           |
-| [Confirm Dialog](docs/components/confirm-dialog.md)   | `<x-hwc::confirm-dialog>`  | `confirm-dialog`    | [readme](docs/components/confirm-dialog.md)  |
-| [Flash Container](docs/components/flash-container.md) | `<x-hwc::flash-container>` | `toaster`           | [readme](docs/components/flash-container.md) |
-| [Flash Message](docs/components/flash-message.md)     | `<x-hwc::flash-message>`   | `toast`             | [readme](docs/components/flash-message.md)   |
-| [Loader](docs/components/loader.md)                   | `<x-hwc::loader>`          | —                   | [readme](docs/components/loader.md)          |
-| [Optimistic](docs/components/optimistic.md)           | `<x-hwc::optimistic>`      | —                   | [readme](docs/components/optimistic.md)      |
-| [Scroll Progress](docs/components/scroll-progress.md) | `<x-hwc::scroll-progress>` | `scroll-progress`   | [readme](docs/components/scroll-progress.md) |
-| [Timeago](docs/components/timeago.md)                 | `<x-hwc::timeago>`         | `timeago`           | [readme](docs/components/timeago.md)         |
+| Component                                             | Blade                      | Stimulus Identifier(s)                             | Docs                                         |
+|-------------------------------------------------------|----------------------------|----------------------------------------------------|----------------------------------------------|
+| [Form](docs/components/form.md)                       | `<x-hwc::form>`            | `auto-submit`, `unsaved-changes`, `clean-query-params` | [readme](docs/components/form.md)            |
+| [Field](docs/components/field.md)                     | `<x-hwc::field>`           | —                                                  | [readme](docs/components/field.md)           |
+| [Input](docs/components/input.md)                     | `<x-hwc::input>`           | `auto-select`, `clear-input`, `input-mask`         | [readme](docs/components/input.md)           |
+| [Label](docs/components/label.md)                     | `<x-hwc::label>`           | —                                                  | [readme](docs/components/label.md)           |
+| [Select](docs/components/select.md)                   | `<x-hwc::select>`          | —                                                  | [readme](docs/components/select.md)          |
+| [Textarea](docs/components/textarea.md)               | `<x-hwc::textarea>`        | `auto-resize`, `char-counter`                      | [readme](docs/components/textarea.md)        |
+| [Checkbox Group](docs/components/checkbox-group.md)   | `<x-hwc::checkbox-group>`  | `checkbox-select-all`                              | [readme](docs/components/checkbox-group.md)  |
+| [Description](docs/components/description.md)         | `<x-hwc::description>`     | —                                                  | [readme](docs/components/description.md)     |
+| [Error](docs/components/error.md)                     | `<x-hwc::error>`           | —                                                  | [readme](docs/components/error.md)           |
+| [Flash Container](docs/components/flash-container.md) | `<x-hwc::flash-container>` | `toaster`                                          | [readme](docs/components/flash-container.md) |
+| [Flash Message](docs/components/flash-message.md)     | `<x-hwc::flash-message>`   | `toast`                                            | [readme](docs/components/flash-message.md)   |
+| [Spinner](docs/components/spinner.md)                 | `<x-hwc::spinner>`         | —                                                  | [readme](docs/components/spinner.md)         |
+| [Modal](docs/components/modal.md)                     | `<x-hwc::modal>`           | `modal`                                            | [readme](docs/components/modal.md)           |
+| [Confirm Dialog](docs/components/confirm-dialog.md)   | `<x-hwc::confirm-dialog>`  | `confirm-dialog`                                   | [readme](docs/components/confirm-dialog.md)  |
+| [Optimistic](docs/components/optimistic.md)           | `<x-hwc::optimistic>`      | —                                                  | [readme](docs/components/optimistic.md)      |
+| [Scroll Progress](docs/components/scroll-progress.md) | `<x-hwc::scroll-progress>` | `scroll-progress`                                  | [readme](docs/components/scroll-progress.md) |
+| [Timeago](docs/components/timeago.md)                 | `<x-hwc::timeago>`         | `timeago`                                          | [readme](docs/components/timeago.md)         |
 
 ## Stimulus Controllers (standalone)
 
@@ -257,16 +266,19 @@ them automatically via `import.meta.glob`.
 | [Checkbox Select All](docs/controllers/checkbox-select-all.md) | `checkbox-select-all` | —               | [readme](docs/controllers/checkbox-select-all.md) |
 | [Clean Query Params](docs/controllers/clean-query-params.md)   | `clean-query-params`  | —               | [readme](docs/controllers/clean-query-params.md)  |
 | [Clear Input](docs/controllers/clear-input.md)                 | `clear-input`         | —               | [readme](docs/controllers/clear-input.md)         |
+| [Confirm Dialog](docs/controllers/confirm-dialog.md)           | `confirm-dialog`      | —               | [readme](docs/controllers/confirm-dialog.md)      |
 | [Copy To Clipboard](docs/controllers/copy-to-clipboard.md)     | `copy-to-clipboard`   | —               | [readme](docs/controllers/copy-to-clipboard.md)   |
-| [Modal](docs/controllers/modal.md)                             | `modal`               | —               | [readme](docs/controllers/modal.md)               |
 | [GTM](docs/controllers/gtm.md)                                 | `gtm`                 | —               | [readme](docs/controllers/gtm.md)                 |
 | [Hotkey](docs/controllers/hotkey.md)                           | `hotkey`              | —               | [readme](docs/controllers/hotkey.md)              |
 | [Input Mask](docs/controllers/input-mask.md)                   | `input-mask`          | `maska`         | [readme](docs/controllers/input-mask.md)          |
 | [Lazy Image](docs/controllers/lazy-image.md)                   | `lazy-image`          | —               | [readme](docs/controllers/lazy-image.md)          |
+| [Modal](docs/controllers/modal.md)                             | `modal`               | —               | [readme](docs/controllers/modal.md)               |
+| [Modal Auto Close](docs/controllers/modal-auto-close.md)      | `modal-auto-close`    | —               | [readme](docs/controllers/modal-auto-close.md)    |
 | [Money Input](docs/controllers/money-input.md)                 | `money-input`         | —               | [readme](docs/controllers/money-input.md)         |
 | [OEmbed](docs/controllers/oembed.md)                           | `oembed`              | —               | [readme](docs/controllers/oembed.md)              |
 | [Remote Form](docs/controllers/remote-form.md)                 | `remote-form`         | —               | [readme](docs/controllers/remote-form.md)         |
 | [Reset Files](docs/controllers/reset-files.md)                 | `reset-files`         | —               | [readme](docs/controllers/reset-files.md)         |
+| [Scroll Progress](docs/controllers/scroll-progress.md)         | `scroll-progress`     | —               | [readme](docs/controllers/scroll-progress.md)     |
 | [Timeago](docs/controllers/timeago.md)                         | `timeago`             | `date-fns`      | [readme](docs/controllers/timeago.md)             |
 | [Toast](docs/controllers/toast.md)                             | `toast`               | `@emaia/sonner` | [readme](docs/controllers/toast.md)               |
 | [Toaster](docs/controllers/toaster.md)                         | `toaster`             | `@emaia/sonner` | [readme](docs/controllers/toaster.md)             |

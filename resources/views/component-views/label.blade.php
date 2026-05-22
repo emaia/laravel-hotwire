@@ -21,7 +21,7 @@
 
 <label
     @if ($resolvedFor) for="{{ $resolvedFor }}" @endif
-    {{ $attributes->class(['label', $class]) }}
+    {{ $attributes->class(['hwc-label', $class]) }}
 >
     {{ trim($slotHtml) !== '' ? $slot : $value }}
 

@@ -2,10 +2,13 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Emaia\LaravelHotwire\Components\Concerns\StripsNullProps;
 use Illuminate\View\Component;
 
 class Input extends Component
 {
+    use StripsNullProps;
+
     public function __construct(
         public ?string $name = null,
         public ?string $id = null,
@@ -28,14 +31,6 @@ class Input extends Component
 
     public function data(): array
     {
-        $data = parent::data();
-
-        foreach (['name', 'id', 'errorKey'] as $key) {
-            if (($data[$key] ?? null) === null) {
-                unset($data[$key]);
-            }
-        }
-
-        return $data;
+        return $this->stripNullProps(parent::data(), ['name', 'id', 'errorKey']);
     }
 }

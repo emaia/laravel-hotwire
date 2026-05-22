@@ -2,10 +2,13 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Emaia\LaravelHotwire\Components\Concerns\StripsNullProps;
 use Illuminate\View\Component;
 
 class Error extends Component
 {
+    use StripsNullProps;
+
     /** @var string[]|null */
     public ?array $explicitMessages;
 
@@ -31,14 +34,6 @@ class Error extends Component
 
     public function data(): array
     {
-        $data = parent::data();
-
-        foreach (['name', 'errorKey', 'id'] as $key) {
-            if (($data[$key] ?? null) === null) {
-                unset($data[$key]);
-            }
-        }
-
-        return $data;
+        return $this->stripNullProps(parent::data(), ['name', 'errorKey', 'id']);
     }
 }

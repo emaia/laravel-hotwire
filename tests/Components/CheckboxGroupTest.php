@@ -95,13 +95,46 @@ it('disables old() when :old=false', function () {
 it('casts old() scalar value to array', function () {
     session()->put('_old_input', ['branch' => 'main']);
 
-    $view = $this->blade('<x-hwc::checkbox-group name="branch" :options="[\'main\' => \'Main\', \'dev\' => \'Dev\']" :selected="[\'dev\']" />');
+    $view = $this->blade('<x-hwc::checkbox-group name="branch[]" :options="[\'main\' => \'Main\', \'dev\' => \'Dev\']" :selected="[\'dev\']" />');
 
     $html = (string) $view;
     // Old scalar 'main' should be cast to array and checked
     expect($html)->toContain('value="main"');
     expect($html)->toContain('checked');
     $this->assertEquals(1, substr_count($html, 'checked'));
+});
+
+// --- Name auto-normalization ---
+
+it('auto-appends [] when name does not end with brackets', function () {
+    $view = $this->blade('<x-hwc::checkbox-group name="ids" :options="[1 => \'One\', 2 => \'Two\']" />');
+
+    $view->assertSee('name="ids[]"', false);
+    $view->assertDontSee('name="ids"', false);
+});
+
+it('keeps name unchanged when it already ends with []', function () {
+    $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\']" />');
+
+    $view->assertSee('name="ids[]"', false);
+});
+
+it('normalizes name from @aware via field wrapper', function () {
+    $view = $this->blade('
+        <x-hwc::field name="ids">
+            <x-hwc::checkbox-group :options="[1 => \'One\']" />
+        </x-hwc::field>
+    ');
+
+    $view->assertSee('name="ids[]"', false);
+});
+
+it('uses unbracketed name for id and error key derivation after normalization', function () {
+    $view = $this->blade('<x-hwc::checkbox-group name="ids" :options="[1 => \'One\']" />');
+
+    // id and aria-describedby still derive from the unbracketed name
+    $view->assertSee('id="ids-1"', false);
+    $view->assertSee('aria-describedby="ids-error"', false);
 });
 
 // --- Select all ---
@@ -149,6 +182,26 @@ it('merges custom class on wrapper', function () {
     $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\']" class="space-y-2" />');
 
     $view->assertSee('class="space-y-2"', false);
+});
+
+it('adds hwc-input hook on items', function () {
+    $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\']" />');
+
+    $view->assertSee('class="hwc-input"', false);
+});
+
+it('adds hwc-label hook on item wrappers', function () {
+    $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\']" />');
+
+    $view->assertSee('class="hwc-label"', false);
+});
+
+it('adds hwc-input and hwc-label hooks on the select-all master', function () {
+    $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\']" select-all />');
+
+    $html = (string) $view;
+    expect(substr_count($html, 'class="hwc-input"'))->toBe(2);
+    expect(substr_count($html, 'class="hwc-label"'))->toBe(2);
 });
 
 // --- User data-controller merge ---

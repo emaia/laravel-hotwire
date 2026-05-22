@@ -222,6 +222,59 @@ it('passes through arbitrary attributes', function () {
     $view->assertSee('data-test="x"', false);
 });
 
+// --- Multiple ---
+
+it('renders multiple attribute when set', function () {
+    $view = $this->blade('<x-hwc::select name="ids[]" :options="[1 => \'A\', 2 => \'B\']" multiple />');
+
+    $view->assertSee('multiple', false);
+});
+
+it('marks multiple options as selected when selected is an array', function () {
+    $view = $this->blade('<x-hwc::select name="ids[]" :options="[1 => \'A\', 2 => \'B\', 3 => \'C\']" :selected="[1, 3]" multiple />');
+
+    $html = (string) $view;
+    expect(substr_count($html, 'selected'))->toBe(2);
+    expect($html)->toContain('value="1" selected');
+    expect($html)->toContain('value="3" selected');
+});
+
+it('marks no options as selected when selected array is empty with multiple', function () {
+    $view = $this->blade('<x-hwc::select name="ids[]" :options="[1 => \'A\', 2 => \'B\']" :selected="[]" multiple />');
+
+    $view->assertDontSee('selected', false);
+});
+
+it('omits placeholder option when multiple is set', function () {
+    $view = $this->blade('<x-hwc::select name="ids[]" :options="[1 => \'A\']" placeholder="Choose..." multiple />');
+
+    $view->assertDontSee('Choose...');
+    $view->assertDontSee('value=""', false);
+});
+
+it('omits nullable blank option when multiple is set', function () {
+    $view = $this->blade('<x-hwc::select name="ids[]" :options="[1 => \'A\']" :nullable="true" multiple />');
+
+    $view->assertDontSee('value=""', false);
+});
+
+it('coerces scalar selected into array when multiple', function () {
+    $view = $this->blade('<x-hwc::select name="ids[]" :options="[1 => \'A\', 2 => \'B\']" :selected="2" multiple />');
+
+    $view->assertSee('value="2" selected', false);
+});
+
+it('merges multiple selected with old() input array', function () {
+    session()->put('_old_input', ['ids' => [2, 3]]);
+
+    $view = $this->blade('<x-hwc::select name="ids[]" :options="[1 => \'A\', 2 => \'B\', 3 => \'C\']" :selected="[1]" multiple />');
+
+    $html = (string) $view;
+    expect(substr_count($html, 'selected'))->toBe(2);
+    expect($html)->toContain('value="2" selected');
+    expect($html)->toContain('value="3" selected');
+});
+
 // --- @aware propagation from field ---
 
 it('picks up name and required from field via @aware', function () {
