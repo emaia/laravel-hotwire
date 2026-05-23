@@ -1,6 +1,7 @@
 @php
     $userController = trim($attributes->get('data-controller', ''));
     $method = strtolower($attributes->get('method', 'post'));
+    $isSpoofMethod = in_array($method, ['put', 'patch', 'delete']);
 
     $controller = trim(implode(' ', array_filter([
         $userController,
@@ -12,10 +13,15 @@
 
 <form
     @if ($controller !== '') data-controller="{{ $controller }}" @endif
-    {{ $attributes->merge(['method' => 'post'])->except(['auto-submit', 'unsaved-changes', 'clean-query-params', 'track-frame-src']) }}
+    method="{{ $isSpoofMethod ? 'post' : $method }}"
+    {{ $attributes->except(['method', 'auto-submit', 'unsaved-changes', 'clean-query-params', 'track-frame-src']) }}
 >
     @if ($method !== 'get')
         @csrf
+    @endif
+
+    @if ($isSpoofMethod)
+        @method($method)
     @endif
 
     @if ($trackFrameSrc)

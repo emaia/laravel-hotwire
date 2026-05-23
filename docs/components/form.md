@@ -23,7 +23,7 @@ Form wrapper that composes optional Stimulus behaviors via boolean props. Render
 
 Any other HTML attribute (`action`, `method`, `enctype`, `class`, `data-*`, `aria-*`) passes through to the `<form>` element. Method defaults to `post` unless overridden.
 
-The component automatically includes `@csrf` for all non-GET methods.
+The component automatically includes `@csrf` for all non-GET methods and `@method` for PUT, PATCH, and DELETE forms.
 
 ## Controllers
 
@@ -60,8 +60,7 @@ See [auto-submit controller](../controllers/auto-submit.md).
 Warns with a browser confirmation dialog when attempting to navigate away with unsaved form changes. Integrates with Turbo Drive.
 
 ```blade
-<x-hwc::form :action="route('posts.update', $post)" method="post" unsaved-changes>
-    @csrf @method('put')
+<x-hwc::form :action="route('posts.update', $post)" method="put" unsaved-changes>
     <x-hwc::input name="title" :value="$post->title" />
     <button type="submit">Save</button>
 </x-hwc::form>
@@ -86,9 +85,9 @@ Removes empty parameters from the query string before submitting a GET form, avo
 
 See [clean-query-params controller](../controllers/clean-query-params.md).
 
-### CSRF protection
+### CSRF and method spoofing
 
-The component automatically includes `@csrf` for all non-GET methods. You don't need to add it manually inside the slot:
+The component automatically includes `@csrf` for all non-GET methods, and `@method` for PUT, PATCH, and DELETE forms. You don't need to add them manually inside the slot:
 
 ```blade
 <x-hwc::form :action="route('posts.store')" method="post">
@@ -96,9 +95,15 @@ The component automatically includes `@csrf` for all non-GET methods. You don't 
     <button type="submit">Save</button>
 </x-hwc::form>
 {{-- @csrf is automatically included --}}
+
+<x-hwc::form :action="route('posts.update', $post)" method="put">
+    <x-hwc::input name="title" :value="$post->title" />
+    <button type="submit">Update</button>
+</x-hwc::form>
+{{-- @csrf and @method('put') are automatically included --}}
 ```
 
-GET forms (search, filters) don't get a CSRF token since they don't modify state.
+GET forms (search, filters) don't get a CSRF token or method spoofing since they don't modify state.
 
 ### Frame redirect resolution
 

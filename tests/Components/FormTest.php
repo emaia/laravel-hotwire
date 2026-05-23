@@ -121,6 +121,68 @@ it('includes csrf on non-GET methods like put and delete', function () {
     $view->assertSee('_token', false);
 });
 
+// --- Method spoofing ---
+
+it('includes _method hidden input for PUT forms', function () {
+    $view = $this->blade('<x-hwc::form method="put"><span>x</span></x-hwc::form>');
+
+    $view->assertSee('name="_method"', false);
+    $view->assertSee('value="put"', false);
+});
+
+it('includes _method hidden input for PATCH forms', function () {
+    $view = $this->blade('<x-hwc::form method="patch"><span>x</span></x-hwc::form>');
+
+    $view->assertSee('name="_method"', false);
+    $view->assertSee('value="patch"', false);
+});
+
+it('includes _method hidden input for DELETE forms', function () {
+    $view = $this->blade('<x-hwc::form method="delete"><span>x</span></x-hwc::form>');
+
+    $view->assertSee('name="_method"', false);
+    $view->assertSee('value="delete"', false);
+});
+
+it('does not include _method for POST forms', function () {
+    $view = $this->blade('<x-hwc::form method="post"><span>x</span></x-hwc::form>');
+
+    $view->assertDontSee('_method', false);
+});
+
+it('does not include _method for default POST forms', function () {
+    $view = $this->blade('<x-hwc::form><span>x</span></x-hwc::form>');
+
+    $view->assertDontSee('_method', false);
+});
+
+it('does not include _method for GET forms', function () {
+    $view = $this->blade('<x-hwc::form method="get"><span>x</span></x-hwc::form>');
+
+    $view->assertDontSee('_method', false);
+});
+
+it('renders method="post" on form tag for PUT forms', function () {
+    $view = $this->blade('<x-hwc::form method="put"><span>x</span></x-hwc::form>');
+
+    $view->assertSee('method="post"', false);
+    $view->assertDontSee('method="put"', false);
+});
+
+it('renders method="post" on form tag for DELETE forms', function () {
+    $view = $this->blade('<x-hwc::form method="delete"><span>x</span></x-hwc::form>');
+
+    $view->assertSee('method="post"', false);
+    $view->assertDontSee('method="delete"', false);
+});
+
+it('renders method exactly once for spoofed forms', function () {
+    $view = $this->blade('<x-hwc::form method="put"><span>x</span></x-hwc::form>');
+
+    $html = (string) $view;
+    expect(substr_count($html, 'method='))->toBe(1);
+});
+
 // --- Track Frame Src ---
 
 it('outputs hidden _turbo_frame_src input when track-frame-src is true', function () {
