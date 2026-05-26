@@ -58,6 +58,9 @@ function installGlobals(testWindow) {
     globalThis.MouseEvent = testWindow.MouseEvent;
     globalThis.MutationObserver = testWindow.MutationObserver;
     globalThis.Node = testWindow.Node;
+    globalThis.DataTransfer = testWindow.DataTransfer;
+    globalThis.File = testWindow.File;
+    globalThis.Blob = testWindow.Blob;
     globalThis.requestAnimationFrame = testWindow.requestAnimationFrame.bind(testWindow);
     globalThis.cancelAnimationFrame = testWindow.cancelAnimationFrame.bind(testWindow);
     globalThis.getComputedStyle = testWindow.getComputedStyle.bind(testWindow);

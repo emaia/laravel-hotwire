@@ -5,6 +5,7 @@ use Emaia\LaravelHotwire\Components\ConfirmDialog;
 use Emaia\LaravelHotwire\Components\Description;
 use Emaia\LaravelHotwire\Components\Error;
 use Emaia\LaravelHotwire\Components\Field;
+use Emaia\LaravelHotwire\Components\File;
 use Emaia\LaravelHotwire\Components\FlashContainer;
 use Emaia\LaravelHotwire\Components\FlashMessage;
 use Emaia\LaravelHotwire\Components\Form;
@@ -67,6 +68,14 @@ return [
             'category' => 'forms',
             'description' => 'Wraps label, input, description and error — propagates name/errorKey/required via @aware',
             'controllers' => [],
+        ],
+        'file' => [
+            'class' => File::class,
+            'view' => 'hotwire::component-views.file',
+            'docs' => 'docs/components/file.md',
+            'category' => 'forms',
+            'description' => 'File input with auto id/errorKey, ARIA, optional current file display and Turbo morph reset',
+            'controllers' => ['file-preserve', 'reset-files'],
         ],
         'flash-container' => [
             'class' => FlashContainer::class,
@@ -199,6 +208,12 @@ return [
             'docs' => 'docs/controllers/checkbox-select-all.md',
             'category' => 'forms',
             'description' => 'Select-all checkbox that controls a group, with indeterminate state',
+        ],
+        'file-preserve' => [
+            'source' => 'resources/js/controllers/file_preserve_controller.js',
+            'docs' => 'docs/controllers/file-preserve.md',
+            'category' => 'forms',
+            'description' => 'Captures and restores file input selection across Turbo morphs and frame navigations',
         ],
         'clean-query-params' => [
             'source' => 'resources/js/controllers/clean_query_params_controller.js',
