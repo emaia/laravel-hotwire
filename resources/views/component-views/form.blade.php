@@ -1,20 +1,9 @@
-@php
-    $userController = trim($attributes->get('data-controller', ''));
-    $method = strtolower($attributes->get('method', 'post'));
-    $isSpoofMethod = in_array($method, ['put', 'patch', 'delete']);
-
-    $controller = trim(implode(' ', array_filter([
-        $userController,
-        $autoSubmit ? 'auto-submit' : null,
-        $unsavedChanges ? 'unsaved-changes' : null,
-        $cleanQueryParams ? 'clean-query-params' : null,
-    ])));
-@endphp
+@php extract($compute($attributes)) @endphp
 
 <form
     @if ($controller !== '') data-controller="{{ $controller }}" @endif
     method="{{ $isSpoofMethod ? 'post' : $method }}"
-    {{ $attributes->except(['method', 'auto-submit', 'unsaved-changes', 'clean-query-params', 'track-frame-src']) }}
+    {{ $attributes->whereDoesntStartWith(['data-controller'])->except(['method', 'auto-submit', 'unsaved-changes', 'clean-query-params', 'track-frame-src']) }}
 >
     @if ($method !== 'get')
         @csrf

@@ -1,35 +1,6 @@
 @aware(['name' => null, 'id' => null, 'errorKey' => null, 'required' => false])
 
-@php
-    use Emaia\LaravelHotwire\Support\FieldKey;
-
-    $hasName = $name !== null && $name !== '';
-
-    $resolvedId = $id ?: ($hasName ? FieldKey::toId($name) : 'hwc-select-'.uniqid());
-    $resolvedErrorKey = $errorKey ?: ($hasName ? FieldKey::toErrorKey($name) : '');
-    $errorId = $resolvedId.'-error';
-
-    $resolvedSelected = ($old && $resolvedErrorKey !== '')
-        ? old($resolvedErrorKey, $selected)
-        : $selected;
-
-    $isMultiple = $attributes->has('multiple') && $attributes->get('multiple') !== false;
-
-    if ($isMultiple) {
-        $resolvedSelected = match (true) {
-            is_array($resolvedSelected)                                    => $resolvedSelected,
-            $resolvedSelected === null || $resolvedSelected === ''         => [],
-            default                                                         => [$resolvedSelected],
-        };
-        $selectedSet = array_map('strval', $resolvedSelected);
-        $placeholderSelected = false;
-    } else {
-        $placeholderSelected = $resolvedSelected === '' || $resolvedSelected === null;
-    }
-
-    $hasErrors = $resolvedErrorKey !== '' && $errors->has($resolvedErrorKey);
-    $isRequired = ($attributes->has('required') && $attributes->get('required') !== false) || $required;
-@endphp
+@php extract($compute($name, $id, $errorKey, $required, $errors, $attributes)) @endphp
 
 <select
     id="{{ $resolvedId }}"

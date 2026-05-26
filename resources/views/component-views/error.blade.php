@@ -1,15 +1,6 @@
 @aware(['name' => null, 'errorKey' => null, 'id' => null])
 
-@php
-    use Emaia\LaravelHotwire\Support\FieldKey;
-
-    $hasName = $name !== null && $name !== '';
-    $resolvedErrorKey = $errorKey ?: ($hasName ? FieldKey::toErrorKey($name) : null);
-    $resolvedId = $id ?: ($hasName ? FieldKey::toId($name).'-error' : 'hwc-error-'.uniqid());
-
-    $messages = $explicitMessages ?? ($resolvedErrorKey ? $errors->get($resolvedErrorKey) : []);
-    $isEmpty = empty($messages);
-@endphp
+@php extract($compute($name, $errorKey, $id, $errors)) @endphp
 
 <div
     id="{{ $resolvedId }}"

@@ -1,34 +1,6 @@
 @aware(['name' => null, 'id' => null, 'errorKey' => null, 'required' => false])
 
-@php
-    use Emaia\LaravelHotwire\Support\FieldKey;
-
-    $hasName = $name !== null && $name !== '';
-
-    $resolvedId = $id ?: ($hasName ? FieldKey::toId($name) : 'hwc-textarea-'.uniqid());
-    $resolvedErrorKey = $errorKey ?: ($hasName ? FieldKey::toErrorKey($name) : '');
-    $errorId = $resolvedId.'-error';
-
-    $resolvedValue = ($old && $resolvedErrorKey !== '')
-        ? old($resolvedErrorKey, $value)
-        : $value;
-
-    $hasErrors = $resolvedErrorKey !== '' && $errors->has($resolvedErrorKey);
-    $isRequired = ($attributes->has('required') && $attributes->get('required') !== false) || $required;
-
-    $needsWrapper = $counter !== null;
-
-    $userController = trim($attributes->get('data-controller', ''));
-
-    $elementController = trim(implode(' ', array_filter([
-        $userController,
-        $autoResize ? 'auto-resize' : null,
-    ])));
-
-    $internalPrefixes = array_values(array_filter([
-        $counter !== null ? 'data-char-counter-' : null,
-    ]));
-@endphp
+@php extract($compute($name, $id, $errorKey, $required, $errors, $attributes)) @endphp
 
 @if ($needsWrapper)
 <span @class(['hwc-textarea', $wrapperClass]) data-controller="char-counter" @if ($countdown) data-char-counter-countdown-value="true" @endif>
