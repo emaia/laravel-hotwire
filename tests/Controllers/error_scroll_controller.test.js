@@ -95,7 +95,7 @@ test.serial("respects custom block value", async () => {
     });
 });
 
-test.serial("removes listener on disconnect", async () => {
+test.serial("removes listeners on disconnect", async () => {
     const { root, controller } = await mountRaw(`
         <turbo-frame data-controller="error-scroll">
             <form>
@@ -110,9 +110,33 @@ test.serial("removes listener on disconnect", async () => {
     controller.disconnect();
 
     document.dispatchEvent(new Event("turbo:frame-render", { bubbles: true }));
+    document.dispatchEvent(new Event("turbo:render", { bubbles: true }));
     await wait(50);
 
     expect(target.scrollIntoView).toHaveBeenCalledTimes(0);
+});
+
+test.serial("scrolls to first error on full-page render", async () => {
+    const { root } = await mount(`
+        <form data-controller="error-scroll">
+            <input type="text" name="email" />
+            <span aria-invalid="true">Required</span>
+            <input type="text" name="name" />
+            <span aria-invalid="true">Required</span>
+        </form>
+    `);
+
+    const firstError = root.querySelector("[aria-invalid]");
+    firstError.scrollIntoView = mock(() => {});
+
+    document.dispatchEvent(new Event("turbo:render", { bubbles: true }));
+    await wait(50);
+
+    expect(firstError.scrollIntoView).toHaveBeenCalledTimes(1);
+    expect(firstError.scrollIntoView.mock.calls[0][0]).toEqual({
+        behavior: "smooth",
+        block: "center",
+    });
 });
 
 // --- Helpers ---

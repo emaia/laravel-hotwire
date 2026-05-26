@@ -10,10 +10,12 @@ export default class extends Controller {
     connect() {
         this.scrollToError = this.scrollToError.bind(this);
         document.addEventListener("turbo:frame-render", this.scrollToError);
+        document.addEventListener("turbo:render", this.scrollToError);
     }
 
     disconnect() {
         document.removeEventListener("turbo:frame-render", this.scrollToError);
+        document.removeEventListener("turbo:render", this.scrollToError);
     }
 
     scrollToError() {

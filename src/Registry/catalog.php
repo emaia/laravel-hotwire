@@ -35,7 +35,7 @@ return [
             'docs' => 'docs/components/form.md',
             'category' => 'forms',
             'description' => 'Form wrapper with optional Stimulus behaviors, CSRF, and Turbo Frame redirect support',
-            'controllers' => ['auto-submit', 'unsaved-changes', 'clean-query-params'],
+            'controllers' => ['auto-submit', 'unsaved-changes', 'error-scroll', 'clean-query-params'],
         ],
         'checkbox-group' => [
             'class' => CheckboxGroup::class,
@@ -225,7 +225,7 @@ return [
             'source' => 'resources/js/controllers/error_scroll_controller.js',
             'docs' => 'docs/controllers/error-scroll.md',
             'category' => 'forms',
-            'description' => 'Scrolls to the first validation error inside a Turbo Frame after frame render',
+            'description' => 'Scrolls to the first validation error inside a container after frame render or full-page render',
         ],
         'clear-input' => [
             'source' => 'resources/js/controllers/clear_input_controller.js',

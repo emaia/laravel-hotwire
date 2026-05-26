@@ -1,6 +1,6 @@
 # Error Scroll
 
-Scrolls to the first validation error inside a Turbo Frame after `turbo:frame-render`, so the user always sees what went wrong — even when `autoscroll` on the frame rolls to a different position.
+Scrolls to the first validation error after `turbo:frame-render` (inside a Turbo Frame) or `turbo:render` (full-page morphs). The user always sees what went wrong — even when `autoscroll` on a frame rolls to a different position.
 
 **Identifier:** `error-scroll`
 **Install:** `php artisan hotwire:controllers error-scroll`
@@ -8,13 +8,14 @@ Scrolls to the first validation error inside a Turbo Frame after `turbo:frame-re
 ## Requirements
 
 - No external dependencies.
-- Turbo 8+ (`turbo:frame-render` event).
+- Turbo 8+ (`turbo:frame-render` and `turbo:render` events).
 
 ## Usage
 
-Place the controller on a `<turbo-frame>` or any ancestor that wraps the form:
+Place the controller on a `<turbo-frame>`, a `<form>`, or any ancestor that wraps the form:
 
 ```blade
+{{-- With a Turbo Frame --}}
 <turbo-frame id="create_form" data-controller="error-scroll">
     <x-hwc::form action="/store" method="post">
         <x-hwc::field name="email" label="E-mail" required>
@@ -23,9 +24,17 @@ Place the controller on a `<turbo-frame>` or any ancestor that wraps the form:
         <button type="submit">Save</button>
     </x-hwc::form>
 </turbo-frame>
+
+{{-- Without a Turbo Frame (full-page morphs) --}}
+<form data-controller="error-scroll" action="/store" method="post">
+    <x-hwc::field name="email" label="E-mail" required>
+        <x-hwc::input type="email" />
+    </x-hwc::field>
+    <button type="submit">Save</button>
+</form>
 ```
 
-After a validation error, the controller finds the first `[aria-invalid]` element inside the frame and scrolls it into view with smooth animation and center alignment.
+After a validation error, the controller finds the first `[aria-invalid]` element inside the container and scrolls it into view with smooth animation and center alignment.
 
 ## Values
 
@@ -68,14 +77,4 @@ The `<turbo-frame>` attribute `autoscroll` already scrolls to the frame itself a
 
 ## Without a Turbo Frame
 
-If you want error scrolling on full-page morphs (no frame), listen to `turbo:render` instead. A small variation:
-
-```js
-connect() {
-    this.go = this.scrollToError.bind(this)
-    document.addEventListener("turbo:render", this.go)
-}
-disconnect() {
-    document.removeEventListener("turbo:render", this.go)
-}
-```
+The controller listens to both `turbo:frame-render` and `turbo:render` events, so it works natively on full-page morphs with no modifications needed. Just place `data-controller="error-scroll"` on the `<form>` or a wrapper element.

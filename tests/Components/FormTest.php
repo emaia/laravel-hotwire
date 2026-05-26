@@ -71,6 +71,12 @@ it('adds clean-query-params controller when clean-query-params is true', functio
     $view->assertSee('data-controller="clean-query-params"', false);
 });
 
+it('adds error-scroll controller when error-scroll is true', function () {
+    $view = $this->blade('<x-hwc::form error-scroll><span>x</span></x-hwc::form>');
+
+    $view->assertSee('data-controller="error-scroll"', false);
+});
+
 it('combines multiple controllers separated by space', function () {
     $view = $this->blade('<x-hwc::form auto-submit unsaved-changes><span>x</span></x-hwc::form>');
 
@@ -78,15 +84,15 @@ it('combines multiple controllers separated by space', function () {
 });
 
 it('combines all controllers', function () {
-    $view = $this->blade('<x-hwc::form auto-submit unsaved-changes clean-query-params><span>x</span></x-hwc::form>');
+    $view = $this->blade('<x-hwc::form auto-submit unsaved-changes error-scroll clean-query-params><span>x</span></x-hwc::form>');
 
-    $view->assertSee('data-controller="auto-submit unsaved-changes clean-query-params"', false);
+    $view->assertSee('data-controller="auto-submit unsaved-changes error-scroll clean-query-params"', false);
 });
 
 it('merges user data-controller with internal controllers', function () {
-    $view = $this->blade('<x-hwc::form data-controller="foo" auto-submit unsaved-changes><span>x</span></x-hwc::form>');
+    $view = $this->blade('<x-hwc::form data-controller="foo" auto-submit unsaved-changes error-scroll><span>x</span></x-hwc::form>');
 
-    $view->assertSee('data-controller="foo auto-submit unsaved-changes"', false);
+    $view->assertSee('data-controller="foo auto-submit unsaved-changes error-scroll"', false);
 });
 
 // --- Class merge ---
@@ -219,6 +225,12 @@ it('does not render clean-query-params as an html attribute', function () {
     $view = $this->blade('<x-hwc::form clean-query-params><span>x</span></x-hwc::form>');
 
     $view->assertDontSee(' clean-query-params', false);
+});
+
+it('does not render error-scroll as an html attribute', function () {
+    $view = $this->blade('<x-hwc::form error-scroll><span>x</span></x-hwc::form>');
+
+    $view->assertDontSee(' error-scroll', false);
 });
 
 // --- Pass-through ---

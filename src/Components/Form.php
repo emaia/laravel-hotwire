@@ -10,6 +10,7 @@ class Form extends Component
     public function __construct(
         public bool $autoSubmit = false,
         public bool $unsavedChanges = false,
+        public bool $errorScroll = false,
         public bool $cleanQueryParams = false,
         public bool $trackFrameSrc = false,
         public ?string $enctype = null,
@@ -41,6 +42,7 @@ class Form extends Component
             $userController,
             $this->autoSubmit ? 'auto-submit' : null,
             $this->unsavedChanges ? 'unsaved-changes' : null,
+            $this->errorScroll ? 'error-scroll' : null,
             $this->cleanQueryParams ? 'clean-query-params' : null,
         ])));
 
