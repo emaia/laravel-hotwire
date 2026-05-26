@@ -30,6 +30,38 @@ export async function mountController(identifier, Controller, html) {
     };
 }
 
+export async function mountControllers(identifier, Controller, html) {
+    const testWindow = new Window({ url: "http://localhost" });
+    testWindow.SyntaxError = SyntaxError;
+
+    installGlobals(testWindow);
+
+    document.body.innerHTML = html;
+
+    const application = Application.start(document.body);
+    application.register(identifier, Controller);
+
+    await wait(0);
+
+    const roots = [...document.querySelectorAll(`[data-controller~="${identifier}"]`)];
+
+    return {
+        application,
+        document,
+        roots,
+        controllers: roots.map((root) =>
+            application.getControllerForElementAndIdentifier(root, identifier)
+        ),
+        window: testWindow,
+        cleanup: async () => {
+            application.stop();
+            document.body.innerHTML = "";
+            await wait(0);
+            testWindow.close();
+        },
+    };
+}
+
 export function dispatchEvent(element, type, options = {}) {
     element.dispatchEvent(new Event(type, { bubbles: true, ...options }));
 }

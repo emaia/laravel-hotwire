@@ -1,6 +1,6 @@
 import { afterEach, expect, test } from "bun:test";
 
-import { mountController, wait } from "../../resources/js/helpers/test_stimulus.js";
+import { mountController, mountControllers, wait } from "../../resources/js/helpers/test_stimulus.js";
 import FilePreserveController from "../../resources/js/controllers/file_preserve_controller.js";
 
 let mounted;
@@ -163,6 +163,76 @@ test.serial("new instance restores after disconnect with errors", async () => {
     await m2.cleanup();
 });
 
+// --- Multiple file fields on the same page ---
+
+test.serial("restores every file field, not just the first", async () => {
+    mounted = await mountControllers("file-preserve", FilePreserveController, `
+        <form>
+            <div data-controller="file-preserve"><input type="file" name="avatar" /></div>
+            <div data-controller="file-preserve"><input type="file" name="document" /></div>
+        </form>
+    `);
+
+    const [rootA, rootB] = mounted.roots;
+    const inputA = rootA.querySelector("input[type='file']");
+    const inputB = rootB.querySelector("input[type='file']");
+    setFileOnInput(inputA, mockFile("a.pdf"));
+    setFileOnInput(inputB, mockFile("b.pdf"));
+
+    const form = document.querySelector("form");
+    dispatchTurboSubmitEnd(form);
+    document.dispatchEvent(new Event("turbo:before-render", { bubbles: true }));
+
+    // Re-render both fields with a validation error on the form
+    const newA = makeFileInput("avatar");
+    const newB = makeFileInput("document");
+    rootA.innerHTML = "";
+    rootA.appendChild(newA);
+    rootB.innerHTML = "";
+    rootB.appendChild(newB);
+    const indicator = document.createElement("span");
+    indicator.setAttribute("aria-invalid", "true");
+    form.appendChild(indicator);
+
+    document.dispatchEvent(new Event("turbo:render", { bubbles: true }));
+    await wait(50);
+
+    expect(newA.files.length).toBe(1);
+    expect(newB.files.length).toBe(1);
+});
+
+// --- Submit of an unrelated form must not arm capture ---
+
+test.serial("ignores submit from a form that does not contain the field", async () => {
+    await mount(`
+        <form id="mine">
+            <div data-controller="file-preserve"><input type="file" name="avatar" /></div>
+        </form>
+    `);
+
+    const root = document.querySelector("[data-controller='file-preserve']");
+    const input = root.querySelector("input[type='file']");
+    setFileOnInput(input, mockFile());
+
+    // A different form elsewhere submits
+    const other = document.createElement("form");
+    document.body.appendChild(other);
+    dispatchTurboSubmitEnd(other);
+
+    document.dispatchEvent(new Event("turbo:before-render", { bubbles: true }));
+    const newInput = makeFileInput("avatar");
+    root.innerHTML = "";
+    root.appendChild(newInput);
+    const indicator = document.createElement("span");
+    indicator.setAttribute("aria-invalid", "true");
+    document.querySelector("#mine").appendChild(indicator);
+
+    document.dispatchEvent(new Event("turbo:render", { bubbles: true }));
+    await wait(50);
+
+    expect(newInput.files.length).toBe(0);
+});
+
 // --- Cleanup ---
 
 test.serial("removes listeners on disconnect", async () => {
@@ -202,4 +272,11 @@ function dispatchTurboSubmitEnd(target) {
     target.dispatchEvent(
         new CustomEvent("turbo:submit-end", { bubbles: true, detail: {} })
     );
+}
+
+function makeFileInput(name) {
+    const input = document.createElement("input");
+    input.setAttribute("type", "file");
+    input.setAttribute("name", name);
+    return input;
 }

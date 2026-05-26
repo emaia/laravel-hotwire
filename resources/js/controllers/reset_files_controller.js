@@ -1,47 +1,42 @@
 import { Controller } from "@hotwired/stimulus";
-
-let lastSubmitWasSuccessful = false;
-let submitTracked = false;
+import { formHasErrors } from "./_form_errors";
 
 export default class extends Controller {
     connect() {
-        this.onMorph = this.onMorph.bind(this);
+        this.armed = false;
+        this.lastSubmitSucceeded = false;
+        this.onRender = this.onRender.bind(this);
         this.trackSubmit = this.trackSubmit.bind(this);
 
-        document.addEventListener("turbo:morph", this.onMorph);
-        document.addEventListener("turbo:frame-render", this.onMorph);
-        document.addEventListener("turbo:render", this.onMorph);
+        document.addEventListener("turbo:render", this.onRender);
+        document.addEventListener("turbo:frame-render", this.onRender);
         document.addEventListener("turbo:submit-end", this.trackSubmit);
     }
 
     disconnect() {
-        document.removeEventListener("turbo:morph", this.onMorph);
-        document.removeEventListener("turbo:frame-render", this.onMorph);
-        document.removeEventListener("turbo:render", this.onMorph);
+        document.removeEventListener("turbo:render", this.onRender);
+        document.removeEventListener("turbo:frame-render", this.onRender);
         document.removeEventListener("turbo:submit-end", this.trackSubmit);
     }
 
-    onMorph() {
-        if (this.element.dataset.resetOnSuccess !== "true") return;
-        if (!submitTracked) return;
-        if (!lastSubmitWasSuccessful) {
-            submitTracked = false;
-            return;
-        }
-
-        submitTracked = false;
-        lastSubmitWasSuccessful = false;
-
-        if (!this.#formHasErrors()) {
-            this.resetInputs();
+    trackSubmit(event) {
+        const form = event.target;
+        if (this.element === form || form?.contains(this.element)) {
+            // `success` reflects the HTTP status (2xx/3xx); formHasErrors() in
+            // onRender still guards against a 200 that re-renders the form with
+            // validation errors.
+            this.lastSubmitSucceeded = event.detail?.success === true;
+            this.armed = true;
         }
     }
 
-    trackSubmit(event) {
-        const submittedForm = event.target;
-        if (this.element === submittedForm || (submittedForm && submittedForm.contains(this.element))) {
-            lastSubmitWasSuccessful = event.detail?.success === true;
-            submitTracked = true;
+    onRender() {
+        if (this.element.dataset.resetOnSuccess !== "true") return;
+        if (!this.armed) return;
+
+        this.armed = false;
+        if (this.lastSubmitSucceeded && !formHasErrors(this.element)) {
+            this.resetInputs();
         }
     }
 
@@ -49,14 +44,5 @@ export default class extends Controller {
         this.element.querySelectorAll('input[type="file"]').forEach((input) => {
             input.value = "";
         });
-    }
-
-    #formHasErrors() {
-        const input = this.element.querySelector('input, select, textarea');
-        if (input) {
-            const form = input.closest('form');
-            return form && form.querySelector('[aria-invalid="true"]') !== null;
-        }
-        return false;
     }
 }

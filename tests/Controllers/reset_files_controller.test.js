@@ -1,6 +1,6 @@
 import { afterEach, expect, test } from "bun:test";
 
-import { mountController, wait } from "../../resources/js/helpers/test_stimulus.js";
+import { mountController, mountControllers, wait } from "../../resources/js/helpers/test_stimulus.js";
 import ResetFilesController from "../../resources/js/controllers/reset_files_controller.js";
 
 let mounted;
@@ -204,6 +204,31 @@ test.serial("does not reset when a different form submits", async () => {
     await wait(0);
 
     expect(input.value).not.toBe("");
+});
+
+// --- Multiple file fields on the same page ---
+
+test.serial("resets every file field after success, not just the first", async () => {
+    mounted = await mountControllers("reset-files", ResetFilesController, `
+        <form>
+            <div data-controller="reset-files" data-reset-on-success="true"><input type="file" name="avatar" /></div>
+            <div data-controller="reset-files" data-reset-on-success="true"><input type="file" name="document" /></div>
+        </form>
+    `);
+
+    const [rootA, rootB] = mounted.roots;
+    const inputA = rootA.querySelector("input[type='file']");
+    const inputB = rootB.querySelector("input[type='file']");
+    simulateFileSelection(inputA);
+    simulateFileSelection(inputB);
+
+    const form = document.querySelector("form");
+    dispatchTurboSubmitEnd(form, true);
+    document.dispatchEvent(new Event("turbo:render", { bubbles: true }));
+    await wait(0);
+
+    expect(inputA.value).toBe("");
+    expect(inputB.value).toBe("");
 });
 
 // --- Cleanup ---

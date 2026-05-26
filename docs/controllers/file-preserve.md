@@ -8,14 +8,23 @@ Captures and restores file input selection across Turbo morphs and frame navigat
 ## Requirements
 
 - No external dependencies.
-- Turbo 8+ (`turbo:morph`, `turbo:before-morph`, `turbo:frame-render`, `turbo:before-frame-render` events).
+- Turbo 8+ (`turbo:before-render`/`turbo:render` for Drive and page-morph renders,
+  `turbo:before-frame-render`/`turbo:frame-render` for Turbo Frames).
 
 ## How it works
 
-1. **Before morph/frame render**: captures `FileList` from all `<input type="file">` inside the element.
-2. **After morph/frame render**: restores the captured `FileList` to the matching inputs.
-3. **On a successful submit**: the stash is cleared (so files are NOT carried over after a successful redirect).
-4. **On disconnect** (frame replacement): the stash is populated so the new controller instance can restore it.
+1. **On `turbo:submit-end`**: arms the controller if *this* element's form was the one submitted.
+2. **Before the render** (`turbo:before-render`/`turbo:before-frame-render`): while armed, captures the `FileList`
+   from every `<input type="file">` inside the element into a stash keyed by input name.
+3. **After the render** (`turbo:render`/`turbo:frame-render`): if the re-rendered form has a field marked
+   `aria-invalid="true"` (a failed/validation submit), restores the stashed files to the matching inputs; otherwise
+   the stash for those inputs is discarded (so files are NOT carried over after a successful submit).
+4. **On disconnect** (frame replacement): if still armed, the stash is populated so the incoming controller instance
+   can restore it.
+
+The `aria-invalid="true"` marker is the signal for "the submit failed". `<x-hwc::file>` renders it automatically on
+invalid fields; standalone usage must render it too, or files will never be restored. Each instance only stashes and
+restores its own inputs, so multiple file fields on the same page are preserved independently.
 
 ## Usage
 

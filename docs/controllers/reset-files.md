@@ -1,6 +1,6 @@
 # Reset Files
 
-Clears file inputs (`<input type="file">`) automatically after a successful Turbo morph.
+Clears file inputs (`<input type="file">`) automatically after a successful submit re-renders the form.
 
 **Identifier:** `reset-files`  
 **Install:** `php artisan hotwire:controllers reset-files`
@@ -8,7 +8,18 @@ Clears file inputs (`<input type="file">`) automatically after a successful Turb
 ## Requirements
 
 - No external dependencies.
-- Turbo 8+ (`turbo:morph` event).
+- Turbo 8+ (`turbo:render` for Drive/page-morph renders, `turbo:frame-render` for Turbo Frames).
+
+## How it works
+
+1. On `turbo:submit-end`, records whether the submit of *this* element's form succeeded (HTTP 2xx/3xx).
+2. On the following render (`turbo:render` or `turbo:frame-render`), if the submit succeeded **and** the
+   re-rendered form has no field marked `aria-invalid="true"`, the file inputs inside the element are cleared.
+
+The two-step success check matters: a `200` response that re-renders the form with validation errors reports
+`success` on `turbo:submit-end`, so the `aria-invalid` guard is what actually distinguishes success from a failed
+validation. `<x-hwc::file>` renders `aria-invalid="true"` on invalid fields automatically; standalone usage must do
+the same for the guard to work.
 
 ## Usage
 
@@ -35,5 +46,5 @@ After the server responds successfully and Turbo applies the morph, file inputs 
 ## When to use
 
 - Upload forms that remain on screen after submission (no redirect).
-- Forms inside Turbo Frames that are updated via morph.
-- Any scenario where `turbo:morph` is used and file inputs should be reset.
+- Forms inside Turbo Frames that re-render after a successful submit.
+- Any scenario where the form is re-rendered (Drive morph or frame render) and file inputs should be reset.
