@@ -221,6 +221,12 @@ return [
             'category' => 'forms',
             'description' => 'Strips empty fields from the query string before submitting a GET form',
         ],
+        'error-scroll' => [
+            'source' => 'resources/js/controllers/error_scroll_controller.js',
+            'docs' => 'docs/controllers/error-scroll.md',
+            'category' => 'forms',
+            'description' => 'Scrolls to the first validation error inside a Turbo Frame after frame render',
+        ],
         'clear-input' => [
             'source' => 'resources/js/controllers/clear_input_controller.js',
             'docs' => 'docs/controllers/clear-input.md',
