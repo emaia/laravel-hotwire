@@ -58,6 +58,13 @@ it('uses explicit id', function () {
     $view->assertSee('id="my-input"', false);
 });
 
+it('generates random id when name is absent', function () {
+    $view = $this->blade('<x-hwc::input />');
+
+    $view->assertSee('id="hwc-input-', false);
+    $view->assertDontSee('name="', false);
+});
+
 // --- Value + old() ---
 
 it('renders value prop', function () {

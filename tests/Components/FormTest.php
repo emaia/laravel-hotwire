@@ -203,6 +203,24 @@ it('does not render track-frame-src as an html attribute', function () {
     $view->assertDontSee('track-frame-src', false);
 });
 
+it('does not render auto-submit as an html attribute', function () {
+    $view = $this->blade('<x-hwc::form auto-submit><span>x</span></x-hwc::form>');
+
+    $view->assertDontSee(' auto-submit', false);
+});
+
+it('does not render unsaved-changes as an html attribute', function () {
+    $view = $this->blade('<x-hwc::form unsaved-changes><span>x</span></x-hwc::form>');
+
+    $view->assertDontSee(' unsaved-changes', false);
+});
+
+it('does not render clean-query-params as an html attribute', function () {
+    $view = $this->blade('<x-hwc::form clean-query-params><span>x</span></x-hwc::form>');
+
+    $view->assertDontSee(' clean-query-params', false);
+});
+
 // --- Pass-through ---
 
 it('passes through arbitrary attributes', function () {

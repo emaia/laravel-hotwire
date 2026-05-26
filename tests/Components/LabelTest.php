@@ -125,3 +125,27 @@ it('passes through arbitrary attributes', function () {
 
     $view->assertSee('data-test="x"', false);
 });
+
+// --- @aware propagation from field ---
+
+it('picks up name and derives for from field via @aware', function () {
+    $view = $this->blade('
+        <x-hwc::field name="email">
+            <x-hwc::label>E-mail</x-hwc::label>
+        </x-hwc::field>
+    ');
+
+    $view->assertSee('for="email"', false);
+    $view->assertSee('E-mail');
+});
+
+it('picks up required from field via @aware', function () {
+    $view = $this->blade('
+        <x-hwc::field name="email" required>
+            <x-hwc::label>E-mail</x-hwc::label>
+        </x-hwc::field>
+    ');
+
+    $view->assertSee('*');
+    $view->assertSee('aria-hidden="true"', false);
+});

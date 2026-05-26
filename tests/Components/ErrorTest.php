@@ -94,6 +94,15 @@ it('accepts a single string in messages', function () {
     $view->assertSee('Just one');
 });
 
+it('renders multiple explicit messages as a list', function () {
+    $view = $this->blade('<x-hwc::error :messages="[\'First error\', \'Second error\']" />');
+
+    $view->assertSee('First error');
+    $view->assertSee('Second error');
+    $view->assertSee('<ul', false);
+    $view->assertSee('<li', false);
+});
+
 // --- Id ---
 
 it('uses explicit id', function () {
@@ -115,4 +124,19 @@ it('merges custom class with hwc-error', function () {
 
     $view->assertSee('hwc-error', false);
     $view->assertSee('text-red-600', false);
+});
+
+// --- @aware propagation from field ---
+
+it('picks up name from field via @aware', function () {
+    shareErrors(['email' => ['Required']]);
+
+    $view = $this->blade('
+        <x-hwc::field name="email">
+            <x-hwc::error />
+        </x-hwc::field>
+    ');
+
+    $view->assertSee('Required');
+    $view->assertSee('id="email-error"', false);
 });

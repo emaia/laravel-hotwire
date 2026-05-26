@@ -57,6 +57,13 @@ it('uses explicit id', function () {
     $view->assertSee('id="my-textarea"', false);
 });
 
+it('generates random id when name is absent', function () {
+    $view = $this->blade('<x-hwc::textarea />');
+
+    $view->assertSee('id="hwc-textarea-', false);
+    $view->assertDontSee('name="', false);
+});
+
 // --- Value + old() ---
 
 it('renders value prop', function () {
@@ -187,6 +194,20 @@ it('does not render wrapper when no counter', function () {
     $view->assertDontSee('data-char-counter-target="counter"', false);
 });
 
+it('renders custom counter slot content', function () {
+    $view = $this->blade('
+        <x-hwc::textarea name="bio" :counter="160">
+            <x-slot:counterSlot>
+                <span class="custom-counter">custom</span>
+            </x-slot:counterSlot>
+        </x-hwc::textarea>
+    ');
+
+    $view->assertSee('custom-counter', false);
+    $view->assertSee('>custom</span>', false);
+    $view->assertDontSee('data-char-counter-target="counter"', false);
+});
+
 // --- Combination ---
 
 it('combines auto-resize with counter correctly', function () {
@@ -226,6 +247,12 @@ it('filters data-char-counter prefix when counter is active', function () {
     $view = $this->blade('<x-hwc::textarea name="bio" :counter="100" data-char-counter-target="override" />');
 
     $view->assertDontSee('data-char-counter-target="override"', false);
+});
+
+it('filters data-auto-resize prefix when auto-resize is active', function () {
+    $view = $this->blade('<x-hwc::textarea name="bio" auto-resize data-auto-resize-resize-debounce-delay-value="500" />');
+
+    $view->assertDontSee('data-auto-resize-resize-debounce-delay-value="500"', false);
 });
 
 it('passes user data when no wrapper exists', function () {

@@ -68,6 +68,13 @@ it('uses explicit id', function () {
     $view->assertSee('id="my-select"', false);
 });
 
+it('generates random id when name is absent', function () {
+    $view = $this->blade('<x-hwc::select :options="[1 => \'Active\']" />');
+
+    $view->assertSee('id="hwc-select-', false);
+    $view->assertDontSee('name="', false);
+});
+
 // --- Selected ---
 
 it('marks the selected option', function () {

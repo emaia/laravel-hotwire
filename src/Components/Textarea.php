@@ -36,6 +36,7 @@ class Textarea extends Component
         $data['needsWrapper'] = $this->counter !== null;
         $data['internalPrefixes'] = array_values(array_filter([
             $this->counter !== null ? 'data-char-counter-' : null,
+            $this->autoResize ? 'data-auto-resize-' : null,
         ]));
         $data['compute'] = $this->computeResolved(...);
 

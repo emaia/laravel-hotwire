@@ -218,6 +218,12 @@ it('preserves user data-controller when no select-all', function () {
     $view->assertSee('data-controller="foo"', false);
 });
 
+it('filters data-checkbox-select-all prefix when select-all is active', function () {
+    $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\']" select-all data-checkbox-select-all-target="override" />');
+
+    $view->assertDontSee('data-checkbox-select-all-target="override"', false);
+});
+
 // --- Pass-through ---
 
 it('passes through arbitrary attributes', function () {
