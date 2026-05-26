@@ -3,7 +3,9 @@
 namespace Emaia\LaravelHotwire\Commands;
 
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
+use Emaia\LaravelHotwire\Support\ControllerImports;
 use Illuminate\Console\Command;
+use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Filesystem\Filesystem;
 
 use function Laravel\Prompts\confirm;
@@ -22,11 +24,16 @@ class PublishControllersCommand extends Command
 
     public $description = 'Publish Stimulus controllers to your application';
 
-    public function __construct(private Filesystem $files)
-    {
+    public function __construct(
+        private readonly Filesystem $files,
+        private readonly ControllerImports $imports,
+    ) {
         parent::__construct();
     }
 
+    /**
+     * @throws FileNotFoundException
+     */
     public function handle(): int
     {
         $available = $this->availableControllers();
@@ -44,6 +51,9 @@ class PublishControllersCommand extends Command
         return $this->publishControllers($selected, $available);
     }
 
+    /**
+     * @throws FileNotFoundException
+     */
     private function listOrSelect(array $available): int
     {
         if ($this->option('list') || ! $this->input->isInteractive()) {
@@ -98,6 +108,9 @@ class PublishControllersCommand extends Command
         return $this->publishControllers($selected, $available);
     }
 
+    /**
+     * @throws FileNotFoundException
+     */
     private function publishControllers(array $selected, array $available): int
     {
         $targetBase = resource_path('js/controllers');
@@ -112,7 +125,7 @@ class PublishControllersCommand extends Command
 
             if ($this->files->exists($targetFile) && ! $this->option('force')) {
                 if ($this->files->hash($controller['source_file']) === $this->files->hash($targetFile)) {
-                    info("Controller \"{$key}\" is already up to date.");
+                    info("Controller \"$key\" is already up to date.");
 
                     $this->publishSharedDeps($controller, $targetBase, $publishedDeps);
 
@@ -120,12 +133,12 @@ class PublishControllersCommand extends Command
                 }
 
                 if (! $this->input->isInteractive()) {
-                    warning("Controller \"{$key}\" already exists. Use --force to overwrite.");
+                    warning("Controller \"$key\" already exists. Use --force to overwrite.");
 
                     continue;
                 }
 
-                if (! confirm("Controller \"{$key}\" already exists and differs from the package version. Overwrite?")) {
+                if (! confirm("Controller \"$key\" already exists and differs from the package version. Overwrite?")) {
                     continue;
                 }
             }
@@ -133,127 +146,56 @@ class PublishControllersCommand extends Command
             $this->files->ensureDirectoryExists($targetDir);
             $this->files->copy($controller['source_file'], $targetFile);
 
-            info("Published controller: {$key} -> {$targetFile}");
+            info("Published controller: $key -> $targetFile");
             $published++;
 
             $published += $this->publishSharedDeps($controller, $targetBase, $publishedDeps);
         }
 
         if ($published > 0) {
-            info("Published {$published} controller(s).");
+            info("Published $published controller(s).");
         }
 
         return self::SUCCESS;
     }
 
-    /** @param array<string, bool> $alreadyPublished */
+    /** @param array<string, bool> $alreadyPublished
+     * @throws FileNotFoundException
+     */
     private function publishSharedDeps(array $controller, string $targetBase, array &$alreadyPublished): int
     {
         $baseDir = (string) realpath(__DIR__.'/../../resources/js/controllers');
-
         $count = 0;
-        $visited = [];
-        $queue = [$controller['source_file']];
 
-        while (! empty($queue)) {
-            $current = array_shift($queue);
+        foreach ($this->imports->sharedDependencies($controller['source_file'], $baseDir) as $resolved) {
+            $targetFile = $this->imports->targetPath($resolved, $baseDir, $targetBase);
+            $relativePath = ltrim(str_replace($targetBase, '', $targetFile), '/');
 
-            if (isset($visited[$current])) {
+            if (isset($alreadyPublished[$relativePath])) {
                 continue;
             }
-            $visited[$current] = true;
 
-            foreach ($this->extractRelativeImports($current) as $importPath) {
-                $resolved = $this->resolveImport($current, $importPath);
-
-                if (! $resolved || ! str_starts_with($resolved, $baseDir.DIRECTORY_SEPARATOR)) {
-                    continue;
-                }
-
-                // Other controllers are published independently — skip here
-                if (preg_match('/_controller\.(js|ts)$/', $resolved)) {
-                    continue;
-                }
-
-                $relativePath = ltrim(str_replace('\\', '/', substr($resolved, strlen($baseDir))), '/');
-                $targetFile = $targetBase.'/'.$relativePath;
-
-                if (isset($alreadyPublished[$relativePath])) {
-                    $queue[] = $resolved;
+            if ($this->files->exists($targetFile) && ! $this->option('force')) {
+                if ($this->files->hash($resolved) === $this->files->hash($targetFile)) {
+                    $alreadyPublished[$relativePath] = true;
 
                     continue;
                 }
 
-                if ($this->files->exists($targetFile) && ! $this->option('force')) {
-                    if ($this->files->hash($resolved) === $this->files->hash($targetFile)) {
-                        $alreadyPublished[$relativePath] = true;
-                        $queue[] = $resolved;
-
-                        continue;
-                    }
-
-                    if (! $this->input->isInteractive()) {
-                        continue;
-                    }
+                if (! $this->input->isInteractive()) {
+                    continue;
                 }
-
-                $this->files->ensureDirectoryExists(dirname($targetFile));
-                $this->files->copy($resolved, $targetFile);
-
-                info('Published dependency: '.basename($resolved).' -> '.$targetFile);
-                $alreadyPublished[$relativePath] = true;
-                $count++;
-                $queue[] = $resolved;
             }
+
+            $this->files->ensureDirectoryExists(dirname($targetFile));
+            $this->files->copy($resolved, $targetFile);
+
+            info('Published dependency: '.basename($resolved).' -> '.$targetFile);
+            $alreadyPublished[$relativePath] = true;
+            $count++;
         }
 
         return $count;
-    }
-
-    /** @return string[] */
-    private function extractRelativeImports(string $filePath): array
-    {
-        $source = $this->files->get($filePath);
-        $imports = [];
-
-        $patterns = [
-            '/\b(?:import|from|require)\s*\(?\s*[\'"](\.[^\'"]+)[\'"]/',
-            '/@import\s+(?:url\()?\s*[\'"](\.[^\'"]+)[\'"]/',
-        ];
-
-        foreach ($patterns as $pattern) {
-            if (preg_match_all($pattern, $source, $matches)) {
-                $imports = array_merge($imports, $matches[1]);
-            }
-        }
-
-        return array_values(array_unique($imports));
-    }
-
-    private function resolveImport(string $fromFile, string $importPath): ?string
-    {
-        $candidate = dirname($fromFile).'/'.$importPath;
-
-        $direct = realpath($candidate);
-        if ($direct && is_file($direct)) {
-            return $direct;
-        }
-
-        foreach (['.js', '.ts', '.mjs', '.css'] as $ext) {
-            $withExt = realpath($candidate.$ext);
-            if ($withExt && is_file($withExt)) {
-                return $withExt;
-            }
-        }
-
-        foreach (['.js', '.ts', '.mjs'] as $ext) {
-            $index = realpath($candidate.'/index'.$ext);
-            if ($index && is_file($index)) {
-                return $index;
-            }
-        }
-
-        return null;
     }
 
     /** @return string[] */
@@ -277,7 +219,7 @@ class PublishControllersCommand extends Command
         foreach ($args as $arg) {
             if (str_contains($arg, '/')) {
                 if (! isset($available[$arg])) {
-                    warning("Controller \"{$arg}\" not found. Run --list to see available controllers.");
+                    warning("Controller \"$arg\" not found. Run --list to see available controllers.");
                 } else {
                     $selected[] = $arg;
                 }
@@ -294,7 +236,7 @@ class PublishControllersCommand extends Command
             $matched = array_keys(array_filter($available, fn ($c) => $c['relative_dir'] === $arg));
 
             if (empty($matched)) {
-                warning("Controller or substrate \"{$arg}\" not found. Run --list to see available controllers.");
+                warning("Controller or substrate \"$arg\" not found. Run --list to see available controllers.");
             } else {
                 array_push($selected, ...$matched);
             }
@@ -317,18 +259,14 @@ class PublishControllersCommand extends Command
         $registry = HotwireRegistry::make();
         $basePath = $registry->basePath();
 
-        $controllers = [];
-
-        foreach ($registry->publishableControllers() as $key => $controller) {
-            $controllers[$key] = [
+        return array_map(function ($controller) use ($basePath) {
+            return [
                 'name' => $controller->name(),
                 'identifier' => $controller->identifier,
                 'relative_dir' => $controller->relativeDir(),
                 'source_file' => $controller->sourcePath($basePath),
                 'filename' => $controller->filename(),
             ];
-        }
-
-        return $controllers;
+        }, $registry->publishableControllers());
     }
 }
