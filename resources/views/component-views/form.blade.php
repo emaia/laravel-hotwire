@@ -3,7 +3,8 @@
 <form
     @if ($controller !== '') data-controller="{{ $controller }}" @endif
     method="{{ $isSpoofMethod ? 'post' : $method }}"
-    {{ $attributes->whereDoesntStartWith(['data-controller'])->except(['method', 'auto-submit', 'unsaved-changes', 'clean-query-params', 'track-frame-src']) }}
+    @if ($enctype !== null) enctype="{{ $enctype }}" @endif
+    {{ $attributes->whereDoesntStartWith(['data-controller'])->except(['method', 'enctype', 'auto-submit', 'unsaved-changes', 'clean-query-params', 'track-frame-src']) }}
 >
     @if ($method !== 'get')
         @csrf

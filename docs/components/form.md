@@ -20,8 +20,9 @@ Form wrapper that composes optional Stimulus behaviors via boolean props. Render
 | `unsaved-changes`    | `bool`  | `false`  | Warns before navigating away with unsaved changes                          |
 | `clean-query-params` | `bool`  | `false`  | Strips empty fields from GET query strings before submission                |
 | `track-frame-src`    | `bool`  | `false`  | Includes a hidden `_turbo_frame_src` input for correct redirect resolution inside Turbo Frames |
+| `enctype`            | `string\|null` | `null`  | HTML `enctype` attribute. Set to `"multipart/form-data"` for file uploads. Default `null` omits the attribute (browser uses `application/x-www-form-urlencoded`) |
 
-Any other HTML attribute (`action`, `method`, `enctype`, `class`, `data-*`, `aria-*`) passes through to the `<form>` element. Method defaults to `post` unless overridden.
+Any other HTML attribute (`action`, `method`, `class`, `data-*`, `aria-*`) passes through to the `<form>` element. Method defaults to `post` unless overridden.
 
 The component automatically includes `@csrf` for all non-GET methods and `@method` for PUT, PATCH, and DELETE forms.
 

@@ -224,8 +224,34 @@ it('does not render clean-query-params as an html attribute', function () {
 // --- Pass-through ---
 
 it('passes through arbitrary attributes', function () {
-    $view = $this->blade('<x-hwc::form data-turbo-frame="modal" enctype="multipart/form-data"><span>x</span></x-hwc::form>');
+    $view = $this->blade('<x-hwc::form data-turbo-frame="modal"><span>x</span></x-hwc::form>');
 
     $view->assertSee('data-turbo-frame="modal"', false);
+});
+
+// --- enctype ---
+
+it('does not render enctype by default', function () {
+    $view = $this->blade('<x-hwc::form><span>x</span></x-hwc::form>');
+
+    $view->assertDontSee('enctype=', false);
+});
+
+it('renders enctype when provided as prop', function () {
+    $view = $this->blade('<x-hwc::form enctype="multipart/form-data"><span>x</span></x-hwc::form>');
+
     $view->assertSee('enctype="multipart/form-data"', false);
+});
+
+it('renders enctype="text/plain" when set', function () {
+    $view = $this->blade('<x-hwc::form enctype="text/plain"><span>x</span></x-hwc::form>');
+
+    $view->assertSee('enctype="text/plain"', false);
+});
+
+it('renders enctype exactly once when set', function () {
+    $view = $this->blade('<x-hwc::form enctype="multipart/form-data"><span>x</span></x-hwc::form>');
+
+    $html = (string) $view;
+    expect(substr_count($html, 'enctype='))->toBe(1);
 });

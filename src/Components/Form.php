@@ -12,6 +12,7 @@ class Form extends Component
         public bool $unsavedChanges = false,
         public bool $cleanQueryParams = false,
         public bool $trackFrameSrc = false,
+        public ?string $enctype = null,
     ) {}
 
     public function render()
