@@ -22,5 +22,5 @@ Each recipe is self-contained — pick the one that matches your use case.
 
 ## See also
 
-- [Components catalog](../../README.md#components) — the Blade primitives the recipes build on.
+- [Components catalog](../../README.md#blade-components) — the Blade primitives the recipes build on.
 - [Registry](../registry.md) — where the package metadata lives.

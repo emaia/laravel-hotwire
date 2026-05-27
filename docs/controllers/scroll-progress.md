@@ -10,9 +10,9 @@ Displays a progress bar that fills based on the user's scroll position.
 
 ## Stimulus Values
 
-| Value | Type | Default | Description |
-|-------|------|---------|-------------|
-| `throttle-delay` | `Number` | `15` | Throttle delay (ms) on the scroll event. Use `0` to disable |
+| Value            | Type     | Default | Description                                                 |
+|------------------|----------|---------|-------------------------------------------------------------|
+| `throttle-delay` | `Number` | `15`    | Throttle delay (ms) on the scroll event. Use `0` to disable |
 
 ## Basic usage
 

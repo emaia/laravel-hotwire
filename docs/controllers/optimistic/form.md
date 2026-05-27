@@ -29,8 +29,8 @@ elements that Turbo executes immediately.
 
 ## Values
 
-| Value   | Type      | Default | Description                                                                 |
-|---------|-----------|---------|-----------------------------------------------------------------------------|
+| Value   | Type      | Default | Description                                                                        |
+|---------|-----------|---------|------------------------------------------------------------------------------------|
 | `reset` | `Boolean` | `false` | Resets the form after a successful submission (`turbo:submit-end` with `success`). |
 
 ```html

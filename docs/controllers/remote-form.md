@@ -17,8 +17,8 @@ Proxy controller for form submissions that need to be triggered from a decoupled
 
 ## Actions
 
-| Action                      | Description                              |
-|-----------------------------|------------------------------------------|
+| Action                     | Description                              |
+|----------------------------|------------------------------------------|
 | `remote-form#remoteSubmit` | Clicks the configured `submitBtn` target |
 
 ## Remote submit

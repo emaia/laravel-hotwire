@@ -1,6 +1,7 @@
 # Textarea
 
-Auto-resizing textarea with optional character counter. Mirrors the same auto-derivation (`id`/`errorKey`), `old()` merge, and ARIA wiring as `<x-hwc::input>`.
+Auto-resizing the textarea with an optional character counter. Mirrors the same auto-derivation (`id`/`errorKey`),
+`old()` merge, and ARIA wiring as `<x-hwc::input>`.
 
 ## Quick example
 
@@ -10,18 +11,18 @@ Auto-resizing textarea with optional character counter. Mirrors the same auto-de
 
 ## Props
 
-| Prop            | Type           | Default                        | Description                                                       |
-|-----------------|----------------|--------------------------------|-------------------------------------------------------------------|
-| `name`          | `string\|null` | —                              | Pass-through. Drives `id` and `errorKey` if those aren't set       |
-| `id`            | `string\|null` | derived from `name`            | Override the auto-derived id                                      |
-| `value`         | `mixed`        | `null`                         | Default content, merged with `old($errorKey, $value)`              |
-| `errorKey`      | `string\|null` | derived from `name`            | Override for arrays where HTML `name` ≠ validation key            |
-| `old`           | `bool`         | `true`                         | Disable `old()` auto-merge                                        |
-| `auto-resize`   | `bool`         | `false`                        | Automatically grows the textarea to fit content                   |
-| `counter`       | `int\|null`    | `null`                         | Enables char counter and sets `maxlength`                         |
-| `countdown`     | `bool`         | `false`                        | Counter shows remaining instead of used                           |
-| `class`         | `string`       | `""`                           | Merged on `<textarea>`                                            |
-| `wrapper-class` | `string`       | `""`                           | Merged on the wrapper when counter is active                      |
+| Prop            | Type           | Default             | Description                                                  |
+|-----------------|----------------|---------------------|--------------------------------------------------------------|
+| `name`          | `string\|null` | —                   | Pass-through. Drives `id` and `errorKey` if those aren't set |
+| `id`            | `string\|null` | derived from `name` | Override the auto-derived id                                 |
+| `value`         | `mixed`        | `null`              | Default content, merged with `old($errorKey, $value)`        |
+| `errorKey`      | `string\|null` | derived from `name` | Override for arrays where HTML `name` ≠ validation key       |
+| `old`           | `bool`         | `true`              | Disable `old()` auto-merge                                   |
+| `auto-resize`   | `bool`         | `false`             | Automatically grows the textarea to fit content              |
+| `counter`       | `int\|null`    | `null`              | Enables char counter and sets `maxlength`                    |
+| `countdown`     | `bool`         | `false`             | Counter shows remaining instead of used                      |
+| `class`         | `string`       | `""`                | Merged on `<textarea>`                                       |
+| `wrapper-class` | `string`       | `""`                | Merged on the wrapper when counter is active                 |
 
 Any other HTML attribute (`placeholder`, `rows`, `disabled`, `data-*`, `aria-*`) passes through.
 
@@ -36,7 +37,8 @@ Same convention as `<x-hwc::input>`:
 
 ## Auto-resize
 
-The textarea grows automatically as the user types and shrinks when text is deleted. Customize the resize debounce via `data-auto-resize-resize-debounce-delay-value`:
+The textarea grows automatically as the user types and shrinks when text is deleted. Customize the resize debounce via
+`data-auto-resize-resize-debounce-delay-value`:
 
 ```blade
 <x-hwc::textarea name="content" auto-resize
@@ -45,7 +47,8 @@ The textarea grows automatically as the user types and shrinks when text is dele
 
 ## Char counter
 
-When `:counter` is set, a wrapper `<span>` with `data-controller="char-counter"` is rendered around the textarea, and a `<small data-char-counter-target="counter">` shows the live count. Add `countdown` to show remaining characters:
+When `:counter` is set, a wrapper `<span>` with `data-controller="char-counter"` is rendered around the textarea, and a
+`<small data-char-counter-target="counter">` shows the live count. Add `countdown` to show remaining characters:
 
 ```blade
 <x-hwc::textarea name="tweet" :counter="280" countdown />

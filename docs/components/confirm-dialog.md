@@ -6,7 +6,7 @@ links, buttons, form submissions, and Turbo actions.
 ## Basic usage
 
 The default slot **is** the trigger — anything you put inside the component will be wrapped in a
-click-intercept zone. The confirm button is styled red by default since most confirmation prompts
+click-intercept zone. The confirmation button is styled red by default since most confirmation prompts
 guard destructive actions:
 
 ```html
@@ -25,7 +25,7 @@ guard destructive actions:
 
 ## Non-destructive variant
 
-For confirmations that aren't destructive (submitting a report, sending an invite), override
+For confirmations that aren't destructive (submitting a report, sending an invitation), override
 `confirm-class` to a primary color. `cancel-class` is also available for tighter visual pairing:
 
 ```html
@@ -84,35 +84,35 @@ write `data-*-value` attributes:
 
 ## Props
 
-| Prop                      | Type     | Default              | Description                                                                                               |
-|---------------------------|----------|----------------------|-----------------------------------------------------------------------------------------------------------|
-| `id`                      | `string` | `uniqid('confirm-')` | Root element ID                                                                                           |
-| `title`                   | `string` | `''`                 | Dialog heading                                                                                            |
-| `message`                 | `string` | `''`                 | Body text below the title                                                                                 |
-| `confirm-label`           | `string` | `'Confirm'`          | Confirm button label                                                                                      |
-| `cancel-label`            | `string` | `'Cancel'`           | Cancel button label                                                                                       |
-| `confirm-class`           | `string` | `''`                 | CSS classes for the confirm button. Defaults to `bg-red-600 text-white hover:bg-red-700` when empty       |
-| `cancel-class`            | `string` | `''`                 | CSS classes for the cancel button. Defaults to `border border-gray-300 text-gray-700 hover:bg-gray-50` when empty |
-| `open-duration`           | `int`    | `200`                | Opening animation duration (ms)                                                                           |
-| `close-duration`          | `int`    | `200`                | Closing animation duration (ms)                                                                           |
-| `lock-scroll`             | `bool`   | `true`               | Locks body scroll when the dialog is open                                                                 |
-| `close-on-click-outside`  | `bool`   | `true`               | Closes when clicking the backdrop                                                                         |
+| Prop                     | Type     | Default              | Description                                                                                                       |
+|--------------------------|----------|----------------------|-------------------------------------------------------------------------------------------------------------------|
+| `id`                     | `string` | `uniqid('confirm-')` | Root element ID                                                                                                   |
+| `title`                  | `string` | `''`                 | Dialog heading                                                                                                    |
+| `message`                | `string` | `''`                 | Body text below the title                                                                                         |
+| `confirm-label`          | `string` | `'Confirm'`          | Confirm button label                                                                                              |
+| `cancel-label`           | `string` | `'Cancel'`           | Cancel button label                                                                                               |
+| `confirm-class`          | `string` | `''`                 | CSS classes for the confirm button. Defaults to `bg-red-600 text-white hover:bg-red-700` when empty               |
+| `cancel-class`           | `string` | `''`                 | CSS classes for the cancel button. Defaults to `border border-gray-300 text-gray-700 hover:bg-gray-50` when empty |
+| `open-duration`          | `int`    | `200`                | Opening animation duration (ms)                                                                                   |
+| `close-duration`         | `int`    | `200`                | Closing animation duration (ms)                                                                                   |
+| `lock-scroll`            | `bool`   | `true`               | Locks body scroll when the dialog is open                                                                         |
+| `close-on-click-outside` | `bool`   | `true`               | Closes when clicking the backdrop                                                                                 |
 
 ## Slots
 
-| Slot             | Description                                                                       |
-|------------------|-----------------------------------------------------------------------------------|
-| `slot` (default) | Trigger element whose click is intercepted to open the dialog                     |
-| `body`           | Optional rich content rendered below `message` and above the buttons              |
+| Slot             | Description                                                          |
+|------------------|----------------------------------------------------------------------|
+| `slot` (default) | Trigger element whose click is intercepted to open the dialog        |
+| `body`           | Optional rich content rendered below `message` and above the buttons |
 
 ## How it works
 
 The default slot is wrapped in a click-intercept zone. When the user clicks any element inside, the click is
-cancelled and the confirmation dialog opens. If the user clicks **Confirm**, the original click is re-fired on the same
+canceled and the confirmation dialog opens. If the user clicks **Confirm**, the original click is re-fired on the same
 element (bypassing the intercept). If the user clicks **Cancel** or presses `Escape`, the dialog closes and nothing
 happens.
 
-The trigger element needs no special attributes — just place it as the default slot.
+The trigger element needs no special attributes — place it as the default slot.
 
 ## Accessibility
 
@@ -130,4 +130,4 @@ The dialog cancels automatically on `turbo:before-cache`, preventing ghost dialo
 ## Need more control?
 
 For fully custom markup — different DOM structure, no Tailwind, or wiring custom buttons inside the
-dialog — drop down to the [`confirm-dialog` controller](../../controllers/confirm-dialog.md).
+dialog — drop down to the [`confirm-dialog` controller](../controllers/confirm-dialog.md).

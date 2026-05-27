@@ -12,47 +12,47 @@ Accessible modal with backdrop, animations, focus trap and dynamic content suppo
 
 ## Targets
 
-| Target | Description |
-|--------|-------------|
-| `modal` | Modal root element (overlay) |
-| `backdrop` | Dark background layer |
-| `dialog` | Dialog box (visible content) |
-| `dynamicContent` | Container observed for content loaded via Turbo |
-| `loadingTemplate` | Template shown while dynamic content loads |
+| Target            | Description                                     |
+|-------------------|-------------------------------------------------|
+| `modal`           | Modal root element (overlay)                    |
+| `backdrop`        | Dark background layer                           |
+| `dialog`          | Dialog box (visible content)                    |
+| `dynamicContent`  | Container observed for content loaded via Turbo |
+| `loadingTemplate` | Template shown while dynamic content loads      |
 
 ## Stimulus Values
 
-| Value | Type | Default | Description |
-|-------|------|---------|-------------|
-| `open-duration` | `Number` | `300` | Opening animation duration (ms) |
-| `close-duration` | `Number` | `300` | Closing animation duration (ms) |
-| `lock-scroll` | `Boolean` | `true` | Locks body scroll when open |
-| `close-on-escape` | `Boolean` | `true` | Closes on Escape key |
-| `close-on-click-outside` | `Boolean` | `true` | Closes when clicking outside the modal |
-| `prevent-reopen-delay` | `Number` | `300` | Anti-bounce delay between close and reopen (ms) |
+| Value                    | Type      | Default | Description                                     |
+|--------------------------|-----------|---------|-------------------------------------------------|
+| `open-duration`          | `Number`  | `300`   | Opening animation duration (ms)                 |
+| `close-duration`         | `Number`  | `300`   | Closing animation duration (ms)                 |
+| `lock-scroll`            | `Boolean` | `true`  | Locks body scroll when open                     |
+| `close-on-escape`        | `Boolean` | `true`  | Closes on Escape key                            |
+| `close-on-click-outside` | `Boolean` | `true`  | Closes when clicking outside the modal          |
+| `prevent-reopen-delay`   | `Number`  | `300`   | Anti-bounce delay between close and reopen (ms) |
 
 ## Stimulus Classes
 
-| Class | Description |
-|-------|-------------|
-| `hidden` / `visible` | Applied to the `modal` target on open/close |
-| `backdrop-hidden` / `backdrop-visible` | Applied to the `backdrop` target |
-| `dialog-hidden` / `dialog-visible` | Applied to the `dialog` target |
-| `lock-scroll` | Applied to `<body>` when `lock-scroll` is `true` |
+| Class                                  | Description                                      |
+|----------------------------------------|--------------------------------------------------|
+| `hidden` / `visible`                   | Applied to the `modal` target on open/close      |
+| `backdrop-hidden` / `backdrop-visible` | Applied to the `backdrop` target                 |
+| `dialog-hidden` / `dialog-visible`     | Applied to the `dialog` target                   |
+| `lock-scroll`                          | Applied to `<body>` when `lock-scroll` is `true` |
 
 ## Actions
 
-| Action | Description |
-|--------|-------------|
-| `modal#open` | Opens the modal |
-| `modal#close` | Closes the modal |
+| Action               | Description                                                      |
+|----------------------|------------------------------------------------------------------|
+| `modal#open`         | Opens the modal                                                  |
+| `modal#close`        | Closes the modal                                                 |
 | `modal#clickOutside` | Closes when clicking outside (use with `click` event on overlay) |
-| `modal#showLoading` | Shows the loading template before a Turbo request |
+| `modal#showLoading`  | Shows the loading template before a Turbo request                |
 
 ## Events
 
-| Event | Description |
-|-------|-------------|
+| Event          | Description                                                     |
+|----------------|-----------------------------------------------------------------|
 | `modal:opened` | Fired on the root element after the opening animation completes |
 | `modal:closed` | Fired on the root element after the closing animation completes |
 
@@ -103,7 +103,8 @@ or `aria-labelledby` belong on that same controller element.
 
 ## With dynamic content via Turbo Frame
 
-The `dynamicContent` target is observed via `MutationObserver`. When content is inserted, the modal opens automatically. When the content is removed, it closes.
+The `dynamicContent` target is observed via `MutationObserver`. When content is inserted, the modal opens automatically.
+When the content is removed, it closes.
 
 ```html
 <div data-controller="modal" ...>

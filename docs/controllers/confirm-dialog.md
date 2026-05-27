@@ -12,38 +12,38 @@ the low-level Stimulus controller used by [`<x-hwc::confirm-dialog>`](../compone
 
 ## Targets
 
-| Target | Description |
-|--------|-------------|
-| `modal` | Overlay element shown and hidden by the controller |
-| `backdrop` | Background layer animated separately from the dialog |
-| `dialog` | Visible dialog panel used for click-outside and focus trap logic |
+| Target     | Description                                                      |
+|------------|------------------------------------------------------------------|
+| `modal`    | Overlay element shown and hidden by the controller               |
+| `backdrop` | Background layer animated separately from the dialog             |
+| `dialog`   | Visible dialog panel used for click-outside and focus trap logic |
 
 ## Stimulus Values
 
-| Value | Type | Default | Description |
-|-------|------|---------|-------------|
-| `open-duration` | `Number` | `200` | Opening animation duration in milliseconds |
-| `close-duration` | `Number` | `200` | Closing animation duration in milliseconds |
-| `lock-scroll` | `Boolean` | `true` | Adds and removes the configured body scroll-lock class |
-| `close-on-click-outside` | `Boolean` | `true` | Cancels the dialog when the user clicks outside the panel |
+| Value                    | Type      | Default | Description                                               |
+|--------------------------|-----------|---------|-----------------------------------------------------------|
+| `open-duration`          | `Number`  | `200`   | Opening animation duration in milliseconds                |
+| `close-duration`         | `Number`  | `200`   | Closing animation duration in milliseconds                |
+| `lock-scroll`            | `Boolean` | `true`  | Adds and removes the configured body scroll-lock class    |
+| `close-on-click-outside` | `Boolean` | `true`  | Cancels the dialog when the user clicks outside the panel |
 
 ## Stimulus Classes
 
-| Class | Description |
-|-------|-------------|
-| `hidden` / `visible` | Applied to the `modal` target during close/open |
-| `backdrop-hidden` / `backdrop-visible` | Applied to the `backdrop` target |
-| `dialog-hidden` / `dialog-visible` | Applied to the `dialog` target |
-| `lock-scroll` | Applied to `<body>` while the dialog is open when `lock-scroll` is enabled |
+| Class                                  | Description                                                                |
+|----------------------------------------|----------------------------------------------------------------------------|
+| `hidden` / `visible`                   | Applied to the `modal` target during close/open                            |
+| `backdrop-hidden` / `backdrop-visible` | Applied to the `backdrop` target                                           |
+| `dialog-hidden` / `dialog-visible`     | Applied to the `dialog` target                                             |
+| `lock-scroll`                          | Applied to `<body>` while the dialog is open when `lock-scroll` is enabled |
 
 ## Actions
 
-| Action | Description |
-|--------|-------------|
-| `confirm-dialog#intercept` | Intercepts a click, stores the original element, and opens the dialog |
-| `confirm-dialog#confirm` | Closes the dialog and re-fires the original click after the close animation |
-| `confirm-dialog#cancel` | Cancels the pending action and closes the dialog |
-| `confirm-dialog#clickOutside` | Cancels when clicking outside the dialog panel |
+| Action                        | Description                                                                 |
+|-------------------------------|-----------------------------------------------------------------------------|
+| `confirm-dialog#intercept`    | Intercepts a click, stores the original element, and opens the dialog       |
+| `confirm-dialog#confirm`      | Closes the dialog and re-fires the original click after the close animation |
+| `confirm-dialog#cancel`       | Cancels the pending action and closes the dialog                            |
+| `confirm-dialog#clickOutside` | Cancels when clicking outside the dialog panel                              |
 
 ## Basic usage
 

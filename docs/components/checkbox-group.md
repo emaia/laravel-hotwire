@@ -1,10 +1,13 @@
 # Checkbox Group
 
-Renders a group of checkboxes from an `options` array, with optional "select-all" master checkbox via the `checkbox-select-all` Stimulus controller.
+Renders a group of checkboxes from an `options` array, with optional "select-all" master checkbox via the
+`checkbox-select-all` Stimulus controller.
 
-Each checkbox gets a unique `id` derived from the group name and option value. All checkboxes share the same `aria-describedby` pointing to the group's error element.
+Each checkbox gets a unique `id` derived from the group name and option value. All checkboxes share the same
+`aria-describedby` pointing to the group's error element.
 
-Flat (non-associative) options arrays are automatically normalized: `['main', 'dev']` becomes `['main' => 'main', 'dev' => 'dev']`.
+Flat (non-associative) options arrays are automatically normalized: `['main', 'dev']` becomes
+`['main' => 'main', 'dev' => 'dev']`.
 
 ## Quick example
 
@@ -18,21 +21,23 @@ Flat (non-associative) options arrays are automatically normalized: `['main', 'd
 
 ## Props
 
-| Prop               | Type           | Default       | Description                                                    |
-|--------------------|----------------|---------------|----------------------------------------------------------------|
-| `name`             | `string\|null` | —             | Input name. Auto-normalized to `foo[]` if you pass `foo` (see below) |
-| `options`          | `array`        | `[]`          | `[value => label]` pairs                                       |
-| `selected`         | `array`        | `[]`          | Values that should be checked                                  |
-| `select-all`       | `bool`         | `false`       | Renders a master checkbox that toggles all items                |
-| `select-all-label` | `string\|null` | `"Select all"` | Custom label for the master checkbox                           |
-| `class`            | `string`       | `""`          | Merged on the wrapper `<div>`                                  |
-| `old`              | `bool`         | `true`        | When `true`, merges `old()` input over `selected`              |
-| `id`               | `string\|null` | derived        | Base id for per-checkbox ids and error reference                |
-| `errorKey`         | `string\|null` | derived        | Override when HTML `name` ≠ Laravel validation key              |
+| Prop               | Type           | Default        | Description                                                          |
+|--------------------|----------------|----------------|----------------------------------------------------------------------|
+| `name`             | `string\|null` | —              | Input name. Auto-normalized to `foo[]` if you pass `foo` (see below) |
+| `options`          | `array`        | `[]`           | `[value => label]` pairs                                             |
+| `selected`         | `array`        | `[]`           | Values that should be checked                                        |
+| `select-all`       | `bool`         | `false`        | Renders a master checkbox that toggles all items                     |
+| `select-all-label` | `string\|null` | `"Select all"` | Custom label for the master checkbox                                 |
+| `class`            | `string`       | `""`           | Merged on the wrapper `<div>`                                        |
+| `old`              | `bool`         | `true`         | When `true`, merges `old()` input over `selected`                    |
+| `id`               | `string\|null` | derived        | Base id for per-checkbox ids and error reference                     |
+| `errorKey`         | `string\|null` | derived        | Override when HTML `name` ≠ Laravel validation key                   |
 
 ## Name auto-normalization
 
-Checkbox groups submit one HTTP field per checked item. PHP only collects them into an array when the `name` ends in `[]` — otherwise it silently keeps only the last submitted value. To prevent this footgun, the component appends `[]` automatically when missing:
+Checkbox groups submit one HTTP field per checked item. PHP only collects them into an array when the `name` ends in
+`[]` — otherwise it silently keeps only the last submitted value. To prevent this footgun, the component appends `[]`
+automatically when missing:
 
 ```blade
 {{-- These render identically --}}
@@ -40,7 +45,9 @@ Checkbox groups submit one HTTP field per checked item. PHP only collects them i
 <x-hwc::checkbox-group name="ids[]" :options="$opts" />
 ```
 
-Both produce `<input ... name="ids[]" ...>`. In debug mode (`APP_DEBUG=true`, non-testing env), passing `name="ids"` triggers an `E_USER_NOTICE` so you can tighten the call site. Validation keys and per-checkbox ids are unaffected — they're always derived from the unbracketed name (`ids`, `ids-1`, `ids-error`).
+Both produce `<input ... name="ids[]" ...>`. In debug mode (`APP_DEBUG=true`, non-testing env), passing `name="ids"`
+triggers an `E_USER_NOTICE` so you can tighten the call site. Validation keys and per-checkbox ids are unaffected —
+they're always derived from the unbracketed name (`ids`, `ids-1`, `ids-error`).
 
 ## ARIA
 
@@ -66,7 +73,9 @@ Each checkbox renders inside a `<label>` with the option label as its text node.
 
 ## With select-all
 
-When `select-all` is enabled, the wrapper gets `data-controller="checkbox-select-all"`, the master checkbox gets `data-checkbox-select-all-target="checkboxAll"`, and each item gets `data-checkbox-select-all-target="checkbox"`. The controller handles indeterminate state automatically.
+When `select-all` is enabled, the wrapper gets `data-controller="checkbox-select-all"`, the master checkbox gets
+`data-checkbox-select-all-target="checkboxAll"`, and each item gets `data-checkbox-select-all-target="checkbox"`. The
+controller handles indeterminate state automatically.
 
 ```blade
 <x-hwc::checkbox-group
@@ -79,7 +88,7 @@ When `select-all` is enabled, the wrapper gets `data-controller="checkbox-select
 
 ## Flat options arrays
 
-Non-associative arrays are normalized so values serve as both keys and labels:
+Non-associative arrays are normalized, so values serve as both keys and labels:
 
 ```blade
 <x-hwc::checkbox-group
@@ -103,7 +112,8 @@ When inside `<x-hwc::field>`, `name`, `id`, and `errorKey` are inherited via `@a
 
 ## Disable indeterminate state
 
-The select-all checkbox shows an indeterminate (dash) state when some — but not all — items are checked. To disable this behavior and only toggle between fully checked and unchecked:
+The select-all checkbox shows an indeterminate (dash) state when some — but not all — items are checked. To disable this
+behavior and only toggle between fully checked and unchecked:
 
 ```blade
 <x-hwc::checkbox-group

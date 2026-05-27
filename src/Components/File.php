@@ -56,7 +56,7 @@ class File extends Component
         $errorId = $resolvedId.'-error';
 
         // `multiple` posts an array, so the HTML name needs `[]`. The id/errorKey
-        // stay bracket-free (FieldKey strips a trailing `[]`).
+        //  stays bracket-free (FieldKey strips a trailing `[]`).
         $renderName = $name;
         if ($this->multiple && $hasName && ! str_ends_with($name, '[]')) {
             $renderName = $name.'[]';

@@ -1,6 +1,7 @@
 # Hotkey
 
-Binds keyboard shortcuts to click or focus an element. Automatically ignores keystrokes typed inside inputs, textareas, and rich-text editors.
+Binds keyboard shortcuts to click or focus an element. Automatically ignores keystrokes typed inside inputs, textareas,
+and rich-text editors.
 
 **Identifier:** `hotkey`  
 **Install:** `php artisan hotwire:controllers hotkey`
@@ -11,12 +12,13 @@ Binds keyboard shortcuts to click or focus an element. Automatically ignores key
 
 ## Actions
 
-| Action                  | Description                                                   |
-|-------------------------|---------------------------------------------------------------|
-| `hotkey#click`   | Clicks the controller element when the key is pressed         |
-| `hotkey#focus`   | Focuses the controller element when the key is pressed        |
+| Action         | Description                                            |
+|----------------|--------------------------------------------------------|
+| `hotkey#click` | Clicks the controller element when the key is pressed  |
+| `hotkey#focus` | Focuses the controller element when the key is pressed |
 
 Both actions are no-ops when:
+
 - The element has `pointer-events: none` (e.g. a disabled button styled via CSS)
 - The key event originated inside an `<input>`, `<textarea>`, or `<lexxy-editor>`
 - The event was already prevented by another handler
@@ -73,7 +75,8 @@ Stimulus action descriptors support modifier keys via filters:
 
 ## Combining with Turbo
 
-Because the controller clicks or focuses the real element, it works transparently with Turbo Drive links and Turbo Frame forms — no extra wiring needed.
+Because the controller clicks or focuses the real element, it works transparently with Turbo Drive links and Turbo Frame
+forms — no extra wiring needed.
 
 ```html
 <a

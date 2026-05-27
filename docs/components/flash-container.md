@@ -1,11 +1,11 @@
 # Flash Container
 
 Initializes the [Sonner](https://www.npmjs.com/package/@emaia/sonner) toaster once per page and persists it across
-Turbo Drive navigations. It's the host element for every toast fired by [`<x-hwc::flash-message />`](../flash-message/readme.md)
+Turbo Drive navigations. It's the host element for every toast fired by [`<x-hwc::flash-message />`](./flash-message.md)
 or by appended Turbo Streams.
 
 Internally the component maps to the `toaster` Stimulus controller (`toaster_controller.js`), which calls Sonner's
-`Toaster()` factory on connect.
+`Toaster()` factory on connection.
 
 ## Requirements
 
@@ -21,7 +21,7 @@ Place the container once in your main layout (typically before `</body>`):
 
 ```html
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>...</head>
 <body>
 {{ $slot }}
@@ -46,32 +46,32 @@ return turbo_stream()->append('flash-container', Blade::render(
 
 ## Props
 
-Props below map to Sonner's [`ToasterConfig`](https://github.com/emilkowalski/sonner). Nullable props are only
+Props below a map to Sonner's [`ToasterConfig`](https://github.com/emilkowalski/sonner). Nullable props are only
 emitted when you set them, so Sonner's own defaults still apply.
 
-| Prop                   | Type      | Default           | Description                                                                                     |
-|------------------------|-----------|-------------------|-------------------------------------------------------------------------------------------------|
-| `id`                   | `string`  | `flash-container` | Element id — also used as the default target for Turbo Stream appends                           |
-| `position`             | `string`  | `bottom-center`   | `top-left`, `top-center`, `top-right`, `bottom-left`, `bottom-center`, `bottom-right`           |
-| `theme`                | `string`  | `light`           | `light`, `dark`, `system`                                                                       |
-| `duration`             | `int`     | `4000`            | Duration in ms before the toast disappears                                                      |
-| `visible-toasts`       | `int`     | `3`               | Maximum number of toasts visible at once                                                        |
-| `close-button`         | `bool`    | `true`            | Shows close button on each toast                                                                |
-| `rich-colors`          | `bool`    | `true`            | Uses rich colors for types (success, error, etc.)                                               |
-| `expand`               | `bool`    | `false`           | Toasts expanded by default                                                                      |
-| `invert`               | `bool`    | `false`           | Inverts the color scheme                                                                        |
-| `auto-disconnect`      | `bool`    | `false`           | Destroys the toaster when the controller disconnects                                            |
-| `turbo-permanent`      | `bool`    | `true`            | Renders `data-turbo-permanent` on the container                                                 |
-| `class`                | `string`  | `''`              | CSS class applied to the container `<div>` itself                                               |
-| `gap`                  | `?int`    | `null`            | Vertical gap between toasts (px)                                                                |
-| `hotkey`               | `?string` | `null`            | Keyboard shortcut to focus toasts (e.g. `alt+T`, `alt+KeyT`) — comma/space separated            |
-| `dir`                  | `?string` | `null`            | `ltr`, `rtl`, `auto`                                                                            |
-| `offset`               | `?string` | `null`            | Edge offset — `"16px"` or JSON like `{"top":"20px"}`                                            |
-| `mobile-offset`        | `?string` | `null`            | Same shape as `offset`, applied on mobile                                                       |
-| `swipe-directions`     | `?string` | `null`            | Allowed swipe-to-dismiss directions — comma separated (`left,right,top,bottom`)                 |
-| `class-name`           | `?string` | `null`            | Forwarded to Sonner's `className` (applied to the toast list)                                   |
-| `container-aria-label` | `?string` | `null`            | `aria-label` on the Sonner container                                                            |
-| `custom-aria-label`    | `?string` | `null`            | `aria-label` used for each toast                                                                |
+| Prop                   | Type      | Default           | Description                                                                           |
+|------------------------|-----------|-------------------|---------------------------------------------------------------------------------------|
+| `id`                   | `string`  | `flash-container` | Element id — also used as the default target for Turbo Stream appends                 |
+| `position`             | `string`  | `bottom-center`   | `top-left`, `top-center`, `top-right`, `bottom-left`, `bottom-center`, `bottom-right` |
+| `theme`                | `string`  | `light`           | `light`, `dark`, `system`                                                             |
+| `duration`             | `int`     | `4000`            | Duration in ms before the toast disappears                                            |
+| `visible-toasts`       | `int`     | `3`               | Maximum number of toasts visible at once                                              |
+| `close-button`         | `bool`    | `true`            | Shows close button on each toast                                                      |
+| `rich-colors`          | `bool`    | `true`            | Uses rich colors for types (success, error, etc.)                                     |
+| `expand`               | `bool`    | `false`           | Toasts expanded by default                                                            |
+| `invert`               | `bool`    | `false`           | Inverts the color scheme                                                              |
+| `auto-disconnect`      | `bool`    | `false`           | Destroys the toaster when the controller disconnects                                  |
+| `turbo-permanent`      | `bool`    | `true`            | Renders `data-turbo-permanent` on the container                                       |
+| `class`                | `string`  | `''`              | CSS class applied to the container `<div>` itself                                     |
+| `gap`                  | `?int`    | `null`            | Vertical gap between toasts (px)                                                      |
+| `hotkey`               | `?string` | `null`            | Keyboard shortcut to focus toasts (e.g. `alt+T`, `alt+KeyT`) — comma/space separated  |
+| `dir`                  | `?string` | `null`            | `ltr`, `rtl`, `auto`                                                                  |
+| `offset`               | `?string` | `null`            | Edge offset — `"16px"` or JSON like `{"top":"20px"}`                                  |
+| `mobile-offset`        | `?string` | `null`            | Same shape as `offset`, applied on mobile                                             |
+| `swipe-directions`     | `?string` | `null`            | Allowed swipe-to-dismiss directions — comma separated (`left,right,top,bottom`)       |
+| `class-name`           | `?string` | `null`            | Forwarded to Sonner's `className` (applied to the toast list)                         |
+| `container-aria-label` | `?string` | `null`            | `aria-label` on the Sonner container                                                  |
+| `custom-aria-label`    | `?string` | `null`            | `aria-label` used for each toast                                                      |
 
 ## Customization examples
 
@@ -94,7 +94,7 @@ Expanded toasts, no close button:
 />
 ```
 
-Offset tuning with hotkey and swipe directions:
+Offset tuning with a hotkey and swipe directions:
 
 ```html
 <x-hwc::flash-container
@@ -105,7 +105,7 @@ Offset tuning with hotkey and swipe directions:
 />
 ```
 
-Custom id (useful if you need more than one target, or want a different Turbo Stream anchor):
+Custom id (useful if you need more than one target or want a different Turbo Stream anchor):
 
 ```html
 <x-hwc::flash-container id="my-toaster" />
@@ -133,4 +133,4 @@ is just a thin wrapper:
 
 ## See also
 
-- [`<x-hwc::flash-message />`](../flash-message/readme.md) — fires individual toasts from session or props
+- [`<x-hwc::flash-message />`](./flash-message.md) — fires individual toasts from session or props
