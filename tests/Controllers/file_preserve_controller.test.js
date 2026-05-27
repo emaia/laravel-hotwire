@@ -201,6 +201,37 @@ test.serial("restores every file field, not just the first", async () => {
     expect(newB.files.length).toBe(1);
 });
 
+// --- Mounted directly on the input ---
+
+test.serial("restores when mounted on the input itself", async () => {
+    mounted = await mountController("file-preserve", FilePreserveController, `
+        <form>
+            <input type="file" name="avatar" data-controller="file-preserve" />
+        </form>
+    `);
+
+    const form = document.querySelector("form");
+    const input = form.querySelector("input[type='file']");
+    setFileOnInput(input, mockFile());
+
+    dispatchTurboSubmitEnd(form);
+    document.dispatchEvent(new Event("turbo:before-render", { bubbles: true }));
+
+    // The same input persists through morph but loses its selection; a
+    // validation error must make the controller restore it.
+    input.files = new DataTransfer().files;
+    expect(input.files.length).toBe(0);
+
+    const indicator = document.createElement("span");
+    indicator.setAttribute("aria-invalid", "true");
+    form.appendChild(indicator);
+
+    document.dispatchEvent(new Event("turbo:render", { bubbles: true }));
+    await wait(50);
+
+    expect(input.files.length).toBe(1);
+});
+
 // --- Submit of an unrelated form must not arm capture ---
 
 test.serial("ignores submit from a form that does not contain the field", async () => {

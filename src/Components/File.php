@@ -19,6 +19,7 @@ class File extends Component
         public ?string $currentUrl = null,
         public ?string $currentLabel = null,
         public bool $resetOnSuccess = false,
+        public bool $multiple = false,
         public string $class = '',
         public string $wrapperClass = '',
     ) {}
@@ -54,23 +55,40 @@ class File extends Component
         $resolvedErrorKey = $errorKey ?: ($hasName ? FieldKey::toErrorKey($name) : '');
         $errorId = $resolvedId.'-error';
 
-        $hasErrors = $resolvedErrorKey !== '' && $errorsBag->has($resolvedErrorKey);
+        // `multiple` posts an array, so the HTML name needs `[]`. The id/errorKey
+        // stay bracket-free (FieldKey strips a trailing `[]`).
+        $renderName = $name;
+        if ($this->multiple && $hasName && ! str_ends_with($name, '[]')) {
+            $renderName = $name.'[]';
+        }
+
+        // Per-file rules (e.g. `cover.*`) put failures under sub-keys, so also
+        // treat any `errorKey.*` match as an error on this field.
+        $hasErrors = $resolvedErrorKey !== ''
+            && ($errorsBag->has($resolvedErrorKey) || $errorsBag->has($resolvedErrorKey.'.*'));
+
         $isRequired = ($attributes->has('required') && $attributes->get('required') !== false) || $required;
 
         $userController = trim($attributes->get('data-controller', ''));
-        $wrapperController = trim(implode(' ', array_filter([
+        $inputController = trim(implode(' ', array_filter([
             $userController,
             'file-preserve',
             $this->resetOnSuccess ? 'reset-files' : null,
         ])));
 
+        // Only wrap when there is something to wrap: the current-file link or a
+        // caller-provided wrapper class. Controllers always live on the input.
+        $needsWrapper = $this->currentUrl !== null || $this->wrapperClass !== '';
+
         return [
             'resolvedId' => $resolvedId,
             'resolvedErrorKey' => $resolvedErrorKey,
+            'renderName' => $renderName,
             'errorId' => $errorId,
             'hasErrors' => $hasErrors,
             'isRequired' => $isRequired,
-            'wrapperController' => $wrapperController,
+            'inputController' => $inputController,
+            'needsWrapper' => $needsWrapper,
         ];
     }
 }

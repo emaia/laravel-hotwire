@@ -53,6 +53,9 @@ export default class extends Controller {
     }
 
     #fileInputs() {
+        // The controller may be mounted on the file input itself or on a
+        // wrapper that contains one or more file inputs.
+        if (this.element.matches?.('input[type="file"]')) return [this.element];
         return this.element.querySelectorAll('input[type="file"]');
     }
 

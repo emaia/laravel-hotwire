@@ -18,14 +18,15 @@ beforeEach(function () {
 
 // --- Basic render ---
 
-it('renders a file input wrapped in div with file-preserve controller', function () {
+it('renders a bare file input with file-preserve on the input by default', function () {
     $view = $this->blade('<x-hwc::file name="avatar" />');
 
-    $view->assertSee('class="hwc-file', false);
     $view->assertSee('data-controller="file-preserve"', false);
     $view->assertSee('<input', false);
     $view->assertSee('type="file"', false);
     $view->assertSee('name="avatar"', false);
+    // No wrapper when there is nothing to wrap.
+    $view->assertDontSee('class="hwc-file', false);
 });
 
 it('renders type as file always', function () {
@@ -145,13 +146,13 @@ it('does not add reset-files controller by default', function () {
     $view->assertDontSee('data-reset-on-success', false);
 });
 
-it('merges user data-controller with reset-files on wrapper', function () {
+it('merges user data-controller with reset-files on the input', function () {
     $view = $this->blade('<x-hwc::file name="avatar" data-controller="foo" reset-on-success />');
 
     $view->assertSee('data-controller="foo file-preserve reset-files"', false);
 });
 
-it('merges user data-controller on wrapper without reset-files when disabled', function () {
+it('merges user data-controller on the input without reset-files when disabled', function () {
     $view = $this->blade('<x-hwc::file name="avatar" data-controller="foo" />');
 
     $view->assertSee('data-controller="foo file-preserve"', false);
@@ -192,6 +193,80 @@ it('wraps when current-url is set even without reset-on-success', function () {
     $view = $this->blade('<x-hwc::file name="avatar" current-url="https://example.com/img.jpg" />');
 
     $view->assertSee('<div class="hwc-file', false);
+});
+
+// --- Multiple ---
+
+it('renders the multiple attribute when multiple prop is set', function () {
+    $view = $this->blade('<x-hwc::file name="cover" multiple />');
+
+    $view->assertSee('multiple', false);
+});
+
+it('appends [] to the name when multiple and name has no brackets', function () {
+    $view = $this->blade('<x-hwc::file name="cover" multiple />');
+
+    $view->assertSee('name="cover[]"', false);
+});
+
+it('does not double the brackets when name already ends with []', function () {
+    $view = $this->blade('<x-hwc::file name="cover[]" multiple />');
+
+    $view->assertSee('name="cover[]"', false);
+    $view->assertDontSee('cover[][]', false);
+});
+
+it('keeps id and error key derived without brackets when multiple', function () {
+    shareFileErrors(['cover' => ['Required']]);
+
+    $view = $this->blade('<x-hwc::file name="cover" multiple />');
+
+    $view->assertSee('id="cover"', false);
+    $view->assertSee('aria-describedby="cover-error"', false);
+    $view->assertSee('aria-invalid="true"', false);
+});
+
+it('does not render multiple by default', function () {
+    $view = $this->blade('<x-hwc::file name="avatar" />');
+
+    $view->assertDontSee('multiple', false);
+    $view->assertSee('name="avatar"', false);
+});
+
+// --- Per-file (sub-key) validation errors ---
+
+it('marks the field invalid when only sub-key errors are present', function () {
+    shareFileErrors(['cover.0' => ['too big'], 'cover.1' => ['bad type']]);
+
+    $view = $this->blade('<x-hwc::file name="cover" multiple />');
+
+    $view->assertSee('aria-invalid="true"', false);
+    $view->assertSee('data-invalid', false);
+});
+
+it('does not mark invalid when neither the key nor sub-keys have errors', function () {
+    shareFileErrors(['other.0' => ['nope']]);
+
+    $view = $this->blade('<x-hwc::file name="cover" multiple />');
+
+    $view->assertDontSee('aria-invalid="true"', false);
+});
+
+// --- Conditional wrapper ---
+
+it('renders a wrapper when wrapper-class is provided even without current-url', function () {
+    $view = $this->blade('<x-hwc::file name="avatar" wrapper-class="relative" />');
+
+    $view->assertSee('<div class="hwc-file relative"', false);
+});
+
+it('puts the controller on the input even when wrapped for current-url', function () {
+    $view = $this->blade('<x-hwc::file name="avatar" current-url="https://example.com/img.jpg" />');
+
+    // Wrapper is plain layout; controller lives on the input.
+    $view->assertSee('<div class="hwc-file', false);
+    $view->assertSee('data-controller="file-preserve"', false);
+    $view->assertDontSee('<div class="hwc-file" data-controller', false);
 });
 
 // --- Class merge ---

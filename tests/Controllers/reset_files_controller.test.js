@@ -231,6 +231,26 @@ test.serial("resets every file field after success, not just the first", async (
     expect(inputB.value).toBe("");
 });
 
+// --- Mounted directly on the input ---
+
+test.serial("resets when mounted on the input itself", async () => {
+    await mount(`
+        <form>
+            <input type="file" data-controller="reset-files" data-reset-on-success="true" />
+        </form>
+    `);
+
+    const form = document.querySelector("form");
+    const input = document.querySelector("input[type='file']");
+    simulateFileSelection(input);
+
+    dispatchTurboSubmitEnd(form, true);
+    document.dispatchEvent(new Event("turbo:render", { bubbles: true }));
+    await wait(0);
+
+    expect(input.value).toBe("");
+});
+
 // --- Cleanup ---
 
 test.serial("stops listening after disconnect", async () => {

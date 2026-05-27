@@ -41,8 +41,14 @@ export default class extends Controller {
     }
 
     resetInputs() {
-        this.element.querySelectorAll('input[type="file"]').forEach((input) => {
+        this.fileInputs().forEach((input) => {
             input.value = "";
         });
+    }
+
+    fileInputs() {
+        // Mounted either on the file input itself or on a wrapper around it.
+        if (this.element.matches?.('input[type="file"]')) return [this.element];
+        return this.element.querySelectorAll('input[type="file"]');
     }
 }
