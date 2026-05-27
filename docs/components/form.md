@@ -18,6 +18,7 @@ Form wrapper that composes optional Stimulus behaviors via boolean props. Render
 |----------------------|---------|----------|-----------------------------------------------------------------------------|
 | `auto-submit`        | `bool`  | `false`  | Adds `auto-submit` controller (submit on input/change — requires `data-action` on fields) |
 | `unsaved-changes`    | `bool`  | `false`  | Warns before navigating away with unsaved changes                          |
+| `error-scroll`       | `bool`  | `false`  | Scrolls to the first validation error after form submission                |
 | `clean-query-params` | `bool`  | `false`  | Strips empty fields from GET query strings before submission                |
 | `track-frame-src`    | `bool`  | `false`  | Includes a hidden `_turbo_frame_src` input for correct redirect resolution inside Turbo Frames |
 | `enctype`            | `string\|null` | `null`  | HTML `enctype` attribute. Set to `"multipart/form-data"` for file uploads. Default `null` omits the attribute (browser uses `application/x-www-form-urlencoded`) |
@@ -86,6 +87,21 @@ Removes empty parameters from the query string before submitting a GET form, avo
 
 See [clean-query-params controller](../controllers/clean-query-params.md).
 
+### error-scroll
+
+Scrolls to the first validation error after a form submission fails. Listens to `turbo:frame-render` (inside a Turbo Frame) or `turbo:render` (full-page morphs) and finds the first `[aria-invalid]` element to scroll it into view. Works automatically with `<x-hwc::field>` and `<x-hwc::input>`, which set `aria-invalid` on validation errors.
+
+```blade
+<x-hwc::form :action="route('posts.store')" method="post" error-scroll>
+    <x-hwc::field name="title" label="Title" required>
+        <x-hwc::input />
+    </x-hwc::field>
+    <button type="submit">Save</button>
+</x-hwc::form>
+```
+
+The controller also supports customising the selector, scroll behavior, and block position via `data-error-scroll-*-value` attributes. See [error-scroll controller](../controllers/error-scroll.md).
+
 ### CSRF and method spoofing
 
 The component automatically includes `@csrf` for all non-GET methods, and `@method` for PUT, PATCH, and DELETE forms. You don't need to add them manually inside the slot:
@@ -123,4 +139,4 @@ On validation failure, the server reads this input and redirects back to the fra
 
 ## Required controllers
 
-`hotwire:check` looks for `auto-submit`, `unsaved-changes`, and `clean-query-params`. Only the ones you actually use need to be published — `hotwire:check` will warn for the others even if you do not enable them.
+`hotwire:check` looks for `auto-submit`, `unsaved-changes`, `error-scroll`, and `clean-query-params`. Only the ones you actually use need to be published — `hotwire:check` will warn for the others even if you do not enable them.

@@ -1,6 +1,6 @@
 # File
 
-File input with auto-derived `id`/`errorKey` from `name`, ARIA wiring, optional existing file display, and Turbo morph reset integration via the built-in `reset-files` controller.
+File input with auto-derived `id`/`errorKey` from `name`, ARIA wiring, optional existing file display, file selection preservation across Turbo morphs via `file-preserve`, and optional reset after successful upload via `reset-files`.
 
 ## Quick example
 
@@ -26,7 +26,7 @@ Renders an `<input type="file">` with:
 | `currentLabel`    | `string\|null` | `"Current file"` | Custom label for the current file link                          |
 | `resetOnSuccess`  | `bool`         | `false`         | Activates the `reset-files` controller to clear the input after a successful `turbo:morph` |
 | `class`           | `string`       | `""`            | Merged on `<input>`                                              |
-| `wrapperClass`    | `string`       | `""`            | Merged on the wrapper `<div>` when one is present                |
+| `wrapperClass`    | `string`       | `""`            | Merged on the wrapper `<div>`                                   |
 
 Any other HTML attribute (`accept`, `disabled`, `multiple`, `data-*`, `aria-*`) passes through to the `<input>` element.
 
@@ -68,7 +68,7 @@ When editing a record that already has a file, use `current-url` to show a link 
 Renders:
 
 ```html
-<div class="hwc-file">
+<div class="hwc-file" data-controller="file-preserve">
     <p>Current file: <a href="https://..." target="_blank" rel="noopener">Current file</a></p>
     <input type="file" id="avatar" name="avatar" ... />
 </div>
@@ -96,21 +96,19 @@ When a file upload form stays on screen after a successful response (common insi
 </turbo-frame>
 ```
 
-The wrapper `<div>` gets `data-controller="reset-files" data-reset-on-success="true"`. After a `turbo:morph` event, the file input is cleared automatically.
+The wrapper `<div>` gets `data-controller="file-preserve reset-files" data-reset-on-success="true"`. After a `turbo:morph` event, the file input is cleared automatically.
 
-The `resetOnSuccess` prop requires the `reset-files` controller to be published. Run `hotwire:check` to verify.
+The `resetOnSuccess` prop requires the `reset-files` controller to be published. The `file-preserve` controller is always present on the wrapper — publish it too so `hotwire:check` passes.
 
-## Without wrapper
+## File preservation across Turbo morphs
 
-When neither `current-url` nor `reset-on-success` is set, only the bare `<input type="file">` is rendered — no wrapping `<div>`:
+The `file-preserve` controller is always active on the wrapping `<div>`. It captures and restores file input selections across Turbo morphs and frame navigations, so the user's file choice survives validation errors and page re-renders:
 
-```blade
-<x-hwc::file name="avatar" />
-```
+- On `turbo:submit-end`: arms the controller if the form was submitted.
+- Before `turbo:before-render` / `turbo:before-frame-render`: captures the `FileList` from every `<input type="file">` inside.
+- After `turbo:render` / `turbo:frame-render`: if the re-rendered form has `aria-invalid="true"` (validation failure), restores the files. Otherwise, the stash is discarded (files are not carried over after a successful submit).
 
-```html
-<input type="file" id="avatar" name="avatar" aria-describedby="avatar-error" />
-```
+This means the component is **always wrapped** in a `<div class="hwc-file" data-controller="file-preserve">`, even without `current-url` or `reset-on-success`:
 
 ## Inheriting from `<x-hwc::field>`
 
@@ -156,20 +154,20 @@ Use the array bracket notation (`name="attachments[]"`) so PHP receives all sele
     required />
 ```
 
-Renders a wrapper with the current file link, `reset-files` controller, and a file input with image-only restriction.
+Renders a wrapper with the `file-preserve` and `reset-files` controllers, the current file link, and a file input with image-only restriction.
 
 ## Custom JavaScript
 
-When using `data-controller` with the file component, the controller is placed on the **wrapper** (when one exists) or on the **input** (when there's no wrapper):
+The component always renders a wrapper `<div>`. When using `data-controller`, it is placed on the **wrapper** and merged alongside `file-preserve` (and `reset-files` when enabled):
 
 ```blade
-{{-- No wrapper: controller goes on the input --}}
 <x-hwc::file name="avatar" data-controller="my-uploader" />
+{{-- Renders: data-controller="my-uploader file-preserve" --}}
 
-{{-- With wrapper (current-url or reset-on-success): controller goes on the wrapper --}}
-<x-hwc::file name="avatar" current-url="/old.jpg" data-controller="my-uploader" />
+<x-hwc::file name="avatar" reset-on-success data-controller="my-uploader" />
+{{-- Renders: data-controller="my-uploader file-preserve reset-files" --}}
 ```
 
 ## Required controllers
 
-`hotwire:check` looks for `reset-files` when you use the `reset-on-success` prop.
+`hotwire:check` looks for `file-preserve` (always used by this component) and `reset-files` (when `reset-on-success` is enabled). Both must be published for `hotwire:check` to pass.
