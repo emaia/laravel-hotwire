@@ -2,6 +2,15 @@
 
 All notable changes to `laravel-hotwire-components` will be documented in this file.
 
+## 0.10.0 - 2026-05-28
+
+### What's Changed
+
+* Update emaia/laravel-hotwire-turbo requirement from ^0.8.4 to ^0.9.2 by @dependabot[bot] in https://github.com/emaia/laravel-hotwire/pull/9
+* add form components and controllers by @emaia in https://github.com/emaia/laravel-hotwire/pull/10
+
+**Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/0.9.12...0.10.0
+
 ## 0.9.12 - 2026-04-30
 
 **Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/0.9.11...0.9.12
