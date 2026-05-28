@@ -2,6 +2,10 @@
 
 All notable changes to `laravel-hotwire-components` will be documented in this file.
 
+## 0.12.1 - 2026-05-28
+
+**Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/0.12.0...0.12.1
+
 ## 0.12.0 - 2026-05-28
 
 **Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/0.12.0...0.12.0
