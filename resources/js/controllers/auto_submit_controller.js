@@ -1,27 +1,29 @@
 import { Controller } from "@hotwired/stimulus";
 
-function debounce(fn, ms) {
-    let id;
-    return (...args) => {
-        clearTimeout(id);
-        id = setTimeout(() => fn(...args), ms);
-    };
-}
-
 export default class extends Controller {
-    initialize() {
-        this.debouncedSubmit = debounce(this.debouncedSubmit.bind(this), 300);
+    static values = {
+        delay: {
+            type: Number,
+            default: 300,
+        },
+    };
+
+    disconnect() {
+        clearTimeout(this.timeout);
     }
 
-    submit(e) {
+    submit() {
+        clearTimeout(this.timeout);
         this.element.requestSubmit();
     }
 
-    debouncedSubmit(evt) {
-        this.submit();
-    }
+    debouncedSubmit() {
+        if (this.delayValue <= 0) {
+            this.submit();
+            return;
+        }
 
-    submitOnChange() {
-        this.submit();
+        clearTimeout(this.timeout);
+        this.timeout = setTimeout(() => this.element.requestSubmit(), this.delayValue);
     }
 }

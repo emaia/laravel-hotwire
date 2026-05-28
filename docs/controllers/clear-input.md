@@ -26,6 +26,7 @@ it is empty.
 ## Basic usage
 
 ```html
+
 <div data-controller="clear-input" class="relative">
     <input
         type="text"
@@ -60,9 +61,10 @@ The controller automatically injects the styles that control button visibility:
 
 The `clear-input--touched` class is added/removed automatically as the input receives or loses a value.
 
-## With autosubmit on clear
+## With auto-submit on clear
 
 ```html
+
 <form data-controller="auto-submit">
     <div data-controller="clear-input" class="relative">
         <input
@@ -83,13 +85,16 @@ The `clear-input--touched` class is added/removed automatically as the input rec
 </form>
 ```
 
-When the user clicks "X", the `inputCleared` event triggers the form submit automatically.
+When the user clicks "X", the `inputCleared` event triggers the form submit automatically. It uses `submit`
+so the cleared results show instantly — and because `submit` cancels a debounce still pending from typing,
+the clear produces a single request — while typing stays debounced via `debouncedSubmit`.
 
 ## With a pre-filled value
 
 If the input already has a value when the page loads, the button appears immediately:
 
 ```html
+
 <div data-controller="clear-input" class="relative">
     <input
         type="text"

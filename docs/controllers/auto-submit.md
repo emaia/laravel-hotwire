@@ -1,6 +1,6 @@
 # Auto Submit
 
-Submits the form automatically in response to events, with debounce support.
+Submits the form automatically in response to events, with optional debounce.
 
 **Identifier:** `auto-submit`  
 **Install:** `php artisan hotwire:controllers auto-submit`
@@ -11,13 +11,22 @@ Submits the form automatically in response to events, with debounce support.
 
 ## Actions
 
-| Action                        | Description                                    |
-|-------------------------------|------------------------------------------------|
-| `auto-submit#submit`          | Submits the form immediately                   |
-| `auto-submit#debouncedSubmit` | Submits after 300ms of inactivity (debounce)   |
-| `auto-submit#submitOnChange`  | Alias for submit, semantic for `change` events |
+| Action                        | Description                                                                    |
+|-------------------------------|-------------------------------------------------------------------------------|
+| `auto-submit#submit`          | Submits the form immediately, cancelling any pending debounced submit          |
+| `auto-submit#debouncedSubmit` | Submits after `delay` ms of inactivity; set `delay` to `0` to submit instantly |
+
+## Values
+
+| Value   | Type     | Default | Description                                                                       |
+|---------|----------|---------|-----------------------------------------------------------------------------------|
+| `delay` | `Number` | `300`   | Debounce window in milliseconds for `debouncedSubmit`. Set to `0` to submit instantly |
+
+`delay` only affects `debouncedSubmit` — `submit` is always immediate.
 
 ## Basic usage — submit on select change
+
+A select `change` is a discrete event, so wire it to `submit` for an instant submit:
 
 ```html
 <form data-controller="auto-submit">
@@ -31,6 +40,9 @@ Submits the form automatically in response to events, with debounce support.
 
 ## With debounce — search as you type
 
+Wire high-frequency `input` events to `debouncedSubmit` so the form submits only after the user stops
+typing:
+
 ```html
 <form data-controller="auto-submit">
     <input
@@ -42,7 +54,23 @@ Submits the form automatically in response to events, with debounce support.
 </form>
 ```
 
+Tune the debounce window with `data-auto-submit-delay-value`:
+
+```html
+<form data-controller="auto-submit" data-auto-submit-delay-value="500">
+    <input
+        type="search"
+        name="q"
+        placeholder="Search..."
+        data-action="input->auto-submit#debouncedSubmit"
+    />
+</form>
+```
+
 ## Combined filters
+
+Debounce the text input and submit selects immediately. Because `submit` cancels a debounce still pending
+from typing, changing a select mid-search produces a single request instead of two:
 
 ```html
 <form data-controller="auto-submit" method="get" action="/items">
