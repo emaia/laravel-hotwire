@@ -74,6 +74,17 @@ $request->validate([
 />
 ```
 
+## Custom position
+
+Override the toaster's default position for a single toast. The container stays in one place; only this message
+appears in the chosen corner:
+
+```html
+<x-hwc::flash-message message="Session expires in 5 min" type="warning" position="top-center"/>
+```
+
+Accepted values: `top-left`, `top-center`, `top-right`, `bottom-left`, `bottom-center`, `bottom-right`.
+
 ## Props
 
 | Prop          | Type      | Default | Description                                                                                    |
@@ -81,6 +92,7 @@ $request->validate([
 | `message`     | `?string` | `null`  | Toast message. If `null`, reads from session                                                   |
 | `description` | `?string` | `null`  | Additional description shown below the message                                                 |
 | `type`        | `?string` | `null`  | Toast type: `success`, `error`, `warning`, `info`, `default`. If `null`, detected from session |
+| `position`    | `?string` | `null`  | Override the toaster position for this toast only: `top-left`, `top-center`, `top-right`, `bottom-left`, `bottom-center`, `bottom-right`. If `null`, uses the [`<x-hwc::flash-container />`](../flash-container/readme.md) default |
 
 ### Supported session keys
 
@@ -121,10 +133,10 @@ use Illuminate\Support\Facades\Blade;
 
 public function boot(): void
 {
-    TurboStreamBuilder::macro('flash', function (string $type, string $message, ?string $description = null) {
+    TurboStreamBuilder::macro('flash', function (string $type, string $message, ?string $description = null, ?string $position = null) {
         return $this->append('flash-container', Blade::render(
-            '<x-hwc::flash-message :type="$type" :message="$message" :description="$description" />',
-            compact('type', 'message', 'description'),
+            '<x-hwc::flash-message :type="$type" :message="$message" :description="$description" :position="$position" />',
+            compact('type', 'message', 'description', 'position'),
         ));
     });
 }
@@ -137,6 +149,9 @@ return turbo_stream()->flash('success', 'Saved!');
 
 // with an optional description
 return turbo_stream()->flash('error', 'Failed to save', 'Check the required fields');
+
+// override the position for this toast only
+return turbo_stream()->flash('warning', 'Session expires in 5 min', position: 'top-center');
 
 // or chained with other streams
 return turbo_stream()
