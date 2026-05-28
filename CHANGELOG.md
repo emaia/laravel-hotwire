@@ -2,6 +2,16 @@
 
 All notable changes to `laravel-hotwire-components` will be documented in this file.
 
+## 0.12.0 - 2026-05-28
+
+**Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/0.12.0...0.12.0
+
+### What's Changed
+
+* add Stimulus attribute helpers for Blade by @emaia in https://github.com/emaia/laravel-hotwire/pull/12
+
+**Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/0.11.0...0.12.0
+
 ## 0.11.0 - 2026-05-28
 
 ### What's Changed
