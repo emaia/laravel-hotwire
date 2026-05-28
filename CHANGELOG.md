@@ -2,6 +2,14 @@
 
 All notable changes to `laravel-hotwire-components` will be documented in this file.
 
+## 0.11.0 - 2026-05-28
+
+### What's Changed
+
+* add per-toast position to flash-message by @emaia in https://github.com/emaia/laravel-hotwire/pull/11
+
+**Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/0.10.0...0.11.0
+
 ## 0.10.0 - 2026-05-28
 
 ### What's Changed
