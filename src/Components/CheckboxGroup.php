@@ -21,6 +21,7 @@ class CheckboxGroup extends Component
         public ?string $selectAllLabel = null,
         public string $class = '',
         public string $wrapperClass = '',
+        public string $labelClass = '',
         public bool $old = true,
         public ?string $id = null,
         public ?string $errorKey = null,

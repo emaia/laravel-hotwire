@@ -184,6 +184,25 @@ it('merges custom class on wrapper', function () {
     $view->assertSee('class="space-y-2"', false);
 });
 
+it('does not render an empty class attribute when no classes are provided', function () {
+    $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\']" />');
+
+    $view->assertDontSee('class=""', false);
+});
+
+it('merges custom label-class on each label', function () {
+    $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\']" label-class="font-bold" />');
+
+    $view->assertSee('class="hwc-label font-bold"', false);
+});
+
+it('merges custom label-class on the select-all master label too', function () {
+    $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\']" select-all label-class="font-bold" />');
+
+    $html = (string) $view;
+    expect(substr_count($html, 'class="hwc-label font-bold"'))->toBe(2);
+});
+
 it('adds hwc-input hook on items', function () {
     $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\']" />');
 

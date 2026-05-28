@@ -3,13 +3,17 @@
 @php extract($compute($name, $id, $errorKey, $errors, $attributes)) @endphp
 
 <div @if ($wrapperController) data-controller="{{ $wrapperController }}" @endif
-    {{ $attributes->class([$wrapperClass])->whereDoesntStartWith(array_merge(['data-controller'], $internalPrefixes))->except(['select-all']) }}
+    {{ $attributes->merge(
+            filled($wrapperClass)
+                ? ['class' => $wrapperClass]
+                : []
+        )->whereDoesntStartWith(array_merge(['data-controller'], $internalPrefixes))->except(['select-all']) }}
 >
     @if ($selectAll)
         @php
             $selectAllId = $baseId ? $baseId.'-all' : null;
         @endphp
-        <x-hwc::label>
+        <x-hwc::label class="{{ $labelClass }}">
             <input
                 type="checkbox"
                 @class(['hwc-input', $class => filled($class)])
@@ -26,7 +30,7 @@
         @php
             $resolvedId = $baseId ? $baseId.'-'.\Illuminate\Support\Str::slug((string) $value) : null;
         @endphp
-        <x-hwc::label>
+        <x-hwc::label class="{{ $labelClass }}">
             <input
                 type="checkbox"
                 @class(['hwc-input', $class => filled($class)])
