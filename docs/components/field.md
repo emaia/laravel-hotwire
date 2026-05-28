@@ -66,8 +66,8 @@ When you need more control — custom label content, label wrapping inputs, diff
 `description` props and compose children manually in the slot:
 
 ```blade
-<x-hwc::field name="documento" required :error="false" class="mb-4">
-    <x-hwc::label class="text-sm font-bold">Documento</x-hwc::label>
+<x-hwc::field name="document" required :error="false" class="mb-4">
+    <x-hwc::label class="text-sm font-bold">Document</x-hwc::label>
     <p class="text-xs text-gray-500">CPF ou CNPJ</p>
     <x-hwc::input class="w-full" clearable mask="cpf-cnpj" />
     <x-hwc::error class="text-red-500 text-sm" />

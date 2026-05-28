@@ -28,7 +28,8 @@ Flat (non-associative) options arrays are automatically normalized: `['main', 'd
 | `selected`         | `array`        | `[]`           | Values that should be checked                                        |
 | `select-all`       | `bool`         | `false`        | Renders a master checkbox that toggles all items                     |
 | `select-all-label` | `string\|null` | `"Select all"` | Custom label for the master checkbox                                 |
-| `class`            | `string`       | `""`           | Merged on the wrapper `<div>`                                        |
+| `class`            | `string`       | `""`           | Merged on each checkbox `<input>` (added alongside `hwc-input`)      |
+| `wrapper-class`    | `string`       | `""`           | Merged on the wrapper `<div>`                                        |
 | `old`              | `bool`         | `true`         | When `true`, merges `old()` input over `selected`                    |
 | `id`               | `string\|null` | derived        | Base id for per-checkbox ids and error reference                     |
 | `errorKey`         | `string\|null` | derived        | Override when HTML `name` ≠ Laravel validation key                   |
