@@ -23,6 +23,18 @@ it('does not render description attribute when not provided', function () {
     $view->assertDontSee('description-value', false);
 });
 
+it('renders position when provided', function () {
+    $view = $this->blade('<x-hwc::flash-message message="Heads up" type="warning" position="top-center" />');
+
+    $view->assertSee('data-toast-position-value="top-center"', false);
+});
+
+it('does not render position attribute when not provided', function () {
+    $view = $this->blade('<x-hwc::flash-message message="Saved" type="success" />');
+
+    $view->assertDontSee('position-value', false);
+});
+
 it('does not render when no message or session', function () {
     $component = new FlashMessage;
 

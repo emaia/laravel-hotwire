@@ -15,17 +15,23 @@ export default class extends Controller {
             type: String,
             default: "default",
         },
+        position: {
+            type: String,
+            default: "",
+        },
     };
 
     connect() {
+        const options = { description: this.descriptionValue };
+
+        if (this.positionValue) {
+            options.position = this.positionValue;
+        }
+
         if (this.typeValue === "default") {
-            toast(this.messageValue, {
-                description: this.descriptionValue,
-            });
+            toast(this.messageValue, options);
         } else {
-            toast[this.typeValue](this.messageValue, {
-                description: this.descriptionValue,
-            });
+            toast[this.typeValue](this.messageValue, options);
         }
 
         this.element.remove();

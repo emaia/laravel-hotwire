@@ -6,4 +6,7 @@
     @if ($description)
         data-toast-description-value="{{ $description }}"
     @endif
+    @if ($position)
+        data-toast-position-value="{{ $position }}"
+    @endif
 ></div>
