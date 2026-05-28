@@ -22,6 +22,7 @@ the box.
         - [Turbo](#turbo-1)
         - [Optimistic](#optimistic)
         - [Dev](#dev)
+- [Stimulus Attribute Helpers](#stimulus-attribute-helpers)
 - [Verify Your Setup](#verify-your-setup)
 - [Configuration](#configuration)
 - [View Customization](#view-customization)
@@ -312,6 +313,27 @@ Controllers tied to Turbo Drive / Turbo Frames.
 | Controller                         | Identifier | Dependencies | Docs                                  |
 |------------------------------------|------------|--------------|---------------------------------------|
 | [Log](docs/controllers/dev/log.md) | `dev--log` | —            | [readme](docs/controllers/dev/log.md) |
+
+## Stimulus Attribute Helpers
+
+Build Stimulus `data-*` attributes from Blade without hand-writing the verbose markup. Three global
+helpers return a fluent, chainable builder that is `Htmlable` (renders directly in `{{ }}`) and
+`Arrayable` (merges into a component's attribute bag):
+
+```blade
+<div {{ stimulus_controller('chart', ['name' => 'Likes', 'data' => [1, 2, 3, 4]])
+        ->action('chart', 'refresh', 'click')
+        ->target('chart', 'canvas') }}>
+```
+
+```php
+stimulus_controller($name, $values = [], $classes = [], $outlets = []);
+stimulus_action($controller, $method, $event = null, $params = []);
+stimulus_target($controller, $target);
+```
+
+See [Stimulus attribute helpers](docs/stimulus-helpers.md) for values/classes/outlets, action params,
+stacking multiple controllers, attribute-bag merging and the escaping rules.
 
 ## Verify Your Setup
 
