@@ -194,7 +194,7 @@ return [
         'auto-select' => [
             'source' => 'resources/js/controllers/auto_select_controller.js',
             'docs' => 'docs/controllers/auto-select.md',
-            'category' => 'utility',
+            'category' => 'forms',
             'description' => 'Selects all text in an input when it receives focus',
         ],
         'char-counter' => [
