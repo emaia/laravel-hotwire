@@ -18,7 +18,7 @@ Accessible modal with backdrop, animations, focus trap and Turbo integration.
 </x-hwc::modal>
 ```
 
-## With close button
+## With a close button
 
 The X button is shown by default (`close-button` is `true`). To hide it:
 
@@ -29,7 +29,7 @@ The X button is shown by default (`close-button` is `true`). To hide it:
         <button data-action="modal#open" type="button">Open</button>
     </x-slot:trigger>
 
-    <p class="p-6">Modal without X button.</p>
+    <p class="p-6">Modal without the X button.</p>
 </x-hwc::modal>
 ```
 
@@ -188,11 +188,11 @@ Configurable via `data-modal-*-value` on the root element:
 
 ## Actions
 
-| Action               | Description                                                |
-|----------------------|------------------------------------------------------------|
-| `modal#open`         | Opens the modal                                            |
-| `modal#close`        | Closes the modal                                           |
-| `modal#showLoading`  | Shows the loading template while awaiting a Turbo response |
+| Action              | Description                                                |
+|---------------------|------------------------------------------------------------|
+| `modal#open`        | Opens the modal                                            |
+| `modal#close`       | Closes the modal                                           |
+| `modal#showLoading` | Shows the loading template while awaiting a Turbo response |
 
 ## Events
 

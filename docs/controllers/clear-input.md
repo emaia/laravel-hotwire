@@ -1,6 +1,7 @@
 # Clear Input
 
-Adds an "X" button to clear an input value. The button appears automatically when the field has a value and hides when it is empty.
+Adds an "X" button to clear an input value. The button appears automatically when the field has a value and hides when
+it is empty.
 
 **Identifier:** `clear-input`  
 **Install:** `php artisan hotwire:controllers clear-input`
@@ -11,15 +12,15 @@ Adds an "X" button to clear an input value. The button appears automatically whe
 
 ## Targets
 
-| Target | Description |
-|--------|-------------|
-| `input` | The input to be cleared |
+| Target        | Description                        |
+|---------------|------------------------------------|
+| `input`       | The input to be cleared            |
 | `clearButton` | The button that triggers the clear |
 
 ## Events
 
-| Event | Description |
-|-------|-------------|
+| Event          | Description                                 |
+|----------------|---------------------------------------------|
 | `inputCleared` | Fired on the input after clearing. Bubbles. |
 
 ## Basic usage
@@ -84,7 +85,7 @@ The `clear-input--touched` class is added/removed automatically as the input rec
 
 When the user clicks "X", the `inputCleared` event triggers the form submit automatically.
 
-## With pre-filled value
+## With a pre-filled value
 
 If the input already has a value when the page loads, the button appears immediately:
 
@@ -106,3 +107,10 @@ If the input already has a value when the page loads, the button appears immedia
     </button>
 </div>
 ```
+
+## Turbo morph support
+
+The controller re-syncs the `clear-input--touched` class on every `turbo:render`. With `@turboRefreshMethod('morph')` (
+or `data-turbo-action="morph"`), idiomorph rewrites the input's `class` attribute from server HTML — which does not
+contain the runtime-added class — so the clear button would no longer appear over `old()`-restored values. The listener
+re-applies (or removes) the class based on the current input value after the morph completes.

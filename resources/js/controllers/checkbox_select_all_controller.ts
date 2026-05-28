@@ -20,6 +20,14 @@ export default class CheckboxSelectAll extends Controller {
         this.refresh = this.refresh.bind(this);
     }
 
+    connect(): void {
+        document.addEventListener("turbo:render", this.refresh);
+    }
+
+    disconnect(): void {
+        document.removeEventListener("turbo:render", this.refresh);
+    }
+
     checkboxAllTargetConnected(checkbox: HTMLInputElement): void {
         checkbox.addEventListener("change", this.toggle);
 

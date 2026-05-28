@@ -24,6 +24,7 @@ optimistic--dispatch           ← escape hatch for custom triggers
 ```
 
 Add **one** controller to the host element:
+
 - `optimistic--form` on a `<form>`
 - `optimistic--link` on an `<a>`
 - `optimistic--dispatch` for anything else
@@ -71,10 +72,10 @@ choice is yours.
 
 ## Props
 
-| Prop      | Type     | Default     | Description                                                    |
-|-----------|----------|-------------|----------------------------------------------------------------|
-| `target`  | `string` | `''`        | DOM id of the element to mutate                                |
-| `targets` | `string` | `''`        | CSS selector (alternative to `target`, applies the action to all matches) |
+| Prop      | Type     | Default     | Description                                                                                           |
+|-----------|----------|-------------|-------------------------------------------------------------------------------------------------------|
+| `target`  | `string` | `''`        | DOM id of the element to mutate                                                                       |
+| `targets` | `string` | `''`        | CSS selector (alternative to `target`, applies the action to all matches)                             |
 | `action`  | `string` | `'replace'` | Turbo Stream action: `replace`, `update`, `append`, `prepend`, `before`, `after`, `remove`, `refresh` |
 
 ## Slot

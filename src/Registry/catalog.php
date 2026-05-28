@@ -1,12 +1,22 @@
 <?php
 
+use Emaia\LaravelHotwire\Components\CheckboxGroup;
 use Emaia\LaravelHotwire\Components\ConfirmDialog;
+use Emaia\LaravelHotwire\Components\Description;
+use Emaia\LaravelHotwire\Components\Error;
+use Emaia\LaravelHotwire\Components\Field;
+use Emaia\LaravelHotwire\Components\File;
 use Emaia\LaravelHotwire\Components\FlashContainer;
 use Emaia\LaravelHotwire\Components\FlashMessage;
-use Emaia\LaravelHotwire\Components\Loader;
+use Emaia\LaravelHotwire\Components\Form;
+use Emaia\LaravelHotwire\Components\Input;
+use Emaia\LaravelHotwire\Components\Label;
 use Emaia\LaravelHotwire\Components\Modal;
 use Emaia\LaravelHotwire\Components\Optimistic;
 use Emaia\LaravelHotwire\Components\ScrollProgress;
+use Emaia\LaravelHotwire\Components\Select;
+use Emaia\LaravelHotwire\Components\Spinner;
+use Emaia\LaravelHotwire\Components\Textarea;
 use Emaia\LaravelHotwire\Components\Timeago;
 
 return [
@@ -18,6 +28,54 @@ return [
             'category' => 'overlay',
             'description' => 'Accessible confirmation dialog that intercepts clicks before proceeding',
             'controllers' => ['confirm-dialog'],
+        ],
+        'form' => [
+            'class' => Form::class,
+            'view' => 'hotwire::component-views.form',
+            'docs' => 'docs/components/form.md',
+            'category' => 'forms',
+            'description' => 'Form wrapper with optional Stimulus behaviors, CSRF, and Turbo Frame redirect support',
+            'controllers' => ['auto-submit', 'unsaved-changes', 'error-scroll', 'clean-query-params'],
+        ],
+        'checkbox-group' => [
+            'class' => CheckboxGroup::class,
+            'view' => 'hotwire::component-views.checkbox-group',
+            'docs' => 'docs/components/checkbox-group.md',
+            'category' => 'forms',
+            'description' => 'Checkbox group with optional select-all master checkbox',
+            'controllers' => ['checkbox-select-all'],
+        ],
+        'description' => [
+            'class' => Description::class,
+            'view' => 'hotwire::component-views.description',
+            'docs' => 'docs/components/description.md',
+            'category' => 'forms',
+            'description' => 'Helper text for a form field — paragraph with the hwc-description hook',
+            'controllers' => [],
+        ],
+        'error' => [
+            'class' => Error::class,
+            'view' => 'hotwire::component-views.error',
+            'docs' => 'docs/components/error.md',
+            'category' => 'forms',
+            'description' => 'Always-present error container bound to a form field via name/errorKey',
+            'controllers' => [],
+        ],
+        'field' => [
+            'class' => Field::class,
+            'view' => 'hotwire::component-views.field',
+            'docs' => 'docs/components/field.md',
+            'category' => 'forms',
+            'description' => 'Wraps label, input, description and error — propagates name/errorKey/required via @aware',
+            'controllers' => [],
+        ],
+        'file' => [
+            'class' => File::class,
+            'view' => 'hotwire::component-views.file',
+            'docs' => 'docs/components/file.md',
+            'category' => 'forms',
+            'description' => 'File input with auto id/errorKey, ARIA, optional current file display and Turbo morph reset',
+            'controllers' => ['file-preserve', 'reset-files'],
         ],
         'flash-container' => [
             'class' => FlashContainer::class,
@@ -35,10 +93,42 @@ return [
             'description' => 'Fires a toast notification from the Laravel session or from explicit props',
             'controllers' => ['toast'],
         ],
-        'loader' => [
-            'class' => Loader::class,
-            'view' => 'hotwire::component-views.loader',
-            'docs' => 'docs/components/loader.md',
+        'input' => [
+            'class' => Input::class,
+            'view' => 'hotwire::component-views.input',
+            'docs' => 'docs/components/input.md',
+            'category' => 'forms',
+            'description' => 'Form input with auto id/errorKey, ARIA, optional mask/clear/auto-select',
+            'controllers' => ['auto-select', 'clear-input', 'input-mask'],
+        ],
+        'label' => [
+            'class' => Label::class,
+            'view' => 'hotwire::component-views.label',
+            'docs' => 'docs/components/label.md',
+            'category' => 'forms',
+            'description' => 'Form label with auto-derived for/id and optional required marker',
+            'controllers' => [],
+        ],
+        'select' => [
+            'class' => Select::class,
+            'view' => 'hotwire::component-views.select',
+            'docs' => 'docs/components/select.md',
+            'category' => 'forms',
+            'description' => 'Select dropdown with auto id/errorKey, ARIA, old() merge and placeholder support',
+            'controllers' => [],
+        ],
+        'textarea' => [
+            'class' => Textarea::class,
+            'view' => 'hotwire::component-views.textarea',
+            'docs' => 'docs/components/textarea.md',
+            'category' => 'forms',
+            'description' => 'Textarea with auto-resize and optional char counter',
+            'controllers' => ['auto-resize', 'char-counter'],
+        ],
+        'spinner' => [
+            'class' => Spinner::class,
+            'view' => 'hotwire::component-views.spinner',
+            'docs' => 'docs/components/spinner.md',
             'category' => 'feedback',
             'description' => 'Animated SVG spinner — no JavaScript required',
             'controllers' => [],
@@ -104,7 +194,7 @@ return [
         'auto-select' => [
             'source' => 'resources/js/controllers/auto_select_controller.js',
             'docs' => 'docs/controllers/auto-select.md',
-            'category' => 'utility',
+            'category' => 'forms',
             'description' => 'Selects all text in an input when it receives focus',
         ],
         'char-counter' => [
@@ -119,11 +209,23 @@ return [
             'category' => 'forms',
             'description' => 'Select-all checkbox that controls a group, with indeterminate state',
         ],
+        'file-preserve' => [
+            'source' => 'resources/js/controllers/file_preserve_controller.js',
+            'docs' => 'docs/controllers/file-preserve.md',
+            'category' => 'forms',
+            'description' => 'Captures and restores file input selection across Turbo morphs and frame navigations',
+        ],
         'clean-query-params' => [
             'source' => 'resources/js/controllers/clean_query_params_controller.js',
             'docs' => 'docs/controllers/clean-query-params.md',
             'category' => 'forms',
             'description' => 'Strips empty fields from the query string before submitting a GET form',
+        ],
+        'error-scroll' => [
+            'source' => 'resources/js/controllers/error_scroll_controller.js',
+            'docs' => 'docs/controllers/error-scroll.md',
+            'category' => 'forms',
+            'description' => 'Scrolls to the first validation error inside a container after frame render or full-page render',
         ],
         'clear-input' => [
             'source' => 'resources/js/controllers/clear_input_controller.js',
@@ -261,6 +363,12 @@ return [
             'category' => 'utility',
             'description' => 'Adds Tippy.js tooltips to any element via data attributes',
             'npm' => ['tippy.js' => '^6.3.7'],
+        ],
+        'turbo--frame-src' => [
+            'source' => 'resources/js/controllers/turbo/frame_src_controller.js',
+            'docs' => 'docs/controllers/turbo/frame-src.md',
+            'category' => 'turbo',
+            'description' => 'Injects the X-Turbo-Frame-Src header on Turbo Frame requests for correct redirect resolution',
         ],
         'turbo--polling' => [
             'source' => 'resources/js/controllers/turbo/polling_controller.js',

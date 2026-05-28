@@ -2,6 +2,7 @@
 
 use Emaia\LaravelHotwire\Support\PackageInstaller;
 use Illuminate\Console\Command;
+use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\File;
 
@@ -28,7 +29,9 @@ class FakePackageInstaller extends PackageInstaller
     }
 }
 
-beforeEach(function () {
+beforeEach(/**
+ * @throws FileNotFoundException
+ */ function () {
     $this->targetDir = resource_path('js/controllers');
     $this->viewsDir = resource_path('views');
     $this->packageJsonPath = base_path('package.json');
@@ -56,7 +59,7 @@ afterEach(function () {
 
 function writeView(string $name, string $content): void
 {
-    $path = resource_path("views/{$name}");
+    $path = resource_path("views/$name");
     File::ensureDirectoryExists(dirname($path));
     File::put($path, $content);
 }
@@ -72,11 +75,11 @@ function publishController(string $identifier, string $targetDir): void
 
     $name = str_replace('-', '_', $name);
     $base = realpath(__DIR__.'/../../resources/js/controllers');
-    $searchBase = $dir === '' ? $base : "{$base}/{$dir}";
+    $searchBase = $dir === '' ? $base : "$base/$dir";
     $source = null;
 
     foreach (['.js', '.ts'] as $ext) {
-        $candidate = "{$searchBase}/{$name}_controller{$ext}";
+        $candidate = "$searchBase/{$name}_controller$ext";
         if (file_exists($candidate)) {
             $source = $candidate;
             break;
@@ -84,13 +87,13 @@ function publishController(string $identifier, string $targetDir): void
     }
 
     if ($source === null) {
-        throw new RuntimeException("Controller source not found for {$identifier}");
+        throw new RuntimeException("Controller source not found for $identifier");
     }
 
     $ext = pathinfo($source, PATHINFO_EXTENSION);
     $target = $dir === ''
-        ? "{$targetDir}/{$name}_controller.{$ext}"
-        : "{$targetDir}/{$dir}/{$name}_controller.{$ext}";
+        ? "$targetDir/{$name}_controller.$ext"
+        : "$targetDir/$dir/{$name}_controller.$ext";
 
     File::ensureDirectoryExists(dirname($target));
     File::copy($source, $target);
@@ -253,7 +256,7 @@ it('shows which component requires each controller', function () {
 });
 
 it('shows dash for component without controller dependency', function () {
-    writeView('page.blade.php', '<x-hwc::loader />');
+    writeView('page.blade.php', '<x-hwc::spinner />');
 
     $this->artisan('hotwire:check --no-interaction')
         ->expectsOutputToContain('No controllers required')
@@ -319,9 +322,9 @@ it('shows not published for a ts controller', function () {
     $exitCode = Artisan::call('hotwire:check', ['--no-interaction' => true]);
     $output = Artisan::output();
 
-    expect($output)->toContain('timeago');
-    expect($output)->toContain('not published');
-    expect($exitCode)->toBe(1);
+    expect($output)->toContain('timeago')
+        ->and($output)->toContain('not published')
+        ->and($exitCode)->toBe(1);
 });
 
 it('shows up to date when ts controller matches package version', function () {
@@ -432,6 +435,56 @@ it('marks dependency as missing when absent from package.json', function () {
         ->expectsOutputToContain('@emaia/sonner')
         ->expectsOutputToContain('missing from package.json')
         ->assertExitCode(1);
+});
+
+// --- Shared controller dependencies ---
+
+function depSource(string $name): string
+{
+    return (string) realpath(__DIR__."/../../resources/js/controllers/$name");
+}
+
+it('reports a missing shared dependency as not published', function () {
+    publishController('file-preserve', $this->targetDir);
+    publishController('reset-files', $this->targetDir);
+    writeView('page.blade.php', '<x-hwc::file name="avatar" />');
+
+    $this->artisan('hotwire:check --no-interaction')
+        ->expectsOutputToContain('_form_errors.js  not published')
+        ->assertExitCode(1);
+});
+
+it('marks a shared dependency up to date when present', function () {
+    publishController('file-preserve', $this->targetDir);
+    publishController('reset-files', $this->targetDir);
+    File::copy(depSource('_form_errors.js'), $this->targetDir.'/_form_errors.js');
+    writeView('page.blade.php', '<x-hwc::file name="avatar" />');
+
+    $this->artisan('hotwire:check --no-interaction')
+        ->assertSuccessful();
+});
+
+it('reports a shared dependency as outdated when it differs', function () {
+    publishController('file-preserve', $this->targetDir);
+    publishController('reset-files', $this->targetDir);
+    File::put($this->targetDir.'/_form_errors.js', '// modified');
+    writeView('page.blade.php', '<x-hwc::file name="avatar" />');
+
+    $this->artisan('hotwire:check --no-interaction')
+        ->expectsOutputToContain('_form_errors.js  outdated')
+        ->assertExitCode(1);
+});
+
+it('publishes a missing shared dependency with --fix', function () {
+    publishController('file-preserve', $this->targetDir);
+    publishController('reset-files', $this->targetDir);
+    writeView('page.blade.php', '<x-hwc::file name="avatar" />');
+
+    $this->artisan('hotwire:check --fix --no-interaction')
+        ->assertSuccessful();
+
+    expect(File::hash($this->targetDir.'/_form_errors.js'))
+        ->toBe(File::hash(depSource('_form_errors.js')));
 });
 
 it('normalizes scoped subpath imports', function () {
@@ -559,8 +612,8 @@ it('does not duplicate a dependency already present when --fix runs', function (
         ->assertSuccessful();
 
     $json = readPackageJson();
-    expect($json['dependencies'])->toHaveKey('@emaia/sonner');
-    expect($json['devDependencies'] ?? [])->not->toHaveKey('@emaia/sonner');
+    expect($json['dependencies'])->toHaveKey('@emaia/sonner')
+        ->and($json['devDependencies'] ?? [])->not->toHaveKey('@emaia/sonner');
 });
 
 it('warns and skips npm check when package.json does not exist', function () {

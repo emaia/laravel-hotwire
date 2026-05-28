@@ -122,3 +122,9 @@ Use a JSON array to switch between masks based on the number of characters typed
     placeholder="Value"
 />
 ```
+
+## Turbo morph support
+
+The controller destroys and recreates the Maska instance on every `turbo:render`, reapplying the mask to whatever value
+the input currently holds. Under morph, idiomorph rewrites the input value silently, and Maska's cached state would
+otherwise be out of sync.

@@ -68,6 +68,10 @@ Enable countdown mode by adding the `countdown` value:
 </div>
 ```
 
+## Turbo morph support
+
+The controller re-syncs the counter on every `turbo:render` event. When the page is morphed (e.g., after a validation redirect with `@turboRefreshMethod('morph')` or `data-turbo-action="morph"`), idiomorph preserves the controller and its targets but rewrites the counter span's `innerHTML` back to the server-rendered initial value (typically `"0"`). The listener re-runs `update()` so the counter reflects the current input value after the morph completes.
+
 ## With a form field component
 
 ```html

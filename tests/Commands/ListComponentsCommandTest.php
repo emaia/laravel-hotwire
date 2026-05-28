@@ -23,7 +23,7 @@ it('lists all registered components', function () {
         ->and($output)->toContain('Confirm Dialog')
         ->and($output)->toContain('Flash Container')
         ->and($output)->toContain('Flash Message')
-        ->and($output)->toContain('Loader')
+        ->and($output)->toContain('Spinner')
         ->and($output)->toContain('Scroll Progress');
 });
 
@@ -32,7 +32,7 @@ it('shows blade tags with current prefix', function () {
         ->expectsOutputToContain('<x-hwc::modal>')
         ->expectsOutputToContain('<x-hwc::confirm-dialog>')
         ->expectsOutputToContain('<x-hwc::flash-message>')
-        ->expectsOutputToContain('<x-hwc::loader>')
+        ->expectsOutputToContain('<x-hwc::spinner>')
         ->expectsOutputToContain('<x-hwc::scroll-progress>')
         ->assertSuccessful();
 });

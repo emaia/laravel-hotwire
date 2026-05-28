@@ -1,6 +1,7 @@
 # Polling
 
-Automatically reloads a Turbo Frame at regular intervals. Useful for dashboards, feeds and areas that need up-to-date data without user interaction.
+Automatically reloads a Turbo Frame at regular intervals. Useful for dashboards, feeds and areas that need up-to-date
+data without user interaction.
 
 **Identifier:** `polling`
 **Install:** `php artisan hotwire:controllers turbo/polling`
@@ -11,16 +12,16 @@ Automatically reloads a Turbo Frame at regular intervals. Useful for dashboards,
 
 ## Stimulus Values
 
-| Value | Type | Default | Description |
-|-------|------|---------|-------------|
-| `frame` | `String` | — | ID of the Turbo Frame to reload (required) |
-| `timeout` | `Number` | `5000` | Interval between refreshes (ms) |
-| `enabled` | `Boolean` | `true` | Enables/disables polling |
+| Value     | Type      | Default | Description                                |
+|-----------|-----------|---------|--------------------------------------------|
+| `frame`   | `String`  | —       | ID of the Turbo Frame to reload (required) |
+| `timeout` | `Number`  | `5000`  | Interval between refreshes (ms)            |
+| `enabled` | `Boolean` | `true`  | Enables/disables polling                   |
 
 ## Actions
 
-| Action | Description |
-|--------|-------------|
+| Action            | Description                                            |
+|-------------------|--------------------------------------------------------|
 | `polling#refresh` | Forces an immediate refresh and schedules the next one |
 
 ## Basic usage

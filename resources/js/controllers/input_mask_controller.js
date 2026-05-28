@@ -11,12 +11,20 @@ export default class extends Controller {
     };
 
     connect() {
+        this.resyncAfterMorph = this.resyncAfterMorph.bind(this);
         this.mask = new MaskInput(this.element, this.#options());
+        document.addEventListener("turbo:render", this.resyncAfterMorph);
     }
 
     disconnect() {
+        document.removeEventListener("turbo:render", this.resyncAfterMorph);
         this.mask?.destroy();
         this.mask = null;
+    }
+
+    resyncAfterMorph() {
+        this.mask?.destroy();
+        this.mask = new MaskInput(this.element, this.#options());
     }
 
     maskValueChanged() {

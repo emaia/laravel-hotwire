@@ -1,6 +1,7 @@
 # Checkbox Select All
 
-Adds a "select all" checkbox that controls a group of checkboxes. Supports indeterminate state to indicate partial selection.
+Adds a "select all" checkbox that controls a group of checkboxes. Supports indeterminate state to indicate partial
+selection.
 
 **Identifier:** `checkbox-select-all`  
 **Install:** `php artisan hotwire:controllers checkbox-select-all`
@@ -11,15 +12,15 @@ Adds a "select all" checkbox that controls a group of checkboxes. Supports indet
 
 ## Targets
 
-| Target        | Description                                  |
-|---------------|----------------------------------------------|
+| Target        | Description                                    |
+|---------------|------------------------------------------------|
 | `checkboxAll` | The master checkbox that selects/deselects all |
-| `checkbox`    | Each individual checkbox in the group        |
+| `checkbox`    | Each individual checkbox in the group          |
 
 ## Stimulus Values
 
-| Value                  | Type      | Default | Description                                                                              |
-|------------------------|-----------|---------|------------------------------------------------------------------------------------------|
+| Value                   | Type      | Default | Description                                                                              |
+|-------------------------|-----------|---------|------------------------------------------------------------------------------------------|
 | `disable-indeterminate` | `Boolean` | `false` | When `true`, skips indeterminate state — the master is only checked when all are checked |
 
 ## Basic usage
@@ -48,7 +49,7 @@ Adds a "select all" checkbox that controls a group of checkboxes. Supports indet
 
 The master checkbox becomes indeterminate when some (but not all) items are checked.
 
-## Without indeterminate state
+## Without an indeterminate state
 
 ```html
 <div
@@ -104,4 +105,12 @@ In this mode the master checkbox is only checked when every item is checked; it 
 </table>
 ```
 
-> The controller element must be an ancestor of both `checkboxAll` and `checkbox` targets. In the table example the controller lives on `<tr>` inside `<thead>`, but the `checkbox` targets are in `<tbody>` — this works because `data-controller` looks up descendants at any depth.
+> The controller element must be an ancestor of both `checkboxAll` and `checkbox` targets. In the table example the
+> controller lives on `<tr>` inside `<thead>`, but the `checkbox` targets are in `<tbody>` — this works because
+`data-controller` looks up descendants at any depth.
+
+## Turbo morph support
+
+The controller re-syncs the master's `checked` and `indeterminate` state on every `turbo:render`. Under morph (
+`@turboRefreshMethod('morph')` or `data-turbo-action="morph"`), idiomorph updates the children's checked attributes but
+does not fire `targetConnected` — so the master would otherwise stay stale.

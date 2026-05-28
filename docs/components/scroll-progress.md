@@ -1,6 +1,6 @@
 # Scroll Progress
 
-Fixed progress bar that fills based on the user's scroll position.
+Fixed the progress bar that fills based on the user's scroll position.
 
 ## Usage
 
@@ -39,9 +39,9 @@ Set it to `0` to disable throttling:
 
 ## Props
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `throttle-delay` | `int` | `15` | Throttle delay in milliseconds. Use `0` to disable throttling. |
+| Prop             | Type  | Default | Description                                                    |
+|------------------|-------|---------|----------------------------------------------------------------|
+| `throttle-delay` | `int` | `15`    | Throttle delay in milliseconds. Use `0` to disable throttling. |
 
 ## Controller
 

@@ -4,8 +4,10 @@ namespace Emaia\LaravelHotwire\Commands;
 
 use Emaia\LaravelHotwire\Registry\ControllerDefinition;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
+use Emaia\LaravelHotwire\Support\ControllerImports;
 use Emaia\LaravelHotwire\Support\PackageInstaller;
 use Illuminate\Console\Command;
+use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Filesystem\Filesystem;
 use Symfony\Component\Finder\Finder;
 
@@ -24,10 +26,14 @@ class CheckCommand extends Command
     public function __construct(
         private readonly Filesystem $files,
         private readonly PackageInstaller $packageInstaller,
+        private readonly ControllerImports $imports,
     ) {
         parent::__construct();
     }
 
+    /**
+     * @throws FileNotFoundException
+     */
     public function handle(): int
     {
         $prefix = config('hotwire.prefix', 'hwc');
@@ -138,11 +144,15 @@ class CheckCommand extends Command
      *
      * @param  string[]  $usedKeys
      * @return array{issues: array<int, array{identifier: string, source_file: string, target_file: string}>, controllers: array<string, ControllerDefinition>}
+     *
+     * @throws FileNotFoundException
      */
     private function reportStatus(array $usedKeys, string $prefix, string $targetBase, HotwireRegistry $registry): array
     {
         $issues = [];
         $controllers = [];
+        $seenDeps = [];
+        $controllersBase = $registry->basePath().'/resources/js/controllers';
 
         foreach ($usedKeys as $key) {
             $component = $registry->component($key);
@@ -176,10 +186,53 @@ class CheckCommand extends Command
                         'target_file' => $targetFile,
                     ];
                 }
+
+                $this->reportSharedDeps($controller, $sourceFile, $controllersBase, $targetBase, $issues, $seenDeps);
             }
         }
 
         return ['issues' => $issues, 'controllers' => $controllers];
+    }
+
+    /**
+     * Verify the shared (non-controller) files a controller imports are published
+     * and up to date. A controller can hash-match the package while a dependency
+     * it imports (e.g. _form_errors.js) is missing — which would break the build.
+     *
+     * @param  array<int, array{identifier: string, source_file: string, target_file: string}>  $issues
+     * @param  array<string, bool>  $seenDeps
+     *
+     * @throws FileNotFoundException
+     */
+    private function reportSharedDeps(
+        ControllerDefinition $controller,
+        string $sourceFile,
+        string $controllersBase,
+        string $targetBase,
+        array &$issues,
+        array &$seenDeps,
+    ): void {
+        foreach ($this->imports->sharedDependencies($sourceFile, $controllersBase) as $depSource) {
+            $depTarget = $this->imports->targetPath($depSource, $controllersBase, $targetBase);
+
+            if (isset($seenDeps[$depTarget])) {
+                continue;
+            }
+            $seenDeps[$depTarget] = true;
+
+            $name = basename($depSource);
+            [$status, $symbol, $color] = $this->resolveStatus($depTarget, $depSource);
+
+            $this->line("  <$color>$symbol</$color>  $name  $status  <fg=gray>(required by $controller->identifier)</>");
+
+            if ($status !== 'up to date') {
+                $issues[] = [
+                    'identifier' => $name,
+                    'source_file' => $depSource,
+                    'target_file' => $depTarget,
+                ];
+            }
+        }
     }
 
     /** @return array{string, string, string} [status, symbol, color] */
@@ -233,6 +286,8 @@ class CheckCommand extends Command
      *
      * @param  array<string, array{version: string, used_by: string[]}>  $required
      * @return array<string, string>
+     *
+     * @throws FileNotFoundException
      */
     private function reportDependencies(array $required): array
     {
@@ -318,7 +373,9 @@ class CheckCommand extends Command
         }
     }
 
-    /** @param array<string, string> $missingDeps package name => version */
+    /** @param array<string, string> $missingDeps package name => version
+     * @throws FileNotFoundException
+     */
     private function writeMissingDependencies(array $missingDeps): int
     {
         if (empty($missingDeps)) {

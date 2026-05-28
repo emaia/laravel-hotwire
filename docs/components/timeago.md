@@ -1,7 +1,7 @@
 # Timeago
 
 A `<time>` element that displays a relative time (e.g. "3 minutes ago") and progressively enhances into a
-self-refreshing label once Stimulus connects. Wraps the [`timeago` controller](../../controllers/timeago.md).
+self-refreshing label once Stimulus connects. Wraps the [`timeago` controller](../controllers/timeago.md).
 
 ## Requirements
 
@@ -13,13 +13,13 @@ self-refreshing label once Stimulus connects. Wraps the [`timeago` controller](.
 
 ## Props
 
-| Prop               | Type                          | Default        | Description                                                |
-|--------------------|-------------------------------|----------------|------------------------------------------------------------|
-| `datetime`         | `DateTimeInterface\|string`   | —              | The date/time to display (Carbon, DateTime, or ISO string) |
-| `add-suffix`       | `bool`                        | `true`         | Appends "ago" / "in" to the output                         |
-| `include-seconds`  | `bool`                        | `false`        | More granular output for differences under a minute        |
-| `refresh-interval` | `int\|null`                   | `null`         | Milliseconds between auto-refreshes. Omit to disable       |
-| `title-format`     | `string`                      | `'d M Y H:i'` | PHP date format used for the `title` tooltip               |
+| Prop               | Type                        | Default       | Description                                                |
+|--------------------|-----------------------------|---------------|------------------------------------------------------------|
+| `datetime`         | `DateTimeInterface\|string` | —             | The date/time to display (Carbon, DateTime, or ISO string) |
+| `add-suffix`       | `bool`                      | `true`        | Appends "ago" / "in" to the output                         |
+| `include-seconds`  | `bool`                      | `false`       | More granular output for differences under a minute        |
+| `refresh-interval` | `int\|null`                 | `null`        | Milliseconds between auto-refreshes. Omit to disable       |
+| `title-format`     | `string`                    | `'d M Y H:i'` | PHP date format used for the `title` tooltip               |
 
 The default slot is rendered as a server-side fallback before Stimulus connects. Pass
 `$model->created_at->diffForHumans()` for a seamless progressive-enhancement experience.
@@ -90,10 +90,10 @@ Renders as e.g. `3 hours` instead of `3 hours ago`.
 ## Localization
 
 Localization happens at the controller level — see
-[the `timeago` controller doc](../../controllers/timeago.md#localization) for how to subclass it and inject a
+[the `timeago` controller doc](../controllers/timeago.md#localization) for how to subclass it and inject a
 `date-fns` locale.
 
 ## See also
 
-- [`timeago` controller](../../controllers/timeago.md) — the underlying Stimulus controller, including all values
+- [`timeago` controller](../controllers/timeago.md) — the underlying Stimulus controller, including all values
   and the localization hook

@@ -35,7 +35,8 @@ When the submit button is clicked, navigation is allowed without an alert.
 
 ## Ignoring specific fields
 
-Fields that should not trigger the alert (e.g., hidden fields updated dynamically) can be marked with `data-ignore-unsaved-change`:
+Fields that should not trigger the alert (e.g., hidden fields updated dynamically) can be marked with
+`data-ignore-unsaved-change`:
 
 ```html
 <form data-controller="unsaved-changes" action="/items/1" method="post">
@@ -55,12 +56,12 @@ Fields that should not trigger the alert (e.g., hidden fields updated dynamicall
 
 The controller detects changes in:
 
-| Element | Check |
-|---------|-------|
-| `<input type="text">`, `<textarea>` | `value !== defaultValue` |
-| `<input type="checkbox">`, `<input type="radio">` | `checked !== defaultChecked` |
-| `<select>` | `selectedIndex` differs from default |
-| `<select multiple>` | Any `option.selected !== option.defaultSelected` |
+| Element                                           | Check                                            |
+|---------------------------------------------------|--------------------------------------------------|
+| `<input type="text">`, `<textarea>`               | `value !== defaultValue`                         |
+| `<input type="checkbox">`, `<input type="radio">` | `checked !== defaultChecked`                     |
+| `<select>`                                        | `selectedIndex` differs from default             |
+| `<select multiple>`                               | Any `option.selected !== option.defaultSelected` |
 
 ## How it works
 
@@ -73,3 +74,10 @@ The controller automatically sets up the required `data-action` on `connect()`:
 
 The current controller handles Turbo Drive navigation. Browser tab close and reload handling are outside this
 controller's documented behavior.
+
+## Turbo morph support
+
+The controller re-applies its `data-action` wiring on every `turbo:render`. Under morph (`@turboRefreshMethod('morph')`
+or `data-turbo-action="morph"`), idiomorph rewrites the form's `data-action` attribute from server HTML — without
+re-applying, the leave-warning and submit-allow actions would be lost after a morph. The "is changed" detection still
+compares `value` vs `defaultValue` per element, which idiomorph keeps in sync when it updates input attributes.

@@ -11,8 +11,8 @@ Utility controller for debugging. Logs Stimulus events to the browser console.
 
 ## Actions
 
-| Action | Description |
-|--------|-------------|
+| Action    | Description                     |
+|-----------|---------------------------------|
 | `log#log` | Logs the event to `console.log` |
 
 ## Usage — click debug

@@ -1,6 +1,7 @@
 # Lazy Image
 
-Polls an image URL until it becomes available, then displays it automatically. Useful for asynchronously generated images (thumbnails, conversions, background processing).
+Polls an image URL until it becomes available, then displays it automatically. Useful for asynchronously generated
+images (thumbnails, conversions, background processing).
 
 **Identifier:** `lazy-image`  
 **Install:** `php artisan hotwire:controllers lazy-image`
@@ -11,16 +12,16 @@ Polls an image URL until it becomes available, then displays it automatically. U
 
 ## Stimulus Values
 
-| Value | Type | Default | Description |
-|-------|------|---------|-------------|
-| `url` | `String` | — | Image URL (required) |
-| `alt` | `String` | `""` | Image alt text |
-| `interval` | `Number` | `3000` | Interval between attempts (ms) |
-| `width` | `Number` | `0` | Image width (0 = not set) |
-| `height` | `Number` | `0` | Image height (0 = not set) |
-| `max-attempts` | `Number` | `20` | Maximum number of attempts |
-| `img-class` | `String` | `""` | CSS classes applied to the `<img>` tag |
-| `sources` | `Array` | `[]` | Array of `{ media, srcset }` for `<source>` (responsive) |
+| Value          | Type     | Default | Description                                              |
+|----------------|----------|---------|----------------------------------------------------------|
+| `url`          | `String` | —       | Image URL (required)                                     |
+| `alt`          | `String` | `""`    | Image alt text                                           |
+| `interval`     | `Number` | `3000`  | Interval between attempts (ms)                           |
+| `width`        | `Number` | `0`     | Image width (0 = not set)                                |
+| `height`       | `Number` | `0`     | Image height (0 = not set)                               |
+| `max-attempts` | `Number` | `20`    | Maximum number of attempts                               |
+| `img-class`    | `String` | `""`    | CSS classes applied to the `<img>` tag                   |
+| `sources`      | `Array`  | `[]`    | Array of `{ media, srcset }` for `<source>` (responsive) |
 
 ## Basic usage
 

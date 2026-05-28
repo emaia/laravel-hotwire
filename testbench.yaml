@@ -1,2 +1,3 @@
 providers:
   - Emaia\LaravelHotwire\LaravelHotwireServiceProvider
+  - Emaia\LaravelHotwireTurbo\TurboServiceProvider

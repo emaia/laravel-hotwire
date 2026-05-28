@@ -13,17 +13,25 @@ export default class extends Controller {
     };
 
     connect() {
+        this.resyncAfterMorph = this.resyncAfterMorph.bind(this);
         this.affixes = this.#resolveAffixes();
         this.digitBuffer = this.#digitBufferFromMinor(this.element.value);
         this.#bindEvents();
         this.#renderCurrentValue();
+        document.addEventListener("turbo:render", this.resyncAfterMorph);
     }
 
     disconnect() {
         this.#unbindEvents();
+        document.removeEventListener("turbo:render", this.resyncAfterMorph);
         this.affixes = null;
         this.digitBuffer = null;
         this.rebuildQueued = false;
+    }
+
+    resyncAfterMorph() {
+        this.digitBuffer = this.#digitBufferFromMinor(this.element.value);
+        this.#renderCurrentValue();
     }
 
     localeValueChanged() {

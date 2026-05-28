@@ -1,6 +1,7 @@
 # GTM (Google Tag Manager)
 
-Loads Google Tag Manager with lazy loading support (loads only after the first user interaction) and fires custom events via `data-action`.
+Loads Google Tag Manager with lazy loading support (loads only after the first user interaction) and fires custom events
+via `data-action`.
 
 **Identifier:** `gtm`  
 **Install:** `php artisan hotwire:controllers gtm`
@@ -12,23 +13,23 @@ Loads Google Tag Manager with lazy loading support (loads only after the first u
 
 ## Stimulus Values
 
-| Value | Type | Default | Description |
-|-------|------|---------|-------------|
-| `id` | `String` | — | GTM container ID (required, format `GTM-XXXXXXX`) |
-| `lazy` | `Boolean` | `true` | Loads the script only after scroll, mousemove or touchstart |
+| Value  | Type      | Default | Description                                                 |
+|--------|-----------|---------|-------------------------------------------------------------|
+| `id`   | `String`  | —       | GTM container ID (required, format `GTM-XXXXXXX`)           |
+| `lazy` | `Boolean` | `true`  | Loads the script only after scroll, mousemove or touchstart |
 
 ## Actions
 
-| Action | Description |
-|--------|-------------|
+| Action      | Description                           |
+|-------------|---------------------------------------|
 | `gtm#event` | Sends a custom event to the dataLayer |
 
 ## Action Params
 
-| Param | Type | Description |
-|-------|------|-------------|
-| `event-name` | `String` | Event name in the dataLayer (required) |
-| `event-payload` | `Object` | Additional data sent with the event |
+| Param           | Type     | Description                            |
+|-----------------|----------|----------------------------------------|
+| `event-name`    | `String` | Event name in the dataLayer (required) |
+| `event-payload` | `Object` | Additional data sent with the event    |
 
 ## Basic usage — lazy loading (default)
 
@@ -108,6 +109,7 @@ Result in `dataLayer`:
 
 1. On `initialize()`, creates `window.dataLayer` if it doesn't exist.
 2. On `connect()`, validates the ID format (`GTM-XXXXXXX`).
-3. If `lazy` (default), registers listeners on `scroll`, `mousemove` and `touchstart`. On the first interaction, loads the script and removes the listeners.
+3. If `lazy` (default), registers listeners on `scroll`, `mousemove` and `touchstart`. On the first interaction, loads
+   the script and removes the listeners.
 4. If not lazy, loads the script immediately.
 5. The script is loaded only once (`window.gtmDidInit` prevents duplication).

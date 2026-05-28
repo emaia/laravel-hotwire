@@ -11,11 +11,11 @@ Submits the form automatically in response to events, with debounce support.
 
 ## Actions
 
-| Action | Description |
-|--------|-------------|
-| `auto-submit#submit` | Submits the form immediately |
-| `auto-submit#debouncedSubmit` | Submits after 300ms of inactivity (debounce) |
-| `auto-submit#submitOnChange` | Alias for submit, semantic for `change` events |
+| Action                        | Description                                    |
+|-------------------------------|------------------------------------------------|
+| `auto-submit#submit`          | Submits the form immediately                   |
+| `auto-submit#debouncedSubmit` | Submits after 300ms of inactivity (debounce)   |
+| `auto-submit#submitOnChange`  | Alias for submit, semantic for `change` events |
 
 ## Basic usage — submit on select change
 

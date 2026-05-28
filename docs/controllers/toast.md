@@ -13,11 +13,11 @@ low-level controller used by `<x-hwc::flash-message>` and can also be rendered d
 
 ## Stimulus Values
 
-| Value | Type | Default | Description |
-|-------|------|---------|-------------|
-| `message` | `String` | — | Main toast message (required) |
-| `description` | `String` | `null` | Secondary text shown below the message |
-| `type` | `String` | `"default"` | Toast type: `default`, `success`, `error`, `warning`, `info` |
+| Value         | Type     | Default     | Description                                                  |
+|---------------|----------|-------------|--------------------------------------------------------------|
+| `message`     | `String` | —           | Main toast message (required)                                |
+| `description` | `String` | `null`      | Secondary text shown below the message                       |
+| `type`        | `String` | `"default"` | Toast type: `default`, `success`, `error`, `warning`, `info` |
 
 ## Basic usage
 
@@ -65,10 +65,10 @@ supported Laravel session keys and renders this controller for you.
 
 ## Available types
 
-| `type` | Behavior |
-|--------|----------|
+| `type`    | Behavior      |
+|-----------|---------------|
 | `default` | Neutral toast |
-| `success` | Green toast |
-| `error` | Red toast |
-| `warning` | Yellow toast |
-| `info` | Blue toast |
+| `success` | Green toast   |
+| `error`   | Red toast     |
+| `warning` | Yellow toast  |
+| `info`    | Blue toast    |

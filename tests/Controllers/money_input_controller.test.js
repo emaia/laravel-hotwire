@@ -461,6 +461,29 @@ test.serial("rebuilds the mask when currency value changes at runtime", async ()
     expect(input.value).toContain("100,00");
 });
 
+test.serial("re-seeds digit buffer after turbo:render (morph scenario)", async () => {
+    // Initial value is minor units (10000 cents = 100.00).
+    await setup(`<input data-controller="money-input" value="10000" />`);
+
+    const input = document.querySelector("input");
+    expect(input.value).toBe("100.00");
+
+    // Simulate morph: idiomorph rewrites the value from server HTML to the
+    // newly flashed cents. No input event fires.
+    input.value = "250000";
+
+    document.dispatchEvent(new Event("turbo:render", { bubbles: true }));
+    await wait(0);
+
+    expect(input.value).toBe("2,500.00");
+
+    // Digit buffer must also be re-seeded so subsequent typing appends correctly.
+    pressKeys(input, "7");
+    await wait(0);
+
+    expect(input.value).toBe("25,000.07");
+});
+
 function type(input, value) {
     input.value = value;
     dispatchEvent(input, "input");

@@ -14,8 +14,8 @@ Adds tooltips to any element using [Tippy.js](https://atomiks.github.io/tippyjs/
 
 ## Stimulus Values
 
-| Value | Type | Default | Description |
-|-------|------|---------|-------------|
+| Value     | Type     | Default     | Description                    |
+|-----------|----------|-------------|--------------------------------|
 | `content` | `String` | `"Tooltip"` | Tooltip content. Supports HTML |
 
 ## Basic usage

@@ -1,6 +1,6 @@
 # Auto Save
 
-Automatically saves a form after the user changes it. Designed for draft editors, settings screens and inline edit
+Automatically saves a form after the user changes it. Designed for draft editors, settings screen and inline edit
 forms where saving should feel native and unobtrusive.
 
 **Identifier:** `auto-save`  
@@ -10,14 +10,14 @@ forms where saving should feel native and unobtrusive.
 
 - No external dependencies.
 - A `<form>` element as the controller root.
-- Turbo is recommended so the submission can complete without a full page reload.
+- Turbo is recommended so the submission can be complete without a full page reload.
 
 ## Targets
 
-| Target      | Description                                                                 |
-|-------------|-----------------------------------------------------------------------------|
-| `status`    | Optional element that receives the current status text                       |
-| `submitter` | Optional submit button used as the real submitter for `requestSubmit()`      |
+| Target      | Description                                                             |
+|-------------|-------------------------------------------------------------------------|
+| `status`    | Optional element that receives the current status text                  |
+| `submitter` | Optional submit button used as the real submitter for `requestSubmit()` |
 
 ## Stimulus Values
 
@@ -29,28 +29,28 @@ forms where saving should feel native and unobtrusive.
 
 ## CSS Classes
 
-| Class    | Applied when                            |
-|----------|-----------------------------------------|
+| Class    | Applied when                             |
+|----------|------------------------------------------|
 | `dirty`  | The form has changes waiting to be saved |
-| `saving` | A submit is in progress                 |
-| `saved`  | The last submit completed successfully  |
-| `error`  | The last submit failed                  |
+| `saving` | A submit is in progress                  |
+| `saved`  | The last submit completed successfully   |
+| `error`  | The last submit failed                   |
 
 ## Actions
 
-| Action             | Description                         |
-|--------------------|-------------------------------------|
-| `auto-save#save`   | Saves immediately                   |
-| `auto-save#cancel` | Cancels the pending save timer      |
+| Action             | Description                    |
+|--------------------|--------------------------------|
+| `auto-save#save`   | Saves immediately              |
+| `auto-save#cancel` | Cancels the pending save timer |
 
 ## Events
 
-| Event                | Description                        |
-|----------------------|------------------------------------|
-| `auto-save:dirty`    | Fired when unsaved changes exist   |
-| `auto-save:saving`   | Fired when a submit starts         |
-| `auto-save:saved`    | Fired after a successful submit    |
-| `auto-save:error`    | Fired after a failed submit        |
+| Event              | Description                      |
+|--------------------|----------------------------------|
+| `auto-save:dirty`  | Fired when unsaved changes exist |
+| `auto-save:saving` | Fired when a submit starts       |
+| `auto-save:saved`  | Fired after a successful submit  |
+| `auto-save:error`  | Fired after a failed submit      |
 
 ## Basic usage
 
@@ -134,7 +134,7 @@ You can also configure classes:
 
 ## Custom submitter
 
-Use a `submitter` target when the autosave request should go through a specific button with its own submit metadata,
+Use a `submitter` target when the autosave request should go through a specific button with its own submitted metadata,
 such as `formaction`, `formmethod` or `data-turbo-frame`.
 
 ```html

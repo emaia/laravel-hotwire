@@ -18,23 +18,30 @@ export default class extends Controller {
 
     initialize() {
         this.autogrow = this.autogrow.bind(this);
+        this.resyncAfterMorph = this.resyncAfterMorph.bind(this);
     }
 
     connect() {
-        this.element.style.overflow = "hidden";
         const delay = this.resizeDebounceDelayValue;
 
         this.onResize =
             delay > 0 ? debounce(this.autogrow, delay) : this.autogrow;
 
-        this.autogrow();
+        this.resyncAfterMorph();
 
         this.element.addEventListener("input", this.autogrow);
         window.addEventListener("resize", this.onResize);
+        document.addEventListener("turbo:render", this.resyncAfterMorph);
     }
 
     disconnect() {
         window.removeEventListener("resize", this.onResize);
+        document.removeEventListener("turbo:render", this.resyncAfterMorph);
+    }
+
+    resyncAfterMorph() {
+        this.element.style.overflow = "hidden";
+        this.autogrow();
     }
 
     autogrow() {

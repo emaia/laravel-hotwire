@@ -1,6 +1,7 @@
 # Progress
 
-Shows the native Turbo Drive progress bar during Turbo Frame and Stream requests, which by default only appears on full-page navigations.
+Shows the native Turbo Drive progress bar during Turbo Frame and Stream requests, which by default only appears on
+full-page navigations.
 
 **Identifier:** `progress`
 **Install:** `php artisan hotwire:controllers turbo/progress`
@@ -23,10 +24,10 @@ From that point, any Turbo Frame or Stream request will show the progress bar at
 
 ## How it works
 
-| Turbo event | Action |
-|---|---|
+| Turbo event                  | Action                 |
+|------------------------------|------------------------|
 | `turbo:before-fetch-request` | Shows the progress bar |
-| `turbo:frame-render` | Hides the progress bar |
+| `turbo:frame-render`         | Hides the progress bar |
 | `turbo:before-stream-render` | Hides the progress bar |
 
 ## Example with Turbo Frame

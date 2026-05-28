@@ -9,15 +9,16 @@ export default class extends Controller {
 
     initialize() {
         this.formChanges(this.element);
+        this.setupActions = this.setupActions.bind(this);
     }
 
     connect() {
         this.setupActions();
-        document.addEventListener("turbo:render", this.setupActions.bind(this));
+        document.addEventListener("turbo:render", this.setupActions);
     }
 
     disconnect() {
-        document.removeEventListener("turbo:render", this.setupActions.bind(this));
+        document.removeEventListener("turbo:render", this.setupActions);
     }
 
     setupActions() {

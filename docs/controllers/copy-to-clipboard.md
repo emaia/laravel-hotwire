@@ -1,6 +1,7 @@
 # Copy To Clipboard
 
-Copies text to the clipboard when a button is clicked. Temporarily replaces the button label with a success message after copying.
+Copies text to the clipboard when a button is clicked. Temporarily replaces the button label with a success message
+after copying.
 
 **Identifier:** `copy-to-clipboard`  
 **Install:** `php artisan hotwire:controllers copy-to-clipboard`
@@ -11,23 +12,23 @@ Copies text to the clipboard when a button is clicked. Temporarily replaces the 
 
 ## Targets
 
-| Target   | Description                                   |
-|----------|-----------------------------------------------|
-| `source` | Element whose text content or value is copied |
+| Target   | Description                                                 |
+|----------|-------------------------------------------------------------|
+| `source` | Element whose text content or value is copied               |
 | `button` | The trigger button (optional — needed for success feedback) |
 
 ## Stimulus Values
 
-| Value              | Type     | Default | Description                                                        |
-|--------------------|----------|---------|--------------------------------------------------------------------|
-| `success-content`  | `String` | —       | HTML to show inside the button after a successful copy             |
-| `success-duration` | `Number` | `2000`  | Milliseconds before the button reverts to its original content     |
+| Value              | Type     | Default | Description                                                    |
+|--------------------|----------|---------|----------------------------------------------------------------|
+| `success-content`  | `String` | —       | HTML to show inside the button after a successful copy         |
+| `success-duration` | `Number` | `2000`  | Milliseconds before the button reverts to its original content |
 
 ## Actions
 
-| Action                    | Description           |
-|---------------------------|-----------------------|
-| `copy-to-clipboard#copy`   | Copies the source text to the clipboard |
+| Action                   | Description                             |
+|--------------------------|-----------------------------------------|
+| `copy-to-clipboard#copy` | Copies the source text to the clipboard |
 
 ## Basic usage — copy a code block
 
