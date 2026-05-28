@@ -8,7 +8,11 @@
     aria-describedby="{{ $errorId }}"
     @if ($hasErrors) aria-invalid="true" data-invalid @endif
     @if ($isRequired) aria-required="true" required @endif
-    {{ $attributes->class([$class])->except(['required']) }}
+    {{ $attributes->merge(
+            filled($class)
+                ? ['class' => $class]
+                : []
+        )->except(['required']) }}
 >
     @if (! $isMultiple && ($placeholder || $nullable))
         <option value="" @if ($placeholderSelected) selected @endif>{{ $placeholder ?? '' }}</option>

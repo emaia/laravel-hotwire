@@ -9,6 +9,6 @@
     {{ trim($slotHtml) !== '' ? $slot : $value }}
 
     @if ($required)
-        <span class="label-required" aria-hidden="true">{{ $requiredLabel }}</span>
+        <span class="hwc-label-required" aria-hidden="true">{{ $requiredLabel }}</span>
     @endif
 </label>

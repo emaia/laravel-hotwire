@@ -14,7 +14,11 @@
     @if ($isRequired) aria-required="true" required @endif
     @if ($elementController !== '') data-controller="{{ $elementController }}" @endif
     @if ($counter !== null) data-char-counter-target="input" maxlength="{{ $counter }}" @endif
-    {{ $attributes->class([$class])->whereDoesntStartWith(array_merge(['data-controller'], $internalPrefixes))->except(['required']) }}
+    {{ $attributes->merge(
+            filled($class)
+                ? ['class' => $class]
+                : []
+        )->whereDoesntStartWith(array_merge(['data-controller'], $internalPrefixes))->except(['required']) }}
 >{{ $resolvedValue }}</textarea>
 
 @if ($needsWrapper)

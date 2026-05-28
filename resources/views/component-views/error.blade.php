@@ -6,7 +6,7 @@
     id="{{ $resolvedId }}"
     role="alert"
     aria-live="polite"
-    @class(['hwc-error', $class, 'hidden' => $isEmpty])
+    @class(['hwc-error', 'hidden' => $isEmpty, $class => filled($class)])
     @if ($isEmpty) hidden @endif
 >
     @if (count($messages) === 1)

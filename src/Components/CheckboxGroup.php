@@ -20,6 +20,7 @@ class CheckboxGroup extends Component
         public bool $selectAll = false,
         public ?string $selectAllLabel = null,
         public string $class = '',
+        public string $wrapperClass = '',
         public bool $old = true,
         public ?string $id = null,
         public ?string $errorKey = null,

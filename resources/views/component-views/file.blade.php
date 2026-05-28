@@ -20,6 +20,10 @@
         aria-describedby="{{ $errorId }}"
         @if ($hasErrors) aria-invalid="true" data-invalid @endif
         @if ($isRequired) aria-required="true" required @endif
-        {{ $attributes->class([$class])->whereDoesntStartWith(array_merge(['data-controller'], $internalPrefixes))->except(['required']) }}
+        {{ $attributes->merge(
+            filled($class)
+                ? ['class' => $class]
+                : []
+        )->whereDoesntStartWith(array_merge(['data-controller'], $internalPrefixes))->except(['required']) }}
     />
 @if ($needsWrapper)</div>@endif

@@ -3,33 +3,33 @@
 @php extract($compute($name, $id, $errorKey, $errors, $attributes)) @endphp
 
 <div @if ($wrapperController) data-controller="{{ $wrapperController }}" @endif
-    {{ $attributes->class([$class])->whereDoesntStartWith(array_merge(['data-controller'], $internalPrefixes))->except(['select-all']) }}
+    {{ $attributes->class([$wrapperClass])->whereDoesntStartWith(array_merge(['data-controller'], $internalPrefixes))->except(['select-all']) }}
 >
     @if ($selectAll)
         @php
             $selectAllId = $baseId ? $baseId.'-all' : null;
         @endphp
-        <label class="hwc-label">
+        <x-hwc::label>
             <input
                 type="checkbox"
-                class="hwc-input"
+                @class(['hwc-input', $class => filled($class)])
                 data-checkbox-select-all-target="checkboxAll"
                 @if ($selectAllId) id="{{ $selectAllId }}" @endif
                 @if ($errorId) aria-describedby="{{ $errorId }}" @endif
                 @if ($hasErrors) aria-invalid="true" data-invalid @endif
             />
             {{ $selectAllLabel ?: 'Select all' }}
-        </label>
+        </x-hwc::label>
     @endif
 
     @foreach ($options as $value => $label)
         @php
             $resolvedId = $baseId ? $baseId.'-'.\Illuminate\Support\Str::slug((string) $value) : null;
         @endphp
-        <label class="hwc-label">
+        <x-hwc::label>
             <input
                 type="checkbox"
-                class="hwc-input"
+                @class(['hwc-input', $class => filled($class)])
                 @if ($name) name="{{ $name }}" @endif
                 value="{{ $value }}"
                 @if ($resolvedId) id="{{ $resolvedId }}" @endif
@@ -39,6 +39,6 @@
                 @if (in_array($value, $resolvedSelected)) checked @endif
             />
             {{ $label }}
-        </label>
+        </x-hwc::label>
     @endforeach
 </div>

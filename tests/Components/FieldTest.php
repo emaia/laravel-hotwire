@@ -130,7 +130,7 @@ it('auto-rendered label shows default asterisk when required', function () {
 
     $html = (string) $view;
     // The label contains '*' but rendered via component, not as raw '*'
-    expect($html)->toContain('<span class="label-required"');
+    expect($html)->toContain('<span class="hwc-label-required"');
 });
 
 it('does not auto-render label when label prop is null', function () {

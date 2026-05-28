@@ -22,7 +22,11 @@
     @if ($elementController !== '') data-controller="{{ $elementController }}" @endif
     @if ($mask !== null) data-input-mask-mask-value="{{ $resolvedMask }}" @endif
     @if ($clearable) data-clear-input-target="input" @endif
-    {{ $attributes->class([$class])->whereDoesntStartWith(array_merge(['data-controller'], $internalPrefixes))->except(['required', 'checked']) }}
+    {{ $attributes->merge(
+            filled($class)
+                ? ['class' => $class]
+                : []
+        )->whereDoesntStartWith(array_merge(['data-controller'], $internalPrefixes))->except(['required', 'checked']) }}
 />
 
 @if ($clearable)

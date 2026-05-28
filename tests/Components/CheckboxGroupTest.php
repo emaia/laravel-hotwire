@@ -38,7 +38,7 @@ it('renders a single checkbox', function () {
 // --- Non-associative options ---
 
 it('normalizes flat options array so keys equal values', function () {
-    $view = $this->blade('<x-hwc::checkbox-group name="branchs[]" :options="[\'main\', \'dev\', \'next\']" :selected="[\'main\', \'dev\']" />');
+    $view = $this->blade('<x-hwc::checkbox-group name="branches[]" :options="[\'main\', \'dev\', \'next\']" :selected="[\'main\', \'dev\']" />');
 
     $view->assertSee('value="main"', false);
     $view->assertSee('value="dev"', false);
@@ -74,8 +74,8 @@ it('merges selected with old() input', function () {
     $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\', 2 => \'Two\']" :selected="[1]" />');
 
     $html = (string) $view;
-    expect($html)->toContain('value="2"');
-    expect($html)->toContain('checked');
+    expect($html)->toContain('value="2"')
+        ->and($html)->toContain('checked');
     // Only one checkbox should be checked (old wins over selected)
     $this->assertEquals(1, substr_count($html, 'checked'));
 });
@@ -87,8 +87,8 @@ it('disables old() when :old=false', function () {
 
     $html = (string) $view;
     // :old=false means selected [1] remains, old [2] is ignored
-    expect($html)->toContain('value="1"');
-    expect($html)->toContain('checked');
+    expect($html)->toContain('value="1"')
+        ->and($html)->toContain('checked');
     $this->assertEquals(1, substr_count($html, 'checked'));
 });
 
@@ -99,8 +99,8 @@ it('casts old() scalar value to array', function () {
 
     $html = (string) $view;
     // Old scalar 'main' should be cast to array and checked
-    expect($html)->toContain('value="main"');
-    expect($html)->toContain('checked');
+    expect($html)->toContain('value="main"')
+        ->and($html)->toContain('checked');
     $this->assertEquals(1, substr_count($html, 'checked'));
 });
 
@@ -179,7 +179,7 @@ it('marks individual checkboxes as checkbox targets only when select-all is acti
 // --- Class merge ---
 
 it('merges custom class on wrapper', function () {
-    $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\']" class="space-y-2" />');
+    $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\']" wrapper-class="space-y-2" />');
 
     $view->assertSee('class="space-y-2"', false);
 });
@@ -200,8 +200,8 @@ it('adds hwc-input and hwc-label hooks on the select-all master', function () {
     $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\']" select-all />');
 
     $html = (string) $view;
-    expect(substr_count($html, 'class="hwc-input"'))->toBe(2);
-    expect(substr_count($html, 'class="hwc-label"'))->toBe(2);
+    expect(substr_count($html, 'class="hwc-input"'))->toBe(2)
+        ->and(substr_count($html, 'class="hwc-label"'))->toBe(2);
 });
 
 // --- User data-controller merge ---
@@ -277,7 +277,7 @@ it('generates id from single name without brackets', function () {
 });
 
 it('uses explicit id as base for per-checkbox ids', function () {
-    $view = $this->blade('<x-hwc::checkbox-group name="branchs[]" id="my-group" :options="[\'main\' => \'Main\', \'dev\' => \'Dev\']" />');
+    $view = $this->blade('<x-hwc::checkbox-group name="branches[]" id="my-group" :options="[\'main\' => \'Main\', \'dev\' => \'Dev\']" />');
 
     $view->assertSee('id="my-group-main"', false);
     $view->assertSee('id="my-group-dev"', false);
