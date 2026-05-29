@@ -336,6 +336,12 @@ return [
             'category' => 'utility',
             'description' => 'Displays a progress bar that follows the scroll position',
         ],
+        'tabs' => [
+            'source' => 'resources/js/controllers/tabs_controller.js',
+            'docs' => 'docs/controllers/tabs.md',
+            'category' => 'utility',
+            'description' => 'Accessible tabs with roving tabindex, arrow/Home/End keyboard navigation and automatic activation',
+        ],
         'timeago' => [
             'source' => 'resources/js/controllers/timeago_controller.ts',
             'docs' => 'docs/controllers/timeago.md',
