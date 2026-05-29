@@ -2,6 +2,14 @@
 
 All notable changes to `laravel-hotwire-components` will be documented in this file.
 
+## 0.12.2 - 2026-05-29
+
+### What's Changed
+
+* Add tabs controller by @emaia in https://github.com/emaia/laravel-hotwire/pull/13
+
+**Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/0.12.1...0.12.2
+
 ## 0.12.1 - 2026-05-28
 
 **Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/0.12.0...0.12.1
