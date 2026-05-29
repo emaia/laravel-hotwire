@@ -1,26 +1,20 @@
 import { Controller } from "@hotwired/stimulus";
 
-// Accessible tabs following the WAI-ARIA APG tabs pattern: roving tabindex,
-// arrow/Home/End keyboard navigation and automatic activation. State is read
-// from the DOM on connect so server-rendered selection and Turbo morphs are
-// preserved without the controller fighting the markup.
 export default class extends Controller {
     static targets = ["tab", "panel"];
     static values = { selectedIndex: { type: Number, default: 0 } };
 
     connect() {
-        this.activate(this.tabTargets[this.initialIndex], { focus: false });
+        this.activate(this.tabTargets[this.initialIndex], { focus: false, notify: false });
     }
 
     select(event) {
-        const tab = event.target.closest('[role="tab"]');
-        if (tab && this.tabTargets.includes(tab)) {
-            this.activate(tab, { focus: false });
-        }
+        const tab = this.tabFromEvent(event);
+        if (tab) this.activate(tab, { focus: false });
     }
 
     navigate(event) {
-        const current = event.target.closest('[role="tab"]');
+        const current = this.tabFromEvent(event);
         const index = this.tabTargets.indexOf(current);
         if (index === -1) return;
 
@@ -48,7 +42,7 @@ export default class extends Controller {
         this.activate(this.tabTargets[next], { focus: true });
     }
 
-    activate(tab, { focus } = {}) {
+    activate(tab, { focus = false, notify = true } = {}) {
         if (!tab) return;
 
         this.tabTargets.forEach((current) => {
@@ -64,8 +58,12 @@ export default class extends Controller {
         this.selectedIndexValue = index;
 
         if (focus) tab.focus();
+        if (notify) this.dispatch("change", { detail: { index, tab, panel: this.panelFor(tab) } });
+    }
 
-        this.dispatch("change", { detail: { index, tab, panel: this.panelFor(tab) } });
+    tabFromEvent(event) {
+        const tab = event.target.closest('[role="tab"]');
+        return tab && this.tabTargets.includes(tab) ? tab : null;
     }
 
     panelFor(tab) {

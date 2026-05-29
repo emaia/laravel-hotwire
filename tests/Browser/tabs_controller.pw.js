@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 test("moves focus with arrow keys and activates the focused tab", async ({ page }) => {
     await page.setContent(`
         <div data-controller="tabs">
-            <div role="tablist" data-tabs-target="tablist"
+            <div role="tablist"
                  data-action="click->tabs#select keydown->tabs#navigate">
                 <button role="tab" id="t1" aria-controls="p1" data-tabs-target="tab">One</button>
                 <button role="tab" id="t2" aria-controls="p2" data-tabs-target="tab">Two</button>

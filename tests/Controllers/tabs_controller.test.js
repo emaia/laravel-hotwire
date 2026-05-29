@@ -111,6 +111,41 @@ test.serial("dispatches tabs:change with index, tab and panel", async () => {
     expect(detail.panel).toBe(panelEls()[2]);
 });
 
+test.serial("does not dispatch tabs:change on connect", async () => {
+    await mount();
+
+    let fired = false;
+    mounted.root.addEventListener("tabs:change", () => (fired = true));
+
+    // connect is idempotent; re-running it must not emit the change event.
+    mounted.controller.connect();
+    await wait(0);
+
+    expect(fired).toBe(false);
+});
+
+test.serial("vertical orientation navigates with ArrowDown and ArrowUp", async () => {
+    await mount({ vertical: true });
+    const tabs = tabEls();
+
+    press(tabs[0], "ArrowDown");
+    expect(tabs[1].getAttribute("aria-selected")).toBe("true");
+
+    press(tabs[1], "ArrowUp");
+    expect(tabs[0].getAttribute("aria-selected")).toBe("true");
+});
+
+test.serial("vertical orientation ignores ArrowRight and ArrowLeft", async () => {
+    await mount({ vertical: true });
+    const tabs = tabEls();
+
+    press(tabs[0], "ArrowRight");
+    expect(tabs[0].getAttribute("aria-selected")).toBe("true");
+
+    press(tabs[0], "ArrowLeft");
+    expect(tabs[0].getAttribute("aria-selected")).toBe("true");
+});
+
 // --- helpers ---
 
 function tabEls() {
@@ -125,16 +160,17 @@ function press(tab, key) {
     tab.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));
 }
 
-async function mount({ selectedAttr = null, selectedIndexValue = null } = {}) {
+async function mount({ selectedAttr = null, selectedIndexValue = null, vertical = false } = {}) {
     const selected = (i) => (selectedAttr === i ? 'aria-selected="true"' : "");
     const valueAttr = selectedIndexValue === null ? "" : `data-tabs-selected-index-value="${selectedIndexValue}"`;
+    const orientation = vertical ? 'aria-orientation="vertical"' : "";
 
     mounted = await mountController(
         "tabs",
         TabsController,
         `
         <div data-controller="tabs" ${valueAttr}>
-            <div role="tablist" data-tabs-target="tablist"
+            <div role="tablist" ${orientation}
                  data-action="click->tabs#select keydown->tabs#navigate">
                 <button role="tab" id="t1" aria-controls="p1" data-tabs-target="tab" ${selected(0)}>One</button>
                 <button role="tab" id="t2" aria-controls="p2" data-tabs-target="tab" ${selected(1)}>Two</button>

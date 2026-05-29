@@ -13,11 +13,10 @@ state is read from the DOM on connect, so server-rendered selection and Turbo mo
 
 ## Targets
 
-| Target    | Description                                                              |
-|-----------|--------------------------------------------------------------------------|
-| `tab`     | Each tab button (`role="tab"`, with `aria-controls` pointing to a panel) |
-| `panel`   | Each tab panel (`role="tabpanel"`, matched by `id`/`aria-controls`)      |
-| `tablist` | (Optional) the `role="tablist"` container — convenient action target     |
+| Target  | Description                                                              |
+|---------|-------------------------------------------------------------------------|
+| `tab`   | Each tab button (`role="tab"`, with `aria-controls` pointing to a panel) |
+| `panel` | Each tab panel (`role="tabpanel"`, matched by `id`/`aria-controls`)      |
 
 ## Stimulus Values
 
@@ -30,7 +29,10 @@ state is read from the DOM on connect, so server-rendered selection and Turbo mo
 - Each `tab` must declare `aria-controls` pointing to the `id` of its panel — that's how panels are resolved.
 - Bind the keyboard/click actions on the tablist (event delegation):
   `data-action="click->tabs#select keydown->tabs#navigate"`.
-- The controller manages `aria-selected`, `tabindex` and each panel's `hidden` attribute for you.
+- The controller manages each tab's `aria-selected`/`tabindex` and each panel's `hidden` attribute for you.
+- **Panel `tabindex` is yours to set, not the controller's.** Per the APG, add `tabindex="0"` to a panel only when it
+  has no focusable content of its own (so it stays reachable by keyboard); omit it when the panel already contains
+  focusable elements. The controller never touches panel `tabindex`.
 
 ## Basic usage
 
@@ -38,7 +40,6 @@ state is read from the DOM on connect, so server-rendered selection and Turbo mo
 
 <div data-controller="tabs">
     <div role="tablist" aria-label="Settings"
-         data-tabs-target="tablist"
          data-action="click->tabs#select keydown->tabs#navigate">
         <button role="tab" id="tab-general" aria-controls="panel-general" data-tabs-target="tab">
             General
@@ -79,7 +80,6 @@ Add `aria-orientation="vertical"` to the tablist to navigate with `ArrowUp`/`Arr
 ```html
 
 <div role="tablist" aria-orientation="vertical"
-     data-tabs-target="tablist"
      data-action="click->tabs#select keydown->tabs#navigate">
     …
 </div>
@@ -88,7 +88,8 @@ Add `aria-orientation="vertical"` to the tablist to navigate with `ArrowUp`/`Arr
 ## Reacting to changes
 
 The controller dispatches a `tabs:change` event on its element whenever the active tab changes, with
-`{ index, tab, panel }` in `event.detail`:
+`{ index, tab, panel }` in `event.detail`. It fires only on an actual change (click or keyboard) — **not** on the
+initial render or on Turbo morph reconnects, so listeners like analytics aren't triggered on page load:
 
 ```html
 
