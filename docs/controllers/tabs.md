@@ -14,7 +14,7 @@ state is read from the DOM on connect, so server-rendered selection and Turbo mo
 ## Targets
 
 | Target  | Description                                                              |
-|---------|-------------------------------------------------------------------------|
+|---------|--------------------------------------------------------------------------|
 | `tab`   | Each tab button (`role="tab"`, with `aria-controls` pointing to a panel) |
 | `panel` | Each tab panel (`role="tabpanel"`, matched by `id`/`aria-controls`)      |
 
@@ -39,39 +39,29 @@ state is read from the DOM on connect, so server-rendered selection and Turbo mo
 ```html
 
 <div data-controller="tabs">
-    <div role="tablist" aria-label="Settings"
-         data-action="click->tabs#select keydown->tabs#navigate">
-        <button role="tab" id="tab-general" aria-controls="panel-general" data-tabs-target="tab">
-            General
-        </button>
-        <button role="tab" id="tab-advanced" aria-controls="panel-advanced" data-tabs-target="tab">
-            Advanced
-        </button>
+    <div role="tablist" aria-label="Settings" data-action="click->tabs#select keydown->tabs#navigate">
+        <button role="tab" id="tab-general" aria-controls="panel-general" data-tabs-target="tab">General</button>
+        <button role="tab" id="tab-advanced" aria-controls="panel-advanced" data-tabs-target="tab">Advanced</button>
     </div>
 
-    <div role="tabpanel" id="panel-general" aria-labelledby="tab-general"
-         data-tabs-target="panel" tabindex="0">
-        General settings…
+    <!-- Panel WITH focusable content: no tabindex — the link is already reachable -->
+    <div role="tabpanel" id="panel-general" aria-labelledby="tab-general" data-tabs-target="panel">
+        <a href="/docs">Read the docs</a>
     </div>
-    <div role="tabpanel" id="panel-advanced" aria-labelledby="tab-advanced"
-         data-tabs-target="panel" tabindex="0" hidden>
+
+    <!-- Text-only panel: needs tabindex="0" to stay reachable by keyboard -->
+    <div
+        role="tabpanel"
+        id="panel-advanced"
+        aria-labelledby="tab-advanced"
+        data-tabs-target="panel"
+        tabindex="0"
+        hidden
+    >
         Advanced settings…
     </div>
 </div>
 ```
-
-## Selecting a tab on the server
-
-Render the desired tab with `aria-selected="true"` and its panel without `hidden`; the controller honors it on connect:
-
-```html
-
-<button role="tab" id="tab-advanced" aria-controls="panel-advanced"
-        data-tabs-target="tab" aria-selected="true">Advanced
-</button>
-```
-
-Alternatively set `data-tabs-selected-index-value="1"` on the controller element.
 
 ## Vertical orientation
 
@@ -79,10 +69,7 @@ Add `aria-orientation="vertical"` to the tablist to navigate with `ArrowUp`/`Arr
 
 ```html
 
-<div role="tablist" aria-orientation="vertical"
-     data-action="click->tabs#select keydown->tabs#navigate">
-    …
-</div>
+<div role="tablist" aria-orientation="vertical" data-action="click->tabs#select keydown->tabs#navigate">…</div>
 ```
 
 ## Reacting to changes
@@ -93,18 +80,111 @@ initial render or on Turbo morph reconnects, so listeners like analytics aren't 
 
 ```html
 
-<div data-controller="tabs" data-action="tabs:change->analytics#track">
-    …
-</div>
+<div data-controller="tabs" data-action="tabs:change->analytics#track">…</div>
 ```
 
 ## Keyboard support
 
-| Key                         | Action                              |
-|-----------------------------|-------------------------------------|
-| `ArrowRight` / `ArrowDown`* | Move to the next tab (wraps around) |
-| `ArrowLeft` / `ArrowUp`*    | Move to the previous tab (wraps)    |
-| `Home`                      | Move to the first tab               |
-| `End`                       | Move to the last tab                |
+| Key                          | Action                              |
+|------------------------------|-------------------------------------|
+| `ArrowRight` / `ArrowDown`\* | Move to the next tab (wraps around) |
+| `ArrowLeft` / `ArrowUp`\*    | Move to the previous tab (wraps)    |
+| `Home`                       | Move to the first tab               |
+| `End`                        | Move to the last tab                |
 
 \* Up/Down keys apply when the tablist has `aria-orientation="vertical"`.
+
+## Selecting a tab on the server
+
+Render the desired tab with `aria-selected="true"` and its panel without `hidden`; the controller honors it on connect:
+
+```html
+
+<button role="tab" id="tab-advanced" aria-controls="panel-advanced" aria-selected="true" data-tabs-target="tab">
+    Advanced
+</button>
+```
+
+Alternatively set `data-tabs-selected-index-value="1"` on the controller element — the value is the **zero-based
+index** of the tab to activate on connect (`0` = first tab, `1` = second, …). If any tab already has
+`aria-selected="true"`, that wins, and the value is ignored; an out-of-range index falls back to `0`.
+
+### Picking the initial tab from a query string
+
+For a URL like `/settings?tab=1`:
+
+```blade
+<div data-controller="tabs" data-tabs-selected-index-value="{{ (int) request('tab', 0) }}"></div>
+```
+
+Or map a friendly name (`?tab=billing`) to an index:
+
+```blade
+@php
+    $names = ['general', 'advanced', 'billing'];
+    $active = array_search(request('tab'), $names);
+    $active = $active === false ? 0 : $active;
+@endphp
+
+<div data-controller="tabs" data-tabs-selected-index-value="{{ $active }}"></div>
+```
+
+### Opening the tab that has validation errors
+
+When a form spans several tabs, reopen the one holding the failed fields so the user actually sees the error instead of
+landing back on the first tab:
+
+```blade
+@php
+    // tab 0 = Profile, tab 1 = Security
+    $activeTab = $errors->hasAny(['password', 'password_confirmation', 'current_password']) ? 1 : 0;
+@endphp
+
+<div data-controller="tabs" data-tabs-selected-index-value="{{ $activeTab }}">
+    <div role="tablist" aria-label="Account" data-action="click->tabs#select keydown->tabs#navigate">
+        <button
+            role="tab"
+            id="tab-profile"
+            aria-controls="panel-profile"
+            data-tabs-target="tab"
+            @if ($activeTab === 0) aria-selected="true" @endif
+        >
+            Profile
+        </button>
+        <button
+            role="tab"
+            id="tab-security"
+            aria-controls="panel-security"
+            data-tabs-target="tab"
+            @if ($activeTab === 1) aria-selected="true" @endif
+        >
+            Security
+        </button>
+    </div>
+
+    <div
+        role="tabpanel"
+        id="panel-profile"
+        aria-labelledby="tab-profile"
+        data-tabs-target="panel"
+        @if ($activeTab !== 0) hidden @endif
+    >
+        {{-- profile fields --}}
+    </div>
+    <div
+        role="tabpanel"
+        id="panel-security"
+        aria-labelledby="tab-security"
+        data-tabs-target="panel"
+        @if ($activeTab !== 1) hidden @endif
+    >
+        {{-- security fields --}}
+    </div>
+</div>
+```
+
+> **Progressive enhancement:** `data-tabs-selected-index-value` is only read by the controller once it connects. Before
+> that (JS disabled or still loading), the browser shows whichever panel is not `hidden`. So drive both the markup and
+> the
+> value from the same variable — as above — to avoid a flash of the wrong tab. The controller reconciles the final state
+> on connect, but the pre-JS render is the markup's responsibility.
