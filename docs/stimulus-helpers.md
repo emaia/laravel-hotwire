@@ -1,26 +1,28 @@
 # Stimulus attribute helpers
 
-Three global helpers build Stimulus `data-*` attributes from Blade without hand-writing the verbose
-markup. They return a fluent `Emaia\LaravelHotwire\Support\Stimulus` builder that is chainable,
-`Htmlable` (so `{{ }}` renders it without double-escaping) and `Arrayable` (so it merges into a
-component's attribute bag).
+The primary `stimulus()` entry point returns a fluent `Emaia\LaravelHotwire\Support\Stimulus` builder
+that is chainable, `Htmlable` (so `{{ }}` renders it without double-escaping) and `Arrayable` (so it
+merges into a component's attribute bag). Three convenience aliases are also available:
 
 ```php
+stimulus(): Stimulus
 stimulus_controller(string $name, array $values = [], array $classes = [], array $outlets = []): Stimulus
 stimulus_action(string $controller, string $method, ?string $event = null, array $params = []): Stimulus
 stimulus_target(string $controller, string $target): Stimulus
 ```
 
-Each helper is just `Stimulus::make()->{method}(...)`, so the helper and the chained method share the
-same signature.
+`stimulus_controller(...)` is an alias for `stimulus()->controller(...)`. `stimulus_action()` and
+`stimulus_target()` are shortcuts for `stimulus()->action(...)` and `stimulus()->target(...)`. All
+helper signatures match their corresponding builder methods.
 
 ## Controllers, values, classes, outlets
 
 ```blade
-<div {{ stimulus_controller('chart',
-        ['name' => 'Likes', 'maxItems' => 4],
-        ['busy' => 'opacity-50'],
-        ['legend' => '.legend']) }}>
+<div {{ stimulus()
+        ->controller('chart',
+            ['name' => 'Likes', 'maxItems' => 4],
+            ['busy' => 'opacity-50'],
+            ['legend' => '.legend']) }}>
 ```
 
 ```html
@@ -45,12 +47,13 @@ same signature.
 - Controller names and keys are emitted verbatim into attribute **names** (keys only get
   kebab-cased), so they must be valid Stimulus identifiers — they are not sanitized. Dynamic or
   user-supplied data belongs in **values/params**, which are the escaped path.
-- Use named arguments to skip positional gaps: `stimulus_controller('hello', outlets: ['other' => '.target'])`.
+- Use named arguments to skip positional gaps: `stimulus()->controller('hello', outlets: ['other' => '.target'])`.
 
 ## Actions and targets
 
 ```blade
-<button {{ stimulus_action('clipboard', 'copy', 'click', ['format' => 'text'])
+<button {{ stimulus()
+            ->action('clipboard', 'copy', 'click', ['format' => 'text'])
             ->action('analytics', 'track', 'click') }}>Copy</button>
 ```
 
@@ -68,7 +71,8 @@ repeated calls for the same controller into one attribute.
 ## Stacking everything on one element
 
 ```blade
-<textarea {{ stimulus_controller('char-counter', ['max' => 280])
+<textarea {{ stimulus()
+    ->controller('char-counter', ['max' => 280])
     ->controller('auto-resize', ['maxRows' => 12])
     ->target('char-counter', 'field')
     ->action('char-counter', 'count', 'input')
@@ -92,7 +96,8 @@ Stimulus attributes as **defaults** on the element and escapes them on render:
 
 ```blade
 <input {{ $attributes->merge(
-    stimulus_controller('input-mask', ['mask' => $mask])
+    stimulus()
+        ->controller('input-mask', ['mask' => $mask])
         ->action('input-mask', 'format', 'input')
         ->toArray()
 ) }}>

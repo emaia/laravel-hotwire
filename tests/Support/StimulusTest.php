@@ -240,11 +240,52 @@ it('returns an empty string when nothing is configured', function () {
 
 // --- global helpers ---
 
+it('exposes stimulus() as the primary entry point', function () {
+    $html = stimulus()
+        ->controller('hello', ['name' => 'World'])
+        ->action('hello', 'greet', 'click')
+        ->target('hello', 'button')
+        ->toHtml();
+
+    expect($html)->toBe(
+        'data-controller="hello" '
+        .'data-hello-name-value="World" '
+        .'data-hello-target="button" '
+        .'data-action="click->hello#greet"'
+    );
+});
+
+it('ensures stimulus() is chainable with all builder methods', function () {
+    $html = stimulus()
+        ->controller('chart', ['name' => 'Likes', 'maxItems' => 4], ['busy' => 'opacity-50'], ['legend' => '.legend'])
+        ->controller('zoom')
+        ->target('chart', 'canvas')
+        ->action('chart', 'refresh', 'click')
+        ->toHtml();
+
+    expect($html)->toBe(
+        'data-controller="chart zoom" '
+        .'data-chart-name-value="Likes" '
+        .'data-chart-max-items-value="4" '
+        .'data-chart-busy-class="opacity-50" '
+        .'data-chart-legend-outlet=".legend" '
+        .'data-chart-target="canvas" '
+        .'data-action="click->chart#refresh"'
+    );
+});
+
 it('exposes stimulus_controller helper', function () {
     expect(stimulus_controller('hello', ['name' => 'World']))
         ->toBeInstanceOf(Stimulus::class)
         ->and(stimulus_controller('hello', ['name' => 'World'])->toHtml())
         ->toBe('data-controller="hello" data-hello-name-value="World"');
+});
+
+it('produces identical output between stimulus() and stimulus_controller()', function () {
+    $viaStimulus = stimulus()->controller('hello', ['name' => 'World'])->toHtml();
+    $viaAlias = stimulus_controller('hello', ['name' => 'World'])->toHtml();
+
+    expect($viaStimulus)->toBe($viaAlias);
 });
 
 it('exposes stimulus_action helper', function () {

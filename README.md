@@ -316,21 +316,26 @@ Controllers tied to Turbo Drive / Turbo Frames.
 
 ## Stimulus Attribute Helpers
 
-Build Stimulus `data-*` attributes from Blade without hand-writing the verbose markup. Three global
-helpers return a fluent, chainable builder that is `Htmlable` (renders directly in `{{ }}`) and
-`Arrayable` (merges into a component's attribute bag):
+Build Stimulus `data-*` attributes from Blade without hand-writing the verbose markup. The primary
+`stimulus()` entry point returns a fluent, chainable builder that is `Htmlable` (renders directly in
+`{{ }}`) and `Arrayable` (merges into a component's attribute bag):
 
 ```blade
-<div {{ stimulus_controller('chart', ['name' => 'Likes', 'data' => [1, 2, 3, 4]])
+<div {{ stimulus()
+        ->controller('chart', ['name' => 'Likes', 'data' => [1, 2, 3, 4]])
         ->action('chart', 'refresh', 'click')
         ->target('chart', 'canvas') }}>
 ```
 
 ```php
+stimulus();
 stimulus_controller($name, $values = [], $classes = [], $outlets = []);
 stimulus_action($controller, $method, $event = null, $params = []);
 stimulus_target($controller, $target);
 ```
+
+`stimulus_controller()` is an alias for `stimulus()->controller(...)`; `stimulus_action()` and
+`stimulus_target()` are shortcuts for `stimulus()->action(...)` and `stimulus()->target(...)`.
 
 See [Stimulus attribute helpers](docs/stimulus-helpers.md) for values/classes/outlets, action params,
 stacking multiple controllers, attribute-bag merging and the escaping rules.
