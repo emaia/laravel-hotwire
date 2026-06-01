@@ -2,6 +2,14 @@
 
 All notable changes to `laravel-hotwire-components` will be documented in this file.
 
+## 0.12.6 - 2026-06-01
+
+### What's Changed
+
+* Add controllers() helper to Stimulus builder by @emaia in https://github.com/emaia/laravel-hotwire/pull/16
+
+**Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/0.12.5...0.12.6
+
 ## 0.12.2 - 2026-05-29
 
 ### What's Changed
