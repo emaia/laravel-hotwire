@@ -103,6 +103,9 @@ You can browse the package docs directly in the terminal:
 php artisan hotwire:docs
 ```
 
+<details>
+<summary>Interactive search, reading a single doc, and listing everything</summary>
+
 This opens an interactive search across all controllers and components. Type a name, category, or keyword to filter:
 
 ```
@@ -131,6 +134,8 @@ php artisan hotwire:docs --list
 php artisan hotwire:docs --list --controller
 php artisan hotwire:docs --list --component
 ```
+
+</details>
 
 ## Turbo
 
