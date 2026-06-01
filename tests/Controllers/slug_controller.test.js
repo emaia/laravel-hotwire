@@ -1,6 +1,6 @@
 import { afterEach, expect, test } from "bun:test";
 
-import { mountController, wait } from "../../resources/js/helpers/test_stimulus.js";
+import { mountController } from "../../resources/js/helpers/test_stimulus.js";
 import SlugController from "../../resources/js/controllers/slug_controller.js";
 
 let mounted;
@@ -115,7 +115,6 @@ test.serial("relink unlocks and regenerates from the source", async () => {
     expect(mounted.root.getAttribute("data-slug-locked")).toBe("true");
 
     mounted.controller.relink();
-    await wait(0);
 
     expect(slug().value).toBe("my-post");
     expect(mounted.root.getAttribute("data-slug-locked")).toBe("false");

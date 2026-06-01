@@ -113,6 +113,6 @@ export default class extends Controller {
         const at = cut.lastIndexOf(sep);
         if (at > 0) cut = cut.slice(0, at);
 
-        return cut.replace(new RegExp(`\\${sep}+$`, "g"), "");
+        return cut.replace(new RegExp(`\\${sep}+$`), "");
     }
 }
