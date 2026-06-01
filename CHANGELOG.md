@@ -45,11 +45,13 @@ All notable changes to `laravel-hotwire` will be documented in this file.
 
 ## 0.12.1 - 2026-05-28
 
+### What's Changed
+
+* Improve the auto-submit controller by @emaia
+
 **Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/0.12.0...0.12.1
 
 ## 0.12.0 - 2026-05-28
-
-**Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/0.12.0...0.12.0
 
 ### What's Changed
 
@@ -76,6 +78,10 @@ All notable changes to `laravel-hotwire` will be documented in this file.
 **Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/0.9.12...0.10.0
 
 ## 0.9.12 - 2026-04-30
+
+### What's Changed
+
+* Improve the modal component, controller, docs and recipes by @emaia
 
 **Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/0.9.11...0.9.12
 
@@ -107,6 +113,13 @@ All notable changes to `laravel-hotwire` will be documented in this file.
 **Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/0.9.1...0.9.2
 
 ## 0.9.1 - 2026-04-28
+
+### What's Changed
+
+* Add `input-mask` and `money-input` controllers by @emaia
+* Add an `--outdated` flag to `hotwire:controllers` to update only published controllers that changed by @emaia
+* Improve the clean-query-params controller by @emaia
+* Standardize controller names and refactor the docs by @emaia
 
 **Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/0.9.0...0.9.1
 
@@ -144,5 +157,9 @@ All notable changes to `laravel-hotwire` will be documented in this file.
 **Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/0.7.4...0.7.5
 
 ## 0.7.4 - 2026-04-13
+
+### What's Changed
+
+* Bump dependencies and update the README by @emaia
 
 **Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/0.7.3...0.7.4
