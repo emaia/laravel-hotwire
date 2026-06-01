@@ -56,6 +56,27 @@ it('merges values across repeated calls to the same controller', function () {
     expect($html)->toBe('data-controller="hello" data-hello-a-value="1" data-hello-b-value="2"');
 });
 
+// --- controllers() ---
+
+it('registers several controllers at once', function () {
+    expect(Stimulus::make()->controllers('tabs', 'tab-url')->toHtml())
+        ->toBe('data-controller="tabs tab-url"');
+});
+
+it('de-duplicates and composes with controller()', function () {
+    $html = Stimulus::make()
+        ->controllers('tabs', 'tab-url')
+        ->controller('tabs', ['active' => 1])
+        ->toHtml();
+
+    expect($html)->toBe('data-controller="tabs tab-url" data-tabs-active-value="1"');
+});
+
+it('accepts a spread array of controllers', function () {
+    expect(Stimulus::make()->controllers(...['a', 'b'])->toHtml())
+        ->toBe('data-controller="a b"');
+});
+
 // --- action() ---
 
 it('renders an action without an event', function () {

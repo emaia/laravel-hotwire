@@ -18,20 +18,27 @@ helper signatures match their corresponding builder methods.
 ## Controllers, values, classes, outlets
 
 ```blade
-<div {{ stimulus()
-        ->controller('chart',
-            ['name' => 'Likes', 'maxItems' => 4],
-            ['busy' => 'opacity-50'],
-            ['legend' => '.legend']) }}>
+<div
+    {{
+        stimulus()
+            ->controller(
+                'chart',
+                ['name' => 'Likes', 'maxItems' => 4],
+                ['busy' => 'opacity-50'],
+                ['legend' => '.legend']
+            )
+    }}
+></div>
 ```
 
 ```html
-
-<div data-controller="chart"
-     data-chart-name-value="Likes"
-     data-chart-max-items-value="4"
-     data-chart-busy-class="opacity-50"
-     data-chart-legend-outlet=".legend"></div>
+<div
+    data-controller="chart"
+    data-chart-name-value="Likes"
+    data-chart-max-items-value="4"
+    data-chart-busy-class="opacity-50"
+    data-chart-legend-outlet=".legend"
+></div>
 ```
 
 - Value/class/outlet/param keys are kebab-cased (`maxItems` → `max-items`).
@@ -49,19 +56,43 @@ helper signatures match their corresponding builder methods.
   user-supplied data belongs in **values/params**, which are the escaped path.
 - Use named arguments to skip positional gaps: `stimulus()->controller('hello', outlets: ['other' => '.target'])`.
 
-## Actions and targets
+To register several controllers that need no config, use `controllers()` instead of chaining
+`controller()`:
 
 ```blade
-<button {{ stimulus()
-            ->action('clipboard', 'copy', 'click', ['format' => 'text'])
-            ->action('analytics', 'track', 'click') }}>Copy</button>
+<div
+    {{
+        stimulus()
+            ->controllers('tabs', 'tab-url')
+            ->action('tab-url', 'update', 'tabs:change')
+    }}
+></div>
 ```
 
 ```html
+<div data-controller="tabs tab-url" data-action="tabs:change->tab-url#update"></div>
+```
 
-<button data-action="click->clipboard#copy click->analytics#track"
-        data-clipboard-format-param="text">Copy
+`controllers(string ...$names)` is variadic — spread an array with `->controllers(...$names)`. It
+composes with `controller()` (use the singular when a controller needs values/classes/outlets), and
+both deduplicate.
+
+## Actions and targets
+
+```blade
+<button
+    {{
+        stimulus()
+            ->action('clipboard', 'copy', 'click', ['format' => 'text'])
+            ->action('analytics', 'track', 'click')
+    }}
+>
+    Copy
 </button>
+```
+
+```html
+<button data-action="click->clipboard#copy click->analytics#track" data-clipboard-format-param="text">Copy</button>
 ```
 
 Omit the event for a default-event action (`stimulus_action('toggle', 'switch')` →
@@ -71,20 +102,26 @@ repeated calls for the same controller into one attribute.
 ## Stacking everything on one element
 
 ```blade
-<textarea {{ stimulus()
-    ->controller('char-counter', ['max' => 280])
-    ->controller('auto-resize', ['maxRows' => 12])
-    ->target('char-counter', 'field')
-    ->action('char-counter', 'count', 'input')
-    ->action('auto-resize', 'grow', 'input') }}></textarea>
+<textarea
+    {{
+        stimulus()
+            ->controller('char-counter', ['max' => 280])
+            ->controller('auto-resize', ['maxRows' => 12])
+            ->target('char-counter', 'field')
+            ->action('char-counter', 'count', 'input')
+            ->action('auto-resize', 'grow', 'input')
+    }}
+></textarea>
 ```
 
 ```html
-<textarea data-controller="char-counter auto-resize"
-          data-char-counter-max-value="280"
-          data-auto-resize-max-rows-value="12"
-          data-char-counter-target="field"
-          data-action="input->char-counter#count input->auto-resize#grow"></textarea>
+<textarea
+    data-controller="char-counter auto-resize"
+    data-char-counter-max-value="280"
+    data-auto-resize-max-rows-value="12"
+    data-char-counter-target="field"
+    data-action="input->char-counter#count input->auto-resize#grow"
+></textarea>
 ```
 
 Repeated `->controller()` tokens are deduplicated; `->action()` segments accumulate in order.
@@ -95,17 +132,21 @@ Repeated `->controller()` tokens are deduplicated; `->action()` segments accumul
 Stimulus attributes as **defaults** on the element and escapes them on render:
 
 ```blade
-<input {{ $attributes->merge(
-    stimulus()
-        ->controller('input-mask', ['mask' => $mask])
-        ->action('input-mask', 'format', 'input')
-        ->toArray()
-) }}>
+<input
+    {{
+        $attributes->merge(
+            stimulus()
+                ->controller('input-mask', ['mask' => $mask])
+                ->action('input-mask', 'format', 'input')
+                ->toArray()
+        )
+    }}
+/>
 ```
 
 > **`merge()` does not union `data-controller`/`data-action`.** Blade's `merge()` only concatenates
 > `class` and `style`; for every other attribute the value already on the element wins. So if the
-> caller also passes a `data-controller`, *theirs* wins and the builder's is dropped. To combine a
+> caller also passes a `data-controller`, _theirs_ wins and the builder's is dropped. To combine a
 > caller-supplied controller with your own, build the union in PHP and pass it into the builder — the
 > same way this package's own components do it (`trim($userController.' input-mask')`), rather than
 > relying on `merge()`.
