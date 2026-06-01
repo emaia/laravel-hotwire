@@ -55,7 +55,7 @@ function transition(el, direction, hidden) {
     });
 }
 
-function cancel(el) {
+export function cancel(el) {
     const state = running.get(el);
     if (!state) return;
 

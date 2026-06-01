@@ -73,7 +73,7 @@ async function bundle() {
     );
     const controller = (await readFile("resources/js/controllers/dropdown_controller.js", "utf8"))
         .replace('import { Controller } from "@hotwired/stimulus";', "")
-        .replace('import { enter, leave } from "./_transition.js";', "")
+        .replace(/import \{[^}]*\} from "\.\/_transition\.js";/, "")
         .replace("export default class extends Controller", "class DropdownController extends Controller");
 
     return `

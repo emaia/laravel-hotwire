@@ -1,6 +1,6 @@
 import { afterEach, expect, test } from "bun:test";
 
-import { mountController } from "../../resources/js/helpers/test_stimulus.js";
+import { mountController, wait } from "../../resources/js/helpers/test_stimulus.js";
 import DropdownController from "../../resources/js/controllers/dropdown_controller.js";
 
 let mounted;
@@ -142,6 +142,110 @@ test.serial("dropdowns operate independently", async () => {
 
     expect(menus[0].classList.contains("hidden")).toBe(false);
     expect(menus[1].classList.contains("hidden")).toBe(true);
+});
+
+// --- custom hidden class ---
+
+test.serial("uses a custom hidden class", async () => {
+    mounted = await mountController(
+        "dropdown",
+        DropdownController,
+        `
+        <div data-controller="dropdown" data-dropdown-hidden-class="is-closed">
+            <button data-dropdown-target="trigger" data-action="dropdown#toggle" aria-expanded="false">M</button>
+            <div data-dropdown-target="menu" class="is-closed"><a href="#x">x</a></div>
+        </div>`,
+    );
+
+    const menuEl = document.querySelector('[data-dropdown-target="menu"]');
+    document
+        .querySelector('[data-dropdown-target="trigger"]')
+        .dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+    expect(menuEl.classList.contains("is-closed")).toBe(false);
+});
+
+// --- close action ---
+
+test.serial("the close action dismisses the menu", async () => {
+    mounted = await mountController(
+        "dropdown",
+        DropdownController,
+        `
+        <div data-controller="dropdown" data-dropdown-close-on-select-value="false">
+            <button data-dropdown-target="trigger" data-action="dropdown#toggle" aria-expanded="false">M</button>
+            <div data-dropdown-target="menu" class="hidden">
+                <button type="button" data-action="dropdown#close">Apply</button>
+            </div>
+        </div>`,
+    );
+
+    const menuEl = document.querySelector('[data-dropdown-target="menu"]');
+    document
+        .querySelector('[data-dropdown-target="trigger"]')
+        .dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    expect(menuEl.classList.contains("hidden")).toBe(false);
+
+    menuEl.querySelector("button").dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+    expect(menuEl.classList.contains("hidden")).toBe(true);
+});
+
+// --- focus return with multiple triggers ---
+
+test.serial("Escape returns focus to the trigger that opened the menu", async () => {
+    mounted = await mountController(
+        "dropdown",
+        DropdownController,
+        `
+        <div data-controller="dropdown">
+            <button id="t1" data-dropdown-target="trigger" data-action="dropdown#toggle" aria-expanded="false">One</button>
+            <button id="t2" data-dropdown-target="trigger" data-action="dropdown#toggle" aria-expanded="false">Two</button>
+            <div data-dropdown-target="menu" class="hidden"><a href="#x">x</a></div>
+        </div>`,
+    );
+
+    document.getElementById("t2").dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    press("Escape");
+
+    expect(document.activeElement).toBe(document.getElementById("t2"));
+});
+
+// --- before-cache with a pending transition ---
+
+test.serial("turbo:before-cache cancels a pending transition and hides cleanly", async () => {
+    mounted = await mountController(
+        "dropdown",
+        DropdownController,
+        `
+        <div data-controller="dropdown">
+            <button data-dropdown-target="trigger" data-action="dropdown#toggle" aria-expanded="false">M</button>
+            <div data-dropdown-target="menu" class="hidden"
+                 data-transition-enter="t-enter" data-transition-enter-from="ef" data-transition-enter-to="et">
+                <a href="#x">x</a>
+            </div>
+        </div>`,
+    );
+
+    const menuEl = document.querySelector('[data-dropdown-target="menu"]');
+
+    // Start opening: the enter transition applies its active/from classes and
+    // schedules a frame, but it has not completed yet.
+    mounted.controller.open();
+    expect(menuEl.classList.contains("t-enter")).toBe(true);
+    expect(menuEl.classList.contains("ef")).toBe(true);
+
+    document.dispatchEvent(new CustomEvent("turbo:before-cache", { bubbles: true }));
+
+    // Cancelled and hidden, with no stale transition classes left behind.
+    expect(menuEl.classList.contains("hidden")).toBe(true);
+    expect(menuEl.classList.contains("t-enter")).toBe(false);
+    expect(menuEl.classList.contains("ef")).toBe(false);
+
+    // The cancelled frame must not fire and re-dirty the element.
+    await wait(0);
+    expect(menuEl.classList.contains("hidden")).toBe(true);
+    expect(menuEl.classList.contains("et")).toBe(false);
 });
 
 // --- helpers ---

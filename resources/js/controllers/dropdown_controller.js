@@ -1,6 +1,6 @@
 import { Controller } from "@hotwired/stimulus";
 
-import { enter, leave } from "./_transition.js";
+import { cancel, enter, leave } from "./_transition.js";
 
 export default class extends Controller {
     static targets = ["trigger", "menu"];
@@ -15,6 +15,7 @@ export default class extends Controller {
         this.onKeydown = this.onKeydown.bind(this);
         this.onMenuClick = this.onMenuClick.bind(this);
         this.closeForCache = this.closeForCache.bind(this);
+        this.activeTrigger = null;
     }
 
     connect() {
@@ -23,7 +24,6 @@ export default class extends Controller {
         this.menuTarget.addEventListener("click", this.onMenuClick);
         document.addEventListener("turbo:before-cache", this.closeForCache);
 
-        // Reflect the initial state without animating.
         this.hiddenClassList.forEach((cls) => this.menuTarget.classList.toggle(cls, !this.openValue));
         this.syncAria();
     }
@@ -35,11 +35,13 @@ export default class extends Controller {
         document.removeEventListener("turbo:before-cache", this.closeForCache);
     }
 
-    toggle() {
+    toggle(event) {
+        this.rememberTrigger(event);
         this.openValue ? this.close() : this.open();
     }
 
-    open() {
+    open(event) {
+        this.rememberTrigger(event);
         if (this.openValue) return;
         this.openValue = true;
         this.syncAria();
@@ -51,7 +53,7 @@ export default class extends Controller {
         this.openValue = false;
         this.syncAria();
         leave(this.menuTarget, { hidden: this.hiddenClassList });
-        if (focusTrigger && this.hasTriggerTarget) this.triggerTarget.focus();
+        if (focusTrigger) (this.activeTrigger ?? (this.hasTriggerTarget ? this.triggerTarget : null))?.focus();
     }
 
     onOutsideClick(event) {
@@ -70,10 +72,15 @@ export default class extends Controller {
     }
 
     closeForCache() {
-        // Snapshot must not be cached open; skip the animation.
+        cancel(this.menuTarget);
         this.openValue = false;
         this.syncAria();
         this.menuTarget.classList.add(...this.hiddenClassList);
+    }
+
+    rememberTrigger(event) {
+        const trigger = event?.currentTarget;
+        if (trigger && this.triggerTargets.includes(trigger)) this.activeTrigger = trigger;
     }
 
     syncAria() {

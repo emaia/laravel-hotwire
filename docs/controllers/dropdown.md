@@ -15,27 +15,27 @@ optional and driven entirely by CSS classes; positioning is left to you.
 ## Targets
 
 | Target    | Required | Description                                                                                            |
-|-----------|:--------:|--------------------------------------------------------------------------------------------------------|
-| `trigger` |    ✅     | The button that toggles the menu; its `aria-expanded` is synced and it receives focus back on `Escape` |
-| `menu`    |    ✅     | The element shown/hidden                                                                               |
+| --------- | :------: | ------------------------------------------------------------------------------------------------------ |
+| `trigger` |    ✅    | The button that toggles the menu; its `aria-expanded` is synced and it receives focus back on `Escape` |
+| `menu`    |    ✅    | The element shown/hidden                                                                               |
 
 ## Stimulus Values
 
 | Value             | Type      | Default | Description                                                              |
-|-------------------|-----------|---------|--------------------------------------------------------------------------|
+| ----------------- | --------- | ------- | ------------------------------------------------------------------------ |
 | `open`            | `Boolean` | `false` | Initial/reflected open state. Set to `true` to start open (no animation) |
 | `close-on-select` | `Boolean` | `true`  | Close when an `<a>` or `<button>` inside the menu is clicked             |
 
 ## Stimulus Classes
 
 | Class    | Default    | Description                    |
-|----------|------------|--------------------------------|
+| -------- | ---------- | ------------------------------ |
 | `hidden` | `"hidden"` | Class toggled to hide the menu |
 
 ## Actions
 
 | Action   | Description                              |
-|----------|------------------------------------------|
+| -------- | ---------------------------------------- |
 | `toggle` | Toggle open/closed (bind to the trigger) |
 | `open`   | Open the menu                            |
 | `close`  | Close the menu                           |
@@ -45,7 +45,6 @@ optional and driven entirely by CSS classes; positioning is left to you.
 Position the menu yourself with CSS (e.g. a `relative` wrapper and an `absolute` menu):
 
 ```html
-
 <div data-controller="dropdown" class="relative inline-block">
     <button
         data-dropdown-target="trigger"
@@ -78,10 +77,9 @@ Declare enter/leave transitions with `data-transition-*` on the menu (Vue/`stimu
 without them the menu just toggles the hidden class.
 
 ```html
-
 <div
     data-dropdown-target="menu"
-    class="absolute origin-top-right right-0 mt-2 hidden w-56 rounded-md bg-white shadow-lg"
+    class="absolute right-0 mt-2 hidden w-56 origin-top-right rounded-md bg-white shadow-lg"
     data-transition-enter="transition ease-out duration-100"
     data-transition-enter-from="opacity-0 scale-95"
     data-transition-enter-to="opacity-100 scale-100"
@@ -94,7 +92,7 @@ without them the menu just toggles the hidden class.
 ```
 
 | Attribute                    | Applied                                  |
-|------------------------------|------------------------------------------|
+| ---------------------------- | ---------------------------------------- |
 | `data-transition-enter`      | Throughout the enter transition (timing) |
 | `data-transition-enter-from` | Enter start state                        |
 | `data-transition-enter-to`   | Enter end state                          |
@@ -102,7 +100,8 @@ without them the menu just toggles the hidden class.
 | `data-transition-leave-from` | Leave start state                        |
 | `data-transition-leave-to`   | Leave end state                          |
 
-### CSS-only transitions (Tailwind v4)
+<details>
+<summary><strong>CSS-only transitions (Tailwind v4)</strong></summary>
 
 You can skip the `data-transition-*` attributes entirely and animate with CSS, keyed off the hidden class — the
 controller then just toggles `hidden` instantly and CSS does the rest. This needs three pieces, because `hidden` is
@@ -117,9 +116,10 @@ In plain CSS:
 
 ```css
 .menu {
-    transition: opacity 150ms ease,
-    transform 150ms ease,
-    display 150ms allow-discrete;
+    transition:
+        opacity 150ms ease,
+        transform 150ms ease,
+        display 150ms allow-discrete;
     opacity: 1;
     transform: scale(1);
 }
@@ -143,7 +143,6 @@ In plain CSS:
 The same thing with Tailwind v4 utilities — no `data-transition-*` needed:
 
 ```html
-
 <div
     data-dropdown-target="menu"
     class="absolute right-0 mt-2 hidden w-56 scale-100 rounded-md bg-white opacity-100 shadow-lg transition-all transition-discrete duration-150 ease-out starting:scale-95 starting:opacity-0 [&.hidden]:scale-95 [&.hidden]:opacity-0"
@@ -153,7 +152,7 @@ The same thing with Tailwind v4 utilities — no `data-transition-*` needed:
 ```
 
 | Utility                                    | Role                                                          |
-|--------------------------------------------|---------------------------------------------------------------|
+| ------------------------------------------ | ------------------------------------------------------------- |
 | `transition-all transition-discrete`       | Transition everything (incl. `display`) with `allow-discrete` |
 | `opacity-100 scale-100`                    | Resting (visible) state                                       |
 | `starting:opacity-0 starting:scale-95`     | `@starting-style` — where the enter starts                    |
@@ -163,12 +162,13 @@ The same thing with Tailwind v4 utilities — no `data-transition-*` needed:
 > browser/Tailwind); omit them and the CSS path above takes over (needs `@starting-style`/`allow-discrete`, i.e. recent
 > browsers + Tailwind v4).
 
+</details>
+
 ## Closing on select
 
 By default, clicking an `<a>` or `<button>` inside the menu closes it. To opt out and close manually:
 
 ```html
-
 <div data-controller="dropdown" data-dropdown-close-on-select-value="false">
     <button data-dropdown-target="trigger" data-action="dropdown#toggle" aria-expanded="false">Filters</button>
     <div data-dropdown-target="menu" class="hidden">
