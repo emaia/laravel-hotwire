@@ -34,7 +34,9 @@ control — either by editing the slug directly or by loading a page where the s
 - **On connect:** the controller locks if the slug is already filled (edit page) or `auto` is `false`. Otherwise, it
   generates once from the source — handy when the title is repopulated via `old()` after a validation error.
 - **Typing in the source** regenerates the slug, unless locked.
-- **Typing in the slug** locks it: the user has taken over, and the source no longer overwrites it.
+- **Typing in the slug** locks it: the user has taken over, and the source no longer overwrites it. The field is also
+  sanitized as you type — spaces, uppercase and punctuation are converted to the separator (the caret is preserved). A
+  trailing separator is kept while typing so you can keep adding words, then trimmed on blur.
 - **`max-length`** applies only to the generated slug, truncating at the last separator before the limit (falling back
   to a hard cut for a single long word). It does not constrain manual typing — add `maxlength` to the input for that.
 - The current state is reflected on the root element as `data-slug-locked="true|false"` so you can show or hide a

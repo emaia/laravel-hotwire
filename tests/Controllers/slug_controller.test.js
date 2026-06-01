@@ -124,6 +124,53 @@ test.serial("relink unlocks and regenerates from the source", async () => {
     expect(slug().value).toBe("my-post-updated");
 });
 
+// --- sanitizing manual input ---
+
+test.serial("sanitizes spaces and symbols typed into the slug field", async () => {
+    await mount();
+
+    type(slug(), "Foo & Bar");
+
+    expect(slug().value).toBe("foo-bar");
+    expect(mounted.root.getAttribute("data-slug-locked")).toBe("true");
+});
+
+test.serial("keeps a trailing separator while typing so words can be continued", async () => {
+    await mount();
+
+    type(slug(), "foo ");
+
+    expect(slug().value).toBe("foo-");
+});
+
+test.serial("trims a trailing separator on change (blur)", async () => {
+    await mount();
+
+    type(slug(), "foo ");
+    expect(slug().value).toBe("foo-");
+
+    slug().dispatchEvent(new Event("change", { bubbles: true }));
+
+    expect(slug().value).toBe("foo");
+});
+
+test.serial("sanitizes manual input with a custom separator", async () => {
+    await mount({ separator: "_" });
+
+    type(slug(), "Hello World");
+
+    expect(slug().value).toBe("hello_world");
+});
+
+test.serial("mirrors the sanitized manual value into the preview", async () => {
+    await mount({ preview: true });
+
+    type(slug(), "Olá Mundo");
+
+    expect(slug().value).toBe("ola-mundo");
+    expect(preview().textContent).toBe("ola-mundo");
+});
+
 // --- preview ---
 
 test.serial("mirrors the slug into the preview element", async () => {

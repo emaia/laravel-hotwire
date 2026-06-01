@@ -10,13 +10,15 @@ export default class extends Controller {
 
     initialize() {
         this.sync = this.sync.bind(this);
-        this.lock = this.lock.bind(this);
+        this.onSlugInput = this.onSlugInput.bind(this);
+        this.onSlugChange = this.onSlugChange.bind(this);
     }
 
     connect() {
         this.locked = !this.autoValue || this.slugTarget.value.trim() !== "";
         this.sourceTarget.addEventListener("input", this.sync);
-        this.slugTarget.addEventListener("input", this.lock);
+        this.slugTarget.addEventListener("input", this.onSlugInput);
+        this.slugTarget.addEventListener("change", this.onSlugChange);
         this.reflect();
 
         if (this.locked) {
@@ -28,7 +30,8 @@ export default class extends Controller {
 
     disconnect() {
         this.sourceTarget.removeEventListener("input", this.sync);
-        this.slugTarget.removeEventListener("input", this.lock);
+        this.slugTarget.removeEventListener("input", this.onSlugInput);
+        this.slugTarget.removeEventListener("change", this.onSlugChange);
     }
 
     sync() {
@@ -36,10 +39,32 @@ export default class extends Controller {
         this.write(this.slugify(this.sourceTarget.value));
     }
 
-    lock() {
+    onSlugInput() {
         this.locked = true;
         this.reflect();
-        this.updatePreview(this.slugTarget.value);
+        this.clean((text) => this.sanitize(text));
+    }
+
+    onSlugChange() {
+        this.clean((text) => this.slugify(text));
+    }
+
+    clean(transform) {
+        const el = this.slugTarget;
+        const cleaned = transform(el.value);
+
+        if (cleaned !== el.value) {
+            const at = el.selectionStart;
+            if (typeof at === "number") {
+                const before = transform(el.value.slice(0, at)).length;
+                el.value = cleaned;
+                el.setSelectionRange?.(before, before);
+            } else {
+                el.value = cleaned;
+            }
+        }
+
+        this.updatePreview(el.value);
     }
 
     relink() {
@@ -49,8 +74,6 @@ export default class extends Controller {
     }
 
     write(value) {
-        // Setting .value programmatically does not fire "input", so this never
-        // re-triggers lock().
         this.slugTarget.value = value;
         this.updatePreview(value);
     }
@@ -63,17 +86,20 @@ export default class extends Controller {
         this.element.setAttribute("data-slug-locked", String(this.locked));
     }
 
-    slugify(text) {
+    sanitize(text) {
         const sep = this.separatorValue;
-        const slug = text
+        return text
             .toString()
             .normalize("NFD")
             .replace(/\p{Mn}/gu, "")
             .toLowerCase()
-            .trim()
             .replace(/[^a-z0-9]+/g, sep)
-            .replace(new RegExp(`\\${sep}+`, "g"), sep)
-            .replace(new RegExp(`^\\${sep}+|\\${sep}+$`, "g"), "");
+            .replace(new RegExp(`^\\${sep}+`), "");
+    }
+
+    slugify(text) {
+        const sep = this.separatorValue;
+        const slug = this.sanitize(text).replace(new RegExp(`\\${sep}+$`), "");
 
         return this.truncate(slug);
     }
