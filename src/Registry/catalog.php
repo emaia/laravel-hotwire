@@ -239,6 +239,12 @@ return [
             'category' => 'overlay',
             'description' => 'Intercepts clicks and requires user confirmation before proceeding',
         ],
+        'dropdown' => [
+            'source' => 'resources/js/controllers/dropdown_controller.js',
+            'docs' => 'docs/controllers/dropdown.md',
+            'category' => 'overlay',
+            'description' => 'Accessible disclosure dropdown with outside-click/Escape dismissal and optional transitions',
+        ],
         'copy-to-clipboard' => [
             'source' => 'resources/js/controllers/copy_to_clipboard_controller.ts',
             'docs' => 'docs/controllers/copy-to-clipboard.md',
