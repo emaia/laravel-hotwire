@@ -42,6 +42,20 @@ final class Stimulus implements Arrayable, Htmlable, Stringable
     }
 
     /**
+     * Register several controllers at once (no per-controller config). For
+     * values/classes/outlets on a controller, use controller() instead — the two
+     * compose freely and both deduplicate.
+     */
+    public function controllers(string ...$names): self
+    {
+        foreach ($names as $name) {
+            $this->controller($name);
+        }
+
+        return $this;
+    }
+
+    /**
      * @param  array<string, mixed>  $values  keys are kebab-cased → data-{name}-{key}-value
      * @param  array<string, string>  $classes  → data-{name}-{key}-class
      * @param  array<string, string>  $outlets  → data-{name}-{key}-outlet (value is a CSS selector)
