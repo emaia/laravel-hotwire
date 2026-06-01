@@ -1,5 +1,8 @@
 @php
-    $controller = trim('dropdown '.($attributes->get('data-controller') ?? ''));
+    use Illuminate\View\ComponentSlot;
+
+    extract($compute($attributes));
+    $triggerSlot = $trigger ?? new ComponentSlot;
 @endphp
 
 <div
@@ -8,7 +11,7 @@
 >
     <button
         {{
-            $trigger->attributes
+            $triggerSlot->attributes
                 ->class(['group', $triggerClass])
                 ->merge([
                     'type' => 'button',
@@ -20,7 +23,7 @@
                 ])
         }}
     >
-        {{ $trigger }}
+        {{ $triggerSlot }}
     </button>
 
     <div

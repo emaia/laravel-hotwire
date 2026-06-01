@@ -18,6 +18,18 @@ it('renders the controller, trigger button and menu wiring', function () {
     $view->assertSee('href="/account"', false);
 });
 
+it('does not crash when no trigger slot is provided', function () {
+    $view = $this->blade('
+        <x-hwc::dropdown>
+            <a href="/x">x</a>
+        </x-hwc::dropdown>
+    ');
+
+    $view->assertSee('data-controller="dropdown"', false);
+    $view->assertSee('data-dropdown-target="trigger"', false); // button is still rendered and wired
+    $view->assertSee('href="/x"', false);
+});
+
 it('links the trigger to the menu via id and aria-controls', function () {
     $view = $this->blade('
         <x-hwc::dropdown id="acct">
