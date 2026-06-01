@@ -180,6 +180,7 @@ php artisan hotwire:controllers auto-select auto-submit turbo/progress
 | [Clear Input](docs/controllers/clear-input.md)                 | `clear-input`         | `forms`    | —               | [readme](docs/controllers/clear-input.md)         |
 | [Confirm Dialog](docs/controllers/confirm-dialog.md)           | `confirm-dialog`      | `overlay`  | —               | [readme](docs/controllers/confirm-dialog.md)      |
 | [Copy To Clipboard](docs/controllers/copy-to-clipboard.md)     | `copy-to-clipboard`   | `utility`  | —               | [readme](docs/controllers/copy-to-clipboard.md)   |
+| [Dropdown](docs/controllers/dropdown.md)                       | `dropdown`            | `overlay`  | —               | [readme](docs/controllers/dropdown.md)            |
 | [Error Scroll](docs/controllers/error-scroll.md)               | `error-scroll`        | `forms`    | —               | [readme](docs/controllers/error-scroll.md)        |
 | [File Preserve](docs/controllers/file-preserve.md)             | `file-preserve`       | `forms`    | —               | [readme](docs/controllers/file-preserve.md)       |
 | [GTM](docs/controllers/gtm.md)                                 | `gtm`                 | `utility`  | —               | [readme](docs/controllers/gtm.md)                 |
