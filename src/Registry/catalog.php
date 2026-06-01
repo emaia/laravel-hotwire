@@ -336,6 +336,12 @@ return [
             'category' => 'utility',
             'description' => 'Displays a progress bar that follows the scroll position',
         ],
+        'slug' => [
+            'source' => 'resources/js/controllers/slug_controller.js',
+            'docs' => 'docs/controllers/slug.md',
+            'category' => 'forms',
+            'description' => 'Auto-fills a slug field from a source input until the user edits it, with preview and max-length',
+        ],
         'tabs' => [
             'source' => 'resources/js/controllers/tabs_controller.js',
             'docs' => 'docs/controllers/tabs.md',

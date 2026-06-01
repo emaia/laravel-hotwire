@@ -193,6 +193,7 @@ php artisan hotwire:controllers auto-select auto-submit turbo/progress
 | [Remote Form](docs/controllers/remote-form.md)                 | `remote-form`         | `forms`    | —               | [readme](docs/controllers/remote-form.md)         |
 | [Reset Files](docs/controllers/reset-files.md)                 | `reset-files`         | `forms`    | —               | [readme](docs/controllers/reset-files.md)         |
 | [Scroll Progress](docs/controllers/scroll-progress.md)         | `scroll-progress`     | `utility`  | —               | [readme](docs/controllers/scroll-progress.md)     |
+| [Slug](docs/controllers/slug.md)                               | `slug`                | `forms`    | —               | [readme](docs/controllers/slug.md)                |
 | [Tabs](docs/controllers/tabs.md)                               | `tabs`                | `utility`  | —               | [readme](docs/controllers/tabs.md)                |
 | [Timeago](docs/controllers/timeago.md)                         | `timeago`             | `utility`  | `date-fns`      | [readme](docs/controllers/timeago.md)             |
 | [Toast](docs/controllers/toast.md)                             | `toast`               | `feedback` | `@emaia/sonner` | [readme](docs/controllers/toast.md)               |
