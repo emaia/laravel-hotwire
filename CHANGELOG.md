@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to `laravel-hotwire-components` will be documented in this file.
+All notable changes to `laravel-hotwire` will be documented in this file.
 
 ## 0.12.6 - 2026-06-01
 
@@ -69,7 +69,8 @@ All notable changes to `laravel-hotwire-components` will be documented in this f
 
 ### What's Changed
 
-* Update emaia/laravel-hotwire-turbo requirement from ^0.8.4 to ^0.9.2 by @dependabot[bot] in https://github.com/emaia/laravel-hotwire/pull/9
+* Update emaia/laravel-hotwire-turbo requirement from ^0.8.4 to ^0.9.2 by @dependabot[bot]
+  in https://github.com/emaia/laravel-hotwire/pull/9
 * add form components and controllers by @emaia in https://github.com/emaia/laravel-hotwire/pull/10
 
 **Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/0.9.12...0.10.0
@@ -124,7 +125,8 @@ All notable changes to `laravel-hotwire-components` will be documented in this f
 ### What's Changed
 
 * Move controllers to flat structure by @emaia in https://github.com/emaia/laravel-hotwire/pull/3
-* Bump dependabot/fetch-metadata from 3.0.0 to 3.1.0 by @dependabot[bot] in https://github.com/emaia/laravel-hotwire/pull/4
+* Bump dependabot/fetch-metadata from 3.0.0 to 3.1.0 by @dependabot[bot]
+  in https://github.com/emaia/laravel-hotwire/pull/4
 
 ### New Contributors
 
@@ -136,7 +138,8 @@ All notable changes to `laravel-hotwire-components` will be documented in this f
 
 ### What's Changed
 
-* feat: add optimistic UI primitives (component + form/link/dispatch controllers)  by @emaia in https://github.com/emaia/laravel-hotwire/pull/2
+* feat: add optimistic UI primitives (component + form/link/dispatch controllers)  by @emaia
+  in https://github.com/emaia/laravel-hotwire/pull/2
 
 **Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/0.7.4...0.7.5
 
