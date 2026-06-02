@@ -318,6 +318,55 @@ hand-write as JSON and pleasant as a PHP array:
 </div>
 ```
 
+> `breakpoints` only overrides **Embla options** — it does **not** change how many slides are visible. Slide width is
+> CSS (`--carousel-slide-size`); see the next section to make both responsive together.
+
+## Responsive slides per view (e.g. 3-up desktop, 1-up mobile)
+
+This is the one setup that lives in **two places**, because Embla doesn't control slide width — your CSS does:
+
+- **How many slides are visible** → the `--carousel-slide-size` custom property (a CSS media query).
+- **How many slides advance per page** → Embla's `slidesToScroll`, made responsive with `breakpoints`.
+
+Use the **same breakpoint** in both so they flip together. Three-per-page from `md` up (advancing a page of three),
+one-per-page on mobile:
+
+```blade
+<div
+    {{
+        stimulus()
+            ->controller('carousel', ['options' => ['loop' => true, 'align' => 'center', 'breakpoints' => [
+                '(min-width: 768px)' => ['slidesToScroll' => 2],
+                '(min-width: 1280px)' => ['slidesToScroll' => 3],
+            ]]], ['active-dot' => 'bg-white'])
+            ->action('carousel', 'teardownForCache', 'turbo:before-cache@window')
+    }}
+    class="relative [--carousel-slide-size:100%] md:[--carousel-slide-size:45%] lg:[--carousel-slide-size:25%] [--carousel-slide-spacing:1rem]"
+>
+    <div
+        {{ stimulus_target('carousel', 'viewport') }}
+        class="overflow-hidden"
+    >
+        <div {{ stimulus_target('carousel', 'container') }}>
+            @foreach ($photos as $photo)
+                <img src="{{ $photo->url }}" alt="" class="w-full h-96 object-cover md:rounded-md">
+            @endforeach
+        </div>
+    </div>
+</div>
+```
+
+- `[--carousel-slide-size:…]` are Tailwind arbitrary custom-property utilities — no extra CSS file needed (plain CSS
+  works too: a class setting `--carousel-slide-size` inside a `@media` query). `33.333%` × 3 fills the row; the spacing
+  sits inside each slide (padding method), so it still fits.
+- `align: 'start'` keeps pages aligned to the edge — `center` would offset multi-slide pages.
+- The dots become one per **page** (Embla groups the snaps), and the controller labels them "Go to group N"
+  automatically.
+- Embla re-inits on the breakpoint change (matchMedia) and on the slide-width change (ResizeObserver) — nothing to
+  wire up.
+- For clean pages, keep the slide count a multiple of `slidesToScroll`; the default `containScroll: 'trimSnaps'`
+  trims redundant snaps otherwise.
+
 ## Reactive options
 
 Setting `data-carousel-options-value` at runtime (via another controller, a Turbo Stream replacing the attribute,

@@ -56,3 +56,28 @@ test("loop layout is offset-independent and does not overlap when centered", asy
     expect(centered.overlap).not.toBeNull();
     expect(centered.overlap).toBeLessThanOrEqual(1);
 });
+
+test("--carousel-slide-size is overridable by an app class (no default rule to fight)", async ({ page }) => {
+    const css = await readFile("resources/js/controllers/carousel.css", "utf8");
+    await page.setViewportSize({ width: 1200, height: 800 });
+
+    async function slideWidth(rootClass) {
+        await page.setContent(`
+            <style>* { box-sizing: border-box; margin: 0; padding: 0; }
+            .half { --carousel-slide-size: 50%; }
+            ${css}</style>
+            <div data-controller="carousel" data-carousel-axis="x" class="${rootClass}">
+                <div data-carousel-target="viewport"><div data-carousel-target="container">
+                    <div><div style="height:100px"></div></div>
+                    <div><div style="height:100px"></div></div>
+                </div></div>
+            </div>
+        `);
+        return page.evaluate(() =>
+            Math.round(document.querySelector('[data-carousel-target="container"] > *').getBoundingClientRect().width),
+        );
+    }
+
+    expect(await slideWidth("")).toBeGreaterThan(1000); // fallback ~100%
+    expect(await slideWidth("half")).toBeLessThan(700); // class wins → ~50%
+});

@@ -9,11 +9,6 @@
  * controller mirrors onto [data-carousel-axis]; default is horizontal.
  */
 
-[data-controller~="carousel"] {
-    --carousel-slide-size: 100%;
-    --carousel-slide-spacing: 0px;
-}
-
 [data-controller~="carousel"] [data-carousel-target="viewport"] {
     overflow: hidden;
 }
@@ -31,7 +26,7 @@
 
 [data-controller~="carousel"] [data-carousel-target="container"] > * {
     box-sizing: border-box;
-    flex: 0 0 var(--carousel-slide-size);
+    flex: 0 0 var(--carousel-slide-size, 100%);
     min-width: 0;
     min-height: 0;
 }
@@ -41,11 +36,11 @@
 [data-controller~="carousel"]:not([data-carousel-axis="y"]) [data-carousel-target="container"] {
     flex-direction: row;
     touch-action: pan-y pinch-zoom;
-    margin-left: calc(var(--carousel-slide-spacing) * -1);
+    margin-left: calc(var(--carousel-slide-spacing, 0px) * -1);
 }
 
 [data-controller~="carousel"]:not([data-carousel-axis="y"]) [data-carousel-target="container"] > * {
-    padding-left: var(--carousel-slide-spacing);
+    padding-left: var(--carousel-slide-spacing, 0px);
 }
 
 /* --- Vertical (axis: 'y') --- */
@@ -54,9 +49,9 @@
     flex-direction: column;
     height: 100%;
     touch-action: pan-x pinch-zoom;
-    margin-top: calc(var(--carousel-slide-spacing) * -1);
+    margin-top: calc(var(--carousel-slide-spacing, 0px) * -1);
 }
 
 [data-controller~="carousel"][data-carousel-axis="y"] [data-carousel-target="container"] > * {
-    padding-top: var(--carousel-slide-spacing);
+    padding-top: var(--carousel-slide-spacing, 0px);
 }
