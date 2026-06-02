@@ -307,39 +307,122 @@ specs com Embla real para validar drag/autoplay/focus.
 - `id` auto-gerado quando ausente
 - `optionsJson` omite defaults via `StripsNullProps`
 
-## Critérios de aceitação
+## Faseamento
 
-1. `bun test tests/Controllers/carousel_controller.test.js` passa
-2. `composer test --filter=Carousel` passa
-3. `php artisan hotwire:components` lista `carousel`
-4. `php artisan hotwire:controllers carousel` publica o arquivo + CSS
-5. `php artisan hotwire:check` reconhece o uso de `<x-hwc::carousel>`, exige
-   `carousel` controller publicado + `embla-carousel` em `package.json`
-6. `php artisan hotwire:docs carousel` exibe a doc
-7. `composer analyse` sem erros
-8. `composer format` aplicado
+A entrega é dividida em **4 fases incrementais**. Cada fase é independentemente
+shippable (controller funcional, testes verdes, doc atualizada), o que permite
+commit/PR separado por fase, revisão isolada e desbloquear melhorias futuras
+sem segurar o core.
 
-## Arquivos a criar / modificar
+### Fase 1 — Core controller (sem plugins)
 
-**Criar**:
-- `resources/js/controllers/carousel_controller.js`
-- `resources/js/controllers/carousel.css`
-- `src/Components/Carousel.php`
-- `resources/views/component-views/carousel.blade.php`
-- `docs/controllers/carousel.md`
-- `docs/components/carousel.md`
-- `tests/Controllers/carousel_controller.test.js`
-- `tests/Components/CarouselTest.php`
-- (Opcional) `tests/Browser/carousel_controller.pw.js`
+Entrega o carousel funcionando standalone, sem plugins externos. É o
+**bloco maior** porque inclui a lógica de mounting, CSS, integração com
+`hotwire:controllers` e fundação dos testes.
 
-**Modificar**:
-- `src/Registry/catalog.php` — adicionar entries `carousel` (component) e
-  `carousel` (controller)
-- Verificar se `hotwire:controllers` copia o CSS co-localizado; se não,
-  ajustar a lógica de publish para incluir `.css` adjacente ao controller (ou
-  ajustar o `source` para listar ambos). **Ponto a investigar antes do
-  primeiro commit** — pode exigir mudança em `src/Commands/ControllersCommand.php`
-  ou `src/Support/ControllerImports.php`.
+Inclui:
+- `resources/js/controllers/carousel_controller.js` — targets viewport,
+  container, prevButton, nextButton, dotList, dotTemplate. Values:
+  `options` apenas (sem `plugins`). Classes: `activeDot`, `disabledNav`.
+- `resources/js/controllers/carousel.css` — mínimo estrutural.
+- Actions: `next`, `prev`, `scrollTo`.
+- Dot rendering via `dotTemplate` + ativação do dot selecionado.
+- Prev/Next disabled state via `canScrollPrev/Next`.
+- Listener `turbo:before-cache@window` → destroy.
+- Dispatch `carousel:init`, `carousel:select`, `carousel:settle`.
+- `optionsValueChanged` → `reInit`.
+- `disconnect` → destroy + cleanup.
+- Registry: entry do controller `carousel` em `src/Registry/catalog.php`
+  com `npm => ['embla-carousel' => '^8.5.0']`.
+- Doc: `docs/controllers/carousel.md` (sem seção de plugins).
+- Testes JS: `tests/Controllers/carousel_controller.test.js` cobrindo mount,
+  actions, dots, disabled state, dispatch, cache teardown, reInit, disconnect.
+- **Pré-requisito a investigar antes do commit**: confirmar que
+  `hotwire:controllers` copia o `.css` co-localizado adjacente ao controller.
+  Se não, ajustar `src/Commands/ControllersCommand.php` / `ControllerImports.php`
+  para incluir o sibling `.css` no publish. Se o ajuste for grande, sai como
+  Fase 1.5 isolada.
+
+Critério de aceite Fase 1:
+- `bun test tests/Controllers/carousel_controller.test.js` passa
+- `php artisan hotwire:controllers carousel` publica `.js` **e** `.css`
+- `php artisan hotwire:check` valida o controller
+- `composer analyse` e `composer format` OK
+
+### Fase 2 — Plugins
+
+Adiciona suporte declarativo aos plugins oficiais do Embla, sem mexer no
+contrato do core.
+
+Inclui:
+- Novo value `plugins: { type: Object, default: {} }`.
+- Método privado `#loadPlugins()` com dynamic import condicional para:
+  Autoplay, Class Names, Fade, Wheel Gestures, Auto Scroll, Auto Height.
+  Cada `import()` em try/catch com erro amigável quando o pacote não está
+  instalado.
+- Refactor de `connect`/`optionsValueChanged` para passar `plugins` ao Embla.
+- Actions opcionais `play()` / `stop()` delegando para
+  `embla.plugins().autoplay`.
+- `pluginsValueChanged` → `reInit` com novos plugins.
+- Doc: nova seção "Plugins" em `docs/controllers/carousel.md` listando cada
+  plugin, package npm e snippet de uso.
+- Testes JS: mockando dynamic imports — verifica que (a) flags ligadas
+  carregam o módulo correto, (b) flags desligadas não carregam,
+  (c) `reInit` é chamado quando `pluginsValue` muda, (d) erro amigável quando
+  módulo ausente.
+
+Critério de aceite Fase 2:
+- `bun test tests/Controllers/carousel_controller.test.js` (suite estendida) passa
+- Doc atualizada com seção de plugins
+- Sem mudança no `npm` do registry (plugins são opt-in instalação manual)
+
+### Fase 3 — Blade component `<x-hwc::carousel>`
+
+Casca ergonômica sobre o controller. Independente de Fase 2 — funciona com
+ou sem plugins.
+
+Inclui:
+- `src/Components/Carousel.php` usando `StripsNullProps`.
+- `resources/views/component-views/carousel.blade.php`.
+- Registry: entry `carousel` em `components` referenciando `controllers => ['carousel']`.
+- Doc: `docs/components/carousel.md` com props table, slots (`default`,
+  `prev_button`, `next_button`, `dot_template`) e exemplos.
+- Testes PHP: `tests/Components/CarouselTest.php` cobrindo defaults,
+  flags `navigation/dots`, JSON de `plugins`, merge de `$attributes`, id
+  auto-gerado, `StripsNullProps`.
+
+Critério de aceite Fase 3:
+- `composer test --filter=Carousel` passa
+- `php artisan hotwire:components` lista `carousel`
+- `php artisan hotwire:check` em uma view com `<x-hwc::carousel>` exige
+  `carousel` controller publicado + `embla-carousel` em `package.json`
+- `php artisan hotwire:docs carousel` exibe a doc
+
+### Fase 4 — Extras (progress, counter, browser tests)
+
+Polimento opcional, pode entrar depois de feedback de uso real.
+
+Inclui:
+- Targets adicionais no controller: `progress`, `indexLabel`, `totalLabel`.
+  Handler `scroll` atualiza `progress.style.width` (ou `transform`);
+  handler `select`/`init` atualiza labels.
+- Props `progress` e `counter` no componente.
+- `tests/Browser/carousel_controller.pw.js` — 1-3 specs validando drag real,
+  autoplay e focus.
+
+Critério de aceite Fase 4:
+- `bun run test:browser` passa
+- Demo manual via Testbench confirma drag, autoplay, prev/next disable,
+  dispatch de eventos no console.
+
+## Arquivos por fase
+
+| Fase | Criar                                                                                                                                                                                                                                                                                          | Modificar                                                                                       |
+|------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------|
+| 1    | `resources/js/controllers/carousel_controller.js`, `resources/js/controllers/carousel.css`, `docs/controllers/carousel.md`, `tests/Controllers/carousel_controller.test.js`                                                                                                                   | `src/Registry/catalog.php` (entry controller), possivelmente `ControllersCommand`/`ControllerImports` |
+| 2    | (incrementa) doc + testes existentes                                                                                                                                                                                                                                                          | `carousel_controller.js`, `docs/controllers/carousel.md`, `tests/Controllers/carousel_controller.test.js` |
+| 3    | `src/Components/Carousel.php`, `resources/views/component-views/carousel.blade.php`, `docs/components/carousel.md`, `tests/Components/CarouselTest.php`                                                                                                                                       | `src/Registry/catalog.php` (entry component)                                                    |
+| 4    | `tests/Browser/carousel_controller.pw.js`                                                                                                                                                                                                                                                     | `carousel_controller.js`, `Carousel.php`, view, doc do componente                               |
 
 ## Verificação end-to-end
 
