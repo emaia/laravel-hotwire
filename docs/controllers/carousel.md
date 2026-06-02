@@ -34,21 +34,33 @@ Stimulus events for integration with other controllers, and cleans itself up on 
 |-----------|----------|---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `options` | `Object` | `{}`    | Embla [options](https://www.embla-carousel.com/api/options/) — `loop`, `align`, `axis`, `slidesToScroll`, `dragFree`, `containScroll`, `duration`, `startIndex`, `breakpoints`, etc. Changes trigger `embla.reInit()`. |
 
-## Stimulus Classes
+## Styling state
 
-| Class         | Applied to             | Description                                               |
-|---------------|------------------------|-----------------------------------------------------------|
-| `activeDot`   | Selected dot           | One or more space-separated classes for the active snap   |
-| `disabledNav` | Prev/Next when blocked | One or more classes for prev/next when they cannot scroll |
+The controller stays presentation-free — it only manages **semantic state**, and you style from it:
+
+- The **active dot** is marked `aria-current="true"`. Style it with the `aria-[current=true]:` Tailwind variant (or
+  `[aria-current="true"] { … }` in plain CSS) right on the dot template.
+- **Prev/Next** use the native `disabled` attribute. Style them with the `disabled:` variant (or `button:disabled`).
 
 ```html
 
-<div
-    data-controller="carousel"
-    data-carousel-active-dot-class="bg-white"
-    data-carousel-disabled-nav-class="opacity-40 pointer-events-none"
-></div>
+<button
+    type="button"
+    class="size-2.5 rounded-full bg-white/50 transition-colors aria-[current=true]:bg-white"
+    data-action="carousel#scrollTo"
+></button>
+
+<button
+    data-carousel-target="prevButton"
+    data-action="carousel#prev"
+    class="disabled:pointer-events-none disabled:opacity-40"
+>
+    ‹
+</button>
 ```
+
+There's no presentation class to configure (and so nothing to safelist) — the utility lives literally in the markup,
+where Tailwind scans it.
 
 ## Actions
 
@@ -140,9 +152,6 @@ JSON-encode it for you, and chain the rest of the wiring:
         stimulus()
             ->controller('carousel', [
                 'options' => ['loop' => true, 'align' => 'center'],
-            ], [
-                'activeDot' => 'bg-white',
-                'disabledNav' => 'opacity-40 pointer-events-none',
             ])
             ->action('carousel', 'teardownForCache', 'turbo:before-cache@window')
     }}
@@ -158,8 +167,6 @@ renders to the same attributes the controller expects:
 <div
     data-controller="carousel"
     data-carousel-options-value='{"loop":true,"align":"center"}'
-    data-carousel-active-dot-class="bg-white"
-    data-carousel-disabled-nav-class="opacity-40 pointer-events-none"
     data-action="turbo:before-cache@window->carousel#teardownForCache"
 ></div>
 ```
@@ -184,7 +191,7 @@ All examples below use this style.
 <div
     {{
         stimulus()
-            ->controller('carousel', ['options' => $options], $classes)
+            ->controller('carousel', ['options' => $options])
             ->action('carousel', 'teardownForCache', 'turbo:before-cache@window')
     }}
     class="relative"
@@ -203,7 +210,7 @@ All examples below use this style.
         type="button"
         {{ stimulus_target('carousel', 'prevButton') }}
         {{ stimulus_action('carousel', 'prev') }}
-        class="absolute top-1/2 left-2 -translate-y-1/2 rounded-full bg-white/80 p-2"
+        class="absolute top-1/2 left-2 -translate-y-1/2 rounded-full bg-white/80 p-2 disabled:pointer-events-none disabled:opacity-40"
         aria-label="Previous"
     >
         <svg
@@ -226,7 +233,7 @@ All examples below use this style.
         type="button"
         {{ stimulus_target('carousel', 'nextButton') }}
         {{ stimulus_action('carousel', 'next') }}
-        class="absolute top-1/2 right-2 -translate-y-1/2 rounded-full bg-white/80 p-2"
+        class="absolute top-1/2 right-2 -translate-y-1/2 rounded-full bg-white/80 p-2 disabled:pointer-events-none disabled:opacity-40"
         aria-label="Next"
     >
         <svg
@@ -248,14 +255,14 @@ All examples below use this style.
     <div
         {{ stimulus_target('carousel', 'dotList') }}
         class="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5"
-        role="tablist"
-        aria-label="Slide"
+        role="group"
+        aria-label="Choose slide"
     ></div>
 
     <template {{ stimulus_target('carousel', 'dotTemplate') }}>
         <button
             type="button"
-            class="size-2.5 rounded-full bg-white/50 transition-colors"
+            class="size-2.5 rounded-full bg-white/50 transition-colors aria-current:bg-white"
             {{ stimulus_action('carousel', 'scrollTo') }}
         ></button>
     </template>
@@ -263,11 +270,10 @@ All examples below use this style.
 ```
 
 The controller fills `dotList` with one cloned `dotTemplate` per snap, sets `data-carousel-index-param` on each
-clone so `scrollTo` knows where to go, and toggles the `activeDot` class as the selection changes. Each dot also gets
-an `aria-label` — "Go to slide N", or "Go to group N" when `slidesToScroll` groups slides (snaps fewer than slides) —
-and the active one is marked `aria-current="true"`, independently of the `activeDot` class. Dots are rebuilt only when
-the snap count changes (init, `reInit`, `slidesChanged`), not on every selection, so dot focus is preserved while
-navigating.
+clone so `scrollTo` knows where to go, and marks the active dot with `aria-current="true"` (style it with the
+`aria-[current=true]:` variant). Each dot also gets an `aria-label` — "Go to slide N", or "Go to group N" when
+`slidesToScroll` groups slides (snaps fewer than slides). Dots are rebuilt only when the snap count changes (init,
+`reInit`, `slidesChanged`), not on every selection, so dot focus is preserved while navigating.
 
 ## Vertical orientation
 

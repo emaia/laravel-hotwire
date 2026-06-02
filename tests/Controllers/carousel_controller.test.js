@@ -156,28 +156,6 @@ test.serial("renders one dot per snap by cloning the dot template", async () => 
     });
 });
 
-test.serial("applies the active-dot class to the selected snap on init", async () => {
-    emblaState.snaps = [0, 0.5, 1];
-    emblaState.selected = 1;
-    await mount();
-
-    const dots = dotEls();
-    expect(dots[1].classList.contains("is-active")).toBe(true);
-    expect(dots[0].classList.contains("is-active")).toBe(false);
-});
-
-test.serial("moves the active-dot class when Embla fires select", async () => {
-    await mount();
-
-    emblaState.previous = 0;
-    emblaState.selected = 2;
-    emit("select");
-
-    const dots = dotEls();
-    expect(dots[0].classList.contains("is-active")).toBe(false);
-    expect(dots[2].classList.contains("is-active")).toBe(true);
-});
-
 test.serial("does not rebuild the dots on select (keeps dot nodes stable)", async () => {
     await mount();
     const firstDot = dotEls()[0];
@@ -225,50 +203,22 @@ test.serial("marks the active dot with aria-current and moves it on select", asy
     expect(dots[1].hasAttribute("aria-current")).toBe(false);
 });
 
-test.serial("marks the active dot even without an active-dot class configured", async () => {
-    mounted = await mountController(
-        "carousel",
-        CarouselController,
-        `
-        <div data-controller="carousel">
-            <div data-carousel-target="viewport">
-                <div data-carousel-target="container"><div>a</div><div>b</div></div>
-            </div>
-            <div data-carousel-target="dotList"></div>
-            <template data-carousel-target="dotTemplate">
-                <button type="button" data-action="carousel#scrollTo"></button>
-            </template>
-        </div>`,
-    );
-
-    expect(dotEls()[0].getAttribute("aria-current")).toBe("true");
-});
-
 // --- Prev/Next disabled state ---
 
-test.serial("disables prevButton when canScrollPrev is false", async () => {
+test.serial("toggles the native disabled state on prev/next based on can-scroll", async () => {
     emblaState.canPrev = false;
     emblaState.canNext = true;
     await mount();
 
     expect(prevButton().disabled).toBe(true);
     expect(nextButton().disabled).toBe(false);
-});
-
-test.serial("toggles the disabled-nav class on prev/next based on can-scroll", async () => {
-    emblaState.canPrev = false;
-    emblaState.canNext = true;
-    await mount();
-
-    expect(prevButton().classList.contains("is-disabled")).toBe(true);
-    expect(nextButton().classList.contains("is-disabled")).toBe(false);
 
     emblaState.canPrev = true;
     emblaState.canNext = false;
     emit("select");
 
-    expect(prevButton().classList.contains("is-disabled")).toBe(false);
-    expect(nextButton().classList.contains("is-disabled")).toBe(true);
+    expect(prevButton().disabled).toBe(false);
+    expect(nextButton().disabled).toBe(true);
 });
 
 // --- Events dispatched ---
@@ -475,8 +425,6 @@ async function mount({ options = {} } = {}) {
         `
         <div data-controller="carousel"
              ${optsAttr}
-             data-carousel-active-dot-class="is-active"
-             data-carousel-disabled-nav-class="is-disabled"
              data-action="turbo:before-cache@window->carousel#teardownForCache">
             <div data-carousel-target="viewport">
                 <div data-carousel-target="container">

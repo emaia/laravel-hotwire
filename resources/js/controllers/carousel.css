@@ -20,11 +20,17 @@
 
 [data-controller~="carousel"] [data-carousel-target="container"] {
     display: flex;
-    will-change: transform;
-    backface-visibility: hidden;
+    /*
+     * No `will-change`/`transform` here: a composited layer / containing block on
+     * the container at init corrupts Embla's slide measurements when the carousel
+     * is offset on the page (e.g. centered in a max-width wrapper), breaking the
+     * loop (slides overlap / wrong gap). Embla applies its own transform after
+     * measuring, which is fine.
+     */
 }
 
 [data-controller~="carousel"] [data-carousel-target="container"] > * {
+    box-sizing: border-box;
     flex: 0 0 var(--carousel-slide-size);
     min-width: 0;
     min-height: 0;

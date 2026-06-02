@@ -10,8 +10,6 @@ export default class extends Controller {
         options: { type: Object, default: {} },
     };
 
-    static classes = ["activeDot", "disabledNav"];
-
     initialize() {
         this.onSelect = this.onSelect.bind(this);
         this.onReInit = this.onReInit.bind(this);
@@ -152,39 +150,17 @@ export default class extends Controller {
 
         const selected = this.embla.selectedScrollSnap();
         this.dotNodes.forEach((node, index) => {
-            const active = index === selected;
-
-            if (active) {
+            if (index === selected) {
                 node.setAttribute("aria-current", "true");
             } else {
                 node.removeAttribute("aria-current");
-            }
-
-            if (this.hasActiveDotClass) {
-                this.activeDotClasses.forEach((cls) => node.classList.toggle(cls, active));
             }
         });
     }
 
     syncNav() {
-        const canPrev = this.embla.canScrollPrev();
-        const canNext = this.embla.canScrollNext();
-
-        if (this.hasPrevButtonTarget) {
-            this.prevButtonTarget.disabled = !canPrev;
-            this.toggleDisabledClass(this.prevButtonTarget, !canPrev);
-        }
-        if (this.hasNextButtonTarget) {
-            this.nextButtonTarget.disabled = !canNext;
-            this.toggleDisabledClass(this.nextButtonTarget, !canNext);
-        }
-    }
-
-    toggleDisabledClass(element, disabled) {
-        if (!this.hasDisabledNavClass) return;
-        this.disabledNavClasses.forEach((cls) => {
-            element.classList.toggle(cls, disabled);
-        });
+        if (this.hasPrevButtonTarget) this.prevButtonTarget.disabled = !this.embla.canScrollPrev();
+        if (this.hasNextButtonTarget) this.nextButtonTarget.disabled = !this.embla.canScrollNext();
     }
 
     syncAxis() {

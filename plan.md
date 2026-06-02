@@ -58,9 +58,9 @@ static values = {
     plugins: { type: Object, default: {} },         // {autoplay: {...}|true, fade: true, ...}
 };
 
-static classes = ["activeDot", "disabledNav"];
-// data-carousel-active-dot-class="bg-white"
-// data-carousel-disabled-nav-class="opacity-40 pointer-events-none"
+// Sem `static classes`. O controller é presentational-free: marca estado
+// semântico (aria-current no dot ativo, disabled nativo no prev/next) e a
+// estilização vem de variantes Tailwind (aria-[current=true]:, disabled:).
 ```
 
 **Carregamento de plugins** — dynamic import condicional (code-splitting via
@@ -159,8 +159,9 @@ direção do gap e `flex-direction` — dependem do eixo, então são escopadas 
 [data-controller~="carousel"] [data-carousel-target="viewport"] { overflow: hidden; }
 [data-controller~="carousel"] [data-carousel-target="container"] {
     display: flex;
-    will-change: transform;
-    backface-visibility: hidden;
+    /* No will-change/transform: a composited layer on the container at init
+       corrupts Embla's measurements when the carousel is offset on the page
+       (centered in a max-width wrapper), breaking the loop seam. */
 }
 [data-controller~="carousel"] [data-carousel-target="container"] > * {
     flex: 0 0 var(--carousel-slide-size);
@@ -226,10 +227,9 @@ public function __construct(
     public string $class = '',
     public string $viewportClass = '',
     public string $containerClass = '',
-    public string $slideClass = 'min-w-0 flex-[0_0_100%]',
-    public string $activeDotClass = 'bg-white',
-    public string $dotClass = 'size-2.5 rounded-full bg-white/50 transition-colors',
-    public string $disabledNavClass = 'opacity-40 pointer-events-none',
+    // dot ativo via aria-current (variante aria-[current=true]:); nav via disabled:
+    public string $dotClass = 'size-2.5 rounded-full bg-white/50 transition-colors aria-[current=true]:bg-white',
+    public string $navClass = 'disabled:opacity-40 disabled:pointer-events-none',
     // CSS custom properties — "Embla way" de configurar visualmente o carousel
     public ?string $slideSize = null,           // ex: '70%' → --carousel-slide-size
     public ?string $slideSpacing = null,        // ex: '16px' → --carousel-slide-spacing + padding approach
@@ -281,8 +281,6 @@ e a utility no slide seria ignorada.
     data-controller="carousel"
     data-carousel-options-value="{{ $optionsJson() }}"
     data-carousel-plugins-value="{{ $pluginsJson() }}"
-    data-carousel-active-dot-class="{{ $activeDotClass }}"
-    data-carousel-disabled-nav-class="{{ $disabledNavClass }}"
     data-action="turbo:before-cache@window->carousel#teardownForCache"
     @if($customProperties) style="{{ implode('; ', $customProperties) }}" @endif
     {{ $attributes->except(['data-controller','data-action'])->whereDoesntStartWith('data-carousel-')->merge(['id' => $id, 'class' => $class]) }}
@@ -294,16 +292,16 @@ e a utility no slide seria ignorada.
     </div>
 
     @if ($navigation)
-        <button type="button" data-carousel-target="prevButton" data-action="carousel#prev" aria-label="Previous">
+        <button type="button" class="{{ $navClass }}" data-carousel-target="prevButton" data-action="carousel#prev" aria-label="Previous">
             {{ $prev_button ?? '‹' }}
         </button>
-        <button type="button" data-carousel-target="nextButton" data-action="carousel#next" aria-label="Next">
+        <button type="button" class="{{ $navClass }}" data-carousel-target="nextButton" data-action="carousel#next" aria-label="Next">
             {{ $next_button ?? '›' }}
         </button>
     @endif
 
     @if ($dots)
-        <div data-carousel-target="dotList" role="tablist" aria-label="Slide selection"></div>
+        <div data-carousel-target="dotList" role="group" aria-label="Choose slide"></div>
         @if (isset($dot_template))
             <template data-carousel-target="dotTemplate">{{ $dot_template }}</template>
         @else
@@ -378,8 +376,8 @@ de `tests/Controllers/tabs_controller.test.js` usando `mountController` de
 - `next()`/`prev()` chamam `scrollNext`/`scrollPrev` do mock
 - `scrollTo` com `params.index` chama `scrollTo(index)`
 - renderiza N dots a partir de `scrollSnapList`
-- aplica `activeDotClass` no dot do `selectedScrollSnap`
-- atualiza `prevButton.disabled` + classe `disabledNavClass` conforme
+- marca `aria-current="true"` no dot do `selectedScrollSnap`
+- atualiza `prevButton.disabled`/`nextButton.disabled` conforme
   `canScrollPrev/Next` do mock
 - `optionsValueChanged` chama `embla.reInit(...)`
 - `disconnect()` chama `embla.destroy()` e remove listeners
@@ -416,7 +414,8 @@ Entrega o carousel funcionando standalone, sem plugins externos. É o
 Inclui:
 - `resources/js/controllers/carousel_controller.js` — targets viewport,
   container, prevButton, nextButton, dotList, dotTemplate. Values:
-  `options` apenas (sem `plugins`). Classes: `activeDot`, `disabledNav`.
+  `options` apenas (sem `plugins`). Sem `static classes` — estado semântico
+  (aria-current / disabled) estilizado por variantes Tailwind.
 - `resources/js/controllers/carousel.css` — mínimo estrutural + CSS custom
   properties (`--carousel-slide-size`, `--carousel-slide-spacing`) + padding
   approach (`margin-left` negativo no container) + `touch-action` no container.
