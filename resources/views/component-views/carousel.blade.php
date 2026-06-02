@@ -12,8 +12,9 @@
 
 <div
     data-controller="{{ $controller }}"
-    data-carousel-axis="{{ $axis }}"
     data-carousel-options-value="{{ $optionsJson() }}"
+    @if ($activeDotClass !== '') data-carousel-active-dot-class="{{ $activeDotClass }}" @endif
+    @if ($disabledNavClass !== '') data-carousel-disabled-nav-class="{{ $disabledNavClass }}" @endif
     data-action="{{ $action }}"
     @if ($style !== '') style="{{ $style }}" @endif
     {{ $attributes->except(['data-controller', 'data-action'])->whereDoesntStartWith('data-carousel-')->merge(['id' => $id, 'class' => $class]) }}

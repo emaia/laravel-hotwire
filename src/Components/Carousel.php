@@ -17,6 +17,7 @@ class Carousel extends Component
         public string $axis = 'x',
         public int|string $slidesToScroll = 'auto',
         public bool $dragFree = false,
+        public string $containScroll = 'trimSnaps',
         public ?array $breakpoints = null,
         public bool $respectMotionPreference = true,
         public array $options = [],
@@ -27,6 +28,8 @@ class Carousel extends Component
         public string $class = '',
         public string $viewportClass = '',
         public string $containerClass = '',
+        public string $activeDotClass = '',
+        public string $disabledNavClass = '',
         public string $dotClass = '',
         public string $dotListClass = '',
         public string $dotListLabel = 'Choose slide',
@@ -53,6 +56,7 @@ class Carousel extends Component
             'axis' => $this->axis !== 'x' ? $this->axis : null,
             'slidesToScroll' => $this->slidesToScroll !== 1 ? $this->slidesToScroll : null,
             'dragFree' => $this->dragFree ?: null,
+            'containScroll' => $this->containScroll !== 'trimSnaps' ? $this->containScroll : null,
         ], fn ($value) => $value !== null);
 
         $breakpoints = $this->breakpoints ?? [];

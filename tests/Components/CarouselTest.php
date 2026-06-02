@@ -11,7 +11,7 @@ it('emits slidesToScroll auto and the reduced-motion breakpoint by default', fun
     ]);
 });
 
-it('omits Embla defaults (loop, center align, x axis, dragFree) from the JSON', function () {
+it('omits Embla defaults (loop, center align, x axis, dragFree, trimSnaps) from the JSON', function () {
     expect(json_decode((new Carousel(respectMotionPreference: false))->optionsJson(), true))
         ->toBe(['slidesToScroll' => 'auto']);
 });
@@ -22,6 +22,7 @@ it('includes non-default options', function () {
         align: 'start',
         axis: 'y',
         dragFree: true,
+        containScroll: 'keepSnaps',
         respectMotionPreference: false,
     ))->optionsJson();
 
@@ -31,6 +32,7 @@ it('includes non-default options', function () {
         'axis' => 'y',
         'slidesToScroll' => 'auto',
         'dragFree' => true,
+        'containScroll' => 'keepSnaps',
     ]);
 });
 
@@ -75,9 +77,18 @@ it('renders the controller, viewport, container and slides', function () {
     $view->assertSee('carousel#teardownForCache', false);
 });
 
-it('mirrors the axis onto data-carousel-axis', function () {
-    $this->blade('<x-hwc::carousel axis="y">x</x-hwc::carousel>')->assertSee('data-carousel-axis="y"', false);
-    $this->blade('<x-hwc::carousel>x</x-hwc::carousel>')->assertSee('data-carousel-axis="x"', false);
+it('emits active-dot and disabled-nav class attributes', function () {
+    $view = $this->blade('<x-hwc::carousel active-dot-class="is-active" disabled-nav-class="is-disabled">x</x-hwc::carousel>');
+
+    $view->assertSee('data-carousel-active-dot-class="is-active"', false);
+    $view->assertSee('data-carousel-disabled-nav-class="is-disabled"', false);
+});
+
+it('omits active-dot and disabled-nav data attributes when the prop is empty', function () {
+    $view = $this->blade('<x-hwc::carousel>x</x-hwc::carousel>');
+
+    $view->assertDontSee('data-carousel-active-dot-class', false);
+    $view->assertDontSee('data-carousel-disabled-nav-class', false);
 });
 
 it('renders navigation by default and hides it when disabled', function () {
