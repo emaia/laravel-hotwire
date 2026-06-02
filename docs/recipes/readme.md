@@ -19,6 +19,10 @@ Each recipe is self-contained — pick the one that matches your use case.
   single Turbo Frame. Per-step validation, browser back, resume-where-you-left-off, no client state.
 - [Composing streams](./composing-streams.md) — chain `refresh`, `update`, `flash` and friends to
   describe the full UI transition in a single response.
+- [Carousel patterns](./carousel-patterns.md) — thumbnail nav, lightbox modal, infinite Turbo Stream slides,
+  URL-deep-linked slides — built on the `carousel` controller.
+- [Carousel as a primitive](./carousel-as-primitive.md) — multi-step wizard, server-driven signage, swipe
+  deck and real-time presence — when the carousel is the snap engine, not the gallery.
 
 ## See also
 
