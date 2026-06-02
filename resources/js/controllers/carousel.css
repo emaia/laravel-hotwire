@@ -4,6 +4,7 @@
 
 [data-controller~="carousel"] [data-carousel-target="container"] {
     display: flex;
+    touch-action: pan-y pinch-zoom;
     will-change: transform;
     backface-visibility: hidden;
 }
