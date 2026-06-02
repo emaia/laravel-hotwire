@@ -1,0 +1,202 @@
+<?php
+
+it('renders the controller, trigger button and menu wiring', function () {
+    $view = $this->blade('
+        <x-hwc::dropdown>
+            <x-slot:trigger>Options</x-slot:trigger>
+            <a href="/account">Account</a>
+        </x-hwc::dropdown>
+    ');
+
+    $view->assertSee('data-controller="dropdown"', false);
+    $view->assertSee('data-dropdown-target="trigger"', false);
+    $view->assertSee('data-action="dropdown#toggle"', false);
+    $view->assertSee('aria-haspopup="true"', false);
+    $view->assertSee('aria-expanded="false"', false);
+    $view->assertSee('data-dropdown-target="menu"', false);
+    $view->assertSee('Options');
+    $view->assertSee('href="/account"', false);
+});
+
+it('does not crash when no trigger slot is provided', function () {
+    $view = $this->blade('
+        <x-hwc::dropdown>
+            <a href="/x">x</a>
+        </x-hwc::dropdown>
+    ');
+
+    $view->assertSee('data-controller="dropdown"', false);
+    $view->assertSee('data-dropdown-target="trigger"', false); // button is still rendered and wired
+    $view->assertSee('href="/x"', false);
+});
+
+it('links the trigger to the menu via id and aria-controls', function () {
+    $view = $this->blade('
+        <x-hwc::dropdown id="acct">
+            <x-slot:trigger>M</x-slot:trigger>
+            <a href="/x">x</a>
+        </x-hwc::dropdown>
+    ');
+
+    $view->assertSee('id="acct"', false);
+    $view->assertSee('aria-controls="acct"', false);
+});
+
+it('auto-generates a menu id when none is given', function () {
+    $view = $this->blade('
+        <x-hwc::dropdown>
+            <x-slot:trigger>M</x-slot:trigger>
+            <a href="/x">x</a>
+        </x-hwc::dropdown>
+    ');
+
+    $view->assertSee('id="dropdown-', false);
+    $view->assertSee('aria-controls="dropdown-', false);
+});
+
+it('is hidden and closed by default', function () {
+    $view = $this->blade('
+        <x-hwc::dropdown>
+            <x-slot:trigger>M</x-slot:trigger>
+            <a href="/x">x</a>
+        </x-hwc::dropdown>
+    ');
+
+    $view->assertSee('hidden', false);
+    $view->assertSee('aria-expanded="false"', false);
+    $view->assertDontSee('data-dropdown-open-value', false);
+});
+
+it('starts open when open is true', function () {
+    $view = $this->blade('
+        <x-hwc::dropdown :open="true">
+            <x-slot:trigger>M</x-slot:trigger>
+            <a href="/x">x</a>
+        </x-hwc::dropdown>
+    ');
+
+    $view->assertSee('data-dropdown-open-value="true"', false);
+    $view->assertSee('aria-expanded="true"', false);
+    $view->assertDontSee('hidden', false);
+});
+
+it('aligns to the start by default (RTL-safe logical position)', function () {
+    $view = $this->blade('
+        <x-hwc::dropdown>
+            <x-slot:trigger>M</x-slot:trigger>
+            <a href="/x">x</a>
+        </x-hwc::dropdown>
+    ');
+
+    $view->assertSee('start-0', false);
+    $view->assertDontSee('end-0', false);
+});
+
+it('aligns to the end when requested', function () {
+    $view = $this->blade('
+        <x-hwc::dropdown align="end">
+            <x-slot:trigger>M</x-slot:trigger>
+            <a href="/x">x</a>
+        </x-hwc::dropdown>
+    ');
+
+    $view->assertSee('end-0', false);
+    $view->assertDontSee('start-0', false);
+});
+
+it('omits close-on-select by default and emits it when disabled', function () {
+    $default = $this->blade('
+        <x-hwc::dropdown>
+            <x-slot:trigger>M</x-slot:trigger>
+            <a href="/x">x</a>
+        </x-hwc::dropdown>
+    ');
+    $default->assertDontSee('data-dropdown-close-on-select-value', false);
+
+    $off = $this->blade('
+        <x-hwc::dropdown :close-on-select="false">
+            <x-slot:trigger>M</x-slot:trigger>
+            <a href="/x">x</a>
+        </x-hwc::dropdown>
+    ');
+    $off->assertSee('data-dropdown-close-on-select-value="false"', false);
+});
+
+it('includes default transitions, and omits them when disabled', function () {
+    $on = $this->blade('
+        <x-hwc::dropdown>
+            <x-slot:trigger>M</x-slot:trigger>
+            <a href="/x">x</a>
+        </x-hwc::dropdown>
+    ');
+    $on->assertSee('data-transition-enter-from="opacity-0 scale-95"', false);
+
+    $off = $this->blade('
+        <x-hwc::dropdown :transition="false">
+            <x-slot:trigger>M</x-slot:trigger>
+            <a href="/x">x</a>
+        </x-hwc::dropdown>
+    ');
+    $off->assertDontSee('data-transition-enter', false);
+});
+
+it('unions a user-supplied data-controller', function () {
+    $view = $this->blade('
+        <x-hwc::dropdown data-controller="analytics">
+            <x-slot:trigger>M</x-slot:trigger>
+            <a href="/x">x</a>
+        </x-hwc::dropdown>
+    ');
+
+    $view->assertSee('data-controller="dropdown analytics"', false);
+});
+
+it('filters user-supplied data-dropdown-* attributes', function () {
+    $view = $this->blade('
+        <x-hwc::dropdown data-dropdown-foo="bar">
+            <x-slot:trigger>M</x-slot:trigger>
+            <a href="/x">x</a>
+        </x-hwc::dropdown>
+    ');
+
+    $view->assertDontSee('data-dropdown-foo', false);
+});
+
+it('merges trigger slot attributes onto the button', function () {
+    $view = $this->blade('
+        <x-hwc::dropdown>
+            <x-slot:trigger class="btn-primary">Options</x-slot:trigger>
+            <a href="/x">x</a>
+        </x-hwc::dropdown>
+    ');
+
+    $view->assertSee('btn-primary', false);
+    $view->assertSee('group', false);
+});
+
+it('overrides the trigger layout classes while keeping group', function () {
+    $view = $this->blade('
+        <x-hwc::dropdown trigger-class="flex w-full justify-between">
+            <x-slot:trigger class="btn-outline">M</x-slot:trigger>
+            <a href="/x">x</a>
+        </x-hwc::dropdown>
+    ');
+
+    $view->assertSee('flex w-full justify-between', false); // default layout replaced
+    $view->assertSee('btn-outline', false);                 // slot class still appended
+    $view->assertSee('group', false);                       // functional class kept
+    $view->assertDontSee('inline-flex', false);             // hardcoded default gone
+});
+
+it('overrides menu width and accepts extra menu classes', function () {
+    $view = $this->blade('
+        <x-hwc::dropdown width="w-72" menu-class="text-sm">
+            <x-slot:trigger>M</x-slot:trigger>
+            <a href="/x">x</a>
+        </x-hwc::dropdown>
+    ');
+
+    $view->assertSee('w-72', false);
+    $view->assertDontSee('w-56', false);
+    $view->assertSee('text-sm', false);
+});

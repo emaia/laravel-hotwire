@@ -3,6 +3,7 @@
 use Emaia\LaravelHotwire\Components\CheckboxGroup;
 use Emaia\LaravelHotwire\Components\ConfirmDialog;
 use Emaia\LaravelHotwire\Components\Description;
+use Emaia\LaravelHotwire\Components\Dropdown;
 use Emaia\LaravelHotwire\Components\Error;
 use Emaia\LaravelHotwire\Components\Field;
 use Emaia\LaravelHotwire\Components\File;
@@ -132,6 +133,14 @@ return [
             'category' => 'feedback',
             'description' => 'Animated SVG spinner — no JavaScript required',
             'controllers' => [],
+        ],
+        'dropdown' => [
+            'class' => Dropdown::class,
+            'view' => 'hotwire::component-views.dropdown',
+            'docs' => 'docs/components/dropdown.md',
+            'category' => 'overlay',
+            'description' => 'Accessible disclosure dropdown — a trigger toggles a menu, with outside-click/Escape dismissal',
+            'controllers' => ['dropdown'],
         ],
         'modal' => [
             'class' => Modal::class,
