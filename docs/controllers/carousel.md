@@ -1,0 +1,254 @@
+# Carousel
+
+Slider/carousel powered by [Embla Carousel](https://www.embla-carousel.com). Wraps the Embla instance with
+declarative targets for navigation buttons and pagination dots, syncs `disabled` state automatically, dispatches
+Stimulus events for integration with other controllers, and cleans itself up on Turbo cache and disconnect.
+
+**Identifier:** `carousel`
+**Install:** `php artisan hotwire:controllers carousel`
+
+> The published files are `carousel_controller.js` and `carousel.css` (imported by the controller). Width per slide
+> is intentionally left to your CSS — see the [Markup contract](#markup-contract).
+
+## Requirements
+
+- `embla-carousel` `^8.6.0` (`bun add embla-carousel`)
+
+> `php artisan hotwire:check --fix` adds `embla-carousel` (pinned to the version this package targets) to your
+> `package.json` automatically when any view uses `<x-hwc::carousel>` or a `data-controller="carousel"` element.
+
+## Targets
+
+| Target        | Required | Description                                                                                               |
+|---------------|----------|-----------------------------------------------------------------------------------------------------------|
+| `viewport`    | Optional | The element with `overflow:hidden` that Embla measures. Falls back to the controller element itself       |
+| `container`   | Optional | The flex container that holds the slides — informational; Embla finds it via `viewport.firstElementChild` |
+| `prevButton`  | Optional | Previous-slide button. Disabled automatically when `canScrollPrev` is false                               |
+| `nextButton`  | Optional | Next-slide button. Disabled automatically when `canScrollNext` is false                                   |
+| `dotList`     | Optional | Container that the controller fills with one button per snap                                              |
+| `dotTemplate` | Optional | `<template>` cloned for each dot. Falls back to a bare `<button>` when absent                             |
+
+## Stimulus Values
+
+| Value     | Type     | Default | Description                                                                                                                                                                                                            |
+|-----------|----------|---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `options` | `Object` | `{}`    | Embla [options](https://www.embla-carousel.com/api/options/) — `loop`, `align`, `axis`, `slidesToScroll`, `dragFree`, `containScroll`, `duration`, `startIndex`, `breakpoints`, etc. Changes trigger `embla.reInit()`. |
+
+## Stimulus Classes
+
+| Class         | Applied to             | Description                                               |
+|---------------|------------------------|-----------------------------------------------------------|
+| `activeDot`   | Selected dot           | One or more space-separated classes for the active snap   |
+| `disabledNav` | Prev/Next when blocked | One or more classes for prev/next when they cannot scroll |
+
+```html
+<div
+    data-controller="carousel"
+    data-carousel-active-dot-class="bg-white"
+    data-carousel-disabled-nav-class="opacity-40 pointer-events-none"
+>
+```
+
+## Actions
+
+| Action             | Description                                                           |
+|--------------------|-----------------------------------------------------------------------|
+| `next`             | Scroll to the next snap (`embla.scrollNext()`)                        |
+| `prev`             | Scroll to the previous snap (`embla.scrollPrev()`)                    |
+| `scrollTo`         | Scroll to a specific snap by index — pass `data-carousel-index-param` |
+| `teardownForCache` | Destroy the Embla instance — wire to `turbo:before-cache@window`      |
+
+## Events dispatched
+
+The controller dispatches `CustomEvent`s on its root element (they bubble):
+
+| Event             | `detail`                                                                                       |
+|-------------------|------------------------------------------------------------------------------------------------|
+| `carousel:init`   | `{ embla }` — the live Embla instance, useful for plugins/analytics                            |
+| `carousel:select` | `{ index, previousIndex, slidesInView }`                                                       |
+| `carousel:settle` | (empty) — fired after a scroll comes to rest                                                   |
+
+Wire them with `data-action`:
+
+```html
+<div data-controller="carousel" data-action="carousel:select->analytics#track">…</div>
+```
+
+## Markup contract
+
+The minimum required structure:
+
+```html
+<div data-controller="carousel">
+    <div data-carousel-target="viewport">
+        <div data-carousel-target="container">
+            <div class="min-w-0 flex-[0_0_100%]">slide 1</div>
+            <div class="min-w-0 flex-[0_0_100%]">slide 2</div>
+            <div class="min-w-0 flex-[0_0_100%]">slide 3</div>
+        </div>
+    </div>
+</div>
+```
+
+The controller's CSS file applies `overflow:hidden` to the viewport and `display:flex` to the container; **per-slide
+width is yours to set** so multi-slide-per-view, vertical and responsive layouts stay possible. The example above
+shows the single-slide-per-view default — drop in `flex-[0_0_50%]` for two-per-view, etc.
+
+If you omit the viewport target, the controller element itself is used as the viewport — fine for the simplest
+case, but using an explicit target lets you place navigation/dots outside the clipped area.
+
+## Configuring with the Stimulus builder
+
+Writing the `options` value inline as a JSON string (`data-carousel-options-value='{"loop":true}'`) gets noisy
+fast. Use the package's [Stimulus attribute helpers](../stimulus-helpers.md) — pass a PHP array, let the builder
+JSON-encode it for you, and chain the rest of the wiring:
+
+```blade
+<div
+    {{
+        stimulus()
+            ->controller('carousel', [
+                'options' => ['loop' => true, 'align' => 'center'],
+            ], [
+                'activeDot' => 'bg-white',
+                'disabledNav' => 'opacity-40 pointer-events-none',
+            ])
+            ->action('carousel', 'teardownForCache', 'turbo:before-cache@window')
+    }}
+>
+    …
+</div>
+```
+
+renders to the same attributes the controller expects:
+
+```html
+<div
+    data-controller="carousel"
+    data-carousel-options-value='{"loop":true,"align":"center"}'
+    data-carousel-active-dot-class="bg-white"
+    data-carousel-disabled-nav-class="opacity-40 pointer-events-none"
+    data-action="turbo:before-cache@window->carousel#teardownForCache"
+>
+```
+
+The same goes for targets and actions on the children:
+
+```blade
+<div {{ stimulus_target('carousel', 'viewport') }}>…</div>
+<button {{ stimulus_target('carousel', 'prevButton') }} {{ stimulus_action('carousel', 'prev') }}>‹</button>
+```
+
+All examples below use this style.
+
+## With navigation and dots
+
+```blade
+<div
+    {{
+        stimulus()
+            ->controller('carousel', ['options' => $options], $classes)
+            ->action('carousel', 'teardownForCache', 'turbo:before-cache@window')
+    }}
+    class="relative"
+>
+    <div {{ stimulus_target('carousel', 'viewport') }}>
+        <div {{ stimulus_target('carousel', 'container') }}>
+            @foreach ($photos as $photo)
+                <div class="min-w-0 flex-[0_0_100%]">
+                    <img src="{{ $photo->url }}" alt="">
+                </div>
+            @endforeach
+        </div>
+    </div>
+
+    <button
+        type="button"
+        {{ stimulus_target('carousel', 'prevButton') }}
+        {{ stimulus_action('carousel', 'prev') }}
+        class="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-2"
+        aria-label="Previous"
+    >‹</button>
+
+    <button
+        type="button"
+        {{ stimulus_target('carousel', 'nextButton') }}
+        {{ stimulus_action('carousel', 'next') }}
+        class="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-2"
+        aria-label="Next"
+    >›</button>
+
+    <div
+        {{ stimulus_target('carousel', 'dotList') }}
+        class="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5"
+        role="tablist"
+        aria-label="Slide"
+    ></div>
+
+    <template {{ stimulus_target('carousel', 'dotTemplate') }}>
+        <button
+            type="button"
+            class="size-2.5 rounded-full bg-white/50 transition-colors"
+            {{ stimulus_action('carousel', 'scrollTo') }}
+        ></button>
+    </template>
+</div>
+```
+
+The controller fills `dotList` with one cloned `dotTemplate` per snap, sets `data-carousel-index-param` on each
+clone so `scrollTo` knows where to go, and toggles the `activeDot` class as the selection changes.
+
+## Vertical orientation
+
+```blade
+<div {{ stimulus_controller('carousel', ['options' => [...$options, 'axis' => 'y']]) }} class="h-96">
+    <div {{ stimulus_target('carousel', 'viewport') }} class="h-full">
+        <div {{ stimulus_target('carousel', 'container') }} class="h-full flex-col">
+            <div class="min-h-0 flex-[0_0_100%]">slide 1</div>
+            <div class="min-h-0 flex-[0_0_100%]">slide 2</div>
+        </div>
+    </div>
+</div>
+```
+
+When `axis: "y"` is set, the controller's CSS still applies `display:flex` to the container — add `flex-col` (or
+`flex-direction: column`) yourself, plus a fixed height on the viewport.
+
+## Breakpoints
+
+Embla supports media-query overrides via the `breakpoints` option — exactly the kind of payload that's painful to
+hand-write as JSON and pleasant as a PHP array:
+
+```blade
+<div
+    {{
+        stimulus_controller('carousel', [
+            'options' => [
+                ...$options,
+                'slidesToScroll' => 1,
+                'breakpoints' => [
+                    '(min-width: 768px)' => ['slidesToScroll' => 2],
+                    '(min-width: 1280px)' => ['slidesToScroll' => 3],
+                ],
+            ],
+        ])
+    }}
+>
+    …
+</div>
+```
+
+## Reactive options
+
+Setting `data-carousel-options-value` at runtime (via another controller, a Turbo Stream replacing the attribute,
+etc.) calls `embla.reInit(...)` automatically, so the carousel picks up the new configuration without remounting.
+
+## Turbo compatibility
+
+- Wire `turbo:before-cache@window->carousel#teardownForCache` so the Embla-applied inline `transform` does not get
+  cached into the snapshot — otherwise the restored page would briefly show the slides in the wrong position.
+- The controller cleans up on `disconnect()`: removes Embla listeners, calls `embla.destroy()`, clears references.
+  Turbo Drive navigations, Frame replacements and morphs all go through Stimulus disconnect/connect and re-mount
+  correctly.
+- Embla's own observers (`watchSlides`, `watchResize`) handle slides added by Turbo Streams inside the container
+  without manual reInit.

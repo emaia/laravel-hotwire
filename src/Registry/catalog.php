@@ -197,6 +197,13 @@ return [
             'category' => 'forms',
             'description' => 'Selects all text in an input when it receives focus',
         ],
+        'carousel' => [
+            'source' => 'resources/js/controllers/carousel_controller.js',
+            'docs' => 'docs/controllers/carousel.md',
+            'category' => 'utility',
+            'description' => 'Carousel/slider — wraps Embla Carousel with navigation, dots and Turbo-friendly lifecycle',
+            'npm' => ['embla-carousel' => '^8.6.0'],
+        ],
         'char-counter' => [
             'source' => 'resources/js/controllers/char_counter_controller.ts',
             'docs' => 'docs/controllers/char-counter.md',

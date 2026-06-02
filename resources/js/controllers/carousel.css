@@ -1,0 +1,9 @@
+[data-controller~="carousel"] [data-carousel-target="viewport"] {
+    overflow: hidden;
+}
+
+[data-controller~="carousel"] [data-carousel-target="container"] {
+    display: flex;
+    will-change: transform;
+    backface-visibility: hidden;
+}
