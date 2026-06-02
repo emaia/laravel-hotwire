@@ -12,15 +12,16 @@ Stimulus events for integration with other controllers, and cleans itself up on 
 
 ## Requirements
 
-- `embla-carousel` `^8.6.0` (`bun add embla-carousel`)
+- `embla-carousel` `^8.6.0` — install it yourself: `bun add embla-carousel` (or `npm install embla-carousel`).
 
-> `php artisan hotwire:check --fix` adds `embla-carousel` (pinned to the version this package targets) to your
-> `package.json` automatically when any view uses `<x-hwc::carousel>` or a `data-controller="carousel"` element.
+> `hotwire:check` scans for Blade **component** tags (`<x-hwc::…>`), not raw `data-controller` attributes — so for the
+> standalone controller it won't detect the carousel or add the npm dependency. Install `embla-carousel` manually.
+> Once the `<x-hwc::carousel>` component ships, `hotwire:check --fix` adds the dependency automatically.
 
 ## Targets
 
 | Target        | Required | Description                                                                                               |
-|---------------|----------|-----------------------------------------------------------------------------------------------------------|
+| ------------- | -------- | --------------------------------------------------------------------------------------------------------- |
 | `viewport`    | Optional | The element with `overflow:hidden` that Embla measures. Falls back to the controller element itself       |
 | `container`   | Optional | The flex container that holds the slides — informational; Embla finds it via `viewport.firstElementChild` |
 | `prevButton`  | Optional | Previous-slide button. Disabled automatically when `canScrollPrev` is false                               |
@@ -31,7 +32,7 @@ Stimulus events for integration with other controllers, and cleans itself up on 
 ## Stimulus Values
 
 | Value     | Type     | Default | Description                                                                                                                                                                                                            |
-|-----------|----------|---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| --------- | -------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `options` | `Object` | `{}`    | Embla [options](https://www.embla-carousel.com/api/options/) — `loop`, `align`, `axis`, `slidesToScroll`, `dragFree`, `containScroll`, `duration`, `startIndex`, `breakpoints`, etc. Changes trigger `embla.reInit()`. |
 
 ## Styling state
@@ -43,7 +44,6 @@ The controller stays presentation-free — it only manages **semantic state**, a
 - **Prev/Next** use the native `disabled` attribute. Style them with the `disabled:` variant (or `button:disabled`).
 
 ```html
-
 <button
     type="button"
     class="size-2.5 rounded-full bg-white/50 transition-colors aria-[current=true]:bg-white"
@@ -65,7 +65,7 @@ where Tailwind scans it.
 ## Actions
 
 | Action             | Description                                                           |
-|--------------------|-----------------------------------------------------------------------|
+| ------------------ | --------------------------------------------------------------------- |
 | `next`             | Scroll to the next snap (`embla.scrollNext()`)                        |
 | `prev`             | Scroll to the previous snap (`embla.scrollPrev()`)                    |
 | `scrollTo`         | Scroll to a specific snap by index — pass `data-carousel-index-param` |
@@ -78,7 +78,7 @@ where Tailwind scans it.
 The controller dispatches `CustomEvent`s on its root element (they bubble):
 
 | Event                     | `detail`                                                                              |
-|---------------------------|---------------------------------------------------------------------------------------|
+| ------------------------- | ------------------------------------------------------------------------------------- |
 | `carousel:init`           | `{ embla }` — the live Embla instance, useful for plugins/analytics                   |
 | `carousel:select`         | `{ index, previousIndex, slidesInView }`                                              |
 | `carousel:scroll`         | `{ progress }` — scroll progress `0..1`; fires on every frame, keep the handler cheap |
@@ -89,7 +89,6 @@ The controller dispatches `CustomEvent`s on its root element (they bubble):
 Wire them with `data-action`:
 
 ```html
-
 <div data-controller="carousel" data-action="carousel:select->analytics#track">…</div>
 ```
 
@@ -98,7 +97,6 @@ Wire them with `data-action`:
 The minimum required structure:
 
 ```html
-
 <div data-controller="carousel">
     <div data-carousel-target="viewport">
         <div data-carousel-target="container">
@@ -114,14 +112,13 @@ The controller's CSS file handles the structure: `overflow:hidden` on the viewpo
 and per-slide sizing/gap through two custom properties (the "Embla way"):
 
 | Property                   | Default | Description                                                              |
-|----------------------------|---------|--------------------------------------------------------------------------|
+| -------------------------- | ------- | ------------------------------------------------------------------------ |
 | `--carousel-slide-size`    | `100%`  | Flex basis of each slide (`50%` → two-per-view, `33.333%` → three, etc.) |
 | `--carousel-slide-spacing` | `0px`   | Gap between slides (applied via the padding method, loop/RTL-safe)       |
 
 Set them on the carousel root (the `<x-hwc::carousel>` component does this from its `slideSize`/`slideSpacing` props):
 
 ```html
-
 <div data-controller="carousel" style="--carousel-slide-size: 50%; --carousel-slide-spacing: 1rem">…</div>
 ```
 
@@ -163,7 +160,6 @@ JSON-encode it for you, and chain the rest of the wiring:
 renders to the same attributes the controller expects:
 
 ```html
-
 <div
     data-controller="carousel"
     data-carousel-options-value='{"loop":true,"align":"center"}'
@@ -341,7 +337,7 @@ one-per-page on mobile:
             ]]], ['active-dot' => 'bg-white'])
             ->action('carousel', 'teardownForCache', 'turbo:before-cache@window')
     }}
-    class="relative [--carousel-slide-size:100%] md:[--carousel-slide-size:45%] lg:[--carousel-slide-size:25%] [--carousel-slide-spacing:1rem]"
+    class="relative [--carousel-slide-size:100%] [--carousel-slide-spacing:1rem] md:[--carousel-slide-size:45%] lg:[--carousel-slide-size:25%]"
 >
     <div
         {{ stimulus_target('carousel', 'viewport') }}
@@ -349,7 +345,7 @@ one-per-page on mobile:
     >
         <div {{ stimulus_target('carousel', 'container') }}>
             @foreach ($photos as $photo)
-                <img src="{{ $photo->url }}" alt="" class="w-full h-96 object-cover md:rounded-md">
+                <img src="{{ $photo->url }}" alt="" class="h-96 w-full object-cover md:rounded-md" />
             @endforeach
         </div>
     </div>
