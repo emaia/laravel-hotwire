@@ -170,6 +170,72 @@ test.serial("moves the active-dot class when Embla fires select", async () => {
     expect(dots[2].classList.contains("is-active")).toBe(true);
 });
 
+test.serial("does not rebuild the dots on select (keeps dot nodes stable)", async () => {
+    await mount();
+    const firstDot = dotEls()[0];
+
+    emblaState.selected = 1;
+    emit("select");
+
+    expect(dotEls()[0]).toBe(firstDot); // same node — not re-created
+});
+
+test.serial("re-renders dots when slidesChanged fires", async () => {
+    emblaState.snaps = [0, 0.5, 1];
+    await mount();
+    expect(dotEls().length).toBe(3);
+
+    emblaState.snaps = [0, 0.25, 0.5, 0.75];
+    emit("slidesChanged");
+
+    expect(dotEls().length).toBe(4);
+});
+
+// --- Dot accessibility ---
+
+test.serial("labels each dot with an aria-label", async () => {
+    emblaState.snaps = [0, 0.5, 1];
+    await mount();
+
+    const dots = dotEls();
+    expect(dots[0].getAttribute("aria-label")).toBe("Go to slide 1");
+    expect(dots[2].getAttribute("aria-label")).toBe("Go to slide 3");
+});
+
+test.serial("marks the active dot with aria-current and moves it on select", async () => {
+    emblaState.selected = 1;
+    await mount();
+
+    const dots = dotEls();
+    expect(dots[1].getAttribute("aria-current")).toBe("true");
+    expect(dots[0].hasAttribute("aria-current")).toBe(false);
+
+    emblaState.selected = 2;
+    emit("select");
+
+    expect(dots[2].getAttribute("aria-current")).toBe("true");
+    expect(dots[1].hasAttribute("aria-current")).toBe(false);
+});
+
+test.serial("marks the active dot even without an active-dot class configured", async () => {
+    mounted = await mountController(
+        "carousel",
+        CarouselController,
+        `
+        <div data-controller="carousel">
+            <div data-carousel-target="viewport">
+                <div data-carousel-target="container"><div>a</div><div>b</div></div>
+            </div>
+            <div data-carousel-target="dotList"></div>
+            <template data-carousel-target="dotTemplate">
+                <button type="button" data-action="carousel#scrollTo"></button>
+            </template>
+        </div>`,
+    );
+
+    expect(dotEls()[0].getAttribute("aria-current")).toBe("true");
+});
+
 // --- Prev/Next disabled state ---
 
 test.serial("disables prevButton when canScrollPrev is false", async () => {

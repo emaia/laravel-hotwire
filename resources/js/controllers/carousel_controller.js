@@ -4,14 +4,7 @@ import EmblaCarousel from "embla-carousel";
 import "./carousel.css";
 
 export default class extends Controller {
-    static targets = [
-        "viewport",
-        "container",
-        "prevButton",
-        "nextButton",
-        "dotList",
-        "dotTemplate",
-    ];
+    static targets = ["viewport", "container", "prevButton", "nextButton", "dotList", "dotTemplate"];
 
     static values = {
         options: { type: Object, default: {} },
@@ -21,6 +14,7 @@ export default class extends Controller {
 
     initialize() {
         this.onSelect = this.onSelect.bind(this);
+        this.onReInit = this.onReInit.bind(this);
         this.onSettle = this.onSettle.bind(this);
         this.onSlidesInView = this.onSlidesInView.bind(this);
         this.onSlidesChanged = this.onSlidesChanged.bind(this);
@@ -34,7 +28,7 @@ export default class extends Controller {
         this.renderDots();
 
         this.embla.on("select", this.onSelect);
-        this.embla.on("reInit", this.onSelect);
+        this.embla.on("reInit", this.onReInit);
         this.embla.on("settle", this.onSettle);
         this.embla.on("slidesInView", this.onSlidesInView);
         this.embla.on("slidesChanged", this.onSlidesChanged);
@@ -78,7 +72,6 @@ export default class extends Controller {
     }
 
     onSelect() {
-        this.renderDots();
         this.syncSelected();
         this.syncNav();
         this.dispatch("select", {
@@ -88,6 +81,12 @@ export default class extends Controller {
                 slidesInView: this.embla.slidesInView(),
             },
         });
+    }
+
+    onReInit() {
+        this.renderDots();
+        this.syncSelected();
+        this.syncNav();
     }
 
     onSettle() {
@@ -101,6 +100,9 @@ export default class extends Controller {
     }
 
     onSlidesChanged() {
+        this.renderDots();
+        this.syncSelected();
+        this.syncNav();
         this.dispatch("slides-changed");
     }
 
@@ -108,9 +110,7 @@ export default class extends Controller {
         if (!this.hasDotListTarget) return;
 
         const snaps = this.embla.scrollSnapList();
-        const template = this.hasDotTemplateTarget
-            ? this.dotTemplateTarget.content.firstElementChild
-            : null;
+        const template = this.hasDotTemplateTarget ? this.dotTemplateTarget.content.firstElementChild : null;
 
         this.dotListTarget.innerHTML = "";
         this.dotNodes = snaps.map((_, index) => {
@@ -123,6 +123,7 @@ export default class extends Controller {
                 node.dataset.action = "carousel#scrollTo";
             }
             node.dataset.carouselIndexParam = String(index);
+            node.setAttribute("aria-label", `Go to slide ${index + 1}`);
             this.dotListTarget.appendChild(node);
             return node;
         });
@@ -130,13 +131,20 @@ export default class extends Controller {
 
     syncSelected() {
         if (this.dotNodes.length === 0) return;
-        if (!this.hasActiveDotClass) return;
 
         const selected = this.embla.selectedScrollSnap();
         this.dotNodes.forEach((node, index) => {
-            this.activeDotClasses.forEach((cls) => {
-                node.classList.toggle(cls, index === selected);
-            });
+            const active = index === selected;
+
+            if (active) {
+                node.setAttribute("aria-current", "true");
+            } else {
+                node.removeAttribute("aria-current");
+            }
+
+            if (this.hasActiveDotClass) {
+                this.activeDotClasses.forEach((cls) => node.classList.toggle(cls, active));
+            }
         });
     }
 

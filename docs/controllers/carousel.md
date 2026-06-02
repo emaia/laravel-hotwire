@@ -42,11 +42,12 @@ Stimulus events for integration with other controllers, and cleans itself up on 
 | `disabledNav` | Prev/Next when blocked | One or more classes for prev/next when they cannot scroll |
 
 ```html
+
 <div
     data-controller="carousel"
     data-carousel-active-dot-class="bg-white"
     data-carousel-disabled-nav-class="opacity-40 pointer-events-none"
->
+></div>
 ```
 
 ## Actions
@@ -62,17 +63,18 @@ Stimulus events for integration with other controllers, and cleans itself up on 
 
 The controller dispatches `CustomEvent`s on its root element (they bubble):
 
-| Event                      | `detail`                                                                              |
-|----------------------------|---------------------------------------------------------------------------------------|
-| `carousel:init`            | `{ embla }` — the live Embla instance, useful for plugins/analytics                   |
-| `carousel:select`          | `{ index, previousIndex, slidesInView }`                                              |
-| `carousel:settle`          | (empty) — fired after a scroll comes to rest                                          |
-| `carousel:slides-in-view`  | `{ inView: number[] }` — slide indexes currently in the viewport (lazy-load trigger)  |
-| `carousel:slides-changed`  | (empty) — fired when slides are added or removed (e.g. by a Turbo Stream)             |
+| Event                     | `detail`                                                                             |
+|---------------------------|--------------------------------------------------------------------------------------|
+| `carousel:init`           | `{ embla }` — the live Embla instance, useful for plugins/analytics                  |
+| `carousel:select`         | `{ index, previousIndex, slidesInView }`                                             |
+| `carousel:settle`         | (empty) — fired after a scroll comes to rest                                         |
+| `carousel:slides-in-view` | `{ inView: number[] }` — slide indexes currently in the viewport (lazy-load trigger) |
+| `carousel:slides-changed` | (empty) — fired when slides are added or removed (e.g. by a Turbo Stream)            |
 
 Wire them with `data-action`:
 
 ```html
+
 <div data-controller="carousel" data-action="carousel:select->analytics#track">…</div>
 ```
 
@@ -81,6 +83,7 @@ Wire them with `data-action`:
 The minimum required structure:
 
 ```html
+
 <div data-controller="carousel">
     <div data-carousel-target="viewport">
         <div data-carousel-target="container">
@@ -130,20 +133,26 @@ JSON-encode it for you, and chain the rest of the wiring:
 renders to the same attributes the controller expects:
 
 ```html
+
 <div
     data-controller="carousel"
     data-carousel-options-value='{"loop":true,"align":"center"}'
     data-carousel-active-dot-class="bg-white"
     data-carousel-disabled-nav-class="opacity-40 pointer-events-none"
     data-action="turbo:before-cache@window->carousel#teardownForCache"
->
+></div>
 ```
 
 The same goes for targets and actions on the children:
 
 ```blade
 <div {{ stimulus_target('carousel', 'viewport') }}>…</div>
-<button {{ stimulus_target('carousel', 'prevButton') }} {{ stimulus_action('carousel', 'prev') }}>‹</button>
+<button
+    {{ stimulus_target('carousel', 'prevButton') }}
+    {{ stimulus_action('carousel', 'prev') }}
+>
+    ‹
+</button>
 ```
 
 All examples below use this style.
@@ -163,7 +172,7 @@ All examples below use this style.
         <div {{ stimulus_target('carousel', 'container') }}>
             @foreach ($photos as $photo)
                 <div class="min-w-0 flex-[0_0_100%]">
-                    <img src="{{ $photo->url }}" alt="">
+                    <img src="{{ $photo->url }}" alt="" />
                 </div>
             @endforeach
         </div>
@@ -173,17 +182,21 @@ All examples below use this style.
         type="button"
         {{ stimulus_target('carousel', 'prevButton') }}
         {{ stimulus_action('carousel', 'prev') }}
-        class="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-2"
+        class="absolute top-1/2 left-2 -translate-y-1/2 rounded-full bg-white/80 p-2"
         aria-label="Previous"
-    >‹</button>
+    >
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-left-icon lucide-chevron-left"><path d="m15 18-6-6 6-6"/></svg>
+    </button>
 
     <button
         type="button"
         {{ stimulus_target('carousel', 'nextButton') }}
         {{ stimulus_action('carousel', 'next') }}
-        class="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-2"
+        class="absolute top-1/2 right-2 -translate-y-1/2 rounded-full bg-white/80 p-2"
         aria-label="Next"
-    >›</button>
+    >
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right-icon lucide-chevron-right"><path d="m9 18 6-6-6-6"/></svg>
+    </button>
 
     <div
         {{ stimulus_target('carousel', 'dotList') }}
@@ -203,14 +216,23 @@ All examples below use this style.
 ```
 
 The controller fills `dotList` with one cloned `dotTemplate` per snap, sets `data-carousel-index-param` on each
-clone so `scrollTo` knows where to go, and toggles the `activeDot` class as the selection changes.
+clone so `scrollTo` knows where to go, and toggles the `activeDot` class as the selection changes. Each dot also gets
+an `aria-label` ("Go to slide N") and the active one is marked `aria-current="true"` — independently of the
+`activeDot` class. Dots are rebuilt only when the snap count changes (init, `reInit`, `slidesChanged`), not on every
+selection, so dot focus is preserved while navigating.
 
 ## Vertical orientation
 
 ```blade
-<div {{ stimulus_controller('carousel', ['options' => [...$options, 'axis' => 'y']]) }} class="h-96">
+<div
+    {{ stimulus_controller('carousel', ['options' => [...$options, 'axis' => 'y']]) }}
+    class="h-96"
+>
     <div {{ stimulus_target('carousel', 'viewport') }} class="h-full">
-        <div {{ stimulus_target('carousel', 'container') }} class="h-full flex-col">
+        <div
+            {{ stimulus_target('carousel', 'container') }}
+            class="h-full flex-col"
+        >
             <div class="min-h-0 flex-[0_0_100%]">slide 1</div>
             <div class="min-h-0 flex-[0_0_100%]">slide 2</div>
         </div>
