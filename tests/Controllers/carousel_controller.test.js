@@ -236,6 +236,22 @@ test.serial("calls reInit when optionsValue changes", async () => {
     expect(emblaState.instance.reInit.mock.calls[0][0]).toEqual({ loop: true });
 });
 
+test.serial("re-renders dots when the snap list changes on reInit", async () => {
+    emblaState.snaps = [0, 0.5, 1];
+    await mount();
+
+    expect(dotEls().length).toBe(3);
+
+    emblaState.snaps = [0, 0.2, 0.4, 0.6, 0.8];
+    emit("reInit");
+
+    const dots = dotEls();
+    expect(dots.length).toBe(5);
+    dots.forEach((dot, index) => {
+        expect(dot.dataset.carouselIndexParam).toBe(String(index));
+    });
+});
+
 // --- Lifecycle ---
 
 test.serial("destroys the Embla instance on disconnect", async () => {

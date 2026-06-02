@@ -97,6 +97,11 @@ shows the single-slide-per-view default — drop in `flex-[0_0_50%]` for two-per
 If you omit the viewport target, the controller element itself is used as the viewport — fine for the simplest
 case, but using an explicit target lets you place navigation/dots outside the clipped area.
 
+> **Nested carousels:** the CSS selectors use descendant combinators, so an inner carousel's `viewport`/`container`
+> targets also match the outer carousel's rules. Both rules (`overflow:hidden` and `display:flex`) are always wanted
+> on a viewport/container anyway, so there's no behavioral conflict — just be aware that any custom selector you
+> add against `data-controller~="carousel"` will reach inner instances too.
+
 ## Configuring with the Stimulus builder
 
 Writing the `options` value inline as a JSON string (`data-carousel-options-value='{"loop":true}'`) gets noisy

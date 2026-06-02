@@ -43,9 +43,6 @@ export default class extends Controller {
 
     disconnect() {
         if (this.embla) {
-            this.embla.off?.("select", this.onSelect);
-            this.embla.off?.("reInit", this.onSelect);
-            this.embla.off?.("settle", this.onSettle);
             this.embla.destroy();
             this.embla = null;
         }
@@ -77,6 +74,7 @@ export default class extends Controller {
     }
 
     onSelect() {
+        this.renderDots();
         this.syncSelected();
         this.syncNav();
         this.dispatch("select", {
