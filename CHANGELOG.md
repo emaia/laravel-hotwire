@@ -2,6 +2,14 @@
 
 All notable changes to `laravel-hotwire` will be documented in this file.
 
+## 0.13.0 - 2026-06-02
+
+### What's Changed
+
+* Add Dropdown component by @emaia in https://github.com/emaia/laravel-hotwire/pull/17
+
+**Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/0.12.6...0.13.0
+
 ## 0.12.6 - 2026-06-01
 
 ### What's Changed
