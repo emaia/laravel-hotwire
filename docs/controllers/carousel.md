@@ -62,11 +62,13 @@ Stimulus events for integration with other controllers, and cleans itself up on 
 
 The controller dispatches `CustomEvent`s on its root element (they bubble):
 
-| Event             | `detail`                                                                                       |
-|-------------------|------------------------------------------------------------------------------------------------|
-| `carousel:init`   | `{ embla }` — the live Embla instance, useful for plugins/analytics                            |
-| `carousel:select` | `{ index, previousIndex, slidesInView }`                                                       |
-| `carousel:settle` | (empty) — fired after a scroll comes to rest                                                   |
+| Event                      | `detail`                                                                              |
+|----------------------------|---------------------------------------------------------------------------------------|
+| `carousel:init`            | `{ embla }` — the live Embla instance, useful for plugins/analytics                   |
+| `carousel:select`          | `{ index, previousIndex, slidesInView }`                                              |
+| `carousel:settle`          | (empty) — fired after a scroll comes to rest                                          |
+| `carousel:slides-in-view`  | `{ inView: number[] }` — slide indexes currently in the viewport (lazy-load trigger)  |
+| `carousel:slides-changed`  | (empty) — fired when slides are added or removed (e.g. by a Turbo Stream)             |
 
 Wire them with `data-action`:
 

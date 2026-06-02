@@ -22,6 +22,8 @@ export default class extends Controller {
     initialize() {
         this.onSelect = this.onSelect.bind(this);
         this.onSettle = this.onSettle.bind(this);
+        this.onSlidesInView = this.onSlidesInView.bind(this);
+        this.onSlidesChanged = this.onSlidesChanged.bind(this);
         this.dotNodes = [];
     }
 
@@ -34,6 +36,8 @@ export default class extends Controller {
         this.embla.on("select", this.onSelect);
         this.embla.on("reInit", this.onSelect);
         this.embla.on("settle", this.onSettle);
+        this.embla.on("slidesInView", this.onSlidesInView);
+        this.embla.on("slidesChanged", this.onSlidesChanged);
 
         this.syncSelected();
         this.syncNav();
@@ -88,6 +92,16 @@ export default class extends Controller {
 
     onSettle() {
         this.dispatch("settle");
+    }
+
+    onSlidesInView() {
+        this.dispatch("slides-in-view", {
+            detail: { inView: this.embla.slidesInView() },
+        });
+    }
+
+    onSlidesChanged() {
+        this.dispatch("slides-changed");
     }
 
     renderDots() {

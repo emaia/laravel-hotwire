@@ -14,6 +14,7 @@ const emblaState = {
     previous: 0,
     canPrev: true,
     canNext: true,
+    inView: [],
     handlers: {},
 };
 
@@ -35,7 +36,7 @@ function createInstance() {
         destroy: mock(() => {}),
         reInit: mock(() => {}),
         plugins: () => ({}),
-        slidesInView: () => [],
+        slidesInView: () => emblaState.inView,
     };
     return instance;
 }
@@ -62,6 +63,7 @@ beforeEach(() => {
     emblaState.previous = 0;
     emblaState.canPrev = true;
     emblaState.canNext = true;
+    emblaState.inView = [];
     emblaState.handlers = {};
     emblaFactory.mockClear();
 });
@@ -219,6 +221,30 @@ test.serial("dispatches carousel:settle when Embla fires settle", async () => {
     mounted.root.addEventListener("carousel:settle", () => (fired = true));
 
     emit("settle");
+
+    expect(fired).toBe(true);
+});
+
+test.serial("dispatches carousel:slides-in-view with the visible indexes", async () => {
+    await mount();
+
+    let detail = null;
+    mounted.root.addEventListener("carousel:slides-in-view", (e) => (detail = e.detail));
+
+    emblaState.inView = [1, 2];
+    emit("slidesInView");
+
+    expect(detail).not.toBeNull();
+    expect(detail.inView).toEqual([1, 2]);
+});
+
+test.serial("dispatches carousel:slides-changed when Embla fires slidesChanged", async () => {
+    await mount();
+
+    let fired = false;
+    mounted.root.addEventListener("carousel:slides-changed", () => (fired = true));
+
+    emit("slidesChanged");
 
     expect(fired).toBe(true);
 });
