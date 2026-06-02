@@ -1,5 +1,6 @@
 <?php
 
+use Emaia\LaravelHotwire\Components\Carousel;
 use Emaia\LaravelHotwire\Components\CheckboxGroup;
 use Emaia\LaravelHotwire\Components\ConfirmDialog;
 use Emaia\LaravelHotwire\Components\Description;
@@ -22,6 +23,14 @@ use Emaia\LaravelHotwire\Components\Timeago;
 
 return [
     'components' => [
+        'carousel' => [
+            'class' => Carousel::class,
+            'view' => 'hotwire::component-views.carousel',
+            'docs' => 'docs/components/carousel.md',
+            'category' => 'utility',
+            'description' => 'Carousel/slider (Embla) with navigation, dots, responsive options and CSS-variable sizing',
+            'controllers' => ['carousel'],
+        ],
         'confirm-dialog' => [
             'class' => ConfirmDialog::class,
             'view' => 'hotwire::component-views.confirm-dialog',

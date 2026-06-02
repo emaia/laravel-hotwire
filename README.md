@@ -346,6 +346,7 @@ stacking multiple controllers, attribute-bag merging and the escaping rules.
 | [Confirm Dialog](docs/components/confirm-dialog.md)   | `<x-hwc::confirm-dialog>`  | `overlay`  | `confirm-dialog`                                                       | [readme](docs/components/confirm-dialog.md)  |
 | [Dropdown](docs/components/dropdown.md)               | `<x-hwc::dropdown>`        | `overlay`  | `dropdown`                                                             | [readme](docs/components/dropdown.md)        |
 | [Optimistic](docs/components/optimistic.md)           | `<x-hwc::optimistic>`      | `turbo`    | —                                                                      | [readme](docs/components/optimistic.md)      |
+| [Carousel](docs/components/carousel.md)               | `<x-hwc::carousel>`        | `utility`  | `carousel`                                                             | [readme](docs/components/carousel.md)        |
 | [Scroll Progress](docs/components/scroll-progress.md) | `<x-hwc::scroll-progress>` | `utility`  | `scroll-progress`                                                      | [readme](docs/components/scroll-progress.md) |
 | [Timeago](docs/components/timeago.md)                 | `<x-hwc::timeago>`         | `utility`  | `timeago`                                                              | [readme](docs/components/timeago.md)         |
 
