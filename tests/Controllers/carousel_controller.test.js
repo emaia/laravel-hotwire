@@ -10,11 +10,14 @@ const emblaState = {
     instance: null,
     calls: [],
     snaps: [0, 0.5, 1],
+    slideNodes: [{}, {}, {}],
     selected: 0,
     previous: 0,
+    progress: 0,
     canPrev: true,
     canNext: true,
     inView: [],
+    plugins: {},
     handlers: {},
 };
 
@@ -35,8 +38,10 @@ function createInstance() {
         off: mock(() => instance),
         destroy: mock(() => {}),
         reInit: mock(() => {}),
-        plugins: () => ({}),
+        plugins: () => emblaState.plugins,
         slidesInView: () => emblaState.inView,
+        slideNodes: () => emblaState.slideNodes,
+        scrollProgress: () => emblaState.progress,
     };
     return instance;
 }
@@ -59,11 +64,14 @@ beforeEach(() => {
     emblaState.instance = null;
     emblaState.calls = [];
     emblaState.snaps = [0, 0.5, 1];
+    emblaState.slideNodes = [{}, {}, {}];
     emblaState.selected = 0;
     emblaState.previous = 0;
+    emblaState.progress = 0;
     emblaState.canPrev = true;
     emblaState.canNext = true;
     emblaState.inView = [];
+    emblaState.plugins = {};
     emblaState.handlers = {};
     emblaFactory.mockClear();
 });
@@ -313,6 +321,76 @@ test.serial("dispatches carousel:slides-changed when Embla fires slidesChanged",
     emit("slidesChanged");
 
     expect(fired).toBe(true);
+});
+
+test.serial("dispatches carousel:scroll with the scroll progress", async () => {
+    await mount();
+
+    let detail = null;
+    mounted.root.addEventListener("carousel:scroll", (e) => (detail = e.detail));
+
+    emblaState.progress = 0.42;
+    emit("scroll");
+
+    expect(detail).not.toBeNull();
+    expect(detail.progress).toBe(0.42);
+});
+
+// --- Grouped dots (aria-label) ---
+
+test.serial('labels dots "slide" when each snap is one slide', async () => {
+    emblaState.snaps = [0, 0.5, 1];
+    emblaState.slideNodes = [{}, {}, {}];
+    await mount();
+
+    expect(dotEls()[0].getAttribute("aria-label")).toBe("Go to slide 1");
+});
+
+test.serial('labels dots "group" when slides are grouped (snaps < slides)', async () => {
+    emblaState.snaps = [0, 0.5];
+    emblaState.slideNodes = [{}, {}, {}, {}];
+    await mount();
+
+    const dots = dotEls();
+    expect(dots[0].getAttribute("aria-label")).toBe("Go to group 1");
+    expect(dots[1].getAttribute("aria-label")).toBe("Go to group 2");
+});
+
+// --- Autoplay actions ---
+
+test.serial("play() and stop() delegate to the autoplay plugin when present", async () => {
+    const play = mock(() => {});
+    const stop = mock(() => {});
+    emblaState.plugins = { autoplay: { play, stop } };
+    await mount();
+
+    mounted.controller.play();
+    mounted.controller.stop();
+
+    expect(play).toHaveBeenCalledTimes(1);
+    expect(stop).toHaveBeenCalledTimes(1);
+});
+
+test.serial("play() and stop() are no-ops when no autoplay plugin is present", async () => {
+    emblaState.plugins = {};
+    await mount();
+
+    expect(() => {
+        mounted.controller.play();
+        mounted.controller.stop();
+    }).not.toThrow();
+});
+
+// --- Axis mirroring (CSS hook) ---
+
+test.serial("mirrors the axis option to a data attribute and defaults to x", async () => {
+    await mount();
+    expect(mounted.root.getAttribute("data-carousel-axis")).toBe("x");
+});
+
+test.serial("mirrors a vertical axis to the data attribute", async () => {
+    await mount({ options: { axis: "y" } });
+    expect(mounted.root.getAttribute("data-carousel-axis")).toBe("y");
 });
 
 // --- Reactivity ---

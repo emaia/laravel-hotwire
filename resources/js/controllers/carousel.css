@@ -1,10 +1,56 @@
+/*
+ * Structural styles for the `carousel` controller. Sizing/gaps are configured
+ * via custom properties (the "Embla way") — set --carousel-slide-size and
+ * --carousel-slide-spacing (the Blade component does this from props). Avoid
+ * styling slides with conflicting flex-basis utilities: the rules below are
+ * scoped (descendant + child) and would win on specificity.
+ *
+ * Directional rules (touch-action, gap, flex direction) follow the axis the
+ * controller mirrors onto [data-carousel-axis]; default is horizontal.
+ */
+
+[data-controller~="carousel"] {
+    --carousel-slide-size: 100%;
+    --carousel-slide-spacing: 0px;
+}
+
 [data-controller~="carousel"] [data-carousel-target="viewport"] {
     overflow: hidden;
 }
 
 [data-controller~="carousel"] [data-carousel-target="container"] {
     display: flex;
-    touch-action: pan-y pinch-zoom;
     will-change: transform;
     backface-visibility: hidden;
+}
+
+[data-controller~="carousel"] [data-carousel-target="container"] > * {
+    flex: 0 0 var(--carousel-slide-size);
+    min-width: 0;
+    min-height: 0;
+}
+
+/* --- Horizontal (default) --- */
+
+[data-controller~="carousel"]:not([data-carousel-axis="y"]) [data-carousel-target="container"] {
+    flex-direction: row;
+    touch-action: pan-y pinch-zoom;
+    margin-left: calc(var(--carousel-slide-spacing) * -1);
+}
+
+[data-controller~="carousel"]:not([data-carousel-axis="y"]) [data-carousel-target="container"] > * {
+    padding-left: var(--carousel-slide-spacing);
+}
+
+/* --- Vertical (axis: 'y') --- */
+
+[data-controller~="carousel"][data-carousel-axis="y"] [data-carousel-target="container"] {
+    flex-direction: column;
+    height: 100%;
+    touch-action: pan-x pinch-zoom;
+    margin-top: calc(var(--carousel-slide-spacing) * -1);
+}
+
+[data-controller~="carousel"][data-carousel-axis="y"] [data-carousel-target="container"] > * {
+    padding-top: var(--carousel-slide-spacing);
 }

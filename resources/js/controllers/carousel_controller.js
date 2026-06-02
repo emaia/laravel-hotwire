@@ -15,6 +15,7 @@ export default class extends Controller {
     initialize() {
         this.onSelect = this.onSelect.bind(this);
         this.onReInit = this.onReInit.bind(this);
+        this.onScroll = this.onScroll.bind(this);
         this.onSettle = this.onSettle.bind(this);
         this.onSlidesInView = this.onSlidesInView.bind(this);
         this.onSlidesChanged = this.onSlidesChanged.bind(this);
@@ -24,11 +25,13 @@ export default class extends Controller {
     connect() {
         const node = this.hasViewportTarget ? this.viewportTarget : this.element;
 
+        this.syncAxis();
         this.embla = EmblaCarousel(node, this.optionsValue);
         this.renderDots();
 
         this.embla.on("select", this.onSelect);
         this.embla.on("reInit", this.onReInit);
+        this.embla.on("scroll", this.onScroll);
         this.embla.on("settle", this.onSettle);
         this.embla.on("slidesInView", this.onSlidesInView);
         this.embla.on("slidesChanged", this.onSlidesChanged);
@@ -60,6 +63,14 @@ export default class extends Controller {
         this.embla?.scrollTo(index);
     }
 
+    play() {
+        this.embla?.plugins()?.autoplay?.play();
+    }
+
+    stop() {
+        this.embla?.plugins()?.autoplay?.stop();
+    }
+
     teardownForCache() {
         if (!this.embla) return;
         this.embla.destroy();
@@ -67,6 +78,7 @@ export default class extends Controller {
     }
 
     optionsValueChanged() {
+        this.syncAxis();
         if (!this.embla) return;
         this.embla.reInit(this.optionsValue);
     }
@@ -87,6 +99,10 @@ export default class extends Controller {
         this.renderDots();
         this.syncSelected();
         this.syncNav();
+    }
+
+    onScroll() {
+        this.dispatch("scroll", { detail: { progress: this.embla.scrollProgress() } });
     }
 
     onSettle() {
@@ -111,6 +127,8 @@ export default class extends Controller {
 
         const snaps = this.embla.scrollSnapList();
         const template = this.hasDotTemplateTarget ? this.dotTemplateTarget.content.firstElementChild : null;
+        // When slidesToScroll groups slides, a dot is a group/page, not a single slide.
+        const noun = snaps.length === this.embla.slideNodes().length ? "slide" : "group";
 
         this.dotListTarget.innerHTML = "";
         this.dotNodes = snaps.map((_, index) => {
@@ -123,7 +141,7 @@ export default class extends Controller {
                 node.dataset.action = "carousel#scrollTo";
             }
             node.dataset.carouselIndexParam = String(index);
-            node.setAttribute("aria-label", `Go to slide ${index + 1}`);
+            node.setAttribute("aria-label", `Go to ${noun} ${index + 1}`);
             this.dotListTarget.appendChild(node);
             return node;
         });
@@ -167,5 +185,9 @@ export default class extends Controller {
         this.disabledNavClasses.forEach((cls) => {
             element.classList.toggle(cls, disabled);
         });
+    }
+
+    syncAxis() {
+        this.element.dataset.carouselAxis = this.optionsValue.axis === "y" ? "y" : "x";
     }
 }

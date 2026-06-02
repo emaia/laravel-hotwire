@@ -121,8 +121,18 @@ Cada `import()` em try/catch — se a dep não estiver instalada, log claro:
 - `carousel:init` `{ detail: { embla } }`
 - `carousel:select` `{ detail: { index, previousIndex, slidesInView } }`
 - `carousel:settle` (idem)
+- `carousel:scroll` `{ detail: { progress } }` — `scrollProgress()` 0..1, útil
+  para progress bars externas
+- `carousel:slides-in-view` `{ detail: { inView } }`
+- `carousel:slides-changed`
 
 Permite integração externa: `data-action="carousel:select->analytics#track"`.
+
+**Aria-label condicional nos dots**: quando `slidesToScroll` agrupa slides
+(`snaps.length !== slideNodes.length`), cada dot representa um grupo/página,
+não um slide individual. O `aria-label` usa `"Go to group N"` nesse caso em
+vez de `"Go to slide N"`. A detecção é via `embla.scrollSnapList().length !==
+embla.slideNodes().length`.
 
 **Coexistência (CLAUDE.md)**: scope DOM reads ao próprio `this.element`/targets,
 nunca toca em `data-controller` de irmãos, cleanup completo no `disconnect`,
@@ -131,23 +141,65 @@ handlers idempotentes em events Turbo compartilhados.
 ### 2. CSS `resources/js/controllers/carousel.css`
 
 Mínimo estrutural — usa atributos de target para não criar dependência de
-sistema de classes:
+sistema de classes. Expõe CSS custom properties como API de configuração
+visual (padrão oficial do Embla — os guias *Slide Sizes* e *Slide Gaps* usam
+`--slide-size`/`--slide-spacing` consistentemente):
+
+**Axis-aware** (corrigido na implementação): as regras direcionais — `touch-action`,
+direção do gap e `flex-direction` — dependem do eixo, então são escopadas por
+`[data-carousel-axis="y"]`. O controller espelha `options.axis` nesse atributo
+(`syncAxis()`), default horizontal. Sem isso, um carousel vertical teria
+`touch-action: pan-y` bloqueando o drag vertical no mobile.
 
 ```css
-[data-controller~="carousel"] [data-carousel-target="viewport"] {
-    overflow: hidden;
+[data-controller~="carousel"] {
+    --carousel-slide-size: 100%;
+    --carousel-slide-spacing: 0px;
 }
+[data-controller~="carousel"] [data-carousel-target="viewport"] { overflow: hidden; }
 [data-controller~="carousel"] [data-carousel-target="container"] {
     display: flex;
     will-change: transform;
     backface-visibility: hidden;
 }
+[data-controller~="carousel"] [data-carousel-target="container"] > * {
+    flex: 0 0 var(--carousel-slide-size);
+    min-width: 0;
+    min-height: 0;
+}
+/* horizontal (default) */
+[data-controller~="carousel"]:not([data-carousel-axis="y"]) [data-carousel-target="container"] {
+    flex-direction: row;
+    touch-action: pan-y pinch-zoom;
+    margin-left: calc(var(--carousel-slide-spacing) * -1);
+}
+[data-controller~="carousel"]:not([data-carousel-axis="y"]) [data-carousel-target="container"] > * {
+    padding-left: var(--carousel-slide-spacing);
+}
+/* vertical (axis: 'y') */
+[data-controller~="carousel"][data-carousel-axis="y"] [data-carousel-target="container"] {
+    flex-direction: column;
+    height: 100%;
+    touch-action: pan-x pinch-zoom;
+    margin-top: calc(var(--carousel-slide-spacing) * -1);
+}
+[data-controller~="carousel"][data-carousel-axis="y"] [data-carousel-target="container"] > * {
+    padding-top: var(--carousel-slide-spacing);
+}
 ```
+
+A regra `> *` aplica o **padding approach** (guia *Slide Gaps* — robusto com
+loop/RTL/SSR sem `calc()` manual). **Sizing é só via custom property**, não via
+Tailwind nos slides: a regra do controller é escopada (alta especificidade) e
+venceria uma utility no slide. O Blade component sobrescreve as vars inline via
+`style=""`.
 
 Importado no topo do controller: `import "./carousel.css";`.
 
-Width por slide (`flex: 0 0 X%`) fica a cargo do usuário/componente (Tailwind).
-Isso permite layouts multi-slide-per-view, vertical, etc.
+**Aviso (guia *How Embla Works*):** Não aplique `transform` nem `transition`
+diretamente no container ou nos slides — o Embla escreve `translate3d` inline
+e esses conflitos quebram o comportamento. Use wrappers internos nos slides
+para estilização.
 
 ### 3. Blade component
 
@@ -159,7 +211,7 @@ public function __construct(
     public bool $loop = false,
     public string $align = 'center',          // start|center|end
     public string $axis = 'x',                // x|y
-    public int|string $slidesToScroll = 1,    // int | 'auto'
+    public int|string $slidesToScroll = 'auto', // int | 'auto'
     public bool $dragFree = false,
     public string $containScroll = 'trimSnaps', // ''|'trimSnaps'|'keepSnaps'
     public int $duration = 25,
@@ -178,20 +230,53 @@ public function __construct(
     public string $activeDotClass = 'bg-white',
     public string $dotClass = 'size-2.5 rounded-full bg-white/50 transition-colors',
     public string $disabledNavClass = 'opacity-40 pointer-events-none',
+    // CSS custom properties — "Embla way" de configurar visualmente o carousel
+    public ?string $slideSize = null,           // ex: '70%' → --carousel-slide-size
+    public ?string $slideSpacing = null,        // ex: '16px' → --carousel-slide-spacing + padding approach
+    // Acessibilidade e comportamento
+    public bool $respectMotionPreference = true, // injeta '(prefers-reduced-motion)' breakpoint
+    public string $direction = 'ltr',            // 'ltr' | 'rtl'
+    public bool $watchDrag = true,
+    public bool $watchFocus = true,
+    public ?float $inViewThreshold = null,
 ) { /* derive id, normalize plugins map */ }
 
 public function optionsJson(): string  // omite defaults via StripsNullProps
 public function pluginsJson(): string
 ```
 
+**Default `slidesToScroll: 'auto'`** em vez do default `1` do Embla: o
+comportamento mais intuitivo com múltiplos slides visíveis é paginação
+(avançar o grupo visível), não avanço 1-a-1. O Embla calcula dinamicamente
+quantos slides cabem no viewport e agrupa automaticamente. Quem quiser o
+comportamento 1-a-1 seta `slidesToScroll="1"` explicitamente.
+
+**`$respectMotionPreference`:** Quando `true` (default), o `optionsJson()`
+injeta `'(prefers-reduced-motion: reduce)': { duration: 0 }` nos breakpoints,
+seguindo a recomendação da doc de API do Embla. Setar `false` omite.
+
 Usa o trait `StripsNullProps` (`src/Components/Concerns/StripsNullProps.php`)
-para omitir props nulas/default do JSON. O `slideClass` é exposto como prop
-mas o slot default já recebe slides do usuário (usuário aplica classe nos
-slides, ou usa Tailwind `[&>*]:flex-[0_0_100%]` no `containerClass`).
+para omitir props nulas/default do JSON.
+
+**`$slideSize` / `$slideSpacing`:** Se não nulos, o componente injeta as CSS
+custom properties como inline `style` no elemento raiz:
+`style="--carousel-slide-size: 70%; --carousel-slide-spacing: 16px"`.
+O CSS co-localizado consome essas variáveis e aplica o "padding approach"
+automaticamente — o usuário ganha gaps e sizing sem escrever `calc()` manual
+nem margin negativa. **Sizing é só via `slideSize`/`slideSpacing` (custom
+properties)** — a doc não orienta Tailwind nos slides, pois a regra escopada do
+controller (`… [data-carousel-target="container"] > *`) vence por especificidade
+e a utility no slide seria ignorada.
 
 `resources/views/component-views/carousel.blade.php` (estrutura):
 
 ```blade
+@php
+    $customProperties = [];
+    if ($slideSize !== null) $customProperties[] = "--carousel-slide-size: {$slideSize}";
+    if ($slideSpacing !== null) $customProperties[] = "--carousel-slide-spacing: {$slideSpacing}";
+@endphp
+
 <div
     data-controller="carousel"
     data-carousel-options-value="{{ $optionsJson() }}"
@@ -199,6 +284,7 @@ slides, ou usa Tailwind `[&>*]:flex-[0_0_100%]` no `containerClass`).
     data-carousel-active-dot-class="{{ $activeDotClass }}"
     data-carousel-disabled-nav-class="{{ $disabledNavClass }}"
     data-action="turbo:before-cache@window->carousel#teardownForCache"
+    @if($customProperties) style="{{ implode('; ', $customProperties) }}" @endif
     {{ $attributes->except(['data-controller','data-action'])->whereDoesntStartWith('data-carousel-')->merge(['id' => $id, 'class' => $class]) }}
 >
     <div data-carousel-target="viewport" class="{{ $viewportClass }}">
@@ -268,11 +354,18 @@ enxuto: só adiciona o core.
   requirements (Embla core + opcionais), targets, values, classes, actions,
   eventos dispatched, exemplos (básico, autoplay, fade, vertical, breakpoints,
   multi-slide-per-view, slides carregados via Turbo Frame), "Markup contract"
-  com viewport / container / slides.
+  com viewport / container / slides. Incluir tabela de eventos com
+  `carousel:scroll`.
 - `docs/components/carousel.md` — modelo `docs/components/modal.md`: props
   table, slots (`default`, `prev_button`, `next_button`, `dot_template`),
   exemplos blade completos, observações Turbo (carousel dentro de frame,
   lazy-image em slides, modal+carousel).
+  **Callout: Não aplique CSS de alinhamento/transform no container.**
+  Propriedades como `justify-content`, `align-items` ou `transform` ao longo
+  do eixo de scroll no container distorcem os `computed offsets` que o Embla
+  mede, quebrando o snapping. Aplique transformações e transições em wrappers
+  internos de cada slide, nunca diretamente no container ou slides. Origem:
+  guias *How Embla Works* e *Alignments*.
 
 ### 6. Testes
 
@@ -324,19 +417,28 @@ Inclui:
 - `resources/js/controllers/carousel_controller.js` — targets viewport,
   container, prevButton, nextButton, dotList, dotTemplate. Values:
   `options` apenas (sem `plugins`). Classes: `activeDot`, `disabledNav`.
-- `resources/js/controllers/carousel.css` — mínimo estrutural.
-- Actions: `next`, `prev`, `scrollTo`.
+- `resources/js/controllers/carousel.css` — mínimo estrutural + CSS custom
+  properties (`--carousel-slide-size`, `--carousel-slide-spacing`) + padding
+  approach (`margin-left` negativo no container) + `touch-action` no container.
+- Actions: `next`, `prev`, `scrollTo`, `play`, `stop` (stubs que delegam para
+  `embla.plugins().autoplay` — no-ops sem o plugin, funcionais com ele).
 - Dot rendering via `dotTemplate` + ativação do dot selecionado.
+- Aria-label condicional: "Go to group N" quando há grouping de slides
+  (`snaps.length !== slideNodes.length`), "Go to slide N" caso contrário.
 - Prev/Next disabled state via `canScrollPrev/Next`.
 - Listener `turbo:before-cache@window` → destroy.
-- Dispatch `carousel:init`, `carousel:select`, `carousel:settle`.
+- Dispatch `carousel:init`, `carousel:select`, `carousel:settle`,
+  `carousel:slides-in-view`, `carousel:slides-changed`, `carousel:scroll`
+  (com `progress` 0..1).
+- Handler `scroll` do Embla → dispatch `carousel:scroll` com `scrollProgress()`.
 - `optionsValueChanged` → `reInit`.
 - `disconnect` → destroy + cleanup.
 - Registry: entry do controller `carousel` em `src/Registry/catalog.php`
   com `npm => ['embla-carousel' => '^8.5.0']`.
 - Doc: `docs/controllers/carousel.md` (sem seção de plugins).
 - Testes JS: `tests/Controllers/carousel_controller.test.js` cobrindo mount,
-  actions, dots, disabled state, dispatch, cache teardown, reInit, disconnect.
+  actions, dots, disabled state, dispatch, cache teardown, reInit, disconnect,
+  `carousel:scroll` dispatch, aria-label condicional com grouping.
 - **Pré-requisito a investigar antes do commit**: confirmar que
   `hotwire:controllers` copia o `.css` co-localizado adjacente ao controller.
   Se não, ajustar `src/Commands/ControllersCommand.php` / `ControllerImports.php`
@@ -348,6 +450,8 @@ Critério de aceite Fase 1:
 - `php artisan hotwire:controllers carousel` publica `.js` **e** `.css`
 - `php artisan hotwire:check` valida o controller
 - `composer analyse` e `composer format` OK
+- Testes cobrem: `carousel:scroll` dispatch com progress, aria-label "group"
+  quando snaps < slides, `play()`/`stop()` não quebram sem plugin
 
 ### Fase 2 — Plugins
 
@@ -384,12 +488,27 @@ ou sem plugins.
 Inclui:
 - `src/Components/Carousel.php` usando `StripsNullProps`.
 - `resources/views/component-views/carousel.blade.php`.
+- Props de CSS custom properties: `$slideSize`, `$slideSpacing` → injetam
+  `--carousel-slide-size`/`--carousel-slide-spacing` inline + ativam o
+  padding approach automaticamente (DX: sem `calc()` manual).
+- Prop `$respectMotionPreference` (default `true`) → injeta breakpoint
+  `'(prefers-reduced-motion: reduce)': { duration: 0 }` automaticamente.
+- Prop `$direction` (`'ltr'`/`'rtl'`), `$watchDrag`, `$watchFocus`,
+  `$inViewThreshold` expostos como props nomeadas.
+- Default `slidesToScroll` = `'auto'` (paginação intuitiva com múltiplos
+  slides visíveis).
+- Lógica de `optionsJson()`: merge dos breakpoints, omissão de defaults.
+- Injeção de `style` com custom properties no elemento raiz.
 - Registry: entry `carousel` em `components` referenciando `controllers => ['carousel']`.
 - Doc: `docs/components/carousel.md` com props table, slots (`default`,
-  `prev_button`, `next_button`, `dot_template`) e exemplos.
+  `prev_button`, `next_button`, `dot_template`), callout sobre não aplicar
+  CSS de alinhamento/transform no container, e exemplos.
 - Testes PHP: `tests/Components/CarouselTest.php` cobrindo defaults,
   flags `navigation/dots`, JSON de `plugins`, merge de `$attributes`, id
-  auto-gerado, `StripsNullProps`.
+  auto-gerado, `StripsNullProps`, `$slideSpacing` renderiza custom property
+  + container com margin negativa, `$respectMotionPreference` injeta/omite
+  breakpoint, `$direction`/`$watchDrag`/`$watchFocus`/`$inViewThreshold`
+  aparecem no `optionsJson` quando não-default.
 
 Critério de aceite Fase 3:
 - `composer test --filter=Carousel` passa
@@ -397,15 +516,21 @@ Critério de aceite Fase 3:
 - `php artisan hotwire:check` em uma view com `<x-hwc::carousel>` exige
   `carousel` controller publicado + `embla-carousel` em `package.json`
 - `php artisan hotwire:docs carousel` exibe a doc
+- `<x-hwc::carousel slideSpacing="16px">` renderiza `--carousel-slide-spacing:
+  16px` + container com margin negativa
+- `<x-hwc::carousel :respect-motion-preference="false">` omite o breakpoint
 
 ### Fase 4 — Extras (progress, counter, browser tests)
 
-Polimento opcional, pode entrar depois de feedback de uso real.
+Polimento opcional, pode entrar depois de feedback de uso real. O handler
+`scroll` e o dispatch `carousel:scroll` com `progress` já existem desde a
+Fase 1 — esta fase só adiciona a UI que consome esses dados.
 
 Inclui:
 - Targets adicionais no controller: `progress`, `indexLabel`, `totalLabel`.
-  Handler `scroll` atualiza `progress.style.width` (ou `transform`);
-  handler `select`/`init` atualiza labels.
+  Handler `scroll` atualiza `progressTarget.style.width` (ou `transform`)
+  com `embla.scrollProgress()`; handler `select`/`init` atualiza labels.
+  O dispatch `carousel:scroll` já existe desde a Fase 1.
 - Props `progress` e `counter` no componente.
 - `tests/Browser/carousel_controller.pw.js` — 1-3 specs validando drag real,
   autoplay e focus.
@@ -420,9 +545,9 @@ Critério de aceite Fase 4:
 | Fase | Criar                                                                                                                                                                                                                                                                                          | Modificar                                                                                       |
 |------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------|
 | 1    | `resources/js/controllers/carousel_controller.js`, `resources/js/controllers/carousel.css`, `docs/controllers/carousel.md`, `tests/Controllers/carousel_controller.test.js`                                                                                                                   | `src/Registry/catalog.php` (entry controller), possivelmente `ControllersCommand`/`ControllerImports` |
-| 2    | (incrementa) doc + testes existentes                                                                                                                                                                                                                                                          | `carousel_controller.js`, `docs/controllers/carousel.md`, `tests/Controllers/carousel_controller.test.js` |
+| 2    | (incrementa) doc + testes existentes                                                                                                                                                                                                                                                          | `carousel_controller.js` (+ `#loadPlugins` + `connect` async + `play/stop` reais + `pluginsValueChanged`), `docs/controllers/carousel.md`, `tests/Controllers/carousel_controller.test.js` |
 | 3    | `src/Components/Carousel.php`, `resources/views/component-views/carousel.blade.php`, `docs/components/carousel.md`, `tests/Components/CarouselTest.php`                                                                                                                                       | `src/Registry/catalog.php` (entry component)                                                    |
-| 4    | `tests/Browser/carousel_controller.pw.js`                                                                                                                                                                                                                                                     | `carousel_controller.js`, `Carousel.php`, view, doc do componente                               |
+| 4    | `tests/Browser/carousel_controller.pw.js`                                                                                                                                                                                                                                                     | `carousel_controller.js` (+ progress/counter targets), `Carousel.php`, view, doc do componente  |
 
 ## Verificação end-to-end
 

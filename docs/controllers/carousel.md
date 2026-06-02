@@ -7,8 +7,8 @@ Stimulus events for integration with other controllers, and cleans itself up on 
 **Identifier:** `carousel`
 **Install:** `php artisan hotwire:controllers carousel`
 
-> The published files are `carousel_controller.js` and `carousel.css` (imported by the controller). Width per slide
-> is intentionally left to your CSS — see the [Markup contract](#markup-contract).
+> The published files are `carousel_controller.js` and `carousel.css` (imported by the controller). Slide size and
+> spacing are set with CSS custom properties — see the [Markup contract](#markup-contract).
 
 ## Requirements
 
@@ -57,19 +57,22 @@ Stimulus events for integration with other controllers, and cleans itself up on 
 | `next`             | Scroll to the next snap (`embla.scrollNext()`)                        |
 | `prev`             | Scroll to the previous snap (`embla.scrollPrev()`)                    |
 | `scrollTo`         | Scroll to a specific snap by index — pass `data-carousel-index-param` |
+| `play`             | Start autoplay — no-op unless the Autoplay plugin is enabled          |
+| `stop`             | Stop autoplay — no-op unless the Autoplay plugin is enabled           |
 | `teardownForCache` | Destroy the Embla instance — wire to `turbo:before-cache@window`      |
 
 ## Events dispatched
 
 The controller dispatches `CustomEvent`s on its root element (they bubble):
 
-| Event                     | `detail`                                                                             |
-|---------------------------|--------------------------------------------------------------------------------------|
-| `carousel:init`           | `{ embla }` — the live Embla instance, useful for plugins/analytics                  |
-| `carousel:select`         | `{ index, previousIndex, slidesInView }`                                             |
-| `carousel:settle`         | (empty) — fired after a scroll comes to rest                                         |
-| `carousel:slides-in-view` | `{ inView: number[] }` — slide indexes currently in the viewport (lazy-load trigger) |
-| `carousel:slides-changed` | (empty) — fired when slides are added or removed (e.g. by a Turbo Stream)            |
+| Event                     | `detail`                                                                              |
+|---------------------------|---------------------------------------------------------------------------------------|
+| `carousel:init`           | `{ embla }` — the live Embla instance, useful for plugins/analytics                   |
+| `carousel:select`         | `{ index, previousIndex, slidesInView }`                                              |
+| `carousel:scroll`         | `{ progress }` — scroll progress `0..1`; fires on every frame, keep the handler cheap |
+| `carousel:settle`         | (empty) — fired after a scroll comes to rest                                          |
+| `carousel:slides-in-view` | `{ inView: number[] }` — slide indexes currently in the viewport (lazy-load trigger)  |
+| `carousel:slides-changed` | (empty) — fired when slides are added or removed (e.g. by a Turbo Stream)             |
 
 Wire them with `data-action`:
 
@@ -87,17 +90,35 @@ The minimum required structure:
 <div data-controller="carousel">
     <div data-carousel-target="viewport">
         <div data-carousel-target="container">
-            <div class="min-w-0 flex-[0_0_100%]">slide 1</div>
-            <div class="min-w-0 flex-[0_0_100%]">slide 2</div>
-            <div class="min-w-0 flex-[0_0_100%]">slide 3</div>
+            <div>slide 1</div>
+            <div>slide 2</div>
+            <div>slide 3</div>
         </div>
     </div>
 </div>
 ```
 
-The controller's CSS file applies `overflow:hidden` to the viewport and `display:flex` to the container; **per-slide
-width is yours to set** so multi-slide-per-view, vertical and responsive layouts stay possible. The example above
-shows the single-slide-per-view default — drop in `flex-[0_0_50%]` for two-per-view, etc.
+The controller's CSS file handles the structure: `overflow:hidden` on the viewport, `display:flex` on the container,
+and per-slide sizing/gap through two custom properties (the "Embla way"):
+
+| Property                   | Default | Description                                                              |
+|----------------------------|---------|--------------------------------------------------------------------------|
+| `--carousel-slide-size`    | `100%`  | Flex basis of each slide (`50%` → two-per-view, `33.333%` → three, etc.) |
+| `--carousel-slide-spacing` | `0px`   | Gap between slides (applied via the padding method, loop/RTL-safe)       |
+
+Set them on the carousel root (the `<x-hwc::carousel>` component does this from its `slideSize`/`slideSpacing` props):
+
+```html
+
+<div data-controller="carousel" style="--carousel-slide-size: 50%; --carousel-slide-spacing: 1rem">…</div>
+```
+
+Prefer the custom properties over putting `flex-[…]` utilities on the slides — the controller's slide rule is scoped
+(`… [data-carousel-target="container"] > *`) and wins on specificity, so a utility on the slide would be ignored.
+
+**Axis:** the controller mirrors the Embla `axis` onto `data-carousel-axis` on the root, and the CSS applies the
+matching `touch-action` (`pan-y` horizontal / `pan-x` vertical) and gap/flex direction. Vertical (`axis: 'y'`) needs a
+height on the viewport — set it via `viewportClass`/your own CSS.
 
 If you omit the viewport target, the controller element itself is used as the viewport — fine for the simplest
 case, but using an explicit target lets you place navigation/dots outside the clipped area.
@@ -171,7 +192,7 @@ All examples below use this style.
     <div {{ stimulus_target('carousel', 'viewport') }}>
         <div {{ stimulus_target('carousel', 'container') }}>
             @foreach ($photos as $photo)
-                <div class="min-w-0 flex-[0_0_100%]">
+                <div>
                     <img src="{{ $photo->url }}" alt="" />
                 </div>
             @endforeach
@@ -185,7 +206,20 @@ All examples below use this style.
         class="absolute top-1/2 left-2 -translate-y-1/2 rounded-full bg-white/80 p-2"
         aria-label="Previous"
     >
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-left-icon lucide-chevron-left"><path d="m15 18-6-6 6-6"/></svg>
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="lucide lucide-chevron-left-icon lucide-chevron-left"
+        >
+            <path d="m15 18-6-6 6-6" />
+        </svg>
     </button>
 
     <button
@@ -195,7 +229,20 @@ All examples below use this style.
         class="absolute top-1/2 right-2 -translate-y-1/2 rounded-full bg-white/80 p-2"
         aria-label="Next"
     >
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right-icon lucide-chevron-right"><path d="m9 18 6-6-6-6"/></svg>
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="lucide lucide-chevron-right-icon lucide-chevron-right"
+        >
+            <path d="m9 18 6-6-6-6" />
+        </svg>
     </button>
 
     <div
@@ -217,9 +264,10 @@ All examples below use this style.
 
 The controller fills `dotList` with one cloned `dotTemplate` per snap, sets `data-carousel-index-param` on each
 clone so `scrollTo` knows where to go, and toggles the `activeDot` class as the selection changes. Each dot also gets
-an `aria-label` ("Go to slide N") and the active one is marked `aria-current="true"` — independently of the
-`activeDot` class. Dots are rebuilt only when the snap count changes (init, `reInit`, `slidesChanged`), not on every
-selection, so dot focus is preserved while navigating.
+an `aria-label` — "Go to slide N", or "Go to group N" when `slidesToScroll` groups slides (snaps fewer than slides) —
+and the active one is marked `aria-current="true"`, independently of the `activeDot` class. Dots are rebuilt only when
+the snap count changes (init, `reInit`, `slidesChanged`), not on every selection, so dot focus is preserved while
+navigating.
 
 ## Vertical orientation
 
@@ -229,12 +277,9 @@ selection, so dot focus is preserved while navigating.
     class="h-96"
 >
     <div {{ stimulus_target('carousel', 'viewport') }} class="h-full">
-        <div
-            {{ stimulus_target('carousel', 'container') }}
-            class="h-full flex-col"
-        >
-            <div class="min-h-0 flex-[0_0_100%]">slide 1</div>
-            <div class="min-h-0 flex-[0_0_100%]">slide 2</div>
+        <div {{ stimulus_target('carousel', 'container') }}>
+            <div>slide 1</div>
+            <div>slide 2</div>
         </div>
     </div>
 </div>
