@@ -2,6 +2,15 @@
 
 All notable changes to `laravel-hotwire` will be documented in this file.
 
+## 0.14.0 - 2026-06-03
+
+Carousel for Hotwire — the Embla-powered `carousel` controller plus the `<x-hwc::carousel>` Blade component.
+
+- Add carousel controller (Embla) (#18) — drag, loop, axis, breakpoints, reduced-motion, dot/nav wiring.
+- Add Carousel Blade component (#19) — prev/next nav, pagination dots, responsive options, CSS-variable sizing, `prev_button`/`next_button`/`dot_template` slots, and a `nav-wrapper-class` prop to group the nav buttons.
+
+Full Changelog: https://github.com/emaia/laravel-hotwire/compare/0.13.0...0.14.0
+
 ## 0.13.0 - 2026-06-02
 
 ### What's Changed
