@@ -152,6 +152,23 @@ it('merges prev/next slot attributes onto the buttons (class + aria-label)', fun
     $view->assertSee('data-carousel-target="prevButton"', false); // wiring intact
 });
 
+it('leaves the nav buttons loose by default (no wrapper)', function () {
+    $view = $this->blade('<x-hwc::carousel>x</x-hwc::carousel>');
+
+    $view->assertSee('data-carousel-target="prevButton"', false);
+    $view->assertDontSee('data-carousel-nav-wrapper', false);
+});
+
+it('wraps the nav buttons when nav-wrapper-class is set', function () {
+    $view = $this->blade('<x-hwc::carousel nav-wrapper-class="absolute bottom-3 left-3 flex gap-2">x</x-hwc::carousel>');
+
+    $view->assertSee('data-carousel-nav-wrapper', false);
+    $view->assertSee('absolute bottom-3 left-3 flex gap-2', false);
+    // buttons still wired inside the wrapper
+    $view->assertSee('data-carousel-target="prevButton"', false);
+    $view->assertSee('data-carousel-target="nextButton"', false);
+});
+
 it('merges dot_template slot attributes onto the dot button', function () {
     $view = $this->blade('
         <x-hwc::carousel>

@@ -23,26 +23,27 @@ custom properties) — see [sizing](../controllers/carousel.md#markup-contract).
 
 ## Props
 
-| Prop                                           | Type          | Default        | Description                                                                                        |
-|------------------------------------------------|---------------|----------------|----------------------------------------------------------------------------------------------------|
-| `id`                                           | `?string`     | `uniqid()`     | Root element id                                                                                    |
-| `loop`                                         | `bool`        | `false`        | Infinite looping                                                                                   |
-| `align`                                        | `string`      | `center`       | `start` / `center` / `end`                                                                         |
-| `axis`                                         | `string`      | `x`            | `x` / `y` (vertical needs a height on the viewport)                                                |
-| `slides-to-scroll`                             | `int\|string` | `auto`         | Slides advanced per move (`auto` paginates by the visible count)                                   |
-| `drag-free`                                    | `bool`        | `false`        | Momentum dragging without snapping                                                                 |
-| `breakpoints`                                  | `?array`      | `null`         | Media-query → option overrides (e.g. responsive `slides-to-scroll`)                                |
-| `respect-motion-preference`                    | `bool`        | `true`         | Injects a `prefers-reduced-motion` breakpoint that disables the animation                          |
-| `options`                                      | `array`       | `[]`           | Catch-all merged into the Embla options (`duration`, `containScroll`, `direction`, `watchDrag`, …) |
-| `navigation`                                   | `bool`        | `true`         | Render prev/next buttons                                                                           |
-| `dots`                                         | `bool`        | `true`         | Render pagination dots                                                                             |
-| `slide-size`                                   | `?string`     | `null`         | `--carousel-slide-size` (e.g. `70%`); responsive via Tailwind utilities                            |
-| `slide-spacing`                                | `?string`     | `null`         | `--carousel-slide-spacing` (e.g. `1rem`)                                                           |
-| `class` / `viewport-class` / `container-class` | `string`      | `''`           | Classes for the root / viewport / container                                                        |
-| `dot-class`                                    | `string`      | `''`           | Class for each dot (active state via `aria-[current=true]:`)                                       |
-| `dot-list-class`                               | `string`      | `''`           | Class for the dot-list container (e.g. positioning)                                                |
-| `dot-list-label`                               | `string`      | `Choose slide` | `aria-label` for the dot-list container                                                            |
-| `nav-class`                                    | `string`      | sensible       | Class for prev/next (disabled state via `disabled:`)                                               |
+| Prop                                           | Type          | Default        | Description                                                                                                          |
+|------------------------------------------------|---------------|----------------|----------------------------------------------------------------------------------------------------------------------|
+| `id`                                           | `?string`     | `uniqid()`     | Root element id                                                                                                      |
+| `loop`                                         | `bool`        | `false`        | Infinite looping                                                                                                     |
+| `align`                                        | `string`      | `center`       | `start` / `center` / `end`                                                                                           |
+| `axis`                                         | `string`      | `x`            | `x` / `y` (vertical needs a height on the viewport)                                                                  |
+| `slides-to-scroll`                             | `int\|string` | `auto`         | Slides advanced per move (`auto` paginates by the visible count)                                                     |
+| `drag-free`                                    | `bool`        | `false`        | Momentum dragging without snapping                                                                                   |
+| `breakpoints`                                  | `?array`      | `null`         | Media-query → option overrides (e.g. responsive `slides-to-scroll`)                                                  |
+| `respect-motion-preference`                    | `bool`        | `true`         | Injects a `prefers-reduced-motion` breakpoint that disables the animation                                            |
+| `options`                                      | `array`       | `[]`           | Catch-all merged into the Embla options (`duration`, `containScroll`, `direction`, `watchDrag`, …)                   |
+| `navigation`                                   | `bool`        | `true`         | Render prev/next buttons                                                                                             |
+| `dots`                                         | `bool`        | `true`         | Render pagination dots                                                                                               |
+| `slide-size`                                   | `?string`     | `null`         | `--carousel-slide-size` (e.g. `70%`); responsive via Tailwind utilities                                              |
+| `slide-spacing`                                | `?string`     | `null`         | `--carousel-slide-spacing` (e.g. `1rem`)                                                                             |
+| `class` / `viewport-class` / `container-class` | `string`      | `''`           | Classes for the root / viewport / container                                                                          |
+| `dot-class`                                    | `string`      | `''`           | Class for each dot (active state via `aria-[current=true]:`)                                                         |
+| `dot-list-class`                               | `string`      | `''`           | Class for the dot-list container (e.g. positioning)                                                                  |
+| `dot-list-label`                               | `string`      | `Choose slide` | `aria-label` for the dot-list container                                                                              |
+| `nav-class`                                    | `string`      | sensible       | Class for prev/next (disabled state via `disabled:`)                                                                 |
+| `nav-wrapper-class`                            | `string`      | `''`           | When set, wraps both nav buttons in a `<div>` with this class (e.g. group them bottom-left); empty leaves them loose |
 
 > `slides-to-scroll` defaults to `auto` (Embla's is `1`) so multi-slide layouts paginate by the visible count.
 > Pass `:slides-to-scroll="1"` for one-at-a-time. Use `:` for integers (`:slides-to-scroll="3"`).
@@ -91,16 +92,12 @@ Prev/next take inner content via slots; dot appearance is set with `dot-class` (
 ```html
 
 <x-hwc::carousel dot-class="h-1 w-6 rounded bg-white/40 transition-colors aria-current:bg-white">
-    <x-slot:prev_button
-    >
+    <x-slot:prev_button>
         <svg><!-- chevron-left --></svg>
-    </x-slot:prev_button
-    >
-    <x-slot:next_button
-    >
+    </x-slot:prev_button>
+    <x-slot:next_button>
         <svg><!-- chevron-right --></svg>
-    </x-slot:next_button
-    >
+    </x-slot:next_button>
 
     {{-- slides --}}
 </x-hwc::carousel>
@@ -162,10 +159,42 @@ Prev/next take inner content via slots; dot appearance is set with `dot-class` (
 
     @foreach ($photos as $photo)
     <div class="min-h-0 overflow-hidden">
-        <img src="{{ $photo['url'] }}" alt="" class="w-full h-full object-cover rounded-2xl "/>
+        <img src="{{ $photo->url }}" alt="" class="w-full h-full object-cover rounded-2xl "/>
     </div>
     @endforeach
 </x-hwc::carousel> 
+```
+
+## Fullscreen example
+
+```html
+
+<x-hwc::carousel class="relative h-screen"
+                 dot-list-class="absolute bottom-6 left-6 flex gap-1.5"
+                 nav-wrapper-class="absolute bottom-5 right-5 flex gap-2"
+                 loop
+>
+
+    @foreach ($photos as $photo)
+    <div class="min-w-0 overflow-hidden">
+        <img src="{{ $photo->url }}" alt="" class="w-full h-screen"/>
+    </div>
+    @endforeach
+
+    <x-slot:prev_button
+        class="rounded-full bg-white/30 md:bg-white w-8 h-16 md:size-16 flex items-center justify-center text-3xl/none">
+        &larr;
+    </x-slot:prev_button>
+
+    <x-slot:next_button
+        class="rounded-full bg-white/30 md:bg-white w-8 h-16 md:size-16 flex items-center justify-center text-3xl/none">
+        &rarr;
+    </x-slot:next_button>
+
+    <x-slot:dot_template
+        class="size-2.5 rounded-full bg-white/50 transition-colors aria-current:bg-white"></x-slot:dot_template>
+
+</x-hwc::carousel>
 ```
 
 ## Turbo

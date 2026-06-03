@@ -34,6 +34,7 @@ class Carousel extends Component
         public string $dotListClass = '',
         public string $dotListLabel = 'Choose slide',
         public string $navClass = '',
+        public string $navWrapperClass = '',
     ) {
         $this->id ??= uniqid('carousel-');
     }

@@ -26,6 +26,9 @@
     </div>
 
     @if ($navigation)
+        @if ($navWrapperClass !== '')
+            <div data-carousel-nav-wrapper class="{{ $navWrapperClass }}">
+        @endif
         <button
             {{
                 ($prev_button ?? new ComponentSlot)->attributes->merge([
@@ -52,6 +55,9 @@
         >
             {{ $next_button ?? '›' }}
         </button>
+        @if ($navWrapperClass !== '')
+            </div>
+        @endif
     @endif
 
     @if ($dots)
