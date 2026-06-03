@@ -524,32 +524,13 @@ class CheckCommand extends Command
      */
     private function writeMissingDependencies(array $missingDeps): int
     {
-        if (empty($missingDeps)) {
-            return 0;
-        }
+        $added = $this->packageInstaller->addDevDependencies($this->files, $missingDeps);
 
-        $packageJsonPath = base_path('package.json');
-
-        if (! $this->files->exists($packageJsonPath)) {
-            return 0;
-        }
-
-        $json = json_decode($this->files->get($packageJsonPath), true) ?: [];
-        $devDeps = $json['devDependencies'] ?? [];
-
-        foreach ($missingDeps as $package => $version) {
-            $devDeps[$package] = $version;
+        foreach ($added as $package => $version) {
             info("Added to devDependencies: $package $version");
         }
 
-        $json['devDependencies'] = $devDeps;
-
-        $this->files->put(
-            $packageJsonPath,
-            json_encode($json, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)."\n"
-        );
-
-        return count($missingDeps);
+        return count($added);
     }
 
     private function shouldInstallDependencies(): bool

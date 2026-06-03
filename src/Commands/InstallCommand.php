@@ -2,6 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Commands;
 
+use Emaia\LaravelHotwire\Support\PackageInstaller;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
 use Symfony\Component\Finder\Finder;
@@ -24,8 +25,10 @@ class InstallCommand extends Command
         '@hotwired/turbo',
     ];
 
-    public function __construct(private Filesystem $files)
-    {
+    public function __construct(
+        private readonly Filesystem $files,
+        private readonly PackageInstaller $packageInstaller,
+    ) {
         parent::__construct();
     }
 
@@ -34,7 +37,7 @@ class InstallCommand extends Command
         $filter = $this->option('only');
 
         if ($filter !== null && ! in_array($filter, ['js', 'css'])) {
-            warning("Invalid --only value: \"{$filter}\". Use 'js' or 'css'.");
+            warning("Invalid --only value: \"$filter\". Use 'js' or 'css'.");
 
             return self::FAILURE;
         }
@@ -93,12 +96,12 @@ class InstallCommand extends Command
 
                 if (! $this->option('force')) {
                     if (! $this->input->isInteractive()) {
-                        warning("File \"{$relativePath}\" already exists. Use --force to overwrite.");
+                        warning("File \"$relativePath\" already exists. Use --force to overwrite.");
 
                         continue;
                     }
 
-                    if (! confirm("File \"{$relativePath}\" already exists and differs. Overwrite?")) {
+                    if (! confirm("File \"$relativePath\" already exists and differs. Overwrite?")) {
                         continue;
                     }
                 }
@@ -107,7 +110,7 @@ class InstallCommand extends Command
             $this->files->ensureDirectoryExists(dirname($targetFile));
             $this->files->copy($sourceFile, $targetFile);
 
-            info("Published: {$relativePath}");
+            info("Published: $relativePath");
             $copied++;
         }
 
@@ -139,74 +142,28 @@ class InstallCommand extends Command
             return 0;
         }
 
-        $dependencies = $this->coreDependencies();
-
-        if (empty($dependencies)) {
-            return 0;
-        }
-
-        $json = json_decode($this->files->get($packageJsonPath), true);
-        $devDeps = $json['devDependencies'] ?? [];
-        $added = 0;
-
-        foreach ($dependencies as $package => $version) {
-            if (($devDeps[$package] ?? null) === $version) {
-                continue;
-            }
-
-            $devDeps[$package] = $version;
-            $added++;
-        }
-
-        if ($added > 0) {
-            $json['devDependencies'] = $devDeps;
-
-            $this->files->put(
-                $packageJsonPath,
-                json_encode($json, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)."\n"
-            );
-        }
-
-        return $added;
-    }
-
-    private function detectPackageManager(): string
-    {
-        $lockFiles = [
-            'bun.lock' => 'bun',
-            'pnpm-lock.yaml' => 'pnpm',
-            'yarn.lock' => 'yarn',
-            'package-lock.json' => 'npm',
-        ];
-
-        foreach ($lockFiles as $file => $manager) {
-            if ($this->files->exists(base_path($file))) {
-                return $manager;
-            }
-        }
-
-        return 'npm';
+        return count($this->packageInstaller->addDevDependencies($this->files, $this->coreDependencies()));
     }
 
     private function showSummary(int $copied, int $depsAdded): void
     {
-        $pm = $this->detectPackageManager();
+        $pm = $this->packageInstaller->detect($this->files);
 
         $this->newLine();
         info('Hotwire installed successfully!');
 
         if ($copied > 0) {
-            $this->line("  Files copied: {$copied}");
+            $this->line("  Files copied: $copied");
         }
 
         if ($depsAdded > 0) {
-            $this->line("  Dependencies added: {$depsAdded}");
+            $this->line("  Dependencies added: $depsAdded");
         }
 
         $this->newLine();
         $this->line('Next steps:');
-        $this->line("  1. Run `{$pm} install` to install dependencies");
-        $this->line("  2. Run `{$pm} run dev` to compile assets");
+        $this->line("  1. Run `$pm install` to install dependencies");
+        $this->line("  2. Run `$pm run dev` to compile assets");
         $this->newLine();
         $this->line('Discover what ships with Hotwire:');
         $this->line('  • `php artisan hotwire:components`         list Blade components and their controllers');

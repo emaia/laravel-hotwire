@@ -2,6 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Commands;
 
+use Emaia\LaravelHotwire\Support\PackageInstaller;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
 
@@ -24,8 +25,10 @@ class UiCommand extends Command
 
     private const string INDEX_IMPORT = 'import "./ui";';
 
-    public function __construct(private Filesystem $files)
-    {
+    public function __construct(
+        private readonly Filesystem $files,
+        private readonly PackageInstaller $packageInstaller,
+    ) {
         parent::__construct();
     }
 
@@ -70,24 +73,11 @@ class UiCommand extends Command
             return 0;
         }
 
-        $version = $this->resolveBasecoatVersion();
-
-        $json = json_decode($this->files->get($packageJsonPath), true);
-        $devDeps = $json['devDependencies'] ?? [];
-
-        if (isset($devDeps[self::BASECOAT_NPM])) {
-            return 0;
-        }
-
-        $devDeps[self::BASECOAT_NPM] = $version;
-        $json['devDependencies'] = $devDeps;
-
-        $this->files->put(
-            $packageJsonPath,
-            json_encode($json, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)."\n"
-        );
-
-        return 1;
+        return count($this->packageInstaller->addDevDependencies(
+            $this->files,
+            [self::BASECOAT_NPM => $this->resolveBasecoatVersion()],
+            updateExisting: false,
+        ));
     }
 
     private function resolveBasecoatVersion(): string
@@ -184,28 +174,10 @@ class UiCommand extends Command
         return true;
     }
 
-    private function detectPackageManager(): string
-    {
-        $lockFiles = [
-            'bun.lock' => 'bun',
-            'pnpm-lock.yaml' => 'pnpm',
-            'yarn.lock' => 'yarn',
-            'package-lock.json' => 'npm',
-        ];
-
-        foreach ($lockFiles as $file => $manager) {
-            if ($this->files->exists(base_path($file))) {
-                return $manager;
-            }
-        }
-
-        return 'npm';
-    }
-
     /** @param string[] $steps */
     private function showSummary(array $steps): void
     {
-        $pm = $this->detectPackageManager();
+        $pm = $this->packageInstaller->detect($this->files);
 
         foreach ($steps as $step) {
             info($step);
@@ -215,8 +187,8 @@ class UiCommand extends Command
         info('Basecoat UI installed successfully!');
         $this->newLine();
         $this->line('Next steps:');
-        $this->line("  1. Run `{$pm} install` to install the package");
-        $this->line("  2. Run `{$pm} run dev` to compile assets");
+        $this->line("  1. Run `$pm install` to install the package");
+        $this->line("  2. Run `$pm run dev` to compile assets");
         $this->line('  3. Start using Basecoat classes: btn, card, input, etc.');
         $this->newLine();
         $this->line('  Docs: https://basecoatui.com');
