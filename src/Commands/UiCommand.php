@@ -5,6 +5,7 @@ namespace Emaia\LaravelHotwire\Commands;
 use Emaia\LaravelHotwire\Support\PackageInstaller;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
+
 use function Laravel\Prompts\info;
 use function Laravel\Prompts\warning;
 
@@ -25,17 +26,16 @@ class UiCommand extends Command
     private const string INDEX_IMPORT = 'import "./ui";';
 
     public function __construct(
-        private readonly Filesystem       $files,
+        private readonly Filesystem $files,
         private readonly PackageInstaller $packageInstaller,
-    )
-    {
+    ) {
         parent::__construct();
     }
 
     public function handle(): int
     {
-        $cssOnly = (bool)$this->option('css-only');
-        $jsOnly = (bool)$this->option('js-only');
+        $cssOnly = (bool) $this->option('css-only');
+        $jsOnly = (bool) $this->option('js-only');
 
         $steps = [];
 
@@ -44,14 +44,14 @@ class UiCommand extends Command
             $steps[] = 'Added basecoat-css to devDependencies';
         }
 
-        if (!$jsOnly) {
+        if (! $jsOnly) {
             $cssInjected = $this->injectCssImport();
             if ($cssInjected) {
-                $steps[] = 'Injected ' . self::CSS_IMPORT . ' into resources/css/app.css';
+                $steps[] = 'Injected '.self::CSS_IMPORT.' into resources/css/app.css';
             }
         }
 
-        if (!$cssOnly) {
+        if (! $cssOnly) {
             $jsInstalled = $this->installJs();
             if ($jsInstalled) {
                 $steps[] = 'Created resources/js/libs/ui.js with Basecoat JS import';
@@ -67,7 +67,7 @@ class UiCommand extends Command
     {
         $packageJsonPath = base_path('package.json');
 
-        if (!$this->files->exists($packageJsonPath)) {
+        if (! $this->files->exists($packageJsonPath)) {
             warning('package.json not found. Skipping npm dependency installation.');
 
             return 0;
@@ -82,9 +82,9 @@ class UiCommand extends Command
 
     private function resolveBasecoatVersion(): string
     {
-        $path = realpath(__DIR__ . '/../../package.json');
+        $path = realpath(__DIR__.'/../../package.json');
 
-        if (!$path) {
+        if (! $path) {
             return '^0.3';
         }
 
@@ -113,11 +113,11 @@ class UiCommand extends Command
             if (str_contains($content, $tailwindImport)) {
                 $content = str_replace(
                     $tailwindImport,
-                    $tailwindImport . "\n" . self::CSS_IMPORT,
+                    $tailwindImport."\n".self::CSS_IMPORT,
                     $content
                 );
             } else {
-                $content = self::CSS_IMPORT . "\n" . $content;
+                $content = self::CSS_IMPORT."\n".$content;
             }
 
             $this->files->put($cssPath, $content);
@@ -128,7 +128,7 @@ class UiCommand extends Command
         $this->files->ensureDirectoryExists(dirname($cssPath));
         $this->files->put(
             $cssPath,
-            '@import "tailwindcss";' . "\n" . self::CSS_IMPORT . "\n"
+            '@import "tailwindcss";'."\n".self::CSS_IMPORT."\n"
         );
 
         return true;
@@ -140,20 +140,20 @@ class UiCommand extends Command
         $indexJsPath = resource_path('js/libs/index.js');
         $changed = false;
 
-        if ($this->writeOrSkipJsFile($uiJsPath, self::JS_IMPORT . "\n")) {
+        if ($this->writeOrSkipJsFile($uiJsPath, self::JS_IMPORT."\n")) {
             $changed = true;
         }
 
         if ($this->files->exists($indexJsPath)) {
             $content = $this->files->get($indexJsPath);
 
-            if (!str_contains($content, self::INDEX_IMPORT)) {
-                $this->files->put($indexJsPath, $content . self::INDEX_IMPORT . "\n");
+            if (! str_contains($content, self::INDEX_IMPORT)) {
+                $this->files->put($indexJsPath, $content.self::INDEX_IMPORT."\n");
                 $changed = true;
             }
         } else {
             $this->files->ensureDirectoryExists(dirname($indexJsPath));
-            $this->files->put($indexJsPath, self::INDEX_IMPORT . "\n");
+            $this->files->put($indexJsPath, self::INDEX_IMPORT."\n");
             $changed = true;
         }
 

@@ -6,6 +6,7 @@ use Emaia\LaravelHotwire\Support\PackageInstaller;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
 use Symfony\Component\Finder\Finder;
+
 use function Laravel\Prompts\confirm;
 use function Laravel\Prompts\info;
 use function Laravel\Prompts\warning;
@@ -25,10 +26,9 @@ class InstallCommand extends Command
     ];
 
     public function __construct(
-        private readonly Filesystem       $files,
+        private readonly Filesystem $files,
         private readonly PackageInstaller $packageInstaller,
-    )
-    {
+    ) {
         parent::__construct();
     }
 
@@ -36,13 +36,13 @@ class InstallCommand extends Command
     {
         $filter = $this->option('only');
 
-        if ($filter !== null && !in_array($filter, ['js', 'css'])) {
+        if ($filter !== null && ! in_array($filter, ['js', 'css'])) {
             warning("Invalid --only value: \"$filter\". Use 'js' or 'css'.");
 
             return self::FAILURE;
         }
 
-        $stubBase = realpath(__DIR__ . '/../../stubs/resources');
+        $stubBase = realpath(__DIR__.'/../../stubs/resources');
         $targetBase = resource_path();
 
         $stubFiles = $this->stubFiles($stubBase, $filter);
@@ -68,7 +68,7 @@ class InstallCommand extends Command
         foreach ($finder as $file) {
             $relativePath = str_replace('\\', '/', $file->getRelativePathname());
 
-            if ($filter !== null && !str_starts_with($relativePath, $filter . '/')) {
+            if ($filter !== null && ! str_starts_with($relativePath, $filter.'/')) {
                 continue;
             }
 
@@ -86,22 +86,22 @@ class InstallCommand extends Command
         $copied = 0;
 
         foreach ($files as $relativePath) {
-            $sourceFile = $stubBase . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relativePath);
-            $targetFile = $targetBase . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relativePath);
+            $sourceFile = $stubBase.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $relativePath);
+            $targetFile = $targetBase.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $relativePath);
 
             if ($this->files->exists($targetFile)) {
                 if ($this->files->hash($sourceFile) === $this->files->hash($targetFile)) {
                     continue;
                 }
 
-                if (!$this->option('force')) {
-                    if (!$this->input->isInteractive()) {
+                if (! $this->option('force')) {
+                    if (! $this->input->isInteractive()) {
                         warning("File \"$relativePath\" already exists. Use --force to overwrite.");
 
                         continue;
                     }
 
-                    if (!confirm("File \"$relativePath\" already exists and differs. Overwrite?")) {
+                    if (! confirm("File \"$relativePath\" already exists and differs. Overwrite?")) {
                         continue;
                     }
                 }
@@ -120,9 +120,9 @@ class InstallCommand extends Command
     /** @return array<string, string> */
     private function coreDependencies(): array
     {
-        $path = realpath(__DIR__ . '/../../package.json');
+        $path = realpath(__DIR__.'/../../package.json');
 
-        if (!$path) {
+        if (! $path) {
             return [];
         }
 
@@ -136,7 +136,7 @@ class InstallCommand extends Command
     {
         $packageJsonPath = base_path('package.json');
 
-        if (!$this->files->exists($packageJsonPath)) {
+        if (! $this->files->exists($packageJsonPath)) {
             warning('package.json not found. Skipping npm dependency installation.');
 
             return 0;
