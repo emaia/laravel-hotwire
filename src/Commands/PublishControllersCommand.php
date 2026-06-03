@@ -198,16 +198,43 @@ class PublishControllersCommand extends Command
         return $count;
     }
 
-    /** @return string[] */
+    /**
+     * A published controller counts as outdated when its own file drifted from
+     * the package OR any of its already-published shared dependencies did — so
+     * a stale dependency (e.g., carousel.css) is updated even while the
+     * controller file itself is unchanged.
+     *
+     * @return string[]
+     *
+     * @throws FileNotFoundException
+     */
     private function resolveOutdated(array $available): array
     {
         $targetBase = resource_path('js/controllers');
+        $baseDir = (string) realpath(__DIR__.'/../../resources/js/controllers');
 
-        return array_keys(array_filter($available, function (array $controller) use ($targetBase): bool {
+        return array_keys(array_filter($available, function (array $controller) use ($targetBase, $baseDir): bool {
             $targetFile = $this->targetFile($targetBase, $controller);
 
-            return $this->files->exists($targetFile)
-                && $this->files->hash($controller['source_file']) !== $this->files->hash($targetFile);
+            // Not published → not "outdated" (publishing new files is check --fix's job).
+            if (! $this->files->exists($targetFile)) {
+                return false;
+            }
+
+            if ($this->files->hash($controller['source_file']) !== $this->files->hash($targetFile)) {
+                return true;
+            }
+
+            foreach ($this->imports->sharedDependencies($controller['source_file'], $baseDir) as $depSource) {
+                $depTarget = $this->imports->targetPath($depSource, $baseDir, $targetBase);
+
+                if ($this->files->exists($depTarget)
+                    && $this->files->hash($depSource) !== $this->files->hash($depTarget)) {
+                    return true;
+                }
+            }
+
+            return false;
         }));
     }
 
