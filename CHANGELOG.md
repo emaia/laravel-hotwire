@@ -2,6 +2,14 @@
 
 All notable changes to `laravel-hotwire` will be documented in this file.
 
+## 0.15.2 - 2026-06-03
+
+Internal refactor — no behavior change.
+
+- Centralize package-manager detection and package.json devDependency writes in the PackageInstaller service, removing duplicated logic across the install, ui and check commands (#22).
+
+Full Changelog: https://github.com/emaia/laravel-hotwire/compare/0.15.1...0.15.2
+
 ## 0.15.1 - 2026-06-03
 
 Fixes hotwire:controllers --outdated missing drifted shared dependencies.
