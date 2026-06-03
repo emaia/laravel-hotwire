@@ -1,8 +1,12 @@
 @php
     use Illuminate\View\ComponentSlot;
 
-    $controller = trim('carousel '.($attributes->get('data-controller') ?? ''));
-    $action = trim('turbo:before-cache@window->carousel#teardownForCache '.($attributes->get('data-action') ?? ''));
+    // $controller is the Stimulus identifier (default "carousel"); override it to
+    // point at a subclass (e.g., controller="gallery"). All data-* / action prefixes
+    // follow it, while the structural CSS hooks below stay identifier-independent.
+    $identifier = $controller;
+    $dataController = trim($identifier.' '.($attributes->get('data-controller') ?? ''));
+    $action = trim("turbo:before-cache@window->{$identifier}#teardownForCache ".($attributes->get('data-action') ?? ''));
 
     $style = collect([
         $slideSize !== null ? "--carousel-slide-size: {$slideSize}" : null,
@@ -11,16 +15,17 @@
 @endphp
 
 <div
-    data-controller="{{ $controller }}"
-    data-carousel-options-value="{{ $optionsJson() }}"
-    @if ($activeDotClass !== '') data-carousel-active-dot-class="{{ $activeDotClass }}" @endif
-    @if ($disabledNavClass !== '') data-carousel-disabled-nav-class="{{ $disabledNavClass }}" @endif
+    data-controller="{{ $dataController }}"
+    data-{{ $identifier }}-options-value="{{ $optionsJson() }}"
+    data-carousel-axis="{{ $axis }}"
+    @if ($activeDotClass !== '') data-{{ $identifier }}-active-dot-class="{{ $activeDotClass }}" @endif
+    @if ($disabledNavClass !== '') data-{{ $identifier }}-disabled-nav-class="{{ $disabledNavClass }}" @endif
     data-action="{{ $action }}"
     @if ($style !== '') style="{{ $style }}" @endif
-    {{ $attributes->except(['data-controller', 'data-action'])->whereDoesntStartWith('data-carousel-')->merge(['id' => $id, 'class' => $class]) }}
+    {{ $attributes->except(['data-controller', 'data-action'])->whereDoesntStartWith($internalPrefixes)->merge(['id' => $id, 'class' => $class]) }}
 >
-    <div data-carousel-target="viewport" class="{{ $viewportClass }}">
-        <div data-carousel-target="container" class="{{ $containerClass }}">
+    <div data-carousel-viewport class="{{ $viewportClass }}">
+        <div data-carousel-container class="{{ $containerClass }}">
             {{ $slot }}
         </div>
     </div>
@@ -33,8 +38,8 @@
             {{
                 ($prev_button ?? new ComponentSlot)->attributes->merge([
                     'type' => 'button',
-                    'data-carousel-target' => 'prevButton',
-                    'data-action' => 'carousel#prev',
+                    "data-{$identifier}-target" => 'prevButton',
+                    'data-action' => "{$identifier}#prev",
                     'aria-label' => 'Previous',
                     'class' => $navClass,
                 ])
@@ -46,8 +51,8 @@
             {{
                 ($next_button ?? new ComponentSlot)->attributes->merge([
                     'type' => 'button',
-                    'data-carousel-target' => 'nextButton',
-                    'data-action' => 'carousel#next',
+                    "data-{$identifier}-target" => 'nextButton',
+                    'data-action' => "{$identifier}#next",
                     'aria-label' => 'Next',
                     'class' => $navClass,
                 ])
@@ -62,18 +67,18 @@
 
     @if ($dots)
         <div
-            data-carousel-target="dotList"
+            data-{{ $identifier }}-target="dotList"
             class="{{ $dotListClass }}"
             role="group"
             aria-label="{{ $dotListLabel }}"
         ></div>
 
-        <template data-carousel-target="dotTemplate">
+        <template data-{{ $identifier }}-target="dotTemplate">
             <button
                 {{
                     ($dot_template ?? new ComponentSlot)->attributes->merge([
                         'type' => 'button',
-                        'data-action' => 'carousel#scrollTo',
+                        'data-action' => "{$identifier}#scrollTo",
                         'class' => $dotClass,
                     ])
                 }}

@@ -14,20 +14,23 @@ Stimulus events for integration with other controllers, and cleans itself up on 
 
 - `embla-carousel` `^8.6.0` — install it yourself: `bun add embla-carousel` (or `npm install embla-carousel`).
 
-> `hotwire:check` scans for Blade **component** tags (`<x-hwc::…>`), not raw `data-controller` attributes — so for the
-> standalone controller it won't detect the carousel or add the npm dependency. Install `embla-carousel` manually.
-> Once the `<x-hwc::carousel>` component ships, `hotwire:check --fix` adds the dependency automatically.
+> `hotwire:check` detects the carousel via the `<x-hwc::carousel>` component and via a raw `data-controller="carousel"`,
+> and `--fix` adds the `embla-carousel` dependency. (A subclass under your own identifier is your code — install
+> `embla-carousel` yourself; it's pulled in transitively by the published `carousel_controller.js` you import.)
 
 ## Targets
 
 | Target        | Required | Description                                                                                               |
 | ------------- | -------- | --------------------------------------------------------------------------------------------------------- |
-| `viewport`    | Optional | The element with `overflow:hidden` that Embla measures. Falls back to the controller element itself       |
-| `container`   | Optional | The flex container that holds the slides — informational; Embla finds it via `viewport.firstElementChild` |
 | `prevButton`  | Optional | Previous-slide button. Disabled automatically when `canScrollPrev` is false                               |
 | `nextButton`  | Optional | Next-slide button. Disabled automatically when `canScrollNext` is false                                   |
 | `dotList`     | Optional | Container that the controller fills with one button per snap                                              |
 | `dotTemplate` | Optional | `<template>` cloned for each dot. Falls back to a bare `<button>` when absent                             |
+
+The viewport and container are not Stimulus targets — they're marked with the identifier-independent hooks
+`data-carousel-viewport` / `data-carousel-container` (see [Markup contract](#markup-contract)). The viewport is the
+element Embla measures (`overflow:hidden`); it falls back to the controller element if the hook is absent. The
+container is the flex track Embla animates (Embla finds it via `viewport.firstElementChild`).
 
 ## Stimulus Values
 
@@ -92,14 +95,48 @@ Wire them with `data-action`:
 <div data-controller="carousel" data-action="carousel:select->analytics#track">…</div>
 ```
 
+## Extending (plugins & custom behavior)
+
+Published files are **managed** — don't edit them (updates overwrite). To customize, **extend** in your own
+controller (the package never touches it).
+
+Embla plugins are opt-in and not bundled by the package (a bundler can't resolve an import of a package you haven't
+installed). Install the one you want and override `emblaPlugins()` in a subclass:
+
+```js
+// resources/js/controllers/gallery_controller.js
+import CarouselController from "./carousel_controller";
+import Autoplay from "embla-carousel-autoplay";
+
+export default class extends CarouselController {
+    emblaPlugins() {
+        return [Autoplay({ delay: 4000 })];
+    }
+}
+```
+
+Your subclass is auto-registered under its filename (`gallery`), and its plugin imports load **lazily with it** —
+nothing enters your main bundle. Use it with the component via the `controller` prop, or with raw markup:
+
+```html
+<div data-controller="gallery">
+    <div data-carousel-viewport>
+        <div data-carousel-container>…</div>
+    </div>
+</div>
+```
+
+The structural hooks (`data-carousel-viewport` / `data-carousel-container`) are identifier-independent, so the subclass
+gets the same layout for free. `play` / `stop` delegate to the Autoplay plugin when present.
+
 ## Markup contract
 
 The minimum required structure:
 
 ```html
 <div data-controller="carousel">
-    <div data-carousel-target="viewport">
-        <div data-carousel-target="container">
+    <div data-carousel-viewport>
+        <div data-carousel-container>
             <div>slide 1</div>
             <div>slide 2</div>
             <div>slide 3</div>
@@ -107,6 +144,11 @@ The minimum required structure:
     </div>
 </div>
 ```
+
+The controller finds the viewport/container by the `data-carousel-viewport` / `data-carousel-container` hooks (not
+Stimulus targets), and the structural CSS keys on the same hooks. They're **identifier-independent** — a subclass
+under its own identifier reuses them and the CSS unchanged (see [Extending](#extending-plugins--custom-behavior)).
+`prevButton`/`nextButton`/`dotList`/`dotTemplate` remain Stimulus targets (`data-carousel-target="…"`).
 
 The controller's CSS file handles the structure: `overflow:hidden` on the viewport, `display:flex` on the container,
 and per-slide sizing/gap through two custom properties (the "Embla way"):
@@ -123,19 +165,14 @@ Set them on the carousel root (the `<x-hwc::carousel>` component does this from 
 ```
 
 Prefer the custom properties over putting `flex-[…]` utilities on the slides — the controller's slide rule is scoped
-(`… [data-carousel-target="container"] > *`) and wins on specificity, so a utility on the slide would be ignored.
+(`[data-carousel-container] > *`) and wins on specificity, so a utility on the slide would be ignored.
 
 **Axis:** the controller mirrors the Embla `axis` onto `data-carousel-axis` on the root, and the CSS applies the
 matching `touch-action` (`pan-y` horizontal / `pan-x` vertical) and gap/flex direction. Vertical (`axis: 'y'`) needs a
 height on the viewport — set it via `viewportClass`/your own CSS.
 
-If you omit the viewport target, the controller element itself is used as the viewport — fine for the simplest
-case, but using an explicit target lets you place navigation/dots outside the clipped area.
-
-> **Nested carousels:** the CSS selectors use descendant combinators, so an inner carousel's `viewport`/`container`
-> targets also match the outer carousel's rules. Both rules (`overflow:hidden` and `display:flex`) are always wanted
-> on a viewport/container anyway, so there's no behavioral conflict — just be aware that any custom selector you
-> add against `data-controller~="carousel"` will reach inner instances too.
+If you omit the `data-carousel-viewport` hook, the controller element itself is used as the viewport — fine for the
+simplest case, but an explicit viewport lets you place navigation/dots outside the clipped area.
 
 ## Configuring with the Stimulus builder
 
@@ -170,7 +207,7 @@ renders to the same attributes the controller expects:
 The same goes for targets and actions on the children:
 
 ```blade
-<div {{ stimulus_target('carousel', 'viewport') }}>…</div>
+<div data-carousel-viewport>…</div>
 <button
     {{ stimulus_target('carousel', 'prevButton') }}
     {{ stimulus_action('carousel', 'prev') }}
@@ -192,8 +229,8 @@ All examples below use this style.
     }}
     class="relative"
 >
-    <div {{ stimulus_target('carousel', 'viewport') }}>
-        <div {{ stimulus_target('carousel', 'container') }}>
+    <div data-carousel-viewport>
+        <div data-carousel-container>
             @foreach ($photos as $photo)
                 <div>
                     <img src="{{ $photo->url }}" alt="" />
@@ -278,8 +315,8 @@ clone so `scrollTo` knows where to go, and marks the active dot with `aria-curre
     {{ stimulus_controller('carousel', ['options' => [...$options, 'axis' => 'y']]) }}
     class="h-96"
 >
-    <div {{ stimulus_target('carousel', 'viewport') }} class="h-full">
-        <div {{ stimulus_target('carousel', 'container') }}>
+    <div data-carousel-viewport class="h-full">
+        <div data-carousel-container>
             <div>slide 1</div>
             <div>slide 2</div>
         </div>
@@ -340,10 +377,10 @@ one-per-page on mobile:
     class="relative [--carousel-slide-size:100%] [--carousel-slide-spacing:1rem] md:[--carousel-slide-size:45%] lg:[--carousel-slide-size:25%]"
 >
     <div
-        {{ stimulus_target('carousel', 'viewport') }}
+        data-carousel-viewport
         class="overflow-hidden"
     >
-        <div {{ stimulus_target('carousel', 'container') }}>
+        <div data-carousel-container>
             @foreach ($photos as $photo)
                 <img src="{{ $photo->url }}" alt="" class="h-96 w-full object-cover md:rounded-md" />
             @endforeach

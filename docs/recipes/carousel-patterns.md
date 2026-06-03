@@ -31,8 +31,8 @@ controller that bridges them via Stimulus outlets.
             ->action('gallery-sync', 'follow', 'carousel:select')
     }}
 >
-    <div {{ stimulus_target('carousel', 'viewport') }} class="aspect-square">
-        <div {{ stimulus_target('carousel', 'container') }}>
+    <div data-carousel-viewport class="aspect-square">
+        <div data-carousel-container>
             @foreach ($photos as $photo)
                 <div class="min-w-0 flex-[0_0_100%]">
                     <img src="{{ $photo->url }}" alt="">
@@ -56,8 +56,8 @@ controller that bridges them via Stimulus outlets.
     data-thumbnail-strip
     class="mt-2"
 >
-    <div {{ stimulus_target('carousel', 'viewport') }}>
-        <div {{ stimulus_target('carousel', 'container') }}>
+    <div data-carousel-viewport>
+        <div data-carousel-container>
             @foreach ($photos as $i => $photo)
                 <button
                     type="button"
@@ -117,8 +117,8 @@ duplication — the modal pulls a dedicated `lightbox.show` route.
 
 ```blade
 <div {{ stimulus_controller('carousel', ['options' => $options]) }}>
-    <div {{ stimulus_target('carousel', 'viewport') }}>
-        <div {{ stimulus_target('carousel', 'container') }}>
+    <div data-carousel-viewport>
+        <div data-carousel-container>
             @foreach ($photos as $photo)
                 <a
                     href="{{ route('lightbox.show', $photo) }}"
@@ -162,8 +162,8 @@ counters.
     <p>{{ __('Slide') }} <span data-slide-counter-target="current">1</span>
        {{ __('of') }} <span data-slide-counter-target="total">{{ $photos->count() }}</span></p>
 
-    <div {{ stimulus_target('carousel', 'viewport') }}>
-        <div {{ stimulus_target('carousel', 'container') }} id="carousel-slides">
+    <div data-carousel-viewport>
+        <div data-carousel-container id="carousel-slides">
             @foreach ($photos as $photo)
                 @include('partials.slide', ['photo' => $photo])
             @endforeach
@@ -266,8 +266,8 @@ Lets a user share a link like `/gallery#slide-3` and land on the right slide. Tw
             ->action('hash-slides', 'restore', 'turbo:load@window')
     }}
 >
-    <div {{ stimulus_target('carousel', 'viewport') }}>
-        <div {{ stimulus_target('carousel', 'container') }}>
+    <div data-carousel-viewport>
+        <div data-carousel-container>
             @foreach ($photos as $photo)
                 <div class="min-w-0 flex-[0_0_100%]">…</div>
             @endforeach
@@ -330,8 +330,8 @@ tiny `carousel-analytics` sister controller for the per-slide payload (since `gt
             ])
     }}
 >
-    <div {{ stimulus_target('carousel', 'viewport') }}>
-        <div {{ stimulus_target('carousel', 'container') }}>
+    <div data-carousel-viewport>
+        <div data-carousel-container>
             @foreach ($gallery->slides as $slide)
                 <div data-slide-sku="{{ $slide->sku }}" class="min-w-0 flex-[0_0_100%]">…</div>
             @endforeach

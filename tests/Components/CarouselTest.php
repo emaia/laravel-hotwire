@@ -70,8 +70,8 @@ it('renders the controller, viewport, container and slides', function () {
     $view = $this->blade('<x-hwc::carousel><div>one</div><div>two</div></x-hwc::carousel>');
 
     $view->assertSee('data-controller="carousel"', false);
-    $view->assertSee('data-carousel-target="viewport"', false);
-    $view->assertSee('data-carousel-target="container"', false);
+    $view->assertSee('data-carousel-viewport', false);
+    $view->assertSee('data-carousel-container', false);
     $view->assertSee('one');
     $view->assertSee('two');
     $view->assertSee('carousel#teardownForCache', false);
@@ -89,6 +89,33 @@ it('omits active-dot and disabled-nav data attributes when the prop is empty', f
 
     $view->assertDontSee('data-carousel-active-dot-class', false);
     $view->assertDontSee('data-carousel-disabled-nav-class', false);
+});
+
+it('emits identifier-independent structural hooks', function () {
+    $view = $this->blade('<x-hwc::carousel>x</x-hwc::carousel>');
+
+    $view->assertSee('data-carousel-viewport', false)
+        ->assertSee('data-carousel-container', false)
+        ->assertSee('data-carousel-axis="x"', false);
+});
+
+it('swaps the Stimulus identifier with the controller prop', function () {
+    $view = $this->blade('<x-hwc::carousel controller="gallery">x</x-hwc::carousel>');
+
+    // identifier-scoped attrs follow the prop
+    $view->assertSee('data-controller="gallery"', false)
+        ->assertSee('data-gallery-target="prevButton"', false)
+        ->assertSee('data-gallery-options-value', false)
+        ->assertSee('gallery#prev', false)
+        ->assertSee('gallery#teardownForCache', false);
+
+    // structural hooks stay identifier-independent
+    $view->assertSee('data-carousel-viewport', false)
+        ->assertSee('data-carousel-container', false);
+
+    // no leftover hardcoded carousel identifier
+    $view->assertDontSee('data-carousel-target', false)
+        ->assertDontSee('carousel#prev', false);
 });
 
 it('renders navigation by default and hides it when disabled', function () {
@@ -110,11 +137,32 @@ it('emits slide size and spacing as custom properties', function () {
     $view->assertSee('--carousel-slide-spacing: 1rem', false);
 });
 
-it('unions a user data-controller and filters data-carousel-* attributes', function () {
+it('unions a user data-controller and only filters the component\'s own data-carousel-* attributes', function () {
     $view = $this->blade('<x-hwc::carousel data-controller="analytics" data-carousel-foo="bar">x</x-hwc::carousel>');
 
     $view->assertSee('data-controller="carousel analytics"', false);
-    $view->assertDontSee('data-carousel-foo', false);
+    $view->assertSee('data-carousel-foo="bar"', false);
+    // The component renders its own options-value; we only filter the
+    // user-supplied one — verify the rendered value isn't "hacked".
+    $view->assertSee('data-carousel-options-value', false);
+});
+
+it('lets a subclass value pass through while filtering owned attributes', function () {
+    $view = $this->blade('<x-hwc::carousel controller="gallery" data-controller="tracking" data-gallery-delay-value="100">x</x-hwc::carousel>');
+
+    $view->assertSee('data-controller="gallery tracking"', false);
+    $view->assertSee('data-gallery-delay-value="100"', false);
+    // Component renders its own options-value; the user's isn't duplicated.
+    $view->assertSee('data-gallery-options-value', false);
+});
+
+it('filters owned attributes matching the internal prefixes', function () {
+    $default = $this->blade('<x-hwc::carousel data-carousel-options-value="hacked">x</x-hwc::carousel>');
+    $subclass = $this->blade('<x-hwc::carousel controller="gallery" data-gallery-options-value="hacked" data-gallery-active-dot-class="hacked" data-gallery-disabled-nav-class="hacked">x</x-hwc::carousel>');
+
+    // The user's "hacked" value is stripped; only the component's own value survives.
+    $default->assertDontSee('hacked', false);
+    $subclass->assertDontSee('hacked', false);
 });
 
 it('wraps a dot_template slot inside the dot button (content slot, like prev/next)', function () {

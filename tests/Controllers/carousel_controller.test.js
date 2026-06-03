@@ -46,10 +46,10 @@ function createInstance() {
     return instance;
 }
 
-const emblaFactory = mock((node, options) => {
+const emblaFactory = mock((node, options, plugins) => {
     const instance = createInstance();
     emblaState.instance = instance;
-    emblaState.calls.push({ node, options });
+    emblaState.calls.push({ node, options, plugins });
     return instance;
 });
 
@@ -98,7 +98,7 @@ test.serial("falls back to the controller element when no viewport target exists
         CarouselController,
         `
         <div data-controller="carousel">
-            <div data-carousel-target="container">
+            <div data-carousel-container>
                 <div>slide 1</div>
             </div>
         </div>`,
@@ -331,6 +331,46 @@ test.serial("play() and stop() are no-ops when no autoplay plugin is present", a
     }).not.toThrow();
 });
 
+// --- Plugins / extension ---
+
+test.serial("passes an empty plugin array to Embla by default", async () => {
+    await mount();
+
+    expect(emblaState.calls[0].plugins).toEqual([]);
+});
+
+test.serial("a subclass supplies Embla plugins via emblaPlugins(), and dots use the subclass identifier", async () => {
+    const fakePlugin = { name: "fake" };
+
+    class Gallery extends CarouselController {
+        emblaPlugins() {
+            return [fakePlugin];
+        }
+    }
+
+    const gallery = await mountController(
+        "gallery",
+        Gallery,
+        `
+        <div data-controller="gallery" data-gallery-options-value='{}'>
+            <div data-carousel-viewport>
+                <div data-carousel-container><div>slide</div></div>
+            </div>
+            <div data-gallery-target="dotList"></div>
+        </div>`,
+    );
+
+    // plugins from the subclass reach Embla
+    expect(emblaState.calls[0].plugins).toEqual([fakePlugin]);
+
+    // fallback dots are wired to the subclass identifier, not a hardcoded "carousel"
+    const dot = document.querySelector('[data-gallery-target="dotList"] button');
+    expect(dot.getAttribute("data-action")).toBe("gallery#scrollTo");
+    expect(dot.hasAttribute("data-gallery-index-param")).toBe(true);
+
+    await gallery.cleanup();
+});
+
 // --- Axis mirroring (CSS hook) ---
 
 test.serial("mirrors the axis option to a data attribute and defaults to x", async () => {
@@ -396,7 +436,7 @@ test.serial("teardownForCache destroys the Embla instance before Turbo caches th
 // --- Helpers ---
 
 function viewport() {
-    return document.querySelector('[data-carousel-target="viewport"]');
+    return document.querySelector("[data-carousel-viewport]");
 }
 
 function dotEls() {
@@ -426,8 +466,8 @@ async function mount({ options = {} } = {}) {
         <div data-controller="carousel"
              ${optsAttr}
              data-action="turbo:before-cache@window->carousel#teardownForCache">
-            <div data-carousel-target="viewport">
-                <div data-carousel-target="container">
+            <div data-carousel-viewport>
+                <div data-carousel-container>
                     <div>slide 1</div>
                     <div>slide 2</div>
                     <div>slide 3</div>

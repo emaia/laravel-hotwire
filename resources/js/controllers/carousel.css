@@ -5,15 +5,17 @@
  * styling slides with conflicting flex-basis utilities: the rules below are
  * scoped (descendant + child) and would win on specificity.
  *
- * Directional rules (touch-action, gap, flex direction) follow the axis the
- * controller mirrors onto [data-carousel-axis]; default is horizontal.
+ * Identifier-independent: the rules key on the structural hooks the markup
+ * carries (data-carousel-viewport / data-carousel-container) and the axis
+ * mirrored onto [data-carousel-axis] — never on the Stimulus identifier — so a
+ * subclassed controller (its own identifier) reuses these styles unchanged.
  */
 
-[data-controller~="carousel"] [data-carousel-target="viewport"] {
+[data-carousel-viewport] {
     overflow: hidden;
 }
 
-[data-controller~="carousel"] [data-carousel-target="container"] {
+[data-carousel-container] {
     display: flex;
     /*
      * No `will-change`/`transform` here: a composited layer / containing block on
@@ -24,7 +26,7 @@
      */
 }
 
-[data-controller~="carousel"] [data-carousel-target="container"] > * {
+[data-carousel-container] > * {
     box-sizing: border-box;
     flex: 0 0 var(--carousel-slide-size, 100%);
     min-width: 0;
@@ -33,25 +35,25 @@
 
 /* --- Horizontal (default) --- */
 
-[data-controller~="carousel"]:not([data-carousel-axis="y"]) [data-carousel-target="container"] {
+[data-carousel-axis="x"] [data-carousel-container] {
     flex-direction: row;
     touch-action: pan-y pinch-zoom;
     margin-left: calc(var(--carousel-slide-spacing, 0px) * -1);
 }
 
-[data-controller~="carousel"]:not([data-carousel-axis="y"]) [data-carousel-target="container"] > * {
+[data-carousel-axis="x"] [data-carousel-container] > * {
     padding-left: var(--carousel-slide-spacing, 0px);
 }
 
 /* --- Vertical (axis: 'y') --- */
 
-[data-controller~="carousel"][data-carousel-axis="y"] [data-carousel-target="container"] {
+[data-carousel-axis="y"] [data-carousel-container] {
     flex-direction: column;
     height: 100%;
     touch-action: pan-x pinch-zoom;
     margin-top: calc(var(--carousel-slide-spacing, 0px) * -1);
 }
 
-[data-controller~="carousel"][data-carousel-axis="y"] [data-carousel-target="container"] > * {
+[data-carousel-axis="y"] [data-carousel-container] > * {
     padding-top: var(--carousel-slide-spacing, 0px);
 }

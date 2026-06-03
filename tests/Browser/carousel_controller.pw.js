@@ -16,7 +16,7 @@ async function render(page, wrapperStyle) {
         <style>* { box-sizing: border-box; margin: 0; padding: 0; } ${css}</style>
         <div style="${wrapperStyle}">
             <div data-controller="carousel" data-carousel-axis="x" style="--carousel-slide-size:70%;--carousel-slide-spacing:1rem">
-                <div data-carousel-target="viewport"><div data-carousel-target="container">
+                <div data-carousel-viewport><div data-carousel-container>
                     ${Array.from({ length: 6 }, () => `<div><div style="height:200px"></div></div>`).join("")}
                 </div></div>
             </div>
@@ -25,7 +25,7 @@ async function render(page, wrapperStyle) {
     await page.addScriptTag({ path: "node_modules/embla-carousel/embla-carousel.umd.js" });
 
     return page.evaluate(() => {
-        const viewport = document.querySelector('[data-carousel-target="viewport"]');
+        const viewport = document.querySelector('[data-carousel-viewport]');
         const embla = window.EmblaCarousel(viewport, { loop: true, align: "center", axis: "x" });
         const v = viewport.getBoundingClientRect();
         const slides = embla.slideNodes();
@@ -67,14 +67,14 @@ test("--carousel-slide-size is overridable by an app class (no default rule to f
             .half { --carousel-slide-size: 50%; }
             ${css}</style>
             <div data-controller="carousel" data-carousel-axis="x" class="${rootClass}">
-                <div data-carousel-target="viewport"><div data-carousel-target="container">
+                <div data-carousel-viewport><div data-carousel-container>
                     <div><div style="height:100px"></div></div>
                     <div><div style="height:100px"></div></div>
                 </div></div>
             </div>
         `);
         return page.evaluate(() =>
-            Math.round(document.querySelector('[data-carousel-target="container"] > *').getBoundingClientRect().width),
+            Math.round(document.querySelector('[data-carousel-container] > *').getBoundingClientRect().width),
         );
     }
 
