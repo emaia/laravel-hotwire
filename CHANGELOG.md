@@ -2,6 +2,16 @@
 
 All notable changes to `laravel-hotwire` will be documented in this file.
 
+## 0.15.0 - 2026-06-03
+
+hotwire:check now detects Stimulus controllers used directly, not just via components — data-controller attributes and the stimulus_controller() / stimulus()->controller()/controllers() / stimulus_action() / stimulus_target() helpers (#20).
+
+- Only package-registered controllers are checked; user-defined ones are ignored.
+- Comments, <script> and <style> blocks are stripped before scanning, so commented-out code is ignored.
+- May surface new CI failures (exit 1): a package controller used via a raw data-controller, without its component and not yet published, is now reported.
+
+Full Changelog: https://github.com/emaia/laravel-hotwire/compare/0.14.0...0.15.0
+
 ## 0.14.0 - 2026-06-03
 
 Carousel for Hotwire — the Embla-powered `carousel` controller plus the `<x-hwc::carousel>` Blade component.
