@@ -129,6 +129,50 @@ Or map a friendly name (`?tab=billing`) to an index:
 <div data-controller="tabs" data-tabs-selected-index-value="{{ $active }}"></div>
 ```
 
+### Syncing the active tab back to the URL
+
+The companion of the section above: write the active tab to the query string whenever it changes, so a reload or a
+shared link reopens the same tab. A small user controller listens for `tabs:change` and rewrites the URL — `replaceState`
+adds no new history entry (no spurious back-button steps) and keeps Turbo's restoration state intact:
+
+```js
+// resources/js/controllers/tab_url_controller.js
+import { Controller } from "@hotwired/stimulus";
+
+export default class extends Controller {
+    update(event) {
+        const { tab, index } = event.detail;
+        const name = tab.dataset.tabName ?? index; // a name is more robust than a positional index
+
+        const url = new URL(window.location);
+        url.searchParams.set("tab", name);
+
+        // replaceState adds no history entry and preserves Turbo's restoration state.
+        history.replaceState(history.state, "", url);
+    }
+}
+```
+
+Mount it alongside `tabs` and wire the `tabs:change` event to it, tagging each tab with the `data-tab-name` the server reads:
+
+```blade
+<div
+    data-controller="tabs tab-url"
+    data-action="tabs:change->tab-url#update"
+    data-tabs-selected-index-value="{{ $active }}"
+>
+    <div role="tablist" aria-label="Settings" data-action="click->tabs#select keydown->tabs#navigate">
+        <button role="tab" id="tab-general" aria-controls="panel-general" data-tabs-target="tab" data-tab-name="general">General</button>
+        <button role="tab" id="tab-advanced" aria-controls="panel-advanced" data-tabs-target="tab" data-tab-name="advanced">Advanced</button>
+        <button role="tab" id="tab-billing" aria-controls="panel-billing" data-tabs-target="tab" data-tab-name="billing">Billing</button>
+    </div>
+
+    {{-- panels --}}
+</div>
+```
+
+Use the same `data-tab-name` values the server maps when [picking the initial tab](#picking-the-initial-tab-from-a-query-string), so the round-trip (load → switch → reload) lands on the same tab. `tab-url` is a controller you add to your app. Since `tabs:change` fires only on an actual change — never on the initial render or a Turbo morph — the URL is only rewritten when the user switches, not on page load.
+
 ### Opening the tab that has validation errors
 
 When a form spans several tabs, reopen the one holding the failed fields so the user actually sees the error instead of
