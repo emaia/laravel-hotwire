@@ -164,9 +164,8 @@ class CheckCommand extends Command
     {
         $content = preg_replace('/{{--.*?--}}/s', '', $content);
         $content = preg_replace('/<script[\s>][\s\S]*?<\/script>/i', '', $content);
-        $content = preg_replace('/<style[\s>][\s\S]*?<\/style>/i', '', $content);
 
-        return $content;
+        return preg_replace('/<style[\s>][\s\S]*?<\/style>/i', '', $content);
     }
 
     /**
@@ -241,10 +240,12 @@ class CheckCommand extends Command
 
     /**
      * Report the status of controllers used directly (without a component wrapper)
-     * and return issues + controller definitions compatible with the existing pipeline.
+     * and return issues and controller definitions compatible with the existing pipeline.
      *
      * @param  array<string, ControllerDefinition>  $standaloneControllers
      * @return array{issues: array<int, array{identifier: string, source_file: string, target_file: string}>, controllers: array<string, ControllerDefinition>}
+     *
+     * @throws FileNotFoundException
      */
     private function reportStandaloneControllers(array $standaloneControllers, string $targetBase, HotwireRegistry $registry): array
     {
@@ -266,6 +267,8 @@ class CheckCommand extends Command
      *
      * @param  string[]  $usedKeys
      * @return array{issues: array<int, array{identifier: string, source_file: string, target_file: string}>, controllers: array<string, ControllerDefinition>}
+     *
+     * @throws FileNotFoundException
      */
     private function reportStatus(array $usedKeys, string $prefix, string $targetBase, HotwireRegistry $registry): array
     {

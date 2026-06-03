@@ -236,7 +236,8 @@ it('detects multiple controllers via data-controller attribute', function () {
     $exit = Artisan::call('hotwire:check --no-interaction');
     $output = Artisan::output();
 
-    expect($output)->toContain('timeago')
+    expect($exit)->toBe(1)
+        ->and($output)->toContain('timeago')
         ->and($output)->toContain('modal');
 });
 
@@ -268,7 +269,8 @@ it('detects multiple via stimulus()->controllers()', function () {
     $exit = Artisan::call('hotwire:check --no-interaction');
     $output = Artisan::output();
 
-    expect($output)->toContain('modal')
+    expect($exit)->toBe(1)
+        ->and($output)->toContain('modal')
         ->and($output)->toContain('confirm-dialog');
 });
 
