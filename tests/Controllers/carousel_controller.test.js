@@ -412,6 +412,87 @@ test.serial("re-renders dots when the snap list changes on reInit", async () => 
     });
 });
 
+// --- Progress target ---
+
+test.serial("sets the progress target width on scroll", async () => {
+    await mount();
+
+    emblaState.progress = 0.42;
+    emit("scroll");
+
+    const bar = document.querySelector('[data-carousel-target="progress"]');
+    expect(bar.style.width).toBe("42%");
+});
+
+test.serial("progress target is optional (no error when absent)", async () => {
+    const m = await mountController("carousel", CarouselController, `
+        <div data-controller="carousel" data-carousel-options-value='{}'>
+            <div data-carousel-viewport>
+                <div data-carousel-container><div>slide</div></div>
+            </div>
+        </div>`);
+
+    expect(() => {
+        emblaState.progress = 0.5;
+        emit("scroll");
+    }).not.toThrow();
+
+    await m.cleanup();
+});
+
+// --- Counter targets ---
+
+test.serial("sets indexLabel (1-based) and totalLabel on connect", async () => {
+    emblaState.snaps = [0, 0.25, 0.5, 0.75];
+    await mount();
+
+    expect(document.querySelector('[data-carousel-target="indexLabel"]').textContent).toBe("1");
+    expect(document.querySelector('[data-carousel-target="totalLabel"]').textContent).toBe("4");
+});
+
+test.serial("updates indexLabel on select", async () => {
+    await mount();
+
+    emblaState.selected = 2;
+    emit("select");
+
+    expect(document.querySelector('[data-carousel-target="indexLabel"]').textContent).toBe("3");
+});
+
+test.serial("updates totalLabel on reInit and slidesChanged", async () => {
+    emblaState.snaps = [0, 0.5, 1];
+    await mount();
+    expect(document.querySelector('[data-carousel-target="totalLabel"]').textContent).toBe("3");
+
+    emblaState.snaps = [0, 0.2, 0.4, 0.6, 0.8];
+    emit("reInit");
+    expect(document.querySelector('[data-carousel-target="totalLabel"]').textContent).toBe("5");
+
+    emblaState.snaps = [0, 0.5];
+    emit("slidesChanged");
+    expect(document.querySelector('[data-carousel-target="totalLabel"]').textContent).toBe("2");
+});
+
+test.serial("counter targets are optional (no error when absent)", async () => {
+    emblaState.snaps = [0, 0.5, 1];
+
+    const m = await mountController("carousel", CarouselController, `
+        <div data-controller="carousel" data-carousel-options-value='{}'>
+            <div data-carousel-viewport>
+                <div data-carousel-container><div>slide</div></div>
+            </div>
+        </div>`);
+
+    expect(() => {
+        emblaState.selected = 1;
+        emit("select");
+        emit("reInit");
+        emit("slidesChanged");
+    }).not.toThrow();
+
+    await m.cleanup();
+});
+
 // --- Lifecycle ---
 
 test.serial("destroys the Embla instance on disconnect", async () => {
@@ -473,6 +554,9 @@ async function mount({ options = {} } = {}) {
                     <div>slide 3</div>
                 </div>
             </div>
+            <div data-carousel-target="progress"></div>
+            <span data-carousel-target="indexLabel"></span>
+            <span data-carousel-target="totalLabel"></span>
             <button type="button" data-carousel-target="prevButton" data-action="carousel#prev">‹</button>
             <button type="button" data-carousel-target="nextButton" data-action="carousel#next">›</button>
             <div data-carousel-target="dotList"></div>

@@ -233,3 +233,56 @@ it('auto-generates an id and accepts a custom one', function () {
     $this->blade('<x-hwc::carousel>x</x-hwc::carousel>')->assertSee('id="carousel-', false);
     $this->blade('<x-hwc::carousel id="gallery">x</x-hwc::carousel>')->assertSee('id="gallery"', false);
 });
+
+// --- Progress bar ---
+
+it('renders a progress bar when progress is true', function () {
+    $view = $this->blade('<x-hwc::carousel :progress="true">x</x-hwc::carousel>');
+
+    $view->assertSee('data-carousel-target="progress"', false);
+});
+
+it('does not render a progress bar by default', function () {
+    $view = $this->blade('<x-hwc::carousel>x</x-hwc::carousel>');
+
+    $view->assertDontSee('data-carousel-target="progress"', false);
+});
+
+it('applies progressClass and progressWrapperClass', function () {
+    $view = $this->blade('<x-hwc::carousel :progress="true" progress-wrapper-class="h-1 bg-gray-200 rounded" progress-class="h-full bg-indigo-500 rounded">x</x-hwc::carousel>');
+
+    $view->assertSee('h-1 bg-gray-200 rounded', false);
+    $view->assertSee('h-full bg-indigo-500 rounded', false);
+});
+
+// --- Counter ---
+
+it('renders a counter when counter is true', function () {
+    $view = $this->blade('<x-hwc::carousel :counter="true">x</x-hwc::carousel>');
+
+    $view->assertSee('data-carousel-target="indexLabel"', false);
+    $view->assertSee('data-carousel-target="totalLabel"', false);
+});
+
+it('does not render a counter by default', function () {
+    $view = $this->blade('<x-hwc::carousel>x</x-hwc::carousel>');
+
+    $view->assertDontSee('data-carousel-target="indexLabel"', false);
+    $view->assertDontSee('data-carousel-target="totalLabel"', false);
+});
+
+it('applies counterClass', function () {
+    $view = $this->blade('<x-hwc::carousel :counter="true" counter-class="text-sm text-gray-500">x</x-hwc::carousel>');
+
+    $view->assertSee('text-sm text-gray-500', false);
+});
+
+// --- Extras with controller prop ---
+
+it('uses the custom controller identifier for progress and counter targets', function () {
+    $view = $this->blade('<x-hwc::carousel controller="gallery" :progress="true" :counter="true">x</x-hwc::carousel>');
+
+    $view->assertSee('data-gallery-target="progress"', false);
+    $view->assertSee('data-gallery-target="indexLabel"', false);
+    $view->assertSee('data-gallery-target="totalLabel"', false);
+});

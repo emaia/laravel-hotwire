@@ -20,12 +20,15 @@ Stimulus events for integration with other controllers, and cleans itself up on 
 
 ## Targets
 
-| Target        | Required | Description                                                                                               |
-| ------------- | -------- | --------------------------------------------------------------------------------------------------------- |
-| `prevButton`  | Optional | Previous-slide button. Disabled automatically when `canScrollPrev` is false                               |
-| `nextButton`  | Optional | Next-slide button. Disabled automatically when `canScrollNext` is false                                   |
-| `dotList`     | Optional | Container that the controller fills with one button per snap                                              |
-| `dotTemplate` | Optional | `<template>` cloned for each dot. Falls back to a bare `<button>` when absent                             |
+| Target        | Required | Description                                                                                            |
+|---------------|----------|--------------------------------------------------------------------------------------------------------|
+| `prevButton`  | Optional | Previous-slide button. Disabled automatically when `canScrollPrev` is false                            |
+| `nextButton`  | Optional | Next-slide button. Disabled automatically when `canScrollNext` is false                                |
+| `dotList`     | Optional | Container that the controller fills with one button per snap                                           |
+| `dotTemplate` | Optional | `<template>` cloned for each dot. Falls back to a bare `<button>` when absent                          |
+| `progress`    | Optional | Progress bar element — the controller sets `style.width` from `embla.scrollProgress()` on every scroll |
+| `indexLabel`  | Optional | Span that shows the current snap index (1-based), updated on select, reInit and slidesChanged          |
+| `totalLabel`  | Optional | Span that shows the total snap count, updated on reInit and slidesChanged                              |
 
 The viewport and container are not Stimulus targets — they're marked with the identifier-independent hooks
 `data-carousel-viewport` / `data-carousel-container` (see [Markup contract](#markup-contract)). The viewport is the
@@ -35,7 +38,7 @@ container is the flex track Embla animates (Embla finds it via `viewport.firstEl
 ## Stimulus Values
 
 | Value     | Type     | Default | Description                                                                                                                                                                                                            |
-| --------- | -------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|-----------|----------|---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `options` | `Object` | `{}`    | Embla [options](https://www.embla-carousel.com/api/options/) — `loop`, `align`, `axis`, `slidesToScroll`, `dragFree`, `containScroll`, `duration`, `startIndex`, `breakpoints`, etc. Changes trigger `embla.reInit()`. |
 
 ## Styling state
@@ -47,6 +50,7 @@ The controller stays presentation-free — it only manages **semantic state**, a
 - **Prev/Next** use the native `disabled` attribute. Style them with the `disabled:` variant (or `button:disabled`).
 
 ```html
+
 <button
     type="button"
     class="size-2.5 rounded-full bg-white/50 transition-colors aria-[current=true]:bg-white"
@@ -68,7 +72,7 @@ where Tailwind scans it.
 ## Actions
 
 | Action             | Description                                                           |
-| ------------------ | --------------------------------------------------------------------- |
+|--------------------|-----------------------------------------------------------------------|
 | `next`             | Scroll to the next snap (`embla.scrollNext()`)                        |
 | `prev`             | Scroll to the previous snap (`embla.scrollPrev()`)                    |
 | `scrollTo`         | Scroll to a specific snap by index — pass `data-carousel-index-param` |
@@ -81,7 +85,7 @@ where Tailwind scans it.
 The controller dispatches `CustomEvent`s on its root element (they bubble):
 
 | Event                     | `detail`                                                                              |
-| ------------------------- | ------------------------------------------------------------------------------------- |
+|---------------------------|---------------------------------------------------------------------------------------|
 | `carousel:init`           | `{ embla }` — the live Embla instance, useful for plugins/analytics                   |
 | `carousel:select`         | `{ index, previousIndex, slidesInView }`                                              |
 | `carousel:scroll`         | `{ progress }` — scroll progress `0..1`; fires on every frame, keep the handler cheap |
@@ -92,6 +96,7 @@ The controller dispatches `CustomEvent`s on its root element (they bubble):
 Wire them with `data-action`:
 
 ```html
+
 <div data-controller="carousel" data-action="carousel:select->analytics#track">…</div>
 ```
 
@@ -107,18 +112,40 @@ installed). Install the one you want and override `emblaPlugins()` in a subclass
 // resources/js/controllers/gallery_controller.js
 import CarouselController from "./carousel_controller";
 import Autoplay from "embla-carousel-autoplay";
+import Fade from "embla-carousel-fade";
+import AutoScroll from 'embla-carousel-auto-scroll'
 
 export default class extends CarouselController {
+    static values = {
+        ...CarouselController.values,
+        delay: {type: Number, default: 4000}
+    };
+
     emblaPlugins() {
-        return [Autoplay({ delay: 4000 })];
+        return [
+            Autoplay({delay: this.delayValue}),
+            AutoScroll({playOnInit: false}),
+            Fade()
+        ];
     }
 }
+```
+
+Use it with the component — subclass values pass through freely since the component only filters its own
+`data-{identifier}-*` prefixes:
+
+```blade
+<x-hwc::carousel controller="gallery" data-gallery-delay-value="6000">
+    <div>slide 1</div>
+    <div>slide 2</div>
+</x-hwc::carousel>
 ```
 
 Your subclass is auto-registered under its filename (`gallery`), and its plugin imports load **lazily with it** —
 nothing enters your main bundle. Use it with the component via the `controller` prop, or with raw markup:
 
 ```html
+
 <div data-controller="gallery">
     <div data-carousel-viewport>
         <div data-carousel-container>…</div>
@@ -134,6 +161,7 @@ gets the same layout for free. `play` / `stop` delegate to the Autoplay plugin w
 The minimum required structure:
 
 ```html
+
 <div data-controller="carousel">
     <div data-carousel-viewport>
         <div data-carousel-container>
@@ -154,13 +182,14 @@ The controller's CSS file handles the structure: `overflow:hidden` on the viewpo
 and per-slide sizing/gap through two custom properties (the "Embla way"):
 
 | Property                   | Default | Description                                                              |
-| -------------------------- | ------- | ------------------------------------------------------------------------ |
+|----------------------------|---------|--------------------------------------------------------------------------|
 | `--carousel-slide-size`    | `100%`  | Flex basis of each slide (`50%` → two-per-view, `33.333%` → three, etc.) |
 | `--carousel-slide-spacing` | `0px`   | Gap between slides (applied via the padding method, loop/RTL-safe)       |
 
 Set them on the carousel root (the `<x-hwc::carousel>` component does this from its `slideSize`/`slideSpacing` props):
 
 ```html
+
 <div data-controller="carousel" style="--carousel-slide-size: 50%; --carousel-slide-spacing: 1rem">…</div>
 ```
 
@@ -197,6 +226,7 @@ JSON-encode it for you, and chain the rest of the wiring:
 renders to the same attributes the controller expects:
 
 ```html
+
 <div
     data-controller="carousel"
     data-carousel-options-value='{"loop":true,"align":"center"}'
