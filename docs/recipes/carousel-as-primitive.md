@@ -42,8 +42,8 @@ user on the same step until the server is happy.
         <span data-wizard-target="current">1</span> / {{ count($steps) }}
     </p>
 
-    <div {{ stimulus_target('carousel', 'viewport') }}>
-        <div {{ stimulus_target('carousel', 'container') }}>
+    <div data-carousel-viewport>
+        <div data-carousel-container>
             @foreach ($steps as $i => $step)
                 <section class="min-w-0 flex-[0_0_100%]">
                     <turbo-frame id="wizard-step-{{ $i }}" src="{{ route('signup.step', $step->slug) }}">
@@ -159,8 +159,8 @@ The carousel listens for a custom DOM event and reacts:
             ->action('carousel', 'next', 'hero:tick')
     }}
 >
-    <div {{ stimulus_target('carousel', 'viewport') }}>
-        <div {{ stimulus_target('carousel', 'container') }}>
+    <div data-carousel-viewport>
+        <div data-carousel-container>
             @foreach ($slides as $slide)
                 <div class="min-w-0 flex-[0_0_100%]">…</div>
             @endforeach
@@ -224,8 +224,8 @@ flash if the action wasn't allowed.
             ])
     }}
 >
-    <div {{ stimulus_target('carousel', 'viewport') }}>
-        <div {{ stimulus_target('carousel', 'container') }} id="swipe-deck">
+    <div data-carousel-viewport>
+        <div data-carousel-container id="swipe-deck">
             @foreach ($candidates as $candidate)
                 @include('partials.swipe-card', ['candidate' => $candidate])
             @endforeach
@@ -312,8 +312,8 @@ group photo reviews.
             ->action('presence', 'apply', 'presence:apply')
     }}
 >
-    <div {{ stimulus_target('carousel', 'viewport') }}>
-        <div {{ stimulus_target('carousel', 'container') }}>…</div>
+    <div data-carousel-viewport>
+        <div data-carousel-container>…</div>
     </div>
 
     <div {{ stimulus_target('carousel', 'dotList') }} class="relative"></div>
@@ -443,8 +443,8 @@ on by default) take care of the re-measure.
             ->action('ad-slot', 'beacon', 'carousel:settle')
     }}
 >
-    <div {{ stimulus_target('carousel', 'viewport') }}>
-        <div {{ stimulus_target('carousel', 'container') }}>
+    <div data-carousel-viewport>
+        <div data-carousel-container>
             @foreach ($slot->liveCreatives() as $creative)
                 @include('partials.ad-creative', ['creative' => $creative])
             @endforeach
@@ -618,8 +618,8 @@ what this stack already provides.
         <span data-time-travel-target="counter" class="text-gray-400">({{ $snapshots->count() }})</span>
     </p>
 
-    <div {{ stimulus_target('carousel', 'viewport') }}>
-        <div {{ stimulus_target('carousel', 'container') }}>
+    <div data-carousel-viewport>
+        <div data-carousel-container>
             @foreach ($snapshots as $snapshot)
                 @include('partials.history-snapshot', ['snapshot' => $snapshot])
             @endforeach

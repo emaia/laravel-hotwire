@@ -26,6 +26,7 @@ custom properties) — see [sizing](../controllers/carousel.md#markup-contract).
 | Prop                                           | Type          | Default        | Description                                                                                                          |
 |------------------------------------------------|---------------|----------------|----------------------------------------------------------------------------------------------------------------------|
 | `id`                                           | `?string`     | `uniqid()`     | Root element id                                                                                                      |
+| `controller`                                   | `string`      | `carousel`     | Stimulus identifier to mount — set to a [subclass](../controllers/carousel.md#extending-plugins--custom-behavior) (e.g. `gallery`) to use Embla plugins/custom behavior |
 | `loop`                                         | `bool`        | `false`        | Infinite looping                                                                                                     |
 | `align`                                        | `string`      | `center`       | `start` / `center` / `end`                                                                                           |
 | `axis`                                         | `string`      | `x`            | `x` / `y` (vertical needs a height on the viewport)                                                                  |

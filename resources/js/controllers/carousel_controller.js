@@ -4,7 +4,7 @@ import EmblaCarousel from "embla-carousel";
 import "./carousel.css";
 
 export default class extends Controller {
-    static targets = ["viewport", "container", "prevButton", "nextButton", "dotList", "dotTemplate"];
+    static targets = ["prevButton", "nextButton", "dotList", "dotTemplate"];
 
     static values = {
         options: { type: Object, default: {} },
@@ -21,10 +21,13 @@ export default class extends Controller {
     }
 
     connect() {
-        const node = this.hasViewportTarget ? this.viewportTarget : this.element;
+        // Viewport/container are found by their structural hooks (not Stimulus
+        // targets) so they stay identifier-independent — a subclass reuses them
+        // and the same CSS without a per-identifier attribute.
+        const node = this.element.querySelector("[data-carousel-viewport]") ?? this.element;
 
         this.syncAxis();
-        this.embla = EmblaCarousel(node, this.optionsValue);
+        this.embla = EmblaCarousel(node, this.optionsValue, this.emblaPlugins());
         this.renderDots();
 
         this.embla.on("select", this.onSelect);
@@ -78,7 +81,16 @@ export default class extends Controller {
     optionsValueChanged() {
         this.syncAxis();
         if (!this.embla) return;
-        this.embla.reInit(this.optionsValue);
+        this.embla.reInit(this.optionsValue, this.emblaPlugins());
+    }
+
+    /**
+     * Override point for Embla plugins. Subclass this controller, install the
+     * plugin packages you want, and return their instances — they load lazily
+     * with your subclass's chunk. See docs/controllers/carousel.md#plugins.
+     */
+    emblaPlugins() {
+        return [];
     }
 
     onSelect() {
@@ -136,9 +148,9 @@ export default class extends Controller {
             } else {
                 node = document.createElement("button");
                 node.type = "button";
-                node.dataset.action = "carousel#scrollTo";
+                node.dataset.action = `${this.identifier}#scrollTo`;
             }
-            node.dataset.carouselIndexParam = String(index);
+            node.setAttribute(`data-${this.identifier}-index-param`, String(index));
             node.setAttribute("aria-label", `Go to ${noun} ${index + 1}`);
             this.dotListTarget.appendChild(node);
             return node;

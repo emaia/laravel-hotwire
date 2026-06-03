@@ -12,6 +12,7 @@ class Carousel extends Component
      */
     public function __construct(
         public ?string $id = null,
+        public string $controller = 'carousel',
         public bool $loop = false,
         public string $align = 'center',
         public string $axis = 'x',
@@ -42,6 +43,18 @@ class Carousel extends Component
     public function render()
     {
         return view('hotwire::component-views.carousel');
+    }
+
+    public function data(): array
+    {
+        $data = parent::data();
+        $data['internalPrefixes'] = [
+            "data-{$this->controller}-options-",
+            "data-{$this->controller}-active-dot-class",
+            "data-{$this->controller}-disabled-nav-class",
+        ];
+
+        return $data;
     }
 
     /**
