@@ -496,3 +496,23 @@ it('warns and skips outdated controllers in non-interactive mode without --force
 
     expect(File::get(targetFor($this->targetDir, 'modal')))->toBe('// outdated');
 });
+
+it('updates an outdated shared dependency even when the controller itself is unchanged', function () {
+    writeFixture('themed.css', ".themed { color: blue; }\n");
+    writeFixture('themed_controller.js', "import './themed.css';\nexport default class {}\n");
+    registerFixture('__fixtures/themed');
+
+    $this->artisan('hotwire:controllers', ['controllers' => ['__fixtures/themed']])
+        ->assertSuccessful();
+
+    $publishedCss = $this->targetDir.'/__fixtures/themed.css';
+    expect(File::exists($publishedCss))->toBeTrue();
+
+    // Only the published dependency drifts; the controller file stays in sync.
+    File::put($publishedCss, '/* outdated */');
+
+    $this->artisan('hotwire:controllers --outdated --force --no-interaction')
+        ->assertSuccessful();
+
+    expect(File::get($publishedCss))->toBe(".themed { color: blue; }\n");
+});
