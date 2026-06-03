@@ -42,8 +42,8 @@ class CheckCommand extends Command
         $registry = HotwireRegistry::make();
 
         $totalFiles = 0;
-        $usedComponentKeys = $this->detectUsedComponents($paths, $prefix, $totalFiles);
-        $standaloneControllers = $this->detectDirectControllerUsages($paths, $registry);
+        ['components' => $usedComponentKeys, 'controllers' => $standaloneControllers] =
+            $this->scanViews($paths, $prefix, $registry, $totalFiles);
 
         $this->line('Scanning '.implode(', ', array_map('basename', $paths))." ($totalFiles files)...");
         $this->line('');
@@ -55,6 +55,10 @@ class CheckCommand extends Command
         }
 
         ['issues' => $issues, 'controllers' => $controllers] = $this->reportStatus($usedComponentKeys, $prefix, $targetBase, $registry);
+
+        // A controller already reported via its component must not be reported
+        // (or published, or counted) again as a standalone usage.
+        $standaloneControllers = array_diff_key($standaloneControllers, $controllers);
 
         $standaloneResult = $this->reportStandaloneControllers($standaloneControllers, $targetBase, $registry);
         $issues = array_merge($issues, $standaloneResult['issues']);
@@ -108,20 +112,23 @@ class CheckCommand extends Command
     }
 
     /**
-     * Scan blade files and return deduplicated component keys found.
+     * Single pass over the blade files: collect both the Hotwire component keys
+     * and the direct Stimulus controller usages, reading each file only once.
      *
-     * Recognizes both the configured prefix and the literal 'hotwire' alias
-     * (registered globally by the service provider).
+     * Component detection recognizes both the configured prefix and the literal
+     * 'hotwire' alias (registered globally by the service provider).
      *
      * @param  string[]  $paths
-     * @return string[]
+     * @return array{components: string[], controllers: array<string, ControllerDefinition>}
      */
-    private function detectUsedComponents(array $paths, string $prefix, int &$totalFiles): array
+    private function scanViews(array $paths, string $prefix, HotwireRegistry $registry, int &$totalFiles): array
     {
         $prefixes = array_unique([$prefix, 'hotwire']);
         $alt = implode('|', array_map(fn (string $p) => preg_quote($p, '/'), $prefixes));
-        $pattern = '/<x-(?:'.$alt.')::([a-z][a-z0-9-]*)[\s\/>]/';
-        $found = [];
+        $componentPattern = '/<x-(?:'.$alt.')::([a-z][a-z0-9-]*)[\s\/>]/';
+
+        $components = [];
+        $controllers = [];
 
         foreach ($paths as $path) {
             if (! is_dir($path)) {
@@ -132,15 +139,21 @@ class CheckCommand extends Command
 
             foreach ($files as $file) {
                 $totalFiles++;
-                preg_match_all($pattern, $file->getContents(), $matches);
+                // Strip comments/scripts/styles once so neither components nor
+                // controllers are detected inside commented-out or non-markup code.
+                $content = $this->stripNonMarkup($file->getContents());
+
+                preg_match_all($componentPattern, $content, $matches);
 
                 foreach ($matches[1] as $key) {
-                    $found[$key] = true;
+                    $components[$key] = true;
                 }
+
+                $this->collectControllerUsages($content, $registry, $controllers);
             }
         }
 
-        return array_keys($found);
+        return ['components' => array_keys($components), 'controllers' => $controllers];
     }
 
     /**
@@ -157,86 +170,73 @@ class CheckCommand extends Command
     }
 
     /**
-     * Scan blade files for direct Stimulus controller usage — raw data-controller
-     * attributes, stimulus_controller() helpers, and stimulus()->controller() calls.
+     * Collect direct Stimulus controller usages from already-stripped blade
+     * content — raw data-controller attributes, stimulus_controller() /
+     * stimulus()->controller() / ->controllers() calls, and stimulus_action() /
+     * stimulus_target() references.
      *
-     * Only returns controllers that exist in the package registry; user-defined
+     * Only controllers that exist in the package registry are kept; user-defined
      * controllers are silently ignored.
      *
-     * @param  string[]  $paths
-     * @return array<string, ControllerDefinition>
+     * @param  array<string, ControllerDefinition>  $found
      */
-    private function detectDirectControllerUsages(array $paths, HotwireRegistry $registry): array
+    private function collectControllerUsages(string $content, HotwireRegistry $registry, array &$found): void
     {
-        $found = [];
+        $id = '[a-z][a-z0-9-]*(?:--[a-z][a-z0-9-]*)?';
 
-        foreach ($paths as $path) {
-            if (! is_dir($path)) {
-                continue;
-            }
+        // 1. data-controller="foo bar"
+        preg_match_all('/data-controller\s*=\s*["\']([^"\']+)["\']/', $content, $matches);
 
-            $files = Finder::create()->files()->name('*.blade.php')->in($path);
-
-            foreach ($files as $file) {
-                $content = $this->stripNonMarkup($file->getContents());
-
-                // 1. data-controller="foo bar"
-                preg_match_all('/data-controller\s*=\s*["\']([^"\']+)["\']/', $content, $matches);
-
-                foreach ($matches[1] as $value) {
-                    foreach (preg_split('/\s+/', trim($value)) as $id) {
-                        if ($id === '') {
-                            continue;
-                        }
-
-                        if ($c = $registry->controller($id)) {
-                            $found[$id] = $c;
-                        }
-                    }
-                }
-
-                // 2. stimulus_controller('foo', ...) / stimulus()->controller('foo', ...)
-                $singlePattern = '/stimulus\(\)\s*->\s*controller\s*\(\s*[\'"]([a-z][a-z0-9-]*(?:--[a-z][a-z0-9-]*)?)[\'"]'
-                    .'|stimulus_controller\s*\(\s*[\'"]([a-z][a-z0-9-]*(?:--[a-z][a-z0-9-]*)?)[\'"]/';
-                preg_match_all($singlePattern, $content, $singleMatches, PREG_SET_ORDER | PREG_UNMATCHED_AS_NULL);
-
-                foreach ($singleMatches as $m) {
-                    $id = $m[1] ?? $m[2];
-
-                    if ($id && $c = $registry->controller($id)) {
-                        $found[$id] = $c;
-                    }
-                }
-
-                // 3. stimulus()->controllers('a', 'b', ...) — variadic
-                preg_match_all('/stimulus\(\)\s*->\s*controllers\s*\(([^)]+)\)/', $content, $controllersMatches);
-
-                foreach ($controllersMatches[1] as $args) {
-                    preg_match_all('/[\'"]([a-z][a-z0-9-]*(?:--[a-z][a-z0-9-]*)?)[\'"]/', $args, $strings);
-
-                    foreach ($strings[1] as $id) {
-                        if ($c = $registry->controller($id)) {
-                            $found[$id] = $c;
-                        }
-                    }
-                }
-
-                // 4. stimulus_action('foo', ...) / stimulus_target('foo', ...)
-                $refPattern = '/stimulus_action\s*\(\s*[\'"]([a-z][a-z0-9-]*(?:--[a-z][a-z0-9-]*)?)[\'"]'
-                    .'|stimulus_target\s*\(\s*[\'"]([a-z][a-z0-9-]*(?:--[a-z][a-z0-9-]*)?)[\'"]/';
-                preg_match_all($refPattern, $content, $refMatches, PREG_SET_ORDER | PREG_UNMATCHED_AS_NULL);
-
-                foreach ($refMatches as $m) {
-                    $id = $m[1] ?? $m[2];
-
-                    if ($id && $c = $registry->controller($id)) {
-                        $found[$id] = $c;
-                    }
-                }
+        foreach ($matches[1] as $value) {
+            foreach (preg_split('/\s+/', trim($value)) as $identifier) {
+                $this->keepRegistered($identifier, $registry, $found);
             }
         }
 
-        return $found;
+        // 2. ->controller('foo', ...) (incl. chained) / stimulus_controller('foo', ...)
+        $singlePattern = '/->\s*controller\s*\(\s*[\'"]('.$id.')[\'"]'
+            .'|stimulus_controller\s*\(\s*[\'"]('.$id.')[\'"]/';
+        preg_match_all($singlePattern, $content, $singleMatches, PREG_SET_ORDER | PREG_UNMATCHED_AS_NULL);
+
+        foreach ($singleMatches as $m) {
+            $this->keepRegistered($m[1] ?? $m[2], $registry, $found);
+        }
+
+        // 3. stimulus()->controllers('a', 'b', ...) — variadic
+        preg_match_all('/->\s*controllers\s*\(([^)]+)\)/', $content, $controllersMatches);
+
+        foreach ($controllersMatches[1] as $args) {
+            preg_match_all('/[\'"]('.$id.')[\'"]/', $args, $strings);
+
+            foreach ($strings[1] as $identifier) {
+                $this->keepRegistered($identifier, $registry, $found);
+            }
+        }
+
+        // 4. stimulus_action('foo', ...) / stimulus_target('foo', ...)
+        $refPattern = '/stimulus_action\s*\(\s*[\'"]('.$id.')[\'"]'
+            .'|stimulus_target\s*\(\s*[\'"]('.$id.')[\'"]/';
+        preg_match_all($refPattern, $content, $refMatches, PREG_SET_ORDER | PREG_UNMATCHED_AS_NULL);
+
+        foreach ($refMatches as $m) {
+            $this->keepRegistered($m[1] ?? $m[2], $registry, $found);
+        }
+    }
+
+    /**
+     * Record an identifier when it maps to a controller in the package registry.
+     *
+     * @param  array<string, ControllerDefinition>  $found
+     */
+    private function keepRegistered(?string $identifier, HotwireRegistry $registry, array &$found): void
+    {
+        if ($identifier === null || $identifier === '') {
+            return;
+        }
+
+        if ($controller = $registry->controller($identifier)) {
+            $found[$identifier] = $controller;
+        }
     }
 
     /**
@@ -253,7 +253,7 @@ class CheckCommand extends Command
         $seenDeps = [];
         $controllersBase = $registry->basePath().'/resources/js/controllers';
 
-        foreach ($standaloneControllers as $identifier => $controller) {
+        foreach ($standaloneControllers as $controller) {
             $this->checkController($controller, $targetBase, $controllersBase, $registry->basePath(), 'standalone', $issues, $controllers, $seenDeps);
         }
 

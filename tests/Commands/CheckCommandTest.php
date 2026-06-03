@@ -272,6 +272,28 @@ it('detects multiple via stimulus()->controllers()', function () {
         ->and($output)->toContain('confirm-dialog');
 });
 
+it('detects chained stimulus()->controller()->controller()', function () {
+    writeView('page.blade.php', "{{ stimulus()->controller('modal')->controller('tooltip') }}");
+
+    Artisan::call('hotwire:check --no-interaction');
+    $output = Artisan::output();
+
+    expect($output)->toContain('modal')
+        ->and($output)->toContain('tooltip');
+});
+
+it('does not double-report a controller used by both a component and standalone', function () {
+    publishController('modal', $this->targetDir);
+    writeView('page.blade.php', '<x-hwc::modal>x</x-hwc::modal><div data-controller="modal"></div>');
+
+    Artisan::call('hotwire:check --no-interaction');
+    $output = Artisan::output();
+
+    // Reported once via the component, never again as standalone.
+    expect($output)->toContain('modal')
+        ->and(substr_count($output, 'used by standalone'))->toBe(0);
+});
+
 it('detects standalone controller via stimulus_action()', function () {
     writeView('page.blade.php', '{{ stimulus_action(\'carousel\', \'next\') }}');
 
@@ -307,6 +329,14 @@ it('ignores data-controller inside Blade comments', function () {
 
     $this->artisan('hotwire:check --no-interaction')
         ->doesntExpectOutputToContain('timeago')
+        ->assertSuccessful();
+});
+
+it('ignores a hotwire component inside Blade comments', function () {
+    writeView('page.blade.php', '{{-- <x-hwc::carousel slide-size="80%"> --}}{{-- </x-hwc::carousel> --}}<p>real content</p>');
+
+    $this->artisan('hotwire:check --no-interaction')
+        ->expectsOutputToContain('No Hotwire components or controllers found')
         ->assertSuccessful();
 });
 
