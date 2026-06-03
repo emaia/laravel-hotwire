@@ -2,6 +2,45 @@
 
 All notable changes to `laravel-hotwire` will be documented in this file.
 
+## 0.16.0 — Carousel extensibility via subclassing - 2026-06-03
+
+### Carousel extensibility via subclassing
+
+The `<x-hwc::carousel>` component now supports a `controller` prop that lets you swap the mounted Stimulus identifier so subclasses can inherit from `CarouselController` and supply Embla plugins.
+
+#### Extending the controller
+
+```js
+// resources/js/controllers/gallery_controller.js
+import CarouselController from "./carousel_controller";
+import Autoplay from "embla-carousel-autoplay";
+
+export default class extends CarouselController {
+    emblaPlugins() {
+        return [Autoplay({ delay: 4000 })];
+    }
+}
+
+```
+```blade
+<x-hwc::carousel controller="gallery">
+    <div>slide 1</div>
+    <div>slide 2</div>
+</x-hwc::carousel>
+
+```
+Plugin imports load lazily with the subclass chunk. `play()` and `stop()` delegate to `embla.plugins()?.autoplay` when present.
+
+#### Identifier-independent structural hooks
+
+Viewport and container are no longer Stimulus targets — they use `data-carousel-viewport` and `data-carousel-container` hooks so a subclass reuses the same CSS and layout without per-identifier attributes.
+
+#### Subclass values pass through
+
+The root element filters only the component`s own `data-{identifier}-*` prefixes (`options-`, `active-dot-class`, `disabled-nav-class`). Any additional value your subclass declares (e.g. `data-gallery-delay-value`) passes through freely.
+
+**Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/0.15.2...0.16.0
+
 ## 0.15.2 - 2026-06-03
 
 Internal refactor — no behavior change.
