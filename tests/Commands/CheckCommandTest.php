@@ -128,7 +128,7 @@ it('reports all ok when no hotwire components used', function () {
     writeView('page.blade.php', '<div>Hello world</div>');
 
     $this->artisan('hotwire:check --no-interaction')
-        ->expectsOutputToContain('No Hotwire components found')
+        ->expectsOutputToContain('No Hotwire components or controllers found')
         ->assertSuccessful();
 });
 
@@ -213,7 +213,155 @@ it('ignores components from other packages', function () {
     writeView('page.blade.php', '<x-jetstream-button /><x-ui-card />');
 
     $this->artisan('hotwire:check --no-interaction')
-        ->expectsOutputToContain('No Hotwire components found')
+        ->expectsOutputToContain('No Hotwire components or controllers found')
+        ->assertSuccessful();
+});
+
+// --- Standalone controller detection ---
+
+it('detects standalone controller via data-controller attribute', function () {
+    writeView('page.blade.php', '<div data-controller="timeago"></div>');
+
+    $exit = Artisan::call('hotwire:check --no-interaction');
+    $output = Artisan::output();
+
+    expect($exit)->toBe(1)
+        ->and($output)->toContain('timeago')
+        ->and($output)->toContain('used by standalone');
+});
+
+it('detects multiple controllers via data-controller attribute', function () {
+    writeView('page.blade.php', '<section data-controller="timeago modal">x</section>');
+
+    $exit = Artisan::call('hotwire:check --no-interaction');
+    $output = Artisan::output();
+
+    expect($output)->toContain('timeago')
+        ->and($output)->toContain('modal');
+});
+
+it('detects standalone controller via stimulus_controller()', function () {
+    writeView('page.blade.php', '{{ stimulus_controller(\'timeago\', [\'datetime\' => now()]) }}');
+
+    $exit = Artisan::call('hotwire:check --no-interaction');
+    $output = Artisan::output();
+
+    expect($exit)->toBe(1)
+        ->and($output)->toContain('timeago')
+        ->and($output)->toContain('used by standalone');
+});
+
+it('detects standalone controller via stimulus()->controller()', function () {
+    writeView('page.blade.php', '{{ stimulus()->controller(\'tooltip\')->action(\'tooltip\', \'show\', \'mouseenter\') }}');
+
+    $exit = Artisan::call('hotwire:check --no-interaction');
+    $output = Artisan::output();
+
+    expect($exit)->toBe(1)
+        ->and($output)->toContain('tooltip')
+        ->and($output)->toContain('used by standalone');
+});
+
+it('detects multiple via stimulus()->controllers()', function () {
+    writeView('page.blade.php', '{{ stimulus()->controllers(\'modal\', \'confirm-dialog\') }}');
+
+    $exit = Artisan::call('hotwire:check --no-interaction');
+    $output = Artisan::output();
+
+    expect($output)->toContain('modal')
+        ->and($output)->toContain('confirm-dialog');
+});
+
+it('detects standalone controller via stimulus_action()', function () {
+    writeView('page.blade.php', '{{ stimulus_action(\'carousel\', \'next\') }}');
+
+    $exit = Artisan::call('hotwire:check --no-interaction');
+    $output = Artisan::output();
+
+    expect($exit)->toBe(1)
+        ->and($output)->toContain('carousel')
+        ->and($output)->toContain('used by standalone');
+});
+
+it('detects standalone controller via stimulus_target()', function () {
+    writeView('page.blade.php', '{{ stimulus_target(\'carousel\', \'viewport\') }}');
+
+    $exit = Artisan::call('hotwire:check --no-interaction');
+    $output = Artisan::output();
+
+    expect($exit)->toBe(1)
+        ->and($output)->toContain('carousel')
+        ->and($output)->toContain('used by standalone');
+});
+
+it('ignores user-defined controller not in package registry', function () {
+    writeView('page.blade.php', '<div data-controller="my-custom-thing"></div>');
+
+    $this->artisan('hotwire:check --no-interaction')
+        ->doesntExpectOutputToContain('my-custom-thing')
+        ->assertSuccessful();
+});
+
+it('ignores data-controller inside Blade comments', function () {
+    writeView('page.blade.php', '{{-- <div data-controller="timeago"> --}}<p>real content</p>');
+
+    $this->artisan('hotwire:check --no-interaction')
+        ->doesntExpectOutputToContain('timeago')
+        ->assertSuccessful();
+});
+
+it('ignores data-controller inside script tags', function () {
+    writeView('page.blade.php', '<script>const el = \'<div data-controller="timeago">\';</script><p>real</p>');
+
+    $this->artisan('hotwire:check --no-interaction')
+        ->doesntExpectOutputToContain('timeago')
+        ->assertSuccessful();
+});
+
+it('deduplicates standalone controller used across multiple files', function () {
+    writeView('a.blade.php', '<div data-controller="timeago"></div>');
+    writeView('b.blade.php', '<div data-controller="timeago"></div>');
+
+    Artisan::call('hotwire:check --no-interaction');
+    $output = Artisan::output();
+
+    expect(substr_count($output, 'timeago'))->toBe(1);
+});
+
+it('publishes missing standalone controller with --fix', function () {
+    writeView('page.blade.php', '<div data-controller="timeago"></div>');
+
+    $this->artisan('hotwire:check --fix --no-interaction')
+        ->assertSuccessful();
+
+    expect(File::exists($this->targetDir.'/timeago_controller.ts'))->toBeTrue();
+});
+
+it('reports npm deps for standalone controllers', function () {
+    writePackageJson(['name' => 'app', 'devDependencies' => []]);
+    writeView('page.blade.php', '<div data-controller="toast"></div>');
+
+    $this->artisan('hotwire:check --no-interaction')
+        ->expectsOutputToContain('Required npm dependencies')
+        ->expectsOutputToContain('@emaia/sonner')
+        ->assertExitCode(1);
+});
+
+it('reports not published for standalone controller when file is missing', function () {
+    writeView('page.blade.php', '<div data-controller="timeago"></div>');
+
+    $this->artisan('hotwire:check --no-interaction')
+        ->expectsOutputToContain('not published')
+        ->assertExitCode(1);
+});
+
+it('reports up to date for standalone controller when file matches', function () {
+    writePackageJson(['name' => 'app', 'devDependencies' => ['date-fns' => '^4.1.0']]);
+    publishController('timeago', $this->targetDir);
+    writeView('page.blade.php', '<div data-controller="timeago"></div>');
+
+    $this->artisan('hotwire:check --no-interaction')
+        ->expectsOutputToContain('up to date')
         ->assertSuccessful();
 });
 
@@ -387,7 +535,7 @@ it('reports no components found when custom path has no blade files', function (
     File::ensureDirectoryExists($customDir);
 
     $this->artisan('hotwire:check', ['--path' => [resource_path('views/empty')], '--no-interaction' => true])
-        ->expectsOutputToContain('No Hotwire components found')
+        ->expectsOutputToContain('No Hotwire components or controllers found')
         ->assertSuccessful();
 });
 
