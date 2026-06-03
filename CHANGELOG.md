@@ -2,6 +2,15 @@
 
 All notable changes to `laravel-hotwire` will be documented in this file.
 
+## 0.15.1 - 2026-06-03
+
+Fixes hotwire:controllers --outdated missing drifted shared dependencies.
+
+- A published controller now counts as outdated when its own file OR any of its already-published shared deps (e.g. carousel.css) differ from the package — so --outdated --force updates a stale dependency even when the controller file itself is unchanged (#21).
+- Docs: README now lists the Carousel controller and documents hotwire:check's direct-controller detection.
+
+Full Changelog: https://github.com/emaia/laravel-hotwire/compare/0.15.0...0.15.1
+
 ## 0.15.0 - 2026-06-03
 
 hotwire:check now detects Stimulus controllers used directly, not just via components — data-controller attributes and the stimulus_controller() / stimulus()->controller()/controllers() / stimulus_action() / stimulus_target() helpers (#20).
