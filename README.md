@@ -172,40 +172,41 @@ php artisan hotwire:controllers auto-select auto-submit turbo/progress
 
 ### Top-level controllers
 
-| Controller                                                     | Identifier            | Category   | Dependencies    | Docs                                              |
-|----------------------------------------------------------------|-----------------------|------------|-----------------|---------------------------------------------------|
-| [Animated Number](docs/controllers/animated-number.md)         | `animated-number`     | `utility`  | —               | [readme](docs/controllers/animated-number.md)     |
-| [Auto Save](docs/controllers/auto-save.md)                     | `auto-save`           | `forms`    | —               | [readme](docs/controllers/auto-save.md)           |
-| [Auto Resize](docs/controllers/auto-resize.md)                 | `auto-resize`         | `forms`    | —               | [readme](docs/controllers/auto-resize.md)         |
-| [Auto Select](docs/controllers/auto-select.md)                 | `auto-select`         | `forms`    | —               | [readme](docs/controllers/auto-select.md)         |
-| [Auto Submit](docs/controllers/auto-submit.md)                 | `auto-submit`         | `forms`    | —               | [readme](docs/controllers/auto-submit.md)         |
-| [Char Counter](docs/controllers/char-counter.md)               | `char-counter`        | `forms`    | —               | [readme](docs/controllers/char-counter.md)        |
-| [Checkbox Select All](docs/controllers/checkbox-select-all.md) | `checkbox-select-all` | `forms`    | —               | [readme](docs/controllers/checkbox-select-all.md) |
-| [Clean Query Params](docs/controllers/clean-query-params.md)   | `clean-query-params`  | `forms`    | —               | [readme](docs/controllers/clean-query-params.md)  |
-| [Clear Input](docs/controllers/clear-input.md)                 | `clear-input`         | `forms`    | —               | [readme](docs/controllers/clear-input.md)         |
-| [Confirm Dialog](docs/controllers/confirm-dialog.md)           | `confirm-dialog`      | `overlay`  | —               | [readme](docs/controllers/confirm-dialog.md)      |
-| [Copy To Clipboard](docs/controllers/copy-to-clipboard.md)     | `copy-to-clipboard`   | `utility`  | —               | [readme](docs/controllers/copy-to-clipboard.md)   |
-| [Dropdown](docs/controllers/dropdown.md)                       | `dropdown`            | `overlay`  | —               | [readme](docs/controllers/dropdown.md)            |
-| [Error Scroll](docs/controllers/error-scroll.md)               | `error-scroll`        | `forms`    | —               | [readme](docs/controllers/error-scroll.md)        |
-| [File Preserve](docs/controllers/file-preserve.md)             | `file-preserve`       | `forms`    | —               | [readme](docs/controllers/file-preserve.md)       |
-| [GTM](docs/controllers/gtm.md)                                 | `gtm`                 | `utility`  | —               | [readme](docs/controllers/gtm.md)                 |
-| [Hotkey](docs/controllers/hotkey.md)                           | `hotkey`              | `utility`  | —               | [readme](docs/controllers/hotkey.md)              |
-| [Input Mask](docs/controllers/input-mask.md)                   | `input-mask`          | `forms`    | `maska`         | [readme](docs/controllers/input-mask.md)          |
-| [Lazy Image](docs/controllers/lazy-image.md)                   | `lazy-image`          | `utility`  | —               | [readme](docs/controllers/lazy-image.md)          |
-| [Modal](docs/controllers/modal.md)                             | `modal`               | `overlay`  | —               | [readme](docs/controllers/modal.md)               |
-| [Modal Auto Close](docs/controllers/modal-auto-close.md)       | `modal-auto-close`    | `overlay`  | —               | [readme](docs/controllers/modal-auto-close.md)    |
-| [Money Input](docs/controllers/money-input.md)                 | `money-input`         | `forms`    | —               | [readme](docs/controllers/money-input.md)         |
-| [OEmbed](docs/controllers/oembed.md)                           | `oembed`              | `utility`  | —               | [readme](docs/controllers/oembed.md)              |
-| [Remote Form](docs/controllers/remote-form.md)                 | `remote-form`         | `forms`    | —               | [readme](docs/controllers/remote-form.md)         |
-| [Reset Files](docs/controllers/reset-files.md)                 | `reset-files`         | `forms`    | —               | [readme](docs/controllers/reset-files.md)         |
-| [Scroll Progress](docs/controllers/scroll-progress.md)         | `scroll-progress`     | `utility`  | —               | [readme](docs/controllers/scroll-progress.md)     |
-| [Slug](docs/controllers/slug.md)                               | `slug`                | `forms`    | —               | [readme](docs/controllers/slug.md)                |
-| [Tabs](docs/controllers/tabs.md)                               | `tabs`                | `utility`  | —               | [readme](docs/controllers/tabs.md)                |
-| [Timeago](docs/controllers/timeago.md)                         | `timeago`             | `utility`  | `date-fns`      | [readme](docs/controllers/timeago.md)             |
-| [Toast](docs/controllers/toast.md)                             | `toast`               | `feedback` | `@emaia/sonner` | [readme](docs/controllers/toast.md)               |
-| [Toaster](docs/controllers/toaster.md)                         | `toaster`             | `feedback` | `@emaia/sonner` | [readme](docs/controllers/toaster.md)             |
-| [Tooltip](docs/controllers/tooltip.md)                         | `tooltip`             | `utility`  | `tippy.js`      | [readme](docs/controllers/tooltip.md)             |
-| [Unsaved Changes](docs/controllers/unsaved-changes.md)         | `unsaved-changes`     | `forms`    | —               | [readme](docs/controllers/unsaved-changes.md)     |
+| Controller                                                     | Identifier            | Category   | Dependencies     | Docs                                              |
+|----------------------------------------------------------------|-----------------------|------------|------------------|---------------------------------------------------|
+| [Animated Number](docs/controllers/animated-number.md)         | `animated-number`     | `utility`  | —                | [readme](docs/controllers/animated-number.md)     |
+| [Auto Save](docs/controllers/auto-save.md)                     | `auto-save`           | `forms`    | —                | [readme](docs/controllers/auto-save.md)           |
+| [Auto Resize](docs/controllers/auto-resize.md)                 | `auto-resize`         | `forms`    | —                | [readme](docs/controllers/auto-resize.md)         |
+| [Auto Select](docs/controllers/auto-select.md)                 | `auto-select`         | `forms`    | —                | [readme](docs/controllers/auto-select.md)         |
+| [Auto Submit](docs/controllers/auto-submit.md)                 | `auto-submit`         | `forms`    | —                | [readme](docs/controllers/auto-submit.md)         |
+| [Carousel](docs/controllers/carousel.md)                       | `carousel`            | `utility`  | `embla-carousel` | [readme](docs/controllers/carousel.md)            |
+| [Char Counter](docs/controllers/char-counter.md)               | `char-counter`        | `forms`    | —                | [readme](docs/controllers/char-counter.md)        |
+| [Checkbox Select All](docs/controllers/checkbox-select-all.md) | `checkbox-select-all` | `forms`    | —                | [readme](docs/controllers/checkbox-select-all.md) |
+| [Clean Query Params](docs/controllers/clean-query-params.md)   | `clean-query-params`  | `forms`    | —                | [readme](docs/controllers/clean-query-params.md)  |
+| [Clear Input](docs/controllers/clear-input.md)                 | `clear-input`         | `forms`    | —                | [readme](docs/controllers/clear-input.md)         |
+| [Confirm Dialog](docs/controllers/confirm-dialog.md)           | `confirm-dialog`      | `overlay`  | —                | [readme](docs/controllers/confirm-dialog.md)      |
+| [Copy To Clipboard](docs/controllers/copy-to-clipboard.md)     | `copy-to-clipboard`   | `utility`  | —                | [readme](docs/controllers/copy-to-clipboard.md)   |
+| [Dropdown](docs/controllers/dropdown.md)                       | `dropdown`            | `overlay`  | —                | [readme](docs/controllers/dropdown.md)            |
+| [Error Scroll](docs/controllers/error-scroll.md)               | `error-scroll`        | `forms`    | —                | [readme](docs/controllers/error-scroll.md)        |
+| [File Preserve](docs/controllers/file-preserve.md)             | `file-preserve`       | `forms`    | —                | [readme](docs/controllers/file-preserve.md)       |
+| [GTM](docs/controllers/gtm.md)                                 | `gtm`                 | `utility`  | —                | [readme](docs/controllers/gtm.md)                 |
+| [Hotkey](docs/controllers/hotkey.md)                           | `hotkey`              | `utility`  | —                | [readme](docs/controllers/hotkey.md)              |
+| [Input Mask](docs/controllers/input-mask.md)                   | `input-mask`          | `forms`    | `maska`          | [readme](docs/controllers/input-mask.md)          |
+| [Lazy Image](docs/controllers/lazy-image.md)                   | `lazy-image`          | `utility`  | —                | [readme](docs/controllers/lazy-image.md)          |
+| [Modal](docs/controllers/modal.md)                             | `modal`               | `overlay`  | —                | [readme](docs/controllers/modal.md)               |
+| [Modal Auto Close](docs/controllers/modal-auto-close.md)       | `modal-auto-close`    | `overlay`  | —                | [readme](docs/controllers/modal-auto-close.md)    |
+| [Money Input](docs/controllers/money-input.md)                 | `money-input`         | `forms`    | —                | [readme](docs/controllers/money-input.md)         |
+| [OEmbed](docs/controllers/oembed.md)                           | `oembed`              | `utility`  | —                | [readme](docs/controllers/oembed.md)              |
+| [Remote Form](docs/controllers/remote-form.md)                 | `remote-form`         | `forms`    | —                | [readme](docs/controllers/remote-form.md)         |
+| [Reset Files](docs/controllers/reset-files.md)                 | `reset-files`         | `forms`    | —                | [readme](docs/controllers/reset-files.md)         |
+| [Scroll Progress](docs/controllers/scroll-progress.md)         | `scroll-progress`     | `utility`  | —                | [readme](docs/controllers/scroll-progress.md)     |
+| [Slug](docs/controllers/slug.md)                               | `slug`                | `forms`    | —                | [readme](docs/controllers/slug.md)                |
+| [Tabs](docs/controllers/tabs.md)                               | `tabs`                | `utility`  | —                | [readme](docs/controllers/tabs.md)                |
+| [Timeago](docs/controllers/timeago.md)                         | `timeago`             | `utility`  | `date-fns`       | [readme](docs/controllers/timeago.md)             |
+| [Toast](docs/controllers/toast.md)                             | `toast`               | `feedback` | `@emaia/sonner`  | [readme](docs/controllers/toast.md)               |
+| [Toaster](docs/controllers/toaster.md)                         | `toaster`             | `feedback` | `@emaia/sonner`  | [readme](docs/controllers/toaster.md)             |
+| [Tooltip](docs/controllers/tooltip.md)                         | `tooltip`             | `utility`  | `tippy.js`       | [readme](docs/controllers/tooltip.md)             |
+| [Unsaved Changes](docs/controllers/unsaved-changes.md)         | `unsaved-changes`     | `forms`    | —                | [readme](docs/controllers/unsaved-changes.md)     |
 
 ### Turbo
 
@@ -360,22 +361,26 @@ php artisan hotwire:components
 
 Shows each Blade component, its tag, and the Stimulus controllers it depends on — with publication status for each.
 
-**Check controllers for components used in your views:**
+**Check controllers used in your views (components and direct usage):**
 
 ```bash
 php artisan hotwire:check
 ```
 
-Scans `resources/views` for Hotwire components, then verifies two things:
+Scans `resources/views` for Hotwire components **and direct Stimulus controller usage** — `data-controller`
+attributes and the `stimulus_controller()` / `stimulus()->controller()` / `->controllers()` / `stimulus_action()` /
+`stimulus_target()` helpers — then verifies two things:
 
-1. **Stimulus controllers** — every controller required by a used component is published and up to date.
+1. **Stimulus controllers** — every controller required by a used component, or referenced directly, is published and up to date.
 2. **npm dependencies** — every external package imported by those controllers (e.g. `@emaia/sonner`, `tippy.js`)
    is declared in your `package.json` (`dependencies` or `devDependencies`).
 
 Exits with code `1` if either has pending items (useful for CI).
 
 Both the configured prefix (`hwc` by default) and the literal `hotwire` alias are recognized, so views like
-`<x-hwc::flash-message />` and `<x-hotwire::flash-message />` are detected equally.
+`<x-hwc::flash-message />` and `<x-hotwire::flash-message />` are detected equally. Only controllers shipped by the
+package are checked — your own controllers are ignored — and Blade comments and `<script>`/`<style>` blocks are
+stripped first, so commented-out code is skipped.
 
 ```bash
 # Auto-publish missing/outdated controllers AND add missing npm deps to devDependencies

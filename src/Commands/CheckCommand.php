@@ -21,7 +21,7 @@ class CheckCommand extends Command
                         {--fix   : Publish missing/outdated controllers and add missing npm deps without prompting}
                         {--install : Run package manager install after adding missing npm deps}';
 
-    public $description = 'Check that Stimulus controllers for used Hotwire components are published';
+    public $description = 'Check that Stimulus controllers used by your views (via components or directly) are published';
 
     public function __construct(
         private readonly Filesystem $files,
