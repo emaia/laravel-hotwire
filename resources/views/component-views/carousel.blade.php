@@ -22,13 +22,25 @@
     @if ($disabledNavClass !== '') data-{{ $identifier }}-disabled-nav-class="{{ $disabledNavClass }}" @endif
     data-action="{{ $action }}"
     @if ($style !== '') style="{{ $style }}" @endif
-    {{ $attributes->except(['data-controller', 'data-action'])->whereDoesntStartWith($internalPrefixes)->merge(['id' => $id, 'class' => $class]) }}
+    {{ $attributes->except(['data-controller', 'data-action', 'progress', 'counter'])->whereDoesntStartWith($internalPrefixes)->merge(['id' => $id, 'class' => $class]) }}
 >
     <div data-carousel-viewport class="{{ $viewportClass }}">
         <div data-carousel-container class="{{ $containerClass }}">
             {{ $slot }}
         </div>
     </div>
+
+    @if ($progress)
+        <div class="{{ $progressWrapperClass }}">
+            <div data-{{ $identifier }}-target="progress" class="{{ $progressClass }}" style="width: 0%"></div>
+        </div>
+    @endif
+
+    @if ($counter)
+        <div class="{{ $counterClass }}">
+            <span data-{{ $identifier }}-target="indexLabel"></span>/<span data-{{ $identifier }}-target="totalLabel"></span>
+        </div>
+    @endif
 
     @if ($navigation)
         @if ($navWrapperClass !== '')

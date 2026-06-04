@@ -4,7 +4,7 @@ import EmblaCarousel from "embla-carousel";
 import "./carousel.css";
 
 export default class extends Controller {
-    static targets = ["prevButton", "nextButton", "dotList", "dotTemplate"];
+    static targets = ["prevButton", "nextButton", "dotList", "dotTemplate", "progress", "indexLabel", "totalLabel"];
 
     static values = {
         options: { type: Object, default: {} },
@@ -39,6 +39,8 @@ export default class extends Controller {
 
         this.syncSelected();
         this.syncNav();
+        this.syncCounter();
+        this.syncProgress();
 
         this.dispatch("init", { detail: { embla: this.embla } });
     }
@@ -96,6 +98,8 @@ export default class extends Controller {
     onSelect() {
         this.syncSelected();
         this.syncNav();
+        this.syncCounter();
+        this.syncProgress();
         this.dispatch("select", {
             detail: {
                 index: this.embla.selectedScrollSnap(),
@@ -109,9 +113,12 @@ export default class extends Controller {
         this.renderDots();
         this.syncSelected();
         this.syncNav();
+        this.syncCounter();
+        this.syncProgress();
     }
 
     onScroll() {
+        this.syncProgress();
         this.dispatch("scroll", { detail: { progress: this.embla.scrollProgress() } });
     }
 
@@ -129,6 +136,8 @@ export default class extends Controller {
         this.renderDots();
         this.syncSelected();
         this.syncNav();
+        this.syncCounter();
+        this.syncProgress();
         this.dispatch("slides-changed");
     }
 
@@ -173,6 +182,18 @@ export default class extends Controller {
     syncNav() {
         if (this.hasPrevButtonTarget) this.prevButtonTarget.disabled = !this.embla.canScrollPrev();
         if (this.hasNextButtonTarget) this.nextButtonTarget.disabled = !this.embla.canScrollNext();
+    }
+
+    syncProgress() {
+        if (!this.hasProgressTarget) return;
+        const snaps = this.embla.scrollSnapList();
+        const current = this.embla.selectedScrollSnap();
+        this.progressTarget.style.width = `${((current + 1) / snaps.length) * 100}%`;
+    }
+
+    syncCounter() {
+        if (this.hasIndexLabelTarget) this.indexLabelTarget.textContent = this.embla.selectedScrollSnap() + 1;
+        if (this.hasTotalLabelTarget) this.totalLabelTarget.textContent = this.embla.scrollSnapList().length;
     }
 
     syncAxis() {
