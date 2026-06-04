@@ -2,6 +2,29 @@
 
 All notable changes to `laravel-hotwire` will be documented in this file.
 
+## 0.17.0 - 2026-06-04
+
+### Carousel progress bar and slide counter
+
+The `<x-hwc::carousel>` component now supports an opt-in progress bar and slide counter.
+
+#### Progress bar
+
+```blade
+<x-hwc::carousel :progress="true"
+                 progress-class="h-1 bg-red-500"
+                 progress-wrapper-class="max-w-xs bg-gray-200 rounded-md h-1">
+
+```
+#### Slide counter
+
+```blade
+<x-hwc::carousel :counter="true"
+                 counter-class="text-sm">
+
+```
+**Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/0.16.0...0.17.0
+
 ## 0.16.0 — Carousel extensibility via subclassing - 2026-06-03
 
 ### Carousel extensibility via subclassing
@@ -21,12 +44,14 @@ export default class extends CarouselController {
     }
 }
 
+
 ```
 ```blade
 <x-hwc::carousel controller="gallery">
     <div>slide 1</div>
     <div>slide 2</div>
 </x-hwc::carousel>
+
 
 ```
 Plugin imports load lazily with the subclass chunk. `play()` and `stop()` delegate to `embla.plugins()?.autoplay` when present.
