@@ -87,6 +87,38 @@ registered here**, or the commands won't see it.
 - Request detection: `request()->wantsTurboStream()`, `request()->wasFromTurboFrame()`
 - DOM helpers: `dom_id($model)`, `dom_class($model)`
 
+## Release Workflow
+
+### Commits
+
+- **Subject**: Imperative mood, no period at end (e.g. `Add progress bar and counter targets to carousel`)
+- **Body**: Bullet points prefixed with `-`, each describing a specific change
+- **PR reference**: Appended as `(#N)` in the subject when applicable
+- Always signed (GPG)
+
+### Pull Requests
+
+- Push feature branch, open PR on GitHub
+- Branch naming: descriptive kebab-case (e.g. `carousel-extras`, `confirm-dialog`)
+- PR title matches commit subject convention; body summarizes changes
+- Review required; merge manually (do not squash-merge from the CLI)
+- Remote merge (GitHub UI) squashes the branch into a single commit on `main`
+
+### Tag and Release
+
+- Tags are created on `main` after the PR is merged remotely
+- Versioning follows `0.X.Y` semver:
+  - Patch (`0.16.1`): bugfixes
+  - Minor (`0.17.0`): new features
+- Annotated tag: `git tag -a 0.17.0 -m "0.17.0"`
+- Release created via `gh release create 0.17.0 --title "0.17.0" --notes-file /tmp/release-notes.md`
+- Release notes format (following the `0.16.0` template):
+  - Markdown title with feature name (e.g. `## Carousel progress bar and slide counter`)
+  - One-sentence summary
+  - Section per feature with Blade code block showing usage
+  - `**Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/<prev>...<version>` at the end
+- CHANGELOG.md is updated automatically by the release workflow; do not edit manually
+
 ## Development
 
 ```bash
