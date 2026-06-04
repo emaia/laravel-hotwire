@@ -114,14 +114,19 @@ Prev/next take inner content via slots; dot appearance is set with `dot-class` (
 ```html
 
 <x-hwc::carousel class="relative"
-                 dot-list-class="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5"
-                 slide-size="80%"
-                 slide-spacing="1rem"
+                 slide-size="75%"
+                 slide-spacing=".5rem"
+                 :counter="true"
+                 :progress="true"
                  loop
+                 dot-list-class="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5"
+                 counter-class="bg-white/50 backdrop-blur w-16 justify-center inline-flex px-4 py-3 leading-none font-medium text-sm tracking-widest rounded-xl absolute top-5 right-5"
+                 progress-class="h-1 bg-accent/80 transition-all duration-300 ease-in-out rounded-xl"
+                 progress-wrapper-class="absolute top-3 left-1/2 -translate-x-1/2 w-32 rounded-2xl max-w-xs backdrop-blur bg-white/20 rounded-md h-1"
 >
     @foreach ($photos as $photo)
     <div class="min-w-0 overflow-hidden">
-        <img src="{{ $photo['url'] }}" alt="" class="w-full h-full rounded-md"/>
+        <img src="{{ $photo->url }}" alt="" class="w-full h-full rounded-md"/>
     </div>
     @endforeach
 

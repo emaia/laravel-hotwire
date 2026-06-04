@@ -32,7 +32,7 @@
 
     @if ($progress)
         <div class="{{ $progressWrapperClass }}">
-            <div data-{{ $identifier }}-target="progress" class="{{ $progressClass }}"></div>
+            <div data-{{ $identifier }}-target="progress" class="{{ $progressClass }}" style="width: 0%"></div>
         </div>
     @endif
 

@@ -414,14 +414,54 @@ test.serial("re-renders dots when the snap list changes on reInit", async () => 
 
 // --- Progress target ---
 
-test.serial("sets the progress target width on scroll", async () => {
+test.serial("sets the progress target width based on snap position on scroll", async () => {
     await mount();
+    emblaState.selected = 1;
 
-    emblaState.progress = 0.42;
     emit("scroll");
 
     const bar = document.querySelector('[data-carousel-target="progress"]');
-    expect(bar.style.width).toBe("42%");
+    expect(parseFloat(bar.style.width)).toBeCloseTo(66.67, 2);
+});
+
+test.serial("syncs progress on connect using snap position", async () => {
+    emblaState.snaps = [0, 0.5, 1];
+    emblaState.selected = 0;
+    await mount();
+
+    const bar = document.querySelector('[data-carousel-target="progress"]');
+    expect(parseFloat(bar.style.width)).toBeCloseTo(33.33, 2);
+});
+
+test.serial("syncs progress on select using snap position", async () => {
+    await mount();
+
+    emblaState.selected = 2;
+    emit("select");
+
+    const bar = document.querySelector('[data-carousel-target="progress"]');
+    expect(parseFloat(bar.style.width)).toBe(100);
+});
+
+test.serial("syncs progress on reInit using snap position", async () => {
+    await mount();
+
+    emblaState.selected = 1;
+    emit("reInit");
+
+    const bar = document.querySelector('[data-carousel-target="progress"]');
+    expect(parseFloat(bar.style.width)).toBeCloseTo(66.67, 2);
+});
+
+test.serial("syncs progress on slidesChanged using snap position", async () => {
+    emblaState.snaps = [0, 0.25, 0.5, 0.75];
+    await mount();
+
+    emblaState.selected = 2;
+    emit("slidesChanged");
+
+    const bar = document.querySelector('[data-carousel-target="progress"]');
+    expect(parseFloat(bar.style.width)).toBe(75);
 });
 
 test.serial("progress target is optional (no error when absent)", async () => {
@@ -433,8 +473,11 @@ test.serial("progress target is optional (no error when absent)", async () => {
         </div>`);
 
     expect(() => {
-        emblaState.progress = 0.5;
+        emblaState.selected = 1;
         emit("scroll");
+        emit("select");
+        emit("reInit");
+        emit("slidesChanged");
     }).not.toThrow();
 
     await m.cleanup();

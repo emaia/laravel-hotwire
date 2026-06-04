@@ -40,6 +40,7 @@ export default class extends Controller {
         this.syncSelected();
         this.syncNav();
         this.syncCounter();
+        this.syncProgress();
 
         this.dispatch("init", { detail: { embla: this.embla } });
     }
@@ -98,6 +99,7 @@ export default class extends Controller {
         this.syncSelected();
         this.syncNav();
         this.syncCounter();
+        this.syncProgress();
         this.dispatch("select", {
             detail: {
                 index: this.embla.selectedScrollSnap(),
@@ -112,6 +114,7 @@ export default class extends Controller {
         this.syncSelected();
         this.syncNav();
         this.syncCounter();
+        this.syncProgress();
     }
 
     onScroll() {
@@ -134,6 +137,7 @@ export default class extends Controller {
         this.syncSelected();
         this.syncNav();
         this.syncCounter();
+        this.syncProgress();
         this.dispatch("slides-changed");
     }
 
@@ -182,7 +186,9 @@ export default class extends Controller {
 
     syncProgress() {
         if (!this.hasProgressTarget) return;
-        this.progressTarget.style.width = `${this.embla.scrollProgress() * 100}%`;
+        const snaps = this.embla.scrollSnapList();
+        const current = this.embla.selectedScrollSnap();
+        this.progressTarget.style.width = `${((current + 1) / snaps.length) * 100}%`;
     }
 
     syncCounter() {
