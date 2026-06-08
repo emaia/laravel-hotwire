@@ -2,6 +2,12 @@
 
 All notable changes to `laravel-hotwire` will be documented in this file.
 
+## 0.17.1 - 2026-06-08
+
+* Bump deps (php/js)
+
+**Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/0.17.0...0.17.1
+
 ## 0.17.0 - 2026-06-04
 
 ### Carousel progress bar and slide counter
@@ -15,12 +21,14 @@ The `<x-hwc::carousel>` component now supports an opt-in progress bar and slide 
                  progress-class="h-1 bg-red-500"
                  progress-wrapper-class="max-w-xs bg-gray-200 rounded-md h-1">
 
+
 ```
 #### Slide counter
 
 ```blade
 <x-hwc::carousel :counter="true"
                  counter-class="text-sm">
+
 
 ```
 **Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/0.16.0...0.17.0
@@ -45,12 +53,14 @@ export default class extends CarouselController {
 }
 
 
+
 ```
 ```blade
 <x-hwc::carousel controller="gallery">
     <div>slide 1</div>
     <div>slide 2</div>
 </x-hwc::carousel>
+
 
 
 ```
