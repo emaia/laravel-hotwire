@@ -1,0 +1,37 @@
+# Configures the auto-generated release notes used by GitHub's
+# "Generate release notes" button. The body of a published release
+# is then consumed by the update-changelog workflow, so categories
+# here become the section headers in CHANGELOG.md.
+#
+# Keep the category titles aligned with Keep a Changelog
+# (https://keepachangelog.com) so the changelog stays consistent
+# with the manually-written entries in earlier versions.
+
+changelog:
+  exclude:
+    labels:
+      - duplicate
+      - invalid
+      - wontfix
+      - question
+  categories:
+    - title: Added
+      labels:
+        - enhancement
+    - title: Changed
+      labels:
+        - refactor
+        - change
+    - title: Fixed
+      labels:
+        - bug
+    - title: Removed
+      labels:
+        - removal
+        - breaking
+    - title: Documentation
+      labels:
+        - documentation
+    - title: Other Changes
+      labels:
+        - "*"
