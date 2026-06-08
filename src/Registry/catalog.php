@@ -11,6 +11,7 @@ use Emaia\LaravelHotwire\Components\File;
 use Emaia\LaravelHotwire\Components\FlashContainer;
 use Emaia\LaravelHotwire\Components\FlashMessage;
 use Emaia\LaravelHotwire\Components\Form;
+use Emaia\LaravelHotwire\Components\FrameOrPage;
 use Emaia\LaravelHotwire\Components\Input;
 use Emaia\LaravelHotwire\Components\Label;
 use Emaia\LaravelHotwire\Components\Modal;
@@ -102,6 +103,14 @@ return [
             'category' => 'feedback',
             'description' => 'Fires a toast notification from the Laravel session or from explicit props',
             'controllers' => ['toast'],
+        ],
+        'frame-or-page' => [
+            'class' => FrameOrPage::class,
+            'view' => 'hotwire::component-views.frame-or-page',
+            'docs' => 'docs/components/frame-or-page.md',
+            'category' => 'turbo',
+            'description' => 'Renders a view as a Turbo Frame payload or wrapped in a layout, based on the Turbo-Frame request header',
+            'controllers' => [],
         ],
         'input' => [
             'class' => Input::class,

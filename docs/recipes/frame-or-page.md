@@ -3,6 +3,10 @@
 Render the **same view** as either a full-page response or a Turbo Frame modal payload, depending on
 how the user reached it. One controller, one view, no duplication.
 
+> The pattern below is also packaged as [`<x-hwc::frame-or-page>`](../components/frame-or-page.md).
+> Use this recipe when you want to understand the moving parts or when you need to customize the
+> dashboard layout itself; reach for the component when you just want the behavior.
+
 ## The problem
 
 A typical CRUD flow has two ways to open a record's "edit" form:
