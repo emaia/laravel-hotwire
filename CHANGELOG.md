@@ -2,6 +2,32 @@
 
 All notable changes to `laravel-hotwire` will be documented in this file.
 
+## 0.18.0 - 2026-06-08
+
+### Frame-or-page Blade component
+
+New `<x-hwc::frame-or-page>` component renders a view as a Turbo Frame payload or wrapped in a layout based on the `Turbo-Frame` request header — one view, two presentations.
+
+#### Usage
+
+```blade
+<x-hwc::frame-or-page frame="modal" layout="layouts.dashboard">
+    <form>...</form>
+</x-hwc::frame-or-page>
+
+```
+#### Model-aware frame ids
+
+Pass a Model instead of a string; the component calls `dom_id()` to derive the frame id.
+
+```blade
+<x-hwc::frame-or-page :frame="$message" layout="layouts.dashboard">
+    ...
+</x-hwc::frame-or-page>
+
+```
+**Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/0.17.1...0.18.0
+
 ## 0.17.1 - 2026-06-08
 
 * Bump deps (php/js)
@@ -22,12 +48,14 @@ The `<x-hwc::carousel>` component now supports an opt-in progress bar and slide 
                  progress-wrapper-class="max-w-xs bg-gray-200 rounded-md h-1">
 
 
+
 ```
 #### Slide counter
 
 ```blade
 <x-hwc::carousel :counter="true"
                  counter-class="text-sm">
+
 
 
 ```
@@ -54,12 +82,14 @@ export default class extends CarouselController {
 
 
 
+
 ```
 ```blade
 <x-hwc::carousel controller="gallery">
     <div>slide 1</div>
     <div>slide 2</div>
 </x-hwc::carousel>
+
 
 
 
