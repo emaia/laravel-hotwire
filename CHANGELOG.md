@@ -2,6 +2,60 @@
 
 All notable changes to `laravel-hotwire` will be documented in this file.
 
+## 0.20.0 - 2026-06-09
+
+### Password visibility controller
+
+New `password-visibility` Stimulus controller toggles a password input between hidden and visible, keeping the optional button target's `aria-pressed` and `aria-label` in sync.
+
+```html
+
+<div data-controller="password-visibility">
+    <input type="password" name="password" data-password-visibility-target="input"/>
+    <button
+        type="button"
+        data-password-visibility-target="button"
+        data-action="password-visibility#toggle"
+    >👁</button>
+</div>
+
+```
+`aria-label` is driven by the `show-label` / `hide-label` values (defaults `Show password` / `Hide password`). A `password-visibility:change` event with `{ visible: bool }` fires on every transition so a small companion controller — or another listener — can swap icons. `connect()` always forces `type="password"`: visibility is never persisted across Turbo morphs or Drive navigations.
+
+### Autofocus controller
+
+New `autofocus` Stimulus controller focuses the first matching field on `connect()` and on `turbo:frame-load`, filling the gap left by native HTML `[autofocus]` which does not fire on Drive visits or frame swaps.
+
+```html
+
+<form data-controller="autofocus" action="/messages" method="POST">
+    <input type="text" name="title" autofocus/>
+</form>
+
+```
+Three strategies are available via `strategy-value`: `autofocus-attribute` (default — first `[autofocus]`), `first-focusable` (first `<input>` / `<select>` / `<textarea>` / `<button>`), and `target` (the `field` Stimulus target). All strategies skip `[disabled]`, `[type="hidden"]`, `[tabindex="-1"]`, and descendants of `[hidden]` / `[aria-hidden="true"]`. The controller never steals focus from an element already active inside its scope, and focuses with `{ preventScroll: true }` unless `scroll-into-view-value="true"` opts in.
+
+### Back to top controller
+
+New `back-to-top` Stimulus controller toggles `data-visible="true|false"` on its element as `window.scrollY` crosses a configurable threshold, and exposes a `scrollToTop` action that respects `prefers-reduced-motion`.
+
+```html
+
+<button
+    type="button"
+    data-controller="back-to-top"
+    data-action="back-to-top#scrollToTop"
+    class="fixed bottom-6 right-6 transition-opacity
+           data-[visible=false]:opacity-0 data-[visible=false]:pointer-events-none
+           data-[visible=true]:opacity-100"
+    aria-label="Back to top"
+>↑</button>
+
+```
+Default threshold is `400` (strict greater-than). The scroll listener is throttled via `requestAnimationFrame` and cleaned up on disconnect. No styles are shipped — the controller only writes the `data-visible` attribute, so consumers drive the show/hide transition with Tailwind `data-[visible=...]` variants or plain CSS.
+
+**Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/0.19.1...0.20.0
+
 ## 0.19.1 - 2026-06-09
 
 ### 0.19.1
@@ -32,6 +86,7 @@ Single `size` prop replaces the previous `allow-small-width` and `allow-full-wid
 <x-hwc::modal size="50vw">...</x-hwc::modal>     {{-- arbitrary CSS length --}}
 
 
+
 ```
 `allow-small-width` and `allow-full-width` are removed. Use `size="auto"` to keep the old "no width constraints" behavior, or `size="50vw"` to keep the old "half viewport" default. The migration table in `docs/components/modal.md` maps every previous combination to the new prop.
 
@@ -56,6 +111,7 @@ New `<x-hwc::frame-or-page>` component renders a view as a Turbo Frame payload o
 
 
 
+
 ```
 #### Model-aware frame ids
 
@@ -65,6 +121,7 @@ Pass a Model instead of a string; the component calls `dom_id()` to derive the f
 <x-hwc::frame-or-page :frame="$message" layout="layouts.dashboard">
     ...
 </x-hwc::frame-or-page>
+
 
 
 
@@ -94,12 +151,14 @@ The `<x-hwc::carousel>` component now supports an opt-in progress bar and slide 
 
 
 
+
 ```
 #### Slide counter
 
 ```blade
 <x-hwc::carousel :counter="true"
                  counter-class="text-sm">
+
 
 
 
@@ -132,12 +191,14 @@ export default class extends CarouselController {
 
 
 
+
 ```
 ```blade
 <x-hwc::carousel controller="gallery">
     <div>slide 1</div>
     <div>slide 2</div>
 </x-hwc::carousel>
+
 
 
 
