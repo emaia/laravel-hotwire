@@ -212,6 +212,12 @@ it('does not forward modal stimulus attributes from arbitrary attributes', funct
     $view->assertDontSee('data-modal-close-on-escape-value="false"', false);
 });
 
+it('clips horizontal overflow on the scroll container', function () {
+    $view = $this->blade('<x-hwc::modal>Content</x-hwc::modal>');
+
+    $view->assertSee('w-full overflow-x-hidden overflow-y-auto', false);
+});
+
 it('renders an accessible label on the close button', function () {
     $view = $this->blade('<x-hwc::modal>Content</x-hwc::modal>');
 

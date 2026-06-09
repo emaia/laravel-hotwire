@@ -56,7 +56,7 @@
                 $class,
             ])>
                 <div @class([
-                    'w-full overflow-y-auto',
+                    'w-full overflow-x-hidden overflow-y-auto',
                     'flex-1' => $isFullSize(),
                     'max-h-[calc(100vh-80px)]' => ! $isFullSize(),
                 ])>
