@@ -2,6 +2,50 @@
 
 All notable changes to `laravel-hotwire` will be documented in this file.
 
+## 0.21.0 - 2026-06-09
+
+### Disclosure controller
+
+New `disclosure` Stimulus controller — collapsible inline content with proper ARIA, the base primitive for "read more" sections, FAQ items, and accordion patterns.
+
+```html
+
+<div data-controller="disclosure">
+    <button type="button"
+            data-disclosure-target="trigger"
+            data-action="disclosure#toggle"
+            aria-expanded="false">Read more</button>
+    <div data-disclosure-target="content" hidden>...</div>
+</div>
+
+```
+Two-way `open` value (default `false`), idempotent `toggle` / `open` / `close` actions, and a `disclosure:change` event with `{ open: bool }` for hooking analytics, icon swaps, or chained UI off transitions. The `content` target is required; the `trigger` target is optional and receives `aria-expanded` sync when present.
+
+#### Programmatic control via outlets
+
+Open or close from another controller:
+
+```js
+static outlets = ["disclosure"];
+
+revealHelp() {
+    this.disclosureOutlet.open();
+}
+
+```
+Always call the methods (not `outlet.openValue = true`) — they sync DOM and dispatch synchronously, while raw value writes go through Stimulus's MutationObserver path and update asynchronously.
+
+### Accordion recipe
+
+New cookbook entry at `docs/recipes/accordion.md` covering both paths:
+
+- **Native `<details>`** for static FAQ-style accordions — gets ARIA, keyboard handling, single-open via the native `toggle` event, and `::details-content` animation for free.
+- **Controller-based patterns** — independent disclosures, single-open via Stimulus outlets, server-rendered initial state, and URL-driven sections — for when state needs to be JS- or server-driven.
+
+Includes a "when is `<details>` not the right answer" checklist so the choice between native and controller stays explicit.
+
+**Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/0.20.0...0.21.0
+
 ## 0.20.0 - 2026-06-09
 
 ### Password visibility controller
@@ -19,6 +63,7 @@ New `password-visibility` Stimulus controller toggles a password input between h
     >👁</button>
 </div>
 
+
 ```
 `aria-label` is driven by the `show-label` / `hide-label` values (defaults `Show password` / `Hide password`). A `password-visibility:change` event with `{ visible: bool }` fires on every transition so a small companion controller — or another listener — can swap icons. `connect()` always forces `type="password"`: visibility is never persisted across Turbo morphs or Drive navigations.
 
@@ -31,6 +76,7 @@ New `autofocus` Stimulus controller focuses the first matching field on `connect
 <form data-controller="autofocus" action="/messages" method="POST">
     <input type="text" name="title" autofocus/>
 </form>
+
 
 ```
 Three strategies are available via `strategy-value`: `autofocus-attribute` (default — first `[autofocus]`), `first-focusable` (first `<input>` / `<select>` / `<textarea>` / `<button>`), and `target` (the `field` Stimulus target). All strategies skip `[disabled]`, `[type="hidden"]`, `[tabindex="-1"]`, and descendants of `[hidden]` / `[aria-hidden="true"]`. The controller never steals focus from an element already active inside its scope, and focuses with `{ preventScroll: true }` unless `scroll-into-view-value="true"` opts in.
@@ -50,6 +96,7 @@ New `back-to-top` Stimulus controller toggles `data-visible="true|false"` on its
            data-[visible=true]:opacity-100"
     aria-label="Back to top"
 >↑</button>
+
 
 ```
 Default threshold is `400` (strict greater-than). The scroll listener is throttled via `requestAnimationFrame` and cleaned up on disconnect. No styles are shipped — the controller only writes the `data-visible` attribute, so consumers drive the show/hide transition with Tailwind `data-[visible=...]` variants or plain CSS.
@@ -87,6 +134,7 @@ Single `size` prop replaces the previous `allow-small-width` and `allow-full-wid
 
 
 
+
 ```
 `allow-small-width` and `allow-full-width` are removed. Use `size="auto"` to keep the old "no width constraints" behavior, or `size="50vw"` to keep the old "half viewport" default. The migration table in `docs/components/modal.md` maps every previous combination to the new prop.
 
@@ -112,6 +160,7 @@ New `<x-hwc::frame-or-page>` component renders a view as a Turbo Frame payload o
 
 
 
+
 ```
 #### Model-aware frame ids
 
@@ -121,6 +170,7 @@ Pass a Model instead of a string; the component calls `dom_id()` to derive the f
 <x-hwc::frame-or-page :frame="$message" layout="layouts.dashboard">
     ...
 </x-hwc::frame-or-page>
+
 
 
 
@@ -152,12 +202,14 @@ The `<x-hwc::carousel>` component now supports an opt-in progress bar and slide 
 
 
 
+
 ```
 #### Slide counter
 
 ```blade
 <x-hwc::carousel :counter="true"
                  counter-class="text-sm">
+
 
 
 
@@ -192,12 +244,14 @@ export default class extends CarouselController {
 
 
 
+
 ```
 ```blade
 <x-hwc::carousel controller="gallery">
     <div>slide 1</div>
     <div>slide 2</div>
 </x-hwc::carousel>
+
 
 
 
