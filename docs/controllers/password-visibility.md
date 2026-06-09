@@ -94,33 +94,44 @@ connects, so it only matters for users who load the page with JavaScript disable
 </div>
 ```
 
-## Swapping icons via the change event
+## Swapping icons via a companion controller
 
-The controller does not render or swap icons — it only manages state. Listen for
-`password-visibility:change` and toggle whatever icon system you use:
+The controller does not render or swap icons — it only manages state. Wire a small companion
+controller to the `password-visibility:change` event and let it flip whatever icons you ship.
 
 ```html
 
-<div data-controller="password-visibility">
+<div data-controller="password-visibility password-visibility-icon"
+     data-action="password-visibility:change->password-visibility-icon#swap">
     <input type="password" data-password-visibility-target="input" />
     <button
         type="button"
         data-password-visibility-target="button"
         data-action="password-visibility#toggle"
     >
-        <svg data-icon="eye" class="h-5 w-5">...</svg>
-        <svg data-icon="eye-slash" class="h-5 w-5 hidden">...</svg>
+        <svg data-password-visibility-icon-target="show" class="h-5 w-5">...</svg>
+        <svg data-password-visibility-icon-target="hide" class="h-5 w-5" hidden>...</svg>
     </button>
 </div>
-
-<script>
-    document.addEventListener("password-visibility:change", (event) => {
-        const button = event.target.querySelector("button");
-        button.querySelector("[data-icon='eye']").classList.toggle("hidden", event.detail.visible);
-        button.querySelector("[data-icon='eye-slash']").classList.toggle("hidden", !event.detail.visible);
-    });
-</script>
 ```
+
+```js
+// resources/js/controllers/password_visibility_icon_controller.js
+import { Controller } from "@hotwired/stimulus";
+
+export default class extends Controller {
+    static targets = ["show", "hide"];
+
+    swap(event) {
+        this.showTarget.hidden = event.detail.visible;
+        this.hideTarget.hidden = !event.detail.visible;
+    }
+}
+```
+
+Both controllers live on the same element, so the `password-visibility:change` event fires
+exactly where the companion's action listener is declared — no bubbling, no `event.target`
+querying. Swap `hidden` for a class toggle if your icon library needs it.
 
 ## Pairing with `password` and `password_confirmation`
 
