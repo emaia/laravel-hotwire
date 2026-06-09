@@ -2,6 +2,32 @@
 
 All notable changes to `laravel-hotwire` will be documented in this file.
 
+## 0.19.0 - 2026-06-09
+
+### 0.19.0
+
+#### Modal `size` prop
+
+Single `size` prop replaces the previous `allow-small-width` and `allow-full-width` booleans. Presets follow a monotonically increasing scale (`sm < md < lg < xl`) at any viewport, so the chosen size is predictable regardless of screen width or browser zoom. Arbitrary CSS lengths are forwarded as inline `max-width`.
+
+```blade
+<x-hwc::modal size="sm">...</x-hwc::modal>      {{-- md:max-w-md, 448px --}}
+<x-hwc::modal>...</x-hwc::modal>                 {{-- size=md default, md:max-w-xl, 576px --}}
+<x-hwc::modal size="lg">...</x-hwc::modal>       {{-- md:max-w-3xl, 768px --}}
+<x-hwc::modal size="xl">...</x-hwc::modal>       {{-- md:max-w-5xl, 1024px --}}
+<x-hwc::modal size="full">...</x-hwc::modal>     {{-- fills the viewport, close button moves inside --}}
+<x-hwc::modal size="auto">...</x-hwc::modal>     {{-- sizes to content, no width constraints --}}
+<x-hwc::modal size="50vw">...</x-hwc::modal>     {{-- arbitrary CSS length --}}
+
+```
+`allow-small-width` and `allow-full-width` are removed. Use `size="auto"` to keep the old "no width constraints" behavior, or `size="50vw"` to keep the old "half viewport" default. The migration table in `docs/components/modal.md` maps every previous combination to the new prop.
+
+#### Modal scroll container clips horizontal overflow
+
+`overflow-x-hidden` is now applied to the modal's inner scroll container. Without it, the CSS quirk that promotes `overflow-x: visible` to `auto` when `overflow-y: auto` is set could raise a spurious horizontal scrollbar whenever content was wider than the dialog.
+
+**Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/0.18.0...0.19.0
+
 ## 0.18.0 - 2026-06-08
 
 ### Frame-or-page Blade component
@@ -15,6 +41,7 @@ New `<x-hwc::frame-or-page>` component renders a view as a Turbo Frame payload o
     <form>...</form>
 </x-hwc::frame-or-page>
 
+
 ```
 #### Model-aware frame ids
 
@@ -24,6 +51,7 @@ Pass a Model instead of a string; the component calls `dom_id()` to derive the f
 <x-hwc::frame-or-page :frame="$message" layout="layouts.dashboard">
     ...
 </x-hwc::frame-or-page>
+
 
 ```
 **Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/0.17.1...0.18.0
@@ -49,12 +77,14 @@ The `<x-hwc::carousel>` component now supports an opt-in progress bar and slide 
 
 
 
+
 ```
 #### Slide counter
 
 ```blade
 <x-hwc::carousel :counter="true"
                  counter-class="text-sm">
+
 
 
 
@@ -83,12 +113,14 @@ export default class extends CarouselController {
 
 
 
+
 ```
 ```blade
 <x-hwc::carousel controller="gallery">
     <div>slide 1</div>
     <div>slide 2</div>
 </x-hwc::carousel>
+
 
 
 
