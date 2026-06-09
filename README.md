@@ -179,6 +179,8 @@ php artisan hotwire:controllers auto-select auto-submit turbo/progress
 | [Auto Resize](docs/controllers/auto-resize.md)                 | `auto-resize`         | `forms`    | —                | [readme](docs/controllers/auto-resize.md)         |
 | [Auto Select](docs/controllers/auto-select.md)                 | `auto-select`         | `forms`    | —                | [readme](docs/controllers/auto-select.md)         |
 | [Auto Submit](docs/controllers/auto-submit.md)                 | `auto-submit`         | `forms`    | —                | [readme](docs/controllers/auto-submit.md)         |
+| [Autofocus](docs/controllers/autofocus.md)                     | `autofocus`           | `forms`    | —                | [readme](docs/controllers/autofocus.md)           |
+| [Back to Top](docs/controllers/back-to-top.md)                 | `back-to-top`         | `utility`  | —                | [readme](docs/controllers/back-to-top.md)         |
 | [Carousel](docs/controllers/carousel.md)                       | `carousel`            | `utility`  | `embla-carousel` | [readme](docs/controllers/carousel.md)            |
 | [Char Counter](docs/controllers/char-counter.md)               | `char-counter`        | `forms`    | —                | [readme](docs/controllers/char-counter.md)        |
 | [Checkbox Select All](docs/controllers/checkbox-select-all.md) | `checkbox-select-all` | `forms`    | —                | [readme](docs/controllers/checkbox-select-all.md) |
@@ -186,6 +188,7 @@ php artisan hotwire:controllers auto-select auto-submit turbo/progress
 | [Clear Input](docs/controllers/clear-input.md)                 | `clear-input`         | `forms`    | —                | [readme](docs/controllers/clear-input.md)         |
 | [Confirm Dialog](docs/controllers/confirm-dialog.md)           | `confirm-dialog`      | `overlay`  | —                | [readme](docs/controllers/confirm-dialog.md)      |
 | [Copy To Clipboard](docs/controllers/copy-to-clipboard.md)     | `copy-to-clipboard`   | `utility`  | —                | [readme](docs/controllers/copy-to-clipboard.md)   |
+| [Disclosure](docs/controllers/disclosure.md)                   | `disclosure`          | `utility`  | —                | [readme](docs/controllers/disclosure.md)          |
 | [Dropdown](docs/controllers/dropdown.md)                       | `dropdown`            | `overlay`  | —                | [readme](docs/controllers/dropdown.md)            |
 | [Error Scroll](docs/controllers/error-scroll.md)               | `error-scroll`        | `forms`    | —                | [readme](docs/controllers/error-scroll.md)        |
 | [File Preserve](docs/controllers/file-preserve.md)             | `file-preserve`       | `forms`    | —                | [readme](docs/controllers/file-preserve.md)       |
@@ -197,6 +200,7 @@ php artisan hotwire:controllers auto-select auto-submit turbo/progress
 | [Modal Auto Close](docs/controllers/modal-auto-close.md)       | `modal-auto-close`    | `overlay`  | —                | [readme](docs/controllers/modal-auto-close.md)    |
 | [Money Input](docs/controllers/money-input.md)                 | `money-input`         | `forms`    | —                | [readme](docs/controllers/money-input.md)         |
 | [OEmbed](docs/controllers/oembed.md)                           | `oembed`              | `utility`  | —                | [readme](docs/controllers/oembed.md)              |
+| [Password Visibility](docs/controllers/password-visibility.md) | `password-visibility` | `forms`    | —                | [readme](docs/controllers/password-visibility.md) |
 | [Remote Form](docs/controllers/remote-form.md)                 | `remote-form`         | `forms`    | —                | [readme](docs/controllers/remote-form.md)         |
 | [Reset Files](docs/controllers/reset-files.md)                 | `reset-files`         | `forms`    | —                | [readme](docs/controllers/reset-files.md)         |
 | [Scroll Progress](docs/controllers/scroll-progress.md)         | `scroll-progress`     | `utility`  | —                | [readme](docs/controllers/scroll-progress.md)     |
