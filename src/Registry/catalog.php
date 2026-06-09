@@ -297,6 +297,12 @@ return [
             'category' => 'utility',
             'description' => 'Copies text to the clipboard and shows a temporary success label',
         ],
+        'disclosure' => [
+            'source' => 'resources/js/controllers/disclosure_controller.js',
+            'docs' => 'docs/controllers/disclosure.md',
+            'category' => 'utility',
+            'description' => 'Show/hide collapsible content with aria-expanded sync — base primitive for FAQ items, read-more sections and accordions',
+        ],
         'dev--log' => [
             'source' => 'resources/js/controllers/dev/log_controller.js',
             'docs' => 'docs/controllers/dev/log.md',
