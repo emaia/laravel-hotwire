@@ -212,6 +212,12 @@ return [
             'category' => 'forms',
             'description' => 'Submits a form automatically on input or change events, with debounce support',
         ],
+        'back-to-top' => [
+            'source' => 'resources/js/controllers/back_to_top_controller.js',
+            'docs' => 'docs/controllers/back-to-top.md',
+            'category' => 'utility',
+            'description' => 'Toggles a data-visible attribute on the element as the page scrolls past a threshold, and exposes a scrollToTop action that respects prefers-reduced-motion',
+        ],
         'auto-resize' => [
             'source' => 'resources/js/controllers/auto_resize_controller.js',
             'docs' => 'docs/controllers/auto-resize.md',
