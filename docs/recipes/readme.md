@@ -23,6 +23,8 @@ Each recipe is self-contained — pick the one that matches your use case.
   URL-deep-linked slides — built on the `carousel` controller.
 - [Carousel as a primitive](./carousel-as-primitive.md) — multi-step wizard, server-driven signage, swipe
   deck and real-time presence — when the carousel is the snap engine, not the gallery.
+- [Accordion](./accordion.md) — compose multiple `disclosure` controllers into an accordion, with
+  patterns for independent or single-open behavior and server-driven initial state.
 
 ## See also
 
