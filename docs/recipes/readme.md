@@ -25,6 +25,9 @@ Each recipe is self-contained — pick the one that matches your use case.
   deck and real-time presence — when the carousel is the snap engine, not the gallery.
 - [Accordion](./accordion.md) — compose multiple `disclosure` controllers into an accordion, with
   patterns for independent or single-open behavior and server-driven initial state.
+- [Conditional fields](./conditional-fields.md) — five real-world form patterns built on
+  `conditional-fields` + `<x-hwc::conditional-field>`: "other" reason, ship-to-different-address,
+  subscription tiers, NPS survey follow-ups, and newsletter preferences.
 
 ## See also
 
