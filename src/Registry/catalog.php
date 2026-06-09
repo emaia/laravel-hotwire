@@ -224,6 +224,12 @@ return [
             'category' => 'forms',
             'description' => 'Selects all text in an input when it receives focus',
         ],
+        'autofocus' => [
+            'source' => 'resources/js/controllers/autofocus_controller.js',
+            'docs' => 'docs/controllers/autofocus.md',
+            'category' => 'forms',
+            'description' => 'Focuses the first matching field on connect and on turbo:frame-load, with autofocus-attribute, first-focusable and target strategies',
+        ],
         'carousel' => [
             'source' => 'resources/js/controllers/carousel_controller.js',
             'docs' => 'docs/controllers/carousel.md',
