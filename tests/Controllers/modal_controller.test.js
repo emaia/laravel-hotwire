@@ -252,3 +252,111 @@ test.serial("defers an empty turbo stream update for dynamic content until after
     expect(rendered).toBe(true);
     expect(frame.innerHTML).toBe("");
 });
+
+const ANIMATE_RESIZE_HTML = `
+    <div
+        data-controller="modal"
+        data-modal-open-duration-value="0"
+        data-modal-close-duration-value="0"
+        data-modal-animate-resize-value="true"
+        data-modal-resize-duration-value="50"
+    >
+        <div
+            data-modal-target="modal"
+            data-modal-hidden-class="hidden"
+            data-modal-visible-class="visible"
+            data-modal-backdrop-hidden-class="backdrop-hidden"
+            data-modal-backdrop-visible-class="backdrop-visible"
+            data-modal-dialog-hidden-class="dialog-hidden"
+            data-modal-dialog-visible-class="dialog-visible"
+            data-modal-lock-scroll-class="overflow-hidden"
+            hidden
+        >
+            <div data-modal-target="backdrop"></div>
+            <div data-modal-target="dialog">
+                <turbo-frame id="modal-frame" data-modal-target="dynamicContent"></turbo-frame>
+            </div>
+        </div>
+    </div>
+`;
+
+function stubDialogSize(dialog, width, height) {
+    Object.defineProperty(dialog, "offsetWidth", { configurable: true, get: () => width });
+    Object.defineProperty(dialog, "offsetHeight", { configurable: true, get: () => height });
+}
+
+test.serial("captures previousDialogSize on open and clears it on close when animate-resize is on", async () => {
+    mounted = await mountController("modal", ModalController, ANIMATE_RESIZE_HTML);
+    const dialog = document.querySelector('[data-modal-target="dialog"]');
+    stubDialogSize(dialog, 120, 80);
+
+    mounted.controller.open();
+    await wait(0);
+
+    expect(mounted.controller.previousDialogSize).toEqual({ width: 120, height: 80 });
+
+    mounted.controller.close();
+    await wait(0);
+
+    expect(mounted.controller.previousDialogSize).toBe(null);
+});
+
+test.serial("does not animate resize when animate-resize prop is off", async () => {
+    mounted = await mountController(
+        "modal",
+        ModalController,
+        ANIMATE_RESIZE_HTML.replace('data-modal-animate-resize-value="true"', 'data-modal-animate-resize-value="false"'),
+    );
+    const dialog = document.querySelector('[data-modal-target="dialog"]');
+    const frame = document.querySelector("turbo-frame");
+    stubDialogSize(dialog, 100, 100);
+
+    frame.innerHTML = "<p>loading</p>";
+    await wait(0);
+    await wait(0);
+    expect(mounted.controller.isOpen).toBe(true);
+    expect(mounted.controller.previousDialogSize).toBe(null);
+
+    stubDialogSize(dialog, 200, 150);
+    frame.innerHTML = "<p>final content with much more text inside</p>";
+    await wait(0);
+
+    expect(dialog.style.width).toBe("");
+    expect(dialog.style.height).toBe("");
+});
+
+test.serial("does not capture previousDialogSize on open when animate-resize is off", async () => {
+    mounted = await mountController(
+        "modal",
+        ModalController,
+        ANIMATE_RESIZE_HTML.replace('data-modal-animate-resize-value="true"', 'data-modal-animate-resize-value="false"'),
+    );
+    const dialog = document.querySelector('[data-modal-target="dialog"]');
+    stubDialogSize(dialog, 100, 100);
+
+    mounted.controller.open();
+    await wait(0);
+
+    expect(mounted.controller.previousDialogSize).toBe(null);
+});
+
+test.serial("clears in-flight resizeAnimationCleanup on close", async () => {
+    mounted = await mountController("modal", ModalController, ANIMATE_RESIZE_HTML);
+    const dialog = document.querySelector('[data-modal-target="dialog"]');
+    stubDialogSize(dialog, 100, 100);
+
+    mounted.controller.open();
+    await wait(0);
+
+    let cleared = false;
+    mounted.controller.resizeAnimationCleanup = () => {
+        cleared = true;
+        mounted.controller.resizeAnimationCleanup = null;
+    };
+
+    mounted.controller.close();
+    await wait(0);
+
+    expect(cleared).toBe(true);
+    expect(mounted.controller.resizeAnimationCleanup).toBe(null);
+});

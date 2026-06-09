@@ -44,6 +44,9 @@ The X button is shown by default (`close-button` is `true`). To hide it:
 | `fixed-top`            | `bool`    | `false`            | Pins the modal to the top with a margin (ignored when `size="full"`) |
 | `frame`                | `?string` | `null`             | Renders a Turbo Frame dynamic content target    |
 | `prevent-reopen-delay` | `int`     | `1000`             | Delay (ms) before allowing reopen after closing |
+| `animate-resize`       | `bool`    | `false`            | Animate the dialog between its old and new size when dynamic content changes |
+| `resize-duration`      | `int`     | `200`              | Duration (ms) of the resize animation when `animate-resize` is on |
+| `resize-easing`        | `string`  | `'ease'`           | CSS timing function for the resize animation (e.g. `ease-in-out`, `linear`, `cubic-bezier(0.4, 0, 0.2, 1)`) |
 
 ### Size presets
 
@@ -223,6 +226,50 @@ example):
 Resolution order: per-link `data-loading-template` → modal's `loading_template` slot → no loading
 template. Without a loading template, the modal stays closed until the real frame content arrives.
 
+## Smooth resize on content change
+
+When the modal sits in front of a Turbo Frame and the content swaps between a small loading template and a
+larger final response (or between two server-driven views of different sizes), the dialog jumps abruptly
+to fit the new content. Enable `animate-resize` to interpolate the dialog dimensions between the old and
+the new natural size:
+
+```blade
+<x-hwc::modal frame="modal" size="lg" animate-resize>
+    <x-slot:loading_template>
+        <div class="flex items-center justify-center p-12">Loading...</div>
+    </x-slot:loading_template>
+</x-hwc::modal>
+```
+
+How it works (FLIP):
+
+1. When the modal opens, the controller snapshots the dialog's current width/height.
+2. When the `dynamicContent` target mutates (loading template → final content, or any other in-place swap),
+   the controller measures the new natural size, locks the dialog to the old size via inline styles, and
+   transitions both `width` and `height` to the new size over `resize-duration` (default 200 ms).
+3. The inline styles are cleared after the transition so the dialog returns to natural sizing.
+
+Notes:
+
+- Resize is only animated while the modal is fully open and not in the middle of the open or close
+  animation. If a content swap arrives mid-open, the open animation completes at the new content's size
+  without an extra resize tween.
+- The animation runs on the dialog target, so it composes with the `size` preset cap — the dialog never
+  grows past it. With `size="full"` the dialog is already fixed at viewport size, so `animate-resize` has
+  nothing to interpolate.
+- Closing the modal cancels any in-flight resize animation immediately.
+
+### Tuning the animation
+
+```blade
+<x-hwc::modal frame="modal" size="lg" animate-resize :resize-duration="300" resize-easing="ease-in-out">
+    ...
+</x-hwc::modal>
+```
+
+`resize-easing` accepts any CSS `transition-timing-function` value — `linear`, `ease`, `ease-in`,
+`ease-out`, `ease-in-out`, or any `cubic-bezier(...)` / `steps(...)` function.
+
 ## Stimulus Values
 
 Configurable via `data-modal-*-value` on the root element:
@@ -235,6 +282,9 @@ Configurable via `data-modal-*-value` on the root element:
 | `close-on-escape`        | `Boolean` | `true`  | Closes on Escape key                     |
 | `close-on-click-outside` | `Boolean` | `true`  | Closes when clicking outside the modal   |
 | `prevent-reopen-delay`   | `Number`  | `300`   | Anti-bounce delay in the controller (ms) |
+| `animate-resize`         | `Boolean` | `false` | Animate the dialog between its old and new size when dynamic content changes |
+| `resize-duration`        | `Number`  | `200`   | Duration of the resize animation (ms)    |
+| `resize-easing`          | `String`  | `'ease'` | CSS timing function for the resize animation |
 
 ## Actions
 

@@ -1,7 +1,7 @@
 import { Controller } from "@hotwired/stimulus";
 
 export default class ModalController extends Controller {
-    static targets = ["modal", "backdrop", "dialog", "dynamicContent", "loadingTemplate"];
+    static targets = ["modal", "backdrop", "dialog", "panel", "dynamicContent", "loadingTemplate"];
 
     static classes = [
         "hidden",
@@ -20,6 +20,9 @@ export default class ModalController extends Controller {
         closeOnEscape: { type: Boolean, default: true },
         closeOnClickOutside: { type: Boolean, default: true },
         preventReopenDelay: { type: Number, default: 300 },
+        animateResize: { type: Boolean, default: false },
+        resizeDuration: { type: Number, default: 200 },
+        resizeEasing: { type: String, default: "ease" },
     };
 
     observer = null;
@@ -32,6 +35,8 @@ export default class ModalController extends Controller {
     dismissedWhileLoading = false;
     lastClickedLink = null;
     pendingEmptyStreamRender = null;
+    previousDialogSize = null;
+    resizeAnimationCleanup = null;
 
     get isOpen() {
         if (!this.hasModalTarget) return false;
@@ -103,6 +108,13 @@ export default class ModalController extends Controller {
         this.modalTarget.hidden = false;
         this.modalTarget.setAttribute("data-open", "true");
 
+        if (this.animateResizeValue) {
+            this.previousDialogSize = {
+                width: this.dialogTarget.offsetWidth,
+                height: this.dialogTarget.offsetHeight,
+            };
+        }
+
         if (this.lockScrollValue) {
             document.body.classList.add(...this.lockScrollClasses);
         }
@@ -135,6 +147,11 @@ export default class ModalController extends Controller {
         this.lastCloseTime = Date.now();
         this.isClosing = true;
         this.dismissedWhileLoading = true;
+        this.previousDialogSize = null;
+
+        if (this.resizeAnimationCleanup) {
+            this.resizeAnimationCleanup();
+        }
 
         this.modalTarget.setAttribute("data-open", "false");
         this.modalTarget.classList.remove(...this.visibleClasses);
@@ -291,6 +308,7 @@ export default class ModalController extends Controller {
                     this.close();
                 } else if (contentChanged) {
                     this.contentState = currentHash;
+                    this.#maybeAnimateDialogResize();
                 }
             });
 
@@ -302,10 +320,79 @@ export default class ModalController extends Controller {
         }
     }
 
+    #maybeAnimateDialogResize() {
+        if (!this.animateResizeValue) return;
+        if (!this.hasDialogTarget) return;
+        if (!this.isOpen || this.isOpening || this.isClosing) return;
+
+        const newWidth = this.dialogTarget.offsetWidth;
+        const newHeight = this.dialogTarget.offsetHeight;
+        const previous = this.previousDialogSize;
+
+        this.previousDialogSize = { width: newWidth, height: newHeight };
+
+        if (!previous || previous.width <= 0 || previous.height <= 0) return;
+        if (previous.width === newWidth && previous.height === newHeight) return;
+
+        this.#animateDialogResize(previous.width, previous.height, newWidth, newHeight);
+    }
+
+    #animateDialogResize(oldWidth, oldHeight, newWidth, newHeight) {
+        const dialog = this.dialogTarget;
+        const panel = this.hasPanelTarget ? this.panelTarget : null;
+
+        if (this.resizeAnimationCleanup) {
+            this.resizeAnimationCleanup();
+        }
+
+        const duration = this.resizeDurationValue;
+        const easing = this.resizeEasingValue;
+        const previousDialogTransition = dialog.style.transition;
+        const previousPanelTransition = panel?.style.transition ?? "";
+
+        dialog.style.width = `${oldWidth}px`;
+        dialog.style.height = `${oldHeight}px`;
+        dialog.style.transition = `width ${duration}ms ${easing}, height ${duration}ms ${easing}`;
+
+        // Panel width follows dialog automatically (block default), but height
+        // is content-driven and ignores the dialog's lock — so animate it
+        // explicitly to keep the visible white box in sync with the dialog box.
+        if (panel) {
+            panel.style.height = `${oldHeight}px`;
+            panel.style.transition = `height ${duration}ms ${easing}`;
+        }
+
+        void dialog.offsetWidth;
+
+        requestAnimationFrame(() => {
+            dialog.style.width = `${newWidth}px`;
+            dialog.style.height = `${newHeight}px`;
+            if (panel) panel.style.height = `${newHeight}px`;
+        });
+
+        const cleanup = () => {
+            clearTimeout(timeoutId);
+            dialog.style.width = "";
+            dialog.style.height = "";
+            dialog.style.transition = previousDialogTransition;
+            if (panel) {
+                panel.style.height = "";
+                panel.style.transition = previousPanelTransition;
+            }
+            this.resizeAnimationCleanup = null;
+        };
+        const timeoutId = setTimeout(cleanup, duration + 100);
+        this.resizeAnimationCleanup = cleanup;
+    }
+
     #cleanupResources() {
         if (this.observer) {
             this.observer.disconnect();
             this.observer = null;
+        }
+
+        if (this.resizeAnimationCleanup) {
+            this.resizeAnimationCleanup();
         }
 
         if (this.isOpen && !this.isClosing) {

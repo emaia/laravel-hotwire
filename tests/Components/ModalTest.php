@@ -96,6 +96,38 @@ it('applies custom prevent-reopen-delay', function () {
     $view->assertSee('data-modal-prevent-reopen-delay-value="2000"', false);
 });
 
+it('defaults animate-resize to false', function () {
+    $view = $this->blade('<x-hwc::modal>Content</x-hwc::modal>');
+
+    $view->assertSee('data-modal-animate-resize-value="false"', false);
+    $view->assertSee('data-modal-resize-duration-value="200"', false);
+    $view->assertSee('data-modal-resize-easing-value="ease"', false);
+});
+
+it('applies custom resize-easing', function () {
+    $view = $this->blade('<x-hwc::modal :animate-resize="true" resize-easing="ease-in-out">Content</x-hwc::modal>');
+
+    $view->assertSee('data-modal-resize-easing-value="ease-in-out"', false);
+});
+
+it('accepts cubic-bezier resize-easing', function () {
+    $view = $this->blade('<x-hwc::modal :animate-resize="true" resize-easing="cubic-bezier(0.4, 0, 0.2, 1)">Content</x-hwc::modal>');
+
+    $view->assertSee('data-modal-resize-easing-value="cubic-bezier(0.4, 0, 0.2, 1)"', false);
+});
+
+it('enables animate-resize when prop is true', function () {
+    $view = $this->blade('<x-hwc::modal :animate-resize="true">Content</x-hwc::modal>');
+
+    $view->assertSee('data-modal-animate-resize-value="true"', false);
+});
+
+it('applies custom resize-duration', function () {
+    $view = $this->blade('<x-hwc::modal :animate-resize="true" :resize-duration="350">Content</x-hwc::modal>');
+
+    $view->assertSee('data-modal-resize-duration-value="350"', false);
+});
+
 it('applies size=md by default filling width up to xl cap', function () {
     $view = $this->blade('<x-hwc::modal>Content</x-hwc::modal>');
 
@@ -210,6 +242,18 @@ it('does not forward modal stimulus attributes from arbitrary attributes', funct
     $view->assertDontSee('data-controller="custom"', false);
     $view->assertDontSee('data-action="click-&gt;custom#run"', false);
     $view->assertDontSee('data-modal-close-on-escape-value="false"', false);
+});
+
+it('clips horizontal overflow on the scroll container', function () {
+    $view = $this->blade('<x-hwc::modal>Content</x-hwc::modal>');
+
+    $view->assertSee('w-full overflow-x-hidden overflow-y-auto', false);
+});
+
+it('exposes the panel as a Stimulus target', function () {
+    $view = $this->blade('<x-hwc::modal>Content</x-hwc::modal>');
+
+    $view->assertSee('data-modal-target="panel"', false);
 });
 
 it('renders an accessible label on the close button', function () {

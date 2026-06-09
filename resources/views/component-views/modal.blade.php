@@ -1,6 +1,9 @@
 <div
     data-controller="modal"
     data-modal-prevent-reopen-delay-value="{{ $preventReopenDelay }}"
+    data-modal-animate-resize-value="{{ $animateResize ? 'true' : 'false' }}"
+    data-modal-resize-duration-value="{{ $resizeDuration }}"
+    data-modal-resize-easing-value="{{ $resizeEasing }}"
     data-modal-hidden-class="opacity-0 pointer-events-none"
     data-modal-visible-class="opacity-100 pointer-events-auto"
     data-modal-backdrop-hidden-class="opacity-0"
@@ -50,13 +53,16 @@
             ])
             @if ($sizeStyle()) style="{{ $sizeStyle() }}" @endif
         >
-            <div @class([
-                'overflow-hidden rounded-lg bg-white shadow-xl',
-                'flex h-full flex-col' => $isFullSize(),
-                $class,
-            ])>
+            <div
+                data-modal-target="panel"
+                @class([
+                    'overflow-hidden rounded-lg bg-white shadow-xl',
+                    'flex h-full flex-col' => $isFullSize(),
+                    $class,
+                ])
+            >
                 <div @class([
-                    'w-full overflow-y-auto',
+                    'w-full overflow-x-hidden overflow-y-auto',
                     'flex-1' => $isFullSize(),
                     'max-h-[calc(100vh-80px)]' => ! $isFullSize(),
                 ])>

@@ -16,6 +16,9 @@ class Modal extends Component
         public bool $fixedTop = false,
         public ?string $frame = null,
         public int $preventReopenDelay = 1000,
+        public bool $animateResize = false,
+        public int $resizeDuration = 200,
+        public string $resizeEasing = 'ease',
     ) {
         if ($this->id === '') {
             $this->id = uniqid('modal-');
