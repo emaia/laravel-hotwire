@@ -2,6 +2,18 @@
 
 All notable changes to `laravel-hotwire` will be documented in this file.
 
+## 0.19.1 - 2026-06-09
+
+### 0.19.1
+
+#### Eliminate the loading template race condition
+
+The modal's loading template is now injected synchronously on `turbo:before-fetch-request` instead of being queued through `showLoading()` and a `setTimeout(0)` racing against `turbo:before-fetch-response`. Behavior is identical for users in every observed flow, with one quiet improvement: programmatic `frame.src` changes that previously skipped the template (because there was no click) now show it correctly.
+
+The public `modal#showLoading` Stimulus action is removed — no code in the package referenced it and the Blade component never emitted `data-action="modal#showLoading"`. Custom markup that called it manually will need to drop the action.
+
+**Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/0.19.0...0.19.1
+
 ## 0.19.0 - 2026-06-09
 
 ### 0.19.0
@@ -18,6 +30,7 @@ Single `size` prop replaces the previous `allow-small-width` and `allow-full-wid
 <x-hwc::modal size="full">...</x-hwc::modal>     {{-- fills the viewport, close button moves inside --}}
 <x-hwc::modal size="auto">...</x-hwc::modal>     {{-- sizes to content, no width constraints --}}
 <x-hwc::modal size="50vw">...</x-hwc::modal>     {{-- arbitrary CSS length --}}
+
 
 ```
 `allow-small-width` and `allow-full-width` are removed. Use `size="auto"` to keep the old "no width constraints" behavior, or `size="50vw"` to keep the old "half viewport" default. The migration table in `docs/components/modal.md` maps every previous combination to the new prop.
@@ -42,6 +55,7 @@ New `<x-hwc::frame-or-page>` component renders a view as a Turbo Frame payload o
 </x-hwc::frame-or-page>
 
 
+
 ```
 #### Model-aware frame ids
 
@@ -51,6 +65,7 @@ Pass a Model instead of a string; the component calls `dom_id()` to derive the f
 <x-hwc::frame-or-page :frame="$message" layout="layouts.dashboard">
     ...
 </x-hwc::frame-or-page>
+
 
 
 ```
@@ -78,12 +93,14 @@ The `<x-hwc::carousel>` component now supports an opt-in progress bar and slide 
 
 
 
+
 ```
 #### Slide counter
 
 ```blade
 <x-hwc::carousel :counter="true"
                  counter-class="text-sm">
+
 
 
 
@@ -114,12 +131,14 @@ export default class extends CarouselController {
 
 
 
+
 ```
 ```blade
 <x-hwc::carousel controller="gallery">
     <div>slide 1</div>
     <div>slide 2</div>
 </x-hwc::carousel>
+
 
 
 
