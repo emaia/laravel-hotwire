@@ -161,14 +161,16 @@ The `loading_template` slot defines what fills the dynamic content while the Tur
 in flight. The lifecycle:
 
 1. User clicks `<a data-turbo-frame="<frame id>">` — anywhere on the page.
-2. The modal injects the loading template into its `dynamicContent` target.
-3. The content observer sees the inserted markup and opens the modal.
-4. The frame response arrives → its content replaces the loading template.
+2. Turbo dispatches `turbo:before-fetch-request` on the matching frame just before the network call.
+3. The modal catches that event, resolves a template and injects it into its `dynamicContent`
+   target synchronously.
+4. The content observer sees the inserted markup and opens the modal.
+5. The frame response arrives → its content replaces the loading template.
 
-The injection only happens if the response hasn't already arrived. For very fast responses, the
-loading template never flashes — the modal opens straight to the final content. If no per-link or
-slot template exists, there is no loading state; the modal waits for the real frame content and
-opens when that content arrives.
+Cached or preview responses that Turbo serves without a fetch never reach `turbo:before-fetch-request`,
+so the modal opens straight to the final content without flashing the template. If no per-link or
+slot template exists, there is no loading state; the modal waits for the real frame content and opens
+when that content arrives.
 
 ### Default template
 
@@ -238,11 +240,10 @@ Configurable via `data-modal-*-value` on the root element:
 
 ## Actions
 
-| Action              | Description                                                |
-|---------------------|------------------------------------------------------------|
-| `modal#open`        | Opens the modal                                            |
-| `modal#close`       | Closes the modal                                           |
-| `modal#showLoading` | Shows the loading template while awaiting a Turbo response |
+| Action        | Description       |
+|---------------|-------------------|
+| `modal#open`  | Opens the modal   |
+| `modal#close` | Closes the modal  |
 
 ## Events
 
