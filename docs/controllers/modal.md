@@ -47,7 +47,6 @@ Accessible modal with backdrop, animations, focus trap and dynamic content suppo
 | `modal#open`         | Opens the modal                                                  |
 | `modal#close`        | Closes the modal                                                 |
 | `modal#clickOutside` | Closes when clicking outside (use with `click` event on overlay) |
-| `modal#showLoading`  | Shows the loading template before a Turbo request                |
 
 ## Events
 
@@ -138,14 +137,17 @@ is in flight.
 ### Lifecycle
 
 1. User clicks `<a data-turbo-frame="<frame id>">` — anywhere on the page.
-2. The controller resolves a template and injects it into the `dynamicContent` target.
-3. The content observer sees the inserted markup and opens the modal.
-4. The frame response arrives → its content replaces the template.
+2. Turbo dispatches `turbo:before-fetch-request` on the matching frame just before the network call.
+3. The controller catches that event, resolves a template and injects it into the `dynamicContent`
+   target synchronously.
+4. The content observer sees the inserted markup and opens the modal.
+5. The frame response arrives → its content replaces the template.
 
-The injection is deferred to the next tick. If `turbo:before-fetch-response` fires first (very fast
-responses), the controller skips the injection — the modal opens straight to the final content
-without flashing the template. If no template resolves at all, the controller shows no loading
-state and waits for the real frame content.
+Synchronous injection on `turbo:before-fetch-request` means there is no timing race with the
+response: by the time the request is in flight, the loading state is already on screen. Cached or
+preview responses that Turbo serves without a fetch never reach this event, so the modal opens
+straight to the final content without flashing the template. If no template resolves at all, the
+controller shows no loading state and waits for the real frame content.
 
 ### Default template (target)
 

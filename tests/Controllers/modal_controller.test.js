@@ -10,133 +10,90 @@ afterEach(async () => {
     mounted = null;
 });
 
-test.serial("injects the default loading template for a matching turbo-frame link", async () => {
-    mounted = await mountController(
-        "modal",
-        ModalController,
-        `
-            <div data-controller="modal">
-                <a href="/items/1/edit" data-turbo-frame="modal-frame">Edit</a>
+const LOADING_TEMPLATE_HTML = `
+    <div data-controller="modal">
+        <a href="/items/1/edit" data-turbo-frame="modal-frame">Edit</a>
+        <a href="/items/1/comments" data-turbo-frame="modal-frame" data-loading-template="#per-link-skeleton">Comments</a>
 
-                <div
-                    data-modal-target="modal"
-                    data-modal-hidden-class="hidden"
-                    data-modal-visible-class="visible"
-                    data-modal-backdrop-hidden-class="backdrop-hidden"
-                    data-modal-backdrop-visible-class="backdrop-visible"
-                    data-modal-dialog-hidden-class="dialog-hidden"
-                    data-modal-dialog-visible-class="dialog-visible"
-                    data-modal-lock-scroll-class="overflow-hidden"
-                    hidden
-                >
-                    <div data-modal-target="backdrop"></div>
-                    <div data-modal-target="dialog">
-                        <turbo-frame id="modal-frame" data-modal-target="dynamicContent"></turbo-frame>
-                        <template data-modal-target="loadingTemplate">
-                            <div class="loading-state">Loading...</div>
-                        </template>
-                    </div>
-                </div>
+        <template id="per-link-skeleton">
+            <div class="comments-skeleton">Loading comments...</div>
+        </template>
+
+        <div
+            data-modal-target="modal"
+            data-modal-hidden-class="hidden"
+            data-modal-visible-class="visible"
+            data-modal-backdrop-hidden-class="backdrop-hidden"
+            data-modal-backdrop-visible-class="backdrop-visible"
+            data-modal-dialog-hidden-class="dialog-hidden"
+            data-modal-dialog-visible-class="dialog-visible"
+            data-modal-lock-scroll-class="overflow-hidden"
+            hidden
+        >
+            <div data-modal-target="backdrop"></div>
+            <div data-modal-target="dialog">
+                <turbo-frame id="modal-frame" data-modal-target="dynamicContent"></turbo-frame>
+                <template data-modal-target="loadingTemplate">
+                    <div class="loading-state">Loading...</div>
+                </template>
             </div>
-        `,
-    );
+        </div>
+    </div>
+`;
 
-    const link = document.querySelector('a[data-turbo-frame="modal-frame"]');
-    const frame = document.querySelector("turbo-frame");
+test.serial("injects the default loading template when turbo:before-fetch-request fires on the dynamic content", async () => {
+    mounted = await mountController("modal", ModalController, LOADING_TEMPLATE_HTML);
 
-    dispatchEvent(link, "click");
-    await wait(0);
-    await wait(0);
+    const editLink = document.querySelector('a[href="/items/1/edit"]');
+    const frame = document.querySelector('#modal-frame');
+
+    dispatchEvent(editLink, "click");
+    frame.dispatchEvent(new CustomEvent("turbo:before-fetch-request", { bubbles: true }));
 
     expect(frame.innerHTML).toContain("Loading...");
 });
 
-test.serial("does not let an unrelated turbo response suppress the loading template", async () => {
-    mounted = await mountController(
-        "modal",
-        ModalController,
-        `
-            <div data-controller="modal">
-                <a href="/items/1/edit" data-turbo-frame="modal-frame">Edit</a>
-                <turbo-frame id="other-frame"></turbo-frame>
+test.serial("injects the per-link template when the trigger declares data-loading-template", async () => {
+    mounted = await mountController("modal", ModalController, LOADING_TEMPLATE_HTML);
 
-                <div
-                    data-modal-target="modal"
-                    data-modal-hidden-class="hidden"
-                    data-modal-visible-class="visible"
-                    data-modal-backdrop-hidden-class="backdrop-hidden"
-                    data-modal-backdrop-visible-class="backdrop-visible"
-                    data-modal-dialog-hidden-class="dialog-hidden"
-                    data-modal-dialog-visible-class="dialog-visible"
-                    data-modal-lock-scroll-class="overflow-hidden"
-                    hidden
-                >
-                    <div data-modal-target="backdrop"></div>
-                    <div data-modal-target="dialog">
-                        <turbo-frame id="modal-frame" data-modal-target="dynamicContent"></turbo-frame>
-                        <template data-modal-target="loadingTemplate">
-                            <div class="loading-state">Loading...</div>
-                        </template>
-                    </div>
-                </div>
-            </div>
-        `,
-    );
-
-    const link = document.querySelector('a[data-turbo-frame="modal-frame"]');
-    const otherFrame = document.querySelector('#other-frame');
+    const commentsLink = document.querySelector('a[href="/items/1/comments"]');
     const frame = document.querySelector('#modal-frame');
 
-    dispatchEvent(link, "click");
-    otherFrame.dispatchEvent(new CustomEvent("turbo:before-fetch-response", { bubbles: true }));
+    dispatchEvent(commentsLink, "click");
+    frame.dispatchEvent(new CustomEvent("turbo:before-fetch-request", { bubbles: true }));
 
-    await wait(0);
-    await wait(0);
-
-    expect(frame.innerHTML).toContain("Loading...");
+    expect(frame.innerHTML).toContain("Loading comments...");
+    expect(frame.innerHTML).not.toContain("Loading...");
 });
 
-test.serial("skips the loading template when the matching frame response arrives first", async () => {
-    mounted = await mountController(
-        "modal",
-        ModalController,
-        `
-            <div data-controller="modal">
-                <a href="/items/1/edit" data-turbo-frame="modal-frame">Edit</a>
+test.serial("skips template injection when the fetch request targets a different frame", async () => {
+    mounted = await mountController("modal", ModalController, LOADING_TEMPLATE_HTML);
 
-                <div
-                    data-modal-target="modal"
-                    data-modal-hidden-class="hidden"
-                    data-modal-visible-class="visible"
-                    data-modal-backdrop-hidden-class="backdrop-hidden"
-                    data-modal-backdrop-visible-class="backdrop-visible"
-                    data-modal-dialog-hidden-class="dialog-hidden"
-                    data-modal-dialog-visible-class="dialog-visible"
-                    data-modal-lock-scroll-class="overflow-hidden"
-                    hidden
-                >
-                    <div data-modal-target="backdrop"></div>
-                    <div data-modal-target="dialog">
-                        <turbo-frame id="modal-frame" data-modal-target="dynamicContent"></turbo-frame>
-                        <template data-modal-target="loadingTemplate">
-                            <div class="loading-state">Loading...</div>
-                        </template>
-                    </div>
-                </div>
-            </div>
-        `,
-    );
-
-    const link = document.querySelector('a[data-turbo-frame="modal-frame"]');
     const frame = document.querySelector('#modal-frame');
+    const otherFrame = document.createElement("turbo-frame");
+    otherFrame.id = "other-frame";
+    document.body.appendChild(otherFrame);
 
-    dispatchEvent(link, "click");
-    frame.dispatchEvent(new CustomEvent("turbo:before-fetch-response", { bubbles: true }));
-
-    await wait(0);
-    await wait(0);
+    otherFrame.dispatchEvent(new CustomEvent("turbo:before-fetch-request", { bubbles: true }));
 
     expect(frame.innerHTML).toBe("");
+});
+
+test.serial("skips template injection when the modal is already open", async () => {
+    mounted = await mountController("modal", ModalController, LOADING_TEMPLATE_HTML);
+    const frame = document.querySelector('#modal-frame');
+
+    frame.innerHTML = "<p>existing content</p>";
+    mounted.controller.open();
+    await wait(20);
+
+    expect(mounted.controller.isOpen).toBe(true);
+    const before = frame.innerHTML;
+
+    frame.dispatchEvent(new CustomEvent("turbo:before-fetch-request", { bubbles: true }));
+
+    expect(frame.innerHTML).toBe(before);
+    expect(frame.innerHTML).not.toContain("Loading...");
 });
 
 test.serial("defers an empty turbo stream update for the modal root until after close animation", async () => {

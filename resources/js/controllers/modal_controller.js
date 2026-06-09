@@ -54,7 +54,6 @@ export default class ModalController extends Controller {
         }
 
         this.lastClickedLink = link.hasAttribute("data-loading-template") ? link : null;
-        this.showLoading();
     };
 
     connect() {
@@ -65,6 +64,7 @@ export default class ModalController extends Controller {
         document.addEventListener("keydown", this.handleFocusTrap);
         document.addEventListener("keydown", this.handleEscapeKey);
         document.addEventListener("click", this.trackClickedLink, true);
+        document.addEventListener("turbo:before-fetch-request", this.handleBeforeFetchRequest);
         document.addEventListener("turbo:before-stream-render", this.handleBeforeStreamRender);
 
         if (this.isOpen) {
@@ -192,30 +192,18 @@ export default class ModalController extends Controller {
         }
     }
 
-    showLoading() {
-        if (!this.modalTarget.hidden || !this.hasDynamicContentTarget) return;
+    handleBeforeFetchRequest = (event) => {
+        if (!this.hasDynamicContentTarget) return;
+        if (event.target !== this.dynamicContentTarget) return;
+        if (!this.modalTarget.hidden) return;
 
         this.dismissedWhileLoading = false;
 
-        let isNeedingLoadingIndicator = true;
-        const handleFetchResponse = (event) => {
-            if (this.#isResponseForDynamicFrame(event)) {
-                isNeedingLoadingIndicator = false;
-            }
-        };
-
-        document.addEventListener("turbo:before-fetch-response", handleFetchResponse);
-
-        setTimeout(() => {
-            if (isNeedingLoadingIndicator) {
-                const templateHtml = this.#resolveLoadingTemplate();
-                if (templateHtml) {
-                    this.dynamicContentTarget.innerHTML = templateHtml;
-                }
-            }
-            document.removeEventListener("turbo:before-fetch-response", handleFetchResponse);
-        }, 0);
-    }
+        const templateHtml = this.#resolveLoadingTemplate();
+        if (templateHtml) {
+            this.dynamicContentTarget.innerHTML = templateHtml;
+        }
+    };
 
     #resolveLoadingTemplate() {
         const trigger = this.#findTriggerWithTemplate();
@@ -237,19 +225,6 @@ export default class ModalController extends Controller {
         if (this.lastClickedLink) return this.lastClickedLink;
 
         return null;
-    }
-
-    #isResponseForDynamicFrame(event) {
-        if (!this.hasDynamicContentTarget) return false;
-
-        const frame = this.dynamicContentTarget;
-        const target = event?.target;
-
-        if (target === frame) {
-            return true;
-        }
-
-        return target?.closest?.("turbo-frame") === frame;
     }
 
     #dispatchEvent(name) {
@@ -315,6 +290,7 @@ export default class ModalController extends Controller {
         document.removeEventListener("keydown", this.handleFocusTrap);
         document.removeEventListener("keydown", this.handleEscapeKey);
         document.removeEventListener("click", this.trackClickedLink, true);
+        document.removeEventListener("turbo:before-fetch-request", this.handleBeforeFetchRequest);
         document.removeEventListener("turbo:before-stream-render", this.handleBeforeStreamRender);
     }
 
