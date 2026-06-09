@@ -358,6 +358,12 @@ return [
             'category' => 'turbo',
             'description' => 'Dispatches optimistic UI updates immediately when a Turbo-driven link is clicked',
         ],
+        'password-visibility' => [
+            'source' => 'resources/js/controllers/password_visibility_controller.js',
+            'docs' => 'docs/controllers/password-visibility.md',
+            'category' => 'forms',
+            'description' => 'Toggles a password input between hidden and visible, keeping the trigger ARIA state in sync',
+        ],
         'remote-form' => [
             'source' => 'resources/js/controllers/remote_form_controller.js',
             'docs' => 'docs/controllers/remote-form.md',
