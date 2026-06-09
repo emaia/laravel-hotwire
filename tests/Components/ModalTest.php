@@ -96,22 +96,82 @@ it('applies custom prevent-reopen-delay', function () {
     $view->assertSee('data-modal-prevent-reopen-delay-value="2000"', false);
 });
 
-it('applies allow-small-width constraint', function () {
+it('applies size=md by default filling width up to xl cap', function () {
     $view = $this->blade('<x-hwc::modal>Content</x-hwc::modal>');
 
-    $view->assertSee('md:min-w-[50%]', false);
-});
-
-it('removes min-width constraint when allow-small-width is true', function () {
-    $view = $this->blade('<x-hwc::modal :allow-small-width="true">Content</x-hwc::modal>');
-
+    $view->assertSee('w-full md:max-w-xl', false);
     $view->assertDontSee('md:min-w-[50%]', false);
 });
 
-it('applies max-width constraint when allow-full-width is false', function () {
-    $view = $this->blade('<x-hwc::modal :allow-full-width="false">Content</x-hwc::modal>');
+it('applies size=sm filling width up to md cap', function () {
+    $view = $this->blade('<x-hwc::modal size="sm">Content</x-hwc::modal>');
 
-    $view->assertSee('md:max-w-[50%]', false);
+    $view->assertSee('w-full md:max-w-md', false);
+    $view->assertDontSee('md:min-w-[50%]', false);
+});
+
+it('applies size=lg filling width up to 3xl cap', function () {
+    $view = $this->blade('<x-hwc::modal size="lg">Content</x-hwc::modal>');
+
+    $view->assertSee('w-full md:max-w-3xl', false);
+    $view->assertDontSee('md:min-w-[50%]', false);
+});
+
+it('applies size=xl filling width up to 5xl cap', function () {
+    $view = $this->blade('<x-hwc::modal size="xl">Content</x-hwc::modal>');
+
+    $view->assertSee('w-full md:max-w-5xl', false);
+    $view->assertDontSee('md:min-w-[50%]', false);
+});
+
+it('applies size=full with viewport dimensions and inner h-full', function () {
+    $view = $this->blade('<x-hwc::modal size="full">Content</x-hwc::modal>');
+
+    $view->assertSee('w-full h-full', false);
+    $view->assertSee('flex h-full flex-col', false);
+    $view->assertSee('flex-1', false);
+    $view->assertDontSee('max-h-[calc(100vh-80px)]', false);
+});
+
+it('moves close button inside the dialog when size=full', function () {
+    $view = $this->blade('<x-hwc::modal size="full">Content</x-hwc::modal>');
+
+    $view->assertSee('top-2 right-2 z-10', false);
+    $view->assertDontSee('-top-4 -right-4', false);
+});
+
+it('keeps close button outside the dialog when size is not full', function () {
+    $view = $this->blade('<x-hwc::modal>Content</x-hwc::modal>');
+
+    $view->assertSee('-top-4 -right-4', false);
+});
+
+it('ignores fixed-top when size=full', function () {
+    $view = $this->blade('<x-hwc::modal size="full" :fixed-top="true">Content</x-hwc::modal>');
+
+    $view->assertDontSee('mt-14 self-start', false);
+});
+
+it('applies size=auto with no width constraints and no w-full', function () {
+    $view = $this->blade('<x-hwc::modal size="auto">Content</x-hwc::modal>');
+
+    $view->assertDontSee('md:max-w-md', false);
+    $view->assertDontSee('style="max-width:', false);
+    $view->assertDontSee(' w-full', false);
+});
+
+it('applies arbitrary size with w-full and inline max-width style', function () {
+    $view = $this->blade('<x-hwc::modal size="800px">Content</x-hwc::modal>');
+
+    $view->assertSee('w-full', false);
+    $view->assertSee('style="max-width: 800px;"', false);
+});
+
+it('applies arbitrary size in viewport units with w-full', function () {
+    $view = $this->blade('<x-hwc::modal size="60vw">Content</x-hwc::modal>');
+
+    $view->assertSee('w-full', false);
+    $view->assertSee('style="max-width: 60vw;"', false);
 });
 
 it('applies custom class', function () {

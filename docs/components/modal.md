@@ -38,13 +38,63 @@ The X button is shown by default (`close-button` is `true`). To hide it:
 | Prop                   | Type      | Default            | Description                                     |
 |------------------------|-----------|--------------------|-------------------------------------------------|
 | `id`                   | `string`  | `uniqid('modal-')` | Root element ID                                 |
-| `allow-small-width`    | `bool`    | `false`            | Allows width smaller than 50% on `md+` screens  |
-| `allow-full-width`     | `bool`    | `true`             | Allows full width (no `max-w-[50%]`)            |
+| `size`                 | `string`  | `'md'`             | Preset (`sm`/`md`/`lg`/`xl`/`full`/`auto`) or arbitrary width (`800px`, `60vw`) |
 | `class`                | `string`  | `''`               | Additional CSS classes on the content container |
 | `close-button`         | `bool`    | `true`             | Shows X button to close                         |
-| `fixed-top`            | `bool`    | `false`            | Pins the modal to the top with a margin         |
+| `fixed-top`            | `bool`    | `false`            | Pins the modal to the top with a margin (ignored when `size="full"`) |
 | `frame`                | `?string` | `null`             | Renders a Turbo Frame dynamic content target    |
 | `prevent-reopen-delay` | `int`     | `1000`             | Delay (ms) before allowing reopen after closing |
+
+### Size presets
+
+All presets except `auto` apply `w-full` plus a fixed `max-w-*` cap, so the dialog fills the available
+width up to the preset's cap. The caps follow a monotonically increasing scale — `sm < md < lg < xl` at
+**any** viewport — so the choice is predictable regardless of screen size or browser zoom.
+
+| `size`         | Width                                | px cap (md+) | Height                          | Notes                                   |
+|----------------|--------------------------------------|--------------|---------------------------------|-----------------------------------------|
+| `sm`           | `w-full md:max-w-md`                 | 448          | auto                            | Compact dialogs                         |
+| `md` (default) | `w-full md:max-w-xl`                 | 576          | auto                            | Standard form/dialog size               |
+| `lg`           | `w-full md:max-w-3xl`                | 768          | auto                            | Forms with multiple fields              |
+| `xl`           | `w-full md:max-w-5xl`                | 1024         | auto                            | Wide content (tables, dashboards)       |
+| `full`         | `w-full`                             | n/a          | `h-full` (viewport - padding)   | Fills the viewport; close button moves inside |
+| `auto`         | No cap, no `w-full`                  | n/a          | auto                            | Sizes to content — use when you want the dialog to shrink-wrap |
+
+Need "half the viewport" or another fluid value? Pass an arbitrary `size`:
+
+```blade
+<x-hwc::modal size="50vw">...</x-hwc::modal>
+```
+
+### Arbitrary size
+
+Any non-preset value is forwarded as `style="max-width: <value>"` on the dialog, alongside the same
+`w-full` that the presets use — so the dialog fills the available width up to that arbitrary cap (same
+behavior as the presets, just with a custom number):
+
+```blade
+<x-hwc::modal size="800px">...</x-hwc::modal>
+<x-hwc::modal size="60vw">...</x-hwc::modal>
+<x-hwc::modal size="42rem">...</x-hwc::modal>
+```
+
+If you instead want the dialog to **shrink to content** with a custom cap, use `size="auto"` and add the
+cap via the `class` prop on the inner panel:
+
+```blade
+<x-hwc::modal size="auto" class="md:max-w-[800px]">...</x-hwc::modal>
+```
+
+### Migrating from `allow-small-width` / `allow-full-width`
+
+The previous boolean props have been replaced by `size`. Map your usage:
+
+| Before                                                       | After                       |
+|--------------------------------------------------------------|-----------------------------|
+| `<x-hwc::modal>` (defaults)                                  | `<x-hwc::modal size="50vw">` to keep the old "half-viewport" behavior — or just `<x-hwc::modal>` for the new 576px cap |
+| `<x-hwc::modal :allow-small-width="true">`                   | `<x-hwc::modal size="auto">` |
+| `<x-hwc::modal :allow-full-width="false">`                   | `<x-hwc::modal size="50vw">` (or pick a preset) |
+| `<x-hwc::modal :allow-small-width="true" :allow-full-width="false">` | `<x-hwc::modal size="md">` (576px cap, allows shrinking on `sm`) |
 
 ## Root attributes
 

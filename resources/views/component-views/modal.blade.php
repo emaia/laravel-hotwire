@@ -40,13 +40,26 @@
             data-modal-target="dialog"
             @class([
                 'relative z-10 max-w-full scale-80 transition duration-200 ease-in-out',
-                'md:min-w-[50%]' => ! $allowSmallWidth,
-                'md:max-w-[50%]' => ! $allowFullWidth,
-                'mt-14 self-start' => $fixedTop,
+                'w-full' => $size !== 'auto',
+                'md:max-w-md' => $size === 'sm',
+                'md:max-w-xl' => $size === 'md',
+                'md:max-w-3xl' => $size === 'lg',
+                'md:max-w-5xl' => $size === 'xl',
+                'h-full' => $isFullSize(),
+                'mt-14 self-start' => $fixedTop && ! $isFullSize(),
             ])
+            @if ($sizeStyle()) style="{{ $sizeStyle() }}" @endif
         >
-            <div @class(['overflow-hidden rounded-lg bg-white shadow-xl', $class])>
-                <div class="max-h-[calc(100vh-80px)] w-full overflow-y-auto">
+            <div @class([
+                'overflow-hidden rounded-lg bg-white shadow-xl',
+                'flex h-full flex-col' => $isFullSize(),
+                $class,
+            ])>
+                <div @class([
+                    'w-full overflow-y-auto',
+                    'flex-1' => $isFullSize(),
+                    'max-h-[calc(100vh-80px)]' => ! $isFullSize(),
+                ])>
                     @if ($frame !== null)
                         <turbo-frame id="{{ $frame }}" data-modal-target="dynamicContent">
                             {{ $slot }}
@@ -59,7 +72,11 @@
 
             @if ($closeButton)
                 <button
-                    class="absolute -top-4 -right-4 flex items-center rounded-full bg-gray-200 p-2 text-gray-700 transition-colors hover:bg-white hover:text-gray-600"
+                    @class([
+                        'absolute flex items-center rounded-full bg-gray-200 p-2 text-gray-700 transition-colors hover:bg-white hover:text-gray-600',
+                        'top-2 right-2 z-10' => $isFullSize(),
+                        '-top-4 -right-4' => ! $isFullSize(),
+                    ])
                     data-action="modal#close"
                     type="button"
                     aria-label="Close modal"
