@@ -15,8 +15,22 @@ wrong fields on first paint.
 | Prop    | Type     | Default      | Description                                                                                                |
 |---------|----------|--------------|------------------------------------------------------------------------------------------------------------|
 | `when`  | `array`  | (required)   | The rule: `['field' => 'value']`, `['field' => ['v1', 'v2']]` (OR), or `['field' => ':checked']`. Multiple entries AND-match. |
-| `state` | `array`  | `[]`         | Override current values per field. Used for edit forms where values come from a model in addition to `old()`. |
+| `model` | `mixed`  | `null`       | Source of attribute fallbacks for edit forms. Anything `data_get()` can read — Eloquent model, array, stdClass. The component evaluates `old($field, data_get($model, $field))` per trigger. |
 | `tag`   | `string` | `'fieldset'` | Wrapper element. `<fieldset>` is recommended — the `disabled` cascade reaches every descendant control for free. |
+
+## How the initial value is resolved
+
+For each `field` in `when`, the component reads the current value via:
+
+```
+old($field, data_get($model, $field))
+```
+
+- After validation retry — `old()` returns the failed-submission value from session. The model fallback is skipped.
+- Fresh GET on an edit form (model passed) — `old()` is empty, falls back to `$model->$field`.
+- Fresh GET with no model — `null`. Dependent renders `hidden disabled` by default.
+
+This mirrors what you already write in `<x-hwc::input value="{{ old('reason', $message->reason) }}">` — same expression, evaluated once on the server, no duplicate state map to maintain.
 
 ## Wrapping with the controller
 
@@ -50,40 +64,38 @@ triggers). The component handles the rest:
 </form>
 ```
 
-## Edit forms — the `state` prop
+## Edit forms — the `model` prop
 
-On a fresh request, the component reads each trigger's value from `request()->input()`, which
-covers `old()` after a failed validation. For edit forms the initial value comes from a model
-attribute, not from the request — pass it via `state`:
+Pass the same model your inputs already read from via `old(..., $model->field)`. No need to
+build a parallel state map.
 
 ```blade
-@php $state = [
-    'reason' => old('reason', $message->reason),
-]; @endphp
-
 <form data-controller="conditional-fields" action="/messages/{{ $message->id }}" method="POST">
     @csrf @method('PATCH')
 
     <x-hwc::select name="reason">
         @foreach ($reasons as $value => $label)
-            <option value="{{ $value }}" @selected($state['reason'] === $value)>{{ $label }}</option>
+            <option value="{{ $value }}"
+                    @selected(old('reason', $message->reason) === $value)>{{ $label }}</option>
         @endforeach
     </x-hwc::select>
 
-    <x-hwc::conditional-field :when="['reason' => 'other']" :state="$state">
-        <x-hwc::input name="other_reason" value="{{ old('other_reason', $message->other_reason) }}" />
+    <x-hwc::conditional-field :model="$message" :when="['reason' => 'other']">
+        <x-hwc::input name="other_reason"
+                      value="{{ old('other_reason', $message->other_reason) }}" />
     </x-hwc::conditional-field>
 </form>
 ```
 
-The same `$state` array can drive multiple dependents — compute it once at the top of the form
-and reuse.
+A failed validation retry still wins over the model — `old()` returns the user's last value, the
+component matches against it, and the dependent's initial visibility lines up with what the
+user just submitted.
 
 ## Token shortcuts
 
 | Rule                                          | Meaning                                                                |
 |-----------------------------------------------|------------------------------------------------------------------------|
-| `['ship_different' => ':checked']`            | Match when the named field is "checked" (truthy in `state`/`request`). |
+| `['ship_different' => ':checked']`            | Match when the named field's resolved value (`old()` / model fallback) is truthy. |
 | `['agree' => ':unchecked']`                   | Match when the named field is empty / unchecked.                       |
 | `['plan' => 'enterprise']`                    | Equality.                                                              |
 | `['plan' => ['pro', 'enterprise']]`           | OR.                                                                    |

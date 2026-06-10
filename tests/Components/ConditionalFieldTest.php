@@ -1,5 +1,19 @@
 <?php
 
+use Emaia\LaravelHotwire\Components\ConditionalField;
+use Illuminate\Database\Eloquent\Model;
+
+class ConditionalFieldMessage extends Model
+{
+    protected $guarded = [];
+}
+
+function seedOldInput(array $values): void
+{
+    request()->setLaravelSession(session()->driver());
+    session()->put('_old_input', $values);
+}
+
 it('renders a fieldset with the dependent target attribute', function () {
     $view = $this->blade('<x-hwc::conditional-field :when="[\'reason\' => \'other\']">inside</x-hwc::conditional-field>');
 
@@ -35,8 +49,15 @@ it('renders one attribute per field for multi-field AND rules', function () {
     $view->assertSee('data-when-needs_visa="yes"', false);
 });
 
-it('renders without hidden/disabled when current request matches the rule', function () {
-    request()->merge(['reason' => 'other']);
+it('renders hidden and disabled by default when neither old() nor model is set', function () {
+    $view = $this->blade('<x-hwc::conditional-field :when="[\'reason\' => \'other\']">inside</x-hwc::conditional-field>');
+
+    $view->assertSee('hidden', false);
+    $view->assertSee('disabled', false);
+});
+
+it('renders visible after validation retry — old() value drives the rule', function () {
+    seedOldInput(['reason' => 'other']);
 
     $view = $this->blade('<x-hwc::conditional-field :when="[\'reason\' => \'other\']">inside</x-hwc::conditional-field>');
 
@@ -44,8 +65,8 @@ it('renders without hidden/disabled when current request matches the rule', func
     $view->assertDontSee(' disabled', false);
 });
 
-it('renders hidden and disabled when the current request does not match', function () {
-    request()->merge(['reason' => 'bug']);
+it('renders hidden after validation retry when old() value does not match', function () {
+    seedOldInput(['reason' => 'bug']);
 
     $view = $this->blade('<x-hwc::conditional-field :when="[\'reason\' => \'other\']">inside</x-hwc::conditional-field>');
 
@@ -53,44 +74,53 @@ it('renders hidden and disabled when the current request does not match', functi
     $view->assertSee('disabled', false);
 });
 
-it('renders hidden and disabled by default when the trigger field is absent', function () {
-    $view = $this->blade('<x-hwc::conditional-field :when="[\'reason\' => \'other\']">inside</x-hwc::conditional-field>');
+it('falls back to the model attribute when old() is empty', function () {
+    $message = new ConditionalFieldMessage(['reason' => 'other']);
 
-    $view->assertSee('hidden', false);
-    $view->assertSee('disabled', false);
-});
-
-it('uses the state prop to override request input for edit forms', function () {
-    request()->merge(['reason' => 'bug']);
-
-    $view = $this->blade(
-        '<x-hwc::conditional-field :when="[\'reason\' => \'other\']" :state="[\'reason\' => \'other\']">inside</x-hwc::conditional-field>'
+    $component = new ConditionalField(
+        when: ['reason' => 'other'],
+        model: $message,
     );
 
-    $view->assertDontSee(' hidden', false);
-    $view->assertDontSee(' disabled', false);
+    expect($component->matches)->toBeTrue();
 });
 
-it('matches :checked token when the state value is truthy', function () {
-    $view = $this->blade(
-        '<x-hwc::conditional-field :when="[\'ship_different\' => \':checked\']" :state="[\'ship_different\' => \'1\']">x</x-hwc::conditional-field>'
+it('old() value wins over the model attribute on validation retry', function () {
+    seedOldInput(['reason' => 'bug']);
+
+    $message = new ConditionalFieldMessage(['reason' => 'other']);
+
+    $component = new ConditionalField(
+        when: ['reason' => 'other'],
+        model: $message,
     );
 
-    $view->assertDontSee(' hidden', false);
+    expect($component->matches)->toBeFalse();
 });
 
-it('matches :unchecked token when the state value is empty', function () {
-    $view = $this->blade('<x-hwc::conditional-field :when="[\'agree\' => \':unchecked\']">x</x-hwc::conditional-field>');
+it('matches :checked token when the model attribute is truthy', function () {
+    $message = new ConditionalFieldMessage(['ship_different' => '1']);
 
-    $view->assertDontSee(' hidden', false);
-});
-
-it('matches an array trigger value when the state contains the wanted value', function () {
-    $view = $this->blade(
-        '<x-hwc::conditional-field :when="[\'interests\' => \'events\']" :state="[\'interests\' => [\'news\', \'events\']]">x</x-hwc::conditional-field>'
+    $component = new ConditionalField(
+        when: ['ship_different' => ':checked'],
+        model: $message,
     );
 
-    $view->assertDontSee(' hidden', false);
+    expect($component->matches)->toBeTrue();
+});
+
+it('matches :unchecked token by default when no value is present', function () {
+    $component = new ConditionalField(when: ['agree' => ':unchecked']);
+
+    expect($component->matches)->toBeTrue();
+});
+
+it('matches an array trigger value when old() carries the wanted item', function () {
+    seedOldInput(['interests' => ['news', 'events']]);
+
+    $component = new ConditionalField(when: ['interests' => 'events']);
+
+    expect($component->matches)->toBeTrue();
 });
 
 it('accepts a custom wrapper tag', function () {

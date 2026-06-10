@@ -10,11 +10,10 @@ class ConditionalField extends Component
 
     /**
      * @param  array<string, string|array<int, string>>  $when
-     * @param  array<string, mixed>  $state
      */
     public function __construct(
         public array $when,
-        public array $state = [],
+        public mixed $model = null,
         public string $tag = 'fieldset',
     ) {
         $this->matches = $this->evaluate();
@@ -95,11 +94,9 @@ class ConditionalField extends Component
 
     private function currentValue(string $field): mixed
     {
-        if (array_key_exists($field, $this->state)) {
-            return $this->state[$field];
-        }
+        $default = $this->model !== null ? data_get($this->model, $field) : null;
 
-        return request()->input($field);
+        return old($field, $default);
     }
 
     private function isTruthy(mixed $value): bool

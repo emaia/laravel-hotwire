@@ -191,33 +191,32 @@ the group.
 </form>
 ```
 
-## Edit-form pattern — the `state` prop
+## Edit-form pattern — the `model` prop
 
-When the initial value comes from a model rather than the request, pass a `state` array so the
-component knows what the trigger value is for the first paint. Compute it once at the top of the
-form and reuse across every dependent:
+Pass the same model you already use for `old(..., $model->field)` in your inputs. The component
+reads from `old()` first (so validation retries always win) and falls back to the model
+attribute when `old()` is empty.
 
 ```blade
-@php $state = [
-    'reason' => old('reason', $message->reason),
-    'ship_different' => old('ship_different', $message->ship_different),
-]; @endphp
-
 <form data-controller="conditional-fields" action="/messages/{{ $message->id }}" method="POST">
     @csrf @method('PATCH')
 
     <x-hwc::select name="reason">
         @foreach ($reasons as $value => $label)
-            <option value="{{ $value }}" @selected($state['reason'] === $value)>{{ $label }}</option>
+            <option value="{{ $value }}"
+                    @selected(old('reason', $message->reason) === $value)>{{ $label }}</option>
         @endforeach
     </x-hwc::select>
 
-    <x-hwc::conditional-field :when="['reason' => 'other']" :state="$state">
+    <x-hwc::conditional-field :model="$message" :when="['reason' => 'other']">
         <x-hwc::input name="other_reason"
                       value="{{ old('other_reason', $message->other_reason) }}"/>
     </x-hwc::conditional-field>
 </form>
 ```
+
+No `@php` state map, no parallel structures — the conditional-field reads the same expression
+shape your inputs already use.
 
 ## See also
 

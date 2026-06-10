@@ -119,6 +119,29 @@ Writing this by hand encodes the rule **twice** (once in `data-when-reason="othe
 reveal sensitive fields. Reach for [`<x-hwc::conditional-field>`](../components/conditional-field.md) so the
 rule lives in exactly one place.
 
+## Not limited to `<form>` elements
+
+The controller hosts on any container that wraps the named inputs — filter bars, dashboard
+toolbars, in-page configuration panels, rule builders. As long as the descendants have `name`
+attributes and the dependents declare their `data-when-*` rules, the controller behaves the
+same.
+
+```html
+
+<section data-controller="conditional-fields" class="filter-bar">
+    <select name="status">
+        <option value="">All</option>
+        <option value="open">Open</option>
+        <option value="closed">Closed</option>
+    </select>
+
+    <fieldset data-conditional-fields-target="dependent" data-when-status="closed">
+        <input type="date" name="closed_after"/>
+        <input type="date" name="closed_before"/>
+    </fieldset>
+</section>
+```
+
 ## Limitations
 
 - **No negation operator.** `data-when-reason="not-other"` is treated as a literal value `not-other`,
