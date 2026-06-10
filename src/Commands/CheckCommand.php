@@ -23,6 +23,21 @@ class CheckCommand extends Command
 
     public $description = 'Check that Stimulus controllers used by your views (via components or directly) are published';
 
+    /** @var array<int, array{key: string, line: string}> Buffered "needs attention" entries, printed at the end alphabetically so they sit right next to the prompt. */
+    private array $problemLines = [];
+
+    /** @var string[] OK status lines for component-driven controllers, kept in component-scan order so each component's controllers stay grouped. */
+    private array $okComponentControllerLines = [];
+
+    /** @var string[] OK status lines for `<x-hwc::*>` components without controllers, kept in alphabetical scan order. */
+    private array $okNoControllerLines = [];
+
+    /** @var string[] OK status lines for standalone controllers, in alphabetical order. */
+    private array $okStandaloneLines = [];
+
+    /** @var array<int, array{key: string, line: string}> OK status lines for shared dependencies (`_*.js`, `*.css`), sorted by basename before emission. */
+    private array $okHelperLines = [];
+
     public function __construct(
         private readonly Filesystem $files,
         private readonly PackageInstaller $packageInstaller,
@@ -64,6 +79,8 @@ class CheckCommand extends Command
         $issues = array_merge($issues, $standaloneResult['issues']);
         $controllers = array_merge($controllers, $standaloneResult['controllers']);
 
+        $this->emitScanOutput();
+
         $required = $this->collectRequiredDependencies($controllers);
         $missingDeps = $this->reportDependencies($required);
 
@@ -78,6 +95,7 @@ class CheckCommand extends Command
             return self::SUCCESS;
         }
 
+        $this->printProblemLines();
         $this->printIssueSummary($issues, $missingDeps);
 
         if ($this->shouldFix()) {
@@ -254,6 +272,8 @@ class CheckCommand extends Command
         $seenDeps = [];
         $controllersBase = $registry->basePath().'/resources/js/controllers';
 
+        ksort($standaloneControllers);
+
         foreach ($standaloneControllers as $controller) {
             $this->checkController($controller, $targetBase, $controllersBase, $registry->basePath(), 'standalone', $issues, $controllers, $seenDeps);
         }
@@ -277,6 +297,8 @@ class CheckCommand extends Command
         $seenDeps = [];
         $controllersBase = $registry->basePath().'/resources/js/controllers';
 
+        sort($usedKeys);
+
         foreach ($usedKeys as $key) {
             $component = $registry->component($key);
             $tag = "<x-$prefix::$key>";
@@ -286,7 +308,7 @@ class CheckCommand extends Command
             }
 
             if ($component->controllers === []) {
-                $this->line("  <info>✓</info>  $tag  No controllers required");
+                $this->okNoControllerLines[] = "  <info>✓</info>  $tag  No controllers required";
 
                 continue;
             }
@@ -327,9 +349,16 @@ class CheckCommand extends Command
         $controllers[$controller->identifier] = $controller;
         [$status, $symbol, $color] = $this->resolveStatus($targetFile, $sourceFile);
 
-        $this->line("  <$color>$symbol</$color>  $controller->identifier  $status  <fg=gray>(used by $origin)</>");
+        $line = "  <$color>$symbol</$color>  $controller->identifier  $status  <fg=gray>(used by $origin)</>";
 
-        if ($status !== 'up to date') {
+        if ($status === 'up to date') {
+            if ($origin === 'standalone') {
+                $this->okStandaloneLines[] = $line;
+            } else {
+                $this->okComponentControllerLines[] = $line;
+            }
+        } else {
+            $this->problemLines[] = ['key' => $controller->identifier, 'line' => $line];
             $issues[] = [
                 'identifier' => $controller->identifier,
                 'source_file' => $sourceFile,
@@ -358,7 +387,10 @@ class CheckCommand extends Command
         array &$issues,
         array &$seenDeps,
     ): void {
-        foreach ($this->imports->sharedDependencies($sourceFile, $controllersBase) as $depSource) {
+        $deps = $this->imports->sharedDependencies($sourceFile, $controllersBase);
+        usort($deps, fn (string $a, string $b) => strcmp(basename($a), basename($b)));
+
+        foreach ($deps as $depSource) {
             $depTarget = $this->imports->targetPath($depSource, $controllersBase, $targetBase);
 
             if (isset($seenDeps[$depTarget])) {
@@ -369,9 +401,12 @@ class CheckCommand extends Command
             $name = basename($depSource);
             [$status, $symbol, $color] = $this->resolveStatus($depTarget, $depSource);
 
-            $this->line("  <$color>$symbol</$color>  $name  $status  <fg=gray>(required by $controller->identifier)</>");
+            $line = "  <$color>$symbol</$color>  $name  $status  <fg=gray>(required by $controller->identifier)</>";
 
-            if ($status !== 'up to date') {
+            if ($status === 'up to date') {
+                $this->okHelperLines[] = ['key' => $name, 'line' => $line];
+            } else {
+                $this->problemLines[] = ['key' => $name, 'line' => $line];
                 $issues[] = [
                     'identifier' => $name,
                     'source_file' => $depSource,
@@ -469,11 +504,56 @@ class CheckCommand extends Command
                 continue;
             }
 
-            $this->line("  <error>✗</error>  $package {$info['version']}  <fg=gray>missing from package.json (used by $usedBy)</>");
+            $this->problemLines[] = [
+                'key' => $package,
+                'line' => "  <error>✗</error>  $package {$info['version']}  <fg=gray>missing from package.json (used by $usedBy)</>",
+            ];
             $missing[$package] = $info['version'];
         }
 
         return $missing;
+    }
+
+    private function emitScanOutput(): void
+    {
+        foreach ($this->okComponentControllerLines as $line) {
+            $this->line($line);
+        }
+
+        foreach ($this->okNoControllerLines as $line) {
+            $this->line($line);
+        }
+
+        if ($this->okStandaloneLines !== []) {
+            $this->line('');
+            sort($this->okStandaloneLines);
+            foreach ($this->okStandaloneLines as $line) {
+                $this->line($line);
+            }
+        }
+
+        if ($this->okHelperLines !== []) {
+            $this->line('');
+            usort($this->okHelperLines, fn (array $a, array $b) => strcmp($a['key'], $b['key']));
+            foreach ($this->okHelperLines as $entry) {
+                $this->line($entry['line']);
+            }
+        }
+    }
+
+    private function printProblemLines(): void
+    {
+        if ($this->problemLines === []) {
+            return;
+        }
+
+        usort($this->problemLines, fn (array $a, array $b) => strcmp($a['key'], $b['key']));
+
+        $this->line('<options=bold>Needs attention:</>');
+        foreach ($this->problemLines as $entry) {
+            $this->line($entry['line']);
+        }
+        $this->line('');
     }
 
     /**

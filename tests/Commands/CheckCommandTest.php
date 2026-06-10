@@ -452,6 +452,98 @@ it('shows dash for component without controller dependency', function () {
         ->assertSuccessful();
 });
 
+it('groups problem lines under a "Needs attention" heading at the end of the output', function () {
+    writeView('page.blade.php', '<x-hwc::modal />');
+
+    Artisan::call('hotwire:check --no-interaction');
+    $output = Artisan::output();
+
+    expect($output)->toContain('Needs attention:');
+
+    // The header should appear AFTER the per-view scan output and BEFORE the
+    // summary count, so the user can read it without scrolling.
+    $needsAttentionPos = strpos($output, 'Needs attention:');
+    $modalProblemPos = strpos($output, 'not published');
+    $summaryPos = strpos($output, 'controller(s) need attention');
+
+    expect($needsAttentionPos)->toBeLessThan($modalProblemPos);
+    expect($modalProblemPos)->toBeLessThan($summaryPos);
+});
+
+it('does not print the "Needs attention" heading when everything is up to date', function () {
+    publishController('modal', $this->targetDir);
+    writeView('page.blade.php', '<x-hwc::modal />');
+
+    Artisan::call('hotwire:check --no-interaction');
+    $output = Artisan::output();
+
+    expect($output)->not->toContain('Needs attention:');
+});
+
+it('sorts scanned components alphabetically', function () {
+    writeView('a.blade.php', '<x-hwc::modal /><x-hwc::carousel /><x-hwc::dropdown />');
+
+    Artisan::call('hotwire:check --no-interaction');
+    $output = Artisan::output();
+
+    $carouselPos = strpos($output, '<x-hwc::carousel>');
+    $dropdownPos = strpos($output, '<x-hwc::dropdown>');
+    $modalPos = strpos($output, '<x-hwc::modal>');
+
+    expect($carouselPos)->toBeLessThan($dropdownPos);
+    expect($dropdownPos)->toBeLessThan($modalPos);
+});
+
+it('sorts the Needs attention block alphabetically', function () {
+    writeView('a.blade.php', '<x-hwc::modal /><x-hwc::carousel /><x-hwc::dropdown />');
+
+    Artisan::call('hotwire:check --no-interaction');
+    $output = Artisan::output();
+
+    $needsAttentionPos = strpos($output, 'Needs attention:');
+    $tail = substr($output, $needsAttentionPos);
+
+    // Match the entry-line pattern "  IDENTIFIER  not published" to avoid
+    // collisions with "(required by IDENTIFIER)" suffixes on shared dep lines.
+    $carouselPos = strpos($tail, '  carousel  not published');
+    $dropdownPos = strpos($tail, '  dropdown  not published');
+    $modalPos = strpos($tail, '  modal  not published');
+
+    expect($carouselPos)->toBeLessThan($dropdownPos);
+    expect($dropdownPos)->toBeLessThan($modalPos);
+});
+
+it('groups OK output as components -> standalones -> helpers', function () {
+    publishController('dropdown', $this->targetDir);
+    publishController('disclosure', $this->targetDir);
+    writeView('page.blade.php', '<x-hwc::dropdown /><div data-controller="disclosure"></div>');
+
+    Artisan::call('hotwire:check --no-interaction');
+    $output = Artisan::output();
+
+    $componentPos = strpos($output, '  dropdown  up to date  ');
+    $standalonePos = strpos($output, '  disclosure  up to date  ');
+    $helperPos = strpos($output, '  _transition.js  up to date  ');
+
+    expect($componentPos)->toBeLessThan($standalonePos);
+    expect($standalonePos)->toBeLessThan($helperPos);
+});
+
+it('groups <x-hwc::*> "no controllers required" entries after component controllers', function () {
+    publishController('modal', $this->targetDir);
+    writeView('page.blade.php', '<x-hwc::modal /><x-hwc::spinner /><x-hwc::field />');
+
+    Artisan::call('hotwire:check --no-interaction');
+    $output = Artisan::output();
+
+    $modalPos = strpos($output, '  modal  up to date  ');
+    $fieldPos = strpos($output, '<x-hwc::field>  No controllers required');
+    $spinnerPos = strpos($output, '<x-hwc::spinner>  No controllers required');
+
+    expect($modalPos)->toBeLessThan($fieldPos);
+    expect($fieldPos)->toBeLessThan($spinnerPos);
+});
+
 // --- Exit code ---
 
 it('exits with 0 when all controllers are up to date', function () {
