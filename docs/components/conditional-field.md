@@ -69,10 +69,13 @@ triggers). The component handles the rest:
 
 ## Edit forms — the `model` prop
 
-`<x-hwc::input>`, `<x-hwc::select>`, and `<x-hwc::textarea>` already merge `old()` with the
-`value` / `selected` prop automatically. Pass the same model to `<x-hwc::conditional-field>`
-and it evaluates against the very same `old(field, $model->field)` expression those fields use
-internally — no parallel state map.
+`<x-hwc::input>`, `<x-hwc::select>`, and `<x-hwc::textarea>` each render **one field** with the
+value you hand them via `:value` / `:selected`, merging `old()` on top automatically.
+
+`<x-hwc::conditional-field>` decides visibility for the **whole block** by resolving the `when`
+rule server-side, often across multiple fields. It can't peek at the sibling form fields — they
+are separate components — so it does its own `old($field, data_get($model, $field))` lookup.
+`:model` hands it the same source the fields already read from. No parallel state map.
 
 ```blade
 <form data-controller="conditional-fields" action="/messages/{{ $message->id }}" method="POST">
