@@ -2,6 +2,72 @@
 
 All notable changes to `laravel-hotwire` will be documented in this file.
 
+## 0.22.0 - 2026-06-10
+
+### Conditional fields controller and `<x-hwc::conditional-field>` component
+
+New `conditional-fields` Stimulus controller shows or hides dependent blocks based on the value of other form fields, with zero round-trips. The controller auto-detects triggers from `data-when-{name}` attributes on each dependent, and works on any container with named inputs — `<form>` is the common host, but filter bars, dashboards, and in-page configuration panels work too.
+
+```html
+
+<form data-controller="conditional-fields">
+    <select name="ship_different">...</select>
+
+    <fieldset data-conditional-fields-target="dependent"
+              data-when-ship-different=":checked"
+              hidden disabled>
+        ...
+    </fieldset>
+</form>
+
+```
+#### Rule grammar
+
+- Values are pipe-separated within a single `data-when-*` attribute (OR). `data-when-reason="bug|feature"` matches when `reason` is `bug` or `feature`. Pipe (rather than whitespace) is the separator so trigger values containing spaces — full names like `"Kris Jhonson"`, country labels, statuses like `"In Progress"` — match literally.
+- Multiple `data-when-*` attributes on the same dependent AND-match across fields.
+- Tokens `:checked` / `:unchecked` for boolean checkboxes.
+- Checkbox groups (`name[]`) supported: the dependent matches when any of the wanted values is checked.
+
+#### `<x-hwc::conditional-field>` Blade component
+
+Recommended path — encodes the rule once on the server, renders `hidden disabled` initially when the current state does not match, and emits the matching `data-when-*` attributes for the controller. Eliminates the client/server drift that would otherwise flash the wrong fields on first paint.
+
+```blade
+<form data-controller="conditional-fields" action="/feedback" method="POST">
+    @csrf
+
+    <x-hwc::select
+        name="reason"
+        placeholder="Pick one…"
+        :options="['bug' => 'Bug', 'feature' => 'Feature', 'other' => 'Other']"
+    />
+
+    <x-hwc::conditional-field :when="['reason' => ['bug', 'feature']]">
+        <x-hwc::field name="details" label="What happened?">
+            <x-hwc::textarea name="details" />
+        </x-hwc::field>
+    </x-hwc::conditional-field>
+</form>
+
+```
+#### Edit forms — the `:model` prop
+
+Pass the same model your `<x-hwc::input>` / `<x-hwc::select>` / `<x-hwc::textarea>` already read from. The component evaluates `old($field, data_get($model, $field))` for each trigger named in `when`, lining initial visibility up with the model on the first GET while keeping `old()` winning on validation retry.
+
+```blade
+<x-hwc::conditional-field :model="$message" :when="['reason' => 'other']">
+    <x-hwc::input name="other_reason" :value="$message->other_reason" />
+</x-hwc::conditional-field>
+
+```
+When the trigger name does not match the model attribute (nested attributes like `$user->address->country`, camelCase models, foreign-key vs display-value pickers), define an accessor on the model or pass an associative `$state` array as `:model` — `data_get` accepts arrays, so a single `$state` map at the top of the form can resolve every `when` key to its real source.
+
+#### Recipe
+
+New cookbook entry at `docs/recipes/conditional-fields.md` covers five real-world patterns — "other" reason, ship-to-different-address, subscription tiers, NPS survey follow-ups, and newsletter preferences — plus an edit-form `:model` example.
+
+**Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/0.21.0...0.22.0
+
 ## 0.21.0 - 2026-06-09
 
 ### Disclosure controller
@@ -18,6 +84,7 @@ New `disclosure` Stimulus controller — collapsible inline content with proper 
     <div data-disclosure-target="content" hidden>...</div>
 </div>
 
+
 ```
 Two-way `open` value (default `false`), idempotent `toggle` / `open` / `close` actions, and a `disclosure:change` event with `{ open: bool }` for hooking analytics, icon swaps, or chained UI off transitions. The `content` target is required; the `trigger` target is optional and receives `aria-expanded` sync when present.
 
@@ -31,6 +98,7 @@ static outlets = ["disclosure"];
 revealHelp() {
     this.disclosureOutlet.open();
 }
+
 
 ```
 Always call the methods (not `outlet.openValue = true`) — they sync DOM and dispatch synchronously, while raw value writes go through Stimulus's MutationObserver path and update asynchronously.
@@ -64,6 +132,7 @@ New `password-visibility` Stimulus controller toggles a password input between h
 </div>
 
 
+
 ```
 `aria-label` is driven by the `show-label` / `hide-label` values (defaults `Show password` / `Hide password`). A `password-visibility:change` event with `{ visible: bool }` fires on every transition so a small companion controller — or another listener — can swap icons. `connect()` always forces `type="password"`: visibility is never persisted across Turbo morphs or Drive navigations.
 
@@ -76,6 +145,7 @@ New `autofocus` Stimulus controller focuses the first matching field on `connect
 <form data-controller="autofocus" action="/messages" method="POST">
     <input type="text" name="title" autofocus/>
 </form>
+
 
 
 ```
@@ -96,6 +166,7 @@ New `back-to-top` Stimulus controller toggles `data-visible="true|false"` on its
            data-[visible=true]:opacity-100"
     aria-label="Back to top"
 >↑</button>
+
 
 
 ```
@@ -135,6 +206,7 @@ Single `size` prop replaces the previous `allow-small-width` and `allow-full-wid
 
 
 
+
 ```
 `allow-small-width` and `allow-full-width` are removed. Use `size="auto"` to keep the old "no width constraints" behavior, or `size="50vw"` to keep the old "half viewport" default. The migration table in `docs/components/modal.md` maps every previous combination to the new prop.
 
@@ -161,6 +233,7 @@ New `<x-hwc::frame-or-page>` component renders a view as a Turbo Frame payload o
 
 
 
+
 ```
 #### Model-aware frame ids
 
@@ -170,6 +243,7 @@ Pass a Model instead of a string; the component calls `dom_id()` to derive the f
 <x-hwc::frame-or-page :frame="$message" layout="layouts.dashboard">
     ...
 </x-hwc::frame-or-page>
+
 
 
 
@@ -203,12 +277,14 @@ The `<x-hwc::carousel>` component now supports an opt-in progress bar and slide 
 
 
 
+
 ```
 #### Slide counter
 
 ```blade
 <x-hwc::carousel :counter="true"
                  counter-class="text-sm">
+
 
 
 
@@ -245,12 +321,14 @@ export default class extends CarouselController {
 
 
 
+
 ```
 ```blade
 <x-hwc::carousel controller="gallery">
     <div>slide 1</div>
     <div>slide 2</div>
 </x-hwc::carousel>
+
 
 
 
