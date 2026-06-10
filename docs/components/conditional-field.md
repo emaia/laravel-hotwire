@@ -97,6 +97,37 @@ A failed validation retry still wins over the model — `old()` returns the user
 component matches against it, and the dependent's initial visibility lines up with what the
 user just submitted.
 
+### `:model` is about the triggers, not the contents
+
+The fields **inside** the block (the dependent inputs that appear and disappear together) are
+irrelevant to whether you pass `:model`. What matters is whether the **trigger fields** named
+on the `when` keys carry an initial value from a model — that's the value `:model` resolves.
+
+```blade
+{{-- 1 trigger, 1 input inside the block — `:model` is what makes it visible on edit --}}
+<x-hwc::conditional-field :model="$message" :when="['reason' => 'other']">
+    <x-hwc::input name="other_reason" :value="$message->other_reason" />
+</x-hwc::conditional-field>
+
+{{-- 1 trigger, 3 inputs inside the block — still the same `:model`, same lookup --}}
+<x-hwc::conditional-field :model="$message" :when="['ship_different' => ':checked']">
+    <x-hwc::input name="shipping_address" :value="$message->shipping_address" />
+    <x-hwc::input name="shipping_city"    :value="$message->shipping_city" />
+    <x-hwc::input name="shipping_zip"     :value="$message->shipping_zip" />
+</x-hwc::conditional-field>
+
+{{-- 2 triggers AND, 1 input inside — `:model` resolves both keys for the rule --}}
+<x-hwc::conditional-field
+    :model="$message"
+    :when="['authorized' => 'no', 'needs_visa' => 'yes']"
+>
+    <x-hwc::select name="sponsorship_country" :options="$countries" :selected="$message->sponsorship_country" />
+</x-hwc::conditional-field>
+```
+
+Create forms (no model) skip `:model` entirely — `old()` alone handles fresh GET (everything
+starts hidden) and validation retry (`old()` returns the submitted value).
+
 ## Token shortcuts
 
 | Rule                                          | Meaning                                                                |
