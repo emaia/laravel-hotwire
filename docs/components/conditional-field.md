@@ -10,28 +10,6 @@ markup has to encode the rule twice (once in `data-when-*` attributes for the cl
 `@if (...) hidden disabled @endif` for the server), and any drift between the two flashes the
 wrong fields on first paint.
 
-## Props
-
-| Prop    | Type     | Default      | Description                                                                                                |
-|---------|----------|--------------|------------------------------------------------------------------------------------------------------------|
-| `when`  | `array`  | (required)   | The rule: `['field' => 'value']`, `['field' => ['v1', 'v2']]` (OR), or `['field' => ':checked']`. Multiple entries AND-match. |
-| `model` | `mixed`  | `null`       | Source of attribute fallbacks for edit forms. Anything `data_get()` can read — Eloquent model, array, stdClass. The component evaluates `old($field, data_get($model, $field))` per trigger. |
-| `tag`   | `string` | `'fieldset'` | Wrapper element. `<fieldset>` is recommended — the `disabled` cascade reaches every descendant control for free. |
-
-## How the initial value is resolved
-
-For each `field` in `when`, the component reads the current value via:
-
-```
-old($field, data_get($model, $field))
-```
-
-- After validation retry — `old()` returns the failed-submission value from session. The model fallback is skipped.
-- Fresh GET on an edit form (model passed) — `old()` is empty, falls back to `$model->$field`.
-- Fresh GET with no model — `null`. Dependent renders `hidden disabled` by default.
-
-This is the same lookup `<x-hwc::input>`, `<x-hwc::select>`, and `<x-hwc::textarea>` already perform when you set `:value="$message->field"` or `:selected="$message->field"` on them — evaluated once on the server, no duplicate state map to maintain.
-
 ## Wrapping with the controller
 
 Put `data-controller="conditional-fields"` on the form (or any parent of the dependents and their
@@ -157,6 +135,28 @@ $state = [
     ...
 </x-hwc::conditional-field>
 ```
+
+## Props
+
+| Prop    | Type     | Default      | Description                                                                                                |
+|---------|----------|--------------|------------------------------------------------------------------------------------------------------------|
+| `when`  | `array`  | (required)   | The rule: `['field' => 'value']`, `['field' => ['v1', 'v2']]` (OR), or `['field' => ':checked']`. Multiple entries AND-match. |
+| `model` | `mixed`  | `null`       | Source of attribute fallbacks for edit forms. Anything `data_get()` can read — Eloquent model, array, stdClass. The component evaluates `old($field, data_get($model, $field))` per trigger. |
+| `tag`   | `string` | `'fieldset'` | Wrapper element. `<fieldset>` is recommended — the `disabled` cascade reaches every descendant control for free. |
+
+## How the initial value is resolved
+
+For each `field` in `when`, the component reads the current value via:
+
+```
+old($field, data_get($model, $field))
+```
+
+- After validation retry — `old()` returns the failed-submission value from session. The model fallback is skipped.
+- Fresh GET on an edit form (model passed) — `old()` is empty, falls back to `$model->$field`.
+- Fresh GET with no model — `null`. Dependent renders `hidden disabled` by default.
+
+This is the same lookup `<x-hwc::input>`, `<x-hwc::select>`, and `<x-hwc::textarea>` already perform when you set `:value="$message->field"` or `:selected="$message->field"` on them — evaluated once on the server, no duplicate state map to maintain.
 
 ## Token shortcuts
 
