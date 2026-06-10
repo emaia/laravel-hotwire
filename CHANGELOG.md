@@ -2,6 +2,26 @@
 
 All notable changes to `laravel-hotwire` will be documented in this file.
 
+## 0.22.1 - 2026-06-10
+
+### Focus trap helper
+
+Internal refactor: the focus trap code that lived inline in `modal_controller` and `confirm_dialog_controller` is now a shared `FocusTrap` helper at `resources/js/controllers/_focus_trap.js`. Both controllers shed ~30 LOC each and delegate to the helper.
+
+#### What changes for users
+
+Nothing. Modal and confirm-dialog behave identically — same focusable selector, same priming-on-open semantics, same trigger-element focus restoration on close. When you publish either controller with `php artisan hotwire:controllers`, the publish pipeline now ships `_focus_trap.js` alongside it as a shared dependency (the same way `_transition.js` and `_form_errors.js` already work).
+
+#### Why
+
+A future bug fix in focus trap logic — Tab cycling, priming, the focusable selector — now applies to both consumers in one place, instead of having to be repeated. `hotwire:check` also flags the helper as not published / outdated when applicable, consistent with the rest of the shared-dep checks.
+
+### CI
+
+- Bumped `actions/cache` from 4 to 5 (#36)
+
+**Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/0.22.0...0.22.1
+
 ## 0.22.0 - 2026-06-10
 
 ### Conditional fields controller and `<x-hwc::conditional-field>` component
@@ -19,6 +39,7 @@ New `conditional-fields` Stimulus controller shows or hides dependent blocks bas
         ...
     </fieldset>
 </form>
+
 
 ```
 #### Rule grammar
@@ -49,6 +70,7 @@ Recommended path — encodes the rule once on the server, renders `hidden disabl
     </x-hwc::conditional-field>
 </form>
 
+
 ```
 #### Edit forms — the `:model` prop
 
@@ -58,6 +80,7 @@ Pass the same model your `<x-hwc::input>` / `<x-hwc::select>` / `<x-hwc::textare
 <x-hwc::conditional-field :model="$message" :when="['reason' => 'other']">
     <x-hwc::input name="other_reason" :value="$message->other_reason" />
 </x-hwc::conditional-field>
+
 
 ```
 When the trigger name does not match the model attribute (nested attributes like `$user->address->country`, camelCase models, foreign-key vs display-value pickers), define an accessor on the model or pass an associative `$state` array as `:model` — `data_get` accepts arrays, so a single `$state` map at the top of the form can resolve every `when` key to its real source.
@@ -85,6 +108,7 @@ New `disclosure` Stimulus controller — collapsible inline content with proper 
 </div>
 
 
+
 ```
 Two-way `open` value (default `false`), idempotent `toggle` / `open` / `close` actions, and a `disclosure:change` event with `{ open: bool }` for hooking analytics, icon swaps, or chained UI off transitions. The `content` target is required; the `trigger` target is optional and receives `aria-expanded` sync when present.
 
@@ -98,6 +122,7 @@ static outlets = ["disclosure"];
 revealHelp() {
     this.disclosureOutlet.open();
 }
+
 
 
 ```
@@ -133,6 +158,7 @@ New `password-visibility` Stimulus controller toggles a password input between h
 
 
 
+
 ```
 `aria-label` is driven by the `show-label` / `hide-label` values (defaults `Show password` / `Hide password`). A `password-visibility:change` event with `{ visible: bool }` fires on every transition so a small companion controller — or another listener — can swap icons. `connect()` always forces `type="password"`: visibility is never persisted across Turbo morphs or Drive navigations.
 
@@ -145,6 +171,7 @@ New `autofocus` Stimulus controller focuses the first matching field on `connect
 <form data-controller="autofocus" action="/messages" method="POST">
     <input type="text" name="title" autofocus/>
 </form>
+
 
 
 
@@ -166,6 +193,7 @@ New `back-to-top` Stimulus controller toggles `data-visible="true|false"` on its
            data-[visible=true]:opacity-100"
     aria-label="Back to top"
 >↑</button>
+
 
 
 
@@ -207,6 +235,7 @@ Single `size` prop replaces the previous `allow-small-width` and `allow-full-wid
 
 
 
+
 ```
 `allow-small-width` and `allow-full-width` are removed. Use `size="auto"` to keep the old "no width constraints" behavior, or `size="50vw"` to keep the old "half viewport" default. The migration table in `docs/components/modal.md` maps every previous combination to the new prop.
 
@@ -234,6 +263,7 @@ New `<x-hwc::frame-or-page>` component renders a view as a Turbo Frame payload o
 
 
 
+
 ```
 #### Model-aware frame ids
 
@@ -243,6 +273,7 @@ Pass a Model instead of a string; the component calls `dom_id()` to derive the f
 <x-hwc::frame-or-page :frame="$message" layout="layouts.dashboard">
     ...
 </x-hwc::frame-or-page>
+
 
 
 
@@ -278,12 +309,14 @@ The `<x-hwc::carousel>` component now supports an opt-in progress bar and slide 
 
 
 
+
 ```
 #### Slide counter
 
 ```blade
 <x-hwc::carousel :counter="true"
                  counter-class="text-sm">
+
 
 
 
@@ -322,12 +355,14 @@ export default class extends CarouselController {
 
 
 
+
 ```
 ```blade
 <x-hwc::carousel controller="gallery">
     <div>slide 1</div>
     <div>slide 2</div>
 </x-hwc::carousel>
+
 
 
 
