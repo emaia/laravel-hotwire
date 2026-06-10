@@ -128,6 +128,36 @@ on the `when` keys carry an initial value from a model — that's the value `:mo
 Create forms (no model) skip `:model` entirely — `old()` alone handles fresh GET (everything
 starts hidden) and validation retry (`old()` returns the submitted value).
 
+### When the trigger name doesn't match the model attribute
+
+The `when` key plays two roles: at runtime the controller looks for `[name="<key>"]` in the
+form; at SSR the component calls `data_get($model, '<key>')`. In standard Laravel forms the
+two align naturally. They diverge when the data lives on a related model
+(`$user->address->country`), on a different case convention (`shipToCountry` vs
+`ship_to_country`), or behind a display-only field (form name `customer_type`, value at
+`$invoice->customer->type`). The `data_get` call silently returns `null` and the dependent
+flashes `hidden` on first paint.
+
+Two ways out:
+
+- **Define an accessor on the model.** `Attribute::get(fn () => $this->address?->country)` lets
+  `data_get($user, 'country')` resolve transparently — zero change in the Blade.
+- **Pass an associative array as `:model`.** `data_get` accepts arrays, so a `$state` map at
+  the top of the form can resolve each `when` key to whatever its real source is.
+
+```blade
+@php
+$state = [
+    'country'       => $user->address->country,
+    'customer_type' => $invoice->customer->type,
+];
+@endphp
+
+<x-hwc::conditional-field :model="$state" :when="['country' => 'US']">
+    ...
+</x-hwc::conditional-field>
+```
+
 ## Token shortcuts
 
 | Rule                                          | Meaning                                                                |
