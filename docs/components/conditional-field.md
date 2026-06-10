@@ -30,7 +30,7 @@ old($field, data_get($model, $field))
 - Fresh GET on an edit form (model passed) — `old()` is empty, falls back to `$model->$field`.
 - Fresh GET with no model — `null`. Dependent renders `hidden disabled` by default.
 
-This mirrors what you already write in `<x-hwc::input value="{{ old('reason', $message->reason) }}">` — same expression, evaluated once on the server, no duplicate state map to maintain.
+This is the same lookup `<x-hwc::input>`, `<x-hwc::select>`, and `<x-hwc::textarea>` already perform when you set `:value="$message->field"` or `:selected="$message->field"` on them — evaluated once on the server, no duplicate state map to maintain.
 
 ## Wrapping with the controller
 
@@ -41,22 +41,25 @@ triggers). The component handles the rest:
 <form data-controller="conditional-fields" action="/feedback" method="POST">
     @csrf
 
-    <x-hwc::select name="reason">
-        <option value="">Pick one…</option>
-        <option value="bug">Bug</option>
-        <option value="feature">Feature</option>
-        <option value="other">Other</option>
-    </x-hwc::select>
+    <x-hwc::select
+        name="reason"
+        placeholder="Pick one…"
+        :options="[
+            'bug'     => 'Bug',
+            'feature' => 'Feature',
+            'other'   => 'Other',
+        ]"
+    />
 
     <x-hwc::conditional-field :when="['reason' => ['bug', 'feature']]">
         <x-hwc::field name="details" label="What happened?">
-            <x-hwc::textarea name="details">{{ old('details') }}</x-hwc::textarea>
+            <x-hwc::textarea name="details" />
         </x-hwc::field>
     </x-hwc::conditional-field>
 
     <x-hwc::conditional-field :when="['reason' => 'other']">
         <x-hwc::field name="other_reason" label="Tell us">
-            <x-hwc::input name="other_reason" value="{{ old('other_reason') }}" />
+            <x-hwc::input name="other_reason" />
         </x-hwc::field>
     </x-hwc::conditional-field>
 
@@ -66,23 +69,23 @@ triggers). The component handles the rest:
 
 ## Edit forms — the `model` prop
 
-Pass the same model your inputs already read from via `old(..., $model->field)`. No need to
-build a parallel state map.
+`<x-hwc::input>`, `<x-hwc::select>`, and `<x-hwc::textarea>` already merge `old()` with the
+`value` / `selected` prop automatically. Pass the same model to `<x-hwc::conditional-field>`
+and it evaluates against the very same `old(field, $model->field)` expression those fields use
+internally — no parallel state map.
 
 ```blade
 <form data-controller="conditional-fields" action="/messages/{{ $message->id }}" method="POST">
     @csrf @method('PATCH')
 
-    <x-hwc::select name="reason">
-        @foreach ($reasons as $value => $label)
-            <option value="{{ $value }}"
-                    @selected(old('reason', $message->reason) === $value)>{{ $label }}</option>
-        @endforeach
-    </x-hwc::select>
+    <x-hwc::select
+        name="reason"
+        :options="$reasons"
+        :selected="$message->reason"
+    />
 
     <x-hwc::conditional-field :model="$message" :when="['reason' => 'other']">
-        <x-hwc::input name="other_reason"
-                      value="{{ old('other_reason', $message->other_reason) }}" />
+        <x-hwc::input name="other_reason" :value="$message->other_reason" />
     </x-hwc::conditional-field>
 </form>
 ```
@@ -107,7 +110,7 @@ For a single-field dependent that does not need a `<legend>`, `<div>` is accepta
 
 ```blade
 <x-hwc::conditional-field tag="div" :when="['mode' => 'advanced']" class="mt-4">
-    <x-hwc::input name="threshold" value="{{ old('threshold') }}" />
+    <x-hwc::input name="threshold" />
 </x-hwc::conditional-field>
 ```
 

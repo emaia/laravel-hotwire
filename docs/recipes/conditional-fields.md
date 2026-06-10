@@ -15,24 +15,27 @@ A feedback form with a `reason` select. Some reasons need a free-text follow-up;
     @csrf
 
     <x-hwc::field name="reason" label="What's this about?">
-        <x-hwc::select name="reason">
-            <option value="">Pick one…</option>
-            <option value="bug">Bug</option>
-            <option value="feature">Feature request</option>
-            <option value="question">Question</option>
-            <option value="other">Other</option>
-        </x-hwc::select>
+        <x-hwc::select
+            name="reason"
+            placeholder="Pick one…"
+            :options="[
+                'bug'      => 'Bug',
+                'feature'  => 'Feature request',
+                'question' => 'Question',
+                'other'    => 'Other',
+            ]"
+        />
     </x-hwc::field>
 
     <x-hwc::conditional-field :when="['reason' => ['bug', 'feature']]">
         <x-hwc::field name="details" label="What happened (or what's missing)?">
-            <x-hwc::textarea name="details" rows="4">{{ old('details') }}</x-hwc::textarea>
+            <x-hwc::textarea name="details" rows="4" />
         </x-hwc::field>
     </x-hwc::conditional-field>
 
     <x-hwc::conditional-field :when="['reason' => 'other']">
         <x-hwc::field name="other_reason" label="Tell us">
-            <x-hwc::input name="other_reason" value="{{ old('other_reason') }}"/>
+            <x-hwc::input name="other_reason" />
         </x-hwc::field>
     </x-hwc::conditional-field>
 
@@ -51,9 +54,9 @@ cascade handles the disable for free.
 
     <fieldset>
         <legend>Billing address</legend>
-        <x-hwc::input name="billing_address" value="{{ old('billing_address') }}"/>
-        <x-hwc::input name="billing_city" value="{{ old('billing_city') }}"/>
-        <x-hwc::input name="billing_zip" value="{{ old('billing_zip') }}"/>
+        <x-hwc::input name="billing_address"/>
+        <x-hwc::input name="billing_city"/>
+        <x-hwc::input name="billing_zip"/>
     </fieldset>
 
     <label class="my-4 flex items-center gap-2">
@@ -63,9 +66,9 @@ cascade handles the disable for free.
 
     <x-hwc::conditional-field :when="['ship_different' => ':checked']">
         <legend>Shipping address</legend>
-        <x-hwc::input name="shipping_address" value="{{ old('shipping_address') }}"/>
-        <x-hwc::input name="shipping_city" value="{{ old('shipping_city') }}"/>
-        <x-hwc::input name="shipping_zip" value="{{ old('shipping_zip') }}"/>
+        <x-hwc::input name="shipping_address"/>
+        <x-hwc::input name="shipping_city"/>
+        <x-hwc::input name="shipping_zip"/>
     </x-hwc::conditional-field>
 
     <button type="submit">Continue to payment</button>
@@ -96,18 +99,17 @@ for Enterprise.
 
     <x-hwc::conditional-field :when="['plan' => ['pro', 'enterprise']]">
         <x-hwc::field name="team_size" label="How many seats?">
-            <x-hwc::input type="number" name="team_size" min="1" max="500"
-                          value="{{ old('team_size') }}"/>
+            <x-hwc::input type="number" name="team_size" min="1" max="500" />
         </x-hwc::field>
     </x-hwc::conditional-field>
 
     <x-hwc::conditional-field :when="['plan' => 'enterprise']">
         <legend>Enterprise</legend>
         <x-hwc::field name="sla_contact" label="Primary contact for SLA negotiation">
-            <x-hwc::input name="sla_contact" type="email" value="{{ old('sla_contact') }}"/>
+            <x-hwc::input name="sla_contact" type="email"/>
         </x-hwc::field>
         <x-hwc::field name="annual_volume" label="Estimated annual API volume">
-            <x-hwc::input type="number" name="annual_volume" value="{{ old('annual_volume') }}"/>
+            <x-hwc::input type="number" name="annual_volume"/>
         </x-hwc::field>
     </x-hwc::conditional-field>
 </form>
@@ -134,13 +136,13 @@ in a single OR rule.
 
     <x-hwc::conditional-field :when="['score' => ['0', '1', '2', '3', '4', '5', '6']]">
         <x-hwc::field name="reason_low" label="What's the main reason for that score?">
-            <x-hwc::textarea name="reason_low" rows="3">{{ old('reason_low') }}</x-hwc::textarea>
+            <x-hwc::textarea name="reason_low" rows="3" />
         </x-hwc::field>
     </x-hwc::conditional-field>
 
     <x-hwc::conditional-field :when="['score' => ['9', '10']]">
         <x-hwc::field name="reason_high" label="What's the main reason for that score?">
-            <x-hwc::textarea name="reason_high" rows="3">{{ old('reason_high') }}</x-hwc::textarea>
+            <x-hwc::textarea name="reason_high" rows="3" />
         </x-hwc::field>
     </x-hwc::conditional-field>
 </form>
@@ -174,10 +176,10 @@ the group.
 
     <x-hwc::conditional-field :when="['interests' => ['news', 'tips', 'events']]">
         <x-hwc::field name="cadence" label="How often?">
-            <x-hwc::select name="cadence">
-                <option value="weekly" @selected(old('cadence') === 'weekly')>Weekly</option>
-                <option value="monthly" @selected(old('cadence') === 'monthly')>Monthly</option>
-            </x-hwc::select>
+            <x-hwc::select
+                name="cadence"
+                :options="['weekly' => 'Weekly', 'monthly' => 'Monthly']"
+            />
         </x-hwc::field>
     </x-hwc::conditional-field>
 
@@ -193,30 +195,29 @@ the group.
 
 ## Edit-form pattern — the `model` prop
 
-Pass the same model you already use for `old(..., $model->field)` in your inputs. The component
-reads from `old()` first (so validation retries always win) and falls back to the model
-attribute when `old()` is empty.
+`<x-hwc::input>`, `<x-hwc::select>`, and `<x-hwc::textarea>` already merge `old()` with the
+`value` / `selected` prop. Pass the same model to `<x-hwc::conditional-field>` and it evaluates
+`old(field, $model->field)` — the same lookup those fields use internally. Validation retries
+always win over the model fallback.
 
 ```blade
 <form data-controller="conditional-fields" action="/messages/{{ $message->id }}" method="POST">
     @csrf @method('PATCH')
 
-    <x-hwc::select name="reason">
-        @foreach ($reasons as $value => $label)
-            <option value="{{ $value }}"
-                    @selected(old('reason', $message->reason) === $value)>{{ $label }}</option>
-        @endforeach
-    </x-hwc::select>
+    <x-hwc::select
+        name="reason"
+        :options="$reasons"
+        :selected="$message->reason"
+    />
 
     <x-hwc::conditional-field :model="$message" :when="['reason' => 'other']">
-        <x-hwc::input name="other_reason"
-                      value="{{ old('other_reason', $message->other_reason) }}"/>
+        <x-hwc::input name="other_reason" :value="$message->other_reason" />
     </x-hwc::conditional-field>
 </form>
 ```
 
-No `@php` state map, no parallel structures — the conditional-field reads the same expression
-shape your inputs already use.
+No `@php` state map, no parallel structures — `<x-hwc::conditional-field>` reads the same
+`old()` lookup the inputs use internally.
 
 ## See also
 
