@@ -28,10 +28,16 @@ it('emits a data-when-* attribute for a single string value', function () {
     $view->assertSee('data-when-reason="other"', false);
 });
 
-it('emits a space-separated data-when-* attribute for an array value', function () {
+it('emits a pipe-separated data-when-* attribute for an array value', function () {
     $view = $this->blade('<x-hwc::conditional-field :when="[\'reason\' => [\'bug\', \'feature\']]">inside</x-hwc::conditional-field>');
 
-    $view->assertSee('data-when-reason="bug feature"', false);
+    $view->assertSee('data-when-reason="bug|feature"', false);
+});
+
+it('preserves spaces inside trigger values when emitting data-when-*', function () {
+    $view = $this->blade('<x-hwc::conditional-field :when="[\'user\' => [\'Kris Jhonson\', \'John Doe\']]">inside</x-hwc::conditional-field>');
+
+    $view->assertSee('data-when-user="Kris Jhonson|John Doe"', false);
 });
 
 it('passes through tokens like :checked unchanged', function () {

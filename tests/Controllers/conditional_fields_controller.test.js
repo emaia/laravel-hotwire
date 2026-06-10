@@ -77,7 +77,7 @@ test.serial("select trigger — flips dependent on change", async () => {
 
 // --- OR within field ---
 
-test.serial("space-separated values are OR-matched within a field", async () => {
+test.serial("pipe-separated values are OR-matched within a field", async () => {
     await mount(`
         <form data-controller="conditional-fields">
             <select name="reason">
@@ -85,7 +85,7 @@ test.serial("space-separated values are OR-matched within a field", async () => 
                 <option value="feature">Feature</option>
                 <option value="other">Other</option>
             </select>
-            <fieldset data-conditional-fields-target="dependent" data-when-reason="bug feature">
+            <fieldset data-conditional-fields-target="dependent" data-when-reason="bug|feature">
                 <textarea name="details"></textarea>
             </fieldset>
         </form>
@@ -101,6 +101,34 @@ test.serial("space-separated values are OR-matched within a field", async () => 
     expect(dep.hidden).toBe(false); // feature matches
 
     select.value = "other";
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+    expect(dep.hidden).toBe(true); // neither
+});
+
+test.serial("trigger values containing spaces match literally (pipe separator)", async () => {
+    await mount(`
+        <form data-controller="conditional-fields">
+            <select name="user">
+                <option value="Kris Jhonson" selected>Kris Jhonson</option>
+                <option value="John Doe">John Doe</option>
+                <option value="Jane Doe">Jane Doe</option>
+            </select>
+            <fieldset data-conditional-fields-target="dependent" data-when-user="Kris Jhonson|John Doe">
+                <input name="notes" />
+            </fieldset>
+        </form>
+    `);
+
+    const dep = document.querySelector("fieldset");
+    const select = document.querySelector("select");
+
+    expect(dep.hidden).toBe(false); // Kris Jhonson matches as a whole token
+
+    select.value = "John Doe";
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+    expect(dep.hidden).toBe(false); // John Doe matches
+
+    select.value = "Jane Doe";
     select.dispatchEvent(new Event("change", { bubbles: true }));
     expect(dep.hidden).toBe(true); // neither
 });
@@ -140,7 +168,7 @@ test.serial("radio group — effective value is the checked radio", async () => 
             <input type="radio" name="plan" value="starter" checked />
             <input type="radio" name="plan" value="pro" />
             <input type="radio" name="plan" value="enterprise" />
-            <fieldset data-conditional-fields-target="dependent" data-when-plan="pro enterprise">
+            <fieldset data-conditional-fields-target="dependent" data-when-plan="pro|enterprise">
                 <input name="team_size" />
             </fieldset>
         </form>

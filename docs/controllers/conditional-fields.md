@@ -34,14 +34,17 @@ Each dependent declares one or more `data-when-{field-name}` attributes:
 
 ```html
 <fieldset data-conditional-fields-target="dependent"
-          data-when-reason="bug feature"
+          data-when-reason="bug|feature"
           data-when-severity="high">
     ...
 </fieldset>
 ```
 
-- **Within a single attribute** — values are space-separated and OR-matched.
-  `data-when-reason="bug feature"` matches when `reason` equals either `bug` or `feature`.
+- **Within a single attribute** — values are **pipe-separated** (`|`) and OR-matched.
+  `data-when-reason="bug|feature"` matches when `reason` equals either `bug` or `feature`.
+  Pipe is the separator rather than whitespace so that real-world values containing spaces —
+  full names like `"Kris Jhonson"`, country labels like `"United States"`, statuses like
+  `"In Progress"` — match literally without being split into pieces.
 - **Across multiple `data-when-*`** — conditions are AND-combined. The dependent above appears
   only when `reason` is `bug` or `feature` **and** `severity` is `high`.
 
@@ -150,4 +153,7 @@ same.
   controller.
 - **Bracketed nested names** like `user[email]` are not supported as trigger names — the data
   attribute name would be invalid. Top-level names (including `name[]` array names) work.
+- **Trigger values containing a literal `|`** clash with the OR separator. Normalize such values
+  (slug, code) before using them as triggers — `:when="['country' => $user->country_code]"` is
+  safer than matching a free-text label with `|` in it.
 - **No animation.** Visibility flips synchronously; `hidden` is binary.

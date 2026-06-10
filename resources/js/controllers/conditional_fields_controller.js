@@ -40,7 +40,7 @@ export default class extends Controller {
             if (!attr.name.startsWith("data-when-")) continue;
 
             const name = attr.name.slice("data-when-".length);
-            const expected = attr.value.trim().split(/\s+/).filter(Boolean);
+            const expected = attr.value.split("|").map((v) => v.trim()).filter(Boolean);
             conditions.push({ name, expected });
         }
         return conditions;

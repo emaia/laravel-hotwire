@@ -31,7 +31,7 @@ class ConditionalField extends Component
             $attributes[] = [
                 'name' => $name,
                 'attribute' => 'data-when-'.$name,
-                'value' => implode(' ', $values),
+                'value' => implode('|', $values),
             ];
         }
 
