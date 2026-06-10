@@ -28,6 +28,8 @@ Each recipe is self-contained — pick the one that matches your use case.
 - [Conditional fields](./conditional-fields.md) — five real-world form patterns built on
   `conditional-fields` + `<x-hwc::conditional-field>`: "other" reason, ship-to-different-address,
   subscription tiers, NPS survey follow-ups, and newsletter preferences.
+- [Charts](./charts.md) — Apache ECharts integration: inline option, URL-fetched option,
+  subclass extension, and a drill-down pattern with smooth universal transitions.
 
 ## See also
 
