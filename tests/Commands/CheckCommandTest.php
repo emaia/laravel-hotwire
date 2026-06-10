@@ -1,5 +1,6 @@
 <?php
 
+use Emaia\LaravelHotwire\Support\ControllerImports;
 use Emaia\LaravelHotwire\Support\PackageInstaller;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
@@ -97,6 +98,14 @@ function publishController(string $identifier, string $targetDir): void
 
     File::ensureDirectoryExists(dirname($target));
     File::copy($source, $target);
+
+    // Mirror PublishControllersCommand: also copy shared deps the controller imports.
+    $imports = app(ControllerImports::class);
+    foreach ($imports->sharedDependencies($source, $base) as $depSource) {
+        $depTarget = $imports->targetPath($depSource, $base, $targetDir);
+        File::ensureDirectoryExists(dirname($depTarget));
+        File::copy($depSource, $depTarget);
+    }
 }
 
 function writePackageJson(array $data): void
@@ -627,6 +636,7 @@ function depSource(string $name): string
 it('reports a missing shared dependency as not published', function () {
     publishController('file-preserve', $this->targetDir);
     publishController('reset-files', $this->targetDir);
+    File::delete($this->targetDir.'/_form_errors.js'); // simulate missing shared dep
     writeView('page.blade.php', '<x-hwc::file name="avatar" />');
 
     $this->artisan('hotwire:check --no-interaction')
