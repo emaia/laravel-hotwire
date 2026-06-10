@@ -1,6 +1,7 @@
 <?php
 
 use Emaia\LaravelHotwire\Components\Carousel;
+use Emaia\LaravelHotwire\Components\Chart;
 use Emaia\LaravelHotwire\Components\CheckboxGroup;
 use Emaia\LaravelHotwire\Components\ConditionalField;
 use Emaia\LaravelHotwire\Components\ConfirmDialog;
@@ -32,6 +33,14 @@ return [
             'category' => 'utility',
             'description' => 'Carousel/slider (Embla) with navigation, dots, responsive options and CSS-variable sizing',
             'controllers' => ['carousel'],
+        ],
+        'chart' => [
+            'class' => Chart::class,
+            'view' => 'hotwire::component-views.chart',
+            'docs' => 'docs/components/chart.md',
+            'category' => 'utility',
+            'description' => 'Apache ECharts wrapper — inline option or URL-fetched, theme + sizing props, controller swap for subclass extensibility',
+            'controllers' => ['chart'],
         ],
         'confirm-dialog' => [
             'class' => ConfirmDialog::class,
@@ -257,6 +266,13 @@ return [
             'docs' => 'docs/controllers/char-counter.md',
             'category' => 'forms',
             'description' => 'Shows a live character count with count-up or countdown mode',
+        ],
+        'chart' => [
+            'source' => 'resources/js/controllers/chart_controller.js',
+            'docs' => 'docs/controllers/chart.md',
+            'category' => 'utility',
+            'description' => 'Apache ECharts wrapper — server-rendered option, optional URL fetch, ResizeObserver, subclass-friendly defaults',
+            'npm' => ['echarts' => '^6.1.0'],
         ],
         'conditional-fields' => [
             'source' => 'resources/js/controllers/conditional_fields_controller.js',

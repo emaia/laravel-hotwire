@@ -183,6 +183,7 @@ php artisan hotwire:controllers auto-select auto-submit turbo/progress
 | [Back to Top](docs/controllers/back-to-top.md)                 | `back-to-top`         | `utility`  | —                | [readme](docs/controllers/back-to-top.md)         |
 | [Carousel](docs/controllers/carousel.md)                       | `carousel`            | `utility`  | `embla-carousel` | [readme](docs/controllers/carousel.md)            |
 | [Char Counter](docs/controllers/char-counter.md)               | `char-counter`        | `forms`    | —                | [readme](docs/controllers/char-counter.md)        |
+| [Chart](docs/controllers/chart.md)                             | `chart`               | `utility`  | `echarts`        | [readme](docs/controllers/chart.md)               |
 | [Checkbox Select All](docs/controllers/checkbox-select-all.md) | `checkbox-select-all` | `forms`    | —                | [readme](docs/controllers/checkbox-select-all.md) |
 | [Clean Query Params](docs/controllers/clean-query-params.md)   | `clean-query-params`  | `forms`    | —                | [readme](docs/controllers/clean-query-params.md)  |
 | [Clear Input](docs/controllers/clear-input.md)                 | `clear-input`         | `forms`    | —                | [readme](docs/controllers/clear-input.md)         |
@@ -354,6 +355,7 @@ stacking multiple controllers, attribute-bag merging and the escaping rules.
 | [Dropdown](docs/components/dropdown.md)               | `<x-hwc::dropdown>`        | `overlay`  | `dropdown`                                                             | [readme](docs/components/dropdown.md)        |
 | [Optimistic](docs/components/optimistic.md)           | `<x-hwc::optimistic>`      | `turbo`    | —                                                                      | [readme](docs/components/optimistic.md)      |
 | [Carousel](docs/components/carousel.md)               | `<x-hwc::carousel>`        | `utility`  | `carousel`                                                             | [readme](docs/components/carousel.md)        |
+| [Chart](docs/components/chart.md)                     | `<x-hwc::chart>`           | `utility`  | `chart`                                                                | [readme](docs/components/chart.md)           |
 | [Scroll Progress](docs/components/scroll-progress.md) | `<x-hwc::scroll-progress>` | `utility`  | `scroll-progress`                                                      | [readme](docs/components/scroll-progress.md) |
 | [Timeago](docs/components/timeago.md)                 | `<x-hwc::timeago>`         | `utility`  | `timeago`                                                              | [readme](docs/components/timeago.md)         |
 
