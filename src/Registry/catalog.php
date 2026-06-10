@@ -2,6 +2,7 @@
 
 use Emaia\LaravelHotwire\Components\Carousel;
 use Emaia\LaravelHotwire\Components\CheckboxGroup;
+use Emaia\LaravelHotwire\Components\ConditionalField;
 use Emaia\LaravelHotwire\Components\ConfirmDialog;
 use Emaia\LaravelHotwire\Components\Description;
 use Emaia\LaravelHotwire\Components\Dropdown;
@@ -55,6 +56,14 @@ return [
             'category' => 'forms',
             'description' => 'Checkbox group with optional select-all master checkbox',
             'controllers' => ['checkbox-select-all'],
+        ],
+        'conditional-field' => [
+            'class' => ConditionalField::class,
+            'view' => 'hotwire::component-views.conditional-field',
+            'docs' => 'docs/components/conditional-field.md',
+            'category' => 'forms',
+            'description' => 'Renders a dependent block for the conditional-fields controller — single source of truth for the show/hide rule on both client and server',
+            'controllers' => ['conditional-fields'],
         ],
         'description' => [
             'class' => Description::class,
@@ -248,6 +257,12 @@ return [
             'docs' => 'docs/controllers/char-counter.md',
             'category' => 'forms',
             'description' => 'Shows a live character count with count-up or countdown mode',
+        ],
+        'conditional-fields' => [
+            'source' => 'resources/js/controllers/conditional_fields_controller.js',
+            'docs' => 'docs/controllers/conditional-fields.md',
+            'category' => 'forms',
+            'description' => 'Show/hide dependent fields based on the value of other form fields — auto-detects triggers from data-when-* attributes',
         ],
         'checkbox-select-all' => [
             'source' => 'resources/js/controllers/checkbox_select_all_controller.ts',
