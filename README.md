@@ -186,6 +186,7 @@ php artisan hotwire:controllers auto-select auto-submit turbo/progress
 | [Checkbox Select All](docs/controllers/checkbox-select-all.md) | `checkbox-select-all` | `forms`    | —                | [readme](docs/controllers/checkbox-select-all.md) |
 | [Clean Query Params](docs/controllers/clean-query-params.md)   | `clean-query-params`  | `forms`    | —                | [readme](docs/controllers/clean-query-params.md)  |
 | [Clear Input](docs/controllers/clear-input.md)                 | `clear-input`         | `forms`    | —                | [readme](docs/controllers/clear-input.md)         |
+| [Conditional Fields](docs/controllers/conditional-fields.md)   | `conditional-fields`  | `forms`    | —                | [readme](docs/controllers/conditional-fields.md)  |
 | [Confirm Dialog](docs/controllers/confirm-dialog.md)           | `confirm-dialog`      | `overlay`  | —                | [readme](docs/controllers/confirm-dialog.md)      |
 | [Copy To Clipboard](docs/controllers/copy-to-clipboard.md)     | `copy-to-clipboard`   | `utility`  | —                | [readme](docs/controllers/copy-to-clipboard.md)   |
 | [Disclosure](docs/controllers/disclosure.md)                   | `disclosure`          | `utility`  | —                | [readme](docs/controllers/disclosure.md)          |
@@ -336,6 +337,7 @@ stacking multiple controllers, attribute-bag merging and the escaping rules.
 |-------------------------------------------------------|----------------------------|------------|------------------------------------------------------------------------|----------------------------------------------|
 | [Form](docs/components/form.md)                       | `<x-hwc::form>`            | `forms`    | `auto-submit`, `unsaved-changes`, `error-scroll`, `clean-query-params` | [readme](docs/components/form.md)            |
 | [Field](docs/components/field.md)                     | `<x-hwc::field>`           | `forms`    | —                                                                      | [readme](docs/components/field.md)           |
+| [Conditional Field](docs/components/conditional-field.md) | `<x-hwc::conditional-field>` | `forms`    | `conditional-fields`                                                   | [readme](docs/components/conditional-field.md) |
 | [Input](docs/components/input.md)                     | `<x-hwc::input>`           | `forms`    | `auto-select`, `clear-input`, `input-mask`                             | [readme](docs/components/input.md)           |
 | [Label](docs/components/label.md)                     | `<x-hwc::label>`           | `forms`    | —                                                                      | [readme](docs/components/label.md)           |
 | [Select](docs/components/select.md)                   | `<x-hwc::select>`          | `forms`    | —                                                                      | [readme](docs/components/select.md)          |
