@@ -1,5 +1,7 @@
 import { Controller } from "@hotwired/stimulus";
 
+import { FocusTrap } from "./_focus_trap.js";
+
 export default class ConfirmController extends Controller {
     static targets = ["modal", "backdrop", "dialog"];
 
@@ -24,18 +26,20 @@ export default class ConfirmController extends Controller {
     triggerElement = null;
     confirmed = false;
     isOpen = false;
-    trapPriming = false;
+    focusTrap = null;
 
     connect() {
         this.handleEscapeKey = this.handleEscapeKey.bind(this);
-        this.handleFocusTrap = this.handleFocusTrap.bind(this);
         document.addEventListener("keydown", this.handleEscapeKey);
-        document.addEventListener("keydown", this.handleFocusTrap);
+
+        if (this.hasModalTarget) {
+            this.focusTrap = new FocusTrap(this.modalTarget);
+        }
     }
 
     disconnect() {
         document.removeEventListener("keydown", this.handleEscapeKey);
-        document.removeEventListener("keydown", this.handleFocusTrap);
+        this.focusTrap?.deactivate();
 
         if (this.isOpen) {
             this.#close();
@@ -97,32 +101,6 @@ export default class ConfirmController extends Controller {
         }
     }
 
-    handleFocusTrap(event) {
-        if (event.key !== "Tab" || this.modalTarget.hidden || !this.isOpen) return;
-
-        const focusableElements = this.#getFocusableElements();
-        if (focusableElements.length === 0) return;
-
-        const first = focusableElements[0];
-        const last = focusableElements[focusableElements.length - 1];
-        const active = document.activeElement;
-
-        if (this.trapPriming) {
-            event.preventDefault();
-            this.trapPriming = false;
-            first.focus();
-            return;
-        }
-
-        if (!event.shiftKey && active === last) {
-            event.preventDefault();
-            first.focus();
-        } else if (event.shiftKey && active === first) {
-            event.preventDefault();
-            last.focus();
-        }
-    }
-
     #open() {
         this.isOpen = true;
         this.modalTarget.hidden = false;
@@ -141,7 +119,7 @@ export default class ConfirmController extends Controller {
             this.dialogTarget.classList.remove(...this.dialogHiddenClasses);
             this.dialogTarget.classList.add(...this.dialogVisibleClasses);
 
-            this.trapPriming = true;
+            this.focusTrap?.activate();
         });
     }
 
@@ -149,6 +127,7 @@ export default class ConfirmController extends Controller {
         if (!this.isOpen) return;
 
         this.isOpen = false;
+        this.focusTrap?.deactivate();
 
         this.modalTarget.classList.remove(...this.visibleClasses);
         this.modalTarget.classList.add(...this.hiddenClasses);
@@ -172,11 +151,4 @@ export default class ConfirmController extends Controller {
         }, this.closeDurationValue);
     }
 
-    #getFocusableElements() {
-        return this.modalTarget.querySelectorAll(
-            'a[href], area[href], input:not([disabled]):not([type="hidden"]), ' +
-                "select:not([disabled]), textarea:not([disabled]), " +
-                'button:not([disabled]), [tabindex]:not([tabindex="-1"])',
-        );
-    }
 }

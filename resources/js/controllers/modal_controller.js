@@ -1,5 +1,7 @@
 import { Controller } from "@hotwired/stimulus";
 
+import { FocusTrap } from "./_focus_trap.js";
+
 export default class ModalController extends Controller {
     static targets = ["modal", "backdrop", "dialog", "dynamicContent", "loadingTemplate"];
 
@@ -23,7 +25,7 @@ export default class ModalController extends Controller {
     };
 
     observer = null;
-    trapPriming = false;
+    focusTrap = null;
     isOpening = false;
     isClosing = false;
     triggerElement = null;
@@ -59,9 +61,11 @@ export default class ModalController extends Controller {
     connect() {
         this.#initializeContentObserver();
 
-        this.handleFocusTrap = this.handleFocusTrap.bind(this);
+        if (this.hasModalTarget) {
+            this.focusTrap = new FocusTrap(this.modalTarget);
+        }
+
         this.handleEscapeKey = this.handleEscapeKey.bind(this);
-        document.addEventListener("keydown", this.handleFocusTrap);
         document.addEventListener("keydown", this.handleEscapeKey);
         document.addEventListener("click", this.trackClickedLink, true);
         document.addEventListener("turbo:before-fetch-request", this.handleBeforeFetchRequest);
@@ -117,7 +121,7 @@ export default class ModalController extends Controller {
             this.dialogTarget.classList.remove(...this.dialogHiddenClasses);
             this.dialogTarget.classList.add(...this.dialogVisibleClasses);
 
-            this.trapPriming = true;
+            this.focusTrap?.activate();
 
             setTimeout(() => {
                 this.isOpening = false;
@@ -135,6 +139,8 @@ export default class ModalController extends Controller {
         this.lastCloseTime = Date.now();
         this.isClosing = true;
         this.dismissedWhileLoading = true;
+
+        this.focusTrap?.deactivate();
 
         this.modalTarget.setAttribute("data-open", "false");
         this.modalTarget.classList.remove(...this.visibleClasses);
@@ -287,7 +293,7 @@ export default class ModalController extends Controller {
             this.close();
         }
 
-        document.removeEventListener("keydown", this.handleFocusTrap);
+        this.focusTrap?.deactivate();
         document.removeEventListener("keydown", this.handleEscapeKey);
         document.removeEventListener("click", this.trackClickedLink, true);
         document.removeEventListener("turbo:before-fetch-request", this.handleBeforeFetchRequest);
@@ -343,40 +349,6 @@ export default class ModalController extends Controller {
         }
 
         return !!target.closest("[data-modal-ignore]");
-    }
-
-    handleFocusTrap(event) {
-        if (event.key !== "Tab" || !this.hasModalTarget || this.modalTarget.hidden || !this.isOpen) return;
-
-        const focusableElements = this.#getFocusableElements();
-        if (focusableElements.length === 0) return;
-
-        const first = focusableElements[0];
-        const last = focusableElements[focusableElements.length - 1];
-        const active = document.activeElement;
-
-        if (this.trapPriming) {
-            event.preventDefault();
-            this.trapPriming = false;
-            first.focus();
-            return;
-        }
-
-        if (!event.shiftKey && active === last) {
-            event.preventDefault();
-            first.focus();
-        } else if (event.shiftKey && active === first) {
-            event.preventDefault();
-            last.focus();
-        }
-    }
-
-    #getFocusableElements() {
-        return this.modalTarget.querySelectorAll(
-            'a[href], area[href], input:not([disabled]):not([type="hidden"]), ' +
-                "select:not([disabled]), textarea:not([disabled]), " +
-                'button:not([disabled]), [tabindex]:not([tabindex="-1"])',
-        );
     }
 
     #isEmptyStreamForModalCloseTarget(stream) {
