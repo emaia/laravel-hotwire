@@ -2,6 +2,46 @@
 
 All notable changes to `laravel-hotwire` will be documented in this file.
 
+## 0.23.0 - 2026-06-10
+
+### Chart controller and `<x-hwc::chart>` component (Apache ECharts)
+
+Apache ECharts ^6.1.0 wrapper with server-rendered or URL-fetched options, ResizeObserver-driven resize, and subclass-friendly extensibility hooks that match the carousel pattern.
+
+```blade
+{{-- Inline option — the 80 % case --}}
+<x-hwc::chart :option="[
+    'title'  => ['text' => 'Sales by month'],
+    'xAxis'  => ['type' => 'category', 'data' => ['Jan', 'Feb', 'Mar']],
+    'yAxis'  => ['type' => 'value'],
+    'series' => [['type' => 'bar', 'data' => [120, 200, 150]]],
+]" height="320px" />
+
+{{-- URL-fetched for heavy datasets --}}
+<x-hwc::chart url="/api/charts/sales" height="320px" />
+
+{{-- Subclass swap for custom defaults, extra chart types, or drill-down --}}
+<x-hwc::chart controller="sales-chart" :option="$option" />
+
+```
+#### Controller features
+
+- **`setOption` action** — partial or full option updates via `event.detail`, with an optional `{ option, replace }` envelope that maps to ECharts' `notMerge` semantics
+- **Hooks for subclasses** — `defaultOption()` (applied as the first `setOption` call) and `afterInit()` (post-init hook for event listeners), matching the carousel extensibility pattern
+- **Base bundle** — bar/line/pie charts, grid/tooltip/legend/title/dataset components, and canvas renderer (~120 KB tree-shaken); subclasses register extras (scatter, gauge, map, SVG renderer, etc.) via `echarts.use([...])`
+- **ResizeObserver** — `chart.resize()` on container dimension changes
+- **Dev-mode warning** — in `local` environment, logs a `Log::warning` when the inline option JSON exceeds 500 KB, pointing to the `url` prop
+
+#### Component
+
+`<x-hwc::chart>` validates that at least one of `option` or `url` is provided, embeds the JSON-encoded option as a `data-*` attribute, applies inline sizing, and passes through extra HTML attributes and user `data-controller` identifiers. The `controller` prop swaps the Stimulus identifier so subclasses mount with zero additional wiring.
+
+#### Recipe
+
+Three patterns in `docs/recipes/charts.md` — inline, URL-fetched, and subclass extension — plus an advanced drill-down pattern with smooth universal transitions and a history stack.
+
+**Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/0.22.2...0.23.0
+
 ## 0.22.2 - 2026-06-10
 
 ### hotwire:check output, reorganized
@@ -52,6 +92,7 @@ New `conditional-fields` Stimulus controller shows or hides dependent blocks bas
 
 
 
+
 ```
 #### Rule grammar
 
@@ -83,6 +124,7 @@ Recommended path — encodes the rule once on the server, renders `hidden disabl
 
 
 
+
 ```
 #### Edit forms — the `:model` prop
 
@@ -92,6 +134,7 @@ Pass the same model your `<x-hwc::input>` / `<x-hwc::select>` / `<x-hwc::textare
 <x-hwc::conditional-field :model="$message" :when="['reason' => 'other']">
     <x-hwc::input name="other_reason" :value="$message->other_reason" />
 </x-hwc::conditional-field>
+
 
 
 
@@ -123,6 +166,7 @@ New `disclosure` Stimulus controller — collapsible inline content with proper 
 
 
 
+
 ```
 Two-way `open` value (default `false`), idempotent `toggle` / `open` / `close` actions, and a `disclosure:change` event with `{ open: bool }` for hooking analytics, icon swaps, or chained UI off transitions. The `content` target is required; the `trigger` target is optional and receives `aria-expanded` sync when present.
 
@@ -136,6 +180,7 @@ static outlets = ["disclosure"];
 revealHelp() {
     this.disclosureOutlet.open();
 }
+
 
 
 
@@ -175,6 +220,7 @@ New `password-visibility` Stimulus controller toggles a password input between h
 
 
 
+
 ```
 `aria-label` is driven by the `show-label` / `hide-label` values (defaults `Show password` / `Hide password`). A `password-visibility:change` event with `{ visible: bool }` fires on every transition so a small companion controller — or another listener — can swap icons. `connect()` always forces `type="password"`: visibility is never persisted across Turbo morphs or Drive navigations.
 
@@ -187,6 +233,7 @@ New `autofocus` Stimulus controller focuses the first matching field on `connect
 <form data-controller="autofocus" action="/messages" method="POST">
     <input type="text" name="title" autofocus/>
 </form>
+
 
 
 
@@ -210,6 +257,7 @@ New `back-to-top` Stimulus controller toggles `data-visible="true|false"` on its
            data-[visible=true]:opacity-100"
     aria-label="Back to top"
 >↑</button>
+
 
 
 
@@ -255,6 +303,7 @@ Single `size` prop replaces the previous `allow-small-width` and `allow-full-wid
 
 
 
+
 ```
 `allow-small-width` and `allow-full-width` are removed. Use `size="auto"` to keep the old "no width constraints" behavior, or `size="50vw"` to keep the old "half viewport" default. The migration table in `docs/components/modal.md` maps every previous combination to the new prop.
 
@@ -284,6 +333,7 @@ New `<x-hwc::frame-or-page>` component renders a view as a Turbo Frame payload o
 
 
 
+
 ```
 #### Model-aware frame ids
 
@@ -293,6 +343,7 @@ Pass a Model instead of a string; the component calls `dom_id()` to derive the f
 <x-hwc::frame-or-page :frame="$message" layout="layouts.dashboard">
     ...
 </x-hwc::frame-or-page>
+
 
 
 
@@ -332,12 +383,14 @@ The `<x-hwc::carousel>` component now supports an opt-in progress bar and slide 
 
 
 
+
 ```
 #### Slide counter
 
 ```blade
 <x-hwc::carousel :counter="true"
                  counter-class="text-sm">
+
 
 
 
@@ -380,12 +433,14 @@ export default class extends CarouselController {
 
 
 
+
 ```
 ```blade
 <x-hwc::carousel controller="gallery">
     <div>slide 1</div>
     <div>slide 2</div>
 </x-hwc::carousel>
+
 
 
 
