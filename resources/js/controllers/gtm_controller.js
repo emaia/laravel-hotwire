@@ -17,19 +17,27 @@ export default class extends Controller {
         this.assertIsGtmId(this.idValue);
 
         if (this.lazyValue) {
-            const initGTMOnEvent = (event) => {
+            this.initGTMOnEvent = (event) => {
                 this.initGTM();
                 event.currentTarget.removeEventListener(
                     event.type,
-                    initGTMOnEvent,
+                    this.initGTMOnEvent,
                 );
             };
 
-            document.addEventListener("scroll", initGTMOnEvent);
-            document.addEventListener("mousemove", initGTMOnEvent);
-            document.addEventListener("touchstart", initGTMOnEvent);
+            document.addEventListener("scroll", this.initGTMOnEvent);
+            document.addEventListener("mousemove", this.initGTMOnEvent);
+            document.addEventListener("touchstart", this.initGTMOnEvent);
         } else {
             this.initGTM();
+        }
+    }
+
+    disconnect() {
+        if (this.initGTMOnEvent) {
+            document.removeEventListener("scroll", this.initGTMOnEvent);
+            document.removeEventListener("mousemove", this.initGTMOnEvent);
+            document.removeEventListener("touchstart", this.initGTMOnEvent);
         }
     }
 
