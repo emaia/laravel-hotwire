@@ -39,6 +39,9 @@ The complete Hotwire stack for Laravel — Turbo Drive, Turbo Streams, Stimulus 
   `data-controller="turbo--progress"`.
 - **No UI-role folders** (no `form/`, `modal/`, `utils/`, `lib/`, `media/`, `notification/`). Names themselves
   describe intent — prefer compound names (`copy-to-clipboard`, `lazy-image`, `input-mask`) over namespace buckets.
+- **Internal helpers** prefixed with `_` (e.g. `_focus_trap.js`, `_transition.js`, `_form_errors.js`) are shared
+  utility modules imported by controllers. They are **not** Stimulus controllers and are never registered via
+  `data-controller`.
 - Loaded via `@emaia/stimulus-dynamic-loader` with Vite's `import.meta.glob`.
 - **Controllers must be mutually compatible.** Blade components stack several controllers on the same element
   (`<x-hwc::form>` → `auto-submit unsaved-changes clean-query-params`; `<x-hwc::file>` →
@@ -56,7 +59,7 @@ The complete Hotwire stack for Laravel — Turbo Drive, Turbo Streams, Stimulus 
 ### Blade Components
 
 - Registered with configurable prefix (default: `hwc`)
-- Usage: `<x-hwc::modal>`, `<x-hwc::confirm-dialog>`, `<x-hwc::flash-message>`, `<x-hwc::loader>`, `<x-hwc::scroll-progress>`, `<x-hwc::timeago>`
+- See all available components with `php artisan hotwire:components`
 - Components that encapsulate a Stimulus controller merge user-provided `data-controller` with internal controllers
   on the element. User-provided `data-{identifier}-*` for internal controllers active via props is filtered to prevent
   conflicts; for other controllers these pass through freely. Expose supported controller configuration as explicit
