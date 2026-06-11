@@ -14,9 +14,10 @@ Adds tooltips to any element using [Tippy.js](https://atomiks.github.io/tippyjs/
 
 ## Stimulus Values
 
-| Value     | Type     | Default     | Description                    |
-|-----------|----------|-------------|--------------------------------|
-| `content` | `String` | `"Tooltip"` | Tooltip content. Supports HTML |
+| Value       | Type     | Default     | Description                                                                                              |
+|-------------|----------|-------------|----------------------------------------------------------------------------------------------------------|
+| `content`   | `String` | `"Tooltip"` | Tooltip content. Supports HTML                                                                           |
+| `placement` | `String` | `"top"`     | Where the tooltip appears relative to the element. See [tippy placements](https://atomiks.github.io/tippyjs/v6/all-props/#placement) |
 
 ## Basic usage
 
@@ -38,6 +39,18 @@ Adds tooltips to any element using [Tippy.js](https://atomiks.github.io/tippyjs/
 >
     Name *
 </span>
+```
+
+## Custom placement
+
+```html
+<button
+    data-controller="tooltip"
+    data-tooltip-content-value="Saved"
+    data-tooltip-placement-value="bottom-end"
+>
+    Save
+</button>
 ```
 
 ## On help icons

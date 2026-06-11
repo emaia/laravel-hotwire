@@ -8,11 +8,17 @@ export default class extends Controller {
             type: String,
             default: "Tooltip",
         },
+        placement: {
+            type: String,
+            default: "top",
+        },
     };
 
     connect() {
+        this.tippy?.destroy();
         this.tippy = tippy(this.element, {
             content: this.contentValue,
+            placement: this.placementValue,
             allowHTML: true,
         });
     }
