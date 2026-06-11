@@ -1,3 +1,4 @@
+// @hotwire-package
 import { Controller } from "@hotwired/stimulus";
 import { formHasErrors } from "./_form_errors";
 

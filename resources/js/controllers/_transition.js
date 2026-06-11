@@ -1,3 +1,4 @@
+// @hotwire-package
 // Dependency-free enter/leave transitions, Vue/stimulus-use style. Reads the
 // classes to apply from the element's own data attributes:
 //

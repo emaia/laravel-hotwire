@@ -6,6 +6,7 @@ use Emaia\LaravelHotwire\Registry\ControllerDefinition;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ControllerImports;
 use Emaia\LaravelHotwire\Support\PackageInstaller;
+use Emaia\LaravelHotwire\Support\PackageMarker;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Filesystem\Filesystem;
@@ -13,6 +14,7 @@ use Symfony\Component\Finder\Finder;
 
 use function Laravel\Prompts\confirm;
 use function Laravel\Prompts\info;
+use function Laravel\Prompts\warning;
 
 class CheckCommand extends Command
 {
@@ -42,6 +44,7 @@ class CheckCommand extends Command
         private readonly Filesystem $files,
         private readonly PackageInstaller $packageInstaller,
         private readonly ControllerImports $imports,
+        private readonly PackageMarker $marker,
     ) {
         parent::__construct();
     }
@@ -592,6 +595,12 @@ class CheckCommand extends Command
     private function publishIssues(array $issues): void
     {
         foreach ($issues as $issue) {
+            if (! $this->marker->isPackageOwned($issue['target_file'])) {
+                warning("Skipped \"{$issue['identifier']}\": {$issue['target_file']} is user-owned (missing package marker). Rename or remove the file, or add `".$this->markerHint($issue['target_file']).'` on its first line to opt in to package updates.');
+
+                continue;
+            }
+
             $targetDir = dirname($issue['target_file']);
             $this->files->ensureDirectoryExists($targetDir);
             $this->files->copy($issue['source_file'], $issue['target_file']);
@@ -647,5 +656,10 @@ class CheckCommand extends Command
         info("$command completed.");
 
         return self::SUCCESS;
+    }
+
+    private function markerHint(string $path): string
+    {
+        return str_ends_with($path, '.css') ? '/* @hotwire-package */' : '// @hotwire-package';
     }
 }

@@ -4,6 +4,7 @@ namespace Emaia\LaravelHotwire\Commands;
 
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ControllerImports;
+use Emaia\LaravelHotwire\Support\PackageMarker;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Filesystem\Filesystem;
@@ -27,6 +28,7 @@ class PublishControllersCommand extends Command
     public function __construct(
         private readonly Filesystem $files,
         private readonly ControllerImports $imports,
+        private readonly PackageMarker $marker,
     ) {
         parent::__construct();
     }
@@ -123,7 +125,7 @@ class PublishControllersCommand extends Command
             $targetFile = $this->targetFile($targetBase, $controller);
             $targetDir = dirname($targetFile);
 
-            if ($this->files->exists($targetFile) && ! $this->option('force')) {
+            if ($this->files->exists($targetFile)) {
                 if ($this->files->hash($controller['source_file']) === $this->files->hash($targetFile)) {
                     info("Controller \"$key\" is already up to date.");
 
@@ -132,14 +134,22 @@ class PublishControllersCommand extends Command
                     continue;
                 }
 
-                if (! $this->input->isInteractive()) {
-                    warning("Controller \"$key\" already exists. Use --force to overwrite.");
+                if (! $this->marker->isPackageOwned($targetFile)) {
+                    warning("Skipped \"$key\": $targetFile is user-owned (missing package marker). Rename or remove the file, or add `".$this->markerHint($targetFile).'` on its first line to opt in to package updates.');
 
                     continue;
                 }
 
-                if (! confirm("Controller \"$key\" already exists and differs from the package version. Overwrite?")) {
-                    continue;
+                if (! $this->option('force')) {
+                    if (! $this->input->isInteractive()) {
+                        warning("Controller \"$key\" already exists. Use --force to overwrite.");
+
+                        continue;
+                    }
+
+                    if (! confirm("Controller \"$key\" already exists and differs from the package version. Overwrite?")) {
+                        continue;
+                    }
                 }
             }
 
@@ -175,15 +185,27 @@ class PublishControllersCommand extends Command
                 continue;
             }
 
-            if ($this->files->exists($targetFile) && ! $this->option('force')) {
+            if ($this->files->exists($targetFile)) {
                 if ($this->files->hash($resolved) === $this->files->hash($targetFile)) {
                     $alreadyPublished[$relativePath] = true;
 
                     continue;
                 }
 
-                if (! $this->input->isInteractive()) {
+                if (! $this->marker->isPackageOwned($targetFile)) {
+                    warning("Skipped shared dependency \"$relativePath\": $targetFile is user-owned (missing package marker). Rename or remove the file, or add `".$this->markerHint($targetFile).'` on its first line to opt in to package updates.');
+                    $alreadyPublished[$relativePath] = true;
+
                     continue;
+                }
+
+                if (! $this->option('force')) {
+                    if (! $this->input->isInteractive()) {
+                        warning("Shared dependency \"$relativePath\" already exists. Use --force to overwrite.");
+                        $alreadyPublished[$relativePath] = true;
+
+                        continue;
+                    }
                 }
             }
 
@@ -278,6 +300,11 @@ class PublishControllersCommand extends Command
         return $controller['relative_dir'] === ''
             ? $targetBase.'/'.$controller['filename']
             : $targetBase.'/'.$controller['relative_dir'].'/'.$controller['filename'];
+    }
+
+    private function markerHint(string $path): string
+    {
+        return str_ends_with($path, '.css') ? '/* @hotwire-package */' : '// @hotwire-package';
     }
 
     /** @return array<string, array{name: string, identifier: string, relative_dir: string, source_file: string, filename: string}> */

@@ -45,6 +45,12 @@ The complete Hotwire stack for Laravel — Turbo Drive, Turbo Streams, Stimulus 
 - **Internal helpers** prefixed with `_` (e.g. `_focus_trap.js`, `_transition.js`, `_form_errors.js`) are shared
   utility modules imported by controllers. They are **not** Stimulus controllers and are never registered via
   `data-controller`.
+- **Package marker.** Every controller, helper, and shared dependency shipped by the package begins with
+  `// @hotwire-package` on its first non-empty line (or `/* @hotwire-package */` for `.css`). The marker lets
+  `hotwire:controllers` (with `--force` or `--outdated --force`) and `hotwire:check --fix` distinguish files that
+  came from the package from files written by the user — without the marker, those commands refuse to overwrite.
+  `hotwire:make-controller` deliberately does **not** emit the marker, so generated user controllers stay protected.
+  Drop the marker when reading `Support\PackageMarker`.
 - Loaded via `@emaia/stimulus-dynamic-loader` with Vite's `import.meta.glob`.
 - **Controllers must be mutually compatible.** Blade components stack several controllers on the same element
   (`<x-hwc::form>` → `auto-submit unsaved-changes clean-query-params`; `<x-hwc::file>` →

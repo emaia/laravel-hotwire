@@ -1,3 +1,4 @@
+// @hotwire-package
 // Shared dispatch logic for Optimistic UI.
 //
 // Scans a root element for <template data-optimistic-stream> nodes and

@@ -1,3 +1,4 @@
+// @hotwire-package
 import { Controller } from "@hotwired/stimulus";
 import tippy from "tippy.js"; // https://atomiks.github.io/tippyjs
 import "tippy.js/dist/tippy.css";

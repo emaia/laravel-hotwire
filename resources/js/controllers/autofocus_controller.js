@@ -1,3 +1,4 @@
+// @hotwire-package
 import { Controller } from "@hotwired/stimulus";
 
 const FOCUSABLE_SELECTOR = "input, select, textarea, button";

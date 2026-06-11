@@ -1,3 +1,4 @@
+// @hotwire-package
 import { Controller } from "@hotwired/stimulus";
 
 const PREV_DISABLED = "data-conditional-fields-prev-disabled";
