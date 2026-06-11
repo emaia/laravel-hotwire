@@ -306,6 +306,12 @@ them automatically via `import.meta.glob`.
 > If a controller already exists and is identical to the package version, the command reports it as up to date. If it
 > differs, it asks for confirmation before overwriting.
 
+> **Name collisions:** package controller names are effectively reserved in `resources/js/controllers/`. If you write
+> your own controller whose file name matches a package one (e.g. your own `tabs_controller.js`), the tooling treats
+> it as an outdated copy of the package controller — `hotwire:controllers --force` (or `--outdated --force`) and
+> `hotwire:check --fix` will overwrite it without prompting. Before naming a new controller, check the taken names
+> with `php artisan hotwire:controllers --list` and pick a different one.
+
 ## Stimulus Attribute Helpers
 
 Build Stimulus `data-*` attributes from Blade without hand-writing the verbose markup. The primary

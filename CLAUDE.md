@@ -5,9 +5,12 @@ The complete Hotwire stack for Laravel — Turbo Drive, Turbo Streams, Stimulus 
 ## Package Structure
 
 - `src/` — PHP source (commands, components, service provider)
-- `src/Components/Concerns/` — shared component traits (e.g. `StripsNullProps` for omitting null props from rendered attributes)
-- `src/Support/` — framework-agnostic helpers (`FieldKey` for id/errorKey derivation, `MaskPresets`, `ControllerImports` for resolving a controller's shared JS deps, doc search/render/paging, installer)
-- `src/Registry/catalog.php` — single source of truth mapping every component and controller to its class/source, view, docs, category and dependencies
+- `src/Components/Concerns/` — shared component traits (e.g. `StripsNullProps` for omitting null props from rendered
+  attributes)
+- `src/Support/` — framework-agnostic helpers (`FieldKey` for id/errorKey derivation, `MaskPresets`, `ControllerImports`
+  for resolving a controller's shared JS deps, doc search/render/paging, installer)
+- `src/Registry/catalog.php` — single source of truth mapping every component and controller to its class/source, view,
+  docs, category and dependencies
 - `resources/js/controllers/` — Stimulus controllers shipped with the package (published to user's app)
 - `resources/views/component-views/` — Blade component views
 - `stubs/resources/` — Scaffolding files copied by `hotwire:install`
@@ -18,14 +21,14 @@ The complete Hotwire stack for Laravel — Turbo Drive, Turbo Streams, Stimulus 
 
 ## Artisan Commands
 
-| Command                   | Description                                                       |
-|---------------------------|-------------------------------------------------------------------|
-| `hotwire:install`         | Scaffold JS/CSS setup, add npm deps to package.json               |
-| `hotwire:make-controller` | Create a new Stimulus controller (interactive scaffolding)        |
+| Command                   | Description                                                                                          |
+|---------------------------|------------------------------------------------------------------------------------------------------|
+| `hotwire:install`         | Scaffold JS/CSS setup, add npm deps to package.json                                                  |
+| `hotwire:make-controller` | Create a new Stimulus controller (interactive scaffolding)                                           |
 | `hotwire:controllers`     | Publish package Stimulus controllers to the app (`--outdated` to update only published+changed ones) |
-| `hotwire:components`      | List available Blade components and their controller dependencies |
-| `hotwire:check`           | Verify required controllers (and their shared deps) are published (CI-friendly) |
-| `hotwire:docs`            | Browse and read controller/component docs in the terminal         |
+| `hotwire:components`      | List available Blade components and their controller dependencies                                    |
+| `hotwire:check`           | Verify required controllers (and their shared deps) are published (CI-friendly)                      |
+| `hotwire:docs`            | Browse and read controller/component docs in the terminal                                            |
 
 ## Conventions
 
@@ -47,14 +50,14 @@ The complete Hotwire stack for Laravel — Turbo Drive, Turbo Streams, Stimulus 
   (`<x-hwc::form>` → `auto-submit unsaved-changes clean-query-params`; `<x-hwc::file>` →
   `file-preserve reset-files` plus the user's own `data-controller`). A controller must therefore never assume it
   owns the element exclusively:
-  - Scope DOM reads/writes to `this.element` (and prefer `this.targets`); don't clobber attributes other controllers
-    set, especially shared `data-controller`.
-  - Multiple controllers commonly listen to the same Turbo events (`turbo:submit-end`, `turbo:morph`,
-    `turbo:before-render`/`turbo:render`). Coordinate on shared semantics (e.g. submit `success`) and make each
-    handler idempotent and order-independent rather than mutating state another controller relies on.
-  - Clean up every listener and timer in `disconnect()` so re-renders/morphs don't leave duplicates behind.
-  - When a controller is activated by a component prop, expose it as an explicit prop and let the component merge the
-    identifier — see the Blade Components `data-*` filtering rule below.
+    - Scope DOM reads/writes to `this.element` (and prefer `this.targets`); don't clobber attributes other controllers
+      set, especially shared `data-controller`.
+    - Multiple controllers commonly listen to the same Turbo events (`turbo:submit-end`, `turbo:morph`,
+      `turbo:before-render`/`turbo:render`). Coordinate on shared semantics (e.g. submit `success`) and make each
+      handler idempotent and order-independent rather than mutating state another controller relies on.
+    - Clean up every listener and timer in `disconnect()` so re-renders/morphs don't leave duplicates behind.
+    - When a controller is activated by a component prop, expose it as an explicit prop and let the component merge the
+      identifier — see the Blade Components `data-*` filtering rule below.
 
 ### Blade Components
 
@@ -98,6 +101,7 @@ registered here**, or the commands won't see it.
 - **Body**: Bullet points prefixed with `-`, each describing a specific change
 - **PR reference**: Appended as `(#N)` in the subject when applicable
 - Always signed (GPG)
+- Ask to confirm the message is correct before pushing
 
 ### Pull Requests
 
@@ -106,21 +110,23 @@ registered here**, or the commands won't see it.
 - PR title matches commit subject convention; body summarizes changes
 - Review required; merge manually (do not squash-merge from the CLI)
 - Remote merge (GitHub UI) squashes the branch into a single commit on `main`
+- Ask to confirm the message is correct before pushing
 
 ### Tag and Release
 
 - Tags are created on `main` after the PR is merged remotely
 - Versioning follows `0.X.Y` semver:
-  - Patch (`0.16.1`): bugfixes
-  - Minor (`0.17.0`): new features
+    - Patch (`0.16.1`): bugfixes
+    - Minor (`0.17.0`): new features
 - Annotated tag: `git tag -a 0.17.0 -m "0.17.0"`
 - Release created via `gh release create 0.17.0 --title "0.17.0" --notes-file /tmp/release-notes.md`
 - Release notes format (following the `0.16.0` template):
-  - Markdown title with feature name (e.g. `## Carousel progress bar and slide counter`)
-  - One-sentence summary
-  - Section per feature with Blade code block showing usage
-  - `**Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/<prev>...<version>` at the end
+    - Markdown title with feature name (e.g. `## Carousel progress bar and slide counter`)
+    - One-sentence summary
+    - Section per feature and referer docs for examples
+    - `**Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/<prev>...<version>` at the end
 - CHANGELOG.md is updated automatically by the release workflow; do not edit manually
+- Ask to confirm the message is correct before pushing
 
 ## Development
 
@@ -147,9 +153,9 @@ TDD flow:
 
 1. **Write the failing test** in the appropriate suite
 2. **Run only that test** to confirm it fails:
-   - PHP: `vendor/bin/pest --filter='test name'`
-   - JS: `bun test tests/Controllers/<name>_controller.test.js`
-   - Browser JS: `bun run test:browser -- tests/Browser/<name>.pw.js`
+    - PHP: `vendor/bin/pest --filter='test name'`
+    - JS: `bun test tests/Controllers/<name>_controller.test.js`
+    - Browser JS: `bun run test:browser -- tests/Browser/<name>.pw.js`
 3. **Implement** the minimum code to make it pass
 4. **Run the test again** to confirm it passes
 5. **Repeat** for the next behavior
@@ -171,7 +177,8 @@ JS conventions:
 - Always call `mounted?.cleanup()` in `afterEach`
 - Always run `bun test` at the end to ensure nothing else broke
 - Use Playwright (`tests/Browser/*.pw.js`) for controller behavior that depends on real browser semantics:
-  `MutationObserver`, focus, `requestAnimationFrame`, layout, Turbo frame-like DOM changes or other complex event timing.
+  `MutationObserver`, focus, `requestAnimationFrame`, layout, Turbo frame-like DOM changes or other complex event
+  timing.
 - Keep Playwright tests focused and few; prefer `bun test` for deterministic controller unit behavior.
 - Run `bun run test:browser` after changing browser-dependent behavior.
 
@@ -179,4 +186,5 @@ JS conventions:
 
 - PHP: `emaia/laravel-hotwire-turbo`, `spatie/laravel-package-tools`
 - JS: `@hotwired/stimulus`, `@hotwired/turbo`, `@emaia/stimulus-dynamic-loader`
-- Optional JS: `maska`, `tippy.js`, `@emaia/sonner` (for specific controllers)
+- Optional JS: third-party libs required by specific controllers — the `npm` maps in `src/Registry/catalog.php` are
+  the source of truth (don't list them here)
