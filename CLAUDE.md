@@ -34,7 +34,7 @@ The complete Hotwire stack for Laravel — Turbo Drive, Turbo Streams, Stimulus 
 
 ### Stimulus Controllers
 
-- **Flat layout** at the top level. File naming: `{name}_controller.{js|ts}` (snake_case).
+- **Flat layout** at the top level. File naming: `{name}_controller.js` (snake_case). The user can generate `.ts` controllers via `hotwire:make-controller --ts`; the package ships `.js` only.
 - **Identifier** matches the file name converted to kebab-case: `auto_submit_controller.js` →
   `data-controller="auto-submit"`.
 - **Substrate folders** (`turbo/`, `optimistic/`, `dev/`) group controllers tied to a specific technical layer.

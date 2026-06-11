@@ -1,11 +1,6 @@
 import { Controller } from "@hotwired/stimulus";
 
-export default class CheckboxSelectAll extends Controller {
-    declare readonly hasCheckboxAllTarget: boolean;
-    declare readonly checkboxTargets: HTMLInputElement[];
-    declare readonly checkboxAllTarget: HTMLInputElement;
-    declare readonly disableIndeterminateValue: boolean;
-
+export default class extends Controller {
     static targets = ["checkboxAll", "checkbox"];
 
     static values = {
@@ -20,49 +15,48 @@ export default class CheckboxSelectAll extends Controller {
         this.refresh = this.refresh.bind(this);
     }
 
-    connect(): void {
+    connect() {
         document.addEventListener("turbo:render", this.refresh);
     }
 
-    disconnect(): void {
+    disconnect() {
         document.removeEventListener("turbo:render", this.refresh);
     }
 
-    checkboxAllTargetConnected(checkbox: HTMLInputElement): void {
+    checkboxAllTargetConnected(checkbox) {
         checkbox.addEventListener("change", this.toggle);
 
         this.refresh();
     }
 
-    checkboxTargetConnected(checkbox: HTMLInputElement): void {
+    checkboxTargetConnected(checkbox) {
         checkbox.addEventListener("change", this.refresh);
 
         this.refresh();
     }
 
-    checkboxAllTargetDisconnected(checkbox: HTMLInputElement): void {
+    checkboxAllTargetDisconnected(checkbox) {
         checkbox.removeEventListener("change", this.toggle);
 
         this.refresh();
     }
 
-    checkboxTargetDisconnected(checkbox: HTMLInputElement): void {
+    checkboxTargetDisconnected(checkbox) {
         checkbox.removeEventListener("change", this.refresh);
 
         this.refresh();
     }
 
-    toggle(e: Event): void {
+    toggle(e) {
         e.preventDefault();
 
         this.checkboxTargets.forEach((checkbox) => {
-            // @ts-expect-error
             checkbox.checked = e.target.checked;
             this.triggerInputEvent(checkbox);
         });
     }
 
-    refresh(): void {
+    refresh() {
         const checkboxesCount = this.checkboxTargets.length;
         const checkboxesCheckedCount = this.checked.length;
 
@@ -75,17 +69,17 @@ export default class CheckboxSelectAll extends Controller {
         }
     }
 
-    triggerInputEvent(checkbox: HTMLInputElement): void {
+    triggerInputEvent(checkbox) {
         const event = new Event("input", { bubbles: false, cancelable: true });
 
         checkbox.dispatchEvent(event);
     }
 
-    get checked(): HTMLInputElement[] {
+    get checked() {
         return this.checkboxTargets.filter((checkbox) => checkbox.checked);
     }
 
-    get unchecked(): HTMLInputElement[] {
+    get unchecked() {
         return this.checkboxTargets.filter((checkbox) => !checkbox.checked);
     }
 }
