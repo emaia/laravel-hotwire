@@ -15,7 +15,7 @@ export default class extends Controller {
     connect() {
         this.element.querySelectorAll("oembed[url]").forEach((node) => {
             const url = node.getAttribute("url");
-            const figure = node.closest("figure") || node.parentElement;
+            const figure = node.closest("figure") || node;
 
             const provider = PROVIDERS.find((p) => p.test.test(url));
 
