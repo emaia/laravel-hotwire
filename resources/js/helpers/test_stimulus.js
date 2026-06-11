@@ -97,3 +97,43 @@ function installGlobals(testWindow) {
     globalThis.cancelAnimationFrame = testWindow.cancelAnimationFrame.bind(testWindow);
     globalThis.getComputedStyle = testWindow.getComputedStyle.bind(testWindow);
 }
+
+export async function mountMultipleControllers(controllers, html) {
+    const entries = Object.entries(controllers);
+    if (entries.length === 0) throw new Error("At least one controller required");
+
+    const testWindow = new Window({ url: "http://localhost" });
+    testWindow.SyntaxError = SyntaxError;
+
+    installGlobals(testWindow);
+
+    document.body.innerHTML = html;
+
+    const application = Application.start(document.body);
+
+    for (const [identifier, Controller] of entries) {
+        application.register(identifier, Controller);
+        await wait(0);
+    }
+
+    await wait(0);
+
+    const root = document.querySelector(`[data-controller~="${entries[0][0]}"]`);
+
+    return {
+        application,
+        controller: root ? application.getControllerForElementAndIdentifier(root, entries[0][0]) : null,
+        document,
+        root,
+        window: testWindow,
+        getController(identifier, element) {
+            return application.getControllerForElementAndIdentifier(element, identifier);
+        },
+        cleanup: async () => {
+            application.stop();
+            document.body.innerHTML = "";
+            await wait(0);
+            testWindow.close();
+        },
+    };
+}
