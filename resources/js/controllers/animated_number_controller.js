@@ -1,13 +1,6 @@
 import { Controller } from "@hotwired/stimulus";
 
-export default class AnimatedNumber extends Controller<HTMLElement> {
-    declare lazyThresholdValue: number;
-    declare lazyRootMarginValue: string;
-    declare startValue: number;
-    declare endValue: number;
-    declare durationValue: number;
-    declare lazyValue: number;
-
+export default class extends Controller {
     static values = {
         start: Number,
         end: Number,
@@ -20,18 +13,18 @@ export default class AnimatedNumber extends Controller<HTMLElement> {
         lazy: Boolean,
     };
 
-    connect(): void {
+    connect() {
         this.lazyValue ? this.lazyAnimate() : this.animate();
     }
 
-    animate(): void {
-        let startTimestamp: number = null;
+    animate() {
+        let startTimestamp = null;
 
-        const step = (timestamp: number) => {
+        const step = (timestamp) => {
             if (!startTimestamp) startTimestamp = timestamp;
 
-            const elapsed: number = timestamp - startTimestamp;
-            const progress: number = Math.min(elapsed / this.durationValue, 1);
+            const elapsed = timestamp - startTimestamp;
+            const progress = Math.min(elapsed / this.durationValue, 1);
 
             this.element.innerHTML = Math.floor(
                 progress * (this.endValue - this.startValue) + this.startValue,
@@ -45,9 +38,9 @@ export default class AnimatedNumber extends Controller<HTMLElement> {
         window.requestAnimationFrame(step);
     }
 
-    lazyAnimate(): void {
+    lazyAnimate() {
         const observer = new IntersectionObserver((entries, observer) => {
-            entries.forEach((entry: IntersectionObserverEntry) => {
+            entries.forEach((entry) => {
                 if (entry.isIntersecting) {
                     this.animate();
 
@@ -59,8 +52,7 @@ export default class AnimatedNumber extends Controller<HTMLElement> {
         observer.observe(this.element);
     }
 
-    // eslint-disable-next-line
-    get lazyAnimateOptions(): IntersectionObserverInit {
+    get lazyAnimateOptions() {
         return {
             threshold: this.lazyThresholdValue,
             rootMargin: this.lazyRootMarginValue,

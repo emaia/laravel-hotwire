@@ -1,7 +1,7 @@
 import { afterEach, expect, test } from "bun:test";
 
 import { dispatchEvent, mountController, wait } from "../../resources/js/helpers/test_stimulus.js";
-import CharCounterController from "../../resources/js/controllers/char_counter_controller.ts";
+import CharCounterController from "../../resources/js/controllers/char_counter_controller.js";
 
 let mounted;
 

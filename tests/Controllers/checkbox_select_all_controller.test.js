@@ -1,7 +1,7 @@
 import { afterEach, expect, test } from "bun:test";
 
 import { dispatchEvent, mountController, wait } from "../../resources/js/helpers/test_stimulus.js";
-import CheckboxSelectAllController from "../../resources/js/controllers/checkbox_select_all_controller.ts";
+import CheckboxSelectAllController from "../../resources/js/controllers/checkbox_select_all_controller.js";
 
 let mounted;
 

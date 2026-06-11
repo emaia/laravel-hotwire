@@ -1,17 +1,7 @@
 import { Controller } from "@hotwired/stimulus";
-import { formatDistanceToNow, FormatDistanceToNowOptions, Locale } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
 
-export default class Timeago extends Controller<HTMLTimeElement> {
-    declare isValid: boolean;
-    declare refreshTimer?: ReturnType<typeof setInterval>;
-    declare locale: Pick<Locale, "formatDistance">;
-
-    declare hasRefreshIntervalValue: boolean;
-    declare datetimeValue: string;
-    declare addSuffixValue: boolean;
-    declare includeSecondsValue: boolean;
-    declare refreshIntervalValue: number;
-
+export default class extends Controller {
     static values = {
         datetime: String,
         refreshInterval: Number,
@@ -19,11 +9,11 @@ export default class Timeago extends Controller<HTMLTimeElement> {
         addSuffix: Boolean,
     };
 
-    initialize(): void {
+    initialize() {
         this.isValid = true;
     }
 
-    connect(): void {
+    connect() {
         this.load();
 
         if (this.hasRefreshIntervalValue && this.isValid) {
@@ -31,14 +21,14 @@ export default class Timeago extends Controller<HTMLTimeElement> {
         }
     }
 
-    disconnect(): void {
+    disconnect() {
         this.stopRefreshing();
     }
 
-    load(): void {
-        const datetime: string = this.datetimeValue;
-        const date: number = Date.parse(datetime);
-        const options: FormatDistanceToNowOptions = {
+    load() {
+        const datetime = this.datetimeValue;
+        const date = Date.parse(datetime);
+        const options = {
             includeSeconds: this.includeSecondsValue,
             addSuffix: this.addSuffixValue,
             locale: this.locale,
@@ -56,13 +46,13 @@ export default class Timeago extends Controller<HTMLTimeElement> {
         this.element.innerHTML = this.isValid ? formatDistanceToNow(date, options) : datetime;
     }
 
-    startRefreshing(): void {
+    startRefreshing() {
         this.refreshTimer = setInterval(() => {
             this.load();
         }, this.refreshIntervalValue);
     }
 
-    stopRefreshing(): void {
+    stopRefreshing() {
         if (this.refreshTimer) {
             clearInterval(this.refreshTimer);
         }

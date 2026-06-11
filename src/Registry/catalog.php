@@ -213,7 +213,7 @@ return [
     ],
     'controllers' => [
         'animated-number' => [
-            'source' => 'resources/js/controllers/animated_number_controller.ts',
+            'source' => 'resources/js/controllers/animated_number_controller.js',
             'docs' => 'docs/controllers/animated-number.md',
             'category' => 'utility',
             'description' => 'Animates a number from start to end value, with scroll-triggered lazy mode',
@@ -262,7 +262,7 @@ return [
             'npm' => ['embla-carousel' => '^8.6.0'],
         ],
         'char-counter' => [
-            'source' => 'resources/js/controllers/char_counter_controller.ts',
+            'source' => 'resources/js/controllers/char_counter_controller.js',
             'docs' => 'docs/controllers/char-counter.md',
             'category' => 'forms',
             'description' => 'Shows a live character count with count-up or countdown mode',
@@ -281,7 +281,7 @@ return [
             'description' => 'Show/hide dependent fields based on the value of other form fields — auto-detects triggers from data-when-* attributes',
         ],
         'checkbox-select-all' => [
-            'source' => 'resources/js/controllers/checkbox_select_all_controller.ts',
+            'source' => 'resources/js/controllers/checkbox_select_all_controller.js',
             'docs' => 'docs/controllers/checkbox-select-all.md',
             'category' => 'forms',
             'description' => 'Select-all checkbox that controls a group, with indeterminate state',
@@ -323,7 +323,7 @@ return [
             'description' => 'Accessible disclosure dropdown with outside-click/Escape dismissal and optional transitions',
         ],
         'copy-to-clipboard' => [
-            'source' => 'resources/js/controllers/copy_to_clipboard_controller.ts',
+            'source' => 'resources/js/controllers/copy_to_clipboard_controller.js',
             'docs' => 'docs/controllers/copy-to-clipboard.md',
             'category' => 'utility',
             'description' => 'Copies text to the clipboard and shows a temporary success label',
@@ -347,7 +347,7 @@ return [
             'description' => 'Loads Google Tag Manager lazily and fires custom events via data-action',
         ],
         'hotkey' => [
-            'source' => 'resources/js/controllers/hotkey_controller.ts',
+            'source' => 'resources/js/controllers/hotkey_controller.js',
             'docs' => 'docs/controllers/hotkey.md',
             'category' => 'utility',
             'description' => 'Binds keyboard shortcuts to click or focus an element',
@@ -444,7 +444,7 @@ return [
             'description' => 'Accessible tabs with roving tabindex, arrow/Home/End keyboard navigation and automatic activation',
         ],
         'timeago' => [
-            'source' => 'resources/js/controllers/timeago_controller.ts',
+            'source' => 'resources/js/controllers/timeago_controller.js',
             'docs' => 'docs/controllers/timeago.md',
             'category' => 'utility',
             'description' => 'Displays a self-refreshing relative timestamp (e.g. "3 minutes ago")',

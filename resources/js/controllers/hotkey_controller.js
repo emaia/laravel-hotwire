@@ -1,26 +1,26 @@
 import { Controller } from "@hotwired/stimulus";
 
-export default class Hotkey extends Controller<HTMLElement> {
-    click(event: KeyboardEvent): void {
+export default class extends Controller {
+    click(event) {
         if (this.isClickable && !this.shouldIgnore(event)) {
             event.preventDefault();
             this.element.click();
         }
     }
 
-    focus(event: KeyboardEvent): void {
+    focus(event) {
         if (this.isClickable && !this.shouldIgnore(event)) {
             event.preventDefault();
             this.element.focus();
         }
     }
 
-    private shouldIgnore(event: KeyboardEvent): boolean {
-        const target = event.target as Element | null;
+    shouldIgnore(event) {
+        const target = event.target;
         return event.defaultPrevented || !!target?.closest("input, textarea, lexxy-editor");
     }
 
-    private get isClickable(): boolean {
+    get isClickable() {
         return getComputedStyle(this.element).pointerEvents !== "none";
     }
 }
