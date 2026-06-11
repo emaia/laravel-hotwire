@@ -3,10 +3,8 @@ import { afterEach, beforeEach, expect, mock, test } from "bun:test";
 import { mountController } from "../../resources/js/helpers/test_stimulus.js";
 import TooltipController from "../../resources/js/controllers/tooltip_controller.js";
 
-// WARNING: mock.module is process-global in Bun. Currently tippy.js is only
-// imported by tooltip_controller, so no cross-file conflict — but introducing
-// another consumer (or reviving toaster, which hit this with sonner) will
-// require a per-file scoping helper before this file can coexist with theirs.
+// mock.module is scoped per file because the suite runs with `bun test --isolate`
+// (see package.json). Drop the flag once Bun 1.4 makes isolation the default.
 
 const state = {
     instances: [],
