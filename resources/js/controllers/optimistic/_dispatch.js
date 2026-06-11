@@ -47,9 +47,9 @@ function populateFields(root, formData) {
 }
 
 function markOptimistic(root) {
-    root.querySelectorAll(":scope > *").forEach((node) => {
+    for (const node of root.children) {
         if (!node.hasAttribute("data-optimistic")) {
             node.setAttribute("data-optimistic", "");
         }
-    });
+    }
 }
