@@ -180,3 +180,20 @@ it('shows usage hint with data-controller', function () {
         ->expectsOutputToContain('data-controller="form--autosave"')
         ->assertSuccessful();
 });
+
+// --- Reserved identifier guard ---
+
+it('refuses to create a controller whose identifier is reserved by the package', function () {
+    $this->artisan('hotwire:make-controller optimistic/form --no-interaction')
+        ->expectsOutputToContain('reserved by the package')
+        ->assertFailed();
+
+    expect(File::exists($this->targetDir.'/optimistic/form_controller.js'))->toBeFalse();
+});
+
+it('allows a reserved identifier with --force', function () {
+    $this->artisan('hotwire:make-controller optimistic/form --force --no-interaction')
+        ->assertSuccessful();
+
+    expect(File::exists($this->targetDir.'/optimistic/form_controller.js'))->toBeTrue();
+});

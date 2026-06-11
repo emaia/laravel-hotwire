@@ -2,6 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Commands;
 
+use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
 
@@ -49,6 +50,14 @@ class MakeControllerCommand extends Command
             return self::FAILURE;
         }
 
+        $identifier = $this->toIdentifier($name);
+
+        if (HotwireRegistry::make()->controller($identifier) && ! $this->option('force')) {
+            warning("Identifier \"{$identifier}\" is reserved by the package — hotwire:controllers or hotwire:check --fix may overwrite your file. Use --force to proceed anyway.");
+
+            return self::FAILURE;
+        }
+
         $ext = $this->resolveExtension();
         $features = $this->resolveFeatures();
         $targets = $this->resolveTargets($features);
@@ -67,8 +76,6 @@ class MakeControllerCommand extends Command
 
         $this->files->ensureDirectoryExists(dirname($targetFile));
         $this->files->put($targetFile, $content);
-
-        $identifier = $this->toIdentifier($name);
 
         $this->newLine();
         info("Created: resources/js/controllers/{$filename}");
