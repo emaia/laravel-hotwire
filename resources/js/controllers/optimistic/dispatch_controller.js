@@ -1,3 +1,4 @@
+// @hotwire-package
 import { Controller } from "@hotwired/stimulus";
 import { dispatchOptimistic } from "./_dispatch";
 

@@ -212,7 +212,7 @@ it('prompts for confirmation when controller differs in interactive mode', funct
     $this->artisan('hotwire:controllers', ['controllers' => ['modal']]);
 
     $published = targetFor($this->targetDir, 'modal');
-    File::put($published, '// modified');
+    File::put($published, "// @hotwire-package\n// modified");
 
     $this->artisan('hotwire:controllers', ['controllers' => ['modal']])
         ->expectsConfirmation(
@@ -221,14 +221,14 @@ it('prompts for confirmation when controller differs in interactive mode', funct
         )
         ->assertSuccessful();
 
-    expect(File::get($published))->toBe('// modified');
+    expect(File::get($published))->toBe("// @hotwire-package\n// modified");
 });
 
 it('overwrites when user confirms in interactive mode', function () {
     $this->artisan('hotwire:controllers', ['controllers' => ['modal']]);
 
     $published = targetFor($this->targetDir, 'modal');
-    File::put($published, '// modified');
+    File::put($published, "// @hotwire-package\n// modified");
 
     $this->artisan('hotwire:controllers', ['controllers' => ['modal']])
         ->expectsConfirmation(
@@ -245,7 +245,7 @@ it('overwrites when controller exists and --force is used', function () {
     $this->artisan('hotwire:controllers', ['controllers' => ['modal']]);
 
     $published = targetFor($this->targetDir, 'modal');
-    File::put($published, '// modified');
+    File::put($published, "// @hotwire-package\n// modified");
 
     $this->artisan('hotwire:controllers', ['controllers' => ['modal'], '--force' => true])
         ->assertSuccessful();
@@ -450,7 +450,7 @@ it('updates only outdated published controllers, ignoring not-published ones', f
     $modal = targetFor($this->targetDir, 'modal');
     $autoSelect = targetFor($this->targetDir, 'auto-select');
 
-    File::put($modal, '// outdated');
+    File::put($modal, "// @hotwire-package\n// outdated");
 
     $this->artisan('hotwire:controllers --outdated --force --no-interaction')
         ->assertSuccessful();
@@ -474,7 +474,7 @@ it('does not publish controllers that are not yet installed when using --outdate
 it('prompts per controller when --outdated is used interactively without --force', function () {
     $this->artisan('hotwire:controllers', ['controllers' => ['modal']]);
 
-    File::put(targetFor($this->targetDir, 'modal'), '// outdated');
+    File::put(targetFor($this->targetDir, 'modal'), "// @hotwire-package\n// outdated");
 
     $this->artisan('hotwire:controllers --outdated')
         ->expectsConfirmation(
@@ -498,8 +498,8 @@ it('warns and skips outdated controllers in non-interactive mode without --force
 });
 
 it('updates an outdated shared dependency even when the controller itself is unchanged', function () {
-    writeFixture('themed.css', ".themed { color: blue; }\n");
-    writeFixture('themed_controller.js', "import './themed.css';\nexport default class {}\n");
+    writeFixture('themed.css', "/* @hotwire-package */\n.themed { color: blue; }\n");
+    writeFixture('themed_controller.js', "// @hotwire-package\nimport './themed.css';\nexport default class {}\n");
     registerFixture('__fixtures/themed');
 
     $this->artisan('hotwire:controllers', ['controllers' => ['__fixtures/themed']])
@@ -509,10 +509,64 @@ it('updates an outdated shared dependency even when the controller itself is unc
     expect(File::exists($publishedCss))->toBeTrue();
 
     // Only the published dependency drifts; the controller file stays in sync.
-    File::put($publishedCss, '/* outdated */');
+    File::put($publishedCss, "/* @hotwire-package */\n/* outdated */");
 
     $this->artisan('hotwire:controllers --outdated --force --no-interaction')
         ->assertSuccessful();
 
-    expect(File::get($publishedCss))->toBe(".themed { color: blue; }\n");
+    expect(File::get($publishedCss))->toBe("/* @hotwire-package */\n.themed { color: blue; }\n");
+});
+
+// --- Package marker guard ---
+
+it('skips a user-owned file in interactive mode without prompting for overwrite', function () {
+    $userFile = targetFor($this->targetDir, 'modal');
+    File::ensureDirectoryExists(dirname($userFile));
+    File::put($userFile, "// user code, no package marker\nexport default class {}\n");
+
+    // No expectsConfirmation() — the test fails if the command tries to prompt.
+    $this->artisan('hotwire:controllers', ['controllers' => ['modal']])
+        ->expectsOutputToContain('user-owned')
+        ->assertSuccessful();
+
+    expect(File::get($userFile))->toBe("// user code, no package marker\nexport default class {}\n");
+});
+
+it('mentions the opt-in marker hint in the warning', function () {
+    $userFile = targetFor($this->targetDir, 'modal');
+    File::ensureDirectoryExists(dirname($userFile));
+    File::put($userFile, "// user code\n");
+
+    $this->artisan('hotwire:controllers modal --force --no-interaction')
+        ->expectsOutputToContain('// @hotwire-package')
+        ->assertSuccessful();
+});
+
+it('refuses to overwrite a user-owned file even with --force', function () {
+    $userFile = targetFor($this->targetDir, 'modal');
+    File::ensureDirectoryExists(dirname($userFile));
+    File::put($userFile, "// user code, no package marker\nexport default class {}\n");
+
+    $this->artisan('hotwire:controllers modal --force --no-interaction')
+        ->expectsOutputToContain('user-owned')
+        ->assertSuccessful();
+
+    expect(File::get($userFile))->toBe("// user code, no package marker\nexport default class {}\n");
+});
+
+it('refuses to overwrite a user-owned shared dependency even with --force', function () {
+    writeFixture('themed.css', "/* @hotwire-package */\n.themed { color: blue; }\n");
+    writeFixture('themed_controller.js', "// @hotwire-package\nimport './themed.css';\nexport default class {}\n");
+    registerFixture('__fixtures/themed');
+
+    $this->artisan('hotwire:controllers', ['controllers' => ['__fixtures/themed']])
+        ->assertSuccessful();
+
+    $publishedCss = $this->targetDir.'/__fixtures/themed.css';
+    File::put($publishedCss, ".user-css { color: red; }\n");
+
+    $this->artisan('hotwire:controllers __fixtures/themed --force --no-interaction')
+        ->assertSuccessful();
+
+    expect(File::get($publishedCss))->toBe(".user-css { color: red; }\n");
 });

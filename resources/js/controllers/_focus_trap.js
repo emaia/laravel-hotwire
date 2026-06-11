@@ -1,3 +1,4 @@
+// @hotwire-package
 const FOCUSABLE_SELECTOR =
     'a[href], area[href], input:not([disabled]):not([type="hidden"]), ' +
     "select:not([disabled]), textarea:not([disabled]), " +

@@ -1,3 +1,4 @@
+// @hotwire-package
 import { Controller } from "@hotwired/stimulus";
 
 import { cancel, enter, leave } from "./_transition.js";

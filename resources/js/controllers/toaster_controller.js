@@ -1,3 +1,4 @@
+// @hotwire-package
 import { Controller } from "@hotwired/stimulus";
 import { createToaster } from "@emaia/sonner/vanilla";
 

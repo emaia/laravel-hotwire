@@ -585,7 +585,7 @@ it('publishes missing controllers with --fix', function () {
 it('updates outdated controllers with --fix', function () {
     $target = $this->targetDir.'/modal_controller.js';
     File::ensureDirectoryExists(dirname($target));
-    File::put($target, '// modified');
+    File::put($target, "// @hotwire-package\n// modified");
     writeView('page.blade.php', '<x-hwc::modal />');
 
     $this->artisan('hotwire:check --fix --no-interaction')
@@ -862,4 +862,19 @@ it('reports npm deps even when controllers are not yet published', function () {
     $this->artisan('hotwire:check --no-interaction')
         ->expectsOutputToContain('@emaia/sonner')
         ->assertExitCode(1);
+});
+
+// --- Package marker guard ---
+
+it('refuses to overwrite a user-owned controller when running --fix', function () {
+    $target = $this->targetDir.'/modal_controller.js';
+    File::ensureDirectoryExists(dirname($target));
+    File::put($target, "// user code, no package marker\nexport default class {}\n");
+    writeView('page.blade.php', '<x-hwc::modal />');
+
+    $this->artisan('hotwire:check --fix --no-interaction')
+        ->expectsOutputToContain('user-owned')
+        ->assertSuccessful();
+
+    expect(File::get($target))->toBe("// user code, no package marker\nexport default class {}\n");
 });

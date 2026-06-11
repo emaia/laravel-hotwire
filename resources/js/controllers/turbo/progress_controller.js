@@ -1,3 +1,4 @@
+// @hotwire-package
 import * as Turbo from "@hotwired/turbo";
 import { Controller } from "@hotwired/stimulus";
 

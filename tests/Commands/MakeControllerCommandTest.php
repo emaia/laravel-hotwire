@@ -197,3 +197,11 @@ it('allows a reserved identifier with --force', function () {
 
     expect(File::exists($this->targetDir.'/optimistic/form_controller.js'))->toBeTrue();
 });
+
+it('does not write the package marker in user-generated controllers', function () {
+    $this->artisan('hotwire:make-controller form/autosave --no-interaction')
+        ->assertSuccessful();
+
+    $content = File::get($this->targetDir.'/form/autosave_controller.js');
+    expect($content)->not->toContain('@hotwire-package');
+});
