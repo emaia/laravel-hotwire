@@ -5,9 +5,9 @@
     "scripts": {
         "build": "vite build",
         "dev": "vite",
-        "test": "bun test",
+        "test": "bun test --isolate",
         "test:browser": "playwright test",
-        "test:watch": "bun test --watch"
+        "test:watch": "bun test --watch --isolate"
     },
     "dependencies": {
         "@emaia/sonner": "^2.1.1",
