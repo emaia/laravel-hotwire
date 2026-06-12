@@ -91,8 +91,9 @@ class CheckCommand extends Command
 
         $hasControllerIssues = ! empty($issues);
         $hasMissingDeps = ! empty($missingDeps);
+        $hasProblemLines = ! empty($this->problemLines);
 
-        if (! $hasControllerIssues && ! $hasMissingDeps) {
+        if (! $hasControllerIssues && ! $hasMissingDeps && ! $hasProblemLines) {
             info('All controllers up to date.');
 
             return self::SUCCESS;
@@ -100,6 +101,12 @@ class CheckCommand extends Command
 
         $this->printProblemLines();
         $this->printIssueSummary($issues, $missingDeps);
+
+        // Only user-owned divergences are present — nothing for --fix to do.
+        // Report visibility but keep the exit code green (e.g. CI stays happy).
+        if (! $hasControllerIssues && ! $hasMissingDeps) {
+            return self::SUCCESS;
+        }
 
         if ($this->shouldFix()) {
             $this->publishIssues($issues);
@@ -362,11 +369,15 @@ class CheckCommand extends Command
             }
         } else {
             $this->problemLines[] = ['key' => $controller->identifier, 'line' => $line];
-            $issues[] = [
-                'identifier' => $controller->identifier,
-                'source_file' => $sourceFile,
-                'target_file' => $targetFile,
-            ];
+
+            // User-owned divergence is informational: --fix can't (and shouldn't) touch it.
+            if ($status !== 'diverged (user-owned)') {
+                $issues[] = [
+                    'identifier' => $controller->identifier,
+                    'source_file' => $sourceFile,
+                    'target_file' => $targetFile,
+                ];
+            }
         }
 
         $this->reportSharedDeps($controller, $sourceFile, $controllersBase, $targetBase, $issues, $seenDeps);
@@ -410,11 +421,14 @@ class CheckCommand extends Command
                 $this->okHelperLines[] = ['key' => $name, 'line' => $line];
             } else {
                 $this->problemLines[] = ['key' => $name, 'line' => $line];
-                $issues[] = [
-                    'identifier' => $name,
-                    'source_file' => $depSource,
-                    'target_file' => $depTarget,
-                ];
+
+                if ($status !== 'diverged (user-owned)') {
+                    $issues[] = [
+                        'identifier' => $name,
+                        'source_file' => $depSource,
+                        'target_file' => $depTarget,
+                    ];
+                }
             }
         }
     }
@@ -427,6 +441,10 @@ class CheckCommand extends Command
         }
 
         if ($this->files->exists($sourceFile) && $this->files->hash($sourceFile) !== $this->files->hash($targetFile)) {
+            if (! $this->marker->isPackageOwned($targetFile)) {
+                return ['diverged (user-owned)', '~', 'comment'];
+            }
+
             return ['outdated', '!', 'comment'];
         }
 
