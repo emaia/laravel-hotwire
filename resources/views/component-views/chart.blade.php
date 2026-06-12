@@ -7,6 +7,7 @@
     @if ($encodedOption !== null) data-{{ $identifier }}-option-value="{{ $encodedOption }}" @endif
     @if ($url !== null && $url !== '') data-{{ $identifier }}-url-value="{{ $url }}" @endif
     @if ($theme !== null && $theme !== '') data-{{ $identifier }}-theme-value="{{ $theme }}" @endif
+    @if ($poll > 0) data-{{ $identifier }}-poll-value="{{ $poll }}" @endif
     style="{{ $style() }}"
     {{ $attributes->except(['data-controller'])->merge(['class' => $class]) }}
 ></div>

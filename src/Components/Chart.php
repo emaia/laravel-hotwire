@@ -19,6 +19,7 @@ class Chart extends Component
         public ?array $option = null,
         public ?string $url = null,
         public ?string $theme = null,
+        public int $poll = 0,
         public string $height = '400px',
         public ?string $width = null,
         public string $class = '',

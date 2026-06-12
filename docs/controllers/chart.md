@@ -19,6 +19,7 @@ hooks for subclasses to provide defaults or attach event listeners.
 | `option` | Object  | `{}`    | Inline ECharts option, embedded server-side via `@json`                                      |
 | `url`    | String  | `""`    | Endpoint that returns a complete ECharts option as JSON. Fetched on connect when `option` is empty |
 | `theme`  | String  | `""`    | Registered ECharts theme name (`'dark'`, `'v5'`, or any custom theme registered with `echarts.registerTheme`) |
+| `poll`   | Number  | `0`     | Polling interval in milliseconds. When set with `url`, the controller re-fetches the URL on every cycle and applies the response via `setOption` (partial merge — no flicker, keeps zoom/selection). `0` (default) disables polling |
 
 ## Actions
 
@@ -75,6 +76,29 @@ class SalesChartController extends Controller
 
 When both `option` and `url` are set, **inline `option` wins** — `url` is only fetched when
 `option` is empty.
+
+## Live polling
+
+When `url` is set and `poll` is a positive number of milliseconds, the controller re-fetches the URL
+on each cycle and applies the response via `setOption`. Because `setOption` does a partial merge by
+default, the chart updates without flicker and keeps user state (zoom, brush, hovered series):
+
+```html
+<div
+    data-controller="chart"
+    data-chart-url-value="/api/charts/sales"
+    data-chart-poll-value="30000"
+    style="width: 100%; height: 400px"
+></div>
+```
+
+The next cycle is only scheduled after the current fetch settles, so a slow endpoint never queues
+overlapping requests. `disconnect()` clears any pending timer.
+
+If the endpoint fails (404, 500, network error), the polling loop continues and the failure is
+reported via `console.error`. There is no built-in retry-with-backoff. For unrecoverable errors,
+remove the `poll` value (Stimulus re-renders / server update) or subclass to add custom error
+handling.
 
 ## Theme
 

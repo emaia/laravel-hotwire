@@ -22,6 +22,7 @@ the controller then initializes Apache ECharts on it.
 | `option`     | `array\|null`    | `null`      | Inline ECharts option, serialized to JSON via `json_encode` and embedded as a data attribute             |
 | `url`        | `string\|null`   | `null`      | Endpoint that returns the complete ECharts option as JSON; fetched on connect when no inline option      |
 | `theme`      | `string\|null`   | `null`      | Registered ECharts theme name (`'dark'`, `'v5'`, custom themes registered via `echarts.registerTheme`)   |
+| `poll`       | `int`            | `0`         | Polling interval in milliseconds. Combined with `url`, re-fetches the endpoint on every cycle. `0` disables polling |
 | `height`     | `string`         | `'400px'`   | CSS height applied inline                                                                                |
 | `width`      | `string\|null`   | `null`      | CSS width applied inline; defaults to `100%` when omitted                                                |
 | `class`      | `string`         | `''`        | Merged on the wrapper element                                                                            |
@@ -63,6 +64,21 @@ class SalesChartController extends Controller
 
 The endpoint returns the **complete option**, not just the data. See the recipe for the
 mental-model explanation of "where the data lives in an option".
+
+## Live polling
+
+Combine `url` with `:poll` to keep the chart fresh against a moving data source. The interval is in
+milliseconds; the controller re-fetches the URL on every cycle and applies the response via partial
+`setOption` merge (no flicker, user interactions like zoom/brush survive):
+
+```blade
+<x-hwc::chart url="/api/charts/sales" :poll="30_000" height="320px" />
+```
+
+The next cycle is only scheduled after the current fetch settles, so a slow endpoint can never queue
+overlapping requests. Set `:poll="0"` (or omit) to disable polling. Endpoint errors (404, 500,
+network) don't stop the loop — failures are logged to `console.error`. For unrecoverable failures,
+re-render the component without `:poll` or subclass to add custom error handling.
 
 ## Theme
 

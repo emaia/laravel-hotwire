@@ -281,6 +281,92 @@ test.serial("disconnect disposes the chart and the observer", async () => {
     expect(lastResizeObserver.disconnected).toBe(true);
 });
 
+// --- live polling ---
+
+test.serial("pollValue > 0 with url schedules a poll cycle on connect", async () => {
+    globalThis.fetch = mock(() => Promise.resolve({ json: () => Promise.resolve({}) }));
+
+    await mount(`<div data-controller="chart" data-chart-url-value="/api/sales" data-chart-poll-value="20"></div>`);
+
+    expect(mounted.controller.pollTimer).not.toBeNull();
+});
+
+test.serial("polling fetches again after the configured interval", async () => {
+    const payload = { title: { text: "tick" } };
+    globalThis.fetch = mock(() => Promise.resolve({ json: () => Promise.resolve(payload) }));
+
+    await mount(`<div data-controller="chart" data-chart-url-value="/api/sales" data-chart-poll-value="20"></div>`);
+    await wait(0); // first immediate loadFromUrl resolves
+
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+
+    await wait(40); // wait past the poll interval — next cycle should have fired
+
+    expect(globalThis.fetch.mock.calls.length).toBeGreaterThanOrEqual(2);
+});
+
+test.serial("startPolling is idempotent: a second call while a timer is pending is a no-op", async () => {
+    globalThis.fetch = mock(() => Promise.resolve({ json: () => Promise.resolve({}) }));
+
+    await mount(`<div data-controller="chart" data-chart-url-value="/api/sales" data-chart-poll-value="1000"></div>`);
+    await wait(0);
+
+    const firstTimer = mounted.controller.pollTimer;
+    expect(firstTimer).not.toBeNull();
+
+    mounted.controller.startPolling();
+
+    expect(mounted.controller.pollTimer).toBe(firstTimer);
+});
+
+test.serial("pollValue = 0 does not schedule any timer", async () => {
+    globalThis.fetch = mock(() => Promise.resolve({ json: () => Promise.resolve({}) }));
+
+    await mount(`<div data-controller="chart" data-chart-url-value="/api/sales"></div>`);
+
+    expect(mounted.controller.pollTimer).toBeNull();
+});
+
+test.serial("polling does not start when there is no url, even with pollValue set", async () => {
+    await mount(`<div data-controller="chart" data-chart-option-value='{"title":{"text":"x"}}' data-chart-poll-value="20"></div>`);
+
+    expect(mounted.controller.pollTimer).toBeNull();
+});
+
+test.serial("polling continues after a fetch error", async () => {
+    let attempt = 0;
+    globalThis.fetch = mock(() => {
+        attempt++;
+        if (attempt === 1) return Promise.reject(new Error("network"));
+        return Promise.resolve({ json: () => Promise.resolve({}) });
+    });
+
+    // Silence the unhandled rejection log from the setTimeout async callback.
+    const originalError = console.error;
+    console.error = mock(() => {});
+
+    await mount(`<div data-controller="chart" data-chart-url-value="/api/sales" data-chart-poll-value="20"></div>`);
+    await wait(40);
+
+    console.error = originalError;
+
+    // First fetch rejected; polling should still have fired at least one more cycle.
+    expect(globalThis.fetch.mock.calls.length).toBeGreaterThanOrEqual(2);
+});
+
+test.serial("disconnect clears the pending poll timer", async () => {
+    globalThis.fetch = mock(() => Promise.resolve({ json: () => Promise.resolve({}) }));
+
+    await mount(`<div data-controller="chart" data-chart-url-value="/api/sales" data-chart-poll-value="20"></div>`);
+    await wait(0);
+
+    expect(mounted.controller.pollTimer).not.toBeNull();
+
+    mounted.controller.disconnect();
+
+    expect(mounted.controller.pollTimer).toBeNull();
+});
+
 async function mount(html) {
     mounted = await mountController("chart", ChartController, html);
 }
