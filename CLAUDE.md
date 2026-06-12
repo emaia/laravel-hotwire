@@ -117,6 +117,25 @@ registered here**, or the commands won't see it.
 - Review required; merge manually (do not squash-merge from the CLI)
 - Remote merge (GitHub UI) squashes the branch into a single commit on `main`
 - Ask to confirm the message is correct before pushing
+- **PR body template** — `## Summary` (bullet points) + `## Test plan`. The Test plan combines automated checks
+  with a manual smoke section covering what tests can't verify (visual, browser-specific behavior, real
+  interaction). Each item is a checkbox so the reviewer can tick it as they go.
+
+  Example:
+
+  ```markdown
+  ## Test plan
+
+  - [ ] `composer test` — N/N passing
+  - [ ] `bun run test` — N/N passing
+  - [ ] Manual smoke: <render this component in a fresh app, click X, expect Y; tweak prop Z, expect Y'>
+  - [ ] Manual smoke: <one scenario per non-trivial code path — error path, edge case, prop variant>
+  - [ ] Manual smoke: <accessibility / keyboard / screen reader if relevant>
+  ```
+
+  Skip the manual lines that don't apply (a pure internal refactor with full test coverage may legitimately
+  have only the automated lines). For Stimulus controllers and Blade components, default to including manual
+  smokes — DOM observability, visual rendering, and event flow are exactly what unit tests can't fully cover.
 
 ### Tag and Release
 

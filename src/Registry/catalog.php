@@ -16,6 +16,7 @@ use Emaia\LaravelHotwire\Components\Form;
 use Emaia\LaravelHotwire\Components\FrameOrPage;
 use Emaia\LaravelHotwire\Components\Input;
 use Emaia\LaravelHotwire\Components\Label;
+use Emaia\LaravelHotwire\Components\Map;
 use Emaia\LaravelHotwire\Components\Modal;
 use Emaia\LaravelHotwire\Components\Optimistic;
 use Emaia\LaravelHotwire\Components\ScrollProgress;
@@ -41,6 +42,14 @@ return [
             'category' => 'utility',
             'description' => 'Apache ECharts wrapper — inline option or URL-fetched, theme + sizing props, controller swap for subclass extensibility',
             'controllers' => ['chart'],
+        ],
+        'map' => [
+            'class' => Map::class,
+            'view' => 'hotwire::component-views.map',
+            'docs' => 'docs/components/map.md',
+            'category' => 'utility',
+            'description' => 'Leaflet wrapper — inline center/markers or GeoJSON URL, OSM tiles by default, subclass-friendly tile/handler hooks',
+            'controllers' => ['map'],
         ],
         'confirm-dialog' => [
             'class' => ConfirmDialog::class,
@@ -364,6 +373,13 @@ return [
             'docs' => 'docs/controllers/lazy-image.md',
             'category' => 'utility',
             'description' => 'Polls until an image URL becomes available, then displays it',
+        ],
+        'map' => [
+            'source' => 'resources/js/controllers/map_controller.js',
+            'docs' => 'docs/controllers/map.md',
+            'category' => 'utility',
+            'description' => 'Leaflet wrapper — center/zoom/markers values, GeoJSON URL fetch, ResizeObserver, subclass hooks for tile layer and event listeners',
+            'npm' => ['leaflet' => '^1.9.4'],
         ],
         'modal' => [
             'source' => 'resources/js/controllers/modal_controller.js',
