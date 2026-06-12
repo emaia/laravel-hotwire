@@ -403,6 +403,73 @@ test.serial("disconnect removes the map and disconnects the observer", async () 
     expect(lastResizeObserver.disconnected).toBe(true);
 });
 
+// --- morph recovery ---
+
+test.serial("re-initialises the map when turbo:morph-element fires and the leaflet-pane is gone", async () => {
+    await mount(`<div data-controller="map" data-map-center-value="[0,0]"></div>`);
+
+    const initBefore = mapState.initCalls.length;
+
+    // The mocked L.map doesn't add a `.leaflet-pane` child, so isStale is true.
+    mounted.root.dispatchEvent(new CustomEvent("turbo:morph-element", { bubbles: true }));
+
+    expect(mapState.initCalls.length).toBe(initBefore + 1);
+});
+
+test.serial("does NOT re-initialise on morph when a leaflet-pane is present", async () => {
+    await mount(`<div data-controller="map" data-map-center-value="[0,0]"></div>`);
+
+    const pane = document.createElement("div");
+    pane.className = "leaflet-pane";
+    mounted.root.appendChild(pane);
+
+    const initBefore = mapState.initCalls.length;
+    mounted.root.dispatchEvent(new CustomEvent("turbo:morph-element", { bubbles: true }));
+
+    expect(mapState.initCalls.length).toBe(initBefore);
+});
+
+test.serial("disconnect detaches the morph recovery listener", async () => {
+    await mount(`<div data-controller="map" data-map-center-value="[0,0]"></div>`);
+
+    mounted.controller.disconnect();
+
+    const initBefore = mapState.initCalls.length;
+    mounted.root.dispatchEvent(new CustomEvent("turbo:morph-element", { bubbles: true }));
+
+    expect(mapState.initCalls.length).toBe(initBefore);
+});
+
+// --- reload action ---
+
+test.serial("reload action re-fetches the URL and adds a new GeoJSON layer without removing the map", async () => {
+    const first = { type: "FeatureCollection", features: [] };
+    const second = { type: "FeatureCollection", features: [{ type: "Feature", geometry: { type: "Point", coordinates: [0, 0] } }] };
+    globalThis.fetch = mock(() => Promise.resolve({ json: () => Promise.resolve(first) }));
+
+    await mount(`<div data-controller="map" data-map-url-value="/api/locations"></div>`);
+    await wait(0);
+
+    const removeBefore = mapState.removeCalls;
+    globalThis.fetch = mock(() => Promise.resolve({ json: () => Promise.resolve(second) }));
+
+    mounted.controller.reload();
+    await wait(0);
+
+    expect(mapState.geoJsonCalls.at(-1).data).toEqual(second);
+    expect(mapState.removeCalls).toBe(removeBefore);
+});
+
+test.serial("reload is a no-op when the controller has no URL configured", async () => {
+    globalThis.fetch = mock(() => Promise.resolve({ json: () => Promise.resolve({}) }));
+
+    await mount(`<div data-controller="map" data-map-center-value="[0,0]"></div>`);
+
+    mounted.controller.reload();
+
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+});
+
 async function mount(html) {
     mounted = await mountController("map", MapController, html);
 }

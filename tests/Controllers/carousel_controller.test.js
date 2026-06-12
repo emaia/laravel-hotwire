@@ -580,6 +580,45 @@ function emit(event) {
     handlers.forEach((handler) => handler(emblaState.instance, event));
 }
 
+// --- morph recovery ---
+
+test.serial("re-initialises Embla when turbo:morph-element fires and the registered slides are no longer in the DOM", async () => {
+    await mount();
+    const callsBefore = emblaState.calls.length;
+
+    // Default slideNodes are placeholder objects ({}, {}, {}), never in document → stale.
+    mounted.root.dispatchEvent(new CustomEvent("turbo:morph-element", { bubbles: true }));
+
+    expect(emblaState.calls.length).toBe(callsBefore + 1);
+});
+
+test.serial("does NOT re-initialise on morph when slide references are still in the DOM", async () => {
+    await mount();
+
+    // Replace slideNodes with elements that ARE in the document.
+    const liveSlides = [
+        mounted.root.querySelector("[data-carousel-container] > div:nth-child(1)"),
+        mounted.root.querySelector("[data-carousel-container] > div:nth-child(2)"),
+    ];
+    emblaState.slideNodes = liveSlides;
+
+    const callsBefore = emblaState.calls.length;
+    mounted.root.dispatchEvent(new CustomEvent("turbo:morph-element", { bubbles: true }));
+
+    expect(emblaState.calls.length).toBe(callsBefore);
+});
+
+test.serial("disconnect detaches the morph recovery listener", async () => {
+    await mount();
+
+    mounted.controller.disconnect();
+
+    const callsBefore = emblaState.calls.length;
+    mounted.root.dispatchEvent(new CustomEvent("turbo:morph-element", { bubbles: true }));
+
+    expect(emblaState.calls.length).toBe(callsBefore);
+});
+
 async function mount({ options = {} } = {}) {
     const optsAttr = `data-carousel-options-value='${JSON.stringify(options)}'`;
 
