@@ -11,6 +11,8 @@ import {
 } from "echarts/components";
 import { CanvasRenderer } from "echarts/renderers";
 
+import { attachMorphRecovery } from "./_turbo_morph_recovery.js";
+
 echarts.use([
     BarChart,
     LineChart,
@@ -37,6 +39,27 @@ export default class extends Controller {
     inflight = false;
 
     connect() {
+        this.initChart();
+
+        this.detachMorphRecovery = attachMorphRecovery(this, {
+            isStale: () => !this.element.querySelector("canvas"),
+            recover: () => this.initChart(),
+        });
+    }
+
+    disconnect() {
+        this.detachMorphRecovery?.();
+        this.destroyChart();
+    }
+
+    initChart() {
+        if (this.chart && !this.chart.isDisposed()) {
+            this.chart.dispose();
+        }
+        if (this.observer) {
+            this.observer.disconnect();
+        }
+
         this.chart = echarts.init(this.element, this.themeValue || null);
 
         const defaults = this.defaultOption();
@@ -61,12 +84,21 @@ export default class extends Controller {
         this.dispatch("ready");
     }
 
-    disconnect() {
+    destroyChart() {
         this.stopPolling();
         this.observer?.disconnect();
         this.observer = null;
         this.chart?.dispose();
         this.chart = null;
+    }
+
+    /** Public action — re-fetch the URL and apply via setOption (animated merge, no canvas teardown).
+     *  Wire from the app via any event name: data-action="kanban:updated@window->chart#reload". */
+    reload() {
+        if (this.urlValue === "") return;
+        this.loadFromUrl().catch((error) => {
+            console.error("Chart reload fetch failed:", error);
+        });
     }
 
     startPolling() {

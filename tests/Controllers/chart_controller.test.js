@@ -17,13 +17,16 @@ const chartState = {
 };
 
 function createInstance() {
+    let disposed = false;
     const instance = {
         setOption: mock((option, notMerge, lazyUpdate) => {
             chartState.setOptionCalls.push({ option, notMerge, lazyUpdate });
         }),
         dispose: mock(() => {
+            disposed = true;
             chartState.disposeCalls++;
         }),
+        isDisposed: () => disposed,
         resize: mock(() => {
             chartState.resizeCalls++;
         }),
@@ -365,6 +368,75 @@ test.serial("disconnect clears the pending poll timer", async () => {
     mounted.controller.disconnect();
 
     expect(mounted.controller.pollTimer).toBeNull();
+});
+
+// --- morph recovery ---
+
+test.serial("re-initialises the chart when turbo:morph-element fires and the canvas is gone", async () => {
+    await mount(`<div data-controller="chart" data-chart-option-value='{"title":{"text":"x"}}'></div>`);
+
+    const initBefore = chartState.initCalls.length;
+
+    // Simulate morph: a Turbo morph wiped the embedded canvas while preserving the host.
+    mounted.root.innerHTML = "";
+    mounted.root.dispatchEvent(new CustomEvent("turbo:morph-element", { bubbles: true }));
+
+    expect(chartState.initCalls.length).toBe(initBefore + 1);
+});
+
+test.serial("does NOT re-initialise on morph when the canvas is still present", async () => {
+    await mount(`<div data-controller="chart" data-chart-option-value='{"title":{"text":"x"}}'></div>`);
+
+    const initBefore = chartState.initCalls.length;
+
+    // Add a fake canvas so isStale() returns false.
+    const canvas = document.createElement("canvas");
+    mounted.root.appendChild(canvas);
+    mounted.root.dispatchEvent(new CustomEvent("turbo:morph-element", { bubbles: true }));
+
+    expect(chartState.initCalls.length).toBe(initBefore);
+});
+
+test.serial("disconnect detaches the morph recovery listener", async () => {
+    await mount(`<div data-controller="chart" data-chart-option-value='{"title":{"text":"x"}}'></div>`);
+
+    mounted.controller.disconnect();
+
+    const initBefore = chartState.initCalls.length;
+    mounted.root.innerHTML = "";
+    mounted.root.dispatchEvent(new CustomEvent("turbo:morph-element", { bubbles: true }));
+
+    expect(chartState.initCalls.length).toBe(initBefore);
+});
+
+// --- reload action ---
+
+test.serial("reload action re-fetches the URL and applies the response without disposing the chart", async () => {
+    const first = { title: { text: "first" } };
+    const second = { title: { text: "second" } };
+    globalThis.fetch = mock(() => Promise.resolve({ json: () => Promise.resolve(first) }));
+
+    await mount(`<div data-controller="chart" data-chart-url-value="/api/sales"></div>`);
+    await wait(0);
+
+    const disposesBefore = chartState.disposeCalls;
+    globalThis.fetch = mock(() => Promise.resolve({ json: () => Promise.resolve(second) }));
+
+    mounted.controller.reload();
+    await wait(0);
+
+    expect(chartState.setOptionCalls.at(-1).option).toEqual(second);
+    expect(chartState.disposeCalls).toBe(disposesBefore);
+});
+
+test.serial("reload is a no-op when the controller has no URL configured", async () => {
+    globalThis.fetch = mock(() => Promise.resolve({ json: () => Promise.resolve({}) }));
+
+    await mount(`<div data-controller="chart" data-chart-option-value='{"title":{"text":"x"}}'></div>`);
+
+    mounted.controller.reload();
+
+    expect(globalThis.fetch).not.toHaveBeenCalled();
 });
 
 async function mount(html) {

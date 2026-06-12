@@ -7,11 +7,9 @@ import iconRetinaUrl from "leaflet/dist/images/marker-icon-2x.png";
 import iconUrl from "leaflet/dist/images/marker-icon.png";
 import shadowUrl from "leaflet/dist/images/marker-shadow.png";
 
-// Vite/Webpack don't resolve Leaflet's default icon paths. The delete is
-// required: Leaflet's internal _getIconUrl prepends a runtime-detected
-// imagePath (derived from the leaflet.js URL) to the icon URL, which under
-// Vite dev produces a duplicated absolute path. Removing the method makes
-// Leaflet use the iconUrl/iconRetinaUrl/shadowUrl fields directly.
+import { attachMorphRecovery } from "./_turbo_morph_recovery.js";
+
+// Vite/Webpack don't resolve Leaflet's default icon paths.
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({ iconRetinaUrl, iconUrl, shadowUrl });
 
@@ -33,6 +31,28 @@ export default class extends Controller {
     observer = null;
 
     connect() {
+        this.initMap();
+
+        this.detachMorphRecovery = attachMorphRecovery(this, {
+            isStale: () => !this.element.querySelector(".leaflet-pane"),
+            recover: () => this.initMap(),
+        });
+    }
+
+    disconnect() {
+        this.detachMorphRecovery?.();
+        this.destroyMap();
+    }
+
+    initMap() {
+        if (this.map) {
+            this.map.remove();
+            this.map = null;
+        }
+        if (this.observer) {
+            this.observer.disconnect();
+        }
+
         const defaults = this.defaultView();
         const center = this.centerValue ?? defaults.center ?? [0, 0];
         const zoom = this.zoomValue ?? defaults.zoom ?? 13;
@@ -75,11 +95,20 @@ export default class extends Controller {
         this.dispatch("ready");
     }
 
-    disconnect() {
+    destroyMap() {
         this.observer?.disconnect();
         this.observer = null;
         this.map?.remove();
         this.map = null;
+    }
+
+    /** Public action — re-fetch the GeoJSON URL and add as a new layer.
+     *  Wire from the app via any event name: data-action="incident:created@window->map#reload". */
+    reload() {
+        if (this.urlValue === "") return;
+        this.loadFromUrl().catch((error) => {
+            console.error("Map reload fetch failed:", error);
+        });
     }
 
     async loadFromUrl() {
@@ -89,7 +118,7 @@ export default class extends Controller {
         return L.geoJSON(geojson).addTo(this.map);
     }
 
-    /** Override in subclass to customise fit options (padding, maxZoom, etc.). */
+    /** Override in subclass to customize fit options (padding, maxZoom, etc.). */
     fitToData(markerLayers, geoLayer) {
         const layers = [...markerLayers];
         if (geoLayer) layers.push(geoLayer);
@@ -126,6 +155,6 @@ export default class extends Controller {
         return {};
     }
 
-    /** Override in subclass — attach event listeners after init (e.g. map.on("click", …)). */
+    /** Override in subclass — attach event listeners after init (e.g., map.on("click", …)). */
     afterInit() {}
 }

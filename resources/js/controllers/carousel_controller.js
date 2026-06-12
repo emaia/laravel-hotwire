@@ -3,6 +3,7 @@ import { Controller } from "@hotwired/stimulus";
 import EmblaCarousel from "embla-carousel";
 
 import "./carousel.css";
+import { attachMorphRecovery } from "./_turbo_morph_recovery.js";
 
 export default class extends Controller {
     static targets = ["prevButton", "nextButton", "dotList", "dotTemplate", "progress", "indexLabel", "totalLabel"];
@@ -22,6 +23,28 @@ export default class extends Controller {
     }
 
     connect() {
+        this.initEmbla();
+
+        this.detachMorphRecovery = attachMorphRecovery(this, {
+            // After morph, Embla still holds references to slide nodes that may
+            // no longer be in the DOM. If the first registered slide is gone,
+            // the carousel needs a re-init against the new children.
+            isStale: () => {
+                const slides = this.embla?.slideNodes?.() ?? [];
+                return slides.length > 0 && !document.contains(slides[0]);
+            },
+            recover: () => this.initEmbla(),
+        });
+    }
+
+    disconnect() {
+        this.detachMorphRecovery?.();
+        this.destroyEmbla();
+    }
+
+    initEmbla() {
+        this.destroyEmbla();
+
         // Viewport/container are found by their structural hooks (not Stimulus
         // targets) so they stay identifier-independent — a subclass reuses them
         // and the same CSS without a per-identifier attribute.
@@ -46,7 +69,7 @@ export default class extends Controller {
         this.dispatch("init", { detail: { embla: this.embla } });
     }
 
-    disconnect() {
+    destroyEmbla() {
         if (this.embla) {
             this.embla.destroy();
             this.embla = null;

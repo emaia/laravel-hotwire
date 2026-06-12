@@ -26,6 +26,7 @@ hooks for subclasses to provide defaults or attach event listeners.
 | Action      | Description                                                                                  |
 |-------------|----------------------------------------------------------------------------------------------|
 | `setOption` | Apply a partial or full option. Accepts `event.detail` as the option directly, or `event.detail = { option, replace }` for `notMerge` control |
+| `reload`    | Re-fetch the configured `url` and apply the response via `setOption` (animated merge, no canvas teardown). No-op when `url` is not set. Wire to any event your app dispatches (e.g. `kanban:updated@window`) |
 
 ## Events
 
@@ -99,6 +100,44 @@ If the endpoint fails (404, 500, network error), the polling loop continues and 
 reported via `console.error`. There is no built-in retry-with-backoff. For unrecoverable errors,
 remove the `poll` value (Stimulus re-renders / server update) or subclass to add custom error
 handling.
+
+## Event-driven updates — the `reload` action
+
+When polling isn't the right model — you want the chart to refresh exactly when *something else*
+on the page changes (a card moved to another column, an incident closed, a deal won) — wire the
+`reload` action to any custom event your app dispatches. The chart re-fetches its `url` and
+applies the response via `setOption`, which ECharts merges into the running instance with
+animation; the canvas is never disposed.
+
+```html
+<div
+    data-controller="chart"
+    data-chart-url-value="/api/charts/totals"
+    data-action="kanban:updated@window->chart#reload"
+    style="width: 100%; height: 320px"
+></div>
+```
+
+In this example, anywhere in your app that dispatches `new CustomEvent("kanban:updated")` on
+`window` triggers the reload. Multiple charts can listen to the same event for a coordinated
+dashboard refresh; or you can use distinct event names to scope updates to specific groups.
+
+```js
+// Anywhere in your app — e.g. another controller after a successful Turbo Stream:
+window.dispatchEvent(new CustomEvent("kanban:updated"));
+```
+
+For element-scoped (not global) dispatch, drop the `@window` modifier and target a specific chart
+by id; the event bubbles up to the controller from anywhere inside that subtree.
+
+## Turbo morph resilience
+
+When Turbo morph preserves the controller's host element but replaces its inner content (`<meta
+name="turbo-refresh-method" content="morph">`, `data-turbo-permanent` ancestors, some cache
+restore scenarios), Stimulus doesn't emit `disconnect`/`connect` and the ECharts instance ends up
+pointing at an orphaned `<canvas>`. The controller listens to `turbo:morph-element` on its own
+element and, if the canvas is gone, recreates the chart with the current values. No manual wiring
+is needed.
 
 ## Theme
 

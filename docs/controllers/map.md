@@ -27,6 +27,7 @@ Wraps [Leaflet](https://leafletjs.com/) as an interactive map controller. Loads 
 |-------------|-----------------------------------------------------------------------------------|
 | `flyTo`     | Calls `map.flyTo(event.detail.center, event.detail.zoom)` for smooth re-centering |
 | `fitBounds` | Calls `map.fitBounds(event.detail.bounds)` to frame a collection of points        |
+| `reload`    | Re-fetch the configured `url` and add the new GeoJSON layer. No-op when `url` is not set. Wire to any event your app dispatches (e.g. `incident:created@window`) |
 
 ## Events
 
@@ -62,6 +63,30 @@ For dynamic data, point `url` at an endpoint that returns a GeoJSON `FeatureColl
 ```
 
 The controller fetches on connect, hands the response to `L.geoJSON`, and adds the layer to the map. Network/parse errors are logged to `console.error` and the rest of the map still initialises.
+
+## Event-driven updates — the `reload` action
+
+When you want the map to refresh exactly when something else on the page changes (a new incident is reported, a delivery moves), wire the `reload` action to any custom event your app dispatches. The controller re-fetches its `url` and adds the new GeoJSON layer on top of the existing map — the Leaflet instance keeps running.
+
+```html
+<div
+    data-controller="map"
+    data-map-url-value="/api/incidents"
+    data-action="incident:created@window->map#reload"
+    style="width: 100%; height: 500px"
+></div>
+```
+
+```js
+// Anywhere in your app:
+window.dispatchEvent(new CustomEvent("incident:created"));
+```
+
+If you'd rather replace the existing layer instead of stacking new ones, subclass `loadFromUrl` to remove the previous layer before adding the new one.
+
+## Turbo morph resilience
+
+When Turbo morph preserves the host element but replaces its inner content (`<meta name="turbo-refresh-method" content="morph">`, `data-turbo-permanent` ancestors, some cache restore scenarios), Stimulus doesn't emit `disconnect`/`connect` and Leaflet ends up pointing at an orphaned container. The controller listens to `turbo:morph-element` on its own element and, if the Leaflet pane is gone, recreates the map with the current values. No manual wiring is needed.
 
 ## Custom tiles — `tileLayerUrl` / `tileLayerOptions` hooks
 
