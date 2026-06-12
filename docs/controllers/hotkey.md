@@ -36,6 +36,28 @@ Both actions are no-ops when:
 
 Pressing `n` anywhere on the page (except inside a text field) clicks the button.
 
+> **Put `data-controller="hotkey"` on the element you want clicked — not on a common ancestor.**
+> The `click`/`focus` actions operate on `this.element`, which Stimulus resolves to the closest
+> ancestor carrying `data-controller="hotkey"`. If you mount it on `<body>` and put the action on
+> a child `<a>`, the controller will dutifully click the `<body>` — silent no-op. There's no
+> registry pattern here; each element owns its own shortcut.
+>
+> ```html
+> {{-- ❌ Won't work: this.element resolves to <body> --}}
+> <body data-controller="hotkey">
+>     <a data-action="keydown.n@window->hotkey#click" href="…">New</a>
+> </body>
+>
+> {{-- ✓ Works: this.element is the <a> --}}
+> <body>
+>     <a
+>         data-controller="hotkey"
+>         data-action="keydown.n@window->hotkey#click"
+>         href="…"
+>     >New</a>
+> </body>
+> ```
+
 ## Focus a search input
 
 ```html
