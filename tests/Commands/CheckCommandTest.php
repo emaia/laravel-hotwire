@@ -360,13 +360,18 @@ it('ignores data-controller inside script tags', function () {
 });
 
 it('deduplicates standalone controller used across multiple files', function () {
+    // Self-contained: pin the package.json so the test isn't sensitive to
+    // whichever state the previous test (under random execution order) left.
+    writePackageJson(['name' => 'app', 'devDependencies' => ['date-fns' => '^4.1.0']]);
     writeView('a.blade.php', '<div data-controller="timeago"></div>');
     writeView('b.blade.php', '<div data-controller="timeago"></div>');
 
     Artisan::call('hotwire:check --no-interaction');
     $output = Artisan::output();
 
-    expect(substr_count($output, 'timeago'))->toBe(1);
+    // Match the controller's status line specifically (surrounding spaces),
+    // not the dependency hint ("(used by timeago)").
+    expect(substr_count($output, ' timeago '))->toBe(1);
 });
 
 it('publishes missing standalone controller with --fix', function () {
@@ -891,4 +896,20 @@ it('labels a user-owned divergence as "diverged (user-owned)" and does not act o
         ->assertSuccessful();
 
     expect(File::get($target))->toBe("// user code\nexport default class {}\n");
+});
+
+it('shows diverged (user-owned) entries even without --fix and keeps the exit code green', function () {
+    // Same scenario as the previous test, minus --fix: the gate must NOT
+    // short-circuit to "All controllers up to date" just because $issues is
+    // empty — the user needs to see the divergence; we just don't fail CI for it.
+    writePackageJson(['name' => 'app']);
+    publishController('modal', $this->targetDir);
+    $target = $this->targetDir.'/modal_controller.js';
+    File::put($target, "// user code\nexport default class {}\n");
+    writeView('page.blade.php', '<x-hwc::modal />');
+
+    $this->artisan('hotwire:check --no-interaction')
+        ->expectsOutputToContain('diverged (user-owned)')
+        ->doesntExpectOutputToContain('All controllers up to date')
+        ->assertSuccessful();
 });

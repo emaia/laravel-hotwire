@@ -91,8 +91,9 @@ class CheckCommand extends Command
 
         $hasControllerIssues = ! empty($issues);
         $hasMissingDeps = ! empty($missingDeps);
+        $hasProblemLines = ! empty($this->problemLines);
 
-        if (! $hasControllerIssues && ! $hasMissingDeps) {
+        if (! $hasControllerIssues && ! $hasMissingDeps && ! $hasProblemLines) {
             info('All controllers up to date.');
 
             return self::SUCCESS;
@@ -100,6 +101,12 @@ class CheckCommand extends Command
 
         $this->printProblemLines();
         $this->printIssueSummary($issues, $missingDeps);
+
+        // Only user-owned divergences are present — nothing for --fix to do.
+        // Report visibility but keep the exit code green (e.g. CI stays happy).
+        if (! $hasControllerIssues && ! $hasMissingDeps) {
+            return self::SUCCESS;
+        }
 
         if ($this->shouldFix()) {
             $this->publishIssues($issues);
