@@ -41,17 +41,14 @@ Renders a sized `<div>` with the `map` Stimulus controller mounted and the cente
 Marker tuples accept an optional third element used as the popup HTML when present:
 
 ```blade
-<x-hwc::map
-    :center="[-23.5, -46.6]"
-    :markers="[
-        [-23.5505, -46.6333, 'São Paulo'],
-        [-22.9068, -43.1729, 'Rio de Janeiro'],
-        [-30.0346, -51.2177],
-    ]"
-/>
+<x-hwc::map :markers="[
+    [-23.5505, -46.6333, 'São Paulo'],
+    [-22.9068, -43.1729, 'Rio de Janeiro'],
+    [-30.0346, -51.2177, 'Porto Alegre'],
+]" />
 ```
 
-Markers without a label render as plain pins with no popup.
+Markers without a label render as plain pins with no popup. Note there's no `:center` or `:zoom` here — the component **auto-fits** to show all markers (see "Auto-fit" below).
 
 ## GeoJSON URL
 
@@ -76,6 +73,27 @@ Route::get('/api/locations', function () {
 ```
 
 The endpoint returns the **complete FeatureCollection**, not just data — server-side filtering keeps the payload small.
+
+## Auto-fit
+
+When you pass `markers` or `url` but **no `center`**, the component automatically frames the map to show everything you provided — Leaflet computes the bounding box of the markers (plus any GeoJSON features once they load) and `fitBounds` the map to it. Padding (20px) and a `maxZoom: 15` cap keep a single-marker case from "zooming until you see the asphalt".
+
+```blade
+{{-- Auto-fit: shows all three pins, no manual zoom math --}}
+<x-hwc::map :markers="[
+    [-23.5505, -46.6333, 'São Paulo'],
+    [-22.9068, -43.1729, 'Rio de Janeiro'],
+    [-30.0346, -51.2177, 'Porto Alegre'],
+]" />
+```
+
+When you pass `:center`, the component respects it and skips the auto-fit — you said what you wanted to see. If you want both (a center hint and the auto-fit), override the decision with `:fit="true"`:
+
+```blade
+<x-hwc::map :center="[-23.5, -46.6]" :fit="true" :markers="$pins" />
+```
+
+To opt out of the auto-fit even when no `:center` is given (rare; usually means you want the default `[0, 0]` center), pass `:fit="false"`.
 
 ## Disabling scroll-wheel zoom
 

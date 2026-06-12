@@ -11,6 +11,7 @@ const mapState = {
     tileLayerCalls: [],
     markerCalls: [],
     geoJsonCalls: [],
+    featureGroupCalls: [],
     iconMergeOptions: null,
     flyToCalls: [],
     fitBoundsCalls: [],
@@ -71,9 +72,23 @@ const geoJsonFn = mock((data) => {
     return layer;
 });
 
-const iconDefault = {
-    mergeOptions: mock((options) => { mapState.iconMergeOptions = options; }),
-};
+const featureGroupFn = mock((layers) => {
+    const group = createLayer("featureGroup");
+    group._layers = layers;
+    group.getBounds = mock(() => ({
+        isValid: () => layers.length > 0,
+        _layers: layers,
+    }));
+    mapState.featureGroupCalls.push({ layers });
+    return group;
+});
+
+// Constructor function so `L.Icon.Default.prototype._getIconUrl` exists and can
+// be tested for `delete`. mergeOptions is attached as a static method.
+function IconDefault() {}
+IconDefault.prototype._getIconUrl = function () { return "/leaflet/" + (this.options?.iconUrl ?? ""); };
+IconDefault.mergeOptions = mock((options) => { mapState.iconMergeOptions = options; });
+const iconDefault = IconDefault;
 
 mock.module("leaflet", () => ({
     default: {
@@ -81,6 +96,7 @@ mock.module("leaflet", () => ({
         tileLayer: tileLayerFn,
         marker: markerFn,
         geoJSON: geoJsonFn,
+        featureGroup: featureGroupFn,
         Icon: { Default: iconDefault },
     },
 }));
@@ -103,6 +119,7 @@ beforeEach(() => {
     mapState.tileLayerCalls = [];
     mapState.markerCalls = [];
     mapState.geoJsonCalls = [];
+    mapState.featureGroupCalls = [];
     mapState.flyToCalls = [];
     mapState.fitBoundsCalls = [];
     mapState.invalidateSizeCalls = 0;
@@ -112,6 +129,7 @@ beforeEach(() => {
     tileLayerFn.mockClear();
     markerFn.mockClear();
     geoJsonFn.mockClear();
+    featureGroupFn.mockClear();
     iconDefault.mergeOptions.mockClear();
 
     lastResizeObserver = null;
@@ -231,6 +249,13 @@ test.serial("merges Leaflet's default icon options to fix bundler-resolved paths
     expect(mapState.iconMergeOptions).toHaveProperty("shadowUrl");
 });
 
+test.serial("deletes L.Icon.Default.prototype._getIconUrl so dev URLs aren't double-prefixed", () => {
+    // Without this delete, Leaflet's internal _getIconUrl prepends the runtime
+    // imagePath (derived from leaflet.js URL) to our absolute iconUrl, producing
+    // a duplicated path under Vite dev. The fix is module-load time.
+    expect(IconDefault.prototype._getIconUrl).toBeUndefined();
+});
+
 // --- hooks ---
 
 test.serial("defaultView hook supplies center/zoom only as a fallback (values still win)", async () => {
@@ -297,6 +322,50 @@ test.serial("fitBounds action delegates to map.fitBounds with event detail", asy
 
     expect(mapState.fitBoundsCalls).toHaveLength(1);
     expect(mapState.fitBoundsCalls[0].bounds).toBe(bounds);
+});
+
+// --- fit-to-data ---
+
+test.serial("fitValue=true calls fitBounds on the feature group of inline markers", async () => {
+    const markers = JSON.stringify([[-23.55, -46.63, "SP"], [-22.91, -43.17, "RJ"]]);
+    await mount(`<div data-controller="map" data-map-markers-value='${markers}' data-map-fit-value="true"></div>`);
+
+    expect(featureGroupFn).toHaveBeenCalledTimes(1);
+    expect(featureGroupFn.mock.calls[0][0]).toHaveLength(2);
+    expect(mapState.fitBoundsCalls).toHaveLength(1);
+});
+
+test.serial("fitValue=false (default) does not call fitBounds even with markers", async () => {
+    const markers = JSON.stringify([[-23.55, -46.63, "SP"], [-22.91, -43.17, "RJ"]]);
+    await mount(`<div data-controller="map" data-map-center-value="[0,0]" data-map-markers-value='${markers}'></div>`);
+
+    expect(featureGroupFn).not.toHaveBeenCalled();
+    expect(mapState.fitBoundsCalls).toHaveLength(0);
+});
+
+test.serial("fitValue=true with url waits for fetch and includes the GeoJSON layer in the bounds", async () => {
+    const payload = { type: "FeatureCollection", features: [] };
+    globalThis.fetch = mock(() => Promise.resolve({ json: () => Promise.resolve(payload) }));
+
+    await mount(`<div data-controller="map" data-map-url-value="/api/locations" data-map-fit-value="true"></div>`);
+    await wait(0);
+    await wait(0);
+    await wait(0);
+
+    expect(featureGroupFn).toHaveBeenCalledTimes(1);
+    // The feature group includes the geojson layer (returned by L.geoJSON).
+    const groupLayers = featureGroupFn.mock.calls[0][0];
+    expect(groupLayers).toHaveLength(1);
+    expect(groupLayers[0]._kind).toBe("geojson");
+    expect(mapState.fitBoundsCalls).toHaveLength(1);
+});
+
+test.serial("fitToData skips when there are no layers to fit", async () => {
+    await mount(`<div data-controller="map" data-map-center-value="[0,0]" data-map-fit-value="true"></div>`);
+
+    // No markers, no url → nothing to fit.
+    expect(featureGroupFn).not.toHaveBeenCalled();
+    expect(mapState.fitBoundsCalls).toHaveLength(0);
 });
 
 // --- ready dispatch ---

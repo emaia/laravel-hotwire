@@ -7,12 +7,17 @@ import iconRetinaUrl from "leaflet/dist/images/marker-icon-2x.png";
 import iconUrl from "leaflet/dist/images/marker-icon.png";
 import shadowUrl from "leaflet/dist/images/marker-shadow.png";
 
-// Vite/Webpack don't resolve Leaflet's default icon paths; merge the bundled
-// assets once so markers render with the standard pin instead of broken images.
+// Vite/Webpack don't resolve Leaflet's default icon paths. The delete is
+// required: Leaflet's internal _getIconUrl prepends a runtime-detected
+// imagePath (derived from the leaflet.js URL) to the icon URL, which under
+// Vite dev produces a duplicated absolute path. Removing the method makes
+// Leaflet use the iconUrl/iconRetinaUrl/shadowUrl fields directly.
+delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({ iconRetinaUrl, iconUrl, shadowUrl });
 
 const DEFAULT_TILE_URL = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
 const DEFAULT_ATTRIBUTION = "© OpenStreetMap contributors";
+const DEFAULT_FIT_OPTIONS = { padding: [20, 20], maxZoom: 15 };
 
 export default class extends Controller {
     static values = {
@@ -21,6 +26,7 @@ export default class extends Controller {
         url: { type: String, default: "" },
         scrollWheelZoom: { type: Boolean, default: true },
         markers: { type: Array, default: [] },
+        fit: { type: Boolean, default: false },
     };
 
     map = null;
@@ -41,15 +47,24 @@ export default class extends Controller {
         const tileOpts = { attribution: DEFAULT_ATTRIBUTION, ...this.tileLayerOptions() };
         L.tileLayer(tileUrl, tileOpts).addTo(this.map);
 
+        const markerLayers = [];
         this.markersValue.forEach(([lat, lng, label]) => {
             const marker = L.marker([lat, lng]).addTo(this.map);
             if (label) marker.bindPopup(label);
+            markerLayers.push(marker);
         });
 
         if (this.urlValue !== "") {
-            this.loadFromUrl().catch((error) => {
-                console.error("Map GeoJSON fetch failed:", error);
-            });
+            this.loadFromUrl()
+                .then((geoLayer) => {
+                    if (this.fitValue) this.fitToData(markerLayers, geoLayer);
+                })
+                .catch((error) => {
+                    console.error("Map GeoJSON fetch failed:", error);
+                    if (this.fitValue) this.fitToData(markerLayers, null);
+                });
+        } else if (this.fitValue) {
+            this.fitToData(markerLayers, null);
         }
 
         this.afterInit();
@@ -70,8 +85,19 @@ export default class extends Controller {
     async loadFromUrl() {
         const response = await fetch(this.urlValue);
         const geojson = await response.json();
-        if (this.map) {
-            L.geoJSON(geojson).addTo(this.map);
+        if (!this.map) return null;
+        return L.geoJSON(geojson).addTo(this.map);
+    }
+
+    /** Override in subclass to customise fit options (padding, maxZoom, etc.). */
+    fitToData(markerLayers, geoLayer) {
+        const layers = [...markerLayers];
+        if (geoLayer) layers.push(geoLayer);
+        if (layers.length === 0) return;
+
+        const bounds = L.featureGroup(layers).getBounds();
+        if (bounds.isValid()) {
+            this.map.fitBounds(bounds, DEFAULT_FIT_OPTIONS);
         }
     }
 

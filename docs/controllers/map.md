@@ -114,7 +114,12 @@ afterInit() {
 
 ## Default marker icon
 
-Leaflet's default marker icons reference assets by relative path, which Vite/Webpack don't resolve, so out of the box markers render as broken images. The controller fixes this once at module load by importing the bundled icons and calling `L.Icon.Default.mergeOptions(...)`. You don't need to do anything; markers render correctly with the standard pin.
+Leaflet's default marker icons reference assets by relative path, which Vite/Webpack don't resolve — out of the box, markers render as broken images. The controller fixes this once at module load with two steps:
+
+1. **`delete L.Icon.Default.prototype._getIconUrl`** — Leaflet's internal `_getIconUrl` prepends a runtime-detected `imagePath` (derived from the URL where `leaflet.js` is served) to the icon URL. Under Vite dev, that path is an absolute URL like `http://127.0.0.1:5173/node_modules/leaflet/dist/images/`, which gets concatenated with the absolute URL we provide via `mergeOptions`, producing a duplicated, broken path. Deleting the method makes Leaflet use the URL fields directly.
+2. **`L.Icon.Default.mergeOptions({ iconUrl, iconRetinaUrl, shadowUrl })`** — points the default icon at the bundled asset URLs that Vite/Webpack rewrite to hashed asset paths at build time.
+
+Skipping step 1 is a common papercut: a production build accidentally works because `imagePath` derives to an empty/relative string, but Vite dev breaks visibly with the duplicated URL.
 
 If you need a custom icon, set it per-marker in your `afterInit` hook using `L.icon({ iconUrl: ... })`.
 
