@@ -2,6 +2,46 @@
 
 All notable changes to `laravel-hotwire` will be documented in this file.
 
+## 0.28.0 - 2026-06-12
+
+### Leaflet map component
+
+New `<x-hwc::map>` Blade component and `map` Stimulus controller — a Leaflet wrapper that covers the 90% case of "show a pin on a map" with very little code, in the same wrapper style as `chart` (ECharts) and `carousel` (Embla).
+
+```blade
+{{-- Pin at an address --}}
+<x-hwc::map
+    :center="[-23.5505, -46.6333]"
+    :zoom="12"
+    :markers="[[-23.5505, -46.6333, 'São Paulo']]"
+    height="400px"
+/>
+
+{{-- Multiple markers — no center needed, auto-fits to show all --}}
+<x-hwc::map :markers="[
+    [-23.5505, -46.6333, 'São Paulo'],
+    [-22.9068, -43.1729, 'Rio de Janeiro'],
+    [-30.0346, -51.2177, 'Porto Alegre'],
+]" />
+
+{{-- GeoJSON from an endpoint --}}
+<x-hwc::map url="/api/locations" height="400px" />
+
+```
+- Default OpenStreetMap tiles with the required attribution automatically set
+- Inline markers with optional popups, or a `url` returning a GeoJSON `FeatureCollection`
+- **Auto-fit:** when `:markers` or `:url` is given without `:center`, the controller frames everything provided (20px padding, `maxZoom: 15`). `:fit="true"`/`:fit="false"` overrides the heuristic
+- Subclass hooks for custom tile providers, plugins, and click handlers: `defaultView`, `tileLayerUrl`, `tileLayerOptions`, `afterInit`
+- Includes two Leaflet bundler papercuts that are easy to miss: `delete L.Icon.Default.prototype._getIconUrl` so dev URLs don't get a duplicated prefix, and Vite-resolved marker icon imports so pins render as the standard blue marker out of the box
+- Three doc pages: `docs/controllers/map.md`, `docs/components/map.md`, and a recipe at `docs/recipes/maps.md` with three patterns (inline markers, GeoJSON endpoint, custom tiles + click handlers + cluster note)
+
+#### Other changes
+
+- `docs/controllers/hotkey.md` gains a callout warning against putting `data-controller="hotkey"` on a common ancestor (`<body>` etc.) — the click/focus actions operate on `this.element` and silently no-op when mounted upstream from the intended target
+- `CLAUDE.md` registers a PR body template (Summary + Test plan with automated checks and manual smoke checklist) to standardise verification across future PRs
+
+**Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/0.27.0...0.28.0
+
 ## 0.27.0 - 2026-06-12
 
 ### Chart live polling
@@ -10,6 +50,7 @@ The `chart` controller now supports a `poll` value (milliseconds) — when set w
 
 ```blade
 <x-hwc::chart url="/api/charts/sales" :poll="30_000" height="320px" />
+
 
 ```
 - Recursive `setTimeout` design — the next cycle is only scheduled after the current fetch settles, so a slow endpoint can't queue overlapping requests (#49)
@@ -96,6 +137,7 @@ Apache ECharts ^6.1.0 wrapper with server-rendered or URL-fetched options, Resiz
 
 
 
+
 ```
 #### Controller features
 
@@ -170,6 +212,7 @@ New `conditional-fields` Stimulus controller shows or hides dependent blocks bas
 
 
 
+
 ```
 #### Rule grammar
 
@@ -206,6 +249,7 @@ Recommended path — encodes the rule once on the server, renders `hidden disabl
 
 
 
+
 ```
 #### Edit forms — the `:model` prop
 
@@ -215,6 +259,7 @@ Pass the same model your `<x-hwc::input>` / `<x-hwc::select>` / `<x-hwc::textare
 <x-hwc::conditional-field :model="$message" :when="['reason' => 'other']">
     <x-hwc::input name="other_reason" :value="$message->other_reason" />
 </x-hwc::conditional-field>
+
 
 
 
@@ -256,6 +301,7 @@ New `disclosure` Stimulus controller — collapsible inline content with proper 
 
 
 
+
 ```
 Two-way `open` value (default `false`), idempotent `toggle` / `open` / `close` actions, and a `disclosure:change` event with `{ open: bool }` for hooking analytics, icon swaps, or chained UI off transitions. The `content` target is required; the `trigger` target is optional and receives `aria-expanded` sync when present.
 
@@ -269,6 +315,7 @@ static outlets = ["disclosure"];
 revealHelp() {
     this.disclosureOutlet.open();
 }
+
 
 
 
@@ -318,6 +365,7 @@ New `password-visibility` Stimulus controller toggles a password input between h
 
 
 
+
 ```
 `aria-label` is driven by the `show-label` / `hide-label` values (defaults `Show password` / `Hide password`). A `password-visibility:change` event with `{ visible: bool }` fires on every transition so a small companion controller — or another listener — can swap icons. `connect()` always forces `type="password"`: visibility is never persisted across Turbo morphs or Drive navigations.
 
@@ -330,6 +378,7 @@ New `autofocus` Stimulus controller focuses the first matching field on `connect
 <form data-controller="autofocus" action="/messages" method="POST">
     <input type="text" name="title" autofocus/>
 </form>
+
 
 
 
@@ -358,6 +407,7 @@ New `back-to-top` Stimulus controller toggles `data-visible="true|false"` on its
            data-[visible=true]:opacity-100"
     aria-label="Back to top"
 >↑</button>
+
 
 
 
@@ -413,6 +463,7 @@ Single `size` prop replaces the previous `allow-small-width` and `allow-full-wid
 
 
 
+
 ```
 `allow-small-width` and `allow-full-width` are removed. Use `size="auto"` to keep the old "no width constraints" behavior, or `size="50vw"` to keep the old "half viewport" default. The migration table in `docs/components/modal.md` maps every previous combination to the new prop.
 
@@ -447,6 +498,7 @@ New `<x-hwc::frame-or-page>` component renders a view as a Turbo Frame payload o
 
 
 
+
 ```
 #### Model-aware frame ids
 
@@ -456,6 +508,7 @@ Pass a Model instead of a string; the component calls `dom_id()` to derive the f
 <x-hwc::frame-or-page :frame="$message" layout="layouts.dashboard">
     ...
 </x-hwc::frame-or-page>
+
 
 
 
@@ -505,12 +558,14 @@ The `<x-hwc::carousel>` component now supports an opt-in progress bar and slide 
 
 
 
+
 ```
 #### Slide counter
 
 ```blade
 <x-hwc::carousel :counter="true"
                  counter-class="text-sm">
+
 
 
 
@@ -563,12 +618,14 @@ export default class extends CarouselController {
 
 
 
+
 ```
 ```blade
 <x-hwc::carousel controller="gallery">
     <div>slide 1</div>
     <div>slide 2</div>
 </x-hwc::carousel>
+
 
 
 
