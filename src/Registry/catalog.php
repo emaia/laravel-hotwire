@@ -19,6 +19,7 @@ use Emaia\LaravelHotwire\Components\Label;
 use Emaia\LaravelHotwire\Components\Map;
 use Emaia\LaravelHotwire\Components\Modal;
 use Emaia\LaravelHotwire\Components\Optimistic;
+use Emaia\LaravelHotwire\Components\RichText;
 use Emaia\LaravelHotwire\Components\ScrollProgress;
 use Emaia\LaravelHotwire\Components\Select;
 use Emaia\LaravelHotwire\Components\Spinner;
@@ -162,6 +163,14 @@ return [
             'category' => 'forms',
             'description' => 'Select dropdown with auto id/errorKey, ARIA, old() merge and placeholder support',
             'controllers' => [],
+        ],
+        'rich-text' => [
+            'class' => RichText::class,
+            'view' => 'hotwire::component-views.rich-text',
+            'docs' => 'docs/components/rich-text.md',
+            'category' => 'forms',
+            'description' => 'Tiptap-backed rich text editor with optional default toolbar, output as HTML or JSON, and image-upload event hook',
+            'controllers' => ['rich-text', 'rich-text-toolbar'],
         ],
         'textarea' => [
             'class' => Textarea::class,
@@ -440,6 +449,25 @@ return [
             'docs' => 'docs/controllers/reset-files.md',
             'category' => 'forms',
             'description' => 'Clears file inputs automatically after a successful Turbo morph',
+        ],
+        'rich-text' => [
+            'source' => 'resources/js/controllers/rich_text_controller.js',
+            'docs' => 'docs/controllers/rich-text.md',
+            'category' => 'forms',
+            'description' => 'Tiptap-backed rich text editor — syncs a hidden input, dispatches change/state/focus/blur and an optional image-upload event for app-side handling',
+            'npm' => [
+                '@tiptap/core' => '^2.0',
+                '@tiptap/starter-kit' => '^2.0',
+                '@tiptap/extension-placeholder' => '^2.0',
+                '@tiptap/extension-link' => '^2.0',
+                '@tiptap/extension-underline' => '^2.0',
+            ],
+        ],
+        'rich-text-toolbar' => [
+            'source' => 'resources/js/controllers/rich_text_toolbar_controller.js',
+            'docs' => 'docs/controllers/rich-text-toolbar.md',
+            'category' => 'forms',
+            'description' => 'Optional toolbar paired with the rich-text controller via a Stimulus outlet — reflects active marks and runs Tiptap chain commands',
         ],
         'scroll-progress' => [
             'source' => 'resources/js/controllers/scroll_progress_controller.js',
