@@ -32,6 +32,18 @@ it('omits the theme attr when theme is not provided', function () {
     $view->assertDontSee('data-chart-theme-value', false);
 });
 
+it('renders the poll data attr when poll prop is set', function () {
+    $view = $this->blade('<x-hwc::chart url="/api/charts/sales" :poll="30000" />');
+
+    $view->assertSee('data-chart-poll-value="30000"', false);
+});
+
+it('omits the poll attr when poll is 0 (default)', function () {
+    $view = $this->blade('<x-hwc::chart url="/api/charts/sales" />');
+
+    $view->assertDontSee('data-chart-poll-value', false);
+});
+
 // --- Sizing ---
 
 it('emits inline style with the default 400px height and 100% width', function () {
