@@ -200,12 +200,13 @@ it('warns when controller exists and differs without --force in non-interactive 
     $this->artisan('hotwire:controllers', ['controllers' => ['modal']]);
 
     $published = targetFor($this->targetDir, 'modal');
-    File::put($published, '// modified');
+    File::put($published, "// @hotwire-package\n// modified");
 
     $this->artisan('hotwire:controllers modal --no-interaction')
+        ->expectsOutputToContain('Use --force')
         ->assertSuccessful();
 
-    expect(File::get($published))->toBe('// modified');
+    expect(File::get($published))->toBe("// @hotwire-package\n// modified");
 });
 
 it('prompts for confirmation when controller differs in interactive mode', function () {
@@ -569,4 +570,27 @@ it('refuses to overwrite a user-owned shared dependency even with --force', func
         ->assertSuccessful();
 
     expect(File::get($publishedCss))->toBe(".user-css { color: red; }\n");
+});
+
+// --- Status visibility for user-owned files ---
+
+it('excludes user-owned controllers from --outdated', function () {
+    $userFile = targetFor($this->targetDir, 'modal');
+    File::ensureDirectoryExists(dirname($userFile));
+    File::put($userFile, "// user code\nexport default class {}\n");
+
+    $this->artisan('hotwire:controllers --outdated --force --no-interaction')
+        ->doesntExpectOutputToContain('Skipped')
+        ->doesntExpectOutputToContain('modal')
+        ->assertSuccessful();
+});
+
+it('labels user-owned controllers as "outdated (user-owned)" in --list', function () {
+    $userFile = targetFor($this->targetDir, 'modal');
+    File::ensureDirectoryExists(dirname($userFile));
+    File::put($userFile, "// user code\nexport default class {}\n");
+
+    $this->artisan('hotwire:controllers --list')
+        ->expectsOutputToContain('outdated (user-owned)')
+        ->assertSuccessful();
 });

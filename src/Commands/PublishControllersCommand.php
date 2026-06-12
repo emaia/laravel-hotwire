@@ -69,6 +69,7 @@ class PublishControllersCommand extends Command
                     $status = match (true) {
                         ! $this->files->exists($targetFile) => '-',
                         $this->files->hash($controller['source_file']) === $this->files->hash($targetFile) => 'up to date',
+                        ! $this->marker->isPackageOwned($targetFile) => 'outdated (user-owned)',
                         default => 'outdated',
                     };
 
@@ -243,6 +244,11 @@ class PublishControllersCommand extends Command
                 return false;
             }
 
+            // User-owned files would be skipped during publish anyway; don't list them as outdated.
+            if (! $this->marker->isPackageOwned($targetFile)) {
+                return false;
+            }
+
             if ($this->files->hash($controller['source_file']) !== $this->files->hash($targetFile)) {
                 return true;
             }
@@ -250,8 +256,15 @@ class PublishControllersCommand extends Command
             foreach ($this->imports->sharedDependencies($controller['source_file'], $baseDir) as $depSource) {
                 $depTarget = $this->imports->targetPath($depSource, $baseDir, $targetBase);
 
-                if ($this->files->exists($depTarget)
-                    && $this->files->hash($depSource) !== $this->files->hash($depTarget)) {
+                if (! $this->files->exists($depTarget)) {
+                    continue;
+                }
+
+                if (! $this->marker->isPackageOwned($depTarget)) {
+                    continue;
+                }
+
+                if ($this->files->hash($depSource) !== $this->files->hash($depTarget)) {
                     return true;
                 }
             }

@@ -428,7 +428,7 @@ it('shows up to date when controller matches package version', function () {
 it('shows outdated when controller differs from package version', function () {
     $target = $this->targetDir.'/modal_controller.js';
     File::ensureDirectoryExists(dirname($target));
-    File::put($target, '// modified');
+    File::put($target, "// @hotwire-package\n// modified");
     writeView('page.blade.php', '<x-hwc::modal />');
 
     $this->artisan('hotwire:check --no-interaction')
@@ -693,7 +693,7 @@ it('marks a shared dependency up to date when present', function () {
 it('reports a shared dependency as outdated when it differs', function () {
     publishController('file-preserve', $this->targetDir);
     publishController('reset-files', $this->targetDir);
-    File::put($this->targetDir.'/_form_errors.js', '// modified');
+    File::put($this->targetDir.'/_form_errors.js', "// @hotwire-package\n// modified");
     writeView('page.blade.php', '<x-hwc::file name="avatar" />');
 
     $this->artisan('hotwire:check --no-interaction')
@@ -877,4 +877,18 @@ it('refuses to overwrite a user-owned controller when running --fix', function (
         ->assertSuccessful();
 
     expect(File::get($target))->toBe("// user code, no package marker\nexport default class {}\n");
+});
+
+it('labels a user-owned divergence as "diverged (user-owned)" and does not act on it with --fix', function () {
+    $target = $this->targetDir.'/modal_controller.js';
+    File::ensureDirectoryExists(dirname($target));
+    File::put($target, "// user code\nexport default class {}\n");
+    writeView('page.blade.php', '<x-hwc::modal />');
+
+    $this->artisan('hotwire:check --fix --no-interaction')
+        ->expectsOutputToContain('diverged (user-owned)')
+        ->doesntExpectOutputToContain('Skipped')
+        ->assertSuccessful();
+
+    expect(File::get($target))->toBe("// user code\nexport default class {}\n");
 });
