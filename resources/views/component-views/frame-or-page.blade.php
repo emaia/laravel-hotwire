@@ -2,6 +2,6 @@
     <x-turbo::frame :id="$frameId" {{ $attributes }}>{{ $slot }}</x-turbo::frame>
 @else
     <x-dynamic-component :component="$layout">
-        <x-turbo::frame :id="$frameId" {{ $attributes }}>{{ $slot }}</x-turbo::frame>
+        {{ $slot }}
     </x-dynamic-component>
 @endif
