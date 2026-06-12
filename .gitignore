@@ -32,3 +32,4 @@ test-results
 
 .claude/settings.local.json
 .codex
+brainstorm/
