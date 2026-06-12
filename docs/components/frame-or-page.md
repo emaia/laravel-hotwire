@@ -21,10 +21,17 @@ This component is the declarative form of the [frame-or-page recipe](../recipes/
 
 - A request with `Turbo-Frame: modal` renders only `<turbo-frame id="modal">…</turbo-frame>` — Turbo
   swaps it into the matching frame in the receiving page.
-- A direct navigation renders `<x-layouts.dashboard>` wrapping the same frame, so the page is
-  standalone, refresh-safe and bookmarkable.
+- A direct navigation renders the layout (`<x-layouts.dashboard>`) wrapping the slot **directly** —
+  no extra `<turbo-frame>` around the content. The standalone page is refresh-safe and bookmarkable,
+  and any `<turbo-frame>` that should host modal/sidebar content lives in the layout itself.
 
 The view itself stays oblivious to how it was requested.
+
+> **Why no `<turbo-frame>` around the slot on direct nav?** A dashboard layout typically already
+> hosts the receiving frame globally — e.g. `<x-hwc::modal frame="modal">` renders a
+> `<turbo-frame id="modal">` once per page. If the component also wrapped the slot in
+> `<turbo-frame id="modal">` on direct nav, the page would carry two elements with the same `id`:
+> invalid HTML, and Turbo would aim subsequent navigations at the wrong frame.
 
 ## Triggering the frame vs. the page
 
@@ -41,10 +48,10 @@ automatically when the frame receives content.
 
 ## Props
 
-| Prop     | Type             | Default | Description                                                                       |
-|----------|------------------|---------|-----------------------------------------------------------------------------------|
-| `frame`  | `string\|object` | —       | DOM id of the frame. Accepts a string or any object resolvable via `dom_id()`.    |
-| `layout` | `?string`        | `null`  | Blade component name (e.g. `layouts.dashboard`) or class-string of the wrapper.   |
+| Prop     | Type             | Default | Description                                                                     |
+|----------|------------------|---------|---------------------------------------------------------------------------------|
+| `frame`  | `string\|object` | —       | DOM id of the frame. Accepts a string or any object resolvable via `dom_id()`.  |
+| `layout` | `?string`        | `null`  | Blade component name (e.g. `layouts.dashboard`) or class-string of the wrapper. |
 
 `frame` is required. Passing an empty string or whitespace throws `InvalidArgumentException`.
 
@@ -53,15 +60,22 @@ request header. Useful for nested frames that never need a standalone presentati
 
 ## Forwarded attributes
 
-Any extra HTML attribute on `<x-hwc::frame-or-page>` is forwarded to the inner `<turbo-frame>`. This
-includes the named props of [`<x-turbo::frame>`](https://github.com/emaia/laravel-hotwire-turbo)
-(`src`, `loading`, `target`, `refresh`, `autoscroll`, …) and arbitrary `data-*` hooks:
+When the component renders **as a frame** — that is, when the request came from a Turbo Frame OR
+when `layout` is omitted — extra HTML attributes on `<x-hwc::frame-or-page>` are forwarded to the
+inner `<turbo-frame>`. This includes the named props of
+[`<x-turbo::frame>`](https://github.com/emaia/laravel-hotwire-turbo) (`src`, `loading`, `target`,
+`refresh`, `autoscroll`, …) and arbitrary `data-*` hooks:
 
 ```blade
 <x-hwc::frame-or-page frame="messages" src="{{ route('messages.index') }}" loading="lazy">
     <div class="loading">Loading…</div>
 </x-hwc::frame-or-page>
 ```
+
+On **direct navigation with a `layout`**, the slot is rendered directly inside the layout component
+with no surrounding `<turbo-frame>`, so frame-specific attributes like `src` / `loading` have no
+target and are dropped. If you need a frame around your content on direct nav (rare — usually the
+layout's host frame is enough), add an explicit `<x-turbo::frame>` inside the slot.
 
 The component does **not** forward attributes to the layout. The layout is your own component —
 configure it the way you'd configure any other Blade layout:
