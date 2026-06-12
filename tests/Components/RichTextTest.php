@@ -1,6 +1,5 @@
 <?php
 
-use Emaia\LaravelHotwire\Components\RichText;
 use Illuminate\Support\ViewErrorBag;
 
 beforeEach(function () {
@@ -133,7 +132,7 @@ it('escapes single quotes inside the outlet selector', function () {
     $view = $this->blade("<x-hwc::rich-text name=\"content\" id=\"weird'id\" />");
 
     // Backslash stays as-is in HTML; the `'` is HTML-escaped to &#039;.
-    $view->assertSee("[data-rich-text-id-value=&#039;weird\\&#039;id&#039;]", false);
+    $view->assertSee('[data-rich-text-id-value=&#039;weird\\&#039;id&#039;]', false);
 });
 
 it('omits the default toolbar when :toolbar="false"', function () {
