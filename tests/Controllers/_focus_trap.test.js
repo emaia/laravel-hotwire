@@ -28,7 +28,7 @@ function dispatchTab({ shift = false } = {}) {
     document.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", shiftKey: shift }));
 }
 
-// --- activate / priming ---
+// --- activate (initial focus) ---
 
 test.serial("does nothing before activate", () => {
     const { container } = mountTrap(`
@@ -46,7 +46,7 @@ test.serial("does nothing before activate", () => {
     expect(document.activeElement).toBe(outside);
 });
 
-test.serial("first Tab after activate focuses the first focusable (priming)", () => {
+test.serial("activate focuses the first focusable when nothing inside is focused", () => {
     const { trap } = mountTrap(`
         <div data-trap>
             <button id="a">A</button>
@@ -55,12 +55,25 @@ test.serial("first Tab after activate focuses the first focusable (priming)", ()
     `);
 
     trap.activate();
-    dispatchTab();
 
     expect(document.activeElement.id).toBe("a");
 });
 
-test.serial("subsequent Tabs do not re-prime", () => {
+test.serial("activate leaves focus untouched when an element inside is already focused", () => {
+    const { trap } = mountTrap(`
+        <div data-trap>
+            <button id="a">A</button>
+            <button id="b">B</button>
+        </div>
+    `);
+
+    document.getElementById("b").focus();
+    trap.activate();
+
+    expect(document.activeElement.id).toBe("b");
+});
+
+test.serial("Tab from a middle element does not get intercepted", () => {
     const { trap } = mountTrap(`
         <div data-trap>
             <button id="a">A</button>
@@ -69,8 +82,7 @@ test.serial("subsequent Tabs do not re-prime", () => {
         </div>
     `);
 
-    trap.activate();
-    dispatchTab(); // primes → focuses "a"
+    trap.activate(); // focuses "a"
     document.getElementById("b").focus();
     dispatchTab(); // b is middle, not last → handler does not preventDefault; happy-dom holds the active element
 
@@ -89,8 +101,6 @@ test.serial("Tab on the last focusable cycles to the first", () => {
     `);
 
     trap.activate();
-    // Consume priming first.
-    dispatchTab();
     document.getElementById("c").focus();
     dispatchTab();
 
@@ -106,9 +116,7 @@ test.serial("Shift+Tab on the first focusable cycles to the last", () => {
         </div>
     `);
 
-    trap.activate();
-    dispatchTab(); // primes
-    // active is "a" now
+    trap.activate(); // focuses "a"
     dispatchTab({ shift: true });
 
     expect(document.activeElement.id).toBe("c");
@@ -116,19 +124,18 @@ test.serial("Shift+Tab on the first focusable cycles to the last", () => {
 
 // --- guards ---
 
-test.serial("no focusable elements: handler is a safe no-op", () => {
+test.serial("no focusable elements: activate and Tab are safe no-ops", () => {
     const { trap } = mountTrap(`
         <div data-trap>
             <p>Nothing focusable here</p>
         </div>
     `);
 
-    trap.activate();
-
+    expect(() => trap.activate()).not.toThrow();
     expect(() => dispatchTab()).not.toThrow();
 });
 
-test.serial("container.hidden makes the listener inert", () => {
+test.serial("container.hidden: activate does not move focus and the listener is inert", () => {
     const { container, trap } = mountTrap(`
         <div data-trap hidden>
             <button id="a">A</button>
@@ -140,13 +147,16 @@ test.serial("container.hidden makes the listener inert", () => {
     outside.focus();
 
     trap.activate();
+
+    expect(document.activeElement).toBe(outside);
+
     dispatchTab();
 
     expect(document.activeElement).toBe(outside);
     expect(container.hidden).toBe(true);
 });
 
-test.serial("skips disabled buttons and [type='hidden'] inputs", () => {
+test.serial("skips disabled buttons and [type='hidden'] inputs when picking the first focusable", () => {
     // NOTE: the shared focusable selector inherited from modal/confirm-dialog
     // does not exclude buttons that carry `tabindex="-1"` (the button clause
     // matches first via `button:not([disabled])`). Preserving 1:1 for now —
@@ -160,8 +170,7 @@ test.serial("skips disabled buttons and [type='hidden'] inputs", () => {
         </div>
     `);
 
-    trap.activate();
-    dispatchTab(); // primes → first focusable is c (a and b are skipped)
+    trap.activate(); // first valid focusable is c (a and b skipped)
 
     expect(document.activeElement.id).toBe("c");
 
@@ -194,7 +203,7 @@ test.serial("deactivate detaches the listener", () => {
 
 // --- idempotence ---
 
-test.serial("activate is idempotent — a second call does not duplicate listeners", () => {
+test.serial("activate is idempotent — a second call does not move focus or duplicate listeners", () => {
     const { trap } = mountTrap(`
         <div data-trap>
             <button id="a">A</button>
@@ -203,15 +212,15 @@ test.serial("activate is idempotent — a second call does not duplicate listene
         </div>
     `);
 
-    trap.activate();
-    trap.activate();
-    dispatchTab(); // primes once
+    trap.activate(); // focuses "a"
+    document.getElementById("b").focus();
+    trap.activate(); // no-op: already active, must not move focus back to "a"
 
-    expect(document.activeElement.id).toBe("a");
+    expect(document.activeElement.id).toBe("b");
 
     document.getElementById("c").focus();
     dispatchTab();
-    expect(document.activeElement.id).toBe("a"); // still cycles, didn't double-fire
+    expect(document.activeElement.id).toBe("a"); // cycles, didn't double-fire the listener
 });
 
 test.serial("deactivate is idempotent — calling twice is safe", () => {
@@ -226,7 +235,7 @@ test.serial("deactivate is idempotent — calling twice is safe", () => {
     expect(() => trap.deactivate()).not.toThrow();
 });
 
-test.serial("re-activating after deactivate primes again on next Tab", () => {
+test.serial("re-activating after deactivate focuses the first focusable again", () => {
     const { trap } = mountTrap(`
         <div data-trap>
             <button id="a">A</button>
@@ -234,13 +243,12 @@ test.serial("re-activating after deactivate primes again on next Tab", () => {
         </div>
     `);
 
-    trap.activate();
-    dispatchTab(); // primes → "a"
+    trap.activate(); // focuses "a"
     document.getElementById("b").focus();
 
     trap.deactivate();
+    document.body.focus(); // simulate focus returning outside after modal close
     trap.activate();
-    dispatchTab(); // primes again
 
     expect(document.activeElement.id).toBe("a");
 });
