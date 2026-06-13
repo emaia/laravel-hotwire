@@ -454,7 +454,7 @@ return [
             'source' => 'resources/js/controllers/rich_text_controller.js',
             'docs' => 'docs/controllers/rich-text.md',
             'category' => 'forms',
-            'description' => 'Tiptap-backed rich text editor — syncs a hidden input, dispatches change/state/focus/blur and an optional image-upload event for app-side handling',
+            'description' => 'Tiptap-backed rich text editor — syncs a hidden textarea, dispatches change/state/focus/blur and an optional image-upload event for app-side handling',
             'npm' => [
                 '@tiptap/core' => '^2.0',
                 '@tiptap/starter-kit' => '^2.0',

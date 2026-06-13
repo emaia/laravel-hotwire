@@ -14,14 +14,14 @@
     @if ($placeholder !== null) data-{{ $identifier }}-placeholder-value="{{ $placeholder }}" @endif
     @if (! $editable) data-{{ $identifier }}-editable-value="false" @endif
     @if ($output !== 'html') data-{{ $identifier }}-output-value="{{ $output }}" @endif
+    @if ($editorClass !== '') data-{{ $identifier }}-editor-class-value="{{ $editorClass }}" @endif
     @if ($imageUpload) data-{{ $identifier }}-image-upload-value="true" @endif
 >
-    <input
-        type="hidden"
+    <textarea
         @if ($name) name="{{ $name }}" @endif
-        value="{{ $resolvedValue }}"
         data-{{ $identifier }}-target="input"
-    >
+        @if ($inputClass !== '') class="{{ $inputClass }}" @else hidden @endif
+    >{{ $resolvedValue }}</textarea>
 
     @if ($toolbar)
         <div

@@ -13,6 +13,10 @@ const editorState = {
     clearContentCalls: [],
     focusCalls: [],
     destroyCalls: [],
+    // Hook for tests to control isEmpty at construction (init runs before the
+    // test can mutate the instance directly). Tests that need to flip isEmpty
+    // after mount mutate `lastInstance.isEmpty` instead.
+    nextIsEmpty: false,
 };
 
 function createInstance(options) {
@@ -47,6 +51,7 @@ function createInstance(options) {
         setEditable: mock(() => {}),
         isActive: mock(() => false),
         isEditable: options.editable !== false,
+        isEmpty: editorState.nextIsEmpty,
         _trigger: (name, extra = {}) => options[name]?.({ editor: instance, ...extra }),
     };
     return instance;
@@ -85,6 +90,7 @@ beforeEach(() => {
     editorState.clearContentCalls = [];
     editorState.focusCalls = [];
     editorState.destroyCalls = [];
+    editorState.nextIsEmpty = false;
 });
 
 afterEach(async () => {
@@ -92,11 +98,22 @@ afterEach(async () => {
     mounted = null;
 });
 
+// Blade escapes `{{ $resolvedValue }}` inside the textarea, so a stored
+// `<p>Hello</p>` lands on the page as `&lt;p&gt;Hello&lt;/p&gt;`. Mirror that
+// here so the template behaves like the real component output.
+function escapeHtml(raw) {
+    return String(raw)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;");
+}
+
 function tmpl({
     value = "",
     placeholder = "",
     editable = true,
     output = "html",
+    editorClass = "",
     imageUpload = false,
 } = {}) {
     return `
@@ -105,8 +122,9 @@ function tmpl({
              ${placeholder ? `data-rich-text-placeholder-value="${placeholder}"` : ""}
              ${editable === false ? `data-rich-text-editable-value="false"` : ""}
              ${output !== "html" ? `data-rich-text-output-value="${output}"` : ""}
+             ${editorClass ? `data-rich-text-editor-class-value="${editorClass}"` : ""}
              ${imageUpload ? `data-rich-text-image-upload-value="true"` : ""}>
-            <input type="hidden" name="content" data-rich-text-target="input" value='${value}'>
+            <textarea hidden name="content" data-rich-text-target="input">${escapeHtml(value)}</textarea>
             <div data-rich-text-target="editor"></div>
         </div>
     `;
@@ -150,7 +168,7 @@ test("editableValue=false makes the editor read-only", async () => {
 
 test("editor update syncs the hidden input with HTML by default", async () => {
     await mount(tmpl());
-    const input = mounted.root.querySelector("input[data-rich-text-target='input']");
+    const input = mounted.root.querySelector("[data-rich-text-target='input']");
 
     editorState.lastInstance._html = "<p>typed</p>";
     editorState.lastInstance._trigger("onUpdate");
@@ -160,12 +178,54 @@ test("editor update syncs the hidden input with HTML by default", async () => {
 
 test("editor update syncs the hidden input with JSON when outputValue is 'json'", async () => {
     await mount(tmpl({ output: "json" }));
-    const input = mounted.root.querySelector("input[data-rich-text-target='input']");
+    const input = mounted.root.querySelector("[data-rich-text-target='input']");
 
     editorState.lastInstance._json = { type: "doc", content: [{ type: "paragraph" }] };
     editorState.lastInstance._trigger("onUpdate");
 
     expect(JSON.parse(input.value)).toEqual({ type: "doc", content: [{ type: "paragraph" }] });
+});
+
+// --- empty-state sync ---
+
+test("update clears the textarea when the editor reports isEmpty", async () => {
+    await mount(tmpl({ value: "<p>Hello</p>" }));
+    const input = mounted.root.querySelector("[data-rich-text-target='input']");
+
+    // User typed and then deleted everything. Tiptap returns `<p></p>` (its
+    // default empty doc) and flips `isEmpty` to `true`.
+    editorState.lastInstance.isEmpty = true;
+    editorState.lastInstance._html = "<p></p>";
+    editorState.lastInstance._trigger("onUpdate");
+
+    expect(input.value).toBe("");
+});
+
+test("update clears the textarea on isEmpty even when outputValue is 'json'", async () => {
+    await mount(tmpl({ output: "json" }));
+    const input = mounted.root.querySelector("[data-rich-text-target='input']");
+
+    editorState.lastInstance.isEmpty = true;
+    editorState.lastInstance._json = { type: "doc", content: [{ type: "paragraph" }] };
+    editorState.lastInstance._trigger("onUpdate");
+
+    expect(input.value).toBe("");
+});
+
+test("connect clears a leftover <p></p> from old() when the mounted doc is empty", async () => {
+    editorState.nextIsEmpty = true;
+
+    await mount(tmpl({ value: "<p></p>" }));
+    const input = mounted.root.querySelector("[data-rich-text-target='input']");
+
+    expect(input.value).toBe("");
+});
+
+test("connect leaves a non-empty textarea untouched (no normalization)", async () => {
+    await mount(tmpl({ value: "<p>Initial</p>" }));
+    const input = mounted.root.querySelector("[data-rich-text-target='input']");
+
+    expect(input.value).toBe("<p>Initial</p>");
 });
 
 // --- events ---
@@ -345,4 +405,64 @@ test("imageUploadValue=false leaves editorProps undefined (no interception)", as
     await mount(tmpl({ imageUpload: false }));
 
     expect(editorState.lastOptions.editorProps).toBeUndefined();
+});
+
+// --- editorClass ---
+
+test("editorClassValue forwards to editorProps.attributes.class", async () => {
+    await mount(tmpl({ editorClass: "prose prose-sm focus:outline-none" }));
+
+    expect(editorState.lastOptions.editorProps.attributes).toEqual({
+        class: "prose prose-sm focus:outline-none",
+    });
+});
+
+test("editorClass is omitted from editorProps when value is empty", async () => {
+    await mount(tmpl());
+
+    expect(editorState.lastOptions.editorProps).toBeUndefined();
+});
+
+// --- morph recovery ---
+
+test("re-initialises the editor when turbo:morph-element fires and the ProseMirror DOM is gone", async () => {
+    await mount(tmpl());
+
+    const constructedBefore = editorState.constructed;
+    const editorTarget = mounted.root.querySelector("[data-rich-text-target='editor']");
+
+    // Simulate morph: a Turbo morph wiped the embedded ProseMirror DOM while
+    // preserving the host element and the editor target.
+    editorTarget.innerHTML = "";
+    mounted.root.dispatchEvent(new CustomEvent("turbo:morph-element", { bubbles: true }));
+
+    expect(editorState.constructed).toBe(constructedBefore + 1);
+});
+
+test("does NOT re-initialise on morph when a ProseMirror node is still present", async () => {
+    await mount(tmpl());
+
+    const constructedBefore = editorState.constructed;
+    const editorTarget = mounted.root.querySelector("[data-rich-text-target='editor']");
+
+    // The mock doesn't actually mount ProseMirror; add a stand-in so isStale() returns false.
+    const pm = document.createElement("div");
+    pm.className = "ProseMirror";
+    editorTarget.appendChild(pm);
+    mounted.root.dispatchEvent(new CustomEvent("turbo:morph-element", { bubbles: true }));
+
+    expect(editorState.constructed).toBe(constructedBefore);
+});
+
+test("disconnect detaches the morph recovery listener", async () => {
+    await mount(tmpl());
+
+    mounted.controller.disconnect();
+
+    const constructedBefore = editorState.constructed;
+    const editorTarget = mounted.root.querySelector("[data-rich-text-target='editor']");
+    editorTarget.innerHTML = "";
+    mounted.root.dispatchEvent(new CustomEvent("turbo:morph-element", { bubbles: true }));
+
+    expect(editorState.constructed).toBe(constructedBefore);
 });

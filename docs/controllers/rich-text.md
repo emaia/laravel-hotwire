@@ -34,6 +34,7 @@ instance.
 | `placeholder` | String  | `""`    | Text shown when the editor is empty. Adds the `@tiptap/extension-placeholder` to the stack.  |
 | `editable`    | Boolean | `true`  | When `false`, the editor renders in read-only mode.                                          |
 | `output`      | String  | `html`  | Serialization for the hidden input: `html` (default) writes the rendered HTML; `json` writes Tiptap's ProseMirror JSON via `JSON.stringify`. |
+| `editorClass` | String  | `""`    | CSS class applied to the `.ProseMirror` contenteditable, via Tiptap's `editorProps.attributes.class`. Typical pick on Tailwind: `prose prose-sm focus:outline-none`. |
 | `imageUpload` | Boolean | `false` | When `true`, paste/drop of image files is intercepted and re-dispatched as `rich-text:image-upload` for the app to handle. |
 
 ## Events

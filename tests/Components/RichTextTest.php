@@ -17,10 +17,11 @@ it('renders a div with the rich-text controller and id-value', function () {
     $view->assertSee('data-rich-text-id-value="content"', false);
 });
 
-it('renders a hidden input bound to the name', function () {
+it('renders a hidden textarea bound to the name', function () {
     $view = $this->blade('<x-hwc::rich-text name="content" />');
 
-    $view->assertSee('type="hidden"', false);
+    $view->assertSee('<textarea', false);
+    $view->assertSee('hidden', false);
     $view->assertSee('name="content"', false);
     $view->assertSee('data-rich-text-target="input"', false);
 });
@@ -31,18 +32,18 @@ it('renders the editor target div', function () {
     $view->assertSee('data-rich-text-target="editor"', false);
 });
 
-it('renders the initial content into the hidden input value', function () {
+it('renders the initial content as the textarea body', function () {
     $view = $this->blade('<x-hwc::rich-text name="content" content="<p>Hello</p>" />');
 
-    $view->assertSee('value="&lt;p&gt;Hello&lt;/p&gt;"', false);
+    $view->assertSee('&lt;p&gt;Hello&lt;/p&gt;</textarea>', false);
 });
 
-it('repopulates the hidden input value from old() on validation errors', function () {
+it('repopulates the textarea body from old() on validation errors', function () {
     session()->put('_old_input', ['content' => '<p>From session</p>']);
 
     $view = $this->blade('<x-hwc::rich-text name="content" content="<p>Initial</p>" />');
 
-    $view->assertSee('value="&lt;p&gt;From session&lt;/p&gt;"', false);
+    $view->assertSee('&lt;p&gt;From session&lt;/p&gt;</textarea>', false);
 });
 
 // --- Placeholder ---
@@ -151,6 +152,39 @@ it('renders the slot content when :toolbar="false"', function () {
     $view->assertSee('Custom', false);
 });
 
+// --- inputClass ---
+
+it('marks the textarea hidden by default (no inputClass)', function () {
+    $view = $this->blade('<x-hwc::rich-text name="content" />');
+
+    expect((string) $view)->toMatch('/<textarea[^>]*\bhidden\b/');
+    expect((string) $view)->not()->toMatch('/<textarea[^>]*\bclass=/');
+});
+
+it('drops the hidden attribute and applies inputClass when set', function () {
+    $view = $this->blade('<x-hwc::rich-text name="content" inputClass="form-textarea mt-2 font-mono" />');
+
+    $view->assertSee('class="form-textarea mt-2 font-mono"', false);
+    // The textarea no longer carries `hidden` — but the wrapper's data attrs
+    // can include the substring, so scope the negative assertion to the textarea opening tag.
+    $view->assertSee('<textarea', false);
+    expect((string) $view)->not()->toMatch('/<textarea[^>]*\bhidden\b/');
+});
+
+// --- editorClass ---
+
+it('emits the editor-class-value attr when editorClass is set', function () {
+    $view = $this->blade('<x-hwc::rich-text name="content" editorClass="prose prose-sm focus:outline-none" />');
+
+    $view->assertSee('data-rich-text-editor-class-value="prose prose-sm focus:outline-none"', false);
+});
+
+it('omits the editor-class-value attr by default', function () {
+    $view = $this->blade('<x-hwc::rich-text name="content" />');
+
+    $view->assertDontSee('data-rich-text-editor-class-value', false);
+});
+
 // --- Field key derivation ---
 
 it('derives the id from bracket notation in name', function () {
@@ -210,15 +244,16 @@ it('honors an explicit errorKey for old() lookups', function () {
 
     $view = $this->blade('<x-hwc::rich-text name="content" errorKey="custom.key" />');
 
-    $view->assertSee('value="&lt;p&gt;From custom key&lt;/p&gt;"', false);
+    $view->assertSee('&lt;p&gt;From custom key&lt;/p&gt;</textarea>', false);
 });
 
 // --- No-name fallback ---
 
-it('renders the hidden input without a name attribute when name is missing', function () {
+it('renders the textarea without a name attribute when name is missing', function () {
     $view = $this->blade('<x-hwc::rich-text id="standalone" />');
 
-    $view->assertSee('type="hidden"', false);
+    $view->assertSee('<textarea', false);
+    $view->assertSee('hidden', false);
     $view->assertSee('data-rich-text-target="input"', false);
     $view->assertDontSee('name=', false);
 });
@@ -241,5 +276,5 @@ it('skips old() lookup when name is missing (no errorKey to resolve)', function 
 
     $view = $this->blade('<x-hwc::rich-text id="standalone" content="<p>Initial</p>" />');
 
-    $view->assertSee('value="&lt;p&gt;Initial&lt;/p&gt;"', false);
+    $view->assertSee('&lt;p&gt;Initial&lt;/p&gt;</textarea>', false);
 });

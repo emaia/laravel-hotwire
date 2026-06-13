@@ -2,6 +2,7 @@
 import { Controller } from "@hotwired/stimulus";
 
 import { RichTextEditor } from "./_rich_text_editor.js";
+import { attachMorphRecovery } from "./_turbo_morph_recovery.js";
 
 export default class extends Controller {
     static values = {
@@ -9,6 +10,7 @@ export default class extends Controller {
         placeholder: { type: String, default: "" },
         editable: { type: Boolean, default: true },
         output: { type: String, default: "html" },
+        editorClass: { type: String, default: "" },
         imageUpload: { type: Boolean, default: false },
     };
 
@@ -17,6 +19,25 @@ export default class extends Controller {
     instance = null;
 
     connect() {
+        this.initEditor();
+
+        this.detachMorphRecovery = attachMorphRecovery(this, {
+            isStale: () => !this.hasEditorTarget || !this.editorTarget.querySelector(".ProseMirror"),
+            recover: () => {
+                this.instance?.destroy();
+                this.instance = null;
+                this.initEditor();
+            },
+        });
+    }
+
+    disconnect() {
+        this.detachMorphRecovery?.();
+        this.instance?.destroy();
+        this.instance = null;
+    }
+
+    initEditor() {
         const placeholder = this.placeholderValue || null;
         const initial = this.hasInputTarget ? this.inputTarget.value : "";
 
@@ -24,6 +45,7 @@ export default class extends Controller {
             content: this.parseInitial(initial),
             editable: this.editableValue,
             placeholder,
+            editorClass: this.editorClassValue,
             extensions: this.extensions({ placeholder }),
             onUpdate: ({ html, json }) => this.handleUpdate(html, json),
             onFocus: () => this.dispatch("focus"),
@@ -32,22 +54,31 @@ export default class extends Controller {
             onImageDrop: this.imageUploadValue ? (file) => this.handleImageUpload(file) : null,
         });
 
+        // Clear a leftover `<p></p>` from old()/database when Tiptap mounts an
+        // effectively-empty doc, so the next submit ships "" not placeholder markup.
+        if (this.editor?.isEmpty) {
+            this.syncInput();
+        }
+
         this.dispatch("ready", { detail: { editor: this.editor } });
         this.dispatch("state", { detail: { editor: this.editor } });
     }
 
-    disconnect() {
-        this.instance?.destroy();
-        this.instance = null;
-    }
-
     handleUpdate(html, json) {
-        if (this.hasInputTarget) {
-            this.inputTarget.value =
-                this.outputValue === "json" ? JSON.stringify(json) : html;
-        }
+        this.syncInput();
         this.dispatch("change", { detail: { html, json } });
         this.dispatch("state", { detail: { editor: this.editor } });
+    }
+
+    syncInput() {
+        if (!this.hasInputTarget || !this.editor) return;
+        if (this.editor.isEmpty) {
+            this.inputTarget.value = "";
+            return;
+        }
+        this.inputTarget.value = this.outputValue === "json"
+            ? JSON.stringify(this.instance.json)
+            : this.instance.html;
     }
 
     handleImageUpload(file) {

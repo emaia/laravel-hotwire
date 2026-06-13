@@ -26,6 +26,8 @@ class RichText extends Component
         public bool $imageUpload = false,
         public bool $old = true,
         public string $class = '',
+        public string $inputClass = '',
+        public string $editorClass = '',
         public string $controller = 'rich-text',
     ) {
         $this->identifier = $this->controller;

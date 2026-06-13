@@ -26,6 +26,7 @@ export class RichTextEditor {
             content = "",
             editable = true,
             placeholder = null,
+            editorClass = "",
             extensions,
             onUpdate,
             onFocus,
@@ -34,12 +35,15 @@ export class RichTextEditor {
             onImageDrop,
         } = options;
 
-        const editorProps = onImageDrop
-            ? {
-                  handlePaste: (_view, event) => this.handleImage(event, onImageDrop),
-                  handleDrop: (_view, event) => this.handleImage(event, onImageDrop),
-              }
-            : undefined;
+        const editorProps = {};
+        if (editorClass) {
+            editorProps.attributes = { class: editorClass };
+        }
+        if (onImageDrop) {
+            editorProps.handlePaste = (_view, event) => this.handleImage(event, onImageDrop);
+            editorProps.handleDrop = (_view, event) => this.handleImage(event, onImageDrop);
+        }
+        const editorPropsOption = Object.keys(editorProps).length > 0 ? editorProps : undefined;
 
         this.editor = new Editor({
             element,
@@ -51,7 +55,7 @@ export class RichTextEditor {
             onFocus: ({ editor }) => onFocus?.({ editor }),
             onBlur: ({ editor }) => onBlur?.({ editor }),
             onSelectionUpdate: ({ editor }) => onSelectionUpdate?.({ editor }),
-            editorProps,
+            editorProps: editorPropsOption,
         });
     }
 

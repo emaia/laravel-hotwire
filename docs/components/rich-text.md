@@ -1,6 +1,6 @@
 # `<x-hwc::rich-text>`
 
-Renders a Tiptap-backed rich text editor with a hidden input synced to the form, an optional
+Renders a Tiptap-backed rich text editor with a hidden textarea synced to the form, an optional
 default toolbar, and Stimulus events for app-side integration. Wraps the
 [`rich-text`](../controllers/rich-text.md) and [`rich-text-toolbar`](../controllers/rich-text-toolbar.md)
 controllers — see those for the runtime side.
@@ -37,20 +37,22 @@ controllers — see those for the runtime side.
 
 | Prop           | Type             | Default       | Description                                                                                                  |
 |----------------|------------------|---------------|--------------------------------------------------------------------------------------------------------------|
-| `name`         | `?string`        | `null`        | Used for the hidden input's `name` and to derive the Stimulus id when `id` is omitted. Omit for a standalone editor that isn't part of a form submission. Inherited from `<x-hwc::field>` via `@aware` when absent. |
+| `name`         | `?string`        | `null`        | Used for the textarea's `name` and to derive the Stimulus id when `id` is omitted. Omit for a standalone editor that isn't part of a form submission. Inherited from `<x-hwc::field>` via `@aware` when absent. |
 | `id`           | `?string`        | derived       | Stable identifier used in the toolbar's outlet selector. Defaults to `\Emaia\LaravelHotwire\Support\FieldKey::toId($name)` (so `user[bio]` becomes `user-bio`); falls back to a generated `hwc-rich-text-<uniqid>` when both `name` and `id` are absent. Inherited from `<x-hwc::field>` via `@aware` when absent. |
 | `content`      | `?string`        | `null`        | Initial HTML (or JSON when `output="json"`). On a request with validation errors, `old()` takes precedence.  |
 | `errorKey`     | `?string`        | derived       | Validation key for `old()` and error lookups. Derived from `name` (e.g. `user.bio` from `user[bio]`); override only when the validation key doesn't match the field name. Inherited from `<x-hwc::field>` via `@aware` when absent. |
 | `placeholder`  | `?string`        | `null`        | Empty-state text. When set, adds the Tiptap Placeholder extension.                                           |
 | `editable`     | `bool`           | `true`        | Set to `false` for a read-only editor.                                                                       |
-| `output`       | `string`         | `'html'`      | `html` writes serialized HTML into the hidden input; `json` writes `JSON.stringify`'d ProseMirror JSON.      |
+| `output`       | `string`         | `'html'`      | `html` writes serialized HTML into the textarea; `json` writes `JSON.stringify`'d ProseMirror JSON.          |
 | `toolbar`      | `bool`           | `true`        | Render the default toolbar. Pass `false` to use a custom one through the slot.                               |
 | `imageUpload`  | `bool`           | `false`       | Intercept image paste/drop and dispatch `rich-text:image-upload` for the app to handle.                      |
 | `old`          | `bool`           | `true`        | Honor `old()` for the initial value (re-populates after a failed validation).                                |
 | `class`        | `string`         | `''`          | Merged on the wrapper element.                                                                               |
+| `inputClass`   | `string`         | `''`          | CSS class for the synced textarea. Empty (default) renders the textarea with the `hidden` attribute (drop-in for the old hidden input). Set a class to drop `hidden` and style the textarea — useful as a no-JS fallback or for a "view source" mode. |
+| `editorClass`  | `string`         | `''`          | CSS class applied to the editor's `.ProseMirror` contenteditable (forwarded into Tiptap's `editorProps.attributes.class`). Typical pick on a Tailwind project: `'prose prose-sm focus:outline-none'`. |
 | `controller`   | `string`         | `'rich-text'` | Stimulus identifier — swap for a subclass when you need different extensions or behavior.                    |
 
-When `name` is omitted, the hidden input renders without a `name` attribute and the editor's value
+When `name` is omitted, the textarea renders without a `name` attribute and the editor's value
 isn't included in form submissions — useful for standalone editors (search-as-rich-text, comment
 draft, etc.). Most uses of the component pass a `name`.
 
@@ -74,7 +76,7 @@ The component renders:
 
 ```html
 <div data-controller="rich-text" data-rich-text-id-value="content" …>
-    <input type="hidden" name="content" data-rich-text-target="input" value="…">
+    <textarea hidden name="content" data-rich-text-target="input">…</textarea>
 
     {{-- omitted when :toolbar="false" --}}
     <div data-controller="rich-text-toolbar"
@@ -90,7 +92,7 @@ The component renders:
 
 ## Initial content + `old()`
 
-The hidden input is the source of truth for content. The component populates it from `content`
+The textarea is the source of truth for content. The component populates it from `content`
 first, then overrides with the last submitted value from `old()` when validation fails — same
 behavior you get on the package's other form components:
 
@@ -100,6 +102,17 @@ behavior you get on the package's other form components:
 
 If validation rejects the form, the page re-renders with the user's draft instead of `$post->content`.
 Disable with `:old="false"` if you need the prop value to always win.
+
+### Empty-state normalization
+
+Tiptap represents an empty document as `<p></p>` — a non-empty string that would bypass Laravel's
+`required` validation. The controller checks `editor.isEmpty` on every change and writes `""` to
+the textarea in that case, so server-side `required` sees an empty field instead of placeholder
+markup. The same check runs on mount, so a leftover `<p></p>` from a previous submission's `old()`
+(or from data stored under the old behavior) is cleared before the next submit.
+
+This applies to both `output="html"` and `output="json"` — Tiptap's "empty doc" JSON
+(`{"type":"doc","content":[{"type":"paragraph"}]}`) is normalized to `""` the same way.
 
 ## Default toolbar
 
@@ -134,6 +147,45 @@ When you need a different set of buttons, drop the default and render your own t
 
 See the [toolbar controller docs](../controllers/rich-text-toolbar.md) for the full action and
 target reference.
+
+## Styling the editor content
+
+The editor renders inside a `.ProseMirror` contenteditable div that Tiptap mounts under
+`data-rich-text-target="editor"`. On a Tailwind project, Preflight strips default heading/list
+styles, so a fresh editor will render headings, paragraphs and lists as visually flat text. The
+fix is to give the contenteditable a class — typically `@tailwindcss/typography`'s `prose`:
+
+```blade
+<x-hwc::rich-text
+    name="content"
+    editorClass="prose prose-sm focus:outline-none max-w-none"
+/>
+```
+
+`editorClass` lands on `editorProps.attributes.class` (the Tiptap-recommended hook), so the
+class ends up on the actual `.ProseMirror` node. Use it with any styling system — Tailwind
+typography, your own stylesheet, plain CSS classes; the package stays unopinionated about
+which one.
+
+If you'd rather style externally (e.g. a shared `app.css` rule for every editor), target the
+existing `.hwc-rich-text-editor .ProseMirror` selector and skip the prop.
+
+## Styling the synced textarea
+
+By default the synced textarea carries the `hidden` HTML attribute — the editor renders inside the
+`data-rich-text-target="editor"` div and the textarea only ships the value with the form. Pass
+`inputClass` to drop the `hidden` attribute and style the textarea — handy for a no-JS fallback
+(if Tiptap fails to load, the user can still type into the textarea) or a "view source" toggle:
+
+```blade
+<x-hwc::rich-text
+    name="content"
+    inputClass="mt-2 block w-full rounded border px-3 py-2 font-mono text-sm"
+/>
+```
+
+The textarea sits before the editor div in the DOM, so it'll appear above the Tiptap view when
+visible. Hide one or the other with your own CSS if you only want one rendered at a time.
 
 ## Multiple editors on the same page
 

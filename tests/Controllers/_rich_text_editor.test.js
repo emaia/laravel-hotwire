@@ -336,3 +336,30 @@ test("handleDrop fires for dataTransfer image files", () => {
     expect(calls).toHaveLength(1);
     expect(calls[0]).toBe(file);
 });
+
+// --- editorClass ---
+
+test("editorClass option lands on editorProps.attributes.class", () => {
+    new RichTextEditor(elem(), { editorClass: "prose prose-sm focus:outline-none" });
+
+    expect(editorState.lastOptions.editorProps.attributes).toEqual({
+        class: "prose prose-sm focus:outline-none",
+    });
+});
+
+test("editorClass coexists with onImageDrop in the same editorProps", () => {
+    new RichTextEditor(elem(), {
+        editorClass: "prose",
+        onImageDrop: () => {},
+    });
+
+    expect(editorState.lastOptions.editorProps.attributes).toEqual({ class: "prose" });
+    expect(typeof editorState.lastOptions.editorProps.handlePaste).toBe("function");
+    expect(typeof editorState.lastOptions.editorProps.handleDrop).toBe("function");
+});
+
+test("empty editorClass leaves editorProps undefined when there's no onImageDrop", () => {
+    new RichTextEditor(elem(), { editorClass: "" });
+
+    expect(editorState.lastOptions.editorProps).toBeUndefined();
+});
