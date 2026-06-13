@@ -8,7 +8,6 @@ export class FocusTrap {
     constructor(container) {
         this.container = container;
         this.active = false;
-        this.priming = false;
         this.handleKey = this.handleKey.bind(this);
     }
 
@@ -16,7 +15,20 @@ export class FocusTrap {
         if (this.active) return;
 
         this.active = true;
-        this.priming = true;
+
+        if (!this.container.hidden) {
+            const active = document.activeElement;
+            const alreadyInside =
+                active &&
+                this.container.contains(active) &&
+                active.matches(FOCUSABLE_SELECTOR);
+
+            if (!alreadyInside) {
+                const focusable = this.container.querySelectorAll(FOCUSABLE_SELECTOR);
+                focusable[0]?.focus();
+            }
+        }
+
         document.addEventListener("keydown", this.handleKey);
     }
 
@@ -24,7 +36,6 @@ export class FocusTrap {
         if (!this.active) return;
 
         this.active = false;
-        this.priming = false;
         document.removeEventListener("keydown", this.handleKey);
     }
 
@@ -38,15 +49,8 @@ export class FocusTrap {
 
         const first = focusable[0];
         const last = focusable[focusable.length - 1];
-
-        if (this.priming) {
-            event.preventDefault();
-            this.priming = false;
-            first.focus();
-            return;
-        }
-
         const active = document.activeElement;
+
         if (!event.shiftKey && active === last) {
             event.preventDefault();
             first.focus();

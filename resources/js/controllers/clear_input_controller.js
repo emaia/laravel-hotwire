@@ -9,7 +9,6 @@ export default class extends Controller {
     initialize() {
         this.styleElement = document.createElement("style");
         this.styleElement.innerHTML = `
-            .clear-input--touched:focus + .clear-input-button,
             .clear-input--touched:hover + .clear-input-button,
             .clear-input--touched + .clear-input-button:hover {
                 display: block !important;
@@ -23,12 +22,16 @@ export default class extends Controller {
         this.handleButtonClick = this.handleButtonClick.bind(this);
         this.handleInputChange = this.handleInputChange.bind(this);
         this.resyncAfterMorph = this.resyncAfterMorph.bind(this);
+        this.handleFocusIn = this.handleFocusIn.bind(this);
+        this.handleFocusOut = this.handleFocusOut.bind(this);
 
         this.resyncAfterMorph();
 
         this.clearButtonTarget.addEventListener("click", this.handleButtonClick);
         this.inputTarget.addEventListener("input", this.handleInputChange);
         this.inputTarget.addEventListener("focus", this.handleInputChange);
+        this.element.addEventListener("focusin", this.handleFocusIn);
+        this.element.addEventListener("focusout", this.handleFocusOut);
         document.addEventListener("turbo:render", this.resyncAfterMorph);
     }
 
@@ -40,6 +43,8 @@ export default class extends Controller {
         } else {
             this.inputTarget.classList.remove("clear-input--touched");
         }
+
+        this.#syncButtonVisibility();
     }
 
     handleInputChange(event) {
@@ -48,14 +53,37 @@ export default class extends Controller {
         } else if (!event.target.value && this.inputTarget.classList.contains("clear-input--touched")) {
             this.inputTarget.classList.remove("clear-input--touched");
         }
+
+        this.#syncButtonVisibility();
     }
 
     handleButtonClick(event) {
         this.inputTarget.value = "";
         this.inputTarget.focus();
         this.inputTarget.classList.remove("clear-input--touched");
+        this.clearButtonTarget.classList.add("hidden");
 
         this.inputTarget.dispatchEvent(new CustomEvent("inputCleared", { detail: event.detail, bubbles: true }));
+    }
+
+    handleFocusIn() {
+        this.#syncButtonVisibility();
+    }
+
+    handleFocusOut(event) {
+        if (!this.element.contains(event.relatedTarget)) {
+            this.clearButtonTarget.classList.add("hidden");
+        }
+    }
+
+    #syncButtonVisibility() {
+        if (!this.hasInputTarget || !this.hasClearButtonTarget) return;
+
+        if (this.inputTarget.value.length > 0 && this.element.contains(document.activeElement)) {
+            this.clearButtonTarget.classList.remove("hidden");
+        } else if (this.inputTarget.value.length === 0) {
+            this.clearButtonTarget.classList.add("hidden");
+        }
     }
 
     disconnect() {
@@ -69,6 +97,9 @@ export default class extends Controller {
             this.inputTarget.removeEventListener("input", this.handleInputChange);
             this.inputTarget.removeEventListener("focus", this.handleInputChange);
         }
+
+        this.element.removeEventListener("focusin", this.handleFocusIn);
+        this.element.removeEventListener("focusout", this.handleFocusOut);
 
         document.removeEventListener("turbo:render", this.resyncAfterMorph);
     }
