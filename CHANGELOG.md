@@ -2,6 +2,18 @@
 
 All notable changes to `laravel-hotwire` will be documented in this file.
 
+## 0.29.0 - 2026-06-12
+
+### Turbo morph recovery for wrappers + chart/map reload action
+
+The chart, map and carousel controllers now survive Turbo morph cleanly, and chart/map gain a `reload` action you can wire to any event your app dispatches.
+
+- New shared helper attaches a `turbo:morph-element` listener on each wrapper's host element. When Turbo morph preserves the host but replaces its embedded DOM (common under `<meta name="turbo-refresh-method" content="morph">`), the controller re-initialises automatically. chart, map and carousel each define their own staleness check (canvas missing / `.leaflet-pane` missing / Embla slides no longer in the DOM) (#51)
+- `chart#reload` and `map#reload` re-fetch the configured `url` and apply the response on the running instance — chart merges via `setOption` with animation, map adds a new GeoJSON layer. Wire to any custom event your app dispatches: `data-action="kanban:updated@window->chart#reload"`. The package owns the API; the app names the semantics (#51)
+- `<x-hwc::frame-or-page>` no longer wraps the slot in a `<turbo-frame>` on direct navigation when a `layout` is set. The previous behaviour produced a duplicate `id` in the DOM whenever the layout already hosted a frame with the same id (e.g. `<x-hwc::modal frame="modal">`), causing Turbo to aim subsequent navigations at the wrong frame. The frame-request branch and the no-layout branch are unchanged (#52)
+
+**Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/0.28.0...0.29.0
+
 ## 0.28.0 - 2026-06-12
 
 ### Leaflet map component
@@ -27,6 +39,7 @@ New `<x-hwc::map>` Blade component and `map` Stimulus controller — a Leaflet w
 {{-- GeoJSON from an endpoint --}}
 <x-hwc::map url="/api/locations" height="400px" />
 
+
 ```
 - Default OpenStreetMap tiles with the required attribution automatically set
 - Inline markers with optional popups, or a `url` returning a GeoJSON `FeatureCollection`
@@ -50,6 +63,7 @@ The `chart` controller now supports a `poll` value (milliseconds) — when set w
 
 ```blade
 <x-hwc::chart url="/api/charts/sales" :poll="30_000" height="320px" />
+
 
 
 ```
@@ -138,6 +152,7 @@ Apache ECharts ^6.1.0 wrapper with server-rendered or URL-fetched options, Resiz
 
 
 
+
 ```
 #### Controller features
 
@@ -213,6 +228,7 @@ New `conditional-fields` Stimulus controller shows or hides dependent blocks bas
 
 
 
+
 ```
 #### Rule grammar
 
@@ -250,6 +266,7 @@ Recommended path — encodes the rule once on the server, renders `hidden disabl
 
 
 
+
 ```
 #### Edit forms — the `:model` prop
 
@@ -259,6 +276,7 @@ Pass the same model your `<x-hwc::input>` / `<x-hwc::select>` / `<x-hwc::textare
 <x-hwc::conditional-field :model="$message" :when="['reason' => 'other']">
     <x-hwc::input name="other_reason" :value="$message->other_reason" />
 </x-hwc::conditional-field>
+
 
 
 
@@ -302,6 +320,7 @@ New `disclosure` Stimulus controller — collapsible inline content with proper 
 
 
 
+
 ```
 Two-way `open` value (default `false`), idempotent `toggle` / `open` / `close` actions, and a `disclosure:change` event with `{ open: bool }` for hooking analytics, icon swaps, or chained UI off transitions. The `content` target is required; the `trigger` target is optional and receives `aria-expanded` sync when present.
 
@@ -315,6 +334,7 @@ static outlets = ["disclosure"];
 revealHelp() {
     this.disclosureOutlet.open();
 }
+
 
 
 
@@ -366,6 +386,7 @@ New `password-visibility` Stimulus controller toggles a password input between h
 
 
 
+
 ```
 `aria-label` is driven by the `show-label` / `hide-label` values (defaults `Show password` / `Hide password`). A `password-visibility:change` event with `{ visible: bool }` fires on every transition so a small companion controller — or another listener — can swap icons. `connect()` always forces `type="password"`: visibility is never persisted across Turbo morphs or Drive navigations.
 
@@ -378,6 +399,7 @@ New `autofocus` Stimulus controller focuses the first matching field on `connect
 <form data-controller="autofocus" action="/messages" method="POST">
     <input type="text" name="title" autofocus/>
 </form>
+
 
 
 
@@ -407,6 +429,7 @@ New `back-to-top` Stimulus controller toggles `data-visible="true|false"` on its
            data-[visible=true]:opacity-100"
     aria-label="Back to top"
 >↑</button>
+
 
 
 
@@ -464,6 +487,7 @@ Single `size` prop replaces the previous `allow-small-width` and `allow-full-wid
 
 
 
+
 ```
 `allow-small-width` and `allow-full-width` are removed. Use `size="auto"` to keep the old "no width constraints" behavior, or `size="50vw"` to keep the old "half viewport" default. The migration table in `docs/components/modal.md` maps every previous combination to the new prop.
 
@@ -499,6 +523,7 @@ New `<x-hwc::frame-or-page>` component renders a view as a Turbo Frame payload o
 
 
 
+
 ```
 #### Model-aware frame ids
 
@@ -508,6 +533,7 @@ Pass a Model instead of a string; the component calls `dom_id()` to derive the f
 <x-hwc::frame-or-page :frame="$message" layout="layouts.dashboard">
     ...
 </x-hwc::frame-or-page>
+
 
 
 
@@ -559,12 +585,14 @@ The `<x-hwc::carousel>` component now supports an opt-in progress bar and slide 
 
 
 
+
 ```
 #### Slide counter
 
 ```blade
 <x-hwc::carousel :counter="true"
                  counter-class="text-sm">
+
 
 
 
@@ -619,12 +647,14 @@ export default class extends CarouselController {
 
 
 
+
 ```
 ```blade
 <x-hwc::carousel controller="gallery">
     <div>slide 1</div>
     <div>slide 2</div>
 </x-hwc::carousel>
+
 
 
 
