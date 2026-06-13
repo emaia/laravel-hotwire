@@ -17,7 +17,7 @@ class RichText extends Component
     public function __construct(
         public ?string $name = null,
         public ?string $id = null,
-        public ?string $content = null,
+        public mixed $value = null,
         public ?string $errorKey = null,
         public ?string $placeholder = null,
         public bool $editable = true,
@@ -53,6 +53,7 @@ class RichText extends Component
         ?string $name,
         ?string $id,
         ?string $errorKey,
+        bool $required,
         ViewErrorBag $errorsBag,
         ComponentAttributeBag $attributes,
     ): array {
@@ -66,12 +67,13 @@ class RichText extends Component
             ? $errorKey
             : ($hasName ? FieldKey::toErrorKey($name) : '');
 
-        $initial = $this->content ?? '';
+        $initial = $this->value === null ? '' : (string) $this->value;
         $resolvedValue = $this->old && $resolvedErrorKey !== ''
             ? (string) old($resolvedErrorKey, $initial)
             : $initial;
 
         $hasErrors = $resolvedErrorKey !== '' && $errorsBag->has($resolvedErrorKey);
+        $isRequired = ($attributes->has('required') && $attributes->get('required') !== false) || $required;
 
         $userController = trim($attributes->get('data-controller', ''));
         $dataController = trim($this->identifier.' '.$userController);
@@ -81,6 +83,7 @@ class RichText extends Component
             'resolvedErrorKey' => $resolvedErrorKey,
             'resolvedValue' => $resolvedValue,
             'hasErrors' => $hasErrors,
+            'isRequired' => $isRequired,
             'dataController' => $dataController,
         ];
     }

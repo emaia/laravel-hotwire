@@ -1,14 +1,14 @@
-@aware(['name' => null, 'id' => null, 'errorKey' => null])
+@aware(['name' => null, 'id' => null, 'errorKey' => null, 'required' => false])
 
 @php
-    extract($compute($name, $id, $errorKey, $errors, $attributes));
+    extract($compute($name, $id, $errorKey, $required, $errors, $attributes));
     // Escape `\` and `'` so an id containing either still produces a valid CSS attribute selector.
     $escapedId = addcslashes($resolvedId, "\\'");
     $outletSelector = '[data-'.$identifier."-id-value='".$escapedId."']";
 @endphp
 
 <div
-    {{ $attributes->except(['data-controller'])->merge(filled($class) ? ['class' => $class] : []) }}
+    {{ $attributes->except(['data-controller', 'required'])->merge(['class' => trim('hwc-rich-text '.$class)]) }}
     data-controller="{{ $dataController }}"
     data-{{ $identifier }}-id-value="{{ $resolvedId }}"
     @if ($placeholder !== null) data-{{ $identifier }}-placeholder-value="{{ $placeholder }}" @endif
@@ -16,10 +16,19 @@
     @if ($output !== 'html') data-{{ $identifier }}-output-value="{{ $output }}" @endif
     @if ($editorClass !== '') data-{{ $identifier }}-editor-class-value="{{ $editorClass }}" @endif
     @if ($imageUpload) data-{{ $identifier }}-image-upload-value="true" @endif
+    @if ($isRequired) aria-required="true" @endif
+    @if ($hasErrors) aria-invalid="true" data-invalid @endif
 >
+    {{-- The synced textarea carries `aria-required` but NOT the HTML `required` attr: a `hidden`
+         form control that can't be focused triggers Chrome's "An invalid form control is not
+         focusable" warning and silently blocks submit with no visible tooltip. Validation lives
+         server-side (Laravel `required`), and `[data-invalid]` on the wrapper handles the visual.
+         See "Required + client-side validation" in the component docs for a JS opt-in. --}}
     <textarea
         @if ($name) name="{{ $name }}" @endif
         data-{{ $identifier }}-target="input"
+        @if ($isRequired) aria-required="true" @endif
+        @if ($hasErrors) aria-invalid="true" @endif
         @if ($inputClass !== '') class="{{ $inputClass }}" @else hidden @endif
     >{{ $resolvedValue }}</textarea>
 

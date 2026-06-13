@@ -15,14 +15,14 @@ controllers — see those for the runtime side.
 <x-hwc::rich-text
     name="content"
     placeholder="Write something…"
-    :content="$post->content"
+    :value="$post->content"
 />
 
 {{-- Read-only preview --}}
-<x-hwc::rich-text name="preview" :editable="false" :content="$post->content" />
+<x-hwc::rich-text name="preview" :editable="false" :value="$post->content" />
 
 {{-- JSON output (store as ProseMirror JSON) --}}
-<x-hwc::rich-text name="content" output="json" :content="$post->content_json" />
+<x-hwc::rich-text name="content" output="json" :value="$post->content_json" />
 
 {{-- Image upload enabled; the app listens for rich-text:image-upload --}}
 <x-hwc::rich-text name="content" :image-upload="true" />
@@ -39,15 +39,16 @@ controllers — see those for the runtime side.
 |----------------|------------------|---------------|--------------------------------------------------------------------------------------------------------------|
 | `name`         | `?string`        | `null`        | Used for the textarea's `name` and to derive the Stimulus id when `id` is omitted. Omit for a standalone editor that isn't part of a form submission. Inherited from `<x-hwc::field>` via `@aware` when absent. |
 | `id`           | `?string`        | derived       | Stable identifier used in the toolbar's outlet selector. Defaults to `\Emaia\LaravelHotwire\Support\FieldKey::toId($name)` (so `user[bio]` becomes `user-bio`); falls back to a generated `hwc-rich-text-<uniqid>` when both `name` and `id` are absent. Inherited from `<x-hwc::field>` via `@aware` when absent. |
-| `content`      | `?string`        | `null`        | Initial HTML (or JSON when `output="json"`). On a request with validation errors, `old()` takes precedence.  |
+| `value`        | `mixed`          | `null`        | Initial HTML (or JSON when `output="json"`). Cast to string in the view. On a request with validation errors, `old()` takes precedence. |
 | `errorKey`     | `?string`        | derived       | Validation key for `old()` and error lookups. Derived from `name` (e.g. `user.bio` from `user[bio]`); override only when the validation key doesn't match the field name. Inherited from `<x-hwc::field>` via `@aware` when absent. |
 | `placeholder`  | `?string`        | `null`        | Empty-state text. When set, adds the Tiptap Placeholder extension.                                           |
 | `editable`     | `bool`           | `true`        | Set to `false` for a read-only editor.                                                                       |
+| `required`     | `bool`/HTML attr | `false`       | Marks the field as required for a11y (`aria-required="true"` on wrapper + textarea). The HTML `required` attribute is **intentionally not emitted** — see [Required + client-side validation](#required--client-side-validation). Inherited from `<x-hwc::field required>` via `@aware`. |
 | `output`       | `string`         | `'html'`      | `html` writes serialized HTML into the textarea; `json` writes `JSON.stringify`'d ProseMirror JSON.          |
 | `toolbar`      | `bool`           | `true`        | Render the default toolbar. Pass `false` to use a custom one through the slot.                               |
 | `imageUpload`  | `bool`           | `false`       | Intercept image paste/drop and dispatch `rich-text:image-upload` for the app to handle.                      |
 | `old`          | `bool`           | `true`        | Honor `old()` for the initial value (re-populates after a failed validation).                                |
-| `class`        | `string`         | `''`          | Merged on the wrapper element.                                                                               |
+| `class`        | `string`         | `''`          | Merged on the wrapper element alongside the always-present `hwc-rich-text` class.                            |
 | `inputClass`   | `string`         | `''`          | CSS class for the synced textarea. Empty (default) renders the textarea with the `hidden` attribute (drop-in for the old hidden input). Set a class to drop `hidden` and style the textarea — useful as a no-JS fallback or for a "view source" mode. |
 | `editorClass`  | `string`         | `''`          | CSS class applied to the editor's `.ProseMirror` contenteditable (forwarded into Tiptap's `editorProps.attributes.class`). Typical pick on a Tailwind project: `'prose prose-sm focus:outline-none'`. |
 | `controller`   | `string`         | `'rich-text'` | Stimulus identifier — swap for a subclass when you need different extensions or behavior.                    |
@@ -63,7 +64,7 @@ field via `@aware`, so you don't repeat them:
 
 ```blade
 <x-hwc::field name="bio" label="Bio" error description="Tell us about yourself">
-    <x-hwc::rich-text :content="$user->bio" placeholder="Type here…" />
+    <x-hwc::rich-text :value="$user->bio" placeholder="Type here…" />
 </x-hwc::field>
 ```
 
@@ -75,7 +76,7 @@ attribute without losing the others.
 The component renders:
 
 ```html
-<div data-controller="rich-text" data-rich-text-id-value="content" …>
+<div class="hwc-rich-text" data-controller="rich-text" data-rich-text-id-value="content" …>
     <textarea hidden name="content" data-rich-text-target="input">…</textarea>
 
     {{-- omitted when :toolbar="false" --}}
@@ -92,16 +93,91 @@ The component renders:
 
 ## Initial content + `old()`
 
-The textarea is the source of truth for content. The component populates it from `content`
+The textarea is the source of truth for content. The component populates it from `value`
 first, then overrides with the last submitted value from `old()` when validation fails — same
 behavior you get on the package's other form components:
 
 ```blade
-<x-hwc::rich-text name="content" :content="$post->content" />
+<x-hwc::rich-text name="content" :value="$post->content" />
 ```
 
 If validation rejects the form, the page re-renders with the user's draft instead of `$post->content`.
 Disable with `:old="false"` if you need the prop value to always win.
+
+### Error state
+
+When validation rejects the form, the component marks itself invalid the same way `<x-hwc::input>`,
+`<x-hwc::textarea>` and the other form components do — `aria-invalid="true" data-invalid` on the
+wrapper `<div>`, plus `aria-invalid="true"` on the synced textarea. Style the error visual on the
+wrapper so it covers the whole editor (toolbar + contenteditable + textarea) instead of just the
+hidden form payload:
+
+```css
+.hwc-rich-text[data-invalid] {
+    border-color: var(--color-danger);
+}
+```
+
+See the [Styling](#styling) section below for a full recipe using `aria-invalid:*` variants on
+Tailwind.
+
+`hasErrors` is resolved from `errorKey` (derived from `name` when omitted), so nesting inside
+`<x-hwc::field name="bio" error>` propagates the error state via `@aware` automatically.
+
+### Required + client-side validation
+
+The component accepts `required` (or inherits it from `<x-hwc::field required>`) and emits
+`aria-required="true"` on the wrapper and the synced textarea, so screen readers announce the
+field correctly. The HTML `required` attribute is **not** emitted, deliberately.
+
+Why: the synced textarea is `hidden` by default, and Chrome refuses to surface validation
+errors on form controls it can't focus — submit gets silently blocked with the warning
+`An invalid form control with name='X' is not focusable` and **no visible tooltip**. Every
+established rich-text editor (TinyMCE, CKEditor, Quill) ran into the same wall and dropped
+the attribute for the same reason. Server-side `required` validation + the wrapper's
+`data-invalid` visual is the supported path:
+
+```php
+// Laravel controller
+$request->validate(['content' => 'required']);
+```
+
+```css
+/* app.css — already in the Styling recipe; restated here for clarity */
+.hwc-rich-text[data-invalid] {
+    border-color: var(--color-destructive);
+}
+```
+
+If you want browser-side blocking (no server round-trip on empty submit), wire it explicitly
+through the controller's public API:
+
+```js
+// resources/js/controllers/rich_text_form_controller.js
+import { Controller } from "@hotwired/stimulus";
+
+export default class extends Controller {
+    static outlets = ["rich-text"];
+
+    submit(event) {
+        if (this.hasRichTextOutlet && this.richTextOutlet.editor?.isEmpty) {
+            event.preventDefault();
+            this.element.dispatchEvent(new CustomEvent("rich-text:empty-submit", { bubbles: true }));
+        }
+    }
+}
+```
+
+```blade
+<form data-controller="rich-text-form"
+      data-rich-text-form-rich-text-outlet="[data-rich-text-id-value='content']"
+      data-action="submit->rich-text-form#submit">
+    <x-hwc::rich-text name="content" required />
+</form>
+```
+
+This keeps the package opinion-free: apps that prefer server-only validation pay zero JS;
+apps that want early stop opt in with a few lines.
 
 ### Empty-state normalization
 
@@ -148,12 +224,33 @@ When you need a different set of buttons, drop the default and render your own t
 See the [toolbar controller docs](../controllers/rich-text-toolbar.md) for the full action and
 target reference.
 
-## Styling the editor content
+## Styling
 
-The editor renders inside a `.ProseMirror` contenteditable div that Tiptap mounts under
-`data-rich-text-target="editor"`. On a Tailwind project, Preflight strips default heading/list
-styles, so a fresh editor will render headings, paragraphs and lists as visually flat text. The
-fix is to give the contenteditable a class — typically `@tailwindcss/typography`'s `prose`:
+The package ships zero CSS — by design. The component gives you stable class hooks and
+prop-based knobs; the visual is the app's call.
+
+### Stable hooks
+
+| Hook                                                    | Element                                       |
+|---------------------------------------------------------|-----------------------------------------------|
+| `.hwc-rich-text`                                        | The outer wrapper (always present)            |
+| `.hwc-rich-text-toolbar`                                | The default toolbar row                       |
+| `.hwc-rich-text-editor`                                 | The div Tiptap mounts the contenteditable into |
+| `.hwc-rich-text-editor .ProseMirror`                    | The contenteditable surface itself            |
+| `[data-controller~="rich-text"][data-invalid]`          | The wrapper when the field has a validation error |
+| `[data-rich-text-target="input"]`                       | The synced textarea                           |
+
+### Knobs
+
+- `editorClass` → lands on `editorProps.attributes.class` (the contenteditable). Best place for
+  typography (`prose`, custom heading sizes, code-block styling).
+- `inputClass` → goes on the synced textarea. When set, the textarea drops its `hidden` attribute
+  so the class actually renders — useful as a no-JS fallback or "view source" toggle.
+- `class` → merged on the wrapper alongside `hwc-rich-text`.
+
+### Recipes
+
+**Tailwind + `@tailwindcss/typography`** — content rendered with semantic heading/list visuals:
 
 ```blade
 <x-hwc::rich-text
@@ -162,20 +259,82 @@ fix is to give the contenteditable a class — typically `@tailwindcss/typograph
 />
 ```
 
-`editorClass` lands on `editorProps.attributes.class` (the Tiptap-recommended hook), so the
-class ends up on the actual `.ProseMirror` node. Use it with any styling system — Tailwind
-typography, your own stylesheet, plain CSS classes; the package stays unopinionated about
-which one.
+**Tailwind + [basecoat-css](https://basecoatui.com/)** — matches the rest of basecoat's form
+inputs (border, focus ring, dark mode, aria-invalid destructive ring) and gives the editor
+heading/list visuals without pulling in `@tailwindcss/typography`. Tested against basecoat's
+design tokens (`border-input`, `ring-ring`, `destructive`, `muted-foreground`):
 
-If you'd rather style externally (e.g. a shared `app.css` rule for every editor), target the
-existing `.hwc-rich-text-editor .ProseMirror` selector and skip the prop.
+```css
+/* app.css */
+@layer components {
+    .hwc-rich-text {
+        @apply appearance-none dark:bg-input/30 border-input w-full min-w-0 rounded-md border bg-transparent p-3 text-base shadow-xs transition-[color,box-shadow] outline-none disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm;
+        @apply focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px];
+        @apply aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive;
+    }
 
-## Styling the synced textarea
+    .hwc-rich-text-toolbar {
+        @apply flex gap-2 items-center mb-3 border;
 
-By default the synced textarea carries the `hidden` HTML attribute — the editor renders inside the
-`data-rich-text-target="editor"` div and the textarea only ships the value with the form. Pass
-`inputClass` to drop the `hidden` attribute and style the textarea — handy for a no-JS fallback
-(if Tiptap fails to load, the user can still type into the textarea) or a "view source" toggle:
+        & > button {
+            @apply rounded-md px-2 py-1 inline-flex items-center gap-1;
+        }
+    }
+
+    .hwc-rich-text-editor > div {
+        @apply block;
+        @apply border-input placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 field-sizing-content min-h-16 w-full rounded-md border bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 md:text-sm;
+
+        & h1 { @apply text-2xl font-bold; }
+        & ul, & ol { @apply list-disc ml-8; }
+        & ol { @apply list-decimal; }
+    }
+}
+```
+
+```blade
+<x-hwc::field name="description" label="Description">
+    <x-hwc::rich-text :value="$task->description" />
+</x-hwc::field>
+```
+
+The wrapper carries `aria-invalid="true"` automatically when validation flags the field, so
+basecoat's `aria-invalid:*` variants light up the destructive ring without any extra wiring.
+Nesting inside `<x-hwc::field required>` propagates `required` to the textarea via `@aware`.
+
+**Vanilla CSS** — same idea, no preprocessor:
+
+```css
+.hwc-rich-text {
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background: #fff;
+}
+.hwc-rich-text[data-invalid] {
+    border-color: #dc2626;
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
+}
+.hwc-rich-text .hwc-rich-text-toolbar {
+    display: flex;
+    gap: 4px;
+    padding: 8px;
+    border-bottom: 1px solid #e5e7eb;
+}
+.hwc-rich-text .hwc-rich-text-editor .ProseMirror {
+    min-height: 8rem;
+    padding: 12px;
+    outline: none;
+}
+.hwc-rich-text .hwc-rich-text-editor .ProseMirror h1 { font-size: 1.5rem; font-weight: 700; }
+.hwc-rich-text .hwc-rich-text-editor .ProseMirror ul { list-style: disc; padding-left: 1.25rem; }
+```
+
+### Exposing the textarea as a "view source" surface
+
+By default the synced textarea has the `hidden` HTML attribute — the editor renders inside the
+`data-rich-text-target="editor"` div and the textarea only ships the value with the form. Passing
+`inputClass` drops the `hidden` attribute so the textarea becomes visible (and styleable) — handy
+as a no-JS fallback or a debug surface alongside the rich editor:
 
 ```blade
 <x-hwc::rich-text
@@ -185,7 +344,7 @@ By default the synced textarea carries the `hidden` HTML attribute — the edito
 ```
 
 The textarea sits before the editor div in the DOM, so it'll appear above the Tiptap view when
-visible. Hide one or the other with your own CSS if you only want one rendered at a time.
+visible.
 
 ## Multiple editors on the same page
 

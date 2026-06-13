@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\MessageBag;
 use Illuminate\Support\ViewErrorBag;
 
 beforeEach(function () {
@@ -7,6 +8,13 @@ beforeEach(function () {
     request()->setLaravelSession($this->app['session.store']);
     session()->forget('_old_input');
 });
+
+function shareRichTextErrors(array $errorsByKey): void
+{
+    $bag = new ViewErrorBag;
+    $bag->put('default', new MessageBag($errorsByKey));
+    view()->share('errors', $bag);
+}
 
 // --- Rendering / data attrs ---
 
@@ -33,7 +41,7 @@ it('renders the editor target div', function () {
 });
 
 it('renders the initial content as the textarea body', function () {
-    $view = $this->blade('<x-hwc::rich-text name="content" content="<p>Hello</p>" />');
+    $view = $this->blade('<x-hwc::rich-text name="content" value="<p>Hello</p>" />');
 
     $view->assertSee('&lt;p&gt;Hello&lt;/p&gt;</textarea>', false);
 });
@@ -41,7 +49,7 @@ it('renders the initial content as the textarea body', function () {
 it('repopulates the textarea body from old() on validation errors', function () {
     session()->put('_old_input', ['content' => '<p>From session</p>']);
 
-    $view = $this->blade('<x-hwc::rich-text name="content" content="<p>Initial</p>" />');
+    $view = $this->blade('<x-hwc::rich-text name="content" value="<p>Initial</p>" />');
 
     $view->assertSee('&lt;p&gt;From session&lt;/p&gt;</textarea>', false);
 });
@@ -185,6 +193,84 @@ it('omits the editor-class-value attr by default', function () {
     $view->assertDontSee('data-rich-text-editor-class-value', false);
 });
 
+// --- Error state ---
+
+it('sets aria-invalid and data-invalid on the wrapper when error present', function () {
+    shareRichTextErrors(['content' => ['Required']]);
+
+    $view = $this->blade('<x-hwc::rich-text name="content" />');
+
+    expect((string) $view)->toMatch('/<div[^>]*\baria-invalid="true"/');
+    expect((string) $view)->toMatch('/<div[^>]*\bdata-invalid\b/');
+});
+
+it('mirrors aria-invalid on the textarea when error present', function () {
+    shareRichTextErrors(['content' => ['Required']]);
+
+    $view = $this->blade('<x-hwc::rich-text name="content" />');
+
+    expect((string) $view)->toMatch('/<textarea[^>]*\baria-invalid="true"/');
+});
+
+it('does not set aria-invalid or data-invalid when no errors', function () {
+    $view = $this->blade('<x-hwc::rich-text name="content" />');
+
+    $view->assertDontSee('aria-invalid="true"', false);
+    $view->assertDontSee('data-invalid', false);
+});
+
+it('derives the error key from bracket notation for error matching', function () {
+    shareRichTextErrors(['user.bio' => ['Required']]);
+
+    $view = $this->blade('<x-hwc::rich-text name="user[bio]" />');
+
+    expect((string) $view)->toMatch('/<div[^>]*\bdata-invalid\b/');
+});
+
+it('honors an explicit errorKey when matching errors', function () {
+    shareRichTextErrors(['custom.path' => ['Required']]);
+
+    $view = $this->blade('<x-hwc::rich-text name="content" errorKey="custom.path" />');
+
+    expect((string) $view)->toMatch('/<div[^>]*\bdata-invalid\b/');
+});
+
+// --- Required ---
+
+it('sets aria-required on the wrapper and the textarea when required attr is present', function () {
+    $view = $this->blade('<x-hwc::rich-text name="content" required />');
+
+    expect((string) $view)->toMatch('/<div[^>]*\baria-required="true"/');
+    expect((string) $view)->toMatch('/<textarea[^>]*\baria-required="true"/');
+});
+
+it('inherits required from a parent x-hwc::field via @aware', function () {
+    $view = $this->blade('<x-hwc::field name="bio" required><x-hwc::rich-text /></x-hwc::field>');
+
+    expect((string) $view)->toMatch('/<div[^>]*\baria-required="true"/');
+    expect((string) $view)->toMatch('/<textarea[^>]*\baria-required="true"/');
+});
+
+it('omits aria-required by default', function () {
+    $view = $this->blade('<x-hwc::rich-text name="content" />');
+
+    $view->assertDontSee('aria-required="true"', false);
+});
+
+it('never emits the HTML required attribute (browser silently blocks submit on hidden form controls)', function () {
+    // Required validation happens server-side + via the wrapper's data-invalid visual;
+    // see docs/components/rich-text.md "Required + client-side validation" for the JS opt-in.
+    $view = $this->blade('<x-hwc::rich-text name="content" required />');
+
+    expect((string) $view)->not()->toMatch('/<textarea[^>]*\brequired\b(?!=)/');
+});
+
+it('does not leak the bare required attribute onto the wrapper from the attribute bag', function () {
+    $view = $this->blade('<x-hwc::rich-text name="content" required />');
+
+    expect((string) $view)->not()->toMatch('/<div[^>]*\brequired\b(?!=)/');
+});
+
 // --- Field key derivation ---
 
 it('derives the id from bracket notation in name', function () {
@@ -216,11 +302,17 @@ it('merges user data-controller with the package one', function () {
     $view->assertSee('data-controller="rich-text my-extra"', false);
 });
 
-it('forwards extra attributes and merges class prop', function () {
+it('forwards extra attributes and merges class prop alongside hwc-rich-text', function () {
     $view = $this->blade('<x-hwc::rich-text name="content" class="rounded" data-test="x" />');
 
-    $view->assertSee('class="rounded"', false);
+    $view->assertSee('class="hwc-rich-text rounded"', false);
     $view->assertSee('data-test="x"', false);
+});
+
+it('always renders the hwc-rich-text class on the wrapper for stable CSS targeting', function () {
+    $view = $this->blade('<x-hwc::rich-text name="content" />');
+
+    $view->assertSee('class="hwc-rich-text"', false);
 });
 
 // --- @aware integration with x-hwc::field ---
@@ -274,7 +366,7 @@ it('honors an explicit id even when name is missing', function () {
 it('skips old() lookup when name is missing (no errorKey to resolve)', function () {
     session()->put('_old_input', ['anything' => '<p>From session</p>']);
 
-    $view = $this->blade('<x-hwc::rich-text id="standalone" content="<p>Initial</p>" />');
+    $view = $this->blade('<x-hwc::rich-text id="standalone" value="<p>Initial</p>" />');
 
     $view->assertSee('&lt;p&gt;Initial&lt;/p&gt;</textarea>', false);
 });
