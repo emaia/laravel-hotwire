@@ -1,7 +1,7 @@
 # Rich text
 
 Tiptap-backed rich text editor. Mounts a Tiptap `Editor` on a target div, syncs serialized output
-into a hidden input on every change, and dispatches Stimulus events for ready/change/focus/blur
+into a hidden textarea on every change, and dispatches Stimulus events for ready/change/focus/blur
 plus a paired `state` event for toolbars to resync. The companion
 [`rich-text-toolbar`](rich-text-toolbar.md) controller wires the default buttons via a Stimulus
 outlet; you can also drive the editor from anywhere by accessing the public API on the controller
@@ -16,15 +16,18 @@ instance.
 
 - The five Tiptap packages listed above. `hotwire:check` reports them as required when the
   controller is in use.
-- A hidden `<input data-rich-text-target="input">` is the source of truth for content. It receives
-  the editor's HTML (or JSON) on every change so the form submission carries the value.
+- A hidden `<textarea data-rich-text-target="input">` is the source of truth for content. It
+  receives the editor's HTML (or JSON) on every change so the form submission carries the value.
+  An `<input type="hidden">` works too — the controller only touches `.value`, so the element
+  type doesn't matter. The Blade component ships a `<textarea>` because it can be made visible
+  via `inputClass` as a no-JS fallback or "view source" surface.
 
 ## Targets
 
 | Target   | Description                                                              |
 |----------|--------------------------------------------------------------------------|
 | `editor` | The div Tiptap mounts the contenteditable into. **Required.**            |
-| `input`  | The hidden input synced with the editor's output. Optional but typical.  |
+| `input`  | The synced field (`<textarea hidden>` or `<input type="hidden">`) the controller writes the editor's output into. Optional but typical. |
 
 ## Values
 
@@ -33,7 +36,7 @@ instance.
 | `id`          | String  | `""`    | Stable identifier used by toolbar outlet selectors. Required when pairing with a toolbar.    |
 | `placeholder` | String  | `""`    | Text shown when the editor is empty. Adds the `@tiptap/extension-placeholder` to the stack.  |
 | `editable`    | Boolean | `true`  | When `false`, the editor renders in read-only mode.                                          |
-| `output`      | String  | `html`  | Serialization for the hidden input: `html` (default) writes the rendered HTML; `json` writes Tiptap's ProseMirror JSON via `JSON.stringify`. |
+| `output`      | String  | `html`  | Serialization for the synced field: `html` (default) writes the rendered HTML; `json` writes Tiptap's ProseMirror JSON via `JSON.stringify`. |
 | `editorClass` | String  | `""`    | CSS class applied to the `.ProseMirror` contenteditable, via Tiptap's `editorProps.attributes.class`. Typical pick on Tailwind: `prose prose-sm focus:outline-none`. |
 | `imageUpload` | Boolean | `false` | When `true`, paste/drop of image files is intercepted and re-dispatched as `rich-text:image-upload` for the app to handle. |
 
@@ -69,12 +72,12 @@ controller.focus();           // Move the cursor into the editor
 ```html
 <div data-controller="rich-text"
      data-rich-text-id-value="content">
-    <input type="hidden" name="content" data-rich-text-target="input">
+    <textarea hidden name="content" data-rich-text-target="input"></textarea>
     <div data-rich-text-target="editor"></div>
 </div>
 ```
 
-This is the minimum: a hidden input for the form payload and a target div for Tiptap. The
+This is the minimum: a hidden textarea for the form payload and a target div for Tiptap. The
 [`<x-hwc::rich-text>`](../components/rich-text.md) Blade component scaffolds this for you and pairs
 it with the default toolbar.
 
@@ -84,7 +87,7 @@ it with the default toolbar.
 <div data-controller="rich-text"
      data-rich-text-id-value="content"
      data-rich-text-placeholder-value="Write something…">
-    <input type="hidden" name="content" data-rich-text-target="input">
+    <textarea hidden name="content" data-rich-text-target="input"></textarea>
     <div data-rich-text-target="editor"></div>
 </div>
 ```
@@ -100,7 +103,7 @@ preview tabs or audit views that reuse the same styling as the editor:
 <div data-controller="rich-text"
      data-rich-text-id-value="preview"
      data-rich-text-editable-value="false">
-    <input type="hidden" data-rich-text-target="input" value="{{ $post->content }}">
+    <textarea hidden data-rich-text-target="input">{{ $post->content }}</textarea>
     <div data-rich-text-target="editor"></div>
 </div>
 ```
@@ -109,19 +112,19 @@ For a pure display (no editor styling), render the HTML directly with `{!! $cont
 
 ## JSON output
 
-When you store ProseMirror JSON instead of HTML, set `output` to `json`. The hidden input will
+When you store ProseMirror JSON instead of HTML, set `output` to `json`. The textarea will
 contain a `JSON.stringify`d snapshot:
 
 ```html
 <div data-controller="rich-text"
      data-rich-text-id-value="content"
      data-rich-text-output-value="json">
-    <input type="hidden" name="content" data-rich-text-target="input">
+    <textarea hidden name="content" data-rich-text-target="input"></textarea>
     <div data-rich-text-target="editor"></div>
 </div>
 ```
 
-The initial value in the hidden input can be either a JSON string or an HTML string — the
+The initial value in the textarea can be either a JSON string or an HTML string — the
 controller `JSON.parse`s when the document looks like JSON, falling back to HTML.
 
 ## Extensions hook (subclass)
@@ -198,8 +201,8 @@ export default class extends RichTextController {
 
 ## Lifecycle
 
-- `connect()` reads the hidden input's value, instantiates `RichTextEditor`, wires the callbacks
-  that drive input sync and event dispatch, and emits `rich-text:ready` + `rich-text:state`.
+- `connect()` reads the synced field's value, instantiates `RichTextEditor`, wires the callbacks
+  that drive field sync and event dispatch, and emits `rich-text:ready` + `rich-text:state`.
 - `disconnect()` destroys the underlying Tiptap editor.
 
 The controller scopes every read/write to `this.element`, `this.editorTarget`, and `this.inputTarget`
