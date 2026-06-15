@@ -56,10 +56,20 @@ test("opens when dynamic content is inserted and closes cleanly through the publ
 });
 
 async function browserControllerScript(path) {
-    const source = await readFile(path, "utf8");
+    // Inline the _focus_trap helper alongside the controller — ES `import` is not valid
+    // inside a regular <script>, so the bundler must concatenate the source instead.
+    const focusTrap = (await readFile("resources/js/controllers/_focus_trap.js", "utf8"))
+        .replace("export class FocusTrap", "class FocusTrap");
 
-    return source
-        .replace('import { Controller } from "@hotwired/stimulus";', "const { Controller } = window.Stimulus;")
-        .replace("export default class ModalController extends Controller", "class ModalController extends Controller")
-        .concat("\nwindow.ModalController = ModalController;\n");
+    const source = (await readFile(path, "utf8"))
+        .replace('import { Controller } from "@hotwired/stimulus";', "")
+        .replace(/import \{[^}]*\} from "\.\/_focus_trap\.js";\s*/, "")
+        .replace("export default class ModalController extends Controller", "class ModalController extends Controller");
+
+    return `
+        const { Controller } = window.Stimulus;
+        ${focusTrap}
+        ${source}
+        window.ModalController = ModalController;
+    `;
 }
