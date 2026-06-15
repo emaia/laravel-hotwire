@@ -25,7 +25,7 @@
     @if ($hasErrors) aria-invalid="true" data-invalid @endif
     @if ($isRequired) aria-required="true" @endif
     {{ $attributes
-        ->merge(filled($class) ? ['class' => $class] : [])
+        ->merge(['class' => trim('hwc-file-upload dropzone '.$class)])
         ->whereDoesntStartWith(array_merge(['data-controller', 'data-action'], $internalPrefixes))
         ->except(['required']) }}
 >

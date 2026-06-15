@@ -404,10 +404,16 @@ it('merges user-provided data-action with the openPicker keydown actions', funct
 
 // --- Class merge & passthrough ---
 
-it('merges class attribute on the element', function () {
-    $view = $this->blade('<x-hwc::file-upload name="avatar" url="/uploads" class="dropzone-custom" />');
+it('always emits hwc-file-upload + dropzone as baseline classes so Dropzone CSS rules apply', function () {
+    $view = $this->blade('<x-hwc::file-upload name="avatar" url="/uploads" />');
 
-    $view->assertSee('class="dropzone-custom"', false);
+    $view->assertSee('class="hwc-file-upload dropzone"', false);
+});
+
+it('merges user-provided class with the baseline', function () {
+    $view = $this->blade('<x-hwc::file-upload name="avatar" url="/uploads" class="my-custom" />');
+
+    $view->assertSee('class="hwc-file-upload dropzone my-custom"', false);
 });
 
 it('forwards arbitrary attributes', function () {
