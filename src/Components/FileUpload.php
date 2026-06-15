@@ -86,6 +86,12 @@ class FileUpload extends Component
         $userController = trim($attributes->get('data-controller', ''));
         $mergedController = trim($userController === '' ? $this->identifier : $userController.' '.$this->identifier);
 
+        $keyActions = "keydown.enter->{$this->identifier}#openPicker keydown.space->{$this->identifier}#openPicker";
+        $userAction = trim($attributes->get('data-action', ''));
+        $mergedAction = trim($userAction === '' ? $keyActions : $userAction.' '.$keyActions);
+
+        $hasAriaLabel = $attributes->has('aria-label');
+
         return [
             'resolvedId' => $resolvedId,
             'resolvedErrorKey' => $resolvedErrorKey,
@@ -94,6 +100,8 @@ class FileUpload extends Component
             'hasErrors' => $hasErrors,
             'isRequired' => $isRequired,
             'mergedController' => $mergedController,
+            'mergedAction' => $mergedAction,
+            'hasAriaLabel' => $hasAriaLabel,
         ];
     }
 }

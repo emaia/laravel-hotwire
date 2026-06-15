@@ -4,7 +4,11 @@
 
 <div
     id="{{ $resolvedId }}"
+    tabindex="0"
+    role="button"
+    @unless ($hasAriaLabel) aria-label="Choose files" @endunless
     data-controller="{{ $mergedController }}"
+    data-action="{{ $mergedAction }}"
     data-{{ $identifier }}-url-value="{{ $url }}"
     @if ($hiddenName !== null) data-{{ $identifier }}-hidden-name-value="{{ $hiddenName }}" @endif
     @if ($accept !== null) data-{{ $identifier }}-accept-value="{{ $accept }}" @endif
@@ -22,7 +26,7 @@
     @if ($isRequired) aria-required="true" @endif
     {{ $attributes
         ->merge(filled($class) ? ['class' => $class] : [])
-        ->whereDoesntStartWith(array_merge(['data-controller'], $internalPrefixes))
+        ->whereDoesntStartWith(array_merge(['data-controller', 'data-action'], $internalPrefixes))
         ->except(['required']) }}
 >
     <div

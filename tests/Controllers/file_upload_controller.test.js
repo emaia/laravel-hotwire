@@ -18,6 +18,7 @@ class FakeDropzone {
     constructor(element, options) {
         this.element = element;
         this.options = options;
+        this.hiddenFileInput = { click: mock(() => {}) };
         dzState.instance = this;
         dzState.options = options;
     }
@@ -380,6 +381,32 @@ test("does not write to the announcer on uploadprogress (avoid screen reader noi
     dzState.instance.emit("uploadprogress", { name: "photo.png" }, 50, 5000);
 
     expect(announcer.textContent).toBe("Uploading photo.png");
+});
+
+// --- Keyboard activation (openPicker) ---
+
+test("openPicker clicks Dropzone's hidden file input", async () => {
+    await mount();
+    mounted.controller.openPicker(new Event("keydown"));
+
+    expect(dzState.instance.hiddenFileInput.click).toHaveBeenCalledTimes(1);
+});
+
+test("openPicker calls preventDefault on the triggering event so Space does not scroll", async () => {
+    await mount();
+    let prevented = false;
+    const event = { preventDefault: () => (prevented = true) };
+
+    mounted.controller.openPicker(event);
+
+    expect(prevented).toBe(true);
+});
+
+test("openPicker is a no-op when Dropzone has no hidden file input yet", async () => {
+    await mount();
+    dzState.instance.hiddenFileInput = null;
+
+    expect(() => mounted.controller.openPicker(new Event("keydown"))).not.toThrow();
 });
 
 // --- Cleanup ---

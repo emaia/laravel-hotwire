@@ -297,7 +297,7 @@ it('filters user-provided data-file-upload-* attrs to prevent conflicts', functi
 it('keeps non-internal data attrs passed by the user', function () {
     $view = $this->blade('<x-hwc::file-upload name="avatar" url="/uploads" data-action="file-upload:success->thing#handle" data-test="x" />');
 
-    $view->assertSee('data-action="file-upload:success->thing#handle"', false);
+    $view->assertSee('thing#handle', false);
     $view->assertSee('data-test="x"', false);
 });
 
@@ -353,6 +353,53 @@ it('renders the announcer even when preview is disabled', function () {
 
     $view->assertSee('aria-live="polite"', false);
     $view->assertSee('data-file-upload-target="announcer"', false);
+});
+
+// --- Keyboard accessibility ---
+
+it('renders the wrapper as a keyboard-operable button widget', function () {
+    $view = $this->blade('<x-hwc::file-upload name="avatar" url="/uploads" />');
+
+    $view->assertSee('tabindex="0"', false);
+    $view->assertSee('role="button"', false);
+});
+
+it('emits a default aria-label so screen readers announce the activation surface', function () {
+    $view = $this->blade('<x-hwc::file-upload name="avatar" url="/uploads" />');
+
+    $view->assertSee('aria-label="Choose files"', false);
+});
+
+it('lets the user override the default aria-label', function () {
+    $view = $this->blade('<x-hwc::file-upload name="avatar" url="/uploads" aria-label="Send your CV" />');
+
+    $view->assertSee('aria-label="Send your CV"', false);
+    $view->assertDontSee('aria-label="Choose files"', false);
+});
+
+it('wires Enter and Space keydown to the openPicker controller action', function () {
+    $view = $this->blade('<x-hwc::file-upload name="avatar" url="/uploads" />');
+
+    $view->assertSee('keydown.enter', false);
+    $view->assertSee('file-upload#openPicker', false);
+    $view->assertSee('keydown.space', false);
+});
+
+it('prefixes openPicker keydown actions with the swapped identifier', function () {
+    $view = $this->blade('<x-hwc::file-upload name="cover" url="/uploads" controller="my-upload" />');
+
+    $view->assertSee('my-upload#openPicker', false);
+    $view->assertDontSee('file-upload#openPicker', false);
+});
+
+it('merges user-provided data-action with the openPicker keydown actions', function () {
+    $view = $this->blade('<x-hwc::file-upload name="avatar" url="/uploads" data-action="drop->thing#log" />');
+
+    $view->assertSee('thing#log', false);
+    $view->assertSee('file-upload#openPicker', false);
+    // user action sits before the keydown bindings so user-defined drop handlers run first
+    $rendered = $view->__toString();
+    expect(strpos($rendered, 'thing#log'))->toBeLessThan(strpos($rendered, 'openPicker'));
 });
 
 // --- Class merge & passthrough ---

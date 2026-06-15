@@ -125,6 +125,11 @@ export default class extends Controller {
         return token ? { "X-CSRF-TOKEN": token } : {};
     }
 
+    openPicker(event) {
+        event?.preventDefault?.();
+        this.dropzone?.hiddenFileInput?.click();
+    }
+
     announce(message) {
         if (!this.hasAnnouncerTarget) return;
         this.announcerTarget.textContent = message;
