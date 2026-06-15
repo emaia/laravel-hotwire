@@ -10,6 +10,7 @@ use Emaia\LaravelHotwire\Components\Dropdown;
 use Emaia\LaravelHotwire\Components\Error;
 use Emaia\LaravelHotwire\Components\Field;
 use Emaia\LaravelHotwire\Components\File;
+use Emaia\LaravelHotwire\Components\FileUpload;
 use Emaia\LaravelHotwire\Components\FlashContainer;
 use Emaia\LaravelHotwire\Components\FlashMessage;
 use Emaia\LaravelHotwire\Components\Form;
@@ -115,6 +116,14 @@ return [
             'category' => 'forms',
             'description' => 'File input with auto id/errorKey, ARIA, optional current file display and Turbo morph reset',
             'controllers' => ['file-preserve', 'reset-files'],
+        ],
+        'file-upload' => [
+            'class' => FileUpload::class,
+            'view' => 'hotwire::component-views.file-upload',
+            'docs' => 'docs/components/file-upload.md',
+            'category' => 'forms',
+            'description' => 'Dropzone wrapper — drag-drop, queue, progress, server-side endpoint, optional hidden input and DELETE',
+            'controllers' => ['file-upload'],
         ],
         'flash-container' => [
             'class' => FlashContainer::class,
@@ -309,6 +318,13 @@ return [
             'docs' => 'docs/controllers/file-preserve.md',
             'category' => 'forms',
             'description' => 'Captures and restores file input selection across Turbo morphs and frame navigations',
+        ],
+        'file-upload' => [
+            'source' => 'resources/js/controllers/file_upload_controller.js',
+            'docs' => 'docs/controllers/file-upload.md',
+            'category' => 'forms',
+            'description' => 'Dropzone-backed multi file upload — drag-drop, queue, progress, emits success/error/progress events, optional hidden input and DELETE',
+            'npm' => ['@deltablot/dropzone' => '^7.4.0'],
         ],
         'clean-query-params' => [
             'source' => 'resources/js/controllers/clean_query_params_controller.js',
