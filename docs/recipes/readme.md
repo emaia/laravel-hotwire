@@ -30,6 +30,9 @@ Each recipe is self-contained — pick the one that matches your use case.
   subscription tiers, NPS survey follow-ups, and newsletter preferences.
 - [Charts](./charts.md) — Apache ECharts integration: inline option, URL-fetched option,
   subclass extension, and a drill-down pattern with smooth universal transitions.
+- [File upload patterns](./file-upload-patterns.md) — four ways to wire the file-upload component:
+  Spatie Media Library, async thumbnail via broadcast, stream-rendered gallery with EXIF, and a
+  single-file edit form with stream-replaced cards (avatar pattern).
 
 ## See also
 
