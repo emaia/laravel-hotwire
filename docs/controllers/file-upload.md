@@ -36,6 +36,7 @@ maintained fork. The fork's API is API-compatible for everything the wrapper use
 | `responseKey`     | String  | `"token"`     | Key read from the JSON response to extract the value written into the hidden input                        |
 | `deleteUrl`       | String  | `""`          | DELETE endpoint hit when a queued file is removed. `:token` is substituted with the extracted value      |
 | `parallelUploads` | Number  | `3`           | Concurrent XHRs in the queue                                                                             |
+| `turboStream`     | Boolean | `false`       | When `true`, sends `Accept: text/vnd.turbo-stream.html, application/json` on every upload XHR; on success/error, if the response body looks like a Turbo Stream, hands it to `Turbo.renderStreamMessage` and skips the automatic hidden input on success |
 
 ## Targets
 
@@ -56,8 +57,8 @@ maintained fork. The fork's API is API-compatible for everything the wrapper use
 | `file-upload:ready`    | `{}`                            | Dropzone is instantiated and event handlers are wired                                |
 | `file-upload:added`    | `{ file }`                      | A file is added to the queue (drag-drop, picker or programmatic)                     |
 | `file-upload:progress` | `{ file, percent, bytes }`      | XHR upload progress tick                                                             |
-| `file-upload:success`  | `{ file, response, value }`     | Endpoint returned 2xx. `value` is the extracted result of `responseKey` lookup       |
-| `file-upload:error`    | `{ file, message, xhr }`        | Endpoint returned non-2xx or network error                                           |
+| `file-upload:success`  | `{ file, response, value }`     | Endpoint returned 2xx. `value` is the extracted result of `responseKey` lookup. `null` when a Turbo Stream was rendered (the server-rendered card owns the hidden input) |
+| `file-upload:error`    | `{ file, message, xhr, text }`  | Endpoint returned non-2xx or network error. `text` is a normalised user-facing string (handles Laravel's `{ message }` and `{ errors: { field: [...] } }` JSON shapes; falls back to `"Upload failed"`) |
 | `file-upload:removed`  | `{ file }`                      | File is removed from the queue (UI button, programmatic `removeFile`, or abort)      |
 
 Event names use the controller identifier. When subclassed via `controller="my-upload"`, the

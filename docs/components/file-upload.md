@@ -1,50 +1,87 @@
 # File upload
 
-Server-rendered Blade wrapper around the [`file-upload`](../controllers/file-upload.md) Stimulus
-controller. Renders a `<div>` mounted on the controller with drag-and-drop, multi-file queue,
-client-side preview and progress provided by [Dropzone](https://github.com/NicolasCARPi/dropzone)
-(the actively maintained 7.x fork). Upload endpoint, validation, storage and cleanup are entirely
-**app-side** — the wrapper handles the browser UX and the form integration.
+**[Dropzone](https://github.com/NicolasCARPi/dropzone) wrapper** — drag-and-drop, multi-file queue,
+client-side preview and progress, with the upload endpoint, validation, storage and cleanup all
+**app-side**. Renders a `<div>` mounted on the [`file-upload`](../controllers/file-upload.md)
+Stimulus controller. Pairs with `<x-hwc::field>`, `<x-hwc::error>`, and Laravel's `old()` /
+validation redirect-back out of the box, and ships native Turbo Stream response support so
+server-rendered cards just work.
 
 ## Quick example
 
 ```blade
 <x-hwc::form action="{{ route('profile.update') }}" method="put">
-    <x-hwc::field name="avatar">
-        <x-hwc::label>Profile picture</x-hwc::label>
+    <x-hwc::field name="avatar" label="Profile picture">
         <x-hwc::file-upload url="{{ route('uploads.store') }}" accept="image/*" />
-        <x-hwc::error />
     </x-hwc::field>
 
     <button type="submit">Save</button>
 </x-hwc::form>
 ```
 
-The endpoint receives a single `multipart/form-data` request per file under the field name `file`
-(override via `param-name`). It must return JSON; the wrapper reads `response.token` by default
+`<x-hwc::field>` renders the label and auto-emits the `<x-hwc::error>` block under the slot, so a
+field-wrapped file-upload reads as a single block.
+
+The endpoint receives one `multipart/form-data` request per file under the field name `file`
+(override via `param-name`). It returns JSON by default; the controller reads `response.token`
 (override via `response-key`) and appends `<input type="hidden" name="avatar" value="{token}">` to
-the parent form so the next submission carries the reference. See the [recipes](#recipes) for
-medialibrary, async thumbnails and Turbo-Stream-rendered cards.
+the parent form so the next submission carries the reference.
+
+See the [recipes](#recipes) for Spatie Media Library, async thumbnails with broadcast, and a
+fully stream-rendered gallery with server-side EXIF.
+
+## Setup — the Dropzone CSS import
+
+The Dropzone library only renders its visible affordance (the dashed border, "Drop files here to
+upload" message, thumbnail layout) when:
+
+1. The host `<div>` carries the `dropzone` class — the component does this for you (it always
+   emits `class="hwc-file-upload dropzone"`).
+2. `@deltablot/dropzone/dist/dropzone.css` is bundled into the page.
+
+The controller imports the CSS at the top:
+
+```js
+import "@deltablot/dropzone/dist/dropzone.css";
+```
+
+If the component renders but **nothing is visible** (no border, no message, 0-height div), the
+import isn't reaching your bundle. Three things to check, in order:
+
+1. Run `bun install` (or `npm install`) — `hotwire:check --fix` adds `@deltablot/dropzone` to
+   `package.json` but doesn't run install for you.
+2. Restart `vite dev` — the dev server caches the import graph; a freshly-published controller
+   may need a kick to be picked up.
+3. Open DevTools → Network and confirm `dropzone.css` (or its content as an inline `<style>` in
+   dev mode) appears. If it doesn't, your bundler isn't processing the CSS import — check your
+   Vite config or open an issue.
+
+To customise the visual without touching the package's CSS, override `.hwc-file-upload`, `.dz-*`
+selectors in your app stylesheet (loaded after the controller's import, so cascade wins). For a
+full takeover, delete the `// @hotwire-package` marker from the published controller file — the
+package will leave your customised version alone on subsequent `hotwire:controllers --force` runs.
 
 ## Props
 
 | Prop               | Type             | Default          | Description                                                                                              |
 |--------------------|------------------|------------------|----------------------------------------------------------------------------------------------------------|
-| `url`              | `string`         | *(required)*     | Endpoint that accepts a `multipart/form-data` POST per file and returns JSON. The component throws `InvalidArgumentException` when missing |
+| `url`              | `string`         | *(required)*     | Endpoint that accepts a `multipart/form-data` POST per file and returns JSON (or a Turbo Stream — see below). Throws `InvalidArgumentException` when missing |
 | `name`             | `string\|null`   | `null`           | Form field name carried in the hidden input. With `multiple`, `[]` is appended automatically. Also drives `id`, `errorKey` and the `aria-describedby` link |
+| `value`            | `mixed`          | `null`           | Initial value(s) for the field. String token in single mode, array of tokens in multi. Overridden by `old()` after a validation-failure redirect-back |
 | `id`               | `string\|null`   | `null`           | Overrides the auto-derived id (`FieldKey::toId($name)`). Falls back to `hwc-file-upload-{uniqid}` when name is absent |
-| `errorKey`         | `string\|null`   | `null`           | Overrides the auto-derived error key. Useful when validation errors live under a different path than the field name |
+| `errorKey`         | `string\|null`   | `null`           | Overrides the auto-derived error key. Use when validation errors live under a different path than the field name |
 | `accept`           | `string\|null`   | `null`           | MIME pattern or extension list (`"image/*"`, `".pdf,.csv"`) — forwarded to Dropzone's `acceptedFiles`     |
 | `maxSizeBytes`     | `int\|null`      | `null`           | Per-file size limit. Converted to MB before reaching Dropzone (`maxFilesize`)                            |
 | `maxFiles`         | `int\|null`      | `null`           | Maximum number of files the queue accepts                                                                |
 | `multiple`         | `bool`           | `false`          | Enables multi-file selection. Hidden input name becomes `name[]`                                         |
 | `preview`          | `bool`           | `true`           | When `false`, suppresses Dropzone's preview list (`previewsContainer: false`). Pair with Turbo Streams for server-rendered cards |
-| `emitHidden`       | `bool`           | `true`           | When `false`, the controller does not append the hidden input on success — the server-rendered card embeds it instead |
+| `emitHidden`       | `bool`           | `true`           | When `false`, the controller does not append a hidden input on success — the server-rendered card embeds it instead |
+| `turboStream`      | `bool`           | `false`          | When `true`, sends `Accept: text/vnd.turbo-stream.html, application/json` on the upload XHR; if the response is a `<turbo-stream>` it's applied via `Turbo.renderStreamMessage`. See [Turbo Streams](#turbo-streams) |
 | `paramName`        | `string`         | `'file'`         | Multipart field name used in each XHR — matches `$request->file('file')` server-side                     |
 | `responseKey`      | `string`         | `'token'`        | Key read from the JSON response to populate the hidden input value. Use `'uuid'` for Spatie media, `'url'` for direct-to-S3, etc. |
 | `deleteUrl`        | `string\|null`   | `null`           | DELETE endpoint hit when a queued file is removed. `:token` is substituted with the extracted value      |
 | `parallelUploads`  | `int`            | `3`              | Concurrent XHRs in the queue                                                                             |
-| `class`            | `string`         | `''`             | Merged on the wrapper                                                                                    |
+| `class`            | `string`         | `''`             | Merged on the wrapper (after the baseline `hwc-file-upload dropzone`)                                    |
 | `controller`       | `string`         | `'file-upload'`  | Stimulus identifier — swap for a subclass (e.g. `controller="my-upload"`)                                |
 
 Any other HTML attribute (`aria-label`, `data-*`, etc.) passes through to the wrapper. Internal
@@ -59,9 +96,8 @@ the props above instead.
 ```
 
 ```php
-// routes/web.php
-Route::post('/uploads', function (Request $request) {
-    $file = $request->validate(['file' => 'required|image|max:2048'])['file'];
+Route::post('/uploads', function (Request $r) {
+    $file = $r->validate(['file' => 'required|image|max:2048'])['file'];
     $path = $file->store('temp-uploads');
 
     return response()->json(['token' => $path]);
@@ -87,22 +123,72 @@ The submit handler later resolves the token (read the temp path, move to permane
 Hidden inputs render as `attachments[]` per uploaded file. The `:token` placeholder in `delete-url`
 is substituted with the extracted response value when the user removes a queued file.
 
-## Field composition
+## Edit forms and validation redirect-back
 
-Like every form input in the package, `file-upload` participates in `<x-hwc::field>` and reads
-`name`/`required`/`errorKey` via `@aware`:
+The `value` prop pre-populates the hidden input(s) so existing data is carried into the form. On
+a validation-failure redirect-back, Laravel's `old($name)` automatically takes precedence — the
+user's most recent upload reference is preserved without re-upload.
 
 ```blade
-<x-hwc::field name="cover" error-key="media.cover" required>
-    <x-hwc::label />
-    <x-hwc::file-upload url="{{ route('uploads.store') }}" accept="image/*" />
-    <x-hwc::description>PNG, JPG, WebP up to 5MB.</x-hwc::description>
-    <x-hwc::error />
+{{-- Editing a user that already has an avatar token --}}
+<x-hwc::field name="avatar_token" label="Profile picture">
+    <x-hwc::file-upload
+        url="{{ route('uploads.store') }}"
+        :value="$user->avatar_token"
+        accept="image/*"
+    />
+</x-hwc::field>
+
+{{-- Editing a post that already has attachments --}}
+<x-hwc::field name="attachments" label="Attachments">
+    <x-hwc::file-upload
+        url="{{ route('uploads.store') }}"
+        :value="$post->attachment_tokens"
+        multiple
+    />
 </x-hwc::field>
 ```
 
-Validation errors on `media.cover` (or any sub-key like `media.cover.0` for multi-file rules)
-automatically mark the wrapper `aria-invalid="true"` and render the `<x-hwc::error>` block.
+The view emits one `<input type="hidden" name="..." value="..." data-hw-upload-preserved>` per
+existing value, **before** Dropzone mounts. On the next form submit (even without the user touching
+the upload area) the existing tokens go through unchanged.
+
+When the user does upload a new file, the controller's behaviour depends on the mode:
+
+- **Single mode**: the preserved hidden is removed before the new one is appended. Only one
+  token at a time.
+- **Multi mode**: preserved hiddens stay; the new upload adds another. The list of attachments
+  accumulates.
+- **`emit-hidden="false"`**: the controller never touches hiddens — the server-rendered card
+  owns the lifecycle (typical when pairing with `:turbo-stream="true"`, see the gallery recipe).
+
+**Known v1 limitation — visual gap**: pre-existing files don't render in Dropzone's preview queue
+on initial load. The data is preserved on the form and re-submit works without re-upload, but the
+drop area shows the empty "Drop files here" state. To show name/thumbnail/EXIF of a pre-existing
+file in the queue requires `name`/`size` metadata in the response shape and a separate prop —
+deferred to a future release. For now: either accept the empty-queue UX, or use the
+[stream-rendered gallery pattern](#3-stream-rendered-gallery-with-server-side-exif) where the
+visible state lives in a separate server-rendered list, not in the Dropzone area.
+
+## Turbo Streams
+
+Set `:turbo-stream="true"` to have the controller negotiate Turbo Stream responses end-to-end:
+
+- Sends `Accept: text/vnd.turbo-stream.html, application/json` on every upload XHR
+- On `success` (any 2xx response): if the body contains `<turbo-stream`, hands it to
+  `Turbo.renderStreamMessage` and skips the automatic hidden input — the server-rendered card is
+  expected to carry the hidden internally. Falls back to JSON parsing when the response isn't a
+  stream
+- On `error` (non-2xx): if the response body looks like a stream, renders it too — useful for
+  rendering inline error messages via a stream targeting an `<errors-region>` element. The
+  controller still announces the error and dispatches `file-upload:error` so app listeners stay
+  informed
+
+When `Turbo` isn't loaded globally (no `@hotwired/turbo` import on the page), stream rendering is
+skipped silently and the controller falls back to the JSON path. No throws.
+
+See the [stream-rendered gallery recipe](#3-stream-rendered-gallery-with-server-side-exif) for a
+full end-to-end example.
 
 ## Keyboard accessibility
 
@@ -122,8 +208,13 @@ Override the label when context demands a specific call-to-action:
 ## Validation feedback
 
 On error the wrapper emits `aria-invalid="true"` plus `data-invalid` for CSS hooks. Compose with
-`<x-hwc::error name="..." />` directly under the file-upload to render the message. For multi-file
-rules (`attachments.*`), any sub-key error marks the wrapper invalid.
+`<x-hwc::error name="..." />` directly under the file-upload (or rely on `<x-hwc::field>` to render
+it) to show the message. For multi-file rules (`attachments.*`), any sub-key error marks the
+wrapper invalid.
+
+Server-side errors returned per-upload (a 422 with `{ message, errors: { file: [...] } }`) are
+normalised by the controller: the announcer, the thumb's error tooltip, and the
+`file-upload:error` event detail all carry a readable string instead of `[object Object]`.
 
 ## Screen reader announcements
 
@@ -173,12 +264,12 @@ returns the media UUID; `response-key="uuid"` writes that into the hidden input.
     url="{{ route('uploads.store') }}"
     response-key="uuid"
     :delete-url="route('uploads.destroy', ':token')"
+    :value="$user->avatar_media_uuid"
     accept="image/*"
 />
 ```
 
 ```php
-// routes/web.php
 Route::post('/uploads', function (Request $r) {
     $r->validate(['file' => 'required|image|max:2048']);
 
@@ -202,20 +293,22 @@ public function update(UpdateProfileRequest $r)
 }
 ```
 
-A scheduled job sweeps unclaimed media older than N hours from the `avatars` collection.
+A scheduled job sweeps unclaimed media older than N hours from the `avatars` collection. With
+`:value`, edit forms work transparently: the UUID is pre-loaded; a redirect-back from a sibling
+field's validation failure keeps the user's avatar selection.
 
 ### 2. Async thumbnail via broadcast
 
-Heavy thumbnail generation moves to a queued job. The endpoint returns immediately with a
-"pending" card so the user keeps moving; when the job finishes, your broadcaster delivers a Turbo
-Stream that swaps the pending card for the final thumb. The wrapper itself is unchanged — only the
-endpoint and the job differ from recipe 3.
+Heavy thumbnail generation moves to a queued job. The endpoint returns a Turbo Stream immediately
+with a "pending" card; when the job finishes, your broadcaster delivers a second stream that
+replaces the pending card with the final thumb.
 
 ```blade
 <x-hwc::file-upload
     name="attachments"
     url="{{ route('uploads.store') }}"
     multiple
+    :turbo-stream="true"
     :preview="false"
     :emit-hidden="false"
 />
@@ -265,54 +358,106 @@ The hidden input lives inside the card from the moment it's appended — the for
 reference even while the thumbnail is still rendering. `lazy-image` on the final thumb defers the
 GET until the card enters the viewport.
 
-### 3. Stream-rendered card (Turbo Streams mode)
+### 3. Stream-rendered gallery with server-side EXIF
 
-When the visual is fully server-owned — branded preview, edit/reorder controls, badges — turn off
-the client preview entirely and let the endpoint reply with a Turbo Stream that appends the card:
+User drops images; each upload returns a Turbo Stream that appends a server-rendered `<li>` card
+with the thumbnail, file name, and EXIF metadata (camera/date) the server extracted. Removal is
+also stream-driven via the package's `remote-form` controller — no app-side glue.
 
 ```blade
-<x-hwc::file-upload
-    name="photos"
-    url="{{ route('photos.store') }}"
-    multiple
-    accept="image/*"
-    :preview="false"
-    :emit-hidden="false"
-/>
+{{-- gallery.blade.php --}}
+<x-hwc::form action="{{ route('gallery.save') }}" method="post">
+    <x-hwc::field name="photos" label="Add photos">
+        <x-hwc::file-upload
+            name="photos"
+            url="{{ route('gallery.upload') }}"
+            accept="image/*"
+            multiple
+            :turbo-stream="true"
+            :preview="false"
+            :emit-hidden="false"
+        />
+    </x-hwc::field>
 
-<ul id="photo-list"></ul>
+    <ul id="photo-gallery" class="gallery"></ul>
+
+    <button type="submit">Save gallery</button>
+</x-hwc::form>
 ```
 
 ```php
-Route::post('/photos', function (Request $r) {
+// routes/web.php
+Route::post('/gallery/upload', function (Request $r) {
+    $r->validate(['file' => 'required|image|max:10240']);
+
     $photo = $r->user()->photos()->create([
-        'path' => $r->file('file')->store('photos'),
+        'path' => $r->file('file')->store('photos', 'public'),
+        'original_name' => $r->file('file')->getClientOriginalName(),
+        'exif' => collect(@exif_read_data($r->file('file')->getPathname()))
+            ->only(['Make', 'Model', 'DateTimeOriginal'])
+            ->filter()
+            ->all(),
     ]);
 
-    return turbo_stream()->append('photo-list', view('photos.card', ['photo' => $photo]));
-});
-```
+    return turbo_stream()->append('photo-gallery', view('photos.card', ['photo' => $photo]));
+})->middleware('auth')->name('gallery.upload');
 
-The endpoint negotiates `Accept` — when the browser asks for `text/vnd.turbo-stream.html` (which
-Turbo always does for non-GET requests on a Turbo page), the stream is applied and the card
-appears. The card itself owns the hidden input and the remove button:
+Route::delete('/gallery/{photo}', function (Photo $photo) {
+    $photo->delete();
+    return turbo_stream()->remove(dom_id($photo));
+})->name('gallery.destroy');
+```
 
 ```blade
 {{-- resources/views/photos/card.blade.php --}}
-<li id="{{ dom_id($photo) }}">
-    <img data-controller="lazy-image" data-lazy-image-src-value="{{ $photo->thumb_url }}" alt="">
+<li id="{{ dom_id($photo) }}" class="photo-card">
+    <img
+        data-controller="lazy-image"
+        data-lazy-image-src-value="{{ Storage::url($photo->path) }}"
+        alt="{{ $photo->original_name }}"
+        loading="lazy" width="160" height="160"
+    >
+    <div class="photo-card__meta">
+        <strong>{{ Str::limit($photo->original_name, 24) }}</strong>
+        @if ($make = $photo->exif['Make'] ?? null)
+            <small>{{ $make }} {{ $photo->exif['Model'] ?? '' }}</small>
+        @endif
+        @if ($shot = $photo->exif['DateTimeOriginal'] ?? null)
+            <small>{{ $shot }}</small>
+        @endif
+    </div>
+
+    {{-- The card carries its own hidden input — the file-upload component skips emitting one
+         because `:emit-hidden="false"`. --}}
     <input type="hidden" name="photos[]" value="{{ $photo->id }}">
-    <button
-        type="button"
-        data-controller="remote-form"
-        formaction="{{ route('photos.destroy', $photo) }}"
-        formmethod="delete"
-    >Remove</button>
+
+    {{-- Stream-driven removal: DELETE returns <turbo-stream action="remove"> which makes the
+         <li> (and its hidden) disappear. --}}
+    <button type="button"
+            data-controller="remote-form"
+            formaction="{{ route('gallery.destroy', $photo) }}"
+            formmethod="delete"
+            aria-label="Remove {{ $photo->original_name }}">×</button>
 </li>
 ```
 
-`emit-hidden="false"` keeps the wrapper out of the hidden-input business; `preview="false"` keeps
-Dropzone's thumbnail DOM out of the picture. Everything visible is server-rendered Blade.
+End-to-end flow:
+
+1. User drops 3 photos → Dropzone fires 3 parallel XHRs (capped by `parallelUploads`).
+2. Each XHR carries `Accept: text/vnd.turbo-stream.html, application/json`.
+3. Server validates, persists, reads EXIF, creates the DB record. Responds with a Turbo Stream
+   appending the card into `#photo-gallery`.
+4. Controller detects the stream body and calls `Turbo.renderStreamMessage`. The `<li>` with
+   `<img>` + EXIF + hidden + remove button slides into the page.
+5. `lazy-image` defers the GET of each thumb until the card enters the viewport — a 20-photo
+   batch doesn't fire 20 image GETs at once.
+6. Parent form submit collects every `photos[]` hidden carried by every card → app persists the
+   final association.
+7. Per-card remove buttons fire DELETE via `remote-form`; server responds with another stream
+   (`<turbo-stream action="remove" target="photo_42">`) → card and its hidden disappear.
+
+Compose with `lazy-image`, `remote-form`, `confirm-dialog`, and any other Stimulus controller you
+need on the card partial. Zero JS glue beyond what the package already ships.
 
 ## See also
 
