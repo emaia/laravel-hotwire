@@ -30,6 +30,7 @@ class FileUpload extends Component
         public string $responseKey = 'token',
         public ?string $deleteUrl = null,
         public int $parallelUploads = 3,
+        public mixed $value = null,
         public string $class = '',
         public string $controller = 'file-upload',
     ) {
@@ -92,6 +93,8 @@ class FileUpload extends Component
 
         $hasAriaLabel = $attributes->has('aria-label');
 
+        $initialValues = $hasName ? $this->resolveInitialValues($name) : [];
+
         return [
             'resolvedId' => $resolvedId,
             'resolvedErrorKey' => $resolvedErrorKey,
@@ -102,6 +105,34 @@ class FileUpload extends Component
             'mergedController' => $mergedController,
             'mergedAction' => $mergedAction,
             'hasAriaLabel' => $hasAriaLabel,
+            'initialValues' => $initialValues,
         ];
+    }
+
+    /**
+     * Resolve preserved hidden values, honouring `old()` over the `value` prop and normalising
+     * scalar/array shapes. Empty entries are dropped so the view never emits `value=""` hiddens.
+     *
+     * @return string[]
+     */
+    private function resolveInitialValues(string $name): array
+    {
+        $resolved = old($name, $this->value);
+
+        if ($this->multiple) {
+            if (! is_array($resolved)) {
+                $resolved = $resolved === null || $resolved === '' ? [] : [$resolved];
+            }
+        } else {
+            if (is_array($resolved)) {
+                $resolved = $resolved[0] ?? null;
+            }
+            $resolved = $resolved === null || $resolved === '' ? [] : [$resolved];
+        }
+
+        return array_values(array_filter(
+            array_map(fn ($v) => (string) $v, $resolved),
+            fn ($v) => $v !== '',
+        ));
     }
 }

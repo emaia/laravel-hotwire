@@ -366,6 +366,67 @@ test("removes the matching hidden input on removedfile", async () => {
     expect(mounted.root.querySelector('input[type="hidden"]')).toBeNull();
 });
 
+// --- Preserved hiddens (Laravel old() / value prop) ---
+
+test("single mode — a new upload replaces a pre-existing preserved hidden", async () => {
+    const html = `
+        <div data-controller="file-upload"
+             data-file-upload-url-value="/upload"
+             data-file-upload-hidden-name-value="avatar">
+            <input type="hidden" name="avatar" value="old-token" data-hw-upload-preserved>
+            <div role="status" data-file-upload-target="announcer"></div>
+        </div>
+    `;
+    await mount(html);
+
+    expect(mounted.root.querySelectorAll('input[type="hidden"][name="avatar"]').length).toBe(1);
+
+    dzState.instance.emit("success", { name: "x.png" }, { token: "new-token" });
+
+    const hiddens = mounted.root.querySelectorAll('input[type="hidden"][name="avatar"]');
+    expect(hiddens.length).toBe(1);
+    expect(hiddens[0].value).toBe("new-token");
+});
+
+test("multi mode — new uploads keep pre-existing preserved hiddens (the list accumulates)", async () => {
+    const html = `
+        <div data-controller="file-upload"
+             data-file-upload-url-value="/upload"
+             data-file-upload-hidden-name-value="attachments[]"
+             data-file-upload-multiple-value="true">
+            <input type="hidden" name="attachments[]" value="old-a" data-hw-upload-preserved>
+            <input type="hidden" name="attachments[]" value="old-b" data-hw-upload-preserved>
+            <div role="status" data-file-upload-target="announcer"></div>
+        </div>
+    `;
+    await mount(html);
+
+    dzState.instance.emit("success", { name: "x.png" }, { token: "new-c" });
+
+    const hiddens = mounted.root.querySelectorAll('input[type="hidden"][name="attachments[]"]');
+    expect(hiddens.length).toBe(3);
+    expect([...hiddens].map((h) => h.value)).toEqual(["old-a", "old-b", "new-c"]);
+});
+
+test("emit-hidden=false leaves preserved hiddens untouched (the form controls the hiddens server-side)", async () => {
+    const html = `
+        <div data-controller="file-upload"
+             data-file-upload-url-value="/upload"
+             data-file-upload-hidden-name-value="avatar"
+             data-file-upload-emit-hidden-value="false">
+            <input type="hidden" name="avatar" value="old-token" data-hw-upload-preserved>
+            <div role="status" data-file-upload-target="announcer"></div>
+        </div>
+    `;
+    await mount(html);
+
+    dzState.instance.emit("success", { name: "x.png" }, { token: "new-token" });
+
+    const hiddens = mounted.root.querySelectorAll('input[type="hidden"]');
+    expect(hiddens.length).toBe(1);
+    expect(hiddens[0].value).toBe("old-token");
+});
+
 // --- DELETE on remove ---
 
 test("fires DELETE with token-substituted URL on removedfile when delete-url is set", async () => {

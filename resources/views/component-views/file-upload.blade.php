@@ -29,6 +29,9 @@
         ->whereDoesntStartWith(array_merge(['data-controller', 'data-action'], $internalPrefixes))
         ->except(['required']) }}
 >
+    @foreach ($initialValues as $val)
+        <input type="hidden" name="{{ $hiddenName }}" value="{{ $val }}" data-hw-upload-preserved>
+    @endforeach
     <div
         role="status"
         aria-live="polite"

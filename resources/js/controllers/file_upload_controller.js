@@ -71,9 +71,18 @@ export default class extends Controller {
     handleSuccess(file, response) {
         const value = this.extractValue(response);
         if (value != null) this.tokensByFile.set(file, value);
-        if (this.emitHiddenValue) this.appendHidden(file, value);
+        if (this.emitHiddenValue) {
+            // Single mode holds at most one value. A new upload should replace any preserved
+            // hidden that came in via `old()`/`value` prop. Multi mode keeps the list growing.
+            if (!this.multipleValue) this.removePreservedHiddens();
+            this.appendHidden(file, value);
+        }
         this.announce(`Uploaded ${file.name}`);
         this.dispatch("success", { detail: { file, response, value } });
+    }
+
+    removePreservedHiddens() {
+        this.element.querySelectorAll("[data-hw-upload-preserved]").forEach((el) => el.remove());
     }
 
     handleError(file, message, xhr) {

@@ -301,6 +301,73 @@ it('keeps non-internal data attrs passed by the user', function () {
     $view->assertSee('data-test="x"', false);
 });
 
+// --- value prop and old() preservation ---
+
+it('emits a single preserved hidden input from value in single mode', function () {
+    $view = $this->blade('<x-hwc::file-upload name="avatar" url="/uploads" value="tok-existing" />');
+
+    $view->assertSee('<input type="hidden" name="avatar" value="tok-existing" data-hw-upload-preserved>', false);
+});
+
+it('emits one preserved hidden input per token from value array in multiple mode', function () {
+    $view = $this->blade('<x-hwc::file-upload name="attachments" url="/uploads" multiple :value="[\'tok-a\', \'tok-b\']" />');
+
+    $view->assertSee('<input type="hidden" name="attachments[]" value="tok-a" data-hw-upload-preserved>', false);
+    $view->assertSee('<input type="hidden" name="attachments[]" value="tok-b" data-hw-upload-preserved>', false);
+});
+
+it('emits no preserved hidden input when value is null and old() is empty', function () {
+    $view = $this->blade('<x-hwc::file-upload name="avatar" url="/uploads" />');
+
+    $view->assertDontSee('data-hw-upload-preserved', false);
+});
+
+it('emits no preserved hidden input when value is empty string', function () {
+    $view = $this->blade('<x-hwc::file-upload name="avatar" url="/uploads" value="" />');
+
+    $view->assertDontSee('data-hw-upload-preserved', false);
+});
+
+it('emits no preserved hidden input when value is empty array in multiple mode', function () {
+    $view = $this->blade('<x-hwc::file-upload name="attachments" url="/uploads" multiple :value="[]" />');
+
+    $view->assertDontSee('data-hw-upload-preserved', false);
+});
+
+it('honours old() over value (single mode redirect-back)', function () {
+    session()->put('_old_input', ['avatar' => 'tok-old']);
+
+    $view = $this->blade('<x-hwc::file-upload name="avatar" url="/uploads" value="tok-prop" />');
+
+    $view->assertSee('value="tok-old"', false);
+    $view->assertDontSee('value="tok-prop"', false);
+});
+
+it('honours old() over value (multiple mode redirect-back)', function () {
+    session()->put('_old_input', ['attachments' => ['tok-x', 'tok-y']]);
+
+    $view = $this->blade('<x-hwc::file-upload name="attachments" url="/uploads" multiple :value="[\'tok-prop\']" />');
+
+    $view->assertSee('value="tok-x"', false);
+    $view->assertSee('value="tok-y"', false);
+    $view->assertDontSee('value="tok-prop"', false);
+});
+
+it('skips null and empty entries in multi value array', function () {
+    $view = $this->blade('<x-hwc::file-upload name="attachments" url="/uploads" multiple :value="[\'tok-a\', null, \'\', \'tok-b\']" />');
+
+    $view->assertSee('value="tok-a"', false);
+    $view->assertSee('value="tok-b"', false);
+    // entries that were null/empty don't yield hidden inputs
+    expect(substr_count((string) $view, 'data-hw-upload-preserved'))->toBe(2);
+});
+
+it('coerces a single-string value to a one-element list in multiple mode', function () {
+    $view = $this->blade('<x-hwc::file-upload name="attachments" url="/uploads" multiple value="tok-solo" />');
+
+    $view->assertSee('name="attachments[]" value="tok-solo" data-hw-upload-preserved', false);
+});
+
 // --- @aware propagation from <x-hwc::field> ---
 
 it('picks up name and required from <x-hwc::field> via @aware', function () {
