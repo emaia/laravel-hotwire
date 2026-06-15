@@ -81,7 +81,7 @@ The component renders:
 
     {{-- omitted when :toolbar="false" --}}
     <div data-controller="rich-text-toolbar"
-         data-rich-text-toolbar-rich-text-outlet="[data-rich-text-id-value='content']"
+         data-rich-text-toolbar-editor-value="[data-rich-text-id-value='content']"
          …>
         <button data-action="click->rich-text-toolbar#bold" …>B</button>
         …
@@ -202,7 +202,7 @@ When you need a different set of buttons, drop the default and render your own t
 ```blade
 <x-hwc::rich-text name="content" :toolbar="false">
     <div data-controller="rich-text-toolbar"
-         data-rich-text-toolbar-rich-text-outlet="[data-rich-text-id-value='content']"
+         data-rich-text-toolbar-editor-value="[data-rich-text-id-value='content']"
          class="my-toolbar">
         <button type="button"
                 data-action="click->rich-text-toolbar#heading"

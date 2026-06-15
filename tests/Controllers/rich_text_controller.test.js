@@ -282,6 +282,31 @@ test("dispatches focus and blur when editor focus/blur fires", async () => {
     expect(events).toContain("blur");
 });
 
+test("emits events under the fixed 'rich-text:' prefix even when registered under a swapped identifier", async () => {
+    // Subclass registered as "rich-text-full" should still fire rich-text:state
+    // (so a toolbar that listens for rich-text:state works against any swap).
+    const events = [];
+
+    const html = `
+        <div data-controller="rich-text-full" data-rich-text-full-id-value="content">
+            <textarea data-rich-text-full-target="input" hidden></textarea>
+            <div data-rich-text-full-target="editor"></div>
+        </div>
+    `;
+    // Reuse mounted-cleanup pattern: tear down whatever previous test left.
+    await mounted?.cleanup();
+    mounted = await mountController("rich-text-full", RichTextController, html);
+
+    const root = document.querySelector("[data-controller~='rich-text-full']");
+    root.addEventListener("rich-text:state", () => events.push("rich-text:state"));
+    root.addEventListener("rich-text-full:state", () => events.push("rich-text-full:state"));
+
+    editorState.lastInstance._trigger("onSelectionUpdate");
+
+    expect(events).toContain("rich-text:state");
+    expect(events).not.toContain("rich-text-full:state");
+});
+
 test("dispatches state on selectionUpdate so toolbars can resync", async () => {
     const events = [];
     class Spy extends RichTextController {

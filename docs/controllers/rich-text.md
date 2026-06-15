@@ -51,6 +51,11 @@ instance.
 | `rich-text:blur`         | —                            | Fires when the editor loses focus.                        |
 | `rich-text:image-upload` | `{ file, editor }`           | Fires per image dropped or pasted when `image-upload` is enabled. The handler is responsible for uploading the file and inserting the resulting URL via `editor.chain().focus().setImage({ src: url }).run()`. |
 
+All events are dispatched under the fixed `rich-text:` prefix — Stimulus's `dispatch(name,
+{ prefix })` option pins the event name regardless of the registered identifier. A subclass
+mounted under `controller="rich-text-full"` still emits `rich-text:state`, `rich-text:ready`,
+etc. The toolbar (and any app-side listener) can stay generic.
+
 ## Public API
 
 The controller exposes a few properties and methods for app code to drive the editor without

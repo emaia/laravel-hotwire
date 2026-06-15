@@ -48,9 +48,9 @@ export default class extends Controller {
             editorClass: this.editorClassValue,
             extensions: this.extensions({ placeholder }),
             onUpdate: ({ html, json }) => this.handleUpdate(html, json),
-            onFocus: () => this.dispatch("focus"),
-            onBlur: () => this.dispatch("blur"),
-            onSelectionUpdate: () => this.dispatch("state", { detail: { editor: this.editor } }),
+            onFocus: () => this.dispatch("focus", { prefix: "rich-text" }),
+            onBlur: () => this.dispatch("blur", { prefix: "rich-text" }),
+            onSelectionUpdate: () => this.dispatch("state", { prefix: "rich-text", detail: { editor: this.editor } }),
             onImageDrop: this.imageUploadValue ? (file) => this.handleImageUpload(file) : null,
         });
 
@@ -60,14 +60,14 @@ export default class extends Controller {
             this.syncInput();
         }
 
-        this.dispatch("ready", { detail: { editor: this.editor } });
-        this.dispatch("state", { detail: { editor: this.editor } });
+        this.dispatch("ready", { prefix: "rich-text", detail: { editor: this.editor } });
+        this.dispatch("state", { prefix: "rich-text", detail: { editor: this.editor } });
     }
 
     handleUpdate(html, json) {
         this.syncInput();
-        this.dispatch("change", { detail: { html, json } });
-        this.dispatch("state", { detail: { editor: this.editor } });
+        this.dispatch("change", { prefix: "rich-text", detail: { html, json } });
+        this.dispatch("state", { prefix: "rich-text", detail: { editor: this.editor } });
     }
 
     syncInput() {
@@ -82,7 +82,7 @@ export default class extends Controller {
     }
 
     handleImageUpload(file) {
-        this.dispatch("image-upload", { detail: { file, editor: this.editor } });
+        this.dispatch("image-upload", { prefix: "rich-text", detail: { file, editor: this.editor } });
     }
 
     // --- public API ---

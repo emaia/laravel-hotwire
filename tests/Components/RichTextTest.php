@@ -117,7 +117,7 @@ it('renders the default toolbar by default', function () {
 
     $view->assertSee('data-controller="rich-text-toolbar"', false);
     $view->assertSee('data-rich-text-toolbar-target="bold"', false);
-    $view->assertSee('data-rich-text-toolbar-rich-text-outlet=', false);
+    $view->assertSee('data-rich-text-toolbar-editor-value=', false);
     $view->assertSee('data-rich-text-id-value=', false);
 });
 

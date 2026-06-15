@@ -107,7 +107,7 @@ afterEach(async () => {
     globalThis.prompt = originalPrompt;
 });
 
-function tmpl({ targets = [], outletSelector = "[data-rich-text-id-value='content']" } = {}) {
+function tmpl({ targets = [], editorSelector = "[data-rich-text-id-value='content']" } = {}) {
     const defaultTargets = [
         ["bold", "B"],
         ["italic", "I"],
@@ -134,7 +134,7 @@ function tmpl({ targets = [], outletSelector = "[data-rich-text-id-value='conten
             <div data-rich-text-target="editor"></div>
         </div>
         <div data-controller="rich-text-toolbar"
-             data-rich-text-toolbar-rich-text-outlet="${outletSelector}">
+             data-rich-text-toolbar-editor-value="${editorSelector}">
             ${buttons}
         </div>
     `;
@@ -156,13 +156,65 @@ function toolbar() {
     return mounted.getController("rich-text-toolbar", el);
 }
 
-// --- outlet wiring ---
+// --- editor lookup ---
 
-test("connects to the rich-text outlet by id selector", async () => {
+test("resolves the editor via the editor-value selector and walks data-controller for the controller", async () => {
     await mount();
 
-    expect(toolbar().hasRichTextOutlet).toBe(true);
-    expect(toolbar().richTextOutlet.editor).toBe(editorState.lastInstance);
+    expect(toolbar().editorElement).toBe(document.querySelector("[data-controller~='rich-text']"));
+    expect(toolbar().editor).toBe(editorState.lastInstance);
+});
+
+test("works against a swapped editor identifier (controller='rich-text-full')", async () => {
+    const html = `
+        <div data-controller="rich-text-full" data-rich-text-full-id-value="content">
+            <input type="hidden" name="content" data-rich-text-full-target="input" value="">
+            <div data-rich-text-full-target="editor"></div>
+        </div>
+        <div data-controller="rich-text-toolbar"
+             data-rich-text-toolbar-editor-value="[data-rich-text-full-id-value='content']">
+            <button type="button" data-action="click->rich-text-toolbar#bold"
+                    data-rich-text-toolbar-target="bold">B</button>
+        </div>
+    `;
+    mounted = await mountMultipleControllers(
+        {
+            "rich-text-full": RichTextController,
+            "rich-text-toolbar": RichTextToolbarController,
+        },
+        html,
+    );
+    await wait(0);
+
+    const tb = toolbar();
+    expect(tb.editorElement).not.toBeNull();
+    expect(tb.editor).toBe(editorState.lastInstance);
+
+    tb.bold();
+    expect(editorState.chainCalls.at(-1)).toEqual(["focus", "toggleBold", "run"]);
+});
+
+test("connect is a no-op when the editor selector matches nothing", async () => {
+    const html = `
+        <div data-controller="rich-text-toolbar"
+             data-rich-text-toolbar-editor-value="[data-not-here]">
+            <button type="button" data-action="click->rich-text-toolbar#bold"
+                    data-rich-text-toolbar-target="bold">B</button>
+        </div>
+    `;
+    mounted = await mountMultipleControllers(
+        {
+            "rich-text": RichTextController,
+            "rich-text-toolbar": RichTextToolbarController,
+        },
+        html,
+    );
+    await wait(0);
+
+    expect(toolbar().editorElement).toBeNull();
+    expect(toolbar().editor).toBeNull();
+    // bold action is still callable; no editor → no chain, no throw
+    expect(() => toolbar().bold()).not.toThrow();
 });
 
 // --- syncButtons ---

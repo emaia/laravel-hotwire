@@ -38,7 +38,7 @@
             role="toolbar"
             aria-label="Formatting"
             data-controller="rich-text-toolbar"
-            data-rich-text-toolbar-rich-text-outlet="{{ $outletSelector }}"
+            data-rich-text-toolbar-editor-value="{{ $outletSelector }}"
         >
             <button type="button" data-action="click->rich-text-toolbar#bold" data-rich-text-toolbar-target="bold" aria-label="Bold"><strong>B</strong></button>
             <button type="button" data-action="click->rich-text-toolbar#italic" data-rich-text-toolbar-target="italic" aria-label="Italic"><em>I</em></button>

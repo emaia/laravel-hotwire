@@ -2,7 +2,11 @@
 import { Controller } from "@hotwired/stimulus";
 
 export default class extends Controller {
-    static outlets = ["rich-text"];
+    static values = {
+        /** CSS selector resolving to the editor element (the one carrying the rich-text
+         *  controller). Set by the Blade view; can be raw HTML for hand-written toolbars. */
+        editor: { type: String, default: "" },
+    };
 
     static targets = [
         "bold",
@@ -33,34 +37,56 @@ export default class extends Controller {
         link: "link",
     };
 
+    editorElement = null;
     syncBound = null;
-    boundElement = null;
+    cachedEditor = null;
 
-    richTextOutletConnected(_outlet, element) {
-        this.boundElement = element;
-        this.syncBound = () => this.syncButtons();
-        element.addEventListener("rich-text:state", this.syncBound);
-        this.syncButtons();
-    }
+    connect() {
+        if (this.editorValue === "") return;
 
-    richTextOutletDisconnected(_outlet, element) {
-        if (this.syncBound) {
-            element.removeEventListener("rich-text:state", this.syncBound);
-            this.syncBound = null;
-        }
-        this.boundElement = null;
+        this.editorElement = document.querySelector(this.editorValue);
+        if (!this.editorElement) return;
+
+        this.syncBound = (event) => {
+            if (event.detail?.editor) this.cachedEditor = event.detail.editor;
+            this.syncButtons();
+        };
+        this.editorElement.addEventListener("rich-text:state", this.syncBound);
+
+        // If the editor controller already mounted, grab its editor synchronously
+        // so the initial active state renders without waiting for a state event.
+        this.cacheEditorFromController();
+        if (this.cachedEditor) this.syncButtons();
     }
 
     disconnect() {
-        if (this.syncBound && this.boundElement) {
-            this.boundElement.removeEventListener("rich-text:state", this.syncBound);
+        if (this.editorElement && this.syncBound) {
+            this.editorElement.removeEventListener("rich-text:state", this.syncBound);
         }
         this.syncBound = null;
-        this.boundElement = null;
+        this.editorElement = null;
+        this.cachedEditor = null;
+    }
+
+    /** Walk the editor element's data-controller attribute and grab the first controller
+     *  instance that exposes an `editor` getter. Identifier-agnostic — works with the
+     *  default `rich-text` and any subclass-via-swap (`rich-text-full`, etc.). */
+    cacheEditorFromController() {
+        if (!this.editorElement) return;
+        const ids = (this.editorElement.getAttribute("data-controller") ?? "")
+            .split(/\s+/)
+            .filter(Boolean);
+        for (const id of ids) {
+            const ctrl = this.application.getControllerForElementAndIdentifier(this.editorElement, id);
+            if (ctrl?.editor) {
+                this.cachedEditor = ctrl.editor;
+                return;
+            }
+        }
     }
 
     get editor() {
-        return this.hasRichTextOutlet ? this.richTextOutlet.editor : null;
+        return this.cachedEditor ?? null;
     }
 
     syncButtons() {
@@ -93,33 +119,15 @@ export default class extends Controller {
 
     // --- actions ---
 
-    bold() {
-        this.editor?.chain().focus().toggleBold().run();
-    }
-    italic() {
-        this.editor?.chain().focus().toggleItalic().run();
-    }
-    underline() {
-        this.editor?.chain().focus().toggleUnderline().run();
-    }
-    bulletList() {
-        this.editor?.chain().focus().toggleBulletList().run();
-    }
-    orderedList() {
-        this.editor?.chain().focus().toggleOrderedList().run();
-    }
-    blockquote() {
-        this.editor?.chain().focus().toggleBlockquote().run();
-    }
-    codeBlock() {
-        this.editor?.chain().focus().toggleCodeBlock().run();
-    }
-    undo() {
-        this.editor?.chain().focus().undo().run();
-    }
-    redo() {
-        this.editor?.chain().focus().redo().run();
-    }
+    bold() { this.editor?.chain().focus().toggleBold().run(); }
+    italic() { this.editor?.chain().focus().toggleItalic().run(); }
+    underline() { this.editor?.chain().focus().toggleUnderline().run(); }
+    bulletList() { this.editor?.chain().focus().toggleBulletList().run(); }
+    orderedList() { this.editor?.chain().focus().toggleOrderedList().run(); }
+    blockquote() { this.editor?.chain().focus().toggleBlockquote().run(); }
+    codeBlock() { this.editor?.chain().focus().toggleCodeBlock().run(); }
+    undo() { this.editor?.chain().focus().undo().run(); }
+    redo() { this.editor?.chain().focus().redo().run(); }
 
     heading(event) {
         const raw = event?.params?.level ?? event?.currentTarget?.dataset?.level ?? "1";
@@ -129,10 +137,9 @@ export default class extends Controller {
 
     link(event) {
         const fromParams = event?.params?.url;
-        const url =
-            typeof fromParams === "string"
-                ? fromParams
-                : globalThis.prompt?.("URL", this.editor?.getAttributes?.("link")?.href ?? "");
+        const url = typeof fromParams === "string"
+            ? fromParams
+            : globalThis.prompt?.("URL", this.editor?.getAttributes?.("link")?.href ?? "");
 
         if (url === null || url === undefined) return;
         if (url === "") {

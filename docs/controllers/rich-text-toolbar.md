@@ -13,23 +13,25 @@ in sync with the editor's current selection.
 - A `rich-text` controller registered on a sibling element (or anywhere in the document) that the
   outlet selector can find.
 
-## Outlet
+## Editor lookup
 
-```js
-static outlets = ["rich-text"];
-```
-
-The outlet attribute on the toolbar element is a CSS selector that resolves to the editor:
+The toolbar takes a CSS selector that points at the editor element via the `editor` value:
 
 ```html
-
 <div data-controller="rich-text-toolbar"
-     data-rich-text-toolbar-rich-text-outlet="[data-rich-text-id-value='content']">
+     data-rich-text-toolbar-editor-value="[data-rich-text-id-value='content']">
 ```
 
-Stimulus filters the selector matches to elements that actually carry `data-controller~="rich-text"`,
-so the `id-value` attribute is enough to pin one toolbar to one editor — even with several editors
-on the same page.
+On `connect()`, the toolbar resolves the editor element, walks its `data-controller` attribute
+looking for a controller that exposes an `editor` getter (the rich-text controller or any
+subclass), caches the Tiptap editor instance, and listens for `rich-text:state` events on that
+element to keep the active-button reflection in sync. The lookup is **identifier-agnostic** — it
+works with the default `rich-text` controller, with subclasses mounted under the same name, and
+with per-instance swaps like `controller="rich-text-full"`.
+
+`rich-text:state` is dispatched under a fixed `rich-text:` prefix by the editor controller
+([rich_text_controller.js:53](../../resources/js/controllers/rich_text_controller.js)) so the
+toolbar's listener catches the event regardless of the editor's registered identifier.
 
 ## Targets
 
@@ -94,25 +96,25 @@ the transaction in a single ProseMirror update.
 
 ## Sync lifecycle
 
-- `richTextOutletConnected(_outlet, element)` stores the editor element, attaches a listener for
-  `rich-text:state`, and calls `syncButtons()` once so the initial state is correct.
-- `richTextOutletDisconnected` removes the listener.
-- `disconnect()` removes the listener defensively in case the outlet is still bound.
+- `connect()` resolves the editor element from `editorValue`, caches the editor (either via the
+  controller-walk or via the first incoming `rich-text:state` event), attaches the state listener,
+  and runs `syncButtons()` once so the initial state is correct.
+- `disconnect()` removes the state listener and clears the cached references.
 
 `syncButtons` iterates only the targets that are actually present, so a minimal toolbar (e.g. just
-bold + italic) doesn't pay for buttons it doesn't render.
+bold + italic) doesn't pay for buttons it doesn't render. When the editor element can't be
+resolved (selector matches nothing) the toolbar stays inert — actions become no-ops, no throws.
 
 ## Basic usage (raw)
 
 ```html
-
 <div data-controller="rich-text" data-rich-text-id-value="content">
     <input type="hidden" name="content" data-rich-text-target="input">
     <div data-rich-text-target="editor"></div>
 </div>
 
 <div data-controller="rich-text-toolbar"
-     data-rich-text-toolbar-rich-text-outlet="[data-rich-text-id-value='content']">
+     data-rich-text-toolbar-editor-value="[data-rich-text-id-value='content']">
     <button type="button" data-action="click->rich-text-toolbar#bold"
             data-rich-text-toolbar-target="bold" aria-label="Bold"><strong>B</strong></button>
     <button type="button" data-action="click->rich-text-toolbar#italic"
@@ -120,14 +122,11 @@ bold + italic) doesn't pay for buttons it doesn't render.
     <button type="button" data-action="click->rich-text-toolbar#heading"
             data-rich-text-toolbar-target="heading"
             data-rich-text-toolbar-level-param="2"
-            data-level="2">H2
-    </button>
+            data-level="2">H2</button>
     <button type="button" data-action="click->rich-text-toolbar#bulletList"
-            data-rich-text-toolbar-target="bulletList">List
-    </button>
+            data-rich-text-toolbar-target="bulletList">List</button>
     <button type="button" data-action="click->rich-text-toolbar#link"
-            data-rich-text-toolbar-target="link">Link
-    </button>
+            data-rich-text-toolbar-target="link">Link</button>
 </div>
 ```
 
@@ -144,9 +143,10 @@ the slot:
 ```blade
 <x-hwc::rich-text name="content" :toolbar="false">
     <div data-controller="rich-text-toolbar"
-         data-rich-text-toolbar-rich-text-outlet="[data-rich-text-id-value='content']"
+         data-rich-text-toolbar-editor-value="[data-rich-text-id-value='content']"
          class="my-toolbar">
-        <button data-action="click->rich-text-toolbar#bold"
+        <button type="button"
+                data-action="click->rich-text-toolbar#bold"
                 data-rich-text-toolbar-target="bold">
             @svg('heroicon-o-bold')
         </button>
@@ -155,7 +155,9 @@ the slot:
 </x-hwc::rich-text>
 ```
 
-The outlet selector matches the controller's `id-value`, so multi-editor pages stay isolated.
+The editor selector matches the rich-text controller's `id-value`, so multi-editor pages stay
+isolated. Inside a `<form>`, **always** set `type="button"` on toolbar buttons — without it the
+default is `type="submit"` and clicks submit the surrounding form instead of toggling formatting.
 
 ## Styling the active state
 
@@ -233,49 +235,65 @@ Pair it with a rich-text subclass that registers the Tiptap extensions:
 // resources/js/controllers/rich_text_with_tables_controller.js
 import RichTextController from "./rich_text_controller";
 import { defaultExtensions } from "./_rich_text_editor";
-import { Table } from "@tiptap/extension-table";
-import { TableRow } from "@tiptap/extension-table-row";
-import { TableHeader } from "@tiptap/extension-table-header";
-import { TableCell } from "@tiptap/extension-table-cell";
+import { TableKit } from "@tiptap/extension-table";
 
 export default class extends RichTextController {
     extensions(options) {
         return [
             ...defaultExtensions(options),
-            Table.configure({ resizable: true }),
-            TableRow,
-            TableHeader,
-            TableCell,
+            TableKit.configure({
+                table: { HTMLAttributes: { class: "table" } },
+            }),
         ];
     }
 }
 ```
 
+`TableKit` bundles `Table` + `TableRow` + `TableCell` + `TableHeader` from a single
+`@tiptap/extension-table` install — one import, one `configure`. Per-extension options live under
+the matching key (`table`, `tableRow`, `tableCell`, `tableHeader`).
+
 `options` is `{ placeholder }`, threaded back into `defaultExtensions` so the Placeholder
 extension still picks up the configured text — same pattern as the
 [Extensions hook](rich-text.md#extensions-hook-subclass) on the editor controller.
 
-Wire both in the Blade markup with a custom toolbar slot:
+> **npm dep:** `@tiptap/extension-table` (any 2.10+ build that ships `TableKit`). Add it to the
+> app's `package.json` manually — the catalog only declares core Tiptap deps.
+
+Wire both in the Blade markup with a custom toolbar slot. The `editor` value points at the editor
+element via its swapped `id-value` attribute — the toolbar walks `data-controller` and finds the
+`rich-text-with-tables` controller transparently:
 
 ```blade
 <x-hwc::rich-text name="content" controller="rich-text-with-tables" :toolbar="false">
     <div data-controller="rich-text-table-toolbar"
-         data-rich-text-table-toolbar-rich-text-outlet="[data-rich-text-with-tables-id-value='content']">
-        {{-- Default buttons (still inherited from the parent's actions) --}}
-        <button data-action="click->rich-text-table-toolbar#bold"
+         data-rich-text-table-toolbar-editor-value="[data-rich-text-with-tables-id-value='content']">
+        {{-- Default buttons (inherited from the parent's actions) --}}
+        <button type="button"
+                data-action="click->rich-text-table-toolbar#bold"
                 data-rich-text-table-toolbar-target="bold">B</button>
-        <button data-action="click->rich-text-table-toolbar#italic"
+        <button type="button"
+                data-action="click->rich-text-table-toolbar#italic"
                 data-rich-text-table-toolbar-target="italic">I</button>
 
         {{-- New table buttons --}}
-        <button data-action="click->rich-text-table-toolbar#insertTable"
+        <button type="button"
+                data-action="click->rich-text-table-toolbar#insertTable"
                 data-rich-text-table-toolbar-target="table">Table</button>
-        <button data-action="click->rich-text-table-toolbar#addColumnAfter">+ Col</button>
-        <button data-action="click->rich-text-table-toolbar#addRowAfter">+ Row</button>
-        <button data-action="click->rich-text-table-toolbar#deleteTable">Drop</button>
+        <button type="button" data-action="click->rich-text-table-toolbar#addColumnAfter">+ Col</button>
+        <button type="button" data-action="click->rich-text-table-toolbar#addRowAfter">+ Row</button>
+        <button type="button" data-action="click->rich-text-table-toolbar#deleteTable">Drop</button>
     </div>
 </x-hwc::rich-text>
 ```
+
+**Two non-obvious bits in this markup:**
+
+- Every `<button>` has `type="button"`. Without it, default is `type="submit"` — clicks submit the
+  form (the editor is almost always inside a form) instead of triggering toolbar actions.
+- The `editor` value uses `[data-rich-text-with-tables-id-value='content']`, **not**
+  `[data-rich-text-id-value='content']`. The Blade view rewrites the `id-value` attribute name
+  when you swap `controller=`, so the selector has to follow.
 
 `syncButtons` still does the right thing for the `table` button — the spread brought in every entry
 the parent reflected, and the new `table: "table"` entry maps the new target to `editor.isActive("table")`.
@@ -283,7 +301,9 @@ The `+ Col` / `+ Row` / `Drop` buttons have no `data-rich-text-table-toolbar-tar
 inert visually — they're just action triggers.
 
 The same shape works for any Tiptap extension: add the target, add the `activeStates` entry, add
-the action method.
+the action method. **No outlet plumbing needed** — the toolbar finds the editor by walking
+`data-controller` on the resolved element, so it works against any editor identifier (`rich-text`,
+`rich-text-full`, `rich-text-with-tables`, …) without renaming callbacks or declaring extra outlets.
 
 ## See also
 
