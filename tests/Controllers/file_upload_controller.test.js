@@ -202,7 +202,7 @@ test("dispatches file-upload:success with file, response and extracted value", a
     expect(captured).toEqual([{ file, response, value: "abc" }]);
 });
 
-test("dispatches file-upload:error with message and xhr", async () => {
+test("dispatches file-upload:error with message, xhr, and normalized text", async () => {
     await mount();
     const captured = [];
     mounted.root.addEventListener("file-upload:error", (e) => captured.push(e.detail));
@@ -211,7 +211,64 @@ test("dispatches file-upload:error with message and xhr", async () => {
     const xhr = { status: 500 };
     dzState.instance.emit("error", file, "boom", xhr);
 
-    expect(captured).toEqual([{ file, message: "boom", xhr }]);
+    expect(captured).toEqual([{ file, message: "boom", xhr, text: "boom" }]);
+});
+
+test("normalizes a Laravel JSON error response (`{ message }`) for the announcer, thumb, and event text", async () => {
+    await mount();
+    const captured = [];
+    mounted.root.addEventListener("file-upload:error", (e) => captured.push(e.detail));
+
+    const previewElement = document.createElement("div");
+    const errMsg = document.createElement("span");
+    errMsg.setAttribute("data-dz-errormessage", "");
+    previewElement.appendChild(errMsg);
+
+    const file = { name: "x.png", previewElement };
+    dzState.instance.emit("error", file, { message: "File too large" }, { status: 422 });
+
+    expect(errMsg.textContent).toBe("File too large");
+
+    const announcer = mounted.root.querySelector('[data-file-upload-target="announcer"]');
+    expect(announcer.textContent).toContain("File too large");
+    expect(announcer.textContent.toLowerCase()).toContain("failed");
+
+    expect(captured[0].text).toBe("File too large");
+    expect(captured[0].message).toEqual({ message: "File too large" });
+});
+
+test("normalizes a Laravel 422 validation response (`{ errors: { field: [...] } }`) using the first field error", async () => {
+    await mount();
+    const captured = [];
+    mounted.root.addEventListener("file-upload:error", (e) => captured.push(e.detail));
+
+    dzState.instance.emit("error", { name: "x.png" }, {
+        message: "The given data was invalid.",
+        errors: { file: ["The file must be an image.", "The file may not be greater than 5120 kilobytes."] },
+    }, { status: 422 });
+
+    // Prefer the actual field error over the generic "The given data was invalid"
+    expect(captured[0].text).toBe("The file must be an image.");
+});
+
+test("falls back to a generic message when the response object has neither a message nor errors", async () => {
+    await mount();
+    const captured = [];
+    mounted.root.addEventListener("file-upload:error", (e) => captured.push(e.detail));
+
+    dzState.instance.emit("error", { name: "x.png" }, { weird: true }, { status: 500 });
+
+    expect(captured[0].text).toBe("Upload failed");
+});
+
+test("falls back to a generic message when the response is null or undefined", async () => {
+    await mount();
+    const captured = [];
+    mounted.root.addEventListener("file-upload:error", (e) => captured.push(e.detail));
+
+    dzState.instance.emit("error", { name: "x.png" }, null, { status: 500 });
+
+    expect(captured[0].text).toBe("Upload failed");
 });
 
 test("dispatches file-upload:removed with the file", async () => {

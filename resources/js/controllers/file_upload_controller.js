@@ -64,10 +64,7 @@ export default class extends Controller {
             this.dispatch("progress", { detail: { file, percent, bytes } });
         });
         this.dropzone.on("success", (file, response) => this.handleSuccess(file, response));
-        this.dropzone.on("error", (file, message, xhr) => {
-            this.announce(`Upload failed: ${message}`);
-            this.dispatch("error", { detail: { file, message, xhr } });
-        });
+        this.dropzone.on("error", (file, message, xhr) => this.handleError(file, message, xhr));
         this.dropzone.on("removedfile", (file) => this.handleRemoved(file));
     }
 
@@ -77,6 +74,34 @@ export default class extends Controller {
         if (this.emitHiddenValue) this.appendHidden(file, value);
         this.announce(`Uploaded ${file.name}`);
         this.dispatch("success", { detail: { file, response, value } });
+    }
+
+    handleError(file, message, xhr) {
+        const text = this.extractErrorMessage(message);
+        // Dropzone writes the raw `message` into the thumb's `[data-dz-errormessage]`,
+        // which coerces objects to "[object Object]". Override with the normalized text.
+        file.previewElement
+            ?.querySelector("[data-dz-errormessage]")
+            ?.replaceChildren(document.createTextNode(text));
+        this.announce(`Upload failed: ${text}`);
+        this.dispatch("error", { detail: { file, message, xhr, text } });
+    }
+
+    /** Coerces a Dropzone error payload into a user-facing string.
+     *  Handles Laravel's two common shapes: `{ errors: { field: [...] } }` (422 validation,
+     *  preferred when present) and `{ message }` (500 default). Falls back to a generic. */
+    extractErrorMessage(raw) {
+        if (typeof raw === "string") return raw;
+        if (raw == null) return "Upload failed";
+        if (typeof raw === "object") {
+            if (raw.errors && typeof raw.errors === "object") {
+                const firstField = Object.values(raw.errors)[0];
+                if (Array.isArray(firstField) && typeof firstField[0] === "string") return firstField[0];
+            }
+            if (typeof raw.message === "string") return raw.message;
+            return "Upload failed";
+        }
+        return String(raw);
     }
 
     handleRemoved(file) {
