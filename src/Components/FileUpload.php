@@ -30,6 +30,7 @@ class FileUpload extends Component
         public string $responseKey = 'token',
         public ?string $deleteUrl = null,
         public int $parallelUploads = 3,
+        public bool $turboStream = false,
         public mixed $value = null,
         public string $class = '',
         public string $controller = 'file-upload',

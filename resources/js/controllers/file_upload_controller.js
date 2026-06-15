@@ -21,6 +21,7 @@ export default class extends Controller {
         hiddenName: { type: String, default: "" },
         deleteUrl: { type: String, default: "" },
         parallelUploads: { type: Number, default: 3 },
+        turboStream: { type: Boolean, default: false },
     };
 
     dropzone = null;
@@ -48,11 +49,17 @@ export default class extends Controller {
             maxFiles: this.maxFilesValue || null,
             parallelUploads: this.parallelUploadsValue,
             uploadMultiple: false,
-            headers: this.csrfHeaders(),
+            headers: this.requestHeaders(),
             ...this.defaultOptions(),
         };
         if (!this.previewValue) opts.previewsContainer = false;
         return opts;
+    }
+
+    requestHeaders() {
+        const headers = this.csrfHeaders();
+        if (this.turboStreamValue) headers.Accept = "text/vnd.turbo-stream.html, application/json";
+        return headers;
     }
 
     wireEvents() {
@@ -69,6 +76,11 @@ export default class extends Controller {
     }
 
     handleSuccess(file, response) {
+        if (this.maybeRenderStream(response)) {
+            this.announce(`Uploaded ${file.name}`);
+            this.dispatch("success", { detail: { file, response, value: null } });
+            return;
+        }
         const value = this.extractValue(response);
         if (value != null) this.tokensByFile.set(file, value);
         if (this.emitHiddenValue) {
@@ -81,11 +93,26 @@ export default class extends Controller {
         this.dispatch("success", { detail: { file, response, value } });
     }
 
+    /** If turbo-stream is on and the body looks like a stream, hand it to Turbo.
+     *  Returns true when a stream was rendered (caller should short-circuit). */
+    maybeRenderStream(body) {
+        if (!this.turboStreamValue) return false;
+        const text = typeof body === "string" ? body : null;
+        if (!text || !text.includes("<turbo-stream")) return false;
+        const renderer = globalThis.Turbo?.renderStreamMessage;
+        if (typeof renderer !== "function") return false;
+        renderer(text);
+        return true;
+    }
+
     removePreservedHiddens() {
         this.element.querySelectorAll("[data-hw-upload-preserved]").forEach((el) => el.remove());
     }
 
     handleError(file, message, xhr) {
+        // Apps often render error UI server-side via a stream on 422 — let it through.
+        this.maybeRenderStream(xhr?.responseText);
+
         const text = this.extractErrorMessage(message);
         // Dropzone writes the raw `message` into the thumb's `[data-dz-errormessage]`,
         // which coerces objects to "[object Object]". Override with the normalized text.

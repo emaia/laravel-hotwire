@@ -21,6 +21,7 @@
     @if ($responseKey !== 'token') data-{{ $identifier }}-response-key-value="{{ $responseKey }}" @endif
     @if ($deleteUrl !== null) data-{{ $identifier }}-delete-url-value="{{ $deleteUrl }}" @endif
     @if ($parallelUploads !== 3) data-{{ $identifier }}-parallel-uploads-value="{{ $parallelUploads }}" @endif
+    @if ($turboStream) data-{{ $identifier }}-turbo-stream-value="true" @endif
     aria-describedby="{{ $errorId }}"
     @if ($hasErrors) aria-invalid="true" data-invalid @endif
     @if ($isRequired) aria-required="true" @endif

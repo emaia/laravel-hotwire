@@ -366,6 +366,75 @@ test("removes the matching hidden input on removedfile", async () => {
     expect(mounted.root.querySelector('input[type="hidden"]')).toBeNull();
 });
 
+// --- Turbo Streams response ---
+
+test("turbo-stream=true negotiates the stream Accept header", async () => {
+    await mount(defaultHtml('data-file-upload-turbo-stream-value="true"'));
+
+    expect(dzState.options.headers.Accept).toBe("text/vnd.turbo-stream.html, application/json");
+});
+
+test("turbo-stream=false (default) does not negotiate the stream Accept header", async () => {
+    await mount();
+
+    expect(dzState.options.headers.Accept).toBeUndefined();
+});
+
+test("turbo-stream success — hands the body to Turbo.renderStreamMessage and skips the hidden input", async () => {
+    const calls = [];
+    globalThis.Turbo = { renderStreamMessage: (msg) => calls.push(msg) };
+
+    await mount(defaultHtml('data-file-upload-turbo-stream-value="true"'));
+
+    const streamBody = '<turbo-stream action="append" target="gallery"><template><li>x</li></template></turbo-stream>';
+    dzState.instance.emit("success", { name: "x.png" }, streamBody);
+
+    expect(calls).toEqual([streamBody]);
+    expect(mounted.root.querySelector('input[type="hidden"]')).toBeNull();
+
+    delete globalThis.Turbo;
+});
+
+test("turbo-stream success — falls back to JSON handling when the response is not a stream", async () => {
+    const calls = [];
+    globalThis.Turbo = { renderStreamMessage: (msg) => calls.push(msg) };
+
+    await mount(defaultHtml('data-file-upload-turbo-stream-value="true"'));
+
+    dzState.instance.emit("success", { name: "x.png" }, { token: "abc" });
+
+    expect(calls).toEqual([]);
+    expect(mounted.root.querySelector('input[type="hidden"]').value).toBe("abc");
+
+    delete globalThis.Turbo;
+});
+
+test("turbo-stream success — no-op when Turbo global is unavailable, dispatches success regardless", async () => {
+    const captured = [];
+    await mount(defaultHtml('data-file-upload-turbo-stream-value="true"'));
+    mounted.root.addEventListener("file-upload:success", (e) => captured.push(e.detail));
+
+    const streamBody = '<turbo-stream action="append" target="gallery"></turbo-stream>';
+    dzState.instance.emit("success", { name: "x.png" }, streamBody);
+
+    expect(captured).toHaveLength(1);
+    expect(captured[0].response).toBe(streamBody);
+});
+
+test("turbo-stream error — error responses that contain a stream are rendered too", async () => {
+    const calls = [];
+    globalThis.Turbo = { renderStreamMessage: (msg) => calls.push(msg) };
+
+    await mount(defaultHtml('data-file-upload-turbo-stream-value="true"'));
+
+    const xhrBody = '<turbo-stream action="replace" target="upload-error">…</turbo-stream>';
+    dzState.instance.emit("error", { name: "x.png" }, "Validation failed", { responseText: xhrBody, status: 422 });
+
+    expect(calls).toEqual([xhrBody]);
+
+    delete globalThis.Turbo;
+});
+
 // --- Preserved hiddens (Laravel old() / value prop) ---
 
 test("single mode — a new upload replaces a pre-existing preserved hidden", async () => {

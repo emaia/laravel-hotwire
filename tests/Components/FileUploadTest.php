@@ -301,6 +301,26 @@ it('keeps non-internal data attrs passed by the user', function () {
     $view->assertSee('data-test="x"', false);
 });
 
+// --- turbo-stream prop ---
+
+it('emits the turbo-stream value attr when the prop is true', function () {
+    $view = $this->blade('<x-hwc::file-upload name="photos" url="/uploads" :turbo-stream="true" />');
+
+    $view->assertSee('data-file-upload-turbo-stream-value="true"', false);
+});
+
+it('omits the turbo-stream value attr when the prop is at default false', function () {
+    $view = $this->blade('<x-hwc::file-upload name="photos" url="/uploads" />');
+
+    $view->assertDontSee('turbo-stream-value', false);
+});
+
+it('prefixes the turbo-stream value attr with the swapped identifier', function () {
+    $view = $this->blade('<x-hwc::file-upload name="photos" url="/uploads" controller="my-upload" :turbo-stream="true" />');
+
+    $view->assertSee('data-my-upload-turbo-stream-value="true"', false);
+});
+
 // --- value prop and old() preservation ---
 
 it('emits a single preserved hidden input from value in single mode', function () {
