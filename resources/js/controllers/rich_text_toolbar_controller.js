@@ -18,6 +18,21 @@ export default class extends Controller {
         "redo",
     ];
 
+    /** Map of target name → Tiptap state name used by editor.isActive().
+     *  Subclasses extend via: static activeStates = { ...super.activeStates, table: "table" };
+     *  Targets without an isActive concept (undo, redo) deliberately stay out.
+     *  Heading is special-cased in syncHeading() because it needs an attr lookup. */
+    static activeStates = {
+        bold: "bold",
+        italic: "italic",
+        underline: "underline",
+        bulletList: "bulletList",
+        orderedList: "orderedList",
+        blockquote: "blockquote",
+        codeBlock: "codeBlock",
+        link: "link",
+    };
+
     syncBound = null;
     boundElement = null;
 
@@ -52,27 +67,21 @@ export default class extends Controller {
         const editor = this.editor;
         if (!editor) return;
 
-        const reflect = (name, targets) => {
-            const active = editor.isActive(name);
-            this.applyActive(targets, active);
-        };
-
-        if (this.hasBoldTarget) reflect("bold", this.boldTargets);
-        if (this.hasItalicTarget) reflect("italic", this.italicTargets);
-        if (this.hasUnderlineTarget) reflect("underline", this.underlineTargets);
-        if (this.hasBulletListTarget) reflect("bulletList", this.bulletListTargets);
-        if (this.hasOrderedListTarget) reflect("orderedList", this.orderedListTargets);
-        if (this.hasBlockquoteTarget) reflect("blockquote", this.blockquoteTargets);
-        if (this.hasCodeBlockTarget) reflect("codeBlock", this.codeBlockTargets);
-        if (this.hasLinkTarget) reflect("link", this.linkTargets);
-
-        if (this.hasHeadingTarget) {
-            this.headingTargets.forEach((btn) => {
-                const level = parseInt(btn.dataset.level ?? "1", 10);
-                const active = editor.isActive("heading", { level });
-                this.applyActive([btn], active);
-            });
+        for (const [target, state] of Object.entries(this.constructor.activeStates)) {
+            const targets = this[`${target}Targets`];
+            if (!targets?.length) continue;
+            this.applyActive(targets, editor.isActive(state));
         }
+
+        this.syncHeading(editor);
+    }
+
+    syncHeading(editor) {
+        if (!this.hasHeadingTarget) return;
+        this.headingTargets.forEach((btn) => {
+            const level = parseInt(btn.dataset.level ?? "1", 10);
+            this.applyActive([btn], editor.isActive("heading", { level }));
+        });
     }
 
     applyActive(targets, active) {
@@ -84,15 +93,33 @@ export default class extends Controller {
 
     // --- actions ---
 
-    bold() { this.editor?.chain().focus().toggleBold().run(); }
-    italic() { this.editor?.chain().focus().toggleItalic().run(); }
-    underline() { this.editor?.chain().focus().toggleUnderline().run(); }
-    bulletList() { this.editor?.chain().focus().toggleBulletList().run(); }
-    orderedList() { this.editor?.chain().focus().toggleOrderedList().run(); }
-    blockquote() { this.editor?.chain().focus().toggleBlockquote().run(); }
-    codeBlock() { this.editor?.chain().focus().toggleCodeBlock().run(); }
-    undo() { this.editor?.chain().focus().undo().run(); }
-    redo() { this.editor?.chain().focus().redo().run(); }
+    bold() {
+        this.editor?.chain().focus().toggleBold().run();
+    }
+    italic() {
+        this.editor?.chain().focus().toggleItalic().run();
+    }
+    underline() {
+        this.editor?.chain().focus().toggleUnderline().run();
+    }
+    bulletList() {
+        this.editor?.chain().focus().toggleBulletList().run();
+    }
+    orderedList() {
+        this.editor?.chain().focus().toggleOrderedList().run();
+    }
+    blockquote() {
+        this.editor?.chain().focus().toggleBlockquote().run();
+    }
+    codeBlock() {
+        this.editor?.chain().focus().toggleCodeBlock().run();
+    }
+    undo() {
+        this.editor?.chain().focus().undo().run();
+    }
+    redo() {
+        this.editor?.chain().focus().redo().run();
+    }
 
     heading(event) {
         const raw = event?.params?.level ?? event?.currentTarget?.dataset?.level ?? "1";
@@ -102,9 +129,10 @@ export default class extends Controller {
 
     link(event) {
         const fromParams = event?.params?.url;
-        const url = typeof fromParams === "string"
-            ? fromParams
-            : globalThis.prompt?.("URL", this.editor?.getAttributes?.("link")?.href ?? "");
+        const url =
+            typeof fromParams === "string"
+                ? fromParams
+                : globalThis.prompt?.("URL", this.editor?.getAttributes?.("link")?.href ?? "");
 
         if (url === null || url === undefined) return;
         if (url === "") {

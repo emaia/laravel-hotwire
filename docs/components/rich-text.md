@@ -222,7 +222,9 @@ When you need a different set of buttons, drop the default and render your own t
 ```
 
 See the [toolbar controller docs](../controllers/rich-text-toolbar.md) for the full action and
-target reference.
+target reference. To add buttons for a Tiptap extension you turned on (Table, TaskList, etc.),
+subclass the toolbar and spread `activeStates` — see
+[Extending the toolbar](../controllers/rich-text-toolbar.md#extending-the-toolbar-table-recipe).
 
 ## Styling
 

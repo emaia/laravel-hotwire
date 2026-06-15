@@ -22,6 +22,7 @@ static outlets = ["rich-text"];
 The outlet attribute on the toolbar element is a CSS selector that resolves to the editor:
 
 ```html
+
 <div data-controller="rich-text-toolbar"
      data-rich-text-toolbar-rich-text-outlet="[data-rich-text-id-value='content']">
 ```
@@ -35,38 +36,58 @@ on the same page.
 Each button is registered as a target named after the action it triggers, so `syncButtons` can flip
 the `is-active` class without re-querying the DOM:
 
-| Target          | Reflects                                |
-|-----------------|------------------------------------------|
-| `bold`          | `editor.isActive("bold")`                |
-| `italic`        | `editor.isActive("italic")`              |
-| `underline`     | `editor.isActive("underline")`           |
-| `bulletList`    | `editor.isActive("bulletList")`          |
-| `orderedList`   | `editor.isActive("orderedList")`         |
-| `blockquote`    | `editor.isActive("blockquote")`          |
-| `codeBlock`     | `editor.isActive("codeBlock")`           |
-| `link`          | `editor.isActive("link")`                |
-| `heading`       | `editor.isActive("heading", { level })`  |
-| `undo`          | —                                        |
-| `redo`          | —                                        |
+| Target        | Reflects                                |
+|---------------|-----------------------------------------|
+| `bold`        | `editor.isActive("bold")`               |
+| `italic`      | `editor.isActive("italic")`             |
+| `underline`   | `editor.isActive("underline")`          |
+| `bulletList`  | `editor.isActive("bulletList")`         |
+| `orderedList` | `editor.isActive("orderedList")`        |
+| `blockquote`  | `editor.isActive("blockquote")`         |
+| `codeBlock`   | `editor.isActive("codeBlock")`          |
+| `link`        | `editor.isActive("link")`               |
+| `heading`     | `editor.isActive("heading", { level })` |
+| `undo`        | —                                       |
+| `redo`        | —                                       |
 
 `heading` targets must declare their level via `data-level="2"` so `syncButtons` can match against
 the specific heading level. Buttons without a target attribute simply aren't tracked — handy when
 the visual style doesn't need the active treatment.
 
+The mapping above lives in a static `activeStates` map on the controller:
+
+```js
+static activeStates = {
+    bold: "bold",
+    italic: "italic",
+    underline: "underline",
+    bulletList: "bulletList",
+    orderedList: "orderedList",
+    blockquote: "blockquote",
+    codeBlock: "codeBlock",
+    link: "link",
+};
+```
+
+`syncButtons` iterates this map and reflects `editor.isActive(state)` on each entry whose target is
+rendered. Subclasses spread it to add new targets — see [Extending the toolbar](#extending-the-toolbar-table-recipe).
+`undo`/`redo` deliberately stay out of the map (no `isActive` semantics). `heading` is special-cased
+in `syncHeading()` because it needs an attr lookup (`isActive("heading", { level })`).
+
 ## Actions
 
-| Action         | Tiptap command                                              |
-|----------------|-------------------------------------------------------------|
-| `bold`         | `editor.chain().focus().toggleBold().run()`                  |
-| `italic`       | `editor.chain().focus().toggleItalic().run()`                |
-| `underline`    | `editor.chain().focus().toggleUnderline().run()`             |
-| `bulletList`   | `editor.chain().focus().toggleBulletList().run()`            |
-| `orderedList`  | `editor.chain().focus().toggleOrderedList().run()`           |
-| `blockquote`   | `editor.chain().focus().toggleBlockquote().run()`            |
-| `codeBlock`    | `editor.chain().focus().toggleCodeBlock().run()`             |
-| `heading`      | `editor.chain().focus().toggleHeading({ level }).run()` — level read from the action's `data-level` param (`data-rich-text-toolbar-level-param`) or from the button's `data-level` attribute, defaulting to `1`. |
-| `link`         | Reads the URL from the `url` action param when present, otherwise prompts the user. An empty string runs `unsetLink`; cancelling the prompt is a no-op; a URL runs `setLink({ href })`. |
-| `undo` / `redo`| `editor.chain().focus().undo().run()` / `redo().run()`        |
+| Action          | Tiptap command                                                                                                                                                                                                   |
+|-----------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `bold`          | `editor.chain().focus().toggleBold().run()`                                                                                                                                                                      |
+| `italic`        | `editor.chain().focus().toggleItalic().run()`                                                                                                                                                                    |
+| `underline`     | `editor.chain().focus().toggleUnderline().run()`                                                                                                                                                                 |
+| `bulletList`    | `editor.chain().focus().toggleBulletList().run()`                                                                                                                                                                |
+| `orderedList`   | `editor.chain().focus().toggleOrderedList().run()`                                                                                                                                                               |
+| `blockquote`    | `editor.chain().focus().toggleBlockquote().run()`                                                                                                                                                                |
+| `codeBlock`     | `editor.chain().focus().toggleCodeBlock().run()`                                                                                                                                                                 |
+| `heading`       | `editor.chain().focus().toggleHeading({ level }).run()` — level read from the action's `data-level` param (`data-rich-text-toolbar-level-param`) or from the button's `data-level` attribute, defaulting to `1`. |
+| `link`          | Reads the URL from the `url` action param when present, otherwise prompts the user. An empty string runs `unsetLink`; cancelling the prompt is a no-op; a URL runs `setLink({ href })`.                          |
+| `undo` / `redo` | `editor.chain().focus().undo().run()` / `redo().run()`                                                                                                                                                           |
 
 The chain pattern (`focus().toggleX().run()`) keeps the document focus, applies the mark, and runs
 the transaction in a single ProseMirror update.
@@ -84,6 +105,7 @@ bold + italic) doesn't pay for buttons it doesn't render.
 ## Basic usage (raw)
 
 ```html
+
 <div data-controller="rich-text" data-rich-text-id-value="content">
     <input type="hidden" name="content" data-rich-text-target="input">
     <div data-rich-text-target="editor"></div>
@@ -98,11 +120,14 @@ bold + italic) doesn't pay for buttons it doesn't render.
     <button type="button" data-action="click->rich-text-toolbar#heading"
             data-rich-text-toolbar-target="heading"
             data-rich-text-toolbar-level-param="2"
-            data-level="2">H2</button>
+            data-level="2">H2
+    </button>
     <button type="button" data-action="click->rich-text-toolbar#bulletList"
-            data-rich-text-toolbar-target="bulletList">List</button>
+            data-rich-text-toolbar-target="bulletList">List
+    </button>
     <button type="button" data-action="click->rich-text-toolbar#link"
-            data-rich-text-toolbar-target="link">Link</button>
+            data-rich-text-toolbar-target="link">Link
+    </button>
 </div>
 ```
 
@@ -147,6 +172,118 @@ Style either one to communicate the current state:
     color: white;
 }
 ```
+
+## Extending the toolbar (Table recipe)
+
+The default toolbar covers what `starter-kit` ships. When you add a Tiptap extension to the editor
+(via the `extensions()` hook on a `rich-text` subclass), the toolbar doesn't grow buttons
+automatically — *something* still has to expose Stimulus actions and reflect active state.
+
+The cleanest path is to subclass the toolbar and spread the parent's `targets` and `activeStates`:
+
+```js
+// resources/js/controllers/rich_text_table_toolbar_controller.js
+import RichTextToolbarController from "./rich_text_toolbar_controller.js";
+
+export default class extends RichTextToolbarController {
+    static targets = [...RichTextToolbarController.targets, "table"];
+
+    static activeStates = {
+        ...RichTextToolbarController.activeStates,
+        table: "table",
+    };
+
+    insertTable() {
+        this.editor?.chain().focus().insertTable({rows: 3, cols: 3, withHeaderRow: true}).run();
+    }
+
+    addColumnBefore() {
+        this.editor?.chain().focus().addColumnBefore().run();
+    }
+
+    addColumnAfter() {
+        this.editor?.chain().focus().addColumnAfter().run();
+    }
+
+    deleteColumn() {
+        this.editor?.chain().focus().deleteColumn().run();
+    }
+
+    addRowBefore() {
+        this.editor?.chain().focus().addRowBefore().run();
+    }
+
+    addRowAfter() {
+        this.editor?.chain().focus().addRowAfter().run();
+    }
+
+    deleteRow() {
+        this.editor?.chain().focus().deleteRow().run();
+    }
+
+    deleteTable() {
+        this.editor?.chain().focus().deleteTable().run();
+    }
+}
+```
+
+Pair it with a rich-text subclass that registers the Tiptap extensions:
+
+```js
+// resources/js/controllers/rich_text_with_tables_controller.js
+import RichTextController from "./rich_text_controller";
+import { defaultExtensions } from "./_rich_text_editor";
+import { Table } from "@tiptap/extension-table";
+import { TableRow } from "@tiptap/extension-table-row";
+import { TableHeader } from "@tiptap/extension-table-header";
+import { TableCell } from "@tiptap/extension-table-cell";
+
+export default class extends RichTextController {
+    extensions(options) {
+        return [
+            ...defaultExtensions(options),
+            Table.configure({ resizable: true }),
+            TableRow,
+            TableHeader,
+            TableCell,
+        ];
+    }
+}
+```
+
+`options` is `{ placeholder }`, threaded back into `defaultExtensions` so the Placeholder
+extension still picks up the configured text — same pattern as the
+[Extensions hook](rich-text.md#extensions-hook-subclass) on the editor controller.
+
+Wire both in the Blade markup with a custom toolbar slot:
+
+```blade
+<x-hwc::rich-text name="content" controller="rich-text-with-tables" :toolbar="false">
+    <div data-controller="rich-text-table-toolbar"
+         data-rich-text-table-toolbar-rich-text-outlet="[data-rich-text-with-tables-id-value='content']">
+        {{-- Default buttons (still inherited from the parent's actions) --}}
+        <button data-action="click->rich-text-table-toolbar#bold"
+                data-rich-text-table-toolbar-target="bold">B</button>
+        <button data-action="click->rich-text-table-toolbar#italic"
+                data-rich-text-table-toolbar-target="italic">I</button>
+
+        {{-- New table buttons --}}
+        <button data-action="click->rich-text-table-toolbar#insertTable"
+                data-rich-text-table-toolbar-target="table">Table</button>
+        <button data-action="click->rich-text-table-toolbar#addColumnAfter">+ Col</button>
+        <button data-action="click->rich-text-table-toolbar#addRowAfter">+ Row</button>
+        <button data-action="click->rich-text-table-toolbar#deleteTable">Drop</button>
+    </div>
+</x-hwc::rich-text>
+```
+
+`syncButtons` still does the right thing for the `table` button — the spread brought in every entry
+the parent reflected, and the new `table: "table"` entry maps the new target to `editor.isActive("table")`.
+The `+ Col` / `+ Row` / `Drop` buttons have no `data-rich-text-table-toolbar-target`, so they stay
+inert visually — they're just action triggers.
+
+The same shape works for any Tiptap extension: add the target, add the `activeStates` entry, add
+the action method.
 
 ## See also
 

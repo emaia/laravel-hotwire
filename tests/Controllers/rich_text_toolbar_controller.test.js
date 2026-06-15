@@ -295,6 +295,56 @@ test("link action with a cancelled prompt does nothing", async () => {
     expect(editorState.chainCalls.length).toBe(before);
 });
 
+// --- subclass extensibility (activeStates spread) ---
+
+test("subclass extends activeStates via spread and reflects new targets on syncButtons", async () => {
+    class TableToolbar extends RichTextToolbarController {
+        static targets = [...RichTextToolbarController.targets, "table"];
+        static activeStates = {
+            ...RichTextToolbarController.activeStates,
+            table: "table",
+        };
+    }
+
+    editorState.isActiveOverrides = { table: true, bold: true };
+
+    const html = tmpl({
+        targets: [
+            ["bold", "B"],
+            ["table", "[Tbl]"],
+        ],
+    });
+    mounted = await mountMultipleControllers(
+        {
+            "rich-text": RichTextController,
+            "rich-text-toolbar": TableToolbar,
+        },
+        html,
+    );
+    await wait(0);
+
+    const tableBtn = document.querySelector("[data-rich-text-toolbar-target='table']");
+    const boldBtn = document.querySelector("[data-rich-text-toolbar-target='bold']");
+
+    expect(tableBtn.classList.contains("is-active")).toBe(true);
+    expect(tableBtn.getAttribute("aria-pressed")).toBe("true");
+    // parent class targets still reflect — inheritance via spread did not drop them
+    expect(boldBtn.classList.contains("is-active")).toBe(true);
+});
+
+test("targets without an activeStates entry are skipped by syncButtons (undo/redo)", async () => {
+    editorState.isActiveOverrides = { undo: true, redo: true };
+    await mount();
+
+    const undoBtn = document.querySelector("[data-rich-text-toolbar-target='undo']");
+    const redoBtn = document.querySelector("[data-rich-text-toolbar-target='redo']");
+
+    // undo/redo do not have an isActive state in Tiptap, so they stay inert
+    expect(undoBtn.classList.contains("is-active")).toBe(false);
+    expect(undoBtn.getAttribute("aria-pressed")).toBe(null);
+    expect(redoBtn.classList.contains("is-active")).toBe(false);
+});
+
 // --- disconnect ---
 
 test("disconnect detaches the state listener so syncButtons no longer re-runs", async () => {
