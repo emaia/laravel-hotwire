@@ -2,6 +2,20 @@
 
 All notable changes to `laravel-hotwire` will be documented in this file.
 
+## 0.30.0 - 2026-06-15
+
+### Rich text editor (Tiptap wrapper)
+
+New `<x-hwc::rich-text>` Blade component pairing a Tiptap editor with a default toolbar — extensible via subclass for tables, task lists or any Tiptap extension. Also: FocusTrap and clear-input fixes surfaced during modal work.
+
+- `<x-hwc::rich-text>` and the `rich-text` controller wrap Tiptap with StarterKit + Link + Underline (plus Placeholder when set). HTML or JSON output via the `output` prop; `value` accepts initial content and is restored from `old()` on validation failure; `:image-upload="true"` intercepts paste/drop and dispatches `rich-text:image-upload` for the app to handle (#53)
+- Default `rich-text-toolbar` controller covers bold/italic/underline/headings/lists/blockquote/code-block/link/undo/redo — each tracked button reflects `editor.isActive(state)` via `is-active` + `aria-pressed` (#53)
+- Toolbar is identifier-agnostic and subclass-friendly: editor events emit under a fixed `rich-text:` prefix, the toolbar finds its editor via the `editor` CSS-selector value + a `data-controller` walk, and subclasses spread `static targets`/`static activeStates` to add Tiptap extensions like Table. The `controller="..."` swap on the component works without outlet rewiring. See the [Table recipe](docs/controllers/rich-text-toolbar.md#extending-the-toolbar-table-recipe) (#53)
+- FocusTrap drops the `priming` flag — `activate()` now focuses the first focusable element immediately if nothing inside is focused. Eliminates the "first Tab does nothing" UX inside modals and the Tab+Enter regression where Enter could submit the surrounding form (#54)
+- `clear-input` controller swaps the CSS `:focus +` rule for explicit `focusin`/`focusout` listeners on the wrapper. Closes the gap where the input lost `:focus` before the clear button received focus and the button went `display:none` (#54)
+
+**Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/0.29.0...0.30.0
+
 ## 0.29.0 - 2026-06-12
 
 ### Turbo morph recovery for wrappers + chart/map reload action
@@ -40,6 +54,7 @@ New `<x-hwc::map>` Blade component and `map` Stimulus controller — a Leaflet w
 <x-hwc::map url="/api/locations" height="400px" />
 
 
+
 ```
 - Default OpenStreetMap tiles with the required attribution automatically set
 - Inline markers with optional popups, or a `url` returning a GeoJSON `FeatureCollection`
@@ -63,6 +78,7 @@ The `chart` controller now supports a `poll` value (milliseconds) — when set w
 
 ```blade
 <x-hwc::chart url="/api/charts/sales" :poll="30_000" height="320px" />
+
 
 
 
@@ -153,6 +169,7 @@ Apache ECharts ^6.1.0 wrapper with server-rendered or URL-fetched options, Resiz
 
 
 
+
 ```
 #### Controller features
 
@@ -229,6 +246,7 @@ New `conditional-fields` Stimulus controller shows or hides dependent blocks bas
 
 
 
+
 ```
 #### Rule grammar
 
@@ -267,6 +285,7 @@ Recommended path — encodes the rule once on the server, renders `hidden disabl
 
 
 
+
 ```
 #### Edit forms — the `:model` prop
 
@@ -276,6 +295,7 @@ Pass the same model your `<x-hwc::input>` / `<x-hwc::select>` / `<x-hwc::textare
 <x-hwc::conditional-field :model="$message" :when="['reason' => 'other']">
     <x-hwc::input name="other_reason" :value="$message->other_reason" />
 </x-hwc::conditional-field>
+
 
 
 
@@ -321,6 +341,7 @@ New `disclosure` Stimulus controller — collapsible inline content with proper 
 
 
 
+
 ```
 Two-way `open` value (default `false`), idempotent `toggle` / `open` / `close` actions, and a `disclosure:change` event with `{ open: bool }` for hooking analytics, icon swaps, or chained UI off transitions. The `content` target is required; the `trigger` target is optional and receives `aria-expanded` sync when present.
 
@@ -334,6 +355,7 @@ static outlets = ["disclosure"];
 revealHelp() {
     this.disclosureOutlet.open();
 }
+
 
 
 
@@ -387,6 +409,7 @@ New `password-visibility` Stimulus controller toggles a password input between h
 
 
 
+
 ```
 `aria-label` is driven by the `show-label` / `hide-label` values (defaults `Show password` / `Hide password`). A `password-visibility:change` event with `{ visible: bool }` fires on every transition so a small companion controller — or another listener — can swap icons. `connect()` always forces `type="password"`: visibility is never persisted across Turbo morphs or Drive navigations.
 
@@ -399,6 +422,7 @@ New `autofocus` Stimulus controller focuses the first matching field on `connect
 <form data-controller="autofocus" action="/messages" method="POST">
     <input type="text" name="title" autofocus/>
 </form>
+
 
 
 
@@ -429,6 +453,7 @@ New `back-to-top` Stimulus controller toggles `data-visible="true|false"` on its
            data-[visible=true]:opacity-100"
     aria-label="Back to top"
 >↑</button>
+
 
 
 
@@ -488,6 +513,7 @@ Single `size` prop replaces the previous `allow-small-width` and `allow-full-wid
 
 
 
+
 ```
 `allow-small-width` and `allow-full-width` are removed. Use `size="auto"` to keep the old "no width constraints" behavior, or `size="50vw"` to keep the old "half viewport" default. The migration table in `docs/components/modal.md` maps every previous combination to the new prop.
 
@@ -524,6 +550,7 @@ New `<x-hwc::frame-or-page>` component renders a view as a Turbo Frame payload o
 
 
 
+
 ```
 #### Model-aware frame ids
 
@@ -533,6 +560,7 @@ Pass a Model instead of a string; the component calls `dom_id()` to derive the f
 <x-hwc::frame-or-page :frame="$message" layout="layouts.dashboard">
     ...
 </x-hwc::frame-or-page>
+
 
 
 
@@ -586,12 +614,14 @@ The `<x-hwc::carousel>` component now supports an opt-in progress bar and slide 
 
 
 
+
 ```
 #### Slide counter
 
 ```blade
 <x-hwc::carousel :counter="true"
                  counter-class="text-sm">
+
 
 
 
@@ -648,12 +678,14 @@ export default class extends CarouselController {
 
 
 
+
 ```
 ```blade
 <x-hwc::carousel controller="gallery">
     <div>slide 1</div>
     <div>slide 2</div>
 </x-hwc::carousel>
+
 
 
 
