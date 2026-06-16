@@ -1,6 +1,6 @@
 # File upload patterns
 
-Four real-world patterns for the [`<x-hwc::file-upload>`](../components/file-upload.md) component
+Five real-world patterns for the [`<x-hwc::file-upload>`](../components/file-upload.md) component
 plus the [`file-upload`](../controllers/file-upload.md) Stimulus controller, ordered from simplest
 to most stream-driven. Each example assumes the package's defaults — `@deltablot/dropzone` is
 installed, `dropzone.css` is bundled, and the upload endpoint lives in your app.
@@ -9,6 +9,7 @@ installed, `dropzone.css` is bundled, and the upload endpoint lives in your app.
 - [2. Async thumbnail via broadcast](#2-async-thumbnail-via-broadcast)
 - [3. Stream-rendered gallery with server-side EXIF](#3-stream-rendered-gallery-with-server-side-exif)
 - [4. Single-file edit form with a stream-replaced card (avatar pattern)](#4-single-file-edit-form-with-a-stream-replaced-card-avatar-pattern)
+- [5. Rich media library list with rename and reorder](#5-rich-media-library-list-with-rename-and-reorder)
 
 ## 1. Spatie Media Library
 
@@ -301,3 +302,232 @@ that you want to manage with stream-driven UX. The two rules:
 
 - **Don't pass `:value`** — the visible card holds the canonical hidden
 - **Always `replace`, never `append`** — keeps the markup count at one
+
+## 5. Rich media library list with rename and reorder
+
+The UI from Dropzone's [Bootstrap demo](https://www.dropzone.dev/bootstrap.html) and Spatie media
+library: a vertical list of cards, each with a drag handle, thumbnail, file metadata (type, size,
+download link), an **editable name input**, and a remove button. Files can be **dragged to reorder**;
+the server receives them as an ordered array with `token` + `name` per entry.
+
+The package already has every primitive needed: `<x-slot:preview_template>` for the card markup,
+`:emit-hidden="false"` to let the slot own the hidden inputs, `:messages` for a custom empty state,
+and a subclass for the SortableJS + metadata wiring. No new package code required.
+
+### Blade
+
+```blade
+<x-hwc::form action="{{ route('gallery.store') }}">
+    <x-hwc::field name="attachments" label="Images">
+        <x-hwc::file-upload
+            controller="media-upload"
+            name="attachments"
+            url="{{ route('uploads.store') }}"
+            multiple
+            accept="image/*,application/pdf"
+            :emit-hidden="false"
+            :max-size-bytes="10 * 1024 * 1024"
+            :messages="['default' => '<span class=\'text-2xl mr-2\'>+</span> Drag files or click to set media']"
+            class="hwc-media-list"
+        >
+            <x-slot:preview_template>
+                <div class="dz-preview dz-file-preview flex items-center gap-4 p-3 border-b bg-white">
+                    <button type="button" data-app-drag class="cursor-move text-gray-400" tabindex="-1" aria-label="Reorder">≡</button>
+                    <img data-dz-thumbnail class="w-16 h-16 object-cover rounded bg-gray-100">
+                    <div class="w-32 shrink-0">
+                        <div class="text-xs text-gray-500 uppercase" data-app-type>—</div>
+                        <div class="text-xs text-gray-500" data-dz-size></div>
+                        <a hidden data-app-download href="#" target="_blank" class="text-xs text-blue-600 underline">Download</a>
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-xs text-gray-500">Name</label>
+                        <input type="text" name="attachments[][name]" data-app-name class="block w-full rounded border-gray-300">
+                    </div>
+                    <button type="button" data-dz-remove class="text-gray-400 hover:text-red-500" aria-label="Remove">×</button>
+                    <input type="hidden" name="attachments[][token]" data-app-token>
+                    <div data-dz-errormessage class="text-red-500 text-xs basis-full"></div>
+                    <div data-dz-uploadprogress class="absolute bottom-0 left-0 h-1 bg-blue-500" style="width:0"></div>
+                </div>
+            </x-slot:preview_template>
+        </x-hwc::file-upload>
+    </x-hwc::field>
+
+    <button type="submit">Save gallery</button>
+</x-hwc::form>
+```
+
+The slot is a normal Blade fragment — Tailwind classes get JIT-scanned as usual. The two
+input names use empty `[]` brackets as placeholders; the subclass renumbers them to explicit
+indices (`attachments[0][token]`, `attachments[1][token]`, …) on every add/remove/reorder so
+the server receives a clean ordered array.
+
+### CSS overrides (neutralize Dropzone's grid layout)
+
+Dropzone's default `.dz-preview` is `display: inline-block` with `margin: 16px` — fights the
+vertical list. A targeted reset in your app stylesheet:
+
+```css
+.hwc-media-list .dz-preview {
+    display: flex;
+    margin: 0;
+    min-height: 0;
+    position: relative;
+}
+.hwc-media-list .dz-preview .dz-image,
+.hwc-media-list .dz-preview .dz-details,
+.hwc-media-list .dz-preview .dz-progress,
+.hwc-media-list .dz-preview .dz-success-mark,
+.hwc-media-list .dz-preview .dz-error-mark {
+    all: unset;
+}
+```
+
+### Stimulus subclass
+
+```js
+// resources/js/controllers/media_upload_controller.js
+import FileUploadController from "./file_upload_controller.js";
+import Sortable from "sortablejs";
+
+export default class extends FileUploadController {
+    afterInit() {
+        this.dropzone.on("addedfile", (file) => this.populateMetadata(file));
+        this.dropzone.on("success", (file, response) => this.stampToken(file, response));
+        this.dropzone.on("removedfile", () => this.renumber());
+
+        this.sortable = new Sortable(this.element, {
+            handle: "[data-app-drag]",
+            animation: 150,
+            draggable: ".dz-preview",
+            onEnd: () => this.renumber(),
+        });
+    }
+
+    disconnect() {
+        this.sortable?.destroy();
+        super.disconnect();
+    }
+
+    populateMetadata(file) {
+        const preview = file.previewElement;
+        if (!preview) return;
+        const nameInput = preview.querySelector("[data-app-name]");
+        if (nameInput && !nameInput.value) nameInput.value = file.name;
+        const typeSpan = preview.querySelector("[data-app-type]");
+        if (typeSpan) typeSpan.textContent = this.formatType(file.type);
+        this.renumber();
+    }
+
+    stampToken(file, response) {
+        const value = this.extractValue(response);
+        const preview = file.previewElement;
+        const tokenInput = preview?.querySelector("[data-app-token]");
+        if (tokenInput && value != null) tokenInput.value = value;
+        const downloadLink = preview?.querySelector("[data-app-download]");
+        if (downloadLink && response?.download_url) {
+            downloadLink.href = response.download_url;
+            downloadLink.hidden = false;
+        }
+    }
+
+    renumber() {
+        this.element.querySelectorAll(".dz-preview").forEach((preview, index) => {
+            preview.querySelectorAll("[name]").forEach((input) => {
+                input.name = input.name.replace(/^attachments\[\d*\]/, `attachments[${index}]`);
+            });
+        });
+    }
+
+    formatType(mime) {
+        const map = {
+            "image/jpeg": "JPEG", "image/png": "PNG", "image/webp": "WebP",
+            "image/gif": "GIF", "application/pdf": "PDF",
+        };
+        return map[mime] ?? mime?.split("/")[1]?.toUpperCase() ?? "FILE";
+    }
+}
+```
+
+Install the SortableJS dep app-side: `bun add sortablejs` (or `npm install sortablejs`).
+The subclass file lives in your app's controllers folder — `hotwire:make-controller` can
+scaffold it, then you swap the base class to extend the published `FileUploadController`.
+
+### Server-side controller
+
+```php
+public function store(Request $request)
+{
+    $data = $request->validate([
+        'attachments' => ['array', 'min:1'],
+        'attachments.*.token' => ['required', 'string'],
+        'attachments.*.name' => ['required', 'string', 'max:255'],
+    ]);
+
+    foreach ($data['attachments'] as $position => $entry) {
+        $finalPath = Storage::move(
+            $entry['token'],
+            'gallery/' . basename($entry['token'])
+        );
+        Gallery::create([
+            'user_id' => $request->user()->id,
+            'path' => $finalPath,
+            'name' => $entry['name'],
+            'position' => $position,
+        ]);
+    }
+
+    return redirect()->route('gallery.show');
+}
+```
+
+Validation errors come back as `attachments.0.name`, `attachments.1.token`, etc. Aggregate
+them under the field with `<x-hwc::error name="attachments" />` (matches `attachments.*`), or
+render per-card with explicit `error-key`.
+
+### Edit forms — pre-existing media
+
+For an edit form where the gallery already has items, render those server-side as
+`.dz-preview` siblings inside the file-upload component before Dropzone instantiates. The
+subclass treats them identically to newly-uploaded files — Sortable lifts them, renumber
+indexes them:
+
+```blade
+<x-hwc::file-upload controller="media-upload" name="attachments" url="..." multiple :emit-hidden="false">
+    @foreach ($gallery->items as $item)
+        <div class="dz-preview dz-file-preview flex items-center gap-4 p-3 border-b bg-white">
+            <button type="button" data-app-drag class="cursor-move text-gray-400">≡</button>
+            <img src="{{ $item->thumbnail_url }}" class="w-16 h-16 object-cover rounded">
+            <div class="w-32 shrink-0">
+                <div class="text-xs text-gray-500 uppercase">{{ strtoupper($item->extension) }}</div>
+                <div class="text-xs text-gray-500">{{ $item->formatted_size }}</div>
+                <a href="{{ $item->download_url }}" class="text-xs text-blue-600 underline">Download</a>
+            </div>
+            <div class="flex-1">
+                <input type="text" name="attachments[][name]" value="{{ $item->name }}" data-app-name class="block w-full rounded border-gray-300">
+            </div>
+            <button type="button" data-dz-remove class="text-gray-400 hover:text-red-500">×</button>
+            <input type="hidden" name="attachments[][token]" value="{{ $item->token }}" data-app-token>
+        </div>
+    @endforeach
+
+    <x-slot:preview_template>
+        {{-- same card markup as the create form --}}
+    </x-slot:preview_template>
+</x-hwc::file-upload>
+```
+
+The default slot of `<x-hwc::file-upload>` is rendered inside the wrapper — the loop above
+goes there, before the `<x-slot:preview_template>` named slot. On submit, both pre-existing
+and newly-uploaded cards send `attachments[N][token]` and `attachments[N][name]` in the same
+shape; the server treats them uniformly.
+
+### When this pattern fits
+
+- **Multi-file uploads** where the user needs to **rename** files before they're persisted (e.g.
+  uploaded filenames like `IMG_2034.jpeg` need human-readable display names).
+- **Ordered collections** where position matters (gallery, slideshow, document set).
+- **Cases where a single submit transaction** owns the whole list — for individually editable
+  records after persist, prefer a separate edit-each-item flow.
+
+For unordered single-token storage, use [#1 Spatie Media Library](#1-spatie-media-library)
+instead — simpler shape and no client-side state.

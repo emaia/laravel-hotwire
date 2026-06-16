@@ -410,6 +410,7 @@ Quick chooser:
 | [Async thumbnail via broadcast](../recipes/file-upload-patterns.md#2-async-thumbnail-via-broadcast) | Heavy server-side processing (transcoding, conversion); response is immediate, broadcast updates later |
 | [Stream-rendered gallery with EXIF](../recipes/file-upload-patterns.md#3-stream-rendered-gallery-with-server-side-exif) | Multi-file upload with server-rendered cards (thumbnails, metadata, remove buttons) |
 | [Single-file edit form (avatar pattern)](../recipes/file-upload-patterns.md#4-single-file-edit-form-with-a-stream-replaced-card-avatar-pattern) | Single-value resource (avatar, cover, signature) with Turbo Stream UX |
+| [Rich media library list with rename and reorder](../recipes/file-upload-patterns.md#5-rich-media-library-list-with-rename-and-reorder) | Vertical list of cards with editable names, drag-to-reorder, file metadata — like the Dropzone Bootstrap demo or Spatie media library UI |
 
 ## See also
 
