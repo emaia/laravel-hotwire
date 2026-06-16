@@ -531,3 +531,8 @@ shape; the server treats them uniformly.
 
 For unordered single-token storage, use [#1 Spatie Media Library](#1-spatie-media-library)
 instead — simpler shape and no client-side state.
+
+**Need the draft to survive page reloads or cross-device sessions?** See the
+[draft-as-state gallery recipe](draft-as-state-gallery.md) — same UI, but each rename,
+reorder and removal hits the server immediately and persists to a `pending_*` table.
+Trades chatter for resumability and per-action validation.
