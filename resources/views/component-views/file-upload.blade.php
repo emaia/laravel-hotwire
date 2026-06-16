@@ -34,6 +34,11 @@
     @foreach ($initialValues as $val)
         <input type="hidden" name="{{ $hiddenName }}" value="{{ $val }}" data-hw-upload-preserved>
     @endforeach
+    @isset($preview_template)
+        @if ($preview_template->isNotEmpty())
+            <template data-{{ $identifier }}-target="previewTemplate">{!! $preview_template !!}</template>
+        @endif
+    @endisset
     <div
         role="status"
         aria-live="polite"

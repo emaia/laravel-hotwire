@@ -658,6 +658,113 @@ test("optionsValue defaults to no-op when attribute is absent", async () => {
     expect(dzState.options.thumbnailMethod).toBeUndefined();
 });
 
+// --- Preview template target ---
+
+test("reads previewTemplate from a child <template data-…-target='previewTemplate'>", async () => {
+    const html = `
+        <div data-controller="file-upload"
+             data-file-upload-url-value="/upload"
+             data-file-upload-hidden-name-value="avatar">
+            <template data-file-upload-target="previewTemplate"><div class="dz-preview custom-preview"><img data-dz-thumbnail></div></template>
+            <div role="status" data-file-upload-target="announcer"></div>
+        </div>
+    `;
+    await mount(html);
+
+    expect(dzState.options.previewTemplate).toContain("custom-preview");
+    expect(dzState.options.previewTemplate).toContain("data-dz-thumbnail");
+});
+
+test("does not set previewTemplate when no template target exists", async () => {
+    await mount();
+    expect(dzState.options.previewTemplate).toBeUndefined();
+});
+
+test("previewTemplate target coexists with optionsValue (both reach Dropzone)", async () => {
+    const optionsJson = JSON.stringify({ thumbnailMethod: "contain" });
+    const html = `
+        <div data-controller="file-upload"
+             data-file-upload-url-value="/upload"
+             data-file-upload-hidden-name-value="avatar"
+             data-file-upload-options-value='${optionsJson}'>
+            <template data-file-upload-target="previewTemplate"><div class="dz-preview opt-coexist"></div></template>
+            <div role="status" data-file-upload-target="announcer"></div>
+        </div>
+    `;
+    await mount(html);
+
+    expect(dzState.options.thumbnailMethod).toBe("contain");
+    expect(dzState.options.previewTemplate).toContain("opt-coexist");
+});
+
+test(":options previewTemplate overrides the slot", async () => {
+    const optionsJson = JSON.stringify({ previewTemplate: "<div data-from-options></div>" });
+    const html = `
+        <div data-controller="file-upload"
+             data-file-upload-url-value="/upload"
+             data-file-upload-hidden-name-value="avatar"
+             data-file-upload-options-value='${optionsJson}'>
+            <template data-file-upload-target="previewTemplate"><div data-from-slot></div></template>
+            <div role="status" data-file-upload-target="announcer"></div>
+        </div>
+    `;
+    await mount(html);
+
+    expect(dzState.options.previewTemplate).toContain("data-from-options");
+    expect(dzState.options.previewTemplate).not.toContain("data-from-slot");
+});
+
+test("subclass defaultOptions() previewTemplate overrides the slot and :options", async () => {
+    class Subclassed extends FileUploadController {
+        defaultOptions() {
+            return { previewTemplate: "<div data-from-subclass></div>" };
+        }
+    }
+    const optionsJson = JSON.stringify({ previewTemplate: "<div data-from-options></div>" });
+    document.body.innerHTML = `
+        <div data-controller="file-upload"
+             data-file-upload-url-value="/upload"
+             data-file-upload-hidden-name-value="avatar"
+             data-file-upload-options-value='${optionsJson}'>
+            <template data-file-upload-target="previewTemplate"><div data-from-slot></div></template>
+            <div role="status" data-file-upload-target="announcer"></div>
+        </div>
+    `;
+    const application = Application.start(document.body);
+    application.register("file-upload", Subclassed);
+    await wait(0);
+
+    try {
+        expect(dzState.options.previewTemplate).toContain("data-from-subclass");
+        expect(dzState.options.previewTemplate).not.toContain("data-from-slot");
+        expect(dzState.options.previewTemplate).not.toContain("data-from-options");
+    } finally {
+        application.stop();
+    }
+});
+
+test("slot present + preview=false → previews stay on (slot wins, no previewsContainer:false)", async () => {
+    const html = `
+        <div data-controller="file-upload"
+             data-file-upload-url-value="/upload"
+             data-file-upload-hidden-name-value="avatar"
+             data-file-upload-preview-value="false">
+            <template data-file-upload-target="previewTemplate"><div class="from-slot"></div></template>
+            <div role="status" data-file-upload-target="announcer"></div>
+        </div>
+    `;
+    await mount(html);
+
+    expect(dzState.options.previewTemplate).toContain("from-slot");
+    expect(dzState.options.previewsContainer).toBeUndefined();
+});
+
+test("preview=false without a slot still sets previewsContainer:false (regression guard)", async () => {
+    await mount(defaultHtml('data-file-upload-preview-value="false"'));
+
+    expect(dzState.options.previewsContainer).toBe(false);
+});
+
 // --- Cleanup ---
 
 test("destroys Dropzone on disconnect", async () => {

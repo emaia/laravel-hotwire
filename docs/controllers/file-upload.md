@@ -41,9 +41,10 @@ maintained fork. The fork's API is API-compatible for everything the wrapper use
 
 ## Targets
 
-| Target      | Required | Description                                                                                  |
-|-------------|----------|----------------------------------------------------------------------------------------------|
-| `announcer` | optional | `aria-live="polite"` region. Controller writes upload milestones to its `textContent`        |
+| Target            | Required | Description                                                                                  |
+|-------------------|----------|----------------------------------------------------------------------------------------------|
+| `announcer`       | optional | `aria-live="polite"` region. Controller writes upload milestones to its `textContent`        |
+| `previewTemplate` | optional | A `<template>` element whose `innerHTML` is forwarded as Dropzone's `previewTemplate` option. The Blade component populates this from `<x-slot:preview_template>`. Subclass `defaultOptions()` still wins over the slot |
 
 ## Actions
 

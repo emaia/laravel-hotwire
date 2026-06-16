@@ -589,3 +589,52 @@ it('throws when :messages contains an unsupported key', function () {
     expect(fn () => new FileUpload(url: '/uploads', messages: ['defaultt' => 'typo']))
         ->toThrow(InvalidArgumentException::class, 'Unknown file-upload message key [defaultt]');
 });
+
+// --- <x-slot:preview_template> ---
+
+it('emits a previewTemplate stimulus target when the preview-template slot is provided', function () {
+    $view = $this->blade('
+        <x-hwc::file-upload name="cover" url="/uploads">
+            <x-slot:preview_template>
+                <div class="dz-preview dz-file-preview"><img data-dz-thumbnail></div>
+            </x-slot:preview_template>
+        </x-hwc::file-upload>
+    ');
+
+    $view->assertSee('<template data-file-upload-target="previewTemplate">', false);
+    $view->assertSee('dz-preview dz-file-preview', false);
+    $view->assertSee('data-dz-thumbnail', false);
+});
+
+it('does not emit a previewTemplate target when no slot is provided', function () {
+    $view = $this->blade('<x-hwc::file-upload name="cover" url="/uploads" />');
+
+    $view->assertDontSee('preview-template', false);
+    $view->assertDontSee('previewTemplate', false);
+});
+
+it('prefixes the previewTemplate target with the swapped controller identifier', function () {
+    $view = $this->blade('
+        <x-hwc::file-upload name="cover" url="/uploads" controller="my-upload">
+            <x-slot:preview_template>
+                <div class="dz-preview"></div>
+            </x-slot:preview_template>
+        </x-hwc::file-upload>
+    ');
+
+    $view->assertSee('<template data-my-upload-target="previewTemplate">', false);
+    $view->assertDontSee('data-file-upload-target="previewTemplate"', false);
+});
+
+it('renders the preview-template slot before the announcer so Dropzone reads it at construction', function () {
+    $view = $this->blade('
+        <x-hwc::file-upload name="cover" url="/uploads">
+            <x-slot:preview_template>
+                <div class="dz-preview marker-slot"></div>
+            </x-slot:preview_template>
+        </x-hwc::file-upload>
+    ');
+
+    $rendered = (string) $view;
+    expect(strpos($rendered, 'marker-slot'))->toBeLessThan(strpos($rendered, 'data-file-upload-target="announcer"'));
+});

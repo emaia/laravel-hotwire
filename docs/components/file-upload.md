@@ -294,8 +294,11 @@ The array is JSON-encoded into a single `data-{identifier}-options-value` attrib
 spread over the wrapper's defaults in the controller. Precedence, lowest to highest:
 
 1. **Base defaults** (`paramName: 'file'`, `parallelUploads: 3`, etc.)
-2. **`:options`** — wins over base defaults, so you can override `parallelUploads` etc.
-3. **Subclass `defaultOptions()`** — wins over everything, because subclass code is
+2. **`<x-slot:preview_template>`** — sets `previewTemplate` from your Blade markup (see
+   [Custom preview template](#custom-preview-template))
+3. **`:options`** — wins over base defaults and the slot, so you can override
+   `parallelUploads`, `previewTemplate`, etc.
+4. **Subclass `defaultOptions()`** — wins over everything, because subclass code is
    explicit user intent
 
 `:options` and `:messages` share the same JSON bag. When both touch the same key (e.g.
@@ -305,6 +308,64 @@ spread over the wrapper's defaults in the controller. Precedence, lowest to high
 When a customization needs **JavaScript** (`accept`, `transformFile`, paste-from-clipboard,
 custom thumbnails, swapping the upload protocol entirely), reach for a [subclass](#controller-swap--subclass-extensibility)
 instead. Rule of thumb: `:options` is for values; subclass is for behavior.
+
+## Custom preview template
+
+To replace Dropzone's default thumbnail layout with your own HTML — different markup,
+Tailwind classes, an extra "uploaded by X" line — pass a `preview_template` slot:
+
+```blade
+<x-hwc::file-upload name="cover" url="{{ route('uploads.store') }}" accept="image/*">
+    <x-slot:preview_template>
+        <div class="dz-preview dz-file-preview rounded-lg border p-3 inline-block mr-2">
+            <div class="relative w-32 h-32">
+                <img data-dz-thumbnail class="w-full h-full object-cover rounded">
+                <button type="button"
+                        data-dz-remove
+                        class="absolute -top-2 -right-2 bg-white border rounded-full w-6 h-6">
+                    ×
+                </button>
+            </div>
+            <div class="mt-2 text-sm truncate" data-dz-name></div>
+            <div class="text-xs text-gray-500" data-dz-size></div>
+            <div class="h-1 mt-1 bg-gray-200 rounded">
+                <div class="h-full bg-blue-500 rounded" data-dz-uploadprogress style="width:0%"></div>
+            </div>
+            <div class="text-xs text-red-600 mt-1" data-dz-errormessage></div>
+        </div>
+    </x-slot:preview_template>
+</x-hwc::file-upload>
+```
+
+The component renders the slot as a `<template data-{identifier}-target="previewTemplate">`
+inside the wrapper. The controller reads its `innerHTML` at construction and passes the
+string to Dropzone's `previewTemplate` option — so Dropzone clones your markup per file
+and binds the `data-dz-*` selectors as usual.
+
+Required `data-dz-*` hooks (Dropzone targets them by selector to wire per-file state):
+
+| Selector              | Purpose                                                                  |
+|-----------------------|--------------------------------------------------------------------------|
+| `data-dz-thumbnail`   | `<img>` that receives the generated thumbnail as `src`                   |
+| `data-dz-name`        | Container for the filename                                               |
+| `data-dz-size`        | Container for the formatted file size                                    |
+| `data-dz-uploadprogress` | Element whose `width` is updated as the XHR progresses                |
+| `data-dz-errormessage`| Container for per-file error text                                        |
+| `data-dz-remove`      | Trigger that removes the file from the queue when clicked (only emitted if you want a remove button) |
+
+**`<template>` content is inert.** Native HTML `<template>` lives in a `DocumentFragment`,
+so its children don't match `document.querySelectorAll(...)`, don't render, and can't be
+focused. Tailwind still scans the Blade view for class strings, so utilities you write
+inside the slot are picked up by JIT as long as the file is on Tailwind's `content` list.
+
+**Interaction with `:preview="false"`.** The slot only takes effect when previews are
+enabled (the default). Passing both the slot and `:preview="false"` is contradictory —
+the slot wins and previews stay on. Use `:preview="false"` when you want **no** client
+preview at all (typically paired with `:turbo-stream="true"` and server-rendered cards).
+
+**When subclassing,** the target prefix follows the swapped identifier: `controller="my-upload"`
+emits `<template data-my-upload-target="previewTemplate">`. Subclass `defaultOptions()` can
+still override `previewTemplate` if it returns one — subclass code wins over the slot.
 
 ## Controller swap — subclass extensibility
 

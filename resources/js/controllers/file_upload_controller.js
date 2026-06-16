@@ -6,7 +6,7 @@ import "@deltablot/dropzone/dist/dropzone.css";
 Dropzone.autoDiscover = false;
 
 export default class extends Controller {
-    static targets = ["announcer"];
+    static targets = ["announcer", "previewTemplate"];
 
     static values = {
         url: String,
@@ -42,6 +42,11 @@ export default class extends Controller {
     }
 
     dropzoneOptions() {
+        // Precedence ladder, lowest authority to highest:
+        //   1. base props (urlValue, paramName, etc.)
+        //   2. slot (`<x-slot:preview_template>` → `previewTemplate` target)
+        //   3. `:options` (PHP-side escape hatch — raw Dropzone config + dict* messages)
+        //   4. subclass `defaultOptions()` — explicit user code, always wins
         const opts = {
             url: this.urlValue,
             paramName: this.paramNameValue,
@@ -51,13 +56,15 @@ export default class extends Controller {
             parallelUploads: this.parallelUploadsValue,
             uploadMultiple: false,
             headers: this.requestHeaders(),
-            // `:options` is the PHP-side escape hatch (raw Dropzone config + dict* messages).
-            // It overrides the wrapper's per-prop defaults so users can tweak things we don't
-            // expose as named props. Subclass `defaultOptions()` still wins on top.
-            ...this.optionsValue,
-            ...this.defaultOptions(),
         };
-        if (!this.previewValue) opts.previewsContainer = false;
+        if (this.hasPreviewTemplateTarget) {
+            opts.previewTemplate = this.previewTemplateTarget.innerHTML;
+        } else if (!this.previewValue) {
+            // Honor `:preview="false"` only when there is no slot — a slot means the user
+            // wrote custom preview markup and obviously wants previews on.
+            opts.previewsContainer = false;
+        }
+        Object.assign(opts, this.optionsValue, this.defaultOptions());
         return opts;
     }
 
