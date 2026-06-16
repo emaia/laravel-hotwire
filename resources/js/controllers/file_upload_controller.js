@@ -22,6 +22,7 @@ export default class extends Controller {
         deleteUrl: { type: String, default: "" },
         parallelUploads: { type: Number, default: 3 },
         turboStream: { type: Boolean, default: false },
+        options: { type: Object, default: {} },
     };
 
     dropzone = null;
@@ -50,6 +51,10 @@ export default class extends Controller {
             parallelUploads: this.parallelUploadsValue,
             uploadMultiple: false,
             headers: this.requestHeaders(),
+            // `:options` is the PHP-side escape hatch (raw Dropzone config + dict* messages).
+            // It overrides the wrapper's per-prop defaults so users can tweak things we don't
+            // expose as named props. Subclass `defaultOptions()` still wins on top.
+            ...this.optionsValue,
             ...this.defaultOptions(),
         };
         if (!this.previewValue) opts.previewsContainer = false;

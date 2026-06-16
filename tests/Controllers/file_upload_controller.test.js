@@ -596,6 +596,68 @@ test("openPicker is a no-op when Dropzone has no hidden file input yet", async (
     expect(() => mounted.controller.openPicker(new Event("keydown"))).not.toThrow();
 });
 
+// --- :options escape hatch ---
+
+test("spreads optionsValue into Dropzone options", async () => {
+    const optionsJson = JSON.stringify({ thumbnailMethod: "contain", resizeQuality: 0.9 });
+    await mount(defaultHtml(`data-file-upload-options-value='${optionsJson}'`));
+
+    expect(dzState.options.thumbnailMethod).toBe("contain");
+    expect(dzState.options.resizeQuality).toBe(0.9);
+});
+
+test("optionsValue overrides base defaults the wrapper sets", async () => {
+    // Wrapper sets parallelUploads:3 by default; an explicit :options should win.
+    const optionsJson = JSON.stringify({ parallelUploads: 8 });
+    await mount(defaultHtml(`data-file-upload-options-value='${optionsJson}'`));
+
+    expect(dzState.options.parallelUploads).toBe(8);
+});
+
+test("subclass defaultOptions() still wins over optionsValue", async () => {
+    class Subclassed extends FileUploadController {
+        defaultOptions() {
+            return { thumbnailMethod: "subclass-wins" };
+        }
+    }
+    const optionsJson = JSON.stringify({ thumbnailMethod: "from-options" });
+    document.body.innerHTML = `
+        <div data-controller="file-upload"
+             data-file-upload-url-value="/upload"
+             data-file-upload-hidden-name-value="avatar"
+             data-file-upload-options-value='${optionsJson}'>
+            <div role="status" data-file-upload-target="announcer"></div>
+        </div>
+    `;
+    const application = Application.start(document.body);
+    application.register("file-upload", Subclassed);
+    await wait(0);
+
+    try {
+        expect(dzState.options.thumbnailMethod).toBe("subclass-wins");
+    } finally {
+        application.stop();
+    }
+});
+
+test("merges dict* messages from optionsValue into Dropzone options", async () => {
+    const optionsJson = JSON.stringify({
+        dictDefaultMessage: "Arraste arquivos aqui",
+        dictFileTooBig: "Arquivo grande demais",
+    });
+    await mount(defaultHtml(`data-file-upload-options-value='${optionsJson}'`));
+
+    expect(dzState.options.dictDefaultMessage).toBe("Arraste arquivos aqui");
+    expect(dzState.options.dictFileTooBig).toBe("Arquivo grande demais");
+});
+
+test("optionsValue defaults to no-op when attribute is absent", async () => {
+    await mount();
+    // base defaults still in effect
+    expect(dzState.options.parallelUploads).toBe(3);
+    expect(dzState.options.thumbnailMethod).toBeUndefined();
+});
+
 // --- Cleanup ---
 
 test("destroys Dropzone on disconnect", async () => {

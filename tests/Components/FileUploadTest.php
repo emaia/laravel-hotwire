@@ -509,3 +509,83 @@ it('forwards arbitrary attributes', function () {
     $view->assertSee('id="custom"', false);
     $view->assertSee('data-extra="yes"', false);
 });
+
+// --- :options escape hatch ---
+
+it('emits options as a JSON data-value when set', function () {
+    $view = $this->blade('<x-hwc::file-upload name="avatar" url="/uploads" :options="[\'thumbnailMethod\' => \'contain\', \'resizeQuality\' => 0.9]" />');
+
+    $view->assertSee('data-file-upload-options-value=', false);
+    $view->assertSee('thumbnailMethod', false);
+    $view->assertSee('contain', false);
+    $view->assertSee('resizeQuality', false);
+    $view->assertSee('0.9', false);
+});
+
+it('omits the options data-value when options is null', function () {
+    $view = $this->blade('<x-hwc::file-upload name="avatar" url="/uploads" />');
+
+    $view->assertDontSee('options-value', false);
+});
+
+it('omits the options data-value when options is an empty array', function () {
+    $view = $this->blade('<x-hwc::file-upload name="avatar" url="/uploads" :options="[]" />');
+
+    $view->assertDontSee('options-value', false);
+});
+
+it('prefixes the options data-value with the swapped identifier', function () {
+    $view = $this->blade('<x-hwc::file-upload name="cover" url="/uploads" controller="my-upload" :options="[\'thumbnailMethod\' => \'contain\']" />');
+
+    $view->assertSee('data-my-upload-options-value=', false);
+    $view->assertDontSee('data-file-upload-options-value', false);
+});
+
+it('filters user-provided data-{identifier}-options-value to prevent conflicts', function () {
+    $view = $this->blade('<x-hwc::file-upload name="avatar" url="/uploads" data-file-upload-options-value="{}" :options="[\'thumbnailMethod\' => \'contain\']" />');
+
+    $view->assertSee('thumbnailMethod', false);
+});
+
+// --- :messages → dict* mapping ---
+
+it('maps messages keys to dict* and emits them inside the options JSON', function () {
+    $view = $this->blade('<x-hwc::file-upload name="avatar" url="/uploads" :messages="[\'default\' => \'Arraste aqui\', \'fileTooBig\' => \'Arquivo grande demais\']" />');
+
+    $view->assertSee('data-file-upload-options-value=', false);
+    $view->assertSee('dictDefaultMessage', false);
+    $view->assertSee('Arraste aqui', false);
+    $view->assertSee('dictFileTooBig', false);
+    $view->assertSee('Arquivo grande demais', false);
+});
+
+it('omits the options data-value when messages is empty and options is null', function () {
+    $view = $this->blade('<x-hwc::file-upload name="avatar" url="/uploads" :messages="[]" />');
+
+    $view->assertDontSee('options-value', false);
+});
+
+it('lets :options override matching dict* keys from :messages', function () {
+    $view = $this->blade('<x-hwc::file-upload name="avatar" url="/uploads"
+        :messages="[\'default\' => \'from-messages\']"
+        :options="[\'dictDefaultMessage\' => \'from-options\']" />');
+
+    $view->assertSee('from-options', false);
+    $view->assertDontSee('from-messages', false);
+});
+
+it('merges :messages and :options when their keys do not overlap', function () {
+    $view = $this->blade('<x-hwc::file-upload name="avatar" url="/uploads"
+        :messages="[\'default\' => \'Drop here\']"
+        :options="[\'thumbnailMethod\' => \'contain\']" />');
+
+    $view->assertSee('dictDefaultMessage', false);
+    $view->assertSee('Drop here', false);
+    $view->assertSee('thumbnailMethod', false);
+    $view->assertSee('contain', false);
+});
+
+it('throws when :messages contains an unsupported key', function () {
+    expect(fn () => new FileUpload(url: '/uploads', messages: ['defaultt' => 'typo']))
+        ->toThrow(InvalidArgumentException::class, 'Unknown file-upload message key [defaultt]');
+});

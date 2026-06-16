@@ -37,6 +37,7 @@ maintained fork. The fork's API is API-compatible for everything the wrapper use
 | `deleteUrl`       | String  | `""`          | DELETE endpoint hit when a queued file is removed. `:token` is substituted with the extracted value      |
 | `parallelUploads` | Number  | `3`           | Concurrent XHRs in the queue                                                                             |
 | `turboStream`     | Boolean | `false`       | When `true`, sends `Accept: text/vnd.turbo-stream.html, application/json` on every upload XHR; on success/error, if the response body looks like a Turbo Stream, hands it to `Turbo.renderStreamMessage` and skips the automatic hidden input on success |
+| `options`         | Object  | `{}`          | Extra Dropzone options, JSON-encoded into the value. Spread over the wrapper's per-prop defaults; subclass `defaultOptions()` still takes precedence. Use for `dict*` localization, `thumbnailMethod`, `resizeQuality`, etc. The Blade component populates this from the `:options` + `:messages` props |
 
 ## Targets
 

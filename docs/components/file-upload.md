@@ -81,6 +81,8 @@ package will leave your customised version alone on subsequent `hotwire:controll
 | `responseKey`      | `string`         | `'token'`        | Key read from the JSON response to populate the hidden input value. Use `'uuid'` for Spatie media, `'url'` for direct-to-S3, etc. |
 | `deleteUrl`        | `string\|null`   | `null`           | DELETE endpoint hit when a queued file is removed. `:token` is substituted with the extracted value      |
 | `parallelUploads`  | `int`            | `3`              | Concurrent XHRs in the queue                                                                             |
+| `messages`         | `array\|null`    | `null`           | Localized strings for Dropzone's built-in UI. Short keys (`default`, `fileTooBig`, …) map to `dict*` options. See [Messages and i18n](#messages-and-i18n) |
+| `options`          | `array\|null`    | `null`           | Escape hatch — any extra Dropzone configuration option, JSON-encoded into a data-value. Overrides per-prop defaults; subclass `defaultOptions()` still wins. See [Options escape hatch](#options-escape-hatch) |
 | `class`            | `string`         | `''`             | Merged on the wrapper (after the baseline `hwc-file-upload dropzone`)                                    |
 | `controller`       | `string`         | `'file-upload'`  | Stimulus identifier — swap for a subclass (e.g. `controller="my-upload"`)                                |
 
@@ -221,6 +223,88 @@ normalised by the controller: the announcer, the thumb's error tooltip, and the
 The view always renders an `aria-live="polite"` status region the controller writes to at upload
 milestones (`Uploading X`, `Uploaded X`, `Upload failed: …`, `Removed X`). Per-tick progress is
 intentionally not announced — too noisy.
+
+## Messages and i18n
+
+Dropzone ships built-in English strings ("Drop files here to upload", "File is too big",
+etc.). To localize them — or just to reword — pass a `:messages` array. Short keys map to
+Dropzone's `dict*` options under the hood, so the array travels straight from `lang/*` to
+the rendered widget.
+
+```blade
+<x-hwc::file-upload
+    name="avatar"
+    url="{{ route('uploads.store') }}"
+    :messages="__('hotwire.file_upload')"
+/>
+```
+
+```php
+// lang/pt_BR/hotwire.php
+return [
+    'file_upload' => [
+        'default' => 'Arraste arquivos aqui ou clique para selecionar',
+        'fileTooBig' => 'Arquivo muito grande ({{filesize}}MiB). Máximo: {{maxFilesize}}MiB.',
+        'invalidFileType' => 'Tipo de arquivo não permitido.',
+        'maxFilesExceeded' => 'Você atingiu o limite de arquivos.',
+        'removeFile' => 'Remover arquivo',
+    ],
+];
+```
+
+| Short key                  | Maps to                          |
+|----------------------------|----------------------------------|
+| `default`                  | `dictDefaultMessage`             |
+| `fallback`                 | `dictFallbackMessage`            |
+| `fallbackText`             | `dictFallbackText`               |
+| `fileTooBig`               | `dictFileTooBig`                 |
+| `invalidFileType`          | `dictInvalidFileType`            |
+| `responseError`            | `dictResponseError`              |
+| `cancelUpload`             | `dictCancelUpload`               |
+| `cancelUploadConfirmation` | `dictCancelUploadConfirmation`   |
+| `uploadCanceled`           | `dictUploadCanceled`             |
+| `removeFile`               | `dictRemoveFile`                 |
+| `removeFileConfirmation`   | `dictRemoveFileConfirmation`     |
+| `maxFilesExceeded`         | `dictMaxFilesExceeded`           |
+| `fileSizeUnits`            | `dictFileSizeUnits`              |
+
+Unknown keys throw an `InvalidArgumentException` at construction so typos surface early.
+For dict options not in the table above (Dropzone may add new ones), use `:options` —
+which accepts the raw `dict*` form directly.
+
+## Options escape hatch
+
+Most Dropzone configuration is already covered by named props (`accept`, `maxSizeBytes`,
+`parallelUploads`, etc.). For the rest — `thumbnailMethod`, `resizeQuality`,
+`createImageThumbnails`, custom `headers`, etc. — pass an `:options` array:
+
+```blade
+<x-hwc::file-upload
+    name="cover"
+    url="{{ route('uploads.store') }}"
+    :options="[
+        'thumbnailMethod' => 'contain',
+        'resizeQuality' => 0.9,
+        'createImageThumbnails' => true,
+    ]"
+/>
+```
+
+The array is JSON-encoded into a single `data-{identifier}-options-value` attribute and
+spread over the wrapper's defaults in the controller. Precedence, lowest to highest:
+
+1. **Base defaults** (`paramName: 'file'`, `parallelUploads: 3`, etc.)
+2. **`:options`** — wins over base defaults, so you can override `parallelUploads` etc.
+3. **Subclass `defaultOptions()`** — wins over everything, because subclass code is
+   explicit user intent
+
+`:options` and `:messages` share the same JSON bag. When both touch the same key (e.g.
+`:messages="['default' => 'A']"` and `:options="['dictDefaultMessage' => 'B']"`), the
+`:options` value wins — it's the lower-level escape hatch.
+
+When a customization needs **JavaScript** (`accept`, `transformFile`, paste-from-clipboard,
+custom thumbnails, swapping the upload protocol entirely), reach for a [subclass](#controller-swap--subclass-extensibility)
+instead. Rule of thumb: `:options` is for values; subclass is for behavior.
 
 ## Controller swap — subclass extensibility
 
