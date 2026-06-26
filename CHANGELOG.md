@@ -2,6 +2,21 @@
 
 All notable changes to `laravel-hotwire` will be documented in this file.
 
+## 0.31.0 - 2026-06-26
+
+### File-upload Blade component (Dropzone wrapper)
+
+New `<x-hwc::file-upload>` Blade component wrapping `@deltablot/dropzone` 7.x for drag-drop uploads with the endpoint, validation, storage and cleanup app-side. Also: JS tests now run in CI.
+
+- `<x-hwc::file-upload>` + `file-upload` controller wrap Dropzone for drag-drop, multi-file queue, client-side preview/progress, aria-live announcer and keyboard operation. `:options` (raw Dropzone config) and `:messages` (short i18n keys → `dict*`) are validated for unknown keys at construction (#56)
+- `<x-slot:preview_template>` lets you author Dropzone preview markup in Blade — rendered as a `<template>` target with `data-dz-*` hooks bound per file (#56)
+- `controller=` swap prop for Stimulus subclass extensibility (mirrors `chart`/`map`); `data-*-value` and `data-*-target` follow the swapped identifier. Subclass hooks: `defaultOptions()` and `afterInit()` (#56)
+- `:value` + `old()` redirect-back preservation; native `:turbo-stream="true"` opt-in (Accept header + `Turbo.renderStreamMessage` on success/error); error response normalisation so `{ message }` and 422 `{ errors: { field } }` render readable text instead of `[object Object]` (#56)
+- Docs: full component page covering Setup, Edit forms, Turbo Streams, Keyboard, Validation, Messages/i18n, Options, Preview template, Controller swap. Plus [`file-upload-patterns.md`](docs/recipes/file-upload-patterns.md) (5 patterns: Spatie Media Library, async thumbnail via broadcast, stream-rendered gallery with EXIF, single-file edit form with stream-replaced card, rich media library list with rename and reorder) and [`draft-as-state-gallery.md`](docs/recipes/draft-as-state-gallery.md) for multi-step creation flows (#56)
+- JS tests now run in CI (`bun run test` + `bun run test:browser`); fixes a modal Playwright bundler regression (#55)
+
+**Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/0.30.0...0.31.0
+
 ## 0.30.0 - 2026-06-15
 
 ### Rich text editor (Tiptap wrapper)
@@ -55,6 +70,7 @@ New `<x-hwc::map>` Blade component and `map` Stimulus controller — a Leaflet w
 
 
 
+
 ```
 - Default OpenStreetMap tiles with the required attribution automatically set
 - Inline markers with optional popups, or a `url` returning a GeoJSON `FeatureCollection`
@@ -78,6 +94,7 @@ The `chart` controller now supports a `poll` value (milliseconds) — when set w
 
 ```blade
 <x-hwc::chart url="/api/charts/sales" :poll="30_000" height="320px" />
+
 
 
 
@@ -170,6 +187,7 @@ Apache ECharts ^6.1.0 wrapper with server-rendered or URL-fetched options, Resiz
 
 
 
+
 ```
 #### Controller features
 
@@ -247,6 +265,7 @@ New `conditional-fields` Stimulus controller shows or hides dependent blocks bas
 
 
 
+
 ```
 #### Rule grammar
 
@@ -286,6 +305,7 @@ Recommended path — encodes the rule once on the server, renders `hidden disabl
 
 
 
+
 ```
 #### Edit forms — the `:model` prop
 
@@ -295,6 +315,7 @@ Pass the same model your `<x-hwc::input>` / `<x-hwc::select>` / `<x-hwc::textare
 <x-hwc::conditional-field :model="$message" :when="['reason' => 'other']">
     <x-hwc::input name="other_reason" :value="$message->other_reason" />
 </x-hwc::conditional-field>
+
 
 
 
@@ -342,6 +363,7 @@ New `disclosure` Stimulus controller — collapsible inline content with proper 
 
 
 
+
 ```
 Two-way `open` value (default `false`), idempotent `toggle` / `open` / `close` actions, and a `disclosure:change` event with `{ open: bool }` for hooking analytics, icon swaps, or chained UI off transitions. The `content` target is required; the `trigger` target is optional and receives `aria-expanded` sync when present.
 
@@ -355,6 +377,7 @@ static outlets = ["disclosure"];
 revealHelp() {
     this.disclosureOutlet.open();
 }
+
 
 
 
@@ -410,6 +433,7 @@ New `password-visibility` Stimulus controller toggles a password input between h
 
 
 
+
 ```
 `aria-label` is driven by the `show-label` / `hide-label` values (defaults `Show password` / `Hide password`). A `password-visibility:change` event with `{ visible: bool }` fires on every transition so a small companion controller — or another listener — can swap icons. `connect()` always forces `type="password"`: visibility is never persisted across Turbo morphs or Drive navigations.
 
@@ -422,6 +446,7 @@ New `autofocus` Stimulus controller focuses the first matching field on `connect
 <form data-controller="autofocus" action="/messages" method="POST">
     <input type="text" name="title" autofocus/>
 </form>
+
 
 
 
@@ -453,6 +478,7 @@ New `back-to-top` Stimulus controller toggles `data-visible="true|false"` on its
            data-[visible=true]:opacity-100"
     aria-label="Back to top"
 >↑</button>
+
 
 
 
@@ -514,6 +540,7 @@ Single `size` prop replaces the previous `allow-small-width` and `allow-full-wid
 
 
 
+
 ```
 `allow-small-width` and `allow-full-width` are removed. Use `size="auto"` to keep the old "no width constraints" behavior, or `size="50vw"` to keep the old "half viewport" default. The migration table in `docs/components/modal.md` maps every previous combination to the new prop.
 
@@ -551,6 +578,7 @@ New `<x-hwc::frame-or-page>` component renders a view as a Turbo Frame payload o
 
 
 
+
 ```
 #### Model-aware frame ids
 
@@ -560,6 +588,7 @@ Pass a Model instead of a string; the component calls `dom_id()` to derive the f
 <x-hwc::frame-or-page :frame="$message" layout="layouts.dashboard">
     ...
 </x-hwc::frame-or-page>
+
 
 
 
@@ -615,12 +644,14 @@ The `<x-hwc::carousel>` component now supports an opt-in progress bar and slide 
 
 
 
+
 ```
 #### Slide counter
 
 ```blade
 <x-hwc::carousel :counter="true"
                  counter-class="text-sm">
+
 
 
 
@@ -679,12 +710,14 @@ export default class extends CarouselController {
 
 
 
+
 ```
 ```blade
 <x-hwc::carousel controller="gallery">
     <div>slide 1</div>
     <div>slide 2</div>
 </x-hwc::carousel>
+
 
 
 
