@@ -24,9 +24,10 @@ const HTML = `
          data-confirm-dialog-close-duration-value="1">
         <a href="/items/1" data-action="click->confirm-dialog#intercept" id="trigger">Delete</a>
 
-        <div data-confirm-dialog-target="modal" hidden>
-            <div data-confirm-dialog-target="backdrop"
-                 data-action="click->confirm-dialog#clickOutside"></div>
+        <div data-confirm-dialog-target="modal"
+             data-action="click->confirm-dialog#clickOutside"
+             hidden>
+            <div data-confirm-dialog-target="backdrop"></div>
             <div data-confirm-dialog-target="dialog">
                 <button id="cancel" data-action="click->confirm-dialog#cancel">Cancel</button>
                 <button id="confirm" data-action="click->confirm-dialog#confirm">OK</button>
@@ -144,12 +145,13 @@ test.serial("clicking the backdrop cancels the dialog when closeOnClickOutside i
 test.serial("clicking inside the dialog does NOT close it", async () => {
     await mount();
     const trigger = document.getElementById("trigger");
-    const cancelBtn = document.getElementById("cancel");
+    const dialog = document.querySelector('[data-confirm-dialog-target="dialog"]');
 
     clickWith(trigger);
 
-    // Dispatch clickOutside directly with target = inside dialog
-    mounted.controller.clickOutside({ target: cancelBtn });
+    // A bubbling click that originates inside the dialog reaches the modal-level
+    // clickOutside handler but should be ignored (target is within the dialog).
+    clickWith(dialog);
 
     expect(mounted.controller.isOpen).toBe(true);
 });
@@ -174,6 +176,81 @@ test.serial("Escape key is a no-op when the dialog is closed", async () => {
     document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
 
     expect(mounted.controller.isOpen).toBe(false);
+});
+
+// --- propagation containment (modal lives inside an outer listener, e.g. a dropdown) ---
+
+test.serial("confirm re-click bubbles past the dialog so ancestors can react", async () => {
+    await mount();
+
+    let ancestorClicks = 0;
+    const spy = (event) => {
+        if (event.target.id === "trigger") ancestorClicks++;
+    };
+    document.body.addEventListener("click", spy);
+
+    const trigger = document.getElementById("trigger");
+    const confirmBtn = document.getElementById("confirm");
+
+    clickWith(trigger); // first click → intercepted, does NOT bubble
+    expect(mounted.controller.isOpen).toBe(true);
+    expect(ancestorClicks).toBe(0);
+
+    clickWith(confirmBtn);
+    await wait(20); // closeDuration (1ms) + re-click
+
+    expect(mounted.controller.isOpen).toBe(false);
+    // The synthetic re-click on the original trigger reaches ancestor listeners,
+    // letting an enclosing dropdown (or other UI) close gracefully after the
+    // modal has finished its own close transition.
+    expect(ancestorClicks).toBe(1);
+
+    document.body.removeEventListener("click", spy);
+});
+
+test.serial("cancel click does not bubble to ancestor click listeners while modal is open", async () => {
+    await mount();
+
+    let ancestorClicks = 0;
+    const spy = () => {
+        ancestorClicks++;
+    };
+    document.body.addEventListener("click", spy);
+
+    const trigger = document.getElementById("trigger");
+    const cancelBtn = document.getElementById("cancel");
+
+    clickWith(trigger);
+    expect(mounted.controller.isOpen).toBe(true);
+
+    const before = ancestorClicks;
+    clickWith(cancelBtn);
+
+    expect(mounted.controller.isOpen).toBe(false);
+    expect(ancestorClicks).toBe(before);
+
+    document.body.removeEventListener("click", spy);
+});
+
+test.serial("Escape does not reach other document keydown listeners while modal is open", async () => {
+    await mount();
+    const trigger = document.getElementById("trigger");
+
+    let bubbleListenerSawEscape = false;
+    const spy = (event) => {
+        if (event.key === "Escape") bubbleListenerSawEscape = true;
+    };
+    document.addEventListener("keydown", spy);
+
+    clickWith(trigger);
+    expect(mounted.controller.isOpen).toBe(true);
+
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+
+    expect(mounted.controller.isOpen).toBe(false);
+    expect(bubbleListenerSawEscape).toBe(false);
+
+    document.removeEventListener("keydown", spy);
 });
 
 // --- disconnect cleanup ---

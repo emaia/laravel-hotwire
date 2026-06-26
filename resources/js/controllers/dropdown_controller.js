@@ -22,7 +22,6 @@ export default class extends Controller {
     connect() {
         document.addEventListener("click", this.onOutsideClick);
         document.addEventListener("keydown", this.onKeydown);
-        this.menuTarget.addEventListener("click", this.onMenuClick);
         document.addEventListener("turbo:before-cache", this.closeForCache);
 
         this.hiddenClassList.forEach((cls) => this.menuTarget.classList.toggle(cls, !this.openValue));
@@ -32,8 +31,15 @@ export default class extends Controller {
     disconnect() {
         document.removeEventListener("click", this.onOutsideClick);
         document.removeEventListener("keydown", this.onKeydown);
-        this.menuTarget.removeEventListener("click", this.onMenuClick);
         document.removeEventListener("turbo:before-cache", this.closeForCache);
+    }
+
+    menuTargetConnected(menu) {
+        menu.addEventListener("click", this.onMenuClick);
+    }
+
+    menuTargetDisconnected(menu) {
+        menu.removeEventListener("click", this.onMenuClick);
     }
 
     toggle(event) {
