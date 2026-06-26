@@ -30,6 +30,13 @@ Each recipe is self-contained — pick the one that matches your use case.
   subscription tiers, NPS survey follow-ups, and newsletter preferences.
 - [Charts](./charts.md) — Apache ECharts integration: inline option, URL-fetched option,
   subclass extension, and a drill-down pattern with smooth universal transitions.
+- [File upload patterns](./file-upload-patterns.md) — five real-world patterns for the file-upload
+  component: Spatie Media Library, async thumbnail via broadcast, stream-rendered gallery with EXIF,
+  single-file edit form with stream-replaced cards (avatar pattern), and a rich media library list
+  with rename and reorder.
+- [Draft-as-state — media gallery](./draft-as-state-gallery.md) — multi-step creation flows where the
+  draft is canonical state: every upload, rename, removal and reorder hits the server immediately and
+  updates a `pending_*` table. The final action just promotes the draft into the permanent resource.
 
 ## See also
 
