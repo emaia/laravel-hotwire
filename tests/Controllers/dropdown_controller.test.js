@@ -211,6 +211,26 @@ test.serial("Escape returns focus to the trigger that opened the menu", async ()
     expect(document.activeElement).toBe(document.getElementById("t2"));
 });
 
+// --- target lifecycle survives DOM replacement (Turbo morph) ---
+
+test.serial("re-attaches the menu click listener when the menu node is replaced", async () => {
+    await mount();
+    clickTrigger();
+    expect(isOpen()).toBe(true);
+
+    // Simulate a Turbo morph that swaps the menu node while keeping the
+    // controller's root in place. Stimulus's MutationObserver should fire
+    // menuTargetDisconnected/Connected on us, so onMenuClick rebinds.
+    const oldMenu = menu();
+    const replacement = oldMenu.cloneNode(true);
+    oldMenu.replaceWith(replacement);
+    await wait(0);
+
+    replacement.querySelector("a").dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+    expect(replacement.classList.contains("hidden")).toBe(true);
+});
+
 // --- before-cache with a pending transition ---
 
 test.serial("turbo:before-cache cancels a pending transition and hides cleanly", async () => {

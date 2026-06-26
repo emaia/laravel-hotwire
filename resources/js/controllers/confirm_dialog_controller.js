@@ -17,8 +17,8 @@ export default class ConfirmController extends Controller {
     ];
 
     static values = {
-        openDuration: { type: Number, default: 200 },
-        closeDuration: { type: Number, default: 200 },
+        openDuration: { type: Number, default: 100 },
+        closeDuration: { type: Number, default: 100 },
         lockScroll: { type: Boolean, default: true },
         closeOnClickOutside: { type: Boolean, default: true },
     };
@@ -31,7 +31,7 @@ export default class ConfirmController extends Controller {
 
     connect() {
         this.handleEscapeKey = this.handleEscapeKey.bind(this);
-        document.addEventListener("keydown", this.handleEscapeKey);
+        document.addEventListener("keydown", this.handleEscapeKey, true);
 
         if (this.hasModalTarget) {
             this.focusTrap = new FocusTrap(this.modalTarget);
@@ -39,7 +39,7 @@ export default class ConfirmController extends Controller {
     }
 
     disconnect() {
-        document.removeEventListener("keydown", this.handleEscapeKey);
+        document.removeEventListener("keydown", this.handleEscapeKey, true);
         this.focusTrap?.deactivate();
 
         if (this.isOpen) {
@@ -86,6 +86,8 @@ export default class ConfirmController extends Controller {
     }
 
     clickOutside(event) {
+        event.stopPropagation();
+
         if (
             this.closeOnClickOutsideValue &&
             this.isOpen &&
@@ -97,9 +99,11 @@ export default class ConfirmController extends Controller {
     }
 
     handleEscapeKey(event) {
-        if (event.key === "Escape" && this.isOpen) {
-            this.cancel();
-        }
+        if (event.key !== "Escape" || !this.isOpen) return;
+
+        event.stopImmediatePropagation();
+        event.preventDefault();
+        this.cancel();
     }
 
     #open() {
@@ -151,5 +155,4 @@ export default class ConfirmController extends Controller {
             this.modalTarget.hidden = true;
         }, this.closeDurationValue);
     }
-
 }
