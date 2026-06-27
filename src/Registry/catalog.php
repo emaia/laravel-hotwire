@@ -1,6 +1,7 @@
 <?php
 
 use Emaia\LaravelHotwire\Components\Carousel;
+use Emaia\LaravelHotwire\Components\Icon;
 use Emaia\LaravelHotwire\Components\Chart;
 use Emaia\LaravelHotwire\Components\CheckboxGroup;
 use Emaia\LaravelHotwire\Components\ConditionalField;
@@ -236,6 +237,14 @@ return [
             'category' => 'utility',
             'description' => 'Self-refreshing relative timestamp element wrapping the timeago controller',
             'controllers' => ['timeago'],
+        ],
+        'icon' => [
+            'class' => Icon::class,
+            'view' => 'hotwire::component-views.icon',
+            'docs' => 'docs/components/icon.md',
+            'category' => 'utility',
+            'description' => 'Inline SVG icon from the embedded Lucide subset (~21 icons)',
+            'controllers' => [],
         ],
     ],
     'controllers' => [
