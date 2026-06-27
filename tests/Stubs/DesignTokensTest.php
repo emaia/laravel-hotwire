@@ -112,6 +112,7 @@ it('preserves existing @source directives', function () use ($stubPath) {
     $css = file_get_contents($stubPath);
 
     expect($css)->toContain("@source '../../vendor/emaia/laravel-hotwire/resources/views/**/*.blade.php'");
+    expect($css)->toContain("@source '../../vendor/emaia/laravel-hotwire/src/Components/**/*.php'");
 });
 
 it('preserves existing @custom-variant rules', function () use ($stubPath) {

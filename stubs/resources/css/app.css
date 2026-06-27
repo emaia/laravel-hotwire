@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 @source '../../vendor/emaia/laravel-hotwire/resources/views/**/*.blade.php';
+@source '../../vendor/emaia/laravel-hotwire/src/Components/**/*.php';
 
 @custom-variant turbo-preview (html[data-turbo-preview] &);
 @custom-variant turbo-visit (html[aria-busy="true"] &);
