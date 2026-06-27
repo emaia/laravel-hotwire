@@ -8,8 +8,10 @@ use Emaia\LaravelHotwire\Commands\InstallCommand;
 use Emaia\LaravelHotwire\Commands\ListComponentsCommand;
 use Emaia\LaravelHotwire\Commands\MakeControllerCommand;
 use Emaia\LaravelHotwire\Commands\PublishControllersCommand;
+use Emaia\LaravelHotwire\Commands\SyncLoaderCommand;
 use Emaia\LaravelHotwire\Commands\UiCommand;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
+use Emaia\LaravelHotwire\Support\LoaderSync;
 use Illuminate\Support\Facades\Blade;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -32,6 +34,7 @@ class LaravelHotwireServiceProvider extends PackageServiceProvider
                 CheckCommand::class,
                 DocsCommand::class,
                 UiCommand::class,
+                SyncLoaderCommand::class,
             ]);
     }
 
@@ -57,6 +60,10 @@ class LaravelHotwireServiceProvider extends PackageServiceProvider
             foreach ($registry->bladeComponentAliases('hotwire') as $alias => $class) {
                 Blade::component($class, $alias);
             }
+        }
+
+        if ($this->app->isLocal()) {
+            app(LoaderSync::class)->syncIfStale();
         }
     }
 }
