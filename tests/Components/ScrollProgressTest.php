@@ -5,7 +5,7 @@ it('renders with default props', function () {
 
     $view->assertSee('data-controller="scroll-progress"', false);
     $view->assertSee('data-scroll-progress-throttle-delay-value="15"', false);
-    $view->assertSee('fixed top-0 left-0 z-50 h-1 bg-indigo-500', false);
+    $view->assertSee('fixed top-0 left-0 z-50 h-1 bg-primary', false);
 });
 
 it('overrides throttle delay', function () {

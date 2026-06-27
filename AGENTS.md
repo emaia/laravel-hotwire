@@ -112,10 +112,12 @@ registered here**, or the commands won't see it.
 ### Pull Requests
 
 - Push feature branch, open PR on GitHub
-- Branch naming: descriptive kebab-case (e.g. `carousel-extras`, `confirm-dialog`)
+- Branch naming: descriptive kebab-case (e.g. `radio-group`, `confirm-dialog`)
 - PR title matches commit subject convention; body summarizes changes
-- Review required; merge manually (do not squash-merge from the CLI)
-- Remote merge (GitHub UI) squashes the branch into a single commit on `main`
+- Review required; merge from the GitHub UI (not the CLI)
+- Remote merge (GitHub UI):
+    - **Default: squash-merge** — for PRs where iterative review/fixup commits should collapse into a single clean commit reflecting the deliverable
+    - **Merge commit (no squash)** — for PRs that bundle multiple isolated changes that each deserve their own commit in history
 - Ask to confirm the message is correct before pushing
 - **PR body template** — `## Summary` (bullet points) + `## Test plan`. The Test plan combines automated checks
   with a manual smoke section covering what tests can't verify (visual, browser-specific behavior, real
@@ -216,3 +218,50 @@ JS conventions:
 - JS: `@hotwired/stimulus`, `@hotwired/turbo`, `@emaia/stimulus-dynamic-loader`
 - Optional JS: third-party libs required by specific controllers — the `npm` maps in `src/Registry/catalog.php` are
   the source of truth (don't list them here)
+
+## Docblock convention
+
+**Selective documentation** — docblocks must add information; if they don't, they're noise. Default to skipping; document deliberately.
+
+### Decision tree
+
+```
+1. Is this method part of the public API that app code calls?
+   (Facades, fluent builders, model accessors/scopes, trait methods exposed to consumers,
+    interface contracts, public methods on PHP classes)
+   → YES  → docblock required (single-line summary at minimum)
+   → NO   → step 2
+
+2. Is the purpose non-obvious from name + parameter types + return type?
+   (Cross-class interaction, hidden constraint, unusual side effect, surprising return semantics)
+   → YES  → docblock focused on WHY, not what
+   → NO   → skip — let the code speak
+```
+
+### What to write
+
+- **Imperative mood**, single sentence ending in a period: `Persist the upload and return the new Media.`
+- **Multi-line only** when 2-3 sentences are required to capture a non-obvious constraint or rationale. If you need more, the docblock is masking a design smell — refactor or move the explanation to `docs/*.md`.
+- **WHY over what** when explaining: "Extracted so the per-iteration try/catch covers every step" — not "Encodes and persists a conversion" (that's the name).
+
+### Native types first
+
+Always declare native PHP types on properties, parameters, and return values when possible. Drop redundant `@var` / `@param` / `@return` once the native type carries the contract. Untyped signatures combined with a docblock that names the type are an anti-pattern (the type system can't enforce what the docblock says).
+
+Constructors don't need a return type. PHP's `resource` pseudo-type has no native equivalent — use `@param resource $stream` / `@return resource` there.
+
+### When to add `@param` / `@return` / `@throws`
+
+- **`@param` / `@return`**: only when they carry information **beyond** the native type (`array<string, callable>`, `string[]`, `Collection<int, Media>`, `array{conversion: string, exception: \Throwable}`, semantic constraint like "empty array returns all"). Never add when they merely repeat the type.
+- **`@throws`**: list exceptions that are part of the method's contract (caller is expected to handle them). Skip generic `RuntimeException` of the "if it breaks it broke" variety.
+- **Property `@var`**: only when the native type loses information (`array<int, array{conversion: string, exception: \Throwable}>`, `MediaChannel[]`, `array<string, Collection<int, Media>>`). Plain typed properties don't need it.
+
+### What to always remove
+
+- Auto-generated IDE docblocks: `/** Get the X. */` on `getX()` — pure noise
+- `@author`, `@version`, `@since`, `@package` — git/Composer resolve these
+- Multi-paragraph essays — move to `docs/*.md` and link
+- `@param` / `@return` that just repeat the type-hint
+- Comments inside method bodies explaining WHAT the next line does (rename a variable instead); keep only WHY when non-obvious
+- Stale TODO/FIXME — convert to an issue or delete
+

@@ -28,20 +28,20 @@
     >
         <div
             data-confirm-dialog-target="backdrop"
-            class="absolute inset-0 bg-slate-600/80 opacity-0 backdrop-blur-sm transition-opacity duration-300 ease-out"
+            class="absolute inset-0 bg-foreground/80 opacity-0 backdrop-blur-sm transition-opacity duration-300 ease-out"
         ></div>
 
         <div
             data-confirm-dialog-target="dialog"
-            class="relative z-10 my-auto w-full max-w-sm min-w-0 scale-90 rounded-lg bg-white opacity-0 shadow-xl transition duration-200 ease-in-out lg:max-w-lg"
+            class="relative z-10 my-auto w-full max-w-sm min-w-0 scale-90 rounded-lg bg-background opacity-0 shadow-xl transition duration-200 ease-in-out lg:max-w-lg"
         >
             <div class="flex flex-col flex-wrap gap-2 p-6">
                 @if ($title)
-                    <h2 class="text-base font-semibold text-gray-900">{{ $title }}</h2>
+                    <h2 class="text-base font-semibold text-foreground">{{ $title }}</h2>
                 @endif
 
                 @if ($message)
-                    <p class="text-sm text-wrap text-gray-600" style="text-wrap-mode: wrap">{{ $message }}</p>
+                    <p class="text-sm text-wrap text-muted-foreground" style="text-wrap-mode: wrap">{{ $message }}</p>
                 @endif
 
                 @isset($body)
@@ -55,7 +55,7 @@
                     data-action="confirm-dialog#cancel"
                     @class([
                         'rounded-md px-4 py-2 text-sm font-medium transition-colors',
-                        $cancelClass ?: 'border border-gray-300 text-gray-700 hover:bg-gray-50',
+                        $cancelClass ?: 'border border-border text-secondary-foreground hover:bg-accent',
                     ])
                 >
                     {{ $cancelLabel }}
@@ -65,7 +65,7 @@
                     data-action="confirm-dialog#confirm"
                     @class([
                         'rounded-md px-4 py-2 text-sm font-medium transition-colors',
-                        $confirmClass ?: 'bg-red-600 text-white hover:bg-red-700',
+                        $confirmClass ?: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
                     ])
                 >
                     {{ $confirmLabel }}

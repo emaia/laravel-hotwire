@@ -6,7 +6,7 @@
             ->except(['data-controller', 'data-action'])
             ->whereDoesntStartWith('data-scroll-progress-')
             ->class([
-            'fixed top-0 left-0 z-50 h-1 bg-indigo-500',
+            'fixed top-0 left-0 z-50 h-1 bg-primary',
         ])
     }}
 ></div>
