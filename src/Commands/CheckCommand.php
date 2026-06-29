@@ -361,7 +361,7 @@ class CheckCommand extends Command
 
         $line = "  <$color>$symbol</$color>  $controller->identifier  $status  <fg=gray>(used by $origin)</>";
 
-        if ($status === 'up to date') {
+        if ($status === 'up to date' || $status === 'auto-loaded from vendor') {
             if ($origin === 'standalone') {
                 $this->okStandaloneLines[] = $line;
             } else {
@@ -401,6 +401,14 @@ class CheckCommand extends Command
         array &$issues,
         array &$seenDeps,
     ): void {
+        $controllerTarget = $controller->relativeDir() === ''
+            ? "$targetBase/{$controller->filename()}"
+            : "$targetBase/{$controller->relativeDir()}/{$controller->filename()}";
+
+        if (! $this->files->exists($controllerTarget)) {
+            return;
+        }
+
         $deps = $this->imports->sharedDependencies($sourceFile, $controllersBase);
         usort($deps, fn (string $a, string $b) => strcmp(basename($a), basename($b)));
 
@@ -413,11 +421,11 @@ class CheckCommand extends Command
             $seenDeps[$depTarget] = true;
 
             $name = basename($depSource);
-            [$status, $symbol, $color] = $this->resolveStatus($depTarget, $depSource);
+            [$status, $symbol, $color] = $this->resolveStatus($depTarget, $depSource, true);
 
             $line = "  <$color>$symbol</$color>  $name  $status  <fg=gray>(required by $controller->identifier)</>";
 
-            if ($status === 'up to date') {
+            if ($status === 'up to date' || $status === 'auto-loaded from vendor') {
                 $this->okHelperLines[] = ['key' => $name, 'line' => $line];
             } else {
                 $this->problemLines[] = ['key' => $name, 'line' => $line];
@@ -434,10 +442,12 @@ class CheckCommand extends Command
     }
 
     /** @return array{string, string, string} [status, symbol, color] */
-    private function resolveStatus(string $targetFile, string $sourceFile): array
+    private function resolveStatus(string $targetFile, string $sourceFile, bool $isRequired = false): array
     {
         if (! $this->files->exists($targetFile)) {
-            return ['not published', '✗', 'error'];
+            return $isRequired
+                ? ['not published', '✗', 'error']
+                : ['auto-loaded from vendor', '✓', 'info'];
         }
 
         if ($this->files->exists($sourceFile) && $this->files->hash($sourceFile) !== $this->files->hash($targetFile)) {
