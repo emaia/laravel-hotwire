@@ -20,6 +20,10 @@ export default class extends Controller {
             type: String,
             default: "",
         },
+        className: {
+            type: String,
+            default: "",
+        },
     };
 
     connect() {
@@ -27,6 +31,10 @@ export default class extends Controller {
 
         if (this.positionValue) {
             options.position = this.positionValue;
+        }
+
+        if (this.hasClassNameValue && this.classNameValue) {
+            options.className = this.classNameValue;
         }
 
         if (this.typeValue === "default") {

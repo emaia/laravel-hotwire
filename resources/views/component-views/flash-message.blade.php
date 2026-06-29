@@ -9,4 +9,7 @@
     @if ($position)
         data-toast-position-value="{{ $position }}"
     @endif
+    @if ($className)
+        data-toast-class-name-value="{{ $className }}"
+    @endif
 ></div>

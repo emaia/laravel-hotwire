@@ -9,7 +9,7 @@ class FlashContainer extends Component
     public function __construct(
         public string $id = 'flash-container',
         public string $position = 'bottom-center',
-        public string $theme = 'light',
+        public string $theme = 'system',
         public int $duration = 4000,
         public int $visibleToasts = 3,
         public bool $closeButton = true,

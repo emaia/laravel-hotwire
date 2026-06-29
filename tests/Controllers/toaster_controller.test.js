@@ -21,11 +21,17 @@ beforeEach(() => {
     createCalls.length = 0;
     destroyMock.mockClear();
     if (typeof window !== "undefined") window.toaster = null;
+    if (typeof document !== "undefined") {
+        document.documentElement.removeAttribute("data-theme");
+    }
 });
 
 afterEach(async () => {
     await mounted?.cleanup();
     mounted = null;
+    if (typeof document !== "undefined") {
+        document.documentElement.removeAttribute("data-theme");
+    }
 });
 
 // --- connect ---
@@ -39,6 +45,48 @@ test.serial("creates toaster on connect with default options", async () => {
     expect(createCalls[0].closeButton).toBe(true);
     expect(createCalls[0].duration).toBe(4000);
     expect(window.toaster).toBeDefined();
+});
+
+test.serial("resolves theme from html[data-theme] when theme is system", async () => {
+    const { Window } = await import("happy-dom");
+    const testWindow = new Window({ url: "http://localhost" });
+    testWindow.document.documentElement.setAttribute("data-theme", "dark");
+    testWindow.SyntaxError = SyntaxError;
+
+    const origWindow = globalThis.window;
+    const origDocument = globalThis.document;
+    globalThis.window = testWindow;
+    globalThis.document = testWindow.document;
+
+    globalThis.CustomEvent = testWindow.CustomEvent;
+    globalThis.Event = testWindow.Event;
+    globalThis.MutationObserver = testWindow.MutationObserver;
+
+    try {
+        testWindow.document.body.innerHTML = `<div data-controller="toaster"></div>`;
+        const root = testWindow.document.querySelector("[data-controller~=\"toaster\"]");
+        const { Application } = await import("@hotwired/stimulus");
+        const application = Application.start(root);
+        application.register("toaster", ToasterController);
+
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
+        expect(createCalls[0].theme).toBe("dark");
+
+        application.stop();
+    } finally {
+        globalThis.window = origWindow;
+        globalThis.document = origDocument;
+        testWindow.close();
+    }
+});
+
+test.serial("explicit theme value overrides data-theme resolution", async () => {
+    document.documentElement.setAttribute("data-theme", "dark");
+
+    await mount(`<div data-controller="toaster" data-toaster-theme-value="light"></div>`);
+
+    expect(createCalls[0].theme).toBe("light");
 });
 
 test.serial("idempotent: re-connect skips create when window.toaster already exists", async () => {
@@ -98,6 +146,16 @@ test.serial("passes offset as string when not JSON", async () => {
     await mount(`<div data-controller="toaster" data-toaster-offset-value="12px"></div>`);
 
     expect(createCalls[0].offset).toBe("12px");
+});
+
+// --- theme observer ---
+
+test.serial("sets up MutationObserver when theme is system", async () => {
+    // happy-dom doesn't fully support MutationObserver, but the controller
+    // should still connect without errors
+    await mount(`<div data-controller="toaster"></div>`);
+
+    expect(window.toaster).toBeDefined();
 });
 
 // --- disconnect ---

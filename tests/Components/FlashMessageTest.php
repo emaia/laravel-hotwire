@@ -129,3 +129,15 @@ it('renders with hotwire:: prefix alias', function () {
     $view->assertSee('data-toast-message-value="Done!"', false);
     $view->assertSee('data-toast-type-value="success"', false);
 });
+
+it('renders class-name when provided', function () {
+    $view = $this->blade('<x-hwc::flash-message message="Done!" type="success" class-name="custom-toast" />');
+
+    $view->assertSee('data-toast-class-name-value="custom-toast"', false);
+});
+
+it('does not render class-name attribute when not provided', function () {
+    $view = $this->blade('<x-hwc::flash-message message="Saved" type="success" />');
+
+    $view->assertDontSee('class-name-value', false);
+});
