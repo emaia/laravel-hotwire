@@ -17,8 +17,8 @@ class InstallCommand extends Command
     public $signature = 'hotwire:install
                         {--force : Overwrite existing files}
                         {--only= : Install only "js" or "css"}
-                        {--with-deps : Include all controller npm dependencies in devDependencies}
-                        {--with-dep=* : Include npm dependencies for a specific controller (repeatable)}
+                        {--with-deps=* : Add npm deps only for these controllers (comma-separated or repeatable). Without this flag (and without --core-only), every catalog dep is added.}
+                        {--core-only : Add only core npm deps (stimulus, turbo, dynamic-loader). Skip catalog deps entirely.}
                         {--install : Run package manager install after adding dependencies}';
 
     public $description = 'Install Hotwire scaffolding into your Laravel application';
@@ -50,7 +50,7 @@ class InstallCommand extends Command
             return self::FAILURE;
         }
 
-        if (! $this->validateWithDep()) {
+        if (! $this->validateDepFlags()) {
             return self::FAILURE;
         }
 
@@ -80,17 +80,23 @@ class InstallCommand extends Command
         return self::SUCCESS;
     }
 
-    private function validateWithDep(): bool
+    private function validateDepFlags(): bool
     {
-        $withDep = $this->option('with-dep');
+        $withDeps = $this->controllerFilter();
 
-        if (empty($withDep)) {
+        if ($this->option('core-only') && $withDeps !== null) {
+            warning('Cannot combine --core-only with --with-deps. Use one or the other.');
+
+            return false;
+        }
+
+        if ($withDeps === null) {
             return true;
         }
 
         $registry = HotwireRegistry::make();
 
-        foreach ($withDep as $identifier) {
+        foreach ($withDeps as $identifier) {
             if ($registry->controller($identifier) !== null) {
                 continue;
             }
@@ -101,6 +107,35 @@ class InstallCommand extends Command
         }
 
         return true;
+    }
+
+    /**
+     * Parse --with-deps into a flat list of controller identifiers. Accepts both
+     * --with-deps=foo,bar and --with-deps=foo --with-deps=bar shapes. Returns null
+     * when the flag is absent (caller treats null as "install everything").
+     *
+     * @return string[]|null
+     */
+    private function controllerFilter(): ?array
+    {
+        $raw = $this->option('with-deps');
+
+        if ($raw === [] || $raw === null) {
+            return null;
+        }
+
+        $ids = [];
+
+        foreach ((array) $raw as $entry) {
+            foreach (explode(',', (string) $entry) as $piece) {
+                $piece = trim($piece);
+                if ($piece !== '') {
+                    $ids[] = $piece;
+                }
+            }
+        }
+
+        return $ids === [] ? null : array_values(array_unique($ids));
     }
 
     /** @return string[] */
@@ -183,13 +218,12 @@ class InstallCommand extends Command
     private function catalogDependencies(): array
     {
         $registry = HotwireRegistry::make();
-        $withDep = $this->option('with-dep');
-        $includeAll = (bool) $this->option('with-deps');
+        $filter = $this->controllerFilter();
 
         $deps = [];
 
         foreach ($registry->controllers() as $identifier => $controller) {
-            if (! $includeAll && ! empty($withDep) && ! in_array($identifier, $withDep, true)) {
+            if ($filter !== null && ! in_array($identifier, $filter, true)) {
                 continue;
             }
 
@@ -219,7 +253,7 @@ class InstallCommand extends Command
 
         $deps = $this->coreDependencies();
 
-        if ($this->option('with-deps') || ! empty($this->option('with-dep'))) {
+        if (! $this->option('core-only')) {
             $deps = array_merge($deps, $this->catalogDependencies());
         }
 

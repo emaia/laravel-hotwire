@@ -156,7 +156,7 @@ it('adds core npm dependencies to package.json in non-interactive mode', functio
         'devDependencies' => new stdClass,
     ], JSON_PRETTY_PRINT));
 
-    $this->artisan('hotwire:install --no-interaction')
+    $this->artisan('hotwire:install --core-only --no-interaction')
         ->assertSuccessful();
 
     $json = json_decode(File::get($this->packageJsonPath), true);
@@ -187,7 +187,7 @@ it('reads dependency versions from the package own package.json', function () {
     }
 });
 
-it('does not install catalog dependencies by default (without --with-deps)', function () {
+it('installs core + all catalog dependencies by default', function () {
     File::put($this->packageJsonPath, json_encode([
         'name' => 'test',
         'devDependencies' => new stdClass,
@@ -202,9 +202,10 @@ it('does not install catalog dependencies by default (without --with-deps)', fun
         ->toHaveKey('@hotwired/stimulus')
         ->toHaveKey('@hotwired/turbo')
         ->toHaveKey('@emaia/stimulus-dynamic-loader')
-        ->not->toHaveKey('maska')
-        ->not->toHaveKey('tippy.js')
-        ->not->toHaveKey('@emaia/sonner');
+        ->toHaveKey('echarts')
+        ->toHaveKey('leaflet')
+        ->toHaveKey('embla-carousel')
+        ->toHaveKey('@emaia/sonner');
 });
 
 it('preserves existing dependencies in package.json', function () {
@@ -224,7 +225,7 @@ it('preserves existing dependencies in package.json', function () {
         ->and($json['devDependencies'])->toHaveKey('@hotwired/stimulus');
 });
 
-it('does not modify package.json when dependencies already present', function () {
+it('does not modify package.json when core deps already present (--core-only)', function () {
     $packageJson = json_decode(file_get_contents(__DIR__.'/../../package.json'), true);
     $coreDeps = [];
     foreach (['@emaia/stimulus-dynamic-loader', '@hotwired/stimulus', '@hotwired/turbo'] as $dep) {
@@ -238,7 +239,7 @@ it('does not modify package.json when dependencies already present', function ()
 
     File::put($this->packageJsonPath, $content);
 
-    $this->artisan('hotwire:install --no-interaction')
+    $this->artisan('hotwire:install --core-only --no-interaction')
         ->assertSuccessful();
 
     expect(File::get($this->packageJsonPath))->toBe($content);
@@ -332,32 +333,69 @@ it('points users to discovery and customisation commands', function () {
         ->assertSuccessful();
 });
 
-// --- Phase 6: --with-deps ---
+// --- Phase 6: --with-deps / --core-only ---
 
-it('adds all catalog dependencies with --with-deps', function () {
+it('adds only specified controller dependencies with --with-deps=chart', function () {
     File::put($this->packageJsonPath, json_encode([
         'name' => 'test',
         'devDependencies' => new stdClass,
     ], JSON_PRETTY_PRINT));
 
-    $this->artisan('hotwire:install --with-deps --no-interaction')
+    $this->artisan('hotwire:install --with-deps=chart --no-interaction')
         ->assertSuccessful();
 
     $json = json_decode(File::get($this->packageJsonPath), true);
 
     expect($json['devDependencies'])
-        ->toHaveKey('@emaia/sonner')
-        ->toHaveKey('date-fns')
-        ->toHaveKey('maska');
+        ->toHaveKey('@hotwired/stimulus')
+        ->toHaveKey('echarts')
+        ->not->toHaveKey('embla-carousel')
+        ->not->toHaveKey('leaflet')
+        ->not->toHaveKey('@emaia/sonner');
 });
 
-it('keeps core dependencies when --with-deps is used', function () {
+it('accepts comma-separated controllers in --with-deps', function () {
     File::put($this->packageJsonPath, json_encode([
         'name' => 'test',
         'devDependencies' => new stdClass,
     ], JSON_PRETTY_PRINT));
 
-    $this->artisan('hotwire:install --with-deps --no-interaction')
+    $this->artisan('hotwire:install --with-deps=chart,carousel,map --no-interaction')
+        ->assertSuccessful();
+
+    $json = json_decode(File::get($this->packageJsonPath), true);
+
+    expect($json['devDependencies'])
+        ->toHaveKey('echarts')
+        ->toHaveKey('embla-carousel')
+        ->toHaveKey('leaflet')
+        ->not->toHaveKey('@emaia/sonner');
+});
+
+it('accepts repeated --with-deps flags', function () {
+    File::put($this->packageJsonPath, json_encode([
+        'name' => 'test',
+        'devDependencies' => new stdClass,
+    ], JSON_PRETTY_PRINT));
+
+    $this->artisan('hotwire:install --with-deps=chart --with-deps=carousel --no-interaction')
+        ->assertSuccessful();
+
+    $json = json_decode(File::get($this->packageJsonPath), true);
+
+    expect($json['devDependencies'])
+        ->toHaveKey('echarts')
+        ->toHaveKey('embla-carousel')
+        ->not->toHaveKey('leaflet');
+});
+
+it('installs only core deps with --core-only', function () {
+    File::put($this->packageJsonPath, json_encode([
+        'name' => 'test',
+        'devDependencies' => new stdClass,
+    ], JSON_PRETTY_PRINT));
+
+    $this->artisan('hotwire:install --core-only --no-interaction')
         ->assertSuccessful();
 
     $json = json_decode(File::get($this->packageJsonPath), true);
@@ -366,65 +404,23 @@ it('keeps core dependencies when --with-deps is used', function () {
         ->toHaveKey('@hotwired/stimulus')
         ->toHaveKey('@hotwired/turbo')
         ->toHaveKey('@emaia/stimulus-dynamic-loader')
-        ->toHaveKey('@emaia/sonner');
-});
-
-it('adds only specified controller dependencies with --with-dep=chart', function () {
-    File::put($this->packageJsonPath, json_encode([
-        'name' => 'test',
-        'devDependencies' => new stdClass,
-    ], JSON_PRETTY_PRINT));
-
-    $this->artisan('hotwire:install --with-dep=chart --no-interaction')
-        ->assertSuccessful();
-
-    $json = json_decode(File::get($this->packageJsonPath), true);
-
-    expect($json['devDependencies'])
-        ->toHaveKey('echarts')
-        ->not->toHaveKey('maska')
+        ->not->toHaveKey('echarts')
+        ->not->toHaveKey('leaflet')
         ->not->toHaveKey('@emaia/sonner');
 });
 
-it('adds deps for multiple controllers with --with-dep=chart --with-dep=carousel', function () {
-    File::put($this->packageJsonPath, json_encode([
-        'name' => 'test',
-        'devDependencies' => new stdClass,
-    ], JSON_PRETTY_PRINT));
-
-    $this->artisan('hotwire:install --with-dep=chart --with-dep=carousel --no-interaction')
-        ->assertSuccessful();
-
-    $json = json_decode(File::get($this->packageJsonPath), true);
-
-    expect($json['devDependencies'])
-        ->toHaveKey('echarts')
-        ->toHaveKey('embla-carousel')
-        ->not->toHaveKey('maska');
-});
-
-it('fails with unknown controller name in --with-dep', function () {
+it('rejects --core-only combined with --with-deps', function () {
     File::put($this->packageJsonPath, json_encode(['name' => 'test'], JSON_PRETTY_PRINT));
 
-    $this->artisan('hotwire:install --with-dep=nonexistent --no-interaction')
+    $this->artisan('hotwire:install --core-only --with-deps=chart --no-interaction')
         ->assertFailed();
 });
 
-it('does not add catalog deps when --with-deps is empty', function () {
-    File::put($this->packageJsonPath, json_encode([
-        'name' => 'test',
-        'devDependencies' => new stdClass,
-    ], JSON_PRETTY_PRINT));
+it('fails with unknown controller name in --with-deps', function () {
+    File::put($this->packageJsonPath, json_encode(['name' => 'test'], JSON_PRETTY_PRINT));
 
-    $this->artisan('hotwire:install --no-interaction')
-        ->assertSuccessful();
-
-    $json = json_decode(File::get($this->packageJsonPath), true);
-
-    expect($json['devDependencies'])
-        ->toHaveKey('@hotwired/stimulus')
-        ->not->toHaveKey('@emaia/sonner')
-        ->not->toHaveKey('maska');
+    $this->artisan('hotwire:install --with-deps=nonexistent --no-interaction')
+        ->assertFailed();
 });
 
 // --- Phase 7: --install flag ---

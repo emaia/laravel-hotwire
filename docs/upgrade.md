@@ -15,6 +15,22 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 - `hotwire:install` adds a `@hotwire` Vite alias to your `vite.config.{ts,mjs,js}` so user code can extend a vendor controller via a clean import (`import CarouselController from '@hotwire/controllers/carousel_controller.js'`). The alias is added idempotently — re-running `hotwire:install` is a no-op when the key is already present. If your config doesn't match the Laravel-stock shape, the command prints the snippet for manual paste instead of writing the file. See [extending-controllers.md](extending-controllers.md).
 - The `Icon` component (`<x-hwc::icon name="..." />`) replaces inline SVGs in the shipped components.
 
+### hotwire:install dependency modes
+
+The `hotwire:install` command exposes three modes for adding npm dependencies to your app's `package.json`. The default favours zero-friction DX (every component works out of the box); the other two are for projects that want to opt into a leaner footprint.
+
+| Command | What it adds |
+|---|---|
+| `php artisan hotwire:install` | Core deps (`@hotwired/stimulus`, `@hotwired/turbo`, `@emaia/stimulus-dynamic-loader`) **plus every catalog dep** declared by package controllers (echarts, leaflet, embla-carousel, tiptap stack, dropzone, maska, tippy.js, date-fns, sonner). Everything works without further setup. |
+| `php artisan hotwire:install --with-deps=carousel,chart,map` | Core deps **plus only the npm deps required by the listed controllers**. Accepts comma-separated values or repeated `--with-deps=X` flags. |
+| `php artisan hotwire:install --core-only` | Core deps **only**. No catalog deps. You'll need to install heavy deps manually before using their controllers. |
+
+End-user runtime cost is identical across the three modes: Vite's dynamic-import code-splitting ships only the chunks for controllers that actually mount in the DOM. The trade-off is purely on the dev side — `node_modules` size, install time and `vite build` time scale with what's installed.
+
+`--core-only` and `--with-deps` are mutually exclusive — the command fails if both are passed.
+
+`--with-deps=<name>` validates each controller name against the catalog and fails fast on a typo.
+
 ### What you must do manually
 
 #### 1. Add the `@source` directive for PHP component classes
