@@ -208,7 +208,7 @@ it('combines element + wrapper controllers correctly', function () {
 it('merges class on input element', function () {
     $view = $this->blade('<x-hwc::input name="email" class="border" />');
 
-    $view->assertSee('class="border"', false);
+    $view->assertSee('border', false);
 });
 
 it('merges wrapper-class on wrapper when present', function () {

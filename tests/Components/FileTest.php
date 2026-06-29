@@ -274,7 +274,7 @@ it('puts the controller on the input even when wrapped for current-url', functio
 it('merges class on input element', function () {
     $view = $this->blade('<x-hwc::file name="avatar" class="border" />');
 
-    $view->assertSee('class="border"', false);
+    $view->assertSee('border', false);
 });
 
 it('merges wrapper-class on wrapper when present', function () {

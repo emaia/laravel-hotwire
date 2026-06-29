@@ -193,34 +193,34 @@ it('does not render an empty class attribute when no classes are provided', func
 it('merges custom label-class on each label', function () {
     $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\']" label-class="font-bold" />');
 
-    $view->assertSee('class="hwc-label font-bold"', false);
+    $view->assertSee('hwc-label font-bold', false);
 });
 
 it('merges custom label-class on the select-all master label too', function () {
     $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\']" select-all label-class="font-bold" />');
 
     $html = (string) $view;
-    expect(substr_count($html, 'class="hwc-label font-bold"'))->toBe(2);
+    expect(substr_count($html, 'hwc-label font-bold'))->toBe(2);
 });
 
 it('adds hwc-input hook on items', function () {
     $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\']" />');
 
-    $view->assertSee('class="hwc-input"', false);
+    $view->assertSee('hwc-input', false);
 });
 
 it('adds hwc-label hook on item wrappers', function () {
     $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\']" />');
 
-    $view->assertSee('class="hwc-label"', false);
+    $view->assertSee('hwc-label', false);
 });
 
 it('adds hwc-input and hwc-label hooks on the select-all master', function () {
     $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\']" select-all />');
 
     $html = (string) $view;
-    expect(substr_count($html, 'class="hwc-input"'))->toBe(2)
-        ->and(substr_count($html, 'class="hwc-label"'))->toBe(2);
+    expect(substr_count($html, 'hwc-input'))->toBe(2)
+        ->and(substr_count($html, 'hwc-label'))->toBe(2);
 });
 
 // --- User data-controller merge ---
