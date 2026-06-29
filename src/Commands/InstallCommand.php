@@ -158,6 +158,8 @@ class InstallCommand extends Command
         $path = realpath(__DIR__.'/../../package.json');
 
         if (! $path) {
+            warning('Could not read package.json from the laravel-hotwire package — core dependencies (stimulus, turbo, dynamic-loader) were not added.');
+
             return [];
         }
 
@@ -172,11 +174,12 @@ class InstallCommand extends Command
     {
         $registry = HotwireRegistry::make();
         $withDep = $this->option('with-dep');
+        $includeAll = (bool) $this->option('with-deps');
 
         $deps = [];
 
         foreach ($registry->controllers() as $identifier => $controller) {
-            if (! empty($withDep) && ! in_array($identifier, $withDep, true)) {
+            if (! $includeAll && ! empty($withDep) && ! in_array($identifier, $withDep, true)) {
                 continue;
             }
 
@@ -210,7 +213,7 @@ class InstallCommand extends Command
             $deps = array_merge($deps, $this->catalogDependencies());
         }
 
-        return count($this->packageInstaller->addDevDependencies($this->files, $deps));
+        return count($this->packageInstaller->addDevDependencies($this->files, $deps, updateExisting: false));
     }
 
     private function shouldInstallDependencies(): bool
@@ -279,9 +282,10 @@ class InstallCommand extends Command
         $this->line('  • `php artisan hotwire:components`         list Blade components and their controllers');
         $this->line('  • `php artisan hotwire:controllers --list` list every available Stimulus controller');
         $this->newLine();
-        $this->line('Publishing what you need:');
-        $this->line('  • Components in your views → `php artisan hotwire:check --fix`');
-        $this->line('    (publishes required controllers and adds any missing npm packages)');
-        $this->line('  • Standalone controller    → `php artisan hotwire:controllers <namespace/name>`');
+        $this->line('Day-to-day commands:');
+        $this->line('  • `php artisan hotwire:check`              verify npm packages required by your views (use --fix to add missing ones)');
+        $this->line('  • `php artisan hotwire:controllers <name>` fork a controller into your app to customise it');
+        $this->newLine();
+        $this->line('Controllers auto-load from the vendor directory — no publish step is required unless you want to customise.');
     }
 }

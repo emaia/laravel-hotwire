@@ -320,14 +320,15 @@ it('shows summary of actions taken', function () {
         ->assertSuccessful();
 });
 
-it('points users to discovery and publishing commands', function () {
+it('points users to discovery and customisation commands', function () {
     File::put($this->packageJsonPath, json_encode(['name' => 'test'], JSON_PRETTY_PRINT));
 
     $this->artisan('hotwire:install --no-interaction')
         ->expectsOutputToContain('hotwire:components')
         ->expectsOutputToContain('hotwire:controllers --list')
-        ->expectsOutputToContain('hotwire:check --fix')
-        ->expectsOutputToContain('hotwire:controllers <namespace/name>')
+        ->expectsOutputToContain('hotwire:check')
+        ->expectsOutputToContain('hotwire:controllers <name>')
+        ->expectsOutputToContain('auto-load')
         ->assertSuccessful();
 });
 
