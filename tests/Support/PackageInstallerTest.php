@@ -84,13 +84,41 @@ it('skips an already-present package when updateExisting is false', function () 
         ->and(File::get($this->packageJsonPath))->toBe($before);
 });
 
-it('returns empty and writes nothing when package.json is missing', function () {
-    if (File::exists($this->packageJsonPath)) {
-        File::delete($this->packageJsonPath);
-    }
+it('preserves all unrelated keys in package.json', function () {
+    writeInstallerPackageJson([
+        'name' => 'my-app',
+        'private' => true,
+        'type' => 'module',
+        'scripts' => ['dev' => 'vite', 'build' => 'vite build'],
+        'dependencies' => ['axios' => '^1.0.0'],
+        'devDependencies' => ['vite' => '^5.0.0'],
+    ]);
+
+    $this->installer->addDevDependencies($this->files, ['maska' => '^3.0.0']);
+
+    $json = json_decode(File::get($this->packageJsonPath), true);
+
+    expect($json['name'])->toBe('my-app')
+        ->and($json['private'])->toBeTrue()
+        ->and($json['type'])->toBe('module')
+        ->and($json['scripts'])->toBe(['dev' => 'vite', 'build' => 'vite build'])
+        ->and($json['dependencies'])->toBe(['axios' => '^1.0.0'])
+        ->and($json['devDependencies']['vite'])->toBe('^5.0.0')
+        ->and($json['devDependencies']['maska'])->toBe('^3.0.0');
+});
+
+it('returns empty and writes nothing when package.json is invalid JSON', function () {
+    File::put($this->packageJsonPath, 'not json');
 
     $changed = $this->installer->addDevDependencies($this->files, ['maska' => '^3.0.0']);
 
-    expect($changed)->toBe([])
-        ->and(File::exists($this->packageJsonPath))->toBeFalse();
+    expect($changed)->toBe([]);
+});
+
+it('returns empty and writes nothing when package.json is null', function () {
+    File::put($this->packageJsonPath, 'null');
+
+    $changed = $this->installer->addDevDependencies($this->files, ['maska' => '^3.0.0']);
+
+    expect($changed)->toBe([]);
 });

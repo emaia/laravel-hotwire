@@ -2,6 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Commands;
 
+use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\PackageInstaller;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
@@ -15,7 +16,10 @@ class InstallCommand extends Command
 {
     public $signature = 'hotwire:install
                         {--force : Overwrite existing files}
-                        {--only= : Install only "js" or "css"}';
+                        {--only= : Install only "js" or "css"}
+                        {--with-deps : Include all controller npm dependencies in devDependencies}
+                        {--with-dep=* : Include npm dependencies for a specific controller (repeatable)}
+                        {--install : Run package manager install after adding dependencies}';
 
     public $description = 'Install Hotwire scaffolding into your Laravel application';
 
@@ -42,6 +46,10 @@ class InstallCommand extends Command
             return self::FAILURE;
         }
 
+        if (! $this->validateWithDep()) {
+            return self::FAILURE;
+        }
+
         $stubBase = realpath(__DIR__.'/../../stubs/resources');
         $targetBase = resource_path();
 
@@ -55,7 +63,34 @@ class InstallCommand extends Command
 
         $this->showSummary($copied, $depsAdded);
 
+        if ($depsAdded > 0 && $this->shouldInstallDependencies()) {
+            return $this->installDependencies();
+        }
+
         return self::SUCCESS;
+    }
+
+    private function validateWithDep(): bool
+    {
+        $withDep = $this->option('with-dep');
+
+        if (empty($withDep)) {
+            return true;
+        }
+
+        $registry = HotwireRegistry::make();
+
+        foreach ($withDep as $identifier) {
+            if ($registry->controller($identifier) !== null) {
+                continue;
+            }
+
+            warning("Unknown controller \"$identifier\". Run `php artisan hotwire:controllers --list` for available controllers.");
+
+            return false;
+        }
+
+        return true;
     }
 
     /** @return string[] */
@@ -132,6 +167,33 @@ class InstallCommand extends Command
         return array_intersect_key($all, array_flip(self::CORE_DEPENDENCIES));
     }
 
+    /** @return array<string, string> */
+    private function catalogDependencies(): array
+    {
+        $registry = HotwireRegistry::make();
+        $withDep = $this->option('with-dep');
+
+        $deps = [];
+
+        foreach ($registry->controllers() as $identifier => $controller) {
+            if (! empty($withDep) && ! in_array($identifier, $withDep, true)) {
+                continue;
+            }
+
+            if (empty($controller->npm)) {
+                continue;
+            }
+
+            foreach ($controller->npm as $package => $version) {
+                $deps[$package] = $version;
+            }
+        }
+
+        ksort($deps);
+
+        return $deps;
+    }
+
     private function addNpmDependencies(): int
     {
         $packageJsonPath = base_path('package.json');
@@ -142,7 +204,49 @@ class InstallCommand extends Command
             return 0;
         }
 
-        return count($this->packageInstaller->addDevDependencies($this->files, $this->coreDependencies()));
+        $deps = $this->coreDependencies();
+
+        if ($this->option('with-deps') || ! empty($this->option('with-dep'))) {
+            $deps = array_merge($deps, $this->catalogDependencies());
+        }
+
+        return count($this->packageInstaller->addDevDependencies($this->files, $deps));
+    }
+
+    private function shouldInstallDependencies(): bool
+    {
+        if ($this->option('install')) {
+            return true;
+        }
+
+        if (! $this->input->isInteractive()) {
+            return false;
+        }
+
+        $manager = $this->packageInstaller->detect($this->files);
+
+        return confirm("Run $manager install now?");
+    }
+
+    private function installDependencies(): int
+    {
+        $manager = $this->packageInstaller->detect($this->files);
+        $command = implode(' ', $this->packageInstaller->command($manager));
+
+        $this->line('');
+        info("Running $command...");
+
+        $exitCode = $this->packageInstaller->install($manager, $this);
+
+        if ($exitCode !== self::SUCCESS) {
+            $this->components->error("$command failed.");
+
+            return self::FAILURE;
+        }
+
+        info("$command completed.");
+
+        return self::SUCCESS;
     }
 
     private function showSummary(int $copied, int $depsAdded): void
@@ -162,8 +266,14 @@ class InstallCommand extends Command
 
         $this->newLine();
         $this->line('Next steps:');
-        $this->line("  1. Run `$pm install` to install dependencies");
-        $this->line("  2. Run `$pm run dev` to compile assets");
+
+        if ($this->option('install')) {
+            $this->line("  1. Run `$pm run dev` to compile assets");
+        } else {
+            $this->line("  1. Run `$pm install` to install dependencies");
+            $this->line("  2. Run `$pm run dev` to compile assets");
+        }
+
         $this->newLine();
         $this->line('Discover what ships with Hotwire:');
         $this->line('  • `php artisan hotwire:components`         list Blade components and their controllers');

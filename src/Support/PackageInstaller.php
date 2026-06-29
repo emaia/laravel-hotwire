@@ -47,14 +47,25 @@ class PackageInstaller
             return [];
         }
 
-        $json = json_decode($files->get($path), true) ?: [];
+        $content = $files->get($path);
+        $json = json_decode($content, true);
+
+        if (! is_array($json)) {
+            return [];
+        }
+
+        $deps = $json['dependencies'] ?? [];
         $devDeps = $json['devDependencies'] ?? [];
         $changed = [];
 
         foreach ($packages as $name => $version) {
-            $present = array_key_exists($name, $devDeps);
+            if (array_key_exists($name, $deps)) {
+                continue;
+            }
 
-            if ($present && (! $updateExisting || $devDeps[$name] === $version)) {
+            $inDev = array_key_exists($name, $devDeps);
+
+            if ($inDev && (! $updateExisting || $devDeps[$name] === $version)) {
                 continue;
             }
 

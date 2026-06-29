@@ -187,13 +187,13 @@ it('reads dependency versions from the package own package.json', function () {
     }
 });
 
-it('never installs optional (non-core) dependencies', function () {
+it('does not install catalog dependencies by default (without --with-deps)', function () {
     File::put($this->packageJsonPath, json_encode([
         'name' => 'test',
         'devDependencies' => new stdClass,
     ], JSON_PRETTY_PRINT));
 
-    $this->artisan('hotwire:install')
+    $this->artisan('hotwire:install --no-interaction')
         ->assertSuccessful();
 
     $json = json_decode(File::get($this->packageJsonPath), true);
@@ -328,5 +328,153 @@ it('points users to discovery and publishing commands', function () {
         ->expectsOutputToContain('hotwire:controllers --list')
         ->expectsOutputToContain('hotwire:check --fix')
         ->expectsOutputToContain('hotwire:controllers <namespace/name>')
+        ->assertSuccessful();
+});
+
+// --- Phase 6: --with-deps ---
+
+it('adds all catalog dependencies with --with-deps', function () {
+    File::put($this->packageJsonPath, json_encode([
+        'name' => 'test',
+        'devDependencies' => new stdClass,
+    ], JSON_PRETTY_PRINT));
+
+    $this->artisan('hotwire:install --with-deps --no-interaction')
+        ->assertSuccessful();
+
+    $json = json_decode(File::get($this->packageJsonPath), true);
+
+    expect($json['devDependencies'])
+        ->toHaveKey('@emaia/sonner')
+        ->toHaveKey('date-fns')
+        ->toHaveKey('maska');
+});
+
+it('keeps core dependencies when --with-deps is used', function () {
+    File::put($this->packageJsonPath, json_encode([
+        'name' => 'test',
+        'devDependencies' => new stdClass,
+    ], JSON_PRETTY_PRINT));
+
+    $this->artisan('hotwire:install --with-deps --no-interaction')
+        ->assertSuccessful();
+
+    $json = json_decode(File::get($this->packageJsonPath), true);
+
+    expect($json['devDependencies'])
+        ->toHaveKey('@hotwired/stimulus')
+        ->toHaveKey('@hotwired/turbo')
+        ->toHaveKey('@emaia/stimulus-dynamic-loader')
+        ->toHaveKey('@emaia/sonner');
+});
+
+it('adds only specified controller dependencies with --with-dep=chart', function () {
+    File::put($this->packageJsonPath, json_encode([
+        'name' => 'test',
+        'devDependencies' => new stdClass,
+    ], JSON_PRETTY_PRINT));
+
+    $this->artisan('hotwire:install --with-dep=chart --no-interaction')
+        ->assertSuccessful();
+
+    $json = json_decode(File::get($this->packageJsonPath), true);
+
+    expect($json['devDependencies'])
+        ->toHaveKey('echarts')
+        ->not->toHaveKey('maska')
+        ->not->toHaveKey('@emaia/sonner');
+});
+
+it('adds deps for multiple controllers with --with-dep=chart --with-dep=carousel', function () {
+    File::put($this->packageJsonPath, json_encode([
+        'name' => 'test',
+        'devDependencies' => new stdClass,
+    ], JSON_PRETTY_PRINT));
+
+    $this->artisan('hotwire:install --with-dep=chart --with-dep=carousel --no-interaction')
+        ->assertSuccessful();
+
+    $json = json_decode(File::get($this->packageJsonPath), true);
+
+    expect($json['devDependencies'])
+        ->toHaveKey('echarts')
+        ->toHaveKey('embla-carousel')
+        ->not->toHaveKey('maska');
+});
+
+it('fails with unknown controller name in --with-dep', function () {
+    File::put($this->packageJsonPath, json_encode(['name' => 'test'], JSON_PRETTY_PRINT));
+
+    $this->artisan('hotwire:install --with-dep=nonexistent --no-interaction')
+        ->assertFailed();
+});
+
+it('does not add catalog deps when --with-deps is empty', function () {
+    File::put($this->packageJsonPath, json_encode([
+        'name' => 'test',
+        'devDependencies' => new stdClass,
+    ], JSON_PRETTY_PRINT));
+
+    $this->artisan('hotwire:install --no-interaction')
+        ->assertSuccessful();
+
+    $json = json_decode(File::get($this->packageJsonPath), true);
+
+    expect($json['devDependencies'])
+        ->toHaveKey('@hotwired/stimulus')
+        ->not->toHaveKey('@emaia/sonner')
+        ->not->toHaveKey('maska');
+});
+
+// --- Phase 7: --install flag ---
+
+it('runs package manager install after adding deps with --install', function () {
+    File::put($this->packageJsonPath, json_encode([
+        'name' => 'test',
+        'devDependencies' => new stdClass,
+    ], JSON_PRETTY_PRINT));
+    File::put(base_path('bun.lock'), '');
+
+    $this->artisan('hotwire:install --no-interaction --install')
+        ->assertSuccessful()
+        ->expectsOutputToContain('Running bun install')
+        ->expectsOutputToContain('bun install completed');
+});
+
+it('skips "Run X install" in next steps when --install was used', function () {
+    File::put($this->packageJsonPath, json_encode([
+        'name' => 'test',
+        'devDependencies' => new stdClass,
+    ], JSON_PRETTY_PRINT));
+    File::put(base_path('bun.lock'), '');
+
+    $this->artisan('hotwire:install --no-interaction --install')
+        ->assertSuccessful()
+        ->doesntExpectOutputToContain('Run bun install')
+        ->expectsOutputToContain('Run `bun run dev`');
+});
+
+it('does not run install when --install is not provided', function () {
+    File::put($this->packageJsonPath, json_encode([
+        'name' => 'test',
+        'devDependencies' => new stdClass,
+    ], JSON_PRETTY_PRINT));
+    File::put(base_path('bun.lock'), '');
+
+    $this->artisan('hotwire:install --no-interaction')
+        ->assertSuccessful()
+        ->doesntExpectOutputToContain('Running bun install');
+});
+
+it('prompts to run install in interactive mode when --install is not provided', function () {
+    File::put($this->packageJsonPath, json_encode([
+        'name' => 'test',
+        'devDependencies' => new stdClass,
+    ], JSON_PRETTY_PRINT));
+    File::put(base_path('bun.lock'), '');
+
+    $this->artisan('hotwire:install')
+        ->expectsConfirmation('Run bun install now?', 'yes')
+        ->expectsOutputToContain('bun install completed')
         ->assertSuccessful();
 });
