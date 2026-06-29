@@ -122,3 +122,133 @@ it('returns empty and writes nothing when package.json is null', function () {
 
     expect($changed)->toBe([]);
 });
+
+// --- addViteAlias ---
+
+beforeEach(function () {
+    $this->viteCandidates = [
+        base_path('vite.config.ts'),
+        base_path('vite.config.mjs'),
+        base_path('vite.config.js'),
+    ];
+    foreach ($this->viteCandidates as $candidate) {
+        $this->{'vite_'.basename($candidate)} = File::exists($candidate) ? File::get($candidate) : null;
+    }
+});
+
+afterEach(function () {
+    foreach ($this->viteCandidates as $candidate) {
+        $key = 'vite_'.basename($candidate);
+        $original = $this->{$key} ?? null;
+
+        if ($original !== null) {
+            File::put($candidate, $original);
+        } elseif (File::exists($candidate)) {
+            File::delete($candidate);
+        }
+    }
+});
+
+function laravelStockViteConfig(): string
+{
+    return <<<'JS'
+        import { defineConfig } from 'vite';
+        import laravel from 'laravel-vite-plugin';
+        import tailwindcss from '@tailwindcss/vite';
+
+        export default defineConfig({
+            plugins: [
+                laravel({
+                    input: ['resources/css/app.css', 'resources/js/app.js'],
+                    refresh: true,
+                }),
+                tailwindcss(),
+            ],
+        });
+        JS;
+}
+
+it('injects the @hotwire alias into a stock Laravel vite.config.js', function () {
+    File::put(base_path('vite.config.js'), laravelStockViteConfig());
+
+    $result = $this->installer->addViteAlias($this->files, '@hotwire', 'vendor/emaia/laravel-hotwire/resources/js');
+
+    expect($result)->toBe(PackageInstaller::VITE_ALIAS_ADDED);
+
+    $written = File::get(base_path('vite.config.js'));
+
+    expect($written)
+        ->toContain("import { fileURLToPath } from 'node:url';")
+        ->toContain("'@hotwire': fileURLToPath(new URL('vendor/emaia/laravel-hotwire/resources/js', import.meta.url)),")
+        ->toContain('resolve: {')
+        ->toContain('alias: {');
+});
+
+it('returns already_present without rewriting when the alias key is already there', function () {
+    $config = laravelStockViteConfig();
+    $configWithAlias = str_replace(
+        "export default defineConfig({\n",
+        "export default defineConfig({\n    resolve: { alias: { '@hotwire': './custom' } },\n",
+        $config,
+    );
+
+    File::put(base_path('vite.config.js'), $configWithAlias);
+    $before = File::get(base_path('vite.config.js'));
+
+    $result = $this->installer->addViteAlias($this->files, '@hotwire', 'vendor/emaia/laravel-hotwire/resources/js');
+
+    expect($result)->toBe(PackageInstaller::VITE_ALIAS_ALREADY_PRESENT)
+        ->and(File::get(base_path('vite.config.js')))->toBe($before);
+});
+
+it('returns no_config when no vite config file exists', function () {
+    foreach ($this->viteCandidates as $candidate) {
+        if (File::exists($candidate)) {
+            File::delete($candidate);
+        }
+    }
+
+    $result = $this->installer->addViteAlias($this->files, '@hotwire', 'vendor/emaia/laravel-hotwire/resources/js');
+
+    expect($result)->toBe(PackageInstaller::VITE_ALIAS_NO_CONFIG);
+});
+
+it('returns pattern_mismatch and writes nothing when defineConfig is absent', function () {
+    $custom = <<<'JS'
+        // Custom config without defineConfig wrapper
+        export default {
+            plugins: [],
+        };
+        JS;
+
+    File::put(base_path('vite.config.js'), $custom);
+
+    $result = $this->installer->addViteAlias($this->files, '@hotwire', 'vendor/emaia/laravel-hotwire/resources/js');
+
+    expect($result)->toBe(PackageInstaller::VITE_ALIAS_PATTERN_MISMATCH)
+        ->and(File::get(base_path('vite.config.js')))->toBe($custom);
+});
+
+it('prefers vite.config.ts over .mjs and .js', function () {
+    File::put(base_path('vite.config.ts'), laravelStockViteConfig());
+    File::put(base_path('vite.config.js'), laravelStockViteConfig());
+
+    $result = $this->installer->addViteAlias($this->files, '@hotwire', 'vendor/emaia/laravel-hotwire/resources/js');
+
+    expect($result)->toBe(PackageInstaller::VITE_ALIAS_ADDED)
+        ->and(File::get(base_path('vite.config.ts')))->toContain('@hotwire')
+        ->and(File::get(base_path('vite.config.js')))->not->toContain('@hotwire');
+});
+
+it('does not duplicate the fileURLToPath import when already present', function () {
+    $config = "import { fileURLToPath } from 'node:url';\n".laravelStockViteConfig();
+
+    File::put(base_path('vite.config.js'), $config);
+
+    $this->installer->addViteAlias($this->files, '@hotwire', 'vendor/emaia/laravel-hotwire/resources/js');
+
+    $written = File::get(base_path('vite.config.js'));
+    $importCount = substr_count($written, "import { fileURLToPath } from 'node:url';");
+
+    expect($importCount)->toBe(1);
+});

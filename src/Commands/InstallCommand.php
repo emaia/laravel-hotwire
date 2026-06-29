@@ -23,6 +23,10 @@ class InstallCommand extends Command
 
     public $description = 'Install Hotwire scaffolding into your Laravel application';
 
+    private const string VITE_ALIAS_KEY = '@hotwire';
+
+    private const string VITE_ALIAS_PATH = 'vendor/emaia/laravel-hotwire/resources/js';
+
     private const array CORE_DEPENDENCIES = [
         '@emaia/stimulus-dynamic-loader',
         '@hotwired/stimulus',
@@ -57,11 +61,17 @@ class InstallCommand extends Command
         $copied = $this->copyStubs($stubFiles, $stubBase, $targetBase);
 
         $depsAdded = 0;
+        $aliasResult = null;
         if ($filter !== 'css') {
             $depsAdded = $this->addNpmDependencies();
+            $aliasResult = $this->packageInstaller->addViteAlias(
+                $this->files,
+                self::VITE_ALIAS_KEY,
+                self::VITE_ALIAS_PATH,
+            );
         }
 
-        $this->showSummary($copied, $depsAdded);
+        $this->showSummary($copied, $depsAdded, $aliasResult);
 
         if ($depsAdded > 0 && $this->shouldInstallDependencies()) {
             return $this->installDependencies();
@@ -252,7 +262,7 @@ class InstallCommand extends Command
         return self::SUCCESS;
     }
 
-    private function showSummary(int $copied, int $depsAdded): void
+    private function showSummary(int $copied, int $depsAdded, ?string $aliasResult): void
     {
         $pm = $this->packageInstaller->detect($this->files);
 
@@ -266,6 +276,8 @@ class InstallCommand extends Command
         if ($depsAdded > 0) {
             $this->line("  Dependencies added: $depsAdded");
         }
+
+        $this->reportAliasResult($aliasResult);
 
         $this->newLine();
         $this->line('Next steps:');
@@ -287,5 +299,39 @@ class InstallCommand extends Command
         $this->line('  • `php artisan hotwire:controllers <name>` fork a controller into your app to customise it');
         $this->newLine();
         $this->line('Controllers auto-load from the vendor directory — no publish step is required unless you want to customise.');
+    }
+
+    private function reportAliasResult(?string $aliasResult): void
+    {
+        if ($aliasResult === null) {
+            return;
+        }
+
+        $key = self::VITE_ALIAS_KEY;
+
+        match ($aliasResult) {
+            PackageInstaller::VITE_ALIAS_ADDED => $this->line("  Vite alias $key added to vite.config.js"),
+            PackageInstaller::VITE_ALIAS_ALREADY_PRESENT => $this->line("  Vite alias $key already configured"),
+            PackageInstaller::VITE_ALIAS_NO_CONFIG => null,
+            PackageInstaller::VITE_ALIAS_PATTERN_MISMATCH => $this->printAliasSnippet(),
+            default => null,
+        };
+    }
+
+    private function printAliasSnippet(): void
+    {
+        $key = self::VITE_ALIAS_KEY;
+        $path = self::VITE_ALIAS_PATH;
+
+        $this->newLine();
+        warning("Could not auto-add the $key Vite alias to your config (custom shape detected). Paste this manually inside your defineConfig({...}):");
+        $this->line('');
+        $this->line("    import { fileURLToPath } from 'node:url';");
+        $this->line('');
+        $this->line('    resolve: {');
+        $this->line('        alias: {');
+        $this->line("            '$key': fileURLToPath(new URL('$path', import.meta.url)),");
+        $this->line('        },');
+        $this->line('    },');
     }
 }
