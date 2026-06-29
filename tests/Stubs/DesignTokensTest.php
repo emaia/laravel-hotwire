@@ -108,6 +108,14 @@ it('contains data-theme dark with overrides', function () use ($stubPath) {
 
 // --- Preserve existing features ---
 
+it('contains @layer base with global border/outline rules', function () use ($stubPath) {
+    $css = file_get_contents($stubPath);
+
+    expect($css)->toContain('@layer base');
+    expect($css)->toContain('border-color: var(--border)');
+    expect($css)->toContain('outline-color: var(--ring)');
+});
+
 it('preserves existing @source directives', function () use ($stubPath) {
     $css = file_get_contents($stubPath);
 
@@ -126,6 +134,7 @@ it('preserves existing @custom-variant rules', function () use ($stubPath) {
         'in-turbo-frame',
         'in-remote-turbo-frame',
         'modal',
+        'dark',
     ];
 
     foreach ($variants as $variant) {

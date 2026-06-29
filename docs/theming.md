@@ -13,24 +13,24 @@ Laravel Hotwire ships a Tailwind v4 theme using semantic CSS custom properties. 
 | Token | Light mode | Dark mode | Role |
 |-------|-----------|-----------|------|
 | `--background` | `oklch(1 0 0)` | `oklch(0.145 0 0)` | Main background |
-| `--foreground` | `oklch(0.145 0 0)` | `oklch(0.985 0 0)` | Primary text |
+| `--foreground` | `oklch(0 0 0)` | `oklch(0.985 0 0)` | Primary text |
 | `--card` | `oklch(1 0 0)` | `oklch(0.205 0 0)` | Card/panel background |
-| `--card-foreground` | `oklch(0.145 0 0)` | `oklch(0.985 0 0)` | Card/panel text |
+| `--card-foreground` | `oklch(0 0 0)` | `oklch(0.985 0 0)` | Card/panel text |
 | `--popover` | `oklch(1 0 0)` | `oklch(0.205 0 0)` | Popover background |
-| `--popover-foreground` | `oklch(0.145 0 0)` | `oklch(0.985 0 0)` | Popover text |
-| `--primary` | `oklch(0.205 0 0)` | `oklch(0.922 0 0)` | Primary accent |
+| `--popover-foreground` | `oklch(0 0 0)` | `oklch(0.985 0 0)` | Popover text |
+| `--primary` | `oklch(0 0 0)` | `oklch(0.922 0 0)` | Primary accent |
 | `--primary-foreground` | `oklch(0.985 0 0)` | `oklch(0.205 0 0)` | Text on primary |
-| `--secondary` | `oklch(0.965 0 0)` | `oklch(0.269 0 0)` | Secondary background |
+| `--secondary` | `oklch(0.97 0 0)` | `oklch(0.269 0 0)` | Secondary background |
 | `--secondary-foreground` | `oklch(0.205 0 0)` | `oklch(0.985 0 0)` | Text on secondary |
-| `--muted` | `oklch(0.965 0 0)` | `oklch(0.269 0 0)` | Muted background |
+| `--muted` | `oklch(0.97 0 0)` | `oklch(0.269 0 0)` | Muted background |
 | `--muted-foreground` | `oklch(0.556 0 0)` | `oklch(0.708 0 0)` | Subdued text |
-| `--accent` | `oklch(0.965 0 0)` | `oklch(0.269 0 0)` | Accent highlight |
+| `--accent` | `oklch(0.97 0 0)` | `oklch(0.371 0 0)` | Accent highlight |
 | `--accent-foreground` | `oklch(0.205 0 0)` | `oklch(0.985 0 0)` | Text on accent |
 | `--destructive` | `oklch(0.577 0.245 27.325)` | `oklch(0.704 0.191 22.216)` | Destructive action |
-| `--destructive-foreground` | `oklch(0.985 0 0)` | `oklch(0.637 0.237 25.331)` | Text on destructive |
-| `--border` | `oklch(0.922 0 0)` | `oklch(0.269 0 0)` | Borders |
-| `--input` | `oklch(0.922 0 0)` | `oklch(0.269 0 0)` | Input backgrounds |
-| `--ring` | `oklch(0.205 0 0)` | `oklch(0.439 0 0)` | Focus rings |
+| `--destructive-foreground` | `oklch(0.97 0.01 17)` | `oklch(0.58 0.22 27)` | Text on destructive |
+| `--border` | `oklch(0.922 0 0)` | `oklch(1 0 0 / 10%)` | Borders |
+| `--input` | `oklch(0.922 0 0)` | `oklch(1 0 0 / 15%)` | Input backgrounds |
+| `--ring` | `oklch(0.708 0 0)` | `oklch(0.556 0 0)` | Focus rings |
 
 ### Radius
 
