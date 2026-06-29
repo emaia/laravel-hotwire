@@ -6,6 +6,7 @@ use Emaia\LaravelHotwire\Components\CheckboxGroup;
 use Emaia\LaravelHotwire\Components\ConditionalField;
 use Emaia\LaravelHotwire\Components\ConfirmDialog;
 use Emaia\LaravelHotwire\Components\Description;
+use Emaia\LaravelHotwire\Components\Drawer;
 use Emaia\LaravelHotwire\Components\Dropdown;
 use Emaia\LaravelHotwire\Components\Error;
 use Emaia\LaravelHotwire\Components\Field;
@@ -213,6 +214,14 @@ return [
             'description' => 'Accessible modal with backdrop, animations, focus trap and Turbo integration',
             'controllers' => ['modal'],
         ],
+        'drawer' => [
+            'class' => Drawer::class,
+            'view' => 'hotwire::component-views.drawer',
+            'docs' => 'docs/components/drawer.md',
+            'category' => 'overlay',
+            'description' => 'Off-canvas drawer (left/right/top/bottom) with backdrop, focus trap and Escape/click-outside dismissal',
+            'controllers' => ['drawer'],
+        ],
         'optimistic' => [
             'class' => Optimistic::class,
             'view' => 'hotwire::component-views.optimistic',
@@ -411,6 +420,12 @@ return [
             'docs' => 'docs/controllers/modal.md',
             'category' => 'overlay',
             'description' => 'Accessible modal with backdrop, focus trap and Turbo integration',
+        ],
+        'drawer' => [
+            'source' => 'resources/js/controllers/drawer_controller.js',
+            'docs' => 'docs/controllers/drawer.md',
+            'category' => 'overlay',
+            'description' => 'Off-canvas drawer (left/right/top/bottom) with backdrop, focus trap and Escape/click-outside dismissal',
         ],
         'modal-auto-close' => [
             'source' => 'resources/js/controllers/modal_auto_close_controller.js',
