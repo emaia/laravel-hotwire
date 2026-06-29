@@ -33,7 +33,7 @@
         <!-- Backdrop -->
         <div
             data-modal-target="backdrop"
-            class="absolute inset-0 bg-foreground/80 backdrop-blur-sm transition-opacity duration-300 ease-out"
+            class="absolute inset-0 bg-black/10 backdrop-blur-xs transition duration-200 ease-out"
         ></div>
 
         <div
@@ -51,7 +51,7 @@
             @if ($sizeStyle()) style="{{ $sizeStyle() }}" @endif
         >
             <div @class([
-                'overflow-hidden rounded-lg bg-background shadow-xl',
+                'overflow-hidden rounded-xl bg-background ring-1 ring-foreground/10 shadow-lg',
                 'flex h-full flex-col' => $isFullSize(),
                 $class,
             ])>
@@ -73,7 +73,7 @@
             @if ($closeButton)
                 <button
                     @class([
-                        'absolute flex items-center rounded-full bg-secondary p-2 text-secondary-foreground transition-colors hover:bg-background hover:text-muted-foreground',
+                        'absolute flex items-center justify-center rounded-xs opacity-70 ring-offset-background transition-opacity hover:opacity-100 [&_svg]:pointer-events-none [&_svg]:shrink-0',
                         'top-2 right-2 z-10' => $isFullSize(),
                         '-top-4 -right-4' => ! $isFullSize(),
                     ])
@@ -81,7 +81,7 @@
                     type="button"
                     aria-label="Close modal"
                 >
-                    <x-hwc::icon name="x" class="h-6 w-6" />
+                    <x-hwc::icon name="x" class="size-4" />
                 </button>
             @endif
 

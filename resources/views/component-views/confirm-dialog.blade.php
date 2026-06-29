@@ -28,12 +28,12 @@
     >
         <div
             data-confirm-dialog-target="backdrop"
-            class="absolute inset-0 bg-foreground/80 opacity-0 backdrop-blur-sm transition-opacity duration-300 ease-out"
+            class="absolute inset-0 bg-black/10 opacity-0 backdrop-blur-xs transition duration-200 ease-out"
         ></div>
 
         <div
             data-confirm-dialog-target="dialog"
-            class="relative z-10 my-auto w-full max-w-sm min-w-0 scale-90 rounded-lg bg-background opacity-0 shadow-xl transition duration-200 ease-in-out lg:max-w-lg"
+            class="relative z-10 my-auto w-full max-w-sm min-w-0 scale-90 rounded-xl bg-popover opacity-0 ring-1 ring-foreground/10 shadow-lg transition duration-200 ease-in-out lg:max-w-lg"
         >
             <div class="flex flex-col flex-wrap gap-2 p-6">
                 @if ($title)

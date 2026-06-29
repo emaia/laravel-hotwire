@@ -74,7 +74,7 @@ it('applies custom cancel class', function () {
     $view = $this->blade('<x-hwc::confirm-dialog title="Delete?" cancel-class="bg-gray-100 text-gray-900"><button>x</button></x-hwc::confirm-dialog>');
 
     $view->assertSee('bg-gray-100 text-gray-900', false);
-    $view->assertDontSee('border-border', false);
+    $view->assertDontSee('text-secondary-foreground hover:bg-accent', false);
 });
 
 it('uses default cancel class when cancel-class is empty', function () {
