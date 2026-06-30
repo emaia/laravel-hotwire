@@ -265,6 +265,49 @@ it('checkbox renders checked attribute from :checked prop', function () {
     $view->assertSee('checked', false);
 });
 
+it('checkbox applies the minimal checkable class instead of the text-input defaults', function () {
+    $view = $this->blade('<x-hwc::input type="checkbox" name="notify" />');
+
+    // Native control sizing + accent-color + focus ring instead of the 36px-tall
+    // full-width rectangle the text-input class produces.
+    $view->assertSee('size-4', false);
+    $view->assertSee('accent-primary', false);
+    $view->assertDontSee('h-9', false);
+    $view->assertDontSee('w-full', false);
+    $view->assertDontSee('rounded-md', false);
+    $view->assertDontSee('px-3', false);
+});
+
+it('radio applies the minimal checkable class instead of the text-input defaults', function () {
+    $view = $this->blade('<x-hwc::input type="radio" name="pref" value="a" />');
+
+    $view->assertSee('size-4', false);
+    $view->assertSee('accent-primary', false);
+    $view->assertDontSee('h-9', false);
+    $view->assertDontSee('rounded-md', false);
+});
+
+it('switch (checkbox with role=switch) falls through to the checkable defaults', function () {
+    // role="switch" is preserved for AT/AX; visual styling matches the checkbox
+    // branch until the dedicated Switch component lands (0.42.0).
+    $view = $this->blade('<x-hwc::input type="checkbox" role="switch" name="dark" />');
+
+    $view->assertSee('role="switch"', false);
+    $view->assertSee('size-4', false);
+    $view->assertSee('accent-primary', false);
+    $view->assertDontSee('h-9', false);
+});
+
+it('text inputs keep the shadcn-aligned text-input defaults', function () {
+    $view = $this->blade('<x-hwc::input type="text" name="title" />');
+
+    $view->assertSee('h-9', false);
+    $view->assertSee('w-full', false);
+    $view->assertSee('border-input', false);
+    $view->assertSee('bg-background', false);
+    $view->assertDontSee('accent-primary', false);
+});
+
 it('checkbox does not render checked when :checked is false', function () {
     $view = $this->blade('<x-hwc::input type="checkbox" name="notify" :checked="false" />');
 
