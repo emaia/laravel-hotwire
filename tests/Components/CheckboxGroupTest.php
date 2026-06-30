@@ -209,6 +209,15 @@ it('adds hwc-input hook on items', function () {
     $view->assertSee('hwc-input', false);
 });
 
+it('applies the same checkable defaults as <x-hwc::input type=checkbox>', function () {
+    // Keeps the visual aligned with the canonical Input checkbox so apps mixing
+    // a stand-alone checkbox with a group don't see a styling regression.
+    $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\']" />');
+
+    $view->assertSee('size-4', false);
+    $view->assertSee('accent-primary', false);
+});
+
 it('adds hwc-label hook on item wrappers', function () {
     $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\']" />');
 
