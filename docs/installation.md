@@ -2,6 +2,20 @@
 
 Reference for everything `hotwire:install` does and the flags that change its behaviour. The [README quick start](../README.md#installation) covers the greenfield case in one line; this page covers the rest.
 
+## Contents
+
+- [What the command does](#what-the-command-does)
+- [Dependency modes](#dependency-modes)
+- [Package manager step](#package-manager-step)
+- [The `@hotwire` Vite alias](#the-hotwire-vite-alias)
+- [The auto-generated loader stub](#the-auto-generated-loader-stub)
+- [Detecting drift between install config and view usage](#detecting-drift-between-install-config-and-view-usage)
+- [CI / automation recipe](#ci--automation-recipe)
+- [Flag reference](#flag-reference)
+- [What changes in your app after install](#what-changes-in-your-app-after-install)
+- [Upgrading](#upgrading)
+- [Troubleshooting](#troubleshooting)
+
 ---
 
 ## What the command does
@@ -37,7 +51,7 @@ Steps 4–6 are skipped when the user passes `--only=css` (CSS-only install).
 
 ## Package manager step
 
-`hotwire:install` runs your package manager by default — the command literally says "install", and the natural expectation is that it finishes the install.
+`hotwire:install` runs your package manager by default.
 
 | Flag | Effect |
 |---|---|
