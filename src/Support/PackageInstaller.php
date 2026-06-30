@@ -147,30 +147,250 @@ class PackageInstaller
     /** Returns the modified content, or null when the file doesn't match the stock shape. */
     private function injectViteAlias(string $content, string $aliasKey, string $relativePath): ?string
     {
-        if (! preg_match('/export\s+default\s+defineConfig\s*\(\s*\{\s*\r?\n/', $content, $match)) {
+        if (! preg_match(
+            '/export\s+default\s+defineConfig\s*\(\s*\{\s*\r?\n/',
+            $content,
+            $match,
+            PREG_OFFSET_CAPTURE,
+        )) {
+            return null;
+        }
+
+        // Locate the `{` that opens the defineConfig literal so brace matching
+        // can find its close — guarantees subsequent merges happen INSIDE the
+        // top-level config object and not in some nested plugin literal.
+        $configOpenPos = strpos($content, '{', $match[0][1]);
+        if ($configOpenPos === false) {
+            return null;
+        }
+        $configClosePos = $this->matchClosingBrace($content, $configOpenPos);
+        if ($configClosePos === null) {
             return null;
         }
 
         $needsImport = ! str_contains($content, 'fileURLToPath');
+        $aliasEntry = "'$aliasKey': fileURLToPath(new URL('$relativePath', import.meta.url))";
 
-        $resolveBlock = "    resolve: {\n"
-            ."        alias: {\n"
-            ."            '$aliasKey': fileURLToPath(new URL('$relativePath', import.meta.url)),\n"
-            ."        },\n"
-            ."    },\n";
+        $injected = $this->injectIntoExistingResolve($content, $configOpenPos, $configClosePos, $aliasEntry, $aliasKey);
 
-        $injected = preg_replace(
-            '/(export\s+default\s+defineConfig\s*\(\s*\{\s*\r?\n)/',
-            "\$1$resolveBlock",
-            $content,
-            1,
-        );
+        if ($injected === null) {
+            // No `resolve:` key in the config — inject the full block at the top.
+            $resolveBlock = "    resolve: {\n"
+                ."        alias: {\n"
+                ."            $aliasEntry,\n"
+                ."        },\n"
+                ."    },\n";
+
+            $injected = preg_replace(
+                '/(export\s+default\s+defineConfig\s*\(\s*\{\s*\r?\n)/',
+                "\$1$resolveBlock",
+                $content,
+                1,
+            );
+        }
 
         if ($needsImport) {
             $injected = $this->insertFileUrlToPathImport($injected);
         }
 
         return $injected;
+    }
+
+    /**
+     * Detect a top-level `resolve:` key inside the defineConfig object and merge
+     * the alias entry into it. Returns the modified content when a merge was
+     * performed, or null when no `resolve:` key exists at the top level.
+     */
+    private function injectIntoExistingResolve(
+        string $content,
+        int $configOpenPos,
+        int $configClosePos,
+        string $aliasEntry,
+        string $aliasKey,
+    ): ?string {
+        $resolveKeyPos = $this->findTopLevelKey($content, $configOpenPos, $configClosePos, 'resolve');
+        if ($resolveKeyPos === null) {
+            return null;
+        }
+
+        $resolveOpenAbs = strpos($content, '{', $resolveKeyPos);
+        if ($resolveOpenAbs === false || $resolveOpenAbs >= $configClosePos) {
+            return null;
+        }
+
+        $resolveClose = $this->matchClosingBrace($content, $resolveOpenAbs);
+        if ($resolveClose === null) {
+            return null;
+        }
+
+        // Derive indentation from the line containing the resolve key.
+        $lineStart = strrpos(substr($content, 0, $resolveKeyPos), "\n");
+        $lineStart = $lineStart === false ? 0 : $lineStart + 1;
+        $resolveKeyIndent = substr($content, $lineStart, $resolveKeyPos - $lineStart);
+        $aliasIndent = $resolveKeyIndent.'    ';
+        $entryIndent = $aliasIndent.'    ';
+
+        // Sub-case 1: existing `alias: { ... }` inside resolve — append entry.
+        $aliasKeyPos = $this->findTopLevelKey($content, $resolveOpenAbs, $resolveClose, 'alias');
+        if ($aliasKeyPos !== null) {
+            $aliasOpenAbs = strpos($content, '{', $aliasKeyPos);
+            if ($aliasOpenAbs === false || $aliasOpenAbs >= $resolveClose) {
+                return null;
+            }
+            $newEntry = "\n{$entryIndent}{$aliasEntry},";
+
+            return substr_replace($content, $newEntry, $aliasOpenAbs + 1, 0);
+        }
+
+        // Sub-case 2: resolve exists but has no `alias:` — inject the alias block.
+        $aliasBlock = "\n{$aliasIndent}alias: {\n{$entryIndent}{$aliasEntry},\n{$aliasIndent}},";
+
+        return substr_replace($content, $aliasBlock, $resolveOpenAbs + 1, 0);
+    }
+
+    /**
+     * Find a property key at the immediate (top-level) depth of the object
+     * literal whose `{` is at $openPos and `}` is at $closePos. Skips strings,
+     * line/block comments, and any nested `{...}`, `[...]` or `(...)`.
+     *
+     * Returns the byte offset of the start of $keyName when found, or null otherwise.
+     */
+    private function findTopLevelKey(string $content, int $openPos, int $closePos, string $keyName): ?int
+    {
+        $depth = 0;
+        $i = $openPos + 1;
+        $keyLen = strlen($keyName);
+
+        while ($i < $closePos) {
+            $c = $content[$i];
+            $next = $content[$i + 1] ?? '';
+
+            if ($c === '/' && $next === '/') {
+                $nl = strpos($content, "\n", $i);
+                $i = $nl !== false ? min($nl + 1, $closePos) : $closePos;
+
+                continue;
+            }
+            if ($c === '/' && $next === '*') {
+                $end = strpos($content, '*/', $i + 2);
+                $i = $end !== false ? min($end + 2, $closePos) : $closePos;
+
+                continue;
+            }
+            if ($c === '"' || $c === "'" || $c === '`') {
+                $quote = $c;
+                $i++;
+                while ($i < $closePos) {
+                    if ($content[$i] === '\\') {
+                        $i += 2;
+
+                        continue;
+                    }
+                    if ($content[$i] === $quote) {
+                        $i++;
+                        break;
+                    }
+                    $i++;
+                }
+
+                continue;
+            }
+            if ($c === '{' || $c === '[' || $c === '(') {
+                $depth++;
+                $i++;
+
+                continue;
+            }
+            if ($c === '}' || $c === ']' || $c === ')') {
+                $depth--;
+                $i++;
+
+                continue;
+            }
+
+            if ($depth === 0 && substr($content, $i, $keyLen) === $keyName) {
+                $before = $i > 0 ? $content[$i - 1] : '';
+                $isWordBoundary = $before === '' || ! preg_match('/[\w$]/', $before);
+
+                if ($isWordBoundary) {
+                    $j = $i + $keyLen;
+                    while ($j < $closePos && ($content[$j] === ' ' || $content[$j] === "\t")) {
+                        $j++;
+                    }
+                    if ($j < $closePos && $content[$j] === ':') {
+                        return $i;
+                    }
+                }
+            }
+
+            $i++;
+        }
+
+        return null;
+    }
+
+    /**
+     * Find the position of the `}` that closes the `{` at $openPos.
+     * Respects strings (single/double/backtick) and line/block comments.
+     * Returns null when the braces are unbalanced.
+     */
+    private function matchClosingBrace(string $content, int $openPos): ?int
+    {
+        if (($content[$openPos] ?? null) !== '{') {
+            return null;
+        }
+
+        $depth = 1;
+        $i = $openPos + 1;
+        $len = strlen($content);
+
+        while ($i < $len && $depth > 0) {
+            $c = $content[$i];
+            $next = $content[$i + 1] ?? '';
+
+            if ($c === '/' && $next === '/') {
+                $nl = strpos($content, "\n", $i);
+                $i = $nl !== false ? $nl + 1 : $len;
+
+                continue;
+            }
+
+            if ($c === '/' && $next === '*') {
+                $end = strpos($content, '*/', $i + 2);
+                $i = $end !== false ? $end + 2 : $len;
+
+                continue;
+            }
+
+            if ($c === '"' || $c === "'" || $c === '`') {
+                $quote = $c;
+                $i++;
+                while ($i < $len) {
+                    if ($content[$i] === '\\') {
+                        $i += 2;
+
+                        continue;
+                    }
+                    if ($content[$i] === $quote) {
+                        $i++;
+                        break;
+                    }
+                    $i++;
+                }
+
+                continue;
+            }
+
+            if ($c === '{') {
+                $depth++;
+            } elseif ($c === '}') {
+                $depth--;
+            }
+
+            $i++;
+        }
+
+        return $depth === 0 ? $i - 1 : null;
     }
 
     /**

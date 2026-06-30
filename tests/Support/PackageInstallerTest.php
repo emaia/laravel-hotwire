@@ -252,3 +252,133 @@ it('does not duplicate the fileURLToPath import when already present', function 
 
     expect($importCount)->toBe(1);
 });
+
+// --- addViteAlias: merging into an existing resolve block ---
+
+it('appends the alias entry into an existing resolve.alias block', function () {
+    $config = <<<'JS'
+        import { defineConfig } from 'vite';
+        import { fileURLToPath } from 'node:url';
+
+        export default defineConfig({
+            resolve: {
+                alias: {
+                    '@': fileURLToPath(new URL('./resources', import.meta.url)),
+                },
+            },
+            plugins: [],
+        });
+        JS;
+
+    File::put(base_path('vite.config.js'), $config);
+
+    $result = $this->installer->addViteAlias($this->files, '@hotwire', 'vendor/emaia/laravel-hotwire/resources/js');
+
+    expect($result)->toBe(PackageInstaller::VITE_ALIAS_ADDED);
+
+    $written = File::get(base_path('vite.config.js'));
+
+    // Single resolve key (no duplicate)
+    expect(substr_count($written, 'resolve:'))->toBe(1);
+    // Existing alias preserved
+    expect($written)->toContain("'@': fileURLToPath(new URL('./resources', import.meta.url))");
+    // New entry inside the same alias block
+    expect($written)->toContain("'@hotwire': fileURLToPath(new URL('vendor/emaia/laravel-hotwire/resources/js', import.meta.url))");
+});
+
+it('injects a fresh alias block when resolve exists but has no alias', function () {
+    $config = <<<'JS'
+        import { defineConfig } from 'vite';
+
+        export default defineConfig({
+            resolve: {
+                preserveSymlinks: true,
+            },
+            plugins: [],
+        });
+        JS;
+
+    File::put(base_path('vite.config.js'), $config);
+
+    $result = $this->installer->addViteAlias($this->files, '@hotwire', 'vendor/emaia/laravel-hotwire/resources/js');
+
+    expect($result)->toBe(PackageInstaller::VITE_ALIAS_ADDED);
+
+    $written = File::get(base_path('vite.config.js'));
+
+    // Single resolve key (no duplicate)
+    expect(substr_count($written, 'resolve:'))->toBe(1);
+    // preserveSymlinks preserved
+    expect($written)->toContain('preserveSymlinks: true');
+    // New alias block inside the same resolve
+    expect($written)->toContain("alias: {")
+        ->toContain("'@hotwire': fileURLToPath(new URL('vendor/emaia/laravel-hotwire/resources/js', import.meta.url))");
+    // fileURLToPath import added
+    expect($written)->toContain("import { fileURLToPath } from 'node:url';");
+});
+
+it('preserves the rest of the config untouched when merging', function () {
+    $config = <<<'JS'
+        import { defineConfig } from 'vite';
+        import laravel from 'laravel-vite-plugin';
+
+        export default defineConfig({
+            resolve: {
+                alias: {
+                    '@': './src',
+                },
+            },
+            plugins: [
+                laravel({
+                    input: ['resources/css/app.css', 'resources/js/app.js'],
+                    refresh: true,
+                }),
+            ],
+            server: {
+                cors: true,
+            },
+        });
+        JS;
+
+    File::put(base_path('vite.config.js'), $config);
+
+    $this->installer->addViteAlias($this->files, '@hotwire', 'vendor/emaia/laravel-hotwire/resources/js');
+
+    $written = File::get(base_path('vite.config.js'));
+
+    expect($written)
+        ->toContain('laravel-vite-plugin')
+        ->toContain('refresh: true')
+        ->toContain('cors: true')
+        ->toContain("'@': './src'")
+        ->toContain("'@hotwire':");
+});
+
+it('does not falsely match a nested resolve key inside a plugin literal', function () {
+    // Hypothetical plugin using `resolve:` as one of its options.
+    // The top-level config has no resolve — our injection should add it,
+    // not merge into the plugin's resolve.
+    $config = <<<'JS'
+        import { defineConfig } from 'vite';
+
+        export default defineConfig({
+            plugins: [
+                somePlugin({
+                    resolve: { somekey: 'value' },
+                }),
+            ],
+        });
+        JS;
+
+    File::put(base_path('vite.config.js'), $config);
+
+    $this->installer->addViteAlias($this->files, '@hotwire', 'vendor/emaia/laravel-hotwire/resources/js');
+
+    $written = File::get(base_path('vite.config.js'));
+
+    // Two resolve keys are acceptable here — one is ours (top-level), one is the plugin's.
+    // The plugin's resolve must NOT have been touched.
+    expect($written)->toContain("resolve: { somekey: 'value' }");
+    // Our resolve.alias must exist at top level
+    expect($written)->toContain("'@hotwire':");
+});
