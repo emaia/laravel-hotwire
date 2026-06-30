@@ -75,7 +75,7 @@ final class LoaderStub
         }
 
         preg_match_all('/!\*\*\/([a-z0-9_-]+_controller\.js)/i', $content, $matches);
-        $excludedFilenames = $matches[1] ?? [];
+        $excludedFilenames = $matches[1];
 
         $included = [];
 

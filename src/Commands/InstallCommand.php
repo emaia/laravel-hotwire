@@ -160,7 +160,7 @@ class InstallCommand extends Command
     {
         $raw = $this->option('with-deps');
 
-        if ($raw === [] || $raw === null) {
+        if ($raw === []) {
             return null;
         }
 
