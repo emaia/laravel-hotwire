@@ -155,7 +155,7 @@ The `defaultOptions()` and `afterInit()` hooks mirror the chart/map pattern:
 
 ```js
 // resources/js/controllers/medialibrary_upload_controller.js
-import FileUploadController from "./file_upload_controller.js";
+import FileUploadController from "@hotwire/file_upload_controller.js";
 
 export default class extends FileUploadController {
     defaultOptions() {

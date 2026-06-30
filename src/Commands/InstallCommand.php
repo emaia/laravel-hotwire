@@ -27,7 +27,7 @@ class InstallCommand extends Command
 
     private const string VITE_ALIAS_KEY = '@hotwire';
 
-    private const string VITE_ALIAS_PATH = 'vendor/emaia/laravel-hotwire/resources/js';
+    private const string VITE_ALIAS_PATH = 'vendor/emaia/laravel-hotwire/resources/js/controllers';
 
     private const array CORE_DEPENDENCIES = [
         '@emaia/stimulus-dynamic-loader',

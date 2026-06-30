@@ -233,7 +233,7 @@ register only ship to clients that actually use them.
 
 ```js
 // resources/js/controllers/sales_chart_controller.js
-import ChartController from "./chart_controller";
+import ChartController from "@hotwire/chart_controller.js";
 import * as echarts from "echarts/core";
 import { GaugeChart, ScatterChart } from "echarts/charts";
 

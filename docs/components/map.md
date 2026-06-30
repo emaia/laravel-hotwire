@@ -117,7 +117,7 @@ When you need a custom tile provider, marker icon, plugin (e.g. cluster), or pos
 
 ```js
 // resources/js/controllers/store_locator_controller.js
-import MapController from "./map_controller";
+import MapController from "@hotwire/map_controller.js";
 
 export default class extends MapController {
     tileLayerUrl() {

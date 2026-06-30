@@ -93,7 +93,7 @@ renderer, …), create a subclass. The base controller exposes two hooks: `defau
 
 ```js
 // resources/js/controllers/branded_chart_controller.js
-import ChartController from "./chart_controller";
+import ChartController from "@hotwire/chart_controller.js";
 import * as echarts from "echarts/core";
 import { GaugeChart, ScatterChart } from "echarts/charts";
 
@@ -136,7 +136,7 @@ you need it.
 
 ```js
 // resources/js/controllers/sales_drill_chart_controller.js
-import ChartController from "./chart_controller";
+import ChartController from "@hotwire/chart_controller.js";
 import * as echarts from "echarts/core";
 import { LineChart } from "echarts/charts";
 import { UniversalTransition } from "echarts/features";

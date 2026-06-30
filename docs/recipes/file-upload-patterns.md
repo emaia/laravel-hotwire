@@ -386,7 +386,7 @@ vertical list. A targeted reset in your app stylesheet:
 
 ```js
 // resources/js/controllers/media_upload_controller.js
-import FileUploadController from "./file_upload_controller.js";
+import FileUploadController from "@hotwire/file_upload_controller.js";
 import Sortable from "sortablejs";
 
 export default class extends FileUploadController {

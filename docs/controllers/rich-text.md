@@ -139,8 +139,8 @@ The default extension stack is StarterKit + Link + Underline (plus Placeholder w
 and override `extensions(options)`:
 
 ```js
-import RichTextController from "./rich_text_controller";
-import { defaultExtensions } from "./_rich_text_editor";
+import RichTextController from "@hotwire/rich_text_controller.js";
+import { defaultExtensions } from "@hotwire/_rich_text_editor.js";
 import { Table } from "@tiptap/extension-table";
 import { TableRow } from "@tiptap/extension-table-row";
 import { TableCell } from "@tiptap/extension-table-cell";
@@ -192,7 +192,7 @@ You can also handle the upload in a subclass by overriding the wrapper's `onImag
 useful when you want to keep the logic colocated with the editor:
 
 ```js
-import RichTextController from "./rich_text_controller";
+import RichTextController from "@hotwire/rich_text_controller.js";
 
 export default class extends RichTextController {
     async handleImageUpload(file) {

@@ -94,7 +94,7 @@ Subclass to point at a different tile provider (CartoDB, Mapbox, Stadia, your ow
 
 ```js
 // resources/js/controllers/store_locator_controller.js
-import MapController from "./map_controller";
+import MapController from "@hotwire/map_controller.js";
 
 export default class extends MapController {
     tileLayerUrl() {

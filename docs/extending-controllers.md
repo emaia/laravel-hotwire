@@ -4,11 +4,11 @@ Since `0.32.0`, package controllers auto-load from the vendor directory — your
 
 ## Option A — Use the `@hotwire` Vite alias (recommended)
 
-`hotwire:install` adds a `@hotwire` alias to your `vite.config.{ts,mjs,js}` pointing at `vendor/emaia/laravel-hotwire/resources/js/`. Use it from your own controllers:
+`hotwire:install` adds a `@hotwire` alias to your `vite.config.{ts,mjs,js}` pointing at `vendor/emaia/laravel-hotwire/resources/js/controllers/`. Use it from your own controllers:
 
 ```js
 // resources/js/controllers/gallery_controller.js
-import CarouselController from "@hotwire/controllers/carousel_controller.js";
+import CarouselController from "@hotwire/carousel_controller.js";
 
 export default class extends CarouselController {
     static targets = [...CarouselController.targets, "caption"];
@@ -64,14 +64,16 @@ export default class extends CarouselController {
 
 Works without any config change. The downsides are ergonomic — the path is verbose, doesn't survive a non-standard `vendor-dir` in `composer.json`, and IDE auto-import won't suggest it.
 
-## Importing helpers
+## Importing shared helpers
 
-The same alias works for the shared helper modules:
+The same alias works for the shared helper modules that live alongside the controllers:
 
 ```js
-import { createOverlay } from "@hotwire/controllers/_overlay.js";
-import { FocusTrap } from "@hotwire/controllers/_focus_trap.js";
-import { attachMorphRecovery } from "@hotwire/controllers/_turbo_morph_recovery.js";
+import { createOverlay } from "@hotwire/_overlay.js";
+import { FocusTrap } from "@hotwire/_focus_trap.js";
+import { attachMorphRecovery } from "@hotwire/_turbo_morph_recovery.js";
 ```
 
 When you extend a vendor controller without forking, you typically don't need to import its helpers directly — they're already loaded as part of the parent class. Import them yourself only when you're composing a *new* controller from scratch and want to reuse the package's primitives.
+
+> The alias resolves to `vendor/emaia/laravel-hotwire/resources/js/controllers/` specifically. Files outside that folder (e.g. `resources/js/helpers/test_stimulus.js` or `resources/js/libs/stimulus.js`) are package-internal and aren't exposed via `@hotwire`; import via a vendor-relative path if you genuinely need one of them.

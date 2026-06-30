@@ -77,7 +77,7 @@ Override the tile provider and wire click events when you need pin-drop, store-l
 
 ```js
 // resources/js/controllers/store_locator_controller.js
-import MapController from "./map_controller";
+import MapController from "@hotwire/map_controller.js";
 
 export default class extends MapController {
     tileLayerUrl() {
@@ -149,7 +149,7 @@ export default class extends Controller {
 For >500 markers, install `leaflet.markercluster` and replace the inline marker loop in a subclass:
 
 ```js
-import MapController from "./map_controller";
+import MapController from "@hotwire/map_controller.js";
 import L from "leaflet";
 import "leaflet.markercluster/dist/leaflet.markercluster.js";
 import "leaflet.markercluster/dist/MarkerCluster.css";
