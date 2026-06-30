@@ -56,19 +56,27 @@ test("opens when dynamic content is inserted and closes cleanly through the publ
 });
 
 async function browserControllerScript(path) {
-    // Inline the _focus_trap helper alongside the controller — ES `import` is not valid
-    // inside a regular <script>, so the bundler must concatenate the source instead.
+    // Inline the _focus_trap and _overlay helpers alongside the controller — ES
+    // `import` is not valid inside a regular <script>, so the bundler concatenates
+    // the source instead. _overlay imports _focus_trap, so order matters: _focus_trap
+    // first, then _overlay (with its import line stripped), then the controller.
     const focusTrap = (await readFile("resources/js/controllers/_focus_trap.js", "utf8"))
         .replace("export class FocusTrap", "class FocusTrap");
+
+    const overlay = (await readFile("resources/js/controllers/_overlay.js", "utf8"))
+        .replace(/import \{[^}]*\} from "\.\/_focus_trap\.js";\s*/, "")
+        .replace("export function createOverlay", "function createOverlay");
 
     const source = (await readFile(path, "utf8"))
         .replace('import { Controller } from "@hotwired/stimulus";', "")
         .replace(/import \{[^}]*\} from "\.\/_focus_trap\.js";\s*/, "")
+        .replace(/import \{[^}]*\} from "\.\/_overlay\.js";\s*/, "")
         .replace("export default class ModalController extends Controller", "class ModalController extends Controller");
 
     return `
         const { Controller } = window.Stimulus;
         ${focusTrap}
+        ${overlay}
         ${source}
         window.ModalController = ModalController;
     `;
