@@ -3,34 +3,8 @@
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ControllerImports;
 use Emaia\LaravelHotwire\Support\LoaderStub;
-use Emaia\LaravelHotwire\Support\PackageInstaller;
-use Illuminate\Console\Command;
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
-use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\File;
-
-class FakePackageInstaller extends PackageInstaller
-{
-    /** @var string[] */
-    public array $installed = [];
-
-    public function __construct(
-        public string $manager = 'bun',
-        public int $exitCode = 0,
-    ) {}
-
-    public function detect(Filesystem $files): string
-    {
-        return $this->manager;
-    }
-
-    public function install(string $manager, Command $command): int
-    {
-        $this->installed[] = $manager;
-
-        return $this->exitCode;
-    }
-}
 
 beforeEach(/**
  * @throws FileNotFoundException
@@ -118,14 +92,6 @@ function writePackageJson(array $data): void
 function readPackageJson(): array
 {
     return json_decode(File::get(base_path('package.json')), true);
-}
-
-function fakePackageInstaller(string $manager = 'bun', int $exitCode = 0): FakePackageInstaller
-{
-    $fake = new FakePackageInstaller($manager, $exitCode);
-    app()->instance(PackageInstaller::class, $fake);
-
-    return $fake;
 }
 
 // --- Basic ---
