@@ -185,12 +185,25 @@ it('injects the @hotwire alias into a stock Laravel vite.config.js', function ()
 });
 
 it('returns already_present without rewriting when the alias key is already there', function () {
-    $config = laravelStockViteConfig();
-    $configWithAlias = str_replace(
-        "export default defineConfig({\n",
-        "export default defineConfig({\n    resolve: { alias: { '@hotwire': './custom' } },\n",
-        $config,
-    );
+    // Build the fixture as a single heredoc instead of editing laravelStockViteConfig()
+    // via str_replace — on Windows checkouts that heredoc has \r\n line endings and a
+    // \n-only str_replace match silently fails, leaving the fixture without @hotwire.
+    $configWithAlias = <<<'JS'
+        import { defineConfig } from 'vite';
+        import laravel from 'laravel-vite-plugin';
+        import tailwindcss from '@tailwindcss/vite';
+
+        export default defineConfig({
+            resolve: { alias: { '@hotwire': './custom' } },
+            plugins: [
+                laravel({
+                    input: ['resources/css/app.css', 'resources/js/app.js'],
+                    refresh: true,
+                }),
+                tailwindcss(),
+            ],
+        });
+        JS;
 
     File::put(base_path('vite.config.js'), $configWithAlias);
     $before = File::get(base_path('vite.config.js'));
