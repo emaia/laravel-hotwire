@@ -911,3 +911,83 @@ it('shows diverged (user-owned) entries even without --fix and keeps the exit co
         ->doesntExpectOutputToContain('All controllers up to date')
         ->assertSuccessful();
 });
+
+// --- Loader stub drift (auto-generated stub vs views) ---
+
+it('reports a com-dep controller used in views but excluded from the loader stub', function () {
+    writePackageJson(['name' => 'app', 'devDependencies' => ['echarts' => '^6.1.0']]);
+    publishController('chart', $this->targetDir);
+
+    // Auto-generated stub that opts into NOTHING (core-only)
+    File::ensureDirectoryExists($this->targetDir);
+    File::put($this->targetDir.'/index.js',
+        \Emaia\LaravelHotwire\Support\LoaderStub::generate(
+            \Emaia\LaravelHotwire\Registry\HotwireRegistry::make(),
+            []
+        )
+    );
+
+    writeView('page.blade.php', '<x-hwc::chart />');
+
+    $this->artisan('hotwire:check --no-interaction')
+        ->expectsOutputToContain('excluded from loader stub')
+        ->assertExitCode(1);
+});
+
+it('does not report drift when stub is hand-written (no auto-generated marker)', function () {
+    writePackageJson(['name' => 'app', 'devDependencies' => ['echarts' => '^6.1.0']]);
+    publishController('chart', $this->targetDir);
+
+    File::ensureDirectoryExists($this->targetDir);
+    File::put($this->targetDir.'/index.js', "// hand-written user file\nimport { Stimulus } from \"../libs/stimulus\";\n");
+
+    writeView('page.blade.php', '<x-hwc::chart />');
+
+    $this->artisan('hotwire:check --no-interaction')
+        ->doesntExpectOutputToContain('excluded from loader stub')
+        ->assertSuccessful();
+});
+
+it('regenerates the loader stub including the missing controller when --fix is used', function () {
+    writePackageJson(['name' => 'app', 'devDependencies' => ['echarts' => '^6.1.0']]);
+    publishController('chart', $this->targetDir);
+
+    File::ensureDirectoryExists($this->targetDir);
+    File::put($this->targetDir.'/index.js',
+        \Emaia\LaravelHotwire\Support\LoaderStub::generate(
+            \Emaia\LaravelHotwire\Registry\HotwireRegistry::make(),
+            []
+        )
+    );
+
+    writeView('page.blade.php', '<x-hwc::chart />');
+
+    $this->artisan('hotwire:check --fix --no-interaction')
+        ->expectsOutputToContain('Regenerated resources/js/controllers/index.js')
+        ->assertSuccessful();
+
+    $regenerated = File::get($this->targetDir.'/index.js');
+
+    expect($regenerated)
+        ->not->toContain('"!**/chart_controller.js"')
+        ->toStartWith('// AUTO-GENERATED');
+});
+
+it('does not flag drift when the used controller IS included in the stub', function () {
+    writePackageJson(['name' => 'app', 'devDependencies' => ['echarts' => '^6.1.0']]);
+    publishController('chart', $this->targetDir);
+
+    File::ensureDirectoryExists($this->targetDir);
+    File::put($this->targetDir.'/index.js',
+        \Emaia\LaravelHotwire\Support\LoaderStub::generate(
+            \Emaia\LaravelHotwire\Registry\HotwireRegistry::make(),
+            ['chart']
+        )
+    );
+
+    writeView('page.blade.php', '<x-hwc::chart />');
+
+    $this->artisan('hotwire:check --no-interaction')
+        ->doesntExpectOutputToContain('excluded from loader stub')
+        ->assertSuccessful();
+});

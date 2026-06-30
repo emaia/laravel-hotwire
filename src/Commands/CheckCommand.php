@@ -5,6 +5,7 @@ namespace Emaia\LaravelHotwire\Commands;
 use Emaia\LaravelHotwire\Registry\ControllerDefinition;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ControllerImports;
+use Emaia\LaravelHotwire\Support\LoaderStub;
 use Emaia\LaravelHotwire\Support\PackageInstaller;
 use Emaia\LaravelHotwire\Support\PackageMarker;
 use Illuminate\Console\Command;
@@ -86,31 +87,34 @@ class CheckCommand extends Command
 
         $required = $this->collectRequiredDependencies($controllers);
         $missingDeps = $this->reportDependencies($required);
+        $excludedFromStub = $this->detectStubExclusions($controllers, $registry);
 
         $this->line('');
 
         $hasControllerIssues = ! empty($issues);
         $hasMissingDeps = ! empty($missingDeps);
+        $hasStubDrift = ! empty($excludedFromStub);
         $hasProblemLines = ! empty($this->problemLines);
 
-        if (! $hasControllerIssues && ! $hasMissingDeps && ! $hasProblemLines) {
+        if (! $hasControllerIssues && ! $hasMissingDeps && ! $hasStubDrift && ! $hasProblemLines) {
             info('All controllers up to date.');
 
             return self::SUCCESS;
         }
 
         $this->printProblemLines();
-        $this->printIssueSummary($issues, $missingDeps);
+        $this->printIssueSummary($issues, $missingDeps, $excludedFromStub);
 
         // Only user-owned divergences are present — nothing for --fix to do.
         // Report visibility but keep the exit code green (e.g. CI stays happy).
-        if (! $hasControllerIssues && ! $hasMissingDeps) {
+        if (! $hasControllerIssues && ! $hasMissingDeps && ! $hasStubDrift) {
             return self::SUCCESS;
         }
 
         if ($this->shouldFix()) {
             $this->publishIssues($issues);
             $depsAdded = $this->writeMissingDependencies($missingDeps);
+            $this->regenerateLoaderStub($excludedFromStub, $registry);
 
             if ($depsAdded > 0) {
                 if ($this->shouldInstallDependencies()) {
@@ -125,6 +129,80 @@ class CheckCommand extends Command
         }
 
         return self::FAILURE;
+    }
+
+    /**
+     * Identify com-dep controllers used in views but excluded from the
+     * auto-generated loader stub. Returns identifiers requiring an --fix
+     * regeneration. Skips silently when the user stub is missing or
+     * hand-written (no marker).
+     *
+     * @param  array<string, ControllerDefinition>  $usedControllers
+     * @return string[]
+     */
+    private function detectStubExclusions(array $usedControllers, HotwireRegistry $registry): array
+    {
+        $stubPath = resource_path('js/controllers/index.js');
+
+        if (! $this->files->exists($stubPath)) {
+            return [];
+        }
+
+        $included = LoaderStub::includedComDepControllers($this->files->get($stubPath), $registry);
+
+        if ($included === null) {
+            return [];
+        }
+
+        $missing = [];
+
+        foreach ($usedControllers as $identifier => $controller) {
+            if (empty($controller->npm)) {
+                continue;
+            }
+            if (in_array($identifier, $included, true)) {
+                continue;
+            }
+            $missing[] = $identifier;
+        }
+
+        sort($missing);
+
+        foreach ($missing as $identifier) {
+            $this->problemLines[] = [
+                'key' => $identifier,
+                'line' => "  <error>✗</error>  $identifier  excluded from loader stub  <fg=gray>(used in views; re-run install with --with-deps including $identifier, or `hotwire:check --fix`)</>",
+            ];
+        }
+
+        return $missing;
+    }
+
+    /**
+     * Regenerate the loader stub including every com-dep controller that
+     * survived stub-drift detection plus those already included.
+     *
+     * @param  string[]  $excludedFromStub
+     */
+    private function regenerateLoaderStub(array $excludedFromStub, HotwireRegistry $registry): void
+    {
+        if ($excludedFromStub === []) {
+            return;
+        }
+
+        $stubPath = resource_path('js/controllers/index.js');
+
+        if (! $this->files->exists($stubPath)) {
+            return;
+        }
+
+        $existing = LoaderStub::includedComDepControllers($this->files->get($stubPath), $registry) ?? [];
+        $merged = array_values(array_unique(array_merge($existing, $excludedFromStub)));
+        sort($merged);
+
+        $this->files->put($stubPath, LoaderStub::generate($registry, $merged));
+
+        info('Regenerated resources/js/controllers/index.js to include: '.implode(', ', $excludedFromStub));
     }
 
     /** @return string[] */
@@ -590,8 +668,9 @@ class CheckCommand extends Command
     /**
      * @param  array<int, array{identifier: string, source_file: string, target_file: string}>  $issues
      * @param  array<string, string>  $missingDeps
+     * @param  string[]  $excludedFromStub
      */
-    private function printIssueSummary(array $issues, array $missingDeps): void
+    private function printIssueSummary(array $issues, array $missingDeps, array $excludedFromStub = []): void
     {
         if (! empty($issues)) {
             $count = count($issues);
@@ -601,6 +680,11 @@ class CheckCommand extends Command
         if (! empty($missingDeps)) {
             $count = count($missingDeps);
             $this->line("<comment>$count npm dependency(ies) missing from package.json.</comment>");
+        }
+
+        if (! empty($excludedFromStub)) {
+            $count = count($excludedFromStub);
+            $this->line("<comment>$count controller(s) used in views but excluded from controllers/index.js — --fix will regenerate.</comment>");
         }
 
         $this->line('');
