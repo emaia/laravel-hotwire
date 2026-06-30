@@ -102,15 +102,16 @@ Wire them with `data-action`:
 
 ## Extending (plugins & custom behavior)
 
-Published files are **managed** — don't edit them (updates overwrite). To customize, **extend** in your own
-controller (the package never touches it).
+Vendor controllers auto-load from the package — don't fork the file unless you also want to **own** future updates. To customize, **extend** in your own controller (the package never touches it).
+
+Import the parent class via the `@hotwire` Vite alias that `hotwire:install` wires into `vite.config.js` (see [extending-controllers.md](../extending-controllers.md) for the alternatives if you can't use it).
 
 Embla plugins are opt-in and not bundled by the package (a bundler can't resolve an import of a package you haven't
 installed). Install the one you want and override `emblaPlugins()` in a subclass:
 
 ```js
 // resources/js/controllers/gallery_controller.js
-import CarouselController from "./carousel_controller";
+import CarouselController from "@hotwire/carousel_controller.js";
 import Autoplay from "embla-carousel-autoplay";
 import Fade from "embla-carousel-fade";
 import AutoScroll from 'embla-carousel-auto-scroll'

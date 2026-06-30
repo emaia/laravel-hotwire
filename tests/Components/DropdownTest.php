@@ -54,6 +54,27 @@ it('auto-generates a menu id when none is given', function () {
     $view->assertSee('aria-controls="dropdown-', false);
 });
 
+it('applies the shadcn-aligned popover defaults to the menu', function () {
+    $view = $this->blade('
+        <x-hwc::dropdown>
+            <x-slot:trigger>M</x-slot:trigger>
+            <a href="/x">x</a>
+        </x-hwc::dropdown>
+    ');
+
+    // shadcn DropdownMenuContent reference: bg-popover + text-popover-foreground
+    // (instead of bg-background), border + shadow-md (instead of ring), z-50
+    // (above modals/popovers), min-w-[8rem], p-1, overflow handling.
+    $view->assertSee('z-50', false);
+    $view->assertSee('bg-popover', false);
+    $view->assertSee('text-popover-foreground', false);
+    $view->assertSee('border', false);
+    $view->assertSee('shadow-md', false);
+    $view->assertSee('min-w-[8rem]', false);
+    $view->assertSee('p-1', false);
+    $view->assertSee('overflow-y-auto', false);
+});
+
 it('is hidden and closed by default', function () {
     $view = $this->blade('
         <x-hwc::dropdown>
@@ -62,7 +83,10 @@ it('is hidden and closed by default', function () {
         </x-hwc::dropdown>
     ');
 
-    $view->assertSee('hidden', false);
+    // Standalone `hidden` Tailwind utility — `overflow-x-hidden` is in the
+    // class string regardless of open state, so match with class-token boundary
+    // (preceded and followed by whitespace or the closing quote).
+    expect((string) $view)->toMatch('/[\s"]hidden[\s"]/');
     $view->assertSee('aria-expanded="false"', false);
     $view->assertDontSee('data-dropdown-open-value', false);
 });
@@ -77,7 +101,9 @@ it('starts open when open is true', function () {
 
     $view->assertSee('data-dropdown-open-value="true"', false);
     $view->assertSee('aria-expanded="true"', false);
-    $view->assertDontSee('hidden', false);
+    // Standalone `hidden` Tailwind utility (display: none) — class-token
+    // boundary check so it doesn't false-match `overflow-x-hidden`.
+    expect((string) $view)->not->toMatch('/[\s"]hidden[\s"]/');
 });
 
 it('aligns to the start by default (RTL-safe logical position)', function () {

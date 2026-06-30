@@ -15,6 +15,7 @@ use Emaia\LaravelHotwire\Components\FlashContainer;
 use Emaia\LaravelHotwire\Components\FlashMessage;
 use Emaia\LaravelHotwire\Components\Form;
 use Emaia\LaravelHotwire\Components\FrameOrPage;
+use Emaia\LaravelHotwire\Components\Icon;
 use Emaia\LaravelHotwire\Components\Input;
 use Emaia\LaravelHotwire\Components\Label;
 use Emaia\LaravelHotwire\Components\Map;
@@ -236,6 +237,14 @@ return [
             'category' => 'utility',
             'description' => 'Self-refreshing relative timestamp element wrapping the timeago controller',
             'controllers' => ['timeago'],
+        ],
+        'icon' => [
+            'class' => Icon::class,
+            'view' => 'hotwire::component-views.icon',
+            'docs' => 'docs/components/icon.md',
+            'category' => 'utility',
+            'description' => 'Inline SVG icon from the embedded Lucide subset (~21 icons)',
+            'controllers' => [],
         ],
     ],
     'controllers' => [

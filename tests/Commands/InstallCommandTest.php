@@ -156,7 +156,7 @@ it('adds core npm dependencies to package.json in non-interactive mode', functio
         'devDependencies' => new stdClass,
     ], JSON_PRETTY_PRINT));
 
-    $this->artisan('hotwire:install --no-interaction')
+    $this->artisan('hotwire:install --core-only --no-interaction')
         ->assertSuccessful();
 
     $json = json_decode(File::get($this->packageJsonPath), true);
@@ -187,13 +187,13 @@ it('reads dependency versions from the package own package.json', function () {
     }
 });
 
-it('never installs optional (non-core) dependencies', function () {
+it('installs core + all catalog dependencies by default', function () {
     File::put($this->packageJsonPath, json_encode([
         'name' => 'test',
         'devDependencies' => new stdClass,
     ], JSON_PRETTY_PRINT));
 
-    $this->artisan('hotwire:install')
+    $this->artisan('hotwire:install --no-interaction')
         ->assertSuccessful();
 
     $json = json_decode(File::get($this->packageJsonPath), true);
@@ -202,9 +202,10 @@ it('never installs optional (non-core) dependencies', function () {
         ->toHaveKey('@hotwired/stimulus')
         ->toHaveKey('@hotwired/turbo')
         ->toHaveKey('@emaia/stimulus-dynamic-loader')
-        ->not->toHaveKey('maska')
-        ->not->toHaveKey('tippy.js')
-        ->not->toHaveKey('@emaia/sonner');
+        ->toHaveKey('echarts')
+        ->toHaveKey('leaflet')
+        ->toHaveKey('embla-carousel')
+        ->toHaveKey('@emaia/sonner');
 });
 
 it('preserves existing dependencies in package.json', function () {
@@ -224,7 +225,7 @@ it('preserves existing dependencies in package.json', function () {
         ->and($json['devDependencies'])->toHaveKey('@hotwired/stimulus');
 });
 
-it('does not modify package.json when dependencies already present', function () {
+it('does not modify package.json when core deps already present (--core-only)', function () {
     $packageJson = json_decode(file_get_contents(__DIR__.'/../../package.json'), true);
     $coreDeps = [];
     foreach (['@emaia/stimulus-dynamic-loader', '@hotwired/stimulus', '@hotwired/turbo'] as $dep) {
@@ -238,7 +239,7 @@ it('does not modify package.json when dependencies already present', function ()
 
     File::put($this->packageJsonPath, $content);
 
-    $this->artisan('hotwire:install --no-interaction')
+    $this->artisan('hotwire:install --core-only --no-interaction')
         ->assertSuccessful();
 
     expect(File::get($this->packageJsonPath))->toBe($content);
@@ -296,8 +297,8 @@ it('skips npm dependencies when --only=css', function () {
 // --- Phase 5: Post-install instructions ---
 
 it('shows post-install instructions with detected package manager', function () {
+    fakePackageInstaller('bun');
     File::put($this->packageJsonPath, json_encode(['name' => 'test'], JSON_PRETTY_PRINT));
-    File::put(base_path('bun.lock'), '');
 
     $this->artisan('hotwire:install --no-interaction')
         ->expectsOutputToContain('bun install')
@@ -320,13 +321,267 @@ it('shows summary of actions taken', function () {
         ->assertSuccessful();
 });
 
-it('points users to discovery and publishing commands', function () {
+it('points users to discovery and customisation commands', function () {
     File::put($this->packageJsonPath, json_encode(['name' => 'test'], JSON_PRETTY_PRINT));
 
     $this->artisan('hotwire:install --no-interaction')
         ->expectsOutputToContain('hotwire:components')
         ->expectsOutputToContain('hotwire:controllers --list')
-        ->expectsOutputToContain('hotwire:check --fix')
-        ->expectsOutputToContain('hotwire:controllers <namespace/name>')
+        ->expectsOutputToContain('hotwire:check')
+        ->expectsOutputToContain('hotwire:controllers <name>')
+        ->expectsOutputToContain('auto-load')
         ->assertSuccessful();
+});
+
+// --- Phase 6: --with-deps / --core-only ---
+
+it('adds only specified controller dependencies with --with-deps=chart', function () {
+    File::put($this->packageJsonPath, json_encode([
+        'name' => 'test',
+        'devDependencies' => new stdClass,
+    ], JSON_PRETTY_PRINT));
+
+    $this->artisan('hotwire:install --with-deps=chart --no-interaction')
+        ->assertSuccessful();
+
+    $json = json_decode(File::get($this->packageJsonPath), true);
+
+    expect($json['devDependencies'])
+        ->toHaveKey('@hotwired/stimulus')
+        ->toHaveKey('echarts')
+        ->not->toHaveKey('embla-carousel')
+        ->not->toHaveKey('leaflet')
+        ->not->toHaveKey('@emaia/sonner');
+});
+
+it('accepts comma-separated controllers in --with-deps', function () {
+    File::put($this->packageJsonPath, json_encode([
+        'name' => 'test',
+        'devDependencies' => new stdClass,
+    ], JSON_PRETTY_PRINT));
+
+    $this->artisan('hotwire:install --with-deps=chart,carousel,map --no-interaction')
+        ->assertSuccessful();
+
+    $json = json_decode(File::get($this->packageJsonPath), true);
+
+    expect($json['devDependencies'])
+        ->toHaveKey('echarts')
+        ->toHaveKey('embla-carousel')
+        ->toHaveKey('leaflet')
+        ->not->toHaveKey('@emaia/sonner');
+});
+
+it('accepts repeated --with-deps flags', function () {
+    File::put($this->packageJsonPath, json_encode([
+        'name' => 'test',
+        'devDependencies' => new stdClass,
+    ], JSON_PRETTY_PRINT));
+
+    $this->artisan('hotwire:install --with-deps=chart --with-deps=carousel --no-interaction')
+        ->assertSuccessful();
+
+    $json = json_decode(File::get($this->packageJsonPath), true);
+
+    expect($json['devDependencies'])
+        ->toHaveKey('echarts')
+        ->toHaveKey('embla-carousel')
+        ->not->toHaveKey('leaflet');
+});
+
+it('installs only core deps with --core-only', function () {
+    File::put($this->packageJsonPath, json_encode([
+        'name' => 'test',
+        'devDependencies' => new stdClass,
+    ], JSON_PRETTY_PRINT));
+
+    $this->artisan('hotwire:install --core-only --no-interaction')
+        ->assertSuccessful();
+
+    $json = json_decode(File::get($this->packageJsonPath), true);
+
+    expect($json['devDependencies'])
+        ->toHaveKey('@hotwired/stimulus')
+        ->toHaveKey('@hotwired/turbo')
+        ->toHaveKey('@emaia/stimulus-dynamic-loader')
+        ->not->toHaveKey('echarts')
+        ->not->toHaveKey('leaflet')
+        ->not->toHaveKey('@emaia/sonner');
+});
+
+it('rejects --core-only combined with --with-deps', function () {
+    File::put($this->packageJsonPath, json_encode(['name' => 'test'], JSON_PRETTY_PRINT));
+
+    $this->artisan('hotwire:install --core-only --with-deps=chart --no-interaction')
+        ->assertFailed();
+});
+
+it('fails with unknown controller name in --with-deps', function () {
+    File::put($this->packageJsonPath, json_encode(['name' => 'test'], JSON_PRETTY_PRINT));
+
+    $this->artisan('hotwire:install --with-deps=nonexistent --no-interaction')
+        ->assertFailed();
+});
+
+// --- Phase 6b: Loader stub generation per mode ---
+
+it('writes a loader stub with no exclusions in default mode', function () {
+    File::put($this->packageJsonPath, json_encode(['name' => 'test'], JSON_PRETTY_PRINT));
+
+    $this->artisan('hotwire:install --no-interaction')
+        ->assertSuccessful();
+
+    $stub = File::get(resource_path('js/controllers/index.js'));
+
+    expect($stub)
+        ->toStartWith('// AUTO-GENERATED')
+        ->not->toContain('"!**/')
+        ->toContain('"../../../vendor/emaia/laravel-hotwire/resources/js/controllers/**/*_controller.js"');
+});
+
+it('writes a loader stub with com-dep exclusions in --core-only mode', function () {
+    File::put($this->packageJsonPath, json_encode(['name' => 'test'], JSON_PRETTY_PRINT));
+
+    $this->artisan('hotwire:install --core-only --no-interaction')
+        ->assertSuccessful();
+
+    $stub = File::get(resource_path('js/controllers/index.js'));
+
+    expect($stub)
+        ->toStartWith('// AUTO-GENERATED')
+        ->toContain('"!**/carousel_controller.js"')
+        ->toContain('"!**/chart_controller.js"')
+        ->toContain('"!**/map_controller.js"')
+        ->not->toContain('"!**/modal_controller.js"')
+        ->not->toContain('"!**/dropdown_controller.js"');
+});
+
+it('writes a loader stub with only non-opted-in com-deps excluded with --with-deps', function () {
+    File::put($this->packageJsonPath, json_encode(['name' => 'test'], JSON_PRETTY_PRINT));
+
+    $this->artisan('hotwire:install --with-deps=carousel,chart --no-interaction')
+        ->assertSuccessful();
+
+    $stub = File::get(resource_path('js/controllers/index.js'));
+
+    expect($stub)
+        ->not->toContain('"!**/carousel_controller.js"')
+        ->not->toContain('"!**/chart_controller.js"')
+        ->toContain('"!**/map_controller.js"')
+        ->toContain('"!**/rich_text_controller.js"');
+});
+
+it('silently regenerates an existing auto-generated stub even without --force', function () {
+    File::put($this->packageJsonPath, json_encode(['name' => 'test'], JSON_PRETTY_PRINT));
+
+    // First install: default mode, no exclusions
+    $this->artisan('hotwire:install --no-interaction')->assertSuccessful();
+
+    // Second install: --core-only — must rewrite the stub silently
+    $this->artisan('hotwire:install --core-only --no-interaction')
+        ->doesntExpectOutputToContain('already exists')
+        ->assertSuccessful();
+
+    $stub = File::get(resource_path('js/controllers/index.js'));
+    expect($stub)->toContain('"!**/chart_controller.js"');
+});
+
+it('preserves a hand-written stub (no marker) unless --force is passed', function () {
+    File::put($this->packageJsonPath, json_encode(['name' => 'test'], JSON_PRETTY_PRINT));
+    $targetPath = resource_path('js/controllers/index.js');
+    File::ensureDirectoryExists(dirname($targetPath));
+    $userContent = "// custom user file, no marker\nconsole.log('hello');\n";
+    File::put($targetPath, $userContent);
+
+    $this->artisan('hotwire:install --no-interaction')
+        ->expectsOutputToContain('already exists')
+        ->assertSuccessful();
+
+    expect(File::get($targetPath))->toBe($userContent);
+});
+
+// --- Phase 6c: Auto-run hotwire:check after install ---
+
+it('skips post-install check in default mode (no exclusions, no drift possible)', function () {
+    File::put($this->packageJsonPath, json_encode(['name' => 'test'], JSON_PRETTY_PRINT));
+
+    $this->artisan('hotwire:install --no-interaction')
+        ->doesntExpectOutputToContain('Verifying view usage')
+        ->assertSuccessful();
+});
+
+it('runs post-install check when --core-only is used', function () {
+    File::put($this->packageJsonPath, json_encode(['name' => 'test'], JSON_PRETTY_PRINT));
+
+    $this->artisan('hotwire:install --core-only --no-interaction')
+        ->expectsOutputToContain('Verifying view usage')
+        ->assertSuccessful();
+});
+
+it('runs post-install check when --with-deps is used', function () {
+    File::put($this->packageJsonPath, json_encode(['name' => 'test'], JSON_PRETTY_PRINT));
+
+    $this->artisan('hotwire:install --with-deps=modal --no-interaction')
+        ->expectsOutputToContain('Verifying view usage')
+        ->assertSuccessful();
+});
+
+// --- Phase 7: package manager install (default) and --skip-install opt-out ---
+
+it('runs package manager install automatically in non-interactive mode by default', function () {
+    $installer = fakePackageInstaller('bun');
+    File::put($this->packageJsonPath, json_encode([
+        'name' => 'test',
+        'devDependencies' => new stdClass,
+    ], JSON_PRETTY_PRINT));
+
+    $this->artisan('hotwire:install --no-interaction')
+        ->assertSuccessful()
+        ->expectsOutputToContain('Running bun install')
+        ->expectsOutputToContain('bun install completed');
+
+    expect($installer->installed)->toBe(['bun']);
+});
+
+it('omits the "Run X install" next-steps line when install ran', function () {
+    fakePackageInstaller('bun');
+    File::put($this->packageJsonPath, json_encode([
+        'name' => 'test',
+        'devDependencies' => new stdClass,
+    ], JSON_PRETTY_PRINT));
+
+    $this->artisan('hotwire:install --no-interaction')
+        ->assertSuccessful()
+        ->doesntExpectOutputToContain('Run `bun install`')
+        ->expectsOutputToContain('Run `bun run dev`');
+});
+
+it('skips package manager install with --skip-install', function () {
+    $installer = fakePackageInstaller('bun');
+    File::put($this->packageJsonPath, json_encode([
+        'name' => 'test',
+        'devDependencies' => new stdClass,
+    ], JSON_PRETTY_PRINT));
+
+    $this->artisan('hotwire:install --no-interaction --skip-install')
+        ->assertSuccessful()
+        ->doesntExpectOutputToContain('Running bun install')
+        ->expectsOutputToContain('Run `bun install`');
+
+    expect($installer->installed)->toBe([]);
+});
+
+it('prompts to run install in interactive mode (default yes)', function () {
+    $installer = fakePackageInstaller('bun');
+    File::put($this->packageJsonPath, json_encode([
+        'name' => 'test',
+        'devDependencies' => new stdClass,
+    ], JSON_PRETTY_PRINT));
+
+    $this->artisan('hotwire:install')
+        ->expectsConfirmation('Run bun install now?', 'yes')
+        ->expectsOutputToContain('bun install completed')
+        ->assertSuccessful();
+
+    expect($installer->installed)->toBe(['bun']);
 });

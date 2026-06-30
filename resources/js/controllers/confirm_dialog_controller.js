@@ -1,7 +1,7 @@
 // @hotwire-package
 import { Controller } from "@hotwired/stimulus";
 
-import { FocusTrap } from "./_focus_trap.js";
+import { createOverlay } from "./_overlay.js";
 
 export default class ConfirmController extends Controller {
     static targets = ["modal", "backdrop", "dialog"];
@@ -24,37 +24,44 @@ export default class ConfirmController extends Controller {
     };
 
     pendingElement = null;
-    triggerElement = null;
     confirmed = false;
-    isOpen = false;
-    focusTrap = null;
+    overlay = null;
+
+    get isOpen() {
+        return this.overlay?.isOpen ?? false;
+    }
 
     connect() {
         this.handleEscapeKey = this.handleEscapeKey.bind(this);
         document.addEventListener("keydown", this.handleEscapeKey, true);
 
-        if (this.hasModalTarget) {
-            this.focusTrap = new FocusTrap(this.modalTarget);
-        }
+        this.overlay = createOverlay(this, {
+            modalTarget: this.modalTarget,
+            backdropTarget: this.backdropTarget,
+            dialogTarget: this.dialogTarget,
+            hiddenClasses: this.hiddenClasses,
+            visibleClasses: this.visibleClasses,
+            backdropHiddenClasses: this.backdropHiddenClasses,
+            backdropVisibleClasses: this.backdropVisibleClasses,
+            dialogHiddenClasses: this.dialogHiddenClasses,
+            dialogVisibleClasses: this.dialogVisibleClasses,
+            lockScrollClasses: this.lockScrollClasses,
+            lockScroll: this.lockScrollValue,
+            openDuration: this.openDurationValue,
+            closeDuration: this.closeDurationValue,
+            closeOnEscape: true,
+            closeOnClickOutside: this.closeOnClickOutsideValue,
+        });
     }
 
     disconnect() {
         document.removeEventListener("keydown", this.handleEscapeKey, true);
-        this.focusTrap?.deactivate();
-
-        if (this.isOpen) {
-            this.#close();
-        }
+        this.overlay?.cleanup();
     }
 
     intercept(event) {
-        if (event.ctrlKey || event.metaKey || event.shiftKey) {
-            return;
-        }
-
-        if (event.button !== undefined && event.button !== 0) {
-            return;
-        }
+        if (event.ctrlKey || event.metaKey || event.shiftKey) return;
+        if (event.button !== undefined && event.button !== 0) return;
 
         if (this.confirmed) {
             this.confirmed = false;
@@ -65,13 +72,12 @@ export default class ConfirmController extends Controller {
         event.stopImmediatePropagation();
 
         this.pendingElement = event.target.closest("a, button") ?? event.target;
-        this.triggerElement = this.pendingElement;
-        this.#open();
+        this.overlay?.open();
     }
 
     confirm() {
         const element = this.pendingElement;
-        this.#close();
+        this.overlay?.close();
 
         setTimeout(() => {
             this.confirmed = true;
@@ -82,7 +88,7 @@ export default class ConfirmController extends Controller {
 
     cancel() {
         this.pendingElement = null;
-        this.#close();
+        this.overlay?.close();
     }
 
     clickOutside(event) {
@@ -90,7 +96,7 @@ export default class ConfirmController extends Controller {
 
         if (
             this.closeOnClickOutsideValue &&
-            this.isOpen &&
+            this.overlay?.isOpen &&
             !this.dialogTarget.contains(event.target) &&
             event.target !== this.dialogTarget
         ) {
@@ -99,60 +105,10 @@ export default class ConfirmController extends Controller {
     }
 
     handleEscapeKey(event) {
-        if (event.key !== "Escape" || !this.isOpen) return;
+        if (event.key !== "Escape" || !this.overlay?.isOpen) return;
 
         event.stopImmediatePropagation();
         event.preventDefault();
         this.cancel();
-    }
-
-    #open() {
-        this.isOpen = true;
-        this.modalTarget.hidden = false;
-
-        if (this.lockScrollValue) {
-            document.body.classList.add(...this.lockScrollClasses);
-        }
-
-        requestAnimationFrame(() => {
-            this.modalTarget.classList.remove(...this.hiddenClasses);
-            this.modalTarget.classList.add(...this.visibleClasses);
-
-            this.backdropTarget.classList.remove(...this.backdropHiddenClasses);
-            this.backdropTarget.classList.add(...this.backdropVisibleClasses);
-
-            this.dialogTarget.classList.remove(...this.dialogHiddenClasses);
-            this.dialogTarget.classList.add(...this.dialogVisibleClasses);
-
-            this.focusTrap?.activate();
-        });
-    }
-
-    #close() {
-        if (!this.isOpen) return;
-
-        this.isOpen = false;
-        this.focusTrap?.deactivate();
-
-        this.modalTarget.classList.remove(...this.visibleClasses);
-        this.modalTarget.classList.add(...this.hiddenClasses);
-
-        this.backdropTarget.classList.remove(...this.backdropVisibleClasses);
-        this.backdropTarget.classList.add(...this.backdropHiddenClasses);
-
-        this.dialogTarget.classList.remove(...this.dialogVisibleClasses);
-        this.dialogTarget.classList.add(...this.dialogHiddenClasses);
-
-        if (this.lockScrollValue) {
-            document.body.classList.remove(...this.lockScrollClasses);
-        }
-
-        if (this.triggerElement && typeof this.triggerElement.focus === "function") {
-            this.triggerElement.focus();
-        }
-
-        setTimeout(() => {
-            this.modalTarget.hidden = true;
-        }, this.closeDurationValue);
     }
 }

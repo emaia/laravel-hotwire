@@ -185,7 +185,7 @@ The cleanest path is to subclass the toolbar and spread the parent's `targets` a
 
 ```js
 // resources/js/controllers/rich_text_table_toolbar_controller.js
-import RichTextToolbarController from "./rich_text_toolbar_controller.js";
+import RichTextToolbarController from "@hotwire/rich_text_toolbar_controller.js";
 
 export default class extends RichTextToolbarController {
     static targets = [...RichTextToolbarController.targets, "table"];
@@ -233,8 +233,8 @@ Pair it with a rich-text subclass that registers the Tiptap extensions:
 
 ```js
 // resources/js/controllers/rich_text_with_tables_controller.js
-import RichTextController from "./rich_text_controller";
-import { defaultExtensions } from "./_rich_text_editor";
+import RichTextController from "@hotwire/rich_text_controller.js";
+import { defaultExtensions } from "@hotwire/_rich_text_editor.js";
 import { TableKit } from "@tiptap/extension-table";
 
 export default class extends RichTextController {

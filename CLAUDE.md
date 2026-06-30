@@ -112,10 +112,12 @@ registered here**, or the commands won't see it.
 ### Pull Requests
 
 - Push feature branch, open PR on GitHub
-- Branch naming: descriptive kebab-case (e.g. `carousel-extras`, `confirm-dialog`)
+- Branch naming: descriptive kebab-case (e.g. `radio-group`, `confirm-dialog`)
 - PR title matches commit subject convention; body summarizes changes
-- Review required; merge manually (do not squash-merge from the CLI)
-- Remote merge (GitHub UI) squashes the branch into a single commit on `main`
+- Review required; merge from the GitHub UI (not the CLI)
+- Remote merge (GitHub UI):
+    - **Default: squash-merge** — for PRs where iterative review/fixup commits should collapse into a single clean commit reflecting the deliverable
+    - **Merge commit (no squash)** — for PRs that bundle multiple isolated changes that each deserve their own commit in history
 - Ask to confirm the message is correct before pushing
 - **PR body template** — `## Summary` (bullet points) + `## Test plan`. The Test plan combines automated checks
   with a manual smoke section covering what tests can't verify (visual, browser-specific behavior, real
@@ -140,18 +142,19 @@ registered here**, or the commands won't see it.
 ### Tag and Release
 
 - Tags are created on `main` after the PR is merged remotely
-- Versioning follows `0.X.Y` semver:
-    - Patch (`0.16.1`): bugfixes
-    - Minor (`0.17.0`): new features
-- Annotated tag: `git tag -a 0.17.0 -m "0.17.0"`
-- Release created via `gh release create 0.17.0 --title "0.17.0" --notes-file /tmp/release-notes.md`
-- Release notes format (following the `0.16.0` template):
+- Versioning follows `X.Y.Z` semver:
+    - Patch (`X.Y.Z+1`): bugfixes
+    - Minor (`X.Y+1.Z`): new features
+- Annotated tag: `git tag -a X.Y.Z -m "X.Y.Z"`
+- Release created via `gh release create X.Y.Z --title "X.Y.Z" --notes-file /tmp/release-notes.md`
+- Release notes format (following the `X.Y.Z` template):
     - Markdown title with feature name (e.g. `## Carousel progress bar and slide counter`)
     - One-sentence summary
     - Section per feature and referer docs for examples
     - `**Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/<prev>...<version>` at the end
 - CHANGELOG.md is updated automatically by the release workflow; do not edit manually
 - Ask to confirm the message is correct before pushing
+
 
 ## Development
 
@@ -215,3 +218,111 @@ JS conventions:
 - JS: `@hotwired/stimulus`, `@hotwired/turbo`, `@emaia/stimulus-dynamic-loader`
 - Optional JS: third-party libs required by specific controllers — the `npm` maps in `src/Registry/catalog.php` are
   the source of truth (don't list them here)
+
+## Docblock convention
+
+**Selective documentation** — docblocks must add information; if they don't, they're noise. Default to skipping; document deliberately.
+
+### Decision tree
+
+```
+1. Is this method part of the public API that app code calls?
+   (Facades, fluent builders, model accessors/scopes, trait methods exposed to consumers,
+    interface contracts, public methods on PHP classes)
+   → YES  → docblock required (single-line summary at minimum)
+   → NO   → step 2
+
+2. Is the purpose non-obvious from name + parameter types + return type?
+   (Cross-class interaction, hidden constraint, unusual side effect, surprising return semantics)
+   → YES  → docblock focused on WHY, not what
+   → NO   → skip — let the code speak
+```
+
+### What to write
+
+- **Imperative mood**, single sentence ending in a period: `Persist the upload and return the new Media.`
+- **Multi-line only** when 2-3 sentences are required to capture a non-obvious constraint or rationale. If you need more, the docblock is masking a design smell — refactor or move the explanation to `docs/*.md`.
+- **WHY over what** when explaining: "Extracted so the per-iteration try/catch covers every step" — not "Encodes and persists a conversion" (that's the name).
+
+### Native types first
+
+Always declare native PHP types on properties, parameters, and return values when possible. Drop redundant `@var` / `@param` / `@return` once the native type carries the contract. Untyped signatures combined with a docblock that names the type are an anti-pattern (the type system can't enforce what the docblock says).
+
+Constructors don't need a return type. PHP's `resource` pseudo-type has no native equivalent — use `@param resource $stream` / `@return resource` there.
+
+### When to add `@param` / `@return` / `@throws`
+
+- **`@param` / `@return`**: only when they carry information **beyond** the native type (`array<string, callable>`, `string[]`, `Collection<int, Media>`, `array{conversion: string, exception: \Throwable}`, semantic constraint like "empty array returns all"). Never add when they merely repeat the type.
+- **`@throws`**: list exceptions that are part of the method's contract (caller is expected to handle them). Skip generic `RuntimeException` of the "if it breaks it broke" variety.
+- **Property `@var`**: only when the native type loses information (`array<int, array{conversion: string, exception: \Throwable}>`, `MediaChannel[]`, `array<string, Collection<int, Media>>`). Plain typed properties don't need it.
+
+### What to always remove
+
+- Auto-generated IDE docblocks: `/** Get the X. */` on `getX()` — pure noise
+- `@author`, `@version`, `@since`, `@package` — git/Composer resolve these
+- Multi-paragraph essays — move to `docs/*.md` and link
+- `@param` / `@return` that just repeat the type-hint
+- Comments inside method bodies explaining WHAT the next line does (rename a variable instead); keep only WHY when non-obvious
+- Stale TODO/FIXME — convert to an issue or delete
+
+## Roadmap
+
+The project roadmap lives in `plan-ui.md` (git-ignored). It defines the release cadence, component inventory, design decisions and
+architectural direction for bringing the package to visual and functional parity with shadcn/ui.
+
+Reference implementations for design decisions are in `_ref/` (Filament, Livewire, shadcn-ui). Consult these when
+the corresponding phase enters active work — not before.
+
+## CSS / Theming (since `0.32.0`)
+
+- **Semantic tokens only.** Component views use `bg-background`, `text-foreground`, `border-border`, etc.
+  Never hardcode raw colors (`bg-white`, `text-gray-700`, `bg-zinc-900`). Tokens are defined in
+  `stubs/resources/css/app.css` via `@theme inline` with OKLCH values for light and dark mode.
+- **Dark mode via `data-theme`** on `<html>`, not `class="dark"`. Default is `:root` (light);
+  `[data-theme="dark"]` activates the dark palette.
+- **Tailwind v4 scanner constraint.** Classes referenced in PHP source files (`src/Components/*.php`,
+  e.g. inside `Variants::make()`) must be **string literals** (`'bg-primary'`, never `"bg-{$color}"`).
+  The scanner is content-type agnostic but does not evaluate expressions — interpolation silently omits
+  the class from the final CSS with no build error. The stub CSS includes a matching `@source` directive:
+  `@source '../../vendor/emaia/laravel-hotwire/src/Components/**/*.php';`.
+- **`Variants` helper.** Use `Support\Variants` when a component has **two or more variant groups** (e.g.
+  `variant × size`) or **compound rules**. For zero or one variant group, stick with `@class([...])`.
+  Variants configuration lives in the Component class (`classNames()` method), not in the Blade view.
+  See `src/Support/Variants.php` for the API.
+- Theming docs for app developers: `docs/theming.md` — token reference, override instructions, colour
+  space notes. Upgrade notes for existing apps: `docs/upgrade.md` (deliverable of `0.32.0`).
+
+## PR Checklist (since `0.32.0`)
+
+Every PR that introduces a new component or controller must include:
+
+- [ ] **Smoke matrix.** Component tested: (a) in isolation, (b) inside a Modal, (c) inside a Dropdown,
+  (d) inside a Turbo Frame. Overlay components additionally tested nested inside each other.
+- [ ] **Listeners and timers** verified cleaned up in `disconnect()` — Turbo morph re-connects
+  controllers; duplicate listeners are a recurring bug source.
+- [ ] **Integration opt-in evaluation.** For each new component, assess whether exposing a prop that
+  activates an existing controller turns a common user setup into a one-liner. Model: Button + `hotkey`
+  (`hotkey="cmd+s"`). Document the decision (adopted or discarded, with rationale) in the PR body.
+
+## New internal helpers (since `0.32.0`)
+
+- `_overlay.js` — shared overlay lifecycle (open/close class toggling, FocusTrap, body scroll lock,
+  outside-click dismiss, Escape key, focus return, configurable durations). Consumed by `modal_controller`,
+  `confirm_dialog_controller` and future Sheet/Drawer/Sidebar controllers. Exports `createOverlay(controller, options)`
+  returning `{ open(), close(), cleanup(), isOpen }`.
+
+## Controller auto-loading (since `0.32.0`)
+
+All package controllers are loaded directly from the vendor directory via `import.meta.glob` in
+`resources/js/controllers/index.js`. No `hotwire:controllers` step is required — controllers
+work out of the box.
+
+The loader index is a static file copied from `stubs/resources/js/controllers/index.js` by
+`hotwire:install`. There is no dynamic generation or version tracking — the stub is the single
+source of truth.
+
+`hotwire:check` verifies npm dependencies (declared in the catalog `npm` key) and reports
+outdated/diverged published controllers. It no longer flags "not published" as a problem since
+controllers auto-load from vendor. `hotwire:controllers` remains available for users who want to
+publish a controller to customize it.
+

@@ -17,7 +17,7 @@ it('emits default stimulus values', function () {
     $view = $this->blade('<x-hwc::flash-container />');
 
     $view->assertSee('data-toaster-position-value="bottom-center"', false);
-    $view->assertSee('data-toaster-theme-value="light"', false);
+    $view->assertSee('data-toaster-theme-value="system"', false);
     $view->assertSee('data-toaster-duration-value="4000"', false);
     $view->assertSee('data-toaster-visible-toasts-value="3"', false);
     $view->assertSee('data-toaster-close-button-value="true"', false);

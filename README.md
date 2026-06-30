@@ -58,42 +58,13 @@ php artisan vendor:publish --tag=hotwire-config
 
 ### Quick Start
 
-The installation command scaffolds the Hotwire setup in your Laravel application — JS entry points, Stimulus loader,
-Turbo imports, and CSS custom variants:
-
 ```bash
 php artisan hotwire:install
 ```
 
-This will:
+This scaffolds the JS/CSS entry points, adds every npm dependency declared by the catalog to your `package.json`, wires the `@hotwire` Vite alias into your `vite.config.{ts,mjs,js}`, generates the controller loader stub, runs your package manager (auto-detected from the lockfile — bun/pnpm/yarn/npm), and verifies your views match the install config. Components work out of the box — no controller publish step required.
 
-1. Copy JS and CSS scaffolding to `resources/`
-2. Add `@hotwired/stimulus`, `@hotwired/turbo` and `@emaia/stimulus-dynamic-loader` to your `package.json`
-3. Show instructions for the next steps
-
-> Only the three core dependencies above are added at installation time. Extra npm packages required by specific
-> components (e.g. `tippy.js`, `@emaia/sonner`) are published on demand by
-> [`hotwire:check`](#verify-your-setup) once you actually use a component that depends on them.
-
-Options:
-
-```bash
-# Overwrite existing files without prompting
-php artisan hotwire:install --force
-
-# Install only JS or CSS scaffolding
-php artisan hotwire:install --only=js
-php artisan hotwire:install --only=css
-```
-
-> If a target file already exists and is identical, it is skipped. If it differs, the command asks for confirmation
-> before overwriting (unless `--force` is used).
-
-After installation, a good next step is:
-
-1. Browse the package docs in the terminal to see what is available
-2. Publish the Stimulus controllers you actually want to use
-3. Run `hotwire:check` to verify controllers and npm dependencies used by your views
+For leaner installs (subset of catalog deps, `--core-only`), CI automation (`--fix --no-interaction`), the auto-generated loader stub, drift detection, extending controllers and the full flag reference, see [**Advanced installation**](docs/installation.md).
 
 ### Explore the Docs
 

@@ -22,6 +22,7 @@ export async function mountController(identifier, Controller, html) {
         root,
         window: testWindow,
         cleanup: async () => {
+            application.unload(identifier);
             application.stop();
             document.body.innerHTML = "";
             await wait(0);
@@ -54,6 +55,7 @@ export async function mountControllers(identifier, Controller, html) {
         ),
         window: testWindow,
         cleanup: async () => {
+            application.unload(identifier);
             application.stop();
             document.body.innerHTML = "";
             await wait(0);
@@ -130,6 +132,9 @@ export async function mountMultipleControllers(controllers, html) {
             return application.getControllerForElementAndIdentifier(element, identifier);
         },
         cleanup: async () => {
+            for (const [identifier] of entries) {
+                application.unload(identifier);
+            }
             application.stop();
             document.body.innerHTML = "";
             await wait(0);

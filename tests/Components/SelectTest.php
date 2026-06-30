@@ -135,7 +135,7 @@ it('renders placeholder option when provided', function () {
 it('does not set disabled on placeholder so it is re-selectable', function () {
     $view = $this->blade('<x-hwc::select name="status" :options="[1 => \'Active\']" placeholder="Choose..." />');
 
-    $view->assertDontSee('disabled', false);
+    $view->assertDontSee('disabled=', false);
 });
 
 it('keeps placeholder selected when options have integer key 0 and nothing is chosen', function () {
@@ -171,7 +171,7 @@ it('uses placeholder text when both nullable and placeholder are provided', func
     $view = $this->blade('<x-hwc::select name="status" :options="[1 => \'Active\']" :nullable="true" placeholder="Choose..." />');
 
     $view->assertSee('Choose...');
-    $view->assertDontSee('disabled', false);
+    $view->assertDontSee('disabled=', false);
 });
 
 // --- Error key + ARIA ---
@@ -217,7 +217,7 @@ it('sets aria-required when required attribute is present', function () {
 it('merges custom class on select element', function () {
     $view = $this->blade('<x-hwc::select name="status" :options="[1 => \'Active\']" class="w-full" />');
 
-    $view->assertSee('class="w-full"', false);
+    $view->assertSee('w-full', false);
 });
 
 // --- Pass-through ---

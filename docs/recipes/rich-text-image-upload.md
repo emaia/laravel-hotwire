@@ -46,8 +46,8 @@ bun add @tiptap/extension-image
 
 ```js
 // resources/js/controllers/rich_text_controller.js (or a subclass)
-import RichTextController from "./rich_text_controller";
-import { defaultExtensions } from "./_rich_text_editor";
+import RichTextController from "@hotwire/rich_text_controller.js";
+import { defaultExtensions } from "@hotwire/_rich_text_editor.js";
 import Image from "@tiptap/extension-image";
 
 export default class extends RichTextController {
@@ -107,9 +107,9 @@ controller dispatches the event through `handleImageUpload(file)` — override i
 directly:
 
 ```js
-// resources/js/controllers/rich_text_controller.js (after publishing)
+// resources/js/controllers/rich_text_controller.js (forked via `hotwire:controllers rich-text`)
 import { Controller } from "@hotwired/stimulus";
-import { RichTextEditor, defaultExtensions } from "./_rich_text_editor.js";
+import { RichTextEditor, defaultExtensions } from "@hotwire/_rich_text_editor.js";
 import Image from "@tiptap/extension-image";
 
 export default class extends Controller {

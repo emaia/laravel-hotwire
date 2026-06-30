@@ -40,7 +40,7 @@
             data-transition-leave-to="opacity-0 scale-95"
         @endif
         @class([
-            'absolute z-10 mt-2 origin-top rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5',
+            'absolute z-50 mt-2 min-w-[8rem] origin-top overflow-x-hidden overflow-y-auto rounded-md border bg-popover p-1 text-popover-foreground shadow-md',
             $width,
             'start-0' => $align === 'start',
             'end-0' => $align === 'end',

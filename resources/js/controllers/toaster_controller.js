@@ -11,7 +11,7 @@ export default class extends Controller {
         invert: { type: Boolean, default: false },
         position: { type: String, default: "bottom-center" },
         richColors: { type: Boolean, default: true },
-        theme: { type: String, default: "light" },
+        theme: { type: String, default: "system" },
         visibleToasts: { type: Number, default: 3 },
         gap: { type: Number, default: 0 },
         hotkey: { type: String, default: "" },
@@ -24,17 +24,50 @@ export default class extends Controller {
         swipeDirections: { type: String, default: "" },
     };
 
+    #themeObserver;
+
     connect() {
         if (window.toaster) return;
 
         window.toaster = createToaster(this.#buildOptions());
+        this.#setupThemeObserver();
     }
 
     disconnect() {
+        this.#themeObserver?.disconnect();
+
         if (this.autoDisconnectValue && window.toaster) {
             window.toaster.destroy();
             window.toaster = null;
         }
+    }
+
+    #getSystemTheme() {
+        return window.matchMedia("(prefers-color-scheme: dark)").matches
+            ? "dark"
+            : "light";
+    }
+
+    #setupThemeObserver() {
+        this.#themeObserver = new MutationObserver(() => {
+            if (!window.toaster) return;
+
+            const htmlTheme = document.documentElement.getAttribute("data-theme");
+            const newTheme = htmlTheme === "dark" || htmlTheme === "light"
+                ? htmlTheme
+                : this.#getSystemTheme();
+
+            window.toaster.actualTheme = newTheme;
+
+            if (typeof window.toaster.updateThemeAttribute === "function") {
+                window.toaster.updateThemeAttribute();
+            }
+        });
+
+        this.#themeObserver.observe(document.documentElement, {
+            attributes: true,
+            attributeFilter: ["data-theme"],
+        });
     }
 
     #buildOptions() {
@@ -49,6 +82,13 @@ export default class extends Controller {
             theme: this.themeValue,
             visibleToasts: this.visibleToastsValue,
         };
+
+        if (options.theme === "system") {
+            const htmlTheme = document.documentElement.getAttribute("data-theme");
+            options.theme = htmlTheme === "dark" || htmlTheme === "light"
+                ? htmlTheme
+                : this.#getSystemTheme();
+        }
 
         if (this.hasGapValue && this.gapValue > 0) {
             options.gap = this.gapValue;

@@ -4,7 +4,7 @@
     $required = $required ?? null;
 @endphp
 
-<div {{ $attributes->class(['hwc-field', $class])->only('class') }}>
+<div {{ $attributes->class(['flex w-full flex-col gap-1.5 group/field', 'hwc-field', $class])->only('class') }}>
     @if ($label !== null && $label !== '')
         <x-hwc::label :required-label="$requiredLabel">{{ $label }}</x-hwc::label>
     @endif

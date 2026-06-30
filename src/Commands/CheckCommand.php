@@ -5,6 +5,7 @@ namespace Emaia\LaravelHotwire\Commands;
 use Emaia\LaravelHotwire\Registry\ControllerDefinition;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ControllerImports;
+use Emaia\LaravelHotwire\Support\LoaderStub;
 use Emaia\LaravelHotwire\Support\PackageInstaller;
 use Emaia\LaravelHotwire\Support\PackageMarker;
 use Illuminate\Console\Command;
@@ -20,8 +21,8 @@ class CheckCommand extends Command
 {
     public $signature = 'hotwire:check
                         {--path=* : Paths to scan for blade files (default: resources/views)}
-                        {--fix   : Publish missing/outdated controllers and add missing npm deps without prompting}
-                        {--install : Run package manager install after adding missing npm deps}';
+                        {--fix   : Apply all fixes (publish controllers, regenerate loader stub, add missing npm deps) without prompting}
+                        {--skip-install : Do not run the package manager (bun/npm/pnpm/yarn) install after --fix adds new deps}';
 
     public $description = 'Check that Stimulus controllers used by your views (via components or directly) are published';
 
@@ -86,31 +87,34 @@ class CheckCommand extends Command
 
         $required = $this->collectRequiredDependencies($controllers);
         $missingDeps = $this->reportDependencies($required);
+        $excludedFromStub = $this->detectStubExclusions($controllers, $registry);
 
         $this->line('');
 
         $hasControllerIssues = ! empty($issues);
         $hasMissingDeps = ! empty($missingDeps);
+        $hasStubDrift = ! empty($excludedFromStub);
         $hasProblemLines = ! empty($this->problemLines);
 
-        if (! $hasControllerIssues && ! $hasMissingDeps && ! $hasProblemLines) {
+        if (! $hasControllerIssues && ! $hasMissingDeps && ! $hasStubDrift && ! $hasProblemLines) {
             info('All controllers up to date.');
 
             return self::SUCCESS;
         }
 
         $this->printProblemLines();
-        $this->printIssueSummary($issues, $missingDeps);
+        $this->printIssueSummary($issues, $missingDeps, $excludedFromStub);
 
         // Only user-owned divergences are present — nothing for --fix to do.
         // Report visibility but keep the exit code green (e.g. CI stays happy).
-        if (! $hasControllerIssues && ! $hasMissingDeps) {
+        if (! $hasControllerIssues && ! $hasMissingDeps && ! $hasStubDrift) {
             return self::SUCCESS;
         }
 
         if ($this->shouldFix()) {
             $this->publishIssues($issues);
             $depsAdded = $this->writeMissingDependencies($missingDeps);
+            $this->regenerateLoaderStub($excludedFromStub, $registry);
 
             if ($depsAdded > 0) {
                 if ($this->shouldInstallDependencies()) {
@@ -125,6 +129,80 @@ class CheckCommand extends Command
         }
 
         return self::FAILURE;
+    }
+
+    /**
+     * Identify com-dep controllers used in views but excluded from the
+     * auto-generated loader stub. Returns identifiers requiring an --fix
+     * regeneration. Skips silently when the user stub is missing or
+     * hand-written (no marker).
+     *
+     * @param  array<string, ControllerDefinition>  $usedControllers
+     * @return string[]
+     */
+    private function detectStubExclusions(array $usedControllers, HotwireRegistry $registry): array
+    {
+        $stubPath = resource_path('js/controllers/index.js');
+
+        if (! $this->files->exists($stubPath)) {
+            return [];
+        }
+
+        $included = LoaderStub::includedComDepControllers($this->files->get($stubPath), $registry);
+
+        if ($included === null) {
+            return [];
+        }
+
+        $missing = [];
+
+        foreach ($usedControllers as $identifier => $controller) {
+            if (empty($controller->npm)) {
+                continue;
+            }
+            if (in_array($identifier, $included, true)) {
+                continue;
+            }
+            $missing[] = $identifier;
+        }
+
+        sort($missing);
+
+        foreach ($missing as $identifier) {
+            $this->problemLines[] = [
+                'key' => $identifier,
+                'line' => "  <error>✗</error>  $identifier  excluded from loader stub  <fg=gray>(used in views; re-run install with --with-deps including $identifier, or `hotwire:check --fix`)</>",
+            ];
+        }
+
+        return $missing;
+    }
+
+    /**
+     * Regenerate the loader stub including every com-dep controller that
+     * survived stub-drift detection plus those already included.
+     *
+     * @param  string[]  $excludedFromStub
+     */
+    private function regenerateLoaderStub(array $excludedFromStub, HotwireRegistry $registry): void
+    {
+        if ($excludedFromStub === []) {
+            return;
+        }
+
+        $stubPath = resource_path('js/controllers/index.js');
+
+        if (! $this->files->exists($stubPath)) {
+            return;
+        }
+
+        $existing = LoaderStub::includedComDepControllers($this->files->get($stubPath), $registry) ?? [];
+        $merged = array_values(array_unique(array_merge($existing, $excludedFromStub)));
+        sort($merged);
+
+        $this->files->put($stubPath, LoaderStub::generate($registry, $merged));
+
+        info('Regenerated resources/js/controllers/index.js to include: '.implode(', ', $excludedFromStub));
     }
 
     /** @return string[] */
@@ -361,7 +439,7 @@ class CheckCommand extends Command
 
         $line = "  <$color>$symbol</$color>  $controller->identifier  $status  <fg=gray>(used by $origin)</>";
 
-        if ($status === 'up to date') {
+        if ($status === 'up to date' || $status === 'auto-loaded from vendor') {
             if ($origin === 'standalone') {
                 $this->okStandaloneLines[] = $line;
             } else {
@@ -401,6 +479,14 @@ class CheckCommand extends Command
         array &$issues,
         array &$seenDeps,
     ): void {
+        $controllerTarget = $controller->relativeDir() === ''
+            ? "$targetBase/{$controller->filename()}"
+            : "$targetBase/{$controller->relativeDir()}/{$controller->filename()}";
+
+        if (! $this->files->exists($controllerTarget)) {
+            return;
+        }
+
         $deps = $this->imports->sharedDependencies($sourceFile, $controllersBase);
         usort($deps, fn (string $a, string $b) => strcmp(basename($a), basename($b)));
 
@@ -413,11 +499,11 @@ class CheckCommand extends Command
             $seenDeps[$depTarget] = true;
 
             $name = basename($depSource);
-            [$status, $symbol, $color] = $this->resolveStatus($depTarget, $depSource);
+            [$status, $symbol, $color] = $this->resolveStatus($depTarget, $depSource, true);
 
             $line = "  <$color>$symbol</$color>  $name  $status  <fg=gray>(required by $controller->identifier)</>";
 
-            if ($status === 'up to date') {
+            if ($status === 'up to date' || $status === 'auto-loaded from vendor') {
                 $this->okHelperLines[] = ['key' => $name, 'line' => $line];
             } else {
                 $this->problemLines[] = ['key' => $name, 'line' => $line];
@@ -434,10 +520,12 @@ class CheckCommand extends Command
     }
 
     /** @return array{string, string, string} [status, symbol, color] */
-    private function resolveStatus(string $targetFile, string $sourceFile): array
+    private function resolveStatus(string $targetFile, string $sourceFile, bool $isRequired = false): array
     {
         if (! $this->files->exists($targetFile)) {
-            return ['not published', '✗', 'error'];
+            return $isRequired
+                ? ['not published', '✗', 'error']
+                : ['auto-loaded from vendor', '✓', 'info'];
         }
 
         if ($this->files->exists($sourceFile) && $this->files->hash($sourceFile) !== $this->files->hash($targetFile)) {
@@ -570,7 +658,10 @@ class CheckCommand extends Command
 
         usort($this->problemLines, fn (array $a, array $b) => strcmp($a['key'], $b['key']));
 
-        $this->line('<options=bold>Needs attention:</>');
+        $count = count($this->problemLines);
+        $word = $count === 1 ? 'issue' : 'issues';
+
+        $this->line("<options=bold>Needs attention ($count $word):</>");
         foreach ($this->problemLines as $entry) {
             $this->line($entry['line']);
         }
@@ -580,8 +671,9 @@ class CheckCommand extends Command
     /**
      * @param  array<int, array{identifier: string, source_file: string, target_file: string}>  $issues
      * @param  array<string, string>  $missingDeps
+     * @param  string[]  $excludedFromStub
      */
-    private function printIssueSummary(array $issues, array $missingDeps): void
+    private function printIssueSummary(array $issues, array $missingDeps, array $excludedFromStub = []): void
     {
         if (! empty($issues)) {
             $count = count($issues);
@@ -591,6 +683,12 @@ class CheckCommand extends Command
         if (! empty($missingDeps)) {
             $count = count($missingDeps);
             $this->line("<comment>$count npm dependency(ies) missing from package.json.</comment>");
+        }
+
+        if (! empty($excludedFromStub)) {
+            $count = count($excludedFromStub);
+            $this->line("<comment>$count controller(s) used in views but excluded from controllers/index.js</comment>");
+            $this->line('<comment>artisan hotwire:check --fix will regenerate.</comment>');
         }
 
         $this->line('');
@@ -606,7 +704,7 @@ class CheckCommand extends Command
             return false;
         }
 
-        return confirm('Publish missing/outdated controllers and add missing npm deps?');
+        return confirm('Apply --fix now? (publishes missing/outdated controllers, regenerates the loader stub, adds missing npm deps)', default: true);
     }
 
     /** @param array<int, array{identifier: string, source_file: string, target_file: string}> $issues */
@@ -642,17 +740,17 @@ class CheckCommand extends Command
 
     private function shouldInstallDependencies(): bool
     {
-        if ($this->option('install')) {
-            return true;
+        if ($this->option('skip-install')) {
+            return false;
         }
 
         if (! $this->input->isInteractive()) {
-            return false;
+            return true;
         }
 
         $manager = $this->packageInstaller->detect($this->files);
 
-        return confirm("Run $manager install now?");
+        return confirm("Run $manager install now?", default: true);
     }
 
     private function installDependencies(): int

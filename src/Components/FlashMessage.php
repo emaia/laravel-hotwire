@@ -16,6 +16,7 @@ class FlashMessage extends Component
         public ?string $description = null,
         public ?string $type = null,
         public ?string $position = null,
+        public ?string $className = null,
     ) {
         $sessionType = match (true) {
             Session::has('success') => 'success',

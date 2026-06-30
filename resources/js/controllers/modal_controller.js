@@ -1,7 +1,7 @@
 // @hotwire-package
 import { Controller } from "@hotwired/stimulus";
 
-import { FocusTrap } from "./_focus_trap.js";
+import { createOverlay } from "./_overlay.js";
 
 export default class ModalController extends Controller {
     static targets = ["modal", "backdrop", "dialog", "dynamicContent", "loadingTemplate"];
@@ -26,20 +26,114 @@ export default class ModalController extends Controller {
     };
 
     observer = null;
-    focusTrap = null;
-    isOpening = false;
-    isClosing = false;
-    triggerElement = null;
     lastCloseTime = 0;
     contentState = "";
     dismissedWhileLoading = false;
     lastClickedLink = null;
     pendingEmptyStreamRender = null;
+    overlay = null;
 
     get isOpen() {
-        if (!this.hasModalTarget) return false;
+        return this.overlay?.isOpen ?? false;
+    }
 
-        return this.modalTarget.getAttribute("data-open") === "true";
+    connect() {
+        this.overlay = createOverlay(this, {
+            modalTarget: this.modalTarget,
+            backdropTarget: this.backdropTarget,
+            dialogTarget: this.dialogTarget,
+            hiddenClasses: this.hiddenClasses,
+            visibleClasses: this.visibleClasses,
+            backdropHiddenClasses: this.backdropHiddenClasses,
+            backdropVisibleClasses: this.backdropVisibleClasses,
+            dialogHiddenClasses: this.dialogHiddenClasses,
+            dialogVisibleClasses: this.dialogVisibleClasses,
+            lockScrollClasses: this.lockScrollClasses,
+            lockScroll: this.lockScrollValue,
+            openDuration: this.openDurationValue,
+            closeDuration: this.closeDurationValue,
+            closeOnEscape: this.closeOnEscapeValue,
+            closeOnClickOutside: this.closeOnClickOutsideValue,
+            onOpen: () => {
+                this.#dispatchEvent("modal:opened");
+            },
+            onClose: () => {
+                const pending = this.pendingEmptyStreamRender;
+                this.pendingEmptyStreamRender = null;
+                this.#dispatchEvent("modal:closed");
+                pending?.();
+                this.clearContent();
+            },
+            getTriggerElement: () => this.triggerElement,
+            isClickInsideCheck: (event) => this.#isClickInsideModal(event),
+        });
+
+        this.#initializeContentObserver();
+
+        document.addEventListener("click", this.trackClickedLink, true);
+        document.addEventListener("turbo:before-fetch-request", this.handleBeforeFetchRequest);
+        document.addEventListener("turbo:before-stream-render", this.handleBeforeStreamRender);
+
+        if (this.modalTarget.getAttribute("data-open") === "true") {
+            this.overlay.setOpen();
+        }
+    }
+
+    disconnect() {
+        if (this.observer) {
+            this.observer.disconnect();
+            this.observer = null;
+        }
+
+        document.removeEventListener("click", this.trackClickedLink, true);
+        document.removeEventListener("turbo:before-fetch-request", this.handleBeforeFetchRequest);
+        document.removeEventListener("turbo:before-stream-render", this.handleBeforeStreamRender);
+
+        this.overlay?.cleanup();
+    }
+
+    open(event) {
+        if (event && (event.ctrlKey || event.metaKey || event.shiftKey)) return;
+        if (event && event.button !== undefined && event.button !== 0) return;
+
+        const currentTime = Date.now();
+        const clickedElement = event?.target;
+
+        if (clickedElement === this.triggerElement && currentTime - this.lastCloseTime < this.preventReopenDelayValue) {
+            return;
+        }
+
+        if (this.overlay?.isOpening || this.overlay?.isClosing || this.isOpen) return;
+
+        this.triggerElement = event?.target || document.activeElement;
+        this.overlay?.open();
+    }
+
+    close() {
+        if (!this.overlay?.isOpen) return;
+
+        this.lastCloseTime = Date.now();
+        this.dismissedWhileLoading = true;
+        this.overlay?.close();
+    }
+
+    clearContent() {
+        if (this.hasDynamicContentTarget) {
+            this.dynamicContentTarget.innerHTML = "";
+            this.contentState = "";
+        }
+    }
+
+    // --- Modal-specific helpers ---
+
+    clickOutside(event) {
+        if (this.closeOnClickOutsideValue && this.isOpen) {
+            if (event.target !== this.dialogTarget
+                && !this.#isClickInsideModal(event)
+                && !this.#isClickOnModalRelatedElement(event.target)) {
+                this.close();
+            }
+        }
     }
 
     trackClickedLink = (event) => {
@@ -59,146 +153,6 @@ export default class ModalController extends Controller {
         this.lastClickedLink = link.hasAttribute("data-loading-template") ? link : null;
     };
 
-    connect() {
-        this.#initializeContentObserver();
-
-        if (this.hasModalTarget) {
-            this.focusTrap = new FocusTrap(this.modalTarget);
-        }
-
-        this.handleEscapeKey = this.handleEscapeKey.bind(this);
-        document.addEventListener("keydown", this.handleEscapeKey);
-        document.addEventListener("click", this.trackClickedLink, true);
-        document.addEventListener("turbo:before-fetch-request", this.handleBeforeFetchRequest);
-        document.addEventListener("turbo:before-stream-render", this.handleBeforeStreamRender);
-
-        if (this.isOpen) {
-            this.lockScrollClasses.forEach((cls) => document.body.classList.toggle(cls, this.lockScrollValue));
-        }
-    }
-
-    disconnect() {
-        this.#cleanupResources();
-    }
-
-    open(event) {
-        if (event && (event.ctrlKey || event.metaKey || event.shiftKey)) {
-            return;
-        }
-
-        if (event && event.button !== undefined && event.button !== 0) {
-            return;
-        }
-
-        const currentTime = Date.now();
-        const clickedElement = event?.target;
-
-        if (clickedElement === this.triggerElement && currentTime - this.lastCloseTime < this.preventReopenDelayValue) {
-            return;
-        }
-
-        if (this.isOpening || this.isClosing || this.isOpen) {
-            return;
-        }
-
-        this.isOpening = true;
-
-        this.triggerElement = event?.target || document.activeElement;
-
-        this.modalTarget.hidden = false;
-        this.modalTarget.setAttribute("data-open", "true");
-
-        if (this.lockScrollValue) {
-            document.body.classList.add(...this.lockScrollClasses);
-        }
-
-        requestAnimationFrame(() => {
-            this.modalTarget.classList.remove(...this.hiddenClasses);
-            this.modalTarget.classList.add(...this.visibleClasses);
-
-            this.backdropTarget.classList.remove(...this.backdropHiddenClasses);
-            this.backdropTarget.classList.add(...this.backdropVisibleClasses);
-
-            this.dialogTarget.classList.remove(...this.dialogHiddenClasses);
-            this.dialogTarget.classList.add(...this.dialogVisibleClasses);
-
-            this.focusTrap?.activate();
-
-            setTimeout(() => {
-                this.isOpening = false;
-
-                this.#dispatchEvent("modal:opened");
-            }, this.openDurationValue);
-        });
-    }
-
-    close() {
-        if (this.isClosing || !this.isOpen) {
-            return;
-        }
-
-        this.lastCloseTime = Date.now();
-        this.isClosing = true;
-        this.dismissedWhileLoading = true;
-
-        this.focusTrap?.deactivate();
-
-        this.modalTarget.setAttribute("data-open", "false");
-        this.modalTarget.classList.remove(...this.visibleClasses);
-        this.modalTarget.classList.add(...this.hiddenClasses);
-
-        this.backdropTarget.classList.remove(...this.backdropVisibleClasses);
-        this.backdropTarget.classList.add(...this.backdropHiddenClasses);
-
-        this.dialogTarget.classList.remove(...this.dialogVisibleClasses);
-        this.dialogTarget.classList.add(...this.dialogHiddenClasses);
-
-        setTimeout(() => {
-            this.modalTarget.hidden = true;
-            this.isClosing = false;
-
-            const pendingEmptyStreamRender = this.pendingEmptyStreamRender;
-            this.pendingEmptyStreamRender = null;
-
-            this.#dispatchEvent("modal:closed");
-            pendingEmptyStreamRender?.();
-            this.clearContent();
-        }, this.closeDurationValue);
-
-        if (this.lockScrollValue) {
-            document.body.classList.remove(...this.lockScrollClasses);
-        }
-
-        if (this.triggerElement && !this.triggerElement.disabled && typeof this.triggerElement.focus === "function") {
-            this.triggerElement.focus();
-        }
-    }
-
-    clearContent() {
-        if (this.hasDynamicContentTarget) {
-            this.dynamicContentTarget.innerHTML = "";
-            this.contentState = "";
-        }
-    }
-
-    clickOutside(event) {
-        if (
-            this.closeOnClickOutsideValue &&
-            this.isOpen &&
-            event.target !== this.dialogTarget &&
-            !this.#isClickInside(event, this.dialogTarget) &&
-            !this.#isClickOnModalRelatedElement(event.target)
-        ) {
-            this.close();
-        }
-    }
-
-    handleEscapeKey(event) {
-        if (this.closeOnEscapeValue && event.key === "Escape" && this.isOpen) {
-            this.close();
-        }
-    }
-
     handleBeforeFetchRequest = (event) => {
         if (!this.hasDynamicContentTarget) return;
         if (event.target !== this.dynamicContentTarget) return;
@@ -211,6 +165,30 @@ export default class ModalController extends Controller {
             this.dynamicContentTarget.innerHTML = templateHtml;
         }
     };
+
+    handleBeforeStreamRender = (event) => {
+        const stream = event.target;
+
+        if (!this.#isEmptyStreamForModalCloseTarget(stream) || (!this.isOpen && !this.overlay?.isClosing)) {
+            return;
+        }
+
+        event.preventDefault();
+        this.pendingEmptyStreamRender = () => this.#renderStream(event);
+
+        if (this.overlay?.isClosing) return;
+
+        this.close();
+    };
+
+    #dispatchEvent(name) {
+        this.element.dispatchEvent(
+            new CustomEvent(name, {
+                bubbles: true,
+                detail: { controller: this },
+            }),
+        );
+    }
 
     #resolveLoadingTemplate() {
         const trigger = this.#findTriggerWithTemplate();
@@ -229,99 +207,52 @@ export default class ModalController extends Controller {
     }
 
     #findTriggerWithTemplate() {
-        if (this.lastClickedLink) return this.lastClickedLink;
-
-        return null;
-    }
-
-    #dispatchEvent(name) {
-        this.element.dispatchEvent(
-            new CustomEvent(name, {
-                bubbles: true,
-                detail: { controller: this },
-            }),
-        );
+        return this.lastClickedLink ?? null;
     }
 
     #getContentHash() {
         if (!this.hasDynamicContentTarget) return "";
         const content = this.dynamicContentTarget.innerHTML.trim();
-        const contentLength = content.length;
-        if (contentLength === 0) return "";
-
-        const prefix = content.substring(0, Math.min(20, contentLength));
-        const suffix = contentLength > 20 ? content.substring(contentLength - 20) : "";
-        return `${contentLength}:${prefix}:${suffix}`;
+        const len = content.length;
+        if (len === 0) return "";
+        const prefix = content.substring(0, Math.min(20, len));
+        const suffix = len > 20 ? content.substring(len - 20) : "";
+        return `${len}:${prefix}:${suffix}`;
     }
 
     #initializeContentObserver() {
-        if (this.hasDynamicContentTarget) {
-            this.contentState = this.#getContentHash();
+        if (!this.hasDynamicContentTarget) return;
 
-            this.observer = new MutationObserver(() => {
-                if (!this.hasDynamicContentTarget) return;
+        this.contentState = this.#getContentHash();
 
-                const currentHash = this.#getContentHash();
-                const hasContent = currentHash.length > 0;
-                const contentChanged = currentHash !== this.contentState;
+        this.observer = new MutationObserver(() => {
+            if (!this.hasDynamicContentTarget) return;
 
-                if (hasContent && contentChanged && !this.isOpen && !this.isOpening && !this.dismissedWhileLoading) {
-                    this.contentState = currentHash;
-                    this.open();
-                } else if (!hasContent && this.isOpen && !this.isClosing) {
-                    this.contentState = currentHash;
-                    this.close();
-                } else if (contentChanged) {
-                    this.contentState = currentHash;
-                }
-            });
+            const currentHash = this.#getContentHash();
+            const hasContent = currentHash.length > 0;
+            const contentChanged = currentHash !== this.contentState;
 
-            this.observer.observe(this.dynamicContentTarget, {
-                childList: true,
-                characterData: true,
-                subtree: true,
-            });
-        }
+            if (hasContent && contentChanged && !this.isOpen && !this.overlay?.isOpening && !this.dismissedWhileLoading) {
+                this.contentState = currentHash;
+                this.open();
+            } else if (!hasContent && this.isOpen && !this.overlay?.isClosing) {
+                this.contentState = currentHash;
+                this.close();
+            } else if (contentChanged) {
+                this.contentState = currentHash;
+            }
+        });
+
+        this.observer.observe(this.dynamicContentTarget, {
+            childList: true,
+            characterData: true,
+            subtree: true,
+        });
     }
 
-    #cleanupResources() {
-        if (this.observer) {
-            this.observer.disconnect();
-            this.observer = null;
-        }
-
-        if (this.isOpen && !this.isClosing) {
-            this.close();
-        }
-
-        this.focusTrap?.deactivate();
-        document.removeEventListener("keydown", this.handleEscapeKey);
-        document.removeEventListener("click", this.trackClickedLink, true);
-        document.removeEventListener("turbo:before-fetch-request", this.handleBeforeFetchRequest);
-        document.removeEventListener("turbo:before-stream-render", this.handleBeforeStreamRender);
-    }
-
-    handleBeforeStreamRender = (event) => {
-        const stream = event.target;
-
-        if (!this.#isEmptyStreamForModalCloseTarget(stream) || (!this.isOpen && !this.isClosing)) {
-            return;
-        }
-
-        event.preventDefault();
-        this.pendingEmptyStreamRender = () => this.#renderStream(event);
-
-        if (this.isClosing) {
-            return;
-        }
-
-        this.close();
-    };
-
-    #isClickInside(event, element) {
-        if (!element) return false;
-
-        const rect = element.getBoundingClientRect();
+    #isClickInsideModal(event) {
+        const rect = this.dialogTarget?.getBoundingClientRect();
+        if (!rect) return false;
         return (
             rect.top <= event.clientY &&
             event.clientY <= rect.bottom &&
@@ -333,20 +264,14 @@ export default class ModalController extends Controller {
     #isClickOnModalRelatedElement(target) {
         if (!target) return false;
 
-        if (this.dialogTarget.contains(target)) {
-            return true;
-        }
+        if (this.dialogTarget.contains(target)) return true;
 
         const selectElement = target.closest("select");
-        if (selectElement && this.dialogTarget.contains(selectElement)) {
-            return true;
-        }
+        if (selectElement && this.dialogTarget.contains(selectElement)) return true;
 
         if (target.tagName === "OPTION") {
             const selectParent = target.parentElement;
-            if (selectParent && this.dialogTarget.contains(selectParent)) {
-                return true;
-            }
+            if (selectParent && this.dialogTarget.contains(selectParent)) return true;
         }
 
         return !!target.closest("[data-modal-ignore]");
@@ -358,9 +283,7 @@ export default class ModalController extends Controller {
         const action = stream.getAttribute("action");
         const target = stream.getAttribute("target");
 
-        if (!["update", "replace"].includes(action) || !this.#isModalCloseTarget(target)) {
-            return false;
-        }
+        if (!["update", "replace"].includes(action) || !this.#isModalCloseTarget(target)) return false;
 
         const template = stream.querySelector("template");
         if (!template) return true;
@@ -371,7 +294,6 @@ export default class ModalController extends Controller {
     #isModalCloseTarget(target) {
         if (!target) return false;
         if (this.element.id && target === this.element.id) return true;
-
         return this.hasDynamicContentTarget && this.dynamicContentTarget.id && target === this.dynamicContentTarget.id;
     }
 
@@ -380,7 +302,6 @@ export default class ModalController extends Controller {
             event.detail.render(event.target);
             return;
         }
-
         event.target.performAction?.();
     }
 }

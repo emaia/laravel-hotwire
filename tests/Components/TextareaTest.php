@@ -226,7 +226,7 @@ it('combines auto-resize with counter correctly', function () {
 it('merges class on textarea element', function () {
     $view = $this->blade('<x-hwc::textarea name="bio" class="w-full" />');
 
-    $view->assertSee('class="w-full"', false);
+    $view->assertSee('w-full', false);
 });
 
 it('merges wrapper-class on wrapper when present', function () {

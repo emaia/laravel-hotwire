@@ -16,7 +16,11 @@
         <x-hwc::label class="{{ $labelClass }}">
             <input
                 type="checkbox"
-                @class(['hwc-input', $class => filled($class)])
+                @class([
+                    'hwc-input',
+                    'size-4 shrink-0 accent-primary outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40',
+                    $class => filled($class),
+                ])
                 data-checkbox-select-all-target="checkboxAll"
                 @if ($selectAllId) id="{{ $selectAllId }}" @endif
                 @if ($errorId) aria-describedby="{{ $errorId }}" @endif
@@ -33,7 +37,11 @@
         <x-hwc::label class="{{ $labelClass }}">
             <input
                 type="checkbox"
-                @class(['hwc-input', $class => filled($class)])
+                @class([
+                    'hwc-input',
+                    'size-4 shrink-0 accent-primary outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40',
+                    $class => filled($class),
+                ])
                 @if ($name) name="{{ $name }}" @endif
                 value="{{ $value }}"
                 @if ($resolvedId) id="{{ $resolvedId }}" @endif

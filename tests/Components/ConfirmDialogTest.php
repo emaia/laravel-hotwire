@@ -67,20 +67,20 @@ it('applies custom confirm class', function () {
 it('uses default red confirm class when confirm-class is empty', function () {
     $view = $this->blade('<x-hwc::confirm-dialog title="Delete?"><button>x</button></x-hwc::confirm-dialog>');
 
-    $view->assertSee('bg-red-600', false);
+    $view->assertSee('bg-destructive', false);
 });
 
 it('applies custom cancel class', function () {
     $view = $this->blade('<x-hwc::confirm-dialog title="Delete?" cancel-class="bg-gray-100 text-gray-900"><button>x</button></x-hwc::confirm-dialog>');
 
     $view->assertSee('bg-gray-100 text-gray-900', false);
-    $view->assertDontSee('border-gray-300', false);
+    $view->assertDontSee('text-secondary-foreground hover:bg-accent', false);
 });
 
 it('uses default cancel class when cancel-class is empty', function () {
     $view = $this->blade('<x-hwc::confirm-dialog title="Delete?"><button>x</button></x-hwc::confirm-dialog>');
 
-    $view->assertSee('border-gray-300', false);
+    $view->assertSee('border-border', false);
 });
 
 it('renders default stimulus values on the root', function () {

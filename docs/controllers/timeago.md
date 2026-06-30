@@ -67,7 +67,7 @@ The text is recalculated every 60 seconds without a page reload.
 Override the `locale` property in a subclass to display relative times in a different language:
 
 ```ts
-import Timeago from "./timeago_controller"
+import Timeago from "@hotwire/timeago_controller.js"
 import { ptBR } from "date-fns/locale"
 
 export default class extends Timeago {

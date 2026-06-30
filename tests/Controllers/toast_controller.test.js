@@ -75,6 +75,34 @@ test.serial("omits position when value is empty string", async () => {
     expect(calls[0].options.position).toBeUndefined();
 });
 
+test.serial("passes className to toast when set", async () => {
+    await mount(`
+        <div
+            data-controller="toast"
+            data-toast-message-value="Done"
+            data-toast-type-value="success"
+            data-toast-class-name-value="custom-toast"
+        ></div>
+    `);
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0].type).toBe("success");
+    expect(calls[0].options.className).toBe("custom-toast");
+});
+
+test.serial("omits className from options when not set", async () => {
+    await mount(`
+        <div
+            data-controller="toast"
+            data-toast-message-value="Saved"
+            data-toast-type-value="success"
+        ></div>
+    `);
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0].options.className).toBeUndefined();
+});
+
 async function mount(html) {
     mounted = await mountController("toast", ToastController, html);
 }
