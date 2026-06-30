@@ -92,6 +92,10 @@ class InstallCommand extends Command
      * Skips silently when the user opted into the default mode (no exclusions
      * to worry about) since drift detection only matters for --core-only or
      * --with-deps installs.
+     *
+     * Inherits interactivity from this command: when install was run in a TTY,
+     * check stays interactive too so its shouldFix() prompt fires directly —
+     * the user doesn't have to re-run `hotwire:check --fix` manually.
      */
     private function runPostInstallCheck(): void
     {
@@ -102,7 +106,8 @@ class InstallCommand extends Command
         $this->newLine();
         $this->line('Verifying view usage matches install config...');
 
-        $this->call('hotwire:check', ['--no-interaction' => true]);
+        $args = $this->input->isInteractive() ? [] : ['--no-interaction' => true];
+        $this->call('hotwire:check', $args);
     }
 
     private function validateDepFlags(): bool

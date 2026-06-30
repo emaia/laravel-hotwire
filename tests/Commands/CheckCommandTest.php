@@ -799,7 +799,7 @@ it('prompts to run package manager install after interactive fix adds dependenci
     writeView('page.blade.php', '<x-hwc::flash-message />');
 
     $this->artisan('hotwire:check')
-        ->expectsConfirmation('Publish missing/outdated controllers and add missing npm deps?', 'yes')
+        ->expectsConfirmation('Apply --fix now? (publishes missing/outdated controllers, regenerates the loader stub, adds missing npm deps)', 'yes')
         ->expectsConfirmation('Run pnpm install now?', 'yes')
         ->expectsOutputToContain('Running pnpm install')
         ->assertSuccessful();

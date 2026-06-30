@@ -21,7 +21,7 @@ class CheckCommand extends Command
 {
     public $signature = 'hotwire:check
                         {--path=* : Paths to scan for blade files (default: resources/views)}
-                        {--fix   : Publish missing/outdated controllers and add missing npm deps without prompting}
+                        {--fix   : Apply all fixes (publish controllers, regenerate loader stub, add missing npm deps) without prompting}
                         {--install : Run package manager install after adding missing npm deps}';
 
     public $description = 'Check that Stimulus controllers used by your views (via components or directly) are published';
@@ -684,7 +684,8 @@ class CheckCommand extends Command
 
         if (! empty($excludedFromStub)) {
             $count = count($excludedFromStub);
-            $this->line("<comment>$count controller(s) used in views but excluded from controllers/index.js — --fix will regenerate.</comment>");
+            $this->line("<comment>$count controller(s) used in views but excluded from controllers/index.js</comment>");
+            $this->line("<comment>artisan hotwire:check --fix will regenerate.</comment>");
         }
 
         $this->line('');
@@ -700,7 +701,7 @@ class CheckCommand extends Command
             return false;
         }
 
-        return confirm('Publish missing/outdated controllers and add missing npm deps?');
+        return confirm('Apply --fix now? (publishes missing/outdated controllers, regenerates the loader stub, adds missing npm deps)', default: true);
     }
 
     /** @param array<int, array{identifier: string, source_file: string, target_file: string}> $issues */
