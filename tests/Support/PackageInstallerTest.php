@@ -311,7 +311,7 @@ it('injects a fresh alias block when resolve exists but has no alias', function 
     // preserveSymlinks preserved
     expect($written)->toContain('preserveSymlinks: true');
     // New alias block inside the same resolve
-    expect($written)->toContain("alias: {")
+    expect($written)->toContain('alias: {')
         ->toContain("'@hotwire': fileURLToPath(new URL('vendor/emaia/laravel-hotwire/resources/js', import.meta.url))");
     // fileURLToPath import added
     expect($written)->toContain("import { fileURLToPath } from 'node:url';");

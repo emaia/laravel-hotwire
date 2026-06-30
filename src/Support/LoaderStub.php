@@ -133,5 +133,4 @@ final class LoaderStub
 
         return "[\n".implode("\n", $lines)."\n    ]";
     }
-
 }

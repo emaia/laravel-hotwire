@@ -1,6 +1,8 @@
 <?php
 
+use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ControllerImports;
+use Emaia\LaravelHotwire\Support\LoaderStub;
 use Emaia\LaravelHotwire\Support\PackageInstaller;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
@@ -921,8 +923,8 @@ it('reports a com-dep controller used in views but excluded from the loader stub
     // Auto-generated stub that opts into NOTHING (core-only)
     File::ensureDirectoryExists($this->targetDir);
     File::put($this->targetDir.'/index.js',
-        \Emaia\LaravelHotwire\Support\LoaderStub::generate(
-            \Emaia\LaravelHotwire\Registry\HotwireRegistry::make(),
+        LoaderStub::generate(
+            HotwireRegistry::make(),
             []
         )
     );
@@ -954,8 +956,8 @@ it('regenerates the loader stub including the missing controller when --fix is u
 
     File::ensureDirectoryExists($this->targetDir);
     File::put($this->targetDir.'/index.js',
-        \Emaia\LaravelHotwire\Support\LoaderStub::generate(
-            \Emaia\LaravelHotwire\Registry\HotwireRegistry::make(),
+        LoaderStub::generate(
+            HotwireRegistry::make(),
             []
         )
     );
@@ -979,8 +981,8 @@ it('does not flag drift when the used controller IS included in the stub', funct
 
     File::ensureDirectoryExists($this->targetDir);
     File::put($this->targetDir.'/index.js',
-        \Emaia\LaravelHotwire\Support\LoaderStub::generate(
-            \Emaia\LaravelHotwire\Registry\HotwireRegistry::make(),
+        LoaderStub::generate(
+            HotwireRegistry::make(),
             ['chart']
         )
     );

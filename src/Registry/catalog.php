@@ -1,7 +1,6 @@
 <?php
 
 use Emaia\LaravelHotwire\Components\Carousel;
-use Emaia\LaravelHotwire\Components\Icon;
 use Emaia\LaravelHotwire\Components\Chart;
 use Emaia\LaravelHotwire\Components\CheckboxGroup;
 use Emaia\LaravelHotwire\Components\ConditionalField;
@@ -16,6 +15,7 @@ use Emaia\LaravelHotwire\Components\FlashContainer;
 use Emaia\LaravelHotwire\Components\FlashMessage;
 use Emaia\LaravelHotwire\Components\Form;
 use Emaia\LaravelHotwire\Components\FrameOrPage;
+use Emaia\LaravelHotwire\Components\Icon;
 use Emaia\LaravelHotwire\Components\Input;
 use Emaia\LaravelHotwire\Components\Label;
 use Emaia\LaravelHotwire\Components\Map;

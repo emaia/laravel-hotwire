@@ -688,7 +688,7 @@ class CheckCommand extends Command
         if (! empty($excludedFromStub)) {
             $count = count($excludedFromStub);
             $this->line("<comment>$count controller(s) used in views but excluded from controllers/index.js</comment>");
-            $this->line("<comment>artisan hotwire:check --fix will regenerate.</comment>");
+            $this->line('<comment>artisan hotwire:check --fix will regenerate.</comment>');
         }
 
         $this->line('');
