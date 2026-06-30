@@ -526,35 +526,9 @@ it('runs post-install check when --with-deps is used', function () {
         ->assertSuccessful();
 });
 
-// --- Phase 7: --install flag ---
+// --- Phase 7: package manager install (default) and --skip-install opt-out ---
 
-it('runs package manager install after adding deps with --install', function () {
-    File::put($this->packageJsonPath, json_encode([
-        'name' => 'test',
-        'devDependencies' => new stdClass,
-    ], JSON_PRETTY_PRINT));
-    File::put(base_path('bun.lock'), '');
-
-    $this->artisan('hotwire:install --no-interaction --install')
-        ->assertSuccessful()
-        ->expectsOutputToContain('Running bun install')
-        ->expectsOutputToContain('bun install completed');
-});
-
-it('skips "Run X install" in next steps when --install was used', function () {
-    File::put($this->packageJsonPath, json_encode([
-        'name' => 'test',
-        'devDependencies' => new stdClass,
-    ], JSON_PRETTY_PRINT));
-    File::put(base_path('bun.lock'), '');
-
-    $this->artisan('hotwire:install --no-interaction --install')
-        ->assertSuccessful()
-        ->doesntExpectOutputToContain('Run bun install')
-        ->expectsOutputToContain('Run `bun run dev`');
-});
-
-it('does not run install when --install is not provided', function () {
+it('runs package manager install automatically in non-interactive mode by default', function () {
     File::put($this->packageJsonPath, json_encode([
         'name' => 'test',
         'devDependencies' => new stdClass,
@@ -563,10 +537,37 @@ it('does not run install when --install is not provided', function () {
 
     $this->artisan('hotwire:install --no-interaction')
         ->assertSuccessful()
-        ->doesntExpectOutputToContain('Running bun install');
+        ->expectsOutputToContain('Running bun install')
+        ->expectsOutputToContain('bun install completed');
 });
 
-it('prompts to run install in interactive mode when --install is not provided', function () {
+it('omits the "Run X install" next-steps line when install ran', function () {
+    File::put($this->packageJsonPath, json_encode([
+        'name' => 'test',
+        'devDependencies' => new stdClass,
+    ], JSON_PRETTY_PRINT));
+    File::put(base_path('bun.lock'), '');
+
+    $this->artisan('hotwire:install --no-interaction')
+        ->assertSuccessful()
+        ->doesntExpectOutputToContain('Run `bun install`')
+        ->expectsOutputToContain('Run `bun run dev`');
+});
+
+it('skips package manager install with --skip-install', function () {
+    File::put($this->packageJsonPath, json_encode([
+        'name' => 'test',
+        'devDependencies' => new stdClass,
+    ], JSON_PRETTY_PRINT));
+    File::put(base_path('bun.lock'), '');
+
+    $this->artisan('hotwire:install --no-interaction --skip-install')
+        ->assertSuccessful()
+        ->doesntExpectOutputToContain('Running bun install')
+        ->expectsOutputToContain('Run `bun install`');
+});
+
+it('prompts to run install in interactive mode (default yes)', function () {
     File::put($this->packageJsonPath, json_encode([
         'name' => 'test',
         'devDependencies' => new stdClass,

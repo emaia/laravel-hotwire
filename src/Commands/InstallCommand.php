@@ -20,7 +20,8 @@ class InstallCommand extends Command
                         {--only= : Install only "js" or "css"}
                         {--with-deps=* : Add npm deps only for these controllers (comma-separated or repeatable). Without this flag (and without --core-only), every catalog dep is added.}
                         {--core-only : Add only core npm deps (stimulus, turbo, dynamic-loader). Skip catalog deps entirely.}
-                        {--install : Run package manager install after adding dependencies}';
+                        {--skip-install : Do not run the package manager (bun/npm/pnpm/yarn) install after writing package.json. Leaves dep fetching to the caller.}
+                        {--fix : Auto-apply hotwire:check --fix during the post-install verification (non-interactive friendly)}';
 
     public $description = 'Install Hotwire scaffolding into your Laravel application';
 
@@ -107,6 +108,15 @@ class InstallCommand extends Command
         $this->line('Verifying view usage matches install config...');
 
         $args = $this->input->isInteractive() ? [] : ['--no-interaction' => true];
+
+        if ($this->option('fix')) {
+            $args['--fix'] = true;
+        }
+
+        if ($this->option('skip-install')) {
+            $args['--skip-install'] = true;
+        }
+
         $this->call('hotwire:check', $args);
     }
 
@@ -335,17 +345,17 @@ class InstallCommand extends Command
 
     private function shouldInstallDependencies(): bool
     {
-        if ($this->option('install')) {
-            return true;
+        if ($this->option('skip-install')) {
+            return false;
         }
 
         if (! $this->input->isInteractive()) {
-            return false;
+            return true;
         }
 
         $manager = $this->packageInstaller->detect($this->files);
 
-        return confirm("Run $manager install now?");
+        return confirm("Run $manager install now?", default: true);
     }
 
     private function installDependencies(): int
@@ -389,11 +399,11 @@ class InstallCommand extends Command
         $this->newLine();
         $this->line('Next steps:');
 
-        if ($this->option('install')) {
-            $this->line("  1. Run `$pm run dev` to compile assets");
-        } else {
+        if ($this->option('skip-install')) {
             $this->line("  1. Run `$pm install` to install dependencies");
             $this->line("  2. Run `$pm run dev` to compile assets");
+        } else {
+            $this->line("  1. Run `$pm run dev` to compile assets");
         }
 
         $this->newLine();

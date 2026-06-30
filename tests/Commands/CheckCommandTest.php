@@ -468,9 +468,9 @@ it('groups problem lines under a "Needs attention" heading at the end of the out
     Artisan::call('hotwire:check --no-interaction');
     $output = Artisan::output();
 
-    expect($output)->toContain('Needs attention:');
+    expect($output)->toContain('Needs attention');
 
-    $needsAttentionPos = strpos($output, 'Needs attention:');
+    $needsAttentionPos = strpos($output, 'Needs attention');
     $depProblemPos = strpos($output, '@emaia/sonner');
     $summaryPos = strpos($output, 'npm dependency');
 
@@ -485,7 +485,7 @@ it('does not print the "Needs attention" heading when everything is up to date',
     Artisan::call('hotwire:check --no-interaction');
     $output = Artisan::output();
 
-    expect($output)->not->toContain('Needs attention:');
+    expect($output)->not->toContain('Needs attention');
 });
 
 it('sorts scanned components alphabetically', function () {
@@ -514,7 +514,7 @@ it('sorts the Needs attention block alphabetically', function () {
     Artisan::call('hotwire:check --no-interaction');
     $output = Artisan::output();
 
-    $needsAttentionPos = strpos($output, 'Needs attention:');
+    $needsAttentionPos = strpos($output, 'Needs attention');
     $tail = substr($output, $needsAttentionPos);
 
     $carouselPos = strpos($tail, '  carousel  outdated');
@@ -768,24 +768,24 @@ it('adds missing npm dependencies to devDependencies with --fix', function () {
     expect($json['devDependencies'])->toHaveKey('@emaia/sonner');
 });
 
-it('does not run package manager install in non-interactive fix mode by default', function () {
+it('skips package manager install with --skip-install in non-interactive fix mode', function () {
     $installer = fakePackageInstaller('bun');
     writePackageJson(['name' => 'app', 'devDependencies' => []]);
     writeView('page.blade.php', '<x-hwc::flash-message />');
 
-    $this->artisan('hotwire:check --fix --no-interaction')
+    $this->artisan('hotwire:check --fix --skip-install --no-interaction')
         ->expectsOutputToContain('Run your package manager install command')
         ->assertSuccessful();
 
     expect($installer->installed)->toBe([]);
 });
 
-it('runs package manager install when requested explicitly', function () {
+it('runs package manager install automatically in non-interactive fix mode by default', function () {
     $installer = fakePackageInstaller('bun');
     writePackageJson(['name' => 'app', 'devDependencies' => []]);
     writeView('page.blade.php', '<x-hwc::flash-message />');
 
-    $this->artisan('hotwire:check --fix --install --no-interaction')
+    $this->artisan('hotwire:check --fix --no-interaction')
         ->expectsOutputToContain('Running bun install')
         ->expectsOutputToContain('bun install completed')
         ->assertSuccessful();
@@ -812,19 +812,19 @@ it('does not run package manager install when no dependencies were added', funct
     writePackageJson(['name' => 'app', 'devDependencies' => []]);
     writeView('page.blade.php', '<x-hwc::modal />');
 
-    $this->artisan('hotwire:check --fix --install --no-interaction')
+    $this->artisan('hotwire:check --fix --no-interaction')
         ->doesntExpectOutputToContain('Running bun install')
         ->assertSuccessful();
 
     expect($installer->installed)->toBe([]);
 });
 
-it('fails when requested package manager install fails', function () {
+it('fails when package manager install fails', function () {
     $installer = fakePackageInstaller('npm', 1);
     writePackageJson(['name' => 'app', 'devDependencies' => []]);
     writeView('page.blade.php', '<x-hwc::flash-message />');
 
-    $this->artisan('hotwire:check --fix --install --no-interaction')
+    $this->artisan('hotwire:check --fix --no-interaction')
         ->expectsOutputToContain('npm install failed')
         ->assertFailed();
 

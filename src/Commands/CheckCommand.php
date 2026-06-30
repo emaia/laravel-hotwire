@@ -22,7 +22,7 @@ class CheckCommand extends Command
     public $signature = 'hotwire:check
                         {--path=* : Paths to scan for blade files (default: resources/views)}
                         {--fix   : Apply all fixes (publish controllers, regenerate loader stub, add missing npm deps) without prompting}
-                        {--install : Run package manager install after adding missing npm deps}';
+                        {--skip-install : Do not run the package manager (bun/npm/pnpm/yarn) install after --fix adds new deps}';
 
     public $description = 'Check that Stimulus controllers used by your views (via components or directly) are published';
 
@@ -658,7 +658,10 @@ class CheckCommand extends Command
 
         usort($this->problemLines, fn (array $a, array $b) => strcmp($a['key'], $b['key']));
 
-        $this->line('<options=bold>Needs attention:</>');
+        $count = count($this->problemLines);
+        $word = $count === 1 ? 'issue' : 'issues';
+
+        $this->line("<options=bold>Needs attention ($count $word):</>");
         foreach ($this->problemLines as $entry) {
             $this->line($entry['line']);
         }
@@ -737,17 +740,17 @@ class CheckCommand extends Command
 
     private function shouldInstallDependencies(): bool
     {
-        if ($this->option('install')) {
-            return true;
+        if ($this->option('skip-install')) {
+            return false;
         }
 
         if (! $this->input->isInteractive()) {
-            return false;
+            return true;
         }
 
         $manager = $this->packageInstaller->detect($this->files);
 
-        return confirm("Run $manager install now?");
+        return confirm("Run $manager install now?", default: true);
     }
 
     private function installDependencies(): int
