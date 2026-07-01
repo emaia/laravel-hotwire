@@ -80,7 +80,7 @@ test.serial("changing timeoutValue while enabled reschedules with the new delay"
     await mount({ timeout: 1000 });
 
     mounted.controller.timeoutValue = 20;
-    await wait(40);
+    await waitUntil(() => visitFn.mock.calls.length === 1);
 
     expect(visitFn).toHaveBeenCalledTimes(1);
 });
@@ -133,4 +133,13 @@ async function mount({ timeout = 100, frame = "posts", enabled = true } = {}) {
         PollingController,
         `<div data-controller="turbo--polling" ${attrs}></div>`,
     );
+}
+
+async function waitUntil(predicate, { timeout = 250, interval = 5 } = {}) {
+    const startedAt = Date.now();
+
+    while (!predicate()) {
+        if (Date.now() - startedAt >= timeout) return;
+        await wait(interval);
+    }
 }

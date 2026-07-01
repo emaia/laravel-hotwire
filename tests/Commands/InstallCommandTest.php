@@ -58,9 +58,14 @@ it('copies all stub files to resources directory', function () {
         expect(File::exists($target))->toBeTrue("Expected {$file} to exist");
 
         $source = $this->stubBase.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $file);
-        expect(File::get($target))->toBe(File::get($source));
+        expect(normalizeLineEndings(File::get($target)))->toBe(normalizeLineEndings(File::get($source)));
     }
 });
+
+function normalizeLineEndings(string $content): string
+{
+    return str_replace(["\r\n", "\r"], "\n", $content);
+}
 
 it('creates necessary subdirectories', function () {
     File::put($this->packageJsonPath, json_encode(['name' => 'test'], JSON_PRETTY_PRINT));
