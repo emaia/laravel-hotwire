@@ -249,6 +249,8 @@ it('defines overlay and menu slots in the nova preset', function () use ($novaPr
         ->toContain('[data-slot="alert-dialog-cancel"]')
         ->toContain('[data-slot="dropdown"]')
         ->toContain('[data-slot="dropdown-trigger"]')
+        ->toContain('[data-slot="dropdown-trigger-icon"]')
+        ->toContain('[data-slot="dropdown-trigger"][aria-expanded="true"] [data-slot="dropdown-trigger-icon"]')
         ->toContain('[data-slot="dropdown-menu"]')
         ->toContain('[data-slot="dropdown-menu"][data-width="default"]')
         ->toContain('[data-slot="dropdown-menu"][data-align="start"]');
