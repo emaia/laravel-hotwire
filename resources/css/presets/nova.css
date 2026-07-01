@@ -48,6 +48,22 @@
     [data-slot="file-upload"] { @apply flex min-h-32 w-full cursor-pointer items-center justify-center rounded-lg border border-dashed border-border bg-background p-6 text-center text-sm text-muted-foreground transition-colors hover:bg-accent/50 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none aria-invalid:border-destructive aria-invalid:ring-destructive/20; }
     [data-slot="file-upload"] .dz-message { @apply m-0; }
 
+    [data-slot="rich-text"] { @apply overflow-hidden rounded-md border border-input bg-background text-foreground shadow-xs transition-colors aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20; }
+    [data-slot="rich-text"]:has(.ProseMirror:focus-visible) { @apply border-ring ring-[3px] ring-ring/50; }
+    [data-slot="rich-text-toolbar"] { @apply flex flex-wrap items-center gap-1 border-b border-border bg-muted/30 p-1; }
+    [data-slot="rich-text-toolbar-button"] { @apply inline-flex h-7 min-w-7 items-center justify-center rounded-md px-2 text-xs font-medium text-muted-foreground transition-colors outline-none hover:bg-muted hover:text-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50 aria-pressed:bg-muted aria-pressed:text-foreground data-[active=true]:bg-muted data-[active=true]:text-foreground disabled:pointer-events-none disabled:opacity-50; }
+    [data-slot="rich-text-editor"] { @apply min-h-32 text-base md:text-sm; }
+    [data-slot="rich-text-editor"] .ProseMirror { @apply min-h-32 px-3 py-2 outline-none; }
+    [data-slot="rich-text-editor"] .ProseMirror > * + * { @apply mt-3; }
+    [data-slot="rich-text-editor"] .ProseMirror p.is-editor-empty:first-child::before { content: attr(data-placeholder); @apply pointer-events-none float-left h-0 text-muted-foreground; }
+    [data-slot="rich-text-editor"] .ProseMirror :is(ul, ol) { @apply pl-6; }
+    [data-slot="rich-text-editor"] .ProseMirror ul { @apply list-disc; }
+    [data-slot="rich-text-editor"] .ProseMirror ol { @apply list-decimal; }
+    [data-slot="rich-text-editor"] .ProseMirror blockquote { @apply border-l-2 border-border pl-3 text-muted-foreground; }
+    [data-slot="rich-text-editor"] .ProseMirror code { @apply rounded bg-muted px-1 py-0.5 text-sm; }
+    [data-slot="rich-text-editor"] .ProseMirror pre { @apply overflow-x-auto rounded-md bg-muted p-3 text-sm; }
+    [data-slot="rich-text-editor"] .ProseMirror pre code { @apply bg-transparent p-0; }
+
     [data-slot="modal-overlay"], [data-slot="alert-dialog-overlay"] { @apply pointer-events-none fixed inset-0 z-50 flex items-center justify-center; }
     [data-slot="modal-overlay"] { @apply flex-wrap p-2 md:p-10; }
     [data-slot="alert-dialog-overlay"] { @apply overflow-y-auto p-4; }

@@ -226,6 +226,20 @@ it('styles checkable inputs when they are wrapped by labels', function () use ($
         ->toContain('aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20');
 });
 
+it('styles rich text via granular slots instead of textarea-only styles', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain('[data-slot="rich-text"]')
+        ->toContain('[data-slot="rich-text"]:has(.ProseMirror:focus-visible)')
+        ->toContain('[data-slot="rich-text-toolbar"]')
+        ->toContain('[data-slot="rich-text-toolbar-button"]')
+        ->toContain('[data-slot="rich-text-editor"] .ProseMirror')
+        ->toContain('p.is-editor-empty:first-child::before')
+        ->toContain('aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20')
+        ->not->toContain('[data-slot="textarea"], [data-slot="rich-text"]');
+});
+
 it('defines overlay and menu slots in the nova preset', function () use ($novaPresetPath) {
     $css = file_get_contents($novaPresetPath);
 
