@@ -390,7 +390,7 @@ test.serial("calls reInit when optionsValue changes", async () => {
     emblaState.instance.reInit.mockClear();
 
     mounted.controller.optionsValue = { loop: true };
-    await wait(0);
+    await waitUntil(() => emblaState.instance.reInit.mock.calls.length > 0);
 
     expect(emblaState.instance.reInit).toHaveBeenCalled();
     expect(emblaState.instance.reInit.mock.calls[0][0]).toEqual({ loop: true });
@@ -578,6 +578,15 @@ function nextButton() {
 function emit(event) {
     const handlers = emblaState.handlers[event] ?? [];
     handlers.forEach((handler) => handler(emblaState.instance, event));
+}
+
+async function waitUntil(predicate, { timeout = 250, interval = 5 } = {}) {
+    const startedAt = Date.now();
+
+    while (!predicate()) {
+        if (Date.now() - startedAt >= timeout) return;
+        await wait(interval);
+    }
 }
 
 // --- morph recovery ---

@@ -18,7 +18,7 @@ test.serial("master becomes indeterminate when some children are checked", async
     `);
 
     const master = document.querySelector('[data-checkbox-select-all-target="checkboxAll"]');
-    expect(master.checked).toBe(true);
+    expect(master.checked).toBe(false);
     expect(master.indeterminate).toBe(true);
 });
 
@@ -54,7 +54,7 @@ test.serial("re-syncs master state after turbo:render (morph scenario)", async (
     document.dispatchEvent(new Event("turbo:render", { bubbles: true }));
     await wait(0);
 
-    expect(master.checked).toBe(true);
+    expect(master.checked).toBe(false);
     expect(master.indeterminate).toBe(true);
 });
 

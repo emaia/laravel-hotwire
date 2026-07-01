@@ -64,7 +64,7 @@ export default class extends Controller {
         if (this.disableIndeterminateValue) {
             this.checkboxAllTarget.checked = checkboxesCheckedCount === checkboxesCount;
         } else {
-            this.checkboxAllTarget.checked = checkboxesCheckedCount > 0;
+            this.checkboxAllTarget.checked = checkboxesCount > 0 && checkboxesCheckedCount === checkboxesCount;
             this.checkboxAllTarget.indeterminate =
                 checkboxesCheckedCount > 0 && checkboxesCheckedCount < checkboxesCount;
         }

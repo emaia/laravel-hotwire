@@ -214,8 +214,13 @@ it('styles checkable inputs when they are wrapped by labels', function () use ($
     expect($css)
         ->toContain('[data-slot="label"]:has(:is([data-slot="input"], [data-slot="checkbox-group-input"])[data-checkable="true"])')
         ->toContain(':is([data-slot="input"], [data-slot="checkbox-group-input"])[data-checkable="true"]')
-        ->toContain(':is([data-slot="input"], [data-slot="checkbox-group-input"])[data-checkable="true"]:is([aria-invalid="true"], [data-invalid])')
-        ->toContain('border-destructive');
+        ->toContain('appearance-none')
+        ->toContain('aspect-square h-4 max-h-4 min-h-4 w-4 min-w-4 max-w-4')
+        ->toContain('checked:border-primary checked:bg-primary')
+        ->toContain('indeterminate:border-primary indeterminate:bg-primary')
+        ->toContain('::before')
+        ->toContain(':indeterminate::before')
+        ->toContain('aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20');
 });
 
 it('defines overlay and menu slots in the nova preset', function () use ($novaPresetPath) {
