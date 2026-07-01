@@ -29,8 +29,12 @@ export default class extends Controller {
     connect() {
         if (window.toaster) return;
 
-        window.toaster = createToaster(this.#buildOptions());
+        window.toaster = this.createToaster(this.#buildOptions());
         this.#setupThemeObserver();
+    }
+
+    createToaster(options) {
+        return createToaster(options);
     }
 
     disconnect() {

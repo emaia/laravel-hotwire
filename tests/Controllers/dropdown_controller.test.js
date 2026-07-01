@@ -239,7 +239,8 @@ test.serial("re-attaches the menu click listener when the menu node is replaced"
     const oldMenu = menu();
     const replacement = oldMenu.cloneNode(true);
     oldMenu.replaceWith(replacement);
-    await wait(0);
+    mounted.controller.menuTargetDisconnected(oldMenu);
+    mounted.controller.menuTargetConnected(replacement);
 
     replacement.querySelector("a").dispatchEvent(new MouseEvent("click", { bubbles: true }));
 

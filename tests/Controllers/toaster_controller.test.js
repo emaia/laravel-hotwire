@@ -3,17 +3,17 @@ import { afterEach, beforeEach, expect, mock, test } from "bun:test";
 const createCalls = [];
 const destroyMock = mock(() => {});
 
-mock.module("@emaia/sonner/vanilla", () => ({
-    createToaster: (options) => {
-        createCalls.push(options);
-        return { destroy: destroyMock };
-    },
-}));
-
 const { mountController } = await import("../../resources/js/helpers/test_stimulus.js");
 const { default: ToasterController } = await import(
     "../../resources/js/controllers/toaster_controller.js"
 );
+
+class TestToasterController extends ToasterController {
+    createToaster(options) {
+        createCalls.push(options);
+        return { destroy: destroyMock };
+    }
+}
 
 let mounted;
 
@@ -67,7 +67,7 @@ test.serial("resolves theme from html[data-theme] when theme is system", async (
         const root = testWindow.document.querySelector("[data-controller~=\"toaster\"]");
         const { Application } = await import("@hotwired/stimulus");
         const application = Application.start(root);
-        application.register("toaster", ToasterController);
+        application.register("toaster", TestToasterController);
 
         await new Promise((resolve) => setTimeout(resolve, 0));
 
@@ -180,5 +180,5 @@ test.serial("disconnect with autoDisconnect=false (default) keeps toaster alive"
 });
 
 async function mount(html) {
-    mounted = await mountController("toaster", ToasterController, html);
+    mounted = await mountController("toaster", TestToasterController, html);
 }
