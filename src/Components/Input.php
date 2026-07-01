@@ -19,7 +19,7 @@ class Input extends Component
         public ?string $id = null,
         public string $type = 'text',
         public mixed $value = null,
-        public bool $checked = false,
+        public bool|string|null $checked = false,
         public ?string $errorKey = null,
         public bool $old = true,
         public bool $clearable = false,
@@ -94,7 +94,7 @@ class Input extends Component
 
         if ($isCheckable) {
             $resolvedValue = $this->value;
-            $isChecked = $this->checked;
+            $isChecked = $this->isCheckedPropTruthy();
 
             if ($this->old && $resolvedErrorKey !== '' && session()->hasOldInput()) {
                 $oldVal = session()->getOldInput($resolvedErrorKey);
@@ -139,5 +139,14 @@ class Input extends Component
     private function isCheckable(): bool
     {
         return in_array($this->type, ['checkbox', 'radio'], true);
+    }
+
+    private function isCheckedPropTruthy(): bool
+    {
+        if (is_bool($this->checked)) {
+            return $this->checked;
+        }
+
+        return filter_var($this->checked, FILTER_VALIDATE_BOOLEAN);
     }
 }

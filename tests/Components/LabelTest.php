@@ -118,6 +118,13 @@ it('merges custom class on the label element', function () {
     $view->assertSee('class="text-sm font-bold"', false);
 });
 
+it('does not render an empty class attribute', function () {
+    $view = $this->blade('<x-hwc::label for="email">E-mail</x-hwc::label>');
+
+    $view->assertSee('data-slot="label"', false);
+    $view->assertDontSee('class=""', false);
+});
+
 // --- Pass-through ---
 
 it('passes through arbitrary attributes', function () {

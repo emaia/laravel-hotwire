@@ -442,6 +442,25 @@ it('radio stays unchecked when old() value does not match', function () {
     $view->assertDontSee(' checked', false);
 });
 
+it('radio does not treat checked=false as checked', function () {
+    $view = $this->blade('<x-hwc::input type="radio" name="plan" value="pro" checked="false" />');
+
+    $view->assertDontSee(' checked', false);
+});
+
+it('renders multiple radios unchecked by default', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hwc::field name="status" label="Status">
+            <x-hwc::label><x-hwc::input type="radio" value="draft" /> Draft</x-hwc::label>
+            <x-hwc::label><x-hwc::input type="radio" value="published" /> Published</x-hwc::label>
+            <x-hwc::label><x-hwc::input type="radio" value="archived" /> Archived</x-hwc::label>
+        </x-hwc::field>
+    BLADE);
+
+    $view->assertSee('name="status"', false);
+    $view->assertDontSee(' checked', false);
+});
+
 it('checkable ignores :old=false and still derives checked from old()', function () {
     session()->put('_old_input', ['notify' => 'on']);
 

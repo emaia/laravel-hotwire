@@ -5,7 +5,7 @@
 <label
     data-slot="label"
     @if ($resolvedFor) for="{{ $resolvedFor }}" @endif
-    {{ $attributes->class($class ?: null) }}
+    {{ trim($class) !== '' ? $attributes->merge(['class' => $class]) : $attributes->except('class') }}
 >
     {{ trim($slotHtml) !== '' ? $slot : $value }}
 

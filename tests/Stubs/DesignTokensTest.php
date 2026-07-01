@@ -217,9 +217,12 @@ it('styles checkable inputs when they are wrapped by labels', function () use ($
         ->toContain('appearance-none')
         ->toContain('aspect-square h-4 max-h-4 min-h-4 w-4 min-w-4 max-w-4')
         ->toContain('checked:border-primary checked:bg-primary')
-        ->toContain('indeterminate:border-primary indeterminate:bg-primary')
+        ->toContain('[type="checkbox"]:indeterminate')
+        ->not->toContain('indeterminate:border-primary indeterminate:bg-primary')
         ->toContain('::before')
-        ->toContain(':indeterminate::before')
+        ->toContain('opacity: 0')
+        ->toContain(':checked::before { opacity: 1')
+        ->toContain('[type="checkbox"]:indeterminate::before')
         ->toContain('aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20');
 });
 
