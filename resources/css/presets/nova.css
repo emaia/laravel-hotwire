@@ -35,6 +35,7 @@
     [data-slot="input-wrapper"][data-clearable="true"] { @apply flex flex-col justify-center items-center; }
     [data-slot="input"], [data-slot="select"], [data-slot="textarea"], [data-slot="file-input"] { @apply flex min-h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-base text-foreground shadow-xs transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 md:text-sm; }
     :is([data-slot="input"], [data-slot="checkbox-group-input"])[data-checkable="true"] { @apply size-4 min-h-0 w-auto rounded border-input p-0 accent-primary shadow-none; }
+    :is([data-slot="input"], [data-slot="checkbox-group-input"])[data-checkable="true"]:is([aria-invalid="true"], [data-invalid]) { @apply border-destructive ring-destructive/20 dark:border-destructive/50 dark:ring-destructive/40; }
     [data-slot="select"] { @apply appearance-none pr-8; }
     [data-slot="select-wrapper"] { @apply relative; }
     [data-slot="select-icon"] { @apply pointer-events-none absolute right-2 top-1/2 size-4 -translate-y-1/2 opacity-50; }
