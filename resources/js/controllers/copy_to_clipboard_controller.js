@@ -29,13 +29,21 @@ export default class extends Controller {
         if (!this.hasButtonTarget) return;
 
         if (this.timeout) {
-            clearTimeout(this.timeout);
+            this.clearFeedbackTimer(this.timeout);
         }
 
         this.buttonTarget.innerHTML = this.successContentValue;
 
-        this.timeout = setTimeout(() => {
+        this.timeout = this.setFeedbackTimer(() => {
             this.buttonTarget.innerHTML = this.originalContent;
         }, this.successDurationValue);
+    }
+
+    setFeedbackTimer(callback, duration) {
+        return setTimeout(callback, duration);
+    }
+
+    clearFeedbackTimer(timeoutId) {
+        clearTimeout(timeoutId);
     }
 }

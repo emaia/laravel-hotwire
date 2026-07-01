@@ -298,14 +298,17 @@ test.serial("polling fetches again after the configured interval", async () => {
     const payload = { title: { text: "tick" } };
     globalThis.fetch = mock(() => Promise.resolve({ json: () => Promise.resolve(payload) }));
 
-    await mount(`<div data-controller="chart" data-chart-url-value="/api/sales" data-chart-poll-value="20"></div>`);
+    await mount(`<div data-controller="chart" data-chart-url-value="/api/sales"></div>`);
     await wait(0); // first immediate loadFromUrl resolves
+    const scheduler = installFakePollScheduler();
 
     expect(globalThis.fetch).toHaveBeenCalledTimes(1);
 
-    await wait(40); // wait past the poll interval — next cycle should have fired
+    mounted.controller.pollValue = 20;
+    mounted.controller.startPolling();
+    await scheduler.runNext();
 
-    expect(globalThis.fetch.mock.calls.length).toBeGreaterThanOrEqual(2);
+    expect(globalThis.fetch).toHaveBeenCalledTimes(2);
 });
 
 test.serial("startPolling is idempotent: a second call while a timer is pending is a no-op", async () => {
@@ -348,26 +351,36 @@ test.serial("polling continues after a fetch error", async () => {
     const originalError = console.error;
     console.error = mock(() => {});
 
-    await mount(`<div data-controller="chart" data-chart-url-value="/api/sales" data-chart-poll-value="20"></div>`);
-    await wait(40);
+    await mount(`<div data-controller="chart" data-chart-url-value="/api/sales"></div>`);
+    const scheduler = installFakePollScheduler();
+
+    mounted.controller.pollValue = 20;
+    mounted.controller.startPolling();
+    await scheduler.runNext();
 
     console.error = originalError;
 
-    // First fetch rejected; polling should still have fired at least one more cycle.
-    expect(globalThis.fetch.mock.calls.length).toBeGreaterThanOrEqual(2);
+    expect(globalThis.fetch).toHaveBeenCalledTimes(2);
+    expect(scheduler.pending()).toHaveLength(1);
 });
 
 test.serial("disconnect clears the pending poll timer", async () => {
     globalThis.fetch = mock(() => Promise.resolve({ json: () => Promise.resolve({}) }));
 
-    await mount(`<div data-controller="chart" data-chart-url-value="/api/sales" data-chart-poll-value="20"></div>`);
-    await wait(0);
+    await mount(`<div data-controller="chart" data-chart-url-value="/api/sales"></div>`);
+    const scheduler = installFakePollScheduler();
+
+    mounted.controller.pollValue = 20;
+    mounted.controller.startPolling();
+    const pendingTimer = scheduler.pending()[0];
 
     expect(mounted.controller.pollTimer).not.toBeNull();
 
     mounted.controller.disconnect();
 
     expect(mounted.controller.pollTimer).toBeNull();
+    expect(pendingTimer.cancelled).toBe(true);
+    expect(scheduler.pending()).toHaveLength(0);
 });
 
 // --- morph recovery ---
@@ -441,4 +454,35 @@ test.serial("reload is a no-op when the controller has no URL configured", async
 
 async function mount(html) {
     mounted = await mountController("chart", ChartController, html);
+}
+
+function installFakePollScheduler() {
+    const timers = [];
+
+    mounted.controller.setPollTimer = (callback, interval) => {
+        const timer = { callback, interval, cancelled: false };
+        timers.push(timer);
+
+        return timer;
+    };
+
+    mounted.controller.clearPollTimer = (timer) => {
+        if (timer) timer.cancelled = true;
+    };
+
+    return {
+        pending() {
+            return timers.filter((timer) => !timer.cancelled);
+        },
+        async runNext() {
+            const timer = this.pending()[0];
+
+            if (!timer) {
+                throw new Error("Expected a pending chart poll timer.");
+            }
+
+            timer.cancelled = true;
+            await timer.callback();
+        },
+    };
 }

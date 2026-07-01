@@ -5,7 +5,7 @@ const visitFn = mock((url, options) => visitCalls.push({ url, options }));
 
 mock.module("@hotwired/turbo", () => ({ visit: visitFn, session: {} }));
 
-const { mountController, wait } = await import("../../../resources/js/helpers/test_stimulus.js");
+const { mountController } = await import("../../../resources/js/helpers/test_stimulus.js");
 const { default: PollingController } = await import(
     "../../../resources/js/controllers/turbo/polling_controller.js"
 );
@@ -29,10 +29,12 @@ afterEach(async () => {
 
 // --- scheduling ---
 
-test.serial("calls Turbo.visit with the frame value after the timeout fires", async () => {
-    await mount({ timeout: 20 });
+test.serial("calls Turbo.visit with the frame value after the scheduled timer fires", async () => {
+    await mount({ timeout: 20, enabled: false });
+    const scheduler = installFakeScheduler();
 
-    await wait(40);
+    setEnabled(true);
+    scheduler.runNext();
 
     expect(visitFn).toHaveBeenCalledTimes(1);
     expect(visitCalls[0].options.frame).toBe("posts");
@@ -40,47 +42,63 @@ test.serial("calls Turbo.visit with the frame value after the timeout fires", as
 });
 
 test.serial("does not fire when frame value is empty", async () => {
-    await mount({ timeout: 20, frame: "" });
+    await mount({ timeout: 20, frame: "", enabled: false });
+    const scheduler = installFakeScheduler();
 
-    await wait(40);
+    setEnabled(true);
 
     expect(visitFn).not.toHaveBeenCalled();
+    expect(scheduler.pending()).toHaveLength(0);
 });
 
 test.serial("does not fire when enabled is false", async () => {
     await mount({ timeout: 20, enabled: false });
+    const scheduler = installFakeScheduler();
 
-    await wait(40);
+    mounted.controller.scheduleRefresh();
 
     expect(visitFn).not.toHaveBeenCalled();
+    expect(scheduler.pending()).toHaveLength(0);
 });
 
 // --- value reactivity ---
 
 test.serial("toggling enabled to false cancels the pending timer", async () => {
-    await mount({ timeout: 50 });
+    await mount({ timeout: 50, enabled: false });
+    const scheduler = installFakeScheduler();
 
-    mounted.controller.enabledValue = false;
+    setEnabled(true);
+    const pendingTimer = scheduler.pending()[0];
 
-    await wait(80);
+    setEnabled(false);
 
     expect(visitFn).not.toHaveBeenCalled();
+    expect(pendingTimer.cancelled).toBe(true);
+    expect(scheduler.pending()).toHaveLength(0);
 });
 
 test.serial("toggling enabled to true restarts the scheduler", async () => {
     await mount({ timeout: 50, enabled: false });
+    const scheduler = installFakeScheduler();
 
-    mounted.controller.enabledValue = true;
-    await wait(80);
+    setEnabled(true);
+    scheduler.runNext();
 
     expect(visitFn).toHaveBeenCalledTimes(1);
 });
 
 test.serial("changing timeoutValue while enabled reschedules with the new delay", async () => {
-    await mount({ timeout: 1000 });
+    await mount({ timeout: 1000, enabled: false });
+    const scheduler = installFakeScheduler();
 
-    mounted.controller.timeoutValue = 20;
-    await waitUntil(() => visitFn.mock.calls.length === 1);
+    setEnabled(true);
+    const firstTimer = scheduler.pending()[0];
+    setTimeoutValue(20);
+    const secondTimer = scheduler.pending()[0];
+
+    expect(firstTimer.cancelled).toBe(true);
+    expect(secondTimer.delay).toBe(20);
+    scheduler.runNext();
 
     expect(visitFn).toHaveBeenCalledTimes(1);
 });
@@ -88,22 +106,32 @@ test.serial("changing timeoutValue while enabled reschedules with the new delay"
 // --- imperative refresh action ---
 
 test.serial("refresh() visits immediately and reschedules", async () => {
-    await mount({ timeout: 1000 });
+    await mount({ timeout: 1000, enabled: false });
+    const scheduler = installFakeScheduler();
+
+    setEnabled(true);
+    scheduler.clear();
 
     mounted.controller.refresh();
 
     expect(visitFn).toHaveBeenCalledTimes(1);
+    expect(scheduler.pending()).toHaveLength(1);
 });
 
 // --- disconnect cleanup ---
 
 test.serial("disconnect cancels the pending timer", async () => {
-    await mount({ timeout: 30 });
+    await mount({ timeout: 30, enabled: false });
+    const scheduler = installFakeScheduler();
+
+    setEnabled(true);
+    const pendingTimer = scheduler.pending()[0];
 
     mounted.controller.disconnect();
-    await wait(60);
 
     expect(visitFn).not.toHaveBeenCalled();
+    expect(pendingTimer.cancelled).toBe(true);
+    expect(scheduler.pending()).toHaveLength(0);
 });
 
 // --- error handling ---
@@ -115,9 +143,12 @@ test.serial("logs and reschedules when Turbo.visit throws", async () => {
         throw new Error("boom");
     });
 
-    await mount({ timeout: 20 });
-    await wait(40); // first fire throws → reschedule
-    await wait(40); // second fire succeeds
+    await mount({ timeout: 20, enabled: false });
+    const scheduler = installFakeScheduler();
+
+    setEnabled(true);
+    scheduler.runNext(); // first fire throws -> reschedule
+    scheduler.runNext(); // second fire succeeds
 
     expect(visitFn).toHaveBeenCalledTimes(2);
 });
@@ -135,11 +166,46 @@ async function mount({ timeout = 100, frame = "posts", enabled = true } = {}) {
     );
 }
 
-async function waitUntil(predicate, { timeout = 250, interval = 5 } = {}) {
-    const startedAt = Date.now();
+function installFakeScheduler() {
+    const timers = [];
 
-    while (!predicate()) {
-        if (Date.now() - startedAt >= timeout) return;
-        await wait(interval);
-    }
+    mounted.controller.setRefreshTimer = (callback, delay) => {
+        const timer = { callback, delay, cancelled: false };
+        timers.push(timer);
+
+        return timer;
+    };
+
+    mounted.controller.clearRefreshTimer = (timer) => {
+        timer.cancelled = true;
+    };
+
+    return {
+        pending() {
+            return timers.filter((timer) => !timer.cancelled);
+        },
+        runNext() {
+            const timer = this.pending()[0];
+
+            if (!timer) {
+                throw new Error("Expected a pending polling timer.");
+            }
+
+            timer.cancelled = true;
+            timer.callback();
+        },
+        clear() {
+            timers.length = 0;
+        },
+    };
+}
+
+function setEnabled(enabled) {
+    mounted.controller.enabledValue = enabled;
+    mounted.controller.enabledValueChanged();
+}
+
+function setTimeoutValue(timeout) {
+    mounted.controller.timeoutValue = timeout;
+    mounted.controller.timeoutValueChanged();
 }

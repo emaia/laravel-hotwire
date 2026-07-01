@@ -74,6 +74,7 @@ test.serial("copied updates button innerHTML with success content", async () => 
     );
 
     const button = document.querySelector("button");
+    const scheduler = installFakeFeedbackScheduler();
     button.click();
     resolveClipboard();
     await wait(0);
@@ -93,13 +94,15 @@ test.serial("copied resets button innerHTML after successDuration", async () => 
     );
 
     const button = document.querySelector("button");
+    const scheduler = installFakeFeedbackScheduler();
     button.click();
     resolveClipboard();
     await wait(0);
 
     expect(button.innerHTML).toBe("Copied!");
 
-    await new Promise((resolve) => setTimeout(resolve, 60));
+    expect(scheduler.pending()[0].duration).toBe(50);
+    scheduler.runNext();
 
     expect(button.innerHTML).toBe("Copy");
 });
@@ -116,11 +119,13 @@ test.serial("multiple rapid copies cancel the previous timeout", async () => {
     );
 
     const button = document.querySelector("button");
+    const scheduler = installFakeFeedbackScheduler();
 
     button.click();
     resolveClipboard();
     await wait(0);
     expect(button.innerHTML).toBe("Copied!");
+    const firstTimer = scheduler.pending()[0];
 
     // Second copy before timeout fires
     let resolve2;
@@ -131,10 +136,10 @@ test.serial("multiple rapid copies cancel the previous timeout", async () => {
     resolve2();
     await wait(0);
 
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(firstTimer.cancelled).toBe(true);
     expect(button.innerHTML).toBe("Copied!");
 
-    await new Promise((resolve) => setTimeout(resolve, 160));
+    scheduler.runNext();
     expect(button.innerHTML).toBe("Copy");
 });
 
@@ -147,6 +152,7 @@ test.serial("successDuration defaults to 2000ms", async () => {
     );
 
     const button = document.querySelector("button");
+    const scheduler = installFakeFeedbackScheduler();
     button.click();
     resolveClipboard();
     await wait(0);
@@ -177,13 +183,15 @@ test.serial("connect stores the original button innerHTML", async () => {
     );
 
     const button = document.querySelector("button");
+    const scheduler = installFakeFeedbackScheduler();
     button.click();
     resolveClipboard();
     await wait(0);
 
     expect(button.innerHTML).toBe("Copied!");
 
-    await new Promise((resolve) => setTimeout(resolve, 2100));
+    expect(scheduler.pending()[0].duration).toBe(2000);
+    scheduler.runNext();
 
     expect(button.innerHTML).toBe("<strong>Copy text</strong>");
 });
@@ -197,4 +205,35 @@ async function mount(html, extraAttrs = {}) {
         CopyToClipboardController,
         `<div data-controller="copy-to-clipboard" ${attrs}>${html}</div>`,
     );
+}
+
+function installFakeFeedbackScheduler() {
+    const timers = [];
+
+    mounted.controller.setFeedbackTimer = (callback, duration) => {
+        const timer = { callback, duration, cancelled: false };
+        timers.push(timer);
+
+        return timer;
+    };
+
+    mounted.controller.clearFeedbackTimer = (timer) => {
+        if (timer) timer.cancelled = true;
+    };
+
+    return {
+        pending() {
+            return timers.filter((timer) => !timer.cancelled);
+        },
+        runNext() {
+            const timer = this.pending()[0];
+
+            if (!timer) {
+                throw new Error("Expected a pending copy feedback timer.");
+            }
+
+            timer.cancelled = true;
+            timer.callback();
+        },
+    };
 }

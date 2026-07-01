@@ -5,7 +5,6 @@ import {
     dispatchTurboSubmitEnd,
     dispatchTurboSubmitStart,
     mountController,
-    wait,
 } from "../../resources/js/helpers/test_stimulus.js";
 import AutoSaveController from "../../resources/js/controllers/auto_save_controller.js";
 
@@ -25,6 +24,7 @@ test.serial("saves a changed form after the input debounce", async () => {
     `);
 
     const { form, input, status } = elements();
+    const scheduler = installFakeSaveScheduler();
     let submits = 0;
 
     form.requestSubmit = () => {
@@ -35,7 +35,7 @@ test.serial("saves a changed form after the input debounce", async () => {
     input.value = "Updated";
     dispatchEvent(input, "input");
 
-    await wait(10);
+    scheduler.runNext();
 
     expect(submits).toBe(1);
     expect(form.dataset.autoSaveState).toBe("saved");
@@ -50,6 +50,7 @@ test.serial("does not save when the value returns to its last saved state", asyn
     `);
 
     const { form, input } = elements();
+    installFakeSaveScheduler();
     let submits = 0;
 
     form.requestSubmit = () => {
@@ -60,8 +61,6 @@ test.serial("does not save when the value returns to its last saved state", asyn
     dispatchEvent(input, "input");
     input.value = "Original";
     dispatchEvent(input, "input");
-
-    await wait(10);
 
     expect(submits).toBe(0);
     expect(form.dataset.autoSaveState).toBe("idle");
@@ -83,6 +82,7 @@ test.serial("uses the change delay for change events", async () => {
 
     const form = document.querySelector("form");
     const select = document.querySelector("select");
+    const scheduler = installFakeSaveScheduler();
     let submits = 0;
 
     form.requestSubmit = () => {
@@ -93,7 +93,8 @@ test.serial("uses the change delay for change events", async () => {
     select.value = "published";
     dispatchEvent(select, "change");
 
-    await wait(10);
+    expect(scheduler.pending()[0].delay).toBe(5);
+    scheduler.runNext();
 
     expect(submits).toBe(1);
 });
@@ -106,6 +107,7 @@ test.serial("queues one more save when the form changes during an in-flight save
     `);
 
     const { form, input } = elements();
+    const scheduler = installFakeSaveScheduler();
     let submits = 0;
     let finishSubmit;
 
@@ -120,13 +122,13 @@ test.serial("queues one more save when the form changes during an in-flight save
     input.value = "First update";
     dispatchEvent(input, "input");
 
-    await wait(10);
+    scheduler.runNext();
 
     input.value = "Second update";
     dispatchEvent(input, "input");
     finishSubmit();
 
-    await wait(10);
+    scheduler.runNext();
 
     expect(submits).toBe(2);
 });
@@ -141,6 +143,7 @@ test.serial("uses the submitter target when present", async () => {
 
     const { form, input } = elements();
     const submitter = document.querySelector("button");
+    const scheduler = installFakeSaveScheduler();
     let usedSubmitter = null;
 
     form.requestSubmit = (button) => {
@@ -151,7 +154,7 @@ test.serial("uses the submitter target when present", async () => {
     input.value = "Updated";
     dispatchEvent(input, "input");
 
-    await wait(10);
+    scheduler.runNext();
 
     expect(usedSubmitter).toBe(submitter);
 });
@@ -166,6 +169,7 @@ test.serial("ignores fields marked with data-auto-save-ignore", async () => {
 
     const form = document.querySelector("form");
     const ignored = document.querySelector("[data-auto-save-ignore]");
+    installFakeSaveScheduler();
     let submits = 0;
 
     form.requestSubmit = () => {
@@ -174,8 +178,6 @@ test.serial("ignores fields marked with data-auto-save-ignore", async () => {
 
     ignored.value = "seo";
     dispatchEvent(ignored, "input");
-
-    await wait(10);
 
     expect(submits).toBe(0);
     expect(form.dataset.autoSaveState).toBe("idle");
@@ -195,6 +197,7 @@ test.serial("applies configured state classes and dispatches lifecycle events", 
     `);
 
     const { form, input } = elements();
+    const scheduler = installFakeSaveScheduler();
     const events = [];
 
     form.addEventListener("auto-save:dirty", () => events.push("dirty"));
@@ -209,7 +212,7 @@ test.serial("applies configured state classes and dispatches lifecycle events", 
     input.value = "Updated";
     dispatchEvent(input, "input");
 
-    await wait(10);
+    scheduler.runNext();
 
     expect(form.classList.contains("is-dirty")).toBe(false);
     expect(form.classList.contains("is-saving")).toBe(false);
@@ -226,6 +229,7 @@ test.serial("sets the error state and dispatches error when submit fails", async
     `);
 
     const { form, input, status } = elements();
+    const scheduler = installFakeSaveScheduler();
     let errorEvents = 0;
 
     form.addEventListener("auto-save:error", () => {
@@ -240,7 +244,7 @@ test.serial("sets the error state and dispatches error when submit fails", async
     input.value = "Updated";
     dispatchEvent(input, "input");
 
-    await wait(10);
+    scheduler.runNext();
 
     expect(form.dataset.autoSaveState).toBe("error");
     expect(form.classList.contains("is-error")).toBe(true);
@@ -256,6 +260,7 @@ test.serial("cancel clears a pending save", async () => {
     `);
 
     const { form, input } = elements();
+    const scheduler = installFakeSaveScheduler();
     let submits = 0;
 
     form.requestSubmit = () => {
@@ -264,11 +269,12 @@ test.serial("cancel clears a pending save", async () => {
 
     input.value = "Updated";
     dispatchEvent(input, "input");
+    const pendingTimer = scheduler.pending()[0];
     mounted.controller.cancel();
 
-    await wait(60);
-
     expect(submits).toBe(0);
+    expect(pendingTimer.cancelled).toBe(true);
+    expect(scheduler.pending()).toHaveLength(0);
     expect(form.dataset.autoSaveState).toBe("dirty");
 });
 
@@ -287,4 +293,35 @@ function succeed(form) {
 
 async function setup(html) {
     mounted = await mountController("auto-save", AutoSaveController, html);
+}
+
+function installFakeSaveScheduler() {
+    const timers = [];
+
+    mounted.controller.setSaveTimer = (callback, delay) => {
+        const timer = { callback, delay, cancelled: false };
+        timers.push(timer);
+
+        return timer;
+    };
+
+    mounted.controller.clearSaveTimer = (timer) => {
+        if (timer) timer.cancelled = true;
+    };
+
+    return {
+        pending() {
+            return timers.filter((timer) => !timer.cancelled);
+        },
+        runNext() {
+            const timer = this.pending()[0];
+
+            if (!timer) {
+                throw new Error("Expected a pending auto-save timer.");
+            }
+
+            timer.cancelled = true;
+            timer.callback();
+        },
+    };
 }

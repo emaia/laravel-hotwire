@@ -161,7 +161,7 @@ registered here**, or the commands won't see it.
 ```bash
 composer test          # Run Pest tests
 composer analyse       # Run PHPStan
-bun run test           # Run JS unit tests (Bun + happy-dom). Use `bun run test`, not `bun test` — the npm script wires up --isolate so mocks don't leak across files
+bun run test           # Run JS unit tests (Bun + happy-dom). Use `bun run test`, not `bun test` — the npm script wires up --isolate --parallel so mocks don't leak across files and files run concurrently
 bun run test:browser   # Run browser tests (Playwright)
 composer format        # Run Pint code formatter
 ```
@@ -203,8 +203,8 @@ JS conventions:
 - One test file per controller: `tests/Controllers/<name>_controller.test.js`
 - Use `mountController` from `resources/js/helpers/test_stimulus.js` to set up the DOM and Stimulus
 - Always call `mounted?.cleanup()` in `afterEach`
-- Always run `bun run test` at the end to ensure nothing else broke (the script applies `--isolate`)
-- The suite runs with `bun test --isolate` (Bun ≥1.3.10): each file gets its own JSGlobalObject, so
+- Always run `bun run test` at the end to ensure nothing else broke (the script applies `--isolate --parallel`)
+- The suite runs with `bun test --isolate --parallel` (Bun ≥1.3.10): each file gets its own JSGlobalObject, so
   `mock.module` registrations don't leak between files. Drop the flag once Bun 1.4 makes isolation the default.
 - Use Playwright (`tests/Browser/*.pw.js`) for controller behavior that depends on real browser semantics:
   `MutationObserver`, focus, `requestAnimationFrame`, layout, Turbo frame-like DOM changes or other complex event

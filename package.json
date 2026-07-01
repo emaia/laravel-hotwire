@@ -5,7 +5,7 @@
     "scripts": {
         "build": "vite build",
         "dev": "vite",
-        "test": "bun test --isolate",
+        "test": "bun test --isolate --parallel",
         "test:browser": "playwright test",
         "test:watch": "bun test --watch --isolate"
     },

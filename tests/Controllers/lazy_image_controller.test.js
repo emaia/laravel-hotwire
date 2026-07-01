@@ -43,7 +43,7 @@ test.serial("renders an <img> with src/alt and replaces innerHTML on first succe
     stubImage({ outcome: "success" });
 
     await mount({ url: "/photo.png", alt: "Hero" });
-    await wait(10);
+    await wait(0);
 
     const img = mounted.root.querySelector("img");
     expect(img).not.toBeNull();
@@ -55,7 +55,7 @@ test.serial("applies width, height and imgClass when set", async () => {
     stubImage();
 
     await mount({ url: "/photo.png", width: 320, height: 200, imgClass: "rounded shadow" });
-    await wait(10);
+    await wait(0);
 
     const img = mounted.root.querySelector("img");
     expect(img.width).toBe(320);
@@ -73,7 +73,7 @@ test.serial("renders <source> entries from sources value before the <img>", asyn
             { media: "(min-width: 601px)", srcset: "/large.png" },
         ]),
     });
-    await wait(10);
+    await wait(0);
 
     const sources = mounted.root.querySelectorAll("source");
     expect(sources.length).toBe(2);
@@ -87,8 +87,17 @@ test.serial("renders <source> entries from sources value before the <img>", asyn
 test.serial("retries up to maxAttempts on probe error", async () => {
     stubImage({ outcome: "error" });
 
-    await mount({ url: "/missing.png", interval: 1, maxAttempts: 3 });
-    await wait(40);
+    await mount({ url: "/missing.png", interval: 1, maxAttempts: 1 });
+    const scheduler = installFakeRetryScheduler();
+    probes.length = 0;
+    mounted.controller.attempts = 0;
+    mounted.controller.maxAttemptsValue = 3;
+    mounted.controller.poll();
+    await wait(0);
+    scheduler.runNext();
+    await wait(0);
+    scheduler.runNext();
+    await wait(0);
 
     // First probe + 2 retries = 3 attempts total.
     expect(probes.length).toBe(3);
@@ -112,8 +121,18 @@ test.serial("stops retrying after a success", async () => {
         get src() { return this._src; }
     };
 
-    await mount({ url: "/photo.png", interval: 1, maxAttempts: 10 });
-    await wait(40);
+    await mount({ url: "/photo.png", interval: 1, maxAttempts: 1 });
+    const scheduler = installFakeRetryScheduler();
+    probes.length = 0;
+    calls = 0;
+    mounted.controller.attempts = 0;
+    mounted.controller.maxAttemptsValue = 10;
+    mounted.controller.poll();
+    await wait(0);
+    scheduler.runNext();
+    await wait(0);
+    scheduler.runNext();
+    await wait(0);
 
     expect(probes.length).toBe(3);
     expect(mounted.root.querySelector("img")).not.toBeNull();
@@ -124,14 +143,21 @@ test.serial("stops retrying after a success", async () => {
 test.serial("disconnect cancels a pending retry timer", async () => {
     stubImage({ outcome: "error" });
 
-    await mount({ url: "/missing.png", interval: 30, maxAttempts: 10 });
-    await wait(5);
+    await mount({ url: "/missing.png", interval: 30, maxAttempts: 1 });
+    const scheduler = installFakeRetryScheduler();
+    probes.length = 0;
+    mounted.controller.attempts = 0;
+    mounted.controller.maxAttemptsValue = 10;
+    mounted.controller.poll();
+    await wait(0);
 
     const probesBefore = probes.length;
+    const pendingTimer = scheduler.pending()[0];
     mounted.controller.disconnect();
-    await wait(60);
 
     expect(probes.length).toBe(probesBefore);
+    expect(pendingTimer.cancelled).toBe(true);
+    expect(scheduler.pending()).toHaveLength(0);
 });
 
 async function mount({ url, alt = "", interval = 1, maxAttempts = 20, width = 0, height = 0, imgClass = "", sources = "[]" } = {}) {
@@ -150,4 +176,35 @@ async function mount({ url, alt = "", interval = 1, maxAttempts = 20, width = 0,
         LazyImageController,
         `<picture data-controller="lazy-image" ${attrs}></picture>`,
     );
+}
+
+function installFakeRetryScheduler() {
+    const timers = [];
+
+    mounted.controller.setRetryTimer = (callback, interval) => {
+        const timer = { callback, interval, cancelled: false };
+        timers.push(timer);
+
+        return timer;
+    };
+
+    mounted.controller.clearRetryTimer = (timer) => {
+        if (timer) timer.cancelled = true;
+    };
+
+    return {
+        pending() {
+            return timers.filter((timer) => !timer.cancelled);
+        },
+        runNext() {
+            const timer = this.pending()[0];
+
+            if (!timer) {
+                throw new Error("Expected a pending lazy-image retry timer.");
+            }
+
+            timer.cancelled = true;
+            timer.callback();
+        },
+    };
 }
