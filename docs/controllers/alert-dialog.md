@@ -1,10 +1,10 @@
-# Confirm Dialog
+# Alert Dialog
 
-Intercepts clicks, opens a confirmation modal, and re-fires the original action only after the user confirms. This is
-the low-level Stimulus controller used by [`<x-hwc::confirm-dialog>`](../components/confirm-dialog.md).
+Intercepts clicks, opens an alert dialog, and re-fires the original action only after the user confirms. This is the
+low-level Stimulus controller used by [`<x-hwc::alert-dialog>`](../components/alert-dialog.md).
 
-**Identifier:** `confirm-dialog`  
-**Install:** `php artisan hotwire:controllers confirm-dialog`
+**Identifier:** `alert-dialog`  
+**Install:** `php artisan hotwire:controllers alert-dialog`
 
 ## Requirements
 
@@ -38,49 +38,49 @@ the low-level Stimulus controller used by [`<x-hwc::confirm-dialog>`](../compone
 
 ## Actions
 
-| Action                        | Description                                                                 |
-|-------------------------------|-----------------------------------------------------------------------------|
-| `confirm-dialog#intercept`    | Intercepts a click, stores the original element, and opens the dialog       |
-| `confirm-dialog#confirm`      | Closes the dialog and re-fires the original click after the close animation |
-| `confirm-dialog#cancel`       | Cancels the pending action and closes the dialog                            |
-| `confirm-dialog#clickOutside` | Cancels when clicking outside the dialog panel                              |
+| Action                      | Description                                                                 |
+|-----------------------------|-----------------------------------------------------------------------------|
+| `alert-dialog#intercept`    | Intercepts a click, stores the original element, and opens the dialog       |
+| `alert-dialog#confirm`      | Closes the dialog and re-fires the original click after the close animation |
+| `alert-dialog#cancel`       | Cancels the pending action and closes the dialog                            |
+| `alert-dialog#clickOutside` | Cancels when clicking outside the dialog panel                              |
 
 ## Basic usage
 
 ```html
 <div
-    data-controller="confirm-dialog"
-    data-confirm-dialog-hidden-class="opacity-0 pointer-events-none"
-    data-confirm-dialog-visible-class="opacity-100 pointer-events-auto"
-    data-confirm-dialog-backdrop-hidden-class="opacity-0"
-    data-confirm-dialog-backdrop-visible-class="opacity-100"
-    data-confirm-dialog-dialog-hidden-class="scale-90 opacity-0"
-    data-confirm-dialog-dialog-visible-class="scale-100 opacity-100"
-    data-confirm-dialog-lock-scroll-class="overflow-hidden"
+    data-controller="alert-dialog"
+    data-alert-dialog-hidden-class="opacity-0 pointer-events-none"
+    data-alert-dialog-visible-class="opacity-100 pointer-events-auto"
+    data-alert-dialog-backdrop-hidden-class="opacity-0"
+    data-alert-dialog-backdrop-visible-class="opacity-100"
+    data-alert-dialog-dialog-hidden-class="scale-90 opacity-0"
+    data-alert-dialog-dialog-visible-class="scale-100 opacity-100"
+    data-alert-dialog-lock-scroll-class="overflow-hidden"
 >
-    <div data-action="click->confirm-dialog#intercept">
-        <button type="button">Delete</button>
+    <div data-action="click->alert-dialog#intercept">
+        <button type="button">Continue</button>
     </div>
 
     <div
-        data-confirm-dialog-target="modal"
-        data-action="click->confirm-dialog#clickOutside"
+        data-alert-dialog-target="modal"
+        data-action="click->alert-dialog#clickOutside"
         hidden
     >
-        <div data-confirm-dialog-target="backdrop"></div>
+        <div data-alert-dialog-target="backdrop"></div>
 
-        <div data-confirm-dialog-target="dialog">
+        <div data-alert-dialog-target="dialog">
             <p>Are you sure?</p>
 
-            <button type="button" data-action="confirm-dialog#cancel">Cancel</button>
-            <button type="button" data-action="confirm-dialog#confirm">Confirm</button>
+            <button type="button" data-action="alert-dialog#cancel">Cancel</button>
+            <button type="button" data-action="alert-dialog#confirm">Confirm</button>
         </div>
     </div>
 </div>
 ```
 
 The controller stores the clicked element, opens the dialog, and only calls `element.click()` again after
-`confirm-dialog#confirm`.
+`alert-dialog#confirm`.
 
 ## With a Turbo method link
 
@@ -88,8 +88,8 @@ Because the controller re-fires the original click, it works with Turbo links an
 integration:
 
 ```html
-<div data-controller="confirm-dialog" ...>
-    <div data-action="click->confirm-dialog#intercept">
+<div data-controller="alert-dialog" ...>
+    <div data-action="click->alert-dialog#intercept">
         <a href="/posts/1" data-turbo-method="delete">Delete post</a>
     </div>
 
@@ -104,8 +104,8 @@ integration:
     <!-- fields -->
 </form>
 
-<div data-controller="confirm-dialog" ...>
-    <div data-action="click->confirm-dialog#intercept">
+<div data-controller="alert-dialog" ...>
+    <div data-action="click->alert-dialog#intercept">
         <button type="submit" form="report-form">Submit report</button>
     </div>
 
@@ -126,8 +126,8 @@ Cancel the dialog on `turbo:before-cache` to avoid restoring an open modal from 
 
 ```html
 <div
-    data-controller="confirm-dialog"
-    data-action="turbo:before-cache@window->confirm-dialog#cancel"
+    data-controller="alert-dialog"
+    data-action="turbo:before-cache@window->alert-dialog#cancel"
 >
     ...
 </div>
@@ -136,5 +136,5 @@ Cancel the dialog on `turbo:before-cache` to avoid restoring an open modal from 
 ## Use the Blade component when possible
 
 If you want the full markup, default classes, labels, and slots already wired, use
-[`<x-hwc::confirm-dialog>`](../components/confirm-dialog.md). Use the controller directly when you need custom
-HTML structure or custom styling.
+[`<x-hwc::alert-dialog>`](../components/alert-dialog.md). Use the controller directly when you need custom HTML
+structure or custom styling.

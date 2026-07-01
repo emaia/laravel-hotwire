@@ -1,4 +1,5 @@
 <div
+    data-slot="flash-message"
     data-turbo-temporary
     data-controller="toast"
     data-toast-message-value="{{ $finalMessage }}"

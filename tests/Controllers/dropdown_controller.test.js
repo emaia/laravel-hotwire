@@ -29,6 +29,7 @@ test.serial("starts closed with aria-expanded false", async () => {
 
     expect(isOpen()).toBe(false);
     expect(trigger().getAttribute("aria-expanded")).toBe("false");
+    expect(menu().dataset.open).toBe("false");
 });
 
 test.serial("toggles open and closed on the trigger", async () => {
@@ -37,10 +38,12 @@ test.serial("toggles open and closed on the trigger", async () => {
     clickTrigger();
     expect(isOpen()).toBe(true);
     expect(trigger().getAttribute("aria-expanded")).toBe("true");
+    expect(menu().dataset.open).toBe("true");
 
     clickTrigger();
     expect(isOpen()).toBe(false);
     expect(trigger().getAttribute("aria-expanded")).toBe("false");
+    expect(menu().dataset.open).toBe("false");
 });
 
 test.serial("open() and close() are idempotent", async () => {
@@ -74,6 +77,16 @@ test.serial("closes when clicking outside", async () => {
     expect(isOpen()).toBe(false);
 });
 
+test.serial("does not close from the same click event that opened it", async () => {
+    await mount();
+
+    const event = { currentTarget: trigger(), target: document.body };
+    mounted.controller.toggle(event);
+    mounted.controller.onOutsideClick(event);
+
+    expect(isOpen()).toBe(true);
+});
+
 test.serial("stays open when clicking a non-actionable element inside the menu", async () => {
     await mount();
     clickTrigger();
@@ -100,10 +113,12 @@ test.serial("closes on turbo:before-cache", async () => {
     await mount();
     clickTrigger();
     expect(isOpen()).toBe(true);
+    expect(menu().dataset.open).toBe("true");
 
     document.dispatchEvent(new CustomEvent("turbo:before-cache", { bubbles: true }));
 
     expect(isOpen()).toBe(false);
+    expect(menu().dataset.open).toBe("false");
 });
 
 // --- close on select ---
@@ -282,7 +297,7 @@ async function mount({ open = false, closeOnSelect = null } = {}) {
             <button data-dropdown-target="trigger" data-action="dropdown#toggle" aria-haspopup="true" aria-expanded="false">
                 Menu
             </button>
-            <div data-dropdown-target="menu" class="hidden">
+            <div data-dropdown-target="menu" data-open="${open ? "true" : "false"}" class="hidden">
                 <span>label</span>
                 <a href="#item">Item</a>
                 <button type="button">Action</button>

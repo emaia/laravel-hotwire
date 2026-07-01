@@ -1,10 +1,11 @@
 <?php
 
+use Emaia\LaravelHotwire\Components\AlertDialog;
+use Emaia\LaravelHotwire\Components\Button;
 use Emaia\LaravelHotwire\Components\Carousel;
 use Emaia\LaravelHotwire\Components\Chart;
 use Emaia\LaravelHotwire\Components\CheckboxGroup;
 use Emaia\LaravelHotwire\Components\ConditionalField;
-use Emaia\LaravelHotwire\Components\ConfirmDialog;
 use Emaia\LaravelHotwire\Components\Description;
 use Emaia\LaravelHotwire\Components\Dropdown;
 use Emaia\LaravelHotwire\Components\Error;
@@ -54,13 +55,13 @@ return [
             'description' => 'Leaflet wrapper — inline center/markers or GeoJSON URL, OSM tiles by default, subclass-friendly tile/handler hooks',
             'controllers' => ['map'],
         ],
-        'confirm-dialog' => [
-            'class' => ConfirmDialog::class,
-            'view' => 'hotwire::component-views.confirm-dialog',
-            'docs' => 'docs/components/confirm-dialog.md',
+        'alert-dialog' => [
+            'class' => AlertDialog::class,
+            'view' => 'hotwire::component-views.alert-dialog',
+            'docs' => 'docs/components/alert-dialog.md',
             'category' => 'overlay',
-            'description' => 'Accessible confirmation dialog that intercepts clicks before proceeding',
-            'controllers' => ['confirm-dialog'],
+            'description' => 'Accessible alert dialog that intercepts clicks before proceeding',
+            'controllers' => ['alert-dialog'],
         ],
         'form' => [
             'class' => Form::class,
@@ -91,7 +92,7 @@ return [
             'view' => 'hotwire::component-views.description',
             'docs' => 'docs/components/description.md',
             'category' => 'forms',
-            'description' => 'Helper text for a form field — paragraph with the hwc-description hook',
+            'description' => 'Helper text for a form field',
             'controllers' => [],
         ],
         'error' => [
@@ -246,6 +247,14 @@ return [
             'description' => 'Inline SVG icon from the embedded Lucide subset (~21 icons)',
             'controllers' => [],
         ],
+        'button' => [
+            'class' => Button::class,
+            'view' => 'hotwire::component-views.button',
+            'docs' => 'docs/components/button.md',
+            'category' => 'utility',
+            'description' => 'Displays a button or a component that looks like a button.',
+            'controllers' => [],
+        ],
     ],
     'controllers' => [
         'animated-number' => [
@@ -353,9 +362,9 @@ return [
             'category' => 'forms',
             'description' => 'Adds a clear button that appears when the input has a value',
         ],
-        'confirm-dialog' => [
-            'source' => 'resources/js/controllers/confirm_dialog_controller.js',
-            'docs' => 'docs/controllers/confirm-dialog.md',
+        'alert-dialog' => [
+            'source' => 'resources/js/controllers/alert_dialog_controller.js',
+            'docs' => 'docs/controllers/alert-dialog.md',
             'category' => 'overlay',
             'description' => 'Intercepts clicks and requires user confirmation before proceeding',
         ],

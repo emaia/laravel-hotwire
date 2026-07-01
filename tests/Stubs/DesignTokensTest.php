@@ -1,16 +1,19 @@
 <?php
 
 $stubPath = realpath(__DIR__.'/../../stubs/resources/css/app.css');
+$tokensPath = realpath(__DIR__.'/../../resources/css/tokens.css');
+$variantsPath = realpath(__DIR__.'/../../resources/css/custom-variants.css');
+$novaPresetPath = realpath(__DIR__.'/../../resources/css/presets/nova.css');
 
 // --- Token system ---
 
-it('contains @theme inline block', function () use ($stubPath) {
-    $css = file_get_contents($stubPath);
+it('contains @theme inline block', function () use ($tokensPath) {
+    $css = file_get_contents($tokensPath);
     expect($css)->toContain('@theme inline');
 });
 
-it('declares all semantic color tokens', function () use ($stubPath) {
-    $css = file_get_contents($stubPath);
+it('declares all semantic color tokens', function () use ($tokensPath) {
+    $css = file_get_contents($tokensPath);
 
     $required = [
         '--color-background',
@@ -39,14 +42,17 @@ it('declares all semantic color tokens', function () use ($stubPath) {
     }
 });
 
-it('declares all radius tokens', function () use ($stubPath) {
-    $css = file_get_contents($stubPath);
+it('declares all radius tokens', function () use ($tokensPath) {
+    $css = file_get_contents($tokensPath);
 
     $required = [
         '--radius-sm',
         '--radius-md',
         '--radius-lg',
         '--radius-xl',
+        '--radius-2xl',
+        '--radius-3xl',
+        '--radius-4xl',
     ];
 
     foreach ($required as $token) {
@@ -54,10 +60,25 @@ it('declares all radius tokens', function () use ($stubPath) {
     }
 });
 
+it('uses proportional scaling (multiplication) for radius derivations', function () use ($tokensPath) {
+    // Pixel arithmetic (-/+ Npx) breaks proportions when the app overrides
+    // --radius from the default. Proportional scaling keeps sm/md/xl/2xl/3xl/4xl
+    // in the same visual relation to the base regardless of what the app sets.
+    $css = file_get_contents($tokensPath);
+
+    expect($css)
+        ->toContain('--radius-sm: calc(var(--radius) * 0.6)')
+        ->toContain('--radius-md: calc(var(--radius) * 0.8)')
+        ->toContain('--radius-xl: calc(var(--radius) * 1.4)')
+        ->toContain('--radius-2xl: calc(var(--radius) * 1.8)')
+        ->toContain('--radius-3xl: calc(var(--radius) * 2.2)')
+        ->toContain('--radius-4xl: calc(var(--radius) * 2.6)');
+});
+
 // --- Light mode ---
 
-it('contains :root with OKLCH values', function () use ($stubPath) {
-    $css = file_get_contents($stubPath);
+it('contains :root with OKLCH values', function () use ($tokensPath) {
+    $css = file_get_contents($tokensPath);
     expect($css)->toContain(':root');
 
     $requiredVars = [
@@ -88,8 +109,8 @@ it('contains :root with OKLCH values', function () use ($stubPath) {
 
 // --- Dark mode ---
 
-it('contains data-theme dark with overrides', function () use ($stubPath) {
-    $css = file_get_contents($stubPath);
+it('contains data-theme dark with overrides', function () use ($tokensPath) {
+    $css = file_get_contents($tokensPath);
 
     expect($css)->toContain('[data-theme="dark"]');
 
@@ -108,23 +129,34 @@ it('contains data-theme dark with overrides', function () use ($stubPath) {
 
 // --- Preserve existing features ---
 
-it('contains @layer base with global border/outline rules', function () use ($stubPath) {
-    $css = file_get_contents($stubPath);
+it('contains @layer base with global border/outline rules', function () use ($tokensPath) {
+    $css = file_get_contents($tokensPath);
 
     expect($css)->toContain('@layer base');
-    expect($css)->toContain('border-color: var(--border)');
-    expect($css)->toContain('outline-color: var(--ring)');
+    expect($css)->toContain('@apply border-border outline-ring/50');
 });
 
-it('preserves existing @source directives', function () use ($stubPath) {
+it('scans package CSS instead of Blade or PHP sources', function () use ($stubPath) {
     $css = file_get_contents($stubPath);
 
-    expect($css)->toContain("@source '../../vendor/emaia/laravel-hotwire/resources/views/**/*.blade.php'");
-    expect($css)->toContain("@source '../../vendor/emaia/laravel-hotwire/src/Components/**/*.php'");
+    expect($css)
+        ->toContain("@source '../../vendor/emaia/laravel-hotwire/resources/css/**/*.css'")
+        ->not->toContain('resources/views/**/*.blade.php')
+        ->not->toContain('src/Components/**/*.php');
 });
 
-it('preserves existing @custom-variant rules', function () use ($stubPath) {
-    $css = file_get_contents($stubPath);
+it('safelists runtime classes applied by Stimulus controllers', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain('@source inline(')
+        ->toContain('pointer-events-none')
+        ->toContain('scale-95')
+        ->toContain('duration-100');
+});
+
+it('preserves existing @custom-variant rules', function () use ($variantsPath) {
+    $css = file_get_contents($variantsPath);
 
     $variants = [
         'turbo-preview',
@@ -140,4 +172,60 @@ it('preserves existing @custom-variant rules', function () use ($stubPath) {
     foreach ($variants as $variant) {
         expect($css)->toContain("@custom-variant {$variant}");
     }
+});
+
+it('keeps the app css stub thin and imports the default preset', function () use ($stubPath) {
+    $css = file_get_contents($stubPath);
+
+    expect($css)
+        ->toContain('@import "tailwindcss"')
+        ->toContain("@import '../../vendor/emaia/laravel-hotwire/resources/css/presets/nova.css'")
+        ->not->toContain('@theme inline')
+        ->not->toContain('@custom-variant turbo-preview');
+});
+
+it('defines component styles in the nova preset via data-slot selectors', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain('[data-slot="button"]')
+        ->toContain('[data-slot="input"]')
+        ->toContain('[data-slot="modal-panel"]')
+        ->toContain('[data-slot="alert-dialog-panel"]');
+});
+
+it('does not apply Tailwind marker-only classes inside presets', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)->not->toMatch('/@apply[^;]*\bgroup\b/');
+});
+
+it('hides the native select arrow when rendering a custom select icon', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain('[data-slot="select"] { @apply appearance-none pr-8; }')
+        ->toContain('[data-slot="select-icon"]');
+});
+
+it('styles checkable inputs when they are wrapped by labels', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain('[data-slot="label"]:has(:is([data-slot="input"], [data-slot="checkbox-group-input"])[data-checkable="true"])')
+        ->toContain(':is([data-slot="input"], [data-slot="checkbox-group-input"])[data-checkable="true"]');
+});
+
+it('defines overlay and menu slots in the nova preset', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain('[data-slot="modal-panel"]')
+        ->toContain('[data-slot="alert-dialog-action"]')
+        ->toContain('[data-slot="alert-dialog-cancel"]')
+        ->toContain('[data-slot="dropdown"]')
+        ->toContain('[data-slot="dropdown-trigger"]')
+        ->toContain('[data-slot="dropdown-menu"]')
+        ->toContain('[data-slot="dropdown-menu"][data-width="default"]')
+        ->toContain('[data-slot="dropdown-menu"][data-align="start"]');
 });

@@ -17,25 +17,24 @@ beforeEach(function () {
 
 // --- Wrapper structure ---
 
-it('renders a wrapper div with hwc-field class', function () {
+it('renders a wrapper div with field slot', function () {
     $view = $this->blade('<x-hwc::field name="email"><span>x</span></x-hwc::field>');
 
-    $view->assertSee('hwc-field', false);
+    $view->assertSee('data-slot="field"', false);
     $view->assertSee('<span>x</span>', false);
 });
 
 it('merges custom class on wrapper', function () {
     $view = $this->blade('<x-hwc::field name="email" class="space-y-1"><span>x</span></x-hwc::field>');
 
-    $view->assertSee('hwc-field', false);
-    $view->assertSee('space-y-1', false);
+    $view->assertSee('class="space-y-1"', false);
 });
 
 it('does not auto-render label or description', function () {
     $view = $this->blade('<x-hwc::field name="email"><span>x</span></x-hwc::field>');
 
     $view->assertDontSee('<label', false);
-    $view->assertDontSee('hwc-description', false);
+    $view->assertDontSee('data-slot="description"', false);
 });
 
 // --- Auto-rendered error ---
@@ -130,7 +129,7 @@ it('auto-rendered label shows default asterisk when required', function () {
 
     $html = (string) $view;
     // The label contains '*' but rendered via component, not as raw '*'
-    expect($html)->toContain('<span class="hwc-label-required"');
+    expect($html)->toContain('<span data-slot="label-required"');
 });
 
 it('does not auto-render label when label prop is null', function () {
@@ -186,7 +185,7 @@ it('auto-renders description between slot and error when description prop is pro
         </x-hwc::field>
     ');
 
-    $view->assertSee('hwc-description', false);
+    $view->assertSee('data-slot="description"', false);
     $view->assertSee('Enter your work email address.');
 });
 
@@ -197,7 +196,7 @@ it('does not auto-render description when description prop is null', function ()
         </x-hwc::field>
     ');
 
-    $view->assertDontSee('hwc-description', false);
+    $view->assertDontSee('data-slot="description"', false);
 });
 
 it('does not auto-render description when description prop is empty string', function () {
@@ -207,7 +206,7 @@ it('does not auto-render description when description prop is empty string', fun
         </x-hwc::field>
     ');
 
-    $view->assertDontSee('hwc-description', false);
+    $view->assertDontSee('data-slot="description"', false);
 });
 
 it('auto-rendered description coexists with auto-rendered label', function () {
@@ -219,7 +218,7 @@ it('auto-rendered description coexists with auto-rendered label', function () {
 
     $view->assertSee('<label', false);
     $view->assertSee('E-mail');
-    $view->assertSee('hwc-description', false);
+    $view->assertSee('data-slot="description"', false);
     $view->assertSee('We will never share your email.');
 });
 
@@ -232,7 +231,7 @@ it('auto-rendered description appears after slot and before error', function () 
 
     $html = (string) $view;
     $inputPos = strpos($html, 'value="test"');
-    $descPos = strpos($html, 'hwc-description');
+    $descPos = strpos($html, 'data-slot="description"');
     $errorPos = strpos($html, 'id="email-error"');
     expect($inputPos)->toBeLessThan($descPos);
     expect($descPos)->toBeLessThan($errorPos);

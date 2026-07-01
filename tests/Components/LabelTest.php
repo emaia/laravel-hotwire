@@ -111,11 +111,11 @@ it('does not render required marker by default', function () {
 
 // --- Class merge ---
 
-it('merges custom class with hwc-label', function () {
+it('merges custom class on the label element', function () {
     $view = $this->blade('<x-hwc::label for="email" class="text-sm font-bold">E-mail</x-hwc::label>');
 
-    $view->assertSee('hwc-label', false);
-    $view->assertSee('text-sm font-bold', false);
+    $view->assertSee('data-slot="label"', false);
+    $view->assertSee('class="text-sm font-bold"', false);
 });
 
 // --- Pass-through ---

@@ -302,17 +302,18 @@ it('merges user data-controller with the package one', function () {
     $view->assertSee('data-controller="rich-text my-extra"', false);
 });
 
-it('forwards extra attributes and merges class prop alongside hwc-rich-text', function () {
+it('forwards extra attributes and merges the class prop on the wrapper', function () {
     $view = $this->blade('<x-hwc::rich-text name="content" class="rounded" data-test="x" />');
 
-    $view->assertSee('class="hwc-rich-text rounded"', false);
+    $view->assertSee('class="rounded"', false);
     $view->assertSee('data-test="x"', false);
 });
 
-it('always renders the hwc-rich-text class on the wrapper for stable CSS targeting', function () {
+it('uses data-slot on the wrapper for stable CSS targeting', function () {
     $view = $this->blade('<x-hwc::rich-text name="content" />');
 
-    $view->assertSee('class="hwc-rich-text"', false);
+    $view->assertSee('data-slot="rich-text"', false);
+    $view->assertDontSee('hwc-rich-text', false);
 });
 
 // --- @aware integration with x-hwc::field ---

@@ -21,7 +21,7 @@ The `hotwire:install` command exposes three modes for adding npm dependencies to
 
 | Command | What it adds | Loader stub shape |
 |---|---|---|
-| `php artisan hotwire:install` | Core deps (`@hotwired/stimulus`, `@hotwired/turbo`, `@emaia/stimulus-dynamic-loader`) **plus every catalog dep** declared by package controllers (echarts, leaflet, embla-carousel, tiptap stack, dropzone, maska, tippy.js, date-fns, sonner). Everything works without further setup. | Globs every package controller — no exclusions |
+| `php artisan hotwire:install` | Core deps (`@hotwired/stimulus`, `@hotwired/turbo`, `@emaia/stimulus-lazy-loader`) **plus every catalog dep** declared by package controllers (echarts, leaflet, embla-carousel, tiptap stack, dropzone, maska, tippy.js, date-fns, sonner). Everything works without further setup. | Globs every package controller — no exclusions |
 | `php artisan hotwire:install --with-deps=carousel,chart,map` | Core deps **plus only the npm deps required by the listed controllers**. Accepts comma-separated values or repeated `--with-deps=X` flags. | Globs zero-dep controllers + only the opted-in com-dep controllers; everything else is excluded so `vite build` never resolves their missing imports |
 | `php artisan hotwire:install --core-only` | Core deps **only**. No catalog deps. | Globs zero-dep controllers only; every com-dep controller excluded |
 
@@ -70,18 +70,17 @@ When you install with `--with-deps=carousel` and later add `<x-hwc::chart>` to a
 
 ### What you must do manually
 
-#### 1. Add the `@source` directive for PHP component classes
+#### 1. Add the `@source` directive for package CSS
 
-The `Variants` helper (and any future component with classes declared in PHP) lives outside the Blade views. Tailwind v4's scanner is content-type agnostic but needs to know where to look — without this line, classes referenced inside `Variants::make(...)` calls will be silently omitted from the final CSS.
+Package styles now live in CSS preset files. Tailwind v4 needs to scan those package CSS files so utilities used in presets and runtime safelists are generated.
 
-Open your application's `resources/css/app.css` and add the second `@source` line:
+Open your application's `resources/css/app.css` and add the package CSS source:
 
 ```diff
-  @source '../../vendor/emaia/laravel-hotwire/resources/views/**/*.blade.php';
-+ @source '../../vendor/emaia/laravel-hotwire/src/Components/**/*.php';
++ @source '../../vendor/emaia/laravel-hotwire/resources/css/**/*.css';
 ```
 
-Apps installed via `hotwire:install` from `0.32.0` onwards get this automatically — the change applies only to apps installed on an earlier version.
+Apps installed via `hotwire:install` from `0.33.0` onwards get this automatically — the change applies only to apps installed on an earlier version.
 
 #### 2. Re-publish the CSS stub if you customised it
 
@@ -103,7 +102,7 @@ Full reference: [`docs/theming.md`](theming.md).
 
 #### 3. Wire up the dark mode trigger (optional)
 
-`[data-theme="dark"]` on `<html>` activates the dark palette. There is no toggle component yet — it lands in `0.34.0`. If you want dark mode now, set the attribute yourself (server-side, inline script, or via your own toggle).
+`[data-theme="dark"]` on `<html>` activates the dark palette. There is no packaged toggle yet. If you want dark mode now, set the attribute yourself (server-side, inline script, or via your own toggle).
 
 ```html
 <html data-theme="dark">
@@ -144,3 +143,43 @@ If the visual change is disruptive and you need to ship before adopting:
 
 - Pin to `^0.31.0` in `composer.json` until you can schedule the visual migration.
 - The class substitutions are not one-way — you can keep overriding the package classes per-component via the `class="..."` attribute on each `<x-hwc::*>` instance if a holistic re-theme is not yet feasible.
+
+---
+
+## Upgrading to `0.33.0`
+
+`0.33.0` moves shipped component styling from inline Tailwind classes in Blade views to CSS presets based on semantic attributes.
+
+### Update `resources/css/app.css`
+
+Re-run the CSS installer if your app has not customised the file:
+
+```bash
+php artisan hotwire:install --only=css --force
+```
+
+If you customised it, keep your app CSS and add the preset source/import shape manually:
+
+```css
+@import "tailwindcss";
+
+@source '../../vendor/emaia/laravel-hotwire/resources/css/**/*.css';
+
+@import '../../vendor/emaia/laravel-hotwire/resources/css/presets/nova.css';
+```
+
+Available preset: `nova`.
+
+### Update component CSS overrides
+
+Overrides that targeted package Tailwind classes should move to semantic selectors:
+
+```css
+/* Before: coupled to internal classes */
+.my-page .bg-primary { ... }
+
+/* After: coupled to component intent */
+.my-page [data-slot="button"][data-variant="default"] { ... }
+```
+
+Props and public HTML attributes are preserved. Custom `class="..."` values still pass through to the rendered element.

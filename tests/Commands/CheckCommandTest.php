@@ -120,23 +120,23 @@ it('detects component used in a blade file', function () {
 });
 
 it('detects component with attributes', function () {
-    writeView('page.blade.php', '<x-hwc::confirm-dialog title="Delete?" message="Sure?"><button>x</button></x-hwc::confirm-dialog>');
+    writeView('page.blade.php', '<x-hwc::alert-dialog title="Continue?" message="Sure?"><button>x</button></x-hwc::alert-dialog>');
 
     $this->artisan('hotwire:check --no-interaction')
-        ->expectsOutputToContain('confirm-dialog')
+        ->expectsOutputToContain('alert-dialog')
         ->assertSuccessful();
 });
 
 it('detects components across multiple files', function () {
     writeView('a.blade.php', '<x-hwc::modal />');
-    writeView('b.blade.php', '<x-hwc::confirm-dialog title="x" />');
+    writeView('b.blade.php', '<x-hwc::alert-dialog title="x" />');
 
     $exit = Artisan::call('hotwire:check --no-interaction');
     $output = Artisan::output();
 
     expect($exit)->toBe(0)
         ->and($output)->toContain('<x-hwc::modal>')
-        ->and($output)->toContain('<x-hwc::confirm-dialog>');
+        ->and($output)->toContain('<x-hwc::alert-dialog>');
 });
 
 it('deduplicates components used in multiple files', function () {
@@ -167,14 +167,14 @@ it('detects components using hotwire:: alias', function () {
 
 it('detects both hwc:: and hotwire:: prefixes in the same codebase', function () {
     writeView('a.blade.php', '<x-hwc::modal />');
-    writeView('b.blade.php', '<x-hotwire::confirm-dialog title="x" />');
+    writeView('b.blade.php', '<x-hotwire::alert-dialog title="x" />');
 
     $exit = Artisan::call('hotwire:check --no-interaction');
     $output = Artisan::output();
 
     expect($exit)->toBe(0)
         ->and($output)->toContain('<x-hwc::modal>')
-        ->and($output)->toContain('<x-hwc::confirm-dialog>');
+        ->and($output)->toContain('<x-hwc::alert-dialog>');
 });
 
 it('detects hotwire:: alias when a custom prefix is set', function () {
@@ -241,14 +241,14 @@ it('detects standalone controller via stimulus()->controller()', function () {
 });
 
 it('detects multiple via stimulus()->controllers()', function () {
-    writeView('page.blade.php', '{{ stimulus()->controllers(\'modal\', \'confirm-dialog\') }}');
+    writeView('page.blade.php', '{{ stimulus()->controllers(\'modal\', \'alert-dialog\') }}');
 
     $exit = Artisan::call('hotwire:check --no-interaction');
     $output = Artisan::output();
 
     expect($exit)->toBe(0)
         ->and($output)->toContain('modal')
-        ->and($output)->toContain('confirm-dialog');
+        ->and($output)->toContain('alert-dialog');
 });
 
 it('detects chained stimulus()->controller()->controller()', function () {
@@ -702,7 +702,7 @@ it('ignores core dependencies', function () {
     $this->artisan('hotwire:check --no-interaction')
         ->doesntExpectOutputToContain('@hotwired/stimulus')
         ->doesntExpectOutputToContain('@hotwired/turbo')
-        ->doesntExpectOutputToContain('@emaia/stimulus-dynamic-loader');
+        ->doesntExpectOutputToContain('@emaia/stimulus-lazy-loader');
 });
 
 it('deduplicates dependencies used by multiple controllers', function () {

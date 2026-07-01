@@ -15,6 +15,7 @@
 @endphp
 
 <div
+    data-slot="carousel"
     data-controller="{{ $dataController }}"
     data-{{ $identifier }}-options-value="{{ $optionsJson() }}"
     data-carousel-axis="{{ $axis }}"
@@ -24,32 +25,33 @@
     @if ($style !== '') style="{{ $style }}" @endif
     {{ $attributes->except(['data-controller', 'data-action', 'progress', 'counter'])->whereDoesntStartWith($internalPrefixes)->merge(['id' => $id, 'class' => $class]) }}
 >
-    <div data-carousel-viewport class="{{ $viewportClass }}">
-        <div data-carousel-container class="{{ $containerClass }}">
+    <div data-slot="carousel-viewport" data-carousel-viewport class="{{ $viewportClass }}">
+        <div data-slot="carousel-container" data-carousel-container class="{{ $containerClass }}">
             {{ $slot }}
         </div>
     </div>
 
     @if ($progress)
-        <div class="{{ $progressWrapperClass }}">
-            <div data-{{ $identifier }}-target="progress" class="{{ $progressClass }}" style="width: 0%"></div>
+        <div data-slot="carousel-progress-wrapper" class="{{ $progressWrapperClass }}">
+            <div data-slot="carousel-progress" data-{{ $identifier }}-target="progress" class="{{ $progressClass }}" style="width: 0"></div>
         </div>
     @endif
 
     @if ($counter)
-        <div class="{{ $counterClass }}">
+        <div data-slot="carousel-counter" class="{{ $counterClass }}">
             <span data-{{ $identifier }}-target="indexLabel"></span>/<span data-{{ $identifier }}-target="totalLabel"></span>
         </div>
     @endif
 
     @if ($navigation)
         @if ($navWrapperClass !== '')
-            <div data-carousel-nav-wrapper class="{{ $navWrapperClass }}">
+            <div data-slot="carousel-nav-wrapper" data-carousel-nav-wrapper class="{{ $navWrapperClass }}">
         @endif
         <button
             {{
                 ($prev_button ?? new ComponentSlot)->attributes->merge([
                     'type' => 'button',
+                    'data-slot' => 'carousel-prev-button',
                     "data-{$identifier}-target" => 'prevButton',
                     'data-action' => "{$identifier}#prev",
                     'aria-label' => 'Previous',
@@ -63,6 +65,7 @@
             {{
                 ($next_button ?? new ComponentSlot)->attributes->merge([
                     'type' => 'button',
+                    'data-slot' => 'carousel-next-button',
                     "data-{$identifier}-target" => 'nextButton',
                     'data-action' => "{$identifier}#next",
                     'aria-label' => 'Next',
@@ -79,6 +82,7 @@
 
     @if ($dots)
         <div
+            data-slot="carousel-dot-list"
             data-{{ $identifier }}-target="dotList"
             class="{{ $dotListClass }}"
             role="group"
@@ -90,6 +94,7 @@
                 {{
                     ($dot_template ?? new ComponentSlot)->attributes->merge([
                         'type' => 'button',
+                        'data-slot' => 'carousel-dot-button',
                         'data-action' => "{$identifier}#scrollTo",
                         'class' => $dotClass,
                     ])

@@ -214,7 +214,7 @@ End-to-end flow:
 7. Per-card remove buttons fire DELETE via `remote-form`; server responds with another stream
    (`<turbo-stream action="remove" target="photo_42">`) → card and its hidden disappear.
 
-Compose with `lazy-image`, `remote-form`, `confirm-dialog`, and any other Stimulus controller you
+Compose with `lazy-image`, `remote-form`, `alert-dialog`, and any other Stimulus controller you
 need on the card partial. Zero JS glue beyond what the package already ships.
 
 ## 4. Single-file edit form with a stream-replaced card (avatar pattern)
@@ -328,7 +328,7 @@ and a subclass for the SortableJS + metadata wiring. No new package code require
             :emit-hidden="false"
             :max-size-bytes="10 * 1024 * 1024"
             :messages="['default' => '<span class=\'text-2xl mr-2\'>+</span> Drag files or click to set media']"
-            class="hwc-media-list"
+            class="media-list"
         >
             <x-slot:preview_template>
                 <div class="dz-preview dz-file-preview flex items-center gap-4 p-3 border-b bg-white">
@@ -367,17 +367,17 @@ Dropzone's default `.dz-preview` is `display: inline-block` with `margin: 16px` 
 vertical list. A targeted reset in your app stylesheet:
 
 ```css
-.hwc-media-list .dz-preview {
+.media-list .dz-preview {
     display: flex;
     margin: 0;
     min-height: 0;
     position: relative;
 }
-.hwc-media-list .dz-preview .dz-image,
-.hwc-media-list .dz-preview .dz-details,
-.hwc-media-list .dz-preview .dz-progress,
-.hwc-media-list .dz-preview .dz-success-mark,
-.hwc-media-list .dz-preview .dz-error-mark {
+.media-list .dz-preview .dz-image,
+.media-list .dz-preview .dz-details,
+.media-list .dz-preview .dz-progress,
+.media-list .dz-preview .dz-success-mark,
+.media-list .dz-preview .dz-error-mark {
     all: unset;
 }
 ```

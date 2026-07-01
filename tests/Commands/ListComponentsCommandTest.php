@@ -20,7 +20,7 @@ it('lists all registered components', function () {
     $output = Artisan::output();
 
     expect($output)->toContain('Modal')
-        ->and($output)->toContain('Confirm Dialog')
+        ->and($output)->toContain('Alert Dialog')
         ->and($output)->toContain('Flash Container')
         ->and($output)->toContain('Flash Message')
         ->and($output)->toContain('Spinner')
@@ -30,7 +30,7 @@ it('lists all registered components', function () {
 it('shows blade tags with current prefix', function () {
     $this->artisan('hotwire:components')
         ->expectsOutputToContain('<x-hwc::modal>')
-        ->expectsOutputToContain('<x-hwc::confirm-dialog>')
+        ->expectsOutputToContain('<x-hwc::alert-dialog>')
         ->expectsOutputToContain('<x-hwc::flash-message>')
         ->expectsOutputToContain('<x-hwc::spinner>')
         ->expectsOutputToContain('<x-hwc::scroll-progress>')
@@ -47,7 +47,7 @@ it('shows blade tags respecting custom prefix', function () {
 
 it('shows stimulus controller identifiers', function () {
     $this->artisan('hotwire:components')
-        ->expectsOutputToContain('confirm-dialog')
+        ->expectsOutputToContain('alert-dialog')
         ->expectsOutputToContain('toaster')
         ->expectsOutputToContain('toast')
         ->expectsOutputToContain('scroll-progress')

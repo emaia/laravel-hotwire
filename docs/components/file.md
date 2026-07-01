@@ -70,7 +70,7 @@ enabled) mounted directly on it:
 <input type="file" id="avatar" name="avatar" data-controller="file-preserve" aria-describedby="avatar-error" />
 ```
 
-A wrapping `<div class="hwc-file">` is added **only when needed** — when `current-url` is set (to hold the link) or when
+A wrapping `<div data-slot="file-wrapper">` is added **only when needed** — when `current-url` is set (to hold the link) or when
 you pass `wrapper-class`. The controllers always live on the `<input>`, never on the wrapper, so a custom
 `data-controller` you pass lands where an uploader controller actually wants to be:
 
@@ -91,7 +91,7 @@ renders the wrapper:
 Renders:
 
 ```html
-<div class="hwc-file">
+<div data-slot="file-wrapper">
     <p>Current file: <a href="https://..." target="_blank" rel="noopener">Current file</a></p>
     <input type="file" id="avatar" name="avatar" data-controller="file-preserve" ... />
 </div>

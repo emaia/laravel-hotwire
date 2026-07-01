@@ -17,6 +17,7 @@ export default class extends Controller {
         this.onMenuClick = this.onMenuClick.bind(this);
         this.closeForCache = this.closeForCache.bind(this);
         this.activeTrigger = null;
+        this.toggleEvent = null;
     }
 
     connect() {
@@ -25,7 +26,7 @@ export default class extends Controller {
         document.addEventListener("turbo:before-cache", this.closeForCache);
 
         this.hiddenClassList.forEach((cls) => this.menuTarget.classList.toggle(cls, !this.openValue));
-        this.syncAria();
+        this.syncState();
     }
 
     disconnect() {
@@ -43,6 +44,7 @@ export default class extends Controller {
     }
 
     toggle(event) {
+        this.toggleEvent = event;
         this.rememberTrigger(event);
         this.openValue ? this.close() : this.open();
     }
@@ -51,19 +53,20 @@ export default class extends Controller {
         this.rememberTrigger(event);
         if (this.openValue) return;
         this.openValue = true;
-        this.syncAria();
+        this.syncState();
         enter(this.menuTarget, { hidden: this.hiddenClassList });
     }
 
     close({ focusTrigger = false } = {}) {
         if (!this.openValue) return;
         this.openValue = false;
-        this.syncAria();
+        this.syncState();
         leave(this.menuTarget, { hidden: this.hiddenClassList });
         if (focusTrigger) (this.activeTrigger ?? (this.hasTriggerTarget ? this.triggerTarget : null))?.focus();
     }
 
     onOutsideClick(event) {
+        if (event === this.toggleEvent) return;
         if (this.openValue && !this.element.contains(event.target)) this.close();
     }
 
@@ -81,7 +84,7 @@ export default class extends Controller {
     closeForCache() {
         cancel(this.menuTarget);
         this.openValue = false;
-        this.syncAria();
+        this.syncState();
         this.menuTarget.classList.add(...this.hiddenClassList);
     }
 
@@ -90,8 +93,9 @@ export default class extends Controller {
         if (trigger && this.triggerTargets.includes(trigger)) this.activeTrigger = trigger;
     }
 
-    syncAria() {
+    syncState() {
         this.triggerTargets.forEach((trigger) => trigger.setAttribute("aria-expanded", String(this.openValue)));
+        this.menuTarget.dataset.open = String(this.openValue);
     }
 
     get hiddenClassList() {

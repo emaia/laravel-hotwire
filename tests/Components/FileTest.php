@@ -26,7 +26,7 @@ it('renders a bare file input with file-preserve on the input by default', funct
     $view->assertSee('type="file"', false);
     $view->assertSee('name="avatar"', false);
     // No wrapper when there is nothing to wrap.
-    $view->assertDontSee('class="hwc-file', false);
+    $view->assertDontSee('data-slot="file-wrapper"', false);
 });
 
 it('renders type as file always', function () {
@@ -192,7 +192,7 @@ it('does not render current file link when current-url is not set', function () 
 it('wraps when current-url is set even without reset-on-success', function () {
     $view = $this->blade('<x-hwc::file name="avatar" current-url="https://example.com/img.jpg" />');
 
-    $view->assertSee('<div class="hwc-file', false);
+    $view->assertSee('data-slot="file-wrapper"', false);
 });
 
 // --- Multiple ---
@@ -257,16 +257,17 @@ it('does not mark invalid when neither the key nor sub-keys have errors', functi
 it('renders a wrapper when wrapper-class is provided even without current-url', function () {
     $view = $this->blade('<x-hwc::file name="avatar" wrapper-class="relative" />');
 
-    $view->assertSee('<div class="hwc-file relative"', false);
+    $view->assertSee('class="relative"', false);
+    $view->assertSee('data-slot="file-wrapper"', false);
 });
 
 it('puts the controller on the input even when wrapped for current-url', function () {
     $view = $this->blade('<x-hwc::file name="avatar" current-url="https://example.com/img.jpg" />');
 
     // Wrapper is plain layout; controller lives on the input.
-    $view->assertSee('<div class="hwc-file', false);
+    $view->assertSee('data-slot="file-wrapper"', false);
     $view->assertSee('data-controller="file-preserve"', false);
-    $view->assertDontSee('<div class="hwc-file" data-controller', false);
+    $view->assertDontSee('data-slot="file-wrapper" data-controller', false);
 });
 
 // --- Class merge ---

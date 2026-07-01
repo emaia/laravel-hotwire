@@ -124,7 +124,7 @@ export default class extends ChartController {
 The defaults apply via a first `chart.setOption(defaults)` call; the user option then merges on
 top using ECharts' built-in setOption semantics. `afterInit` runs once after both are applied.
 
-Subclasses are lazy-loaded by `@emaia/stimulus-dynamic-loader` — the extra ECharts modules they
+Subclasses are lazy-loaded by `@emaia/stimulus-lazy-loader` — the extra ECharts modules they
 register only ship to clients that actually render them.
 
 ## Advanced — drill-down with smooth transitions

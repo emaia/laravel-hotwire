@@ -14,12 +14,12 @@ wiring.
 ## This Package's Setup
 
 Controllers live in `resources/js/controllers/{namespace}/{name}_controller.{js|ts}` and are automatically discovered
-by `@emaia/stimulus-dynamic-loader` via Vite's `import.meta.glob`:
+by `@emaia/stimulus-lazy-loader` via Vite's `import.meta.glob`:
 
 ```javascript
 // resources/js/controllers/index.js
 import { Stimulus } from "../libs/stimulus";
-import { registerControllers } from "@emaia/stimulus-dynamic-loader";
+import { registerControllers } from "@emaia/stimulus-lazy-loader";
 
 const controllers = import.meta.glob("./**/*_controller.{js,ts}", {
     eager: false,

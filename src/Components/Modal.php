@@ -2,6 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\Component;
 
 class Modal extends Component
@@ -16,6 +17,7 @@ class Modal extends Component
         public bool $fixedTop = false,
         public ?string $frame = null,
         public int $preventReopenDelay = 1000,
+        public ?Htmlable $stimulus = null,
     ) {
         if ($this->id === '') {
             $this->id = uniqid('modal-');

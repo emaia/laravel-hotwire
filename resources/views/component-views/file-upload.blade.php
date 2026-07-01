@@ -3,6 +3,7 @@
 @php extract($compute($name, $id, $errorKey, $required, $errors, $attributes)) @endphp
 
 <div
+    data-slot="file-upload"
     id="{{ $resolvedId }}"
     tabindex="0"
     role="button"
@@ -27,7 +28,7 @@
     @if ($hasErrors) aria-invalid="true" data-invalid @endif
     @if ($isRequired) aria-required="true" @endif
     {{ $attributes
-        ->merge(['class' => trim('hwc-file-upload dropzone '.$class)])
+        ->merge(['class' => trim('dropzone '.$class)])
         ->whereDoesntStartWith(array_merge(['data-controller', 'data-action'], $internalPrefixes))
         ->except(['required']) }}
 >
@@ -40,6 +41,7 @@
         @endif
     @endisset
     <div
+        data-slot="file-upload-announcer"
         role="status"
         aria-live="polite"
         data-{{ $identifier }}-target="announcer"

@@ -1,1 +1,1 @@
-<p {{ $attributes->class(['text-sm text-muted-foreground', 'hwc-description', $class]) }}>{{ $slot }}</p>
+<p data-slot="description" {{ $attributes->class($class ?: null) }}>{{ $slot }}</p>

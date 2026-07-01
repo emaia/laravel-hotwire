@@ -48,7 +48,7 @@ controllers — see those for the runtime side.
 | `toolbar`      | `bool`           | `true`        | Render the default toolbar. Pass `false` to use a custom one through the slot.                               |
 | `imageUpload`  | `bool`           | `false`       | Intercept image paste/drop and dispatch `rich-text:image-upload` for the app to handle.                      |
 | `old`          | `bool`           | `true`        | Honor `old()` for the initial value (re-populates after a failed validation).                                |
-| `class`        | `string`         | `''`          | Merged on the wrapper element alongside the always-present `hwc-rich-text` class.                            |
+| `class`        | `string`         | `''`          | Merged on the wrapper element.                                                                               |
 | `inputClass`   | `string`         | `''`          | CSS class for the synced textarea. Empty (default) renders the textarea with the `hidden` attribute (drop-in for the old hidden input). Set a class to drop `hidden` and style the textarea — useful as a no-JS fallback or for a "view source" mode. |
 | `editorClass`  | `string`         | `''`          | CSS class applied to the editor's `.ProseMirror` contenteditable (forwarded into Tiptap's `editorProps.attributes.class`). Typical pick on a Tailwind project: `'prose prose-sm focus:outline-none'`. |
 | `controller`   | `string`         | `'rich-text'` | Stimulus identifier — swap for a subclass when you need different extensions or behavior.                    |
@@ -76,7 +76,7 @@ attribute without losing the others.
 The component renders:
 
 ```html
-<div class="hwc-rich-text" data-controller="rich-text" data-rich-text-id-value="content" …>
+<div data-slot="rich-text" data-controller="rich-text" data-rich-text-id-value="content" …>
     <textarea hidden name="content" data-rich-text-target="input">…</textarea>
 
     {{-- omitted when :toolbar="false" --}}
@@ -87,7 +87,7 @@ The component renders:
         …
     </div>
 
-    <div data-rich-text-target="editor" class="hwc-rich-text-editor"></div>
+    <div data-slot="rich-text-editor" data-rich-text-target="editor"></div>
 </div>
 ```
 
@@ -113,7 +113,7 @@ wrapper so it covers the whole editor (toolbar + contenteditable + textarea) ins
 hidden form payload:
 
 ```css
-.hwc-rich-text[data-invalid] {
+[data-slot="rich-text"][data-invalid] {
     border-color: var(--color-danger);
 }
 ```
@@ -144,7 +144,7 @@ $request->validate(['content' => 'required']);
 
 ```css
 /* app.css — already in the Styling recipe; restated here for clarity */
-.hwc-rich-text[data-invalid] {
+[data-slot="rich-text"][data-invalid] {
     border-color: var(--color-destructive);
 }
 ```
@@ -195,7 +195,7 @@ This applies to both `output="html"` and `output="json"` — Tiptap's "empty doc
 The default toolbar exposes the buttons most editors need: bold, italic, underline, H1/H2/H3,
 bullet list, numbered list, blockquote, code block, link, undo, redo. Each button is a
 `<button type="button">` with a text label (no icons, so no extra dependency) and an `aria-label`
-for screen readers. Restyle freely via CSS — the buttons live inside `.hwc-rich-text-toolbar`.
+for screen readers. Restyle freely via CSS — the buttons live inside `[data-slot="rich-text-toolbar"]`.
 
 When you need a different set of buttons, drop the default and render your own through the slot:
 
@@ -228,18 +228,17 @@ subclass the toolbar and spread `activeStates` — see
 
 ## Styling
 
-The package ships zero CSS — by design. The component gives you stable class hooks and
-prop-based knobs; the visual is the app's call.
+The component exposes stable `data-slot` hooks and prop-based knobs; the visual is controlled by presets or your app CSS.
 
 ### Stable hooks
 
 | Hook                                                    | Element                                       |
 |---------------------------------------------------------|-----------------------------------------------|
-| `.hwc-rich-text`                                        | The outer wrapper (always present)            |
-| `.hwc-rich-text-toolbar`                                | The default toolbar row                       |
-| `.hwc-rich-text-editor`                                 | The div Tiptap mounts the contenteditable into |
-| `.hwc-rich-text-editor .ProseMirror`                    | The contenteditable surface itself            |
-| `[data-controller~="rich-text"][data-invalid]`          | The wrapper when the field has a validation error |
+| `[data-slot="rich-text"]`                               | The outer wrapper                             |
+| `[data-slot="rich-text-toolbar"]`                       | The default toolbar row                       |
+| `[data-slot="rich-text-editor"]`                        | The div Tiptap mounts the contenteditable into |
+| `[data-slot="rich-text-editor"] .ProseMirror`           | The contenteditable surface itself            |
+| `[data-slot="rich-text"][data-invalid]`                 | The wrapper when the field has a validation error |
 | `[data-rich-text-target="input"]`                       | The synced textarea                           |
 
 ### Knobs
@@ -248,7 +247,7 @@ prop-based knobs; the visual is the app's call.
   typography (`prose`, custom heading sizes, code-block styling).
 - `inputClass` → goes on the synced textarea. When set, the textarea drops its `hidden` attribute
   so the class actually renders — useful as a no-JS fallback or "view source" toggle.
-- `class` → merged on the wrapper alongside `hwc-rich-text`.
+- `class` → merged on the wrapper.
 
 ### Recipes
 
@@ -269,13 +268,13 @@ design tokens (`border-input`, `ring-ring`, `destructive`, `muted-foreground`):
 ```css
 /* app.css */
 @layer components {
-    .hwc-rich-text {
+    [data-slot="rich-text"] {
         @apply appearance-none dark:bg-input/30 border-input w-full min-w-0 rounded-md border bg-transparent p-3 text-base shadow-xs transition-[color,box-shadow] outline-none disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm;
         @apply focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px];
         @apply aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive;
     }
 
-    .hwc-rich-text-toolbar {
+    [data-slot="rich-text-toolbar"] {
         @apply flex gap-2 items-center mb-3 border;
 
         & > button {
@@ -283,7 +282,7 @@ design tokens (`border-input`, `ring-ring`, `destructive`, `muted-foreground`):
         }
     }
 
-    .hwc-rich-text-editor > div {
+    [data-slot="rich-text-editor"] > div {
         @apply block;
         @apply border-input placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 field-sizing-content min-h-16 w-full rounded-md border bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 md:text-sm;
 
@@ -307,28 +306,28 @@ Nesting inside `<x-hwc::field required>` propagates `required` to the textarea v
 **Vanilla CSS** — same idea, no preprocessor:
 
 ```css
-.hwc-rich-text {
+[data-slot="rich-text"] {
     border: 1px solid #d1d5db;
     border-radius: 6px;
     background: #fff;
 }
-.hwc-rich-text[data-invalid] {
+[data-slot="rich-text"][data-invalid] {
     border-color: #dc2626;
     box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
 }
-.hwc-rich-text .hwc-rich-text-toolbar {
+[data-slot="rich-text"] [data-slot="rich-text-toolbar"] {
     display: flex;
     gap: 4px;
     padding: 8px;
     border-bottom: 1px solid #e5e7eb;
 }
-.hwc-rich-text .hwc-rich-text-editor .ProseMirror {
+[data-slot="rich-text"] [data-slot="rich-text-editor"] .ProseMirror {
     min-height: 8rem;
     padding: 12px;
     outline: none;
 }
-.hwc-rich-text .hwc-rich-text-editor .ProseMirror h1 { font-size: 1.5rem; font-weight: 700; }
-.hwc-rich-text .hwc-rich-text-editor .ProseMirror ul { list-style: disc; padding-left: 1.25rem; }
+[data-slot="rich-text"] [data-slot="rich-text-editor"] .ProseMirror h1 { font-size: 1.5rem; font-weight: 700; }
+[data-slot="rich-text"] [data-slot="rich-text-editor"] .ProseMirror ul { list-style: disc; padding-left: 1.25rem; }
 ```
 
 ### Exposing the textarea as a "view source" surface

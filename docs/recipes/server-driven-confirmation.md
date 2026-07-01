@@ -14,17 +14,17 @@ modal, the second performs the action.
 
 Two round-trips, zero client-side conditional logic.
 
-## When to use this vs `confirm-dialog`
+## When to use this vs `alert-dialog`
 
 | Scenario                                                             | Use                                                                  |
 |----------------------------------------------------------------------|----------------------------------------------------------------------|
-| "Are you sure?" with no extra context                                | [`confirm-dialog`](../components/confirm-dialog.md) (one round-trip) |
+| "Are you sure?" with no extra context                                | [`alert-dialog`](../components/alert-dialog.md) (one round-trip)     |
 | Confirmation copy depends on server data (counts, related records)   | This recipe                                                          |
 | Server decides *whether* confirmation is needed (policy, thresholds) | This recipe                                                          |
 | Audit/security: the decision must be re-validated server-side        | This recipe                                                          |
 | Type-the-resource-name guard fed by server-side normalization rules  | This recipe                                                          |
 
-`confirm-dialog` is faster (no extra request) and ergonomic for the common case. Reach for the
+`alert-dialog` is faster (no extra request) and ergonomic for the common case. Reach for the
 server-driven path only when the confirmation itself needs server context.
 
 ## Setup
@@ -192,7 +192,7 @@ real route, and the response is a Turbo Stream that Turbo Drive applies to the p
 
 ## See also
 
-- [`<x-hwc::confirm-dialog>`](../components/confirm-dialog.md) — client-side confirmation for
+- [`<x-hwc::alert-dialog>`](../components/alert-dialog.md) — client-side confirmation for
   the trivial case.
 - [Modal patterns](./modal-patterns.md) — the layout-shared setup this recipe builds on.
 - [Frame-or-page views](./frame-or-page.md) — the layout that makes the confirmation view dual-mode.

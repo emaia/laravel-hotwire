@@ -32,12 +32,10 @@ fully stream-rendered gallery with server-side EXIF.
 
 ## Setup — the Dropzone CSS import
 
-The Dropzone library only renders its visible affordance (the dashed border, "Drop files here to
-upload" message, thumbnail layout) when:
+The component renders the upload host as `<div data-slot="file-upload" class="dropzone">` and the controller imports Dropzone's CSS.
+`data-slot="file-upload"` is the package styling contract; `dropzone` is the third-party class Dropzone itself expects for its default message, preview and state CSS.
 
-1. The host `<div>` carries the `dropzone` class — the component does this for you (it always
-   emits `class="hwc-file-upload dropzone"`).
-2. `@deltablot/dropzone/dist/dropzone.css` is bundled into the page.
+The visible affordance depends on `@deltablot/dropzone/dist/dropzone.css` reaching the bundle.
 
 The controller imports the CSS at the top:
 
@@ -56,7 +54,7 @@ import isn't reaching your bundle. Three things to check, in order:
    dev mode) appears. If it doesn't, your bundler isn't processing the CSS import — check your
    Vite config or open an issue.
 
-To customise the visual without touching the package's CSS, override `.hwc-file-upload`, `.dz-*`
+To customise the visual without touching the package's CSS, target `[data-slot="file-upload"]`, `.dropzone` and `.dz-*`
 selectors in your app stylesheet (loaded after the controller's import, so cascade wins). For a
 full takeover, delete the `// @hotwire-package` marker from the published controller file — the
 package will leave your customised version alone on subsequent `hotwire:controllers --force` runs.
@@ -83,7 +81,7 @@ package will leave your customised version alone on subsequent `hotwire:controll
 | `parallelUploads`  | `int`            | `3`              | Concurrent XHRs in the queue                                                                             |
 | `messages`         | `array\|null`    | `null`           | Localized strings for Dropzone's built-in UI. Short keys (`default`, `fileTooBig`, …) map to `dict*` options. See [Messages and i18n](#messages-and-i18n) |
 | `options`          | `array\|null`    | `null`           | Escape hatch — any extra Dropzone configuration option, JSON-encoded into a data-value. Overrides per-prop defaults; subclass `defaultOptions()` still wins. See [Options escape hatch](#options-escape-hatch) |
-| `class`            | `string`         | `''`             | Merged on the wrapper (after the baseline `hwc-file-upload dropzone`)                                    |
+| `class`            | `string`         | `''`             | Merged on the wrapper                                                                                   |
 | `controller`       | `string`         | `'file-upload'`  | Stimulus identifier — swap for a subclass (e.g. `controller="my-upload"`)                                |
 
 Any other HTML attribute (`aria-label`, `data-*`, etc.) passes through to the wrapper. Internal

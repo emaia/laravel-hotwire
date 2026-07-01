@@ -3,6 +3,7 @@
 @endphp
 
 <div
+    data-slot="chart"
     data-controller="{{ $dataController }}"
     @if ($encodedOption !== null) data-{{ $identifier }}-option-value="{{ $encodedOption }}" @endif
     @if ($url !== null && $url !== '') data-{{ $identifier }}-url-value="{{ $url }}" @endif

@@ -1,7 +1,7 @@
 import { afterEach, expect, test } from "bun:test";
 
 import { mountController, wait } from "../../resources/js/helpers/test_stimulus.js";
-import ConfirmDialogController from "../../resources/js/controllers/confirm_dialog_controller.js";
+import AlertDialogController from "../../resources/js/controllers/alert_dialog_controller.js";
 
 let mounted;
 
@@ -11,26 +11,27 @@ afterEach(async () => {
 });
 
 const HTML = `
-    <div data-controller="confirm-dialog"
-         data-confirm-dialog-hidden-class="hidden"
-         data-confirm-dialog-visible-class="visible"
-         data-confirm-dialog-backdrop-hidden-class="bd-hidden"
-         data-confirm-dialog-backdrop-visible-class="bd-visible"
-         data-confirm-dialog-dialog-hidden-class="dlg-hidden"
-         data-confirm-dialog-dialog-visible-class="dlg-visible"
-         data-confirm-dialog-lock-scroll-class="overflow-hidden"
-         data-confirm-dialog-close-on-click-outside-value="true"
-         data-confirm-dialog-open-duration-value="1"
-         data-confirm-dialog-close-duration-value="1">
-        <a href="/items/1" data-action="click->confirm-dialog#intercept" id="trigger">Delete</a>
+    <div data-controller="alert-dialog"
+         data-alert-dialog-hidden-class="hidden"
+         data-alert-dialog-visible-class="visible"
+         data-alert-dialog-backdrop-hidden-class="bd-hidden"
+         data-alert-dialog-backdrop-visible-class="bd-visible"
+         data-alert-dialog-dialog-hidden-class="dlg-hidden"
+         data-alert-dialog-dialog-visible-class="dlg-visible"
+         data-alert-dialog-lock-scroll-class="overflow-hidden"
+         data-alert-dialog-close-on-click-outside-value="true"
+         data-alert-dialog-open-duration-value="1"
+         data-alert-dialog-close-duration-value="1">
+        <a href="/items/1" data-action="click->alert-dialog#intercept" id="trigger">Delete</a>
 
-        <div data-confirm-dialog-target="modal"
-             data-action="click->confirm-dialog#clickOutside"
+        <div data-alert-dialog-target="modal"
+             data-open="false"
+             data-action="click->alert-dialog#clickOutside"
              hidden>
-            <div data-confirm-dialog-target="backdrop"></div>
-            <div data-confirm-dialog-target="dialog">
-                <button id="cancel" data-action="click->confirm-dialog#cancel">Cancel</button>
-                <button id="confirm" data-action="click->confirm-dialog#confirm">OK</button>
+            <div data-alert-dialog-target="backdrop"></div>
+            <div data-alert-dialog-target="dialog">
+                <button id="cancel" data-action="click->alert-dialog#cancel">Cancel</button>
+                <button id="confirm" data-action="click->alert-dialog#confirm">OK</button>
             </div>
         </div>
     </div>
@@ -45,7 +46,7 @@ function clickWith(element, init = {}) {
 test.serial("intercept prevents the click and opens the dialog", async () => {
     await mount();
     const trigger = document.getElementById("trigger");
-    const modal = document.querySelector('[data-confirm-dialog-target="modal"]');
+    const modal = document.querySelector('[data-alert-dialog-target="modal"]');
 
     expect(modal.hidden).toBe(true);
 
@@ -53,6 +54,7 @@ test.serial("intercept prevents the click and opens the dialog", async () => {
 
     expect(defaultPrevented).toBe(true);
     expect(modal.hidden).toBe(false);
+    expect(modal.dataset.open).toBe("true");
     expect(mounted.controller.isOpen).toBe(true);
 });
 
@@ -82,7 +84,7 @@ test.serial("intercept ignores click with modifier keys", async () => {
 test.serial("after open, modal gets the visible class and lock-scroll is applied to body", async () => {
     await mount();
     const trigger = document.getElementById("trigger");
-    const modal = document.querySelector('[data-confirm-dialog-target="modal"]');
+    const modal = document.querySelector('[data-alert-dialog-target="modal"]');
 
     clickWith(trigger);
     await wait(10); // rAF tick
@@ -124,6 +126,7 @@ test.serial("cancel closes the dialog and clears the pending element", async () 
     mounted.controller.cancel();
 
     expect(mounted.controller.isOpen).toBe(false);
+    expect(document.querySelector('[data-alert-dialog-target="modal"]').dataset.open).toBe("false");
     expect(mounted.controller.pendingElement).toBeNull();
 });
 
@@ -132,7 +135,7 @@ test.serial("cancel closes the dialog and clears the pending element", async () 
 test.serial("clicking the backdrop cancels the dialog when closeOnClickOutside is true", async () => {
     await mount();
     const trigger = document.getElementById("trigger");
-    const backdrop = document.querySelector('[data-confirm-dialog-target="backdrop"]');
+    const backdrop = document.querySelector('[data-alert-dialog-target="backdrop"]');
 
     clickWith(trigger);
     expect(mounted.controller.isOpen).toBe(true);
@@ -145,7 +148,7 @@ test.serial("clicking the backdrop cancels the dialog when closeOnClickOutside i
 test.serial("clicking inside the dialog does NOT close it", async () => {
     await mount();
     const trigger = document.getElementById("trigger");
-    const dialog = document.querySelector('[data-confirm-dialog-target="dialog"]');
+    const dialog = document.querySelector('[data-alert-dialog-target="dialog"]');
 
     clickWith(trigger);
 
@@ -274,5 +277,5 @@ test.serial("disconnect detaches the keydown listener and closes an open dialog"
 });
 
 async function mount() {
-    mounted = await mountController("confirm-dialog", ConfirmDialogController, HTML);
+    mounted = await mountController("alert-dialog", AlertDialogController, HTML);
 }

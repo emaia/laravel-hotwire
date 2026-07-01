@@ -51,7 +51,7 @@ The complete Hotwire stack for Laravel — Turbo Drive, Turbo Streams, Stimulus 
   came from the package from files written by the user — without the marker, those commands refuse to overwrite.
   `hotwire:make-controller` deliberately does **not** emit the marker, so generated user controllers stay protected.
   Drop the marker when reading `Support\PackageMarker`.
-- Loaded via `@emaia/stimulus-dynamic-loader` with Vite's `import.meta.glob`.
+- Loaded via `@emaia/stimulus-lazy-loader` with Vite's `import.meta.glob`.
 - **Controllers must be mutually compatible.** Blade components stack several controllers on the same element
   (`<x-hwc::form>` → `auto-submit unsaved-changes clean-query-params`; `<x-hwc::file>` →
   `file-preserve reset-files` plus the user's own `data-controller`). A controller must therefore never assume it
@@ -112,7 +112,7 @@ registered here**, or the commands won't see it.
 ### Pull Requests
 
 - Push feature branch, open PR on GitHub
-- Branch naming: descriptive kebab-case (e.g. `radio-group`, `confirm-dialog`)
+- Branch naming: descriptive kebab-case (e.g. `radio-group`, `alert-dialog`)
 - PR title matches commit subject convention; body summarizes changes
 - Review required; merge from the GitHub UI (not the CLI)
 - Remote merge (GitHub UI):
@@ -215,7 +215,7 @@ JS conventions:
 ## Dependencies
 
 - PHP: `emaia/laravel-hotwire-turbo`, `spatie/laravel-package-tools`
-- JS: `@hotwired/stimulus`, `@hotwired/turbo`, `@emaia/stimulus-dynamic-loader`
+- JS: `@hotwired/stimulus`, `@hotwired/turbo`, `@emaia/stimulus-lazy-loader`
 - Optional JS: third-party libs required by specific controllers — the `npm` maps in `src/Registry/catalog.php` are
   the source of truth (don't list them here)
 
@@ -280,11 +280,9 @@ the corresponding phase enters active work — not before.
   `stubs/resources/css/app.css` via `@theme inline` with OKLCH values for light and dark mode.
 - **Dark mode via `data-theme`** on `<html>`, not `class="dark"`. Default is `:root` (light);
   `[data-theme="dark"]` activates the dark palette.
-- **Tailwind v4 scanner constraint.** Classes referenced in PHP source files (`src/Components/*.php`,
-  e.g. inside `Variants::make()`) must be **string literals** (`'bg-primary'`, never `"bg-{$color}"`).
-  The scanner is content-type agnostic but does not evaluate expressions — interpolation silently omits
-  the class from the final CSS with no build error. The stub CSS includes a matching `@source` directive:
-  `@source '../../vendor/emaia/laravel-hotwire/src/Components/**/*.php';`.
+- **Tailwind v4 scanner constraint.** Shipped component styling lives in CSS presets under `resources/css/**`,
+  and the installed stub scans those CSS files with `@source`. Do not add Tailwind utility defaults back to
+  package Blade/PHP unless they are also represented by preset CSS or an explicit `@source inline(...)` safelist.
 - **`Variants` helper.** Use `Support\Variants` when a component has **two or more variant groups** (e.g.
   `variant × size`) or **compound rules**. For zero or one variant group, stick with `@class([...])`.
   Variants configuration lives in the Component class (`classNames()` method), not in the Blade view.
@@ -308,7 +306,7 @@ Every PR that introduces a new component or controller must include:
 
 - `_overlay.js` — shared overlay lifecycle (open/close class toggling, FocusTrap, body scroll lock,
   outside-click dismiss, Escape key, focus return, configurable durations). Consumed by `modal_controller`,
-  `confirm_dialog_controller` and future Sheet/Drawer/Sidebar controllers. Exports `createOverlay(controller, options)`
+  `alert_dialog_controller` and future Sheet/Drawer/Sidebar controllers. Exports `createOverlay(controller, options)`
   returning `{ open(), close(), cleanup(), isOpen }`.
 
 ## Controller auto-loading (since `0.32.0`)
@@ -325,4 +323,3 @@ source of truth.
 outdated/diverged published controllers. It no longer flags "not published" as a problem since
 controllers auto-load from vendor. `hotwire:controllers` remains available for users who want to
 publish a controller to customize it.
-

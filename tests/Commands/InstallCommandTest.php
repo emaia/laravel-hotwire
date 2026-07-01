@@ -162,7 +162,7 @@ it('adds core npm dependencies to package.json in non-interactive mode', functio
     $json = json_decode(File::get($this->packageJsonPath), true);
 
     expect($json['devDependencies'])
-        ->toHaveKey('@emaia/stimulus-dynamic-loader')
+        ->toHaveKey('@emaia/stimulus-lazy-loader')
         ->toHaveKey('@hotwired/stimulus')
         ->toHaveKey('@hotwired/turbo')
         ->not->toHaveKey('maska')
@@ -182,7 +182,7 @@ it('reads dependency versions from the package own package.json', function () {
     $packageJson = json_decode(file_get_contents(__DIR__.'/../../package.json'), true);
     $appJson = json_decode(File::get($this->packageJsonPath), true);
 
-    foreach (['@hotwired/stimulus', '@hotwired/turbo', '@emaia/stimulus-dynamic-loader'] as $dep) {
+    foreach (['@hotwired/stimulus', '@hotwired/turbo', '@emaia/stimulus-lazy-loader'] as $dep) {
         expect($appJson['devDependencies'][$dep])->toBe($packageJson['dependencies'][$dep]);
     }
 });
@@ -201,7 +201,7 @@ it('installs core + all catalog dependencies by default', function () {
     expect($json['devDependencies'])
         ->toHaveKey('@hotwired/stimulus')
         ->toHaveKey('@hotwired/turbo')
-        ->toHaveKey('@emaia/stimulus-dynamic-loader')
+        ->toHaveKey('@emaia/stimulus-lazy-loader')
         ->toHaveKey('echarts')
         ->toHaveKey('leaflet')
         ->toHaveKey('embla-carousel')
@@ -228,7 +228,7 @@ it('preserves existing dependencies in package.json', function () {
 it('does not modify package.json when core deps already present (--core-only)', function () {
     $packageJson = json_decode(file_get_contents(__DIR__.'/../../package.json'), true);
     $coreDeps = [];
-    foreach (['@emaia/stimulus-dynamic-loader', '@hotwired/stimulus', '@hotwired/turbo'] as $dep) {
+    foreach (['@emaia/stimulus-lazy-loader', '@hotwired/stimulus', '@hotwired/turbo'] as $dep) {
         $coreDeps[$dep] = $packageJson['dependencies'][$dep];
     }
 
@@ -277,6 +277,26 @@ it('copies only css files with --only=css', function () {
 
     expect(File::exists(resource_path('css/app.css')))->toBeTrue()
         ->and(File::exists(resource_path('js/app.js')))->toBeFalse();
+});
+
+it('selects the nova css preset', function () {
+    File::put($this->packageJsonPath, json_encode(['name' => 'test'], JSON_PRETTY_PRINT));
+
+    $this->artisan('hotwire:install --only=css --preset=nova --no-interaction')
+        ->assertSuccessful();
+
+    $css = File::get(resource_path('css/app.css'));
+
+    expect($css)
+        ->toContain("@import '../../vendor/emaia/laravel-hotwire/resources/css/presets/nova.css';")
+        ->toContain('/* Preset: import one default design system. */');
+});
+
+it('rejects invalid css presets', function () {
+    File::put($this->packageJsonPath, json_encode(['name' => 'test'], JSON_PRETTY_PRINT));
+
+    $this->artisan('hotwire:install --only=css --preset=unknown --no-interaction')
+        ->assertFailed();
 });
 
 it('rejects invalid --only value', function () {
@@ -403,7 +423,7 @@ it('installs only core deps with --core-only', function () {
     expect($json['devDependencies'])
         ->toHaveKey('@hotwired/stimulus')
         ->toHaveKey('@hotwired/turbo')
-        ->toHaveKey('@emaia/stimulus-dynamic-loader')
+        ->toHaveKey('@emaia/stimulus-lazy-loader')
         ->not->toHaveKey('echarts')
         ->not->toHaveKey('leaflet')
         ->not->toHaveKey('@emaia/sonner');

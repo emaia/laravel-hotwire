@@ -193,43 +193,31 @@ it('does not render an empty class attribute when no classes are provided', func
 it('merges custom label-class on each label', function () {
     $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\']" label-class="font-bold" />');
 
-    $view->assertSee('hwc-label font-bold', false);
+    $view->assertSee('class="font-bold"', false);
 });
 
 it('merges custom label-class on the select-all master label too', function () {
     $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\']" select-all label-class="font-bold" />');
 
     $html = (string) $view;
-    expect(substr_count($html, 'hwc-label font-bold'))->toBe(2);
+    expect(substr_count($html, 'class="font-bold"'))->toBe(2);
 });
 
-it('adds hwc-input hook on items', function () {
+it('emits the same checkable semantic state as <x-hwc::input type=checkbox>', function () {
     $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\']" />');
 
-    $view->assertSee('hwc-input', false);
+    $view->assertSee('data-slot="checkbox-group-input"', false);
+    $view->assertSee('data-checkable="true"', false);
+    $view->assertDontSee('size-4', false);
+    $view->assertDontSee('accent-primary', false);
 });
 
-it('applies the same checkable defaults as <x-hwc::input type=checkbox>', function () {
-    // Keeps the visual aligned with the canonical Input checkbox so apps mixing
-    // a stand-alone checkbox with a group don't see a styling regression.
-    $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\']" />');
-
-    $view->assertSee('size-4', false);
-    $view->assertSee('accent-primary', false);
-});
-
-it('adds hwc-label hook on item wrappers', function () {
-    $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\']" />');
-
-    $view->assertSee('hwc-label', false);
-});
-
-it('adds hwc-input and hwc-label hooks on the select-all master', function () {
+it('emits semantic slots on the select-all master and item labels', function () {
     $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\']" select-all />');
 
     $html = (string) $view;
-    expect(substr_count($html, 'hwc-input'))->toBe(2)
-        ->and(substr_count($html, 'hwc-label'))->toBe(2);
+    expect(substr_count($html, 'data-slot="checkbox-group-input"'))->toBe(2)
+        ->and(substr_count($html, 'data-slot="label"'))->toBe(2);
 });
 
 // --- User data-controller merge ---

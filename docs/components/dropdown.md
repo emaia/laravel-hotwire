@@ -11,7 +11,7 @@ focus to the trigger), optional close-on-select, and animated open/close. Wraps 
 <x-hwc::dropdown>
     <x-slot:trigger>
         Options
-        <svg class="size-5 transition-transform group-aria-expanded:rotate-180"><!-- chevron --></svg>
+        <svg class="size-5"><!-- chevron --></svg>
     </x-slot:trigger>
 
     <a href="/account" class="block px-4 py-2 text-sm hover:bg-gray-100">Account</a>
@@ -24,7 +24,7 @@ focus to the trigger), optional close-on-select, and animated open/close. Wraps 
 ```
 
 The component renders the `<button>` trigger and the menu, links them via `id`/`aria-controls`, and keeps
-`aria-expanded` in sync. The chevron rotates via the `group-aria-expanded:` variant. Menu items are your own markup;
+`aria-expanded` in sync. Menu items are your own markup;
 clicking an `<a>` or `<button>` closes the menu by default.
 
 > **The `trigger` slot is the button's _content_, not the button.** The component already renders the `<button>` — don't
@@ -41,14 +41,13 @@ clicking an `<a>` or `<button>` closes the menu by default.
 | `open`            | `bool`   | `false`                          | Start open (no animation)                                               |
 | `close-on-select` | `bool`   | `true`                           | Close when an `<a>`/`<button>` inside the menu is clicked               |
 | `transition`      | `bool`   | `true`                           | Include the default enter/leave transition classes                      |
-| `trigger-class`   | `string` | `inline-flex items-center gap-1` | Trigger button layout classes (override freely; `group` is always kept) |
+| `trigger-class`   | `string` | `inline-flex items-center gap-1` | Trigger button layout classes (override freely)                         |
 | `width`           | `string` | `w-56`                           | Menu width utility (override as needed)                                 |
 | `menu-class`      | `string` | `''`                             | Extra classes appended to the menu                                      |
 
 The `trigger` slot's own attributes are merged onto the rendered button — e.g.
 `<x-slot:trigger class="btn">` adds `btn` to it. Use `trigger-class` to replace the default layout classes, or the
-slot's `class` to append; the functional `group` class is always present (so the chevron's `group-aria-expanded:`
-variant works).
+slot's `class` to append.
 
 ## Alignment
 

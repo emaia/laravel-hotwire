@@ -119,11 +119,11 @@ it('uses fallback id when no name and no id', function () {
 
 // --- Class merge ---
 
-it('merges custom class with hwc-error', function () {
+it('merges custom class on the error element', function () {
     $view = $this->blade('<x-hwc::error name="email" class="text-red-600" />');
 
-    $view->assertSee('hwc-error', false);
-    $view->assertSee('text-red-600', false);
+    $view->assertSee('data-slot="error"', false);
+    $view->assertSee('class="text-red-600"', false);
 });
 
 // --- @aware propagation from field ---
