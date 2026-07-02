@@ -19,6 +19,10 @@ beforeEach(/**
     File::deleteDirectory($this->targetDir);
     File::deleteDirectory($this->viewsDir);
     File::ensureDirectoryExists($this->viewsDir);
+
+    if (File::exists($this->packageJsonPath)) {
+        File::delete($this->packageJsonPath);
+    }
 });
 
 afterEach(function () {
