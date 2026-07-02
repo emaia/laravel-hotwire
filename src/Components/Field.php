@@ -17,6 +17,7 @@ class Field extends Component
         public ?string $errorKey = null,
         public ?bool $required = null,
         public bool $error = true,
+        public string $orientation = 'vertical',
         public string $class = '',
     ) {}
 

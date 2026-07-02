@@ -188,10 +188,20 @@ it('defines component styles in the nova preset via data-slot selectors', functi
     $css = file_get_contents($novaPresetPath);
 
     expect($css)
+        ->toContain('[data-slot="field-group"]')
         ->toContain('[data-slot="button"]')
         ->toContain('[data-slot="input"]')
         ->toContain('[data-slot="modal-panel"]')
         ->toContain('[data-slot="alert-dialog-panel"]');
+});
+
+it('does not make field groups size containers by default', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain('[data-slot="field-group"]')
+        ->not->toContain('container-type: inline-size')
+        ->not->toContain('@container field-group');
 });
 
 it('does not apply Tailwind marker-only classes inside presets', function () use ($novaPresetPath) {

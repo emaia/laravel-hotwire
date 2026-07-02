@@ -24,7 +24,12 @@
     :is([data-slot="button"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"])[data-size="icon-sm"] { @apply size-7 rounded-[min(var(--radius-md),12px)]; }
     :is([data-slot="button"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"])[data-size="icon-lg"] { @apply size-9; }
 
-    [data-slot="field"] { @apply flex w-full flex-col gap-1.5; }
+    [data-slot="field-group"] { @apply flex w-full flex-col gap-5; }
+    [data-slot="field-group"] > [data-slot="field-group"] { @apply gap-4; }
+    [data-slot="field"] { @apply flex w-full gap-1.5 data-[orientation=vertical]:flex-col data-[orientation=horizontal]:flex-row data-[orientation=horizontal]:items-center data-[orientation=responsive]:flex-col data-[orientation=responsive]:md:flex-row data-[orientation=responsive]:md:items-center; }
+    [data-slot="field"][data-orientation="vertical"] > *, [data-slot="field"][data-orientation="responsive"] > * { @apply w-full; }
+    [data-slot="field"][data-orientation="responsive"] > * { @apply md:w-auto; }
+    [data-slot="field"][data-orientation="horizontal"] > [data-slot="label"], [data-slot="field"][data-orientation="responsive"] > [data-slot="label"] { @apply flex-auto; }
     [data-slot="label"] { @apply text-sm leading-snug font-medium text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-50; }
     [data-slot="label"]:has(:is([data-slot="input"], [data-slot="checkbox-group-input"])[data-checkable="true"]) { @apply flex items-center gap-2 font-normal; }
     [data-slot="description"] { @apply text-sm text-muted-foreground; }

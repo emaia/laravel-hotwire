@@ -39,7 +39,28 @@ The description renders as `<p data-slot="description">` between the slot and th
 | `errorKey`      | `string\|null` | `null`  | Override the validation key when HTML `name` ≠ Laravel error key.                                |
 | `required`      | `bool\|null`   | `null`  | Marks the field required. Propagated to label (marker) and input (ARIA).                         |
 | `error`         | `bool`         | `true`  | Auto-render `<x-hwc::error>` after the slot. Set `:error="false"` to opt out.                    |
+| `orientation`   | `string`       | `vertical` | Layout state for the preset: `vertical`, `horizontal`, or `responsive`.                      |
 | `class`         | `string`       | `""`    | Merged on the wrapper `<div>`.                                                                   |
+
+## Grouped fields
+
+Wrap related fields in `<x-hwc::field-group>` to get the default form spacing and enable responsive orientation rules:
+
+```blade
+<x-hwc::field-group>
+    <x-hwc::field name="name" label="Name">
+        <x-hwc::input />
+    </x-hwc::field>
+
+    <x-hwc::field name="email" label="Email" orientation="responsive">
+        <x-hwc::input type="email" />
+    </x-hwc::field>
+</x-hwc::field-group>
+```
+
+`orientation="responsive"` starts stacked and switches to a horizontal row at the `md` breakpoint. Unlike shadcn's
+container-query implementation, the package does not make field groups size containers by default so they keep working
+inside intrinsic-width surfaces like `<x-hwc::modal size="auto">`.
 
 ## ARIA contract
 
@@ -68,9 +89,9 @@ When you need more control — custom label content, label wrapping inputs, diff
 ```blade
 <x-hwc::field name="document" required :error="false" class="mb-4">
     <x-hwc::label class="text-sm font-bold">Document</x-hwc::label>
-    <p class="text-xs text-gray-500">CPF ou CNPJ</p>
+    <p class="text-xs text-muted-foreground">CPF ou CNPJ</p>
     <x-hwc::input class="w-full" clearable mask="cpf-cnpj" />
-    <x-hwc::error class="text-red-500 text-sm" />
+    <x-hwc::error class="text-sm text-destructive" />
 </x-hwc::field>
 ```
 

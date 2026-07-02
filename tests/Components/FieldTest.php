@@ -21,7 +21,21 @@ it('renders a wrapper div with field slot', function () {
     $view = $this->blade('<x-hwc::field name="email"><span>x</span></x-hwc::field>');
 
     $view->assertSee('data-slot="field"', false);
+    $view->assertSee('role="group"', false);
+    $view->assertSee('data-orientation="vertical"', false);
     $view->assertSee('<span>x</span>', false);
+});
+
+it('emits the requested orientation state', function () {
+    $view = $this->blade('<x-hwc::field name="email" orientation="horizontal"><span>x</span></x-hwc::field>');
+
+    $view->assertSee('data-orientation="horizontal"', false);
+});
+
+it('supports responsive orientation', function () {
+    $view = $this->blade('<x-hwc::field name="email" orientation="responsive"><span>x</span></x-hwc::field>');
+
+    $view->assertSee('data-orientation="responsive"', false);
 });
 
 it('merges custom class on wrapper', function () {

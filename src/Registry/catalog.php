@@ -10,6 +10,7 @@ use Emaia\LaravelHotwire\Components\Description;
 use Emaia\LaravelHotwire\Components\Dropdown;
 use Emaia\LaravelHotwire\Components\Error;
 use Emaia\LaravelHotwire\Components\Field;
+use Emaia\LaravelHotwire\Components\FieldGroup;
 use Emaia\LaravelHotwire\Components\File;
 use Emaia\LaravelHotwire\Components\FileUpload;
 use Emaia\LaravelHotwire\Components\FlashContainer;
@@ -109,6 +110,14 @@ return [
             'docs' => 'docs/components/field.md',
             'category' => 'forms',
             'description' => 'Wraps label, input, description and error — propagates name/errorKey/required via @aware',
+            'controllers' => [],
+        ],
+        'field-group' => [
+            'class' => FieldGroup::class,
+            'view' => 'hotwire::component-views.slot',
+            'docs' => 'docs/components/field-group.md',
+            'category' => 'forms',
+            'description' => 'Groups form fields and enables responsive field orientation layout',
             'controllers' => [],
         ],
         'file' => [

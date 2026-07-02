@@ -4,7 +4,7 @@
     $required = $required ?? null;
 @endphp
 
-<div data-slot="field" {{ $attributes->class($class ?: null)->only('class') }}>
+<div role="group" data-slot="field" data-orientation="{{ $orientation }}" {{ $attributes->class($class ?: null)->only('class') }}>
     @if ($label !== null && $label !== '')
         <x-hwc::label :required-label="$requiredLabel">{{ $label }}</x-hwc::label>
     @endif
