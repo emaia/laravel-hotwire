@@ -1,6 +1,6 @@
 <?php
 
-namespace Emaia\LaravelHotwire\Components;
+namespace Emaia\LaravelHotwire\Components\Field;
 
 use Emaia\LaravelHotwire\Components\Concerns\StripsNullProps;
 use Emaia\LaravelHotwire\Support\FieldKey;
@@ -21,7 +21,7 @@ class Label extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.label');
+        return view('hotwire::component-views.field-label');
     }
 
     public function data(): array

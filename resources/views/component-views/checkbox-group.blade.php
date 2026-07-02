@@ -13,7 +13,7 @@
         @php
             $selectAllId = $baseId ? $baseId.'-all' : null;
         @endphp
-        <label data-slot="label" @if (filled($labelClass)) class="{{ $labelClass }}" @endif>
+        <label data-slot="field-label" @if (filled($labelClass)) class="{{ $labelClass }}" @endif>
             <input
                 data-slot="checkbox-group-input"
                 data-checkable="true"
@@ -32,7 +32,7 @@
         @php
             $resolvedId = $baseId ? $baseId.'-'.\Illuminate\Support\Str::slug((string) $value) : null;
         @endphp
-        <label data-slot="label" @if (filled($labelClass)) class="{{ $labelClass }}" @endif>
+        <label data-slot="field-label" @if (filled($labelClass)) class="{{ $labelClass }}" @endif>
             <input
                 data-slot="checkbox-group-input"
                 data-checkable="true"

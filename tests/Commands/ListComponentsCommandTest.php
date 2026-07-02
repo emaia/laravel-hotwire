@@ -32,7 +32,7 @@ it('shows blade tags with current prefix', function () {
     $this->artisan('hotwire:components')
         ->expectsOutputToContain('<x-hwc::modal>')
         ->expectsOutputToContain('<x-hwc::alert-dialog>')
-        ->expectsOutputToContain('<x-hwc::field-group>')
+        ->expectsOutputToContain('<x-hwc::field.group>')
         ->expectsOutputToContain('<x-hwc::flash-message>')
         ->expectsOutputToContain('<x-hwc::spinner>')
         ->expectsOutputToContain('<x-hwc::scroll-progress>')

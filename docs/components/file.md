@@ -36,7 +36,7 @@ Any other HTML attribute (`accept`, `disabled`, `data-*`, `aria-*`) passes throu
 
 File inputs **cannot** be pre-filled by the browser for security reasons. Unlike `<x-hwc::input>`, this component does
 not merge `old()` values — `value` attributes have no effect on `<input type="file">`. Validation errors still show
-normally via `<x-hwc::error>`.
+normally via `<x-hwc::field.error>`.
 
 ```blade
 {{-- Works: shows validation error for the 'avatar' field --}}
@@ -148,8 +148,8 @@ selection would be dropped.
 </x-hwc::field>
 ```
 
-`name`, `id`, `errorKey`, and `required` are inherited via `@aware`. The field auto-renders `<x-hwc::label>` and
-`<x-hwc::error>`. The ARIA contract is maintained — the input's `aria-describedby` always matches the error element.
+`name`, `id`, `errorKey`, and `required` are inherited via `@aware`. The field auto-renders `<x-hwc::field.label>` and
+`<x-hwc::field.error>`. The ARIA contract is maintained — the input's `aria-describedby` always matches the error element.
 
 ## Accepting file types
 

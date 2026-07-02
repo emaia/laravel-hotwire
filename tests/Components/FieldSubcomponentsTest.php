@@ -39,6 +39,10 @@ it('registers field subcomponents with custom prefix', function () {
 
     expect(Blade::getClassComponentAliases())
         ->toHaveKey('h::field.content')
+        ->toHaveKey('h::field.description')
+        ->toHaveKey('h::field.error')
+        ->toHaveKey('h::field.group')
+        ->toHaveKey('h::field.label')
         ->toHaveKey('h::field.legend')
         ->toHaveKey('h::field.separator')
         ->toHaveKey('h::field.set')

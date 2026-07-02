@@ -1,6 +1,6 @@
 <?php
 
-namespace Emaia\LaravelHotwire\Components;
+namespace Emaia\LaravelHotwire\Components\Field;
 
 use Emaia\LaravelHotwire\Components\Concerns\StripsNullProps;
 use Emaia\LaravelHotwire\Support\FieldKey;
@@ -31,7 +31,7 @@ class Error extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.error');
+        return view('hotwire::component-views.field-error');
     }
 
     public function data(): array

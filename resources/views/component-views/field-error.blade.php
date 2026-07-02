@@ -3,7 +3,7 @@
 @php extract($compute($name, $errorKey, $id, $errors)) @endphp
 
 <div
-    data-slot="error"
+    data-slot="field-error"
     data-empty="{{ $isEmpty ? 'true' : 'false' }}"
     id="{{ $resolvedId }}"
     role="alert"

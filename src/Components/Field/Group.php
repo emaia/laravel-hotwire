@@ -1,10 +1,10 @@
 <?php
 
-namespace Emaia\LaravelHotwire\Components;
+namespace Emaia\LaravelHotwire\Components\Field;
 
 use Illuminate\View\Component;
 
-class FieldGroup extends Component
+class Group extends Component
 {
     public function render()
     {

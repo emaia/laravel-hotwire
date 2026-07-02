@@ -22,7 +22,7 @@ final readonly class ComponentDefinition
 
     public function displayName(): string
     {
-        return collect(explode('-', $this->key))
+        return collect(preg_split('/[-.]/', $this->key) ?: [])
             ->map(fn (string $word) => ucfirst($word))
             ->implode(' ');
     }
