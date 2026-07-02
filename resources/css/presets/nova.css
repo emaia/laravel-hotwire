@@ -32,6 +32,44 @@
     [data-slot="badge"][data-variant="ghost"] { @apply hover:bg-muted hover:text-muted-foreground dark:hover:bg-muted/50; }
     [data-slot="badge"][data-variant="link"] { @apply text-primary underline-offset-4 hover:underline; }
 
+    [data-slot="separator"], [data-slot="item-separator"] { @apply shrink-0 bg-border data-[orientation=horizontal]:h-px data-[orientation=horizontal]:w-full data-[orientation=vertical]:w-px data-[orientation=vertical]:self-stretch; }
+
+    [data-slot="alert"] { @apply relative grid w-full gap-0.5 rounded-lg border px-2.5 py-2 text-left text-sm has-[[data-slot=icon]]:grid-cols-[auto_1fr] has-[[data-slot=icon]]:gap-x-2 [&>[data-slot=icon]]:row-span-2 [&>[data-slot=icon]]:size-4 [&>[data-slot=icon]]:translate-y-0.5 [&>[data-slot=icon]]:text-current; }
+    [data-slot="alert"][data-variant="default"] { @apply bg-card text-card-foreground; }
+    [data-slot="alert"][data-variant="destructive"] { @apply bg-card text-destructive [&>[data-slot=icon]]:text-current; }
+    [data-slot="alert"]:has(> [data-slot="alert-action"]) { @apply pr-18; }
+    [data-slot="alert-title"] { @apply font-medium [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-foreground; }
+    [data-slot="alert-description"] { @apply text-sm text-balance text-muted-foreground md:text-pretty [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-foreground [&_p:not(:last-child)]:mb-4; }
+    [data-slot="alert"][data-variant="destructive"] > [data-slot="alert-description"] { @apply text-destructive/90; }
+    [data-slot="alert"]:has(> [data-slot="icon"]) > [data-slot="alert-title"], [data-slot="alert"]:has(> [data-slot="icon"]) > [data-slot="alert-description"] { @apply col-start-2; }
+    [data-slot="alert-action"] { @apply absolute top-2 right-2; }
+
+    [data-slot="item-group"] { @apply flex w-full flex-col gap-4; }
+    [data-slot="item-group"]:has([data-slot="item"][data-size="sm"]) { @apply gap-2.5; }
+    [data-slot="item-group"]:has([data-slot="item"][data-size="xs"]) { @apply gap-2; }
+    [data-slot="item"] { @apply flex w-full flex-wrap items-center rounded-lg border text-sm transition-colors duration-100 outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50; }
+    [data-slot="item"][data-variant="default"] { @apply border-transparent; }
+    [data-slot="item"][data-variant="outline"] { @apply border-border; }
+    [data-slot="item"][data-variant="muted"] { @apply border-transparent bg-muted/50; }
+    [data-slot="item"][data-size="default"], [data-slot="item"][data-size="sm"] { @apply gap-2.5 px-3 py-2.5; }
+    [data-slot="item"][data-size="xs"] { @apply gap-2 px-2.5 py-2; }
+    a[data-slot="item"], button[data-slot="item"] { @apply cursor-pointer hover:bg-muted hover:text-foreground; }
+    [data-slot="item-media"] { @apply flex shrink-0 items-center justify-center gap-2 [&_svg]:pointer-events-none; }
+    [data-slot="item-media"][data-variant="default"] { @apply bg-transparent; }
+    [data-slot="item-media"][data-variant="icon"] { @apply [&>[data-slot=icon]]:size-4; }
+    [data-slot="item-media"][data-variant="image"] { @apply size-10 overflow-hidden rounded-sm [&_img]:size-full [&_img]:object-cover; }
+    [data-slot="item"][data-size="sm"] [data-slot="item-media"][data-variant="image"] { @apply size-8; }
+    [data-slot="item"][data-size="xs"] [data-slot="item-media"][data-variant="image"] { @apply size-6; }
+    [data-slot="item"]:has([data-slot="item-description"]) > [data-slot="item-media"] { @apply translate-y-0.5 self-start; }
+    [data-slot="item-content"] { @apply flex flex-1 flex-col gap-1; }
+    [data-slot="item"][data-size="xs"] [data-slot="item-content"] { @apply gap-0; }
+    [data-slot="item-content"] + [data-slot="item-content"] { @apply flex-none; }
+    [data-slot="item-title"] { @apply line-clamp-1 flex w-fit items-center gap-2 text-sm leading-snug font-medium underline-offset-4; }
+    [data-slot="item-description"] { @apply line-clamp-2 text-left text-sm leading-normal font-normal text-muted-foreground [&>a]:underline [&>a]:underline-offset-4 [&>a:hover]:text-primary; }
+    [data-slot="item"][data-size="xs"] [data-slot="item-description"] { @apply text-xs; }
+    [data-slot="item-actions"] { @apply flex items-center gap-2; }
+    [data-slot="item-header"], [data-slot="item-footer"] { @apply flex basis-full items-center justify-between gap-2; }
+
     [data-slot="table-container"] { @apply relative w-full overflow-x-auto; }
     [data-slot="table"] { @apply w-full caption-bottom text-sm; }
     [data-slot="table-header"] tr { @apply border-b; }

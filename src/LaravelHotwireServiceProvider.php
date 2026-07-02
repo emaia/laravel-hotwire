@@ -34,6 +34,9 @@ class LaravelHotwireServiceProvider extends PackageServiceProvider
         'alert-dialog.description' => Components\AlertDialog\Description::class,
         'alert-dialog.content' => Components\AlertDialog\Content::class,
         'alert-dialog.footer' => Components\AlertDialog\Footer::class,
+        'alert.action' => Components\Alert\Action::class,
+        'alert.description' => Components\Alert\Description::class,
+        'alert.title' => Components\Alert\Title::class,
         'field.content' => Components\Field\Content::class,
         'field.description' => Components\Field\Description::class,
         'field.label' => Components\Field\Label::class,
@@ -48,6 +51,15 @@ class LaravelHotwireServiceProvider extends PackageServiceProvider
         'table.head' => Components\Table\Head::class,
         'table.cell' => Components\Table\Cell::class,
         'table.caption' => Components\Table\Caption::class,
+        'item.actions' => Components\Item\Actions::class,
+        'item.content' => Components\Item\Content::class,
+        'item.description' => Components\Item\Description::class,
+        'item.footer' => Components\Item\Footer::class,
+        'item.group' => Components\Item\Group::class,
+        'item.header' => Components\Item\Header::class,
+        'item.media' => Components\Item\Media::class,
+        'item.separator' => Components\Item\Separator::class,
+        'item.title' => Components\Item\Title::class,
     ];
 
     public function configurePackage(Package $package): void

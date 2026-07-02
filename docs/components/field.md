@@ -202,8 +202,8 @@ field.
 </x-hwc::field>
 ```
 
-Unlike shadcn's container-query implementation, Laravel Hotwire uses viewport breakpoints by default. This avoids making
-`field.group` a size container, which would break intrinsic-width surfaces such as `<x-hwc::modal size="auto">`.
+Responsive fields use viewport breakpoints by default. This avoids making `field.group` a size container, which would
+break intrinsic-width surfaces such as `<x-hwc::modal size="auto">`.
 
 ## API Reference
 
