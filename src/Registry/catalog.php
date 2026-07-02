@@ -4,11 +4,14 @@ use Emaia\LaravelHotwire\Components\Alert;
 use Emaia\LaravelHotwire\Components\AlertDialog;
 use Emaia\LaravelHotwire\Components\Badge;
 use Emaia\LaravelHotwire\Components\Button;
+use Emaia\LaravelHotwire\Components\ButtonGroup;
+use Emaia\LaravelHotwire\Components\Card;
 use Emaia\LaravelHotwire\Components\Carousel;
 use Emaia\LaravelHotwire\Components\Chart;
 use Emaia\LaravelHotwire\Components\CheckboxGroup;
 use Emaia\LaravelHotwire\Components\ConditionalField;
 use Emaia\LaravelHotwire\Components\Dropdown;
+use Emaia\LaravelHotwire\Components\EmptyState;
 use Emaia\LaravelHotwire\Components\Field;
 use Emaia\LaravelHotwire\Components\Field\Error as FieldError;
 use Emaia\LaravelHotwire\Components\Field\Group as FieldGroup;
@@ -22,6 +25,7 @@ use Emaia\LaravelHotwire\Components\FrameOrPage;
 use Emaia\LaravelHotwire\Components\Icon;
 use Emaia\LaravelHotwire\Components\Input;
 use Emaia\LaravelHotwire\Components\Item;
+use Emaia\LaravelHotwire\Components\Kbd;
 use Emaia\LaravelHotwire\Components\Map;
 use Emaia\LaravelHotwire\Components\Modal;
 use Emaia\LaravelHotwire\Components\Optimistic;
@@ -29,6 +33,7 @@ use Emaia\LaravelHotwire\Components\RichText;
 use Emaia\LaravelHotwire\Components\ScrollProgress;
 use Emaia\LaravelHotwire\Components\Select;
 use Emaia\LaravelHotwire\Components\Separator;
+use Emaia\LaravelHotwire\Components\Skeleton;
 use Emaia\LaravelHotwire\Components\Spinner;
 use Emaia\LaravelHotwire\Components\Table;
 use Emaia\LaravelHotwire\Components\Textarea;
@@ -82,6 +87,22 @@ return [
             'docs' => 'docs/components/badge.md',
             'category' => 'display',
             'description' => 'Compact status label with semantic variants and optional link rendering',
+            'controllers' => [],
+        ],
+        'button-group' => [
+            'class' => ButtonGroup::class,
+            'view' => 'hotwire::component-views.button-group',
+            'docs' => 'docs/components/button-group.md',
+            'category' => 'display',
+            'description' => 'Groups related buttons and button-like controls with shared borders and orientation state',
+            'controllers' => [],
+        ],
+        'card' => [
+            'class' => Card::class,
+            'view' => 'hotwire::component-views.card',
+            'docs' => 'docs/components/card.md',
+            'category' => 'display',
+            'description' => 'Composable content container with header, action, content and footer slots',
             'controllers' => [],
         ],
         'form' => [
@@ -188,6 +209,14 @@ return [
             'description' => 'Composable list item primitive with media, content, actions, header, footer and separator slots',
             'controllers' => [],
         ],
+        'kbd' => [
+            'class' => Kbd::class,
+            'view' => 'hotwire::component-views.slot',
+            'docs' => 'docs/components/kbd.md',
+            'category' => 'display',
+            'description' => 'Keyboard input hint with optional grouped shortcut rendering',
+            'controllers' => [],
+        ],
         'field.label' => [
             'class' => FieldLabel::class,
             'view' => 'hotwire::component-views.field-label',
@@ -236,6 +265,14 @@ return [
             'description' => 'Horizontal or vertical visual separator with semantic orientation hooks',
             'controllers' => [],
         ],
+        'skeleton' => [
+            'class' => Skeleton::class,
+            'view' => 'hotwire::component-views.slot',
+            'docs' => 'docs/components/skeleton.md',
+            'category' => 'feedback',
+            'description' => 'Animated placeholder block for loading states',
+            'controllers' => [],
+        ],
         'table' => [
             'class' => Table::class,
             'view' => 'hotwire::component-views.table',
@@ -251,6 +288,14 @@ return [
             'category' => 'overlay',
             'description' => 'Accessible disclosure dropdown — a trigger toggles a menu, with outside-click/Escape dismissal',
             'controllers' => ['dropdown'],
+        ],
+        'empty' => [
+            'class' => EmptyState::class,
+            'view' => 'hotwire::component-views.slot',
+            'docs' => 'docs/components/empty.md',
+            'category' => 'display',
+            'description' => 'Composable empty state with media, title, description and action content slots',
+            'controllers' => [],
         ],
         'modal' => [
             'class' => Modal::class,
