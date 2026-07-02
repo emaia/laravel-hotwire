@@ -37,6 +37,19 @@ class LaravelHotwireServiceProvider extends PackageServiceProvider
         'alert.action' => Components\Alert\Action::class,
         'alert.description' => Components\Alert\Description::class,
         'alert.title' => Components\Alert\Title::class,
+        'button-group.separator' => Components\ButtonGroup\Separator::class,
+        'button-group.text' => Components\ButtonGroup\Text::class,
+        'card.action' => Components\Card\Action::class,
+        'card.content' => Components\Card\Content::class,
+        'card.description' => Components\Card\Description::class,
+        'card.footer' => Components\Card\Footer::class,
+        'card.header' => Components\Card\Header::class,
+        'card.title' => Components\Card\Title::class,
+        'empty.content' => Components\Empty\Content::class,
+        'empty.description' => Components\Empty\Description::class,
+        'empty.header' => Components\Empty\Header::class,
+        'empty.media' => Components\Empty\Media::class,
+        'empty.title' => Components\Empty\Title::class,
         'field.content' => Components\Field\Content::class,
         'field.description' => Components\Field\Description::class,
         'field.label' => Components\Field\Label::class,
@@ -60,6 +73,7 @@ class LaravelHotwireServiceProvider extends PackageServiceProvider
         'item.media' => Components\Item\Media::class,
         'item.separator' => Components\Item\Separator::class,
         'item.title' => Components\Item\Title::class,
+        'kbd.group' => Components\Kbd\Group::class,
     ];
 
     public function configurePackage(Package $package): void
