@@ -39,7 +39,7 @@ export default class extends Controller {
             this.isValid = false;
 
             console.error(
-                `[@stimulus-components/timeago] Value given in 'data-timeago-datetime' is not a valid date (${datetime}). Please provide a ISO 8601 compatible datetime string. Displaying given value instead.`,
+                `Value given in 'data-timeago-datetime' is not a valid date (${datetime}). Please provide a ISO 8601 compatible datetime string. Displaying given value instead.`,
             );
         }
 

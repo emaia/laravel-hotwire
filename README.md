@@ -40,7 +40,7 @@ the box.
 - PHP 8.3+
 - Laravel 12+
 - [Stimulus](https://stimulus.hotwired.dev/) with a loader compatible with `import.meta.glob` (
-  e.g. [@emaia/stimulus-dynamic-loader](https://www.npmjs.com/package/@emaia/stimulus-dynamic-loader))
+  e.g. [@emaia/stimulus-lazy-loader](https://www.npmjs.com/package/@emaia/stimulus-lazy-loader))
 - Tailwind CSS
 - Vite.js
 
@@ -159,7 +159,7 @@ php artisan hotwire:controllers auto-select auto-submit turbo/progress
 | [Clean Query Params](docs/controllers/clean-query-params.md)   | `clean-query-params`  | `forms`    | —                | [readme](docs/controllers/clean-query-params.md)  |
 | [Clear Input](docs/controllers/clear-input.md)                 | `clear-input`         | `forms`    | —                | [readme](docs/controllers/clear-input.md)         |
 | [Conditional Fields](docs/controllers/conditional-fields.md)   | `conditional-fields`  | `forms`    | —                | [readme](docs/controllers/conditional-fields.md)  |
-| [Confirm Dialog](docs/controllers/confirm-dialog.md)           | `confirm-dialog`      | `overlay`  | —                | [readme](docs/controllers/confirm-dialog.md)      |
+| [Alert Dialog](docs/controllers/alert-dialog.md)               | `alert-dialog`        | `overlay`  | —                | [readme](docs/controllers/alert-dialog.md)        |
 | [Copy To Clipboard](docs/controllers/copy-to-clipboard.md)     | `copy-to-clipboard`   | `utility`  | —                | [readme](docs/controllers/copy-to-clipboard.md)   |
 | [Disclosure](docs/controllers/disclosure.md)                   | `disclosure`          | `utility`  | —                | [readme](docs/controllers/disclosure.md)          |
 | [Dropdown](docs/controllers/dropdown.md)                       | `dropdown`            | `overlay`  | —                | [readme](docs/controllers/dropdown.md)            |
@@ -271,7 +271,7 @@ Top-level controllers are copied flat to `resources/js/controllers/` (e.g. `moda
 `resources/js/controllers/modal_controller.js`, identifier `modal`). Controllers under a substrate folder preserve
 that folder and use Stimulus' `--` separator (e.g. `turbo/progress` →
 `resources/js/controllers/turbo/progress_controller.js`, identifier `turbo--progress`).
-[@emaia/stimulus-dynamic-loader](https://www.npmjs.com/package/@emaia/stimulus-dynamic-loader) discovers and loads
+[@emaia/stimulus-lazy-loader](https://www.npmjs.com/package/@emaia/stimulus-lazy-loader) discovers and loads
 them automatically via `import.meta.glob`.
 
 > If a controller already exists and is identical to the package version, the command reports it as up to date. If it
@@ -328,7 +328,7 @@ stacking multiple controllers, attribute-bag merging and the escaping rules.
 | [Flash Message](docs/components/flash-message.md)     | `<x-hwc::flash-message>`   | `feedback` | `toast`                                                                | [readme](docs/components/flash-message.md)   |
 | [Spinner](docs/components/spinner.md)                 | `<x-hwc::spinner>`         | `feedback` | —                                                                      | [readme](docs/components/spinner.md)         |
 | [Modal](docs/components/modal.md)                     | `<x-hwc::modal>`           | `overlay`  | `modal`                                                                | [readme](docs/components/modal.md)           |
-| [Confirm Dialog](docs/components/confirm-dialog.md)   | `<x-hwc::confirm-dialog>`  | `overlay`  | `confirm-dialog`                                                       | [readme](docs/components/confirm-dialog.md)  |
+| [Alert Dialog](docs/components/alert-dialog.md)       | `<x-hwc::alert-dialog>`    | `overlay`  | `alert-dialog`                                                         | [readme](docs/components/alert-dialog.md)    |
 | [Dropdown](docs/components/dropdown.md)               | `<x-hwc::dropdown>`        | `overlay`  | `dropdown`                                                             | [readme](docs/components/dropdown.md)        |
 | [Optimistic](docs/components/optimistic.md)           | `<x-hwc::optimistic>`      | `turbo`    | —                                                                      | [readme](docs/components/optimistic.md)      |
 | [Carousel](docs/components/carousel.md)               | `<x-hwc::carousel>`        | `utility`  | `carousel`                                                             | [readme](docs/components/carousel.md)        |
@@ -487,7 +487,7 @@ export {Stimulus}
 
 // resources/js/controllers/index.js
 import {Stimulus} from "../libs/stimulus";
-import {registerControllers} from "@emaia/stimulus-dynamic-loader";
+import {registerControllers} from "@emaia/stimulus-lazy-loader";
 
 const controllers = import.meta.glob("./**/*_controller.{js,ts}", {
     eager: false,
@@ -499,7 +499,7 @@ registerControllers(Stimulus, controllers);
 Install the required js dependencies:
 
 ```bash
-bun add @hotwired/stimulus @hotwired/turbo @emaia/stimulus-dynamic-loader
+bun add @hotwired/stimulus @hotwired/turbo @emaia/stimulus-lazy-loader
 ```
 
 ### TailwindCSS (v4)
@@ -507,14 +507,10 @@ bun add @hotwired/stimulus @hotwired/turbo @emaia/stimulus-dynamic-loader
 Add these settings to your CSS entrypoint `resources/css/app.css`:
 
 ```css
-@source '../../vendor/emaia/laravel-hotwire/resources/views/**/*.blade.php';
-@custom-variant turbo-preview (html[data-turbo-preview] &);
-@custom-variant turbo-visit (html[aria-busy="true"] &);
-@custom-variant form-busy (form[aria-busy="true"] &);
-@custom-variant frame-busy (turbo-frame[busy] &);
-@custom-variant in-turbo-frame (turbo-frame &);
-@custom-variant in-remote-turbo-frame (turbo-frame[src] &);
-@custom-variant modal ([data-modal-target="dialog"] &);
+@import "tailwindcss";
+
+@import '../../vendor/emaia/laravel-hotwire/resources/css/presets/nova.css';
+@source '../../vendor/emaia/laravel-hotwire/resources/css/**/*.css';
 ```
 
 ## Changelog

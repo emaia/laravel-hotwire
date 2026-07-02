@@ -1,6 +1,6 @@
 import { afterEach, expect, test } from "bun:test";
 
-import { dispatchEvent, mountController, wait } from "../../resources/js/helpers/test_stimulus.js";
+import { dispatchEvent, mountController } from "../../resources/js/helpers/test_stimulus.js";
 import AutoSubmitController from "../../resources/js/controllers/auto_submit_controller.js";
 
 let mounted;
@@ -32,6 +32,7 @@ test.serial("debouncedSubmit coalesces rapid events into a single request", asyn
     `);
 
     const { input, submits } = elements();
+    const scheduler = installFakeSubmitScheduler();
 
     dispatchEvent(input, "input");
     dispatchEvent(input, "input");
@@ -39,7 +40,7 @@ test.serial("debouncedSubmit coalesces rapid events into a single request", asyn
 
     expect(submits()).toBe(0);
 
-    await wait(40);
+    scheduler.runNext();
 
     expect(submits()).toBe(1);
 });
@@ -81,14 +82,14 @@ test.serial("submit cancels a pending debounced submit", async () => {
     `);
 
     const { input, select, submits } = elements();
+    const scheduler = installFakeSubmitScheduler();
 
     dispatchEvent(input, "input");
+    const pendingTimer = scheduler.pending()[0];
     dispatchEvent(select, "change");
 
     expect(submits()).toBe(1);
-
-    await wait(70);
-
+    expect(pendingTimer.cancelled).toBe(true);
     expect(submits()).toBe(1);
 });
 
@@ -100,13 +101,15 @@ test.serial("disconnect cancels a pending debounced submit", async () => {
     `);
 
     const { input, submits } = elements();
+    const scheduler = installFakeSubmitScheduler();
 
     dispatchEvent(input, "input");
+    const pendingTimer = scheduler.pending()[0];
     mounted.controller.disconnect();
 
-    await wait(70);
-
     expect(submits()).toBe(0);
+    expect(pendingTimer.cancelled).toBe(true);
+    expect(scheduler.pending()).toHaveLength(0);
 });
 
 function elements() {
@@ -126,4 +129,35 @@ function elements() {
 
 async function setup(html) {
     mounted = await mountController("auto-submit", AutoSubmitController, html);
+}
+
+function installFakeSubmitScheduler() {
+    const timers = [];
+
+    mounted.controller.setSubmitTimer = (callback, delay) => {
+        const timer = { callback, delay, cancelled: false };
+        timers.push(timer);
+
+        return timer;
+    };
+
+    mounted.controller.clearSubmitTimer = (timer) => {
+        if (timer) timer.cancelled = true;
+    };
+
+    return {
+        pending() {
+            return timers.filter((timer) => !timer.cancelled);
+        },
+        runNext() {
+            const timer = this.pending()[0];
+
+            if (!timer) {
+                throw new Error("Expected a pending auto-submit timer.");
+            }
+
+            timer.cancelled = true;
+            timer.callback();
+        },
+    };
 }

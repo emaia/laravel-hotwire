@@ -1,0 +1,12 @@
+@custom-variant turbo-preview (html[data-turbo-preview] &);
+@custom-variant turbo-visit (html[aria-busy="true"] &);
+
+@custom-variant form-busy (form[aria-busy="true"] &);
+@custom-variant frame-busy (turbo-frame[busy] &);
+
+@custom-variant in-turbo-frame (turbo-frame &);
+@custom-variant in-remote-turbo-frame (turbo-frame[src] &);
+
+@custom-variant modal ([data-modal-target="dialog"] &);
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));

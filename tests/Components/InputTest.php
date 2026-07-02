@@ -265,24 +265,22 @@ it('checkbox renders checked attribute from :checked prop', function () {
     $view->assertSee('checked', false);
 });
 
-it('checkbox applies the minimal checkable class instead of the text-input defaults', function () {
+it('checkbox emits the checkable semantic state instead of text-input classes', function () {
     $view = $this->blade('<x-hwc::input type="checkbox" name="notify" />');
 
-    // Native control sizing + accent-color + focus ring instead of the 36px-tall
-    // full-width rectangle the text-input class produces.
-    $view->assertSee('size-4', false);
-    $view->assertSee('accent-primary', false);
+    $view->assertSee('data-slot="input"', false);
+    $view->assertSee('data-checkable="true"', false);
     $view->assertDontSee('h-9', false);
     $view->assertDontSee('w-full', false);
     $view->assertDontSee('rounded-md', false);
     $view->assertDontSee('px-3', false);
 });
 
-it('radio applies the minimal checkable class instead of the text-input defaults', function () {
+it('radio emits the checkable semantic state instead of text-input classes', function () {
     $view = $this->blade('<x-hwc::input type="radio" name="pref" value="a" />');
 
-    $view->assertSee('size-4', false);
-    $view->assertSee('accent-primary', false);
+    $view->assertSee('data-slot="input"', false);
+    $view->assertSee('data-checkable="true"', false);
     $view->assertDontSee('h-9', false);
     $view->assertDontSee('rounded-md', false);
 });
@@ -293,18 +291,17 @@ it('switch (checkbox with role=switch) falls through to the checkable defaults',
     $view = $this->blade('<x-hwc::input type="checkbox" role="switch" name="dark" />');
 
     $view->assertSee('role="switch"', false);
-    $view->assertSee('size-4', false);
-    $view->assertSee('accent-primary', false);
+    $view->assertSee('data-checkable="true"', false);
     $view->assertDontSee('h-9', false);
 });
 
-it('text inputs keep the shadcn-aligned text-input defaults', function () {
+it('text inputs emit semantic styling hooks without inline package classes', function () {
     $view = $this->blade('<x-hwc::input type="text" name="title" />');
 
-    $view->assertSee('h-9', false);
-    $view->assertSee('w-full', false);
-    $view->assertSee('border-input', false);
-    $view->assertSee('bg-background', false);
+    $view->assertSee('data-slot="input"', false);
+    $view->assertSee('data-checkable="false"', false);
+    $view->assertDontSee('h-9', false);
+    $view->assertDontSee('border-input', false);
     $view->assertDontSee('accent-primary', false);
 });
 
@@ -442,6 +439,25 @@ it('radio stays unchecked when old() value does not match', function () {
 
     $view = $this->blade('<x-hwc::input type="radio" name="plan" value="pro" :checked="true" />');
 
+    $view->assertDontSee(' checked', false);
+});
+
+it('radio does not treat checked=false as checked', function () {
+    $view = $this->blade('<x-hwc::input type="radio" name="plan" value="pro" checked="false" />');
+
+    $view->assertDontSee(' checked', false);
+});
+
+it('renders multiple radios unchecked by default', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hwc::field name="status" label="Status">
+            <x-hwc::label><x-hwc::input type="radio" value="draft" /> Draft</x-hwc::label>
+            <x-hwc::label><x-hwc::input type="radio" value="published" /> Published</x-hwc::label>
+            <x-hwc::label><x-hwc::input type="radio" value="archived" /> Archived</x-hwc::label>
+        </x-hwc::field>
+    BLADE);
+
+    $view->assertSee('name="status"', false);
     $view->assertDontSee(' checked', false);
 });
 

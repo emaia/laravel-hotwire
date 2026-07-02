@@ -1,6 +1,7 @@
 @php extract($compute($attributes)) @endphp
 
 <form
+    data-slot="form"
     @if ($controller !== '') data-controller="{{ $controller }}" @endif
     method="{{ $isSpoofMethod ? 'post' : $method }}"
     @if ($enctype !== null) enctype="{{ $enctype }}" @endif

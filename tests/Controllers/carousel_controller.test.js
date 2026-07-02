@@ -390,7 +390,7 @@ test.serial("calls reInit when optionsValue changes", async () => {
     emblaState.instance.reInit.mockClear();
 
     mounted.controller.optionsValue = { loop: true };
-    await wait(0);
+    mounted.controller.optionsValueChanged();
 
     expect(emblaState.instance.reInit).toHaveBeenCalled();
     expect(emblaState.instance.reInit.mock.calls[0][0]).toEqual({ loop: true });

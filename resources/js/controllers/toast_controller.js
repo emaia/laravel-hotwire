@@ -38,11 +38,15 @@ export default class extends Controller {
         }
 
         if (this.typeValue === "default") {
-            toast(this.messageValue, options);
+            this.toast(this.messageValue, options);
         } else {
-            toast[this.typeValue](this.messageValue, options);
+            this.toast[this.typeValue](this.messageValue, options);
         }
 
         this.element.remove();
+    }
+
+    get toast() {
+        return toast;
     }
 }

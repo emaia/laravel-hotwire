@@ -43,8 +43,8 @@ export default class extends Controller {
     }
 
     disconnect() {
-        clearTimeout(this.timeout);
-        clearTimeout(this.statusTimeout);
+        this.clearSaveTimer(this.timeout);
+        this.clearStatusTimer(this.statusTimeout);
 
         this.element.removeEventListener("input", this.handleInput);
         this.element.removeEventListener("change", this.handleChange);
@@ -53,7 +53,7 @@ export default class extends Controller {
     }
 
     save() {
-        clearTimeout(this.timeout);
+        this.clearSaveTimer(this.timeout);
 
         if (!this.isDirty) {
             return;
@@ -69,7 +69,7 @@ export default class extends Controller {
     }
 
     cancel() {
-        clearTimeout(this.timeout);
+        this.clearSaveTimer(this.timeout);
         this.saveQueued = false;
 
         if (!this.saving) {
@@ -88,7 +88,7 @@ export default class extends Controller {
     handleSubmitStart() {
         this.saving = true;
         this.saveQueued = false;
-        clearTimeout(this.timeout);
+        this.clearSaveTimer(this.timeout);
 
         if (this.setState("saving")) {
             this.dispatch("saving");
@@ -128,7 +128,7 @@ export default class extends Controller {
         }
 
         if (!this.isDirty) {
-            clearTimeout(this.timeout);
+            this.clearSaveTimer(this.timeout);
 
             if (!this.saving) {
                 this.setState("idle");
@@ -142,8 +142,8 @@ export default class extends Controller {
     }
 
     queue(delay) {
-        clearTimeout(this.timeout);
-        this.timeout = setTimeout(() => this.save(), delay);
+        this.clearSaveTimer(this.timeout);
+        this.timeout = this.setSaveTimer(() => this.save(), delay);
     }
 
     markDirty() {
@@ -198,12 +198,28 @@ export default class extends Controller {
     }
 
     resetStatusLater() {
-        clearTimeout(this.statusTimeout);
-        this.statusTimeout = setTimeout(() => {
+        this.clearStatusTimer(this.statusTimeout);
+        this.statusTimeout = this.setStatusTimer(() => {
             if (!this.isDirty && !this.saving) {
                 this.setState("idle");
             }
         }, this.statusDurationValue);
+    }
+
+    setSaveTimer(callback, delay) {
+        return setTimeout(callback, delay);
+    }
+
+    clearSaveTimer(timeoutId) {
+        clearTimeout(timeoutId);
+    }
+
+    setStatusTimer(callback, duration) {
+        return setTimeout(callback, duration);
+    }
+
+    clearStatusTimer(timeoutId) {
+        clearTimeout(timeoutId);
     }
 
     shouldIgnore(element) {

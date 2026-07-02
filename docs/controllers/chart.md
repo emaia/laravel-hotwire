@@ -228,7 +228,7 @@ refresh(event) {
 ## Extending via subclass — the `defaultOption` and `afterInit` hooks
 
 The base controller exposes two hooks for subclasses, matching the carousel extensibility pattern.
-Subclasses are lazy-loaded by `@emaia/stimulus-dynamic-loader`, so the extra ECharts modules they
+Subclasses are lazy-loaded by `@emaia/stimulus-lazy-loader`, so the extra ECharts modules they
 register only ship to clients that actually use them.
 
 ```js

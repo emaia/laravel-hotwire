@@ -20,6 +20,7 @@ class InstallCommand extends Command
                         {--only= : Install only "js" or "css"}
                         {--with-deps=* : Add npm deps only for these controllers (comma-separated or repeatable). Without this flag (and without --core-only), every catalog dep is added.}
                         {--core-only : Add only core npm deps (stimulus, turbo, dynamic-loader). Skip catalog deps entirely.}
+                        {--preset=nova : CSS preset to import in resources/css/app.css (nova).}
                         {--skip-install : Do not run the package manager (bun/npm/pnpm/yarn) install after writing package.json. Leaves dep fetching to the caller.}
                         {--fix : Auto-apply hotwire:check --fix during the post-install verification (non-interactive friendly)}';
 
@@ -29,8 +30,12 @@ class InstallCommand extends Command
 
     private const string VITE_ALIAS_PATH = 'vendor/emaia/laravel-hotwire/resources/js/controllers';
 
+    private const string CSS_STUB_RELATIVE = 'css/app.css';
+
+    private const array CSS_PRESETS = ['nova'];
+
     private const array CORE_DEPENDENCIES = [
-        '@emaia/stimulus-dynamic-loader',
+        '@emaia/stimulus-lazy-loader',
         '@hotwired/stimulus',
         '@hotwired/turbo',
     ];
@@ -53,6 +58,10 @@ class InstallCommand extends Command
         }
 
         if (! $this->validateDepFlags()) {
+            return self::FAILURE;
+        }
+
+        if (! $this->validatePreset()) {
             return self::FAILURE;
         }
 
@@ -149,6 +158,19 @@ class InstallCommand extends Command
         return true;
     }
 
+    private function validatePreset(): bool
+    {
+        $preset = (string) $this->option('preset');
+
+        if (in_array($preset, self::CSS_PRESETS, true)) {
+            return true;
+        }
+
+        warning('Invalid --preset value: "'.$preset.'". Use one of: '.implode(', ', self::CSS_PRESETS).'.');
+
+        return false;
+    }
+
     /**
      * Parse --with-deps into a flat list of controller identifiers. Accepts both
      * --with-deps=foo,bar and --with-deps=foo --with-deps=bar shapes. Returns null
@@ -207,16 +229,22 @@ class InstallCommand extends Command
     {
         $copied = 0;
         $loaderStubContent = $this->loaderStubContent();
+        $cssStubContent = $this->cssStubContent();
 
         foreach ($files as $relativePath) {
             $sourceFile = $stubBase.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $relativePath);
             $targetFile = $targetBase.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $relativePath);
 
             $isLoaderStub = $relativePath === self::LOADER_STUB_RELATIVE;
-            $generatedContent = $isLoaderStub ? $loaderStubContent : null;
+            $isCssStub = $relativePath === self::CSS_STUB_RELATIVE;
+            $generatedContent = match (true) {
+                $isLoaderStub => $loaderStubContent,
+                $isCssStub => $cssStubContent,
+                default => null,
+            };
 
             if ($this->files->exists($targetFile)) {
-                $matches = $isLoaderStub
+                $matches = ($isLoaderStub || $isCssStub)
                     ? $this->files->get($targetFile) === $generatedContent
                     : $this->files->hash($sourceFile) === $this->files->hash($targetFile);
 
@@ -241,7 +269,7 @@ class InstallCommand extends Command
 
             $this->files->ensureDirectoryExists(dirname($targetFile));
 
-            if ($isLoaderStub) {
+            if ($isLoaderStub || $isCssStub) {
                 $this->files->put($targetFile, $generatedContent);
             } else {
                 $this->files->copy($sourceFile, $targetFile);
@@ -252,6 +280,27 @@ class InstallCommand extends Command
         }
 
         return $copied;
+    }
+
+    private function cssStubContent(): string
+    {
+        $preset = (string) $this->option('preset');
+        $lines = file(__DIR__.'/../../stubs/resources/css/app.css', FILE_IGNORE_NEW_LINES);
+
+        return collect($lines)
+            ->map(function (string $line) use ($preset): string {
+                foreach (self::CSS_PRESETS as $candidate) {
+                    $import = "@import '../../vendor/emaia/laravel-hotwire/resources/css/presets/{$candidate}.css';";
+                    $commented = "/* {$import} */";
+
+                    if ($line === $import || $line === $commented) {
+                        return $candidate === $preset ? $import : $commented;
+                    }
+                }
+
+                return $line;
+            })
+            ->implode("\n")."\n";
     }
 
     /**

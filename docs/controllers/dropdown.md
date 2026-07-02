@@ -51,10 +51,10 @@ Position the menu yourself with CSS (e.g. a `relative` wrapper and an `absolute`
         data-action="dropdown#toggle"
         aria-haspopup="true"
         aria-expanded="false"
-        class="group inline-flex items-center gap-1"
+        class="inline-flex items-center gap-1"
     >
         Options
-        <svg class="size-5 transition-transform group-aria-expanded:rotate-180"><!-- chevron --></svg>
+        <svg data-slot="dropdown-trigger-icon" class="size-5"><!-- chevron --></svg>
     </button>
 
     <div data-dropdown-target="menu" class="absolute right-0 mt-2 hidden w-56 rounded-md bg-white shadow-lg">
@@ -67,9 +67,9 @@ Position the menu yourself with CSS (e.g. a `relative` wrapper and an `absolute`
 </div>
 ```
 
-The chevron rotates for free as the menu opens: the controller keeps `aria-expanded` in sync on the button, the button
-is a `group`, and the icon reacts with `group-aria-expanded:rotate-180`. (Use the `group-aria-expanded:` variant, not
-`aria-expanded:` — the latter would check the icon's own attribute, which is never set.)
+The chevron rotates for free in the package preset when it carries `data-slot="dropdown-trigger-icon"`: the controller
+keeps `aria-expanded` in sync on the trigger, and the preset targets `[aria-expanded="true"]` on that trigger. If you are
+styling without the preset, use the same selector instead of relying on `group-*` classes.
 
 ## Transitions
 

@@ -26,7 +26,7 @@ automatically after the slot.
 </x-hwc::field>
 ```
 
-The description renders as `<p class="hwc-description">` between the slot and the auto-rendered error.
+The description renders as `<p data-slot="description">` between the slot and the auto-rendered error.
 
 ## Props
 

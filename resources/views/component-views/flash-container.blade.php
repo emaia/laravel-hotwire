@@ -2,6 +2,7 @@
     $bool = fn (bool $v) => $v ? 'true' : 'false';
 @endphp
 <div
+    data-slot="flash-container"
     id="{{ $id }}"
     @if ($turboPermanent) data-turbo-permanent @endif
     @if ($class !== '') class="{{ $class }}" @endif

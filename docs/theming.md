@@ -1,10 +1,12 @@
 # Theming
 
-Override the design tokens to customise the visual appearance of Laravel Hotwire components.
+Override design tokens to customise the palette shared by every preset.
 
 ## How it works
 
-Laravel Hotwire ships a Tailwind v4 theme using semantic CSS custom properties. All components consume tokens like `bg-background`, `text-foreground`, `border-border` — never raw colors. Override the underlying CSS variables to re-theme without touching Blade views.
+Laravel Hotwire ships a Tailwind v4 token layer using semantic CSS custom properties. Components render semantic `data-slot` attributes; presets consume tokens like `bg-background`, `text-foreground`, `border-border` to style those slots.
+
+Use [`presets.md`](presets.md) when you want to change component structure, spacing, radius or variants. Use this guide when you want to change colors/radius tokens while keeping the selected preset.
 
 ## Token reference
 
@@ -13,12 +15,12 @@ Laravel Hotwire ships a Tailwind v4 theme using semantic CSS custom properties. 
 | Token | Light mode | Dark mode | Role |
 |-------|-----------|-----------|------|
 | `--background` | `oklch(1 0 0)` | `oklch(0.145 0 0)` | Main background |
-| `--foreground` | `oklch(0 0 0)` | `oklch(0.985 0 0)` | Primary text |
+| `--foreground` | `oklch(0% 0 0)` | `oklch(0.985 0 0)` | Primary text |
 | `--card` | `oklch(1 0 0)` | `oklch(0.205 0 0)` | Card/panel background |
-| `--card-foreground` | `oklch(0 0 0)` | `oklch(0.985 0 0)` | Card/panel text |
+| `--card-foreground` | `oklch(0% 0 0)` | `oklch(0.985 0 0)` | Card/panel text |
 | `--popover` | `oklch(1 0 0)` | `oklch(0.205 0 0)` | Popover background |
-| `--popover-foreground` | `oklch(0 0 0)` | `oklch(0.985 0 0)` | Popover text |
-| `--primary` | `oklch(0 0 0)` | `oklch(0.922 0 0)` | Primary accent |
+| `--popover-foreground` | `oklch(0% 0 0)` | `oklch(0.985 0 0)` | Popover text |
+| `--primary` | `oklch(0% 0 0)` | `oklch(0.922 0 0)` | Primary accent |
 | `--primary-foreground` | `oklch(0.985 0 0)` | `oklch(0.205 0 0)` | Text on primary |
 | `--secondary` | `oklch(0.97 0 0)` | `oklch(0.269 0 0)` | Secondary background |
 | `--secondary-foreground` | `oklch(0.205 0 0)` | `oklch(0.985 0 0)` | Text on secondary |
@@ -34,22 +36,27 @@ Laravel Hotwire ships a Tailwind v4 theme using semantic CSS custom properties. 
 
 ### Radius
 
+Derived tokens scale proportionally against `--radius`, so overriding the base value (e.g. `--radius: 1rem`) keeps the relative sizes of `sm/md/xl/2xl/3xl/4xl` in the same visual proportion.
+
 | Token | Value |
 |-------|-------|
 | `--radius` | `0.625rem` |
-| `--radius-sm` | `calc(var(--radius) - 4px)` |
-| `--radius-md` | `calc(var(--radius) - 2px)` |
+| `--radius-sm` | `calc(var(--radius) * 0.6)` |
+| `--radius-md` | `calc(var(--radius) * 0.8)` |
 | `--radius-lg` | `var(--radius)` |
-| `--radius-xl` | `calc(var(--radius) + 4px)` |
+| `--radius-xl` | `calc(var(--radius) * 1.4)` |
+| `--radius-2xl` | `calc(var(--radius) * 1.8)` |
+| `--radius-3xl` | `calc(var(--radius) * 2.2)` |
+| `--radius-4xl` | `calc(var(--radius) * 2.6)` |
 
 ## Override tokens
 
-Override the CSS variables anywhere after the `@import` in `resources/css/app.css`:
+Override CSS variables anywhere after the preset import in `resources/css/app.css`:
 
 ```css
 @import "tailwindcss";
 
-/* ... @source and @theme from the package ... */
+@import '../../vendor/emaia/laravel-hotwire/resources/css/presets/nova.css';
 
 :root {
     --background: oklch(0.98 0.01 280);      /* lavender tint */
@@ -77,7 +84,7 @@ Dark mode activates when `<html>` has `data-theme="dark"`:
 <html data-theme="dark">
 ```
 
-Use the provided `color-scheme` component (available from `0.33.0`) to let users toggle themes. Without `data-theme`, the `:root` (light) defaults apply.
+Without `data-theme`, the `:root` (light) defaults apply. A packaged color-scheme toggle is planned separately; until then, set `data-theme` server-side or with your own script.
 
 ## Colour space
 

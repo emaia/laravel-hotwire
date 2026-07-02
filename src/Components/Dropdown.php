@@ -13,8 +13,8 @@ class Dropdown extends Component
         public bool $open = false,
         public bool $closeOnSelect = true,
         public bool $transition = true,
-        public string $triggerClass = 'inline-flex items-center gap-1',
-        public string $width = 'w-56',
+        public string $triggerClass = '',
+        public string $width = '',
         public string $menuClass = '',
     ) {
         if ($this->id === '') {

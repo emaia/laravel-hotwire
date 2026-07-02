@@ -24,8 +24,10 @@ let intervalCallbacks = [];
 let intervalIdCounter = 0;
 const originalSetInterval = globalThis.setInterval;
 const originalClearInterval = globalThis.clearInterval;
+const originalConsoleError = console.error;
 
 let mounted;
+let consoleErrorMock;
 
 beforeEach(() => {
     formatDistanceToNowCalls = [];
@@ -40,11 +42,14 @@ beforeEach(() => {
     globalThis.clearInterval = mock((id) => {
         intervalCallbacks = intervalCallbacks.filter((cb) => cb.id !== id);
     });
+    consoleErrorMock = mock(() => {});
+    console.error = consoleErrorMock;
 });
 
 afterEach(async () => {
     globalThis.setInterval = originalSetInterval;
     globalThis.clearInterval = originalClearInterval;
+    console.error = originalConsoleError;
     await mounted?.cleanup();
     mounted = null;
 });
@@ -101,14 +106,10 @@ test.serial("handles invalid datetime by displaying the raw value", async () => 
 });
 
 test.serial("logs error for invalid datetime", async () => {
-    const originalError = console.error;
-    let logged = null;
-    console.error = (msg) => { logged = msg; };
-
     await mount(`<time data-controller="timeago" data-timeago-datetime-value="not-a-date"></time>`);
 
-    expect(logged).toContain("is not a valid date");
-    console.error = originalError;
+    expect(consoleErrorMock).toHaveBeenCalled();
+    expect(consoleErrorMock.mock.calls[0][0]).toContain("is not a valid date");
 });
 
 // --- refresh ---

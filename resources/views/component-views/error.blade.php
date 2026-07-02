@@ -3,10 +3,12 @@
 @php extract($compute($name, $errorKey, $id, $errors)) @endphp
 
 <div
+    data-slot="error"
+    data-empty="{{ $isEmpty ? 'true' : 'false' }}"
     id="{{ $resolvedId }}"
     role="alert"
     aria-live="polite"
-    @class(['text-sm font-normal text-destructive', 'hwc-error', 'hidden' => $isEmpty, $class => filled($class)])
+    @if (filled($class)) class="{{ $class }}" @endif
     @if ($isEmpty) hidden @endif
 >
     @if (count($messages) === 1)

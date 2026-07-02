@@ -39,7 +39,7 @@ final class LoaderStub
             {$marker}
             // Re-run `php artisan hotwire:install` (or `hotwire:check --fix`) to regenerate.
             import { Stimulus } from "../libs/stimulus";
-            import { registerControllers } from "@emaia/stimulus-dynamic-loader";
+            import { registerControllers } from "@emaia/stimulus-lazy-loader";
 
             const userControllers = import.meta.glob(
                 "./**/*_controller.{js,ts}",

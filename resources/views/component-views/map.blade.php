@@ -3,6 +3,7 @@
 @endphp
 
 <div
+    data-slot="map"
     data-controller="{{ $dataController }}"
     @if ($center !== null) data-{{ $identifier }}-center-value="{{ json_encode($center) }}" @endif
     data-{{ $identifier }}-zoom-value="{{ $zoom }}"

@@ -54,7 +54,7 @@ it('auto-generates a menu id when none is given', function () {
     $view->assertSee('aria-controls="dropdown-', false);
 });
 
-it('applies the shadcn-aligned popover defaults to the menu', function () {
+it('emits semantic popover hooks for the menu', function () {
     $view = $this->blade('
         <x-hwc::dropdown>
             <x-slot:trigger>M</x-slot:trigger>
@@ -62,17 +62,11 @@ it('applies the shadcn-aligned popover defaults to the menu', function () {
         </x-hwc::dropdown>
     ');
 
-    // shadcn DropdownMenuContent reference: bg-popover + text-popover-foreground
-    // (instead of bg-background), border + shadow-md (instead of ring), z-50
-    // (above modals/popovers), min-w-[8rem], p-1, overflow handling.
-    $view->assertSee('z-50', false);
-    $view->assertSee('bg-popover', false);
-    $view->assertSee('text-popover-foreground', false);
-    $view->assertSee('border', false);
-    $view->assertSee('shadow-md', false);
-    $view->assertSee('min-w-[8rem]', false);
-    $view->assertSee('p-1', false);
-    $view->assertSee('overflow-y-auto', false);
+    $view->assertSee('data-slot="dropdown-menu"', false);
+    $view->assertSee('data-open="false"', false);
+    $view->assertDontSee('bg-popover', false);
+    $view->assertDontSee('shadow-md', false);
+    $view->assertDontSee('overflow-y-auto', false);
 });
 
 it('is hidden and closed by default', function () {
@@ -83,12 +77,10 @@ it('is hidden and closed by default', function () {
         </x-hwc::dropdown>
     ');
 
-    // Standalone `hidden` Tailwind utility — `overflow-x-hidden` is in the
-    // class string regardless of open state, so match with class-token boundary
-    // (preceded and followed by whitespace or the closing quote).
-    expect((string) $view)->toMatch('/[\s"]hidden[\s"]/');
+    $view->assertSee('data-open="false"', false);
     $view->assertSee('aria-expanded="false"', false);
     $view->assertDontSee('data-dropdown-open-value', false);
+    expect((string) $view)->not->toMatch('/[\s"]hidden[\s"]/');
 });
 
 it('starts open when open is true', function () {
@@ -101,8 +93,7 @@ it('starts open when open is true', function () {
 
     $view->assertSee('data-dropdown-open-value="true"', false);
     $view->assertSee('aria-expanded="true"', false);
-    // Standalone `hidden` Tailwind utility (display: none) — class-token
-    // boundary check so it doesn't false-match `overflow-x-hidden`.
+    $view->assertSee('data-open="true"', false);
     expect((string) $view)->not->toMatch('/[\s"]hidden[\s"]/');
 });
 
@@ -114,8 +105,8 @@ it('aligns to the start by default (RTL-safe logical position)', function () {
         </x-hwc::dropdown>
     ');
 
-    $view->assertSee('start-0', false);
-    $view->assertDontSee('end-0', false);
+    $view->assertSee('data-align="start"', false);
+    $view->assertDontSee('data-align="end"', false);
 });
 
 it('aligns to the end when requested', function () {
@@ -126,8 +117,8 @@ it('aligns to the end when requested', function () {
         </x-hwc::dropdown>
     ');
 
-    $view->assertSee('end-0', false);
-    $view->assertDontSee('start-0', false);
+    $view->assertSee('data-align="end"', false);
+    $view->assertDontSee('data-align="start"', false);
 });
 
 it('omits close-on-select by default and emits it when disabled', function () {
@@ -197,10 +188,10 @@ it('merges trigger slot attributes onto the button', function () {
     ');
 
     $view->assertSee('btn-primary', false);
-    $view->assertSee('group', false);
+    $view->assertSee('data-slot="dropdown-trigger"', false);
 });
 
-it('overrides the trigger layout classes while keeping group', function () {
+it('overrides the trigger layout classes while keeping the semantic trigger hook', function () {
     $view = $this->blade('
         <x-hwc::dropdown trigger-class="flex w-full justify-between">
             <x-slot:trigger class="btn-outline">M</x-slot:trigger>
@@ -210,8 +201,8 @@ it('overrides the trigger layout classes while keeping group', function () {
 
     $view->assertSee('flex w-full justify-between', false); // default layout replaced
     $view->assertSee('btn-outline', false);                 // slot class still appended
-    $view->assertSee('group', false);                       // functional class kept
-    $view->assertDontSee('inline-flex', false);             // hardcoded default gone
+    $view->assertSee('data-slot="dropdown-trigger"', false);
+    $view->assertDontSee('inline-flex', false);             // preset default is not emitted by Blade
 });
 
 it('overrides menu width and accepts extra menu classes', function () {

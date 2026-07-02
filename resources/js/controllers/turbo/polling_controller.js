@@ -46,7 +46,7 @@ export default class extends Controller {
 
         this.cancelRefresh();
 
-        this.timeoutId = setTimeout(() => {
+        this.timeoutId = this.setRefreshTimer(() => {
             if (this.isConnected && this.enabledValue) {
                 this.performRefresh();
             }
@@ -55,9 +55,17 @@ export default class extends Controller {
 
     cancelRefresh() {
         if (this.timeoutId) {
-            clearTimeout(this.timeoutId);
+            this.clearRefreshTimer(this.timeoutId);
             this.timeoutId = null;
         }
+    }
+
+    setRefreshTimer(callback, timeout) {
+        return setTimeout(callback, timeout);
+    }
+
+    clearRefreshTimer(timeoutId) {
+        clearTimeout(timeoutId);
     }
 
     performRefresh() {

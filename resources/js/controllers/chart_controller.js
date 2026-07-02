@@ -106,7 +106,7 @@ export default class extends Controller {
         if (this.pollValue <= 0) return;
         if (this.urlValue === "") return;
 
-        this.pollTimer = setTimeout(async () => {
+        this.pollTimer = this.setPollTimer(async () => {
             this.pollTimer = null;
             try {
                 await this.loadFromUrl();
@@ -120,8 +120,16 @@ export default class extends Controller {
 
     stopPolling() {
         if (this.pollTimer === null) return;
-        clearTimeout(this.pollTimer);
+        this.clearPollTimer(this.pollTimer);
         this.pollTimer = null;
+    }
+
+    setPollTimer(callback, interval) {
+        return setTimeout(callback, interval);
+    }
+
+    clearPollTimer(timeoutId) {
+        clearTimeout(timeoutId);
     }
 
     setOption(event) {

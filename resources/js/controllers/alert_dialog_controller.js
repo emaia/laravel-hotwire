@@ -3,7 +3,7 @@ import { Controller } from "@hotwired/stimulus";
 
 import { createOverlay } from "./_overlay.js";
 
-export default class ConfirmController extends Controller {
+export default class AlertDialogController extends Controller {
     static targets = ["modal", "backdrop", "dialog"];
 
     static classes = [

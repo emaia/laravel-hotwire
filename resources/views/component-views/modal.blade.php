@@ -1,14 +1,22 @@
+@php
+    $stimulusAttributes = $stimulus instanceof \Illuminate\Contracts\Support\Arrayable ? $stimulus->toArray() : [];
+    $stimulusController = $stimulusAttributes['data-controller'] ?? '';
+    $stimulusAction = $stimulusAttributes['data-action'] ?? '';
+    unset($stimulusAttributes['data-controller'], $stimulusAttributes['data-action']);
+@endphp
+
 <div
-    data-controller="modal"
+    data-slot="modal"
+    data-controller="{{ trim('modal '.$stimulusController) }}"
     data-modal-prevent-reopen-delay-value="{{ $preventReopenDelay }}"
-    data-modal-hidden-class="opacity-0 pointer-events-none"
-    data-modal-visible-class="opacity-100 pointer-events-auto"
+    data-modal-hidden-class="pointer-events-none"
+    data-modal-visible-class="pointer-events-auto"
     data-modal-backdrop-hidden-class="opacity-0"
     data-modal-backdrop-visible-class="opacity-100"
     data-modal-dialog-hidden-class="scale-80 opacity-0"
     data-modal-dialog-visible-class="scale-100 opacity-100"
     data-modal-lock-scroll-class="overflow-hidden"
-    data-action="turbo:before-cache@window->modal#close"
+    data-action="{{ trim('turbo:before-cache@window->modal#close '.$stimulusAction) }}"
     {{
         $attributes
             ->except(['data-controller', 'data-action'])
@@ -17,49 +25,36 @@
             'id' => $id,
         ])
     }}
+    {{ new \Illuminate\View\ComponentAttributeBag($stimulusAttributes) }}
+    @if ($stimulus !== null && ! $stimulus instanceof \Illuminate\Contracts\Support\Arrayable) {!! $stimulus->toHtml() !!} @endif
 >
     @if (isset($trigger))
         {{ $trigger }}
     @endif
 
     <div
+        data-slot="modal-overlay"
+        data-open="false"
         data-modal-target="modal"
         data-action="click->modal#clickOutside"
-        class="pointer-events-none fixed inset-0 z-50 flex flex-wrap items-center justify-center p-2 opacity-0 transition-opacity duration-200 ease-in-out md:p-10"
         role="dialog"
         aria-modal="true"
         hidden
     >
-        <!-- Backdrop -->
         <div
+            data-slot="modal-backdrop"
             data-modal-target="backdrop"
-            class="absolute inset-0 bg-black/10 backdrop-blur-xs transition duration-200 ease-out"
         ></div>
 
         <div
+            data-slot="modal-positioner"
+            data-size="{{ $size }}"
+            data-fixed-top="{{ $fixedTop ? 'true' : 'false' }}"
             data-modal-target="dialog"
-            @class([
-                'relative z-10 max-w-full scale-80 transition duration-200 ease-in-out',
-                'w-full' => $size !== 'auto',
-                'md:max-w-md' => $size === 'sm',
-                'md:max-w-xl' => $size === 'md',
-                'md:max-w-3xl' => $size === 'lg',
-                'md:max-w-5xl' => $size === 'xl',
-                'h-full' => $isFullSize(),
-                'mt-14 self-start' => $fixedTop && ! $isFullSize(),
-            ])
             @if ($sizeStyle()) style="{{ $sizeStyle() }}" @endif
         >
-            <div @class([
-                'overflow-hidden rounded-xl bg-background ring-1 ring-foreground/10 shadow-lg',
-                'flex h-full flex-col' => $isFullSize(),
-                $class,
-            ])>
-                <div @class([
-                    'w-full overflow-x-hidden overflow-y-auto',
-                    'flex-1' => $isFullSize(),
-                    'max-h-[calc(100vh-80px)]' => ! $isFullSize(),
-                ])>
+            <div data-slot="modal-panel" data-size="{{ $size }}" @if ($class !== '') class="{{ $class }}" @endif>
+                <div data-slot="modal-content" data-size="{{ $size }}">
                     @if ($frame !== null)
                         <turbo-frame id="{{ $frame }}" data-modal-target="dynamicContent">
                             {{ $slot }}
@@ -68,22 +63,21 @@
                         {{ $slot }}
                     @endif
                 </div>
-            </div>
 
-            @if ($closeButton)
-                <button
-                    @class([
-                        'absolute flex items-center justify-center rounded-xs opacity-70 ring-offset-background transition-opacity hover:opacity-100 [&_svg]:pointer-events-none [&_svg]:shrink-0',
-                        'top-2 right-2 z-10' => $isFullSize(),
-                        '-top-4 -right-4' => ! $isFullSize(),
-                    ])
-                    data-action="modal#close"
-                    type="button"
-                    aria-label="Close modal"
-                >
-                    <x-hwc::icon name="x" class="size-4" />
-                </button>
-            @endif
+                @if ($closeButton)
+                    <x-hwc::button
+                        slot-name="modal-close"
+                        data-modal-size="{{ $size }}"
+                        variant="ghost"
+                        size="icon-sm"
+                        data-action="modal#close"
+                        type="button"
+                        aria-label="Close modal"
+                    >
+                        <x-hwc::icon name="x" />
+                    </x-hwc::button>
+                @endif
+            </div>
 
             @if (isset($loading_template))
                 <template data-modal-target="loadingTemplate">

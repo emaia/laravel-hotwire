@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, expect, mock, test } from "bun:test";
+import { afterEach, beforeEach, expect, test } from "bun:test";
 
 const calls = [];
 
@@ -15,12 +15,16 @@ const toast = Object.assign(record("default"), {
     info: record("info"),
 });
 
-mock.module("@emaia/sonner/vanilla", () => ({ toast }));
-
 const { mountController } = await import("../../resources/js/helpers/test_stimulus.js");
 const { default: ToastController } = await import(
     "../../resources/js/controllers/toast_controller.js"
 );
+
+class TestToastController extends ToastController {
+    get toast() {
+        return toast;
+    }
+}
 
 let mounted;
 
@@ -104,5 +108,5 @@ test.serial("omits className from options when not set", async () => {
 });
 
 async function mount(html) {
-    mounted = await mountController("toast", ToastController, html);
+    mounted = await mountController("toast", TestToastController, html);
 }

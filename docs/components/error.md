@@ -12,13 +12,13 @@ DOM (with `hidden`) when there are no errors, so the input's `aria-describedby` 
 Renders:
 
 ```html
-<div id="email-error" role="alert" aria-live="polite" class="hwc-error hidden" hidden></div>
+<div data-slot="error" data-empty="true" id="email-error" role="alert" aria-live="polite" hidden></div>
 ```
 
 When validation fails:
 
 ```html
-<div id="email-error" role="alert" aria-live="polite" class="hwc-error">
+<div data-slot="error" data-empty="false" id="email-error" role="alert" aria-live="polite">
     The email field is required.
 </div>
 ```

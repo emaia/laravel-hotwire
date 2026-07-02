@@ -157,7 +157,7 @@ test.serial("container.hidden: activate does not move focus and the listener is 
 });
 
 test.serial("skips disabled buttons and [type='hidden'] inputs when picking the first focusable", () => {
-    // NOTE: the shared focusable selector inherited from modal/confirm-dialog
+    // NOTE: the shared focusable selector inherited from modal/alert-dialog
     // does not exclude buttons that carry `tabindex="-1"` (the button clause
     // matches first via `button:not([disabled])`). Preserving 1:1 for now —
     // a separate PR can tighten the selector if needed.

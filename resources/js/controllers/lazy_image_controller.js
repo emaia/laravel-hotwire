@@ -19,7 +19,7 @@ export default class extends Controller {
     }
 
     disconnect() {
-        clearTimeout(this.timeoutId);
+        this.clearRetryTimer(this.timeoutId);
     }
 
     poll() {
@@ -50,10 +50,18 @@ export default class extends Controller {
 
         probe.onerror = () => {
             if (this.attempts < this.maxAttemptsValue) {
-                this.timeoutId = setTimeout(() => this.poll(), this.intervalValue);
+                this.timeoutId = this.setRetryTimer(() => this.poll(), this.intervalValue);
             }
         };
 
         probe.src = this.urlValue;
+    }
+
+    setRetryTimer(callback, interval) {
+        return setTimeout(callback, interval);
+    }
+
+    clearRetryTimer(timeoutId) {
+        clearTimeout(timeoutId);
     }
 }

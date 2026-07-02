@@ -1,6 +1,6 @@
 # Description
 
-Helper/auxiliary text for a form field. Renders a `<p>` with the `hwc-description` hook so the user can style it freely.
+Helper/auxiliary text for a form field. Renders a `<p>` with `data-slot="description"` so presets can style it consistently.
 
 ## Quick example
 
@@ -11,14 +11,14 @@ Helper/auxiliary text for a form field. Renders a `<p>` with the `hwc-descriptio
 Renders:
 
 ```html
-<p class="hwc-description">We will never share your email.</p>
+<p data-slot="description">We will never share your email.</p>
 ```
 
 ## Props
 
 | Prop    | Type     | Default | Description                                       |
 |---------|----------|---------|---------------------------------------------------|
-| `class` | `string` | `""`    | Merged on the `<p>` alongside `hwc-description`.  |
+| `class` | `string` | `""`    | Merged on the `<p>`.                              |
 
 Any other HTML attribute (`id`, `data-*`, `aria-*`) passes through.
 

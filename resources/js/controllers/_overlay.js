@@ -142,13 +142,42 @@ export function createOverlay(controller, {
         }
     }
 
+    function setOpen() {
+        if (isOpen) return;
+
+        isOpen = true;
+        isOpening = false;
+        isClosing = false;
+
+        modalTarget.hidden = false;
+        modalTarget.setAttribute("data-open", "true");
+        modalTarget.classList.remove(...hiddenClasses);
+        modalTarget.classList.add(...visibleClasses);
+
+        backdropTarget.classList.remove(...backdropHiddenClasses);
+        backdropTarget.classList.add(...backdropVisibleClasses);
+
+        dialogTarget.classList.remove(...dialogHiddenClasses);
+        dialogTarget.classList.add(...dialogVisibleClasses);
+
+        if (lockScroll) {
+            document.body.classList.add(...lockScrollClasses);
+        }
+
+        focusTrap?.activate();
+
+        if (typeof onOpen === "function") {
+            onOpen();
+        }
+    }
+
     // Set initial state after a renderFrame so the DOM is ready
     Object.defineProperty(close, "isClosing", { get: () => isClosing });
 
     return {
         get isOpen() { return isOpen; },
         get isClosing() { return isClosing; },
-        setOpen() { isOpen = true; },
+        setOpen,
         open,
         close,
         cleanup,

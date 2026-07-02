@@ -41,6 +41,44 @@ const LOADING_TEMPLATE_HTML = `
     </div>
 `;
 
+test.serial("connect applies visible state when the overlay is pre-rendered open", async () => {
+    mounted = await mountController(
+        "modal",
+        ModalController,
+        `
+            <div
+                data-controller="modal"
+                data-modal-hidden-class="hidden"
+                data-modal-visible-class="visible"
+                data-modal-backdrop-hidden-class="backdrop-hidden"
+                data-modal-backdrop-visible-class="backdrop-visible"
+                data-modal-dialog-hidden-class="dialog-hidden"
+                data-modal-dialog-visible-class="dialog-visible"
+                data-modal-lock-scroll-class="overflow-hidden"
+            >
+                <div data-modal-target="modal" data-open="true" class="hidden" hidden>
+                    <div data-modal-target="backdrop" class="backdrop-hidden"></div>
+                    <div data-modal-target="dialog" class="dialog-hidden">
+                        <p>Modal content</p>
+                    </div>
+                </div>
+            </div>
+        `,
+    );
+
+    const modal = document.querySelector('[data-modal-target="modal"]');
+    const backdrop = document.querySelector('[data-modal-target="backdrop"]');
+    const dialog = document.querySelector('[data-modal-target="dialog"]');
+
+    expect(mounted.controller.isOpen).toBe(true);
+    expect(modal.hidden).toBe(false);
+    expect(modal.dataset.open).toBe("true");
+    expect(modal.classList.contains("visible")).toBe(true);
+    expect(backdrop.classList.contains("backdrop-visible")).toBe(true);
+    expect(dialog.classList.contains("dialog-visible")).toBe(true);
+    expect(document.body.classList.contains("overflow-hidden")).toBe(true);
+});
+
 test.serial("injects the default loading template when turbo:before-fetch-request fires on the dynamic content", async () => {
     mounted = await mountController("modal", ModalController, LOADING_TEMPLATE_HTML);
 

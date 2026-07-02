@@ -10,11 +10,11 @@ export default class extends Controller {
     };
 
     disconnect() {
-        clearTimeout(this.timeout);
+        this.clearSubmitTimer(this.timeout);
     }
 
     submit() {
-        clearTimeout(this.timeout);
+        this.clearSubmitTimer(this.timeout);
         this.element.requestSubmit();
     }
 
@@ -24,7 +24,15 @@ export default class extends Controller {
             return;
         }
 
-        clearTimeout(this.timeout);
-        this.timeout = setTimeout(() => this.element.requestSubmit(), this.delayValue);
+        this.clearSubmitTimer(this.timeout);
+        this.timeout = this.setSubmitTimer(() => this.element.requestSubmit(), this.delayValue);
+    }
+
+    setSubmitTimer(callback, delay) {
+        return setTimeout(callback, delay);
+    }
+
+    clearSubmitTimer(timeoutId) {
+        clearTimeout(timeoutId);
     }
 }

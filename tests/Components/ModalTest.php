@@ -12,6 +12,12 @@ it('renders with default props', function () {
     $view->assertSee('Content');
     $view->assertSee('role="dialog"', false);
     $view->assertSee('aria-modal="true"', false);
+    $view->assertSee('data-slot="modal-overlay"', false);
+    $view->assertSee('data-open="false"', false);
+    $view->assertSee('data-modal-hidden-class="pointer-events-none"', false);
+    $view->assertSee('data-modal-visible-class="pointer-events-auto"', false);
+    $view->assertSee('data-modal-backdrop-hidden-class="opacity-0"', false);
+    $view->assertSee('data-modal-backdrop-visible-class="opacity-100"', false);
 });
 
 it('renders the trigger slot', function () {
@@ -84,10 +90,10 @@ it('generates unique id when not provided', function () {
     expect($component->id)->toStartWith('modal-');
 });
 
-it('applies fixed-top classes', function () {
+it('emits fixed-top semantic state', function () {
     $view = $this->blade('<x-hwc::modal :fixed-top="true">Content</x-hwc::modal>');
 
-    $view->assertSee('mt-14 self-start', false);
+    $view->assertSee('data-fixed-top="true"', false);
 });
 
 it('applies custom prevent-reopen-delay', function () {
@@ -96,65 +102,73 @@ it('applies custom prevent-reopen-delay', function () {
     $view->assertSee('data-modal-prevent-reopen-delay-value="2000"', false);
 });
 
-it('applies size=md by default filling width up to xl cap', function () {
+it('emits size=md by default', function () {
     $view = $this->blade('<x-hwc::modal>Content</x-hwc::modal>');
 
-    $view->assertSee('w-full md:max-w-xl', false);
-    $view->assertDontSee('md:min-w-[50%]', false);
+    $view->assertSee('data-slot="modal-positioner"', false);
+    $view->assertSee('data-size="md"', false);
+    $view->assertDontSee('md:max-w-xl', false);
 });
 
-it('applies size=sm filling width up to md cap', function () {
+it('emits size=sm state', function () {
     $view = $this->blade('<x-hwc::modal size="sm">Content</x-hwc::modal>');
 
-    $view->assertSee('w-full md:max-w-md', false);
-    $view->assertDontSee('md:min-w-[50%]', false);
+    $view->assertSee('data-size="sm"', false);
+    $view->assertDontSee('md:max-w-md', false);
 });
 
-it('applies size=lg filling width up to 3xl cap', function () {
+it('emits size=lg state', function () {
     $view = $this->blade('<x-hwc::modal size="lg">Content</x-hwc::modal>');
 
-    $view->assertSee('w-full md:max-w-3xl', false);
-    $view->assertDontSee('md:min-w-[50%]', false);
+    $view->assertSee('data-size="lg"', false);
+    $view->assertDontSee('md:max-w-3xl', false);
 });
 
-it('applies size=xl filling width up to 5xl cap', function () {
+it('emits size=xl state', function () {
     $view = $this->blade('<x-hwc::modal size="xl">Content</x-hwc::modal>');
 
-    $view->assertSee('w-full md:max-w-5xl', false);
-    $view->assertDontSee('md:min-w-[50%]', false);
+    $view->assertSee('data-size="xl"', false);
+    $view->assertDontSee('md:max-w-5xl', false);
 });
 
-it('applies size=full with viewport dimensions and inner h-full', function () {
+it('emits size=full state on layout slots', function () {
     $view = $this->blade('<x-hwc::modal size="full">Content</x-hwc::modal>');
 
-    $view->assertSee('w-full h-full', false);
-    $view->assertSee('flex h-full flex-col', false);
-    $view->assertSee('flex-1', false);
+    $view->assertSee('data-slot="modal-positioner"', false);
+    $view->assertSee('data-slot="modal-panel"', false);
+    $view->assertSee('data-slot="modal-content"', false);
+    $view->assertSee('data-size="full"', false);
     $view->assertDontSee('max-h-[calc(100vh-80px)]', false);
 });
 
-it('moves close button inside the dialog when size=full', function () {
+it('keeps the close button anchored inside the dialog when size=full', function () {
     $view = $this->blade('<x-hwc::modal size="full">Content</x-hwc::modal>');
 
-    $view->assertSee('top-2 right-2 z-10', false);
+    $view->assertSee('data-slot="modal-close"', false);
+    $view->assertSee('data-size="icon-sm"', false);
+    $view->assertSee('data-modal-size="full"', false);
     $view->assertDontSee('-top-4 -right-4', false);
 });
 
-it('keeps close button outside the dialog when size is not full', function () {
+it('keeps the close button anchored inside the dialog when size is not full', function () {
     $view = $this->blade('<x-hwc::modal>Content</x-hwc::modal>');
 
-    $view->assertSee('-top-4 -right-4', false);
+    $view->assertSee('data-slot="modal-close"', false);
+    $view->assertSee('data-size="icon-sm"', false);
+    $view->assertSee('data-modal-size="md"', false);
 });
 
 it('ignores fixed-top when size=full', function () {
     $view = $this->blade('<x-hwc::modal size="full" :fixed-top="true">Content</x-hwc::modal>');
 
-    $view->assertDontSee('mt-14 self-start', false);
+    $view->assertSee('data-fixed-top="true"', false);
+    $view->assertSee('data-size="full"', false);
 });
 
 it('applies size=auto with no width constraints and no w-full', function () {
     $view = $this->blade('<x-hwc::modal size="auto">Content</x-hwc::modal>');
 
+    $view->assertSee('data-size="auto"', false);
     $view->assertDontSee('md:max-w-md', false);
     $view->assertDontSee('style="max-width:', false);
     $view->assertDontSee(' w-full', false);
@@ -163,14 +177,14 @@ it('applies size=auto with no width constraints and no w-full', function () {
 it('applies arbitrary size with w-full and inline max-width style', function () {
     $view = $this->blade('<x-hwc::modal size="800px">Content</x-hwc::modal>');
 
-    $view->assertSee('w-full', false);
+    $view->assertSee('data-size="800px"', false);
     $view->assertSee('style="max-width: 800px;"', false);
 });
 
 it('applies arbitrary size in viewport units with w-full', function () {
     $view = $this->blade('<x-hwc::modal size="60vw">Content</x-hwc::modal>');
 
-    $view->assertSee('w-full', false);
+    $view->assertSee('data-size="60vw"', false);
     $view->assertSee('style="max-width: 60vw;"', false);
 });
 
@@ -206,16 +220,24 @@ it('does not forward modal stimulus attributes from arbitrary attributes', funct
     ');
 
     $view->assertSee('data-controller="modal"', false);
-    $view->assertSee('data-action="turbo:before-cache@window->modal#close"', false);
+    $view->assertSee('data-action="turbo:before-cache@window-&gt;modal#close"', false);
     $view->assertDontSee('data-controller="custom"', false);
     $view->assertDontSee('data-action="click-&gt;custom#run"', false);
     $view->assertDontSee('data-modal-close-on-escape-value="false"', false);
 });
 
+it('merges inline stimulus attributes with the internal modal controller', function () {
+    $view = $this->blade('<x-hwc::modal :stimulus="stimulus()->controller(\'hotkey\')->action(\'hotkey\', \'click\', \'keydown.m@window\')">Content</x-hwc::modal>');
+
+    $view->assertSee('data-controller="modal hotkey"', false);
+    $view->assertSee('turbo:before-cache@window-&gt;modal#close keydown.m@window-&gt;hotkey#click', false);
+});
+
 it('clips horizontal overflow on the scroll container', function () {
     $view = $this->blade('<x-hwc::modal>Content</x-hwc::modal>');
 
-    $view->assertSee('w-full overflow-x-hidden overflow-y-auto', false);
+    $view->assertSee('data-slot="modal-content"', false);
+    $view->assertDontSee('w-full overflow-x-hidden overflow-y-auto', false);
 });
 
 it('renders an accessible label on the close button', function () {

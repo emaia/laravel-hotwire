@@ -9,6 +9,11 @@ use Emaia\LaravelHotwire\Commands\ListComponentsCommand;
 use Emaia\LaravelHotwire\Commands\MakeControllerCommand;
 use Emaia\LaravelHotwire\Commands\PublishControllersCommand;
 use Emaia\LaravelHotwire\Commands\UiCommand;
+use Emaia\LaravelHotwire\Components\Modal\Content;
+use Emaia\LaravelHotwire\Components\Modal\Description;
+use Emaia\LaravelHotwire\Components\Modal\Footer;
+use Emaia\LaravelHotwire\Components\Modal\Header;
+use Emaia\LaravelHotwire\Components\Modal\Title;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Illuminate\Support\Facades\Blade;
 use Spatie\LaravelPackageTools\Package;
@@ -17,6 +22,19 @@ use Spatie\LaravelPackageTools\PackageServiceProvider;
 class LaravelHotwireServiceProvider extends PackageServiceProvider
 {
     private const string COMPONENT_NAMESPACE = 'Emaia\\LaravelHotwire\\Components';
+
+    private const array SUB_COMPONENT_ALIASES = [
+        'modal.header' => Header::class,
+        'modal.title' => Title::class,
+        'modal.description' => Description::class,
+        'modal.content' => Content::class,
+        'modal.footer' => Footer::class,
+        'alert-dialog.header' => Components\AlertDialog\Header::class,
+        'alert-dialog.title' => Components\AlertDialog\Title::class,
+        'alert-dialog.description' => Components\AlertDialog\Description::class,
+        'alert-dialog.content' => Components\AlertDialog\Content::class,
+        'alert-dialog.footer' => Components\AlertDialog\Footer::class,
+    ];
 
     public function configurePackage(Package $package): void
     {
@@ -50,6 +68,8 @@ class LaravelHotwireServiceProvider extends PackageServiceProvider
             Blade::component($class, $alias);
         }
 
+        $this->registerSubComponents($prefix);
+
         if ($prefix !== 'hotwire') {
             Blade::componentNamespace(self::COMPONENT_NAMESPACE, 'hotwire');
             Blade::anonymousComponentNamespace('hotwire::components', 'hotwire');
@@ -57,6 +77,15 @@ class LaravelHotwireServiceProvider extends PackageServiceProvider
             foreach ($registry->bladeComponentAliases('hotwire') as $alias => $class) {
                 Blade::component($class, $alias);
             }
+
+            $this->registerSubComponents('hotwire');
+        }
+    }
+
+    private function registerSubComponents(string $prefix): void
+    {
+        foreach (self::SUB_COMPONENT_ALIASES as $suffix => $class) {
+            Blade::component($class, "{$prefix}::{$suffix}");
         }
     }
 }
