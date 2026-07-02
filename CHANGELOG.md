@@ -2,6 +2,40 @@
 
 All notable changes to `laravel-hotwire` will be documented in this file.
 
+## 0.33.0 - 2026-07-02
+
+### Semantic slot preset infrastructure
+
+This release moves shipped component styling out of Blade/PHP defaults and into the Nova CSS preset, adds the Button component, and establishes `data-slot`/`data-variant`/`data-size` as the package styling contract.
+
+#### Button and preset foundation
+
+- Adds `<x-hwc::button>` with semantic `variant`, `size`, `type`, `as`, and `stimulus` support.
+- Adds `resources/css/tokens.css`, `resources/css/custom-variants.css`, and `resources/css/presets/nova.css` as the default preset stack.
+- Replaces the installed CSS stub with a thin Tailwind v4 entrypoint that imports the package preset and scans package CSS.
+- Keeps `Support\Variants` available for app code while shipped components now expose styling hooks through semantic attributes.
+
+#### Semantic slots across shipped components
+
+- Migrates form primitives, overlays, dropdown, rich text, file upload, carousel/chart/map wrappers, feedback components, icons, spinner, timeago, and optimistic UI to `data-slot`-based markup.
+- Adds Modal and Alert-dialog sub-components for header, title, description, content, and footer composition.
+- Renames Confirm-dialog to Alert-dialog to align with the shadcn/Radix naming model.
+- Adds explicit dropdown trigger icon styling through `data-slot="dropdown-trigger-icon"` instead of requiring fragile group selectors.
+
+#### Styling and interaction fixes
+
+- Refines checkable input rendering so checkbox/radio states, invalid states, and indeterminate checkbox state render correctly in the Nova preset.
+- Fixes `checked="false"` handling for checkable inputs and avoids empty `class=""` output on labels.
+- Styles RichText wrapper, toolbar, toolbar buttons, editor content, placeholder, lists, blockquotes, code, and pre blocks in the Nova preset.
+- Stabilizes timer-heavy JS tests and switches the JS suite to `bun test --isolate --parallel`.
+
+#### Docs and references
+
+- Adds Button and Alert-dialog docs and updates dropdown, rich text, file upload, theming, presets, install, and recipes for the semantic-slot direction.
+- Updates component/controller registry entries so commands and docs resolve the new Button and Alert-dialog resources.
+
+**Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/0.32.0...0.33.0
+
 ## 0.32.0 - 2026-06-30
 
 ### Design system foundation + reworked install command with autoload
@@ -31,6 +65,7 @@ export default class extends CarouselController {
     // ...
 }
 
+
 ```
 Brace-aware injection respects an existing `resolve:` block. See [`docs/extending-controllers.md`](docs/extending-controllers.md).
 
@@ -40,6 +75,7 @@ Single canonical command for the greenfield case:
 
 ```bash
 php artisan hotwire:install
+
 
 ```
 Adds every catalog dep, wires the Vite alias, generates the loader stub, runs the package manager (auto-detected from the lockfile), and verifies view usage matches the install config. Three explicit dependency modes:
@@ -146,6 +182,7 @@ New `<x-hwc::map>` Blade component and `map` Stimulus controller — a Leaflet w
 
 
 
+
 ```
 - Default OpenStreetMap tiles with the required attribution automatically set
 - Inline markers with optional popups, or a `url` returning a GeoJSON `FeatureCollection`
@@ -169,6 +206,7 @@ The `chart` controller now supports a `poll` value (milliseconds) — when set w
 
 ```blade
 <x-hwc::chart url="/api/charts/sales" :poll="30_000" height="320px" />
+
 
 
 
@@ -267,6 +305,7 @@ Apache ECharts ^6.1.0 wrapper with server-rendered or URL-fetched options, Resiz
 
 
 
+
 ```
 #### Controller features
 
@@ -347,6 +386,7 @@ New `conditional-fields` Stimulus controller shows or hides dependent blocks bas
 
 
 
+
 ```
 #### Rule grammar
 
@@ -389,6 +429,7 @@ Recommended path — encodes the rule once on the server, renders `hidden disabl
 
 
 
+
 ```
 #### Edit forms — the `:model` prop
 
@@ -398,6 +439,7 @@ Pass the same model your `<x-hwc::input>` / `<x-hwc::select>` / `<x-hwc::textare
 <x-hwc::conditional-field :model="$message" :when="['reason' => 'other']">
     <x-hwc::input name="other_reason" :value="$message->other_reason" />
 </x-hwc::conditional-field>
+
 
 
 
@@ -451,6 +493,7 @@ New `disclosure` Stimulus controller — collapsible inline content with proper 
 
 
 
+
 ```
 Two-way `open` value (default `false`), idempotent `toggle` / `open` / `close` actions, and a `disclosure:change` event with `{ open: bool }` for hooking analytics, icon swaps, or chained UI off transitions. The `content` target is required; the `trigger` target is optional and receives `aria-expanded` sync when present.
 
@@ -464,6 +507,7 @@ static outlets = ["disclosure"];
 revealHelp() {
     this.disclosureOutlet.open();
 }
+
 
 
 
@@ -525,6 +569,7 @@ New `password-visibility` Stimulus controller toggles a password input between h
 
 
 
+
 ```
 `aria-label` is driven by the `show-label` / `hide-label` values (defaults `Show password` / `Hide password`). A `password-visibility:change` event with `{ visible: bool }` fires on every transition so a small companion controller — or another listener — can swap icons. `connect()` always forces `type="password"`: visibility is never persisted across Turbo morphs or Drive navigations.
 
@@ -537,6 +582,7 @@ New `autofocus` Stimulus controller focuses the first matching field on `connect
 <form data-controller="autofocus" action="/messages" method="POST">
     <input type="text" name="title" autofocus/>
 </form>
+
 
 
 
@@ -571,6 +617,7 @@ New `back-to-top` Stimulus controller toggles `data-visible="true|false"` on its
            data-[visible=true]:opacity-100"
     aria-label="Back to top"
 >↑</button>
+
 
 
 
@@ -638,6 +685,7 @@ Single `size` prop replaces the previous `allow-small-width` and `allow-full-wid
 
 
 
+
 ```
 `allow-small-width` and `allow-full-width` are removed. Use `size="auto"` to keep the old "no width constraints" behavior, or `size="50vw"` to keep the old "half viewport" default. The migration table in `docs/components/modal.md` maps every previous combination to the new prop.
 
@@ -678,6 +726,7 @@ New `<x-hwc::frame-or-page>` component renders a view as a Turbo Frame payload o
 
 
 
+
 ```
 #### Model-aware frame ids
 
@@ -687,6 +736,7 @@ Pass a Model instead of a string; the component calls `dom_id()` to derive the f
 <x-hwc::frame-or-page :frame="$message" layout="layouts.dashboard">
     ...
 </x-hwc::frame-or-page>
+
 
 
 
@@ -748,12 +798,14 @@ The `<x-hwc::carousel>` component now supports an opt-in progress bar and slide 
 
 
 
+
 ```
 #### Slide counter
 
 ```blade
 <x-hwc::carousel :counter="true"
                  counter-class="text-sm">
+
 
 
 
@@ -818,12 +870,14 @@ export default class extends CarouselController {
 
 
 
+
 ```
 ```blade
 <x-hwc::carousel controller="gallery">
     <div>slide 1</div>
     <div>slide 2</div>
 </x-hwc::carousel>
+
 
 
 
