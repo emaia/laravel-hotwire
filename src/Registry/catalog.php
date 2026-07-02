@@ -1,6 +1,7 @@
 <?php
 
 use Emaia\LaravelHotwire\Components\AlertDialog;
+use Emaia\LaravelHotwire\Components\Badge;
 use Emaia\LaravelHotwire\Components\Button;
 use Emaia\LaravelHotwire\Components\Carousel;
 use Emaia\LaravelHotwire\Components\Chart;
@@ -26,6 +27,7 @@ use Emaia\LaravelHotwire\Components\RichText;
 use Emaia\LaravelHotwire\Components\ScrollProgress;
 use Emaia\LaravelHotwire\Components\Select;
 use Emaia\LaravelHotwire\Components\Spinner;
+use Emaia\LaravelHotwire\Components\Table;
 use Emaia\LaravelHotwire\Components\Textarea;
 use Emaia\LaravelHotwire\Components\Timeago;
 
@@ -62,6 +64,14 @@ return [
             'category' => 'overlay',
             'description' => 'Accessible alert dialog that intercepts clicks before proceeding',
             'controllers' => ['alert-dialog'],
+        ],
+        'badge' => [
+            'class' => Badge::class,
+            'view' => 'hotwire::component-views.badge',
+            'docs' => 'docs/components/badge.md',
+            'category' => 'display',
+            'description' => 'Compact status label with semantic variants and optional link rendering',
+            'controllers' => [],
         ],
         'form' => [
             'class' => Form::class,
@@ -197,6 +207,14 @@ return [
             'docs' => 'docs/components/spinner.md',
             'category' => 'feedback',
             'description' => 'Animated SVG spinner — no JavaScript required',
+            'controllers' => [],
+        ],
+        'table' => [
+            'class' => Table::class,
+            'view' => 'hotwire::component-views.table',
+            'docs' => 'docs/components/table.md',
+            'category' => 'display',
+            'description' => 'Responsive table wrapper with semantic row, cell, header, footer and caption primitives',
             'controllers' => [],
         ],
         'dropdown' => [
