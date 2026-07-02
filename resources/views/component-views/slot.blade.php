@@ -1,1 +1,1 @@
-<{{ $tag }} data-slot="{{ $slotName }}" {{ $attributes }}>{{ $slot }}</{{ $tag }}>
+<{{ $tag }} data-slot="{{ $slotName }}" @isset($variant) data-variant="{{ $variant }}" @endisset {{ $attributes }}>{{ $slot }}</{{ $tag }}>

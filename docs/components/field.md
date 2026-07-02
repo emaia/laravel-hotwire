@@ -62,6 +62,19 @@ Wrap related fields in `<x-hwc::field-group>` to get the default form spacing an
 container-query implementation, the package does not make field groups size containers by default so they keep working
 inside intrinsic-width surfaces like `<x-hwc::modal size="auto">`.
 
+For checkbox/radio rows with explanatory text, use `field.content` and `field.title`:
+
+```blade
+<x-hwc::field name="newsletter" orientation="horizontal">
+    <x-hwc::input type="checkbox" value="1" />
+
+    <x-hwc::field.content>
+        <x-hwc::field.title>Subscribe to newsletter</x-hwc::field.title>
+        <x-hwc::description>Get product updates once a month.</x-hwc::description>
+    </x-hwc::field.content>
+</x-hwc::field>
+```
+
 ## ARIA contract
 
 `<x-hwc::input>`, `<x-hwc::select>`, `<x-hwc::textarea>`, and `<x-hwc::checkbox-group>` always emit
