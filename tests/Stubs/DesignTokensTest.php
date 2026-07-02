@@ -196,6 +196,9 @@ it('defines component styles in the nova preset via data-slot selectors', functi
         ->toContain('[data-slot="field-content"]')
         ->toContain('[data-slot="field-separator"]')
         ->toContain('[data-slot="button"]')
+        ->toContain('[data-slot="badge"]')
+        ->toContain('[data-slot="table-container"]')
+        ->toContain('[data-slot="table-row"]')
         ->toContain('[data-slot="input"]')
         ->toContain('[data-slot="modal-panel"]')
         ->toContain('[data-slot="alert-dialog-panel"]');

@@ -41,6 +41,13 @@ class LaravelHotwireServiceProvider extends PackageServiceProvider
         'field.separator' => Components\Field\Separator::class,
         'field.set' => Components\Field\FieldSet::class,
         'field.title' => Components\Field\Title::class,
+        'table.header' => Components\Table\Header::class,
+        'table.body' => Components\Table\Body::class,
+        'table.footer' => Components\Table\Footer::class,
+        'table.row' => Components\Table\Row::class,
+        'table.head' => Components\Table\Head::class,
+        'table.cell' => Components\Table\Cell::class,
+        'table.caption' => Components\Table\Caption::class,
     ];
 
     public function configurePackage(Package $package): void
