@@ -3,35 +3,15 @@
 use Illuminate\Support\Facades\File;
 
 beforeEach(function () {
+    $this->appBase = isolateAppPaths();
     $this->cssPath = resource_path('css/app.css');
     $this->uiJsPath = resource_path('js/libs/ui.js');
     $this->indexJsPath = resource_path('js/libs/index.js');
     $this->packageJsonPath = base_path('package.json');
-
-    File::deleteDirectory(resource_path('css'));
-    File::deleteDirectory(resource_path('js'));
-
-    $this->originalPackageJson = File::exists($this->packageJsonPath)
-        ? File::get($this->packageJsonPath)
-        : null;
 });
 
 afterEach(function () {
-    File::deleteDirectory(resource_path('css'));
-    File::deleteDirectory(resource_path('js'));
-
-    if ($this->originalPackageJson !== null) {
-        File::put($this->packageJsonPath, $this->originalPackageJson);
-    } elseif (File::exists($this->packageJsonPath)) {
-        File::delete($this->packageJsonPath);
-    }
-
-    foreach (['bun.lock', 'pnpm-lock.yaml', 'yarn.lock', 'package-lock.json'] as $lock) {
-        $path = base_path($lock);
-        if (File::exists($path)) {
-            File::delete($path);
-        }
-    }
+    releaseIsolatedAppPaths($this->appBase);
 });
 
 // --- Helpers ---

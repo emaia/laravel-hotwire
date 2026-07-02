@@ -3,12 +3,12 @@
 use Illuminate\Support\Facades\File;
 
 beforeEach(function () {
+    $this->appBase = isolateAppPaths();
     $this->targetDir = resource_path('js/controllers');
-    File::deleteDirectory($this->targetDir);
 });
 
 afterEach(function () {
-    File::deleteDirectory($this->targetDir);
+    releaseIsolatedAppPaths($this->appBase);
 });
 
 // --- Basic generation ---

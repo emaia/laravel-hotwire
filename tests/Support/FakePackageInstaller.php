@@ -12,13 +12,13 @@ class FakePackageInstaller extends PackageInstaller
     public array $installed = [];
 
     public function __construct(
-        public string $manager = 'bun',
+        public ?string $manager = 'bun',
         public int $exitCode = 0,
     ) {}
 
     public function detect(Filesystem $files): string
     {
-        return $this->manager;
+        return $this->manager ?? parent::detect($files);
     }
 
     public function install(string $manager, Command $command): int
