@@ -24,12 +24,34 @@
     :is([data-slot="button"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"])[data-size="icon-sm"] { @apply size-7 rounded-[min(var(--radius-md),12px)]; }
     :is([data-slot="button"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"])[data-size="icon-lg"] { @apply size-9; }
 
-    [data-slot="field"] { @apply flex w-full flex-col gap-1.5; }
-    [data-slot="label"] { @apply text-sm leading-snug font-medium text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-50; }
-    [data-slot="label"]:has(:is([data-slot="input"], [data-slot="checkbox-group-input"])[data-checkable="true"]) { @apply flex items-center gap-2 font-normal; }
-    [data-slot="description"] { @apply text-sm text-muted-foreground; }
-    [data-slot="error"] { @apply text-sm font-normal text-destructive; }
-    [data-slot="error"][data-empty="true"] { @apply hidden; }
+    [data-slot="field-group"] { @apply flex w-full flex-col gap-5; }
+    [data-slot="field-group"] > [data-slot="field-group"] { @apply gap-4; }
+    [data-slot="field-set"] { @apply flex flex-col gap-4; }
+    [data-slot="field-set"]:has(> [data-slot="checkbox-group"], > [data-slot="radio-group"]) { @apply gap-3; }
+    [data-slot="field-legend"] { @apply mb-1.5 font-medium data-[variant=label]:text-sm data-[variant=legend]:text-base; }
+    [data-slot="field"] { @apply flex w-full gap-2 data-[orientation=vertical]:flex-col data-[orientation=horizontal]:flex-row data-[orientation=horizontal]:items-center data-[orientation=responsive]:flex-col data-[orientation=responsive]:md:flex-row data-[orientation=responsive]:md:items-center; }
+    [data-slot="field"][data-orientation="vertical"] > *, [data-slot="field"][data-orientation="responsive"] > * { @apply w-full; }
+    [data-slot="field"][data-orientation="responsive"] > * { @apply md:w-auto; }
+    [data-slot="field"][data-orientation="horizontal"] > :is([data-slot="field-label"], [data-slot="field-title"]), [data-slot="field"][data-orientation="responsive"] > :is([data-slot="field-label"], [data-slot="field-title"]) { @apply flex-auto; }
+    [data-slot="field"][data-orientation="horizontal"]:has(> [data-slot="field-content"]) { @apply items-start; }
+    [data-slot="field"][data-orientation="responsive"]:has(> [data-slot="field-content"]) { @apply md:items-start; }
+    [data-slot="field"]:has(> [data-slot="field-content"]) > :is([role="checkbox"], [role="radio"], [data-checkable="true"]) { @apply mt-px; }
+    [data-slot="field-content"] { @apply flex flex-1 flex-col gap-0.5 leading-snug; }
+    [data-slot="field-title"] { @apply flex w-fit items-center gap-2 text-sm font-medium leading-snug; }
+    [data-slot="field-separator"] { @apply relative -my-2 flex h-5 items-center justify-center text-sm; }
+    [data-slot="field-separator-line"] { @apply absolute inset-x-0 top-1/2 h-px bg-border; }
+    [data-slot="field-separator-content"] { @apply relative bg-background px-2 text-muted-foreground; }
+    [data-slot="field-label"] { @apply text-sm leading-snug font-medium text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-50; }
+    [data-slot="field-label"]:has(:is([data-slot="input"], [data-slot="checkbox-group-input"])[data-checkable="true"]) { @apply flex items-center gap-2 font-normal; }
+    [data-slot="field-description"] { @apply text-left text-sm leading-normal font-normal text-muted-foreground; }
+    [data-slot="field"][data-orientation="horizontal"] [data-slot="field-description"], [data-slot="field"][data-orientation="responsive"] [data-slot="field-description"] { @apply md:text-balance; }
+    [data-slot="field-legend"] + [data-slot="field-description"] { @apply -mt-1.5; }
+    [data-slot="field-description"]:nth-last-child(2) { @apply -mt-1; }
+    [data-slot="field-description"] > a { @apply underline underline-offset-4; }
+    [data-slot="field-description"] > a:hover { @apply text-primary; }
+    [data-slot="field-error"] { @apply text-sm font-normal text-destructive; }
+    [data-slot="field-error"] > ul { @apply ml-4 flex list-disc flex-col gap-1; }
+    [data-slot="field-error"][data-empty="true"] { @apply hidden; }
 
     [data-slot="input-wrapper"], [data-slot="textarea-wrapper"], [data-slot="file-wrapper"] { @apply relative; }
     [data-slot="input-wrapper"][data-clearable="true"] { @apply flex flex-col justify-center items-center; }

@@ -451,9 +451,9 @@ it('radio does not treat checked=false as checked', function () {
 it('renders multiple radios unchecked by default', function () {
     $view = $this->blade(<<<'BLADE'
         <x-hwc::field name="status" label="Status">
-            <x-hwc::label><x-hwc::input type="radio" value="draft" /> Draft</x-hwc::label>
-            <x-hwc::label><x-hwc::input type="radio" value="published" /> Published</x-hwc::label>
-            <x-hwc::label><x-hwc::input type="radio" value="archived" /> Archived</x-hwc::label>
+            <x-hwc::field.label><x-hwc::input type="radio" value="draft" /> Draft</x-hwc::field.label>
+            <x-hwc::field.label><x-hwc::input type="radio" value="published" /> Published</x-hwc::field.label>
+            <x-hwc::field.label><x-hwc::input type="radio" value="archived" /> Archived</x-hwc::field.label>
         </x-hwc::field>
     BLADE);
 

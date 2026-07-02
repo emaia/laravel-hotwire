@@ -3,7 +3,7 @@
 **[Dropzone](https://github.com/NicolasCARPi/dropzone) wrapper** — drag-and-drop, multi-file queue,
 client-side preview and progress, with the upload endpoint, validation, storage and cleanup all
 **app-side**. Renders a `<div>` mounted on the [`file-upload`](../controllers/file-upload.md)
-Stimulus controller. Pairs with `<x-hwc::field>`, `<x-hwc::error>`, and Laravel's `old()` /
+Stimulus controller. Pairs with `<x-hwc::field>`, `<x-hwc::field.error>`, and Laravel's `old()` /
 validation redirect-back out of the box, and ships native Turbo Stream response support so
 server-rendered cards just work.
 
@@ -19,7 +19,7 @@ server-rendered cards just work.
 </x-hwc::form>
 ```
 
-`<x-hwc::field>` renders the label and auto-emits the `<x-hwc::error>` block under the slot, so a
+`<x-hwc::field>` renders the label and auto-emits the `<x-hwc::field.error>` block under the slot, so a
 field-wrapped file-upload reads as a single block.
 
 The endpoint receives one `multipart/form-data` request per file under the field name `file`
@@ -208,7 +208,7 @@ Override the label when context demands a specific call-to-action:
 ## Validation feedback
 
 On error the wrapper emits `aria-invalid="true"` plus `data-invalid` for CSS hooks. Compose with
-`<x-hwc::error name="..." />` directly under the file-upload (or rely on `<x-hwc::field>` to render
+`<x-hwc::field.error name="..." />` directly under the file-upload (or rely on `<x-hwc::field>` to render
 it) to show the message. For multi-file rules (`attachments.*`), any sub-key error marks the
 wrapper invalid.
 

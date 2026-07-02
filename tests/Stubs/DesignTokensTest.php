@@ -188,10 +188,26 @@ it('defines component styles in the nova preset via data-slot selectors', functi
     $css = file_get_contents($novaPresetPath);
 
     expect($css)
+        ->toContain('[data-slot="field-group"]')
+        ->toContain('[data-slot="field-description"]')
+        ->toContain('[data-slot="field-description"] > a')
+        ->toContain('[data-slot="field-error"]')
+        ->toContain('[data-slot="field-error"] > ul')
+        ->toContain('[data-slot="field-content"]')
+        ->toContain('[data-slot="field-separator"]')
         ->toContain('[data-slot="button"]')
         ->toContain('[data-slot="input"]')
         ->toContain('[data-slot="modal-panel"]')
         ->toContain('[data-slot="alert-dialog-panel"]');
+});
+
+it('does not make field groups size containers by default', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain('[data-slot="field-group"]')
+        ->not->toContain('container-type: inline-size')
+        ->not->toContain('@container field-group');
 });
 
 it('does not apply Tailwind marker-only classes inside presets', function () use ($novaPresetPath) {
@@ -212,7 +228,9 @@ it('styles checkable inputs when they are wrapped by labels', function () use ($
     $css = file_get_contents($novaPresetPath);
 
     expect($css)
-        ->toContain('[data-slot="label"]:has(:is([data-slot="input"], [data-slot="checkbox-group-input"])[data-checkable="true"])')
+        ->toContain('[data-slot="field-label"]:has(:is([data-slot="input"], [data-slot="checkbox-group-input"])[data-checkable="true"])')
+        ->toContain('[data-slot="field"][data-orientation="horizontal"]:has(> [data-slot="field-content"])')
+        ->toContain('[data-slot="field"]:has(> [data-slot="field-content"]) > :is([role="checkbox"], [role="radio"], [data-checkable="true"])')
         ->toContain(':is([data-slot="input"], [data-slot="checkbox-group-input"])[data-checkable="true"]')
         ->toContain('appearance-none')
         ->toContain('aspect-square h-4 max-h-4 min-h-4 w-4 min-w-4 max-w-4')

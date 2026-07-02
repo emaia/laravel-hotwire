@@ -6,10 +6,11 @@ use Emaia\LaravelHotwire\Components\Carousel;
 use Emaia\LaravelHotwire\Components\Chart;
 use Emaia\LaravelHotwire\Components\CheckboxGroup;
 use Emaia\LaravelHotwire\Components\ConditionalField;
-use Emaia\LaravelHotwire\Components\Description;
 use Emaia\LaravelHotwire\Components\Dropdown;
-use Emaia\LaravelHotwire\Components\Error;
 use Emaia\LaravelHotwire\Components\Field;
+use Emaia\LaravelHotwire\Components\Field\Error as FieldError;
+use Emaia\LaravelHotwire\Components\Field\Group as FieldGroup;
+use Emaia\LaravelHotwire\Components\Field\Label as FieldLabel;
 use Emaia\LaravelHotwire\Components\File;
 use Emaia\LaravelHotwire\Components\FileUpload;
 use Emaia\LaravelHotwire\Components\FlashContainer;
@@ -18,7 +19,6 @@ use Emaia\LaravelHotwire\Components\Form;
 use Emaia\LaravelHotwire\Components\FrameOrPage;
 use Emaia\LaravelHotwire\Components\Icon;
 use Emaia\LaravelHotwire\Components\Input;
-use Emaia\LaravelHotwire\Components\Label;
 use Emaia\LaravelHotwire\Components\Map;
 use Emaia\LaravelHotwire\Components\Modal;
 use Emaia\LaravelHotwire\Components\Optimistic;
@@ -87,18 +87,10 @@ return [
             'description' => 'Renders a dependent block for the conditional-fields controller — single source of truth for the show/hide rule on both client and server',
             'controllers' => ['conditional-fields'],
         ],
-        'description' => [
-            'class' => Description::class,
-            'view' => 'hotwire::component-views.description',
-            'docs' => 'docs/components/description.md',
-            'category' => 'forms',
-            'description' => 'Helper text for a form field',
-            'controllers' => [],
-        ],
-        'error' => [
-            'class' => Error::class,
-            'view' => 'hotwire::component-views.error',
-            'docs' => 'docs/components/error.md',
+        'field.error' => [
+            'class' => FieldError::class,
+            'view' => 'hotwire::component-views.field-error',
+            'docs' => 'docs/components/field.md',
             'category' => 'forms',
             'description' => 'Always-present error container bound to a form field via name/errorKey',
             'controllers' => [],
@@ -109,6 +101,14 @@ return [
             'docs' => 'docs/components/field.md',
             'category' => 'forms',
             'description' => 'Wraps label, input, description and error — propagates name/errorKey/required via @aware',
+            'controllers' => [],
+        ],
+        'field.group' => [
+            'class' => FieldGroup::class,
+            'view' => 'hotwire::component-views.slot',
+            'docs' => 'docs/components/field.md',
+            'category' => 'forms',
+            'description' => 'Groups form fields and enables responsive field orientation layout',
             'controllers' => [],
         ],
         'file' => [
@@ -159,10 +159,10 @@ return [
             'description' => 'Form input with auto id/errorKey, ARIA, optional mask/clear/auto-select',
             'controllers' => ['auto-select', 'clear-input', 'input-mask'],
         ],
-        'label' => [
-            'class' => Label::class,
-            'view' => 'hotwire::component-views.label',
-            'docs' => 'docs/components/label.md',
+        'field.label' => [
+            'class' => FieldLabel::class,
+            'view' => 'hotwire::component-views.field-label',
+            'docs' => 'docs/components/field.md',
             'category' => 'forms',
             'description' => 'Form label with auto-derived for/id and optional required marker',
             'controllers' => [],

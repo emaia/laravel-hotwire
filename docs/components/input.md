@@ -110,8 +110,8 @@ collide on `id`. The component avoids that by appending `-{slug(value)}` to the 
 <x-hwc::input type="radio"    name="plan"   value="pro" />          {{-- id="plan-pro" --}}
 ```
 
-The slug uses `Illuminate\Support\Str::slug`, so any string value is safe. `aria-describedby` still points to the **base
-** error id (`plan-error`, `size-error`), so all inputs in the group bind to the same `<x-hwc::error>` node — which is
+The slug uses `Illuminate\Support\Str::slug`, so any string value is safe. `aria-describedby` still points to the
+**base error id** (`plan-error`, `size-error`), so all inputs in the group bind to the same `<x-hwc::field.error>` node — which is
 what Laravel's per-name validation produces.
 
 Passing an explicit `id` opts out of the auto-derivation: the component uses your id verbatim and derives
@@ -120,7 +120,7 @@ Passing an explicit `id` opts out of the auto-derivation: the component uses you
 ## Inheriting from `<x-hwc::field>`
 
 `<x-hwc::field>` propagates `name`, `errorKey`, and `required` to nested children via `@aware`. It auto-renders
-`<x-hwc::label>`, `<x-hwc::description>`, and `<x-hwc::error>` when the corresponding props are set:
+`<x-hwc::field.label>`, `<x-hwc::field.description>`, and `<x-hwc::field.error>` when the corresponding props are set:
 
 ```blade
 <x-hwc::field name="email" label="E-mail" required>
@@ -128,8 +128,8 @@ Passing an explicit `id` opts out of the auto-derivation: the component uses you
 </x-hwc::field>
 ```
 
-> **ARIA contract:** the input always emits `aria-describedby="{id}-error"`. The field auto-renders `<x-hwc::error>` for
-> you, so the reference is always satisfied by default. Opt out with `:error="false"` and render `<x-hwc::error>`
+> **ARIA contract:** the input always emits `aria-describedby="{id}-error"`. The field auto-renders `<x-hwc::field.error>` for
+> you, so the reference is always satisfied by default. Opt out with `:error="false"` and render `<x-hwc::field.error>`
 > manually
 > if needed.
 

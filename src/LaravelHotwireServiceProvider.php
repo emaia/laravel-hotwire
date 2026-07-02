@@ -34,6 +34,13 @@ class LaravelHotwireServiceProvider extends PackageServiceProvider
         'alert-dialog.description' => Components\AlertDialog\Description::class,
         'alert-dialog.content' => Components\AlertDialog\Content::class,
         'alert-dialog.footer' => Components\AlertDialog\Footer::class,
+        'field.content' => Components\Field\Content::class,
+        'field.description' => Components\Field\Description::class,
+        'field.label' => Components\Field\Label::class,
+        'field.legend' => Components\Field\Legend::class,
+        'field.separator' => Components\Field\Separator::class,
+        'field.set' => Components\Field\FieldSet::class,
+        'field.title' => Components\Field\Title::class,
     ];
 
     public function configurePackage(Package $package): void

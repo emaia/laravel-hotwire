@@ -481,7 +481,7 @@ public function store(Request $request)
 ```
 
 Validation errors come back as `attachments.0.name`, `attachments.1.token`, etc. Aggregate
-them under the field with `<x-hwc::error name="attachments" />` (matches `attachments.*`), or
+them under the field with `<x-hwc::field.error name="attachments" />` (matches `attachments.*`), or
 render per-card with explicit `error-key`.
 
 ### Edit forms — pre-existing media

@@ -217,7 +217,7 @@ it('emits semantic slots on the select-all master and item labels', function () 
 
     $html = (string) $view;
     expect(substr_count($html, 'data-slot="checkbox-group-input"'))->toBe(2)
-        ->and(substr_count($html, 'data-slot="label"'))->toBe(2);
+        ->and(substr_count($html, 'data-slot="field-label"'))->toBe(2);
 });
 
 // --- User data-controller merge ---
