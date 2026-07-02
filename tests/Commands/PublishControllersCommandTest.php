@@ -4,11 +4,10 @@ use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Illuminate\Support\Facades\File;
 
 beforeEach(function () {
+    $this->appBase = isolateAppPaths();
     $this->targetDir = resource_path('js/controllers');
-    $this->fixturesDir = realpath(__DIR__.'/../../resources/js/controllers').'/__fixtures';
-
-    File::deleteDirectory($this->targetDir);
-    File::deleteDirectory($this->fixturesDir);
+    $this->packageBase = base_path('package');
+    $this->fixturesDir = $this->packageBase.'/resources/js/controllers/__fixtures';
 
     HotwireRegistry::reset();
 
@@ -18,8 +17,7 @@ beforeEach(function () {
 });
 
 afterEach(function () {
-    File::deleteDirectory($this->targetDir);
-    File::deleteDirectory($this->fixturesDir);
+    releaseIsolatedAppPaths($this->appBase);
     HotwireRegistry::reset();
 });
 
@@ -51,7 +49,7 @@ function targetFor(string $baseDir, string $key): string
 
 function writeFixture(string $relativePath, string $content): string
 {
-    $base = realpath(__DIR__.'/../../resources/js/controllers').'/__fixtures';
+    $base = base_path('package/resources/js/controllers/__fixtures');
     $path = "{$base}/{$relativePath}";
     File::ensureDirectoryExists(dirname($path));
     File::put($path, $content);
@@ -66,10 +64,11 @@ function writeFixture(string $relativePath, string $content): string
  */
 function registerFixture(string $publishKey): void
 {
-    $basePath = realpath(__DIR__.'/../..');
-    $catalog = require $basePath.'/src/Registry/catalog.php';
+    $realBasePath = realpath(__DIR__.'/../..');
+    $packageBasePath = base_path('package');
+    $catalog = require $realBasePath.'/src/Registry/catalog.php';
 
-    $extension = file_exists("{$basePath}/resources/js/controllers/{$publishKey}_controller.ts") ? 'ts' : 'js';
+    $extension = file_exists("{$packageBasePath}/resources/js/controllers/{$publishKey}_controller.ts") ? 'ts' : 'js';
 
     $catalog['controllers'][str_replace('/', '--', $publishKey)] = [
         'source' => "resources/js/controllers/{$publishKey}_controller.{$extension}",
@@ -77,7 +76,7 @@ function registerFixture(string $publishKey): void
         'category' => 'fixture',
     ];
 
-    HotwireRegistry::swap(HotwireRegistry::fromCatalog($catalog, $basePath));
+    HotwireRegistry::swap(HotwireRegistry::fromCatalog($catalog, $packageBasePath));
 }
 
 // --- --list ---

@@ -175,7 +175,7 @@ class PublishControllersCommand extends Command
      */
     private function publishSharedDeps(array $controller, string $targetBase, array &$alreadyPublished): int
     {
-        $baseDir = (string) realpath(__DIR__.'/../../resources/js/controllers');
+        $baseDir = HotwireRegistry::make()->basePath().'/resources/js/controllers';
         $count = 0;
 
         foreach ($this->imports->sharedDependencies($controller['source_file'], $baseDir) as $resolved) {
@@ -234,7 +234,7 @@ class PublishControllersCommand extends Command
     private function resolveOutdated(array $available): array
     {
         $targetBase = resource_path('js/controllers');
-        $baseDir = (string) realpath(__DIR__.'/../../resources/js/controllers');
+        $baseDir = HotwireRegistry::make()->basePath().'/resources/js/controllers';
 
         return array_keys(array_filter($available, function (array $controller) use ($targetBase, $baseDir): bool {
             $targetFile = $this->targetFile($targetBase, $controller);

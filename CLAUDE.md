@@ -159,7 +159,7 @@ registered here**, or the commands won't see it.
 ## Development
 
 ```bash
-composer test          # Run Pest tests
+composer test          # Run Pest tests (aliased to `pest --parallel` — command tests each isolate `basePath()` in a per-worker temp dir)
 composer analyse       # Run PHPStan
 bun run test           # Run JS unit tests (Bun + happy-dom). Use `bun run test`, not `bun test` — the npm script wires up --isolate --parallel so mocks don't leak across files and files run concurrently
 bun run test:browser   # Run browser tests (Playwright)
@@ -196,6 +196,11 @@ PHP conventions:
 - Use `beforeEach`/`afterEach` for shared setup and cleanup (temp files, directories)
 - For artisan commands: use `$this->artisan('command')->assertSuccessful()` and `expectsQuestion`/`expectsChoice`/
   `expectsOutput` for interactive flows
+- Command tests that write to `resource_path()`/`base_path()` must call `isolateAppPaths()` in `beforeEach` and
+  `releaseIsolatedAppPaths($this->appBase)` in `afterEach`. The helper (in `tests/Pest.php`) points Laravel's
+  `basePath()` at a per-test temp dir keyed by `TEST_TOKEN`, so `--parallel` workers don't collide on the shared
+  Testbench app fixture. It also binds a `FakePackageInstaller` that keeps the real lock-file `detect()` but stubs
+  `install()` — tests that force a manager still call `fakePackageInstaller('bun'|'pnpm'|…)` explicitly.
 - Always run `composer test` at the end to ensure nothing else broke
 
 JS conventions:

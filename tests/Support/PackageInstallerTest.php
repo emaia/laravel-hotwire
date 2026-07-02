@@ -5,20 +5,14 @@ use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\File;
 
 beforeEach(function () {
+    $this->appBase = isolateAppPaths();
     $this->installer = new PackageInstaller;
     $this->files = new Filesystem;
     $this->packageJsonPath = base_path('package.json');
-    $this->originalPackageJson = File::exists($this->packageJsonPath)
-        ? File::get($this->packageJsonPath)
-        : null;
 });
 
 afterEach(function () {
-    if ($this->originalPackageJson !== null) {
-        File::put($this->packageJsonPath, $this->originalPackageJson);
-    } elseif (File::exists($this->packageJsonPath)) {
-        File::delete($this->packageJsonPath);
-    }
+    releaseIsolatedAppPaths($this->appBase);
 });
 
 function writeInstallerPackageJson(array $json): void
@@ -131,22 +125,6 @@ beforeEach(function () {
         base_path('vite.config.mjs'),
         base_path('vite.config.js'),
     ];
-    foreach ($this->viteCandidates as $candidate) {
-        $this->{'vite_'.basename($candidate)} = File::exists($candidate) ? File::get($candidate) : null;
-    }
-});
-
-afterEach(function () {
-    foreach ($this->viteCandidates as $candidate) {
-        $key = 'vite_'.basename($candidate);
-        $original = $this->{$key} ?? null;
-
-        if ($original !== null) {
-            File::put($candidate, $original);
-        } elseif (File::exists($candidate)) {
-            File::delete($candidate);
-        }
-    }
 });
 
 function laravelStockViteConfig(): string

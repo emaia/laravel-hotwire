@@ -3,37 +3,13 @@
 use Illuminate\Support\Facades\File;
 
 beforeEach(function () {
+    $this->appBase = isolateAppPaths();
     $this->stubBase = realpath(__DIR__.'/../../stubs/resources');
-
-    // Clean target directories
-    File::deleteDirectory(resource_path('js'));
-    File::deleteDirectory(resource_path('css'));
-
-    // Save original package.json if it exists
     $this->packageJsonPath = base_path('package.json');
-    $this->originalPackageJson = File::exists($this->packageJsonPath)
-        ? File::get($this->packageJsonPath)
-        : null;
 });
 
 afterEach(function () {
-    File::deleteDirectory(resource_path('js'));
-    File::deleteDirectory(resource_path('css'));
-
-    // Restore original package.json
-    if ($this->originalPackageJson !== null) {
-        File::put($this->packageJsonPath, $this->originalPackageJson);
-    } elseif (File::exists($this->packageJsonPath)) {
-        File::delete($this->packageJsonPath);
-    }
-
-    // Clean up lock files
-    foreach (['bun.lock', 'pnpm-lock.yaml', 'yarn.lock', 'package-lock.json'] as $lock) {
-        $path = base_path($lock);
-        if (File::exists($path)) {
-            File::delete($path);
-        }
-    }
+    releaseIsolatedAppPaths($this->appBase);
 });
 
 // --- Phase 1: Basic copy ---

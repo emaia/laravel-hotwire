@@ -3,37 +3,17 @@
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ControllerImports;
 use Emaia\LaravelHotwire\Support\LoaderStub;
-use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Support\Facades\File;
 
-beforeEach(/**
- * @throws FileNotFoundException
- */ function () {
+beforeEach(function () {
+    $this->appBase = isolateAppPaths();
     $this->targetDir = resource_path('js/controllers');
     $this->viewsDir = resource_path('views');
     $this->packageJsonPath = base_path('package.json');
-    $this->originalPackageJson = File::exists($this->packageJsonPath)
-        ? File::get($this->packageJsonPath)
-        : null;
-
-    File::deleteDirectory($this->targetDir);
-    File::deleteDirectory($this->viewsDir);
-    File::ensureDirectoryExists($this->viewsDir);
-
-    if (File::exists($this->packageJsonPath)) {
-        File::delete($this->packageJsonPath);
-    }
 });
 
 afterEach(function () {
-    File::deleteDirectory($this->targetDir);
-    File::deleteDirectory($this->viewsDir);
-
-    if ($this->originalPackageJson !== null) {
-        File::put($this->packageJsonPath, $this->originalPackageJson);
-    } elseif (File::exists($this->packageJsonPath)) {
-        File::delete($this->packageJsonPath);
-    }
+    releaseIsolatedAppPaths($this->appBase);
 });
 
 // --- Helpers ---
