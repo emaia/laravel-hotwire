@@ -17,7 +17,7 @@ Compact status label for counts, states and inline metadata.
 | `variant` | `default` | `default`, `secondary`, `destructive`, `outline`, `ghost` or `link`. |
 | `as` | `span` | Render a different element, usually `a` for link badges. |
 
-Blade does not have a React Slot equivalent for shadcn's `asChild`; use `as="a"` and pass attributes directly to the badge instead.
+Use `as="a"` and pass link attributes directly to the badge when it should behave as a link.
 
 ## Styling Hooks
 

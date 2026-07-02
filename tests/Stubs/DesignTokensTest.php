@@ -197,11 +197,44 @@ it('defines component styles in the nova preset via data-slot selectors', functi
         ->toContain('[data-slot="field-separator"]')
         ->toContain('[data-slot="button"]')
         ->toContain('[data-slot="badge"]')
+        ->toContain('[data-slot="separator"]')
+        ->toContain('[data-slot="alert"]')
+        ->toContain('[data-slot="alert-title"]')
+        ->toContain('[data-slot="item"]')
+        ->toContain('[data-slot="item-media"]')
+        ->toContain('[data-slot="item-separator"]')
         ->toContain('[data-slot="table-container"]')
         ->toContain('[data-slot="table-row"]')
         ->toContain('[data-slot="input"]')
         ->toContain('[data-slot="modal-panel"]')
         ->toContain('[data-slot="alert-dialog-panel"]');
+});
+
+it('keeps item icon media unframed like the shadcn base-nova reference', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain('[data-slot="item-media"][data-variant="icon"] { @apply [&>[data-slot=icon]]:size-4; }')
+        ->not->toContain('[data-slot="item-media"][data-variant="icon"] { @apply size-8 rounded-md border border-border bg-background');
+});
+
+it('applies destructive alert color to the alert description', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain('[data-slot="alert"][data-variant="destructive"] { @apply bg-card text-destructive')
+        ->toContain('[data-slot="alert"][data-variant="destructive"] > [data-slot="alert-description"] { @apply text-destructive/90; }');
+});
+
+it('keeps item media sizing driven by the media variant and parent item size', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain('[data-slot="item-media"][data-variant="default"] { @apply bg-transparent; }')
+        ->toContain('[data-slot="item-media"][data-variant="image"] { @apply size-10 overflow-hidden rounded-sm')
+        ->toContain('[data-slot="item"][data-size="sm"] [data-slot="item-media"][data-variant="image"] { @apply size-8; }')
+        ->toContain('[data-slot="item"][data-size="xs"] [data-slot="item-media"][data-variant="image"] { @apply size-6; }')
+        ->not->toContain('[data-slot="item-media"][data-variant="default"] { @apply size-8; }');
 });
 
 it('does not make field groups size containers by default', function () use ($novaPresetPath) {

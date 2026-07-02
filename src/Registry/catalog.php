@@ -1,5 +1,6 @@
 <?php
 
+use Emaia\LaravelHotwire\Components\Alert;
 use Emaia\LaravelHotwire\Components\AlertDialog;
 use Emaia\LaravelHotwire\Components\Badge;
 use Emaia\LaravelHotwire\Components\Button;
@@ -20,12 +21,14 @@ use Emaia\LaravelHotwire\Components\Form;
 use Emaia\LaravelHotwire\Components\FrameOrPage;
 use Emaia\LaravelHotwire\Components\Icon;
 use Emaia\LaravelHotwire\Components\Input;
+use Emaia\LaravelHotwire\Components\Item;
 use Emaia\LaravelHotwire\Components\Map;
 use Emaia\LaravelHotwire\Components\Modal;
 use Emaia\LaravelHotwire\Components\Optimistic;
 use Emaia\LaravelHotwire\Components\RichText;
 use Emaia\LaravelHotwire\Components\ScrollProgress;
 use Emaia\LaravelHotwire\Components\Select;
+use Emaia\LaravelHotwire\Components\Separator;
 use Emaia\LaravelHotwire\Components\Spinner;
 use Emaia\LaravelHotwire\Components\Table;
 use Emaia\LaravelHotwire\Components\Textarea;
@@ -64,6 +67,14 @@ return [
             'category' => 'overlay',
             'description' => 'Accessible alert dialog that intercepts clicks before proceeding',
             'controllers' => ['alert-dialog'],
+        ],
+        'alert' => [
+            'class' => Alert::class,
+            'view' => 'hotwire::component-views.alert',
+            'docs' => 'docs/components/alert.md',
+            'category' => 'feedback',
+            'description' => 'Inline alert with title, description, action and semantic variants',
+            'controllers' => [],
         ],
         'badge' => [
             'class' => Badge::class,
@@ -169,6 +180,14 @@ return [
             'description' => 'Form input with auto id/errorKey, ARIA, optional mask/clear/auto-select',
             'controllers' => ['auto-select', 'clear-input', 'input-mask'],
         ],
+        'item' => [
+            'class' => Item::class,
+            'view' => 'hotwire::component-views.item',
+            'docs' => 'docs/components/item.md',
+            'category' => 'display',
+            'description' => 'Composable list item primitive with media, content, actions, header, footer and separator slots',
+            'controllers' => [],
+        ],
         'field.label' => [
             'class' => FieldLabel::class,
             'view' => 'hotwire::component-views.field-label',
@@ -207,6 +226,14 @@ return [
             'docs' => 'docs/components/spinner.md',
             'category' => 'feedback',
             'description' => 'Animated SVG spinner — no JavaScript required',
+            'controllers' => [],
+        ],
+        'separator' => [
+            'class' => Separator::class,
+            'view' => 'hotwire::component-views.separator',
+            'docs' => 'docs/components/separator.md',
+            'category' => 'display',
+            'description' => 'Horizontal or vertical visual separator with semantic orientation hooks',
             'controllers' => [],
         ],
         'table' => [
