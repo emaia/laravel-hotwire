@@ -61,7 +61,7 @@ class RichText extends Component
 
         $resolvedId = $id !== null && $id !== ''
             ? $id
-            : ($hasName ? FieldKey::toId($name) : 'hwc-rich-text-'.uniqid());
+            : ($hasName ? FieldKey::toId($name) : 'hw-rich-text-'.uniqid());
 
         $resolvedErrorKey = $errorKey !== null && $errorKey !== ''
             ? $errorKey

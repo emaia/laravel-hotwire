@@ -112,7 +112,7 @@ class DocsCommand extends Command
     {
         $name = $this->argument('name');
         $key = str_replace('/', '--', $name);
-        $prefix = config('hotwire.prefix', 'hwc');
+        $prefix = config('hotwire.prefix', 'hw');
         $index = new DocSearchIndex;
 
         $controller = ! $this->option('component') ? $registry->controller($key) : null;
@@ -173,7 +173,7 @@ class DocsCommand extends Command
             default => 'controllers and components',
         };
 
-        $prefix = config('hotwire.prefix', 'hwc');
+        $prefix = config('hotwire.prefix', 'hw');
 
         $entries = (new DocSearchIndex)->build(
             $registry,
@@ -231,7 +231,7 @@ class DocsCommand extends Command
             options: ['controller', 'component'],
         );
 
-        $prefix = config('hotwire.prefix', 'hwc');
+        $prefix = config('hotwire.prefix', 'hw');
 
         $index = new DocSearchIndex;
 
@@ -246,7 +246,7 @@ class DocsCommand extends Command
     {
         $onlyControllers = $this->option('controller');
         $onlyComponents = $this->option('component');
-        $prefix = config('hotwire.prefix', 'hwc');
+        $prefix = config('hotwire.prefix', 'hw');
 
         $entries = (new DocSearchIndex)->build(
             $registry,

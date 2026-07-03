@@ -15,7 +15,7 @@ function seedOldInput(array $values): void
 }
 
 it('renders a fieldset with the dependent target attribute', function () {
-    $view = $this->blade('<x-hwc::conditional-field :when="[\'reason\' => \'other\']">inside</x-hwc::conditional-field>');
+    $view = $this->blade('<x-hw::conditional-field :when="[\'reason\' => \'other\']">inside</x-hw::conditional-field>');
 
     $view->assertSee('<fieldset', false);
     $view->assertSee('data-conditional-fields-target="dependent"', false);
@@ -23,32 +23,32 @@ it('renders a fieldset with the dependent target attribute', function () {
 });
 
 it('emits a data-when-* attribute for a single string value', function () {
-    $view = $this->blade('<x-hwc::conditional-field :when="[\'reason\' => \'other\']">inside</x-hwc::conditional-field>');
+    $view = $this->blade('<x-hw::conditional-field :when="[\'reason\' => \'other\']">inside</x-hw::conditional-field>');
 
     $view->assertSee('data-when-reason="other"', false);
 });
 
 it('emits a pipe-separated data-when-* attribute for an array value', function () {
-    $view = $this->blade('<x-hwc::conditional-field :when="[\'reason\' => [\'bug\', \'feature\']]">inside</x-hwc::conditional-field>');
+    $view = $this->blade('<x-hw::conditional-field :when="[\'reason\' => [\'bug\', \'feature\']]">inside</x-hw::conditional-field>');
 
     $view->assertSee('data-when-reason="bug|feature"', false);
 });
 
 it('preserves spaces inside trigger values when emitting data-when-*', function () {
-    $view = $this->blade('<x-hwc::conditional-field :when="[\'user\' => [\'Kris Jhonson\', \'John Doe\']]">inside</x-hwc::conditional-field>');
+    $view = $this->blade('<x-hw::conditional-field :when="[\'user\' => [\'Kris Jhonson\', \'John Doe\']]">inside</x-hw::conditional-field>');
 
     $view->assertSee('data-when-user="Kris Jhonson|John Doe"', false);
 });
 
 it('passes through tokens like :checked unchanged', function () {
-    $view = $this->blade('<x-hwc::conditional-field :when="[\'ship_different\' => \':checked\']">inside</x-hwc::conditional-field>');
+    $view = $this->blade('<x-hw::conditional-field :when="[\'ship_different\' => \':checked\']">inside</x-hw::conditional-field>');
 
     $view->assertSee('data-when-ship_different=":checked"', false);
 });
 
 it('renders one attribute per field for multi-field AND rules', function () {
     $view = $this->blade(
-        '<x-hwc::conditional-field :when="[\'authorized\' => \'no\', \'needs_visa\' => \'yes\']">inside</x-hwc::conditional-field>'
+        '<x-hw::conditional-field :when="[\'authorized\' => \'no\', \'needs_visa\' => \'yes\']">inside</x-hw::conditional-field>'
     );
 
     $view->assertSee('data-when-authorized="no"', false);
@@ -56,7 +56,7 @@ it('renders one attribute per field for multi-field AND rules', function () {
 });
 
 it('renders hidden and disabled by default when neither old() nor model is set', function () {
-    $view = $this->blade('<x-hwc::conditional-field :when="[\'reason\' => \'other\']">inside</x-hwc::conditional-field>');
+    $view = $this->blade('<x-hw::conditional-field :when="[\'reason\' => \'other\']">inside</x-hw::conditional-field>');
 
     $view->assertSee('hidden', false);
     $view->assertSee('disabled', false);
@@ -65,7 +65,7 @@ it('renders hidden and disabled by default when neither old() nor model is set',
 it('renders visible after validation retry — old() value drives the rule', function () {
     seedOldInput(['reason' => 'other']);
 
-    $view = $this->blade('<x-hwc::conditional-field :when="[\'reason\' => \'other\']">inside</x-hwc::conditional-field>');
+    $view = $this->blade('<x-hw::conditional-field :when="[\'reason\' => \'other\']">inside</x-hw::conditional-field>');
 
     $view->assertDontSee(' hidden', false);
     $view->assertDontSee(' disabled', false);
@@ -74,7 +74,7 @@ it('renders visible after validation retry — old() value drives the rule', fun
 it('renders hidden after validation retry when old() value does not match', function () {
     seedOldInput(['reason' => 'bug']);
 
-    $view = $this->blade('<x-hwc::conditional-field :when="[\'reason\' => \'other\']">inside</x-hwc::conditional-field>');
+    $view = $this->blade('<x-hw::conditional-field :when="[\'reason\' => \'other\']">inside</x-hw::conditional-field>');
 
     $view->assertSee('hidden', false);
     $view->assertSee('disabled', false);
@@ -130,14 +130,14 @@ it('matches an array trigger value when old() carries the wanted item', function
 });
 
 it('accepts a custom wrapper tag', function () {
-    $view = $this->blade('<x-hwc::conditional-field :when="[\'reason\' => \'other\']" tag="div">x</x-hwc::conditional-field>');
+    $view = $this->blade('<x-hw::conditional-field :when="[\'reason\' => \'other\']" tag="div">x</x-hw::conditional-field>');
 
     $view->assertSee('<div', false);
     $view->assertSee('data-conditional-fields-target="dependent"', false);
 });
 
 it('forwards extra attributes to the wrapper element', function () {
-    $view = $this->blade('<x-hwc::conditional-field :when="[\'reason\' => \'other\']" class="my-class">x</x-hwc::conditional-field>');
+    $view = $this->blade('<x-hw::conditional-field :when="[\'reason\' => \'other\']" class="my-class">x</x-hw::conditional-field>');
 
     $view->assertSee('class="my-class"', false);
 });

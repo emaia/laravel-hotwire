@@ -96,7 +96,7 @@ it('reports all ok when no hotwire components used', function () {
 // --- Detection ---
 
 it('detects component used in a blade file', function () {
-    writeView('page.blade.php', '<x-hwc::modal />');
+    writeView('page.blade.php', '<x-hw::modal />');
 
     $this->artisan('hotwire:check --no-interaction')
         ->expectsOutputToContain('modal')
@@ -104,7 +104,7 @@ it('detects component used in a blade file', function () {
 });
 
 it('detects component with attributes', function () {
-    writeView('page.blade.php', '<x-hwc::alert-dialog title="Continue?" message="Sure?"><button>x</button></x-hwc::alert-dialog>');
+    writeView('page.blade.php', '<x-hw::alert-dialog title="Continue?" message="Sure?"><button>x</button></x-hw::alert-dialog>');
 
     $this->artisan('hotwire:check --no-interaction')
         ->expectsOutputToContain('alert-dialog')
@@ -112,24 +112,24 @@ it('detects component with attributes', function () {
 });
 
 it('detects components across multiple files', function () {
-    writeView('a.blade.php', '<x-hwc::modal />');
-    writeView('b.blade.php', '<x-hwc::alert-dialog title="x" />');
+    writeView('a.blade.php', '<x-hw::modal />');
+    writeView('b.blade.php', '<x-hw::alert-dialog title="x" />');
 
     $exit = Artisan::call('hotwire:check --no-interaction');
     $output = Artisan::output();
 
     expect($exit)->toBe(0)
-        ->and($output)->toContain('<x-hwc::modal>')
-        ->and($output)->toContain('<x-hwc::alert-dialog>');
+        ->and($output)->toContain('<x-hw::modal>')
+        ->and($output)->toContain('<x-hw::alert-dialog>');
 });
 
 it('deduplicates components used in multiple files', function () {
-    writeView('a.blade.php', '<x-hwc::modal />');
-    writeView('b.blade.php', '<x-hwc::modal />');
+    writeView('a.blade.php', '<x-hw::modal />');
+    writeView('b.blade.php', '<x-hw::modal />');
 
     Artisan::call('hotwire:check --no-interaction');
     $output = Artisan::output();
-    expect(substr_count($output, 'x-hwc::modal'))->toBe(1);
+    expect(substr_count($output, 'x-hw::modal'))->toBe(1);
 });
 
 it('respects custom prefix', function () {
@@ -141,29 +141,30 @@ it('respects custom prefix', function () {
         ->assertSuccessful();
 });
 
-it('detects components using hotwire:: alias', function () {
-    writeView('page.blade.php', '<x-hotwire::modal />');
+it('detects components using hw:: alias', function () {
+    writeView('page.blade.php', '<x-hw::modal />');
 
     $this->artisan('hotwire:check --no-interaction')
         ->expectsOutputToContain('modal')
         ->assertSuccessful();
 });
 
-it('detects both hwc:: and hotwire:: prefixes in the same codebase', function () {
-    writeView('a.blade.php', '<x-hwc::modal />');
-    writeView('b.blade.php', '<x-hotwire::alert-dialog title="x" />');
+it('detects both configured and hw prefixes in the same codebase', function () {
+    config()->set('hotwire.prefix', 'h');
+    writeView('a.blade.php', '<x-h::modal />');
+    writeView('b.blade.php', '<x-hw::alert-dialog title="x" />');
 
     $exit = Artisan::call('hotwire:check --no-interaction');
     $output = Artisan::output();
 
     expect($exit)->toBe(0)
-        ->and($output)->toContain('<x-hwc::modal>')
-        ->and($output)->toContain('<x-hwc::alert-dialog>');
+        ->and($output)->toContain('<x-h::modal>')
+        ->and($output)->toContain('<x-hw::alert-dialog>');
 });
 
-it('detects hotwire:: alias when a custom prefix is set', function () {
+it('detects hw:: alias when a custom prefix is set', function () {
     config()->set('hotwire.prefix', 'h');
-    writeView('page.blade.php', '<x-hotwire::modal />');
+    writeView('page.blade.php', '<x-hw::modal />');
 
     $this->artisan('hotwire:check --no-interaction')
         ->expectsOutputToContain('modal')
@@ -247,7 +248,7 @@ it('detects chained stimulus()->controller()->controller()', function () {
 
 it('does not double-report a controller used by both a component and standalone', function () {
     publishController('modal', $this->targetDir);
-    writeView('page.blade.php', '<x-hwc::modal>x</x-hwc::modal><div data-controller="modal"></div>');
+    writeView('page.blade.php', '<x-hw::modal>x</x-hw::modal><div data-controller="modal"></div>');
 
     Artisan::call('hotwire:check --no-interaction');
     $output = Artisan::output();
@@ -296,7 +297,7 @@ it('ignores data-controller inside Blade comments', function () {
 });
 
 it('ignores a hotwire component inside Blade comments', function () {
-    writeView('page.blade.php', '{{-- <x-hwc::carousel slide-size="80%"> --}}{{-- </x-hwc::carousel> --}}<p>real content</p>');
+    writeView('page.blade.php', '{{-- <x-hw::carousel slide-size="80%"> --}}{{-- </x-hw::carousel> --}}<p>real content</p>');
 
     $this->artisan('hotwire:check --no-interaction')
         ->expectsOutputToContain('No Hotwire components or controllers found')
@@ -370,7 +371,7 @@ it('reports up to date for standalone controller when file matches', function ()
 // --- Status reporting ---
 
 it('shows auto-loaded from vendor when controller is missing', function () {
-    writeView('page.blade.php', '<x-hwc::modal />');
+    writeView('page.blade.php', '<x-hw::modal />');
 
     $this->artisan('hotwire:check --no-interaction')
         ->expectsOutputToContain('auto-loaded from vendor')
@@ -379,7 +380,7 @@ it('shows auto-loaded from vendor when controller is missing', function () {
 
 it('shows up to date when controller matches package version', function () {
     publishController('modal', $this->targetDir);
-    writeView('page.blade.php', '<x-hwc::modal />');
+    writeView('page.blade.php', '<x-hw::modal />');
 
     $this->artisan('hotwire:check --no-interaction')
         ->expectsOutputToContain('up to date')
@@ -390,7 +391,7 @@ it('shows outdated when controller differs from package version', function () {
     $target = $this->targetDir.'/modal_controller.js';
     File::ensureDirectoryExists(dirname($target));
     File::put($target, "// @hotwire-package\n// modified");
-    writeView('page.blade.php', '<x-hwc::modal />');
+    writeView('page.blade.php', '<x-hw::modal />');
 
     $this->artisan('hotwire:check --no-interaction')
         ->expectsOutputToContain('outdated')
@@ -398,15 +399,15 @@ it('shows outdated when controller differs from package version', function () {
 });
 
 it('shows which component requires each controller', function () {
-    writeView('page.blade.php', '<x-hwc::modal />');
+    writeView('page.blade.php', '<x-hw::modal />');
 
     $this->artisan('hotwire:check --no-interaction')
-        ->expectsOutputToContain('x-hwc::modal')
+        ->expectsOutputToContain('x-hw::modal')
         ->assertSuccessful();
 });
 
 it('shows dash for component without controller dependency', function () {
-    writeView('page.blade.php', '<x-hwc::spinner />');
+    writeView('page.blade.php', '<x-hw::spinner />');
 
     $this->artisan('hotwire:check --no-interaction')
         ->expectsOutputToContain('No controllers required')
@@ -415,7 +416,7 @@ it('shows dash for component without controller dependency', function () {
 
 it('groups problem lines under a "Needs attention" heading at the end of the output', function () {
     writePackageJson(['name' => 'app', 'devDependencies' => []]);
-    writeView('page.blade.php', '<x-hwc::flash-message />');
+    writeView('page.blade.php', '<x-hw::flash-message />');
 
     Artisan::call('hotwire:check --no-interaction');
     $output = Artisan::output();
@@ -432,7 +433,7 @@ it('groups problem lines under a "Needs attention" heading at the end of the out
 
 it('does not print the "Needs attention" heading when everything is up to date', function () {
     publishController('modal', $this->targetDir);
-    writeView('page.blade.php', '<x-hwc::modal />');
+    writeView('page.blade.php', '<x-hw::modal />');
 
     Artisan::call('hotwire:check --no-interaction');
     $output = Artisan::output();
@@ -441,14 +442,14 @@ it('does not print the "Needs attention" heading when everything is up to date',
 });
 
 it('sorts scanned components alphabetically', function () {
-    writeView('a.blade.php', '<x-hwc::modal /><x-hwc::carousel /><x-hwc::dropdown />');
+    writeView('a.blade.php', '<x-hw::modal /><x-hw::carousel /><x-hw::dropdown />');
 
     Artisan::call('hotwire:check --no-interaction');
     $output = Artisan::output();
 
-    $carouselPos = strpos($output, '<x-hwc::carousel>');
-    $dropdownPos = strpos($output, '<x-hwc::dropdown>');
-    $modalPos = strpos($output, '<x-hwc::modal>');
+    $carouselPos = strpos($output, '<x-hw::carousel>');
+    $dropdownPos = strpos($output, '<x-hw::dropdown>');
+    $modalPos = strpos($output, '<x-hw::modal>');
 
     expect($carouselPos)->toBeLessThan($dropdownPos);
     expect($dropdownPos)->toBeLessThan($modalPos);
@@ -461,7 +462,7 @@ it('sorts the Needs attention block alphabetically', function () {
         File::ensureDirectoryExists(dirname($target));
         File::put($target, "// @hotwire-package\n// modified");
     }
-    writeView('a.blade.php', '<x-hwc::modal /><x-hwc::carousel /><x-hwc::dropdown />');
+    writeView('a.blade.php', '<x-hw::modal /><x-hw::carousel /><x-hw::dropdown />');
 
     Artisan::call('hotwire:check --no-interaction');
     $output = Artisan::output();
@@ -480,7 +481,7 @@ it('sorts the Needs attention block alphabetically', function () {
 it('groups OK output as components -> standalones -> helpers', function () {
     publishController('dropdown', $this->targetDir);
     publishController('disclosure', $this->targetDir);
-    writeView('page.blade.php', '<x-hwc::dropdown /><div data-controller="disclosure"></div>');
+    writeView('page.blade.php', '<x-hw::dropdown /><div data-controller="disclosure"></div>');
 
     Artisan::call('hotwire:check --no-interaction');
     $output = Artisan::output();
@@ -493,16 +494,16 @@ it('groups OK output as components -> standalones -> helpers', function () {
     expect($standalonePos)->toBeLessThan($helperPos);
 });
 
-it('groups <x-hwc::*> "no controllers required" entries after component controllers', function () {
+it('groups <x-hw::*> "no controllers required" entries after component controllers', function () {
     publishController('modal', $this->targetDir);
-    writeView('page.blade.php', '<x-hwc::modal /><x-hwc::spinner /><x-hwc::field />');
+    writeView('page.blade.php', '<x-hw::modal /><x-hw::spinner /><x-hw::field />');
 
     Artisan::call('hotwire:check --no-interaction');
     $output = Artisan::output();
 
     $modalPos = strpos($output, '  modal  up to date  ');
-    $fieldPos = strpos($output, '<x-hwc::field>  No controllers required');
-    $spinnerPos = strpos($output, '<x-hwc::spinner>  No controllers required');
+    $fieldPos = strpos($output, '<x-hw::field>  No controllers required');
+    $spinnerPos = strpos($output, '<x-hw::spinner>  No controllers required');
 
     expect($modalPos)->toBeLessThan($fieldPos);
     expect($fieldPos)->toBeLessThan($spinnerPos);
@@ -512,14 +513,14 @@ it('groups <x-hwc::*> "no controllers required" entries after component controll
 
 it('exits with 0 when all controllers are up to date', function () {
     publishController('modal', $this->targetDir);
-    writeView('page.blade.php', '<x-hwc::modal />');
+    writeView('page.blade.php', '<x-hw::modal />');
 
     $this->artisan('hotwire:check --no-interaction')
         ->assertExitCode(0);
 });
 
 it('exits with 0 when a controller is auto-loaded from vendor', function () {
-    writeView('page.blade.php', '<x-hwc::modal />');
+    writeView('page.blade.php', '<x-hw::modal />');
 
     $this->artisan('hotwire:check --no-interaction')
         ->assertExitCode(0);
@@ -529,7 +530,7 @@ it('exits with 1 when a controller is outdated', function () {
     $target = $this->targetDir.'/modal_controller.js';
     File::ensureDirectoryExists(dirname($target));
     File::put($target, '// modified');
-    writeView('page.blade.php', '<x-hwc::modal />');
+    writeView('page.blade.php', '<x-hw::modal />');
 
     $this->artisan('hotwire:check --no-interaction')
         ->assertExitCode(1);
@@ -541,7 +542,7 @@ it('updates outdated controllers with --fix', function () {
     $target = $this->targetDir.'/modal_controller.js';
     File::ensureDirectoryExists(dirname($target));
     File::put($target, "// @hotwire-package\n// modified");
-    writeView('page.blade.php', '<x-hwc::modal />');
+    writeView('page.blade.php', '<x-hw::modal />');
 
     $this->artisan('hotwire:check --fix --no-interaction')
         ->assertSuccessful();
@@ -555,7 +556,7 @@ it('updates outdated controllers with --fix', function () {
 it('accepts custom path to scan', function () {
     $customDir = resource_path('views/custom');
     File::ensureDirectoryExists($customDir);
-    File::put($customDir.'/page.blade.php', '<x-hwc::modal />');
+    File::put($customDir.'/page.blade.php', '<x-hw::modal />');
 
     $this->artisan('hotwire:check', ['--path' => [resource_path('views/custom')], '--no-interaction' => true])
         ->expectsOutputToContain('modal')
@@ -575,7 +576,7 @@ it('reports no components found when custom path has no blade files', function (
 
 it('lists required npm dependencies for used controllers', function () {
     writePackageJson(['name' => 'app', 'devDependencies' => []]);
-    writeView('page.blade.php', '<x-hwc::flash-message />');
+    writeView('page.blade.php', '<x-hw::flash-message />');
 
     $this->artisan('hotwire:check --no-interaction')
         ->expectsOutputToContain('Required npm dependencies')
@@ -587,7 +588,7 @@ it('marks dependency as present when listed in dependencies', function () {
     writePackageJson(['name' => 'app', 'dependencies' => ['@emaia/sonner' => '^2.1.0']]);
     publishController('toast', $this->targetDir);
     publishController('toaster', $this->targetDir);
-    writeView('page.blade.php', '<x-hwc::flash-message />');
+    writeView('page.blade.php', '<x-hw::flash-message />');
 
     $this->artisan('hotwire:check --no-interaction')
         ->doesntExpectOutputToContain('missing from package.json')
@@ -598,7 +599,7 @@ it('marks dependency as present when listed in devDependencies', function () {
     writePackageJson(['name' => 'app', 'devDependencies' => ['@emaia/sonner' => '^2.1.0']]);
     publishController('toast', $this->targetDir);
     publishController('toaster', $this->targetDir);
-    writeView('page.blade.php', '<x-hwc::flash-message />');
+    writeView('page.blade.php', '<x-hw::flash-message />');
 
     $this->artisan('hotwire:check --no-interaction')
         ->doesntExpectOutputToContain('missing from package.json')
@@ -609,7 +610,7 @@ it('marks dependency as missing when absent from package.json', function () {
     writePackageJson(['name' => 'app', 'devDependencies' => []]);
     publishController('toast', $this->targetDir);
     publishController('toaster', $this->targetDir);
-    writeView('page.blade.php', '<x-hwc::flash-message />');
+    writeView('page.blade.php', '<x-hw::flash-message />');
 
     $this->artisan('hotwire:check --no-interaction')
         ->expectsOutputToContain('@emaia/sonner')
@@ -628,7 +629,7 @@ it('reports a missing shared dependency as not published', function () {
     publishController('file-preserve', $this->targetDir);
     publishController('reset-files', $this->targetDir);
     File::delete($this->targetDir.'/_form_errors.js'); // simulate missing shared dep
-    writeView('page.blade.php', '<x-hwc::file name="avatar" />');
+    writeView('page.blade.php', '<x-hw::file name="avatar" />');
 
     $this->artisan('hotwire:check --no-interaction')
         ->expectsOutputToContain('_form_errors.js  not published')
@@ -639,7 +640,7 @@ it('marks a shared dependency up to date when present', function () {
     publishController('file-preserve', $this->targetDir);
     publishController('reset-files', $this->targetDir);
     File::copy(depSource('_form_errors.js'), $this->targetDir.'/_form_errors.js');
-    writeView('page.blade.php', '<x-hwc::file name="avatar" />');
+    writeView('page.blade.php', '<x-hw::file name="avatar" />');
 
     $this->artisan('hotwire:check --no-interaction')
         ->assertSuccessful();
@@ -649,7 +650,7 @@ it('reports a shared dependency as outdated when it differs', function () {
     publishController('file-preserve', $this->targetDir);
     publishController('reset-files', $this->targetDir);
     File::put($this->targetDir.'/_form_errors.js', "// @hotwire-package\n// modified");
-    writeView('page.blade.php', '<x-hwc::file name="avatar" />');
+    writeView('page.blade.php', '<x-hw::file name="avatar" />');
 
     $this->artisan('hotwire:check --no-interaction')
         ->expectsOutputToContain('_form_errors.js  outdated')
@@ -659,7 +660,7 @@ it('reports a shared dependency as outdated when it differs', function () {
 it('publishes a missing shared dependency with --fix', function () {
     publishController('file-preserve', $this->targetDir);
     publishController('reset-files', $this->targetDir);
-    writeView('page.blade.php', '<x-hwc::file name="avatar" />');
+    writeView('page.blade.php', '<x-hw::file name="avatar" />');
 
     $this->artisan('hotwire:check --fix --no-interaction')
         ->assertSuccessful();
@@ -672,7 +673,7 @@ it('normalizes scoped subpath imports', function () {
     writePackageJson(['name' => 'app', 'devDependencies' => ['@emaia/sonner' => '^2.1.0']]);
     publishController('toast', $this->targetDir);
     publishController('toaster', $this->targetDir);
-    writeView('page.blade.php', '<x-hwc::flash-message />');
+    writeView('page.blade.php', '<x-hw::flash-message />');
 
     $this->artisan('hotwire:check --no-interaction')
         ->doesntExpectOutputToContain('@emaia/sonner/vanilla')
@@ -681,7 +682,7 @@ it('normalizes scoped subpath imports', function () {
 
 it('ignores core dependencies', function () {
     writePackageJson(['name' => 'app', 'devDependencies' => []]);
-    writeView('page.blade.php', '<x-hwc::flash-message />');
+    writeView('page.blade.php', '<x-hw::flash-message />');
 
     $this->artisan('hotwire:check --no-interaction')
         ->doesntExpectOutputToContain('@hotwired/stimulus')
@@ -691,7 +692,7 @@ it('ignores core dependencies', function () {
 
 it('deduplicates dependencies used by multiple controllers', function () {
     writePackageJson(['name' => 'app', 'devDependencies' => []]);
-    writeView('page.blade.php', '<x-hwc::flash-message />');
+    writeView('page.blade.php', '<x-hw::flash-message />');
 
     Artisan::call('hotwire:check --no-interaction');
     $output = Artisan::output();
@@ -703,7 +704,7 @@ it('exits with 1 when a dependency is missing', function () {
     writePackageJson(['name' => 'app', 'devDependencies' => []]);
     publishController('toast', $this->targetDir);
     publishController('toaster', $this->targetDir);
-    writeView('page.blade.php', '<x-hwc::flash-message />');
+    writeView('page.blade.php', '<x-hw::flash-message />');
 
     $this->artisan('hotwire:check --no-interaction')
         ->assertExitCode(1);
@@ -711,7 +712,7 @@ it('exits with 1 when a dependency is missing', function () {
 
 it('adds missing npm dependencies to devDependencies with --fix', function () {
     writePackageJson(['name' => 'app', 'devDependencies' => []]);
-    writeView('page.blade.php', '<x-hwc::flash-message />');
+    writeView('page.blade.php', '<x-hw::flash-message />');
 
     $this->artisan('hotwire:check --fix --no-interaction')
         ->assertSuccessful();
@@ -723,7 +724,7 @@ it('adds missing npm dependencies to devDependencies with --fix', function () {
 it('skips package manager install with --skip-install in non-interactive fix mode', function () {
     $installer = fakePackageInstaller('bun');
     writePackageJson(['name' => 'app', 'devDependencies' => []]);
-    writeView('page.blade.php', '<x-hwc::flash-message />');
+    writeView('page.blade.php', '<x-hw::flash-message />');
 
     $this->artisan('hotwire:check --fix --skip-install --no-interaction')
         ->expectsOutputToContain('Run your package manager install command')
@@ -735,7 +736,7 @@ it('skips package manager install with --skip-install in non-interactive fix mod
 it('runs package manager install automatically in non-interactive fix mode by default', function () {
     $installer = fakePackageInstaller('bun');
     writePackageJson(['name' => 'app', 'devDependencies' => []]);
-    writeView('page.blade.php', '<x-hwc::flash-message />');
+    writeView('page.blade.php', '<x-hw::flash-message />');
 
     $this->artisan('hotwire:check --fix --no-interaction')
         ->expectsOutputToContain('Running bun install')
@@ -748,7 +749,7 @@ it('runs package manager install automatically in non-interactive fix mode by de
 it('prompts to run package manager install after interactive fix adds dependencies', function () {
     $installer = fakePackageInstaller('pnpm');
     writePackageJson(['name' => 'app', 'devDependencies' => []]);
-    writeView('page.blade.php', '<x-hwc::flash-message />');
+    writeView('page.blade.php', '<x-hw::flash-message />');
 
     $this->artisan('hotwire:check')
         ->expectsConfirmation('Apply --fix now? (publishes missing/outdated controllers, regenerates the loader stub, adds missing npm deps)', 'yes')
@@ -762,7 +763,7 @@ it('prompts to run package manager install after interactive fix adds dependenci
 it('does not run package manager install when no dependencies were added', function () {
     $installer = fakePackageInstaller('bun');
     writePackageJson(['name' => 'app', 'devDependencies' => []]);
-    writeView('page.blade.php', '<x-hwc::modal />');
+    writeView('page.blade.php', '<x-hw::modal />');
 
     $this->artisan('hotwire:check --fix --no-interaction')
         ->doesntExpectOutputToContain('Running bun install')
@@ -774,7 +775,7 @@ it('does not run package manager install when no dependencies were added', funct
 it('fails when package manager install fails', function () {
     $installer = fakePackageInstaller('npm', 1);
     writePackageJson(['name' => 'app', 'devDependencies' => []]);
-    writeView('page.blade.php', '<x-hwc::flash-message />');
+    writeView('page.blade.php', '<x-hw::flash-message />');
 
     $this->artisan('hotwire:check --fix --no-interaction')
         ->expectsOutputToContain('npm install failed')
@@ -787,7 +788,7 @@ it('does not duplicate a dependency already present when --fix runs', function (
     writePackageJson(['name' => 'app', 'dependencies' => ['@emaia/sonner' => '^2.1.0'], 'devDependencies' => []]);
     publishController('toast', $this->targetDir);
     publishController('toaster', $this->targetDir);
-    writeView('page.blade.php', '<x-hwc::flash-message />');
+    writeView('page.blade.php', '<x-hw::flash-message />');
 
     $this->artisan('hotwire:check --fix --no-interaction')
         ->assertSuccessful();
@@ -803,7 +804,7 @@ it('warns and skips npm check when package.json does not exist', function () {
     }
     publishController('toast', $this->targetDir);
     publishController('toaster', $this->targetDir);
-    writeView('page.blade.php', '<x-hwc::flash-message />');
+    writeView('page.blade.php', '<x-hw::flash-message />');
 
     $this->artisan('hotwire:check --no-interaction')
         ->expectsOutputToContain('package.json not found')
@@ -812,7 +813,7 @@ it('warns and skips npm check when package.json does not exist', function () {
 
 it('reports npm deps even when controllers are not yet published', function () {
     writePackageJson(['name' => 'app', 'devDependencies' => []]);
-    writeView('page.blade.php', '<x-hwc::flash-message />');
+    writeView('page.blade.php', '<x-hw::flash-message />');
 
     $this->artisan('hotwire:check --no-interaction')
         ->expectsOutputToContain('@emaia/sonner')
@@ -825,7 +826,7 @@ it('refuses to overwrite a user-owned controller when running --fix', function (
     $target = $this->targetDir.'/modal_controller.js';
     File::ensureDirectoryExists(dirname($target));
     File::put($target, "// user code, no package marker\nexport default class {}\n");
-    writeView('page.blade.php', '<x-hwc::modal />');
+    writeView('page.blade.php', '<x-hw::modal />');
 
     $this->artisan('hotwire:check --fix --no-interaction')
         ->expectsOutputToContain('user-owned')
@@ -838,7 +839,7 @@ it('labels a user-owned divergence as "diverged (user-owned)" and does not act o
     $target = $this->targetDir.'/modal_controller.js';
     File::ensureDirectoryExists(dirname($target));
     File::put($target, "// user code\nexport default class {}\n");
-    writeView('page.blade.php', '<x-hwc::modal />');
+    writeView('page.blade.php', '<x-hw::modal />');
 
     $this->artisan('hotwire:check --fix --no-interaction')
         ->expectsOutputToContain('diverged (user-owned)')
@@ -856,7 +857,7 @@ it('shows diverged (user-owned) entries even without --fix and keeps the exit co
     publishController('modal', $this->targetDir);
     $target = $this->targetDir.'/modal_controller.js';
     File::put($target, "// user code\nexport default class {}\n");
-    writeView('page.blade.php', '<x-hwc::modal />');
+    writeView('page.blade.php', '<x-hw::modal />');
 
     $this->artisan('hotwire:check --no-interaction')
         ->expectsOutputToContain('diverged (user-owned)')
@@ -879,7 +880,7 @@ it('reports a com-dep controller used in views but excluded from the loader stub
         )
     );
 
-    writeView('page.blade.php', '<x-hwc::chart />');
+    writeView('page.blade.php', '<x-hw::chart />');
 
     $this->artisan('hotwire:check --no-interaction')
         ->expectsOutputToContain('excluded from loader stub')
@@ -893,7 +894,7 @@ it('does not report drift when stub is hand-written (no auto-generated marker)',
     File::ensureDirectoryExists($this->targetDir);
     File::put($this->targetDir.'/index.js', "// hand-written user file\nimport { Stimulus } from \"../libs/stimulus\";\n");
 
-    writeView('page.blade.php', '<x-hwc::chart />');
+    writeView('page.blade.php', '<x-hw::chart />');
 
     $this->artisan('hotwire:check --no-interaction')
         ->doesntExpectOutputToContain('excluded from loader stub')
@@ -912,7 +913,7 @@ it('regenerates the loader stub including the missing controller when --fix is u
         )
     );
 
-    writeView('page.blade.php', '<x-hwc::chart />');
+    writeView('page.blade.php', '<x-hw::chart />');
 
     $this->artisan('hotwire:check --fix --no-interaction')
         ->expectsOutputToContain('Regenerated resources/js/controllers/index.js')
@@ -937,7 +938,7 @@ it('does not flag drift when the used controller IS included in the stub', funct
         )
     );
 
-    writeView('page.blade.php', '<x-hwc::chart />');
+    writeView('page.blade.php', '<x-hw::chart />');
 
     $this->artisan('hotwire:check --no-interaction')
         ->doesntExpectOutputToContain('excluded from loader stub')

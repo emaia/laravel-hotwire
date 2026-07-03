@@ -19,7 +19,7 @@ afterEach(function () {
 });
 
 it('renders only the frame when no layout is given', function () {
-    $view = $this->blade('<x-hwc::frame-or-page frame="modal">Content</x-hwc::frame-or-page>');
+    $view = $this->blade('<x-hw::frame-or-page frame="modal">Content</x-hw::frame-or-page>');
 
     $view->assertSee('<turbo-frame id="modal"', false);
     $view->assertSee('Content');
@@ -27,7 +27,7 @@ it('renders only the frame when no layout is given', function () {
 });
 
 it('wraps the slot directly in the layout when no Turbo-Frame header is present', function () {
-    $view = $this->blade('<x-hwc::frame-or-page frame="modal" layout="dashboard-shell">Content</x-hwc::frame-or-page>');
+    $view = $this->blade('<x-hw::frame-or-page frame="modal" layout="dashboard-shell">Content</x-hw::frame-or-page>');
 
     $view->assertSee('data-test-layout="dashboard"', false);
     $view->assertSee('Content');
@@ -39,7 +39,7 @@ it('wraps the slot directly in the layout when no Turbo-Frame header is present'
 it('renders only the frame when the Turbo-Frame header matches', function () {
     request()->headers->set('Turbo-Frame', 'modal');
 
-    $view = $this->blade('<x-hwc::frame-or-page frame="modal" layout="dashboard-shell">Content</x-hwc::frame-or-page>');
+    $view = $this->blade('<x-hw::frame-or-page frame="modal" layout="dashboard-shell">Content</x-hw::frame-or-page>');
 
     $view->assertSee('<turbo-frame id="modal"', false);
     $view->assertSee('Content');
@@ -49,7 +49,7 @@ it('renders only the frame when the Turbo-Frame header matches', function () {
 it('wraps the slot directly in the layout when the Turbo-Frame header is for a different frame', function () {
     request()->headers->set('Turbo-Frame', 'sidebar');
 
-    $view = $this->blade('<x-hwc::frame-or-page frame="modal" layout="dashboard-shell">Content</x-hwc::frame-or-page>');
+    $view = $this->blade('<x-hw::frame-or-page frame="modal" layout="dashboard-shell">Content</x-hw::frame-or-page>');
 
     $view->assertSee('data-test-layout="dashboard"', false);
     $view->assertSee('Content');
@@ -61,7 +61,7 @@ it('resolves the frame from a Model via dom_id', function () {
     $model->id = 42;
 
     $view = $this->blade(
-        '<x-hwc::frame-or-page :frame="$model">Content</x-hwc::frame-or-page>',
+        '<x-hw::frame-or-page :frame="$model">Content</x-hw::frame-or-page>',
         ['model' => $model],
     );
 
@@ -69,7 +69,7 @@ it('resolves the frame from a Model via dom_id', function () {
 });
 
 it('forwards extra attributes to the inner turbo-frame', function () {
-    $view = $this->blade('<x-hwc::frame-or-page frame="modal" src="/edit" loading="lazy">Content</x-hwc::frame-or-page>');
+    $view = $this->blade('<x-hw::frame-or-page frame="modal" src="/edit" loading="lazy">Content</x-hw::frame-or-page>');
 
     $view->assertSee('src="/edit"', false);
     $view->assertSee('loading="lazy"', false);
@@ -79,7 +79,7 @@ it('does NOT emit a duplicate frame id when the layout already hosts a frame wit
     // The dashboard-with-modal fixture renders its own <turbo-frame id="modal"> (the modal host).
     // The component must not wrap the slot in another <turbo-frame id="modal"> on direct nav,
     // or the page ends up with duplicated ids and Turbo aims content at the wrong frame.
-    $view = $this->blade('<x-hwc::frame-or-page frame="modal" layout="dashboard-with-modal">Content</x-hwc::frame-or-page>');
+    $view = $this->blade('<x-hw::frame-or-page frame="modal" layout="dashboard-with-modal">Content</x-hw::frame-or-page>');
 
     expect(substr_count($view->__toString(), 'id="modal"'))->toBe(1);
     $view->assertSee('data-test-layout="dashboard-with-modal"', false);
@@ -87,7 +87,7 @@ it('does NOT emit a duplicate frame id when the layout already hosts a frame wit
 });
 
 it('does not forward turbo-frame attributes to the layout slot on direct nav', function () {
-    $view = $this->blade('<x-hwc::frame-or-page frame="modal" layout="dashboard-shell" src="/edit" loading="lazy">Content</x-hwc::frame-or-page>');
+    $view = $this->blade('<x-hw::frame-or-page frame="modal" layout="dashboard-shell" src="/edit" loading="lazy">Content</x-hw::frame-or-page>');
 
     // The slot is rendered directly inside the layout; frame-specific attrs have nowhere to go
     // and must not leak onto the layout wrapper or be inlined next to the content.
@@ -96,7 +96,7 @@ it('does not forward turbo-frame attributes to the layout slot on direct nav', f
 });
 
 it('rejects an empty string frame id', function () {
-    $this->blade('<x-hwc::frame-or-page frame="">Content</x-hwc::frame-or-page>')->render();
+    $this->blade('<x-hw::frame-or-page frame="">Content</x-hw::frame-or-page>')->render();
 })->throws(ViewException::class, 'The frame prop must be a non-empty string');
 
 it('exposes the resolved frame id as a public property', function () {

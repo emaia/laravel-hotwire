@@ -19,7 +19,7 @@ beforeEach(function () {
 // --- Basic render ---
 
 it('renders a bare file input with file-preserve on the input by default', function () {
-    $view = $this->blade('<x-hwc::file name="avatar" />');
+    $view = $this->blade('<x-hw::file name="avatar" />');
 
     $view->assertSee('data-controller="file-preserve"', false);
     $view->assertSee('<input', false);
@@ -30,7 +30,7 @@ it('renders a bare file input with file-preserve on the input by default', funct
 });
 
 it('renders type as file always', function () {
-    $view = $this->blade('<x-hwc::file name="avatar" />');
+    $view = $this->blade('<x-hw::file name="avatar" />');
 
     $view->assertSee('type="file"', false);
 });
@@ -38,34 +38,34 @@ it('renders type as file always', function () {
 // --- Id derivation ---
 
 it('derives id from name', function () {
-    $view = $this->blade('<x-hwc::file name="avatar" />');
+    $view = $this->blade('<x-hw::file name="avatar" />');
 
     $view->assertSee('id="avatar"', false);
 });
 
 it('derives id from bracket notation', function () {
-    $view = $this->blade('<x-hwc::file name="variables[0][name]" />');
+    $view = $this->blade('<x-hw::file name="variables[0][name]" />');
 
     $view->assertSee('id="variables-0-name"', false);
 });
 
 it('uses explicit id', function () {
-    $view = $this->blade('<x-hwc::file name="avatar" id="my-file" />');
+    $view = $this->blade('<x-hw::file name="avatar" id="my-file" />');
 
     $view->assertSee('id="my-file"', false);
 });
 
 it('generates random id when name is absent', function () {
-    $view = $this->blade('<x-hwc::file />');
+    $view = $this->blade('<x-hw::file />');
 
-    $view->assertSee('id="hwc-file-', false);
+    $view->assertSee('id="hw-file-', false);
     $view->assertDontSee('name="', false);
 });
 
 // --- ARIA ---
 
 it('always sets aria-describedby pointing to error id', function () {
-    $view = $this->blade('<x-hwc::file name="avatar" />');
+    $view = $this->blade('<x-hw::file name="avatar" />');
 
     $view->assertSee('aria-describedby="avatar-error"', false);
 });
@@ -73,14 +73,14 @@ it('always sets aria-describedby pointing to error id', function () {
 it('sets aria-invalid and data-invalid when error present', function () {
     shareFileErrors(['avatar' => ['Required']]);
 
-    $view = $this->blade('<x-hwc::file name="avatar" />');
+    $view = $this->blade('<x-hw::file name="avatar" />');
 
     $view->assertSee('aria-invalid="true"', false);
     $view->assertSee('data-invalid', false);
 });
 
 it('does not set aria-invalid when no errors', function () {
-    $view = $this->blade('<x-hwc::file name="avatar" />');
+    $view = $this->blade('<x-hw::file name="avatar" />');
 
     $view->assertDontSee('aria-invalid="true"', false);
     $view->assertDontSee('data-invalid', false);
@@ -89,7 +89,7 @@ it('does not set aria-invalid when no errors', function () {
 it('uses derived error key from bracket notation', function () {
     shareFileErrors(['variables.0.name' => ['Required']]);
 
-    $view = $this->blade('<x-hwc::file name="variables[0][name]" />');
+    $view = $this->blade('<x-hw::file name="variables[0][name]" />');
 
     $view->assertSee('aria-invalid="true"', false);
 });
@@ -97,19 +97,19 @@ it('uses derived error key from bracket notation', function () {
 it('uses explicit error key override', function () {
     shareFileErrors(['custom.path' => ['Required']]);
 
-    $view = $this->blade('<x-hwc::file name="avatar" error-key="custom.path" />');
+    $view = $this->blade('<x-hw::file name="avatar" error-key="custom.path" />');
 
     $view->assertSee('aria-invalid="true"', false);
 });
 
 it('sets aria-required when required attribute is present', function () {
-    $view = $this->blade('<x-hwc::file name="avatar" required />');
+    $view = $this->blade('<x-hw::file name="avatar" required />');
 
     $view->assertSee('aria-required="true"', false);
 });
 
 it('sets aria-describedby with bracket notation', function () {
-    $view = $this->blade('<x-hwc::file name="variables[0][name]" />');
+    $view = $this->blade('<x-hw::file name="variables[0][name]" />');
 
     $view->assertSee('aria-describedby="variables-0-name-error"', false);
 });
@@ -117,7 +117,7 @@ it('sets aria-describedby with bracket notation', function () {
 // --- No value / no old() ---
 
 it('does not emit value attribute', function () {
-    $view = $this->blade('<x-hwc::file name="avatar" />');
+    $view = $this->blade('<x-hw::file name="avatar" />');
 
     $view->assertDontSee('value="', false);
 });
@@ -125,7 +125,7 @@ it('does not emit value attribute', function () {
 it('does not repopulate from old() input', function () {
     session()->put('_old_input', ['avatar' => 'some-file.jpg']);
 
-    $view = $this->blade('<x-hwc::file name="avatar" />');
+    $view = $this->blade('<x-hw::file name="avatar" />');
 
     $view->assertDontSee('value="some-file.jpg"', false);
 });
@@ -133,27 +133,27 @@ it('does not repopulate from old() input', function () {
 // --- reset-on-success ---
 
 it('wraps and adds reset-files controller + data-reset-on-success when enabled', function () {
-    $view = $this->blade('<x-hwc::file name="avatar" reset-on-success />');
+    $view = $this->blade('<x-hw::file name="avatar" reset-on-success />');
 
     $view->assertSee('data-controller="file-preserve reset-files"', false);
     $view->assertSee('data-reset-on-success="true"', false);
 });
 
 it('does not add reset-files controller by default', function () {
-    $view = $this->blade('<x-hwc::file name="avatar" />');
+    $view = $this->blade('<x-hw::file name="avatar" />');
 
     $view->assertDontSee('data-controller="file-preserve reset-files"', false);
     $view->assertDontSee('data-reset-on-success', false);
 });
 
 it('merges user data-controller with reset-files on the input', function () {
-    $view = $this->blade('<x-hwc::file name="avatar" data-controller="foo" reset-on-success />');
+    $view = $this->blade('<x-hw::file name="avatar" data-controller="foo" reset-on-success />');
 
     $view->assertSee('data-controller="foo file-preserve reset-files"', false);
 });
 
 it('merges user data-controller on the input without reset-files when disabled', function () {
-    $view = $this->blade('<x-hwc::file name="avatar" data-controller="foo" />');
+    $view = $this->blade('<x-hw::file name="avatar" data-controller="foo" />');
 
     $view->assertSee('data-controller="foo file-preserve"', false);
     $view->assertDontSee('reset-files', false);
@@ -162,35 +162,35 @@ it('merges user data-controller on the input without reset-files when disabled',
 // --- current-url / current-label ---
 
 it('shows current file link when current-url is set', function () {
-    $view = $this->blade('<x-hwc::file name="avatar" current-url="https://example.com/img.jpg" />');
+    $view = $this->blade('<x-hw::file name="avatar" current-url="https://example.com/img.jpg" />');
 
     $view->assertSee('href="https://example.com/img.jpg"', false);
     $view->assertSee('current-label' === '' ? false : 'Current file');
 });
 
 it('uses current-label prop for the link text', function () {
-    $view = $this->blade('<x-hwc::file name="avatar" current-url="https://example.com/img.jpg" current-label="Foto atual" />');
+    $view = $this->blade('<x-hw::file name="avatar" current-url="https://example.com/img.jpg" current-label="Foto atual" />');
 
     $view->assertSee('Foto atual');
     $view->assertSee('href="https://example.com/img.jpg"', false);
 });
 
 it('renders current file link with target=_blank and rel=noopener', function () {
-    $view = $this->blade('<x-hwc::file name="avatar" current-url="https://example.com/img.jpg" />');
+    $view = $this->blade('<x-hw::file name="avatar" current-url="https://example.com/img.jpg" />');
 
     $view->assertSee('target="_blank"', false);
     $view->assertSee('rel="noopener"', false);
 });
 
 it('does not render current file link when current-url is not set', function () {
-    $view = $this->blade('<x-hwc::file name="avatar" />');
+    $view = $this->blade('<x-hw::file name="avatar" />');
 
     $view->assertDontSee('Current file');
     $view->assertDontSee('href="', false);
 });
 
 it('wraps when current-url is set even without reset-on-success', function () {
-    $view = $this->blade('<x-hwc::file name="avatar" current-url="https://example.com/img.jpg" />');
+    $view = $this->blade('<x-hw::file name="avatar" current-url="https://example.com/img.jpg" />');
 
     $view->assertSee('data-slot="file-wrapper"', false);
 });
@@ -198,19 +198,19 @@ it('wraps when current-url is set even without reset-on-success', function () {
 // --- Multiple ---
 
 it('renders the multiple attribute when multiple prop is set', function () {
-    $view = $this->blade('<x-hwc::file name="cover" multiple />');
+    $view = $this->blade('<x-hw::file name="cover" multiple />');
 
     $view->assertSee('multiple', false);
 });
 
 it('appends [] to the name when multiple and name has no brackets', function () {
-    $view = $this->blade('<x-hwc::file name="cover" multiple />');
+    $view = $this->blade('<x-hw::file name="cover" multiple />');
 
     $view->assertSee('name="cover[]"', false);
 });
 
 it('does not double the brackets when name already ends with []', function () {
-    $view = $this->blade('<x-hwc::file name="cover[]" multiple />');
+    $view = $this->blade('<x-hw::file name="cover[]" multiple />');
 
     $view->assertSee('name="cover[]"', false);
     $view->assertDontSee('cover[][]', false);
@@ -219,7 +219,7 @@ it('does not double the brackets when name already ends with []', function () {
 it('keeps id and error key derived without brackets when multiple', function () {
     shareFileErrors(['cover' => ['Required']]);
 
-    $view = $this->blade('<x-hwc::file name="cover" multiple />');
+    $view = $this->blade('<x-hw::file name="cover" multiple />');
 
     $view->assertSee('id="cover"', false);
     $view->assertSee('aria-describedby="cover-error"', false);
@@ -227,7 +227,7 @@ it('keeps id and error key derived without brackets when multiple', function () 
 });
 
 it('does not render multiple by default', function () {
-    $view = $this->blade('<x-hwc::file name="avatar" />');
+    $view = $this->blade('<x-hw::file name="avatar" />');
 
     $view->assertDontSee('multiple', false);
     $view->assertSee('name="avatar"', false);
@@ -238,7 +238,7 @@ it('does not render multiple by default', function () {
 it('marks the field invalid when only sub-key errors are present', function () {
     shareFileErrors(['cover.0' => ['too big'], 'cover.1' => ['bad type']]);
 
-    $view = $this->blade('<x-hwc::file name="cover" multiple />');
+    $view = $this->blade('<x-hw::file name="cover" multiple />');
 
     $view->assertSee('aria-invalid="true"', false);
     $view->assertSee('data-invalid', false);
@@ -247,7 +247,7 @@ it('marks the field invalid when only sub-key errors are present', function () {
 it('does not mark invalid when neither the key nor sub-keys have errors', function () {
     shareFileErrors(['other.0' => ['nope']]);
 
-    $view = $this->blade('<x-hwc::file name="cover" multiple />');
+    $view = $this->blade('<x-hw::file name="cover" multiple />');
 
     $view->assertDontSee('aria-invalid="true"', false);
 });
@@ -255,14 +255,14 @@ it('does not mark invalid when neither the key nor sub-keys have errors', functi
 // --- Conditional wrapper ---
 
 it('renders a wrapper when wrapper-class is provided even without current-url', function () {
-    $view = $this->blade('<x-hwc::file name="avatar" wrapper-class="relative" />');
+    $view = $this->blade('<x-hw::file name="avatar" wrapper-class="relative" />');
 
     $view->assertSee('class="relative"', false);
     $view->assertSee('data-slot="file-wrapper"', false);
 });
 
 it('puts the controller on the input even when wrapped for current-url', function () {
-    $view = $this->blade('<x-hwc::file name="avatar" current-url="https://example.com/img.jpg" />');
+    $view = $this->blade('<x-hw::file name="avatar" current-url="https://example.com/img.jpg" />');
 
     // Wrapper is plain layout; controller lives on the input.
     $view->assertSee('data-slot="file-wrapper"', false);
@@ -273,13 +273,13 @@ it('puts the controller on the input even when wrapped for current-url', functio
 // --- Class merge ---
 
 it('merges class on input element', function () {
-    $view = $this->blade('<x-hwc::file name="avatar" class="border" />');
+    $view = $this->blade('<x-hw::file name="avatar" class="border" />');
 
     $view->assertSee('border', false);
 });
 
 it('merges wrapper-class on wrapper when present', function () {
-    $view = $this->blade('<x-hwc::file name="avatar" current-url="https://example.com/img.jpg" wrapper-class="relative" />');
+    $view = $this->blade('<x-hw::file name="avatar" current-url="https://example.com/img.jpg" wrapper-class="relative" />');
 
     $view->assertSee('relative', false);
 });
@@ -287,7 +287,7 @@ it('merges wrapper-class on wrapper when present', function () {
 // --- Pass-through ---
 
 it('passes through arbitrary attributes to the input', function () {
-    $view = $this->blade('<x-hwc::file name="avatar" accept=".pdf,.doc" data-test="x" disabled />');
+    $view = $this->blade('<x-hw::file name="avatar" accept=".pdf,.doc" data-test="x" disabled />');
 
     $view->assertSee('accept=".pdf,.doc"', false);
     $view->assertSee('data-test="x"', false);
@@ -298,9 +298,9 @@ it('passes through arbitrary attributes to the input', function () {
 
 it('picks up name and required from field via @aware', function () {
     $view = $this->blade('
-        <x-hwc::field name="avatar" required>
-            <x-hwc::file />
-        </x-hwc::field>
+        <x-hw::field name="avatar" required>
+            <x-hw::file />
+        </x-hw::field>
     ');
 
     $view->assertSee('name="avatar"', false);
@@ -312,9 +312,9 @@ it('picks up errorKey from field via @aware', function () {
     shareFileErrors(['indicator.name' => ['Required']]);
 
     $view = $this->blade('
-        <x-hwc::field name="variables[0][name]" error-key="indicator.name">
-            <x-hwc::file />
-        </x-hwc::field>
+        <x-hw::field name="variables[0][name]" error-key="indicator.name">
+            <x-hw::file />
+        </x-hw::field>
     ');
 
     $view->assertSee('aria-invalid="true"', false);
@@ -322,9 +322,9 @@ it('picks up errorKey from field via @aware', function () {
 
 it('picks up id from field via @aware', function () {
     $view = $this->blade('
-        <x-hwc::field name="avatar">
-            <x-hwc::file id="custom-file" />
-        </x-hwc::field>
+        <x-hw::field name="avatar">
+            <x-hw::file id="custom-file" />
+        </x-hw::field>
     ');
 
     $view->assertSee('id="custom-file"', false);
@@ -333,7 +333,7 @@ it('picks up id from field via @aware', function () {
 // --- combined features ---
 
 it('combines reset-on-success and current-url in wrapper', function () {
-    $view = $this->blade('<x-hwc::file name="avatar" current-url="https://example.com/img.jpg" reset-on-success />');
+    $view = $this->blade('<x-hw::file name="avatar" current-url="https://example.com/img.jpg" reset-on-success />');
 
     $view->assertSee('data-controller="file-preserve reset-files"', false);
     $view->assertSee('data-reset-on-success="true"', false);
@@ -342,7 +342,7 @@ it('combines reset-on-success and current-url in wrapper', function () {
 });
 
 it('combines current-url and reset-on-success with user data-controller', function () {
-    $view = $this->blade('<x-hwc::file name="avatar" current-url="https://example.com/img.jpg" reset-on-success data-controller="foo" />');
+    $view = $this->blade('<x-hw::file name="avatar" current-url="https://example.com/img.jpg" reset-on-success data-controller="foo" />');
 
     $view->assertSee('data-controller="foo file-preserve reset-files"', false);
     $view->assertSee('href="https://example.com/img.jpg"', false);

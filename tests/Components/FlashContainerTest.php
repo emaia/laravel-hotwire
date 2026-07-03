@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Blade;
 // --- Defaults ---
 
 it('renders with default props', function () {
-    $view = $this->blade('<x-hwc::flash-container />');
+    $view = $this->blade('<x-hw::flash-container />');
 
     $view->assertSee('data-controller="toaster"', false);
     $view->assertSee('id="flash-container"', false);
@@ -14,7 +14,7 @@ it('renders with default props', function () {
 });
 
 it('emits default stimulus values', function () {
-    $view = $this->blade('<x-hwc::flash-container />');
+    $view = $this->blade('<x-hw::flash-container />');
 
     $view->assertSee('data-toaster-position-value="bottom-center"', false);
     $view->assertSee('data-toaster-theme-value="system"', false);
@@ -30,19 +30,19 @@ it('emits default stimulus values', function () {
 // --- Identity and Turbo integration ---
 
 it('uses a custom id when provided', function () {
-    $view = $this->blade('<x-hwc::flash-container id="toaster-root" />');
+    $view = $this->blade('<x-hw::flash-container id="toaster-root" />');
 
     $view->assertSee('id="toaster-root"', false);
 });
 
 it('omits data-turbo-permanent when disabled', function () {
-    $view = $this->blade('<x-hwc::flash-container :turbo-permanent="false" />');
+    $view = $this->blade('<x-hw::flash-container :turbo-permanent="false" />');
 
     $view->assertDontSee('data-turbo-permanent', false);
 });
 
 it('applies a custom class on the container div', function () {
-    $view = $this->blade('<x-hwc::flash-container class="z-50 isolate" />');
+    $view = $this->blade('<x-hw::flash-container class="z-50 isolate" />');
 
     $view->assertSee('class="z-50 isolate"', false);
 });
@@ -50,7 +50,7 @@ it('applies a custom class on the container div', function () {
 // --- Nullable props: omitted when unset ---
 
 it('omits nullable stimulus values when not provided', function () {
-    $view = $this->blade('<x-hwc::flash-container />');
+    $view = $this->blade('<x-hw::flash-container />');
 
     $view->assertDontSee('gap-value', false);
     $view->assertDontSee('hotkey-value', false);
@@ -67,7 +67,7 @@ it('omits nullable stimulus values when not provided', function () {
 
 it('emits custom position, theme, duration, and visible toasts', function () {
     $view = $this->blade('
-        <x-hwc::flash-container
+        <x-hw::flash-container
             position="top-right"
             theme="dark"
             :duration="5000"
@@ -83,7 +83,7 @@ it('emits custom position, theme, duration, and visible toasts', function () {
 
 it('emits boolean props as true/false strings', function () {
     $view = $this->blade('
-        <x-hwc::flash-container
+        <x-hw::flash-container
             :close-button="false"
             :rich-colors="false"
             :expand="true"
@@ -101,7 +101,7 @@ it('emits boolean props as true/false strings', function () {
 
 it('emits optional advanced props when provided', function () {
     $view = $this->blade('
-        <x-hwc::flash-container
+        <x-hw::flash-container
             :gap="10"
             hotkey="alt+T"
             dir="rtl"
@@ -127,8 +127,8 @@ it('emits optional advanced props when provided', function () {
 
 // --- Namespace registration ---
 
-it('renders with hotwire:: prefix alias', function () {
-    $view = $this->blade('<x-hotwire::flash-container />');
+it('renders with hw:: prefix alias', function () {
+    $view = $this->blade('<x-hw::flash-container />');
 
     $view->assertSee('data-controller="toaster"', false);
     $view->assertSee('id="flash-container"', false);

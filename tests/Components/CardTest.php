@@ -1,7 +1,7 @@
 <?php
 
 it('renders a card root with semantic size state', function () {
-    $view = $this->blade('<x-hwc::card size="sm">Content</x-hwc::card>');
+    $view = $this->blade('<x-hw::card size="sm">Content</x-hw::card>');
 
     $view->assertSee('data-slot="card"', false)
         ->assertSee('data-size="sm"', false)
@@ -11,15 +11,15 @@ it('renders a card root with semantic size state', function () {
 
 it('renders card subcomponents with semantic slots', function () {
     $view = $this->blade(<<<'BLADE'
-        <x-hwc::card>
-            <x-hwc::card.header>
-                <x-hwc::card.title>Revenue</x-hwc::card.title>
-                <x-hwc::card.description>Last 30 days</x-hwc::card.description>
-                <x-hwc::card.action><x-hwc::button size="sm">Export</x-hwc::button></x-hwc::card.action>
-            </x-hwc::card.header>
-            <x-hwc::card.content>$12,400</x-hwc::card.content>
-            <x-hwc::card.footer>Updated now</x-hwc::card.footer>
-        </x-hwc::card>
+        <x-hw::card>
+            <x-hw::card.header>
+                <x-hw::card.title>Revenue</x-hw::card.title>
+                <x-hw::card.description>Last 30 days</x-hw::card.description>
+                <x-hw::card.action><x-hw::button size="sm">Export</x-hw::button></x-hw::card.action>
+            </x-hw::card.header>
+            <x-hw::card.content>$12,400</x-hw::card.content>
+            <x-hw::card.footer>Updated now</x-hw::card.footer>
+        </x-hw::card>
     BLADE);
 
     $view->assertSee('data-slot="card-header"', false)
@@ -34,7 +34,7 @@ it('renders card subcomponents with semantic slots', function () {
 });
 
 it('passes through attributes', function () {
-    $view = $this->blade('<x-hwc::card id="metrics" class="max-w-md" data-test="card">Metrics</x-hwc::card>');
+    $view = $this->blade('<x-hw::card id="metrics" class="max-w-md" data-test="card">Metrics</x-hw::card>');
 
     $view->assertSee('id="metrics"', false)
         ->assertSee('class="max-w-md"', false)

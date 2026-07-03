@@ -80,6 +80,8 @@ class InstallCommand extends Command
                 self::VITE_ALIAS_KEY,
                 self::VITE_ALIAS_PATH,
             );
+
+            $this->callSilent('hotwire:ide-json', ['--no-interaction' => true]);
         }
 
         $this->showSummary($copied, $depsAdded, $aliasResult);

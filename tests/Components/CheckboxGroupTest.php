@@ -19,7 +19,7 @@ beforeEach(function () {
 // --- Basic render ---
 
 it('renders checkboxes from options', function () {
-    $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\', 2 => \'Two\']" />');
+    $view = $this->blade('<x-hw::checkbox-group name="ids[]" :options="[1 => \'One\', 2 => \'Two\']" />');
 
     $view->assertSee('name="ids[]"', false);
     $view->assertSee('value="1"', false);
@@ -29,7 +29,7 @@ it('renders checkboxes from options', function () {
 });
 
 it('renders a single checkbox', function () {
-    $view = $this->blade('<x-hwc::checkbox-group name="active" :options="[1 => \'Active\']" />');
+    $view = $this->blade('<x-hw::checkbox-group name="active" :options="[1 => \'Active\']" />');
 
     $view->assertSee('value="1"', false);
     $view->assertSee('Active');
@@ -38,7 +38,7 @@ it('renders a single checkbox', function () {
 // --- Non-associative options ---
 
 it('normalizes flat options array so keys equal values', function () {
-    $view = $this->blade('<x-hwc::checkbox-group name="branches[]" :options="[\'main\', \'dev\', \'next\']" :selected="[\'main\', \'dev\']" />');
+    $view = $this->blade('<x-hw::checkbox-group name="branches[]" :options="[\'main\', \'dev\', \'next\']" :selected="[\'main\', \'dev\']" />');
 
     $view->assertSee('value="main"', false);
     $view->assertSee('value="dev"', false);
@@ -49,19 +49,19 @@ it('normalizes flat options array so keys equal values', function () {
 // --- Selected ---
 
 it('checks selected values', function () {
-    $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\', 2 => \'Two\']" :selected="[1]" />');
+    $view = $this->blade('<x-hw::checkbox-group name="ids[]" :options="[1 => \'One\', 2 => \'Two\']" :selected="[1]" />');
 
     $view->assertSee('checked', false);
 });
 
 it('checks multiple selected values', function () {
-    $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\', 2 => \'Two\', 3 => \'Three\']" :selected="[1, 3]" />');
+    $view = $this->blade('<x-hw::checkbox-group name="ids[]" :options="[1 => \'One\', 2 => \'Two\', 3 => \'Three\']" :selected="[1, 3]" />');
 
     $view->assertSee('checked', false);
 });
 
 it('does not check anything when selected is empty', function () {
-    $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\', 2 => \'Two\']" />');
+    $view = $this->blade('<x-hw::checkbox-group name="ids[]" :options="[1 => \'One\', 2 => \'Two\']" />');
 
     $view->assertDontSee('checked', false);
 });
@@ -71,7 +71,7 @@ it('does not check anything when selected is empty', function () {
 it('merges selected with old() input', function () {
     session()->put('_old_input', ['ids' => [2]]);
 
-    $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\', 2 => \'Two\']" :selected="[1]" />');
+    $view = $this->blade('<x-hw::checkbox-group name="ids[]" :options="[1 => \'One\', 2 => \'Two\']" :selected="[1]" />');
 
     $html = (string) $view;
     expect($html)->toContain('value="2"')
@@ -83,7 +83,7 @@ it('merges selected with old() input', function () {
 it('disables old() when :old=false', function () {
     session()->put('_old_input', ['ids' => [2]]);
 
-    $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\', 2 => \'Two\']" :selected="[1]" :old="false" />');
+    $view = $this->blade('<x-hw::checkbox-group name="ids[]" :options="[1 => \'One\', 2 => \'Two\']" :selected="[1]" :old="false" />');
 
     $html = (string) $view;
     // :old=false means selected [1] remains, old [2] is ignored
@@ -95,7 +95,7 @@ it('disables old() when :old=false', function () {
 it('casts old() scalar value to array', function () {
     session()->put('_old_input', ['branch' => 'main']);
 
-    $view = $this->blade('<x-hwc::checkbox-group name="branch[]" :options="[\'main\' => \'Main\', \'dev\' => \'Dev\']" :selected="[\'dev\']" />');
+    $view = $this->blade('<x-hw::checkbox-group name="branch[]" :options="[\'main\' => \'Main\', \'dev\' => \'Dev\']" :selected="[\'dev\']" />');
 
     $html = (string) $view;
     // Old scalar 'main' should be cast to array and checked
@@ -107,30 +107,30 @@ it('casts old() scalar value to array', function () {
 // --- Name auto-normalization ---
 
 it('auto-appends [] when name does not end with brackets', function () {
-    $view = $this->blade('<x-hwc::checkbox-group name="ids" :options="[1 => \'One\', 2 => \'Two\']" />');
+    $view = $this->blade('<x-hw::checkbox-group name="ids" :options="[1 => \'One\', 2 => \'Two\']" />');
 
     $view->assertSee('name="ids[]"', false);
     $view->assertDontSee('name="ids"', false);
 });
 
 it('keeps name unchanged when it already ends with []', function () {
-    $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\']" />');
+    $view = $this->blade('<x-hw::checkbox-group name="ids[]" :options="[1 => \'One\']" />');
 
     $view->assertSee('name="ids[]"', false);
 });
 
 it('normalizes name from @aware via field wrapper', function () {
     $view = $this->blade('
-        <x-hwc::field name="ids">
-            <x-hwc::checkbox-group :options="[1 => \'One\']" />
-        </x-hwc::field>
+        <x-hw::field name="ids">
+            <x-hw::checkbox-group :options="[1 => \'One\']" />
+        </x-hw::field>
     ');
 
     $view->assertSee('name="ids[]"', false);
 });
 
 it('uses unbracketed name for id and error key derivation after normalization', function () {
-    $view = $this->blade('<x-hwc::checkbox-group name="ids" :options="[1 => \'One\']" />');
+    $view = $this->blade('<x-hw::checkbox-group name="ids" :options="[1 => \'One\']" />');
 
     // id and aria-describedby still derive from the unbracketed name
     $view->assertSee('id="ids-1"', false);
@@ -140,13 +140,13 @@ it('uses unbracketed name for id and error key derivation after normalization', 
 // --- Select all ---
 
 it('does not add controller wrapper without select-all', function () {
-    $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\']" />');
+    $view = $this->blade('<x-hw::checkbox-group name="ids[]" :options="[1 => \'One\']" />');
 
     $view->assertDontSee('data-controller', false);
 });
 
 it('adds controller wrapper with select-all', function () {
-    $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\', 2 => \'Two\']" select-all />');
+    $view = $this->blade('<x-hw::checkbox-group name="ids[]" :options="[1 => \'One\', 2 => \'Two\']" select-all />');
 
     $view->assertSee('data-controller="checkbox-select-all"', false);
     $view->assertSee('data-checkbox-select-all-target="checkboxAll"', false);
@@ -154,24 +154,24 @@ it('adds controller wrapper with select-all', function () {
 });
 
 it('renders select-all master checkbox with default label', function () {
-    $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\']" select-all />');
+    $view = $this->blade('<x-hw::checkbox-group name="ids[]" :options="[1 => \'One\']" select-all />');
 
     $view->assertSee('Select all');
 });
 
 it('renders select-all with custom label', function () {
-    $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\']" select-all select-all-label="Marcar todos" />');
+    $view = $this->blade('<x-hw::checkbox-group name="ids[]" :options="[1 => \'One\']" select-all select-all-label="Marcar todos" />');
 
     $view->assertSee('Marcar todos');
     $view->assertDontSee('Select all');
 });
 
 it('marks individual checkboxes as checkbox targets only when select-all is active', function () {
-    $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\']" select-all />');
+    $view = $this->blade('<x-hw::checkbox-group name="ids[]" :options="[1 => \'One\']" select-all />');
 
     $view->assertSee('data-checkbox-select-all-target="checkbox"', false);
 
-    $view2 = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\']" />');
+    $view2 = $this->blade('<x-hw::checkbox-group name="ids[]" :options="[1 => \'One\']" />');
 
     $view2->assertDontSee('data-checkbox-select-all-target', false);
 });
@@ -179,32 +179,32 @@ it('marks individual checkboxes as checkbox targets only when select-all is acti
 // --- Class merge ---
 
 it('merges custom class on wrapper', function () {
-    $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\']" wrapper-class="space-y-2" />');
+    $view = $this->blade('<x-hw::checkbox-group name="ids[]" :options="[1 => \'One\']" wrapper-class="space-y-2" />');
 
     $view->assertSee('class="space-y-2"', false);
 });
 
 it('does not render an empty class attribute when no classes are provided', function () {
-    $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\']" />');
+    $view = $this->blade('<x-hw::checkbox-group name="ids[]" :options="[1 => \'One\']" />');
 
     $view->assertDontSee('class=""', false);
 });
 
 it('merges custom label-class on each label', function () {
-    $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\']" label-class="font-bold" />');
+    $view = $this->blade('<x-hw::checkbox-group name="ids[]" :options="[1 => \'One\']" label-class="font-bold" />');
 
     $view->assertSee('class="font-bold"', false);
 });
 
 it('merges custom label-class on the select-all master label too', function () {
-    $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\']" select-all label-class="font-bold" />');
+    $view = $this->blade('<x-hw::checkbox-group name="ids[]" :options="[1 => \'One\']" select-all label-class="font-bold" />');
 
     $html = (string) $view;
     expect(substr_count($html, 'class="font-bold"'))->toBe(2);
 });
 
-it('emits the same checkable semantic state as <x-hwc::input type=checkbox>', function () {
-    $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\']" />');
+it('emits the same checkable semantic state as <x-hw::input type=checkbox>', function () {
+    $view = $this->blade('<x-hw::checkbox-group name="ids[]" :options="[1 => \'One\']" />');
 
     $view->assertSee('data-slot="checkbox-group-input"', false);
     $view->assertSee('data-checkable="true"', false);
@@ -213,7 +213,7 @@ it('emits the same checkable semantic state as <x-hwc::input type=checkbox>', fu
 });
 
 it('emits semantic slots on the select-all master and item labels', function () {
-    $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\']" select-all />');
+    $view = $this->blade('<x-hw::checkbox-group name="ids[]" :options="[1 => \'One\']" select-all />');
 
     $html = (string) $view;
     expect(substr_count($html, 'data-slot="checkbox-group-input"'))->toBe(2)
@@ -223,19 +223,19 @@ it('emits semantic slots on the select-all master and item labels', function () 
 // --- User data-controller merge ---
 
 it('merges user data-controller with checkbox-select-all when select-all', function () {
-    $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\']" data-controller="foo" select-all />');
+    $view = $this->blade('<x-hw::checkbox-group name="ids[]" :options="[1 => \'One\']" data-controller="foo" select-all />');
 
     $view->assertSee('data-controller="foo checkbox-select-all"', false);
 });
 
 it('preserves user data-controller when no select-all', function () {
-    $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\']" data-controller="foo" />');
+    $view = $this->blade('<x-hw::checkbox-group name="ids[]" :options="[1 => \'One\']" data-controller="foo" />');
 
     $view->assertSee('data-controller="foo"', false);
 });
 
 it('filters data-checkbox-select-all prefix when select-all is active', function () {
-    $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\']" select-all data-checkbox-select-all-target="override" />');
+    $view = $this->blade('<x-hw::checkbox-group name="ids[]" :options="[1 => \'One\']" select-all data-checkbox-select-all-target="override" />');
 
     $view->assertDontSee('data-checkbox-select-all-target="override"', false);
 });
@@ -243,7 +243,7 @@ it('filters data-checkbox-select-all prefix when select-all is active', function
 // --- Pass-through ---
 
 it('passes through arbitrary attributes', function () {
-    $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\']" data-test="x" hidden />');
+    $view = $this->blade('<x-hw::checkbox-group name="ids[]" :options="[1 => \'One\']" data-test="x" hidden />');
 
     $view->assertSee('data-test="x"', false);
     $view->assertSee('hidden', false);
@@ -253,25 +253,25 @@ it('passes through arbitrary attributes', function () {
 
 it('renders name when explicitly provided inside field', function () {
     $view = $this->blade('
-        <x-hwc::field name="other[]">
-            <x-hwc::checkbox-group name="custom[]" :options="[1 => \'One\']" />
-        </x-hwc::field>
+        <x-hw::field name="other[]">
+            <x-hw::checkbox-group name="custom[]" :options="[1 => \'One\']" />
+        </x-hw::field>
     ');
 
     $view->assertSee('name="custom[]"', false);
 });
 
 it('does not render name attribute when no name is provided', function () {
-    $view = $this->blade('<x-hwc::checkbox-group :options="[1 => \'One\']" />');
+    $view = $this->blade('<x-hw::checkbox-group :options="[1 => \'One\']" />');
 
     $view->assertDontSee('name="', false);
 });
 
 it('field overrides name from @aware', function () {
     $view = $this->blade('
-        <x-hwc::field name="other[]">
-            <x-hwc::checkbox-group name="custom[]" :options="[1 => \'One\']" />
-        </x-hwc::field>
+        <x-hw::field name="other[]">
+            <x-hw::checkbox-group name="custom[]" :options="[1 => \'One\']" />
+        </x-hw::field>
     ');
 
     $view->assertSee('name="custom[]"', false);
@@ -280,27 +280,27 @@ it('field overrides name from @aware', function () {
 // --- Id derivation ---
 
 it('generates unique ids per checkbox from name', function () {
-    $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\', 2 => \'Two\']" />');
+    $view = $this->blade('<x-hw::checkbox-group name="ids[]" :options="[1 => \'One\', 2 => \'Two\']" />');
 
     $view->assertSee('id="ids-1"', false);
     $view->assertSee('id="ids-2"', false);
 });
 
 it('generates id from single name without brackets', function () {
-    $view = $this->blade('<x-hwc::checkbox-group name="active" :options="[1 => \'Active\']" />');
+    $view = $this->blade('<x-hw::checkbox-group name="active" :options="[1 => \'Active\']" />');
 
     $view->assertSee('id="active-1"', false);
 });
 
 it('uses explicit id as base for per-checkbox ids', function () {
-    $view = $this->blade('<x-hwc::checkbox-group name="branches[]" id="my-group" :options="[\'main\' => \'Main\', \'dev\' => \'Dev\']" />');
+    $view = $this->blade('<x-hw::checkbox-group name="branches[]" id="my-group" :options="[\'main\' => \'Main\', \'dev\' => \'Dev\']" />');
 
     $view->assertSee('id="my-group-main"', false);
     $view->assertSee('id="my-group-dev"', false);
 });
 
 it('does not set id when no name and no explicit id', function () {
-    $view = $this->blade('<x-hwc::checkbox-group :options="[1 => \'One\']" />');
+    $view = $this->blade('<x-hw::checkbox-group :options="[1 => \'One\']" />');
 
     $view->assertDontSee('id="', false);
 });
@@ -308,7 +308,7 @@ it('does not set id when no name and no explicit id', function () {
 // --- ARIA ---
 
 it('always sets aria-describedby on checkboxes', function () {
-    $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\', 2 => \'Two\']" />');
+    $view = $this->blade('<x-hw::checkbox-group name="ids[]" :options="[1 => \'One\', 2 => \'Two\']" />');
 
     $view->assertSee('aria-describedby="ids-error"', false);
 });
@@ -316,14 +316,14 @@ it('always sets aria-describedby on checkboxes', function () {
 it('sets aria-invalid and data-invalid when error present', function () {
     shareCheckboxGroupErrors(['ids' => ['Required.']]);
 
-    $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\']" />');
+    $view = $this->blade('<x-hw::checkbox-group name="ids[]" :options="[1 => \'One\']" />');
 
     $view->assertSee('aria-invalid="true"', false);
     $view->assertSee('data-invalid', false);
 });
 
 it('does not set aria-invalid when no errors', function () {
-    $view = $this->blade('<x-hwc::checkbox-group name="ids[]" :options="[1 => \'One\']" />');
+    $view = $this->blade('<x-hw::checkbox-group name="ids[]" :options="[1 => \'One\']" />');
 
     $view->assertDontSee('aria-invalid="true"', false);
     $view->assertDontSee('data-invalid', false);
@@ -332,7 +332,7 @@ it('does not set aria-invalid when no errors', function () {
 it('uses derived error key from bracket notation', function () {
     shareCheckboxGroupErrors(['variables.0.name' => ['Required.']]);
 
-    $view = $this->blade('<x-hwc::checkbox-group name="variables[0][name]" :options="[\'a\' => \'A\']" />');
+    $view = $this->blade('<x-hw::checkbox-group name="variables[0][name]" :options="[\'a\' => \'A\']" />');
 
     $view->assertSee('aria-invalid="true"', false);
 });
@@ -340,7 +340,7 @@ it('uses derived error key from bracket notation', function () {
 it('uses explicit error key override', function () {
     shareCheckboxGroupErrors(['custom.path' => ['Required.']]);
 
-    $view = $this->blade('<x-hwc::checkbox-group name="ids[]" error-key="custom.path" :options="[1 => \'One\']" />');
+    $view = $this->blade('<x-hw::checkbox-group name="ids[]" error-key="custom.path" :options="[1 => \'One\']" />');
 
     $view->assertSee('aria-invalid="true"', false);
 });
@@ -348,7 +348,7 @@ it('uses explicit error key override', function () {
 it('uses error key for error lookup, aria-describedby from name', function () {
     shareCheckboxGroupErrors(['custom' => ['Required.']]);
 
-    $view = $this->blade('<x-hwc::checkbox-group name="ids[]" error-key="custom" :options="[1 => \'One\']" />');
+    $view = $this->blade('<x-hw::checkbox-group name="ids[]" error-key="custom" :options="[1 => \'One\']" />');
 
     // aria-describedby follows the name-derived id, not the error key
     $view->assertSee('aria-describedby="ids-error"', false);

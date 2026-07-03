@@ -8,12 +8,12 @@ return [
     |--------------------------------------------------------------------------
     |
     | The prefix used for all Blade components provided by this package.
-    | For example, with prefix "hwc", the modal component is used as:
+    | For example, with prefix "hw", the modal component is used as:
     |
-    |     <x-hwc::modal> ... </x-hwc::modal>
+    |     <hw:modal> ... </hw:modal>
     |
     */
 
-    'prefix' => 'hwc',
+    'prefix' => 'hw',
 
 ];

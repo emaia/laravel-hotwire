@@ -1,7 +1,7 @@
 <?php
 
 it('renders an item with semantic variant and size state', function () {
-    $view = $this->blade('<x-hwc::item variant="outline" size="sm">Profile</x-hwc::item>');
+    $view = $this->blade('<x-hw::item variant="outline" size="sm">Profile</x-hw::item>');
 
     $view->assertSee('data-slot="item"', false)
         ->assertSee('data-variant="outline"', false)
@@ -11,7 +11,7 @@ it('renders an item with semantic variant and size state', function () {
 });
 
 it('renders as a link via the as prop', function () {
-    $view = $this->blade('<x-hwc::item as="a" href="/profile">Profile</x-hwc::item>');
+    $view = $this->blade('<x-hw::item as="a" href="/profile">Profile</x-hw::item>');
 
     $view->assertSee('<a', false)
         ->assertSee('href="/profile"', false)
@@ -22,21 +22,21 @@ it('renders as a link via the as prop', function () {
 
 it('renders item subcomponents with semantic slots', function () {
     $view = $this->blade(<<<'BLADE'
-        <x-hwc::item.group>
-            <x-hwc::item variant="muted" size="xs">
-                <x-hwc::item.header>
-                    <x-hwc::item.title>Deploy</x-hwc::item.title>
-                    <x-hwc::badge>Live</x-hwc::badge>
-                </x-hwc::item.header>
-                <x-hwc::item.media variant="icon"><x-hwc::icon name="check" /></x-hwc::item.media>
-                <x-hwc::item.content>
-                    <x-hwc::item.description>Production deploy finished.</x-hwc::item.description>
-                </x-hwc::item.content>
-                <x-hwc::item.actions><x-hwc::button size="sm">Open</x-hwc::button></x-hwc::item.actions>
-                <x-hwc::item.footer>Just now</x-hwc::item.footer>
-            </x-hwc::item>
-            <x-hwc::item.separator />
-        </x-hwc::item.group>
+        <x-hw::item.group>
+            <x-hw::item variant="muted" size="xs">
+                <x-hw::item.header>
+                    <x-hw::item.title>Deploy</x-hw::item.title>
+                    <x-hw::badge>Live</x-hw::badge>
+                </x-hw::item.header>
+                <x-hw::item.media variant="icon"><x-hw::icon name="check" /></x-hw::item.media>
+                <x-hw::item.content>
+                    <x-hw::item.description>Production deploy finished.</x-hw::item.description>
+                </x-hw::item.content>
+                <x-hw::item.actions><x-hw::button size="sm">Open</x-hw::button></x-hw::item.actions>
+                <x-hw::item.footer>Just now</x-hw::item.footer>
+            </x-hw::item>
+            <x-hw::item.separator />
+        </x-hw::item.group>
     BLADE);
 
     $view->assertSee('role="list"', false)
@@ -55,7 +55,7 @@ it('renders item subcomponents with semantic slots', function () {
 });
 
 it('passes through attributes', function () {
-    $view = $this->blade('<x-hwc::item id="notification" class="gap-4" data-test="notification">Item</x-hwc::item>');
+    $view = $this->blade('<x-hw::item id="notification" class="gap-4" data-test="notification">Item</x-hw::item>');
 
     $view->assertSee('id="notification"', false)
         ->assertSee('class="gap-4"', false)

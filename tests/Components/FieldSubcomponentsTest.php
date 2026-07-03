@@ -5,12 +5,12 @@ use Illuminate\Support\Facades\Blade;
 
 it('renders field layout subcomponents with semantic slots', function () {
     $view = $this->blade('
-        <x-hwc::field.set class="space-y-4">
-            <x-hwc::field.legend variant="label">Preferences</x-hwc::field.legend>
-            <x-hwc::field.content>Content</x-hwc::field.content>
-            <x-hwc::field.title>Marketing emails</x-hwc::field.title>
-            <x-hwc::field.separator>Or</x-hwc::field.separator>
-        </x-hwc::field.set>
+        <x-hw::field.set class="space-y-4">
+            <x-hw::field.legend variant="label">Preferences</x-hw::field.legend>
+            <x-hw::field.content>Content</x-hw::field.content>
+            <x-hw::field.title>Marketing emails</x-hw::field.title>
+            <x-hw::field.separator>Or</x-hw::field.separator>
+        </x-hw::field.set>
     ');
 
     $view->assertSee('data-slot="field-set"', false)
@@ -24,7 +24,7 @@ it('renders field layout subcomponents with semantic slots', function () {
 });
 
 it('renders a field separator without content', function () {
-    $view = $this->blade('<x-hwc::field.separator />');
+    $view = $this->blade('<x-hw::field.separator />');
 
     $view->assertSee('data-slot="field-separator"', false);
     $view->assertSee('data-content="false"', false);

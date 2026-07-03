@@ -1,0 +1,451 @@
+{
+    "$schema": "https://laravel-ide.com/schema/laravel-ide-v2.json",
+    "blade": {
+        "components": {
+            "list": [
+                {
+                    "name": "alert",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Alert"
+                },
+                {
+                    "name": "alert-dialog",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\AlertDialog"
+                },
+                {
+                    "name": "alert-dialog.content",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\AlertDialog\\Content"
+                },
+                {
+                    "name": "alert-dialog.description",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\AlertDialog\\Description"
+                },
+                {
+                    "name": "alert-dialog.footer",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\AlertDialog\\Footer"
+                },
+                {
+                    "name": "alert-dialog.header",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\AlertDialog\\Header"
+                },
+                {
+                    "name": "alert-dialog.title",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\AlertDialog\\Title"
+                },
+                {
+                    "name": "alert.action",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Alert\\Action"
+                },
+                {
+                    "name": "alert.description",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Alert\\Description"
+                },
+                {
+                    "name": "alert.title",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Alert\\Title"
+                },
+                {
+                    "name": "badge",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Badge"
+                },
+                {
+                    "name": "button",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Button"
+                },
+                {
+                    "name": "button-group",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\ButtonGroup"
+                },
+                {
+                    "name": "button-group.separator",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\ButtonGroup\\Separator"
+                },
+                {
+                    "name": "button-group.text",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\ButtonGroup\\Text"
+                },
+                {
+                    "name": "card",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Card"
+                },
+                {
+                    "name": "card.action",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Card\\Action"
+                },
+                {
+                    "name": "card.content",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Card\\Content"
+                },
+                {
+                    "name": "card.description",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Card\\Description"
+                },
+                {
+                    "name": "card.footer",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Card\\Footer"
+                },
+                {
+                    "name": "card.header",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Card\\Header"
+                },
+                {
+                    "name": "card.title",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Card\\Title"
+                },
+                {
+                    "name": "carousel",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Carousel"
+                },
+                {
+                    "name": "chart",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Chart"
+                },
+                {
+                    "name": "checkbox-group",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\CheckboxGroup"
+                },
+                {
+                    "name": "conditional-field",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\ConditionalField"
+                },
+                {
+                    "name": "dropdown",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Dropdown"
+                },
+                {
+                    "name": "empty",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\EmptyState"
+                },
+                {
+                    "name": "empty.content",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Empty\\Content"
+                },
+                {
+                    "name": "empty.description",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Empty\\Description"
+                },
+                {
+                    "name": "empty.header",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Empty\\Header"
+                },
+                {
+                    "name": "empty.media",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Empty\\Media"
+                },
+                {
+                    "name": "empty.title",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Empty\\Title"
+                },
+                {
+                    "name": "field",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Field"
+                },
+                {
+                    "name": "field.content",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Field\\Content"
+                },
+                {
+                    "name": "field.description",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Field\\Description"
+                },
+                {
+                    "name": "field.error",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Field\\Error"
+                },
+                {
+                    "name": "field.group",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Field\\Group"
+                },
+                {
+                    "name": "field.label",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Field\\Label"
+                },
+                {
+                    "name": "field.legend",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Field\\Legend"
+                },
+                {
+                    "name": "field.separator",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Field\\Separator"
+                },
+                {
+                    "name": "field.set",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Field\\FieldSet"
+                },
+                {
+                    "name": "field.title",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Field\\Title"
+                },
+                {
+                    "name": "file",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\File"
+                },
+                {
+                    "name": "file-upload",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\FileUpload"
+                },
+                {
+                    "name": "flash-container",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\FlashContainer"
+                },
+                {
+                    "name": "flash-message",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\FlashMessage"
+                },
+                {
+                    "name": "form",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Form"
+                },
+                {
+                    "name": "frame-or-page",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\FrameOrPage"
+                },
+                {
+                    "name": "icon",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Icon"
+                },
+                {
+                    "name": "input",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Input"
+                },
+                {
+                    "name": "item",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Item"
+                },
+                {
+                    "name": "item.actions",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Item\\Actions"
+                },
+                {
+                    "name": "item.content",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Item\\Content"
+                },
+                {
+                    "name": "item.description",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Item\\Description"
+                },
+                {
+                    "name": "item.footer",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Item\\Footer"
+                },
+                {
+                    "name": "item.group",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Item\\Group"
+                },
+                {
+                    "name": "item.header",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Item\\Header"
+                },
+                {
+                    "name": "item.media",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Item\\Media"
+                },
+                {
+                    "name": "item.separator",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Item\\Separator"
+                },
+                {
+                    "name": "item.title",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Item\\Title"
+                },
+                {
+                    "name": "kbd",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Kbd"
+                },
+                {
+                    "name": "kbd.group",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Kbd\\Group"
+                },
+                {
+                    "name": "map",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Map"
+                },
+                {
+                    "name": "modal",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Modal"
+                },
+                {
+                    "name": "modal.content",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Modal\\Content"
+                },
+                {
+                    "name": "modal.description",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Modal\\Description"
+                },
+                {
+                    "name": "modal.footer",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Modal\\Footer"
+                },
+                {
+                    "name": "modal.header",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Modal\\Header"
+                },
+                {
+                    "name": "modal.title",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Modal\\Title"
+                },
+                {
+                    "name": "optimistic",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Optimistic"
+                },
+                {
+                    "name": "rich-text",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\RichText"
+                },
+                {
+                    "name": "scroll-progress",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\ScrollProgress"
+                },
+                {
+                    "name": "select",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Select"
+                },
+                {
+                    "name": "separator",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Separator"
+                },
+                {
+                    "name": "skeleton",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Skeleton"
+                },
+                {
+                    "name": "spinner",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Spinner"
+                },
+                {
+                    "name": "table",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Table"
+                },
+                {
+                    "name": "table.body",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Table\\Body"
+                },
+                {
+                    "name": "table.caption",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Table\\Caption"
+                },
+                {
+                    "name": "table.cell",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Table\\Cell"
+                },
+                {
+                    "name": "table.footer",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Table\\Footer"
+                },
+                {
+                    "name": "table.head",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Table\\Head"
+                },
+                {
+                    "name": "table.header",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Table\\Header"
+                },
+                {
+                    "name": "table.row",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Table\\Row"
+                },
+                {
+                    "name": "textarea",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Textarea"
+                },
+                {
+                    "name": "timeago",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Timeago"
+                }
+            ],
+            "phpNamespaces": [
+                {
+                    "phpNamespace": "\\Emaia\\LaravelHotwire\\Components",
+                    "prefix": "hw:",
+                    "ignoreBladeComponentPrefix": true
+                }
+            ]
+        }
+    }
+}

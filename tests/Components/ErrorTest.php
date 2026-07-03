@@ -17,7 +17,7 @@ beforeEach(function () {
 // --- Container always present ---
 
 it('always renders the container even without errors but hides it', function () {
-    $view = $this->blade('<x-hwc::field.error name="email" />');
+    $view = $this->blade('<x-hw::field.error name="email" />');
 
     $view->assertSee('role="alert"', false);
     $view->assertSee('aria-live="polite"', false);
@@ -28,7 +28,7 @@ it('always renders the container even without errors but hides it', function () 
 it('does not show hidden when there are messages', function () {
     shareErrors(['email' => ['Required']]);
 
-    $view = $this->blade('<x-hwc::field.error name="email" />');
+    $view = $this->blade('<x-hw::field.error name="email" />');
 
     $view->assertDontSee(' hidden ', false);
     $view->assertDontSee(' hidden>', false);
@@ -40,7 +40,7 @@ it('does not show hidden when there are messages', function () {
 it('renders a single message inline without list', function () {
     shareErrors(['email' => ['The email is required.']]);
 
-    $view = $this->blade('<x-hwc::field.error name="email" />');
+    $view = $this->blade('<x-hw::field.error name="email" />');
 
     $view->assertSee('The email is required.');
     $view->assertDontSee('<ul', false);
@@ -50,7 +50,7 @@ it('renders a single message inline without list', function () {
 it('renders multiple messages as a list', function () {
     shareErrors(['email' => ['The email is required.', 'The email must be valid.']]);
 
-    $view = $this->blade('<x-hwc::field.error name="email" />');
+    $view = $this->blade('<x-hw::field.error name="email" />');
 
     $view->assertSee('<ul', false);
     $view->assertSee('<li', false);
@@ -63,7 +63,7 @@ it('renders multiple messages as a list', function () {
 it('derives error key from name in bracket notation', function () {
     shareErrors(['variables.0.name' => ['Required']]);
 
-    $view = $this->blade('<x-hwc::field.error name="variables[0][name]" />');
+    $view = $this->blade('<x-hw::field.error name="variables[0][name]" />');
 
     $view->assertSee('Required');
     $view->assertSee('id="variables-0-name-error"', false);
@@ -72,7 +72,7 @@ it('derives error key from name in bracket notation', function () {
 it('uses explicit error key when provided', function () {
     shareErrors(['indicator.name' => ['Required']]);
 
-    $view = $this->blade('<x-hwc::field.error name="ignored" error-key="indicator.name" />');
+    $view = $this->blade('<x-hw::field.error name="ignored" error-key="indicator.name" />');
 
     $view->assertSee('Required');
 });
@@ -82,20 +82,20 @@ it('uses explicit error key when provided', function () {
 it('uses explicit messages prop overriding $errors lookup', function () {
     shareErrors(['email' => ['Should not appear']]);
 
-    $view = $this->blade('<x-hwc::field.error name="email" :messages="[\'Custom message\']" />');
+    $view = $this->blade('<x-hw::field.error name="email" :messages="[\'Custom message\']" />');
 
     $view->assertSee('Custom message');
     $view->assertDontSee('Should not appear');
 });
 
 it('accepts a single string in messages', function () {
-    $view = $this->blade('<x-hwc::field.error :messages="\'Just one\'" />');
+    $view = $this->blade('<x-hw::field.error :messages="\'Just one\'" />');
 
     $view->assertSee('Just one');
 });
 
 it('renders multiple explicit messages as a list', function () {
-    $view = $this->blade('<x-hwc::field.error :messages="[\'First error\', \'Second error\']" />');
+    $view = $this->blade('<x-hw::field.error :messages="[\'First error\', \'Second error\']" />');
 
     $view->assertSee('First error');
     $view->assertSee('Second error');
@@ -106,21 +106,21 @@ it('renders multiple explicit messages as a list', function () {
 // --- Id ---
 
 it('uses explicit id', function () {
-    $view = $this->blade('<x-hwc::field.error name="email" id="my-error" />');
+    $view = $this->blade('<x-hw::field.error name="email" id="my-error" />');
 
     $view->assertSee('id="my-error"', false);
 });
 
 it('uses fallback id when no name and no id', function () {
-    $view = $this->blade('<x-hwc::field.error :messages="[\'Oops\']" />');
+    $view = $this->blade('<x-hw::field.error :messages="[\'Oops\']" />');
 
-    $view->assertSee('id="hwc-error-', false);
+    $view->assertSee('id="hw-error-', false);
 });
 
 // --- Class merge ---
 
 it('merges custom class on the error element', function () {
-    $view = $this->blade('<x-hwc::field.error name="email" class="text-red-600" />');
+    $view = $this->blade('<x-hw::field.error name="email" class="text-red-600" />');
 
     $view->assertSee('data-slot="field-error"', false);
     $view->assertSee('class="text-red-600"', false);
@@ -132,9 +132,9 @@ it('picks up name from field via @aware', function () {
     shareErrors(['email' => ['Required']]);
 
     $view = $this->blade('
-        <x-hwc::field name="email">
-            <x-hwc::field.error />
-        </x-hwc::field>
+        <x-hw::field name="email">
+            <x-hw::field.error />
+        </x-hw::field>
     ');
 
     $view->assertSee('Required');

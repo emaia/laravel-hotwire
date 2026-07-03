@@ -19,7 +19,7 @@ class ListComponentsCommand extends Command
 
     public function handle(): int
     {
-        $prefix = config('hotwire.prefix', 'hwc');
+        $prefix = config('hotwire.prefix', 'hw');
         $targetBase = resource_path('js/controllers');
         $registry = HotwireRegistry::make();
 

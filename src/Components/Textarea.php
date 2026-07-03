@@ -56,7 +56,7 @@ class Textarea extends Component
     ): array {
         $hasName = $name !== null && $name !== '';
 
-        $resolvedId = $id ?: ($hasName ? FieldKey::toId($name) : 'hwc-textarea-'.uniqid());
+        $resolvedId = $id ?: ($hasName ? FieldKey::toId($name) : 'hw-textarea-'.uniqid());
         $resolvedErrorKey = $errorKey ?: ($hasName ? FieldKey::toErrorKey($name) : '');
         $errorId = $resolvedId.'-error';
 

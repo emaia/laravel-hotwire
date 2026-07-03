@@ -1,7 +1,7 @@
 <?php
 
 it('renders with default props', function () {
-    $view = $this->blade('<x-hwc::timeago datetime="2026-04-29 12:00:00">Apr 29</x-hwc::timeago>');
+    $view = $this->blade('<x-hw::timeago datetime="2026-04-29 12:00:00">Apr 29</x-hw::timeago>');
 
     $view->assertSee('data-controller="timeago"', false);
     $view->assertSee('data-timeago-datetime-value=', false);
@@ -12,7 +12,7 @@ it('renders with default props', function () {
 
 it('does not forward timeago stimulus attributes from arbitrary attributes', function () {
     $view = $this->blade('
-        <x-hwc::timeago
+        <x-hw::timeago
             datetime="2026-04-29 12:00:00"
             data-controller="custom"
             data-action="click->custom#run"
@@ -30,7 +30,7 @@ it('does not forward timeago stimulus attributes from arbitrary attributes', fun
 });
 
 it('renders refresh interval when configured', function () {
-    $view = $this->blade('<x-hwc::timeago datetime="2026-04-29 12:00:00" :refresh-interval="60" />');
+    $view = $this->blade('<x-hw::timeago datetime="2026-04-29 12:00:00" :refresh-interval="60" />');
 
     $view->assertSee('data-timeago-refresh-interval-value="60"', false);
 });

@@ -18,7 +18,7 @@ beforeEach(function () {
 // --- Wrapper structure ---
 
 it('renders a wrapper div with field slot', function () {
-    $view = $this->blade('<x-hwc::field name="email"><span>x</span></x-hwc::field>');
+    $view = $this->blade('<x-hw::field name="email"><span>x</span></x-hw::field>');
 
     $view->assertSee('data-slot="field"', false);
     $view->assertSee('role="group"', false);
@@ -27,25 +27,25 @@ it('renders a wrapper div with field slot', function () {
 });
 
 it('emits the requested orientation state', function () {
-    $view = $this->blade('<x-hwc::field name="email" orientation="horizontal"><span>x</span></x-hwc::field>');
+    $view = $this->blade('<x-hw::field name="email" orientation="horizontal"><span>x</span></x-hw::field>');
 
     $view->assertSee('data-orientation="horizontal"', false);
 });
 
 it('supports responsive orientation', function () {
-    $view = $this->blade('<x-hwc::field name="email" orientation="responsive"><span>x</span></x-hwc::field>');
+    $view = $this->blade('<x-hw::field name="email" orientation="responsive"><span>x</span></x-hw::field>');
 
     $view->assertSee('data-orientation="responsive"', false);
 });
 
 it('merges custom class on wrapper', function () {
-    $view = $this->blade('<x-hwc::field name="email" class="space-y-1"><span>x</span></x-hwc::field>');
+    $view = $this->blade('<x-hw::field name="email" class="space-y-1"><span>x</span></x-hw::field>');
 
     $view->assertSee('class="space-y-1"', false);
 });
 
 it('does not auto-render label or description', function () {
-    $view = $this->blade('<x-hwc::field name="email"><span>x</span></x-hwc::field>');
+    $view = $this->blade('<x-hw::field name="email"><span>x</span></x-hw::field>');
 
     $view->assertDontSee('<label', false);
     $view->assertDontSee('data-slot="field-description"', false);
@@ -53,15 +53,15 @@ it('does not auto-render label or description', function () {
 
 // --- Auto-rendered error ---
 
-it('auto-renders <x-hwc::field.error> at the end when name is set', function () {
-    $view = $this->blade('<x-hwc::field name="email"><span>x</span></x-hwc::field>');
+it('auto-renders <x-hw::field.error> at the end when name is set', function () {
+    $view = $this->blade('<x-hw::field name="email"><span>x</span></x-hw::field>');
 
     $view->assertSee('id="email-error"', false);
     $view->assertSee('role="alert"', false);
 });
 
 it('auto-renders error with the field error key when name has bracket notation', function () {
-    $view = $this->blade('<x-hwc::field name="variables[0][name]"><span>x</span></x-hwc::field>');
+    $view = $this->blade('<x-hw::field name="variables[0][name]"><span>x</span></x-hw::field>');
 
     $view->assertSee('id="variables-0-name-error"', false);
 });
@@ -69,29 +69,29 @@ it('auto-renders error with the field error key when name has bracket notation',
 it('auto-renders error showing the validation message for the field name', function () {
     shareFieldErrors(['email' => ['Required']]);
 
-    $view = $this->blade('<x-hwc::field name="email"><span>x</span></x-hwc::field>');
+    $view = $this->blade('<x-hw::field name="email"><span>x</span></x-hw::field>');
 
     $view->assertSee('Required');
 });
 
 it('does not auto-render error when name is not set', function () {
-    $view = $this->blade('<x-hwc::field><span>x</span></x-hwc::field>');
+    $view = $this->blade('<x-hw::field><span>x</span></x-hw::field>');
 
     $view->assertDontSee('role="alert"', false);
 });
 
 it('does not auto-render error when :error="false"', function () {
-    $view = $this->blade('<x-hwc::field name="email" :error="false"><span>x</span></x-hwc::field>');
+    $view = $this->blade('<x-hw::field name="email" :error="false"><span>x</span></x-hw::field>');
 
     $view->assertDontSee('role="alert"', false);
 });
 
 it('does not duplicate the error node when slot already includes one', function () {
     $view = $this->blade('
-        <x-hwc::field name="email" :error="false">
-            <x-hwc::input type="email" />
-            <x-hwc::field.error class="custom" />
-        </x-hwc::field>
+        <x-hw::field name="email" :error="false">
+            <x-hw::input type="email" />
+            <x-hw::field.error class="custom" />
+        </x-hw::field>
     ');
 
     expect(substr_count((string) $view, 'id="email-error"'))->toBe(1);
@@ -101,9 +101,9 @@ it('auto-rendered error uses field error-key override', function () {
     shareFieldErrors(['indicator.name' => ['Required']]);
 
     $view = $this->blade('
-        <x-hwc::field name="variables[0][name]" error-key="indicator.name">
-            <x-hwc::input type="text" />
-        </x-hwc::field>
+        <x-hw::field name="variables[0][name]" error-key="indicator.name">
+            <x-hw::input type="text" />
+        </x-hw::field>
     ');
 
     $view->assertSee('Required');
@@ -113,9 +113,9 @@ it('auto-rendered error uses field error-key override', function () {
 
 it('auto-renders label before slot when label prop is provided', function () {
     $view = $this->blade('
-        <x-hwc::field name="email" label="E-mail">
-            <x-hwc::input type="email" />
-        </x-hwc::field>
+        <x-hw::field name="email" label="E-mail">
+            <x-hw::input type="email" />
+        </x-hw::field>
     ');
 
     $view->assertSee('<label', false);
@@ -125,9 +125,9 @@ it('auto-renders label before slot when label prop is provided', function () {
 
 it('auto-rendered label uses required-label prop', function () {
     $view = $this->blade('
-        <x-hwc::field name="email" label="E-mail" required required-label="(obrigatório)">
-            <x-hwc::input type="email" />
-        </x-hwc::field>
+        <x-hw::field name="email" label="E-mail" required required-label="(obrigatório)">
+            <x-hw::input type="email" />
+        </x-hw::field>
     ');
 
     $view->assertSee('(obrigatório)');
@@ -136,9 +136,9 @@ it('auto-rendered label uses required-label prop', function () {
 
 it('auto-rendered label shows default asterisk when required', function () {
     $view = $this->blade('
-        <x-hwc::field name="email" label="E-mail" required>
-            <x-hwc::input type="email" />
-        </x-hwc::field>
+        <x-hw::field name="email" label="E-mail" required>
+            <x-hw::input type="email" />
+        </x-hw::field>
     ');
 
     $html = (string) $view;
@@ -148,9 +148,9 @@ it('auto-rendered label shows default asterisk when required', function () {
 
 it('does not auto-render label when label prop is null', function () {
     $view = $this->blade('
-        <x-hwc::field name="email">
-            <x-hwc::input type="email" />
-        </x-hwc::field>
+        <x-hw::field name="email">
+            <x-hw::input type="email" />
+        </x-hw::field>
     ');
 
     $view->assertDontSee('<label', false);
@@ -158,9 +158,9 @@ it('does not auto-render label when label prop is null', function () {
 
 it('does not auto-render label when label prop is empty string', function () {
     $view = $this->blade('
-        <x-hwc::field name="email" label="">
-            <x-hwc::input type="email" />
-        </x-hwc::field>
+        <x-hw::field name="email" label="">
+            <x-hw::input type="email" />
+        </x-hw::field>
     ');
 
     $view->assertDontSee('<label', false);
@@ -168,9 +168,9 @@ it('does not auto-render label when label prop is empty string', function () {
 
 it('auto-rendered label coexists with auto-rendered error', function () {
     $view = $this->blade('
-        <x-hwc::field name="email" label="E-mail">
-            <x-hwc::input type="email" />
-        </x-hwc::field>
+        <x-hw::field name="email" label="E-mail">
+            <x-hw::input type="email" />
+        </x-hw::field>
     ');
 
     $view->assertSee('for="email"', false);
@@ -179,9 +179,9 @@ it('auto-rendered label coexists with auto-rendered error', function () {
 
 it('auto-rendered label appears before slot content', function () {
     $view = $this->blade('
-        <x-hwc::field name="email" label="E-mail">
-            <x-hwc::input type="email" value="test" />
-        </x-hwc::field>
+        <x-hw::field name="email" label="E-mail">
+            <x-hw::input type="email" value="test" />
+        </x-hw::field>
     ');
 
     $html = (string) $view;
@@ -194,9 +194,9 @@ it('auto-rendered label appears before slot content', function () {
 
 it('auto-renders description between slot and error when description prop is provided', function () {
     $view = $this->blade('
-        <x-hwc::field name="email" description="Enter your work email address.">
-            <x-hwc::input type="email" />
-        </x-hwc::field>
+        <x-hw::field name="email" description="Enter your work email address.">
+            <x-hw::input type="email" />
+        </x-hw::field>
     ');
 
     $view->assertSee('data-slot="field-description"', false);
@@ -205,9 +205,9 @@ it('auto-renders description between slot and error when description prop is pro
 
 it('does not auto-render description when description prop is null', function () {
     $view = $this->blade('
-        <x-hwc::field name="email">
-            <x-hwc::input type="email" />
-        </x-hwc::field>
+        <x-hw::field name="email">
+            <x-hw::input type="email" />
+        </x-hw::field>
     ');
 
     $view->assertDontSee('data-slot="field-description"', false);
@@ -215,9 +215,9 @@ it('does not auto-render description when description prop is null', function ()
 
 it('does not auto-render description when description prop is empty string', function () {
     $view = $this->blade('
-        <x-hwc::field name="email" description="">
-            <x-hwc::input type="email" />
-        </x-hwc::field>
+        <x-hw::field name="email" description="">
+            <x-hw::input type="email" />
+        </x-hw::field>
     ');
 
     $view->assertDontSee('data-slot="field-description"', false);
@@ -225,9 +225,9 @@ it('does not auto-render description when description prop is empty string', fun
 
 it('auto-rendered description coexists with auto-rendered label', function () {
     $view = $this->blade('
-        <x-hwc::field name="email" label="E-mail" description="We will never share your email.">
-            <x-hwc::input type="email" />
-        </x-hwc::field>
+        <x-hw::field name="email" label="E-mail" description="We will never share your email.">
+            <x-hw::input type="email" />
+        </x-hw::field>
     ');
 
     $view->assertSee('<label', false);
@@ -238,9 +238,9 @@ it('auto-rendered description coexists with auto-rendered label', function () {
 
 it('auto-rendered description appears after slot and before error', function () {
     $view = $this->blade('
-        <x-hwc::field name="email" description="Helper text.">
-            <x-hwc::input type="email" value="test" />
-        </x-hwc::field>
+        <x-hw::field name="email" description="Helper text.">
+            <x-hw::input type="email" value="test" />
+        </x-hw::field>
     ');
 
     $html = (string) $view;
@@ -255,9 +255,9 @@ it('auto-rendered description appears after slot and before error', function () 
 
 it('propagates name to nested input', function () {
     $view = $this->blade('
-        <x-hwc::field name="email">
-            <x-hwc::input type="email" />
-        </x-hwc::field>
+        <x-hw::field name="email">
+            <x-hw::input type="email" />
+        </x-hw::field>
     ');
 
     $view->assertSee('id="email"', false);
@@ -267,10 +267,10 @@ it('propagates name to nested input', function () {
 
 it('propagates name to nested label and error', function () {
     $view = $this->blade('
-        <x-hwc::field name="email">
-            <x-hwc::field.label>E-mail</x-hwc::field.label>
-            <x-hwc::field.error />
-        </x-hwc::field>
+        <x-hw::field name="email">
+            <x-hw::field.label>E-mail</x-hw::field.label>
+            <x-hw::field.error />
+        </x-hw::field>
     ');
 
     $view->assertSee('for="email"', false);
@@ -279,11 +279,11 @@ it('propagates name to nested label and error', function () {
 
 it('propagates name with bracket notation to nested children', function () {
     $view = $this->blade('
-        <x-hwc::field name="variables[0][name]">
-            <x-hwc::field.label>Variables</x-hwc::field.label>
-            <x-hwc::input type="text" />
-            <x-hwc::field.error />
-        </x-hwc::field>
+        <x-hw::field name="variables[0][name]">
+            <x-hw::field.label>Variables</x-hw::field.label>
+            <x-hw::input type="text" />
+            <x-hw::field.error />
+        </x-hw::field>
     ');
 
     $view->assertSee('name="variables[0][name]"', false);
@@ -294,10 +294,10 @@ it('propagates name with bracket notation to nested children', function () {
 
 it('propagates required to nested label and input', function () {
     $view = $this->blade('
-        <x-hwc::field name="email" required>
-            <x-hwc::field.label>E-mail</x-hwc::field.label>
-            <x-hwc::input type="email" />
-        </x-hwc::field>
+        <x-hw::field name="email" required>
+            <x-hw::field.label>E-mail</x-hw::field.label>
+            <x-hw::input type="email" />
+        </x-hw::field>
     ');
 
     $view->assertSee('required', false);
@@ -310,10 +310,10 @@ it('overrides errorKey when explicit error-key is set on field', function () {
     shareFieldErrors(['indicator.name' => ['Required']]);
 
     $view = $this->blade('
-        <x-hwc::field name="variables[0][name]" error-key="indicator.name">
-            <x-hwc::input type="text" />
-            <x-hwc::field.error />
-        </x-hwc::field>
+        <x-hw::field name="variables[0][name]" error-key="indicator.name">
+            <x-hw::input type="text" />
+            <x-hw::field.error />
+        </x-hw::field>
     ');
 
     $view->assertSee('Required');

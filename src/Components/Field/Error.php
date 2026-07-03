@@ -54,7 +54,7 @@ class Error extends Component
         $hasName = $name !== null && $name !== '';
 
         $resolvedErrorKey = $errorKey ?: ($hasName ? FieldKey::toErrorKey($name) : null);
-        $resolvedId = $id ?: ($hasName ? FieldKey::toId($name).'-error' : 'hwc-error-'.uniqid());
+        $resolvedId = $id ?: ($hasName ? FieldKey::toId($name).'-error' : 'hw-error-'.uniqid());
 
         $messages = $this->explicitMessages ?? ($resolvedErrorKey ? $errorsBag->get($resolvedErrorKey) : []);
         $isEmpty = empty($messages);
