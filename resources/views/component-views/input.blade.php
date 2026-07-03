@@ -35,6 +35,7 @@
 @if ($clearable)
     <button
         type="button"
+        class="hidden"
         data-slot="clear-input-button"
         data-clear-input-target="clearButton"
         tabindex="0"

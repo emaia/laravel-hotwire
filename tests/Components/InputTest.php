@@ -192,6 +192,14 @@ it('renders clear button with type=button', function () {
     $view->assertSee('type="button"', false);
 });
 
+it('renders clear button hidden state as a removable class', function () {
+    $html = (string) $this->blade('<x-hwc::input name="q" clearable />');
+
+    expect($html)
+        ->toContain('data-slot="clear-input-button"')
+        ->toMatch('/<button[^>]*\bclass="[^"]*\bhidden\b[^"]*"[^>]*data-slot="clear-input-button"|<button[^>]*data-slot="clear-input-button"[^>]*\bclass="[^"]*\bhidden\b[^"]*"/');
+});
+
 // --- Wrapper: combination ---
 
 it('combines element + wrapper controllers correctly', function () {

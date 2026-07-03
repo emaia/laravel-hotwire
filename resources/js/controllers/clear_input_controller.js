@@ -9,9 +9,9 @@ export default class extends Controller {
     initialize() {
         this.styleElement = document.createElement("style");
         this.styleElement.innerHTML = `
-            .clear-input--touched:hover + .clear-input-button,
-            .clear-input--touched + .clear-input-button:hover {
-                display: block !important;
+            .clear-input--touched:hover + [data-slot="clear-input-button"],
+            .clear-input--touched + [data-slot="clear-input-button"]:hover {
+                display: inline-flex !important;
             }
         `;
 
