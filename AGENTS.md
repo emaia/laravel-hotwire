@@ -99,6 +99,11 @@ registered here**, or the commands won't see it.
 - Request detection: `request()->wantsTurboStream()`, `request()->wasFromTurboFrame()`
 - DOM helpers: `dom_id($model)`, `dom_class($model)`
 
+## Collaboration Rules
+
+- Do not expose local absolute paths in user-facing messages.
+- Always ask the user to confirm commit, PR, tag and release messages before pushing, publishing or creating them.
+
 ## Release Workflow
 
 ### Commits
