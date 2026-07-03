@@ -1,6 +1,6 @@
 import { afterEach, expect, test } from "bun:test";
 
-import { mountController, wait } from "../../resources/js/helpers/test_stimulus.js";
+import { mountController, mountControllers, wait } from "../../resources/js/helpers/test_stimulus.js";
 import AlertDialogController from "../../resources/js/controllers/alert_dialog_controller.js";
 
 let mounted;
@@ -8,6 +8,8 @@ let mounted;
 afterEach(async () => {
     await mounted?.cleanup();
     mounted = null;
+    document.body.removeAttribute("style");
+    document.body.removeAttribute("class");
 });
 
 const HTML = `
@@ -91,6 +93,46 @@ test.serial("after open, modal gets the visible class and lock-scroll is applied
 
     expect(modal.classList.contains("visible")).toBe(true);
     expect(document.body.classList.contains("overflow-hidden")).toBe(true);
+});
+
+test.serial("lock-scroll compensates for the removed scrollbar gutter", async () => {
+    await mount();
+    setViewportWidth(1000, 980);
+
+    clickWith(document.getElementById("trigger"));
+
+    expect(document.body.classList.contains("overflow-hidden")).toBe(true);
+    expect(document.body.style.paddingRight).toBe("20px");
+
+    mounted.controller.cancel();
+
+    expect(document.body.classList.contains("overflow-hidden")).toBe(false);
+    expect(document.body.style.paddingRight).toBe("");
+});
+
+test.serial("lock-scroll keeps compensation until the last overlay unlocks", async () => {
+    mounted = await mountControllers(
+        "alert-dialog",
+        AlertDialogController,
+        `${HTML}${HTML.replace('id="trigger"', 'id="trigger-two"')}`,
+    );
+    setViewportWidth(1000, 980);
+
+    const [first, second] = mounted.controllers;
+
+    clickWith(document.getElementById("trigger"));
+    expect(document.body.style.paddingRight).toBe("20px");
+
+    clickWith(document.getElementById("trigger-two"));
+    expect(document.body.style.paddingRight).toBe("20px");
+
+    first.cancel();
+    expect(document.body.classList.contains("overflow-hidden")).toBe(true);
+    expect(document.body.style.paddingRight).toBe("20px");
+
+    second.cancel();
+    expect(document.body.classList.contains("overflow-hidden")).toBe(false);
+    expect(document.body.style.paddingRight).toBe("");
 });
 
 // --- confirm() re-clicks the original trigger ---
@@ -278,4 +320,9 @@ test.serial("disconnect detaches the keydown listener and closes an open dialog"
 
 async function mount() {
     mounted = await mountController("alert-dialog", AlertDialogController, HTML);
+}
+
+function setViewportWidth(innerWidth, clientWidth) {
+    Object.defineProperty(window, "innerWidth", { configurable: true, value: innerWidth });
+    Object.defineProperty(document.documentElement, "clientWidth", { configurable: true, value: clientWidth });
 }
