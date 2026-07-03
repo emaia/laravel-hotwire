@@ -27,6 +27,25 @@ it('includes every component and subcomponent in the hw namespace', function () 
     expect($components->pluck('namespace')->unique()->values()->all())->toBe(['hw']);
 });
 
+it('registers renamed components under Laravel Idea derived public names', function () {
+    $metadata = LaravelIdeaMetadata::make();
+    $components = collect($metadata['blade']['components']['list']);
+
+    expect($components->firstWhere('name', 'empty-state'))
+        ->toMatchArray([
+            'name' => 'empty-state',
+            'namespace' => 'hw',
+            'className' => '\Emaia\LaravelHotwire\Components\EmptyState',
+        ])
+        ->and($components->firstWhere('name', 'field.set'))->toMatchArray([
+            'name' => 'field.set',
+            'namespace' => 'hw',
+            'className' => '\Emaia\LaravelHotwire\Components\Field\Set',
+        ])
+        ->and($components->pluck('name')->all())->not->toContain('empty')
+        ->and($components->pluck('name')->all())->not->toContain('field.field-set');
+});
+
 it('omits stimulus controller completions from the package ide json', function () {
     $metadata = LaravelIdeaMetadata::make();
 

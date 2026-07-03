@@ -289,10 +289,10 @@ return [
             'description' => 'Accessible disclosure dropdown — a trigger toggles a menu, with outside-click/Escape dismissal',
             'controllers' => ['dropdown'],
         ],
-        'empty' => [
+        'empty-state' => [
             'class' => EmptyState::class,
             'view' => 'hotwire::component-views.slot',
-            'docs' => 'docs/components/empty.md',
+            'docs' => 'docs/components/empty-state.md',
             'category' => 'display',
             'description' => 'Composable empty state with media, title, description and action content slots',
             'controllers' => [],

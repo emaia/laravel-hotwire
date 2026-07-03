@@ -4,7 +4,7 @@ namespace Emaia\LaravelHotwire\Components\Field;
 
 use Illuminate\View\Component;
 
-class FieldSet extends Component
+class Set extends Component
 {
     public function render()
     {

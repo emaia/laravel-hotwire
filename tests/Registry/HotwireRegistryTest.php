@@ -27,13 +27,17 @@ it('keeps component controller dependencies in the registry', function () {
     ))->toBe(['toast']);
 });
 
-it('points every registered component class, docs and controller source to a real file', function () {
+it('points every registered component class, view, docs and controller source to a real file', function () {
     $registry = HotwireRegistry::make();
     $basePath = $registry->basePath();
 
     foreach ($registry->components() as $component) {
         expect(class_exists($component->class))->toBeTrue();
-        expect(file_exists($basePath.'/'.$component->docs))->toBeTrue();
+
+        $view = str_replace(['hotwire::', '.'], ['resources/views/', '/'], $component->view).'.blade.php';
+
+        expect(file_exists($basePath.'/'.$view))->toBeTrue()
+            ->and(file_exists($basePath.'/'.$component->docs))->toBeTrue();
 
         foreach ($registry->controllersForComponent($component) as $controller) {
             expect(file_exists($controller->sourcePath($basePath)))->toBeTrue();

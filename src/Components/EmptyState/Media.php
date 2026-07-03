@@ -1,6 +1,6 @@
 <?php
 
-namespace Emaia\LaravelHotwire\Components\Empty;
+namespace Emaia\LaravelHotwire\Components\EmptyState;
 
 use Illuminate\View\Component;
 

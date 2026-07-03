@@ -1,14 +1,14 @@
 <?php
 
-namespace Emaia\LaravelHotwire\Components\Empty;
+namespace Emaia\LaravelHotwire\Components\EmptyState;
 
 use Illuminate\View\Component;
 
-class Header extends Component
+class Content extends Component
 {
     public string $tag = 'div';
 
-    public string $slotName = 'empty-header';
+    public string $slotName = 'empty-state-content';
 
     public function render()
     {
