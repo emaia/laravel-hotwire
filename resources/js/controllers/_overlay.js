@@ -5,6 +5,12 @@
 
 import { FocusTrap } from "./_focus_trap.js";
 
+const bodyScrollLock = {
+    count: 0,
+    classes: new Set(),
+    paddingRight: null,
+};
+
 export function createOverlay(controller, {
     modalTarget,
     backdropTarget,
@@ -71,9 +77,7 @@ export function createOverlay(controller, {
         modalTarget.hidden = false;
         modalTarget.setAttribute("data-open", "true");
 
-        if (lockScroll) {
-            document.body.classList.add(...lockScrollClasses);
-        }
+        if (lockScroll) lockBodyScroll(lockScrollClasses);
 
         requestAnimationFrame(() => {
             modalTarget.classList.remove(...hiddenClasses);
@@ -124,9 +128,7 @@ export function createOverlay(controller, {
             }
         }, closeDuration);
 
-        if (lockScroll) {
-            document.body.classList.remove(...lockScrollClasses);
-        }
+        if (lockScroll) unlockBodyScroll();
 
         if (triggerElement && !triggerElement.disabled && typeof triggerElement.focus === "function") {
             triggerElement.focus();
@@ -160,9 +162,7 @@ export function createOverlay(controller, {
         dialogTarget.classList.remove(...dialogHiddenClasses);
         dialogTarget.classList.add(...dialogVisibleClasses);
 
-        if (lockScroll) {
-            document.body.classList.add(...lockScrollClasses);
-        }
+        if (lockScroll) lockBodyScroll(lockScrollClasses);
 
         focusTrap?.activate();
 
@@ -182,4 +182,38 @@ export function createOverlay(controller, {
         close,
         cleanup,
     };
+}
+
+function lockBodyScroll(classes) {
+    if (bodyScrollLock.count === 0) {
+        bodyScrollLock.paddingRight = document.body.style.paddingRight;
+
+        const clientWidth = document.documentElement.clientWidth;
+        const scrollbarWidth = clientWidth > 0 ? Math.max(0, window.innerWidth - clientWidth) : 0;
+        if (scrollbarWidth > 0) {
+            const currentPadding = bodyScrollLock.paddingRight.trim();
+            document.body.style.paddingRight = currentPadding === ""
+                ? `${scrollbarWidth}px`
+                : `calc(${currentPadding} + ${scrollbarWidth}px)`;
+        }
+    }
+
+    for (const className of classes) {
+        bodyScrollLock.classes.add(className);
+    }
+
+    document.body.classList.add(...classes);
+    bodyScrollLock.count++;
+}
+
+function unlockBodyScroll() {
+    if (bodyScrollLock.count === 0) return;
+
+    bodyScrollLock.count--;
+    if (bodyScrollLock.count > 0) return;
+
+    document.body.classList.remove(...bodyScrollLock.classes);
+    bodyScrollLock.classes.clear();
+    document.body.style.paddingRight = bodyScrollLock.paddingRight ?? "";
+    bodyScrollLock.paddingRight = null;
 }
