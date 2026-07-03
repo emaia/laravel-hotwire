@@ -5,9 +5,9 @@ Compact status label for counts, states and inline metadata.
 ## Usage
 
 ```blade
-<x-hwc::badge>New</x-hwc::badge>
-<x-hwc::badge variant="outline">Beta</x-hwc::badge>
-<x-hwc::badge as="a" href="/issues" variant="secondary">12 issues</x-hwc::badge>
+<hw:badge>New</hw:badge>
+<hw:badge variant="outline">Beta</hw:badge>
+<hw:badge as="a" href="/issues" variant="secondary">12 issues</hw:badge>
 ```
 
 ## Props

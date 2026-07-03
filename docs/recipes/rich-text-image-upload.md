@@ -1,6 +1,6 @@
 # Rich text image upload
 
-Wire the `<x-hwc::rich-text>` component to a Laravel endpoint that stores pasted/dropped images
+Wire the `<hw:rich-text>` component to a Laravel endpoint that stores pasted/dropped images
 and returns a public URL the editor can insert. The package doesn't ship a runtime endpoint —
 storage and access control are app concerns — so this recipe is the canonical reference for how
 the pieces fit together.
@@ -22,7 +22,7 @@ your app's choice: where the file lives, how it's served, what authorization pro
 ## Enable image upload on the component
 
 ```blade
-<x-hwc::rich-text
+<hw:rich-text
     name="content"
     placeholder="Write something…"
     :content="$post->content"

@@ -5,26 +5,26 @@ Composable list item primitive for menus, notifications, search results and sett
 ## Usage
 
 ```blade
-<x-hwc::item.group>
-    <x-hwc::item variant="outline">
-        <x-hwc::item.media variant="icon">
-            <x-hwc::icon name="bell" />
-        </x-hwc::item.media>
-        <x-hwc::item.content>
-            <x-hwc::item.title>Notifications</x-hwc::item.title>
-            <x-hwc::item.description>Manage delivery preferences.</x-hwc::item.description>
-        </x-hwc::item.content>
-        <x-hwc::item.actions>
-            <x-hwc::badge variant="secondary">New</x-hwc::badge>
-        </x-hwc::item.actions>
-    </x-hwc::item>
+<hw:item.group>
+    <hw:item variant="outline">
+        <hw:item.media variant="icon">
+            <hw:icon name="bell" />
+        </hw:item.media>
+        <hw:item.content>
+            <hw:item.title>Notifications</hw:item.title>
+            <hw:item.description>Manage delivery preferences.</hw:item.description>
+        </hw:item.content>
+        <hw:item.actions>
+            <hw:badge variant="secondary">New</hw:badge>
+        </hw:item.actions>
+    </hw:item>
 
-    <x-hwc::item.separator />
+    <hw:item.separator />
 
-    <x-hwc::item as="a" href="/settings/profile" size="sm">
+    <hw:item as="a" href="/settings/profile" size="sm">
         Profile settings
-    </x-hwc::item>
-</x-hwc::item.group>
+    </hw:item>
+</hw:item.group>
 ```
 
 Use `as="a"`, `as="button"` or another tag and pass attributes directly to the item when it needs a different root element.

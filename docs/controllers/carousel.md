@@ -14,7 +14,7 @@ Stimulus events for integration with other controllers, and cleans itself up on 
 
 - `embla-carousel` `^8.6.0` — install it yourself: `bun add embla-carousel` (or `npm install embla-carousel`).
 
-> `hotwire:check` detects the carousel via the `<x-hwc::carousel>` component and via a raw `data-controller="carousel"`,
+> `hotwire:check` detects the carousel via the `<hw:carousel>` component and via a raw `data-controller="carousel"`,
 > and `--fix` adds the `embla-carousel` dependency. (A subclass under your own identifier is your code — install
 > `embla-carousel` yourself; it's pulled in transitively by the published `carousel_controller.js` you import.)
 
@@ -136,10 +136,10 @@ Use it with the component — subclass values pass through freely since the comp
 `data-{identifier}-*` prefixes:
 
 ```blade
-<x-hwc::carousel controller="gallery" data-gallery-delay-value="6000">
+<hw:carousel controller="gallery" data-gallery-delay-value="6000">
     <div>slide 1</div>
     <div>slide 2</div>
-</x-hwc::carousel>
+</hw:carousel>
 ```
 
 Your subclass is auto-registered under its filename (`gallery`), and its plugin imports load **lazily with it** —
@@ -187,7 +187,7 @@ and per-slide sizing/gap through two custom properties (the "Embla way"):
 | `--carousel-slide-size`    | `100%`  | Flex basis of each slide (`50%` → two-per-view, `33.333%` → three, etc.) |
 | `--carousel-slide-spacing` | `0px`   | Gap between slides (applied via the padding method, loop/RTL-safe)       |
 
-Set them on the carousel root (the `<x-hwc::carousel>` component does this from its `slideSize`/`slideSpacing` props):
+Set them on the carousel root (the `<hw:carousel>` component does this from its `slideSize`/`slideSpacing` props):
 
 ```html
 

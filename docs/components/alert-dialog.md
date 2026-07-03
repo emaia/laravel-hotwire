@@ -9,9 +9,9 @@ The default slot **is** the trigger — anything inside the component is wrapped
 button uses the `default` variant by default:
 
 ```html
-<x-hwc::alert-dialog title="Continue?" message="This will proceed.">
+<hw:alert-dialog title="Continue?" message="This will proceed.">
     <button type="button">Continue</button>
-</x-hwc::alert-dialog>
+</hw:alert-dialog>
 ```
 
 ## Destructive action
@@ -19,27 +19,27 @@ button uses the `default` variant by default:
 Use `confirm-variant="destructive"` when the confirmed action is destructive:
 
 ```html
-<x-hwc::alert-dialog
+<hw:alert-dialog
     title="Delete item?"
     message="This action cannot be undone."
     confirm-label="Delete"
     confirm-variant="destructive"
 >
     <button type="button">Delete</button>
-</x-hwc::alert-dialog>
+</hw:alert-dialog>
 ```
 
 ## With Turbo method
 
 ```html
-<x-hwc::alert-dialog
+<hw:alert-dialog
     title="Delete item?"
     message="This action cannot be undone."
     confirm-label="Delete"
     confirm-variant="destructive"
 >
     <a href="/items/1" data-turbo-method="delete">Delete</a>
-</x-hwc::alert-dialog>
+</hw:alert-dialog>
 ```
 
 ## Rich body content
@@ -47,7 +47,7 @@ Use `confirm-variant="destructive"` when the confirmed action is destructive:
 When `message` isn't enough — lists of consequences, multiple paragraphs, embedded links — use the `body` slot:
 
 ```html
-<x-hwc::alert-dialog title="Archive project?" message="This will hide the project from the dashboard.">
+<hw:alert-dialog title="Archive project?" message="This will hide the project from the dashboard.">
     <button type="button">Archive</button>
 
     <x-slot:body>
@@ -57,7 +57,7 @@ When `message` isn't enough — lists of consequences, multiple paragraphs, embe
             <li>Restoring takes one click from the archive view.</li>
         </ul>
     </x-slot:body>
-</x-hwc::alert-dialog>
+</hw:alert-dialog>
 ```
 
 The `body` slot renders below `message` and above the action buttons.
@@ -68,7 +68,7 @@ Animation speed, scroll lock, and click-outside behavior are exposed as Blade pr
 `data-*-value` attributes:
 
 ```html
-<x-hwc::alert-dialog
+<hw:alert-dialog
     title="Are you sure?"
     :open-duration="500"
     :close-duration="100"
@@ -76,7 +76,7 @@ Animation speed, scroll lock, and click-outside behavior are exposed as Blade pr
     :close-on-click-outside="false"
 >
     <button type="button">Proceed</button>
-</x-hwc::alert-dialog>
+</hw:alert-dialog>
 ```
 
 ## Props

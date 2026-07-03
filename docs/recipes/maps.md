@@ -1,6 +1,6 @@
 # Maps — three patterns
 
-`<x-hwc::map>` covers the 90% case of "show a pin on a map" with very little code. This recipe walks through the three common patterns: inline markers, a GeoJSON endpoint, and a subclass with custom tiles and click handlers.
+`<hw:map>` covers the 90% case of "show a pin on a map" with very little code. This recipe walks through the three common patterns: inline markers, a GeoJSON endpoint, and a subclass with custom tiles and click handlers.
 
 ## Pattern 1 — Pin at an address
 
@@ -8,7 +8,7 @@ The simplest case: known coordinates, single marker, default OSM tiles.
 
 ```blade
 {{-- show.blade.php --}}
-<x-hwc::map
+<hw:map
     :center="[$store->lat, $store->lng]"
     :zoom="14"
     :markers="[[$store->lat, $store->lng, $store->name]]"
@@ -21,7 +21,7 @@ That's it. The marker shows a popup with the store name on click.
 For multiple known points (say, a list of branches), pass an array:
 
 ```blade
-<x-hwc::map
+<hw:map
     :center="[-23.5505, -46.6333]"
     :zoom="11"
     :markers="$stores->map(fn (\$s) => [\$s->lat, \$s->lng, \$s->name])->all()"
@@ -62,7 +62,7 @@ Route::get('/api/incidents', function () {
 ### Blade
 
 ```blade
-<x-hwc::map url="/api/incidents" height="500px" />
+<hw:map url="/api/incidents" height="500px" />
 ```
 
 The map renders with no markers initially, fetches the URL after init, and adds the GeoJSON layer when the response lands. If the endpoint fails the map still shows; the error is logged to `console.error`.
@@ -110,7 +110,7 @@ export default class extends MapController {
 ### Blade — wire the swap
 
 ```blade
-<x-hwc::map
+<hw:map
     controller="store-locator"
     height="500px"
     data-controller="store-locator pin-form"

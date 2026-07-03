@@ -5,9 +5,9 @@ Inline SVG icon from the embedded Lucide subset.
 ## Usage
 
 ```blade
-<x-hwc::icon name="check" />
-<x-hwc::icon name="x" class="w-6 h-6" />
-<x-hwc::icon name="search" aria-label="Search" />
+<hw:icon name="check" />
+<hw:icon name="x" class="w-6 h-6" />
+<hw:icon name="search" aria-label="Search" />
 ```
 
 ## Available Icons

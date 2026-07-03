@@ -61,7 +61,7 @@
             </div>
 
             <div data-slot="alert-dialog-footer">
-                <x-hwc::button
+                <hw:button
                     slot-name="alert-dialog-cancel"
                     type="button"
                     data-action="alert-dialog#cancel"
@@ -69,8 +69,8 @@
                     class="{{ $cancelClass }}"
                 >
                     {{ $cancelLabel }}
-                </x-hwc::button>
-                <x-hwc::button
+                </hw:button>
+                <hw:button
                     slot-name="alert-dialog-action"
                     type="button"
                     data-action="alert-dialog#confirm"
@@ -78,7 +78,7 @@
                     class="{{ $confirmClass }}"
                 >
                     {{ $confirmLabel }}
-                </x-hwc::button>
+                </hw:button>
             </div>
         </div>
     </div>

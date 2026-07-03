@@ -12,7 +12,7 @@ Flat (non-associative) options arrays are automatically normalized: `['main', 'd
 ## Quick example
 
 ```blade
-<x-hwc::checkbox-group
+<hw:checkbox-group
     name="user_ids[]"
     :options="$users->pluck('name', 'id')->toArray()"
     select-all
@@ -43,8 +43,8 @@ automatically when missing:
 
 ```blade
 {{-- These render identically --}}
-<x-hwc::checkbox-group name="ids" :options="$opts" />
-<x-hwc::checkbox-group name="ids[]" :options="$opts" />
+<hw:checkbox-group name="ids" :options="$opts" />
+<hw:checkbox-group name="ids[]" :options="$opts" />
 ```
 
 Both produce `<input ... name="ids[]" ...>`. In debug mode (`APP_DEBUG=true`, non-testing env), passing `name="ids"`
@@ -64,7 +64,7 @@ The select-all checkbox gets `id="{baseId}-all"`.
 ## Without select-all
 
 ```blade
-<x-hwc::checkbox-group
+<hw:checkbox-group
     name="roles[]"
     :options="['admin' => 'Admin', 'editor' => 'Editor', 'viewer' => 'Viewer']"
     :selected="$user->roles ?? []"
@@ -80,7 +80,7 @@ When `select-all` is enabled, the wrapper gets `data-controller="checkbox-select
 controller handles indeterminate state automatically.
 
 ```blade
-<x-hwc::checkbox-group
+<hw:checkbox-group
     name="tags[]"
     :options="[1 => 'Laravel', 2 => 'Hotwire', 3 => 'Stimulus']"
     select-all
@@ -93,7 +93,7 @@ controller handles indeterminate state automatically.
 Non-associative arrays are normalized, so values serve as both keys and labels:
 
 ```blade
-<x-hwc::checkbox-group
+<hw:checkbox-group
     name="branchs[]"
     :options="['main', 'dev', 'next']"
     :selected="['main', 'dev']"
@@ -102,14 +102,14 @@ Non-associative arrays are normalized, so values serve as both keys and labels:
 
 This renders `value="main"`, `value="dev"`, `value="next"` — not `value="0"`, `value="1"`, `value="2"`.
 
-## Inheriting from `<x-hwc::field>`
+## Inheriting from `<hw:field>`
 
-When inside `<x-hwc::field>`, `name`, `id`, and `errorKey` are inherited via `@aware`:
+When inside `<hw:field>`, `name`, `id`, and `errorKey` are inherited via `@aware`:
 
 ```blade
-<x-hwc::field name="roles[]" label="Roles">
-    <x-hwc::checkbox-group :options="[1 => 'Admin', 2 => 'Editor']" />
-</x-hwc::field>
+<hw:field name="roles[]" label="Roles">
+    <hw:checkbox-group :options="[1 => 'Admin', 2 => 'Editor']" />
+</hw:field>
 ```
 
 ## Disable indeterminate state
@@ -118,7 +118,7 @@ The select-all checkbox shows an indeterminate (dash) state when some — but no
 behavior and only toggle between fully checked and unchecked:
 
 ```blade
-<x-hwc::checkbox-group
+<hw:checkbox-group
     name="tags[]"
     :options="[1 => 'Laravel', 2 => 'Hotwire']"
     select-all

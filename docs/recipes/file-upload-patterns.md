@@ -1,6 +1,6 @@
 # File upload patterns
 
-Five real-world patterns for the [`<x-hwc::file-upload>`](../components/file-upload.md) component
+Five real-world patterns for the [`<hw:file-upload>`](../components/file-upload.md) component
 plus the [`file-upload`](../controllers/file-upload.md) Stimulus controller, ordered from simplest
 to most stream-driven. Each example assumes the package's defaults — `@deltablot/dropzone` is
 installed, `dropzone.css` is bundled, and the upload endpoint lives in your app.
@@ -17,7 +17,7 @@ Pin uploaded files to a temporary collection and claim them on the final submit.
 returns the media UUID; `response-key="uuid"` writes that into the hidden input.
 
 ```blade
-<x-hwc::file-upload
+<hw:file-upload
     name="avatar_uuid"
     url="{{ route('uploads.store') }}"
     response-key="uuid"
@@ -62,7 +62,7 @@ with a "pending" card; when the job finishes, your broadcaster delivers a second
 replaces the pending card with the final thumb.
 
 ```blade
-<x-hwc::file-upload
+<hw:file-upload
     name="attachments"
     url="{{ route('uploads.store') }}"
     multiple
@@ -106,7 +106,7 @@ public function handle(): void
     @if ($upload->thumbnail_path)
         <img data-controller="lazy-image" data-lazy-image-src-value="{{ Storage::url($upload->thumbnail_path) }}" alt="">
     @else
-        <x-hwc::spinner /> Processing…
+        <hw:spinner /> Processing…
     @endif
     <input type="hidden" name="attachments[]" value="{{ $upload->id }}">
 </li>
@@ -124,9 +124,9 @@ also stream-driven via the package's `remote-form` controller — no app-side gl
 
 ```blade
 {{-- gallery.blade.php --}}
-<x-hwc::form action="{{ route('gallery.save') }}" method="post">
-    <x-hwc::field name="photos" label="Add photos">
-        <x-hwc::file-upload
+<hw:form action="{{ route('gallery.save') }}" method="post">
+    <hw:field name="photos" label="Add photos">
+        <hw:file-upload
             name="photos"
             url="{{ route('gallery.upload') }}"
             accept="image/*"
@@ -135,12 +135,12 @@ also stream-driven via the package's `remote-form` controller — no app-side gl
             :preview="false"
             :emit-hidden="false"
         />
-    </x-hwc::field>
+    </hw:field>
 
     <ul id="photo-gallery" class="gallery"></ul>
 
     <button type="submit">Save gallery</button>
-</x-hwc::form>
+</hw:form>
 ```
 
 ```php
@@ -231,22 +231,22 @@ replaces the whole card on each upload, so there's only ever one hidden in the f
 
 ```blade
 {{-- profile/edit.blade.php --}}
-<x-hwc::form action="{{ route('profile.update') }}" method="put">
+<hw:form action="{{ route('profile.update') }}" method="put">
     {{-- The current state is server-rendered. The hidden lives inside. --}}
     @include('profile.avatar-card', ['user' => $user])
 
-    <x-hwc::field name="avatar_token" label="Change picture">
-        <x-hwc::file-upload
+    <hw:field name="avatar_token" label="Change picture">
+        <hw:file-upload
             name="avatar_token"
             url="{{ route('profile.avatar.upload') }}"
             accept="image/*"
             :turbo-stream="true"
             :emit-hidden="false"
         />
-    </x-hwc::field>
+    </hw:field>
 
     <button type="submit">Save</button>
-</x-hwc::form>
+</hw:form>
 ```
 
 ```blade
@@ -317,9 +317,9 @@ and a subclass for the SortableJS + metadata wiring. No new package code require
 ### Blade
 
 ```blade
-<x-hwc::form action="{{ route('gallery.store') }}">
-    <x-hwc::field name="attachments" label="Images">
-        <x-hwc::file-upload
+<hw:form action="{{ route('gallery.store') }}">
+    <hw:field name="attachments" label="Images">
+        <hw:file-upload
             controller="media-upload"
             name="attachments"
             url="{{ route('uploads.store') }}"
@@ -349,11 +349,11 @@ and a subclass for the SortableJS + metadata wiring. No new package code require
                     <div data-dz-uploadprogress class="absolute bottom-0 left-0 h-1 bg-blue-500" style="width:0"></div>
                 </div>
             </x-slot:preview_template>
-        </x-hwc::file-upload>
-    </x-hwc::field>
+        </hw:file-upload>
+    </hw:field>
 
     <button type="submit">Save gallery</button>
-</x-hwc::form>
+</hw:form>
 ```
 
 The slot is a normal Blade fragment — Tailwind classes get JIT-scanned as usual. The two
@@ -481,7 +481,7 @@ public function store(Request $request)
 ```
 
 Validation errors come back as `attachments.0.name`, `attachments.1.token`, etc. Aggregate
-them under the field with `<x-hwc::field.error name="attachments" />` (matches `attachments.*`), or
+them under the field with `<hw:field.error name="attachments" />` (matches `attachments.*`), or
 render per-card with explicit `error-key`.
 
 ### Edit forms — pre-existing media
@@ -492,7 +492,7 @@ subclass treats them identically to newly-uploaded files — Sortable lifts them
 indexes them:
 
 ```blade
-<x-hwc::file-upload controller="media-upload" name="attachments" url="..." multiple :emit-hidden="false">
+<hw:file-upload controller="media-upload" name="attachments" url="..." multiple :emit-hidden="false">
     @foreach ($gallery->items as $item)
         <div class="dz-preview dz-file-preview flex items-center gap-4 p-3 border-b bg-white">
             <button type="button" data-app-drag class="cursor-move text-gray-400">≡</button>
@@ -513,10 +513,10 @@ indexes them:
     <x-slot:preview_template>
         {{-- same card markup as the create form --}}
     </x-slot:preview_template>
-</x-hwc::file-upload>
+</hw:file-upload>
 ```
 
-The default slot of `<x-hwc::file-upload>` is rendered inside the wrapper — the loop above
+The default slot of `<hw:file-upload>` is rendered inside the wrapper — the loop above
 goes there, before the `<x-slot:preview_template>` named slot. On submit, both pre-existing
 and newly-uploaded cards send `attachments[N][token]` and `attachments[N][name]` in the same
 shape; the server treats them uniformly.

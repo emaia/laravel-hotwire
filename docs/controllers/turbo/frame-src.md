@@ -30,14 +30,14 @@ When the form is submitted inside the frame and validation fails, the `X-Turbo-F
 
 ## With the form component
 
-If you're using `<x-hwc::form>`, enable the `track-frame-src` prop which includes a server-side hidden input with the current URL (same purpose, no JS required):
+If you're using `<hw:form>`, enable the `track-frame-src` prop which includes a server-side hidden input with the current URL (same purpose, no JS required):
 
 ```blade
 <turbo-frame id="content" src="/posts/create">
-    <x-hwc::form action="/posts" method="post" track-frame-src>
-        <x-hwc::input name="title" />
+    <hw:form action="/posts" method="post" track-frame-src>
+        <hw:input name="title" />
         <button type="submit">Save</button>
-    </x-hwc::form>
+    </hw:form>
 </turbo-frame>
 ```
 

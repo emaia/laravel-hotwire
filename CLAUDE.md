@@ -53,7 +53,7 @@ The complete Hotwire stack for Laravel — Turbo Drive, Turbo Streams, Stimulus 
   Drop the marker when reading `Support\PackageMarker`.
 - Loaded via `@emaia/stimulus-lazy-loader` with Vite's `import.meta.glob`.
 - **Controllers must be mutually compatible.** Blade components stack several controllers on the same element
-  (`<x-hwc::form>` → `auto-submit unsaved-changes clean-query-params`; `<x-hwc::file>` →
+  (`<hw:form>` → `auto-submit unsaved-changes clean-query-params`; `<hw:file>` →
   `file-preserve reset-files` plus the user's own `data-controller`). A controller must therefore never assume it
   owns the element exclusively:
     - Scope DOM reads/writes to `this.element` (and prefer `this.targets`); don't clobber attributes other controllers
@@ -67,7 +67,7 @@ The complete Hotwire stack for Laravel — Turbo Drive, Turbo Streams, Stimulus 
 
 ### Blade Components
 
-- Registered with configurable prefix (default: `hwc`)
+- Registered with configurable prefix (default: `hw`)
 - See all available components with `php artisan hotwire:components`
 - Components that encapsulate a Stimulus controller merge user-provided `data-controller` with internal controllers
   on the element. User-provided `data-{identifier}-*` for internal controllers active via props is filtered to prevent

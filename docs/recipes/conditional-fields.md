@@ -1,7 +1,7 @@
 # Conditional fields
 
 Five real-world form patterns built on the `conditional-fields` controller plus the
-`<x-hwc::conditional-field>` component. Each example puts `data-controller="conditional-fields"` on
+`<hw:conditional-field>` component. Each example puts `data-controller="conditional-fields"` on
 the form and lets the component handle the rest — single source of truth for every show/hide
 rule, no client/server drift.
 
@@ -14,8 +14,8 @@ A feedback form with a `reason` select. Some reasons need a free-text follow-up;
 <form data-controller="conditional-fields" action="/feedback" method="POST">
     @csrf
 
-    <x-hwc::field name="reason" label="What's this about?">
-        <x-hwc::select
+    <hw:field name="reason" label="What's this about?">
+        <hw:select
             name="reason"
             placeholder="Pick one…"
             :options="[
@@ -25,19 +25,19 @@ A feedback form with a `reason` select. Some reasons need a free-text follow-up;
                 'other'    => 'Other',
             ]"
         />
-    </x-hwc::field>
+    </hw:field>
 
-    <x-hwc::conditional-field :when="['reason' => ['bug', 'feature']]">
-        <x-hwc::field name="details" label="What happened (or what's missing)?">
-            <x-hwc::textarea name="details" rows="4" />
-        </x-hwc::field>
-    </x-hwc::conditional-field>
+    <hw:conditional-field :when="['reason' => ['bug', 'feature']]">
+        <hw:field name="details" label="What happened (or what's missing)?">
+            <hw:textarea name="details" rows="4" />
+        </hw:field>
+    </hw:conditional-field>
 
-    <x-hwc::conditional-field :when="['reason' => 'other']">
-        <x-hwc::field name="other_reason" label="Tell us">
-            <x-hwc::input name="other_reason" />
-        </x-hwc::field>
-    </x-hwc::conditional-field>
+    <hw:conditional-field :when="['reason' => 'other']">
+        <hw:field name="other_reason" label="Tell us">
+            <hw:input name="other_reason" />
+        </hw:field>
+    </hw:conditional-field>
 
     <button type="submit">Send</button>
 </form>
@@ -54,9 +54,9 @@ cascade handles the disable for free.
 
     <fieldset>
         <legend>Billing address</legend>
-        <x-hwc::input name="billing_address"/>
-        <x-hwc::input name="billing_city"/>
-        <x-hwc::input name="billing_zip"/>
+        <hw:input name="billing_address"/>
+        <hw:input name="billing_city"/>
+        <hw:input name="billing_zip"/>
     </fieldset>
 
     <label class="my-4 flex items-center gap-2">
@@ -64,12 +64,12 @@ cascade handles the disable for free.
         Ship to a different address
     </label>
 
-    <x-hwc::conditional-field :when="['ship_different' => ':checked']">
+    <hw:conditional-field :when="['ship_different' => ':checked']">
         <legend>Shipping address</legend>
-        <x-hwc::input name="shipping_address"/>
-        <x-hwc::input name="shipping_city"/>
-        <x-hwc::input name="shipping_zip"/>
-    </x-hwc::conditional-field>
+        <hw:input name="shipping_address"/>
+        <hw:input name="shipping_city"/>
+        <hw:input name="shipping_zip"/>
+    </hw:conditional-field>
 
     <button type="submit">Continue to payment</button>
 </form>
@@ -97,21 +97,21 @@ for Enterprise.
         @endforeach
     </fieldset>
 
-    <x-hwc::conditional-field :when="['plan' => ['pro', 'enterprise']]">
-        <x-hwc::field name="team_size" label="How many seats?">
-            <x-hwc::input type="number" name="team_size" min="1" max="500" />
-        </x-hwc::field>
-    </x-hwc::conditional-field>
+    <hw:conditional-field :when="['plan' => ['pro', 'enterprise']]">
+        <hw:field name="team_size" label="How many seats?">
+            <hw:input type="number" name="team_size" min="1" max="500" />
+        </hw:field>
+    </hw:conditional-field>
 
-    <x-hwc::conditional-field :when="['plan' => 'enterprise']">
+    <hw:conditional-field :when="['plan' => 'enterprise']">
         <legend>Enterprise</legend>
-        <x-hwc::field name="sla_contact" label="Primary contact for SLA negotiation">
-            <x-hwc::input name="sla_contact" type="email"/>
-        </x-hwc::field>
-        <x-hwc::field name="annual_volume" label="Estimated annual API volume">
-            <x-hwc::input type="number" name="annual_volume"/>
-        </x-hwc::field>
-    </x-hwc::conditional-field>
+        <hw:field name="sla_contact" label="Primary contact for SLA negotiation">
+            <hw:input name="sla_contact" type="email"/>
+        </hw:field>
+        <hw:field name="annual_volume" label="Estimated annual API volume">
+            <hw:input type="number" name="annual_volume"/>
+        </hw:field>
+    </hw:conditional-field>
 </form>
 ```
 
@@ -134,17 +134,17 @@ in a single OR rule.
         @endforeach
     </fieldset>
 
-    <x-hwc::conditional-field :when="['score' => ['0', '1', '2', '3', '4', '5', '6']]">
-        <x-hwc::field name="reason_low" label="What's the main reason for that score?">
-            <x-hwc::textarea name="reason_low" rows="3" />
-        </x-hwc::field>
-    </x-hwc::conditional-field>
+    <hw:conditional-field :when="['score' => ['0', '1', '2', '3', '4', '5', '6']]">
+        <hw:field name="reason_low" label="What's the main reason for that score?">
+            <hw:textarea name="reason_low" rows="3" />
+        </hw:field>
+    </hw:conditional-field>
 
-    <x-hwc::conditional-field :when="['score' => ['9', '10']]">
-        <x-hwc::field name="reason_high" label="What's the main reason for that score?">
-            <x-hwc::textarea name="reason_high" rows="3" />
-        </x-hwc::field>
-    </x-hwc::conditional-field>
+    <hw:conditional-field :when="['score' => ['9', '10']]">
+        <hw:field name="reason_high" label="What's the main reason for that score?">
+            <hw:textarea name="reason_high" rows="3" />
+        </hw:field>
+    </hw:conditional-field>
 </form>
 ```
 
@@ -174,29 +174,29 @@ the group.
         @endforeach
     </fieldset>
 
-    <x-hwc::conditional-field :when="['interests' => ['news', 'tips', 'events']]">
-        <x-hwc::field name="cadence" label="How often?">
-            <x-hwc::select
+    <hw:conditional-field :when="['interests' => ['news', 'tips', 'events']]">
+        <hw:field name="cadence" label="How often?">
+            <hw:select
                 name="cadence"
                 :options="['weekly' => 'Weekly', 'monthly' => 'Monthly']"
             />
-        </x-hwc::field>
-    </x-hwc::conditional-field>
+        </hw:field>
+    </hw:conditional-field>
 
-    <x-hwc::conditional-field :when="['interests' => 'events']">
+    <hw:conditional-field :when="['interests' => 'events']">
         <label class="flex items-center gap-2">
             <input type="checkbox" name="webinar_reminders" value="1"
                    @checked(old('webinar_reminders'))/>
             Send me reminders 24h before each event
         </label>
-    </x-hwc::conditional-field>
+    </hw:conditional-field>
 </form>
 ```
 
 ## Edit-form pattern — the `model` prop
 
-`<x-hwc::input>`, `<x-hwc::select>`, and `<x-hwc::textarea>` already merge `old()` with the
-`value` / `selected` prop. Pass the same model to `<x-hwc::conditional-field>` and it evaluates
+`<hw:input>`, `<hw:select>`, and `<hw:textarea>` already merge `old()` with the
+`value` / `selected` prop. Pass the same model to `<hw:conditional-field>` and it evaluates
 `old(field, $model->field)` — the same lookup those fields use internally. Validation retries
 always win over the model fallback.
 
@@ -204,22 +204,22 @@ always win over the model fallback.
 <form data-controller="conditional-fields" action="/messages/{{ $message->id }}" method="POST">
     @csrf @method('PATCH')
 
-    <x-hwc::select
+    <hw:select
         name="reason"
         :options="$reasons"
         :selected="$message->reason"
     />
 
-    <x-hwc::conditional-field :model="$message" :when="['reason' => 'other']">
-        <x-hwc::input name="other_reason" :value="$message->other_reason" />
-    </x-hwc::conditional-field>
+    <hw:conditional-field :model="$message" :when="['reason' => 'other']">
+        <hw:input name="other_reason" :value="$message->other_reason" />
+    </hw:conditional-field>
 </form>
 ```
 
-No `@php` state map, no parallel structures — `<x-hwc::conditional-field>` reads the same
+No `@php` state map, no parallel structures — `<hw:conditional-field>` reads the same
 `old()` lookup the inputs use internally.
 
 ## See also
 
 - [Conditional fields controller](../controllers/conditional-fields.md) — full rule grammar reference.
-- [`<x-hwc::conditional-field>` component](../components/conditional-field.md) — props and edge cases.
+- [`<hw:conditional-field>` component](../components/conditional-field.md) — props and edge cases.

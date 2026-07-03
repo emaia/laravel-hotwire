@@ -59,17 +59,17 @@ attribute keeps working across Turbo navigations.
 
 ## Inside a modal
 
-`<x-hwc::modal>` already wraps frame-loaded content. Add the controller on the form *inside* the
+`<hw:modal>` already wraps frame-loaded content. Add the controller on the form *inside* the
 frame so the right field is focused after the modal opens.
 
 ```blade
-<x-hwc::modal frame="user-edit">
+<hw:modal frame="user-edit">
     {{-- server response into the frame --}}
     <form data-controller="autofocus" action="..." method="POST">
         <input type="text" name="name" autofocus />
         ...
     </form>
-</x-hwc::modal>
+</hw:modal>
 ```
 
 ## Picking the first focusable field

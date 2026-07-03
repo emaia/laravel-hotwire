@@ -13,9 +13,9 @@ controller on the `<a>` — no extra dispatch controller needed.
    data-controller="optimistic--link">
     View details
 
-    <x-hwc::optimistic target="detail" action="update">
+    <hw:optimistic target="detail" action="update">
         <div class="animate-pulse p-4">Loading...</div>
-    </x-hwc::optimistic>
+    </hw:optimistic>
 </a>
 
 <turbo-frame id="detail"></turbo-frame>
@@ -37,7 +37,7 @@ The `remove` target should be the list item wrapper, **not** the link itself:
        data-controller="optimistic--link">
         Dismiss
 
-        <x-hwc::optimistic :target="dom_id($n)" action="remove" />
+        <hw:optimistic :target="dom_id($n)" action="remove" />
     </a>
 </li>
 ```

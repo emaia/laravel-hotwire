@@ -1,6 +1,6 @@
 # Charts
 
-Three real-world patterns for the `<x-hwc::chart>` component plus the `chart` Stimulus
+Three real-world patterns for the `<hw:chart>` component plus the `chart` Stimulus
 controller, ordered from simplest to most extensible. All examples use ECharts 6.x — install
 via `npm install echarts@^6.1.0` or let `php artisan hotwire:check` flag it for you.
 
@@ -29,7 +29,7 @@ moderately sized charts (under ~50KB encoded JSON).
     $totals = $sales->pluck('total')->all();
 @endphp
 
-<x-hwc::chart :option="[
+<hw:chart :option="[
     'title'   => ['text' => 'Sales by month', 'left' => 'center'],
     'tooltip' => ['trigger' => 'axis'],
     'xAxis'   => ['type' => 'category', 'data' => $months],
@@ -51,7 +51,7 @@ point `url` at a dedicated endpoint. The component renders an empty container; t
 fetches and applies on connect.
 
 ```blade
-<x-hwc::chart url="{{ route('charts.sales', ['q' => $quarter]) }}" height="320px" />
+<hw:chart url="{{ route('charts.sales', ['q' => $quarter]) }}" height="320px" />
 ```
 
 ```php
@@ -118,7 +118,7 @@ export default class extends ChartController {
 ```
 
 ```blade
-<x-hwc::chart controller="branded-chart" :option="$option" />
+<hw:chart controller="branded-chart" :option="$option" />
 ```
 
 The defaults apply via a first `chart.setOption(defaults)` call; the user option then merges on
@@ -183,7 +183,7 @@ export default class extends ChartController {
 
 ```blade
 <div>
-    <x-hwc::chart
+    <hw:chart
         controller="sales-drill-chart"
         url="/api/charts/sales"
         :data-sales-drill-chart-detail-url-value="route('charts.sales.detail')"
@@ -225,7 +225,7 @@ runs the morph in reverse.
   chart. See the [controller doc](../controllers/chart.md#updating-from-another-controller--outlets).
 - **Live updates via Turbo Stream** — emit a `replace` stream targeting the chart wrapper; the
   controller disposes and re-initializes on disconnect/connect.
-- **Multiple charts on one page** — every `<x-hwc::chart>` instance is independent; share
+- **Multiple charts on one page** — every `<hw:chart>` instance is independent; share
   configuration via a subclass `defaultOption()`.
 
 ## See also

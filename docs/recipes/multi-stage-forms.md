@@ -331,7 +331,7 @@ deleting.
 
 ## What this recipe doesn't ship
 
-There is no `<x-hwc::wizard>` component. The shape of a wizard varies enough (linear vs branching,
+There is no `<hw:wizard>` component. The shape of a wizard varies enough (linear vs branching,
 draft vs session, validate-as-you-go vs at-the-end, custom progress UI) that a generic component
 would either be too rigid or too configurable to be useful. The Turbo Frame + draft model gives you
 90% of the value with primitives you already have.

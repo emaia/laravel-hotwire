@@ -3,7 +3,7 @@
 The [`carousel`](../controllers/carousel.md) controller is a snap engine, not just a way to display photos.
 The recipes below use it for things that are **not** galleries — multi-step forms, server-driven signage,
 swipe decks and real-time presence. Each one composes with the rest of the package (Turbo Streams,
-`<x-hwc::optimistic>`, Mercure/SSE) instead of inventing a parallel framework.
+`<hw:optimistic>`, Mercure/SSE) instead of inventing a parallel framework.
 
 For the day-to-day "I want a gallery" patterns (thumbnails, lightbox, infinite, deep-link, analytics) see
 [carousel-patterns.md](./carousel-patterns.md).
@@ -211,7 +211,7 @@ Side effects worth knowing:
 ## Swipe deck with optimistic streams
 
 Tinder/Bumble-style decision UI. Each card is a `like`/`dislike` Turbo form; submitting either action
-optimistically removes the card via `<x-hwc::optimistic>`, the carousel re-measures (Embla's `watchSlides`)
+optimistically removes the card via `<hw:optimistic>`, the carousel re-measures (Embla's `watchSlides`)
 and the next card is naturally in view. The server confirms the decision asynchronously and rejects with a
 flash if the action wasn't allowed.
 
@@ -244,14 +244,14 @@ flash if the action wasn't allowed.
         <form method="POST" action="{{ route('deck.dispatch', $candidate) }}" data-turbo-frame="_top">
             @csrf
             <input type="hidden" name="decision" value="pass">
-            <x-hwc::optimistic action="remove" target="{{ dom_id($candidate) }}" />
+            <hw:optimistic action="remove" target="{{ dom_id($candidate) }}" />
             <button type="submit" aria-label="Pass">👎</button>
         </form>
 
         <form method="POST" action="{{ route('deck.dispatch', $candidate) }}" data-turbo-frame="_top">
             @csrf
             <input type="hidden" name="decision" value="like">
-            <x-hwc::optimistic action="remove" target="{{ dom_id($candidate) }}" />
+            <hw:optimistic action="remove" target="{{ dom_id($candidate) }}" />
             <button type="submit" aria-label="Like">❤️</button>
         </form>
     </div>
@@ -280,7 +280,7 @@ public function dispatchDecision(Request $request, Candidate $candidate)
 
 Why this combination works:
 
-- **Optimistic removes the card instantly** — `<x-hwc::optimistic action="remove" target="...">` dispatches
+- **Optimistic removes the card instantly** — `<hw:optimistic action="remove" target="...">` dispatches
   before the request leaves, so the swipe feels native even on slow networks.
 - **Carousel re-measures automatically** — Embla's `watchSlides` MutationObserver picks up the removed node;
   the next card slides into the snap position with the configured duration. No imperative `scrollNext` call.
@@ -642,9 +642,9 @@ what this stack already provides.
 
     {{-- Optimistic morph: replace the live editor with this snapshot's HTML
          before the round-trip even leaves. --}}
-    <x-hwc::optimistic target="editor" action="replace">
+    <hw:optimistic target="editor" action="replace">
         {!! $snapshot->html !!}
-    </x-hwc::optimistic>
+    </hw:optimistic>
 
     <button type="submit"
             class="block w-24 h-32 border rounded overflow-hidden hover:ring-2 hover:ring-blue-500 bg-white">
@@ -763,7 +763,7 @@ Why this composition is more than the sum of its parts:
   engine + visual thumbnails + horizontal scroll are exactly what a "scrubbable history" wants. `align: 'end'`
   + `dragFree: true` lets the user flick back through the timeline with a thumb gesture, then snap forward
   again.
-- **Optimistic restore feels instant** — `<x-hwc::optimistic target="editor" action="replace">` swaps the
+- **Optimistic restore feels instant** — `<hw:optimistic target="editor" action="replace">` swaps the
   live editor's HTML in the same tick the user clicks. The server's confirming Turbo Stream `replace` is
   a no-op visually if the optimistic morph already matched — Turbo's morph reconciles on identical DOM.
 - **Multiplayer audit for free** — the channel name `history.{document}` is per-document, not per-user.

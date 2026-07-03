@@ -5,7 +5,7 @@ Animated SVG spinner. Pure HTML/CSS, no JavaScript.
 ## Basic usage
 
 ```blade
-<x-hwc::spinner/>
+<hw:spinner/>
 ```
 
 ## Attributes
@@ -14,7 +14,7 @@ The component renders an `<svg role="status" aria-label="Loading">` with `class=
 merged into the `<svg>`:
 
 ```blade
-<x-hwc::spinner class="text-blue-500 size-4" id="my-spinner"/>
+<hw:spinner class="text-blue-500 size-4" id="my-spinner"/>
 ```
 
 ## Showing the spinner conditionally
@@ -25,7 +25,7 @@ to `aria-busy` on a parent element:
 ```blade
 <button type="submit" aria-busy="false">
     Save
-    <x-hwc::spinner class="hidden aria-busy:block"/>
+    <hw:spinner class="hidden aria-busy:block"/>
 </button>
 ```
 

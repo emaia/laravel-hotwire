@@ -1,7 +1,7 @@
 # Toast
 
 Fires a toast via [Sonner](https://sonner.emilkowal.ski/) on connect and removes the element from the DOM. This is the
-low-level controller used by `<x-hwc::flash-message>` and can also be rendered directly when needed.
+low-level controller used by `<hw:flash-message>` and can also be rendered directly when needed.
 
 **Identifier:** `toast`  
 **Install:** `php artisan hotwire:controllers toast`
@@ -60,7 +60,7 @@ return turbo_stream()
     HTML);
 ```
 
-For session flash messages, use [`<x-hwc::flash-message>`](../../components/flash-message.md), which reads the
+For session flash messages, use [`<hw:flash-message>`](../../components/flash-message.md), which reads the
 supported Laravel session keys and renders this controller for you.
 
 ## Available types

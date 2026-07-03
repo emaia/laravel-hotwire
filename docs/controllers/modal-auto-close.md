@@ -1,7 +1,7 @@
 # Modal Auto Close
 
 Self-removing controller that closes the nearest `modal` ancestor on connect. Designed to be appended to an
-open `<x-hwc::modal>` via Turbo Stream so the server can dismiss the modal after a successful action.
+open `<hw:modal>` via Turbo Stream so the server can dismiss the modal after a successful action.
 
 **Identifier:** `modal-auto-close`  
 **Install:** `php artisan hotwire:controllers modal-auto-close`
@@ -33,9 +33,9 @@ return turbo_stream()->append('edit-post', '<span data-controller="modal-auto-cl
 
 ```html
 <!-- The modal must have a stable id matching the stream target -->
-<x-hwc::modal id="edit-post">
+<hw:modal id="edit-post">
     {{-- ... --}}
-</x-hwc::modal>
+</hw:modal>
 ```
 
 When the stream is processed, the `<span>` lands inside the modal, the controller connects, the modal
@@ -46,10 +46,10 @@ closes, and the `<span>` removes itself.
 Rarely useful on its own (you would just call `modal#close` from a button), but valid:
 
 ```html
-<x-hwc::modal id="edit-post">
+<hw:modal id="edit-post">
     {{-- ... --}}
     <span data-controller="modal-auto-close"></span>
-</x-hwc::modal>
+</hw:modal>
 ```
 
 The modal closes as soon as Stimulus connects.

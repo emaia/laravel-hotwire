@@ -83,7 +83,7 @@ controller.focus();           // Move the cursor into the editor
 ```
 
 This is the minimum: a hidden textarea for the form payload and a target div for Tiptap. The
-[`<x-hwc::rich-text>`](../components/rich-text.md) Blade component scaffolds this for you and pairs
+[`<hw:rich-text>`](../components/rich-text.md) Blade component scaffolds this for you and pairs
 it with the default toolbar.
 
 ## Placeholder

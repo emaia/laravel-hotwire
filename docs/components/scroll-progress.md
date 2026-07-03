@@ -7,7 +7,7 @@ Fixed the progress bar that fills based on the user's scroll position.
 Render it once in your layout:
 
 ```blade
-<x-hwc::scroll-progress />
+<hw:scroll-progress />
 ```
 
 The component renders a fixed top bar and wires the `scroll-progress` Stimulus controller.
@@ -17,7 +17,7 @@ The component renders a fixed top bar and wires the `scroll-progress` Stimulus c
 Use regular Blade attributes for visual customization:
 
 ```blade
-<x-hwc::scroll-progress class="h-2 bg-blue-500" />
+<hw:scroll-progress class="h-2 bg-blue-500" />
 ```
 
 The component sets `data-controller="scroll-progress"` itself. Passing a `data-controller` attribute is ignored so the
@@ -28,13 +28,13 @@ required controller binding cannot be replaced accidentally.
 The scroll listener is throttled by default:
 
 ```blade
-<x-hwc::scroll-progress :throttle-delay="50" />
+<hw:scroll-progress :throttle-delay="50" />
 ```
 
 Set it to `0` to disable throttling:
 
 ```blade
-<x-hwc::scroll-progress :throttle-delay="0" />
+<hw:scroll-progress :throttle-delay="0" />
 ```
 
 ## Props

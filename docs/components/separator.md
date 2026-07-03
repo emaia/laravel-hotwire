@@ -5,11 +5,11 @@ Horizontal or vertical rule for separating content sections.
 ## Usage
 
 ```blade
-<x-hwc::separator />
+<hw:separator />
 
 <div class="flex h-6 gap-4">
     <span>Left</span>
-    <x-hwc::separator orientation="vertical" />
+    <hw:separator orientation="vertical" />
     <span>Right</span>
 </div>
 ```

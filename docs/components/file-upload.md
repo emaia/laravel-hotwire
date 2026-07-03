@@ -3,23 +3,23 @@
 **[Dropzone](https://github.com/NicolasCARPi/dropzone) wrapper** — drag-and-drop, multi-file queue,
 client-side preview and progress, with the upload endpoint, validation, storage and cleanup all
 **app-side**. Renders a `<div>` mounted on the [`file-upload`](../controllers/file-upload.md)
-Stimulus controller. Pairs with `<x-hwc::field>`, `<x-hwc::field.error>`, and Laravel's `old()` /
+Stimulus controller. Pairs with `<hw:field>`, `<hw:field.error>`, and Laravel's `old()` /
 validation redirect-back out of the box, and ships native Turbo Stream response support so
 server-rendered cards just work.
 
 ## Quick example
 
 ```blade
-<x-hwc::form action="{{ route('profile.update') }}" method="put">
-    <x-hwc::field name="avatar" label="Profile picture">
-        <x-hwc::file-upload url="{{ route('uploads.store') }}" accept="image/*" />
-    </x-hwc::field>
+<hw:form action="{{ route('profile.update') }}" method="put">
+    <hw:field name="avatar" label="Profile picture">
+        <hw:file-upload url="{{ route('uploads.store') }}" accept="image/*" />
+    </hw:field>
 
     <button type="submit">Save</button>
-</x-hwc::form>
+</hw:form>
 ```
 
-`<x-hwc::field>` renders the label and auto-emits the `<x-hwc::field.error>` block under the slot, so a
+`<hw:field>` renders the label and auto-emits the `<hw:field.error>` block under the slot, so a
 field-wrapped file-upload reads as a single block.
 
 The endpoint receives one `multipart/form-data` request per file under the field name `file`
@@ -66,7 +66,7 @@ package will leave your customised version alone on subsequent `hotwire:controll
 | `url`              | `string`         | *(required)*     | Endpoint that accepts a `multipart/form-data` POST per file and returns JSON (or a Turbo Stream — see below). Throws `InvalidArgumentException` when missing |
 | `name`             | `string\|null`   | `null`           | Form field name carried in the hidden input. With `multiple`, `[]` is appended automatically. Also drives `id`, `errorKey` and the `aria-describedby` link |
 | `value`            | `mixed`          | `null`           | Initial value(s) for the field. String token in single mode, array of tokens in multi. Overridden by `old()` after a validation-failure redirect-back |
-| `id`               | `string\|null`   | `null`           | Overrides the auto-derived id (`FieldKey::toId($name)`). Falls back to `hwc-file-upload-{uniqid}` when name is absent |
+| `id`               | `string\|null`   | `null`           | Overrides the auto-derived id (`FieldKey::toId($name)`). Falls back to `hw-file-upload-{uniqid}` when name is absent |
 | `errorKey`         | `string\|null`   | `null`           | Overrides the auto-derived error key. Use when validation errors live under a different path than the field name |
 | `accept`           | `string\|null`   | `null`           | MIME pattern or extension list (`"image/*"`, `".pdf,.csv"`) — forwarded to Dropzone's `acceptedFiles`     |
 | `maxSizeBytes`     | `int\|null`      | `null`           | Per-file size limit. Converted to MB before reaching Dropzone (`maxFilesize`)                            |
@@ -92,7 +92,7 @@ the props above instead.
 ## Single file
 
 ```blade
-<x-hwc::file-upload name="avatar" url="{{ route('uploads.store') }}" accept="image/*" />
+<hw:file-upload name="avatar" url="{{ route('uploads.store') }}" accept="image/*" />
 ```
 
 ```php
@@ -109,7 +109,7 @@ The submit handler later resolves the token (read the temp path, move to permane
 ## Multiple files
 
 ```blade
-<x-hwc::file-upload
+<hw:file-upload
     name="attachments"
     url="{{ route('uploads.store') }}"
     :delete-url="route('uploads.destroy', ':token')"
@@ -131,22 +131,22 @@ user's most recent upload reference is preserved without re-upload.
 
 ```blade
 {{-- Editing a user that already has an avatar token --}}
-<x-hwc::field name="avatar_token" label="Profile picture">
-    <x-hwc::file-upload
+<hw:field name="avatar_token" label="Profile picture">
+    <hw:file-upload
         url="{{ route('uploads.store') }}"
         :value="$user->avatar_token"
         accept="image/*"
     />
-</x-hwc::field>
+</hw:field>
 
 {{-- Editing a post that already has attachments --}}
-<x-hwc::field name="attachments" label="Attachments">
-    <x-hwc::file-upload
+<hw:field name="attachments" label="Attachments">
+    <hw:file-upload
         url="{{ route('uploads.store') }}"
         :value="$post->attachment_tokens"
         multiple
     />
-</x-hwc::field>
+</hw:field>
 ```
 
 The view emits one `<input type="hidden" name="..." value="..." data-hw-upload-preserved>` per
@@ -202,13 +202,13 @@ The wrapper is a focusable button widget:
 Override the label when context demands a specific call-to-action:
 
 ```blade
-<x-hwc::file-upload url="..." aria-label="Attach signed contract" />
+<hw:file-upload url="..." aria-label="Attach signed contract" />
 ```
 
 ## Validation feedback
 
 On error the wrapper emits `aria-invalid="true"` plus `data-invalid` for CSS hooks. Compose with
-`<x-hwc::field.error name="..." />` directly under the file-upload (or rely on `<x-hwc::field>` to render
+`<hw:field.error name="..." />` directly under the file-upload (or rely on `<hw:field>` to render
 it) to show the message. For multi-file rules (`attachments.*`), any sub-key error marks the
 wrapper invalid.
 
@@ -230,7 +230,7 @@ Dropzone's `dict*` options under the hood, so the array travels straight from `l
 the rendered widget.
 
 ```blade
-<x-hwc::file-upload
+<hw:file-upload
     name="avatar"
     url="{{ route('uploads.store') }}"
     :messages="__('hotwire.file_upload')"
@@ -277,7 +277,7 @@ Most Dropzone configuration is already covered by named props (`accept`, `maxSiz
 `createImageThumbnails`, custom `headers`, etc. — pass an `:options` array:
 
 ```blade
-<x-hwc::file-upload
+<hw:file-upload
     name="cover"
     url="{{ route('uploads.store') }}"
     :options="[
@@ -313,7 +313,7 @@ To replace Dropzone's default thumbnail layout with your own HTML — different 
 Tailwind classes, an extra "uploaded by X" line — pass a `preview_template` slot:
 
 ```blade
-<x-hwc::file-upload name="cover" url="{{ route('uploads.store') }}" accept="image/*">
+<hw:file-upload name="cover" url="{{ route('uploads.store') }}" accept="image/*">
     <x-slot:preview_template>
         <div class="dz-preview dz-file-preview rounded-lg border p-3 inline-block mr-2">
             <div class="relative w-32 h-32">
@@ -332,7 +332,7 @@ Tailwind classes, an extra "uploaded by X" line — pass a `preview_template` sl
             <div class="text-xs text-red-600 mt-1" data-dz-errormessage></div>
         </div>
     </x-slot:preview_template>
-</x-hwc::file-upload>
+</hw:file-upload>
 ```
 
 The component renders the slot as a `<template data-{identifier}-target="previewTemplate">`
@@ -367,11 +367,11 @@ still override `previewTemplate` if it returns one — subclass code wins over t
 
 ## Controller swap — subclass extensibility
 
-Mirroring `<x-hwc::chart>` and `<x-hwc::map>`, override `controller=` to mount a Stimulus subclass.
+Mirroring `<hw:chart>` and `<hw:map>`, override `controller=` to mount a Stimulus subclass.
 Every `data-*-value` and `data-*-target` follows the new identifier automatically:
 
 ```blade
-<x-hwc::file-upload controller="medialibrary-upload" name="avatar" url="..." />
+<hw:file-upload controller="medialibrary-upload" name="avatar" url="..." />
 ```
 
 Renders `data-controller="medialibrary-upload" data-medialibrary-upload-url-value="..."` etc. See
@@ -384,7 +384,7 @@ and `afterInit()` hooks.
 keydown wiring:
 
 ```blade
-<x-hwc::file-upload
+<hw:file-upload
     url="..."
     data-controller="analytics-track"
     data-action="file-upload:success->gallery#refresh"
@@ -413,5 +413,5 @@ Quick chooser:
 ## See also
 
 - [File upload controller](../controllers/file-upload.md) — values, actions, events, subclass hooks
-- [`<x-hwc::file>`](file.md) — the simpler input variant for forms that don't need previews or
+- [`<hw:file>`](file.md) — the simpler input variant for forms that don't need previews or
   progress

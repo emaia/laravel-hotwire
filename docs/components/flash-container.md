@@ -1,7 +1,7 @@
 # Flash Container
 
 Initializes the [Sonner](https://www.npmjs.com/package/@emaia/sonner) toaster once per page and persists it across
-Turbo Drive navigations. It's the host element for every toast fired by [`<x-hwc::flash-message />`](./flash-message.md)
+Turbo Drive navigations. It's the host element for every toast fired by [`<hw:flash-message />`](./flash-message.md)
 or by appended Turbo Streams.
 
 Internally the component maps to the `toaster` Stimulus controller (`toaster_controller.js`), which calls Sonner's
@@ -26,8 +26,8 @@ Place the container once in your main layout (typically before `</body>`):
 <body>
 {{ $slot }}
 
-<x-hwc::flash-container />
-<x-hwc::flash-message />
+<hw:flash-container />
+<hw:flash-message />
 </body>
 </html>
 ```
@@ -39,7 +39,7 @@ navigations and keeps the Sonner instance alive. The default id also lets you ta
 use Illuminate\Support\Facades\Blade;
 
 return turbo_stream()->append('flash-container', Blade::render(
-    '<x-hwc::flash-message :message="$message" type="success" />',
+    '<hw:flash-message :message="$message" type="success" />',
     ['message' => 'Saved!'],
 ));
 ```
@@ -78,7 +78,7 @@ emitted when you set them, so Sonner's own defaults still apply.
 Top-right, dark theme, 5s duration:
 
 ```html
-<x-hwc::flash-container
+<hw:flash-container
     position="top-right"
     theme="dark"
     :duration="5000"
@@ -88,7 +88,7 @@ Top-right, dark theme, 5s duration:
 Expanded toasts, no close button:
 
 ```html
-<x-hwc::flash-container
+<hw:flash-container
     :close-button="false"
     :expand="true"
 />
@@ -97,7 +97,7 @@ Expanded toasts, no close button:
 Offset tuning with a hotkey and swipe directions:
 
 ```html
-<x-hwc::flash-container
+<hw:flash-container
     offset='{"top":"20px","right":"20px"}'
     mobile-offset="12px"
     hotkey="alt+T"
@@ -108,7 +108,7 @@ Offset tuning with a hotkey and swipe directions:
 Custom id (useful if you need more than one target or want a different Turbo Stream anchor):
 
 ```html
-<x-hwc::flash-container id="my-toaster" />
+<hw:flash-container id="my-toaster" />
 ```
 
 ## Escape hatch
@@ -128,9 +128,9 @@ is just a thin wrapper:
 ## Turbo integration
 
 - The container uses `data-turbo-permanent` by default — Sonner stays initialized across Turbo Drive navigations.
-- Turbo Streams can append rendered `<x-hwc::flash-message />` markup to the container — see the
+- Turbo Streams can append rendered `<hw:flash-message />` markup to the container — see the
   `Blade::render()` example in the [Setup](#setup) section.
 
 ## See also
 
-- [`<x-hwc::flash-message />`](./flash-message.md) — fires individual toasts from session or props
+- [`<hw:flash-message />`](./flash-message.md) — fires individual toasts from session or props

@@ -5,16 +5,16 @@ Groups related buttons and button-like controls so they read as one action clust
 ## Usage
 
 ```blade
-<x-hwc::button-group aria-label="Pagination">
-    <x-hwc::button variant="outline">Previous</x-hwc::button>
-    <x-hwc::button variant="outline">Next</x-hwc::button>
-</x-hwc::button-group>
+<hw:button-group aria-label="Pagination">
+    <hw:button variant="outline">Previous</hw:button>
+    <hw:button variant="outline">Next</hw:button>
+</hw:button-group>
 
-<x-hwc::button-group orientation="vertical">
-    <x-hwc::button-group.text>Sort</x-hwc::button-group.text>
-    <x-hwc::button-group.separator />
-    <x-hwc::button variant="outline">Newest</x-hwc::button>
-</x-hwc::button-group>
+<hw:button-group orientation="vertical">
+    <hw:button-group.text>Sort</hw:button-group.text>
+    <hw:button-group.separator />
+    <hw:button variant="outline">Newest</hw:button>
+</hw:button-group>
 ```
 
 ## Props

@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Blade;
 
 TurboStreamBuilder::macro('flash', function (string $type, string $message, ?string $description = null) {
     return $this->append('flash-container', Blade::render(
-        '<x-hwc::flash-message :type="$type" :message="$message" :description="$description" />',
+        '<hw:flash-message :type="$type" :message="$message" :description="$description" />',
         compact('type', 'message', 'description'),
     ));
 });
@@ -68,7 +68,7 @@ public function favorite(Request $request, Post $post)
 
 Don't compose anything special — return a normal redirect/error response. The Turbo Frame holding
 the form re-renders with the validation errors inside, the modal stays open, and the
-[`<x-hwc::flash-message>`](../components/flash-message.md) component picks up the first
+[`<hw:flash-message>`](../components/flash-message.md) component picks up the first
 validation error from the session and shows a toast.
 
 ### Append a row → highlight it → toast

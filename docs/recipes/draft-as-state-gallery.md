@@ -307,7 +307,7 @@ The page has two visually-coupled but structurally independent regions:
 1. **Image list** — managed entirely by the draft endpoints. Cards are server-rendered;
    each carries its own micro-forms (rename auto-save, delete). The file-upload component
    posts new uploads to the draft store endpoint and the response stream appends a card.
-2. **Publish form** — a single `<x-hwc::form>` with the gallery title and a submit button.
+2. **Publish form** — a single `<hw:form>` with the gallery title and a submit button.
    When clicked, the server reads the draft from DB.
 
 Keeping these as separate forms avoids the "form inside a form" footgun.
@@ -320,7 +320,7 @@ Keeping these as separate forms avoids the "form inside a form" footgun.
     <section class="mt-6">
         <h2 class="text-sm uppercase text-gray-500">Images</h2>
 
-        <x-hwc::file-upload
+        <hw:file-upload
             name="files"
             url="{{ route('pending-media.store') }}"
             param-name="file"
@@ -346,15 +346,15 @@ Keeping these as separate forms avoids the "form inside a form" footgun.
         </div>
     </section>
 
-    <x-hwc::form action="{{ route('gallery.store') }}" class="mt-8">
-        <x-hwc::field name="title" label="Title">
-            <x-hwc::input name="title" required />
-        </x-hwc::field>
+    <hw:form action="{{ route('gallery.store') }}" class="mt-8">
+        <hw:field name="title" label="Title">
+            <hw:input name="title" required />
+        </hw:field>
 
         <button type="submit" class="mt-4 bg-red-600 text-white px-4 py-2 rounded">
             Publish gallery
         </button>
-    </x-hwc::form>
+    </hw:form>
 </x-app-layout>
 ```
 

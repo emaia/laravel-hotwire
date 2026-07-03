@@ -62,9 +62,14 @@ php artisan vendor:publish --tag=hotwire-config
 php artisan hotwire:install
 ```
 
-This scaffolds the JS/CSS entry points, adds every npm dependency declared by the catalog to your `package.json`, wires the `@hotwire` Vite alias into your `vite.config.{ts,mjs,js}`, generates the controller loader stub, runs your package manager (auto-detected from the lockfile — bun/pnpm/yarn/npm), and verifies your views match the install config. Components work out of the box — no controller publish step required.
+This scaffolds the JS/CSS entry points, adds every npm dependency declared by the catalog to your `package.json`, wires
+the `@hotwire` Vite alias into your `vite.config.{ts,mjs,js}`, generates the controller loader stub, runs your package
+manager (auto-detected from the lockfile — bun/pnpm/yarn/npm), and verifies your views match the install config.
+Components work out of the box — no controller publish step required.
 
-For leaner installs (subset of catalog deps, `--core-only`), CI automation (`--fix --no-interaction`), the auto-generated loader stub, drift detection, extending controllers and the full flag reference, see [**Advanced installation**](docs/installation.md).
+For leaner installs (subset of catalog deps, `--core-only`), CI automation (`--fix --no-interaction`), the
+auto-generated loader stub, drift detection, extending controllers and the full flag reference, see [**Advanced
+installation**](docs/installation.md).
 
 ### Explore the Docs
 
@@ -311,40 +316,40 @@ stacking multiple controllers, attribute-bag merging and the escaping rules.
 
 ## Blade Components
 
-| Component                                             | Blade                      | Category   | Stimulus Identifier(s)                                                 | Docs                                         |
-|-------------------------------------------------------|----------------------------|------------|------------------------------------------------------------------------|----------------------------------------------|
-| [Form](docs/components/form.md)                       | `<x-hwc::form>`            | `forms`    | `auto-submit`, `unsaved-changes`, `error-scroll`, `clean-query-params` | [readme](docs/components/form.md)            |
-| [Field](docs/components/field.md)                     | `<x-hwc::field>`           | `forms`    | —                                                                      | [readme](docs/components/field.md)           |
-| [Field Group](docs/components/field.md#x-hwcfieldgroup) | `<x-hwc::field.group>`     | `forms`    | —                                                                      | [readme](docs/components/field.md#x-hwcfieldgroup) |
-| [Conditional Field](docs/components/conditional-field.md) | `<x-hwc::conditional-field>` | `forms`    | `conditional-fields`                                                   | [readme](docs/components/conditional-field.md) |
-| [Input](docs/components/input.md)                     | `<x-hwc::input>`           | `forms`    | `auto-select`, `clear-input`, `input-mask`                             | [readme](docs/components/input.md)           |
-| [Field Label](docs/components/field.md#x-hwcfieldlabel) | `<x-hwc::field.label>`     | `forms`    | —                                                                      | [readme](docs/components/field.md#x-hwcfieldlabel) |
-| [Select](docs/components/select.md)                   | `<x-hwc::select>`          | `forms`    | —                                                                      | [readme](docs/components/select.md)          |
-| [Textarea](docs/components/textarea.md)               | `<x-hwc::textarea>`        | `forms`    | `auto-resize`, `char-counter`                                          | [readme](docs/components/textarea.md)        |
-| [File](docs/components/file.md)                       | `<x-hwc::file>`            | `forms`    | `file-preserve`, `reset-files`                                         | [readme](docs/components/file.md)            |
-| [Checkbox Group](docs/components/checkbox-group.md)   | `<x-hwc::checkbox-group>`  | `forms`    | `checkbox-select-all`                                                  | [readme](docs/components/checkbox-group.md)  |
-| [Field Error](docs/components/field.md#x-hwcfielderror) | `<x-hwc::field.error>`     | `forms`    | —                                                                      | [readme](docs/components/field.md#x-hwcfielderror) |
-| [Flash Container](docs/components/flash-container.md) | `<x-hwc::flash-container>` | `feedback` | `toaster`                                                              | [readme](docs/components/flash-container.md) |
-| [Flash Message](docs/components/flash-message.md)     | `<x-hwc::flash-message>`   | `feedback` | `toast`                                                                | [readme](docs/components/flash-message.md)   |
-| [Alert](docs/components/alert.md)                     | `<x-hwc::alert>`           | `feedback` | —                                                                      | [readme](docs/components/alert.md)           |
-| [Skeleton](docs/components/skeleton.md)               | `<x-hwc::skeleton>`        | `feedback` | —                                                                      | [readme](docs/components/skeleton.md)        |
-| [Spinner](docs/components/spinner.md)                 | `<x-hwc::spinner>`         | `feedback` | —                                                                      | [readme](docs/components/spinner.md)         |
-| [Badge](docs/components/badge.md)                     | `<x-hwc::badge>`           | `display`  | —                                                                      | [readme](docs/components/badge.md)           |
-| [Button Group](docs/components/button-group.md)       | `<x-hwc::button-group>`    | `display`  | —                                                                      | [readme](docs/components/button-group.md)    |
-| [Card](docs/components/card.md)                       | `<x-hwc::card>`            | `display`  | —                                                                      | [readme](docs/components/card.md)            |
-| [Empty](docs/components/empty.md)                     | `<x-hwc::empty>`           | `display`  | —                                                                      | [readme](docs/components/empty.md)           |
-| [Item](docs/components/item.md)                       | `<x-hwc::item>`            | `display`  | —                                                                      | [readme](docs/components/item.md)            |
-| [Kbd](docs/components/kbd.md)                         | `<x-hwc::kbd>`             | `display`  | —                                                                      | [readme](docs/components/kbd.md)             |
-| [Separator](docs/components/separator.md)             | `<x-hwc::separator>`       | `display`  | —                                                                      | [readme](docs/components/separator.md)       |
-| [Table](docs/components/table.md)                     | `<x-hwc::table>`           | `display`  | —                                                                      | [readme](docs/components/table.md)           |
-| [Modal](docs/components/modal.md)                     | `<x-hwc::modal>`           | `overlay`  | `modal`                                                                | [readme](docs/components/modal.md)           |
-| [Alert Dialog](docs/components/alert-dialog.md)       | `<x-hwc::alert-dialog>`    | `overlay`  | `alert-dialog`                                                         | [readme](docs/components/alert-dialog.md)    |
-| [Dropdown](docs/components/dropdown.md)               | `<x-hwc::dropdown>`        | `overlay`  | `dropdown`                                                             | [readme](docs/components/dropdown.md)        |
-| [Optimistic](docs/components/optimistic.md)           | `<x-hwc::optimistic>`      | `turbo`    | —                                                                      | [readme](docs/components/optimistic.md)      |
-| [Carousel](docs/components/carousel.md)               | `<x-hwc::carousel>`        | `utility`  | `carousel`                                                             | [readme](docs/components/carousel.md)        |
-| [Chart](docs/components/chart.md)                     | `<x-hwc::chart>`           | `utility`  | `chart`                                                                | [readme](docs/components/chart.md)           |
-| [Scroll Progress](docs/components/scroll-progress.md) | `<x-hwc::scroll-progress>` | `utility`  | `scroll-progress`                                                      | [readme](docs/components/scroll-progress.md) |
-| [Timeago](docs/components/timeago.md)                 | `<x-hwc::timeago>`         | `utility`  | `timeago`                                                              | [readme](docs/components/timeago.md)         |
+| Component                                                 | Blade                    | Category   | Stimulus Identifier(s)                                                 | Docs                                            |
+|-----------------------------------------------------------|--------------------------|------------|------------------------------------------------------------------------|-------------------------------------------------|
+| [Form](docs/components/form.md)                           | `<hw:form>`              | `forms`    | `auto-submit`, `unsaved-changes`, `error-scroll`, `clean-query-params` | [readme](docs/components/form.md)               |
+| [Field](docs/components/field.md)                         | `<hw:field>`             | `forms`    | —                                                                      | [readme](docs/components/field.md)              |
+| [Field Group](docs/components/field.md#hwfieldgroup)      | `<hw:field.group>`       | `forms`    | —                                                                      | [readme](docs/components/field.md#hwfieldgroup) |
+| [Conditional Field](docs/components/conditional-field.md) | `<hw:conditional-field>` | `forms`    | `conditional-fields`                                                   | [readme](docs/components/conditional-field.md)  |
+| [Input](docs/components/input.md)                         | `<hw:input>`             | `forms`    | `auto-select`, `clear-input`, `input-mask`                             | [readme](docs/components/input.md)              |
+| [Field Label](docs/components/field.md#hwfieldlabel)      | `<hw:field.label>`       | `forms`    | —                                                                      | [readme](docs/components/field.md#hwfieldlabel) |
+| [Select](docs/components/select.md)                       | `<hw:select>`            | `forms`    | —                                                                      | [readme](docs/components/select.md)             |
+| [Textarea](docs/components/textarea.md)                   | `<hw:textarea>`          | `forms`    | `auto-resize`, `char-counter`                                          | [readme](docs/components/textarea.md)           |
+| [File](docs/components/file.md)                           | `<hw:file>`              | `forms`    | `file-preserve`, `reset-files`                                         | [readme](docs/components/file.md)               |
+| [Checkbox Group](docs/components/checkbox-group.md)       | `<hw:checkbox-group>`    | `forms`    | `checkbox-select-all`                                                  | [readme](docs/components/checkbox-group.md)     |
+| [Field Error](docs/components/field.md#hwfielderror)      | `<hw:field.error>`       | `forms`    | —                                                                      | [readme](docs/components/field.md#hwfielderror) |
+| [Flash Container](docs/components/flash-container.md)     | `<hw:flash-container>`   | `feedback` | `toaster`                                                              | [readme](docs/components/flash-container.md)    |
+| [Flash Message](docs/components/flash-message.md)         | `<hw:flash-message>`     | `feedback` | `toast`                                                                | [readme](docs/components/flash-message.md)      |
+| [Alert](docs/components/alert.md)                         | `<hw:alert>`             | `feedback` | —                                                                      | [readme](docs/components/alert.md)              |
+| [Skeleton](docs/components/skeleton.md)                   | `<hw:skeleton>`          | `feedback` | —                                                                      | [readme](docs/components/skeleton.md)           |
+| [Spinner](docs/components/spinner.md)                     | `<hw:spinner>`           | `feedback` | —                                                                      | [readme](docs/components/spinner.md)            |
+| [Badge](docs/components/badge.md)                         | `<hw:badge>`             | `display`  | —                                                                      | [readme](docs/components/badge.md)              |
+| [Button Group](docs/components/button-group.md)           | `<hw:button-group>`      | `display`  | —                                                                      | [readme](docs/components/button-group.md)       |
+| [Card](docs/components/card.md)                           | `<hw:card>`              | `display`  | —                                                                      | [readme](docs/components/card.md)               |
+| [Empty](docs/components/empty.md)                         | `<hw:empty>`             | `display`  | —                                                                      | [readme](docs/components/empty.md)              |
+| [Item](docs/components/item.md)                           | `<hw:item>`              | `display`  | —                                                                      | [readme](docs/components/item.md)               |
+| [Kbd](docs/components/kbd.md)                             | `<hw:kbd>`               | `display`  | —                                                                      | [readme](docs/components/kbd.md)                |
+| [Separator](docs/components/separator.md)                 | `<hw:separator>`         | `display`  | —                                                                      | [readme](docs/components/separator.md)          |
+| [Table](docs/components/table.md)                         | `<hw:table>`             | `display`  | —                                                                      | [readme](docs/components/table.md)              |
+| [Modal](docs/components/modal.md)                         | `<hw:modal>`             | `overlay`  | `modal`                                                                | [readme](docs/components/modal.md)              |
+| [Alert Dialog](docs/components/alert-dialog.md)           | `<hw:alert-dialog>`      | `overlay`  | `alert-dialog`                                                         | [readme](docs/components/alert-dialog.md)       |
+| [Dropdown](docs/components/dropdown.md)                   | `<hw:dropdown>`          | `overlay`  | `dropdown`                                                             | [readme](docs/components/dropdown.md)           |
+| [Optimistic](docs/components/optimistic.md)               | `<hw:optimistic>`        | `turbo`    | —                                                                      | [readme](docs/components/optimistic.md)         |
+| [Carousel](docs/components/carousel.md)                   | `<hw:carousel>`          | `utility`  | `carousel`                                                             | [readme](docs/components/carousel.md)           |
+| [Chart](docs/components/chart.md)                         | `<hw:chart>`             | `utility`  | `chart`                                                                | [readme](docs/components/chart.md)              |
+| [Scroll Progress](docs/components/scroll-progress.md)     | `<hw:scroll-progress>`   | `utility`  | `scroll-progress`                                                      | [readme](docs/components/scroll-progress.md)    |
+| [Timeago](docs/components/timeago.md)                     | `<hw:timeago>`           | `utility`  | `timeago`                                                              | [readme](docs/components/timeago.md)            |
 
 ## Verify Your Setup
 
@@ -366,16 +371,17 @@ Scans `resources/views` for Hotwire components **and direct Stimulus controller 
 attributes and the `stimulus_controller()` / `stimulus()->controller()` / `->controllers()` / `stimulus_action()` /
 `stimulus_target()` helpers — then verifies two things:
 
-1. **Stimulus controllers** — every controller required by a used component, or referenced directly, is published and up to date.
+1. **Stimulus controllers** — every controller required by a used component, or referenced directly, is published and up
+   to date.
 2. **npm dependencies** — every external package imported by those controllers (e.g. `@emaia/sonner`, `tippy.js`)
    is declared in your `package.json` (`dependencies` or `devDependencies`).
 
 Exits with code `1` if either has pending items (useful for CI).
 
-Both the configured prefix (`hwc` by default) and the literal `hotwire` alias are recognized, so views like
-`<x-hwc::flash-message />` and `<x-hotwire::flash-message />` are detected equally. Only controllers shipped by the
-package are checked — your own controllers are ignored — and Blade comments and `<script>`/`<style>` blocks are
-stripped first, so commented-out code is skipped.
+Both the configured prefix (`hw` by default) and the short `<hw:*>` form are recognized, so views like
+`<hw:flash-message />` and `<x-hw::flash-message />` are detected equally. Only controllers shipped by the package are
+checked — your own controllers are ignored — and Blade comments and `<script>`/`<style>` blocks are stripped first, so
+commented-out code is skipped.
 
 ```bash
 # Auto-publish missing/outdated controllers AND add missing npm deps to devDependencies
@@ -391,8 +397,8 @@ php artisan hotwire:check --path=resources/views/app
 Example output:
 
 ```
-  ✓  toaster  up to date  (used by <x-hwc::flash-container>)
-  ✓  toast    up to date  (used by <x-hwc::flash-message>)
+  ✓  toaster  up to date  (used by <hw:flash-container>)
+  ✓  toast    up to date  (used by <hw:flash-message>)
 
 Required npm dependencies:
   ✓  @emaia/sonner ^2.1.0  (used by toaster, toast)
@@ -408,11 +414,26 @@ Required npm dependencies:
 // config/hotwire.php
 
 return [
-    'prefix' => 'hwc', // <x-hwc::modal>
+    'prefix' => 'hw', // <hw:modal>
 ];
 ```
 
-Change `prefix` to use a different prefix for Blade components. E.g. `'prefix' => 'hotwire'` → `<x-hotwire::modal>`.
+Change `prefix` to use a different prefix for Blade components. E.g. `'prefix' => 'ui'` → `<ui:modal>` or
+`<x-ui::modal>`.
+
+## PhpStorm / Laravel Idea
+
+The package ships `ide.json` metadata for Laravel Idea, so PhpStorm can complete and navigate `<hw:*>` components.
+
+For Stimulus helper completions, generate an app-level `ide.json`:
+
+```bash
+php artisan hotwire:ide-json
+```
+
+`hotwire:install` runs this automatically for JS installs. The generated metadata includes package controllers and local
+controllers from `resources/js/controllers`, with local controllers taking precedence when they override a package
+identifier.
 
 ## View Customization
 
@@ -520,6 +541,7 @@ Add these settings to your CSS entrypoint `resources/css/app.css`:
 @import "tailwindcss";
 
 @import '../../vendor/emaia/laravel-hotwire/resources/css/presets/nova.css';
+
 @source '../../vendor/emaia/laravel-hotwire/resources/css/**/*.css';
 ```
 

@@ -112,7 +112,7 @@ the strip snapping like the main carousel. The active-dot class lights up the cu
 
 ## Open a slide in a lightbox modal
 
-Each slide is a clickable link to a `<x-hwc::modal>` frame that paints a bigger view server-side. No image
+Each slide is a clickable link to a `<hw:modal>` frame that paints a bigger view server-side. No image
 duplication — the modal pulls a dedicated `lightbox.show` route.
 
 ```blade
@@ -132,7 +132,7 @@ duplication — the modal pulls a dedicated `lightbox.show` route.
     </div>
 </div>
 
-<x-hwc::modal id="lightbox" frame="lightbox" />
+<hw:modal id="lightbox" frame="lightbox" />
 ```
 
 Server side, the route returns a Turbo Frame response with the larger asset and any metadata you want next to
@@ -232,7 +232,7 @@ as the file exists. No need to delay the Turbo Stream until the asset is ready.
         }}
         class="block aspect-square bg-gray-100"
     >
-        <x-hwc::spinner class="m-auto" />
+        <hw:spinner class="m-auto" />
     </picture>
 </div>
 ```
@@ -241,7 +241,7 @@ Three things to notice:
 
 - **`dom_id($photo)`** keeps each slide individually addressable — handy if a later Turbo Stream wants to
   `update` or `remove` a specific slide (e.g. the asset failed to generate, or the user deleted the photo).
-- **`<x-hwc::spinner>`** is the placeholder rendered server-side; the user sees motion immediately, even
+- **`<hw:spinner>`** is the placeholder rendered server-side; the user sees motion immediately, even
   before the asset URL becomes 200 OK.
 - **`interval: 1500`** keeps polling under control on a long feed — Embla itself doesn't care which slides
   are still loading, so a steady poll across multiple in-flight slides stays cheap.

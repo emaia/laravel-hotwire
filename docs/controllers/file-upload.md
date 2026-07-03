@@ -80,7 +80,7 @@ dispatched names become `my-upload:added`, etc.
 </div>
 ```
 
-The `<x-hwc::file-upload>` Blade component handles the boilerplate (id/errorKey derivation,
+The `<hw:file-upload>` Blade component handles the boilerplate (id/errorKey derivation,
 keyboard wiring, announcer, attribute filtering); reach for raw HTML only when the component's
 props are too restrictive.
 
@@ -179,7 +179,7 @@ export default class extends FileUploadController {
 Mount it via the Blade component's `controller=` prop:
 
 ```blade
-<x-hwc::file-upload controller="medialibrary-upload" name="avatar_uuid" url="..." response-key="uuid" />
+<hw:file-upload controller="medialibrary-upload" name="avatar_uuid" url="..." response-key="uuid" />
 ```
 
 All `data-*-value` and `data-*-target` attributes follow the new identifier (`data-medialibrary-upload-url-value`, etc.).
@@ -192,6 +192,6 @@ after a Turbo morph) starts fresh — the previous queue does not survive.
 
 ## See also
 
-- [`<x-hwc::file-upload>`](../components/file-upload.md) — Blade props, field composition, recipes
-- [`<x-hwc::file>`](../components/file.md) / [`file-preserve`](file-preserve.md) — the simpler
+- [`<hw:file-upload>`](../components/file-upload.md) — Blade props, field composition, recipes
+- [`<hw:file>`](../components/file.md) / [`file-preserve`](file-preserve.md) — the simpler
   input variant for forms that don't need previews or progress

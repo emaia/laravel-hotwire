@@ -30,7 +30,7 @@ server-driven path only when the confirmation itself needs server context.
 ## Setup
 
 Assumes the [layout-shared modal](./modal-patterns.md#pattern-2--layout-shared-modal) and
-[frame-or-page](./frame-or-page.md) recipes — one `<x-hwc::modal frame="modal">` host in the
+[frame-or-page](./frame-or-page.md) recipes — one `<hw:modal frame="modal">` host in the
 layout.
 
 ### 1. Routes
@@ -101,7 +101,7 @@ public function confirmDestroy(Task $task)
 
 The `modal-base` layout (from the [frame-or-page recipe](./frame-or-page.md)) wraps the response in
 `<turbo-frame id="modal">` when called via Turbo Frame. That response lands in the frame rendered by
-`<x-hwc::modal frame="modal">`. Otherwise, the same view renders in the dashboard layout and stays
+`<hw:modal frame="modal">`. Otherwise, the same view renders in the dashboard layout and stays
 bookmarkable.
 
 ### 5. The destroy action
@@ -192,7 +192,7 @@ real route, and the response is a Turbo Stream that Turbo Drive applies to the p
 
 ## See also
 
-- [`<x-hwc::alert-dialog>`](../components/alert-dialog.md) — client-side confirmation for
+- [`<hw:alert-dialog>`](../components/alert-dialog.md) — client-side confirmation for
   the trivial case.
 - [Modal patterns](./modal-patterns.md) — the layout-shared setup this recipe builds on.
 - [Frame-or-page views](./frame-or-page.md) — the layout that makes the confirmation view dual-mode.

@@ -8,10 +8,10 @@ focus to the trigger), optional close-on-select, and animated open/close. Wraps 
 
 ```html
 
-<x-hwc::dropdown>
+<hw:dropdown>
     <x-slot:trigger>
         Options
-        <x-hwc::icon name="chevron-down" data-slot="dropdown-trigger-icon" />
+        <hw:icon name="chevron-down" data-slot="dropdown-trigger-icon" />
     </x-slot:trigger>
 
     <a href="/account" class="block px-4 py-2 text-sm hover:bg-gray-100">Account</a>
@@ -20,7 +20,7 @@ focus to the trigger), optional close-on-select, and animated open/close. Wraps 
         @csrf
         <button type="submit" class="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100">Sign out</button>
     </form>
-</x-hwc::dropdown>
+</hw:dropdown>
 ```
 
 The component renders the `<button>` trigger and the menu, links them via `id`/`aria-controls`, and keeps
@@ -60,10 +60,10 @@ overflow. Both are logical, so they flip correctly under RTL.
 
 ```html
 
-<x-hwc::dropdown align="end">
+<hw:dropdown align="end">
     <x-slot:trigger>Menu</x-slot:trigger>
     <a href="/x" class="block px-4 py-2 text-sm">Item</a>
-</x-hwc::dropdown>
+</hw:dropdown>
 ```
 
 ## Keeping the menu open on click
@@ -73,12 +73,12 @@ where needed with `data-action="dropdown#close"`:
 
 ```html
 
-<x-hwc::dropdown :close-on-select="false">
+<hw:dropdown :close-on-select="false">
     <x-slot:trigger>Filters</x-slot:trigger>
 
     <label class="block px-4 py-2 text-sm"><input type="checkbox" name="active"/> Active</label>
     <button type="button" data-action="dropdown#close" class="block w-full px-4 py-2 text-left text-sm">Apply</button>
-</x-hwc::dropdown>
+</hw:dropdown>
 ```
 
 ## Custom styling and transitions

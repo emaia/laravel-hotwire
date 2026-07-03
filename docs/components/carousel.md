@@ -11,11 +11,11 @@ published with `php artisan hotwire:controllers carousel`.
 
 ```html
 
-<x-hwc::carousel slide-size="80%" slide-spacing="1rem" loop>
+<hw:carousel slide-size="80%" slide-spacing="1rem" loop>
     @foreach ($photos as $photo)
     <img src="{{ $photo->url }}" alt="" class="w-full rounded-md"/>
     @endforeach
-</x-hwc::carousel>
+</hw:carousel>
 ```
 
 Each direct child of the default slot is a slide. Slide width and gap come from `slide-size` / `slide-spacing` (CSS
@@ -79,7 +79,7 @@ Slide width is CSS, advance count is an Embla option — use the same breakpoint
 
 ```html
 
-<x-hwc::carousel
+<hw:carousel
     align="start"
     :breakpoints="['(min-width: 768px)' => ['slidesToScroll' => 3]]"
     class="[--carousel-slide-size:100%] [--carousel-slide-spacing:1rem] md:[--carousel-slide-size:33.333%]"
@@ -87,7 +87,7 @@ Slide width is CSS, advance count is an Embla option — use the same breakpoint
     @foreach ($photos as $photo)
     <img src="{{ $photo->url }}" alt="" class="w-full"/>
     @endforeach
-</x-hwc::carousel>
+</hw:carousel>
 ```
 
 ## Custom navigation and dots
@@ -97,7 +97,7 @@ Prev/next take inner content via slots; dot appearance is set with `dot-class` (
 
 ```html
 
-<x-hwc::carousel dot-class="h-1 w-6 rounded bg-white/40 transition-colors aria-current:bg-white">
+<hw:carousel dot-class="h-1 w-6 rounded bg-white/40 transition-colors aria-current:bg-white">
     <x-slot:prev_button>
         <svg><!-- chevron-left --></svg>
     </x-slot:prev_button>
@@ -106,14 +106,14 @@ Prev/next take inner content via slots; dot appearance is set with `dot-class` (
     </x-slot:next_button>
 
     {{-- slides --}}
-</x-hwc::carousel>
+</hw:carousel>
 ```
 
 ## Slides with custom markup
 
 ```html
 
-<x-hwc::carousel class="relative"
+<hw:carousel class="relative"
                  slide-size="75%"
                  slide-spacing=".5rem"
                  :counter="true"
@@ -151,14 +151,14 @@ Prev/next take inner content via slots; dot appearance is set with `dot-class` (
     <x-slot:dot_template
         class="size-2.5 rounded-full bg-white/50 transition-colors aria-current:bg-white"></x-slot:dot_template>
 
-</x-hwc::carousel>
+</hw:carousel>
 ```
 
 ## Vertical Slides example
 
 ```html
 
-<x-hwc::carousel class="relative"
+<hw:carousel class="relative"
                  viewport-class="h-150"
                  container-class="flex-col"
                  slide-size="80%"
@@ -173,14 +173,14 @@ Prev/next take inner content via slots; dot appearance is set with `dot-class` (
         <img src="{{ $photo->url }}" alt="" class="w-full h-full object-cover rounded-2xl "/>
     </div>
     @endforeach
-</x-hwc::carousel> 
+</hw:carousel>
 ```
 
 ## Fullscreen example
 
 ```html
 
-<x-hwc::carousel class="relative h-screen"
+<hw:carousel class="relative h-screen"
                  dot-list-class="absolute bottom-6 left-6 flex gap-1.5"
                  nav-wrapper-class="absolute bottom-5 right-5 flex gap-2"
                  loop
@@ -205,7 +205,7 @@ Prev/next take inner content via slots; dot appearance is set with `dot-class` (
     <x-slot:dot_template
         class="size-2.5 rounded-full bg-white/50 transition-colors aria-current:bg-white"></x-slot:dot_template>
 
-</x-hwc::carousel>
+</hw:carousel>
 ```
 
 ## Turbo

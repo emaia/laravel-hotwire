@@ -9,14 +9,14 @@ This component is the declarative form of the [frame-or-page recipe](../recipes/
 
 ```blade
 {{-- resources/views/messages/edit.blade.php --}}
-<x-hwc::frame-or-page frame="modal" layout="layouts.dashboard">
+<hw:frame-or-page frame="modal" layout="layouts.dashboard">
     <form method="POST" action="{{ route('messages.update', $message) }}">
         @csrf
         @method('PUT')
         <textarea name="body">{{ old('body', $message->body) }}</textarea>
         <button type="submit">Save</button>
     </form>
-</x-hwc::frame-or-page>
+</hw:frame-or-page>
 ```
 
 - A request with `Turbo-Frame: modal` renders only `<turbo-frame id="modal">…</turbo-frame>` — Turbo
@@ -28,7 +28,7 @@ This component is the declarative form of the [frame-or-page recipe](../recipes/
 The view itself stays oblivious to how it was requested.
 
 > **Why no `<turbo-frame>` around the slot on direct nav?** A dashboard layout typically already
-> hosts the receiving frame globally — e.g. `<x-hwc::modal frame="modal">` renders a
+> hosts the receiving frame globally — e.g. `<hw:modal frame="modal">` renders a
 > `<turbo-frame id="modal">` once per page. If the component also wrapped the slot in
 > `<turbo-frame id="modal">` on direct nav, the page would carry two elements with the same `id`:
 > invalid HTML, and Turbo would aim subsequent navigations at the wrong frame.
@@ -43,7 +43,7 @@ The view itself stays oblivious to how it was requested.
 The first link asks Turbo to scope the request to the `modal` frame, sending the `Turbo-Frame`
 request header. The second link navigates normally; the layout renders the standalone page.
 
-Pair with [`<x-hwc::modal frame="modal">`](./modal.md) in your dashboard layout so the modal opens
+Pair with [`<hw:modal frame="modal">`](./modal.md) in your dashboard layout so the modal opens
 automatically when the frame receives content.
 
 ## Props
@@ -61,15 +61,15 @@ request header. Useful for nested frames that never need a standalone presentati
 ## Forwarded attributes
 
 When the component renders **as a frame** — that is, when the request came from a Turbo Frame OR
-when `layout` is omitted — extra HTML attributes on `<x-hwc::frame-or-page>` are forwarded to the
+when `layout` is omitted — extra HTML attributes on `<hw:frame-or-page>` are forwarded to the
 inner `<turbo-frame>`. This includes the named props of
 [`<x-turbo::frame>`](https://github.com/emaia/laravel-hotwire-turbo) (`src`, `loading`, `target`,
 `refresh`, `autoscroll`, …) and arbitrary `data-*` hooks:
 
 ```blade
-<x-hwc::frame-or-page frame="messages" src="{{ route('messages.index') }}" loading="lazy">
+<hw:frame-or-page frame="messages" src="{{ route('messages.index') }}" loading="lazy">
     <div class="loading">Loading…</div>
-</x-hwc::frame-or-page>
+</hw:frame-or-page>
 ```
 
 On **direct navigation with a `layout`**, the slot is rendered directly inside the layout component
@@ -84,12 +84,12 @@ configure it the way you'd configure any other Blade layout:
   in your layout directly when you need props, and skip the `layout` prop:
   ```blade
   <x-layouts.dashboard title="Edit message" :fixed-top="true">
-      <x-hwc::frame-or-page frame="modal">
+      <hw:frame-or-page frame="modal">
           @include('messages._edit-form')
-      </x-hwc::frame-or-page>
+      </hw:frame-or-page>
   </x-layouts.dashboard>
   ```
-  Frame requests still skip the layout (the `<x-hwc::frame-or-page>` branch handles that); only the
+  Frame requests still skip the layout (the `<hw:frame-or-page>` branch handles that); only the
   direct-navigation case renders the dashboard.
 - **`@push` / `@stack`** for cross-branch values (page title, breadcrumbs) — these survive both
   branches because Blade resolves the stack at render time.
@@ -100,9 +100,9 @@ When `frame` is an object, the component calls `dom_id()` (from
 [`emaia/laravel-hotwire-turbo`](https://github.com/emaia/laravel-hotwire-turbo)) to derive the id:
 
 ```blade
-<x-hwc::frame-or-page :frame="$message" layout="layouts.dashboard">
+<hw:frame-or-page :frame="$message" layout="layouts.dashboard">
     {{-- renders <turbo-frame id="message_42"> for a Message #42 --}}
-</x-hwc::frame-or-page>
+</hw:frame-or-page>
 ```
 
 This pairs naturally with `dom_id($message)` calls in your list views and stream responses, keeping
@@ -137,8 +137,8 @@ matching `<turbo-frame>`; it cannot retroactively change elements outside the fr
 
 Three options, in order of how much they cost you:
 
-1. **Use multiple modal hosts**. Render two `<x-hwc::modal frame="modal-edit" :fixed-top="true">`
-   and `<x-hwc::modal frame="modal-quick">` in the layout and pick per link via `data-turbo-frame`.
+1. **Use multiple modal hosts**. Render two `<hw:modal frame="modal-edit" :fixed-top="true">`
+   and `<hw:modal frame="modal-quick">` in the layout and pick per link via `data-turbo-frame`.
    Zero JS, zero stream gymnastics, the choice is explicit at the call site.
 2. **Return a Turbo Stream with `morph`** when you detect the frame request:
    ```php
@@ -149,12 +149,12 @@ Three options, in order of how much they cost you:
    `morph` diffs the DOM and only patches changed attributes/classes, so the modal stays mounted and
    open — no flicker. Avoid `->replace('modal', ...)`: it destroys the open modal and the new one
    won't auto-open, since the modal's content-mutation observer never fires on a fresh mount.
-3. **Render `<x-hwc::modal frame="modal">` inside the view itself** instead of relying on a shared
+3. **Render `<hw:modal frame="modal">` inside the view itself** instead of relying on a shared
    host. More flexible per-view, but you lose the convenience of one host serving every link.
 
 ## See also
 
 - [Frame-or-page recipe](../recipes/frame-or-page.md) — the manual pattern this component encapsulates.
-- [`<x-hwc::modal>`](./modal.md) — the modal host that receives the frame content.
-- [`<x-hwc::form>`](./form.md) — the `track-frame-src` variant that preserves the originating frame URL.
+- [`<hw:modal>`](./modal.md) — the modal host that receives the frame content.
+- [`<hw:form>`](./form.md) — the `track-frame-src` variant that preserves the originating frame URL.
 - [`turbo--frame-src` controller](../controllers/turbo/frame-src.md) — client-side fallback for frame-aware redirects.

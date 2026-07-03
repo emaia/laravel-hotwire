@@ -6,7 +6,7 @@ placeholder.
 ## Quick example
 
 ```blade
-<x-hwc::select name="status" :options="[1 => 'Active', 2 => 'Inactive']" :selected="$status" />
+<hw:select name="status" :options="[1 => 'Active', 2 => 'Inactive']" :selected="$status" />
 ```
 
 ## Props
@@ -28,17 +28,17 @@ is interpreted — see [Multiple](#multiple).
 
 ## Auto-derivation
 
-Same convention as `<x-hwc::input>`:
+Same convention as `<hw:input>`:
 
 ```blade
-<x-hwc::select name="variables[0][status]" :options="[...]" />
+<hw:select name="variables[0][status]" :options="[...]" />
 {{-- id="variables-0-status", aria-describedby="variables-0-status-error", errorKey="variables.0.status" --}}
 ```
 
 ## Placeholder
 
 ```blade
-<x-hwc::select name="status" :options="$statuses" placeholder="Select a status..." />
+<hw:select name="status" :options="$statuses" placeholder="Select a status..." />
 ```
 
 Renders a re-selectable `<option value="" selected>` as the first item. When a `selected` value is provided, the
@@ -48,20 +48,20 @@ optional fields.
 ## Nullable
 
 ```blade
-<x-hwc::select name="status" :options="$statuses" :nullable="true" />
+<hw:select name="status" :options="$statuses" :nullable="true" />
 ```
 
 When no `placeholder` string is provided, renders an empty `<option value=""></option>` so no option is pre-selected.
 Combine with `placeholder` for a labeled empty choice:
 
 ```blade
-<x-hwc::select name="status" :options="$statuses" :nullable="true" placeholder="No status" />
+<hw:select name="status" :options="$statuses" :nullable="true" placeholder="No status" />
 ```
 
 ## Multiple
 
 ```blade
-<x-hwc::select name="ids[]" :options="$users" :selected="[1, 3]" multiple />
+<hw:select name="ids[]" :options="$users" :selected="[1, 3]" multiple />
 ```
 
 When `multiple` is set, `selected` accepts an array and each matching option gets the `selected` attribute. The
@@ -71,12 +71,12 @@ without `[]`, PHP only receives the last selected value.
 `old()` integrates naturally: after a validation redirect, the previously selected values are restored from the flashed
 array.
 
-## Inheriting from `<x-hwc::field>`
+## Inheriting from `<hw:field>`
 
 ```blade
-<x-hwc::field name="status" label="Status" required>
-    <x-hwc::select :options="[1 => 'Active', 2 => 'Inactive']" />
-</x-hwc::field>
+<hw:field name="status" label="Status" required>
+    <hw:select :options="[1 => 'Active', 2 => 'Inactive']" />
+</hw:field>
 ```
 
 ## Required controllers

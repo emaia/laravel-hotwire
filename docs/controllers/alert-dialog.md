@@ -1,7 +1,7 @@
 # Alert Dialog
 
 Intercepts clicks, opens an alert dialog, and re-fires the original action only after the user confirms. This is the
-low-level Stimulus controller used by [`<x-hwc::alert-dialog>`](../components/alert-dialog.md).
+low-level Stimulus controller used by [`<hw:alert-dialog>`](../components/alert-dialog.md).
 
 **Identifier:** `alert-dialog`  
 **Install:** `php artisan hotwire:controllers alert-dialog`
@@ -136,5 +136,5 @@ Cancel the dialog on `turbo:before-cache` to avoid restoring an open modal from 
 ## Use the Blade component when possible
 
 If you want the full markup, default classes, labels, and slots already wired, use
-[`<x-hwc::alert-dialog>`](../components/alert-dialog.md). Use the controller directly when you need custom HTML
+[`<hw:alert-dialog>`](../components/alert-dialog.md). Use the controller directly when you need custom HTML
 structure or custom styling.

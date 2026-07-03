@@ -1,4 +1,4 @@
-# `<x-hwc::map>`
+# `<hw:map>`
 
 Renders a sized `<div>` with the `map` Stimulus controller mounted and the center/zoom/markers/url values pre-filled. Wraps [Leaflet](https://leafletjs.com/) — see the [controller docs](../controllers/map.md) for the runtime side.
 
@@ -6,7 +6,7 @@ Renders a sized `<div>` with the `map` Stimulus controller mounted and the cente
 
 ```blade
 {{-- Pin at an address --}}
-<x-hwc::map
+<hw:map
     :center="[-23.5505, -46.6333]"
     :zoom="12"
     :markers="[[-23.5505, -46.6333, 'São Paulo']]"
@@ -14,10 +14,10 @@ Renders a sized `<div>` with the `map` Stimulus controller mounted and the cente
 />
 
 {{-- GeoJSON via endpoint --}}
-<x-hwc::map url="/api/locations" height="400px" />
+<hw:map url="/api/locations" height="400px" />
 
 {{-- Subclass swap (custom tiles, handlers, clusters) --}}
-<x-hwc::map controller="store-locator" url="/api/stores" />
+<hw:map controller="store-locator" url="/api/stores" />
 ```
 
 ## Props
@@ -41,7 +41,7 @@ Renders a sized `<div>` with the `map` Stimulus controller mounted and the cente
 Marker tuples accept an optional third element used as the popup HTML when present:
 
 ```blade
-<x-hwc::map :markers="[
+<hw:map :markers="[
     [-23.5505, -46.6333, 'São Paulo'],
     [-22.9068, -43.1729, 'Rio de Janeiro'],
     [-30.0346, -51.2177, 'Porto Alegre'],
@@ -55,7 +55,7 @@ Markers without a label render as plain pins with no popup. Note there's no `:ce
 For dynamic or larger collections, point `url` at an endpoint that returns a GeoJSON `FeatureCollection`. The controller fetches on connect and renders the response via `L.geoJSON`:
 
 ```blade
-<x-hwc::map url="/api/locations" height="320px" />
+<hw:map url="/api/locations" height="320px" />
 ```
 
 ```php
@@ -80,7 +80,7 @@ When you pass `markers` or `url` but **no `center`**, the component automaticall
 
 ```blade
 {{-- Auto-fit: shows all three pins, no manual zoom math --}}
-<x-hwc::map :markers="[
+<hw:map :markers="[
     [-23.5505, -46.6333, 'São Paulo'],
     [-22.9068, -43.1729, 'Rio de Janeiro'],
     [-30.0346, -51.2177, 'Porto Alegre'],
@@ -90,7 +90,7 @@ When you pass `markers` or `url` but **no `center`**, the component automaticall
 When you pass `:center`, the component respects it and skips the auto-fit — you said what you wanted to see. If you want both (a center hint and the auto-fit), override the decision with `:fit="true"`:
 
 ```blade
-<x-hwc::map :center="[-23.5, -46.6]" :fit="true" :markers="$pins" />
+<hw:map :center="[-23.5, -46.6]" :fit="true" :markers="$pins" />
 ```
 
 To opt out of the auto-fit even when no `:center` is given (rare; usually means you want the default `[0, 0]` center), pass `:fit="false"`.
@@ -100,13 +100,13 @@ To opt out of the auto-fit even when no `:center` is given (rare; usually means 
 By default the map zooms when the user scrolls with the mouse wheel — convenient inside a dashboard, but it traps page scroll on long content. Pass `:scroll-wheel-zoom="false"` for pages where the map is one section among many:
 
 ```blade
-<x-hwc::map :center="[0, 0]" :scroll-wheel-zoom="false" height="320px" />
+<hw:map :center="[0, 0]" :scroll-wheel-zoom="false" height="320px" />
 ```
 
 ## Sizing
 
 ```blade
-<x-hwc::map :center="[0, 0]" height="500px" width="800px" />
+<hw:map :center="[0, 0]" height="500px" width="800px" />
 ```
 
 Both props become inline `style` declarations. `height` is required (Leaflet won't render in a zero-height container); `width` defaults to `100%`.
@@ -139,7 +139,7 @@ export default class extends MapController {
 Then point the component at it via `controller`:
 
 ```blade
-<x-hwc::map controller="store-locator" url="/api/stores" height="500px" />
+<hw:map controller="store-locator" url="/api/stores" height="500px" />
 ```
 
 ## OpenStreetMap attribution
@@ -151,7 +151,7 @@ OSM's tile usage policy requires the attribution "© OpenStreetMap contributors"
 Stack additional controllers on the wrapper via `data-controller`:
 
 ```blade
-<x-hwc::map
+<hw:map
     url="/api/locations"
     height="400px"
     data-controller="lazy-load"

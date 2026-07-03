@@ -6,16 +6,16 @@
 
 <div role="group" data-slot="field" data-orientation="{{ $orientation }}" {{ $attributes->class($class ?: null)->only('class') }}>
     @if ($label !== null && $label !== '')
-        <x-hwc::field.label :required-label="$requiredLabel">{{ $label }}</x-hwc::field.label>
+        <hw:field.label :required-label="$requiredLabel">{{ $label }}</hw:field.label>
     @endif
 
     {{ $slot }}
 
     @if ($description !== null && $description !== '')
-        <x-hwc::field.description>{{ $description }}</x-hwc::field.description>
+        <hw:field.description>{{ $description }}</hw:field.description>
     @endif
 
     @if ($error && $name)
-        <x-hwc::field.error :name="$name" :error-key="$errorKey" />
+        <hw:field.error :name="$name" :error-key="$errorKey" />
     @endif
 </div>

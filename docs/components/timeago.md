@@ -29,7 +29,7 @@ Additional HTML attributes (e.g. `class`, `id`) are merged onto the `<time>` ele
 ## Basic usage
 
 ```blade
-<x-hwc::timeago :datetime="$post->created_at" />
+<hw:timeago :datetime="$post->created_at" />
 ```
 
 Renders as e.g. `3 hours ago` with a hover tooltip showing `19 Apr 2026 14:30`.
@@ -37,9 +37,9 @@ Renders as e.g. `3 hours ago` with a hover tooltip showing `19 Apr 2026 14:30`.
 ## With server-rendered fallback
 
 ```blade
-<x-hwc::timeago :datetime="$comment->created_at">
+<hw:timeago :datetime="$comment->created_at">
     {{ $comment->created_at->diffForHumans() }}
-</x-hwc::timeago>
+</hw:timeago>
 ```
 
 The slot content is displayed immediately on page load and replaced by the JS-formatted string once Stimulus
@@ -48,41 +48,41 @@ connects.
 ## With auto-refresh
 
 ```blade
-<x-hwc::timeago
+<hw:timeago
     :datetime="$post->created_at"
     :refresh-interval="60000"
 >
     {{ $post->created_at->diffForHumans() }}
-</x-hwc::timeago>
+</hw:timeago>
 ```
 
 ## With seconds precision
 
 ```blade
-<x-hwc::timeago
+<hw:timeago
     :datetime="$event->started_at"
     :include-seconds="true"
     :refresh-interval="10000"
 >
     {{ $event->started_at->diffForHumans() }}
-</x-hwc::timeago>
+</hw:timeago>
 ```
 
 ## Custom title format
 
 ```blade
-<x-hwc::timeago
+<hw:timeago
     :datetime="$order->placed_at"
     title-format="d/m/Y H:i:s"
 >
     {{ $order->placed_at->diffForHumans() }}
-</x-hwc::timeago>
+</hw:timeago>
 ```
 
 ## Without suffix
 
 ```blade
-<x-hwc::timeago :datetime="$file->updated_at" :add-suffix="false" />
+<hw:timeago :datetime="$file->updated_at" :add-suffix="false" />
 ```
 
 Renders as e.g. `3 hours` instead of `3 hours ago`.

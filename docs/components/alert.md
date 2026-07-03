@@ -5,28 +5,28 @@ Inline feedback block for status messages, warnings and contextual notices.
 ## Usage
 
 ```blade
-<x-hwc::alert>
-    <x-hwc::icon name="info" />
-    <x-hwc::alert.title>Heads up</x-hwc::alert.title>
-    <x-hwc::alert.description>
+<hw:alert>
+    <hw:icon name="info" />
+    <hw:alert.title>Heads up</hw:alert.title>
+    <hw:alert.description>
         You can add components to your app using the installer.
-    </x-hwc::alert.description>
-</x-hwc::alert>
+    </hw:alert.description>
+</hw:alert>
 
-<x-hwc::alert variant="destructive">
-    <x-hwc::alert.title>Upload failed</x-hwc::alert.title>
-    <x-hwc::alert.description>The file could not be processed.</x-hwc::alert.description>
-    <x-hwc::alert.action>
-        <x-hwc::button variant="outline" size="sm">Retry</x-hwc::button>
-    </x-hwc::alert.action>
-</x-hwc::alert>
+<hw:alert variant="destructive">
+    <hw:alert.title>Upload failed</hw:alert.title>
+    <hw:alert.description>The file could not be processed.</hw:alert.description>
+    <hw:alert.action>
+        <hw:button variant="outline" size="sm">Retry</hw:button>
+    </hw:alert.action>
+</hw:alert>
 
-<x-hwc::alert class="border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-50">
-    <x-hwc::alert.title>Scheduled maintenance</x-hwc::alert.title>
-    <x-hwc::alert.description>
+<hw:alert class="border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-50">
+    <hw:alert.title>Scheduled maintenance</hw:alert.title>
+    <hw:alert.description>
         Deployments will be paused for a few minutes tonight.
-    </x-hwc::alert.description>
-</x-hwc::alert>
+    </hw:alert.description>
+</hw:alert>
 ```
 
 ## Props

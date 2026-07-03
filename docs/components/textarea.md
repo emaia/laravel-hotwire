@@ -1,12 +1,12 @@
 # Textarea
 
 Auto-resizing the textarea with an optional character counter. Mirrors the same auto-derivation (`id`/`errorKey`),
-`old()` merge, and ARIA wiring as `<x-hwc::input>`.
+`old()` merge, and ARIA wiring as `<hw:input>`.
 
 ## Quick example
 
 ```blade
-<x-hwc::textarea name="bio" auto-resize :counter="500" />
+<hw:textarea name="bio" auto-resize :counter="500" />
 ```
 
 ## Props
@@ -28,10 +28,10 @@ Any other HTML attribute (`placeholder`, `rows`, `disabled`, `data-*`, `aria-*`)
 
 ## Auto-derivation
 
-Same convention as `<x-hwc::input>`:
+Same convention as `<hw:input>`:
 
 ```blade
-<x-hwc::textarea name="variables[0][name]" />
+<hw:textarea name="variables[0][name]" />
 {{-- id="variables-0-name", aria-describedby="variables-0-name-error", errorKey="variables.0.name" --}}
 ```
 
@@ -41,7 +41,7 @@ The textarea grows automatically as the user types and shrinks when text is dele
 `data-auto-resize-resize-debounce-delay-value`:
 
 ```blade
-<x-hwc::textarea name="content" auto-resize
+<hw:textarea name="content" auto-resize
     data-auto-resize-resize-debounce-delay-value="200" />
 ```
 
@@ -51,25 +51,25 @@ When `:counter` is set, a wrapper `<span>` with `data-controller="char-counter"`
 `<small data-char-counter-target="counter">` shows the live count. Add `countdown` to show remaining characters:
 
 ```blade
-<x-hwc::textarea name="tweet" :counter="280" countdown />
+<hw:textarea name="tweet" :counter="280" countdown />
 ```
 
 Customize the counter markup with the `counter` slot:
 
 ```blade
-<x-hwc::textarea name="bio" :counter="500">
+<hw:textarea name="bio" :counter="500">
     <x-slot:counter>
         <span class="text-xs text-gray-500" data-char-counter-target="counter"></span>
     </x-slot:counter>
-</x-hwc::textarea>
+</hw:textarea>
 ```
 
-## Inheriting from `<x-hwc::field>`
+## Inheriting from `<hw:field>`
 
 ```blade
-<x-hwc::field name="bio" label="Bio" required>
-    <x-hwc::textarea auto-resize />
-</x-hwc::field>
+<hw:field name="bio" label="Bio" required>
+    <hw:textarea auto-resize />
+</hw:field>
 ```
 
 ## Required controllers
