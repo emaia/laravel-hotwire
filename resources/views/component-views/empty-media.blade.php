@@ -1,1 +1,1 @@
-<div data-slot="empty-icon" data-variant="{{ $variant }}" {{ $attributes }}>{{ $slot }}</div>
+<div data-slot="empty-state-media" data-variant="{{ $variant }}" {{ $attributes }}>{{ $slot }}</div>

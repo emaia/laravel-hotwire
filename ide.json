@@ -139,34 +139,34 @@
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Dropdown"
                 },
                 {
-                    "name": "empty",
+                    "name": "empty-state",
                     "namespace": "hw",
                     "className": "\\Emaia\\LaravelHotwire\\Components\\EmptyState"
                 },
                 {
-                    "name": "empty.content",
+                    "name": "empty-state.content",
                     "namespace": "hw",
-                    "className": "\\Emaia\\LaravelHotwire\\Components\\Empty\\Content"
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\EmptyState\\Content"
                 },
                 {
-                    "name": "empty.description",
+                    "name": "empty-state.description",
                     "namespace": "hw",
-                    "className": "\\Emaia\\LaravelHotwire\\Components\\Empty\\Description"
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\EmptyState\\Description"
                 },
                 {
-                    "name": "empty.header",
+                    "name": "empty-state.header",
                     "namespace": "hw",
-                    "className": "\\Emaia\\LaravelHotwire\\Components\\Empty\\Header"
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\EmptyState\\Header"
                 },
                 {
-                    "name": "empty.media",
+                    "name": "empty-state.media",
                     "namespace": "hw",
-                    "className": "\\Emaia\\LaravelHotwire\\Components\\Empty\\Media"
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\EmptyState\\Media"
                 },
                 {
-                    "name": "empty.title",
+                    "name": "empty-state.title",
                     "namespace": "hw",
-                    "className": "\\Emaia\\LaravelHotwire\\Components\\Empty\\Title"
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\EmptyState\\Title"
                 },
                 {
                     "name": "field",
@@ -211,7 +211,7 @@
                 {
                     "name": "field.set",
                     "namespace": "hw",
-                    "className": "\\Emaia\\LaravelHotwire\\Components\\Field\\FieldSet"
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Field\\Set"
                 },
                 {
                     "name": "field.title",

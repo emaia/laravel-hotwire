@@ -8,7 +8,7 @@ class EmptyState extends Component
 {
     public string $tag = 'div';
 
-    public string $slotName = 'empty';
+    public string $slotName = 'empty-state';
 
     public function render()
     {

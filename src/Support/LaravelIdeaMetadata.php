@@ -77,15 +77,11 @@ final readonly class LaravelIdeaMetadata
 
         ksort($components);
 
-        return array_map(
-            fn (string $name, string $class): array => [
-                'name' => $name,
-                'namespace' => $this->prefix,
-                'className' => '\\'.$class,
-            ],
-            array_keys($components),
-            array_values($components),
-        );
+        return array_map(fn (string $name, string $class): array => [
+            'name' => $name,
+            'namespace' => $this->prefix,
+            'className' => '\\'.$class,
+        ], array_keys($components), array_values($components));
     }
 
     /** @return list<array<string, mixed>> */
