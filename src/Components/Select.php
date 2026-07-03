@@ -51,7 +51,7 @@ class Select extends Component
     ): array {
         $hasName = $name !== null && $name !== '';
 
-        $resolvedId = $id ?: ($hasName ? FieldKey::toId($name) : 'hwc-select-'.uniqid());
+        $resolvedId = $id ?: ($hasName ? FieldKey::toId($name) : 'hw-select-'.uniqid());
         $resolvedErrorKey = $errorKey ?: ($hasName ? FieldKey::toErrorKey($name) : '');
         $errorId = $resolvedId.'-error';
 

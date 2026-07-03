@@ -2,10 +2,10 @@
 
 it('renders the controller, trigger button and menu wiring', function () {
     $view = $this->blade('
-        <x-hwc::dropdown>
+        <x-hw::dropdown>
             <x-slot:trigger>Options</x-slot:trigger>
             <a href="/account">Account</a>
-        </x-hwc::dropdown>
+        </x-hw::dropdown>
     ');
 
     $view->assertSee('data-controller="dropdown"', false);
@@ -20,9 +20,9 @@ it('renders the controller, trigger button and menu wiring', function () {
 
 it('does not crash when no trigger slot is provided', function () {
     $view = $this->blade('
-        <x-hwc::dropdown>
+        <x-hw::dropdown>
             <a href="/x">x</a>
-        </x-hwc::dropdown>
+        </x-hw::dropdown>
     ');
 
     $view->assertSee('data-controller="dropdown"', false);
@@ -32,10 +32,10 @@ it('does not crash when no trigger slot is provided', function () {
 
 it('links the trigger to the menu via id and aria-controls', function () {
     $view = $this->blade('
-        <x-hwc::dropdown id="acct">
+        <x-hw::dropdown id="acct">
             <x-slot:trigger>M</x-slot:trigger>
             <a href="/x">x</a>
-        </x-hwc::dropdown>
+        </x-hw::dropdown>
     ');
 
     $view->assertSee('id="acct"', false);
@@ -44,10 +44,10 @@ it('links the trigger to the menu via id and aria-controls', function () {
 
 it('auto-generates a menu id when none is given', function () {
     $view = $this->blade('
-        <x-hwc::dropdown>
+        <x-hw::dropdown>
             <x-slot:trigger>M</x-slot:trigger>
             <a href="/x">x</a>
-        </x-hwc::dropdown>
+        </x-hw::dropdown>
     ');
 
     $view->assertSee('id="dropdown-', false);
@@ -56,10 +56,10 @@ it('auto-generates a menu id when none is given', function () {
 
 it('emits semantic popover hooks for the menu', function () {
     $view = $this->blade('
-        <x-hwc::dropdown>
+        <x-hw::dropdown>
             <x-slot:trigger>M</x-slot:trigger>
             <a href="/x">x</a>
-        </x-hwc::dropdown>
+        </x-hw::dropdown>
     ');
 
     $view->assertSee('data-slot="dropdown-menu"', false);
@@ -71,10 +71,10 @@ it('emits semantic popover hooks for the menu', function () {
 
 it('is hidden and closed by default', function () {
     $view = $this->blade('
-        <x-hwc::dropdown>
+        <x-hw::dropdown>
             <x-slot:trigger>M</x-slot:trigger>
             <a href="/x">x</a>
-        </x-hwc::dropdown>
+        </x-hw::dropdown>
     ');
 
     $view->assertSee('data-open="false"', false);
@@ -85,10 +85,10 @@ it('is hidden and closed by default', function () {
 
 it('starts open when open is true', function () {
     $view = $this->blade('
-        <x-hwc::dropdown :open="true">
+        <x-hw::dropdown :open="true">
             <x-slot:trigger>M</x-slot:trigger>
             <a href="/x">x</a>
-        </x-hwc::dropdown>
+        </x-hw::dropdown>
     ');
 
     $view->assertSee('data-dropdown-open-value="true"', false);
@@ -99,10 +99,10 @@ it('starts open when open is true', function () {
 
 it('aligns to the start by default (RTL-safe logical position)', function () {
     $view = $this->blade('
-        <x-hwc::dropdown>
+        <x-hw::dropdown>
             <x-slot:trigger>M</x-slot:trigger>
             <a href="/x">x</a>
-        </x-hwc::dropdown>
+        </x-hw::dropdown>
     ');
 
     $view->assertSee('data-align="start"', false);
@@ -111,10 +111,10 @@ it('aligns to the start by default (RTL-safe logical position)', function () {
 
 it('aligns to the end when requested', function () {
     $view = $this->blade('
-        <x-hwc::dropdown align="end">
+        <x-hw::dropdown align="end">
             <x-slot:trigger>M</x-slot:trigger>
             <a href="/x">x</a>
-        </x-hwc::dropdown>
+        </x-hw::dropdown>
     ');
 
     $view->assertSee('data-align="end"', false);
@@ -123,46 +123,46 @@ it('aligns to the end when requested', function () {
 
 it('omits close-on-select by default and emits it when disabled', function () {
     $default = $this->blade('
-        <x-hwc::dropdown>
+        <x-hw::dropdown>
             <x-slot:trigger>M</x-slot:trigger>
             <a href="/x">x</a>
-        </x-hwc::dropdown>
+        </x-hw::dropdown>
     ');
     $default->assertDontSee('data-dropdown-close-on-select-value', false);
 
     $off = $this->blade('
-        <x-hwc::dropdown :close-on-select="false">
+        <x-hw::dropdown :close-on-select="false">
             <x-slot:trigger>M</x-slot:trigger>
             <a href="/x">x</a>
-        </x-hwc::dropdown>
+        </x-hw::dropdown>
     ');
     $off->assertSee('data-dropdown-close-on-select-value="false"', false);
 });
 
 it('includes default transitions, and omits them when disabled', function () {
     $on = $this->blade('
-        <x-hwc::dropdown>
+        <x-hw::dropdown>
             <x-slot:trigger>M</x-slot:trigger>
             <a href="/x">x</a>
-        </x-hwc::dropdown>
+        </x-hw::dropdown>
     ');
     $on->assertSee('data-transition-enter-from="opacity-0 scale-95"', false);
 
     $off = $this->blade('
-        <x-hwc::dropdown :transition="false">
+        <x-hw::dropdown :transition="false">
             <x-slot:trigger>M</x-slot:trigger>
             <a href="/x">x</a>
-        </x-hwc::dropdown>
+        </x-hw::dropdown>
     ');
     $off->assertDontSee('data-transition-enter', false);
 });
 
 it('unions a user-supplied data-controller', function () {
     $view = $this->blade('
-        <x-hwc::dropdown data-controller="analytics">
+        <x-hw::dropdown data-controller="analytics">
             <x-slot:trigger>M</x-slot:trigger>
             <a href="/x">x</a>
-        </x-hwc::dropdown>
+        </x-hw::dropdown>
     ');
 
     $view->assertSee('data-controller="dropdown analytics"', false);
@@ -170,10 +170,10 @@ it('unions a user-supplied data-controller', function () {
 
 it('filters user-supplied data-dropdown-* attributes', function () {
     $view = $this->blade('
-        <x-hwc::dropdown data-dropdown-foo="bar">
+        <x-hw::dropdown data-dropdown-foo="bar">
             <x-slot:trigger>M</x-slot:trigger>
             <a href="/x">x</a>
-        </x-hwc::dropdown>
+        </x-hw::dropdown>
     ');
 
     $view->assertDontSee('data-dropdown-foo', false);
@@ -181,10 +181,10 @@ it('filters user-supplied data-dropdown-* attributes', function () {
 
 it('merges trigger slot attributes onto the button', function () {
     $view = $this->blade('
-        <x-hwc::dropdown>
+        <x-hw::dropdown>
             <x-slot:trigger class="btn-primary">Options</x-slot:trigger>
             <a href="/x">x</a>
-        </x-hwc::dropdown>
+        </x-hw::dropdown>
     ');
 
     $view->assertSee('btn-primary', false);
@@ -193,10 +193,10 @@ it('merges trigger slot attributes onto the button', function () {
 
 it('overrides the trigger layout classes while keeping the semantic trigger hook', function () {
     $view = $this->blade('
-        <x-hwc::dropdown trigger-class="flex w-full justify-between">
+        <x-hw::dropdown trigger-class="flex w-full justify-between">
             <x-slot:trigger class="btn-outline">M</x-slot:trigger>
             <a href="/x">x</a>
-        </x-hwc::dropdown>
+        </x-hw::dropdown>
     ');
 
     $view->assertSee('flex w-full justify-between', false); // default layout replaced
@@ -207,10 +207,10 @@ it('overrides the trigger layout classes while keeping the semantic trigger hook
 
 it('overrides menu width and accepts extra menu classes', function () {
     $view = $this->blade('
-        <x-hwc::dropdown width="w-72" menu-class="text-sm">
+        <x-hw::dropdown width="w-72" menu-class="text-sm">
             <x-slot:trigger>M</x-slot:trigger>
             <a href="/x">x</a>
-        </x-hwc::dropdown>
+        </x-hw::dropdown>
     ');
 
     $view->assertSee('w-72', false);

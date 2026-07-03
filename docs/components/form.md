@@ -6,11 +6,11 @@ Form wrapper that composes optional Stimulus behaviors via boolean props. Render
 ## Quick example
 
 ```blade
-<x-hwc::form :action="route('items.index')" method="get" auto-submit clean-query-params>
-    <x-hwc::input type="search" name="q" placeholder="Search..." />
-    <x-hwc::input type="hidden" name="category" value="books" />
+<hw:form :action="route('items.index')" method="get" auto-submit clean-query-params>
+    <hw:input type="search" name="q" placeholder="Search..." />
+    <hw:input type="hidden" name="category" value="books" />
     <button type="submit">Search</button>
-</x-hwc::form>
+</hw:form>
 ```
 
 ## Props
@@ -35,9 +35,9 @@ Each boolean prop activates a Stimulus controller on `data-controller`. Multiple
 
 ```blade
 {{-- Renders: data-controller="auto-submit unsaved-changes" --}}
-<x-hwc::form auto-submit unsaved-changes>
+<hw:form auto-submit unsaved-changes>
     ...
-</x-hwc::form>
+</hw:form>
 ```
 
 ### auto-submit
@@ -45,7 +45,7 @@ Each boolean prop activates a Stimulus controller on `data-controller`. Multiple
 Submits the form automatically in response to events. You still wire individual fields via `data-action`:
 
 ```blade
-<x-hwc::form action="/search" method="get" auto-submit>
+<hw:form action="/search" method="get" auto-submit>
     <input
         type="search"
         name="q"
@@ -54,7 +54,7 @@ Submits the form automatically in response to events. You still wire individual 
     <select name="category" data-action="change->auto-submit#submit">
         ...
     </select>
-</x-hwc::form>
+</hw:form>
 ```
 
 See [auto-submit controller](../controllers/auto-submit.md).
@@ -65,10 +65,10 @@ Warns with a browser confirmation dialog when attempting to navigate away with u
 Turbo Drive.
 
 ```blade
-<x-hwc::form :action="route('posts.update', $post)" method="put" unsaved-changes>
-    <x-hwc::input name="title" :value="$post->title" />
+<hw:form :action="route('posts.update', $post)" method="put" unsaved-changes>
+    <hw:input name="title" :value="$post->title" />
     <button type="submit">Save</button>
-</x-hwc::form>
+</hw:form>
 ```
 
 See [unsaved-changes controller](../controllers/unsaved-changes.md).
@@ -79,14 +79,14 @@ Removes empty parameters from the query string before submitting a GET form, avo
 `?q=&category=`.
 
 ```blade
-<x-hwc::form action="/items" method="get" clean-query-params>
+<hw:form action="/items" method="get" clean-query-params>
     <input type="search" name="q" />
     <select name="category">
         <option value="">All</option>
         ...
     </select>
     <button type="submit">Filter</button>
-</x-hwc::form>
+</hw:form>
 ```
 
 See [clean-query-params controller](../controllers/clean-query-params.md).
@@ -95,15 +95,15 @@ See [clean-query-params controller](../controllers/clean-query-params.md).
 
 Scrolls to the first validation error after a form submission fails. Listens to `turbo:frame-render` (inside a Turbo
 Frame) or `turbo:render` (full-page morphs) and finds the first `[aria-invalid]` element to scroll it into view. Works
-automatically with `<x-hwc::field>` and `<x-hwc::input>`, which set `aria-invalid` on validation errors.
+automatically with `<hw:field>` and `<hw:input>`, which set `aria-invalid` on validation errors.
 
 ```blade
-<x-hwc::form :action="route('posts.store')" method="post" error-scroll>
-    <x-hwc::field name="title" label="Title" required>
-        <x-hwc::input />
-    </x-hwc::field>
+<hw:form :action="route('posts.store')" method="post" error-scroll>
+    <hw:field name="title" label="Title" required>
+        <hw:input />
+    </hw:field>
     <button type="submit">Save</button>
-</x-hwc::form>
+</hw:form>
 ```
 
 The controller also supports customizing the selector, scroll behavior, and block position via
@@ -115,16 +115,16 @@ The component automatically includes `@csrf` for all non-GET methods, and `@meth
 You don't need to add them manually inside the slot:
 
 ```blade
-<x-hwc::form :action="route('posts.store')" method="post">
-    <x-hwc::input name="title" />
+<hw:form :action="route('posts.store')" method="post">
+    <hw:input name="title" />
     <button type="submit">Save</button>
-</x-hwc::form>
+</hw:form>
 {{-- @csrf is automatically included --}}
 
-<x-hwc::form :action="route('posts.update', $post)" method="put">
-    <x-hwc::input name="title" :value="$post->title" />
+<hw:form :action="route('posts.update', $post)" method="put">
+    <hw:input name="title" :value="$post->title" />
     <button type="submit">Update</button>
-</x-hwc::form>
+</hw:form>
 {{-- @csrf and @method('put') are automatically included --}}
 ```
 
@@ -138,10 +138,10 @@ including a hidden `_turbo_frame_src` input with the current page URL:
 
 ```blade
 <turbo-frame id="content" src="/posts/create">
-    <x-hwc::form :action="route('posts.store')" method="post" track-frame-src>
-        <x-hwc::input name="title" />
+    <hw:form :action="route('posts.store')" method="post" track-frame-src>
+        <hw:input name="title" />
         <button type="submit">Save</button>
-    </x-hwc::form>
+    </hw:form>
 </turbo-frame>
 ```
 

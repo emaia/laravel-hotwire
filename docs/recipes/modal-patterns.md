@@ -9,7 +9,7 @@ Modal and trigger live together. The simplest setup; good for self-contained wid
 modal belongs to one specific spot on the page.
 
 ```blade
-<x-hwc::modal>
+<hw:modal>
     <x-slot:trigger>
         <button type="button" data-action="modal#open">Edit profile</button>
     </x-slot:trigger>
@@ -20,7 +20,7 @@ modal belongs to one specific spot on the page.
         {{-- fields --}}
         <button type="submit">Save</button>
     </form>
-</x-hwc::modal>
+</hw:modal>
 ```
 
 **When to use:** widget-level UI (settings popovers, single-action confirmations with custom UI,
@@ -40,13 +40,13 @@ makes sense (list rows, navigation, deep in a partial) — Stimulus picks it up 
     <header>...</header>
     <main>{{ $slot }}</main>
 
-    <x-hwc::modal frame="modal">
+    <hw:modal frame="modal">
         <x-slot:loading_template>
             <div class="flex items-center justify-center p-12">
                 <span>Loading...</span>
             </div>
         </x-slot:loading_template>
-    </x-hwc::modal>
+    </hw:modal>
 </body>
 ```
 
@@ -104,7 +104,7 @@ No Turbo Frame, no dynamic content. The modal body is rendered server-side once 
 `data-action`.
 
 ```blade
-<x-hwc::modal id="welcome-modal">
+<hw:modal id="welcome-modal">
     <x-slot:trigger>
         <button type="button" data-action="modal#open">What's new?</button>
     </x-slot:trigger>
@@ -117,7 +117,7 @@ No Turbo Frame, no dynamic content. The modal body is rendered server-side once 
             <li>Faster search</li>
         </ul>
     </div>
-</x-hwc::modal>
+</hw:modal>
 ```
 
 **When to use:** content that doesn't need a server fetch (welcome dialogs, info modals, terms
@@ -132,7 +132,7 @@ return turbo_stream()->update('welcome-modal');
 
 ## Component vs raw controller
 
-Reach for the Blade component (`<x-hwc::modal>`) by default — it ships sensible markup, default
+Reach for the Blade component (`<hw:modal>`) by default — it ships sensible markup, default
 classes, Turbo `before-cache` integration, and slot ergonomics.
 
 Drop down to the raw [`modal` controller](../controllers/modal.md) only when:
@@ -148,7 +148,7 @@ component already exposes props or Stimulus values — no need to drop down.
 
 ## See also
 
-- [`<x-hwc::modal>`](../components/modal.md) — component reference.
+- [`<hw:modal>`](../components/modal.md) — component reference.
 - [`modal` controller](../controllers/modal.md) — raw controller reference.
 - [Frame-or-page views](./frame-or-page.md) — render the same view as a page or as a modal.
 - [Server-driven modals](./server-driven-modals.md) — open and close from controller responses.

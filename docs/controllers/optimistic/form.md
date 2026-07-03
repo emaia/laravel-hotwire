@@ -12,9 +12,9 @@ controller on the `<form>` — no extra dispatch controller needed.
 <form data-controller="optimistic--form" action="/posts/1/favorite" method="post">
     @csrf
 
-    <x-hwc::optimistic target="post_1_favorite" action="update">
+    <hw:optimistic target="post_1_favorite" action="update">
         ❤️ Favorited
-    </x-hwc::optimistic>
+    </hw:optimistic>
 
     <button type="submit" id="post_1_favorite">
         🤍 Favorite
@@ -41,12 +41,12 @@ elements that Turbo executes immediately.
     <textarea name="content" placeholder="Write…" required></textarea>
     <button type="submit">Send</button>
 
-    <x-hwc::optimistic target="messages" action="append">
+    <hw:optimistic target="messages" action="append">
         <article class="opacity-60">
             <p data-field="content"></p>
             <small>Sending…</small>
         </article>
-    </x-hwc::optimistic>
+    </hw:optimistic>
 </form>
 ```
 
@@ -62,7 +62,7 @@ elements that Turbo executes immediately.
 
 - Reconciliation is the server's job:
   `turbo_stream()->refresh(method: 'morph', scroll: 'preserve')`.
-- See [`<x-hwc::optimistic>`](../../components/optimistic.md) for the
+- See [`<hw:optimistic>`](../../components/optimistic.md) for the
   Blade component reference and a complete worked example.
 - For link triggers use [`optimistic--link`](link.md).
 - For custom triggers use [`optimistic--dispatch`](dispatch.md) or import

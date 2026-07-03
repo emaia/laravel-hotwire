@@ -30,12 +30,12 @@ it('lists all registered components', function () {
 
 it('shows blade tags with current prefix', function () {
     $this->artisan('hotwire:components')
-        ->expectsOutputToContain('<x-hwc::modal>')
-        ->expectsOutputToContain('<x-hwc::alert-dialog>')
-        ->expectsOutputToContain('<x-hwc::field.group>')
-        ->expectsOutputToContain('<x-hwc::flash-message>')
-        ->expectsOutputToContain('<x-hwc::spinner>')
-        ->expectsOutputToContain('<x-hwc::scroll-progress>')
+        ->expectsOutputToContain('<x-hw::modal>')
+        ->expectsOutputToContain('<x-hw::alert-dialog>')
+        ->expectsOutputToContain('<x-hw::field.group>')
+        ->expectsOutputToContain('<x-hw::flash-message>')
+        ->expectsOutputToContain('<x-hw::spinner>')
+        ->expectsOutputToContain('<x-hw::scroll-progress>')
         ->assertSuccessful();
 });
 

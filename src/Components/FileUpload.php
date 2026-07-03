@@ -61,7 +61,7 @@ class FileUpload extends Component
         public string $controller = 'file-upload',
     ) {
         if ($url === null || $url === '') {
-            throw new InvalidArgumentException('x-hwc::file-upload requires a `url` prop.');
+            throw new InvalidArgumentException('hw:file-upload requires a `url` prop.');
         }
 
         foreach ($messages ?? [] as $key => $_value) {
@@ -104,7 +104,7 @@ class FileUpload extends Component
     ): array {
         $hasName = $name !== null && $name !== '';
 
-        $resolvedId = $id ?: ($hasName ? FieldKey::toId($name) : 'hwc-file-upload-'.uniqid());
+        $resolvedId = $id ?: ($hasName ? FieldKey::toId($name) : 'hw-file-upload-'.uniqid());
         $resolvedErrorKey = $errorKey ?: ($hasName ? FieldKey::toErrorKey($name) : '');
         $errorId = $resolvedId.'-error';
 

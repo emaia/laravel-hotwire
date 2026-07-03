@@ -34,7 +34,7 @@ The selected preset applies globally. Preset files may also include scoped selec
 
 ```blade
 <section data-preset="compact">
-    <x-hwc::button>Save</x-hwc::button>
+    <hw:button>Save</hw:button>
 </section>
 ```
 

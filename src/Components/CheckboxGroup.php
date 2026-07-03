@@ -60,7 +60,7 @@ class CheckboxGroup extends Component
         if ($hasName && ! str_ends_with($name, '[]')) {
             if (config('app.debug', false) && ! app()->environment('testing')) {
                 trigger_error(
-                    "<x-hwc::checkbox-group name=\"$name\">: appended [] for array submission. Use name=\"{$name}[]\" explicitly to silence this notice.",
+                    "<hw:checkbox-group name=\"$name\">: appended [] for array submission. Use name=\"{$name}[]\" explicitly to silence this notice.",
                     E_USER_NOTICE
                 );
             }

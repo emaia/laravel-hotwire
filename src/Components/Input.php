@@ -74,7 +74,7 @@ class Input extends Component
         $isCheckable = $this->isCheckable();
         $hasName = $name !== null && $name !== '';
 
-        $baseId = $id ?: ($hasName ? FieldKey::toId($name) : 'hwc-input-'.uniqid());
+        $baseId = $id ?: ($hasName ? FieldKey::toId($name) : 'hw-input-'.uniqid());
         $resolvedId = $baseId;
 
         $isGroupInput = $isCheckable

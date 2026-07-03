@@ -6,7 +6,7 @@ Accessible modal with backdrop, animations, focus trap and Turbo integration.
 
 ```html
 
-<x-hwc::modal>
+<hw:modal>
     <x-slot:trigger>
         <button data-action="modal#open" type="button">Open modal</button>
     </x-slot:trigger>
@@ -15,7 +15,7 @@ Accessible modal with backdrop, animations, focus trap and Turbo integration.
         <h2>Title</h2>
         <p>Modal content.</p>
     </div>
-</x-hwc::modal>
+</hw:modal>
 ```
 
 ## With a close button
@@ -24,13 +24,13 @@ The X button is shown by default (`close-button` is `true`). To hide it:
 
 ```html
 
-<x-hwc::modal :close-button="false">
+<hw:modal :close-button="false">
     <x-slot:trigger>
         <button data-action="modal#open" type="button">Open</button>
     </x-slot:trigger>
 
     <p class="p-6">Modal without the X button.</p>
-</x-hwc::modal>
+</hw:modal>
 ```
 
 ## Props
@@ -63,7 +63,7 @@ width up to the preset's cap. The caps follow a monotonically increasing scale �
 Need "half the viewport" or another fluid value? Pass an arbitrary `size`:
 
 ```blade
-<x-hwc::modal size="50vw">...</x-hwc::modal>
+<hw:modal size="50vw">...</hw:modal>
 ```
 
 ### Arbitrary size
@@ -73,16 +73,16 @@ Any non-preset value is forwarded as `style="max-width: <value>"` on the dialog,
 behavior as the presets, just with a custom number):
 
 ```blade
-<x-hwc::modal size="800px">...</x-hwc::modal>
-<x-hwc::modal size="60vw">...</x-hwc::modal>
-<x-hwc::modal size="42rem">...</x-hwc::modal>
+<hw:modal size="800px">...</hw:modal>
+<hw:modal size="60vw">...</hw:modal>
+<hw:modal size="42rem">...</hw:modal>
 ```
 
 If you instead want the dialog to **shrink to content** with a custom cap, use `size="auto"` and add the
 cap via the `class` prop on the inner panel:
 
 ```blade
-<x-hwc::modal size="auto" class="md:max-w-[800px]">...</x-hwc::modal>
+<hw:modal size="auto" class="md:max-w-[800px]">...</hw:modal>
 ```
 
 ### Migrating from `allow-small-width` / `allow-full-width`
@@ -91,10 +91,10 @@ The previous boolean props have been replaced by `size`. Map your usage:
 
 | Before                                                       | After                       |
 |--------------------------------------------------------------|-----------------------------|
-| `<x-hwc::modal>` (defaults)                                  | `<x-hwc::modal size="50vw">` to keep the old "half-viewport" behavior — or just `<x-hwc::modal>` for the new 576px cap |
-| `<x-hwc::modal :allow-small-width="true">`                   | `<x-hwc::modal size="auto">` |
-| `<x-hwc::modal :allow-full-width="false">`                   | `<x-hwc::modal size="50vw">` (or pick a preset) |
-| `<x-hwc::modal :allow-small-width="true" :allow-full-width="false">` | `<x-hwc::modal size="md">` (576px cap, allows shrinking on `sm`) |
+| `<hw:modal>` (defaults)                                  | `<hw:modal size="50vw">` to keep the old "half-viewport" behavior — or just `<hw:modal>` for the new 576px cap |
+| `<hw:modal :allow-small-width="true">`                   | `<hw:modal size="auto">` |
+| `<hw:modal :allow-full-width="false">`                   | `<hw:modal size="50vw">` (or pick a preset) |
+| `<hw:modal :allow-small-width="true" :allow-full-width="false">` | `<hw:modal size="md">` (576px cap, allows shrinking on `sm`) |
 
 ## Root attributes
 
@@ -102,13 +102,13 @@ Arbitrary attributes are forwarded to the root modal element. This is the escape
 Stimulus values, ARIA attributes, ids, and data hooks:
 
 ```blade
-<x-hwc::modal
+<hw:modal
     data-modal-close-on-escape-value="false"
     aria-labelledby="edit-post-title"
     data-test-id="edit-post-modal"
 >
     ...
-</x-hwc::modal>
+</hw:modal>
 ```
 
 ## Slots
@@ -129,13 +129,13 @@ target that the controller observes and opens/closes automatically:
     Edit
 </a>
 
-<x-hwc::modal frame="modal">
+<hw:modal frame="modal">
     <x-slot:loading_template>
         <div class="flex items-center justify-center p-12">
             <span>Loading...</span>
         </div>
     </x-slot:loading_template>
-</x-hwc::modal>
+</hw:modal>
 ```
 
 `frame="modal"` renders this frame inside the modal body:
@@ -147,7 +147,7 @@ target that the controller observes and opens/closes automatically:
 Use a different root `id` if you set one manually:
 
 ```blade
-<x-hwc::modal id="modal-shell" frame="modal" />
+<hw:modal id="modal-shell" frame="modal" />
 ```
 
 When the Turbo Frame receives content, the modal opens automatically. When the content is removed,
@@ -177,14 +177,14 @@ when that content arrives.
 Provided once via the slot — used for every trigger:
 
 ```blade
-<x-hwc::modal frame="modal">
+<hw:modal frame="modal">
     <x-slot:loading_template>
         <div class="flex items-center justify-center p-12">
             <span class="animate-spin">⏳</span>
             <span>Loading...</span>
         </div>
     </x-slot:loading_template>
-</x-hwc::modal>
+</hw:modal>
 ```
 
 ### Per-link template override

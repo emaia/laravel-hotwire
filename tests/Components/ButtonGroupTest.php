@@ -1,7 +1,7 @@
 <?php
 
 it('renders a horizontal button group by default', function () {
-    $view = $this->blade('<x-hwc::button-group><x-hwc::button>One</x-hwc::button><x-hwc::button>Two</x-hwc::button></x-hwc::button-group>');
+    $view = $this->blade('<x-hw::button-group><x-hw::button>One</x-hw::button><x-hw::button>Two</x-hw::button></x-hw::button-group>');
 
     $view->assertSee('role="group"', false)
         ->assertSee('data-slot="button-group"', false)
@@ -11,18 +11,18 @@ it('renders a horizontal button group by default', function () {
 });
 
 it('renders a vertical button group state', function () {
-    $view = $this->blade('<x-hwc::button-group orientation="vertical"><x-hwc::button>One</x-hwc::button></x-hwc::button-group>');
+    $view = $this->blade('<x-hw::button-group orientation="vertical"><x-hw::button>One</x-hw::button></x-hw::button-group>');
 
     $view->assertSee('data-orientation="vertical"', false);
 });
 
 it('renders text and separator subcomponents', function () {
     $view = $this->blade(<<<'BLADE'
-        <x-hwc::button-group>
-            <x-hwc::button-group.text>Sort</x-hwc::button-group.text>
-            <x-hwc::button-group.separator />
-            <x-hwc::button>Newest</x-hwc::button>
-        </x-hwc::button-group>
+        <x-hw::button-group>
+            <x-hw::button-group.text>Sort</x-hw::button-group.text>
+            <x-hw::button-group.separator />
+            <x-hw::button>Newest</x-hw::button>
+        </x-hw::button-group>
     BLADE);
 
     $view->assertSee('data-slot="button-group-text"', false)
@@ -33,7 +33,7 @@ it('renders text and separator subcomponents', function () {
 });
 
 it('passes through attributes', function () {
-    $view = $this->blade('<x-hwc::button-group id="actions" class="mt-4" aria-label="Actions"><x-hwc::button>Save</x-hwc::button></x-hwc::button-group>');
+    $view = $this->blade('<x-hw::button-group id="actions" class="mt-4" aria-label="Actions"><x-hw::button>Save</x-hw::button></x-hw::button-group>');
 
     $view->assertSee('id="actions"', false)
         ->assertSee('class="mt-4"', false)

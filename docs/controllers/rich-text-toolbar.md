@@ -130,7 +130,7 @@ resolved (selector matches nothing) the toolbar stays inert — actions become n
 </div>
 ```
 
-Most apps don't write this markup by hand — the [`<x-hwc::rich-text>`](../components/rich-text.md)
+Most apps don't write this markup by hand — the [`<hw:rich-text>`](../components/rich-text.md)
 component renders the default toolbar for you and lets you swap it for a custom one via a slot.
 
 ## Custom toolbars
@@ -141,7 +141,7 @@ default toolbar from the Blade component by passing `:toolbar="false"` and rende
 the slot:
 
 ```blade
-<x-hwc::rich-text name="content" :toolbar="false">
+<hw:rich-text name="content" :toolbar="false">
     <div data-controller="rich-text-toolbar"
          data-rich-text-toolbar-editor-value="[data-rich-text-id-value='content']"
          class="my-toolbar">
@@ -152,7 +152,7 @@ the slot:
         </button>
         {{-- … --}}
     </div>
-</x-hwc::rich-text>
+</hw:rich-text>
 ```
 
 The editor selector matches the rich-text controller's `id-value`, so multi-editor pages stay
@@ -265,7 +265,7 @@ element via its swapped `id-value` attribute — the toolbar walks `data-control
 `rich-text-with-tables` controller transparently:
 
 ```blade
-<x-hwc::rich-text name="content" controller="rich-text-with-tables" :toolbar="false">
+<hw:rich-text name="content" controller="rich-text-with-tables" :toolbar="false">
     <div data-controller="rich-text-table-toolbar"
          data-rich-text-table-toolbar-editor-value="[data-rich-text-with-tables-id-value='content']">
         {{-- Default buttons (inherited from the parent's actions) --}}
@@ -284,7 +284,7 @@ element via its swapped `id-value` attribute — the toolbar walks `data-control
         <button type="button" data-action="click->rich-text-table-toolbar#addRowAfter">+ Row</button>
         <button type="button" data-action="click->rich-text-table-toolbar#deleteTable">Drop</button>
     </div>
-</x-hwc::rich-text>
+</hw:rich-text>
 ```
 
 **Two non-obvious bits in this markup:**

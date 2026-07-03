@@ -5,7 +5,7 @@ Displays a button or a component that looks like a button.
 ## Basic usage
 
 ```blade
-<x-hwc::button>Save</x-hwc::button>
+<hw:button>Save</hw:button>
 ```
 
 Renders a native `<button type="button">` with semantic styling hooks. The selected CSS preset applies the visual style.
@@ -13,12 +13,12 @@ Renders a native `<button type="button">` with semantic styling hooks. The selec
 ## Variants
 
 ```blade
-<x-hwc::button variant="default">Default</x-hwc::button>
-<x-hwc::button variant="destructive">Delete</x-hwc::button>
-<x-hwc::button variant="outline">Cancel</x-hwc::button>
-<x-hwc::button variant="secondary">Secondary</x-hwc::button>
-<x-hwc::button variant="ghost">Ghost</x-hwc::button>
-<x-hwc::button variant="link">Link</x-hwc::button>
+<hw:button variant="default">Default</hw:button>
+<hw:button variant="destructive">Delete</hw:button>
+<hw:button variant="outline">Cancel</hw:button>
+<hw:button variant="secondary">Secondary</hw:button>
+<hw:button variant="ghost">Ghost</hw:button>
+<hw:button variant="link">Link</hw:button>
 ```
 
 | Variant       | When to use                                                                          |
@@ -33,15 +33,15 @@ Renders a native `<button type="button">` with semantic styling hooks. The selec
 ## Sizes
 
 ```blade
-<x-hwc::button size="xs">Extra small</x-hwc::button>
-<x-hwc::button size="sm">Small</x-hwc::button>
-<x-hwc::button size="default">Default</x-hwc::button>
-<x-hwc::button size="lg">Large</x-hwc::button>
+<hw:button size="xs">Extra small</hw:button>
+<hw:button size="sm">Small</hw:button>
+<hw:button size="default">Default</hw:button>
+<hw:button size="lg">Large</hw:button>
 
-<x-hwc::button size="icon-xs"><x-hwc::icon name="x" /></x-hwc::button>
-<x-hwc::button size="icon-sm"><x-hwc::icon name="x" /></x-hwc::button>
-<x-hwc::button size="icon"><x-hwc::icon name="x" /></x-hwc::button>
-<x-hwc::button size="icon-lg"><x-hwc::icon name="x" /></x-hwc::button>
+<hw:button size="icon-xs"><hw:icon name="x" /></hw:button>
+<hw:button size="icon-sm"><hw:icon name="x" /></hw:button>
+<hw:button size="icon"><hw:icon name="x" /></hw:button>
+<hw:button size="icon-lg"><hw:icon name="x" /></hw:button>
 ```
 
 | Size       | Use case                                            |
@@ -59,17 +59,17 @@ Exact dimensions are preset-owned. Use `data-size` selectors in app CSS if you n
 
 ## Attaching a Stimulus controller / action
 
-Blade's component parser doesn't accept `{{ $bag }}` as a bare attribute spread inside a component tag — so the usual `{{ stimulus()->controller(…)->action(…) }}` idiom can't go directly on `<x-hwc::button>`. Pass it via the named `:stimulus` prop instead:
+Blade's component parser doesn't accept `{{ $bag }}` as a bare attribute spread inside a component tag — so the usual `{{ stimulus()->controller(…)->action(…) }}` idiom can't go directly on `<hw:button>`. Pass it via the named `:stimulus` prop instead:
 
 ```blade
-<x-hwc::button
+<hw:button
     as="a"
     href="{{ route('tasks.create') }}"
     :stimulus="stimulus()->controller('hotkey')->action('hotkey', 'click', 'keydown.n@window')"
     data-turbo-frame="modal"
 >
     New Task
-</x-hwc::button>
+</hw:button>
 ```
 
 The `:stimulus` prop accepts any `Htmlable` (the `stimulus()`, `stimulus_controller()`, `stimulus_action()` and `stimulus_target()` helpers all return one). Its `toHtml()` is rendered inline alongside the regular attribute bag, so existing `data-controller` / `data-action` you pass via plain HTML attributes still merge correctly.
@@ -81,9 +81,9 @@ If you don't have a Stimulus binding, omit the prop — the rendered button has 
 By default the component renders `<button>`. Pass `as="a"` to render an anchor with the same look — useful when the action navigates to a different page:
 
 ```blade
-<x-hwc::button as="a" href="/dashboard">Dashboard</x-hwc::button>
+<hw:button as="a" href="/dashboard">Dashboard</hw:button>
 
-<x-hwc::button as="a" variant="outline" href="{{ route('profile') }}">Profile</x-hwc::button>
+<hw:button as="a" variant="outline" href="{{ route('profile') }}">Profile</hw:button>
 ```
 
 When `as="a"` is used, the `type` attribute is omitted (it has no meaning on `<a>`). Any HTML attribute the anchor needs — `href`, `target`, `rel`, `download` — passes through as usual.
@@ -115,7 +115,7 @@ Useful for app CSS hooks (`[data-variant="destructive"]:focus { ... }`) and auto
 
 ## Already integrated in shipped components
 
-`<x-hwc::button>` is wired into the components that ship with the package — you don't need to use it directly to benefit from the consistency:
+`<hw:button>` is wired into the components that ship with the package — you don't need to use it directly to benefit from the consistency:
 
-- **Modal close button** — `variant="ghost" size="icon"` wrapping `<x-hwc::icon name="x" />`.
+- **Modal close button** — `variant="ghost" size="icon"` wrapping `<hw:icon name="x" />`.
 - **Alert-dialog cancel/action** — `outline` and `default` respectively. Pass `confirm-variant="destructive"` for destructive actions; `$cancelClass` and `$confirmClass` are forwarded as `class` attributes on the inner buttons.

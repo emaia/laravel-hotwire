@@ -65,7 +65,7 @@
                 </div>
 
                 @if ($closeButton)
-                    <x-hwc::button
+                    <hw:button
                         slot-name="modal-close"
                         data-modal-size="{{ $size }}"
                         variant="ghost"
@@ -74,8 +74,8 @@
                         type="button"
                         aria-label="Close modal"
                     >
-                        <x-hwc::icon name="x" />
-                    </x-hwc::button>
+                        <hw:icon name="x" />
+                    </hw:button>
                 @endif
             </div>
 

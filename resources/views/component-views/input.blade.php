@@ -41,7 +41,7 @@
         tabindex="0"
         aria-label="Clear"
     >
-        <x-hwc::icon name="circle-x" />
+        <hw:icon name="circle-x" />
     </button>
 </span>
 @endif

@@ -67,7 +67,7 @@ it('merges the options catch-all', function () {
 // --- rendering ---
 
 it('renders the controller, viewport, container and slides', function () {
-    $view = $this->blade('<x-hwc::carousel><div>one</div><div>two</div></x-hwc::carousel>');
+    $view = $this->blade('<x-hw::carousel><div>one</div><div>two</div></x-hw::carousel>');
 
     $view->assertSee('data-controller="carousel"', false);
     $view->assertSee('data-carousel-viewport', false);
@@ -78,21 +78,21 @@ it('renders the controller, viewport, container and slides', function () {
 });
 
 it('emits active-dot and disabled-nav class attributes', function () {
-    $view = $this->blade('<x-hwc::carousel active-dot-class="is-active" disabled-nav-class="is-disabled">x</x-hwc::carousel>');
+    $view = $this->blade('<x-hw::carousel active-dot-class="is-active" disabled-nav-class="is-disabled">x</x-hw::carousel>');
 
     $view->assertSee('data-carousel-active-dot-class="is-active"', false);
     $view->assertSee('data-carousel-disabled-nav-class="is-disabled"', false);
 });
 
 it('omits active-dot and disabled-nav data attributes when the prop is empty', function () {
-    $view = $this->blade('<x-hwc::carousel>x</x-hwc::carousel>');
+    $view = $this->blade('<x-hw::carousel>x</x-hw::carousel>');
 
     $view->assertDontSee('data-carousel-active-dot-class', false);
     $view->assertDontSee('data-carousel-disabled-nav-class', false);
 });
 
 it('emits identifier-independent structural hooks', function () {
-    $view = $this->blade('<x-hwc::carousel>x</x-hwc::carousel>');
+    $view = $this->blade('<x-hw::carousel>x</x-hw::carousel>');
 
     $view->assertSee('data-carousel-viewport', false)
         ->assertSee('data-carousel-container', false)
@@ -100,7 +100,7 @@ it('emits identifier-independent structural hooks', function () {
 });
 
 it('swaps the Stimulus identifier with the controller prop', function () {
-    $view = $this->blade('<x-hwc::carousel controller="gallery">x</x-hwc::carousel>');
+    $view = $this->blade('<x-hw::carousel controller="gallery">x</x-hw::carousel>');
 
     // identifier-scoped attrs follow the prop
     $view->assertSee('data-controller="gallery"', false)
@@ -119,26 +119,26 @@ it('swaps the Stimulus identifier with the controller prop', function () {
 });
 
 it('renders navigation by default and hides it when disabled', function () {
-    $this->blade('<x-hwc::carousel>x</x-hwc::carousel>')->assertSee('data-carousel-target="prevButton"', false);
-    $this->blade('<x-hwc::carousel :navigation="false">x</x-hwc::carousel>')
+    $this->blade('<x-hw::carousel>x</x-hw::carousel>')->assertSee('data-carousel-target="prevButton"', false);
+    $this->blade('<x-hw::carousel :navigation="false">x</x-hw::carousel>')
         ->assertDontSee('data-carousel-target="prevButton"', false);
 });
 
 it('renders dots by default and hides them when disabled', function () {
-    $this->blade('<x-hwc::carousel>x</x-hwc::carousel>')->assertSee('data-carousel-target="dotList"', false);
-    $this->blade('<x-hwc::carousel :dots="false">x</x-hwc::carousel>')
+    $this->blade('<x-hw::carousel>x</x-hw::carousel>')->assertSee('data-carousel-target="dotList"', false);
+    $this->blade('<x-hw::carousel :dots="false">x</x-hw::carousel>')
         ->assertDontSee('data-carousel-target="dotList"', false);
 });
 
 it('emits slide size and spacing as custom properties', function () {
-    $view = $this->blade('<x-hwc::carousel slide-size="70%" slide-spacing="1rem">x</x-hwc::carousel>');
+    $view = $this->blade('<x-hw::carousel slide-size="70%" slide-spacing="1rem">x</x-hw::carousel>');
 
     $view->assertSee('--carousel-slide-size: 70%', false);
     $view->assertSee('--carousel-slide-spacing: 1rem', false);
 });
 
 it('unions a user data-controller and only filters the component\'s own data-carousel-* attributes', function () {
-    $view = $this->blade('<x-hwc::carousel data-controller="analytics" data-carousel-foo="bar">x</x-hwc::carousel>');
+    $view = $this->blade('<x-hw::carousel data-controller="analytics" data-carousel-foo="bar">x</x-hw::carousel>');
 
     $view->assertSee('data-controller="carousel analytics"', false);
     $view->assertSee('data-carousel-foo="bar"', false);
@@ -148,7 +148,7 @@ it('unions a user data-controller and only filters the component\'s own data-car
 });
 
 it('lets a subclass value pass through while filtering owned attributes', function () {
-    $view = $this->blade('<x-hwc::carousel controller="gallery" data-controller="tracking" data-gallery-delay-value="100">x</x-hwc::carousel>');
+    $view = $this->blade('<x-hw::carousel controller="gallery" data-controller="tracking" data-gallery-delay-value="100">x</x-hw::carousel>');
 
     $view->assertSee('data-controller="gallery tracking"', false);
     $view->assertSee('data-gallery-delay-value="100"', false);
@@ -157,8 +157,8 @@ it('lets a subclass value pass through while filtering owned attributes', functi
 });
 
 it('filters owned attributes matching the internal prefixes', function () {
-    $default = $this->blade('<x-hwc::carousel data-carousel-options-value="hacked">x</x-hwc::carousel>');
-    $subclass = $this->blade('<x-hwc::carousel controller="gallery" data-gallery-options-value="hacked" data-gallery-active-dot-class="hacked" data-gallery-disabled-nav-class="hacked">x</x-hwc::carousel>');
+    $default = $this->blade('<x-hw::carousel data-carousel-options-value="hacked">x</x-hw::carousel>');
+    $subclass = $this->blade('<x-hw::carousel controller="gallery" data-gallery-options-value="hacked" data-gallery-active-dot-class="hacked" data-gallery-disabled-nav-class="hacked">x</x-hw::carousel>');
 
     // The user's "hacked" value is stripped; only the component's own value survives.
     $default->assertDontSee('hacked', false);
@@ -167,10 +167,10 @@ it('filters owned attributes matching the internal prefixes', function () {
 
 it('wraps a dot_template slot inside the dot button (content slot, like prev/next)', function () {
     $view = $this->blade('
-        <x-hwc::carousel>
+        <x-hw::carousel>
             <x-slot:dot_template><span class="dot-inner">x</span></x-slot:dot_template>
             <div>slide</div>
-        </x-hwc::carousel>
+        </x-hw::carousel>
     ');
 
     // Slot content is kept (not discarded) and the button still carries the action.
@@ -179,20 +179,20 @@ it('wraps a dot_template slot inside the dot button (content slot, like prev/nex
 });
 
 it('styles and labels the dot list', function () {
-    $default = $this->blade('<x-hwc::carousel>x</x-hwc::carousel>');
+    $default = $this->blade('<x-hw::carousel>x</x-hw::carousel>');
     $default->assertSee('aria-label="Choose slide"', false);
 
-    $view = $this->blade('<x-hwc::carousel dot-list-class="absolute bottom-3 flex gap-2" dot-list-label="Escolher slide">x</x-hwc::carousel>');
+    $view = $this->blade('<x-hw::carousel dot-list-class="absolute bottom-3 flex gap-2" dot-list-label="Escolher slide">x</x-hw::carousel>');
     $view->assertSee('absolute bottom-3 flex gap-2', false);
     $view->assertSee('aria-label="Escolher slide"', false);
 });
 
 it('merges prev/next slot attributes onto the buttons (class + aria-label)', function () {
     $view = $this->blade('
-        <x-hwc::carousel>
+        <x-hw::carousel>
             <x-slot:prev_button class="my-prev" aria-label="Anterior">‹</x-slot:prev_button>
             <div>slide</div>
-        </x-hwc::carousel>
+        </x-hw::carousel>
     ');
 
     $view->assertSee('my-prev', false);                 // slot class appended
@@ -201,14 +201,14 @@ it('merges prev/next slot attributes onto the buttons (class + aria-label)', fun
 });
 
 it('leaves the nav buttons loose by default (no wrapper)', function () {
-    $view = $this->blade('<x-hwc::carousel>x</x-hwc::carousel>');
+    $view = $this->blade('<x-hw::carousel>x</x-hw::carousel>');
 
     $view->assertSee('data-carousel-target="prevButton"', false);
     $view->assertDontSee('data-carousel-nav-wrapper', false);
 });
 
 it('wraps the nav buttons when nav-wrapper-class is set', function () {
-    $view = $this->blade('<x-hwc::carousel nav-wrapper-class="absolute bottom-3 left-3 flex gap-2">x</x-hwc::carousel>');
+    $view = $this->blade('<x-hw::carousel nav-wrapper-class="absolute bottom-3 left-3 flex gap-2">x</x-hw::carousel>');
 
     $view->assertSee('data-carousel-nav-wrapper', false);
     $view->assertSee('absolute bottom-3 left-3 flex gap-2', false);
@@ -219,10 +219,10 @@ it('wraps the nav buttons when nav-wrapper-class is set', function () {
 
 it('merges dot_template slot attributes onto the dot button', function () {
     $view = $this->blade('
-        <x-hwc::carousel>
+        <x-hw::carousel>
             <x-slot:dot_template class="h-1 w-6"></x-slot:dot_template>
             <div>slide</div>
-        </x-hwc::carousel>
+        </x-hw::carousel>
     ');
 
     $view->assertSee('h-1 w-6', false);
@@ -230,26 +230,26 @@ it('merges dot_template slot attributes onto the dot button', function () {
 });
 
 it('auto-generates an id and accepts a custom one', function () {
-    $this->blade('<x-hwc::carousel>x</x-hwc::carousel>')->assertSee('id="carousel-', false);
-    $this->blade('<x-hwc::carousel id="gallery">x</x-hwc::carousel>')->assertSee('id="gallery"', false);
+    $this->blade('<x-hw::carousel>x</x-hw::carousel>')->assertSee('id="carousel-', false);
+    $this->blade('<x-hw::carousel id="gallery">x</x-hw::carousel>')->assertSee('id="gallery"', false);
 });
 
 // --- Progress bar ---
 
 it('renders a progress bar when progress is true', function () {
-    $view = $this->blade('<x-hwc::carousel :progress="true">x</x-hwc::carousel>');
+    $view = $this->blade('<x-hw::carousel :progress="true">x</x-hw::carousel>');
 
     $view->assertSee('data-carousel-target="progress"', false);
 });
 
 it('does not render a progress bar by default', function () {
-    $view = $this->blade('<x-hwc::carousel>x</x-hwc::carousel>');
+    $view = $this->blade('<x-hw::carousel>x</x-hw::carousel>');
 
     $view->assertDontSee('data-carousel-target="progress"', false);
 });
 
 it('applies progressClass and progressWrapperClass', function () {
-    $view = $this->blade('<x-hwc::carousel :progress="true" progress-wrapper-class="h-1 bg-gray-200 rounded" progress-class="h-full bg-indigo-500 rounded">x</x-hwc::carousel>');
+    $view = $this->blade('<x-hw::carousel :progress="true" progress-wrapper-class="h-1 bg-gray-200 rounded" progress-class="h-full bg-indigo-500 rounded">x</x-hw::carousel>');
 
     $view->assertSee('h-1 bg-gray-200 rounded', false);
     $view->assertSee('h-full bg-indigo-500 rounded', false);
@@ -258,21 +258,21 @@ it('applies progressClass and progressWrapperClass', function () {
 // --- Counter ---
 
 it('renders a counter when counter is true', function () {
-    $view = $this->blade('<x-hwc::carousel :counter="true">x</x-hwc::carousel>');
+    $view = $this->blade('<x-hw::carousel :counter="true">x</x-hw::carousel>');
 
     $view->assertSee('data-carousel-target="indexLabel"', false);
     $view->assertSee('data-carousel-target="totalLabel"', false);
 });
 
 it('does not render a counter by default', function () {
-    $view = $this->blade('<x-hwc::carousel>x</x-hwc::carousel>');
+    $view = $this->blade('<x-hw::carousel>x</x-hw::carousel>');
 
     $view->assertDontSee('data-carousel-target="indexLabel"', false);
     $view->assertDontSee('data-carousel-target="totalLabel"', false);
 });
 
 it('applies counterClass', function () {
-    $view = $this->blade('<x-hwc::carousel :counter="true" counter-class="text-sm text-gray-500">x</x-hwc::carousel>');
+    $view = $this->blade('<x-hw::carousel :counter="true" counter-class="text-sm text-gray-500">x</x-hw::carousel>');
 
     $view->assertSee('text-sm text-gray-500', false);
 });
@@ -280,7 +280,7 @@ it('applies counterClass', function () {
 // --- Extras with controller prop ---
 
 it('uses the custom controller identifier for progress and counter targets', function () {
-    $view = $this->blade('<x-hwc::carousel controller="gallery" :progress="true" :counter="true">x</x-hwc::carousel>');
+    $view = $this->blade('<x-hw::carousel controller="gallery" :progress="true" :counter="true">x</x-hw::carousel>');
 
     $view->assertSee('data-gallery-target="progress"', false);
     $view->assertSee('data-gallery-target="indexLabel"', false);

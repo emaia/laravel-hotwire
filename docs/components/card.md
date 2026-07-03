@@ -5,19 +5,19 @@ Composable content container with header, action, content and footer slots.
 ## Usage
 
 ```blade
-<x-hwc::card>
-    <x-hwc::card.header>
-        <x-hwc::card.title>Revenue</x-hwc::card.title>
-        <x-hwc::card.description>Last 30 days</x-hwc::card.description>
-        <x-hwc::card.action>
-            <x-hwc::button size="sm" variant="outline">Export</x-hwc::button>
-        </x-hwc::card.action>
-    </x-hwc::card.header>
-    <x-hwc::card.content>
+<hw:card>
+    <hw:card.header>
+        <hw:card.title>Revenue</hw:card.title>
+        <hw:card.description>Last 30 days</hw:card.description>
+        <hw:card.action>
+            <hw:button size="sm" variant="outline">Export</hw:button>
+        </hw:card.action>
+    </hw:card.header>
+    <hw:card.content>
         <p class="text-2xl font-semibold">$12,400</p>
-    </x-hwc::card.content>
-    <x-hwc::card.footer>Updated now</x-hwc::card.footer>
-</x-hwc::card>
+    </hw:card.content>
+    <hw:card.footer>Updated now</hw:card.footer>
+</hw:card>
 ```
 
 ## Props
@@ -31,14 +31,14 @@ Composable content container with header, action, content and footer slots.
 Override `--card-spacing` on the root card to tune header, content and footer padding for one instance.
 
 ```blade
-<x-hwc::card class="[--card-spacing:--spacing(8)]">
-    <x-hwc::card.header>
-        <x-hwc::card.title>Large spacing</x-hwc::card.title>
-    </x-hwc::card.header>
-    <x-hwc::card.content>
+<hw:card class="[--card-spacing:--spacing(8)]">
+    <hw:card.header>
+        <hw:card.title>Large spacing</hw:card.title>
+    </hw:card.header>
+    <hw:card.content>
         Content uses the same spacing token.
-    </x-hwc::card.content>
-</x-hwc::card>
+    </hw:card.content>
+</hw:card>
 ```
 
 ## Components

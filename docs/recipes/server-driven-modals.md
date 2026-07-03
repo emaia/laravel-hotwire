@@ -1,12 +1,12 @@
 # Server-driven modals
 
-Open and close `<x-hwc::modal>` instances from controller responses, without writing client-side JS.
+Open and close `<hw:modal>` instances from controller responses, without writing client-side JS.
 
 ## When to use what
 
 | Scenario                                                | Recommended path                                      |
 |---------------------------------------------------------|-------------------------------------------------------|
-| User clicks a link → open modal with server content     | `<x-hwc::modal frame="modal">` + Turbo Frame link     |
+| User clicks a link → open modal with server content     | `<hw:modal frame="modal">` + Turbo Frame link     |
 | Form submission → close the open frame-driven modal     | `turbo_stream()->update('modal', '')`                 |
 | Form submission → close + refresh underlying page       | `turbo_stream()->refresh(...)->update('modal', '')`   |
 | Frame content cleared → modal closes itself             | `turbo_stream()->update($frameId, '')`                |
@@ -20,13 +20,13 @@ This is the path you want for most "open with content" flows. See the
 [frame-or-page recipe](./frame-or-page.md) for the full setup.
 
 ```blade
-<x-hwc::modal frame="modal">
+<hw:modal frame="modal">
     <x-slot:loading_template>
         <div class="flex items-center justify-center p-12">
             <span>Loading...</span>
         </div>
     </x-slot:loading_template>
-</x-hwc::modal>
+</hw:modal>
 ```
 
 ```blade
@@ -89,7 +89,7 @@ needs to do — refresh the underlying list, fire a toast, etc. See
 
 ## See also
 
-- [`<x-hwc::modal>`](../components/modal.md) — the modal component.
+- [`<hw:modal>`](../components/modal.md) — the modal component.
 - [`modal-auto-close`](../controllers/modal-auto-close.md) — closes reusable static modals without
   removing their markup.
 - [Frame-or-page views](./frame-or-page.md) — the canonical pattern for opening modals with server

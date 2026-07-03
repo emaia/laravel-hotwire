@@ -11,9 +11,9 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 ### What changes automatically (no action required)
 
 - Modal, Confirm-dialog, Dropdown, Form primitives (Input, Label, Select, Textarea, File, Error, Description), Flash-message, Toaster, Spinner and the auxiliary components ship with the new token-aligned palette and spacing.
-- All controllers ship from the vendor directory via `import.meta.glob` — no `php artisan hotwire:controllers <name>` step is required to make a `<x-hwc::*>` work in a fresh app.
+- All controllers ship from the vendor directory via `import.meta.glob` — no `php artisan hotwire:controllers <name>` step is required to make a `<hw:*>` work in a fresh app.
 - `hotwire:install` adds a `@hotwire` Vite alias to your `vite.config.{ts,mjs,js}` so user code can extend a vendor controller via a clean import (`import CarouselController from '@hotwire/carousel_controller.js'`). The alias is added idempotently — re-running `hotwire:install` is a no-op when the key is already present. If your config doesn't match the Laravel-stock shape, the command prints the snippet for manual paste instead of writing the file. See [extending-controllers.md](extending-controllers.md).
-- The `Icon` component (`<x-hwc::icon name="..." />`) replaces inline SVGs in the shipped components.
+- The `Icon` component (`<hw:icon name="..." />`) replaces inline SVGs in the shipped components.
 
 ### hotwire:install dependency modes
 
@@ -62,7 +62,7 @@ Starting `0.32.0`, `resources/js/controllers/index.js` is **generated** by `hotw
 
 ### Detecting drift between install config and view usage
 
-When you install with `--with-deps=carousel` and later add `<x-hwc::chart>` to a view, the build will succeed (chart is excluded from the stub) but Stimulus won't register the chart controller — the component renders inert. To catch this:
+When you install with `--with-deps=carousel` and later add `<hw:chart>` to a view, the build will succeed (chart is excluded from the stub) but Stimulus won't register the chart controller — the component renders inert. To catch this:
 
 - `hotwire:check` reports `chart  excluded from loader stub  (used in views; re-run install with --with-deps including chart, or hotwire:check --fix)`.
 - `hotwire:check --fix` regenerates the stub to include `chart`, and adds the missing npm dep to `package.json`. Run your package manager install command (`bun install`, etc.) afterwards.
@@ -125,7 +125,7 @@ If your app *relied* on the prior appearance of shipped components (e.g. screens
 | Description | `text-gray-600` | `text-muted-foreground` |
 | Error message | `text-red-600` | `text-destructive` |
 | Spinner / Scroll-progress | hardcoded hues | semantic tokens (`text-foreground/50`, `bg-primary`) |
-| Inline SVG close buttons | one-off `<svg>` per component | `<x-hwc::icon name="x" />` |
+| Inline SVG close buttons | one-off `<svg>` per component | `<hw:icon name="x" />` |
 
 Custom classes you pass through `class="..."` on the component are unaffected — only the package's own defaults moved.
 
@@ -142,7 +142,7 @@ Custom classes you pass through `class="..."` on the component are unaffected �
 If the visual change is disruptive and you need to ship before adopting:
 
 - Pin to `^0.31.0` in `composer.json` until you can schedule the visual migration.
-- The class substitutions are not one-way — you can keep overriding the package classes per-component via the `class="..."` attribute on each `<x-hwc::*>` instance if a holistic re-theme is not yet feasible.
+- The class substitutions are not one-way — you can keep overriding the package classes per-component via the `class="..."` attribute on each `<hw:*>` instance if a holistic re-theme is not yet feasible.
 
 ---
 

@@ -9,7 +9,7 @@ Wraps [Leaflet](https://leafletjs.com/) as an interactive map controller. Loads 
 
 - `leaflet` (`bun add leaflet`)
 
-> If any component in your views pulls this controller in (via `<x-hwc::map>`), `php artisan hotwire:check --fix` will add `leaflet` to your `package.json` `devDependencies` automatically.
+> If any component in your views pulls this controller in (via `<hw:map>`), `php artisan hotwire:check --fix` will add `leaflet` to your `package.json` `devDependencies` automatically.
 
 ## Values
 
@@ -113,7 +113,7 @@ Then mount with the swapped identifier:
 <div data-controller="store-locator" data-store-locator-center-value="[0,0]" ...></div>
 ```
 
-Or via the `controller` prop on `<x-hwc::map>` (see component docs).
+Or via the `controller` prop on `<hw:map>` (see component docs).
 
 ## `defaultView` hook
 

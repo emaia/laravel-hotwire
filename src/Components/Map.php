@@ -32,7 +32,7 @@ class Map extends Component
     ) {
         if ($center === null && $markers === null && ($url === null || $url === '')) {
             throw new InvalidArgumentException(
-                'x-hwc::map requires at least one of `center`, `markers`, or `url`.'
+                'hw:map requires at least one of `center`, `markers`, or `url`.'
             );
         }
 

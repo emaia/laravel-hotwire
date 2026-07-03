@@ -7,7 +7,7 @@ the controller then initializes Apache ECharts on it.
 ## Quick example
 
 ```blade
-<x-hwc::chart :option="[
+<hw:chart :option="[
     'title' => ['text' => 'Sales'],
     'xAxis' => ['type' => 'category', 'data' => ['Jan', 'Feb', 'Mar']],
     'yAxis' => ['type' => 'value'],
@@ -40,7 +40,7 @@ For large datasets, dynamic data, or cacheable endpoints, point `url` at a route
 full ECharts option as JSON:
 
 ```blade
-<x-hwc::chart url="/api/charts/sales" height="320px" />
+<hw:chart url="/api/charts/sales" height="320px" />
 ```
 
 ```php
@@ -72,7 +72,7 @@ milliseconds; the controller re-fetches the URL on every cycle and applies the r
 `setOption` merge (no flicker, user interactions like zoom/brush survive):
 
 ```blade
-<x-hwc::chart url="/api/charts/sales" :poll="30_000" height="320px" />
+<hw:chart url="/api/charts/sales" :poll="30_000" height="320px" />
 ```
 
 The next cycle is only scheduled after the current fetch settles, so a slow endpoint can never queue
@@ -83,7 +83,7 @@ re-render the component without `:poll` or subclass to add custom error handling
 ## Theme
 
 ```blade
-<x-hwc::chart :option="$option" theme="dark" />
+<hw:chart :option="$option" theme="dark" />
 ```
 
 Theme names are passed to `echarts.init(element, theme)`. Register custom themes
@@ -95,7 +95,7 @@ entry and use `theme="v5"`.
 ## Sizing
 
 ```blade
-<x-hwc::chart :option="$option" height="240px" width="640px" />
+<hw:chart :option="$option" height="240px" width="640px" />
 ```
 
 The component renders inline `style="width: ...; height: ..."` so the chart container always has
@@ -107,7 +107,7 @@ Following the carousel pattern, override `controller` to mount a Stimulus subcla
 base `chart`. All data attribute prefixes follow the new identifier automatically:
 
 ```blade
-<x-hwc::chart controller="sales-chart" :option="$option" />
+<hw:chart controller="sales-chart" :option="$option" />
 ```
 
 Renders:
@@ -137,7 +137,7 @@ option exceeds 500KB, with a pointer to the `url` prop. Production stays silent.
 `data-controller` passes through — your own controller mounts alongside the chart:
 
 ```blade
-<x-hwc::chart :option="$option" data-controller="analytics-track" />
+<hw:chart :option="$option" data-controller="analytics-track" />
 ```
 
 Renders `data-controller="chart analytics-track"`.

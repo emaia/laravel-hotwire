@@ -5,7 +5,7 @@ Converts a datetime into a human-readable relative string (e.g. "3 minutes ago")
 **Identifier:** `timeago`  
 **Install:** `php artisan hotwire:controllers timeago`
 
-> Looking for the Blade component? See [`<x-hwc::timeago />`](../components/timeago.md).
+> Looking for the Blade component? See [`<hw:timeago />`](../components/timeago.md).
 
 ## Requirements
 
@@ -97,4 +97,4 @@ Setting a `title` attribute provides the absolute date on hover, while the eleme
 The initial text from `diffForHumans()` acts as a server-rendered fallback before Stimulus connects.
 
 For a ready-made wrapper that handles all of this — including the `title` tooltip and slot fallback — use the
-[`<x-hwc::timeago />`](../components/timeago.md) Blade component.
+[`<hw:timeago />`](../components/timeago.md) Blade component.

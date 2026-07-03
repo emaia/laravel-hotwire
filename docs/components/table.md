@@ -5,21 +5,21 @@ Responsive table primitives that keep markup semantic while exposing stable `dat
 ## Usage
 
 ```blade
-<x-hwc::table>
-    <x-hwc::table.caption>Recent invoices</x-hwc::table.caption>
-    <x-hwc::table.header>
-        <x-hwc::table.row>
-            <x-hwc::table.head>Invoice</x-hwc::table.head>
-            <x-hwc::table.head>Status</x-hwc::table.head>
-        </x-hwc::table.row>
-    </x-hwc::table.header>
-    <x-hwc::table.body>
-        <x-hwc::table.row>
-            <x-hwc::table.cell>INV001</x-hwc::table.cell>
-            <x-hwc::table.cell>Paid</x-hwc::table.cell>
-        </x-hwc::table.row>
-    </x-hwc::table.body>
-</x-hwc::table>
+<hw:table>
+    <hw:table.caption>Recent invoices</hw:table.caption>
+    <hw:table.header>
+        <hw:table.row>
+            <hw:table.head>Invoice</hw:table.head>
+            <hw:table.head>Status</hw:table.head>
+        </hw:table.row>
+    </hw:table.header>
+    <hw:table.body>
+        <hw:table.row>
+            <hw:table.cell>INV001</hw:table.cell>
+            <hw:table.cell>Paid</hw:table.cell>
+        </hw:table.row>
+    </hw:table.body>
+</hw:table>
 ```
 
 ## Components

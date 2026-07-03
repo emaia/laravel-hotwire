@@ -3,7 +3,7 @@
 Render the **same view** as either a full-page response or a Turbo Frame modal payload, depending on
 how the user reached it. One controller, one view, no duplication.
 
-> The pattern below is also packaged as [`<x-hwc::frame-or-page>`](../components/frame-or-page.md).
+> The pattern below is also packaged as [`<hw:frame-or-page>`](../components/frame-or-page.md).
 > Use this recipe when you want to understand the moving parts or when you need to customize the
 > dashboard layout itself; reach for the component when you just want the behavior.
 
@@ -71,16 +71,16 @@ The view itself doesn't know — and doesn't care — whether it's rendered as a
     <header>...</header>
     <main>{{ $slot }}</main>
 
-    <x-hwc::modal frame="modal">
+    <hw:modal frame="modal">
         <x-slot:loading_template>
             <div class="flex items-center justify-center p-12">
                 <span>Loading...</span>
             </div>
         </x-slot:loading_template>
-    </x-hwc::modal>
+    </hw:modal>
 
-    <x-hwc::flash-container />
-    <x-hwc::flash-message />
+    <hw:flash-container />
+    <hw:flash-message />
 </body>
 </html>
 ```
@@ -101,7 +101,7 @@ Trigger the modal:
 
 `data-turbo-frame="modal"` makes Turbo issue the request scoped to the frame, sending the
 `Turbo-Frame: modal` header. The layout sees it and renders only the frame content. The frame
-rendered by `<x-hwc::modal frame="modal">` receives the response, the modal observer fires, and the
+rendered by `<hw:modal frame="modal">` receives the response, the modal observer fires, and the
 modal opens.
 
 The modal controller listens globally for clicks on `a[data-turbo-frame="<its frame id>"]`, so the
@@ -158,7 +158,7 @@ service provider.
 
 ## See also
 
-- [`<x-hwc::modal>`](../components/modal.md) — the modal primitive.
+- [`<hw:modal>`](../components/modal.md) — the modal primitive.
 - [`modal` controller](../controllers/modal.md) — dynamic content observer internals.
 - [Server-driven modals](./server-driven-modals.md) — closing and replacing content from the server.
 - [Composing streams](./composing-streams.md) — chain `refresh + update + flash` for clean

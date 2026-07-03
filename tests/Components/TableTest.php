@@ -1,7 +1,7 @@
 <?php
 
 it('renders a responsive table container and table slot', function () {
-    $view = $this->blade('<x-hwc::table><tbody><tr><td>Jane</td></tr></tbody></x-hwc::table>');
+    $view = $this->blade('<x-hw::table><tbody><tr><td>Jane</td></tr></tbody></x-hw::table>');
 
     $view->assertSee('data-slot="table-container"', false)
         ->assertSee('<table', false)
@@ -11,24 +11,24 @@ it('renders a responsive table container and table slot', function () {
 
 it('renders table subcomponents with semantic slots', function () {
     $view = $this->blade(<<<'BLADE'
-        <x-hwc::table>
-            <x-hwc::table.caption>Users</x-hwc::table.caption>
-            <x-hwc::table.header>
-                <x-hwc::table.row>
-                    <x-hwc::table.head>Name</x-hwc::table.head>
-                </x-hwc::table.row>
-            </x-hwc::table.header>
-            <x-hwc::table.body>
-                <x-hwc::table.row data-state="selected">
-                    <x-hwc::table.cell>Jane</x-hwc::table.cell>
-                </x-hwc::table.row>
-            </x-hwc::table.body>
-            <x-hwc::table.footer>
-                <x-hwc::table.row>
-                    <x-hwc::table.cell>Total</x-hwc::table.cell>
-                </x-hwc::table.row>
-            </x-hwc::table.footer>
-        </x-hwc::table>
+        <x-hw::table>
+            <x-hw::table.caption>Users</x-hw::table.caption>
+            <x-hw::table.header>
+                <x-hw::table.row>
+                    <x-hw::table.head>Name</x-hw::table.head>
+                </x-hw::table.row>
+            </x-hw::table.header>
+            <x-hw::table.body>
+                <x-hw::table.row data-state="selected">
+                    <x-hw::table.cell>Jane</x-hw::table.cell>
+                </x-hw::table.row>
+            </x-hw::table.body>
+            <x-hw::table.footer>
+                <x-hw::table.row>
+                    <x-hw::table.cell>Total</x-hw::table.cell>
+                </x-hw::table.row>
+            </x-hw::table.footer>
+        </x-hw::table>
     BLADE);
 
     $view->assertSee('data-slot="table-caption"', false)
@@ -44,7 +44,7 @@ it('renders table subcomponents with semantic slots', function () {
 });
 
 it('does not emit package Tailwind classes inline', function () {
-    $view = $this->blade('<x-hwc::table><x-hwc::table.body /></x-hwc::table>');
+    $view = $this->blade('<x-hw::table><x-hw::table.body /></x-hw::table>');
 
     $view->assertDontSee('overflow-x-auto', false)
         ->assertDontSee('caption-bottom', false)
@@ -52,7 +52,7 @@ it('does not emit package Tailwind classes inline', function () {
 });
 
 it('passes through classes and arbitrary attributes', function () {
-    $view = $this->blade('<x-hwc::table id="users" class="min-w-lg" data-test="users"><x-hwc::table.body /></x-hwc::table>');
+    $view = $this->blade('<x-hw::table id="users" class="min-w-lg" data-test="users"><x-hw::table.body /></x-hw::table>');
 
     $view->assertSee('id="users"', false)
         ->assertSee('class="min-w-lg"', false)

@@ -32,7 +32,7 @@ class CheckCommand extends Command
     /** @var string[] OK status lines for component-driven controllers, kept in component-scan order so each component's controllers stay grouped. */
     private array $okComponentControllerLines = [];
 
-    /** @var string[] OK status lines for `<x-hwc::*>` components without controllers, kept in alphabetical scan order. */
+    /** @var string[] OK status lines for `<x-hw::*>` components without controllers, kept in alphabetical scan order. */
     private array $okNoControllerLines = [];
 
     /** @var string[] OK status lines for standalone controllers, in alphabetical order. */
@@ -55,7 +55,7 @@ class CheckCommand extends Command
      */
     public function handle(): int
     {
-        $prefix = config('hotwire.prefix', 'hwc');
+        $prefix = config('hotwire.prefix', 'hw');
         $paths = $this->scanPaths();
         $targetBase = resource_path('js/controllers');
         $registry = HotwireRegistry::make();
@@ -221,17 +221,18 @@ class CheckCommand extends Command
      * Single pass over the blade files: collect both the Hotwire component keys
      * and the direct Stimulus controller usages, reading each file only once.
      *
-     * Component detection recognizes both the configured prefix and the literal
-     * 'hotwire' alias (registered globally by the service provider).
+     * Component detection recognizes the configured prefix and `hw` in both
+     * native `<x-prefix::*>` and short `<prefix:*>` forms.
      *
      * @param  string[]  $paths
-     * @return array{components: string[], controllers: array<string, ControllerDefinition>}
+     * @return array{components: array<string, string>, controllers: array<string, ControllerDefinition>}
      */
     private function scanViews(array $paths, string $prefix, HotwireRegistry $registry, int &$totalFiles): array
     {
-        $prefixes = array_unique([$prefix, 'hotwire']);
+        $prefixes = $this->componentPrefixes($prefix);
         $alt = implode('|', array_map(fn (string $p) => preg_quote($p, '/'), $prefixes));
-        $componentPattern = '/<x-(?:'.$alt.')::([a-z][a-z0-9-]*)[\s\/>]/';
+        $componentPattern = '/<x-('.$alt.')::([a-z][a-z0-9.-]*)[\s\/>]/';
+        $shortComponentPattern = '/<('.$alt.'):([a-z][a-z0-9.-]*)[\s\/>]/';
 
         $components = [];
         $controllers = [];
@@ -249,17 +250,29 @@ class CheckCommand extends Command
                 // controllers are detected inside commented-out or non-markup code.
                 $content = $this->stripNonMarkup($file->getContents());
 
-                preg_match_all($componentPattern, $content, $matches);
+                preg_match_all($componentPattern, $content, $matches, PREG_SET_ORDER);
 
-                foreach ($matches[1] as $key) {
-                    $components[$key] = true;
+                foreach ($matches as $match) {
+                    $components[$match[2]] ??= "<x-{$match[1]}::{$match[2]}>";
+                }
+
+                preg_match_all($shortComponentPattern, $content, $matches, PREG_SET_ORDER);
+
+                foreach ($matches as $match) {
+                    $components[$match[2]] ??= "<{$match[1]}:{$match[2]}>";
                 }
 
                 $this->collectControllerUsages($content, $registry, $controllers);
             }
         }
 
-        return ['components' => array_keys($components), 'controllers' => $controllers];
+        return ['components' => $components, 'controllers' => $controllers];
+    }
+
+    /** @return string[] */
+    private function componentPrefixes(string $prefix): array
+    {
+        return array_values(array_unique([$prefix, 'hw']));
     }
 
     /**
@@ -373,7 +386,7 @@ class CheckCommand extends Command
      * Print the per-controller status and return both the issues list and a map
      * of identifier → controller definition (used later for npm dependency checks).
      *
-     * @param  string[]  $usedKeys
+     * @param  array<string, string>  $usedKeys
      * @return array{issues: array<int, array{identifier: string, source_file: string, target_file: string}>, controllers: array<string, ControllerDefinition>}
      *
      * @throws FileNotFoundException
@@ -385,11 +398,10 @@ class CheckCommand extends Command
         $seenDeps = [];
         $controllersBase = $registry->basePath().'/resources/js/controllers';
 
-        sort($usedKeys);
+        ksort($usedKeys);
 
-        foreach ($usedKeys as $key) {
+        foreach ($usedKeys as $key => $tag) {
             $component = $registry->component($key);
-            $tag = "<x-$prefix::$key>";
 
             if ($component === null) {
                 continue;

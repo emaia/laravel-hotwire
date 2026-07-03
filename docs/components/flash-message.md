@@ -1,7 +1,7 @@
 # Flash Message
 
 Fires a single toast notification — either reading from the Laravel session or from explicit props. Designed to be
-rendered inside a layout alongside [`<x-hwc::flash-container />`](../flash-container/readme.md), which hosts the
+rendered inside a layout alongside [`<hw:flash-container />`](../flash-container/readme.md), which hosts the
 Sonner instance the toasts are emitted into.
 
 Internally the component maps to the `toast` Stimulus controller (`toast_controller.js`), which calls `toast()`
@@ -10,7 +10,7 @@ from `@emaia/sonner/vanilla` on connect and removes the element from the DOM. It
 ## Requirements
 
 - `@emaia/sonner` installed in the project
-- `<x-hwc::flash-container />` rendered once in the layout
+- `<hw:flash-container />` rendered once in the layout
 - Controller published: `php artisan hotwire:controllers toast`
 
 > `php artisan hotwire:check` detects all requirements automatically — and `--fix` publishes the missing controllers
@@ -18,7 +18,7 @@ from `@emaia/sonner/vanilla` on connect and removes the element from the DOM. It
 
 ## Setup
 
-Place `<x-hwc::flash-message />` once in your main layout, after `<x-hwc::flash-container />`:
+Place `<hw:flash-message />` once in your main layout, after `<hw:flash-container />`:
 
 ```html
 <!DOCTYPE html>
@@ -27,8 +27,8 @@ Place `<x-hwc::flash-message />` once in your main layout, after `<x-hwc::flash-
 <body>
 {{ $slot }}
 
-<x-hwc::flash-container />
-<x-hwc::flash-message />
+<hw:flash-container />
+<hw:flash-message />
 </body>
 </html>
 ```
@@ -61,13 +61,13 @@ $request->validate([
 ## Explicit message
 
 ```html
-<x-hwc::flash-message message="Operation completed" type="success"/>
+<hw:flash-message message="Operation completed" type="success"/>
 ```
 
 ## With description
 
 ```html
-<x-hwc::flash-message
+<hw:flash-message
     message="Failed to save"
     description="Please check the required fields"
     type="error"
@@ -80,7 +80,7 @@ Override the toaster's default position for a single toast. The container stays 
 appears in the chosen corner:
 
 ```html
-<x-hwc::flash-message message="Session expires in 5 min" type="warning" position="top-center"/>
+<hw:flash-message message="Session expires in 5 min" type="warning" position="top-center"/>
 ```
 
 Accepted values: `top-left`, `top-center`, `top-right`, `bottom-left`, `bottom-center`, `bottom-right`.
@@ -92,7 +92,7 @@ Accepted values: `top-left`, `top-center`, `top-right`, `bottom-left`, `bottom-c
 | `message`     | `?string` | `null`  | Toast message. If `null`, reads from session                                                   |
 | `description` | `?string` | `null`  | Additional description shown below the message                                                 |
 | `type`        | `?string` | `null`  | Toast type: `success`, `error`, `warning`, `info`, `default`. If `null`, detected from session |
-| `position`    | `?string` | `null`  | Override the toaster position for this toast only: `top-left`, `top-center`, `top-right`, `bottom-left`, `bottom-center`, `bottom-right`. If `null`, uses the [`<x-hwc::flash-container />`](../flash-container/readme.md) default |
+| `position`    | `?string` | `null`  | Override the toaster position for this toast only: `top-left`, `top-center`, `top-right`, `bottom-left`, `bottom-center`, `bottom-right`. If `null`, uses the [`<hw:flash-container />`](../flash-container/readme.md) default |
 
 ### Supported session keys
 
@@ -108,15 +108,15 @@ Explicit props take priority over the session.
 
 ## Turbo integration
 
-`<x-hwc::flash-message />` uses `data-turbo-temporary`, so cached pages don't replay toasts on back/forward.
+`<hw:flash-message />` uses `data-turbo-temporary`, so cached pages don't replay toasts on back/forward.
 
-Turbo Streams can append rendered `<x-hwc::flash-message />` markup to the container:
+Turbo Streams can append rendered `<hw:flash-message />` markup to the container:
 
 ```php
 use Illuminate\Support\Facades\Blade;
 
 return turbo_stream()->append('flash-container', Blade::render(
-    '<x-hwc::flash-message :message="$message" type="success" />',
+    '<hw:flash-message :message="$message" type="success" />',
     ['message' => 'Saved!'],
 ));
 ```
@@ -135,7 +135,7 @@ public function boot(): void
 {
     TurboStreamBuilder::macro('flash', function (string $type, string $message, ?string $description = null, ?string $position = null) {
         return $this->append('flash-container', Blade::render(
-            '<x-hwc::flash-message :type="$type" :message="$message" :description="$description" :position="$position" />',
+            '<hw:flash-message :type="$type" :message="$message" :description="$description" :position="$position" />',
             compact('type', 'message', 'description', 'position'),
         ));
     });
@@ -162,4 +162,4 @@ return turbo_stream()
 
 ## See also
 
-- [`<x-hwc::flash-container />`](../flash-container/readme.md) — hosts the Sonner instance and exposes its config
+- [`<hw:flash-container />`](../flash-container/readme.md) — hosts the Sonner instance and exposes its config

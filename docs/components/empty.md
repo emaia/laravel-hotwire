@@ -5,20 +5,20 @@ Composable empty state for zero-results, first-run and unavailable-content scree
 ## Usage
 
 ```blade
-<x-hwc::empty>
-    <x-hwc::empty.header>
-        <x-hwc::empty.media variant="icon">
-            <x-hwc::icon name="search" />
-        </x-hwc::empty.media>
-        <x-hwc::empty.title>No results</x-hwc::empty.title>
-        <x-hwc::empty.description>
+<hw:empty>
+    <hw:empty.header>
+        <hw:empty.media variant="icon">
+            <hw:icon name="search" />
+        </hw:empty.media>
+        <hw:empty.title>No results</hw:empty.title>
+        <hw:empty.description>
             Try changing your filters or creating a new record.
-        </x-hwc::empty.description>
-    </x-hwc::empty.header>
-    <x-hwc::empty.content>
-        <x-hwc::button>Create record</x-hwc::button>
-    </x-hwc::empty.content>
-</x-hwc::empty>
+        </hw:empty.description>
+    </hw:empty.header>
+    <hw:empty.content>
+        <hw:button>Create record</hw:button>
+    </hw:empty.content>
+</hw:empty>
 ```
 
 ## Props

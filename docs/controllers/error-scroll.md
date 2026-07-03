@@ -18,19 +18,19 @@ Place the controller on a `<turbo-frame>`, a `<form>`, or any ancestor that wrap
 ```blade
 {{-- With a Turbo Frame --}}
 <turbo-frame id="create_form" data-controller="error-scroll">
-    <x-hwc::form action="/store" method="post">
-        <x-hwc::field name="email" label="E-mail" required>
-            <x-hwc::input type="email" />
-        </x-hwc::field>
+    <hw:form action="/store" method="post">
+        <hw:field name="email" label="E-mail" required>
+            <hw:input type="email" />
+        </hw:field>
         <button type="submit">Save</button>
-    </x-hwc::form>
+    </hw:form>
 </turbo-frame>
 
 {{-- Without a Turbo Frame (full-page morphs) --}}
 <form data-controller="error-scroll" action="/store" method="post">
-    <x-hwc::field name="email" label="E-mail" required>
-        <x-hwc::input type="email" />
-    </x-hwc::field>
+    <hw:field name="email" label="E-mail" required>
+        <hw:input type="email" />
+    </hw:field>
     <button type="submit">Save</button>
 </form>
 ```
@@ -55,7 +55,7 @@ into view with smooth animation and center alignment.
 {{-- Scroll to top of error --}}
 <turbo-frame data-controller="error-scroll" data-error-scroll-block-value="start">
 
-{{-- Custom selector (e.g., when not using hwc components) --}}
+{{-- Custom selector (e.g., when not using Hotwire components) --}}
 <turbo-frame data-controller="error-scroll" data-error-scroll-selector-value=".text-red-500">
 
 {{-- Combined --}}

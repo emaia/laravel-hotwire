@@ -19,7 +19,7 @@ triggers). The component handles the rest:
 <form data-controller="conditional-fields" action="/feedback" method="POST">
     @csrf
 
-    <x-hwc::select
+    <hw:select
         name="reason"
         placeholder="Pick one…"
         :options="[
@@ -29,17 +29,17 @@ triggers). The component handles the rest:
         ]"
     />
 
-    <x-hwc::conditional-field :when="['reason' => ['bug', 'feature']]">
-        <x-hwc::field name="details" label="What happened?">
-            <x-hwc::textarea name="details" />
-        </x-hwc::field>
-    </x-hwc::conditional-field>
+    <hw:conditional-field :when="['reason' => ['bug', 'feature']]">
+        <hw:field name="details" label="What happened?">
+            <hw:textarea name="details" />
+        </hw:field>
+    </hw:conditional-field>
 
-    <x-hwc::conditional-field :when="['reason' => 'other']">
-        <x-hwc::field name="other_reason" label="Tell us">
-            <x-hwc::input name="other_reason" />
-        </x-hwc::field>
-    </x-hwc::conditional-field>
+    <hw:conditional-field :when="['reason' => 'other']">
+        <hw:field name="other_reason" label="Tell us">
+            <hw:input name="other_reason" />
+        </hw:field>
+    </hw:conditional-field>
 
     <button type="submit">Send</button>
 </form>
@@ -47,10 +47,10 @@ triggers). The component handles the rest:
 
 ## Edit forms — the `model` prop
 
-`<x-hwc::input>`, `<x-hwc::select>`, and `<x-hwc::textarea>` each render **one field** with the
+`<hw:input>`, `<hw:select>`, and `<hw:textarea>` each render **one field** with the
 value you hand them via `:value` / `:selected`, merging `old()` on top automatically.
 
-`<x-hwc::conditional-field>` decides visibility for the **whole block** by resolving the `when`
+`<hw:conditional-field>` decides visibility for the **whole block** by resolving the `when`
 rule server-side, often across multiple fields. It can't peek at the sibling form fields — they
 are separate components — so it does its own `old($field, data_get($model, $field))` lookup.
 `:model` hands it the same source the fields already read from. No parallel state map.
@@ -59,15 +59,15 @@ are separate components — so it does its own `old($field, data_get($model, $fi
 <form data-controller="conditional-fields" action="/messages/{{ $message->id }}" method="POST">
     @csrf @method('PATCH')
 
-    <x-hwc::select
+    <hw:select
         name="reason"
         :options="$reasons"
         :selected="$message->reason"
     />
 
-    <x-hwc::conditional-field :model="$message" :when="['reason' => 'other']">
-        <x-hwc::input name="other_reason" :value="$message->other_reason" />
-    </x-hwc::conditional-field>
+    <hw:conditional-field :model="$message" :when="['reason' => 'other']">
+        <hw:input name="other_reason" :value="$message->other_reason" />
+    </hw:conditional-field>
 </form>
 ```
 
@@ -83,24 +83,24 @@ on the `when` keys carry an initial value from a model — that's the value `:mo
 
 ```blade
 {{-- 1 trigger, 1 input inside the block — `:model` is what makes it visible on edit --}}
-<x-hwc::conditional-field :model="$message" :when="['reason' => 'other']">
-    <x-hwc::input name="other_reason" :value="$message->other_reason" />
-</x-hwc::conditional-field>
+<hw:conditional-field :model="$message" :when="['reason' => 'other']">
+    <hw:input name="other_reason" :value="$message->other_reason" />
+</hw:conditional-field>
 
 {{-- 1 trigger, 3 inputs inside the block — still the same `:model`, same lookup --}}
-<x-hwc::conditional-field :model="$message" :when="['ship_different' => ':checked']">
-    <x-hwc::input name="shipping_address" :value="$message->shipping_address" />
-    <x-hwc::input name="shipping_city"    :value="$message->shipping_city" />
-    <x-hwc::input name="shipping_zip"     :value="$message->shipping_zip" />
-</x-hwc::conditional-field>
+<hw:conditional-field :model="$message" :when="['ship_different' => ':checked']">
+    <hw:input name="shipping_address" :value="$message->shipping_address" />
+    <hw:input name="shipping_city"    :value="$message->shipping_city" />
+    <hw:input name="shipping_zip"     :value="$message->shipping_zip" />
+</hw:conditional-field>
 
 {{-- 2 triggers AND, 1 input inside — `:model` resolves both keys for the rule --}}
-<x-hwc::conditional-field
+<hw:conditional-field
     :model="$message"
     :when="['authorized' => 'no', 'needs_visa' => 'yes']"
 >
-    <x-hwc::select name="sponsorship_country" :options="$countries" :selected="$message->sponsorship_country" />
-</x-hwc::conditional-field>
+    <hw:select name="sponsorship_country" :options="$countries" :selected="$message->sponsorship_country" />
+</hw:conditional-field>
 ```
 
 Create forms (no model) skip `:model` entirely — `old()` alone handles fresh GET (everything
@@ -131,9 +131,9 @@ $state = [
 ];
 @endphp
 
-<x-hwc::conditional-field :model="$state" :when="['country' => 'US']">
+<hw:conditional-field :model="$state" :when="['country' => 'US']">
     ...
-</x-hwc::conditional-field>
+</hw:conditional-field>
 ```
 
 ## Props
@@ -156,7 +156,7 @@ old($field, data_get($model, $field))
 - Fresh GET on an edit form (model passed) — `old()` is empty, falls back to `$model->$field`.
 - Fresh GET with no model — `null`. Dependent renders `hidden disabled` by default.
 
-This is the same lookup `<x-hwc::input>`, `<x-hwc::select>`, and `<x-hwc::textarea>` already perform when you set `:value="$message->field"` or `:selected="$message->field"` on them — evaluated once on the server, no duplicate state map to maintain.
+This is the same lookup `<hw:input>`, `<hw:select>`, and `<hw:textarea>` already perform when you set `:value="$message->field"` or `:selected="$message->field"` on them — evaluated once on the server, no duplicate state map to maintain.
 
 ## Token shortcuts
 
@@ -173,9 +173,9 @@ This is the same lookup `<x-hwc::input>`, `<x-hwc::select>`, and `<x-hwc::textar
 For a single-field dependent that does not need a `<legend>`, `<div>` is acceptable:
 
 ```blade
-<x-hwc::conditional-field tag="div" :when="['mode' => 'advanced']" class="mt-4">
-    <x-hwc::input name="threshold" />
-</x-hwc::conditional-field>
+<hw:conditional-field tag="div" :when="['mode' => 'advanced']" class="mt-4">
+    <hw:input name="threshold" />
+</hw:conditional-field>
 ```
 
 The controller walks descendant inputs and toggles their `disabled` state instead of using the
@@ -183,7 +183,7 @@ The controller walks descendant inputs and toggles their `disabled` state instea
 
 ## Multiple dependents reuse the same controller
 
-A single `data-controller="conditional-fields"` on the form is enough — every `<x-hwc::conditional-field>`
+A single `data-controller="conditional-fields"` on the form is enough — every `<hw:conditional-field>`
 under it registers as a dependent target automatically. No per-dependent wiring.
 
 ## See also

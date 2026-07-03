@@ -23,7 +23,7 @@ it('displays docs for a substrate controller using slash notation', function () 
 it('displays docs for a component', function () {
     $this->artisan('hotwire:docs flash-message --component')
         ->expectsOutputToContain('Type: component')
-        ->expectsOutputToContain('Blade: <x-hwc::flash-message>')
+        ->expectsOutputToContain('Blade: <x-hw::flash-message>')
         ->expectsOutputToContain('Controllers: toast')
         ->expectsOutputToContain('Flash Message')
         ->assertSuccessful();
@@ -98,7 +98,7 @@ it('fails with an error when no argument is given in non-interactive mode', func
 // --- List mode ---
 
 it('lists both controllers and components with --list', function () {
-    $entries = (new DocSearchIndex)->build(HotwireRegistry::make(), true, true, 'hwc');
+    $entries = (new DocSearchIndex)->build(HotwireRegistry::make(), true, true, 'hw');
     $rows = array_map(fn (array $entry) => [
         ucfirst($entry['type']),
         $entry['type'] === 'component' ? $entry['tag'] : $entry['key'],
@@ -112,7 +112,7 @@ it('lists both controllers and components with --list', function () {
 });
 
 it('lists only controllers with --list --controller', function () {
-    $entries = (new DocSearchIndex)->build(HotwireRegistry::make(), true, false, 'hwc');
+    $entries = (new DocSearchIndex)->build(HotwireRegistry::make(), true, false, 'hw');
     $rows = array_map(fn (array $entry) => [
         ucfirst($entry['type']),
         $entry['key'],
@@ -126,7 +126,7 @@ it('lists only controllers with --list --controller', function () {
 });
 
 it('lists only components with --list --component', function () {
-    $entries = (new DocSearchIndex)->build(HotwireRegistry::make(), false, true, 'hwc');
+    $entries = (new DocSearchIndex)->build(HotwireRegistry::make(), false, true, 'hw');
     $rows = array_map(fn (array $entry) => [
         ucfirst($entry['type']),
         $entry['tag'],
@@ -148,45 +148,45 @@ it('fails when name is combined with --list', function () {
 // --- DocSearchIndex unit tests ---
 
 it('includes both controllers and components when no filter is applied', function () {
-    $entries = (new DocSearchIndex)->build(HotwireRegistry::make(), true, true, 'hwc');
+    $entries = (new DocSearchIndex)->build(HotwireRegistry::make(), true, true, 'hw');
 
     $labels = array_column($entries, 'label');
     $allLabels = implode("\n", $labels);
 
-    expect($allLabels)->toContain('<x-hwc::')   // at least one component
-        ->and($allLabels)->not->toContain('<x-hwc::auto-submit'); // auto-submit is a controller, not a component
+    expect($allLabels)->toContain('<x-hw::')   // at least one component
+        ->and($allLabels)->not->toContain('<x-hw::auto-submit'); // auto-submit is a controller, not a component
 });
 
 it('excludes components when includeComponents is false', function () {
-    $entries = (new DocSearchIndex)->build(HotwireRegistry::make(), true, false, 'hwc');
+    $entries = (new DocSearchIndex)->build(HotwireRegistry::make(), true, false, 'hw');
 
     $labels = implode("\n", array_column($entries, 'label'));
 
-    expect($labels)->not->toContain('<x-hwc::');
+    expect($labels)->not->toContain('<x-hw::');
 });
 
 it('excludes controllers when includeControllers is false', function () {
-    $entries = (new DocSearchIndex)->build(HotwireRegistry::make(), false, true, 'hwc');
+    $entries = (new DocSearchIndex)->build(HotwireRegistry::make(), false, true, 'hw');
 
     $labels = implode("\n", array_column($entries, 'label'));
 
-    // Component labels start with <x-hwc:: ; controller labels do not
-    expect($labels)->toContain('<x-hwc::')
+    // Component labels start with <x-hw:: ; controller labels do not
+    expect($labels)->toContain('<x-hw::')
         ->and($labels)->not->toMatch('/^auto-submit/m')
         ->and($labels)->not->toMatch('/^modal\s/m');
 });
 
 it('uses the given prefix in component labels', function () {
-    $entries = (new DocSearchIndex)->build(HotwireRegistry::make(), false, true, 'hw');
+    $entries = (new DocSearchIndex)->build(HotwireRegistry::make(), false, true, 'ui');
 
     $labels = implode("\n", array_column($entries, 'label'));
 
-    expect($labels)->toContain('<x-hw::modal>');
-    expect($labels)->not->toContain('<x-hwc::');
+    expect($labels)->toContain('<x-ui::modal>');
+    expect($labels)->not->toContain('<x-hw::');
 });
 
 it('includes category and description in the search index', function () {
-    $entries = (new DocSearchIndex)->build(HotwireRegistry::make(), true, false, 'hwc');
+    $entries = (new DocSearchIndex)->build(HotwireRegistry::make(), true, false, 'hw');
 
     $autoSubmit = collect($entries)->first(fn ($e) => str_contains($e['search'], 'auto-submit'));
 

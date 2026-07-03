@@ -54,6 +54,20 @@ it('creates necessary subdirectories', function () {
         ->and(File::isDirectory(resource_path('css')))->toBeTrue();
 });
 
+it('generates laravel idea metadata during js install', function () {
+    File::put($this->packageJsonPath, json_encode(['name' => 'test'], JSON_PRETTY_PRINT));
+    File::ensureDirectoryExists(resource_path('js/controllers'));
+    File::put(resource_path('js/controllers/gallery_controller.js'), '// gallery');
+
+    $this->artisan('hotwire:install --only=js --no-interaction')
+        ->assertSuccessful();
+
+    $json = json_decode(File::get(base_path('ide.json')), true, 512, JSON_THROW_ON_ERROR);
+    $locations = $json['completions'][0]['options']['stringsWithLocation'];
+
+    expect($locations['gallery'])->toBe('resources/js/controllers/gallery_controller.js');
+});
+
 // --- Phase 2: Conflict detection ---
 
 it('skips files that are identical to stubs', function () {

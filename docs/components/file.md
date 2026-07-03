@@ -6,7 +6,7 @@ preservation across Turbo morphs via `file-preserve`, and optional reset after s
 ## Quick example
 
 ```blade
-<x-hwc::file name="avatar" />
+<hw:file name="avatar" />
 ```
 
 Renders an `<input type="file">` with:
@@ -34,31 +34,31 @@ Any other HTML attribute (`accept`, `disabled`, `data-*`, `aria-*`) passes throu
 
 ## No `old()` repopulation
 
-File inputs **cannot** be pre-filled by the browser for security reasons. Unlike `<x-hwc::input>`, this component does
+File inputs **cannot** be pre-filled by the browser for security reasons. Unlike `<hw:input>`, this component does
 not merge `old()` values — `value` attributes have no effect on `<input type="file">`. Validation errors still show
-normally via `<x-hwc::field.error>`.
+normally via `<hw:field.error>`.
 
 ```blade
 {{-- Works: shows validation error for the 'avatar' field --}}
-<x-hwc::file name="avatar" />
+<hw:file name="avatar" />
 
 {{-- Does NOT work: file inputs ignore value attributes --}}
-<x-hwc::file name="avatar" value="some-file.jpg" />
+<hw:file name="avatar" value="some-file.jpg" />
 ```
 
 ## Auto-derivation
 
-Same convention as `<x-hwc::input>`:
+Same convention as `<hw:input>`:
 
 ```blade
-<x-hwc::file name="variables[0][name]" />
+<hw:file name="variables[0][name]" />
 {{-- id="variables-0-name", aria-describedby="variables-0-name-error", errorKey="variables.0.name" --}}
 ```
 
 Use `error-key` when the HTML name and the validation key diverge:
 
 ```blade
-<x-hwc::file name="payload[doc]" error-key="user.document" />
+<hw:file name="payload[doc]" error-key="user.document" />
 ```
 
 ## Wrapper
@@ -75,7 +75,7 @@ you pass `wrapper-class`. The controllers always live on the `<input>`, never on
 `data-controller` you pass lands where an uploader controller actually wants to be:
 
 ```blade
-<x-hwc::file name="avatar" data-controller="my-uploader" />
+<hw:file name="avatar" data-controller="my-uploader" />
 {{-- <input ... data-controller="my-uploader file-preserve" /> --}}
 ```
 
@@ -85,7 +85,7 @@ When editing a record that already has a file, use `current-url` to show a link 
 renders the wrapper:
 
 ```blade
-<x-hwc::file name="avatar" :current-url="$user->avatar_url" />
+<hw:file name="avatar" :current-url="$user->avatar_url" />
 ```
 
 Renders:
@@ -100,7 +100,7 @@ Renders:
 Customize the link text with `current-label`:
 
 ```blade
-<x-hwc::file name="avatar"
+<hw:file name="avatar"
     :current-url="$user->avatar_url"
     current-label="Foto atual" />
 ```
@@ -112,11 +112,11 @@ the previously selected file — even after a DOM morph. Use `reset-on-success` 
 
 ```blade
 <turbo-frame id="content" src="/uploads/create">
-    <x-hwc::form action="/uploads" method="post" enctype="multipart/form-data">
-        <x-hwc::file name="document" reset-on-success />
+    <hw:form action="/uploads" method="post" enctype="multipart/form-data">
+        <hw:file name="document" reset-on-success />
         {{-- ... --}}
         <button type="submit">Upload</button>
-    </x-hwc::form>
+    </hw:form>
 </turbo-frame>
 ```
 
@@ -140,28 +140,28 @@ Because preservation hinges on the field being marked invalid, multi-file valida
 described under [Multiple files](#multiple-files) — otherwise a per-file failure would look like a success and the
 selection would be dropped.
 
-## Inheriting from `<x-hwc::field>`
+## Inheriting from `<hw:field>`
 
 ```blade
-<x-hwc::field name="avatar" label="Photo" required>
-    <x-hwc::file :current-url="$user->avatar_url" />
-</x-hwc::field>
+<hw:field name="avatar" label="Photo" required>
+    <hw:file :current-url="$user->avatar_url" />
+</hw:field>
 ```
 
-`name`, `id`, `errorKey`, and `required` are inherited via `@aware`. The field auto-renders `<x-hwc::field.label>` and
-`<x-hwc::field.error>`. The ARIA contract is maintained — the input's `aria-describedby` always matches the error element.
+`name`, `id`, `errorKey`, and `required` are inherited via `@aware`. The field auto-renders `<hw:field.label>` and
+`<hw:field.error>`. The ARIA contract is maintained — the input's `aria-describedby` always matches the error element.
 
 ## Accepting file types
 
 ```blade
 {{-- Only images --}}
-<x-hwc::file name="avatar" accept="image/*" />
+<hw:file name="avatar" accept="image/*" />
 
 {{-- Only PDFs and DOCs --}}
-<x-hwc::file name="document" accept=".pdf,.doc,.docx" />
+<hw:file name="document" accept=".pdf,.doc,.docx" />
 
 {{-- Multiple types --}}
-<x-hwc::file name="attachment" accept=".pdf,image/*,.zip" />
+<hw:file name="attachment" accept=".pdf,image/*,.zip" />
 ```
 
 ## Multiple files
@@ -169,7 +169,7 @@ selection would be dropped.
 Use the `multiple` prop to let the user select several files at once:
 
 ```blade
-<x-hwc::file name="cover" multiple />
+<hw:file name="cover" multiple />
 ```
 
 The prop appends `[]` to the HTML `name` for you (`name="cover[]"`), so PHP receives the selection as an **array** —
@@ -193,7 +193,7 @@ errors on both `cover` **and** `cover.*`, so the field still gets `aria-invalid`
 ## Combining features
 
 ```blade
-<x-hwc::file name="avatar"
+<hw:file name="avatar"
     :current-url="$user->avatar_url"
     current-label="Foto atual"
     accept="image/*"
@@ -210,10 +210,10 @@ A `data-controller` you pass is merged onto the **`<input>`** alongside `file-pr
 enabled) — that's where an uploader controller wants to operate:
 
 ```blade
-<x-hwc::file name="avatar" data-controller="my-uploader" />
+<hw:file name="avatar" data-controller="my-uploader" />
 {{-- <input ... data-controller="my-uploader file-preserve" /> --}}
 
-<x-hwc::file name="avatar" reset-on-success data-controller="my-uploader" />
+<hw:file name="avatar" reset-on-success data-controller="my-uploader" />
 {{-- <input ... data-controller="my-uploader file-preserve reset-files" /> --}}
 ```
 

@@ -19,20 +19,20 @@ beforeEach(function () {
 // --- Plain render ---
 
 it('renders a textarea element', function () {
-    $view = $this->blade('<x-hwc::textarea name="bio" />');
+    $view = $this->blade('<x-hw::textarea name="bio" />');
 
     $view->assertSee('<textarea', false);
     $view->assertSee('name="bio"', false);
 });
 
 it('renders content from value prop', function () {
-    $view = $this->blade('<x-hwc::textarea name="bio" value="Hello" />');
+    $view = $this->blade('<x-hw::textarea name="bio" value="Hello" />');
 
     $view->assertSee('>Hello</textarea>', false);
 });
 
 it('renders empty textarea when no value', function () {
-    $view = $this->blade('<x-hwc::textarea name="bio" />');
+    $view = $this->blade('<x-hw::textarea name="bio" />');
 
     $view->assertSee('></textarea>', false);
 });
@@ -40,34 +40,34 @@ it('renders empty textarea when no value', function () {
 // --- Id derivation ---
 
 it('derives id from name', function () {
-    $view = $this->blade('<x-hwc::textarea name="bio" />');
+    $view = $this->blade('<x-hw::textarea name="bio" />');
 
     $view->assertSee('id="bio"', false);
 });
 
 it('derives id from bracket notation', function () {
-    $view = $this->blade('<x-hwc::textarea name="variables[0][name]" />');
+    $view = $this->blade('<x-hw::textarea name="variables[0][name]" />');
 
     $view->assertSee('id="variables-0-name"', false);
 });
 
 it('uses explicit id', function () {
-    $view = $this->blade('<x-hwc::textarea name="bio" id="my-textarea" />');
+    $view = $this->blade('<x-hw::textarea name="bio" id="my-textarea" />');
 
     $view->assertSee('id="my-textarea"', false);
 });
 
 it('generates random id when name is absent', function () {
-    $view = $this->blade('<x-hwc::textarea />');
+    $view = $this->blade('<x-hw::textarea />');
 
-    $view->assertSee('id="hwc-textarea-', false);
+    $view->assertSee('id="hw-textarea-', false);
     $view->assertDontSee('name="', false);
 });
 
 // --- Value + old() ---
 
 it('renders value prop', function () {
-    $view = $this->blade('<x-hwc::textarea name="bio" value="hello" />');
+    $view = $this->blade('<x-hw::textarea name="bio" value="hello" />');
 
     $view->assertSee('hello');
 });
@@ -75,7 +75,7 @@ it('renders value prop', function () {
 it('merges value with old() input', function () {
     session()->put('_old_input', ['bio' => 'old-value']);
 
-    $view = $this->blade('<x-hwc::textarea name="bio" value="default" />');
+    $view = $this->blade('<x-hw::textarea name="bio" value="default" />');
 
     $view->assertSee('old-value');
     $view->assertDontSee('default');
@@ -84,7 +84,7 @@ it('merges value with old() input', function () {
 it('disables old() when :old=false', function () {
     session()->put('_old_input', ['bio' => 'old-value']);
 
-    $view = $this->blade('<x-hwc::textarea name="bio" value="default" :old="false" />');
+    $view = $this->blade('<x-hw::textarea name="bio" value="default" :old="false" />');
 
     $view->assertSee('default');
     $view->assertDontSee('old-value');
@@ -93,7 +93,7 @@ it('disables old() when :old=false', function () {
 it('uses old() with derived dot-notation key for array names', function () {
     session()->put('_old_input', ['variables' => [0 => ['name' => 'flashed']]]);
 
-    $view = $this->blade('<x-hwc::textarea name="variables[0][name]" />');
+    $view = $this->blade('<x-hw::textarea name="variables[0][name]" />');
 
     $view->assertSee('flashed');
 });
@@ -101,7 +101,7 @@ it('uses old() with derived dot-notation key for array names', function () {
 // --- Error key + ARIA ---
 
 it('always sets aria-describedby pointing to error id', function () {
-    $view = $this->blade('<x-hwc::textarea name="bio" />');
+    $view = $this->blade('<x-hw::textarea name="bio" />');
 
     $view->assertSee('aria-describedby="bio-error"', false);
 });
@@ -109,14 +109,14 @@ it('always sets aria-describedby pointing to error id', function () {
 it('sets aria-invalid and data-invalid when error present', function () {
     shareTextareaErrors(['bio' => ['Required']]);
 
-    $view = $this->blade('<x-hwc::textarea name="bio" />');
+    $view = $this->blade('<x-hw::textarea name="bio" />');
 
     $view->assertSee('aria-invalid="true"', false);
     $view->assertSee('data-invalid', false);
 });
 
 it('does not set aria-invalid when no errors', function () {
-    $view = $this->blade('<x-hwc::textarea name="bio" />');
+    $view = $this->blade('<x-hw::textarea name="bio" />');
 
     $view->assertDontSee('aria-invalid="true"', false);
     $view->assertDontSee('data-invalid', false);
@@ -125,7 +125,7 @@ it('does not set aria-invalid when no errors', function () {
 it('uses derived error key from bracket notation', function () {
     shareTextareaErrors(['variables.0.name' => ['Required']]);
 
-    $view = $this->blade('<x-hwc::textarea name="variables[0][name]" />');
+    $view = $this->blade('<x-hw::textarea name="variables[0][name]" />');
 
     $view->assertSee('aria-invalid="true"', false);
 });
@@ -133,13 +133,13 @@ it('uses derived error key from bracket notation', function () {
 it('uses explicit error key override', function () {
     shareTextareaErrors(['custom.path' => ['Required']]);
 
-    $view = $this->blade('<x-hwc::textarea name="bio" error-key="custom.path" />');
+    $view = $this->blade('<x-hw::textarea name="bio" error-key="custom.path" />');
 
     $view->assertSee('aria-invalid="true"', false);
 });
 
 it('sets aria-required when required attribute is present', function () {
-    $view = $this->blade('<x-hwc::textarea name="bio" required />');
+    $view = $this->blade('<x-hw::textarea name="bio" required />');
 
     $view->assertSee('aria-required="true"', false);
 });
@@ -147,13 +147,13 @@ it('sets aria-required when required attribute is present', function () {
 // --- auto-resize ---
 
 it('adds auto-resize controller when auto-resize is true', function () {
-    $view = $this->blade('<x-hwc::textarea name="bio" auto-resize />');
+    $view = $this->blade('<x-hw::textarea name="bio" auto-resize />');
 
     $view->assertSee('data-controller="auto-resize"', false);
 });
 
 it('does not add auto-resize by default', function () {
-    $view = $this->blade('<x-hwc::textarea name="bio" />');
+    $view = $this->blade('<x-hw::textarea name="bio" />');
 
     $view->assertDontSee('data-controller', false);
     $view->assertDontSee('auto-resize', false);
@@ -162,7 +162,7 @@ it('does not add auto-resize by default', function () {
 // --- counter ---
 
 it('renders wrapper with char-counter controller when counter is set', function () {
-    $view = $this->blade('<x-hwc::textarea name="bio" :counter="160" />');
+    $view = $this->blade('<x-hw::textarea name="bio" :counter="160" />');
 
     $view->assertSee('data-controller="char-counter"', false);
     $view->assertSee('data-char-counter-target="input"', false);
@@ -170,25 +170,25 @@ it('renders wrapper with char-counter controller when counter is set', function 
 });
 
 it('sets maxlength when counter is set', function () {
-    $view = $this->blade('<x-hwc::textarea name="bio" :counter="160" />');
+    $view = $this->blade('<x-hw::textarea name="bio" :counter="160" />');
 
     $view->assertSee('maxlength="160"', false);
 });
 
 it('sets countdown value when countdown is true', function () {
-    $view = $this->blade('<x-hwc::textarea name="bio" :counter="160" countdown />');
+    $view = $this->blade('<x-hw::textarea name="bio" :counter="160" countdown />');
 
     $view->assertSee('data-char-counter-countdown-value="true"', false);
 });
 
 it('counter container has aria-live polite', function () {
-    $view = $this->blade('<x-hwc::textarea name="bio" :counter="160" />');
+    $view = $this->blade('<x-hw::textarea name="bio" :counter="160" />');
 
     $view->assertSee('aria-live="polite"', false);
 });
 
 it('does not render wrapper when no counter', function () {
-    $view = $this->blade('<x-hwc::textarea name="bio" />');
+    $view = $this->blade('<x-hw::textarea name="bio" />');
 
     $view->assertDontSee('data-controller="char-counter"', false);
     $view->assertDontSee('data-char-counter-target="counter"', false);
@@ -196,11 +196,11 @@ it('does not render wrapper when no counter', function () {
 
 it('renders custom counter slot content', function () {
     $view = $this->blade('
-        <x-hwc::textarea name="bio" :counter="160">
+        <x-hw::textarea name="bio" :counter="160">
             <x-slot:counterSlot>
                 <span class="custom-counter">custom</span>
             </x-slot:counterSlot>
-        </x-hwc::textarea>
+        </x-hw::textarea>
     ');
 
     $view->assertSee('custom-counter', false);
@@ -211,7 +211,7 @@ it('renders custom counter slot content', function () {
 // --- Combination ---
 
 it('combines auto-resize with counter correctly', function () {
-    $view = $this->blade('<x-hwc::textarea name="bio" auto-resize :counter="160" />');
+    $view = $this->blade('<x-hw::textarea name="bio" auto-resize :counter="160" />');
 
     // wrapper has char-counter
     $view->assertSee('data-controller="char-counter"', false);
@@ -224,13 +224,13 @@ it('combines auto-resize with counter correctly', function () {
 // --- Class merge ---
 
 it('merges class on textarea element', function () {
-    $view = $this->blade('<x-hwc::textarea name="bio" class="w-full" />');
+    $view = $this->blade('<x-hw::textarea name="bio" class="w-full" />');
 
     $view->assertSee('w-full', false);
 });
 
 it('merges wrapper-class on wrapper when present', function () {
-    $view = $this->blade('<x-hwc::textarea name="bio" :counter="160" wrapper-class="relative" />');
+    $view = $this->blade('<x-hw::textarea name="bio" :counter="160" wrapper-class="relative" />');
 
     $view->assertSee('relative', false);
 });
@@ -238,25 +238,25 @@ it('merges wrapper-class on wrapper when present', function () {
 // --- User data-controller merge ---
 
 it('merges user data-controller with auto-resize', function () {
-    $view = $this->blade('<x-hwc::textarea name="bio" data-controller="auto-select" auto-resize />');
+    $view = $this->blade('<x-hw::textarea name="bio" data-controller="auto-select" auto-resize />');
 
     $view->assertSee('data-controller="auto-select auto-resize"', false);
 });
 
 it('filters data-char-counter prefix when counter is active', function () {
-    $view = $this->blade('<x-hwc::textarea name="bio" :counter="100" data-char-counter-target="override" />');
+    $view = $this->blade('<x-hw::textarea name="bio" :counter="100" data-char-counter-target="override" />');
 
     $view->assertDontSee('data-char-counter-target="override"', false);
 });
 
 it('filters data-auto-resize prefix when auto-resize is active', function () {
-    $view = $this->blade('<x-hwc::textarea name="bio" auto-resize data-auto-resize-resize-debounce-delay-value="500" />');
+    $view = $this->blade('<x-hw::textarea name="bio" auto-resize data-auto-resize-resize-debounce-delay-value="500" />');
 
     $view->assertDontSee('data-auto-resize-resize-debounce-delay-value="500"', false);
 });
 
 it('passes user data when no wrapper exists', function () {
-    $view = $this->blade('<x-hwc::textarea name="bio" data-controller="foo" data-foo-value="bar" />');
+    $view = $this->blade('<x-hw::textarea name="bio" data-controller="foo" data-foo-value="bar" />');
 
     $view->assertSee('data-controller="foo"', false);
     $view->assertSee('data-foo-value="bar"', false);
@@ -265,7 +265,7 @@ it('passes user data when no wrapper exists', function () {
 // --- Pass-through ---
 
 it('passes through arbitrary attributes', function () {
-    $view = $this->blade('<x-hwc::textarea name="bio" placeholder="Tell us..." rows="4" />');
+    $view = $this->blade('<x-hw::textarea name="bio" placeholder="Tell us..." rows="4" />');
 
     $view->assertSee('placeholder="Tell us..."', false);
     $view->assertSee('rows="4"', false);
@@ -275,9 +275,9 @@ it('passes through arbitrary attributes', function () {
 
 it('picks up name and required from field via @aware', function () {
     $view = $this->blade('
-        <x-hwc::field name="bio" required>
-            <x-hwc::textarea auto-resize />
-        </x-hwc::field>
+        <x-hw::field name="bio" required>
+            <x-hw::textarea auto-resize />
+        </x-hw::field>
     ');
 
     $view->assertSee('name="bio"', false);

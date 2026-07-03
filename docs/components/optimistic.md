@@ -15,7 +15,7 @@ server *reconcile* via a Turbo 8 morph on the real response.
 ## Architecture
 
 ```
-<x-hwc::optimistic>            ← emits <template data-optimistic-stream …>
+<hw:optimistic>            ← emits <template data-optimistic-stream …>
 
 optimistic--form               ← turbo:submit-start → dispatch
 optimistic--link               ← click → dispatch
@@ -42,9 +42,9 @@ choice is yours.
 >
     @csrf
 
-    <x-hwc::optimistic target="post_1_favorite" action="update">
+    <hw:optimistic target="post_1_favorite" action="update">
         ❤️ Favorited
-    </x-hwc::optimistic>
+    </hw:optimistic>
 
     <button type="submit" id="post_1_favorite">
         🤍 Favorite
@@ -62,9 +62,9 @@ choice is yours.
 >
     View details
 
-    <x-hwc::optimistic target="detail" action="update">
+    <hw:optimistic target="detail" action="update">
         <div class="animate-pulse p-4">Loading...</div>
-    </x-hwc::optimistic>
+    </hw:optimistic>
 </a>
 
 <turbo-frame id="detail"></turbo-frame>
@@ -108,7 +108,7 @@ error feedback.
     @method($isFavorited ? 'DELETE' : 'POST')
 
     {{-- Optimistic action: update button contents, keeping the form intact --}}
-    <x-hwc::optimistic :target="dom_id($post, 'favorite_status')" action="update">
+    <hw:optimistic :target="dom_id($post, 'favorite_status')" action="update">
         @if ($isFavorited)
             <span class="text-slate-400">🤍 Favorite</span>
         @else
@@ -117,7 +117,7 @@ error feedback.
         <span class="text-sm text-slate-500">
             {{ $post->favorites_count + ($isFavorited ? -1 : 1) }}
         </span>
-    </x-hwc::optimistic>
+    </hw:optimistic>
 
     <button type="submit" id="{{ dom_id($post, 'favorite_status') }}" class="inline-flex items-center gap-2">
         <span class="{{ $isFavorited ? 'text-rose-500' : 'text-slate-400' }}">
@@ -191,7 +191,7 @@ public function store(Request $request, Post $post)
         return turbo_stream()
             ->refresh(method: 'morph')
             ->append('flash-container', Blade::render(
-                '<x-hwc::flash-message :message="$message" type="error" />',
+                '<hw:flash-message :message="$message" type="error" />',
                 ['message' => 'Could not favorite this post.'],
             ))
             ->withResponse(403);
@@ -219,12 +219,12 @@ value from the form's `FormData` into the element's `textContent`.
     <textarea name="content" placeholder="Write a message…" required></textarea>
     <button type="submit">Send</button>
 
-    <x-hwc::optimistic target="messages" action="append">
+    <hw:optimistic target="messages" action="append">
         <article class="message">
             <p data-field="content"></p>
             <small>Sending…</small>
         </article>
-    </x-hwc::optimistic>
+    </hw:optimistic>
 </form>
 
 <div id="messages">
@@ -304,7 +304,7 @@ Optimistic UI has well-known pitfalls. Here's how each maps to this stack:
 
 ## Multiple optimistic actions per submit
 
-Drop several `<x-hwc::optimistic>` siblings into the same form — each becomes
+Drop several `<hw:optimistic>` siblings into the same form — each becomes
 its own Turbo Stream, dispatched in order.
 
 ```blade
@@ -317,12 +317,12 @@ its own Turbo Stream, dispatched in order.
     @method('DELETE')
 
     {{-- Remove the row --}}
-    <x-hwc::optimistic :target="dom_id($todo)" action="remove" />
+    <hw:optimistic :target="dom_id($todo)" action="remove" />
 
     {{-- Decrement the counter --}}
-    <x-hwc::optimistic target="todos_counter">
+    <hw:optimistic target="todos_counter">
         <span id="todos_counter">{{ $todosCount - 1 }}</span>
-    </x-hwc::optimistic>
+    </hw:optimistic>
 
     <button type="submit">Delete</button>
 </form>

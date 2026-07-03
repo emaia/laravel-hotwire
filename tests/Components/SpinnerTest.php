@@ -1,7 +1,7 @@
 <?php
 
 it('renders with default props', function () {
-    $view = $this->blade('<x-hwc::spinner />');
+    $view = $this->blade('<x-hw::spinner />');
 
     $view->assertSee('data-slot="spinner"', false);
     $view->assertDontSee('animate-spin', false);
@@ -9,14 +9,14 @@ it('renders with default props', function () {
 });
 
 it('merges extra attributes', function () {
-    $view = $this->blade('<x-hwc::spinner class="text-blue-500" />');
+    $view = $this->blade('<x-hw::spinner class="text-blue-500" />');
 
     $view->assertSee('text-blue-500', false);
     $view->assertSee('data-slot="spinner"', false);
 });
 
 it('renders using :: namespace syntax', function () {
-    $view = $this->blade('<x-hwc::spinner />');
+    $view = $this->blade('<x-hw::spinner />');
 
     $view->assertSee('data-slot="spinner"', false);
 });

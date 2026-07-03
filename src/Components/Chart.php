@@ -27,7 +27,7 @@ class Chart extends Component
     ) {
         if ($option === null && ($url === null || $url === '')) {
             throw new InvalidArgumentException(
-                'x-hwc::chart requires either an `option` or a `url` prop.'
+                'hw:chart requires either an `option` or a `url` prop.'
             );
         }
 
@@ -64,7 +64,7 @@ class Chart extends Component
 
         if ($size > $threshold) {
             Log::warning(sprintf(
-                'x-hwc::chart inline option JSON is %d bytes (>%d). Consider :url for better performance.',
+                'hw:chart inline option JSON is %d bytes (>%d). Consider :url for better performance.',
                 $size,
                 $threshold,
             ));

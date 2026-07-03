@@ -1,4 +1,4 @@
-# `<x-hwc::rich-text>`
+# `<hw:rich-text>`
 
 Renders a Tiptap-backed rich text editor with a hidden textarea synced to the form, an optional
 default toolbar, and Stimulus events for app-side integration. Wraps the
@@ -9,41 +9,41 @@ controllers — see those for the runtime side.
 
 ```blade
 {{-- Simplest: default toolbar, HTML output --}}
-<x-hwc::rich-text name="content" />
+<hw:rich-text name="content" />
 
 {{-- Edit form with initial content and a placeholder --}}
-<x-hwc::rich-text
+<hw:rich-text
     name="content"
     placeholder="Write something…"
     :value="$post->content"
 />
 
 {{-- Read-only preview --}}
-<x-hwc::rich-text name="preview" :editable="false" :value="$post->content" />
+<hw:rich-text name="preview" :editable="false" :value="$post->content" />
 
 {{-- JSON output (store as ProseMirror JSON) --}}
-<x-hwc::rich-text name="content" output="json" :value="$post->content_json" />
+<hw:rich-text name="content" output="json" :value="$post->content_json" />
 
 {{-- Image upload enabled; the app listens for rich-text:image-upload --}}
-<x-hwc::rich-text name="content" :image-upload="true" />
+<hw:rich-text name="content" :image-upload="true" />
 
 {{-- Custom toolbar via slot --}}
-<x-hwc::rich-text name="content" :toolbar="false">
+<hw:rich-text name="content" :toolbar="false">
     {{-- your own <div data-controller="rich-text-toolbar"> here --}}
-</x-hwc::rich-text>
+</hw:rich-text>
 ```
 
 ## Props
 
 | Prop           | Type             | Default       | Description                                                                                                  |
 |----------------|------------------|---------------|--------------------------------------------------------------------------------------------------------------|
-| `name`         | `?string`        | `null`        | Used for the textarea's `name` and to derive the Stimulus id when `id` is omitted. Omit for a standalone editor that isn't part of a form submission. Inherited from `<x-hwc::field>` via `@aware` when absent. |
-| `id`           | `?string`        | derived       | Stable identifier used in the toolbar's outlet selector. Defaults to `\Emaia\LaravelHotwire\Support\FieldKey::toId($name)` (so `user[bio]` becomes `user-bio`); falls back to a generated `hwc-rich-text-<uniqid>` when both `name` and `id` are absent. Inherited from `<x-hwc::field>` via `@aware` when absent. |
+| `name`         | `?string`        | `null`        | Used for the textarea's `name` and to derive the Stimulus id when `id` is omitted. Omit for a standalone editor that isn't part of a form submission. Inherited from `<hw:field>` via `@aware` when absent. |
+| `id`           | `?string`        | derived       | Stable identifier used in the toolbar's outlet selector. Defaults to `\Emaia\LaravelHotwire\Support\FieldKey::toId($name)` (so `user[bio]` becomes `user-bio`); falls back to a generated `hw-rich-text-<uniqid>` when both `name` and `id` are absent. Inherited from `<hw:field>` via `@aware` when absent. |
 | `value`        | `mixed`          | `null`        | Initial HTML (or JSON when `output="json"`). Cast to string in the view. On a request with validation errors, `old()` takes precedence. |
-| `errorKey`     | `?string`        | derived       | Validation key for `old()` and error lookups. Derived from `name` (e.g. `user.bio` from `user[bio]`); override only when the validation key doesn't match the field name. Inherited from `<x-hwc::field>` via `@aware` when absent. |
+| `errorKey`     | `?string`        | derived       | Validation key for `old()` and error lookups. Derived from `name` (e.g. `user.bio` from `user[bio]`); override only when the validation key doesn't match the field name. Inherited from `<hw:field>` via `@aware` when absent. |
 | `placeholder`  | `?string`        | `null`        | Empty-state text. When set, adds the Tiptap Placeholder extension.                                           |
 | `editable`     | `bool`           | `true`        | Set to `false` for a read-only editor.                                                                       |
-| `required`     | `bool`/HTML attr | `false`       | Marks the field as required for a11y (`aria-required="true"` on wrapper + textarea). The HTML `required` attribute is **intentionally not emitted** — see [Required + client-side validation](#required--client-side-validation). Inherited from `<x-hwc::field required>` via `@aware`. |
+| `required`     | `bool`/HTML attr | `false`       | Marks the field as required for a11y (`aria-required="true"` on wrapper + textarea). The HTML `required` attribute is **intentionally not emitted** — see [Required + client-side validation](#required--client-side-validation). Inherited from `<hw:field required>` via `@aware`. |
 | `output`       | `string`         | `'html'`      | `html` writes serialized HTML into the textarea; `json` writes `JSON.stringify`'d ProseMirror JSON.          |
 | `toolbar`      | `bool`           | `true`        | Render the default toolbar. Pass `false` to use a custom one through the slot.                               |
 | `imageUpload`  | `bool`           | `false`       | Intercept image paste/drop and dispatch `rich-text:image-upload` for the app to handle.                      |
@@ -57,15 +57,15 @@ When `name` is omitted, the textarea renders without a `name` attribute and the 
 isn't included in form submissions — useful for standalone editors (search-as-rich-text, comment
 draft, etc.). Most uses of the component pass a `name`.
 
-### Inside a `<x-hwc::field>`
+### Inside a `<hw:field>`
 
 When nested in a field, the rich text component inherits `name`, `id`, and `errorKey` from the
 field via `@aware`, so you don't repeat them:
 
 ```blade
-<x-hwc::field name="bio" label="Bio" error description="Tell us about yourself">
-    <x-hwc::rich-text :value="$user->bio" placeholder="Type here…" />
-</x-hwc::field>
+<hw:field name="bio" label="Bio" error description="Tell us about yourself">
+    <hw:rich-text :value="$user->bio" placeholder="Type here…" />
+</hw:field>
 ```
 
 An explicit prop on the child always wins over the field-provided value, so you can override one
@@ -98,7 +98,7 @@ first, then overrides with the last submitted value from `old()` when validation
 behavior you get on the package's other form components:
 
 ```blade
-<x-hwc::rich-text name="content" :value="$post->content" />
+<hw:rich-text name="content" :value="$post->content" />
 ```
 
 If validation rejects the form, the page re-renders with the user's draft instead of `$post->content`.
@@ -106,8 +106,8 @@ Disable with `:old="false"` if you need the prop value to always win.
 
 ### Error state
 
-When validation rejects the form, the component marks itself invalid the same way `<x-hwc::input>`,
-`<x-hwc::textarea>` and the other form components do — `aria-invalid="true" data-invalid` on the
+When validation rejects the form, the component marks itself invalid the same way `<hw:input>`,
+`<hw:textarea>` and the other form components do — `aria-invalid="true" data-invalid` on the
 wrapper `<div>`, plus `aria-invalid="true"` on the synced textarea. Style the error visual on the
 wrapper so it covers the whole editor (toolbar + contenteditable + textarea) instead of just the
 hidden form payload:
@@ -122,11 +122,11 @@ See the [Styling](#styling) section below for a full recipe using `aria-invalid:
 Tailwind.
 
 `hasErrors` is resolved from `errorKey` (derived from `name` when omitted), so nesting inside
-`<x-hwc::field name="bio" error>` propagates the error state via `@aware` automatically.
+`<hw:field name="bio" error>` propagates the error state via `@aware` automatically.
 
 ### Required + client-side validation
 
-The component accepts `required` (or inherits it from `<x-hwc::field required>`) and emits
+The component accepts `required` (or inherits it from `<hw:field required>`) and emits
 `aria-required="true"` on the wrapper and the synced textarea, so screen readers announce the
 field correctly. The HTML `required` attribute is **not** emitted, deliberately.
 
@@ -172,7 +172,7 @@ export default class extends Controller {
 <form data-controller="rich-text-form"
       data-rich-text-form-rich-text-outlet="[data-rich-text-id-value='content']"
       data-action="submit->rich-text-form#submit">
-    <x-hwc::rich-text name="content" required />
+    <hw:rich-text name="content" required />
 </form>
 ```
 
@@ -200,7 +200,7 @@ for screen readers. Restyle freely via CSS — the buttons live inside `[data-sl
 When you need a different set of buttons, drop the default and render your own through the slot:
 
 ```blade
-<x-hwc::rich-text name="content" :toolbar="false">
+<hw:rich-text name="content" :toolbar="false">
     <div data-controller="rich-text-toolbar"
          data-rich-text-toolbar-editor-value="[data-rich-text-id-value='content']"
          class="my-toolbar">
@@ -218,7 +218,7 @@ When you need a different set of buttons, drop the default and render your own t
                 data-action="click->rich-text-toolbar#italic"
                 data-rich-text-toolbar-target="italic">I</button>
     </div>
-</x-hwc::rich-text>
+</hw:rich-text>
 ```
 
 See the [toolbar controller docs](../controllers/rich-text-toolbar.md) for the full action and
@@ -254,7 +254,7 @@ The component exposes stable `data-slot` hooks and prop-based knobs; the visual 
 **Tailwind + `@tailwindcss/typography`** — content rendered with semantic heading/list visuals:
 
 ```blade
-<x-hwc::rich-text
+<hw:rich-text
     name="content"
     editorClass="prose prose-sm focus:outline-none max-w-none"
 />
@@ -294,14 +294,14 @@ design tokens (`border-input`, `ring-ring`, `destructive`, `muted-foreground`):
 ```
 
 ```blade
-<x-hwc::field name="description" label="Description">
-    <x-hwc::rich-text :value="$task->description" />
-</x-hwc::field>
+<hw:field name="description" label="Description">
+    <hw:rich-text :value="$task->description" />
+</hw:field>
 ```
 
 The wrapper carries `aria-invalid="true"` automatically when validation flags the field, so
 basecoat's `aria-invalid:*` variants light up the destructive ring without any extra wiring.
-Nesting inside `<x-hwc::field required>` propagates `required` to the textarea via `@aware`.
+Nesting inside `<hw:field required>` propagates `required` to the textarea via `@aware`.
 
 **Vanilla CSS** — same idea, no preprocessor:
 
@@ -338,7 +338,7 @@ By default the synced textarea has the `hidden` HTML attribute — the editor re
 as a no-JS fallback or a debug surface alongside the rich editor:
 
 ```blade
-<x-hwc::rich-text
+<hw:rich-text
     name="content"
     inputClass="mt-2 block w-full rounded border px-3 py-2 font-mono text-sm"
 />
@@ -353,8 +353,8 @@ Each editor needs a distinct id-value so the toolbar's outlet selector picks the
 component derives the id from `name`, so two editors with different names just work:
 
 ```blade
-<x-hwc::rich-text name="summary" />
-<x-hwc::rich-text name="body" />
+<hw:rich-text name="summary" />
+<hw:rich-text name="body" />
 ```
 
 When you need to override the derivation (e.g. two editors with the same name in different
@@ -366,7 +366,7 @@ Swap to a subclass when you need different extensions, a different image-upload 
 other behavior change without forking the controller:
 
 ```blade
-<x-hwc::rich-text name="content" controller="rich-text-extended" />
+<hw:rich-text name="content" controller="rich-text-extended" />
 ```
 
 The swap renames the data attributes (so `data-rich-text-id-value` becomes

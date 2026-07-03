@@ -6,7 +6,7 @@ behaviors (`mask`, `clearable`, `auto-select`).
 ## Quick example
 
 ```blade
-<x-hwc::input name="email" type="email" required />
+<hw:input name="email" type="email" required />
 ```
 
 Renders an `<input>` with:
@@ -42,14 +42,14 @@ Laravel validates with dot notation (`variables.0.name`); HTML uses brackets (`v
 the conversion for you:
 
 ```blade
-<x-hwc::input name="variables[0][name]" />
+<hw:input name="variables[0][name]" />
 {{-- id="variables-0-name", aria-describedby="variables-0-name-error", errorKey="variables.0.name" --}}
 ```
 
 Use `error-key` when the HTML name and the validation key diverge:
 
 ```blade
-<x-hwc::input name="payload[email]" error-key="user.email" />
+<hw:input name="payload[email]" error-key="user.email" />
 ```
 
 ## Mask presets
@@ -73,14 +73,14 @@ and `checked` controls the initial state.
 
 ```blade
 {{-- Single checkbox / switch --}}
-<x-hwc::input type="checkbox" name="notify" :checked="$user->notify" />
+<hw:input type="checkbox" name="notify" :checked="$user->notify" />
 
 {{-- Checkbox group --}}
-<x-hwc::input type="checkbox" name="roles[]" value="admin"
+<hw:input type="checkbox" name="roles[]" value="admin"
     :checked="in_array('admin', $user->roles ?? [])" />
 
 {{-- Radio --}}
-<x-hwc::input type="radio" name="plan" value="pro"
+<hw:input type="radio" name="plan" value="pro"
     :checked="$user->plan === 'pro'" />
 ```
 
@@ -101,35 +101,35 @@ The `clearable`, `mask`, and `auto-select` props are no-ops for checkable types.
 
 ### Automatic unique ids for groups
 
-Multiple `<x-hwc::input type="radio">` sharing a `name` — or `type="checkbox"` with `name="…[]"` — would otherwise
+Multiple `<hw:input type="radio">` sharing a `name` — or `type="checkbox"` with `name="…[]"` — would otherwise
 collide on `id`. The component avoids that by appending `-{slug(value)}` to the derived id:
 
 ```blade
-<x-hwc::input type="checkbox" name="size[]" value="default" />     {{-- id="size-default" --}}
-<x-hwc::input type="checkbox" name="size[]" value="comfortable" /> {{-- id="size-comfortable" --}}
-<x-hwc::input type="radio"    name="plan"   value="pro" />          {{-- id="plan-pro" --}}
+<hw:input type="checkbox" name="size[]" value="default" />     {{-- id="size-default" --}}
+<hw:input type="checkbox" name="size[]" value="comfortable" /> {{-- id="size-comfortable" --}}
+<hw:input type="radio"    name="plan"   value="pro" />          {{-- id="plan-pro" --}}
 ```
 
 The slug uses `Illuminate\Support\Str::slug`, so any string value is safe. `aria-describedby` still points to the
-**base error id** (`plan-error`, `size-error`), so all inputs in the group bind to the same `<x-hwc::field.error>` node — which is
+**base error id** (`plan-error`, `size-error`), so all inputs in the group bind to the same `<hw:field.error>` node — which is
 what Laravel's per-name validation produces.
 
 Passing an explicit `id` opts out of the auto-derivation: the component uses your id verbatim and derives
 `aria-describedby` from it.
 
-## Inheriting from `<x-hwc::field>`
+## Inheriting from `<hw:field>`
 
-`<x-hwc::field>` propagates `name`, `errorKey`, and `required` to nested children via `@aware`. It auto-renders
-`<x-hwc::field.label>`, `<x-hwc::field.description>`, and `<x-hwc::field.error>` when the corresponding props are set:
+`<hw:field>` propagates `name`, `errorKey`, and `required` to nested children via `@aware`. It auto-renders
+`<hw:field.label>`, `<hw:field.description>`, and `<hw:field.error>` when the corresponding props are set:
 
 ```blade
-<x-hwc::field name="email" label="E-mail" required>
-    <x-hwc::input type="email" auto-select />
-</x-hwc::field>
+<hw:field name="email" label="E-mail" required>
+    <hw:input type="email" auto-select />
+</hw:field>
 ```
 
-> **ARIA contract:** the input always emits `aria-describedby="{id}-error"`. The field auto-renders `<x-hwc::field.error>` for
-> you, so the reference is always satisfied by default. Opt out with `:error="false"` and render `<x-hwc::field.error>`
+> **ARIA contract:** the input always emits `aria-describedby="{id}-error"`. The field auto-renders `<hw:field.error>` for
+> you, so the reference is always satisfied by default. Opt out with `:error="false"` and render `<hw:field.error>`
 > manually
 > if needed.
 

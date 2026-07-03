@@ -7,9 +7,9 @@ flips visibility — plus the `disabled` cascade — as the user fills in the fo
 **Identifier:** `conditional-fields`  
 **Install:** `php artisan hotwire:controllers conditional-fields`
 
-> **Recommended path:** use the `<x-hwc::conditional-field>` Blade component instead of writing the raw
+> **Recommended path:** use the `<hw:conditional-field>` Blade component instead of writing the raw
 > data attributes by hand. The component encodes the rule once on the server and renders the right
-> markup for both initial state and runtime behavior — see [`<x-hwc::conditional-field>` docs](../components/conditional-field.md).
+> markup for both initial state and runtime behavior — see [`<hw:conditional-field>` docs](../components/conditional-field.md).
 
 ## Requirements
 
@@ -119,7 +119,7 @@ state before JavaScript runs — no flash of the wrong fields. The controller re
 
 Writing this by hand encodes the rule **twice** (once in `data-when-reason="other"`, once in
 `@if (old('reason') !== 'other')`). A drift between the two causes a flash, and worse, can briefly
-reveal sensitive fields. Reach for [`<x-hwc::conditional-field>`](../components/conditional-field.md) so the
+reveal sensitive fields. Reach for [`<hw:conditional-field>`](../components/conditional-field.md) so the
 rule lives in exactly one place.
 
 ## Not limited to `<form>` elements

@@ -1,7 +1,7 @@
 <?php
 
 it('renders an empty root with semantic slot', function () {
-    $view = $this->blade('<x-hwc::empty>No results</x-hwc::empty>');
+    $view = $this->blade('<x-hw::empty>No results</x-hw::empty>');
 
     $view->assertSee('data-slot="empty"', false)
         ->assertSeeText('No results')
@@ -10,14 +10,14 @@ it('renders an empty root with semantic slot', function () {
 
 it('renders empty subcomponents with semantic slots', function () {
     $view = $this->blade(<<<'BLADE'
-        <x-hwc::empty>
-            <x-hwc::empty.header>
-                <x-hwc::empty.media variant="icon"><x-hwc::icon name="search" /></x-hwc::empty.media>
-                <x-hwc::empty.title>No projects</x-hwc::empty.title>
-                <x-hwc::empty.description>Create your first project to get started.</x-hwc::empty.description>
-            </x-hwc::empty.header>
-            <x-hwc::empty.content><x-hwc::button>Create project</x-hwc::button></x-hwc::empty.content>
-        </x-hwc::empty>
+        <x-hw::empty>
+            <x-hw::empty.header>
+                <x-hw::empty.media variant="icon"><x-hw::icon name="search" /></x-hw::empty.media>
+                <x-hw::empty.title>No projects</x-hw::empty.title>
+                <x-hw::empty.description>Create your first project to get started.</x-hw::empty.description>
+            </x-hw::empty.header>
+            <x-hw::empty.content><x-hw::button>Create project</x-hw::button></x-hw::empty.content>
+        </x-hw::empty>
     BLADE);
 
     $view->assertSee('data-slot="empty-header"', false)
@@ -31,7 +31,7 @@ it('renders empty subcomponents with semantic slots', function () {
 });
 
 it('passes through attributes', function () {
-    $view = $this->blade('<x-hwc::empty id="state" class="min-h-64" data-test="empty">Empty</x-hwc::empty>');
+    $view = $this->blade('<x-hw::empty id="state" class="min-h-64" data-test="empty">Empty</x-hw::empty>');
 
     $view->assertSee('id="state"', false)
         ->assertSee('class="min-h-64"', false)
