@@ -271,6 +271,14 @@ it('hides the native select arrow when rendering a custom select icon', function
         ->toContain('[data-slot="select-icon"]');
 });
 
+it('does not hard-code clear input visibility in the preset', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain('[data-slot="clear-input-button"]')
+        ->not->toContain('[data-slot="clear-input-button"] { @apply absolute right-1.5 hidden items-center; }');
+});
+
 it('styles checkable inputs when they are wrapped by labels', function () use ($novaPresetPath) {
     $css = file_get_contents($novaPresetPath);
 

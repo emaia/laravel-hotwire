@@ -161,7 +161,8 @@
     [data-slot="select"] { @apply appearance-none pr-8; }
     [data-slot="select-wrapper"] { @apply relative; }
     [data-slot="select-icon"] { @apply pointer-events-none absolute right-2 top-1/2 size-4 -translate-y-1/2 opacity-50; }
-    [data-slot="clear-input-button"] { @apply absolute right-1.5 hidden items-center; }
+    [data-slot="clear-input-button"] { @apply absolute right-1.5 items-center; }
+    [data-slot="clear-input-button"] svg { @apply size-4 text-foreground/60; }
     [data-slot="file-upload"] { @apply flex min-h-32 w-full cursor-pointer items-center justify-center rounded-lg border border-dashed border-border bg-background p-6 text-center text-sm text-muted-foreground transition-colors hover:bg-accent/50 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none aria-invalid:border-destructive aria-invalid:ring-destructive/20; }
     [data-slot="file-upload"] .dz-message { @apply m-0; }
 
