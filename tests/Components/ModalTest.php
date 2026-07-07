@@ -208,7 +208,7 @@ it('forwards arbitrary attributes to the root element', function () {
     $view->assertSee('data-test-id="modal-root"', false);
 });
 
-it('does not forward modal stimulus attributes from arbitrary attributes', function () {
+it('merges arbitrary stimulus attributes while protecting internal modal attributes', function () {
     $view = $this->blade('
         <x-hw::modal
             data-controller="custom"
@@ -219,10 +219,8 @@ it('does not forward modal stimulus attributes from arbitrary attributes', funct
         </x-hw::modal>
     ');
 
-    $view->assertSee('data-controller="modal"', false);
-    $view->assertSee('data-action="turbo:before-cache@window-&gt;modal#close"', false);
-    $view->assertDontSee('data-controller="custom"', false);
-    $view->assertDontSee('data-action="click-&gt;custom#run"', false);
+    $view->assertSee('data-controller="modal custom"', false);
+    $view->assertSee('data-action="turbo:before-cache@window->modal#close click->custom#run"', false);
     $view->assertDontSee('data-modal-close-on-escape-value="false"', false);
 });
 
@@ -230,7 +228,7 @@ it('merges inline stimulus attributes with the internal modal controller', funct
     $view = $this->blade('<x-hw::modal :stimulus="stimulus()->controller(\'hotkey\')->action(\'hotkey\', \'click\', \'keydown.m@window\')">Content</x-hw::modal>');
 
     $view->assertSee('data-controller="modal hotkey"', false);
-    $view->assertSee('turbo:before-cache@window-&gt;modal#close keydown.m@window-&gt;hotkey#click', false);
+    $view->assertSee('turbo:before-cache@window->modal#close keydown.m@window->hotkey#click', false);
 });
 
 it('clips horizontal overflow on the scroll container', function () {

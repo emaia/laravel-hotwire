@@ -32,6 +32,7 @@ helper signatures match their corresponding builder methods.
 ```
 
 ```html
+
 <div
     data-controller="chart"
     data-chart-name-value="Likes"
@@ -70,6 +71,7 @@ To register several controllers that need no config, use `controllers()` instead
 ```
 
 ```html
+
 <div data-controller="tabs tab-url" data-action="tabs:change->tab-url#update"></div>
 ```
 
@@ -92,6 +94,7 @@ both deduplicate.
 ```
 
 ```html
+
 <button data-action="click->clipboard#copy click->analytics#track" data-clipboard-format-param="text">Copy</button>
 ```
 
@@ -126,10 +129,11 @@ repeated calls for the same controller into one attribute.
 
 Repeated `->controller()` tokens are deduplicated; `->action()` segments accumulate in order.
 
-## Merging into a component attribute bag
+## Merging into component attributes
 
-`toArray()` returns the raw (unescaped) attribute map for `$attributes->merge()`, which applies the
-Stimulus attributes as **defaults** on the element and escapes them on render:
+`toArray()` returns the raw (unescaped) attribute map. For a plain Blade attribute bag, Laravel's
+`$attributes->merge()` applies those attributes as **defaults** on the element and escapes them on
+render:
 
 ```blade
 <input
@@ -144,12 +148,24 @@ Stimulus attributes as **defaults** on the element and escapes them on render:
 />
 ```
 
-> **`merge()` does not union `data-controller`/`data-action`.** Blade's `merge()` only concatenates
-> `class` and `style`; for every other attribute the value already on the element wins. So if the
-> caller also passes a `data-controller`, _theirs_ wins and the builder's is dropped. To combine a
-> caller-supplied controller with your own, build the union in PHP and pass it into the builder — the
-> same way this package's own components do it (`trim($userController.' input-mask')`), rather than
-> relying on `merge()`.
+Blade's native `merge()` does not union `data-controller`/`data-action`; it only concatenates `class`
+and `style`. Components shipped by this package that expose a `stimulus` prop use the internal
+`StimulusAttributes` merger instead. That merger deduplicates `data-controller`, `data-action`, and
+`data-*-target` tokens across internal attributes, regular HTML attributes, and `:stimulus`.
+
+For components with their own controller, component-owned `data-{identifier}-*` configuration stays
+protected. Use the component's explicit props for those values, and use regular `data-controller` /
+`data-action` or `:stimulus` for additional controllers:
+
+```blade
+<hw:tabs
+    id="settings"
+    :active="request()->query('tab')"
+    :stimulus="stimulus()->controller('tab-url')->action('tab-url', 'update', 'tabs:change')"
+>
+    ...
+</hw:tabs>
+```
 
 ## Escaping
 

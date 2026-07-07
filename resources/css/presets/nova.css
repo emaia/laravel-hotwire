@@ -119,6 +119,22 @@
     :is([data-slot="table-head"], [data-slot="table-cell"]):has([role="checkbox"]) { @apply pr-0; }
     [data-slot="table-caption"] { @apply mt-4 text-sm text-muted-foreground; }
 
+    [data-slot="tabs"] { @apply flex gap-2; }
+    [data-slot="tabs"][data-orientation="horizontal"] { @apply flex-col; }
+    [data-slot="tabs-list"] { @apply inline-flex w-fit items-center justify-center rounded-lg p-[3px] text-muted-foreground; }
+    [data-slot="tabs"][data-orientation="horizontal"] [data-slot="tabs-list"] { @apply h-9; }
+    [data-slot="tabs"][data-orientation="vertical"] [data-slot="tabs-list"] { @apply h-fit flex-col; }
+    [data-slot="tabs-list"][data-variant="default"] { @apply bg-muted; }
+    [data-slot="tabs-list"][data-variant="line"] { @apply gap-1 rounded-none bg-transparent; }
+    [data-slot="tabs-trigger"] { @apply relative inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap text-foreground/60 transition-all hover:text-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 dark:text-muted-foreground dark:hover:text-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4; }
+    [data-slot="tabs"][data-orientation="vertical"] [data-slot="tabs-trigger"] { @apply w-full justify-start; }
+    [data-slot="tabs-list"][data-variant="default"] [data-slot="tabs-trigger"][data-state="active"] { @apply bg-background text-foreground shadow-sm dark:border-input dark:bg-input/30 dark:text-foreground; }
+    [data-slot="tabs-list"][data-variant="line"] [data-slot="tabs-trigger"] { @apply bg-transparent after:absolute after:bg-foreground after:opacity-0 after:transition-opacity; }
+    [data-slot="tabs-list"][data-variant="line"] [data-slot="tabs-trigger"][data-state="active"] { @apply bg-transparent text-foreground shadow-none after:opacity-100 dark:border-transparent dark:bg-transparent; }
+    [data-slot="tabs"][data-orientation="horizontal"] [data-slot="tabs-list"][data-variant="line"] [data-slot="tabs-trigger"] { @apply after:inset-x-0 after:bottom-[-5px] after:h-0.5; }
+    [data-slot="tabs"][data-orientation="vertical"] [data-slot="tabs-list"][data-variant="line"] [data-slot="tabs-trigger"] { @apply after:inset-y-0 after:-right-1 after:w-0.5; }
+    [data-slot="tabs-panel"] { @apply flex-1 outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50; }
+
     [data-slot="field-group"] { @apply flex w-full flex-col gap-5; }
     [data-slot="field-group"] > [data-slot="field-group"] { @apply gap-4; }
     [data-slot="field-set"] { @apply flex flex-col gap-4; }

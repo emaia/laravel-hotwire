@@ -1,10 +1,14 @@
-@php $isButton = $as === 'button'; @endphp
+@php
+    $isButton = $as === 'button';
+
+    $buttonAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
+        'type' => $isButton ? $type : null,
+        'data-slot' => $slotName,
+        'data-variant' => $variant,
+        'data-size' => $size,
+    ], $attributes, $stimulus);
+@endphp
 
 <{{ $as }}
-    @if ($isButton) type="{{ $type }}" @endif
-    data-slot="{{ $slotName }}"
-    data-variant="{{ $variant }}"
-    data-size="{{ $size }}"
-    {{ $attributes }}
-    @if ($stimulus !== null) {!! $stimulus->toHtml() !!} @endif
+    {{ $buttonAttributes }}
 >{{ $slot }}</{{ $as }}>

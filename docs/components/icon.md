@@ -35,6 +35,8 @@ Inline SVG icon from the embedded Lucide subset.
 | Eye | `eye` |
 | Eye Off | `eye-off` |
 | Loader Circle | `loader-circle` |
+| App Window | `app-window` |
+| Code | `code` |
 
 ## Props
 

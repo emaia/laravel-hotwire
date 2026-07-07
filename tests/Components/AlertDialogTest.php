@@ -178,12 +178,29 @@ it('renders using :: namespace syntax', function () {
 it('renders turbo cache action', function () {
     $view = $this->blade('<x-hw::alert-dialog title="Continue?"><button>x</button></x-hw::alert-dialog>');
 
-    $view->assertSee('turbo:before-cache@window-&gt;alert-dialog#cancel', false);
+    $view->assertSee('turbo:before-cache@window->alert-dialog#cancel', false);
+});
+
+it('merges arbitrary stimulus attributes while protecting internal alert-dialog attributes', function () {
+    $view = $this->blade('
+        <x-hw::alert-dialog
+            title="Continue?"
+            data-controller="custom"
+            data-action="click->custom#run"
+            data-alert-dialog-lock-scroll-value="false"
+        >
+            <button>x</button>
+        </x-hw::alert-dialog>
+    ');
+
+    $view->assertSee('data-controller="alert-dialog custom"', false);
+    $view->assertSee('data-action="turbo:before-cache@window->alert-dialog#cancel click->custom#run"', false);
+    $view->assertDontSee('data-alert-dialog-lock-scroll-value="false"', false);
 });
 
 it('merges inline stimulus attributes with the internal alert-dialog controller', function () {
     $view = $this->blade('<x-hw::alert-dialog title="Continue?" :stimulus="stimulus()->controller(\'analytics\')->action(\'analytics\', \'track\', \'modal:opened\')"><button>x</button></x-hw::alert-dialog>');
 
     $view->assertSee('data-controller="alert-dialog analytics"', false);
-    $view->assertSee('turbo:before-cache@window-&gt;alert-dialog#cancel modal:opened-&gt;analytics#track', false);
+    $view->assertSee('turbo:before-cache@window->alert-dialog#cancel modal:opened->analytics#track', false);
 });
