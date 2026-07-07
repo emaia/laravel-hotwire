@@ -55,7 +55,7 @@ class Tabs extends Component
                 'data-controller' => $this->identifier,
                 "data-{$this->identifier}-selected-index-value" => $this->selectedIndex,
                 'class' => $this->class ?: null,
-            ], $attributes, $this->stimulus, protectedPrefixes: ["data-{$this->identifier}-"]),
+            ], $attributes, $this->stimulus, protectedPrefixes: ["data-{$this->identifier}-selected-index-"]),
         ];
     }
 }

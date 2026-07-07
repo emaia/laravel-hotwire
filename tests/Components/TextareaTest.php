@@ -240,7 +240,14 @@ it('merges wrapper-class on wrapper when present', function () {
 it('merges user data-controller with auto-resize', function () {
     $view = $this->blade('<x-hw::textarea name="bio" data-controller="auto-select" auto-resize />');
 
-    $view->assertSee('data-controller="auto-select auto-resize"', false);
+    $view->assertSee('data-controller="auto-resize auto-select"', false);
+});
+
+it('merges inline stimulus attributes with auto-resize', function () {
+    $view = $this->blade('<x-hw::textarea name="bio" auto-resize :stimulus="stimulus()->controller(\'analytics\')->action(\'analytics\', \'track\', \'input\')" />');
+
+    $view->assertSee('data-controller="auto-resize analytics"', false);
+    $view->assertSee('data-action="input->analytics#track"', false);
 });
 
 it('filters data-char-counter prefix when counter is active', function () {

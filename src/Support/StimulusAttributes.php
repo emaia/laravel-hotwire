@@ -49,13 +49,13 @@ final class StimulusAttributes
                     continue;
                 }
 
-                if ($name === 'data-controller' || $name === 'data-action' || self::isTargetAttribute($name)) {
-                    $merged[$name] = self::mergeTokenString($merged[$name] ?? '', (string) $value);
-
+                if ($index > 0 && self::isProtected($name, $protectedPrefixes) && array_key_exists($name, $merged)) {
                     continue;
                 }
 
-                if ($index > 0 && self::isProtected($name, $protectedPrefixes) && array_key_exists($name, $merged)) {
+                if ($name === 'data-controller' || $name === 'data-action' || self::isTargetAttribute($name)) {
+                    $merged[$name] = self::mergeTokenString($merged[$name] ?? '', (string) $value);
+
                     continue;
                 }
 

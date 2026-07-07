@@ -1,11 +1,29 @@
-@php extract($compute($attributes)) @endphp
+@php
+    extract($compute($attributes));
+
+    $formAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
+        'data-slot' => 'form',
+        'data-controller' => $controller ?: null,
+        'method' => $isSpoofMethod ? 'post' : $method,
+        'enctype' => $enctype,
+    ], $attributes, $stimulus, except: [
+        'method',
+        'enctype',
+        'auto-submit',
+        'unsaved-changes',
+        'error-scroll',
+        'clean-query-params',
+        'track-frame-src',
+    ], protectedPrefixes: array_values(array_filter([
+        $autoSubmit ? 'data-auto-submit-' : null,
+        $unsavedChanges ? 'data-unsaved-changes-' : null,
+        $errorScroll ? 'data-error-scroll-' : null,
+        $cleanQueryParams ? 'data-clean-query-params-' : null,
+    ])));
+@endphp
 
 <form
-    data-slot="form"
-    @if ($controller !== '') data-controller="{{ $controller }}" @endif
-    method="{{ $isSpoofMethod ? 'post' : $method }}"
-    @if ($enctype !== null) enctype="{{ $enctype }}" @endif
-    {{ $attributes->whereDoesntStartWith(['data-controller'])->except(['method', 'enctype', 'auto-submit', 'unsaved-changes', 'error-scroll', 'clean-query-params', 'track-frame-src']) }}
+    {{ $formAttributes }}
 >
     @if ($method !== 'get')
         @csrf

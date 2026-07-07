@@ -152,10 +152,12 @@ Blade's native `merge()` does not union `data-controller`/`data-action`; it only
 and `style`. Components shipped by this package that expose a `stimulus` prop use the internal
 `StimulusAttributes` merger instead. That merger deduplicates `data-controller`, `data-action`, and
 `data-*-target` tokens across internal attributes, regular HTML attributes, and `:stimulus`.
+Internal controller/action/target tokens render first, followed by plain HTML attributes and then
+`:stimulus`.
 
-For components with their own controller, component-owned `data-{identifier}-*` configuration stays
-protected. Use the component's explicit props for those values, and use regular `data-controller` /
-`data-action` or `:stimulus` for additional controllers:
+For components with package-owned Stimulus wiring, component-owned `data-{identifier}-*`
+configuration stays protected. Use the component's explicit props for those values, and use regular
+`data-controller` / `data-action` or `:stimulus` for additional controllers:
 
 ```blade
 <hw:tabs
@@ -166,6 +168,11 @@ protected. Use the component's explicit props for those values, and use regular 
     ...
 </hw:tabs>
 ```
+
+The `stimulus` prop is available on controller-backed components and primitives: `alert-dialog`,
+`button`, `carousel`, `chart`, `checkbox-group`, `conditional-field`, `dropdown`, `file`,
+`file-upload`, `flash-container`, `flash-message`, `form`, `input`, `map`, `modal`, `rich-text`,
+`scroll-progress`, `tabs`, `textarea`, and `timeago`.
 
 ## Escaping
 

@@ -2,6 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\Component;
 
 class ConditionalField extends Component
@@ -15,6 +16,7 @@ class ConditionalField extends Component
         public array $when,
         public mixed $model = null,
         public string $tag = 'fieldset',
+        public ?Htmlable $stimulus = null,
     ) {
         $this->matches = $this->evaluate();
     }

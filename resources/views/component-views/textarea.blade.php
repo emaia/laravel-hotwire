@@ -1,23 +1,30 @@
 @aware(['name' => null, 'id' => null, 'errorKey' => null, 'required' => false])
 
-@php extract($compute($name, $id, $errorKey, $required, $errors, $attributes)) @endphp
+@php
+    extract($compute($name, $id, $errorKey, $required, $errors, $attributes));
+
+    $textareaAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
+        'data-slot' => 'textarea',
+        'id' => $resolvedId,
+        'name' => $name ?: null,
+        'aria-describedby' => $errorId,
+        'aria-invalid' => $hasErrors ? 'true' : null,
+        'data-invalid' => $hasErrors ? true : null,
+        'aria-required' => $isRequired ? 'true' : null,
+        'required' => $isRequired ? true : null,
+        'data-controller' => $elementController ?: null,
+        'data-char-counter-target' => $counter !== null ? 'input' : null,
+        'maxlength' => $counter,
+        'class' => $class ?: null,
+    ], $attributes, $stimulus, except: ['required'], protectedPrefixes: $internalPrefixes);
+@endphp
 
 @if ($needsWrapper)
 <span data-slot="textarea-wrapper" @if ($wrapperClass !== '') class="{{ $wrapperClass }}" @endif data-controller="char-counter" @if ($countdown) data-char-counter-countdown-value="true" @endif>
 @endif
 
 <textarea
-    data-slot="textarea"
-    id="{{ $resolvedId }}"
-    @if ($name) name="{{ $name }}" @endif
-    aria-describedby="{{ $errorId }}"
-    @if ($hasErrors) aria-invalid="true" data-invalid @endif
-    @if ($isRequired) aria-required="true" required @endif
-    @if ($elementController !== '') data-controller="{{ $elementController }}" @endif
-    @if ($counter !== null) data-char-counter-target="input" maxlength="{{ $counter }}" @endif
-    {{ $attributes->merge([
-            'class' => $class ?: null,
-        ])->whereDoesntStartWith(array_merge(['data-controller'], $internalPrefixes))->except(['required']) }}
+    {{ $textareaAttributes }}
 >{{ $resolvedValue }}</textarea>
 
 @if ($needsWrapper)

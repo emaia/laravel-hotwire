@@ -294,12 +294,27 @@ it('swaps the Stimulus identifier when controller prop is set', function () {
     $view->assertSee('data-markdown-editor-id-value="content"', false);
 });
 
+it('lets subclass data values pass through while filtering owned rich-text values', function () {
+    $view = $this->blade('<x-hw::rich-text name="content" controller="markdown-editor" data-markdown-editor-delay-value="100" data-markdown-editor-id-value="hacked" />');
+
+    $view->assertSee('data-markdown-editor-delay-value="100"', false);
+    $view->assertSee('data-markdown-editor-id-value="content"', false);
+    $view->assertDontSee('hacked', false);
+});
+
 // --- Attribute forwarding ---
 
 it('merges user data-controller with the package one', function () {
     $view = $this->blade('<x-hw::rich-text name="content" data-controller="my-extra" />');
 
     $view->assertSee('data-controller="rich-text my-extra"', false);
+});
+
+it('merges inline stimulus attributes with the package one', function () {
+    $view = $this->blade('<x-hw::rich-text name="content" :stimulus="stimulus()->controller(\'analytics\')->action(\'analytics\', \'track\', \'rich-text:change\')" />');
+
+    $view->assertSee('data-controller="rich-text analytics"', false);
+    $view->assertSee('data-action="rich-text:change->analytics#track"', false);
 });
 
 it('forwards extra attributes and merges the class prop on the wrapper', function () {

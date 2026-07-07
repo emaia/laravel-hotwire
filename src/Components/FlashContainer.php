@@ -2,6 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\Component;
 
 class FlashContainer extends Component
@@ -28,6 +29,7 @@ class FlashContainer extends Component
         public ?string $className = null,
         public ?string $containerAriaLabel = null,
         public ?string $customAriaLabel = null,
+        public ?Htmlable $stimulus = null,
     ) {}
 
     public function render()

@@ -149,14 +149,21 @@ it('does not add reset-files controller by default', function () {
 it('merges user data-controller with reset-files on the input', function () {
     $view = $this->blade('<x-hw::file name="avatar" data-controller="foo" reset-on-success />');
 
-    $view->assertSee('data-controller="foo file-preserve reset-files"', false);
+    $view->assertSee('data-controller="file-preserve reset-files foo"', false);
 });
 
 it('merges user data-controller on the input without reset-files when disabled', function () {
     $view = $this->blade('<x-hw::file name="avatar" data-controller="foo" />');
 
-    $view->assertSee('data-controller="foo file-preserve"', false);
+    $view->assertSee('data-controller="file-preserve foo"', false);
     $view->assertDontSee('reset-files', false);
+});
+
+it('merges inline stimulus attributes on the input', function () {
+    $view = $this->blade('<x-hw::file name="avatar" reset-on-success :stimulus="stimulus()->controller(\'analytics\')->action(\'analytics\', \'track\', \'change\')" />');
+
+    $view->assertSee('data-controller="file-preserve reset-files analytics"', false);
+    $view->assertSee('data-action="change->analytics#track"', false);
 });
 
 // --- current-url / current-label ---
@@ -344,6 +351,6 @@ it('combines reset-on-success and current-url in wrapper', function () {
 it('combines current-url and reset-on-success with user data-controller', function () {
     $view = $this->blade('<x-hw::file name="avatar" current-url="https://example.com/img.jpg" reset-on-success data-controller="foo" />');
 
-    $view->assertSee('data-controller="foo file-preserve reset-files"', false);
+    $view->assertSee('data-controller="file-preserve reset-files foo"', false);
     $view->assertSee('href="https://example.com/img.jpg"', false);
 });

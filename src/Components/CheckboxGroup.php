@@ -4,6 +4,7 @@ namespace Emaia\LaravelHotwire\Components;
 
 use Emaia\LaravelHotwire\Components\Concerns\StripsNullProps;
 use Emaia\LaravelHotwire\Support\FieldKey;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\ViewErrorBag;
 use Illuminate\View\Component;
 use Illuminate\View\ComponentAttributeBag;
@@ -25,6 +26,7 @@ class CheckboxGroup extends Component
         public bool $old = true,
         public ?string $id = null,
         public ?string $errorKey = null,
+        public ?Htmlable $stimulus = null,
     ) {
         if ($options !== [] && array_keys($options) === range(0, count($options) - 1)) {
             $this->options = array_combine($options, $options);
@@ -80,11 +82,9 @@ class CheckboxGroup extends Component
             $resolvedSelected = $resolvedSelected !== null ? [$resolvedSelected] : [];
         }
 
-        $userController = trim($attributes->get('data-controller', ''));
-
         $wrapperController = $this->selectAll
-            ? trim(implode(' ', array_filter([$userController, 'checkbox-select-all'])))
-            : $userController;
+            ? 'checkbox-select-all'
+            : '';
 
         $hasErrors = $resolvedErrorKey !== '' && $errorsBag->has($resolvedErrorKey);
 

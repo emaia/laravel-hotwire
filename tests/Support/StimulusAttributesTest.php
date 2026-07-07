@@ -57,6 +57,23 @@ it('keeps internal attributes when a protected prefix is passed', function () {
         ->and($html)->toContain('data-analytics-id-value="external"');
 });
 
+it('keeps internal target attributes when a protected prefix is passed to stimulus', function () {
+    $bag = StimulusAttributes::merge(
+        [
+            'data-controller' => 'tabs',
+            'data-tabs-target' => 'tab',
+        ],
+        stimulus: stimulus()->target('tabs', 'override')->target('analytics', 'panel'),
+        protectedPrefixes: ['data-tabs-'],
+    );
+
+    $html = (string) $bag;
+
+    expect($html)->toContain('data-controller="tabs"')
+        ->and($html)->toContain('data-tabs-target="tab"')
+        ->and($html)->toContain('data-analytics-target="panel"');
+});
+
 it('lets later non-protected scalar attributes replace earlier ones', function () {
     $bag = StimulusAttributes::merge(
         ['aria-label' => 'Internal'],

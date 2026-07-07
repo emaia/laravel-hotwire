@@ -2,6 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\Component;
 use InvalidArgumentException;
@@ -24,6 +25,7 @@ class Chart extends Component
         public ?string $width = null,
         public string $class = '',
         public string $controller = 'chart',
+        public ?Htmlable $stimulus = null,
     ) {
         if ($option === null && ($url === null || $url === '')) {
             throw new InvalidArgumentException(

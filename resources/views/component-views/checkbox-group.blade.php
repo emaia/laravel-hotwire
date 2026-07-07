@@ -1,13 +1,17 @@
 @aware(['name' => null, 'id' => null, 'errorKey' => null])
 
-@php extract($compute($name, $id, $errorKey, $errors, $attributes)) @endphp
+@php
+    extract($compute($name, $id, $errorKey, $errors, $attributes));
 
-<div data-slot="checkbox-group" @if ($wrapperController) data-controller="{{ $wrapperController }}" @endif
-    {{ $attributes->merge(
-            filled($wrapperClass)
-                ? ['class' => $wrapperClass]
-                : []
-        )->whereDoesntStartWith(array_merge(['data-controller'], $internalPrefixes))->except(['select-all']) }}
+    $checkboxGroupAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
+        'data-slot' => 'checkbox-group',
+        'data-controller' => $wrapperController ?: null,
+        'class' => filled($wrapperClass) ? $wrapperClass : null,
+    ], $attributes, $stimulus, except: ['select-all'], protectedPrefixes: $internalPrefixes);
+@endphp
+
+<div
+    {{ $checkboxGroupAttributes }}
 >
     @if ($selectAll)
         @php

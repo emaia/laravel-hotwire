@@ -2,6 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\Component;
 use InvalidArgumentException;
 
@@ -29,6 +30,7 @@ class Map extends Component
         public ?string $width = null,
         public string $class = '',
         public string $controller = 'map',
+        public ?Htmlable $stimulus = null,
     ) {
         if ($center === null && $markers === null && ($url === null || $url === '')) {
             throw new InvalidArgumentException(

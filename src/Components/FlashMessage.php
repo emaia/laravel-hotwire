@@ -2,6 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Facades\Session;
 use Illuminate\View\Component;
 
@@ -17,6 +18,7 @@ class FlashMessage extends Component
         public ?string $type = null,
         public ?string $position = null,
         public ?string $className = null,
+        public ?Htmlable $stimulus = null,
     ) {
         $sessionType = match (true) {
             Session::has('success') => 'success',

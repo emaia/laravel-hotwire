@@ -13,6 +13,13 @@ it('renders with default props', function () {
     $view->assertSee('data-turbo-permanent', false);
 });
 
+it('merges inline stimulus attributes with the toaster controller', function () {
+    $view = $this->blade('<x-hw::flash-container :stimulus="stimulus()->controller(\'analytics\')->action(\'analytics\', \'track\', \'sonner:toast\')" />');
+
+    $view->assertSee('data-controller="toaster analytics"', false);
+    $view->assertSee('data-action="sonner:toast->analytics#track"', false);
+});
+
 it('emits default stimulus values', function () {
     $view = $this->blade('<x-hw::flash-container />');
 
@@ -123,6 +130,14 @@ it('emits optional advanced props when provided', function () {
     $view->assertSee('data-toaster-container-aria-label-value="Notifications"', false);
     $view->assertSee('data-toaster-custom-aria-label-value="Alert"', false);
     $view->assertSee('data-toaster-swipe-directions-value="left,right"', false);
+});
+
+it('escapes JSON offset values as HTML entities for toaster parsing', function () {
+    $view = $this->blade('<x-hw::flash-container offset=\'{"top":"20px","right":"20px"}\' mobile-offset=\'{"bottom":"12px"}\' />');
+
+    $view->assertSee('data-toaster-offset-value="{&quot;top&quot;:&quot;20px&quot;,&quot;right&quot;:&quot;20px&quot;}"', false);
+    $view->assertSee('data-toaster-mobile-offset-value="{&quot;bottom&quot;:&quot;12px&quot;}"', false);
+    $view->assertDontSee('{\\"top\\"', false);
 });
 
 // --- Namespace registration ---

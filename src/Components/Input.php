@@ -5,6 +5,7 @@ namespace Emaia\LaravelHotwire\Components;
 use Emaia\LaravelHotwire\Components\Concerns\StripsNullProps;
 use Emaia\LaravelHotwire\Support\FieldKey;
 use Emaia\LaravelHotwire\Support\MaskPresets;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Str;
 use Illuminate\Support\ViewErrorBag;
 use Illuminate\View\Component;
@@ -27,6 +28,7 @@ class Input extends Component
         public ?string $mask = null,
         public string $class = '',
         public string $wrapperClass = '',
+        public ?Htmlable $stimulus = null,
     ) {}
 
     public function render()
@@ -117,9 +119,7 @@ class Input extends Component
         $hasErrors = $resolvedErrorKey !== '' && $errorsBag->has($resolvedErrorKey);
         $isRequired = ($attributes->has('required') && $attributes->get('required') !== false) || $required;
 
-        $userController = trim($attributes->get('data-controller', ''));
         $elementController = trim(implode(' ', array_filter([
-            $userController,
             (! $isCheckable && $this->autoSelect) ? 'auto-select' : null,
             (! $isCheckable && $this->mask !== null) ? 'input-mask' : null,
         ])));

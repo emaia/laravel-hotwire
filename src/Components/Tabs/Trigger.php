@@ -57,7 +57,7 @@ class Trigger extends Component
                 'tabindex' => $this->disabled ? '-1' : ($active !== null ? ($selected ? '0' : '-1') : null),
                 'aria-selected' => ! $this->disabled && $active !== null ? ($selected ? 'true' : 'false') : null,
                 'aria-controls' => $panelId,
-            ], $attributes, $this->stimulus, except: ['id'], protectedPrefixes: ["data-{$identifier}-"]),
+            ], $attributes, $this->stimulus, except: ['id'], protectedPrefixes: ["data-{$identifier}-target"]),
         ];
     }
 

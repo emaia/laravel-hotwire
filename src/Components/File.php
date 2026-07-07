@@ -4,6 +4,7 @@ namespace Emaia\LaravelHotwire\Components;
 
 use Emaia\LaravelHotwire\Components\Concerns\StripsNullProps;
 use Emaia\LaravelHotwire\Support\FieldKey;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\ViewErrorBag;
 use Illuminate\View\Component;
 use Illuminate\View\ComponentAttributeBag;
@@ -22,6 +23,7 @@ class File extends Component
         public bool $multiple = false,
         public string $class = '',
         public string $wrapperClass = '',
+        public ?Htmlable $stimulus = null,
     ) {}
 
     public function render()
@@ -69,9 +71,7 @@ class File extends Component
 
         $isRequired = ($attributes->has('required') && $attributes->get('required') !== false) || $required;
 
-        $userController = trim($attributes->get('data-controller', ''));
         $inputController = trim(implode(' ', array_filter([
-            $userController,
             'file-preserve',
             $this->resetOnSuccess ? 'reset-files' : null,
         ])));

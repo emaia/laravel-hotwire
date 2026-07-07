@@ -77,6 +77,13 @@ it('renders the controller, viewport, container and slides', function () {
     $view->assertSee('carousel#teardownForCache', false);
 });
 
+it('escapes options JSON as HTML entities for Stimulus object values', function () {
+    $view = $this->blade('<x-hw::carousel><div>one</div></x-hw::carousel>');
+
+    $view->assertSee('{&quot;slidesToScroll&quot;:&quot;auto&quot;', false);
+    $view->assertDontSee('{\\"slidesToScroll\\"', false);
+});
+
 it('emits active-dot and disabled-nav class attributes', function () {
     $view = $this->blade('<x-hw::carousel active-dot-class="is-active" disabled-nav-class="is-disabled">x</x-hw::carousel>');
 
@@ -148,12 +155,19 @@ it('unions a user data-controller and only filters the component\'s own data-car
 });
 
 it('lets a subclass value pass through while filtering owned attributes', function () {
-    $view = $this->blade('<x-hw::carousel controller="gallery" data-controller="tracking" data-gallery-delay-value="100">x</x-hw::carousel>');
+    $view = $this->blade('<x-hw::carousel controller="gallery" data-controller="tracking" data-gallery-delay-value="100" data-gallery-options-value="hacked">x</x-hw::carousel>');
 
     $view->assertSee('data-controller="gallery tracking"', false);
     $view->assertSee('data-gallery-delay-value="100"', false);
-    // Component renders its own options-value; the user's isn't duplicated.
     $view->assertSee('data-gallery-options-value', false);
+    $view->assertDontSee('hacked', false);
+});
+
+it('merges inline stimulus attributes with the carousel controller', function () {
+    $view = $this->blade('<x-hw::carousel :stimulus="stimulus()->controller(\'analytics\')->action(\'analytics\', \'track\', \'carousel:change\')">x</x-hw::carousel>');
+
+    $view->assertSee('data-controller="carousel analytics"', false);
+    $view->assertSee('turbo:before-cache@window->carousel#teardownForCache carousel:change->analytics#track', false);
 });
 
 it('filters owned attributes matching the internal prefixes', function () {
@@ -176,6 +190,19 @@ it('wraps a dot_template slot inside the dot button (content slot, like prev/nex
     // Slot content is kept (not discarded) and the button still carries the action.
     $view->assertSee('dot-inner', false);
     $view->assertSee('data-action="carousel#scrollTo"', false);
+});
+
+it('merges slot button actions with carousel actions', function () {
+    $view = $this->blade('
+        <x-hw::carousel>
+            <x-slot:prev_button data-action="click->analytics#prev">Prev</x-slot:prev_button>
+            <x-slot:dot_template data-action="click->analytics#dot"><span>x</span></x-slot:dot_template>
+            <div>slide</div>
+        </x-hw::carousel>
+    ');
+
+    $view->assertSee('data-action="carousel#prev click->analytics#prev"', false);
+    $view->assertSee('data-action="carousel#scrollTo click->analytics#dot"', false);
 });
 
 it('styles and labels the dot list', function () {

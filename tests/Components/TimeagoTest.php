@@ -10,7 +10,7 @@ it('renders with default props', function () {
     $view->assertSee('Apr 29');
 });
 
-it('does not forward timeago stimulus attributes from arbitrary attributes', function () {
+it('merges arbitrary stimulus attributes while protecting internal timeago attributes', function () {
     $view = $this->blade('
         <x-hw::timeago
             datetime="2026-04-29 12:00:00"
@@ -21,12 +21,18 @@ it('does not forward timeago stimulus attributes from arbitrary attributes', fun
         />
     ');
 
-    $view->assertSee('data-controller="timeago"', false);
+    $view->assertSee('data-controller="timeago custom"', false);
+    $view->assertSee('data-action="click->custom#run"', false);
     $view->assertSee('data-timeago-add-suffix-value="true"', false);
-    $view->assertDontSee('data-controller="custom"', false);
-    $view->assertDontSee('data-action="click-&gt;custom#run"', false);
     $view->assertDontSee('data-timeago-add-suffix-value="false"', false);
     $view->assertSee('class="text-sm"', false);
+});
+
+it('merges inline stimulus attributes with the timeago controller', function () {
+    $view = $this->blade('<x-hw::timeago datetime="2026-04-29 12:00:00" :stimulus="stimulus()->controller(\'analytics\')->action(\'analytics\', \'track\', \'timeago:tick\')" />');
+
+    $view->assertSee('data-controller="timeago analytics"', false);
+    $view->assertSee('data-action="timeago:tick->analytics#track"', false);
 });
 
 it('renders refresh interval when configured', function () {

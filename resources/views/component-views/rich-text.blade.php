@@ -5,20 +5,32 @@
     // Escape `\` and `'` so an id containing either still produces a valid CSS attribute selector.
     $escapedId = addcslashes($resolvedId, "\\'");
     $outletSelector = '[data-'.$identifier."-id-value='".$escapedId."']";
+
+    $richTextAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
+        'data-slot' => 'rich-text',
+        'class' => $class ?: null,
+        'data-controller' => $dataController,
+        "data-{$identifier}-id-value" => $resolvedId,
+        "data-{$identifier}-placeholder-value" => $placeholder,
+        "data-{$identifier}-editable-value" => $editable ? null : 'false',
+        "data-{$identifier}-output-value" => $output !== 'html' ? $output : null,
+        "data-{$identifier}-editor-class-value" => $editorClass !== '' ? $editorClass : null,
+        "data-{$identifier}-image-upload-value" => $imageUpload ? 'true' : null,
+        'aria-required' => $isRequired ? 'true' : null,
+        'aria-invalid' => $hasErrors ? 'true' : null,
+        'data-invalid' => $hasErrors ? true : null,
+    ], $attributes, $stimulus, except: ['required'], protectedPrefixes: [
+        "data-{$identifier}-id-",
+        "data-{$identifier}-placeholder-",
+        "data-{$identifier}-editable-",
+        "data-{$identifier}-output-",
+        "data-{$identifier}-editor-class-",
+        "data-{$identifier}-image-upload-",
+    ]);
 @endphp
 
 <div
-    data-slot="rich-text"
-    {{ $attributes->except(['data-controller', 'required'])->merge(['class' => $class ?: null]) }}
-    data-controller="{{ $dataController }}"
-    data-{{ $identifier }}-id-value="{{ $resolvedId }}"
-    @if ($placeholder !== null) data-{{ $identifier }}-placeholder-value="{{ $placeholder }}" @endif
-    @if (! $editable) data-{{ $identifier }}-editable-value="false" @endif
-    @if ($output !== 'html') data-{{ $identifier }}-output-value="{{ $output }}" @endif
-    @if ($editorClass !== '') data-{{ $identifier }}-editor-class-value="{{ $editorClass }}" @endif
-    @if ($imageUpload) data-{{ $identifier }}-image-upload-value="true" @endif
-    @if ($isRequired) aria-required="true" @endif
-    @if ($hasErrors) aria-invalid="true" data-invalid @endif
+    {{ $richTextAttributes }}
 >
     {{-- The synced textarea carries `aria-required` but NOT the HTML `required` attr: a `hidden`
          form control that can't be focused triggers Chrome's "An invalid form control is not

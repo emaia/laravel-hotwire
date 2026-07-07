@@ -11,6 +11,13 @@ it('renders with explicit message', function () {
     $view->assertSee('data-toast-type-value="success"', false);
 });
 
+it('merges inline stimulus attributes with the toast controller', function () {
+    $view = $this->blade('<x-hw::flash-message message="Done!" type="success" :stimulus="stimulus()->controller(\'analytics\')->action(\'analytics\', \'track\', \'toast:shown\')" />');
+
+    $view->assertSee('data-controller="toast analytics"', false);
+    $view->assertSee('data-action="toast:shown->analytics#track"', false);
+});
+
 it('renders with description', function () {
     $view = $this->blade('<x-hw::flash-message message="Saved" description="Record updated" type="success" />');
 

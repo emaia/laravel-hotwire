@@ -4,6 +4,7 @@ namespace Emaia\LaravelHotwire\Components;
 
 use Emaia\LaravelHotwire\Components\Concerns\StripsNullProps;
 use Emaia\LaravelHotwire\Support\FieldKey;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\ViewErrorBag;
 use Illuminate\View\Component;
 use Illuminate\View\ComponentAttributeBag;
@@ -59,6 +60,7 @@ class FileUpload extends Component
         public ?array $options = null,
         public string $class = '',
         public string $controller = 'file-upload',
+        public ?Htmlable $stimulus = null,
     ) {
         if ($url === null || $url === '') {
             throw new InvalidArgumentException('hw:file-upload requires a `url` prop.');
@@ -85,7 +87,22 @@ class FileUpload extends Component
     public function data(): array
     {
         $data = parent::data();
-        $data['internalPrefixes'] = ['data-'.$this->identifier.'-'];
+        $data['internalPrefixes'] = [
+            "data-{$this->identifier}-url-",
+            "data-{$this->identifier}-hidden-name-",
+            "data-{$this->identifier}-accept-",
+            "data-{$this->identifier}-max-size-bytes-",
+            "data-{$this->identifier}-max-files-",
+            "data-{$this->identifier}-multiple-",
+            "data-{$this->identifier}-preview-",
+            "data-{$this->identifier}-emit-hidden-",
+            "data-{$this->identifier}-param-name-",
+            "data-{$this->identifier}-response-key-",
+            "data-{$this->identifier}-delete-url-",
+            "data-{$this->identifier}-parallel-uploads-",
+            "data-{$this->identifier}-turbo-stream-",
+            "data-{$this->identifier}-options-",
+        ];
         $data['compute'] = $this->computeResolved(...);
 
         return $this->stripNullProps($data, ['name', 'id', 'errorKey']);
@@ -120,12 +137,7 @@ class FileUpload extends Component
 
         $isRequired = ($attributes->has('required') && $attributes->get('required') !== false) || $required;
 
-        $userController = trim($attributes->get('data-controller', ''));
-        $mergedController = trim($userController === '' ? $this->identifier : $userController.' '.$this->identifier);
-
         $keyActions = "keydown.enter->{$this->identifier}#openPicker keydown.space->{$this->identifier}#openPicker";
-        $userAction = trim($attributes->get('data-action', ''));
-        $mergedAction = trim($userAction === '' ? $keyActions : $userAction.' '.$keyActions);
 
         $hasAriaLabel = $attributes->has('aria-label');
 
@@ -138,8 +150,8 @@ class FileUpload extends Component
             'hiddenName' => $hiddenName,
             'hasErrors' => $hasErrors,
             'isRequired' => $isRequired,
-            'mergedController' => $mergedController,
-            'mergedAction' => $mergedAction,
+            'mergedController' => $this->identifier,
+            'mergedAction' => $keyActions,
             'hasAriaLabel' => $hasAriaLabel,
             'initialValues' => $initialValues,
             'optionsJson' => $this->resolveOptionsJson(),
