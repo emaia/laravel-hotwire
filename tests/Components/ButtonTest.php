@@ -84,15 +84,18 @@ it('uses semantic variant attributes regardless of the rendered tag', function (
 // --- `stimulus` prop (Hotwire-stack integration) ---
 
 it('renders inline stimulus attributes when :stimulus is passed', function () {
-    // Blade's component parser does not support `{{ $stimulusBag }}` as a bare
-    // attribute spread (regardless of expression complexity), so the component
-    // exposes a named :stimulus prop that accepts an Htmlable and emits its
-    // toHtml() raw alongside the regular attribute bag.
     $view = $this->blade('<x-hw::button as="a" href="/x" :stimulus="stimulus()->controller(\'hotkey\')->action(\'hotkey\', \'click\', \'keydown.n@window\')">New Task</x-hw::button>');
 
     $view->assertSee('<a', false)
         ->assertSee('data-controller="hotkey"', false)
         ->assertSee('data-action=', false);
+});
+
+it('merges raw stimulus attributes with the stimulus prop', function () {
+    $view = $this->blade('<x-hw::button data-controller="analytics" data-action="click->analytics#track" :stimulus="stimulus()->controller(\'hotkey\')->action(\'hotkey\', \'click\', \'keydown.n@window\')">New Task</x-hw::button>');
+
+    $view->assertSee('data-controller="analytics hotkey"', false)
+        ->assertSee('data-action="click->analytics#track keydown.n@window->hotkey#click"', false);
 });
 
 it('omits stimulus attributes when no :stimulus prop is passed', function () {

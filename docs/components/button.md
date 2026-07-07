@@ -72,7 +72,7 @@ Blade's component parser doesn't accept `{{ $bag }}` as a bare attribute spread 
 </hw:button>
 ```
 
-The `:stimulus` prop accepts any `Htmlable` (the `stimulus()`, `stimulus_controller()`, `stimulus_action()` and `stimulus_target()` helpers all return one). Its `toHtml()` is rendered inline alongside the regular attribute bag, so existing `data-controller` / `data-action` you pass via plain HTML attributes still merge correctly.
+The `:stimulus` prop accepts the output of `stimulus()`, `stimulus_controller()`, `stimulus_action()` or `stimulus_target()` (they are both `Htmlable` and `Arrayable`). It is merged with the regular attribute bag, so existing `data-controller` / `data-action` you pass via plain HTML attributes compose with the prop and repeated tokens are deduplicated.
 
 If you don't have a Stimulus binding, omit the prop — the rendered button has no extra `data-*` overhead.
 
@@ -99,7 +99,7 @@ When `as="a"` is used, the `type` attribute is omitted (it has no meaning on `<a
 | `type`    | `string` | `'button'`  | Rendered as `<button type="...">`. Use `submit` inside forms. Ignored when `as` is not `button`. |
 | `as`      | `string` | `'button'`  | HTML tag to render. Use `a` for links.                                                         |
 | `slotName`| `string` | `'button'` | Internal escape hatch for shipped components that need a button element with a more specific `data-slot`. Most apps should not set this. |
-| `stimulus`| `Htmlable\|null` | `null` | Optional Stimulus binding (from `stimulus()`, `stimulus_controller()`, `stimulus_action()` or `stimulus_target()`). Pass via `:stimulus="..."`; rendered inline alongside the regular attributes. |
+| `stimulus`| `Htmlable\|null` | `null` | Optional Stimulus binding from `stimulus()`, `stimulus_controller()`, `stimulus_action()` or `stimulus_target()`. Pass via `:stimulus="..."`; merged with regular attributes. |
 
 All other HTML attributes (`id`, `name`, `disabled`, `aria-*`, `data-*`, `href`, `target`, `class`) pass through to the rendered element. Package styling is not emitted as inline classes; presets target the data attributes below.
 

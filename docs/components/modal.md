@@ -44,6 +44,7 @@ The X button is shown by default (`close-button` is `true`). To hide it:
 | `fixed-top`            | `bool`    | `false`            | Pins the modal to the top with a margin (ignored when `size="full"`) |
 | `frame`                | `?string` | `null`             | Renders a Turbo Frame dynamic content target    |
 | `prevent-reopen-delay` | `int`     | `1000`             | Delay (ms) before allowing reopen after closing |
+| `stimulus`             | `Htmlable\|null` | `null`     | Optional extra Stimulus binding merged into the root element |
 
 ### Size presets
 
@@ -98,18 +99,23 @@ The previous boolean props have been replaced by `size`. Map your usage:
 
 ## Root attributes
 
-Arbitrary attributes are forwarded to the root modal element. This is the escape hatch for custom
-Stimulus values, ARIA attributes, ids, and data hooks:
+Arbitrary attributes are forwarded to the root modal element. Use this for ARIA attributes, ids, data
+hooks, and additional Stimulus controllers/actions:
 
 ```blade
 <hw:modal
-    data-modal-close-on-escape-value="false"
     aria-labelledby="edit-post-title"
     data-test-id="edit-post-modal"
+    data-controller="analytics"
+    data-action="modal:opened->analytics#track"
 >
     ...
 </hw:modal>
 ```
+
+Regular `data-controller` / `data-action` attributes and the `stimulus` prop are merged and deduplicated with the
+internal `modal` controller. Component-owned `data-modal-*` attributes are protected; configure supported modal behavior
+with props instead of overriding those attributes directly.
 
 ## Slots
 
@@ -225,9 +231,10 @@ example):
 Resolution order: per-link `data-loading-template` → modal's `loading_template` slot → no loading
 template. Without a loading template, the modal stays closed until the real frame content arrives.
 
-## Stimulus Values
+## Stimulus values
 
-Configurable via `data-modal-*-value` on the root element:
+The underlying controller uses these values. On `<hw:modal>`, configure supported behavior through props; root
+`data-modal-*` attributes are reserved for the component's internal wiring.
 
 | Value                    | Type      | Default | Description                              |
 |--------------------------|-----------|---------|------------------------------------------|

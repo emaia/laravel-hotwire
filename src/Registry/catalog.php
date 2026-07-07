@@ -36,6 +36,7 @@ use Emaia\LaravelHotwire\Components\Separator;
 use Emaia\LaravelHotwire\Components\Skeleton;
 use Emaia\LaravelHotwire\Components\Spinner;
 use Emaia\LaravelHotwire\Components\Table;
+use Emaia\LaravelHotwire\Components\Tabs;
 use Emaia\LaravelHotwire\Components\Textarea;
 use Emaia\LaravelHotwire\Components\Timeago;
 
@@ -280,6 +281,14 @@ return [
             'category' => 'display',
             'description' => 'Responsive table wrapper with semantic row, cell, header, footer and caption primitives',
             'controllers' => [],
+        ],
+        'tabs' => [
+            'class' => Tabs::class,
+            'view' => 'hotwire::component-views.tabs',
+            'docs' => 'docs/components/tabs.md',
+            'category' => 'display',
+            'description' => 'Accessible tab primitives backed by the tabs controller, with server-rendered active state',
+            'controllers' => ['tabs'],
         ],
         'dropdown' => [
             'class' => Dropdown::class,

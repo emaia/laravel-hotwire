@@ -6,20 +6,21 @@ export default class extends Controller {
     static values = { selectedIndex: { type: Number, default: 0 } };
 
     connect() {
-        this.activate(this.tabTargets[this.initialIndex], { focus: false, notify: false });
+        this.activate(this.initialTab, { focus: false, notify: false });
     }
 
     select(event) {
         const tab = this.tabFromEvent(event);
-        if (tab) this.activate(tab, { focus: false });
+        if (tab && !this.isDisabled(tab)) this.activate(tab, { focus: false });
     }
 
     navigate(event) {
         const current = this.tabFromEvent(event);
-        const index = this.tabTargets.indexOf(current);
+        const tabs = this.enabledTabs;
+        const index = tabs.indexOf(current);
         if (index === -1) return;
 
-        const last = this.tabTargets.length - 1;
+        const last = tabs.length - 1;
         let next;
 
         switch (event.key) {
@@ -40,19 +41,23 @@ export default class extends Controller {
         }
 
         event.preventDefault();
-        this.activate(this.tabTargets[next], { focus: true });
+        this.activate(tabs[next], { focus: true });
     }
 
     activate(tab, { focus = false, notify = true } = {}) {
-        if (!tab) return;
+        if (!tab || this.isDisabled(tab)) return;
 
         this.tabTargets.forEach((current) => {
             const selected = current === tab;
+            current.dataset.state = selected ? "active" : "inactive";
             current.setAttribute("aria-selected", selected ? "true" : "false");
-            current.setAttribute("tabindex", selected ? "0" : "-1");
+            current.setAttribute("tabindex", selected && !this.isDisabled(current) ? "0" : "-1");
 
             const panel = this.panelFor(current);
-            if (panel) panel.hidden = !selected;
+            if (panel) {
+                panel.dataset.state = selected ? "active" : "inactive";
+                panel.hidden = !selected;
+            }
         });
 
         const index = this.tabTargets.indexOf(tab);
@@ -67,17 +72,29 @@ export default class extends Controller {
         return tab && this.tabTargets.includes(tab) ? tab : null;
     }
 
+    isDisabled(tab) {
+        return tab.disabled || tab.getAttribute("aria-disabled") === "true";
+    }
+
     panelFor(tab) {
         const id = tab.getAttribute("aria-controls");
         return id ? document.getElementById(id) : null;
     }
 
-    get initialIndex() {
-        const preselected = this.tabTargets.findIndex((tab) => tab.getAttribute("aria-selected") === "true");
-        if (preselected !== -1) return preselected;
+    get enabledTabs() {
+        return this.tabTargets.filter((tab) => !this.isDisabled(tab));
+    }
+
+    get initialTab() {
+        const enabled = this.enabledTabs;
+        const preselected = enabled.find((tab) => tab.getAttribute("aria-selected") === "true");
+        if (preselected) return preselected;
 
         const fromValue = this.selectedIndexValue;
-        return fromValue >= 0 && fromValue < this.tabTargets.length ? fromValue : 0;
+        const tab = this.tabTargets[fromValue];
+        if (tab && !this.isDisabled(tab)) return tab;
+
+        return enabled[0] ?? null;
     }
 
     get vertical() {

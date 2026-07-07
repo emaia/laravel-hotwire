@@ -96,6 +96,11 @@ Animation speed, scroll lock, and click-outside behavior are exposed as Blade pr
 | `close-duration`         | `int`    | `200`              | Closing animation duration (ms)                 |
 | `lock-scroll`            | `bool`   | `true`             | Locks body scroll when the dialog is open       |
 | `close-on-click-outside` | `bool`   | `true`             | Closes when clicking the backdrop               |
+| `stimulus`               | `Htmlable\|null` | `null`   | Optional extra Stimulus binding merged into the root element |
+
+Regular `data-controller` / `data-action` attributes and the `stimulus` prop are merged and deduplicated with the
+internal `alert-dialog` controller. Component-owned `data-alert-dialog-*` attributes are protected; configure supported
+dialog behavior with props instead of overriding those attributes directly.
 
 ## Slots
 

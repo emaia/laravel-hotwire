@@ -1,28 +1,25 @@
 @php
-    $stimulusAttributes = $stimulus instanceof \Illuminate\Contracts\Support\Arrayable ? $stimulus->toArray() : [];
-    $stimulusController = $stimulusAttributes['data-controller'] ?? '';
-    $stimulusAction = $stimulusAttributes['data-action'] ?? '';
-    unset($stimulusAttributes['data-controller'], $stimulusAttributes['data-action']);
+    $alertDialogAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
+        'id' => $id,
+        'data-slot' => 'alert-dialog',
+        'data-controller' => 'alert-dialog',
+        'data-alert-dialog-open-duration-value' => $openDuration,
+        'data-alert-dialog-close-duration-value' => $closeDuration,
+        'data-alert-dialog-lock-scroll-value' => $lockScroll ? 'true' : 'false',
+        'data-alert-dialog-close-on-click-outside-value' => $closeOnClickOutside ? 'true' : 'false',
+        'data-alert-dialog-hidden-class' => 'pointer-events-none',
+        'data-alert-dialog-visible-class' => 'pointer-events-auto',
+        'data-alert-dialog-backdrop-hidden-class' => 'opacity-0',
+        'data-alert-dialog-backdrop-visible-class' => 'opacity-100',
+        'data-alert-dialog-dialog-hidden-class' => 'scale-90 opacity-0',
+        'data-alert-dialog-dialog-visible-class' => 'scale-100 opacity-100',
+        'data-alert-dialog-lock-scroll-class' => 'overflow-hidden',
+        'data-action' => 'turbo:before-cache@window->alert-dialog#cancel',
+    ], $attributes, $stimulus, protectedPrefixes: ['data-alert-dialog-']);
 @endphp
 
 <div
-    data-slot="alert-dialog"
-    id="{{ $id }}"
-    data-controller="{{ trim('alert-dialog '.$stimulusController) }}"
-    data-alert-dialog-open-duration-value="{{ $openDuration }}"
-    data-alert-dialog-close-duration-value="{{ $closeDuration }}"
-    data-alert-dialog-lock-scroll-value="{{ $lockScroll ? 'true' : 'false' }}"
-    data-alert-dialog-close-on-click-outside-value="{{ $closeOnClickOutside ? 'true' : 'false' }}"
-    data-alert-dialog-hidden-class="pointer-events-none"
-    data-alert-dialog-visible-class="pointer-events-auto"
-    data-alert-dialog-backdrop-hidden-class="opacity-0"
-    data-alert-dialog-backdrop-visible-class="opacity-100"
-    data-alert-dialog-dialog-hidden-class="scale-90 opacity-0"
-    data-alert-dialog-dialog-visible-class="scale-100 opacity-100"
-    data-alert-dialog-lock-scroll-class="overflow-hidden"
-    data-action="{{ trim('turbo:before-cache@window->alert-dialog#cancel '.$stimulusAction) }}"
-    {{ new \Illuminate\View\ComponentAttributeBag($stimulusAttributes) }}
-    @if ($stimulus !== null && ! $stimulus instanceof \Illuminate\Contracts\Support\Arrayable) {!! $stimulus->toHtml() !!} @endif
+    {{ $alertDialogAttributes }}
 >
     <div data-slot="alert-dialog-trigger" data-action="click->alert-dialog#intercept">
         {{ $slot }}

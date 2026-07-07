@@ -1,32 +1,22 @@
 @php
-    $stimulusAttributes = $stimulus instanceof \Illuminate\Contracts\Support\Arrayable ? $stimulus->toArray() : [];
-    $stimulusController = $stimulusAttributes['data-controller'] ?? '';
-    $stimulusAction = $stimulusAttributes['data-action'] ?? '';
-    unset($stimulusAttributes['data-controller'], $stimulusAttributes['data-action']);
+    $modalAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
+        'id' => $id,
+        'data-slot' => 'modal',
+        'data-controller' => 'modal',
+        'data-modal-prevent-reopen-delay-value' => $preventReopenDelay,
+        'data-modal-hidden-class' => 'pointer-events-none',
+        'data-modal-visible-class' => 'pointer-events-auto',
+        'data-modal-backdrop-hidden-class' => 'opacity-0',
+        'data-modal-backdrop-visible-class' => 'opacity-100',
+        'data-modal-dialog-hidden-class' => 'scale-80 opacity-0',
+        'data-modal-dialog-visible-class' => 'scale-100 opacity-100',
+        'data-modal-lock-scroll-class' => 'overflow-hidden',
+        'data-action' => 'turbo:before-cache@window->modal#close',
+    ], $attributes, $stimulus, protectedPrefixes: ['data-modal-']);
 @endphp
 
 <div
-    data-slot="modal"
-    data-controller="{{ trim('modal '.$stimulusController) }}"
-    data-modal-prevent-reopen-delay-value="{{ $preventReopenDelay }}"
-    data-modal-hidden-class="pointer-events-none"
-    data-modal-visible-class="pointer-events-auto"
-    data-modal-backdrop-hidden-class="opacity-0"
-    data-modal-backdrop-visible-class="opacity-100"
-    data-modal-dialog-hidden-class="scale-80 opacity-0"
-    data-modal-dialog-visible-class="scale-100 opacity-100"
-    data-modal-lock-scroll-class="overflow-hidden"
-    data-action="{{ trim('turbo:before-cache@window->modal#close '.$stimulusAction) }}"
-    {{
-        $attributes
-            ->except(['data-controller', 'data-action'])
-            ->whereDoesntStartWith('data-modal-')
-            ->merge([
-            'id' => $id,
-        ])
-    }}
-    {{ new \Illuminate\View\ComponentAttributeBag($stimulusAttributes) }}
-    @if ($stimulus !== null && ! $stimulus instanceof \Illuminate\Contracts\Support\Arrayable) {!! $stimulus->toHtml() !!} @endif
+    {{ $modalAttributes }}
 >
     @if (isset($trigger))
         {{ $trigger }}

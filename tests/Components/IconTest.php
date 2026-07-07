@@ -64,6 +64,8 @@ it('renders every defined icon without error', function (string $name) {
     'eye',
     'eye-off',
     'loader-circle',
+    'app-window',
+    'code',
 ]);
 
 // --- Unknown icons ---

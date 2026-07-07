@@ -429,6 +429,26 @@
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Table\\Row"
                 },
                 {
+                    "name": "tabs",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Tabs"
+                },
+                {
+                    "name": "tabs.list",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Tabs\\TabList"
+                },
+                {
+                    "name": "tabs.panel",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Tabs\\Panel"
+                },
+                {
+                    "name": "tabs.trigger",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Tabs\\Trigger"
+                },
+                {
                     "name": "textarea",
                     "namespace": "hw",
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Textarea"
