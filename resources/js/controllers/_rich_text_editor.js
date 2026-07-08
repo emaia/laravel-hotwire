@@ -13,7 +13,7 @@ import Link from "@tiptap/extension-link";
 import Underline from "@tiptap/extension-underline";
 
 export function defaultExtensions({ placeholder = null } = {}) {
-    const list = [StarterKit, Link, Underline];
+    const list = [StarterKit, Link.configure({ openOnClick: false }), Underline];
     if (placeholder) {
         list.push(Placeholder.configure({ placeholder }));
     }

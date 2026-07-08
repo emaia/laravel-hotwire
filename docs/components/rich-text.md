@@ -27,6 +27,12 @@ controllers — see those for the runtime side.
 {{-- Image upload enabled; the app listens for rich-text:image-upload --}}
 <hw:rich-text name="content" :image-upload="true" />
 
+{{-- Compatibility toolbar with headings, underline, quote, code block, undo/redo, etc. --}}
+<hw:rich-text name="content" toolbar="classic" />
+
+{{-- Custom packaged toolbar buttons --}}
+<hw:rich-text name="content" toolbar="bold italic link bullet-list ordered-list" />
+
 {{-- Custom toolbar via slot --}}
 <hw:rich-text name="content" :toolbar="false">
     {{-- your own <div data-controller="rich-text-toolbar"> here --}}
@@ -45,7 +51,7 @@ controllers — see those for the runtime side.
 | `editable`     | `bool`           | `true`        | Set to `false` for a read-only editor.                                                                       |
 | `required`     | `bool`/HTML attr | `false`       | Marks the field as required for a11y (`aria-required="true"` on wrapper + textarea). The HTML `required` attribute is **intentionally not emitted** — see [Required + client-side validation](#required--client-side-validation). Inherited from `<hw:field required>` via `@aware`. |
 | `output`       | `string`         | `'html'`      | `html` writes serialized HTML into the textarea; `json` writes `JSON.stringify`'d ProseMirror JSON.          |
-| `toolbar`      | `bool`           | `true`        | Render the default toolbar. Pass `false` to use a custom one through the slot.                               |
+| `toolbar`      | `bool\|string\|array\|null` | `true`        | Render packaged toolbar buttons. `true`, `null`, and `basic` render bold, italic, link, bullet list, ordered list. `classic` renders the previous broad toolbar plus `strike`, inline `code`, and `horizontal-rule`. Pass a string/array of button keys for a custom set, or `false` to render slot content instead. |
 | `imageUpload`  | `bool`           | `false`       | Intercept image paste/drop and dispatch `rich-text:image-upload` for the app to handle.                      |
 | `old`          | `bool`           | `true`        | Honor `old()` for the initial value (re-populates after a failed validation).                                |
 | `class`        | `string`         | `''`          | Merged on the wrapper element.                                                                               |
@@ -83,7 +89,9 @@ The component renders:
     <div data-controller="rich-text-toolbar"
          data-rich-text-toolbar-editor-value="[data-rich-text-id-value='content']"
          …>
-        <button data-action="click->rich-text-toolbar#bold" …>B</button>
+        <button data-action="click->rich-text-toolbar#bold" aria-label="Bold" …>
+            <svg data-slot="icon">…</svg>
+        </button>
         …
     </div>
 
@@ -190,12 +198,34 @@ markup. The same check runs on mount, so a leftover `<p></p>` from a previous su
 This applies to both `output="html"` and `output="json"` — Tiptap's "empty doc" JSON
 (`{"type":"doc","content":[{"type":"paragraph"}]}`) is normalized to `""` the same way.
 
-## Default toolbar
+## Toolbar presets
 
-The default toolbar exposes the buttons most editors need: bold, italic, underline, H1/H2/H3,
-bullet list, numbered list, blockquote, code block, link, undo, redo. Each button is a
-`<button type="button">` with a text label (no icons, so no extra dependency) and an `aria-label`
-for screen readers. Restyle freely via CSS — the buttons live inside `[data-slot="rich-text-toolbar"]`.
+The default toolbar is `basic`: bold, italic, link, bullet list, and numbered list. This keeps the
+common editor surface compact while still using the bundled `rich-text-toolbar` controller.
+
+Use `toolbar="classic"` when you want the previous broad toolbar: bold, italic, underline, strike,
+inline code, H1/H2/H3, link, bullet list, numbered list, blockquote, code block, horizontal rule,
+undo, and redo.
+
+Pass a string or array of button keys when you want only selected packaged buttons:
+
+```blade
+<hw:rich-text name="content" toolbar="bold italic link" />
+
+<hw:rich-text
+    name="content"
+    :toolbar="['bold', 'italic', 'heading-2', 'blockquote']"
+/>
+```
+
+Supported button keys are: `bold`, `italic`, `underline`, `strike`, `code`, `heading-1`,
+`heading-2`, `heading-3`, `link`, `bullet-list`, `ordered-list`, `blockquote`, `code-block`,
+`horizontal-rule`, `undo`, and `redo`. Unsupported keys are ignored.
+
+There is no `full` preset. Buttons such as alignment, highlight, image insertion, task lists, and
+tables require Tiptap extensions that are not loaded by the base editor, so they stay in app-owned
+custom toolbars. Each packaged button is a `<button type="button">` with a Lucide-style icon and
+stable `aria-label`.
 
 When you need a different set of buttons, drop the default and render your own through the slot:
 
@@ -370,9 +400,8 @@ other behavior change without forking the controller:
 ```
 
 The swap renames the data attributes (so `data-rich-text-id-value` becomes
-`data-rich-text-extended-id-value`) and swaps the `data-controller`. When you swap, the default
-toolbar still references the `rich-text` outlet, so you'll usually want to pair the swap with
-`:toolbar="false"` and render a toolbar configured for the new identifier.
+`data-rich-text-extended-id-value`) and swaps the `data-controller`. The packaged toolbar follows
+the swapped identifier in its outlet selector.
 
 ## Server-side rendering of saved content
 

@@ -135,8 +135,9 @@ controller `JSON.parse`s when the document looks like JSON, falling back to HTML
 ## Extensions hook (subclass)
 
 The default extension stack is StarterKit + Link + Underline (plus Placeholder when the
-`placeholder` value is set). To add or swap extensions without forking, subclass the controller
-and override `extensions(options)`:
+`placeholder` value is set). Link is configured with `openOnClick: false`, so clicking links while
+editing keeps focus in the editor instead of navigating away. To add or swap extensions without
+forking, subclass the controller and override `extensions(options)`:
 
 ```js
 import RichTextController from "@hotwire/rich_text_controller.js";

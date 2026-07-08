@@ -80,7 +80,11 @@ mock.module("@tiptap/extension-placeholder", () => ({
         configure: mock((opts) => ({ name: "Placeholder", options: opts })),
     },
 }));
-mock.module("@tiptap/extension-link", () => ({ default: "Link" }));
+mock.module("@tiptap/extension-link", () => ({
+    default: {
+        configure: mock((opts) => ({ name: "Link", options: opts })),
+    },
+}));
 mock.module("@tiptap/extension-underline", () => ({ default: "Underline" }));
 
 const { RichTextEditor, defaultExtensions } = await import(
@@ -142,8 +146,15 @@ test("default extension list includes StarterKit, Link and Underline", () => {
 
     const exts = editorState.lastOptions.extensions;
     expect(exts).toContain("StarterKit");
-    expect(exts).toContain("Link");
+    expect(exts.some((e) => e?.name === "Link")).toBe(true);
     expect(exts).toContain("Underline");
+});
+
+test("Link is configured not to open links on click while editing", () => {
+    new RichTextEditor(elem());
+
+    const link = editorState.lastOptions.extensions.find((e) => e?.name === "Link");
+    expect(link.options).toEqual({ openOnClick: false });
 });
 
 test("Placeholder is configured and added when placeholder option is provided", () => {
@@ -170,7 +181,11 @@ test("explicit `extensions` option replaces the default list", () => {
 // --- defaultExtensions helper ---
 
 test("defaultExtensions() returns the unmodified default list", () => {
-    expect(defaultExtensions()).toEqual(["StarterKit", "Link", "Underline"]);
+    expect(defaultExtensions()).toEqual([
+        "StarterKit",
+        { name: "Link", options: { openOnClick: false } },
+        "Underline",
+    ]);
 });
 
 test("defaultExtensions({ placeholder }) appends configured Placeholder", () => {
