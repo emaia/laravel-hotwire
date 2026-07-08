@@ -46,7 +46,7 @@
         @if ($inputClass !== '') class="{{ $inputClass }}" @else hidden @endif
     >{{ $resolvedValue }}</textarea>
 
-    @if ($toolbar)
+    @if ($toolbar !== false)
         <div
             data-slot="rich-text-toolbar"
             role="toolbar"
@@ -54,19 +54,18 @@
             data-controller="rich-text-toolbar"
             data-rich-text-toolbar-editor-value="{{ $outletSelector }}"
         >
-            <button data-slot="rich-text-toolbar-button" type="button" data-action="click->rich-text-toolbar#bold" data-rich-text-toolbar-target="bold" aria-label="Bold"><strong>B</strong></button>
-            <button data-slot="rich-text-toolbar-button" type="button" data-action="click->rich-text-toolbar#italic" data-rich-text-toolbar-target="italic" aria-label="Italic"><em>I</em></button>
-            <button data-slot="rich-text-toolbar-button" type="button" data-action="click->rich-text-toolbar#underline" data-rich-text-toolbar-target="underline" aria-label="Underline"><u>U</u></button>
-            <button data-slot="rich-text-toolbar-button" type="button" data-action="click->rich-text-toolbar#heading" data-rich-text-toolbar-target="heading" data-level="1" aria-label="Heading 1">H1</button>
-            <button data-slot="rich-text-toolbar-button" type="button" data-action="click->rich-text-toolbar#heading" data-rich-text-toolbar-target="heading" data-level="2" aria-label="Heading 2">H2</button>
-            <button data-slot="rich-text-toolbar-button" type="button" data-action="click->rich-text-toolbar#heading" data-rich-text-toolbar-target="heading" data-level="3" aria-label="Heading 3">H3</button>
-            <button data-slot="rich-text-toolbar-button" type="button" data-action="click->rich-text-toolbar#bulletList" data-rich-text-toolbar-target="bulletList" aria-label="Bullet list">&bull;</button>
-            <button data-slot="rich-text-toolbar-button" type="button" data-action="click->rich-text-toolbar#orderedList" data-rich-text-toolbar-target="orderedList" aria-label="Numbered list">1.</button>
-            <button data-slot="rich-text-toolbar-button" type="button" data-action="click->rich-text-toolbar#blockquote" data-rich-text-toolbar-target="blockquote" aria-label="Quote">&ldquo;</button>
-            <button data-slot="rich-text-toolbar-button" type="button" data-action="click->rich-text-toolbar#codeBlock" data-rich-text-toolbar-target="codeBlock" aria-label="Code block">&lt;/&gt;</button>
-            <button data-slot="rich-text-toolbar-button" type="button" data-action="click->rich-text-toolbar#link" data-rich-text-toolbar-target="link" aria-label="Link">Link</button>
-            <button data-slot="rich-text-toolbar-button" type="button" data-action="click->rich-text-toolbar#undo" aria-label="Undo">&larr;</button>
-            <button data-slot="rich-text-toolbar-button" type="button" data-action="click->rich-text-toolbar#redo" aria-label="Redo">&rarr;</button>
+            @foreach ($toolbarButtons() as $button)
+                <button
+                    data-slot="rich-text-toolbar-button"
+                    type="button"
+                    data-action="click->rich-text-toolbar#{{ $button['action'] }}"
+                    @if ($button['target']) data-rich-text-toolbar-target="{{ $button['target'] }}" @endif
+                    @if (isset($button['level'])) data-level="{{ $button['level'] }}" @endif
+                    aria-label="{{ $button['label'] }}"
+                >
+                    <hw:icon name="{{ $button['icon'] }}" aria-hidden="true" />
+                </button>
+            @endforeach
         </div>
     @else
         {{ $slot ?? '' }}

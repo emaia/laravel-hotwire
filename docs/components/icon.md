@@ -37,6 +37,21 @@ Inline SVG icon from the embedded Lucide subset.
 | Loader Circle | `loader-circle` |
 | App Window | `app-window` |
 | Code | `code` |
+| Bold | `bold` |
+| Italic | `italic` |
+| Underline | `underline` |
+| Strikethrough | `strikethrough` |
+| Heading 1 | `heading-1` |
+| Heading 2 | `heading-2` |
+| Heading 3 | `heading-3` |
+| Link | `link` |
+| List | `list` |
+| List Ordered | `list-ordered` |
+| Quote | `quote` |
+| Code XML | `code-xml` |
+| Minus | `minus` |
+| Undo 2 | `undo-2` |
+| Redo 2 | `redo-2` |
 
 ## Props
 

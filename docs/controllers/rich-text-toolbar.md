@@ -1,8 +1,9 @@
 # Rich text toolbar
 
 Optional toolbar paired with the [`rich-text`](rich-text.md) controller via a Stimulus outlet.
-Provides the standard formatting actions (bold, italic, underline, lists, blockquote, code block,
-link, headings, undo, redo) and keeps each button's `is-active` class + `aria-pressed` attribute
+Provides the standard formatting actions (bold, italic, underline, strike, inline code, lists,
+blockquote, code block, horizontal rule, link, headings, undo, redo) and keeps each button's
+`is-active` class + `aria-pressed` attribute
 in sync with the editor's current selection.
 
 **Identifier:** `rich-text-toolbar`
@@ -43,12 +44,15 @@ the `is-active` class without re-querying the DOM:
 | `bold`        | `editor.isActive("bold")`               |
 | `italic`      | `editor.isActive("italic")`             |
 | `underline`   | `editor.isActive("underline")`          |
+| `strike`      | `editor.isActive("strike")`             |
+| `code`        | `editor.isActive("code")`               |
 | `bulletList`  | `editor.isActive("bulletList")`         |
 | `orderedList` | `editor.isActive("orderedList")`        |
 | `blockquote`  | `editor.isActive("blockquote")`         |
 | `codeBlock`   | `editor.isActive("codeBlock")`          |
 | `link`        | `editor.isActive("link")`               |
 | `heading`     | `editor.isActive("heading", { level })` |
+| `horizontalRule` | —                                    |
 | `undo`        | —                                       |
 | `redo`        | —                                       |
 
@@ -63,6 +67,8 @@ static activeStates = {
     bold: "bold",
     italic: "italic",
     underline: "underline",
+    strike: "strike",
+    code: "code",
     bulletList: "bulletList",
     orderedList: "orderedList",
     blockquote: "blockquote",
@@ -73,8 +79,9 @@ static activeStates = {
 
 `syncButtons` iterates this map and reflects `editor.isActive(state)` on each entry whose target is
 rendered. Subclasses spread it to add new targets — see [Extending the toolbar](#extending-the-toolbar-table-recipe).
-`undo`/`redo` deliberately stay out of the map (no `isActive` semantics). `heading` is special-cased
-in `syncHeading()` because it needs an attr lookup (`isActive("heading", { level })`).
+`horizontalRule` and `undo`/`redo` deliberately stay out of the map (no persistent `isActive`
+semantics). `heading` is special-cased in `syncHeading()` because it needs an attr lookup
+(`isActive("heading", { level })`).
 
 ## Actions
 
@@ -83,10 +90,13 @@ in `syncHeading()` because it needs an attr lookup (`isActive("heading", { level
 | `bold`          | `editor.chain().focus().toggleBold().run()`                                                                                                                                                                      |
 | `italic`        | `editor.chain().focus().toggleItalic().run()`                                                                                                                                                                    |
 | `underline`     | `editor.chain().focus().toggleUnderline().run()`                                                                                                                                                                 |
+| `strike`        | `editor.chain().focus().toggleStrike().run()`                                                                                                                                                                    |
+| `code`          | `editor.chain().focus().toggleCode().run()`                                                                                                                                                                      |
 | `bulletList`    | `editor.chain().focus().toggleBulletList().run()`                                                                                                                                                                |
 | `orderedList`   | `editor.chain().focus().toggleOrderedList().run()`                                                                                                                                                               |
 | `blockquote`    | `editor.chain().focus().toggleBlockquote().run()`                                                                                                                                                                |
 | `codeBlock`     | `editor.chain().focus().toggleCodeBlock().run()`                                                                                                                                                                 |
+| `horizontalRule` | `editor.chain().focus().setHorizontalRule().run()`                                                                                                                                                              |
 | `heading`       | `editor.chain().focus().toggleHeading({ level }).run()` — level read from the action's `data-level` param (`data-rich-text-toolbar-level-param`) or from the button's `data-level` attribute, defaulting to `1`. |
 | `link`          | Reads the URL from the `url` action param when present, otherwise prompts the user. An empty string runs `unsetLink`; cancelling the prompt is a no-op; a URL runs `setLink({ href })`.                          |
 | `undo` / `redo` | `editor.chain().focus().undo().run()` / `redo().run()`                                                                                                                                                           |
@@ -135,10 +145,8 @@ component renders the default toolbar for you and lets you swap it for a custom 
 
 ## Custom toolbars
 
-The default buttons are intentionally plain — square brackets like `<strong>B</strong>` and
-`<em>I</em>` rather than icons — so you can restyle them or replace them entirely. Drop the
-default toolbar from the Blade component by passing `:toolbar="false"` and render your own inside
-the slot:
+The Blade component renders packaged icon buttons by default. Drop that toolbar by passing
+`:toolbar="false"` and render your own inside the slot:
 
 ```blade
 <hw:rich-text name="content" :toolbar="false">

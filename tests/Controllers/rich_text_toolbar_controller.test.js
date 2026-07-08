@@ -19,10 +19,13 @@ function createInstance(options) {
             toggleBold() { c._calls.push("toggleBold"); return c; },
             toggleItalic() { c._calls.push("toggleItalic"); return c; },
             toggleUnderline() { c._calls.push("toggleUnderline"); return c; },
+            toggleStrike() { c._calls.push("toggleStrike"); return c; },
+            toggleCode() { c._calls.push("toggleCode"); return c; },
             toggleBulletList() { c._calls.push("toggleBulletList"); return c; },
             toggleOrderedList() { c._calls.push("toggleOrderedList"); return c; },
             toggleBlockquote() { c._calls.push("toggleBlockquote"); return c; },
             toggleCodeBlock() { c._calls.push("toggleCodeBlock"); return c; },
+            setHorizontalRule() { c._calls.push("setHorizontalRule"); return c; },
             toggleHeading(attrs) { c._calls.push({ toggleHeading: attrs }); return c; },
             undo() { c._calls.push("undo"); return c; },
             redo() { c._calls.push("redo"); return c; },
@@ -78,7 +81,11 @@ mock.module("@tiptap/starter-kit", () => ({ default: "StarterKit" }));
 mock.module("@tiptap/extension-placeholder", () => ({
     default: { configure: mock((opts) => ({ name: "Placeholder", options: opts })) },
 }));
-mock.module("@tiptap/extension-link", () => ({ default: "Link" }));
+mock.module("@tiptap/extension-link", () => ({
+    default: {
+        configure: mock((opts) => ({ name: "Link", options: opts })),
+    },
+}));
 mock.module("@tiptap/extension-underline", () => ({ default: "Underline" }));
 
 const { mountMultipleControllers, wait } = await import(
@@ -112,10 +119,13 @@ function tmpl({ targets = [], editorSelector = "[data-rich-text-id-value='conten
         ["bold", "B"],
         ["italic", "I"],
         ["underline", "U"],
+        ["strike", "S"],
+        ["code", "`"],
         ["bulletList", "•"],
         ["orderedList", "1."],
         ["blockquote", "\""],
         ["codeBlock", "</>"],
+        ["horizontalRule", "—"],
         ["link", "🔗"],
         ["undo", "↶"],
         ["redo", "↷"],
@@ -271,23 +281,29 @@ test("bold action runs editor.chain().focus().toggleBold().run()", async () => {
     expect(last).toEqual(["focus", "toggleBold", "run"]);
 });
 
-test("italic, underline, bulletList, orderedList, blockquote and codeBlock actions all delegate via chain().focus()", async () => {
+test("formatting actions all delegate via chain().focus()", async () => {
     await mount();
     const t = toolbar();
 
     t.italic();
     t.underline();
+    t.strike();
+    t.code();
     t.bulletList();
     t.orderedList();
     t.blockquote();
     t.codeBlock();
+    t.horizontalRule();
 
-    expect(editorState.chainCalls.at(-6)).toEqual(["focus", "toggleItalic", "run"]);
-    expect(editorState.chainCalls.at(-5)).toEqual(["focus", "toggleUnderline", "run"]);
-    expect(editorState.chainCalls.at(-4)).toEqual(["focus", "toggleBulletList", "run"]);
-    expect(editorState.chainCalls.at(-3)).toEqual(["focus", "toggleOrderedList", "run"]);
-    expect(editorState.chainCalls.at(-2)).toEqual(["focus", "toggleBlockquote", "run"]);
-    expect(editorState.chainCalls.at(-1)).toEqual(["focus", "toggleCodeBlock", "run"]);
+    expect(editorState.chainCalls.at(-9)).toEqual(["focus", "toggleItalic", "run"]);
+    expect(editorState.chainCalls.at(-8)).toEqual(["focus", "toggleUnderline", "run"]);
+    expect(editorState.chainCalls.at(-7)).toEqual(["focus", "toggleStrike", "run"]);
+    expect(editorState.chainCalls.at(-6)).toEqual(["focus", "toggleCode", "run"]);
+    expect(editorState.chainCalls.at(-5)).toEqual(["focus", "toggleBulletList", "run"]);
+    expect(editorState.chainCalls.at(-4)).toEqual(["focus", "toggleOrderedList", "run"]);
+    expect(editorState.chainCalls.at(-3)).toEqual(["focus", "toggleBlockquote", "run"]);
+    expect(editorState.chainCalls.at(-2)).toEqual(["focus", "toggleCodeBlock", "run"]);
+    expect(editorState.chainCalls.at(-1)).toEqual(["focus", "setHorizontalRule", "run"]);
 });
 
 test("undo and redo actions delegate via chain()", async () => {

@@ -12,6 +12,8 @@ export default class extends Controller {
         "bold",
         "italic",
         "underline",
+        "strike",
+        "code",
         "bulletList",
         "orderedList",
         "blockquote",
@@ -30,6 +32,8 @@ export default class extends Controller {
         bold: "bold",
         italic: "italic",
         underline: "underline",
+        strike: "strike",
+        code: "code",
         bulletList: "bulletList",
         orderedList: "orderedList",
         blockquote: "blockquote",
@@ -122,10 +126,13 @@ export default class extends Controller {
     bold() { this.editor?.chain().focus().toggleBold().run(); }
     italic() { this.editor?.chain().focus().toggleItalic().run(); }
     underline() { this.editor?.chain().focus().toggleUnderline().run(); }
+    strike() { this.editor?.chain().focus().toggleStrike().run(); }
+    code() { this.editor?.chain().focus().toggleCode().run(); }
     bulletList() { this.editor?.chain().focus().toggleBulletList().run(); }
     orderedList() { this.editor?.chain().focus().toggleOrderedList().run(); }
     blockquote() { this.editor?.chain().focus().toggleBlockquote().run(); }
     codeBlock() { this.editor?.chain().focus().toggleCodeBlock().run(); }
+    horizontalRule() { this.editor?.chain().focus().setHorizontalRule().run(); }
     undo() { this.editor?.chain().focus().undo().run(); }
     redo() { this.editor?.chain().focus().redo().run(); }
 

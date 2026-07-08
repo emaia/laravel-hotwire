@@ -112,28 +112,102 @@ it('omits the imageUpload attr by default', function () {
 
 // --- Toolbar ---
 
-it('renders the default toolbar by default', function () {
+function richTextToolbarActions(string $html): array
+{
+    preg_match_all('/data-action="click(?:-&gt;|->)rich-text-toolbar#([^"]+)"/', $html, $matches);
+
+    return $matches[1];
+}
+
+it('renders the basic toolbar by default', function () {
     $view = $this->blade('<x-hw::rich-text name="content" />');
 
     $view->assertSee('data-controller="rich-text-toolbar"', false);
     $view->assertSee('data-rich-text-toolbar-target="bold"', false);
     $view->assertSee('data-rich-text-toolbar-editor-value=', false);
     $view->assertSee('data-rich-text-id-value=', false);
+
+    expect(richTextToolbarActions((string) $view))->toBe([
+        'bold',
+        'italic',
+        'link',
+        'bulletList',
+        'orderedList',
+    ]);
 });
 
-it('renders heading buttons (H1, H2, H3) with data-level on the default toolbar', function () {
-    $view = $this->blade('<x-hw::rich-text name="content" />');
+it('renders the basic toolbar when toolbar="basic"', function () {
+    $view = $this->blade('<x-hw::rich-text name="content" toolbar="basic" />');
 
-    $view->assertSee('data-rich-text-toolbar-target="heading"', false);
+    expect(richTextToolbarActions((string) $view))->toBe([
+        'bold',
+        'italic',
+        'link',
+        'bulletList',
+        'orderedList',
+    ]);
+});
+
+it('renders the classic toolbar with compatibility and missing StarterKit actions', function () {
+    $view = $this->blade('<x-hw::rich-text name="content" toolbar="classic" />');
+
+    expect(richTextToolbarActions((string) $view))->toBe([
+        'bold',
+        'italic',
+        'underline',
+        'strike',
+        'code',
+        'heading',
+        'heading',
+        'heading',
+        'link',
+        'bulletList',
+        'orderedList',
+        'blockquote',
+        'codeBlock',
+        'horizontalRule',
+        'undo',
+        'redo',
+    ]);
+
     $view->assertSee('data-level="1"', false);
     $view->assertSee('data-level="2"', false);
     $view->assertSee('data-level="3"', false);
 });
 
-it('renders the codeBlock button on the default toolbar', function () {
-    $view = $this->blade('<x-hw::rich-text name="content" />');
+it('renders a custom toolbar from a space-separated string', function () {
+    $view = $this->blade('<x-hw::rich-text name="content" toolbar="bold italic horizontal-rule" />');
 
-    $view->assertSee('data-rich-text-toolbar-target="codeBlock"', false);
+    expect(richTextToolbarActions((string) $view))->toBe([
+        'bold',
+        'italic',
+        'horizontalRule',
+    ]);
+});
+
+it('renders a custom toolbar from an array', function () {
+    $view = $this->blade('<x-hw::rich-text name="content" :toolbar="[\'bold\', \'link\', \'ordered-list\']" />');
+
+    expect(richTextToolbarActions((string) $view))->toBe([
+        'bold',
+        'link',
+        'orderedList',
+    ]);
+});
+
+it('ignores unsupported toolbar aliases', function () {
+    $view = $this->blade('<x-hw::rich-text name="content" toolbar="bold align-left image table unknown" />');
+
+    expect(richTextToolbarActions((string) $view))->toBe(['bold']);
+});
+
+it('renders toolbar icons and stable labels', function () {
+    $view = $this->blade('<x-hw::rich-text name="content" toolbar="bold italic link" />');
+
+    $view->assertSee('aria-label="Bold"', false);
+    $view->assertSee('aria-label="Italic"', false);
+    $view->assertSee('aria-label="Link"', false);
+    $view->assertSee('data-slot="icon"', false);
 });
 
 it('escapes single quotes inside the outlet selector', function () {

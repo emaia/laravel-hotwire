@@ -72,7 +72,11 @@ mock.module("@tiptap/starter-kit", () => ({ default: "StarterKit" }));
 mock.module("@tiptap/extension-placeholder", () => ({
     default: { configure: mock((opts) => ({ name: "Placeholder", options: opts })) },
 }));
-mock.module("@tiptap/extension-link", () => ({ default: "Link" }));
+mock.module("@tiptap/extension-link", () => ({
+    default: {
+        configure: mock((opts) => ({ name: "Link", options: opts })),
+    },
+}));
 mock.module("@tiptap/extension-underline", () => ({ default: "Underline" }));
 
 const { mountController } = await import("../../resources/js/helpers/test_stimulus.js");

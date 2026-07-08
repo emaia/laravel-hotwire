@@ -66,6 +66,21 @@ it('renders every defined icon without error', function (string $name) {
     'loader-circle',
     'app-window',
     'code',
+    'bold',
+    'italic',
+    'underline',
+    'strikethrough',
+    'heading-1',
+    'heading-2',
+    'heading-3',
+    'link',
+    'list',
+    'list-ordered',
+    'quote',
+    'code-xml',
+    'minus',
+    'undo-2',
+    'redo-2',
 ]);
 
 // --- Unknown icons ---
