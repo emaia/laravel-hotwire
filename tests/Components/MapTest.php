@@ -132,3 +132,17 @@ it('merges user data-controller with the package one', function () {
 
     $view->assertSee('data-controller="map my-extra"', false);
 });
+
+it('lets subclass data values pass through while filtering owned map values', function () {
+    $view = $this->blade('<x-hw::map :center="[0, 0]" controller="store-locator" data-store-locator-delay-value="100" data-store-locator-center-value="hacked" />');
+
+    $view->assertSee('data-store-locator-delay-value="100"', false);
+    $view->assertDontSee('hacked', false);
+});
+
+it('merges inline stimulus attributes with the package one', function () {
+    $view = $this->blade('<x-hw::map :center="[0, 0]" :stimulus="stimulus()->controller(\'analytics\')->action(\'analytics\', \'track\', \'map:ready\')" />');
+
+    $view->assertSee('data-controller="map analytics"', false);
+    $view->assertSee('data-action="map:ready->analytics#track"', false);
+});

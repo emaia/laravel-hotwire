@@ -4,6 +4,7 @@ namespace Emaia\LaravelHotwire\Components;
 
 use Emaia\LaravelHotwire\Components\Concerns\StripsNullProps;
 use Emaia\LaravelHotwire\Support\FieldKey;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\ViewErrorBag;
 use Illuminate\View\Component;
 use Illuminate\View\ComponentAttributeBag;
@@ -23,6 +24,7 @@ class Textarea extends Component
         public bool $countdown = false,
         public string $class = '',
         public string $wrapperClass = '',
+        public ?Htmlable $stimulus = null,
     ) {}
 
     public function render()
@@ -67,9 +69,7 @@ class Textarea extends Component
         $hasErrors = $resolvedErrorKey !== '' && $errorsBag->has($resolvedErrorKey);
         $isRequired = ($attributes->has('required') && $attributes->get('required') !== false) || $required;
 
-        $userController = trim($attributes->get('data-controller', ''));
         $elementController = trim(implode(' ', array_filter([
-            $userController,
             $this->autoResize ? 'auto-resize' : null,
         ])));
 

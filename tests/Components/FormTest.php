@@ -92,7 +92,14 @@ it('combines all controllers', function () {
 it('merges user data-controller with internal controllers', function () {
     $view = $this->blade('<x-hw::form data-controller="foo" auto-submit unsaved-changes error-scroll><span>x</span></x-hw::form>');
 
-    $view->assertSee('data-controller="foo auto-submit unsaved-changes error-scroll"', false);
+    $view->assertSee('data-controller="auto-submit unsaved-changes error-scroll foo"', false);
+});
+
+it('merges inline stimulus attributes with internal controllers', function () {
+    $view = $this->blade('<x-hw::form auto-submit :stimulus="stimulus()->controller(\'analytics\')->action(\'analytics\', \'track\', \'submit\')"><span>x</span></x-hw::form>');
+
+    $view->assertSee('data-controller="auto-submit analytics"', false);
+    $view->assertSee('data-action="submit->analytics#track"', false);
 });
 
 // --- Class merge ---

@@ -161,11 +161,11 @@ it('emits selected index value when provided', function () {
 
 it('swaps the Stimulus identifier when controller prop is set', function () {
     $view = $this->blade(<<<'BLADE'
-        <x-hw::tabs id="settings" controller="settings-tabs" :selected-index="1">
+        <x-hw::tabs id="settings" controller="settings-tabs" :selected-index="1" data-settings-tabs-delay-value="100" data-settings-tabs-selected-index-value="9">
             <x-hw::tabs.list aria-label="Settings">
-                <x-hw::tabs.trigger value="profile">Profile</x-hw::tabs.trigger>
+                <x-hw::tabs.trigger value="profile" data-settings-tabs-delay-value="200" data-settings-tabs-target="override">Profile</x-hw::tabs.trigger>
             </x-hw::tabs.list>
-            <x-hw::tabs.panel value="profile">Profile settings</x-hw::tabs.panel>
+            <x-hw::tabs.panel value="profile" data-settings-tabs-delay-value="300" data-settings-tabs-target="override">Profile settings</x-hw::tabs.panel>
         </x-hw::tabs>
     BLADE);
 
@@ -173,7 +173,12 @@ it('swaps the Stimulus identifier when controller prop is set', function () {
         ->assertSee('data-settings-tabs-selected-index-value="1"', false)
         ->assertSee('data-action="click->settings-tabs#select keydown->settings-tabs#navigate"', false)
         ->assertSee('data-settings-tabs-target="tab"', false)
-        ->assertSee('data-settings-tabs-target="panel"', false);
+        ->assertSee('data-settings-tabs-target="panel"', false)
+        ->assertSee('data-settings-tabs-delay-value="100"', false)
+        ->assertSee('data-settings-tabs-delay-value="200"', false)
+        ->assertSee('data-settings-tabs-delay-value="300"', false)
+        ->assertDontSee('data-settings-tabs-selected-index-value="9"', false)
+        ->assertDontSee('data-settings-tabs-target="override"', false);
 });
 
 it('lets trigger and panel ids be overridden', function () {

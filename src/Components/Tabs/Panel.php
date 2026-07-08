@@ -52,7 +52,7 @@ class Panel extends Component
                 'data-state' => $active !== null ? ($selected ? 'active' : 'inactive') : null,
                 'hidden' => $active !== null && ! $selected,
                 'aria-labelledby' => $tabId,
-            ], $attributes, $this->stimulus, except: ['id'], protectedPrefixes: ["data-{$identifier}-"]),
+            ], $attributes, $this->stimulus, except: ['id'], protectedPrefixes: ["data-{$identifier}-target"]),
         ];
     }
 

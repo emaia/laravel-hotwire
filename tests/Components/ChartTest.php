@@ -103,6 +103,20 @@ it('merges user-provided data-controller alongside the chart identifier', functi
     $view->assertSee('data-controller="chart extra-behavior"', false);
 });
 
+it('lets subclass data values pass through while filtering owned chart values', function () {
+    $view = $this->blade('<x-hw::chart controller="sales-chart" :option="[\'x\' => 1]" data-sales-chart-delay-value="100" data-sales-chart-option-value="hacked" />');
+
+    $view->assertSee('data-sales-chart-delay-value="100"', false);
+    $view->assertDontSee('hacked', false);
+});
+
+it('merges inline stimulus attributes alongside the chart identifier', function () {
+    $view = $this->blade('<x-hw::chart :option="[\'x\' => 1]" :stimulus="stimulus()->controller(\'analytics\')->action(\'analytics\', \'track\', \'chart:ready\')" />');
+
+    $view->assertSee('data-controller="chart analytics"', false);
+    $view->assertSee('data-action="chart:ready->analytics#track"', false);
+});
+
 // --- Dev-mode warning ---
 
 it('logs a warning when inline option exceeds 500KB in local environment', function () {

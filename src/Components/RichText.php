@@ -4,6 +4,7 @@ namespace Emaia\LaravelHotwire\Components;
 
 use Emaia\LaravelHotwire\Components\Concerns\StripsNullProps;
 use Emaia\LaravelHotwire\Support\FieldKey;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\ViewErrorBag;
 use Illuminate\View\Component;
 use Illuminate\View\ComponentAttributeBag;
@@ -29,6 +30,7 @@ class RichText extends Component
         public string $inputClass = '',
         public string $editorClass = '',
         public string $controller = 'rich-text',
+        public ?Htmlable $stimulus = null,
     ) {
         $this->identifier = $this->controller;
     }
@@ -75,16 +77,13 @@ class RichText extends Component
         $hasErrors = $resolvedErrorKey !== '' && $errorsBag->has($resolvedErrorKey);
         $isRequired = ($attributes->has('required') && $attributes->get('required') !== false) || $required;
 
-        $userController = trim($attributes->get('data-controller', ''));
-        $dataController = trim($this->identifier.' '.$userController);
-
         return [
             'resolvedId' => $resolvedId,
             'resolvedErrorKey' => $resolvedErrorKey,
             'resolvedValue' => $resolvedValue,
             'hasErrors' => $hasErrors,
             'isRequired' => $isRequired,
-            'dataController' => $dataController,
+            'dataController' => $this->identifier,
         ];
     }
 }

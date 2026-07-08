@@ -2,8 +2,8 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\Component;
-use Illuminate\View\ComponentAttributeBag;
 
 class Dropdown extends Component
 {
@@ -16,6 +16,7 @@ class Dropdown extends Component
         public string $triggerClass = '',
         public string $width = '',
         public string $menuClass = '',
+        public ?Htmlable $stimulus = null,
     ) {
         if ($this->id === '') {
             $this->id = uniqid('dropdown-');
@@ -38,18 +39,8 @@ class Dropdown extends Component
         return $data;
     }
 
-    /**
-     * Merge the package's `dropdown` controller with any user-supplied one
-     * (merge() does not union data-controller, so we build it here).
-     *
-     * @return array<string, string>
-     */
-    private function computeResolved(ComponentAttributeBag $attributes): array
+    private function computeResolved(): array
     {
-        $userController = trim($attributes->get('data-controller', ''));
-
-        return [
-            'controller' => trim('dropdown '.$userController),
-        ];
+        return ['controller' => 'dropdown'];
     }
 }

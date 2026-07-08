@@ -1,14 +1,17 @@
 @php
     use Illuminate\View\ComponentSlot;
 
-    extract($compute($attributes));
+    extract($compute());
     $triggerSlot = $trigger ?? new ComponentSlot;
+
+    $dropdownAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
+        'data-slot' => 'dropdown',
+        'data-controller' => $controller,
+    ], $attributes, $stimulus, protectedPrefixes: ['data-dropdown-']);
 @endphp
 
 <div
-    data-slot="dropdown"
-    data-controller="{{ $controller }}"
-    {{ $attributes->except('data-controller')->whereDoesntStartWith('data-dropdown-') }}
+    {{ $dropdownAttributes }}
 >
     <button
         {{

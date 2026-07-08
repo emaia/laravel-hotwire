@@ -141,3 +141,12 @@ it('forwards extra attributes to the wrapper element', function () {
 
     $view->assertSee('class="my-class"', false);
 });
+
+it('protects the internal conditional-fields target while merging extra stimulus attributes', function () {
+    $view = $this->blade('<x-hw::conditional-field :when="[\'reason\' => \'other\']" data-conditional-fields-target="override" :stimulus="stimulus()->controller(\'analytics\')->action(\'analytics\', \'track\', \'change\')">x</x-hw::conditional-field>');
+
+    $view->assertSee('data-conditional-fields-target="dependent"', false);
+    $view->assertDontSee('data-conditional-fields-target="override"', false);
+    $view->assertSee('data-controller="analytics"', false);
+    $view->assertSee('data-action="change->analytics#track"', false);
+});

@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Components;
 
 use DateTimeInterface;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\Component;
 
 class Timeago extends Component
@@ -17,6 +18,7 @@ class Timeago extends Component
         public bool $includeSeconds = false,
         public ?int $refreshInterval = null,
         public string $titleFormat = 'd M Y H:i',
+        public ?Htmlable $stimulus = null,
     ) {
         $date = $datetime instanceof DateTimeInterface
             ? $datetime

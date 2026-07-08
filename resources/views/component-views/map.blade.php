@@ -1,16 +1,25 @@
 @php
-    $dataController = trim($identifier.' '.($attributes->get('data-controller') ?? ''));
+    $mapAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
+        'data-slot' => 'map',
+        'data-controller' => $identifier,
+        "data-{$identifier}-center-value" => $center !== null ? e(json_encode($center)) : null,
+        "data-{$identifier}-zoom-value" => $zoom,
+        "data-{$identifier}-markers-value" => $encodedMarkers !== null ? e($encodedMarkers) : null,
+        "data-{$identifier}-url-value" => $url !== '' ? $url : null,
+        "data-{$identifier}-scroll-wheel-zoom-value" => $scrollWheelZoom === false ? 'false' : null,
+        "data-{$identifier}-fit-value" => $resolvedFit ? 'true' : null,
+        'style' => $style(),
+        'class' => $class,
+    ], $attributes, $stimulus, protectedPrefixes: [
+        "data-{$identifier}-center-",
+        "data-{$identifier}-zoom-",
+        "data-{$identifier}-markers-",
+        "data-{$identifier}-url-",
+        "data-{$identifier}-scroll-wheel-zoom-",
+        "data-{$identifier}-fit-",
+    ]);
 @endphp
 
 <div
-    data-slot="map"
-    data-controller="{{ $dataController }}"
-    @if ($center !== null) data-{{ $identifier }}-center-value="{{ json_encode($center) }}" @endif
-    data-{{ $identifier }}-zoom-value="{{ $zoom }}"
-    @if ($encodedMarkers !== null) data-{{ $identifier }}-markers-value="{{ $encodedMarkers }}" @endif
-    @if ($url !== null && $url !== '') data-{{ $identifier }}-url-value="{{ $url }}" @endif
-    @if ($scrollWheelZoom === false) data-{{ $identifier }}-scroll-wheel-zoom-value="false" @endif
-    @if ($resolvedFit) data-{{ $identifier }}-fit-value="true" @endif
-    style="{{ $style() }}"
-    {{ $attributes->except(['data-controller'])->merge(['class' => $class]) }}
+    {{ $mapAttributes }}
 ></div>

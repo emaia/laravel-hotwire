@@ -2,6 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\Component;
 
 class Carousel extends Component
@@ -41,6 +42,7 @@ class Carousel extends Component
         public string $progressWrapperClass = '',
         public bool $counter = false,
         public string $counterClass = '',
+        public ?Htmlable $stimulus = null,
     ) {
         $this->id ??= uniqid('carousel-');
     }

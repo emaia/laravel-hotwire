@@ -168,6 +168,18 @@ it('unions a user-supplied data-controller', function () {
     $view->assertSee('data-controller="dropdown analytics"', false);
 });
 
+it('merges inline stimulus attributes with the dropdown controller', function () {
+    $view = $this->blade('
+        <x-hw::dropdown :stimulus="stimulus()->controller(\'analytics\')->action(\'analytics\', \'track\', \'dropdown:opened\')">
+            <x-slot:trigger>M</x-slot:trigger>
+            <a href="/x">x</a>
+        </x-hw::dropdown>
+    ');
+
+    $view->assertSee('data-controller="dropdown analytics"', false);
+    $view->assertSee('data-action="dropdown:opened->analytics#track"', false);
+});
+
 it('filters user-supplied data-dropdown-* attributes', function () {
     $view = $this->blade('
         <x-hw::dropdown data-dropdown-foo="bar">

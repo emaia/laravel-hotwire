@@ -3,6 +3,24 @@
 @php
     extract($compute($name, $id, $errorKey, $required, $errors, $attributes));
 
+    $inputAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
+        'data-slot' => 'input',
+        'data-checkable' => $isCheckable ? 'true' : 'false',
+        'type' => $type,
+        'id' => $resolvedId,
+        'name' => $name ?: null,
+        'value' => $resolvedValue,
+        'checked' => $isCheckable && $isChecked ? true : null,
+        'aria-describedby' => $errorId,
+        'aria-invalid' => $hasErrors ? 'true' : null,
+        'data-invalid' => $hasErrors ? true : null,
+        'aria-required' => $isRequired ? 'true' : null,
+        'required' => $isRequired ? true : null,
+        'data-controller' => $elementController ?: null,
+        'data-input-mask-mask-value' => $mask !== null ? e($resolvedMask) : null,
+        'data-clear-input-target' => $clearable ? 'input' : null,
+        'class' => $class ?: null,
+    ], $attributes, $stimulus, except: ['required', 'checked'], protectedPrefixes: $internalPrefixes);
 @endphp
 
 @if ($clearable)
@@ -10,26 +28,7 @@
 @endif
 
 <input
-    data-slot="input"
-    data-checkable="{{ $isCheckable ? 'true' : 'false' }}"
-    type="{{ $type }}"
-    id="{{ $resolvedId }}"
-    @if ($name) name="{{ $name }}" @endif
-    @if ($isCheckable)
-        @if ($resolvedValue !== null) value="{{ $resolvedValue }}" @endif
-        @if ($isChecked) checked @endif
-    @else
-        @if ($resolvedValue !== null) value="{{ $resolvedValue }}" @endif
-    @endif
-    aria-describedby="{{ $errorId }}"
-    @if ($hasErrors) aria-invalid="true" data-invalid @endif
-    @if ($isRequired) aria-required="true" required @endif
-    @if ($elementController !== '') data-controller="{{ $elementController }}" @endif
-    @if ($mask !== null) data-input-mask-mask-value="{{ $resolvedMask }}" @endif
-    @if ($clearable) data-clear-input-target="input" @endif
-    {{ $attributes->merge([
-            'class' => $class ?: null,
-        ])->whereDoesntStartWith(array_merge(['data-controller'], $internalPrefixes))->except(['required', 'checked']) }}
+    {{ $inputAttributes }}
 />
 
 @if ($clearable)

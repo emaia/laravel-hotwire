@@ -164,6 +164,13 @@ it('resolves mask preset to mask string', function () {
     $view->assertSee('data-input-mask-mask-value="###.###.###-##"', false);
 });
 
+it('escapes dynamic mask presets as HTML entities for Stimulus string values', function () {
+    $view = $this->blade('<x-hw::input name="documento" mask="cpf-cnpj" />');
+
+    $view->assertSee('[&quot;###.###.###-##&quot;, &quot;##.###.###/####-##&quot;]', false);
+    $view->assertDontSee('[\\"###.###.###-##\\"', false);
+});
+
 it('passes through raw mask string when not a preset', function () {
     $view = $this->blade('<x-hw::input name="custom" mask="@@-##" />');
 
@@ -230,7 +237,7 @@ it('merges wrapper-class on wrapper when present', function () {
 it('merges user data-controller with element controllers on input', function () {
     $view = $this->blade('<x-hw::input name="q" data-controller="foo" auto-select mask="cpf" />');
 
-    $view->assertSee('data-controller="foo auto-select input-mask"', false);
+    $view->assertSee('data-controller="auto-select input-mask foo"', false);
 });
 
 it('merges user data-controller onto the input element with wrapper', function () {
@@ -250,6 +257,13 @@ it('filters internal data-clear-input-* regardless of user merge', function () {
 
     $view->assertSee('data-controller="foo"', false);
     $view->assertDontSee('data-clear-input-target="override"', false);
+});
+
+it('merges inline stimulus attributes with active input controllers', function () {
+    $view = $this->blade('<x-hw::input name="q" auto-select mask="cpf" :stimulus="stimulus()->controller(\'analytics\')->action(\'analytics\', \'track\', \'input\')" />');
+
+    $view->assertSee('data-controller="auto-select input-mask analytics"', false);
+    $view->assertSee('data-action="input->analytics#track"', false);
 });
 
 it('filters data-input-mask-* only when mask is active', function () {

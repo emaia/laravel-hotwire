@@ -284,7 +284,7 @@ it('omits parallel-uploads when at default 3', function () {
 it('merges user-provided data-controller alongside file-upload', function () {
     $view = $this->blade('<x-hw::file-upload name="avatar" url="/uploads" data-controller="extra" />');
 
-    $view->assertSee('data-controller="extra file-upload"', false);
+    $view->assertSee('data-controller="file-upload extra"', false);
 });
 
 it('filters user-provided data-file-upload-* attrs to prevent conflicts', function () {
@@ -484,9 +484,15 @@ it('merges user-provided data-action with the openPicker keydown actions', funct
 
     $view->assertSee('thing#log', false);
     $view->assertSee('file-upload#openPicker', false);
-    // user action sits before the keydown bindings so user-defined drop handlers run first
     $rendered = $view->__toString();
-    expect(strpos($rendered, 'thing#log'))->toBeLessThan(strpos($rendered, 'openPicker'));
+    expect(strpos($rendered, 'openPicker'))->toBeLessThan(strpos($rendered, 'thing#log'));
+});
+
+it('merges inline stimulus attributes with file-upload', function () {
+    $view = $this->blade('<x-hw::file-upload name="avatar" url="/uploads" :stimulus="stimulus()->controller(\'analytics\')->action(\'analytics\', \'track\', \'file-upload:success\')" />');
+
+    $view->assertSee('data-controller="file-upload analytics"', false);
+    $view->assertSee('file-upload:success->analytics#track', false);
 });
 
 // --- Class merge & passthrough ---
@@ -547,6 +553,14 @@ it('filters user-provided data-{identifier}-options-value to prevent conflicts',
     $view = $this->blade('<x-hw::file-upload name="avatar" url="/uploads" data-file-upload-options-value="{}" :options="[\'thumbnailMethod\' => \'contain\']" />');
 
     $view->assertSee('thumbnailMethod', false);
+});
+
+it('lets subclass data values pass through while filtering owned file-upload values', function () {
+    $view = $this->blade('<x-hw::file-upload name="cover" url="/uploads" controller="my-upload" data-my-upload-delay-value="100" data-my-upload-options-value="hacked" :options="[\'thumbnailMethod\' => \'contain\']" />');
+
+    $view->assertSee('data-my-upload-delay-value="100"', false);
+    $view->assertSee('thumbnailMethod', false);
+    $view->assertDontSee('hacked', false);
 });
 
 // --- :messages → dict* mapping ---

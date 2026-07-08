@@ -1,6 +1,24 @@
 @aware(['name' => null, 'id' => null, 'errorKey' => null, 'required' => false])
 
-@php extract($compute($name, $id, $errorKey, $required, $errors, $attributes)) @endphp
+@php
+    extract($compute($name, $id, $errorKey, $required, $errors, $attributes));
+
+    $fileAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
+        'data-slot' => 'file-input',
+        'type' => 'file',
+        'id' => $resolvedId,
+        'data-controller' => $inputController,
+        'name' => $renderName ?: null,
+        'multiple' => $multiple ? true : null,
+        'data-reset-on-success' => $resetOnSuccess ? 'true' : null,
+        'aria-describedby' => $errorId,
+        'aria-invalid' => $hasErrors ? 'true' : null,
+        'data-invalid' => $hasErrors ? true : null,
+        'aria-required' => $isRequired ? 'true' : null,
+        'required' => $isRequired ? true : null,
+        'class' => $class ?: null,
+    ], $attributes, $stimulus, except: ['required'], protectedPrefixes: $internalPrefixes);
+@endphp
 
 @if ($needsWrapper)<div @if ($wrapperClass !== '') class="{{ $wrapperClass }}" @endif data-slot="file-wrapper">
     @if ($currentUrl)
@@ -11,18 +29,6 @@
     @endif
 @endif
     <input
-        data-slot="file-input"
-        type="file"
-        id="{{ $resolvedId }}"
-        data-controller="{{ $inputController }}"
-        @if ($renderName) name="{{ $renderName }}" @endif
-        @if ($multiple) multiple @endif
-        @if ($resetOnSuccess) data-reset-on-success="true" @endif
-        aria-describedby="{{ $errorId }}"
-        @if ($hasErrors) aria-invalid="true" data-invalid @endif
-        @if ($isRequired) aria-required="true" required @endif
-        {{ $attributes->merge([
-                'class' => $class ?: null,
-            ])->whereDoesntStartWith(array_merge(['data-controller'], $internalPrefixes))->except(['required']) }}
+        {{ $fileAttributes }}
     />
 @if ($needsWrapper)</div>@endif

@@ -2,6 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\Component;
 use Illuminate\View\ComponentAttributeBag;
 
@@ -14,6 +15,7 @@ class Form extends Component
         public bool $cleanQueryParams = false,
         public bool $trackFrameSrc = false,
         public ?string $enctype = null,
+        public ?Htmlable $stimulus = null,
     ) {}
 
     public function render()
@@ -34,12 +36,10 @@ class Form extends Component
      */
     private function computeResolved(ComponentAttributeBag $attributes): array
     {
-        $userController = trim($attributes->get('data-controller', ''));
         $method = strtolower($attributes->get('method', 'post'));
         $isSpoofMethod = in_array($method, ['put', 'patch', 'delete']);
 
         $controller = trim(implode(' ', array_filter([
-            $userController,
             $this->autoSubmit ? 'auto-submit' : null,
             $this->unsavedChanges ? 'unsaved-changes' : null,
             $this->errorScroll ? 'error-scroll' : null,

@@ -225,7 +225,14 @@ it('emits semantic slots on the select-all master and item labels', function () 
 it('merges user data-controller with checkbox-select-all when select-all', function () {
     $view = $this->blade('<x-hw::checkbox-group name="ids[]" :options="[1 => \'One\']" data-controller="foo" select-all />');
 
-    $view->assertSee('data-controller="foo checkbox-select-all"', false);
+    $view->assertSee('data-controller="checkbox-select-all foo"', false);
+});
+
+it('merges inline stimulus attributes with checkbox-select-all', function () {
+    $view = $this->blade('<x-hw::checkbox-group name="ids[]" :options="[1 => \'One\']" select-all :stimulus="stimulus()->controller(\'analytics\')->action(\'analytics\', \'track\', \'change\')" />');
+
+    $view->assertSee('data-controller="checkbox-select-all analytics"', false);
+    $view->assertSee('data-action="change->analytics#track"', false);
 });
 
 it('preserves user data-controller when no select-all', function () {

@@ -1,36 +1,40 @@
 @aware(['name' => null, 'id' => null, 'errorKey' => null, 'required' => false])
 
-@php extract($compute($name, $id, $errorKey, $required, $errors, $attributes)) @endphp
+@php
+    extract($compute($name, $id, $errorKey, $required, $errors, $attributes));
+
+    $fileUploadAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
+        'data-slot' => 'file-upload',
+        'id' => $resolvedId,
+        'tabindex' => '0',
+        'role' => 'button',
+        'aria-label' => $hasAriaLabel ? null : 'Choose files',
+        'data-controller' => $mergedController,
+        'data-action' => $mergedAction,
+        "data-{$identifier}-url-value" => $url,
+        "data-{$identifier}-hidden-name-value" => $hiddenName,
+        "data-{$identifier}-accept-value" => $accept,
+        "data-{$identifier}-max-size-bytes-value" => $maxSizeBytes,
+        "data-{$identifier}-max-files-value" => $maxFiles,
+        "data-{$identifier}-multiple-value" => $multiple ? 'true' : null,
+        "data-{$identifier}-preview-value" => $preview ? null : 'false',
+        "data-{$identifier}-emit-hidden-value" => $emitHidden ? null : 'false',
+        "data-{$identifier}-param-name-value" => $paramName !== 'file' ? $paramName : null,
+        "data-{$identifier}-response-key-value" => $responseKey !== 'token' ? $responseKey : null,
+        "data-{$identifier}-delete-url-value" => $deleteUrl,
+        "data-{$identifier}-parallel-uploads-value" => $parallelUploads !== 3 ? $parallelUploads : null,
+        "data-{$identifier}-turbo-stream-value" => $turboStream ? 'true' : null,
+        "data-{$identifier}-options-value" => $optionsJson !== null ? e($optionsJson) : null,
+        'aria-describedby' => $errorId,
+        'aria-invalid' => $hasErrors ? 'true' : null,
+        'data-invalid' => $hasErrors ? true : null,
+        'aria-required' => $isRequired ? 'true' : null,
+        'class' => trim('dropzone '.$class),
+    ], $attributes, $stimulus, except: ['required'], protectedPrefixes: $internalPrefixes);
+@endphp
 
 <div
-    data-slot="file-upload"
-    id="{{ $resolvedId }}"
-    tabindex="0"
-    role="button"
-    @unless ($hasAriaLabel) aria-label="Choose files" @endunless
-    data-controller="{{ $mergedController }}"
-    data-action="{{ $mergedAction }}"
-    data-{{ $identifier }}-url-value="{{ $url }}"
-    @if ($hiddenName !== null) data-{{ $identifier }}-hidden-name-value="{{ $hiddenName }}" @endif
-    @if ($accept !== null) data-{{ $identifier }}-accept-value="{{ $accept }}" @endif
-    @if ($maxSizeBytes !== null) data-{{ $identifier }}-max-size-bytes-value="{{ $maxSizeBytes }}" @endif
-    @if ($maxFiles !== null) data-{{ $identifier }}-max-files-value="{{ $maxFiles }}" @endif
-    @if ($multiple) data-{{ $identifier }}-multiple-value="true" @endif
-    @unless ($preview) data-{{ $identifier }}-preview-value="false" @endunless
-    @unless ($emitHidden) data-{{ $identifier }}-emit-hidden-value="false" @endunless
-    @if ($paramName !== 'file') data-{{ $identifier }}-param-name-value="{{ $paramName }}" @endif
-    @if ($responseKey !== 'token') data-{{ $identifier }}-response-key-value="{{ $responseKey }}" @endif
-    @if ($deleteUrl !== null) data-{{ $identifier }}-delete-url-value="{{ $deleteUrl }}" @endif
-    @if ($parallelUploads !== 3) data-{{ $identifier }}-parallel-uploads-value="{{ $parallelUploads }}" @endif
-    @if ($turboStream) data-{{ $identifier }}-turbo-stream-value="true" @endif
-    @if ($optionsJson !== null) data-{{ $identifier }}-options-value="{{ $optionsJson }}" @endif
-    aria-describedby="{{ $errorId }}"
-    @if ($hasErrors) aria-invalid="true" data-invalid @endif
-    @if ($isRequired) aria-required="true" @endif
-    {{ $attributes
-        ->merge(['class' => trim('dropzone '.$class)])
-        ->whereDoesntStartWith(array_merge(['data-controller', 'data-action'], $internalPrefixes))
-        ->except(['required']) }}
+    {{ $fileUploadAttributes }}
 >
     @foreach ($initialValues as $val)
         <input type="hidden" name="{{ $hiddenName }}" value="{{ $val }}" data-hw-upload-preserved>
