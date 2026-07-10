@@ -8,19 +8,61 @@ Composable app sidebar with collapsible navigation primitives.
 <hw:sidebar.provider>
     <hw:sidebar collapsible="icon">
         <hw:sidebar.header>
-            App
+            <hw:sidebar.input placeholder="Search..." />
         </hw:sidebar.header>
+
+        <hw:sidebar.separator />
 
         <hw:sidebar.content>
             <hw:sidebar.group>
                 <hw:sidebar.group-label>Platform</hw:sidebar.group-label>
+                <hw:sidebar.group-action aria-label="Add project">
+                    <hw:icon name="plus" />
+                </hw:sidebar.group-action>
+
                 <hw:sidebar.group-content>
                     <hw:sidebar.menu>
                         <hw:sidebar.menu-item>
-                            <hw:sidebar.menu-button href="/dashboard" active>
+                            <hw:sidebar.menu-button
+                                href="/dashboard"
+                                active
+                                data-controller="tooltip"
+                                data-tooltip-content-value="Dashboard"
+                                data-tooltip-placement-value="right"
+                                data-tooltip-enabled-when-value="[data-slot=sidebar][data-collapsible=icon]"
+                            >
                                 <hw:icon name="panel-left" />
                                 <span>Dashboard</span>
                             </hw:sidebar.menu-button>
+                            <hw:sidebar.menu-badge>12</hw:sidebar.menu-badge>
+                        </hw:sidebar.menu-item>
+
+                        <hw:sidebar.menu-item>
+                            <hw:sidebar.menu-button href="/projects">
+                                <hw:icon name="folder" />
+                                <span>Projects</span>
+                            </hw:sidebar.menu-button>
+
+                            <hw:sidebar.menu-action show-on-hover aria-label="Create project">
+                                <hw:icon name="plus" />
+                            </hw:sidebar.menu-action>
+
+                            <hw:sidebar.menu-sub>
+                                <hw:sidebar.menu-sub-item>
+                                    <hw:sidebar.menu-sub-button href="/projects/acme" active>
+                                        Acme
+                                    </hw:sidebar.menu-sub-button>
+                                </hw:sidebar.menu-sub-item>
+                                <hw:sidebar.menu-sub-item>
+                                    <hw:sidebar.menu-sub-button href="/projects/roadmap">
+                                        Roadmap
+                                    </hw:sidebar.menu-sub-button>
+                                </hw:sidebar.menu-sub-item>
+                            </hw:sidebar.menu-sub>
+                        </hw:sidebar.menu-item>
+
+                        <hw:sidebar.menu-item>
+                            <hw:sidebar.menu-skeleton show-icon width="60%" />
                         </hw:sidebar.menu-item>
                     </hw:sidebar.menu>
                 </hw:sidebar.group-content>
@@ -28,7 +70,14 @@ Composable app sidebar with collapsible navigation primitives.
         </hw:sidebar.content>
 
         <hw:sidebar.footer>
-            Account
+            <hw:sidebar.menu>
+                <hw:sidebar.menu-item>
+                    <hw:sidebar.menu-button href="/account" size="lg">
+                        <hw:icon name="user" />
+                        <span>Account</span>
+                    </hw:sidebar.menu-button>
+                </hw:sidebar.menu-item>
+            </hw:sidebar.menu>
         </hw:sidebar.footer>
 
         <hw:sidebar.rail />
@@ -43,6 +92,8 @@ Composable app sidebar with collapsible navigation primitives.
     </hw:sidebar.inset>
 </hw:sidebar.provider>
 ```
+
+The tooltip controller depends on `tippy.js`. Run `php artisan hotwire:check --fix` to add missing controller dependencies detected in your views, or install it manually with `npm install tippy.js`.
 
 ## Components
 
@@ -107,6 +158,45 @@ inside a `<span>` after the icon so the NOVA preset can visually hide that text 
             </hw:sidebar.menu-item>
         </hw:sidebar.menu>
     </hw:sidebar>
+</hw:sidebar.provider>
+```
+
+Pair icon-only rails with the `tooltip` controller when labels are hidden. This example keeps the tooltip disabled while the sidebar is expanded and the label is already visible:
+
+```blade
+<hw:sidebar.provider>
+    <hw:sidebar collapsible="icon">
+        <hw:sidebar.header>
+            Components
+        </hw:sidebar.header>
+
+        <hw:sidebar.content>
+            <hw:sidebar.menu>
+                <hw:sidebar.menu-item>
+                    <hw:sidebar.menu-button
+                        href="/components/map"
+                        data-controller="tooltip"
+                        data-tooltip-content-value="Map"
+                        data-tooltip-placement-value="right"
+                        data-tooltip-enabled-when-value="[data-slot=sidebar][data-collapsible=icon]"
+                    >
+                        <x-lucide-map class="size-5" />
+                        <span>Map</span>
+                    </hw:sidebar.menu-button>
+                </hw:sidebar.menu-item>
+            </hw:sidebar.menu>
+        </hw:sidebar.content>
+
+        <hw:sidebar.rail />
+    </hw:sidebar>
+
+    <hw:sidebar.inset>
+        <header>
+            <hw:sidebar.trigger />
+        </header>
+
+        {{ $slot }}
+    </hw:sidebar.inset>
 </hw:sidebar.provider>
 ```
 

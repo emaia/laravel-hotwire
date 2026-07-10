@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, expect, mock, test } from "bun:test";
 
-import { mountController } from "../../resources/js/helpers/test_stimulus.js";
+import { mountController, mountMultipleControllers, wait } from "../../resources/js/helpers/test_stimulus.js";
+import SidebarController from "../../resources/js/controllers/sidebar_controller.js";
 import TooltipController from "../../resources/js/controllers/tooltip_controller.js";
 
 // mock.module is scoped per file because the suite runs with `bun test --isolate`
@@ -12,7 +13,7 @@ const state = {
 };
 
 const tippyFn = mock((element, options) => {
-    const instance = { element, options, destroy: mock(() => {}) };
+    const instance = { element, options, destroy: mock(() => {}), hide: mock(() => {}) };
     state.instances.push(instance);
     state.calls.push({ element, options });
     return instance;
@@ -71,6 +72,122 @@ test.serial("passes placement value to tippy", async () => {
     await mount(`<button data-controller="tooltip" data-tooltip-placement-value="bottom-end">Hover me</button>`);
 
     expect(state.calls[0].options.placement).toBe("bottom-end");
+});
+
+// --- conditional enablement ---
+
+test.serial("allows showing when enabledWhen is omitted", async () => {
+    await mount(`<button data-controller="tooltip">Hover me</button>`);
+
+    expect(state.calls[0].options.onShow()).toBeUndefined();
+});
+
+test.serial("blocks showing when enabledWhen does not match an ancestor", async () => {
+    await mount(`
+        <div data-slot="sidebar" data-collapsible="">
+            <button
+                data-controller="tooltip"
+                data-tooltip-enabled-when-value="[data-slot=sidebar][data-collapsible=icon]"
+            >Map</button>
+        </div>
+    `);
+
+    expect(state.calls[0].options.onShow()).toBe(false);
+});
+
+test.serial("allows showing when enabledWhen matches an ancestor", async () => {
+    await mount(`
+        <div data-slot="sidebar" data-collapsible="icon">
+            <button
+                data-controller="tooltip"
+                data-tooltip-enabled-when-value="[data-slot=sidebar][data-collapsible=icon]"
+            >Map</button>
+        </div>
+    `);
+
+    expect(state.calls[0].options.onShow()).toBeUndefined();
+});
+
+test.serial("enables the tooltip when enabledWhen starts matching", async () => {
+    await mount(`
+        <div data-slot="sidebar" data-collapsible="">
+            <div data-slot="sidebar-menu-item">
+                <button
+                    data-controller="tooltip"
+                    data-tooltip-enabled-when-value="[data-slot=sidebar][data-collapsible=icon]"
+                >Map</button>
+            </div>
+        </div>
+    `);
+
+    mounted.root.closest('[data-slot="sidebar"]').dataset.collapsible = "icon";
+    await wait(0);
+
+    expect(state.calls[0].options.onShow()).toBeUndefined();
+});
+
+test.serial("enables sidebar icon rail tooltips after the sidebar collapses", async () => {
+    mounted = await mountMultipleControllers({ sidebar: SidebarController, tooltip: TooltipController }, `
+        <div data-controller="sidebar" data-sidebar-open-value="true" data-state="expanded">
+            <button data-slot="sidebar-trigger" data-action="click->sidebar#toggle">Toggle</button>
+            <div
+                data-slot="sidebar"
+                data-sidebar-collapsible="icon"
+                data-state="expanded"
+                data-collapsible=""
+            >
+                <a
+                    href="/components/map"
+                    data-slot="sidebar-menu-button"
+                    data-controller="tooltip"
+                    data-tooltip-content-value="Map"
+                    data-tooltip-placement-value="right"
+                    data-tooltip-enabled-when-value="[data-slot=sidebar][data-collapsible=icon]"
+                >
+                    <svg></svg>
+                    <span>Map</span>
+                </a>
+            </div>
+        </div>
+    `);
+    await wait(0);
+
+    const tooltipElement = document.querySelector("[data-controller~='tooltip']");
+    const tooltipController = mounted.getController("tooltip", tooltipElement);
+
+    expect(tooltipController.isEnabled()).toBe(false);
+    expect(state.calls[0].options.onShow()).toBe(false);
+
+    document.querySelector("[data-slot='sidebar-trigger']").click();
+    await wait(0);
+
+    expect(document.querySelector("[data-slot='sidebar']").dataset.collapsible).toBe("icon");
+    expect(tooltipController.isEnabled()).toBe(true);
+    expect(state.calls[0].options.onShow()).toBeUndefined();
+});
+
+test.serial("hides the tooltip when enabledWhen stops matching", async () => {
+    await mount(`
+        <div data-slot="sidebar" data-collapsible="icon">
+            <div data-slot="sidebar-menu-item">
+                <button
+                    data-controller="tooltip"
+                    data-tooltip-enabled-when-value="[data-slot=sidebar][data-collapsible=icon]"
+                >Map</button>
+            </div>
+        </div>
+    `);
+
+    mounted.root.closest('[data-slot="sidebar"]').dataset.collapsible = "";
+    mounted.controller.syncEnabledState();
+
+    expect(state.instances[0].hide).toHaveBeenCalled();
+});
+
+test.serial("invalid enabledWhen selectors fail closed", async () => {
+    await mount(`<button data-controller="tooltip" data-tooltip-enabled-when-value="[">Hover me</button>`);
+
+    expect(state.calls[0].options.onShow()).toBe(false);
 });
 
 // --- disconnect ---
