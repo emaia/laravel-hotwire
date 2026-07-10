@@ -26,6 +26,8 @@ export function createOverlay(controller, {
     openDuration = 300,
     closeDuration = 300,
     closeOnEscape = true,
+    escapeCapture = false,
+    stopEscapePropagation = false,
     closeOnClickOutside = true,
     onOpen,
     onClose,
@@ -44,6 +46,10 @@ export function createOverlay(controller, {
 
     function handleEscapeKey(event) {
         if (closeOnEscape && event.key === "Escape" && isOpen) {
+            if (stopEscapePropagation) {
+                event.stopImmediatePropagation();
+                event.preventDefault();
+            }
             close();
         }
     }
@@ -63,7 +69,7 @@ export function createOverlay(controller, {
         close();
     }
 
-    document.addEventListener("keydown", handleEscapeKey);
+    document.addEventListener("keydown", handleEscapeKey, escapeCapture);
 
     function open() {
         if (isOpening || isClosing || isOpen) return;
@@ -83,8 +89,8 @@ export function createOverlay(controller, {
             modalTarget.classList.remove(...hiddenClasses);
             modalTarget.classList.add(...visibleClasses);
 
-            backdropTarget.classList.remove(...backdropHiddenClasses);
-            backdropTarget.classList.add(...backdropVisibleClasses);
+            backdropTarget?.classList.remove(...backdropHiddenClasses);
+            backdropTarget?.classList.add(...backdropVisibleClasses);
 
             dialogTarget.classList.remove(...dialogHiddenClasses);
             dialogTarget.classList.add(...dialogVisibleClasses);
@@ -113,8 +119,8 @@ export function createOverlay(controller, {
         modalTarget.classList.remove(...visibleClasses);
         modalTarget.classList.add(...hiddenClasses);
 
-        backdropTarget.classList.remove(...backdropVisibleClasses);
-        backdropTarget.classList.add(...backdropHiddenClasses);
+        backdropTarget?.classList.remove(...backdropVisibleClasses);
+        backdropTarget?.classList.add(...backdropHiddenClasses);
 
         dialogTarget.classList.remove(...dialogVisibleClasses);
         dialogTarget.classList.add(...dialogHiddenClasses);
@@ -136,11 +142,42 @@ export function createOverlay(controller, {
     }
 
     function cleanup() {
-        document.removeEventListener("keydown", handleEscapeKey);
+        document.removeEventListener("keydown", handleEscapeKey, escapeCapture);
         focusTrap?.deactivate();
 
         if (isOpen && !isClosing) {
-            close();
+            closeNow({ restoreFocus: false });
+        }
+    }
+
+    function closeNow({ restoreFocus = false } = {}) {
+        const wasOpen = isOpen || isOpening || isClosing || modalTarget.getAttribute("data-open") === "true";
+
+        isOpen = false;
+        isOpening = false;
+        isClosing = false;
+        focusTrap?.deactivate();
+
+        modalTarget.setAttribute("data-open", "false");
+        modalTarget.classList.remove(...visibleClasses);
+        modalTarget.classList.add(...hiddenClasses);
+
+        backdropTarget?.classList.remove(...backdropVisibleClasses);
+        backdropTarget?.classList.add(...backdropHiddenClasses);
+
+        dialogTarget.classList.remove(...dialogVisibleClasses);
+        dialogTarget.classList.add(...dialogHiddenClasses);
+
+        modalTarget.hidden = true;
+
+        if (lockScroll) unlockBodyScroll();
+
+        if (restoreFocus && triggerElement && !triggerElement.disabled && typeof triggerElement.focus === "function") {
+            triggerElement.focus();
+        }
+
+        if (wasOpen && typeof onClose === "function") {
+            onClose();
         }
     }
 
@@ -156,8 +193,8 @@ export function createOverlay(controller, {
         modalTarget.classList.remove(...hiddenClasses);
         modalTarget.classList.add(...visibleClasses);
 
-        backdropTarget.classList.remove(...backdropHiddenClasses);
-        backdropTarget.classList.add(...backdropVisibleClasses);
+        backdropTarget?.classList.remove(...backdropHiddenClasses);
+        backdropTarget?.classList.add(...backdropVisibleClasses);
 
         dialogTarget.classList.remove(...dialogHiddenClasses);
         dialogTarget.classList.add(...dialogVisibleClasses);
@@ -180,6 +217,7 @@ export function createOverlay(controller, {
         setOpen,
         open,
         close,
+        closeNow,
         cleanup,
     };
 }

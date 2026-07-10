@@ -134,6 +134,46 @@
                     "className": "\\Emaia\\LaravelHotwire\\Components\\ConditionalField"
                 },
                 {
+                    "name": "drawer",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Drawer"
+                },
+                {
+                    "name": "drawer.close",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Drawer\\Close"
+                },
+                {
+                    "name": "drawer.content",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Drawer\\Content"
+                },
+                {
+                    "name": "drawer.description",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Drawer\\Description"
+                },
+                {
+                    "name": "drawer.footer",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Drawer\\Footer"
+                },
+                {
+                    "name": "drawer.header",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Drawer\\Header"
+                },
+                {
+                    "name": "drawer.title",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Drawer\\Title"
+                },
+                {
+                    "name": "drawer.trigger",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Drawer\\Trigger"
+                },
+                {
                     "name": "dropdown",
                     "namespace": "hw",
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Dropdown"
@@ -377,6 +417,161 @@
                     "name": "separator",
                     "namespace": "hw",
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Separator"
+                },
+                {
+                    "name": "sheet",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Sheet"
+                },
+                {
+                    "name": "sheet.close",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Sheet\\Close"
+                },
+                {
+                    "name": "sheet.content",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Sheet\\Content"
+                },
+                {
+                    "name": "sheet.description",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Sheet\\Description"
+                },
+                {
+                    "name": "sheet.footer",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Sheet\\Footer"
+                },
+                {
+                    "name": "sheet.header",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Sheet\\Header"
+                },
+                {
+                    "name": "sheet.title",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Sheet\\Title"
+                },
+                {
+                    "name": "sheet.trigger",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Sheet\\Trigger"
+                },
+                {
+                    "name": "sidebar",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Sidebar"
+                },
+                {
+                    "name": "sidebar.content",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Sidebar\\Content"
+                },
+                {
+                    "name": "sidebar.footer",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Sidebar\\Footer"
+                },
+                {
+                    "name": "sidebar.group",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Sidebar\\Group"
+                },
+                {
+                    "name": "sidebar.group-action",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Sidebar\\GroupAction"
+                },
+                {
+                    "name": "sidebar.group-content",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Sidebar\\GroupContent"
+                },
+                {
+                    "name": "sidebar.group-label",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Sidebar\\GroupLabel"
+                },
+                {
+                    "name": "sidebar.header",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Sidebar\\Header"
+                },
+                {
+                    "name": "sidebar.input",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Sidebar\\Input"
+                },
+                {
+                    "name": "sidebar.inset",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Sidebar\\Inset"
+                },
+                {
+                    "name": "sidebar.menu",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Sidebar\\Menu"
+                },
+                {
+                    "name": "sidebar.menu-action",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Sidebar\\MenuAction"
+                },
+                {
+                    "name": "sidebar.menu-badge",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Sidebar\\MenuBadge"
+                },
+                {
+                    "name": "sidebar.menu-button",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Sidebar\\MenuButton"
+                },
+                {
+                    "name": "sidebar.menu-item",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Sidebar\\MenuItem"
+                },
+                {
+                    "name": "sidebar.menu-skeleton",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Sidebar\\MenuSkeleton"
+                },
+                {
+                    "name": "sidebar.menu-sub",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Sidebar\\MenuSub"
+                },
+                {
+                    "name": "sidebar.menu-sub-button",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Sidebar\\MenuSubButton"
+                },
+                {
+                    "name": "sidebar.menu-sub-item",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Sidebar\\MenuSubItem"
+                },
+                {
+                    "name": "sidebar.provider",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Sidebar\\Provider"
+                },
+                {
+                    "name": "sidebar.rail",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Sidebar\\Rail"
+                },
+                {
+                    "name": "sidebar.separator",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Sidebar\\Separator"
+                },
+                {
+                    "name": "sidebar.trigger",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Sidebar\\Trigger"
                 },
                 {
                     "name": "skeleton",

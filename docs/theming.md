@@ -33,6 +33,14 @@ Use [`presets.md`](presets.md) when you want to change component structure, spac
 | `--border` | `oklch(0.922 0 0)` | `oklch(1 0 0 / 10%)` | Borders |
 | `--input` | `oklch(0.922 0 0)` | `oklch(1 0 0 / 15%)` | Input backgrounds |
 | `--ring` | `oklch(0.708 0 0)` | `oklch(0.556 0 0)` | Focus rings |
+| `--sidebar` | `oklch(0.985 0 0)` | `oklch(0.205 0 0)` | Sidebar background |
+| `--sidebar-foreground` | `oklch(0.145 0 0)` | `oklch(0.985 0 0)` | Sidebar text |
+| `--sidebar-primary` | `oklch(0.205 0 0)` | `oklch(0.985 0 0)` | Sidebar primary accents |
+| `--sidebar-primary-foreground` | `oklch(0.985 0 0)` | `oklch(0.205 0 0)` | Text on sidebar primary accents |
+| `--sidebar-accent` | `oklch(0.97 0 0)` | `oklch(0.269 0 0)` | Sidebar hover/active background |
+| `--sidebar-accent-foreground` | `oklch(0.205 0 0)` | `oklch(0.985 0 0)` | Text on sidebar accent |
+| `--sidebar-border` | `oklch(0.922 0 0)` | `oklch(1 0 0 / 10%)` | Sidebar borders |
+| `--sidebar-ring` | `oklch(0.708 0 0)` | `oklch(0.556 0 0)` | Sidebar focus rings |
 
 ### Radius
 
