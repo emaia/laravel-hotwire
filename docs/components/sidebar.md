@@ -67,10 +67,11 @@ Composable app sidebar with collapsible navigation primitives.
 
 | Prop | Default | Description |
 |------|---------|-------------|
-| `defaultOpen` | `true` | Initial expanded state. |
+| `defaultOpen` | `null` | Initial expanded state. When omitted, the provider reads `cookieName` and falls back to open. |
 | `width` | `16rem` | Value for `--sidebar-width`. |
 | `mobileWidth` | `18rem` | Value for `--sidebar-width-mobile`. |
 | `iconWidth` | `3rem` | Value for `--sidebar-width-icon`. |
+| `cookieName` | `sidebar_state` | Cookie used to persist the desktop expanded/collapsed state. |
 | `controller` | `sidebar` | Stimulus identifier. |
 | `stimulus` | `null` | Inline Stimulus attributes merged with the provider. |
 
@@ -117,10 +118,11 @@ Use `collapsible="offcanvas"` when the collapsed sidebar should slide fully out 
 The provider stores the current state as `data-state="expanded|collapsed"`. Triggers and rails use
 `click->sidebar#toggle`, and the controller also listens for Cmd/Ctrl+B on the window.
 
-The controller writes the `sidebar_state` cookie by default so the app can choose to feed that value
-back into `defaultOpen` on the next request.
+The controller writes the cookie named by `cookieName` by default, and the provider reads it automatically when `defaultOpen` is omitted. Pass `defaultOpen` explicitly when a page should ignore the persisted state.
 
 On mobile viewports, the trigger opens a temporary drawer using `--sidebar-width-mobile`. This mobile open state is separate from the desktop expanded/collapsed state, so opening the mobile sidebar does not change the persisted desktop state.
+
+Clicking a normal link inside the open mobile drawer closes it with the configured animation before navigation continues. Modified clicks, non-`_self` `target` links, downloads and `mailto:`/`tel:` links are not intercepted.
 
 ## Styling
 

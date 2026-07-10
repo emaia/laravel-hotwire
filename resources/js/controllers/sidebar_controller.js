@@ -34,6 +34,8 @@ export default class extends Controller {
     mediaQuery = null;
     overlay = null;
     mobileOpenFrame = null;
+    pendingNavigationLink = null;
+    skipNavigationLink = null;
 
     connect() {
         this.currentOpen = this.hasOpenValue ? this.openValue : this.element.dataset.state !== "collapsed";
@@ -57,19 +59,26 @@ export default class extends Controller {
                 escapeCapture: true,
                 stopEscapePropagation: true,
                 onOpen: () => this.syncMobileState("open"),
-                onClose: () => this.syncMobileState("closed"),
+                onClose: () => {
+                    this.syncMobileState("closed");
+                    this.followPendingNavigationLink();
+                },
                 getTriggerElement: () => document.activeElement,
             });
         }
 
+        this.element.addEventListener("click", this.handleNavigationClick, true);
         this.connected = true;
         this.sync();
         this.syncMobileState("closed");
     }
 
     disconnect() {
+        this.element.removeEventListener("click", this.handleNavigationClick, true);
         this.mediaQuery?.removeEventListener?.("change", this.handleMediaChange);
         this.cancelPendingMobileOpen();
+        this.pendingNavigationLink = null;
+        this.skipNavigationLink = null;
         this.overlay?.cleanup();
         this.connected = false;
     }
@@ -103,8 +112,22 @@ export default class extends Controller {
     }
 
     closeForCache() {
-        this.overlay?.closeNow({ restoreFocus: false });
+        this.cancelPendingMobileOpen();
+
+        if (this.currentMobileOpen || this.mobileState !== "closed") {
+            this.overlay?.closeNow({ restoreFocus: false });
+        } else if (this.hasModalTarget) {
+            this.modalTarget.hidden = false;
+        }
+
         this.syncMobileState("closed");
+    }
+
+    preserveStateForRender(event) {
+        const nextRoot = this.nextRootForRender(event.detail?.newBody);
+        if (!nextRoot) return;
+
+        this.applyStateTo(nextRoot, this.currentOpen);
     }
 
     shortcut(event) {
@@ -164,16 +187,17 @@ export default class extends Controller {
         this.overlay?.close();
     }
 
+    handleNavigationClick = (event) => {
+        if (!this.shouldDelayNavigation(event)) return;
+
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        this.pendingNavigationLink = event.target.closest("a[href]");
+        this.closeMobile();
+    };
+
     sync() {
-        this.element.dataset.state = this.state;
-        this.sidebarElements.forEach((sidebar) => {
-            sidebar.dataset.state = this.state;
-            const collapsible = sidebar.dataset.sidebarCollapsible || "offcanvas";
-            sidebar.dataset.collapsible = this.currentOpen ? "" : collapsible;
-        });
-        this.triggerElements.forEach((trigger) => {
-            trigger.setAttribute("aria-expanded", (this.isMobile ? this.currentMobileOpen : this.currentOpen) ? "true" : "false");
-        });
+        this.applyStateTo(this.element, this.currentOpen, this.isMobile ? this.currentMobileOpen : this.currentOpen);
     }
 
     syncMobileState(state) {
@@ -215,20 +239,92 @@ export default class extends Controller {
         this.sync();
     };
 
+    shouldDelayNavigation(event) {
+        if (!this.isMobile || !this.currentMobileOpen || event.defaultPrevented) return false;
+        if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return false;
+        if (event.button !== undefined && event.button !== 0) return false;
+
+        const link = event.target.closest("a[href]");
+        if (!link || !this.element.contains(link) || !this.dialogTarget.contains(link)) return false;
+        if (link === this.skipNavigationLink) return false;
+        if (link.target && link.target !== "_self") return false;
+        if (link.hasAttribute("download")) return false;
+
+        const href = link.getAttribute("href") || "";
+        if (href === "" || href.startsWith("#")) return false;
+        if (/^(mailto|tel):/i.test(href)) return false;
+
+        return true;
+    }
+
+    followPendingNavigationLink() {
+        const link = this.pendingNavigationLink;
+        this.pendingNavigationLink = null;
+        if (!link || !link.isConnected) return;
+
+        this.skipNavigationLink = link;
+        link.click();
+        this.skipNavigationLink = null;
+    }
+
+    applyStateTo(root, open, triggerOpen = open) {
+        const state = open ? "expanded" : "collapsed";
+
+        root.dataset.state = state;
+        root.dataset[`${this.identifier}OpenValue`] = open ? "true" : "false";
+        this.sidebarElementsFor(root).forEach((sidebar) => {
+            sidebar.dataset.state = state;
+            const collapsible = sidebar.dataset.sidebarCollapsible || "offcanvas";
+            sidebar.dataset.collapsible = open ? "" : collapsible;
+        });
+        this.triggerElementsFor(root).forEach((trigger) => {
+            trigger.setAttribute("aria-expanded", triggerOpen ? "true" : "false");
+        });
+    }
+
+    nextRootForRender(newBody) {
+        if (!newBody) return null;
+
+        const selector = `[data-controller~='${this.identifier}']`;
+        const nextRoots = Array.from(newBody.querySelectorAll(selector));
+
+        if (this.element.id) {
+            const matchingId = nextRoots.find((root) => root.id === this.element.id);
+            if (matchingId) return matchingId;
+        }
+
+        const currentRoots = Array.from(document.querySelectorAll(selector));
+        const index = currentRoots.indexOf(this.element);
+
+        return nextRoots[index] ?? null;
+    }
+
     get state() {
         return this.currentOpen ? "expanded" : "collapsed";
     }
 
     get sidebarElements() {
-        return Array.from(this.element.querySelectorAll('[data-slot="sidebar"][data-sidebar-collapsible]'));
+        return this.sidebarElementsFor(this.element);
     }
 
     get triggerElements() {
-        return Array.from(this.element.querySelectorAll('[data-slot="sidebar-trigger"]'));
+        return this.triggerElementsFor(this.element);
+    }
+
+    sidebarElementsFor(root) {
+        return Array.from(root.querySelectorAll('[data-slot="sidebar"][data-sidebar-collapsible]'));
+    }
+
+    triggerElementsFor(root) {
+        return Array.from(root.querySelectorAll('[data-slot="sidebar-trigger"]'));
     }
 
     get isMobile() {
         return this.mediaQuery?.matches ?? false;
+    }
+
+    get mobileState() {
+        return this.sidebarElements[0]?.dataset.mobileState ?? "closed";
     }
 
     get mobileDialogHiddenClasses() {

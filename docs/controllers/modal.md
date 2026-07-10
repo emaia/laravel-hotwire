@@ -102,8 +102,7 @@ or `aria-labelledby` belong on that same controller element.
 
 ## With dynamic content via Turbo Frame
 
-The `dynamicContent` target is observed via `MutationObserver`. When content is inserted, the modal opens automatically.
-When the content is removed, it closes.
+The `dynamicContent` target is observed via `MutationObserver`. When content is inserted, the modal opens automatically. Return an empty `update` or `replace` stream for the modal root or frame id, or a `refresh` stream, to close it after a successful action.
 
 ```html
 <div data-controller="modal" ...>
@@ -126,8 +125,8 @@ When the content is removed, it closes.
 ```
 
 The controller listens globally for clicks on `a[data-turbo-frame="<dynamicContent id>"]` and
-automatically calls `showLoading` — works whether the link is inside the modal element or far away
-in a shared layout.
+injects the resolved loading template — works whether the link is inside the modal element or far
+away in a shared layout.
 
 ## Loading template
 

@@ -1,4 +1,4 @@
-@aware(['direction' => 'down', 'axis' => 'y', 'backdrop' => true, 'drawerHiddenClass' => 'translate-y-full'])
+@aware(['direction' => 'down', 'axis' => 'y', 'backdrop' => true, 'drawerHiddenClass' => 'translate-y-full', 'frame' => null])
 
 <div
     data-slot="drawer-overlay"
@@ -24,7 +24,13 @@
         {{ $attributes->merge(['class' => $drawerHiddenClass]) }}
     >
         <div data-slot="drawer-content">
-            {{ $slot }}
+            @if ($frame !== null)
+                <turbo-frame id="{{ $frame }}" data-drawer-target="dynamicContent">
+                    {{ $slot }}
+                </turbo-frame>
+            @else
+                {{ $slot }}
+            @endif
         </div>
     </div>
 </div>

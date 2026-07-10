@@ -65,8 +65,8 @@ makes sense (list rows, navigation, deep in a partial) — Stimulus picks it up 
 ```
 
 The link click issues a frame-scoped request → the response lands in the `<turbo-frame id="modal">`
-rendered by `frame="modal"` → the modal's content observer opens it. The `showLoading` action fires
-automatically because the controller listens globally for `a[data-turbo-frame="modal"]` clicks.
+rendered by `frame="modal"` → the modal's content observer opens it. The loading template is
+injected automatically because the controller listens globally for `a[data-turbo-frame="modal"]` clicks.
 
 **When to use:** CRUD lists, dashboards with multiple modal-driven actions, anywhere you want
 modals without duplicating markup.

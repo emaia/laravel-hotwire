@@ -58,6 +58,39 @@ it('maps side to transform classes and size axis', function () {
         ->assertSee('--sheet-height: 50vh', false);
 });
 
+it('renders frame content and loading template when frame is configured', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::sheet id="sheet-shell" frame="sheet-frame">
+            <x-hw::sheet.content>Fallback</x-hw::sheet.content>
+            <x-slot:loading_template>Loading sheet...</x-slot:loading_template>
+        </x-hw::sheet>
+    BLADE);
+
+    $view->assertSee('<turbo-frame id="sheet-frame" data-sheet-target="dynamicContent">', false)
+        ->assertSee('Fallback')
+        ->assertSee('<template data-sheet-target="loadingTemplate">', false)
+        ->assertSee('Loading sheet...');
+});
+
+it('renders a complete frame host when sheet content is omitted', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::sheet frame="sheet-panel" side="right">
+            <x-slot:loading_template>
+                <div class="p-6">Loading...</div>
+            </x-slot:loading_template>
+        </x-hw::sheet>
+    BLADE);
+
+    $view->assertSee('data-sheet-target="modal"', false)
+        ->assertSee('data-sheet-target="dialog"', false)
+        ->assertSee('<turbo-frame id="sheet-panel" data-sheet-target="dynamicContent">', false)
+        ->assertSee('<template data-sheet-target="loadingTemplate">', false);
+});
+
+it('rejects matching sheet root and frame ids', function () {
+    expect(fn () => new Sheet(id: 'panel', frame: 'panel'))->toThrow(InvalidArgumentException::class);
+});
+
 it('throws on an invalid side', function () {
     expect(fn () => new Sheet(side: 'diagonal'))->toThrow(InvalidArgumentException::class);
 });

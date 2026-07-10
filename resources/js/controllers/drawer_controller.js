@@ -2,9 +2,10 @@
 import { Controller } from "@hotwired/stimulus";
 
 import { createOverlay } from "./_overlay.js";
+import { createFrameOverlay } from "./_frame_overlay.js";
 
 export default class DrawerController extends Controller {
-    static targets = ["trigger", "modal", "backdrop", "dialog"];
+    static targets = ["trigger", "modal", "backdrop", "dialog", "dynamicContent", "loadingTemplate"];
 
     static classes = [
         "hidden",
@@ -25,6 +26,7 @@ export default class DrawerController extends Controller {
     };
 
     overlay = null;
+    frameOverlay = null;
     triggerElement = null;
 
     get isOpen() {
@@ -51,12 +53,23 @@ export default class DrawerController extends Controller {
             stopEscapePropagation: true,
             closeOnClickOutside: this.closeOnClickOutsideValue,
             onOpen: () => this.dispatch("opened"),
-            onClose: () => this.dispatch("closed"),
+            onClose: () => {
+                this.dispatch("closed");
+                this.frameOverlay?.handleOverlayClosed();
+            },
             getTriggerElement: () => this.triggerElement,
         });
+
+        this.frameOverlay = createFrameOverlay(this);
+
+        if (this.modalTarget.getAttribute("data-open") === "true") {
+            this.overlay.setOpen();
+        }
     }
 
     disconnect() {
+        this.frameOverlay?.cleanup();
+        this.frameOverlay = null;
         this.overlay?.cleanup();
     }
 
@@ -70,6 +83,7 @@ export default class DrawerController extends Controller {
     }
 
     close() {
+        this.frameOverlay?.markDismissedWhileLoading();
         this.overlay?.close();
     }
 
@@ -85,6 +99,7 @@ export default class DrawerController extends Controller {
     }
 
     closeForCache() {
+        this.frameOverlay?.clearContent();
         this.overlay?.closeNow({ restoreFocus: false });
     }
 }

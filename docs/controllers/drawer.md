@@ -12,6 +12,8 @@ Controls an off-canvas drawer overlay.
 | `modal` | Full-screen overlay container. |
 | `backdrop` | Backdrop click target. |
 | `dialog` | Sliding drawer panel. |
+| `dynamicContent` | Optional Turbo Frame that opens the drawer when content loads. |
+| `loadingTemplate` | Optional loading template used while the dynamic frame fetches. |
 
 ## Values
 
@@ -32,6 +34,10 @@ Controls an off-canvas drawer overlay.
 | `toggle` | Toggle the drawer. |
 | `clickOutside` | Close from the backdrop when enabled. |
 | `closeForCache` | Close immediately before Turbo caches the page. |
+
+## Dynamic Frame Behavior
+
+When `dynamicContent` is present, the controller opens the drawer after the frame receives content and clears the frame after close. It injects `loadingTemplate` during `turbo:before-fetch-request`, supports per-link `data-loading-template`, and delays empty `update`/`replace` streams for the drawer root or frame, plus `refresh` streams, until the close animation finishes.
 
 ## Events
 

@@ -20,6 +20,7 @@ class Drawer extends Component
         public string $direction = 'down',
         public ?string $side = null,
         public string $size = '',
+        public ?string $frame = null,
         public bool $backdrop = true,
         public int $openDuration = 300,
         public int $closeDuration = 300,
@@ -30,6 +31,14 @@ class Drawer extends Component
     ) {
         if ($this->id === '') {
             $this->id = uniqid('drawer-');
+        }
+
+        if ($this->frame === '') {
+            $this->frame = null;
+        }
+
+        if ($this->frame !== null && $this->frame === $this->id) {
+            throw new \InvalidArgumentException('The drawer root id and frame id must be different.');
         }
 
         $this->direction = $this->normalizeDirection($this->side ?? $this->direction);

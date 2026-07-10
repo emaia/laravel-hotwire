@@ -1,4 +1,4 @@
-@aware(['side' => 'right', 'backdrop' => true, 'sheetHiddenClass' => 'translate-x-full'])
+@aware(['side' => 'right', 'backdrop' => true, 'sheetHiddenClass' => 'translate-x-full', 'frame' => null])
 
 <div
     data-slot="sheet-overlay"
@@ -22,7 +22,13 @@
         data-sheet-target="dialog"
         {{ $attributes->merge(['class' => $sheetHiddenClass]) }}
     >
-        {{ $slot }}
+        @if ($frame !== null)
+            <turbo-frame id="{{ $frame }}" data-sheet-target="dynamicContent">
+                {{ $slot }}
+            </turbo-frame>
+        @else
+            {{ $slot }}
+        @endif
 
         <button
             type="button"

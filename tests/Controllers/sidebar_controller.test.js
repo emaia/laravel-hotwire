@@ -29,7 +29,7 @@ function template(open = true) {
     return `
         <div data-controller="sidebar"
              data-sidebar-open-value="${open}"
-             data-action="keydown@window->sidebar#shortcut"
+             data-action="keydown@window->sidebar#shortcut turbo:before-cache@window->sidebar#closeForCache turbo:before-render@window->sidebar#preserveStateForRender"
              data-state="${open ? "expanded" : "collapsed"}">
             <button data-slot="sidebar-trigger" data-action="click->sidebar#toggle">Toggle</button>
             <div data-slot="sidebar"
@@ -63,7 +63,7 @@ function mobileTemplate(open = true) {
                  hidden>
                 <div data-slot="sidebar-backdrop" data-sidebar-target="backdrop" data-action="click->sidebar#clickOutside"></div>
                 <div data-slot="sidebar-container" data-sidebar-target="dialog">
-                    <aside data-slot="sidebar-inner">Nav</aside>
+                    <aside data-slot="sidebar-inner"><a href="/reports" data-testid="nav-link">Reports</a></aside>
                 </div>
             </div>
         </div>
@@ -105,6 +105,10 @@ function trigger() {
 
 function dialog() {
     return document.querySelector("[data-slot='sidebar-container']");
+}
+
+function navLink() {
+    return document.querySelector("[data-testid='nav-link']");
 }
 
 test("connect syncs expanded state to root, sidebar and trigger", async () => {
@@ -157,6 +161,40 @@ test("open changes are persisted to the sidebar cookie by default", async () => 
     await wait(0);
 
     expect(document.cookie).toContain("sidebar_state=false");
+});
+
+test("Turbo renders keep the current collapsed desktop state", async () => {
+    await mount(template(true));
+
+    trigger().click();
+    await wait(0);
+
+    const newBody = document.createElement("body");
+    newBody.innerHTML = template(true);
+    window.dispatchEvent(new CustomEvent("turbo:before-render", {
+        detail: { newBody },
+    }));
+
+    const nextRoot = newBody.querySelector("[data-controller~='sidebar']");
+    const nextSidebar = newBody.querySelector("[data-slot='sidebar']");
+
+    expect(nextRoot.dataset.state).toBe("collapsed");
+    expect(nextRoot.dataset.sidebarOpenValue).toBe("false");
+    expect(nextSidebar.dataset.state).toBe("collapsed");
+    expect(nextSidebar.dataset.collapsible).toBe("offcanvas");
+});
+
+test("Turbo before-cache does not hide the desktop sidebar", async () => {
+    await mount(template(true));
+
+    trigger().click();
+    await wait(0);
+    window.dispatchEvent(new CustomEvent("turbo:before-cache"));
+
+    expect(sidebar().hidden).toBe(false);
+    expect(sidebar().dataset.mobileState).toBe("closed");
+    expect(sidebar().dataset.state).toBe("collapsed");
+    expect(sidebar().dataset.collapsible).toBe("offcanvas");
 });
 
 test("mobile toggle opens and closes the mobile drawer without changing desktop state", async () => {
@@ -244,4 +282,46 @@ test("mobile Escape and backdrop close only the mobile drawer", async () => {
     await wait(50);
 
     expect(sidebar().dataset.mobileState).toBe("closed");
+});
+
+test("mobile link clicks wait for the close animation before navigating", async () => {
+    mockMobile(true);
+    await mount(mobileTemplateWithDurations({ closeDuration: 40 }));
+    forceMobile();
+
+    trigger().click();
+    await wait(50);
+
+    let navigations = 0;
+    navLink().addEventListener("click", (event) => {
+        navigations++;
+        event.preventDefault();
+    });
+
+    navLink().click();
+
+    expect(navigations).toBe(0);
+    expect(sidebar().dataset.mobileState).toBe("closing");
+    expect(sidebar().hidden).toBe(false);
+
+    await wait(60);
+
+    expect(navigations).toBe(1);
+    expect(sidebar().dataset.mobileState).toBe("closed");
+    expect(sidebar().hidden).toBe(true);
+});
+
+test("mobile modified link clicks are not intercepted", async () => {
+    mockMobile(true);
+    await mount(mobileTemplate(true));
+    forceMobile();
+
+    trigger().click();
+    await wait(50);
+
+    const event = new MouseEvent("click", { bubbles: true, cancelable: true, metaKey: true });
+    navLink().dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(sidebar().dataset.mobileState).toBe("open");
 });

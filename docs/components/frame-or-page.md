@@ -43,8 +43,7 @@ The view itself stays oblivious to how it was requested.
 The first link asks Turbo to scope the request to the `modal` frame, sending the `Turbo-Frame`
 request header. The second link navigates normally; the layout renders the standalone page.
 
-Pair with [`<hw:modal frame="modal">`](./modal.md) in your dashboard layout so the modal opens
-automatically when the frame receives content.
+Pair with a frame host in your dashboard layout so the overlay opens automatically when the frame receives content. The common hosts are [`<hw:modal frame="modal">`](./modal.md), [`<hw:sheet frame="settings-panel">`](./sheet.md), and [`<hw:drawer frame="drawer-panel">`](./drawer.md).
 
 ## Props
 
@@ -110,7 +109,7 @@ ids consistent across server-rendered, frame-targeted and Turbo Stream contexts.
 
 ## Closing on success
 
-When the form inside the frame submits successfully, the typical flow is: close the modal and refresh
+When the form inside the frame submits successfully, the typical flow is: close the overlay and refresh
 the underlying page. Return a Turbo Stream:
 
 ```php
@@ -126,19 +125,19 @@ public function update(Request $request, Message $message)
 ```
 
 See the [frame-or-page recipe](../recipes/frame-or-page.md) for the full pattern including dashboard
-layout setup and modal host wiring.
+layout setup and frame host wiring.
 
-## Influencing the modal host from a frame payload
+## Influencing the overlay host from a frame payload
 
-A common confusion: trying to configure shared chrome (a modal host, a sidebar) from within a view
+A common confusion: trying to configure shared chrome (a modal, sheet, drawer, or sidebar host) from within a view
 that opens *as a frame*. That chrome lives in the host page's layout — it was already rendered with
 its own settings before the frame request fired. The frame payload only swaps content inside the
 matching `<turbo-frame>`; it cannot retroactively change elements outside the frame.
 
 Three options, in order of how much they cost you:
 
-1. **Use multiple modal hosts**. Render two `<hw:modal frame="modal-edit" :fixed-top="true">`
-   and `<hw:modal frame="modal-quick">` in the layout and pick per link via `data-turbo-frame`.
+1. **Use multiple hosts**. Render two hosts, such as `<hw:modal frame="modal-edit" :fixed-top="true">`
+   and `<hw:sheet frame="settings-panel" side="right">`, in the layout and pick per link via `data-turbo-frame`.
    Zero JS, zero stream gymnastics, the choice is explicit at the call site.
 2. **Return a Turbo Stream with `morph`** when you detect the frame request:
    ```php
@@ -149,12 +148,12 @@ Three options, in order of how much they cost you:
    `morph` diffs the DOM and only patches changed attributes/classes, so the modal stays mounted and
    open — no flicker. Avoid `->replace('modal', ...)`: it destroys the open modal and the new one
    won't auto-open, since the modal's content-mutation observer never fires on a fresh mount.
-3. **Render `<hw:modal frame="modal">` inside the view itself** instead of relying on a shared
+3. **Render `<hw:modal frame="modal">` or another frame host inside the view itself** instead of relying on a shared
    host. More flexible per-view, but you lose the convenience of one host serving every link.
 
 ## See also
 
 - [Frame-or-page recipe](../recipes/frame-or-page.md) — the manual pattern this component encapsulates.
-- [`<hw:modal>`](./modal.md) — the modal host that receives the frame content.
+- [`<hw:modal>`](./modal.md), [`<hw:sheet>`](./sheet.md), and [`<hw:drawer>`](./drawer.md) — frame hosts that receive dynamic content.
 - [`<hw:form>`](./form.md) — the `track-frame-src` variant that preserves the originating frame URL.
 - [`turbo--frame-src` controller](../controllers/turbo/frame-src.md) — client-side fallback for frame-aware redirects.

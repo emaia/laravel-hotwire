@@ -48,11 +48,41 @@ it('can render the provider initially collapsed', function () {
         ->assertSee('data-collapsible="offcanvas"', false);
 });
 
+it('uses the persisted sidebar cookie when default open is omitted', function () {
+    request()->cookies->set('sidebar_state', 'false');
+
+    $view = $this->blade('<x-hw::sidebar.provider><x-hw::sidebar /></x-hw::sidebar.provider>');
+
+    $view->assertSee('data-state="collapsed"', false)
+        ->assertSee('data-sidebar-open-value="false"', false)
+        ->assertSee('data-collapsible="offcanvas"', false);
+});
+
+it('uses the raw sidebar cookie header when Laravel cookie decryption drops the cookie', function () {
+    request()->headers->set('Cookie', 'sidebar_state=false');
+
+    $view = $this->blade('<x-hw::sidebar.provider><x-hw::sidebar /></x-hw::sidebar.provider>');
+
+    $view->assertSee('data-state="collapsed"', false)
+        ->assertSee('data-sidebar-open-value="false"', false)
+        ->assertSee('data-collapsible="offcanvas"', false);
+});
+
+it('lets explicit default open override the persisted sidebar cookie', function () {
+    request()->cookies->set('sidebar_state', 'false');
+
+    $view = $this->blade('<x-hw::sidebar.provider :default-open="true"><x-hw::sidebar /></x-hw::sidebar.provider>');
+
+    $view->assertSee('data-state="expanded"', false)
+        ->assertSee('data-sidebar-open-value="true"', false)
+        ->assertSee('data-collapsible=""', false);
+});
+
 it('merges user stimulus attributes on the provider', function () {
     $view = $this->blade('<x-hw::sidebar.provider data-controller="analytics" data-action="sidebar:change->analytics#track" />');
 
     $view->assertSee('data-controller="sidebar analytics"', false)
-        ->assertSee('keydown@window->sidebar#shortcut turbo:before-cache@window->sidebar#closeForCache sidebar:change->analytics#track', false);
+        ->assertSee('keydown@window->sidebar#shortcut turbo:before-cache@window->sidebar#closeForCache turbo:before-render@window->sidebar#preserveStateForRender sidebar:change->analytics#track', false);
 });
 
 it('renders sidebar side variant collapsible and inner structure', function () {

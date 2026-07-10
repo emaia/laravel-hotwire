@@ -8,5 +8,7 @@
 @custom-variant in-remote-turbo-frame (turbo-frame[src] &);
 
 @custom-variant modal ([data-modal-target="dialog"] &);
+@custom-variant drawer ([data-drawer-target="dialog"] &);
+@custom-variant sheet ([data-sheet-target="dialog"] &);
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));

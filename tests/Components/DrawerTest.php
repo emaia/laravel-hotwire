@@ -61,6 +61,39 @@ it('maps side to transform classes and size axis', function () {
         ->assertSee('--drawer-height: 50vh', false);
 });
 
+it('renders frame content and loading template when frame is configured', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::drawer id="drawer-shell" frame="drawer-frame">
+            <x-hw::drawer.content>Fallback</x-hw::drawer.content>
+            <x-slot:loading_template>Loading drawer...</x-slot:loading_template>
+        </x-hw::drawer>
+    BLADE);
+
+    $view->assertSee('<turbo-frame id="drawer-frame" data-drawer-target="dynamicContent">', false)
+        ->assertSee('Fallback')
+        ->assertSee('<template data-drawer-target="loadingTemplate">', false)
+        ->assertSee('Loading drawer...');
+});
+
+it('renders a complete frame host when drawer content is omitted', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::drawer frame="drawer-panel" direction="down">
+            <x-slot:loading_template>
+                <div class="p-6">Loading...</div>
+            </x-slot:loading_template>
+        </x-hw::drawer>
+    BLADE);
+
+    $view->assertSee('data-drawer-target="modal"', false)
+        ->assertSee('data-drawer-target="dialog"', false)
+        ->assertSee('<turbo-frame id="drawer-panel" data-drawer-target="dynamicContent">', false)
+        ->assertSee('<template data-drawer-target="loadingTemplate">', false);
+});
+
+it('rejects matching drawer root and frame ids', function () {
+    expect(fn () => new Drawer(id: 'panel', frame: 'panel'))->toThrow(InvalidArgumentException::class);
+});
+
 it('throws on an invalid side', function () {
     expect(fn () => new Drawer(side: 'diagonal'))->toThrow(InvalidArgumentException::class);
 });

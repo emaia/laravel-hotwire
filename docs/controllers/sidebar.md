@@ -10,10 +10,12 @@ you, but the controller also works with hand-written HTML.
 | Value | Type | Default | Description |
 |-------|------|---------|-------------|
 | `open` | `boolean` | `true` | Current open state. |
-| `openDuration` | `number` | `300` | Mobile drawer open transition duration in milliseconds. |
+| `openDuration` | `number` | `500` | Mobile drawer open transition duration in milliseconds. |
 | `closeDuration` | `number` | `300` | Mobile drawer close transition duration in milliseconds. |
 | `persist` | `boolean` | `true` | Whether state changes write a cookie. |
 | `cookieName` | `string` | `sidebar_state` | Cookie name used when persistence is enabled. |
+
+The Blade provider reads the same cookie on each request when `defaultOpen` is omitted, so reloads, Turbo refreshes and full navigations preserve the collapsed/expanded state rendered by the server.
 
 ## Actions
 
@@ -23,6 +25,8 @@ you, but the controller also works with hand-written HTML.
 | `open` | Expand the sidebar. |
 | `close` | Collapse the sidebar. |
 | `shortcut` | Toggle on Cmd/Ctrl+B when bound to `keydown@window`. |
+| `closeForCache` | Close the mobile drawer before Turbo caches the page. |
+| `preserveStateForRender` | Copy the current desktop state into Turbo's next body before render. |
 
 ## Events
 
@@ -46,13 +50,15 @@ Use `icon` to keep an icon rail visible, `offcanvas` to move the sidebar fully o
 
 Mobile viewports use a separate drawer state exposed as `data-mobile-state="open|closed"` on the sidebar element. Desktop `data-state` remains unchanged while the mobile drawer opens or closes.
 
+When the mobile drawer is open, normal clicks on links inside the drawer wait for the close animation before the click is replayed. Modified clicks, non-primary mouse buttons, non-`_self` `target` links, downloads, empty hashes, `mailto:` and `tel:` links are left alone.
+
 ## Standalone Usage
 
 ```html
 <div
     data-controller="sidebar"
     data-sidebar-open-value="true"
-    data-action="keydown@window->sidebar#shortcut"
+    data-action="keydown@window->sidebar#shortcut turbo:before-cache@window->sidebar#closeForCache turbo:before-render@window->sidebar#preserveStateForRender"
     data-state="expanded"
     style="--sidebar-width: 16rem; --sidebar-width-icon: 3rem"
 >
