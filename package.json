@@ -31,9 +31,9 @@
         "embla-carousel": "^8.6.0",
         "happy-dom": "^20.10.6",
         "leaflet": "^1.9.4",
-        "prettier": "^3.9.4",
+        "prettier": "^3.9.5",
         "prettier-plugin-blade": "^2.1.21",
         "prettier-plugin-tailwindcss": "^0.7.4",
-        "vite": "^8.1.3"
+        "vite": "^8.1.4"
     }
 }
