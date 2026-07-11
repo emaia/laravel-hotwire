@@ -108,6 +108,8 @@ test("connect applies visible state when the sheet is pre-rendered open", async 
     expect(document.querySelector('[data-sheet-target="backdrop"]').classList.contains("opacity-100")).toBe(true);
     expect(document.querySelector('[data-sheet-target="dialog"]').classList.contains("translate-x-0")).toBe(true);
     expect(document.body.classList.contains("overflow-hidden")).toBe(true);
+    expect(mounted.controller.openDurationValue).toBe(300);
+    expect(mounted.controller.closeDurationValue).toBe(300);
 });
 
 test("frame content opens the sheet and loading templates are injected", async () => {

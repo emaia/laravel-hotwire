@@ -88,10 +88,10 @@ class Sheet extends Component
     private function hiddenClass(): string
     {
         return match ($this->side) {
-            'left' => '-translate-x-full',
-            'right' => 'translate-x-full',
-            'top' => '-translate-y-full',
-            'bottom' => 'translate-y-full',
+            'left' => '-translate-x-10 opacity-0',
+            'right' => 'translate-x-10 opacity-0',
+            'top' => '-translate-y-10 opacity-0',
+            'bottom' => 'translate-y-10 opacity-0',
             default => throw new \LogicException("Invalid sheet side: {$this->side}"),
         };
     }

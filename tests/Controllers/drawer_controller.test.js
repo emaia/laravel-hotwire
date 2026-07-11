@@ -126,6 +126,8 @@ test.serial("connect applies visible state when the drawer is pre-rendered open"
     expect(document.querySelector('[data-drawer-target="backdrop"]').classList.contains("opacity-100")).toBe(true);
     expect(panel().classList.contains("translate-x-0")).toBe(true);
     expect(document.body.classList.contains("overflow-hidden")).toBe(true);
+    expect(mounted.controller.openDurationValue).toBe(450);
+    expect(mounted.controller.closeDurationValue).toBe(450);
 });
 
 test.serial("backdrop and Escape close the drawer", async () => {
