@@ -37,7 +37,6 @@
             aria-label="Close sheet"
         >
             <hw:icon name="x" />
-            <span class="sr-only">Close</span>
         </button>
     </div>
 </div>
