@@ -37,6 +37,7 @@ Inline SVG icon from the embedded Lucide subset.
 | Loader Circle | `loader-circle` |
 | App Window | `app-window` |
 | Code | `code` |
+| Panel Left | `panel-left` |
 | Bold | `bold` |
 | Italic | `italic` |
 | Underline | `underline` |

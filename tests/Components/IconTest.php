@@ -66,6 +66,7 @@ it('renders every defined icon without error', function (string $name) {
     'loader-circle',
     'app-window',
     'code',
+    'panel-left',
     'bold',
     'italic',
     'underline',

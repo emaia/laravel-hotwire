@@ -13,7 +13,13 @@ export default class extends Controller {
             type: String,
             default: "top",
         },
+        enabledWhen: {
+            type: String,
+            default: "",
+        },
     };
+
+    observer = null;
 
     connect() {
         this.tippy?.destroy();
@@ -21,12 +27,56 @@ export default class extends Controller {
             content: this.contentValue,
             placement: this.placementValue,
             allowHTML: true,
+            onShow: () => this.isEnabled() ? undefined : false,
         });
+        this.observeEnablement();
     }
 
     disconnect() {
+        this.observer?.disconnect();
+        this.observer = null;
+
         if (this.tippy) {
             this.tippy.destroy();
         }
+    }
+
+    isEnabled() {
+        if (!this.enabledWhenValue) return true;
+
+        try {
+            if (this.element.closest(this.enabledWhenValue)) return true;
+
+            return Array.from(document.querySelectorAll(this.enabledWhenValue))
+                .some((element) => element.contains(this.element));
+        } catch (_error) {
+            return false;
+        }
+    }
+
+    observeEnablement() {
+        this.observer?.disconnect();
+        this.observer = null;
+
+        if (!this.enabledWhenValue) return;
+
+        this.observer = new MutationObserver(() => {
+            this.syncEnabledState();
+        });
+
+        this.observer.observe(this.observerRoot, {
+            attributes: true,
+            subtree: true,
+        });
+    }
+
+    get observerRoot() {
+        const root = this.element.getRootNode?.();
+
+        return root?.body ?? root?.host ?? this.element;
+    }
+
+    syncEnabledState() {
+        if (!this.isEnabled()) this.tippy?.hide?.();
     }
 }

@@ -53,8 +53,8 @@ Route::delete('tasks/{task}', [TaskController::class, 'destroy'])
 </a>
 ```
 
-`data-turbo-frame="modal"` makes Turbo issue a frame-scoped request. The modal controller
-auto-fires `showLoading` because it listens globally for `a[data-turbo-frame="modal"]` clicks.
+`data-turbo-frame="modal"` makes Turbo issue a frame-scoped request. The modal controller injects
+the loading template automatically because it listens globally for `a[data-turbo-frame="modal"]` clicks.
 
 ### 3. The confirmation action
 

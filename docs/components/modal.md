@@ -128,7 +128,7 @@ with props instead of overriding those attributes directly.
 ## Dynamic content with Turbo Frames
 
 The modal supports content loaded via Turbo Frame. Use the `frame` prop to render a dynamic content
-target that the controller observes and opens/closes automatically:
+target that the controller observes and opens when content arrives:
 
 ```blade
 <a href="/items/1/edit" data-turbo-frame="modal">
@@ -156,8 +156,9 @@ Use a different root `id` if you set one manually:
 <hw:modal id="modal-shell" frame="modal" />
 ```
 
-When the Turbo Frame receives content, the modal opens automatically. When the content is removed,
-it closes. The modal also listens globally for clicks on `a[data-turbo-frame="<its frame id>"]`, so
+When the Turbo Frame receives content, the modal opens automatically. Return an empty `update` or
+`replace` stream for the modal root or frame id, or a `refresh` stream, to close it after a
+successful action. The modal also listens globally for clicks on `a[data-turbo-frame="<its frame id>"]`, so
 the loading template fires even when the trigger lives outside the modal element (typical when the
 modal sits in a shared layout).
 

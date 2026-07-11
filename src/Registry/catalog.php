@@ -10,6 +10,7 @@ use Emaia\LaravelHotwire\Components\Carousel;
 use Emaia\LaravelHotwire\Components\Chart;
 use Emaia\LaravelHotwire\Components\CheckboxGroup;
 use Emaia\LaravelHotwire\Components\ConditionalField;
+use Emaia\LaravelHotwire\Components\Drawer;
 use Emaia\LaravelHotwire\Components\Dropdown;
 use Emaia\LaravelHotwire\Components\EmptyState;
 use Emaia\LaravelHotwire\Components\Field;
@@ -33,6 +34,8 @@ use Emaia\LaravelHotwire\Components\RichText;
 use Emaia\LaravelHotwire\Components\ScrollProgress;
 use Emaia\LaravelHotwire\Components\Select;
 use Emaia\LaravelHotwire\Components\Separator;
+use Emaia\LaravelHotwire\Components\Sheet;
+use Emaia\LaravelHotwire\Components\Sidebar;
 use Emaia\LaravelHotwire\Components\Skeleton;
 use Emaia\LaravelHotwire\Components\Spinner;
 use Emaia\LaravelHotwire\Components\Table;
@@ -298,6 +301,14 @@ return [
             'description' => 'Accessible disclosure dropdown — a trigger toggles a menu, with outside-click/Escape dismissal',
             'controllers' => ['dropdown'],
         ],
+        'drawer' => [
+            'class' => Drawer::class,
+            'view' => 'hotwire::component-views.drawer',
+            'docs' => 'docs/components/drawer.md',
+            'category' => 'overlay',
+            'description' => 'Off-canvas drawer with backdrop, focus trap and Escape/click-outside dismissal',
+            'controllers' => ['drawer'],
+        ],
         'empty-state' => [
             'class' => EmptyState::class,
             'view' => 'hotwire::component-views.slot',
@@ -329,6 +340,22 @@ return [
             'category' => 'utility',
             'description' => 'Fixed scroll progress bar that fills as the page scrolls',
             'controllers' => ['scroll-progress'],
+        ],
+        'sheet' => [
+            'class' => Sheet::class,
+            'view' => 'hotwire::component-views.sheet',
+            'docs' => 'docs/components/sheet.md',
+            'category' => 'overlay',
+            'description' => 'Off-canvas sheet with backdrop, close button, focus trap and side-aware slide transitions',
+            'controllers' => ['sheet'],
+        ],
+        'sidebar' => [
+            'class' => Sidebar::class,
+            'view' => 'hotwire::component-views.sidebar',
+            'docs' => 'docs/components/sidebar.md',
+            'category' => 'utility',
+            'description' => 'Composable app sidebar with provider state, trigger, rail, menu and content primitives',
+            'controllers' => ['sidebar'],
         ],
         'timeago' => [
             'class' => Timeago::class,
@@ -473,6 +500,12 @@ return [
             'category' => 'overlay',
             'description' => 'Accessible disclosure dropdown with outside-click/Escape dismissal and optional transitions',
         ],
+        'drawer' => [
+            'source' => 'resources/js/controllers/drawer_controller.js',
+            'docs' => 'docs/controllers/drawer.md',
+            'category' => 'overlay',
+            'description' => 'Off-canvas drawer with backdrop, focus trap and Escape/click-outside dismissal',
+        ],
         'copy-to-clipboard' => [
             'source' => 'resources/js/controllers/copy_to_clipboard_controller.js',
             'docs' => 'docs/controllers/copy-to-clipboard.md',
@@ -607,6 +640,18 @@ return [
             'docs' => 'docs/controllers/scroll-progress.md',
             'category' => 'utility',
             'description' => 'Displays a progress bar that follows the scroll position',
+        ],
+        'sheet' => [
+            'source' => 'resources/js/controllers/sheet_controller.js',
+            'docs' => 'docs/controllers/sheet.md',
+            'category' => 'overlay',
+            'description' => 'Off-canvas sheet with backdrop, close button, focus trap and side-aware slide transitions',
+        ],
+        'sidebar' => [
+            'source' => 'resources/js/controllers/sidebar_controller.js',
+            'docs' => 'docs/controllers/sidebar.md',
+            'category' => 'utility',
+            'description' => 'Controls sidebar expanded/collapsed state, trigger clicks and the Cmd/Ctrl+B shortcut',
         ],
         'slug' => [
             'source' => 'resources/js/controllers/slug_controller.js',
