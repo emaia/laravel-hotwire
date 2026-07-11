@@ -464,6 +464,11 @@
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Sidebar"
                 },
                 {
+                    "name": "sidebar.brand",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Sidebar\\Brand"
+                },
+                {
                     "name": "sidebar.content",
                     "namespace": "hw",
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Sidebar\\Content"

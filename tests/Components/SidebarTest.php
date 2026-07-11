@@ -148,6 +148,44 @@ it('renders structural sidebar sections', function () {
         ->assertSee('role="separator"', false);
 });
 
+it('renders a sidebar brand with full and icon logos', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::sidebar.provider>
+            <x-hw::sidebar>
+                <x-hw::sidebar.header>
+                    <x-hw::sidebar.brand href="/" label="Acme">
+                        <span>Acme Cloud</span>
+
+                        <x-slot:icon>
+                            <span>AC</span>
+                        </x-slot:icon>
+                    </x-hw::sidebar.brand>
+                </x-hw::sidebar.header>
+            </x-hw::sidebar>
+        </x-hw::sidebar.provider>
+    BLADE);
+
+    $view->assertSee('data-slot="sidebar-brand"', false)
+        ->assertSee('data-sidebar="brand"', false)
+        ->assertSee('href="/"', false)
+        ->assertSee('aria-label="Acme"', false)
+        ->assertSee('data-slot="sidebar-brand-logo"', false)
+        ->assertSee('data-slot="sidebar-brand-icon"', false)
+        ->assertSee('aria-hidden="true"', false)
+        ->assertSeeText('Acme Cloud')
+        ->assertSeeText('AC');
+});
+
+it('renders a sidebar brand without an icon slot', function () {
+    $view = $this->blade('<x-hw::sidebar.provider><x-hw::sidebar.brand label="Acme"><span>Acme Cloud</span></x-hw::sidebar.brand></x-hw::sidebar.provider>');
+
+    $view->assertSee('data-slot="sidebar-brand"', false)
+        ->assertSee('aria-label="Acme"', false)
+        ->assertSee('data-slot="sidebar-brand-logo"', false)
+        ->assertDontSee('data-slot="sidebar-brand-icon"', false)
+        ->assertSeeText('Acme Cloud');
+});
+
 it('renders sidebar menu parts with active and size state', function () {
     $view = $this->blade(<<<'BLADE'
         <x-hw::sidebar.provider>
@@ -205,5 +243,6 @@ it('registers sidebar in the component catalog and subcomponent aliases', functi
     expect(ComponentAliases::subComponents())
         ->toHaveKey('sidebar.provider')
         ->toHaveKey('sidebar.trigger')
+        ->toHaveKey('sidebar.brand')
         ->toHaveKey('sidebar.menu-button');
 });

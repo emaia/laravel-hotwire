@@ -103,6 +103,12 @@
     [data-slot="sidebar"][data-side="right"][data-state="collapsed"] [data-slot="sidebar-rail"] { @apply cursor-w-resize; }
     [data-slot="sidebar"][data-collapsible="offcanvas"] [data-slot="sidebar-rail"] { @apply translate-x-0 after:left-full hover:bg-sidebar; }
     [data-slot="sidebar-header"], [data-slot="sidebar-footer"] { @apply flex flex-col gap-2 p-2; }
+    [data-slot="sidebar-brand"] { @apply relative flex min-h-8 min-w-0 items-center gap-2 overflow-hidden rounded-md px-2 text-sm font-semibold text-sidebar-foreground outline-none transition-[padding] duration-200 ease-linear hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring; }
+    [data-slot="sidebar-brand-logo"] { @apply flex min-w-0 flex-1 scale-100 items-center gap-2 overflow-hidden opacity-100 transition-[opacity,transform] duration-200 ease-linear [&>svg]:shrink-0; }
+    [data-slot="sidebar-brand-icon"] { @apply pointer-events-none absolute inset-0 flex scale-90 items-center justify-center opacity-0 transition-[opacity,transform] duration-200 ease-linear [&>svg]:shrink-0; }
+    [data-slot="sidebar"][data-collapsible="icon"] [data-slot="sidebar-brand"]:has([data-slot="sidebar-brand-icon"]) { @apply justify-center px-0; }
+    [data-slot="sidebar"][data-collapsible="icon"] [data-slot="sidebar-brand"]:has([data-slot="sidebar-brand-icon"]) [data-slot="sidebar-brand-logo"] { @apply pointer-events-none absolute inset-0 scale-95 opacity-0; }
+    [data-slot="sidebar"][data-collapsible="icon"] [data-slot="sidebar-brand-icon"] { @apply scale-100 opacity-100; }
     [data-slot="sidebar-content"] { @apply flex min-h-0 flex-1 flex-col gap-2 overflow-auto; }
     [data-slot="sidebar"][data-collapsible="icon"] [data-slot="sidebar-content"] { @apply overflow-hidden; }
     [data-slot="sidebar-input"] { @apply h-8 w-full rounded-md border border-input bg-background px-2 text-sm shadow-none outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-sidebar-ring focus-visible:ring-2 focus-visible:ring-sidebar-ring/50; }

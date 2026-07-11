@@ -72,6 +72,7 @@ final class ComponentAliases
             'sidebar.rail' => Components\Sidebar\Rail::class,
             'sidebar.inset' => Components\Sidebar\Inset::class,
             'sidebar.header' => Components\Sidebar\Header::class,
+            'sidebar.brand' => Components\Sidebar\Brand::class,
             'sidebar.footer' => Components\Sidebar\Footer::class,
             'sidebar.content' => Components\Sidebar\Content::class,
             'sidebar.input' => Components\Sidebar\Input::class,
