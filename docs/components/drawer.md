@@ -37,8 +37,8 @@ Base drawer overlay with direction-aware slide transitions, backdrop, focus trap
 | `size` | `75vw`/`24rem` for side drawers, `auto` for vertical drawers | CSS length assigned to the drawer width or height variable. |
 | `frame` | `null` | Turbo Frame id for layout-shared, server-loaded drawer content. |
 | `backdrop` | `true` | Render the backdrop and click-outside target. |
-| `openDuration` | `300` | Open transition duration in milliseconds. |
-| `closeDuration` | `300` | Close transition duration in milliseconds. |
+| `openDuration` | `450` | Open transition duration in milliseconds. |
+| `closeDuration` | `450` | Close transition duration in milliseconds. |
 | `lockScroll` | `true` | Lock body scroll while open. |
 | `closeOnEscape` | `true` | Close when Escape is pressed. |
 | `closeOnClickOutside` | `true` | Close when the backdrop is clicked. |

@@ -50,11 +50,11 @@ it('renders trigger close and semantic subcomponents', function () {
 
 it('maps side to transform classes and size axis', function () {
     $right = $this->blade('<x-hw::sheet side="right" size="24rem"><x-hw::sheet.content /></x-hw::sheet>');
-    $right->assertSee('data-sheet-dialog-hidden-class="translate-x-full"', false)
+    $right->assertSee('data-sheet-dialog-hidden-class="translate-x-10 opacity-0"', false)
         ->assertSee('--sheet-width: 24rem', false);
 
     $bottom = $this->blade('<x-hw::sheet side="bottom" size="50vh"><x-hw::sheet.content /></x-hw::sheet>');
-    $bottom->assertSee('data-sheet-dialog-hidden-class="translate-y-full"', false)
+    $bottom->assertSee('data-sheet-dialog-hidden-class="translate-y-10 opacity-0"', false)
         ->assertSee('--sheet-height: 50vh', false);
 });
 

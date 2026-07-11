@@ -18,8 +18,8 @@ export default class DrawerController extends Controller {
     ];
 
     static values = {
-        openDuration: { type: Number, default: 300 },
-        closeDuration: { type: Number, default: 300 },
+        openDuration: { type: Number, default: 450 },
+        closeDuration: { type: Number, default: 450 },
         lockScroll: { type: Boolean, default: true },
         closeOnEscape: { type: Boolean, default: true },
         closeOnClickOutside: { type: Boolean, default: true },

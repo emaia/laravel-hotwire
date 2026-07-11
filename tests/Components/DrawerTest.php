@@ -9,6 +9,8 @@ it('renders drawer markup and controller hooks', function () {
 
     $view->assertSee('data-slot="drawer"', false)
         ->assertSee('data-controller="drawer"', false)
+        ->assertSee('data-drawer-open-duration-value="450"', false)
+        ->assertSee('data-drawer-close-duration-value="450"', false)
         ->assertSee('data-slot="drawer-overlay"', false)
         ->assertSee('data-drawer-target="modal"', false)
         ->assertSee('data-slot="drawer-popup"', false)
