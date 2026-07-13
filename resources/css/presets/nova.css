@@ -55,6 +55,18 @@
     [data-slot="breadcrumb-separator"] { @apply inline-flex items-center text-muted-foreground/70 [&>svg]:size-3.5; }
     [data-slot="breadcrumb-ellipsis"] { @apply inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:text-foreground [&>svg]:size-4; }
 
+    [data-slot="pagination"] { @apply mx-auto flex w-full justify-center; }
+    [data-slot="pagination-content"] { @apply flex items-center gap-0.5; }
+    [data-slot="pagination-item"] { @apply inline-flex; }
+    :is([data-slot="pagination-link"], [data-slot="pagination-previous"], [data-slot="pagination-next"]) { @apply inline-flex h-8 shrink-0 items-center justify-center whitespace-nowrap rounded-lg border border-transparent bg-clip-padding text-sm font-medium transition-all outline-none active:not-aria-[haspopup]:translate-y-px hover:bg-muted hover:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4; }
+    :is([data-slot="pagination-link"], [data-slot="pagination-previous"], [data-slot="pagination-next"])[data-size="icon"] { @apply size-8; }
+    :is([data-slot="pagination-link"], [data-slot="pagination-previous"], [data-slot="pagination-next"])[data-size="default"] { @apply h-8 gap-1.5 px-2.5; }
+    [data-slot="pagination-link"][data-active="true"] { @apply border-border bg-background hover:bg-muted hover:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50; }
+    [data-slot="pagination-previous"] { @apply pl-1.5; }
+    [data-slot="pagination-next"] { @apply pr-1.5; }
+    [data-slot="pagination-previous-label"], [data-slot="pagination-next-label"] { @apply hidden sm:block; }
+    [data-slot="pagination-ellipsis"] { @apply flex size-8 items-center justify-center text-muted-foreground [&_svg:not([class*='size-'])]:size-4; }
+
     [data-slot="card"] { --card-spacing: --spacing(4); @apply flex flex-col gap-(--card-spacing) overflow-hidden rounded-xl bg-card py-(--card-spacing) text-sm text-card-foreground ring-1 ring-foreground/10 has-[[data-slot=card-footer]]:pb-0 has-[>img:first-child]:pt-0 [&>img:first-child]:rounded-t-xl [&>img:last-child]:rounded-b-xl; }
     [data-slot="card"][data-size="sm"] { --card-spacing: --spacing(3); @apply has-[[data-slot=card-footer]]:pb-0; }
     [data-slot="card-header"] { @apply grid auto-rows-min items-start gap-1 rounded-t-xl px-(--card-spacing) has-[[data-slot=card-action]]:grid-cols-[1fr_auto] has-[[data-slot=card-description]]:grid-rows-[auto_auto]; }

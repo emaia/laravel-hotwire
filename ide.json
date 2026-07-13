@@ -459,6 +459,41 @@
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Optimistic"
                 },
                 {
+                    "name": "pagination",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Pagination"
+                },
+                {
+                    "name": "pagination.content",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Pagination\\Content"
+                },
+                {
+                    "name": "pagination.ellipsis",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Pagination\\Ellipsis"
+                },
+                {
+                    "name": "pagination.item",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Pagination\\Item"
+                },
+                {
+                    "name": "pagination.link",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Pagination\\Link"
+                },
+                {
+                    "name": "pagination.next",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Pagination\\Next"
+                },
+                {
+                    "name": "pagination.previous",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Pagination\\Previous"
+                },
+                {
                     "name": "rich-text",
                     "namespace": "hw",
                     "className": "\\Emaia\\LaravelHotwire\\Components\\RichText"
