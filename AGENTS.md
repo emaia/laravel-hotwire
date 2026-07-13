@@ -272,11 +272,7 @@ Constructors don't need a return type. PHP's `resource` pseudo-type has no nativ
 
 ## Roadmap
 
-The project roadmap lives in `plan-ui.md` (git-ignored). It defines the release cadence, component inventory, design decisions and
-architectural direction for bringing the package to visual and functional parity with shadcn/ui.
-
-Reference implementations for design decisions are in `_ref/` (Filament, Livewire, shadcn-ui). Consult these when
-the corresponding phase enters active work — not before.
+Operational roadmap and execution notes are maintained outside this repository. Treat local planning exports as temporary context that may be stale.
 
 ## CSS / Theming (since `0.32.0`)
 

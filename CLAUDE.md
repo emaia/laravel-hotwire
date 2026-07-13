@@ -25,9 +25,9 @@ The complete Hotwire stack for Laravel — Turbo Drive, Turbo Streams, Stimulus 
 |---------------------------|------------------------------------------------------------------------------------------------------|
 | `hotwire:install`         | Scaffold JS/CSS setup, add npm deps to package.json                                                  |
 | `hotwire:make-controller` | Create a new Stimulus controller (interactive scaffolding)                                           |
-| `hotwire:controllers`     | Publish package Stimulus controllers to the app (`--outdated` to update only published+changed ones) |
+| `hotwire:controllers`     | Publish package Stimulus controllers to the app for customization (`--outdated` to update only published+changed ones) |
 | `hotwire:components`      | List available Blade components and their controller dependencies                                    |
-| `hotwire:check`           | Verify required controllers (and their shared deps) are published (CI-friendly)                      |
+| `hotwire:check`           | Verify required npm dependencies are installed and report outdated/diverged published controllers (CI-friendly)                      |
 | `hotwire:docs`            | Browse and read controller/component docs in the terminal                                            |
 
 ## Conventions
@@ -164,7 +164,7 @@ registered here**, or the commands won't see it.
 ## Development
 
 ```bash
-composer test          # Run Pest tests (aliased to `pest --parallel` — command tests each isolate `basePath()` in a per-worker temp dir)
+composer test          # Run Pest tests
 composer analyse       # Run PHPStan
 bun run test           # Run JS unit tests (Bun + happy-dom). Use `bun run test`, not `bun test` — the npm script wires up --isolate --parallel so mocks don't leak across files and files run concurrently
 bun run test:browser   # Run browser tests (Playwright)
@@ -201,11 +201,6 @@ PHP conventions:
 - Use `beforeEach`/`afterEach` for shared setup and cleanup (temp files, directories)
 - For artisan commands: use `$this->artisan('command')->assertSuccessful()` and `expectsQuestion`/`expectsChoice`/
   `expectsOutput` for interactive flows
-- Command tests that write to `resource_path()`/`base_path()` must call `isolateAppPaths()` in `beforeEach` and
-  `releaseIsolatedAppPaths($this->appBase)` in `afterEach`. The helper (in `tests/Pest.php`) points Laravel's
-  `basePath()` at a per-test temp dir keyed by `TEST_TOKEN`, so `--parallel` workers don't collide on the shared
-  Testbench app fixture. It also binds a `FakePackageInstaller` that keeps the real lock-file `detect()` but stubs
-  `install()` — tests that force a manager still call `fakePackageInstaller('bun'|'pnpm'|…)` explicitly.
 - Always run `composer test` at the end to ensure nothing else broke
 
 JS conventions:
@@ -277,11 +272,7 @@ Constructors don't need a return type. PHP's `resource` pseudo-type has no nativ
 
 ## Roadmap
 
-The project roadmap lives in `plan-ui.md` (git-ignored). It defines the release cadence, component inventory, design decisions and
-architectural direction for bringing the package to visual and functional parity with shadcn/ui.
-
-Reference implementations for design decisions are in `_ref/` (Filament, Livewire, shadcn-ui). Consult these when
-the corresponding phase enters active work — not before.
+Operational roadmap and execution notes are maintained outside this repository. Treat local planning exports as temporary context that may be stale.
 
 ## CSS / Theming (since `0.32.0`)
 
