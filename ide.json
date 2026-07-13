@@ -54,6 +54,36 @@
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Alert\\Title"
                 },
                 {
+                    "name": "avatar",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Avatar"
+                },
+                {
+                    "name": "avatar.badge",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Avatar\\Badge"
+                },
+                {
+                    "name": "avatar.fallback",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Avatar\\Fallback"
+                },
+                {
+                    "name": "avatar.group",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Avatar\\AvatarGroup"
+                },
+                {
+                    "name": "avatar.group-count",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Avatar\\GroupCount"
+                },
+                {
+                    "name": "avatar.image",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Avatar\\Image"
+                },
+                {
                     "name": "badge",
                     "namespace": "hw",
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Badge"

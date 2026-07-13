@@ -2,6 +2,7 @@
 
 use Emaia\LaravelHotwire\Components\Alert;
 use Emaia\LaravelHotwire\Components\AlertDialog;
+use Emaia\LaravelHotwire\Components\Avatar;
 use Emaia\LaravelHotwire\Components\Badge;
 use Emaia\LaravelHotwire\Components\Breadcrumb;
 use Emaia\LaravelHotwire\Components\Button;
@@ -85,6 +86,14 @@ return [
             'docs' => 'docs/components/alert.md',
             'category' => 'feedback',
             'description' => 'Inline alert with title, description, action and semantic variants',
+            'controllers' => [],
+        ],
+        'avatar' => [
+            'class' => Avatar::class,
+            'view' => 'hotwire::component-views.avatar',
+            'docs' => 'docs/components/avatar.md',
+            'category' => 'display',
+            'description' => 'User avatar with image, generated initials fallback, badge and grouped display primitives',
             'controllers' => [],
         ],
         'badge' => [
