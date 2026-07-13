@@ -10,6 +10,8 @@
                             :label="$link['label']"
                             :size="$link['size']"
                             :turbo-frame="$turboFrame"
+                            :turbo-stream="$turboStream"
+                            :aria-label="$previousAriaLabel"
                         />
                     @elseif ($link['type'] === 'next')
                         <x-hw::pagination.next
@@ -18,6 +20,8 @@
                             :label="$link['label']"
                             :size="$link['size']"
                             :turbo-frame="$turboFrame"
+                            :turbo-stream="$turboStream"
+                            :aria-label="$nextAriaLabel"
                         />
                     @elseif ($link['type'] === 'ellipsis')
                         <x-hw::pagination.ellipsis :label="$link['label']" />
@@ -27,6 +31,7 @@
                             :active="$link['active']"
                             :disabled="$link['disabled']"
                             :turbo-frame="$turboFrame"
+                            :turbo-stream="$turboStream"
                         >{{ $link['label'] }}</x-hw::pagination.link>
                     @endif
                 </x-hw::pagination.item>

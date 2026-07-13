@@ -12,6 +12,8 @@ class Previous extends Component
         public ?string $label = 'Previous',
         public ?string $turboFrame = null,
         public string $size = 'default',
+        public bool $turboStream = false,
+        public string $ariaLabel = 'Go to previous page',
     ) {}
 
     public function render()

@@ -12,6 +12,7 @@ class Link extends Component
         public bool $disabled = false,
         public string $size = 'icon',
         public ?string $turboFrame = null,
+        public bool $turboStream = false,
     ) {}
 
     public function render()

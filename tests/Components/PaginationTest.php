@@ -73,6 +73,70 @@ it('renders links from a length-aware paginator', function () {
         ->not->toContain('href="/users?page=10"');
 });
 
+it('adds turbo stream to generated paginator links', function () {
+    $paginator = new LengthAwarePaginator(range(1, 10), 200, 10, 10, ['path' => '/users']);
+
+    $view = $this->blade('<x-hw::pagination :paginator="$paginator" turbo-stream />', [
+        'paginator' => $paginator,
+    ]);
+
+    $html = (string) $view;
+
+    expect($html)
+        ->toContain('data-turbo-stream')
+        ->not->toContain(' turbo-stream');
+
+    preg_match('/<span[^>]*aria-current="page"[^>]*>/', $html, $currentPage);
+
+    expect($currentPage[0] ?? '')->not->toContain('data-turbo-stream');
+});
+
+it('adds turbo stream to manual pagination links and controls', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::pagination>
+            <x-hw::pagination.content>
+                <x-hw::pagination.item>
+                    <x-hw::pagination.previous href="/users?page=1" turbo-stream />
+                </x-hw::pagination.item>
+                <x-hw::pagination.item>
+                    <x-hw::pagination.link href="/users?page=2" turbo-stream>2</x-hw::pagination.link>
+                </x-hw::pagination.item>
+                <x-hw::pagination.item>
+                    <x-hw::pagination.link active turbo-stream>3</x-hw::pagination.link>
+                </x-hw::pagination.item>
+                <x-hw::pagination.item>
+                    <x-hw::pagination.next disabled turbo-stream />
+                </x-hw::pagination.item>
+            </x-hw::pagination.content>
+        </x-hw::pagination>
+    BLADE);
+
+    $html = (string) $view;
+
+    expect(substr_count($html, 'data-turbo-stream='))->toBe(2);
+
+    preg_match('/<span[^>]*aria-current="page"[^>]*>/', $html, $currentPage);
+    preg_match('/<span[^>]*data-slot="pagination-next"[^>]*>/', $html, $disabledNext);
+
+    expect($currentPage[0] ?? '')->not->toContain('data-turbo-stream')
+        ->and($disabledNext[0] ?? '')->not->toContain('data-turbo-stream');
+});
+
+it('allows previous and next aria labels to be customized', function () {
+    $paginator = new LengthAwarePaginator(range(1, 10), 200, 10, 10, ['path' => '/users']);
+
+    $view = $this->blade(
+        '<x-hw::pagination :paginator="$paginator" display="icons" previous-aria-label="Previous results page" next-aria-label="Next results page" />',
+        ['paginator' => $paginator],
+    );
+
+    expect((string) $view)
+        ->toContain('aria-label="Previous results page"')
+        ->toContain('aria-label="Next results page"')
+        ->not->toContain('aria-label="Go to previous page"')
+        ->not->toContain('aria-label="Go to next page"');
+});
+
 it('omits empty previous and next label spans', function () {
     $paginator = new LengthAwarePaginator(range(1, 10), 200, 10, 10, ['path' => '/users']);
 

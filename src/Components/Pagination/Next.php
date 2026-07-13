@@ -12,6 +12,8 @@ class Next extends Component
         public ?string $label = 'Next',
         public ?string $turboFrame = null,
         public string $size = 'default',
+        public bool $turboStream = false,
+        public string $ariaLabel = 'Go to next page',
     ) {}
 
     public function render()

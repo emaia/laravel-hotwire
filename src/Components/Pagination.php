@@ -18,6 +18,9 @@ class Pagination extends Component
         public ?string $nextLabel = 'Next',
         public string $ellipsisLabel = 'More pages',
         public string $display = 'full',
+        public bool $turboStream = false,
+        public string $previousAriaLabel = 'Go to previous page',
+        public string $nextAriaLabel = 'Go to next page',
     ) {}
 
     public function render()

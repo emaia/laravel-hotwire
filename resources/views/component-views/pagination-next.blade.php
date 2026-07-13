@@ -3,13 +3,15 @@
     $tag = $isDisabled ? 'span' : 'a';
     $hasLabel = $label !== null && $label !== '';
     $controlSize = $hasLabel ? $size : 'icon';
+    $controlAttributes = $tag === 'a' ? $attributes : $attributes->except(['data-turbo-frame', 'data-turbo-stream']);
 @endphp
 
 <{{ $tag }}
-    {{ $attributes->merge([
+    {{ $controlAttributes->merge([
         'href' => $tag === 'a' ? $href : null,
         'data-turbo-frame' => $tag === 'a' ? $turboFrame : null,
-        'aria-label' => 'Go to next page',
+        'data-turbo-stream' => $tag === 'a' && $turboStream ? true : null,
+        'aria-label' => $ariaLabel,
         'aria-disabled' => $isDisabled ? 'true' : null,
         'data-slot' => 'pagination-next',
         'data-size' => $controlSize,
