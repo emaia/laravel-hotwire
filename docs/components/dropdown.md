@@ -11,21 +11,22 @@ focus to the trigger), optional close-on-select, and animated open/close. Wraps 
 <hw:dropdown>
     <x-slot:trigger>
         Options
-        <hw:icon name="chevron-down" data-slot="dropdown-trigger-icon" />
+        <hw:icon name="chevron-down" data-slot="dropdown-trigger-icon"/>
     </x-slot:trigger>
 
-    <a href="/account" class="block px-4 py-2 text-sm hover:bg-gray-100">Account</a>
-    <a href="/support" class="block px-4 py-2 text-sm hover:bg-gray-100">Support</a>
-    <form action="/logout" method="post">
-        @csrf
-        <button type="submit" class="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100">Sign out</button>
-    </form>
+    <hw:dropdown.group>
+        <hw:dropdown.label>Account</hw:dropdown.label>
+        <hw:dropdown.item href="/account">Profile</hw:dropdown.item>
+        <hw:dropdown.item href="/support">Support</hw:dropdown.item>
+        <hw:dropdown.separator/>
+        <hw:dropdown.item variant="destructive">Sign out</hw:dropdown.item>
+    </hw:dropdown.group>
 </hw:dropdown>
 ```
 
 The component renders the `<button>` trigger and the menu, links them via `id`/`aria-controls`, and keeps
-`aria-expanded` in sync. Menu items are your own markup;
-clicking an `<a>` or `<button>` closes the menu by default.
+`aria-expanded` in sync. Use the menu subcomponents for common item markup, or bring your own markup when you need
+custom interactive content. Clicking an `<a>` or `<button>` inside the menu closes it by default.
 
 Add `data-slot="dropdown-trigger-icon"` to a chevron inside the trigger when you want it to rotate with the open
 state. The Nova preset targets the trigger's `aria-expanded="true"` state, so no `group-*` class is required.
@@ -35,18 +36,49 @@ state. The Nova preset targets the trigger's `aria-expanded="true"` state, so no
 > the click wiring. Style the button by passing classes/attributes on the slot tag itself
 > (`<x-slot:trigger class="btn-outline">…</x-slot:trigger>`) or with the `trigger-class` prop.
 
+## Menu Subcomponents
+
+```html
+
+<hw:dropdown align="end">
+    <x-slot:trigger>Command menu</x-slot:trigger>
+
+    <hw:dropdown.group>
+        <hw:dropdown.label inset>Project</hw:dropdown.label>
+        <hw:dropdown.item href="/projects/new" inset>
+            New project
+            <hw:dropdown.shortcut>N</hw:dropdown.shortcut>
+        </hw:dropdown.item>
+        <hw:dropdown.separator/>
+        <hw:dropdown.item disabled>Archive</hw:dropdown.item>
+    </hw:dropdown.group>
+</hw:dropdown>
+```
+
+| Component            | Description                                                         |
+|----------------------|---------------------------------------------------------------------|
+| `dropdown.group`     | Semantic wrapper for related menu content                           |
+| `dropdown.label`     | Section label; accepts `inset`                                      |
+| `dropdown.item`      | Link or button item; accepts `href`, `variant`, `disabled`, `inset` |
+| `dropdown.separator` | Horizontal visual separator                                         |
+| `dropdown.shortcut`  | Trailing shortcut/helper text, usually inside an item               |
+
+`dropdown.item` renders an `<a>` when `href` is present, otherwise it renders a `<button type="button">`. Use
+`variant="destructive"` for destructive actions. Disabled link items keep their `href` for semantics but receive
+`aria-disabled="true"` and `tabindex="-1"`.
+
 ## Props
 
-| Prop              | Type     | Default                          | Description                                                             |
-|-------------------|----------|----------------------------------|-------------------------------------------------------------------------|
-| `id`              | `string` | `uniqid('dropdown-')`            | The menu's `id` (and the trigger's `aria-controls`)                     |
-| `align`           | `string` | `start`                          | Menu alignment: `start` or `end` (logical, so RTL-aware)                |
-| `open`            | `bool`   | `false`                          | Start open (no animation)                                               |
-| `close-on-select` | `bool`   | `true`                           | Close when an `<a>`/`<button>` inside the menu is clicked               |
-| `transition`      | `bool`   | `true`                           | Include the default enter/leave transition classes                      |
-| `trigger-class`   | `string` | `inline-flex items-center gap-1` | Trigger button layout classes (override freely)                         |
-| `width`           | `string` | `w-56`                           | Menu width utility (override as needed)                                 |
-| `menu-class`      | `string` | `''`                             | Extra classes appended to the menu                                      |
+| Prop              | Type     | Default               | Description                                                           |
+|-------------------|----------|-----------------------|-----------------------------------------------------------------------|
+| `id`              | `string` | `uniqid('dropdown-')` | The menu's `id` (and the trigger's `aria-controls`)                   |
+| `align`           | `string` | `start`               | Menu alignment: `start` or `end` (logical, so RTL-aware)              |
+| `open`            | `bool`   | `false`               | Start open (no animation)                                             |
+| `close-on-select` | `bool`   | `true`                | Close when an `<a>`/`<button>` inside the menu is clicked             |
+| `transition`      | `bool`   | `true`                | Include the default enter/leave transition classes                    |
+| `trigger-class`   | `string` | `''`                  | Trigger button classes; the Nova preset styles the trigger by default |
+| `width`           | `string` | `''`                  | Menu width classes; the Nova preset applies the default width         |
+| `menu-class`      | `string` | `''`                  | Extra classes appended to the menu                                    |
 
 The `trigger` slot's own attributes are merged onto the rendered button — e.g.
 `<x-slot:trigger class="btn">` adds `btn` to it. Use `trigger-class` to replace the default layout classes, or the
@@ -62,7 +94,7 @@ overflow. Both are logical, so they flip correctly under RTL.
 
 <hw:dropdown align="end">
     <x-slot:trigger>Menu</x-slot:trigger>
-    <a href="/x" class="block px-4 py-2 text-sm">Item</a>
+    <hw:dropdown.item href="/x">Item</hw:dropdown.item>
 </hw:dropdown>
 ```
 
@@ -76,8 +108,12 @@ where needed with `data-action="dropdown#close"`:
 <hw:dropdown :close-on-select="false">
     <x-slot:trigger>Filters</x-slot:trigger>
 
-    <label class="block px-4 py-2 text-sm"><input type="checkbox" name="active"/> Active</label>
-    <button type="button" data-action="dropdown#close" class="block w-full px-4 py-2 text-left text-sm">Apply</button>
+    <label>
+        <input type="checkbox" name="active"/>
+        Active
+    </label>
+
+    <hw:dropdown.item data-action="dropdown#close">Apply</hw:dropdown.item>
 </hw:dropdown>
 ```
 
