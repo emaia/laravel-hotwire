@@ -1,6 +1,8 @@
 @php
     $isDisabled = $disabled || $href === null;
     $tag = $isDisabled ? 'span' : 'a';
+    $hasLabel = $label !== null && $label !== '';
+    $controlSize = $hasLabel ? $size : 'icon';
 @endphp
 
 <{{ $tag }}
@@ -10,10 +12,12 @@
         'aria-label' => 'Go to next page',
         'aria-disabled' => $isDisabled ? 'true' : null,
         'data-slot' => 'pagination-next',
-        'data-size' => 'default',
+        'data-size' => $controlSize,
         'data-disabled' => $isDisabled ? 'true' : null,
     ]) }}
 >
-    <span data-slot="pagination-next-label">{{ $label }}</span>
+    @if ($hasLabel)
+        <span data-slot="pagination-next-label">{{ $label }}</span>
+    @endif
     <x-hw::icon name="chevron-right" data-icon="inline-end" aria-hidden="true" />
 </{{ $tag }}>

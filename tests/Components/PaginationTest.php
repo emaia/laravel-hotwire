@@ -2,7 +2,9 @@
 
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
+use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\Paginator;
 
 it('renders composed pagination subcomponents', function () {
     $view = $this->blade(<<<'BLADE'
@@ -69,6 +71,118 @@ it('renders links from a length-aware paginator', function () {
         ->toContain('aria-current="page"')
         ->toContain('data-active="true"')
         ->not->toContain('href="/users?page=10"');
+});
+
+it('omits empty previous and next label spans', function () {
+    $paginator = new LengthAwarePaginator(range(1, 10), 200, 10, 10, ['path' => '/users']);
+
+    $empty = $this->blade('<x-hw::pagination :paginator="$paginator" previous-label="" next-label="" />', [
+        'paginator' => $paginator,
+    ]);
+
+    expect((string) $empty)
+        ->toContain('data-slot="pagination-previous"')
+        ->toContain('data-slot="pagination-next"')
+        ->toContain('data-size="icon"')
+        ->not->toContain('data-slot="pagination-previous-label"')
+        ->not->toContain('data-slot="pagination-next-label"');
+
+    $null = $this->blade('<x-hw::pagination :paginator="$paginator" :previous-label="null" :next-label="null" />', [
+        'paginator' => $paginator,
+    ]);
+
+    expect((string) $null)
+        ->toContain('data-slot="pagination-previous"')
+        ->toContain('data-slot="pagination-next"')
+        ->toContain('data-size="icon"')
+        ->not->toContain('data-slot="pagination-previous-label"')
+        ->not->toContain('data-slot="pagination-next-label"');
+});
+
+it('can render only numbered length-aware paginator links', function () {
+    $paginator = new LengthAwarePaginator(range(1, 10), 200, 10, 10, ['path' => '/users']);
+
+    $view = $this->blade('<x-hw::pagination :paginator="$paginator" display="numbers" />', [
+        'paginator' => $paginator,
+    ]);
+
+    expect((string) $view)
+        ->toContain('data-slot="pagination-link"')
+        ->toContain('data-slot="pagination-ellipsis"')
+        ->toContain('aria-current="page"')
+        ->not->toContain('data-slot="pagination-previous"')
+        ->not->toContain('data-slot="pagination-next"');
+});
+
+it('can render only previous and next controls from a length-aware paginator', function () {
+    $paginator = new LengthAwarePaginator(range(1, 10), 200, 10, 10, ['path' => '/users']);
+
+    $view = $this->blade('<x-hw::pagination :paginator="$paginator" display="controls" />', [
+        'paginator' => $paginator,
+    ]);
+
+    expect((string) $view)
+        ->toContain('data-slot="pagination-previous"')
+        ->toContain('data-slot="pagination-next"')
+        ->toContain('data-slot="pagination-previous-label"')
+        ->toContain('data-slot="pagination-next-label"')
+        ->not->toContain('data-slot="pagination-link"')
+        ->not->toContain('data-slot="pagination-ellipsis"');
+});
+
+it('can render icon-only previous and next controls from a length-aware paginator', function () {
+    $paginator = new LengthAwarePaginator(range(1, 10), 200, 10, 10, ['path' => '/users']);
+
+    $view = $this->blade('<x-hw::pagination :paginator="$paginator" display="icons" />', [
+        'paginator' => $paginator,
+    ]);
+
+    expect((string) $view)
+        ->toContain('data-slot="pagination-previous"')
+        ->toContain('data-slot="pagination-next"')
+        ->toContain('data-size="icon"')
+        ->toContain('aria-label="Go to previous page"')
+        ->toContain('aria-label="Go to next page"')
+        ->not->toContain('data-slot="pagination-link"')
+        ->not->toContain('data-slot="pagination-ellipsis"')
+        ->not->toContain('data-slot="pagination-previous-label"')
+        ->not->toContain('data-slot="pagination-next-label"');
+});
+
+it('renders simple paginators with previous and next controls only', function () {
+    $paginator = new Paginator(range(1, 11), 10, 2, ['path' => '/users']);
+
+    $view = $this->blade('<x-hw::pagination :paginator="$paginator" />', [
+        'paginator' => $paginator,
+    ]);
+
+    expect((string) $view)
+        ->toContain('data-slot="pagination-previous"')
+        ->toContain('href="/users?page=1"')
+        ->toContain('data-slot="pagination-next"')
+        ->toContain('href="/users?page=3"')
+        ->not->toContain('data-slot="pagination-link"')
+        ->not->toContain('data-slot="pagination-ellipsis"');
+});
+
+it('renders cursor paginators with previous and next controls only', function () {
+    $paginator = new CursorPaginator([
+        ['id' => 1],
+        ['id' => 2],
+        ['id' => 3],
+    ], 2, null, ['path' => '/users', 'parameters' => ['id']]);
+
+    $view = $this->blade('<x-hw::pagination :paginator="$paginator" />', [
+        'paginator' => $paginator,
+    ]);
+
+    expect((string) $view)
+        ->toContain('data-slot="pagination-previous"')
+        ->toContain('aria-disabled="true"')
+        ->toContain('data-slot="pagination-next"')
+        ->toContain('href="/users?cursor=')
+        ->not->toContain('data-slot="pagination-link"')
+        ->not->toContain('data-slot="pagination-ellipsis"');
 });
 
 it('does not render automatic pagination when the paginator has no extra pages', function () {

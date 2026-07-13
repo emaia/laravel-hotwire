@@ -116,7 +116,7 @@ return [
             'view' => 'hotwire::component-views.pagination',
             'docs' => 'docs/components/pagination.md',
             'category' => 'display',
-            'description' => 'Pagination navigation primitives with LengthAwarePaginator and Turbo Frame support',
+            'description' => 'Pagination navigation primitives with Laravel paginator display modes and Turbo Frame support',
             'controllers' => [],
         ],
         'card' => [

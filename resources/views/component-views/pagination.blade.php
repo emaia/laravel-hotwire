@@ -8,6 +8,7 @@
                             :href="$link['url']"
                             :disabled="$link['disabled']"
                             :label="$link['label']"
+                            :size="$link['size']"
                             :turbo-frame="$turboFrame"
                         />
                     @elseif ($link['type'] === 'next')
@@ -15,6 +16,7 @@
                             :href="$link['url']"
                             :disabled="$link['disabled']"
                             :label="$link['label']"
+                            :size="$link['size']"
                             :turbo-frame="$turboFrame"
                         />
                     @elseif ($link['type'] === 'ellipsis')

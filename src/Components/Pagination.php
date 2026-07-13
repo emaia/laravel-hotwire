@@ -2,18 +2,22 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
-use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Contracts\Pagination\CursorPaginator as CursorPaginatorContract;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator as LengthAwarePaginatorContract;
+use Illuminate\Contracts\Pagination\Paginator as PaginatorContract;
+use Illuminate\Pagination\UrlWindow;
 use Illuminate\View\Component;
 
 class Pagination extends Component
 {
     public function __construct(
-        public ?LengthAwarePaginator $paginator = null,
+        public PaginatorContract|CursorPaginatorContract|null $paginator = null,
         public string $label = 'Pagination',
         public ?string $turboFrame = null,
-        public string $previousLabel = 'Previous',
-        public string $nextLabel = 'Next',
+        public ?string $previousLabel = 'Previous',
+        public ?string $nextLabel = 'Next',
         public string $ellipsisLabel = 'More pages',
+        public string $display = 'full',
     ) {}
 
     public function render()
@@ -29,7 +33,7 @@ class Pagination extends Component
     }
 
     /**
-     * @return array<int, array{type: string, label: string, url: string|null, active: bool, disabled: bool}>
+     * @return array<int, array{type: string, label: string|null, url: string|null, active: bool, disabled: bool, size?: string}>
      */
     public function normalizedLinks(): array
     {
@@ -37,51 +41,102 @@ class Pagination extends Component
             return [];
         }
 
-        $links = $this->paginator->linkCollection()->values();
-        $lastIndex = $links->count() - 1;
+        $display = $this->resolvedDisplay();
+        $links = [];
 
-        return $links->map(function (array $link, int $index) use ($lastIndex): array {
-            $url = $link['url'] ?? null;
-            $active = (bool) ($link['active'] ?? false);
-            $label = (string) ($link['label'] ?? '');
+        if ($this->showsControls($display)) {
+            $links[] = $this->controlLink('previous', $this->paginator->previousPageUrl(), $this->previousLabel, $display);
+        }
 
-            if ($index === 0) {
-                return [
-                    'type' => 'previous',
-                    'label' => $this->previousLabel,
-                    'url' => is_string($url) ? $url : null,
-                    'active' => false,
-                    'disabled' => ! is_string($url),
-                ];
-            }
+        if ($this->paginator instanceof LengthAwarePaginatorContract && in_array($display, ['full', 'numbers'], true)) {
+            array_push($links, ...$this->numberedLinks($this->paginator));
+        }
 
-            if ($index === $lastIndex) {
-                return [
-                    'type' => 'next',
-                    'label' => $this->nextLabel,
-                    'url' => is_string($url) ? $url : null,
-                    'active' => false,
-                    'disabled' => ! is_string($url),
-                ];
-            }
+        if ($this->showsControls($display)) {
+            $links[] = $this->controlLink('next', $this->paginator->nextPageUrl(), $this->nextLabel, $display);
+        }
 
-            if (! is_string($url) && $label === '...') {
-                return [
+        return $links;
+    }
+
+    private function resolvedDisplay(): string
+    {
+        $display = in_array($this->display, ['full', 'numbers', 'controls', 'icons'], true)
+            ? $this->display
+            : 'full';
+
+        if (! $this->paginator instanceof LengthAwarePaginatorContract && in_array($display, ['full', 'numbers'], true)) {
+            return 'controls';
+        }
+
+        return $display;
+    }
+
+    private function showsControls(string $display): bool
+    {
+        return in_array($display, ['full', 'controls', 'icons'], true);
+    }
+
+    /**
+     * @return array<int, array{type: string, label: string, url: string|null, active: bool, disabled: bool}>
+     */
+    private function numberedLinks(LengthAwarePaginatorContract $paginator): array
+    {
+        $links = [];
+        $window = UrlWindow::make($paginator);
+
+        $elements = array_filter([
+            $window['first'],
+            is_array($window['slider']) ? '...' : null,
+            $window['slider'],
+            is_array($window['last']) ? '...' : null,
+            $window['last'],
+        ]);
+
+        foreach ($elements as $element) {
+            if (is_string($element)) {
+                $links[] = [
                     'type' => 'ellipsis',
                     'label' => $this->ellipsisLabel,
                     'url' => null,
                     'active' => false,
                     'disabled' => true,
                 ];
+
+                continue;
             }
 
-            return [
-                'type' => 'page',
-                'label' => $label,
-                'url' => is_string($url) ? $url : null,
-                'active' => $active,
-                'disabled' => ! is_string($url) && ! $active,
-            ];
-        })->all();
+            foreach ($element as $page => $url) {
+                $active = $paginator->currentPage() === (int) $page;
+
+                $links[] = [
+                    'type' => 'page',
+                    'label' => (string) $page,
+                    'url' => is_string($url) ? $url : null,
+                    'active' => $active,
+                    'disabled' => ! is_string($url) && ! $active,
+                ];
+            }
+        }
+
+        return $links;
+    }
+
+    /**
+     * @return array{type: string, label: string|null, url: string|null, active: bool, disabled: bool, size: string}
+     */
+    private function controlLink(string $type, ?string $url, ?string $label, string $display): array
+    {
+        $label = $display === 'icons' ? null : $label;
+        $hasLabel = $label !== null && $label !== '';
+
+        return [
+            'type' => $type,
+            'label' => $label,
+            'url' => $url,
+            'active' => false,
+            'disabled' => ! is_string($url),
+            'size' => $hasLabel ? 'default' : 'icon',
+        ];
     }
 }

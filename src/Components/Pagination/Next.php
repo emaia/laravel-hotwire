@@ -9,8 +9,9 @@ class Next extends Component
     public function __construct(
         public ?string $href = null,
         public bool $disabled = false,
-        public string $label = 'Next',
+        public ?string $label = 'Next',
         public ?string $turboFrame = null,
+        public string $size = 'default',
     ) {}
 
     public function render()

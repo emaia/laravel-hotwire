@@ -62,8 +62,8 @@
     :is([data-slot="pagination-link"], [data-slot="pagination-previous"], [data-slot="pagination-next"])[data-size="icon"] { @apply size-8; }
     :is([data-slot="pagination-link"], [data-slot="pagination-previous"], [data-slot="pagination-next"])[data-size="default"] { @apply h-8 gap-1.5 px-2.5; }
     [data-slot="pagination-link"][data-active="true"] { @apply border-border bg-background hover:bg-muted hover:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50; }
-    [data-slot="pagination-previous"] { @apply pl-1.5; }
-    [data-slot="pagination-next"] { @apply pr-1.5; }
+    [data-slot="pagination-previous"][data-size="default"] { @apply pl-1.5; }
+    [data-slot="pagination-next"][data-size="default"] { @apply pr-1.5; }
     [data-slot="pagination-previous-label"], [data-slot="pagination-next-label"] { @apply hidden sm:block; }
     [data-slot="pagination-ellipsis"] { @apply flex size-8 items-center justify-center text-muted-foreground [&_svg:not([class*='size-'])]:size-4; }
 
