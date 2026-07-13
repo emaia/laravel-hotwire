@@ -214,6 +214,31 @@
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Dropdown"
                 },
                 {
+                    "name": "dropdown.group",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Dropdown\\Group"
+                },
+                {
+                    "name": "dropdown.item",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Dropdown\\Item"
+                },
+                {
+                    "name": "dropdown.label",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Dropdown\\Label"
+                },
+                {
+                    "name": "dropdown.separator",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Dropdown\\Separator"
+                },
+                {
+                    "name": "dropdown.shortcut",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Dropdown\\Shortcut"
+                },
+                {
                     "name": "empty-state",
                     "namespace": "hw",
                     "className": "\\Emaia\\LaravelHotwire\\Components\\EmptyState"

@@ -376,6 +376,13 @@
     [data-slot="dropdown-menu"][data-align="end"] { @apply end-0; }
     [data-slot="dropdown-menu"][data-open="false"] { @apply hidden pointer-events-none scale-95 opacity-0; }
     [data-slot="dropdown-menu"][data-open="true"] { @apply scale-100 opacity-100; }
+    [data-slot="dropdown-group"] { @apply block; }
+    [data-slot="dropdown-label"] { @apply px-1.5 py-1 text-xs font-medium text-muted-foreground data-[inset=true]:pl-7; }
+    [data-slot="dropdown-item"] { @apply relative flex w-full cursor-default select-none appearance-none items-center gap-1.5 rounded-md border-0 bg-transparent px-1.5 py-1 text-left text-sm text-popover-foreground outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 data-[inset=true]:pl-7 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4; }
+    [data-slot="dropdown-item"]:is(:hover, :focus-visible) [data-slot="dropdown-shortcut"] { @apply text-accent-foreground; }
+    [data-slot="dropdown-item"][data-variant="destructive"] { @apply text-destructive hover:bg-destructive/10 hover:text-destructive focus-visible:bg-destructive/10 focus-visible:text-destructive dark:hover:bg-destructive/20 dark:focus-visible:bg-destructive/20 [&_svg]:text-destructive; }
+    [data-slot="dropdown-separator"] { @apply -mx-1 my-1 h-px bg-border; }
+    [data-slot="dropdown-shortcut"] { @apply ml-auto text-xs tracking-widest text-muted-foreground; }
 
     [data-slot="spinner"] { @apply animate-spin text-foreground/60; }
     [data-slot="scroll-progress"] { @apply fixed left-0 top-0 z-50 h-1 bg-primary; }

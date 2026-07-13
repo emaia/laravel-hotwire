@@ -325,8 +325,27 @@ it('defines overlay and menu slots in the nova preset', function () use ($novaPr
         ->toContain('[data-slot="dropdown-trigger-icon"]')
         ->toContain('[data-slot="dropdown-trigger"][aria-expanded="true"] [data-slot="dropdown-trigger-icon"]')
         ->toContain('[data-slot="dropdown-menu"]')
+        ->toContain('[data-slot="dropdown-group"]')
+        ->toContain('[data-slot="dropdown-label"]')
+        ->toContain('[data-slot="dropdown-item"]')
+        ->toContain('[data-slot="dropdown-separator"]')
+        ->toContain('[data-slot="dropdown-shortcut"]')
         ->toContain('[data-slot="dropdown-menu"][data-width="default"]')
         ->toContain('[data-slot="dropdown-menu"][data-align="start"]');
+});
+
+it('keeps dropdown menu subcomponent styling aligned with the nova reference', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain('[data-slot="dropdown-label"] { @apply px-1.5 py-1 text-xs font-medium text-muted-foreground data-[inset=true]:pl-7; }')
+        ->toContain('[data-slot="dropdown-item"] { @apply relative flex w-full cursor-default select-none appearance-none items-center gap-1.5 rounded-md border-0 bg-transparent px-1.5 py-1 text-left text-sm text-popover-foreground outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground')
+        ->toContain('[data-slot="dropdown-item"]:is(:hover, :focus-visible) [data-slot="dropdown-shortcut"] { @apply text-accent-foreground; }')
+        ->toContain('[data-slot="dropdown-item"][data-variant="destructive"] { @apply text-destructive hover:bg-destructive/10 hover:text-destructive focus-visible:bg-destructive/10 focus-visible:text-destructive')
+        ->toContain('[data-slot="dropdown-separator"] { @apply -mx-1 my-1 h-px bg-border; }')
+        ->toContain('[data-slot="dropdown-shortcut"] { @apply ml-auto text-xs tracking-widest text-muted-foreground; }')
+        ->not->toContain('[data-slot="dropdown-label"] { @apply px-2 py-1.5 text-sm font-medium text-foreground')
+        ->not->toContain('[data-slot="dropdown-item"] { @apply relative flex w-full cursor-default appearance-none items-center gap-2');
 });
 
 it('defines breadcrumb slots in the nova preset', function () use ($novaPresetPath) {

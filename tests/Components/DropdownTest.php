@@ -1,5 +1,7 @@
 <?php
 
+use Emaia\LaravelHotwire\Support\ComponentAliases;
+
 it('renders the controller, trigger button and menu wiring', function () {
     $view = $this->blade('
         <x-hw::dropdown>
@@ -228,4 +230,61 @@ it('overrides menu width and accepts extra menu classes', function () {
     $view->assertSee('w-72', false);
     $view->assertDontSee('w-56', false);
     $view->assertSee('text-sm', false);
+});
+
+it('renders composed menu subcomponents', function () {
+    $view = $this->blade('
+        <x-hw::dropdown id="account-menu">
+            <x-slot:trigger>Account</x-slot:trigger>
+
+            <x-hw::dropdown.group>
+                <x-hw::dropdown.label>Workspace</x-hw::dropdown.label>
+                <x-hw::dropdown.item href="/settings">
+                    Settings
+                    <x-hw::dropdown.shortcut>Cmd+,</x-hw::dropdown.shortcut>
+                </x-hw::dropdown.item>
+                <x-hw::dropdown.separator />
+                <x-hw::dropdown.item variant="destructive">Sign out</x-hw::dropdown.item>
+            </x-hw::dropdown.group>
+        </x-hw::dropdown>
+    ');
+
+    $view->assertSee('data-slot="dropdown-group"', false);
+    $view->assertSee('role="group"', false);
+    $view->assertSee('data-slot="dropdown-label"', false);
+    $view->assertSee('data-slot="dropdown-item"', false);
+    $view->assertSee('href="/settings"', false);
+    $view->assertSee('data-slot="dropdown-shortcut"', false);
+    $view->assertSee('data-slot="dropdown-separator"', false);
+    $view->assertSee('role="separator"', false);
+    $view->assertSee('data-variant="destructive"', false);
+});
+
+it('renders dropdown items as links or buttons with state hooks', function () {
+    $view = $this->blade('
+        <x-hw::dropdown>
+            <x-slot:trigger>Actions</x-slot:trigger>
+            <x-hw::dropdown.item href="/billing" disabled inset data-test="link">Billing</x-hw::dropdown.item>
+            <x-hw::dropdown.item type="submit" data-test="button">Save</x-hw::dropdown.item>
+        </x-hw::dropdown>
+    ');
+
+    $view->assertSee('<a', false);
+    $view->assertSee('href="/billing"', false);
+    $view->assertSee('data-disabled="true"', false);
+    $view->assertSee('aria-disabled="true"', false);
+    $view->assertSee('tabindex="-1"', false);
+    $view->assertSee('data-inset="true"', false);
+    $view->assertSee('<button', false);
+    $view->assertSee('type="submit"', false);
+    $view->assertSee('data-test="button"', false);
+});
+
+it('registers dropdown subcomponent aliases', function () {
+    expect(ComponentAliases::subComponents())
+        ->toHaveKey('dropdown.item')
+        ->toHaveKey('dropdown.label')
+        ->toHaveKey('dropdown.separator')
+        ->toHaveKey('dropdown.shortcut')
+        ->toHaveKey('dropdown.group');
 });
