@@ -59,6 +59,41 @@
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Badge"
                 },
                 {
+                    "name": "breadcrumb",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Breadcrumb"
+                },
+                {
+                    "name": "breadcrumb.ellipsis",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Breadcrumb\\Ellipsis"
+                },
+                {
+                    "name": "breadcrumb.item",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Breadcrumb\\Item"
+                },
+                {
+                    "name": "breadcrumb.link",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Breadcrumb\\Link"
+                },
+                {
+                    "name": "breadcrumb.list",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Breadcrumb\\BreadcrumbList"
+                },
+                {
+                    "name": "breadcrumb.page",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Breadcrumb\\Page"
+                },
+                {
+                    "name": "breadcrumb.separator",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Breadcrumb\\Separator"
+                },
+                {
                     "name": "button",
                     "namespace": "hw",
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Button"

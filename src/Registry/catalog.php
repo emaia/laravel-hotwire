@@ -3,6 +3,7 @@
 use Emaia\LaravelHotwire\Components\Alert;
 use Emaia\LaravelHotwire\Components\AlertDialog;
 use Emaia\LaravelHotwire\Components\Badge;
+use Emaia\LaravelHotwire\Components\Breadcrumb;
 use Emaia\LaravelHotwire\Components\Button;
 use Emaia\LaravelHotwire\Components\ButtonGroup;
 use Emaia\LaravelHotwire\Components\Card;
@@ -99,6 +100,14 @@ return [
             'docs' => 'docs/components/button-group.md',
             'category' => 'display',
             'description' => 'Groups related buttons and button-like controls with shared borders and orientation state',
+            'controllers' => [],
+        ],
+        'breadcrumb' => [
+            'class' => Breadcrumb::class,
+            'view' => 'hotwire::component-views.breadcrumb',
+            'docs' => 'docs/components/breadcrumb.md',
+            'category' => 'display',
+            'description' => 'Semantic navigation trail with composed subcomponents and an items shortcut',
             'controllers' => [],
         ],
         'card' => [

@@ -328,3 +328,16 @@ it('defines overlay and menu slots in the nova preset', function () use ($novaPr
         ->toContain('[data-slot="dropdown-menu"][data-width="default"]')
         ->toContain('[data-slot="dropdown-menu"][data-align="start"]');
 });
+
+it('defines breadcrumb slots in the nova preset', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain('[data-slot="breadcrumb"]')
+        ->toContain('[data-slot="breadcrumb-list"]')
+        ->toContain('[data-slot="breadcrumb-item"]')
+        ->toContain('[data-slot="breadcrumb-link"]')
+        ->toContain('[data-slot="breadcrumb-page"]')
+        ->toContain('[data-slot="breadcrumb-separator"]')
+        ->toContain('[data-slot="breadcrumb-ellipsis"]');
+});
