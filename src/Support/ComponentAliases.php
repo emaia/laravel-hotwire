@@ -111,6 +111,12 @@ final class ComponentAliases
             'item.separator' => Components\Item\Separator::class,
             'item.title' => Components\Item\Title::class,
             'kbd.group' => Components\Kbd\Group::class,
+            'pagination.content' => Components\Pagination\Content::class,
+            'pagination.item' => Components\Pagination\Item::class,
+            'pagination.link' => Components\Pagination\Link::class,
+            'pagination.previous' => Components\Pagination\Previous::class,
+            'pagination.next' => Components\Pagination\Next::class,
+            'pagination.ellipsis' => Components\Pagination\Ellipsis::class,
         ];
     }
 }

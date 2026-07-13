@@ -31,6 +31,7 @@ use Emaia\LaravelHotwire\Components\Kbd;
 use Emaia\LaravelHotwire\Components\Map;
 use Emaia\LaravelHotwire\Components\Modal;
 use Emaia\LaravelHotwire\Components\Optimistic;
+use Emaia\LaravelHotwire\Components\Pagination;
 use Emaia\LaravelHotwire\Components\RichText;
 use Emaia\LaravelHotwire\Components\ScrollProgress;
 use Emaia\LaravelHotwire\Components\Select;
@@ -108,6 +109,14 @@ return [
             'docs' => 'docs/components/breadcrumb.md',
             'category' => 'display',
             'description' => 'Semantic navigation trail with composed subcomponents and an items shortcut',
+            'controllers' => [],
+        ],
+        'pagination' => [
+            'class' => Pagination::class,
+            'view' => 'hotwire::component-views.pagination',
+            'docs' => 'docs/components/pagination.md',
+            'category' => 'display',
+            'description' => 'Pagination navigation primitives with Laravel paginator display modes and Turbo Frame support',
             'controllers' => [],
         ],
         'card' => [

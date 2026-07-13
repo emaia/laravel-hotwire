@@ -360,3 +360,20 @@ it('defines breadcrumb slots in the nova preset', function () use ($novaPresetPa
         ->toContain('[data-slot="breadcrumb-separator"]')
         ->toContain('[data-slot="breadcrumb-ellipsis"]');
 });
+
+it('defines pagination slots in the nova preset', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain('[data-slot="pagination"]')
+        ->toContain('[data-slot="pagination-content"]')
+        ->toContain('[data-slot="pagination-item"]')
+        ->toContain('[data-slot="pagination-link"]')
+        ->toContain('[data-slot="pagination-previous"]')
+        ->toContain('[data-slot="pagination-previous"][data-size="default"]')
+        ->toContain('[data-slot="pagination-next"]')
+        ->toContain('[data-slot="pagination-next"][data-size="default"]')
+        ->toContain('[data-slot="pagination-ellipsis"]')
+        ->toContain('[data-slot="pagination-previous-label"]')
+        ->toContain('[data-slot="pagination-next-label"]');
+});
