@@ -197,6 +197,12 @@ it('defines component styles in the nova preset via data-slot selectors', functi
         ->toContain('[data-slot="field-separator"]')
         ->toContain('[data-slot="button"]')
         ->toContain('[data-slot="badge"]')
+        ->toContain('[data-slot="avatar"]')
+        ->toContain('[data-slot="avatar-image"]')
+        ->toContain('[data-slot="avatar-fallback"]')
+        ->toContain('[data-slot="avatar-badge"]')
+        ->toContain('[data-slot="avatar-group"]')
+        ->toContain('[data-slot="avatar-group-count"]')
         ->toContain('[data-slot="button-group"]')
         ->toContain('[data-slot="button-group-text"]')
         ->toContain('[data-slot="button-group-separator"]')
@@ -227,6 +233,37 @@ it('keeps item icon media unframed like the shadcn base-nova reference', functio
     expect($css)
         ->toContain('[data-slot="item-media"][data-variant="icon"] { @apply [&>[data-slot=icon]]:size-4; }')
         ->not->toContain('[data-slot="item-media"][data-variant="icon"] { @apply size-8 rounded-md border border-border bg-background');
+});
+
+it('does not clip avatar badges from the avatar root', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->not->toMatch('/\[data-slot="avatar"\][^{]*\{[^}]*overflow-hidden/')
+        ->toContain('[data-slot="avatar-image"] { @apply absolute inset-0 aspect-square size-full rounded-[inherit] object-cover; }')
+        ->toContain('[data-slot="avatar-fallback"] { @apply flex size-full items-center justify-center rounded-[inherit] bg-muted text-sm text-muted-foreground; }');
+});
+
+it('matches shadcn nova avatar sizing and grouped count behavior', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain('[data-slot="avatar"] { @apply relative isolate inline-flex size-8')
+        ->toContain('[data-slot="avatar"][data-size="sm"] { @apply size-6 text-xs; }')
+        ->toContain('[data-slot="avatar"][data-size="lg"] { @apply size-10; }')
+        ->toContain('[data-slot="avatar-group"] > [data-slot="avatar"] { @apply ring-2 ring-background; }')
+        ->toContain('[data-slot="avatar-group-count"] { @apply relative inline-flex size-8')
+        ->toContain('ring-2 ring-background')
+        ->toContain('[data-slot="avatar-group"]:has(> [data-slot="avatar"][data-size="sm"]) > [data-slot="avatar-group-count"] { @apply size-6 [&>svg]:size-3; }')
+        ->toContain('[data-slot="avatar-group"]:has(> [data-slot="avatar"][data-size="lg"]) > [data-slot="avatar-group-count"] { @apply size-10 [&>svg]:size-5; }');
+});
+
+it('keeps avatar images out of the group stacking order', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain('[data-slot="avatar-image"] { @apply absolute inset-0 aspect-square size-full rounded-[inherit] object-cover; }')
+        ->not->toContain('[data-slot="avatar-image"] { @apply absolute inset-0 z-10');
 });
 
 it('applies destructive alert color to the alert description', function () use ($novaPresetPath) {
