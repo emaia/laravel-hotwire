@@ -122,6 +122,10 @@ final class ComponentAliases
             'pagination.previous' => Components\Pagination\Previous::class,
             'pagination.next' => Components\Pagination\Next::class,
             'pagination.ellipsis' => Components\Pagination\Ellipsis::class,
+            'progress.track' => Components\Progress\Track::class,
+            'progress.indicator' => Components\Progress\Indicator::class,
+            'progress.label' => Components\Progress\Label::class,
+            'progress.value' => Components\Progress\Value::class,
         ];
     }
 }

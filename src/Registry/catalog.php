@@ -34,6 +34,7 @@ use Emaia\LaravelHotwire\Components\Map;
 use Emaia\LaravelHotwire\Components\Modal;
 use Emaia\LaravelHotwire\Components\Optimistic;
 use Emaia\LaravelHotwire\Components\Pagination;
+use Emaia\LaravelHotwire\Components\Progress;
 use Emaia\LaravelHotwire\Components\RichText;
 use Emaia\LaravelHotwire\Components\ScrollProgress;
 use Emaia\LaravelHotwire\Components\Select;
@@ -135,6 +136,14 @@ return [
             'docs' => 'docs/components/pagination.md',
             'category' => 'display',
             'description' => 'Pagination navigation primitives with Laravel paginator display modes and Turbo Frame support',
+            'controllers' => [],
+        ],
+        'progress' => [
+            'class' => Progress::class,
+            'view' => 'hotwire::component-views.progress',
+            'docs' => 'docs/components/progress.md',
+            'category' => 'display',
+            'description' => 'Server-rendered progress primitive with label, value, track and indicator slots',
             'controllers' => [],
         ],
         'card' => [

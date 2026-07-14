@@ -207,6 +207,11 @@ it('defines component styles in the nova preset via data-slot selectors', functi
         ->toContain('[data-slot="button-group"]')
         ->toContain('[data-slot="button-group-text"]')
         ->toContain('[data-slot="button-group-separator"]')
+        ->toContain('[data-slot="progress"]')
+        ->toContain('[data-slot="progress-track"]')
+        ->toContain('[data-slot="progress-indicator"]')
+        ->toContain('[data-slot="progress-label"]')
+        ->toContain('[data-slot="progress-value"]')
         ->toContain('[data-slot="card"]')
         ->toContain('[data-slot="card-header"]')
         ->toContain('[data-slot="card-footer"]')
@@ -421,4 +426,16 @@ it('defines pagination slots in the nova preset', function () use ($novaPresetPa
         ->toContain('[data-slot="pagination-ellipsis"]')
         ->toContain('[data-slot="pagination-previous-label"]')
         ->toContain('[data-slot="pagination-next-label"]');
+});
+
+it('defines progress slots in the nova preset', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain('[data-slot="progress"]')
+        ->toContain('[data-slot="progress-track"]')
+        ->toContain('[data-slot="progress-indicator"]')
+        ->toContain('width: var(--progress-value)')
+        ->toContain('[data-slot="progress-label"]')
+        ->toContain('[data-slot="progress-value"]');
 });
