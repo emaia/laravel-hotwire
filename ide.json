@@ -504,6 +504,11 @@
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Modal\\Title"
                 },
                 {
+                    "name": "multi-select",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\MultiSelect"
+                },
+                {
                     "name": "optimistic",
                     "namespace": "hw",
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Optimistic"

@@ -32,6 +32,7 @@ it('excludes every com-dep controller in core-only mode (empty opt-in)', functio
         ->toContain('"!**/chart_controller.js"')
         ->toContain('"!**/dropdown_controller.js"')
         ->toContain('"!**/map_controller.js"')
+        ->toContain('"!**/multi_select_controller.js"')
         ->toContain('"!**/rich_text_controller.js"')
         ->toContain('"!**/tooltip_controller.js"');
 });
@@ -44,6 +45,7 @@ it('keeps the opted-in com-dep controllers and excludes the rest', function () {
         ->not->toContain('"!**/chart_controller.js"')
         ->toContain('"!**/dropdown_controller.js"')
         ->toContain('"!**/map_controller.js"')
+        ->toContain('"!**/multi_select_controller.js"')
         ->toContain('"!**/rich_text_controller.js"');
 });
 
@@ -102,6 +104,7 @@ it('reports every com-dep controller as included when no exclusions are present'
         ->toContain('chart')
         ->toContain('dropdown')
         ->toContain('map')
+        ->toContain('multi-select')
         ->toContain('rich-text')
         ->toContain('tooltip');
 });

@@ -5,6 +5,8 @@
 
 import { FocusTrap } from "./_focus_trap.js";
 
+const ESCAPE_SCOPE_SELECTOR = "[data-hotwire-escape-scope]";
+
 const bodyScrollLock = {
     count: 0,
     classes: new Set(),
@@ -45,13 +47,15 @@ export function createOverlay(controller, {
     }
 
     function handleEscapeKey(event) {
-        if (closeOnEscape && event.key === "Escape" && isOpen) {
-            if (stopEscapePropagation) {
-                event.stopImmediatePropagation();
-                event.preventDefault();
-            }
-            close();
+        if (!closeOnEscape || event.key !== "Escape" || !isOpen) return;
+        if (isNestedEscapeScopeEvent(event, dialogTarget)) return;
+
+        if (stopEscapePropagation) {
+            event.stopImmediatePropagation();
+            event.preventDefault();
         }
+
+        close();
     }
 
     function handleClickOutside(event) {
@@ -220,6 +224,14 @@ export function createOverlay(controller, {
         closeNow,
         cleanup,
     };
+}
+
+function isNestedEscapeScopeEvent(event, dialogTarget) {
+    if (!dialogTarget || typeof event.target?.closest !== "function") return false;
+
+    const scope = event.target.closest(ESCAPE_SCOPE_SELECTOR);
+
+    return Boolean(scope && scope !== dialogTarget && dialogTarget.contains(scope));
 }
 
 function lockBodyScroll(classes) {

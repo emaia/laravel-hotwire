@@ -432,6 +432,31 @@
     [data-slot="dropdown-separator"] { @apply -mx-1 my-1 h-px bg-border; }
     [data-slot="dropdown-shortcut"] { @apply ml-auto text-xs tracking-widest text-muted-foreground; }
 
+    [data-slot="multi-select"] { @apply relative block w-full max-w-full; }
+    [data-slot="multi-select-native"] { @apply hidden; }
+    [data-slot="multi-select-trigger"] { @apply inline-flex min-h-9 w-full max-w-full shrink-0 items-center justify-between gap-2 overflow-hidden rounded-md border border-input bg-background px-3 py-1 text-left text-base text-foreground shadow-xs transition-colors outline-none hover:bg-muted/50 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm; }
+    [data-slot="multi-select-trigger-icon"] { @apply size-4 shrink-0 opacity-50 transition-transform; }
+    [data-slot="multi-select-trigger"][aria-expanded="true"] [data-slot="multi-select-trigger-icon"] { @apply rotate-180; }
+    [data-slot="multi-select-value"] { @apply min-w-0 flex-1 truncate; }
+    [data-slot="multi-select-content"] { @apply z-50 max-h-(--available-height) w-(--anchor-width) min-w-52 origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10 transition duration-150 ease-out; }
+    [data-slot="multi-select-content"][data-open="false"] { @apply hidden pointer-events-none scale-95 opacity-0; }
+    [data-slot="multi-select-content"][data-open="false"][data-side="bottom"] { @apply -translate-y-1; }
+    [data-slot="multi-select-content"][data-open="false"][data-side="top"] { @apply translate-y-1; }
+    [data-slot="multi-select-content"][data-open="false"][data-side="left"] { @apply translate-x-1; }
+    [data-slot="multi-select-content"][data-open="false"][data-side="right"] { @apply -translate-x-1; }
+    [data-slot="multi-select-content"][data-open="true"] { @apply translate-x-0 translate-y-0 scale-100 opacity-100; }
+    [data-slot="multi-select-content"] [data-slot="input-wrapper"][data-clearable="true"] { @apply mb-1 block; }
+    [data-slot="multi-select-content"] [data-slot="clear-input-button"] { @apply top-1/2 -translate-y-1/2; }
+    [data-slot="multi-select-search"] { @apply mb-0 flex min-h-8 w-full rounded-md border border-input bg-background px-2 py-1 text-sm text-foreground outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50; }
+    [data-slot="multi-select-list"] { @apply grid gap-0.5; }
+    :is([data-slot="multi-select-select-all"], [data-slot="multi-select-option"]) { @apply relative flex w-full cursor-default select-none appearance-none items-center gap-1.5 rounded-md border-0 bg-transparent px-1.5 py-1 text-left text-sm text-popover-foreground outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-inset aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground; }
+    [data-slot="multi-select-indicator"] { @apply grid size-4 shrink-0 place-content-center rounded-[4px] border border-input bg-background text-primary-foreground; }
+    [data-slot="multi-select-option"][data-selected="true"] [data-slot="multi-select-indicator"], [data-slot="multi-select-select-all"][data-selected="true"] [data-slot="multi-select-indicator"] { @apply border-primary bg-primary; }
+    [data-slot="multi-select-option"][data-selected="true"] [data-slot="multi-select-indicator"]::before, [data-slot="multi-select-select-all"][data-selected="true"] [data-slot="multi-select-indicator"]::before { content: ""; width: 0.75rem; height: 0.75rem; background-color: currentColor; mask: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M13.5 4.5 6.75 11.25 3 7.5' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3e%3c/svg%3e") center / contain no-repeat; }
+    [data-slot="multi-select-option-text"] { @apply flex-1 truncate; }
+    [data-slot="multi-select-empty"] { @apply px-1.5 py-2 text-sm text-muted-foreground; }
+    [data-slot="multi-select-validation"] { @apply pointer-events-none absolute bottom-0 left-0 h-px w-full opacity-0; }
+
     [data-slot="progress"] { @apply flex flex-wrap gap-3; }
     [data-slot="progress-track"] { @apply relative flex h-1 w-full items-center overflow-x-hidden rounded-full bg-muted; }
     [data-slot="progress-indicator"] { @apply h-full bg-primary transition-all; width: var(--progress-value); }

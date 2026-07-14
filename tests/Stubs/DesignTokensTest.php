@@ -420,6 +420,31 @@ it('keeps dropdown menu subcomponent styling aligned with the nova reference', f
         ->not->toContain('[data-slot="dropdown-item"] { @apply relative flex w-full cursor-default appearance-none items-center gap-2');
 });
 
+it('defines multi-select slots in the nova preset', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain('[data-slot="multi-select"] { @apply relative block w-full max-w-full; }')
+        ->toContain('[data-slot="multi-select-native"]')
+        ->toContain('[data-slot="multi-select-trigger"]')
+        ->toContain('[data-slot="multi-select-trigger"] { @apply inline-flex min-h-9 w-full max-w-full shrink-0 items-center justify-between gap-2 overflow-hidden')
+        ->toContain('[data-slot="multi-select-trigger-icon"]')
+        ->toContain('[data-slot="multi-select-value"]')
+        ->toContain('[data-slot="multi-select-value"] { @apply min-w-0 flex-1 truncate; }')
+        ->toContain('[data-slot="multi-select-content"]')
+        ->toContain('max-h-(--available-height)')
+        ->toContain('w-(--anchor-width)')
+        ->toContain('origin-(--transform-origin)')
+        ->toContain('[data-slot="multi-select-search"]')
+        ->toContain('[data-slot="multi-select-list"]')
+        ->toContain('[data-slot="multi-select-select-all"]')
+        ->toContain('[data-slot="multi-select-option"]')
+        ->toContain('focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-inset')
+        ->toContain('[data-slot="multi-select-indicator"]')
+        ->toContain('[data-slot="multi-select-empty"]')
+        ->toContain('[data-slot="multi-select-validation"]');
+});
+
 it('defines breadcrumb slots in the nova preset', function () use ($novaPresetPath) {
     $css = file_get_contents($novaPresetPath);
 
