@@ -424,6 +424,12 @@
     [data-slot="dropdown-separator"] { @apply -mx-1 my-1 h-px bg-border; }
     [data-slot="dropdown-shortcut"] { @apply ml-auto text-xs tracking-widest text-muted-foreground; }
 
+    [data-slot="progress"] { @apply flex flex-wrap gap-3; }
+    [data-slot="progress-track"] { @apply relative flex h-1 w-full items-center overflow-x-hidden rounded-full bg-muted; }
+    [data-slot="progress-indicator"] { @apply h-full bg-primary transition-all; width: var(--progress-value); }
+    [data-slot="progress-label"] { @apply text-sm font-medium; }
+    [data-slot="progress-value"] { @apply ml-auto text-sm text-muted-foreground tabular-nums; }
+
     [data-slot="spinner"] { @apply animate-spin text-foreground/60; }
     [data-slot="scroll-progress"] { @apply fixed left-0 top-0 z-50 h-1 bg-primary; }
     [data-slot="timeago"] { @apply text-muted-foreground; }

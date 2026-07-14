@@ -529,6 +529,31 @@
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Pagination\\Previous"
                 },
                 {
+                    "name": "progress",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Progress"
+                },
+                {
+                    "name": "progress.indicator",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Progress\\Indicator"
+                },
+                {
+                    "name": "progress.label",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Progress\\Label"
+                },
+                {
+                    "name": "progress.track",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Progress\\Track"
+                },
+                {
+                    "name": "progress.value",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Progress\\Value"
+                },
+                {
                     "name": "rich-text",
                     "namespace": "hw",
                     "className": "\\Emaia\\LaravelHotwire\\Components\\RichText"
