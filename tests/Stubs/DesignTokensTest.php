@@ -196,6 +196,7 @@ it('defines component styles in the nova preset via data-slot selectors', functi
         ->toContain('[data-slot="field-content"]')
         ->toContain('[data-slot="field-separator"]')
         ->toContain('[data-slot="button"]')
+        ->toContain('[data-slot="aspect-ratio"]')
         ->toContain('[data-slot="badge"]')
         ->toContain('[data-slot="avatar"]')
         ->toContain('[data-slot="avatar-image"]')
@@ -233,6 +234,13 @@ it('keeps item icon media unframed like the shadcn base-nova reference', functio
     expect($css)
         ->toContain('[data-slot="item-media"][data-variant="icon"] { @apply [&>[data-slot=icon]]:size-4; }')
         ->not->toContain('[data-slot="item-media"][data-variant="icon"] { @apply size-8 rounded-md border border-border bg-background');
+});
+
+it('defines aspect ratio styling in the nova preset', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain('[data-slot="aspect-ratio"] { @apply relative aspect-(--ratio); }');
 });
 
 it('does not clip avatar badges from the avatar root', function () use ($novaPresetPath) {

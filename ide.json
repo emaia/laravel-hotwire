@@ -54,6 +54,11 @@
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Alert\\Title"
                 },
                 {
+                    "name": "aspect-ratio",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\AspectRatio"
+                },
+                {
                     "name": "avatar",
                     "namespace": "hw",
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Avatar"
