@@ -7,6 +7,13 @@
     $dropdownAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
         'data-slot' => 'dropdown',
         'data-controller' => $controller,
+        'data-dropdown-side-value' => $side,
+        'data-dropdown-align-value' => $align,
+        'data-dropdown-side-offset-value' => $sideOffset,
+        'data-dropdown-align-offset-value' => $alignOffset,
+        'data-dropdown-strategy-value' => $strategy,
+        'data-dropdown-flip-value' => $flip ? 'true' : 'false',
+        'data-dropdown-shift-value' => $shift ? 'true' : 'false',
     ], $attributes, $stimulus, protectedPrefixes: ['data-dropdown-']);
 @endphp
 
@@ -35,8 +42,8 @@
         id="{{ $id }}"
         data-slot="dropdown-menu"
         data-open="{{ $open ? 'true' : 'false' }}"
+        data-side="{{ $side }}"
         data-align="{{ $align }}"
-        @if ($width === '') data-width="default" @endif
         data-dropdown-target="menu"
         @unless ($closeOnSelect) data-dropdown-close-on-select-value="false" @endunless
         @if ($open) data-dropdown-open-value="true" @endif

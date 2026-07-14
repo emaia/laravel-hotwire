@@ -413,16 +413,17 @@
     [data-slot="sheet-close-icon"] { @apply absolute top-3 right-3 inline-flex size-7 shrink-0 appearance-none items-center justify-center rounded-md border-0 bg-transparent text-popover-foreground opacity-70 outline-none transition-all hover:bg-muted hover:text-foreground hover:opacity-100 focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0; }
     [data-slot="sheet-trigger"], [data-slot="sheet-close"] { @apply inline-flex h-8 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-border bg-background px-2.5 text-sm font-medium transition-all outline-none active:not-aria-[haspopup]:translate-y-px hover:bg-muted hover:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 dark:border-input dark:bg-input/30 dark:hover:bg-input/50; }
 
-    [data-slot="dropdown"] { @apply relative inline-block; }
+    [data-slot="dropdown"] { @apply inline-block; }
     [data-slot="dropdown-trigger"] { @apply inline-flex h-8 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-border bg-background px-2.5 text-sm font-medium transition-all outline-none active:not-aria-[haspopup]:translate-y-px hover:bg-muted hover:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4; }
     [data-slot="dropdown-trigger-icon"] { @apply transition-transform; }
     [data-slot="dropdown-trigger"][aria-expanded="true"] [data-slot="dropdown-trigger-icon"] { @apply rotate-180; }
-    [data-slot="dropdown-menu"] { @apply absolute z-50 mt-2 min-w-40 origin-top overflow-x-hidden overflow-y-auto rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10 transition duration-150 ease-out; }
-    [data-slot="dropdown-menu"][data-width="default"] { @apply w-56; }
-    [data-slot="dropdown-menu"][data-align="start"] { @apply start-0; }
-    [data-slot="dropdown-menu"][data-align="end"] { @apply end-0; }
+    [data-slot="dropdown-menu"] { @apply z-50 max-h-(--available-height) w-(--anchor-width) min-w-32 origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10 transition duration-150 ease-out; }
     [data-slot="dropdown-menu"][data-open="false"] { @apply hidden pointer-events-none scale-95 opacity-0; }
-    [data-slot="dropdown-menu"][data-open="true"] { @apply scale-100 opacity-100; }
+    [data-slot="dropdown-menu"][data-open="false"][data-side="bottom"] { @apply -translate-y-1; }
+    [data-slot="dropdown-menu"][data-open="false"][data-side="top"] { @apply translate-y-1; }
+    [data-slot="dropdown-menu"][data-open="false"][data-side="left"] { @apply translate-x-1; }
+    [data-slot="dropdown-menu"][data-open="false"][data-side="right"] { @apply -translate-x-1; }
+    [data-slot="dropdown-menu"][data-open="true"] { @apply translate-x-0 translate-y-0 scale-100 opacity-100; }
     [data-slot="dropdown-group"] { @apply block; }
     [data-slot="dropdown-label"] { @apply px-1.5 py-1 text-xs font-medium text-muted-foreground data-[inset=true]:pl-7; }
     [data-slot="dropdown-item"] { @apply relative flex w-full cursor-default select-none appearance-none items-center gap-1.5 rounded-md border-0 bg-transparent px-1.5 py-1 text-left text-sm text-popover-foreground outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 data-[inset=true]:pl-7 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4; }

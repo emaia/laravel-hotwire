@@ -162,6 +162,7 @@ it('adds core npm dependencies to package.json in non-interactive mode', functio
         ->toHaveKey('@hotwired/turbo')
         ->not->toHaveKey('maska')
         ->not->toHaveKey('tippy.js')
+        ->not->toHaveKey('@floating-ui/dom')
         ->not->toHaveKey('@emaia/sonner');
 });
 
@@ -200,6 +201,7 @@ it('installs core + all catalog dependencies by default', function () {
         ->toHaveKey('echarts')
         ->toHaveKey('leaflet')
         ->toHaveKey('embla-carousel')
+        ->toHaveKey('@floating-ui/dom')
         ->toHaveKey('@emaia/sonner');
 });
 
@@ -365,6 +367,7 @@ it('adds only specified controller dependencies with --with-deps=chart', functio
         ->toHaveKey('@hotwired/stimulus')
         ->toHaveKey('echarts')
         ->not->toHaveKey('embla-carousel')
+        ->not->toHaveKey('@floating-ui/dom')
         ->not->toHaveKey('leaflet')
         ->not->toHaveKey('@emaia/sonner');
 });
@@ -375,7 +378,7 @@ it('accepts comma-separated controllers in --with-deps', function () {
         'devDependencies' => new stdClass,
     ], JSON_PRETTY_PRINT));
 
-    $this->artisan('hotwire:install --with-deps=chart,carousel,map --no-interaction')
+    $this->artisan('hotwire:install --with-deps=chart,carousel,map,dropdown --no-interaction')
         ->assertSuccessful();
 
     $json = json_decode(File::get($this->packageJsonPath), true);
@@ -383,6 +386,7 @@ it('accepts comma-separated controllers in --with-deps', function () {
     expect($json['devDependencies'])
         ->toHaveKey('echarts')
         ->toHaveKey('embla-carousel')
+        ->toHaveKey('@floating-ui/dom')
         ->toHaveKey('leaflet')
         ->not->toHaveKey('@emaia/sonner');
 });
@@ -401,6 +405,7 @@ it('accepts repeated --with-deps flags', function () {
     expect($json['devDependencies'])
         ->toHaveKey('echarts')
         ->toHaveKey('embla-carousel')
+        ->not->toHaveKey('@floating-ui/dom')
         ->not->toHaveKey('leaflet');
 });
 
@@ -420,6 +425,7 @@ it('installs only core deps with --core-only', function () {
         ->toHaveKey('@hotwired/turbo')
         ->toHaveKey('@emaia/stimulus-lazy-loader')
         ->not->toHaveKey('echarts')
+        ->not->toHaveKey('@floating-ui/dom')
         ->not->toHaveKey('leaflet')
         ->not->toHaveKey('@emaia/sonner');
 });
@@ -466,9 +472,9 @@ it('writes a loader stub with com-dep exclusions in --core-only mode', function 
         ->toStartWith('// AUTO-GENERATED')
         ->toContain('"!**/carousel_controller.js"')
         ->toContain('"!**/chart_controller.js"')
+        ->toContain('"!**/dropdown_controller.js"')
         ->toContain('"!**/map_controller.js"')
-        ->not->toContain('"!**/modal_controller.js"')
-        ->not->toContain('"!**/dropdown_controller.js"');
+        ->not->toContain('"!**/modal_controller.js"');
 });
 
 it('writes a loader stub with only non-opted-in com-deps excluded with --with-deps', function () {
@@ -482,6 +488,7 @@ it('writes a loader stub with only non-opted-in com-deps excluded with --with-de
     expect($stub)
         ->not->toContain('"!**/carousel_controller.js"')
         ->not->toContain('"!**/chart_controller.js"')
+        ->toContain('"!**/dropdown_controller.js"')
         ->toContain('"!**/map_controller.js"')
         ->toContain('"!**/rich_text_controller.js"');
 });

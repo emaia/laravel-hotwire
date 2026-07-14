@@ -1,16 +1,17 @@
 # Dropdown
 
-Accessible disclosure dropdown: a trigger button toggles a menu. It dismisses on outside click, on `Escape` (returning
-focus to the trigger) and — by default — when an actionable item inside the menu is clicked. The show/hide animation is
-optional and driven entirely by CSS classes; positioning is left to you.
+Accessible disclosure dropdown: a trigger button toggles a Floating UI-positioned menu. It dismisses on outside click,
+on `Escape` (returning focus to the trigger) and — by default — when an actionable item inside the menu is clicked. The
+show/hide animation is optional and driven by CSS classes and positioning data attributes.
 
 **Identifier:** `dropdown`  
 **Install:** `php artisan hotwire:controllers dropdown`
 
 ## Requirements
 
-- No external dependencies. Ships with a small `_transition.js` helper, which `hotwire:controllers` publishes alongside
-  the controller automatically.
+- `@floating-ui/dom` for viewport-aware anchored positioning.
+- Ships with `_floating.js` and `_transition.js` helpers, which `hotwire:controllers` publishes alongside the controller
+  automatically.
 
 ## Targets
 
@@ -25,6 +26,13 @@ optional and driven entirely by CSS classes; positioning is left to you.
 | ----------------- | --------- | ------- | ------------------------------------------------------------------------ |
 | `open`            | `Boolean` | `false` | Initial/reflected open state. Set to `true` to start open (no animation) |
 | `close-on-select` | `Boolean` | `true`  | Close when an `<a>` or `<button>` inside the menu is clicked             |
+| `side`            | `String`  | `bottom` | Preferred side: `top`, `right`, `bottom`, or `left`                     |
+| `align`           | `String`  | `start` | Alignment on the chosen side: `start`, `center`, or `end`                |
+| `side-offset`     | `Number`  | `4`     | Main-axis gap between trigger and menu                                   |
+| `align-offset`    | `Number`  | `0`     | Cross-axis offset along the trigger edge                                 |
+| `strategy`        | `String`  | `absolute` | Floating UI strategy: `absolute` or `fixed`                          |
+| `flip`            | `Boolean` | `true`  | Flip to the opposite side when the preferred side lacks room             |
+| `shift`           | `Boolean` | `true`  | Shift within the viewport when the menu would overflow                   |
 
 ## Stimulus Classes
 
@@ -42,11 +50,12 @@ optional and driven entirely by CSS classes; positioning is left to you.
 
 ## Basic usage
 
-Position the menu yourself with CSS (e.g. a `relative` wrapper and an `absolute` menu):
+The controller positions the menu for you:
 
 ```html
-<div data-controller="dropdown" class="relative inline-block">
+<div data-controller="dropdown" data-dropdown-side-value="bottom" data-dropdown-align-value="end">
     <button
+        data-slot="dropdown-trigger"
         data-dropdown-target="trigger"
         data-action="dropdown#toggle"
         aria-haspopup="true"
@@ -57,7 +66,11 @@ Position the menu yourself with CSS (e.g. a `relative` wrapper and an `absolute`
         <svg data-slot="dropdown-trigger-icon" class="size-5"><!-- chevron --></svg>
     </button>
 
-    <div data-dropdown-target="menu" class="absolute right-0 mt-2 hidden w-56 rounded-md bg-white shadow-lg">
+    <div
+        data-slot="dropdown-menu"
+        data-dropdown-target="menu"
+        class="hidden max-h-(--available-height) w-(--anchor-width) min-w-32 rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10"
+    >
         <a href="/account" class="block px-4 py-2 text-sm">Account</a>
         <a href="/support" class="block px-4 py-2 text-sm">Support</a>
         <form action="/logout" method="post">
@@ -71,6 +84,24 @@ The chevron rotates for free in the package preset when it carries `data-slot="d
 keeps `aria-expanded` in sync on the trigger, and the preset targets `[aria-expanded="true"]` on that trigger. If you are
 styling without the preset, use the same selector instead of relying on `group-*` classes.
 
+## Positioning
+
+The controller uses Floating UI's `computePosition`, `autoUpdate`, `offset`, `flip`, `shift`, and `size` middleware. The
+menu is positioned only while open; `autoUpdate` is cleaned up on close, `disconnect()`, and `turbo:before-cache`.
+
+The helper writes these hooks to the menu:
+
+- `data-side`
+- `data-align`
+- `--anchor-width`
+- `--anchor-height`
+- `--available-width`
+- `--available-height`
+- `--transform-origin`
+
+The Nova preset uses those hooks for trigger-width matching, viewport-constrained height and side-aware animations. This
+controller does not portal the menu; ancestors with `overflow: hidden` may still clip it.
+
 ## Transitions
 
 Declare enter/leave transitions with `data-transition-*` on the menu (Vue/`stimulus-use` style). They are optional —
@@ -78,8 +109,9 @@ without them the menu just toggles the hidden class.
 
 ```html
 <div
+    data-slot="dropdown-menu"
     data-dropdown-target="menu"
-    class="absolute right-0 mt-2 hidden w-56 origin-top-right rounded-md bg-white shadow-lg"
+    class="hidden max-h-(--available-height) w-(--anchor-width) min-w-32 origin-(--transform-origin) rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10"
     data-transition-enter="transition ease-out duration-100"
     data-transition-enter-from="opacity-0 scale-95"
     data-transition-enter-to="opacity-100 scale-100"
@@ -144,8 +176,9 @@ The same thing with Tailwind v4 utilities — no `data-transition-*` needed:
 
 ```html
 <div
+    data-slot="dropdown-menu"
     data-dropdown-target="menu"
-    class="absolute right-0 mt-2 hidden w-56 scale-100 rounded-md bg-white opacity-100 shadow-lg transition-all transition-discrete duration-150 ease-out starting:scale-95 starting:opacity-0 [&.hidden]:scale-95 [&.hidden]:opacity-0"
+    class="hidden max-h-(--available-height) w-(--anchor-width) min-w-32 origin-(--transform-origin) scale-100 rounded-lg bg-popover p-1 text-popover-foreground opacity-100 shadow-md ring-1 ring-foreground/10 transition-all transition-discrete duration-150 ease-out starting:scale-95 starting:opacity-0 [&.hidden]:scale-95 [&.hidden]:opacity-0"
 >
     …
 </div>

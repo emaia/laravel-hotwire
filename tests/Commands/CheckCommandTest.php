@@ -442,6 +442,7 @@ it('does not print the "Needs attention" heading when everything is up to date',
 });
 
 it('sorts scanned components alphabetically', function () {
+    writePackageJson(['name' => 'app', 'devDependencies' => ['@floating-ui/dom' => '^1.8.0']]);
     writeView('a.blade.php', '<x-hw::modal /><x-hw::carousel /><x-hw::dropdown />');
 
     Artisan::call('hotwire:check --no-interaction');
@@ -456,6 +457,7 @@ it('sorts scanned components alphabetically', function () {
 });
 
 it('sorts the Needs attention block alphabetically', function () {
+    writePackageJson(['name' => 'app', 'devDependencies' => ['@floating-ui/dom' => '^1.8.0']]);
     $controllers = ['modal', 'carousel', 'dropdown'];
     foreach ($controllers as $name) {
         $target = "$this->targetDir/{$name}_controller.js";
@@ -479,6 +481,7 @@ it('sorts the Needs attention block alphabetically', function () {
 });
 
 it('groups OK output as components -> standalones -> helpers', function () {
+    writePackageJson(['name' => 'app', 'devDependencies' => ['@floating-ui/dom' => '^1.8.0']]);
     publishController('dropdown', $this->targetDir);
     publishController('disclosure', $this->targetDir);
     writeView('page.blade.php', '<x-hw::dropdown /><div data-controller="disclosure"></div>');

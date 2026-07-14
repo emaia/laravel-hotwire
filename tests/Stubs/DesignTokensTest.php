@@ -383,8 +383,27 @@ it('defines overlay and menu slots in the nova preset', function () use ($novaPr
         ->toContain('[data-slot="dropdown-item"]')
         ->toContain('[data-slot="dropdown-separator"]')
         ->toContain('[data-slot="dropdown-shortcut"]')
-        ->toContain('[data-slot="dropdown-menu"][data-width="default"]')
-        ->toContain('[data-slot="dropdown-menu"][data-align="start"]');
+        ->toContain('[data-slot="dropdown-menu"][data-open="false"][data-side="bottom"]')
+        ->toContain('[data-slot="dropdown-menu"][data-open="false"][data-side="top"]')
+        ->toContain('[data-slot="dropdown-menu"][data-open="false"][data-side="left"]')
+        ->toContain('[data-slot="dropdown-menu"][data-open="false"][data-side="right"]');
+});
+
+it('uses anchored dropdown positioning tokens instead of css-only offsets', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain('[data-slot="dropdown-menu"] { @apply')
+        ->toContain('max-h-(--available-height)')
+        ->toContain('w-(--anchor-width)')
+        ->toContain('min-w-32')
+        ->toContain('origin-(--transform-origin)')
+        ->toContain('[data-slot="dropdown-menu"][data-open="false"][data-side="bottom"]')
+        ->toContain('-translate-y-1')
+        ->not->toContain('[data-slot="dropdown-menu"][data-width="default"]')
+        ->not->toContain('[data-slot="dropdown-menu"][data-align="start"]')
+        ->not->toContain('[data-slot="dropdown-menu"] { @apply absolute z-50 mt-2')
+        ->not->toContain('slide-in-from');
 });
 
 it('keeps dropdown menu subcomponent styling aligned with the nova reference', function () use ($novaPresetPath) {

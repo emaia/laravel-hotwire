@@ -1,9 +1,41 @@
-import { afterEach, expect, test } from "bun:test";
+import { afterEach, beforeEach, expect, mock, test } from "bun:test";
 
 import { mountController, wait } from "../../resources/js/helpers/test_stimulus.js";
-import DropdownController from "../../resources/js/controllers/dropdown_controller.js";
+
+const floatingCleanup = mock(() => {});
+const autoUpdate = mock((_anchor, _floating, update) => {
+    update();
+
+    return floatingCleanup;
+});
+const computePosition = mock(async () => ({ x: 16, y: 24, placement: "bottom-start" }));
+const offset = mock((options) => ({ name: "offset", options }));
+const flip = mock((options = {}) => ({ name: "flip", options }));
+const shift = mock((options = {}) => ({ name: "shift", options }));
+const size = mock((options) => ({ name: "size", options }));
+
+mock.module("@floating-ui/dom", () => ({
+    autoUpdate,
+    computePosition,
+    offset,
+    flip,
+    shift,
+    size,
+}));
+
+const { default: DropdownController } = await import("../../resources/js/controllers/dropdown_controller.js");
 
 let mounted;
+
+beforeEach(() => {
+    floatingCleanup.mockClear();
+    autoUpdate.mockClear();
+    computePosition.mockClear();
+    offset.mockClear();
+    flip.mockClear();
+    shift.mockClear();
+    size.mockClear();
+});
 
 afterEach(async () => {
     await mounted?.cleanup();
@@ -56,6 +88,53 @@ test.serial("open() and close() are idempotent", async () => {
     mounted.controller.close();
     mounted.controller.close();
     expect(isOpen()).toBe(false);
+});
+
+test.serial("starts floating positioning when opened and stops when closed", async () => {
+    await mount();
+
+    clickTrigger();
+    await wait(0);
+
+    expect(autoUpdate).toHaveBeenCalledTimes(1);
+    expect(computePosition).toHaveBeenCalled();
+    expect(menu().style.left).toBe("16px");
+    expect(menu().style.top).toBe("24px");
+    expect(menu().dataset.side).toBe("bottom");
+    expect(menu().dataset.align).toBe("start");
+
+    clickTrigger();
+
+    expect(floatingCleanup).toHaveBeenCalledTimes(1);
+});
+
+test.serial("passes dropdown positioning values to Floating UI", async () => {
+    mounted = await mountController(
+        "dropdown",
+        DropdownController,
+        `
+        <div data-controller="dropdown"
+             data-dropdown-side-value="right"
+             data-dropdown-align-value="end"
+             data-dropdown-side-offset-value="12"
+             data-dropdown-align-offset-value="-4"
+             data-dropdown-strategy-value="fixed"
+             data-dropdown-flip-value="false"
+             data-dropdown-shift-value="false">
+            <button data-dropdown-target="trigger" data-action="dropdown#toggle" aria-expanded="false">M</button>
+            <div data-dropdown-target="menu" class="hidden"><a href="#x">x</a></div>
+        </div>`,
+    );
+
+    clickTrigger();
+    await wait(0);
+
+    const options = computePosition.mock.calls[0][2];
+    expect(options.placement).toBe("right-end");
+    expect(options.strategy).toBe("fixed");
+    expect(offset).toHaveBeenCalledWith({ mainAxis: 12, crossAxis: -4 });
+    expect(flip).not.toHaveBeenCalled();
+    expect(shift).not.toHaveBeenCalled();
 });
 
 test.serial("starts open when open-value is true", async () => {
@@ -119,6 +198,17 @@ test.serial("closes on turbo:before-cache", async () => {
 
     expect(isOpen()).toBe(false);
     expect(menu().dataset.open).toBe("false");
+    expect(floatingCleanup).toHaveBeenCalled();
+});
+
+test.serial("disconnect cleans up floating positioning", async () => {
+    await mount();
+    clickTrigger();
+    await wait(0);
+
+    mounted.controller.disconnect();
+
+    expect(floatingCleanup).toHaveBeenCalled();
 });
 
 // --- close on select ---

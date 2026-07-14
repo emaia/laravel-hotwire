@@ -553,6 +553,7 @@ return [
             'docs' => 'docs/controllers/dropdown.md',
             'category' => 'overlay',
             'description' => 'Accessible disclosure dropdown with outside-click/Escape dismissal and optional transitions',
+            'npm' => ['@floating-ui/dom' => '^1.8.0'],
         ],
         'drawer' => [
             'source' => 'resources/js/controllers/drawer_controller.js',
