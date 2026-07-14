@@ -31,6 +31,7 @@ class MultiSelect extends Component
         public int|string|null $max = null,
         public bool $listAll = false,
         public int|string|null $listAllLimit = 3,
+        public string $listAllMoreText = '+:count more',
         public bool $sortSelected = false,
         public bool $closeListOnItemSelect = false,
         public string $side = 'bottom',
@@ -164,7 +165,7 @@ class MultiSelect extends Component
             $limit = (int) $this->listAllLimit;
 
             if ($limit > 0 && $count > $limit) {
-                return implode(', ', array_slice($labels, 0, $limit)).', +'.($count - $limit).' more';
+                return implode(', ', array_slice($labels, 0, $limit)).', '.$this->formatMoreText($count - $limit);
             }
 
             return $this->fullSummary($labels);
@@ -177,5 +178,10 @@ class MultiSelect extends Component
     private function fullSummary(array $labels): string
     {
         return $labels === [] ? $this->placeholder : implode(', ', $labels);
+    }
+
+    private function formatMoreText(int $count): string
+    {
+        return str_replace(':count', (string) $count, $this->listAllMoreText);
     }
 }

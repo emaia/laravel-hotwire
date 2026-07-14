@@ -23,12 +23,12 @@ test("search clear button is tabbable and Space toggles focused options", async 
                     <input data-slot="multi-select-search" data-multi-select-target="search" data-clear-input-target="input" type="text">
                     <button type="button" class="hidden" data-slot="clear-input-button" data-clear-input-target="clearButton">Clear</button>
                 </span>
-                <button type="button" data-multi-select-target="selectAll">Select all</button>
+                <button type="button" data-multi-select-target="selectAll" aria-pressed="false">Select all</button>
                 <div role="listbox" aria-multiselectable="true">
                     <div data-slot="multi-select-option" data-multi-select-target="option" data-value="active" data-selected="false" role="option" aria-selected="false" tabindex="-1">Active</div>
                     <div data-slot="multi-select-option" data-multi-select-target="option" data-value="paused" data-selected="false" role="option" aria-selected="false" tabindex="-1">Paused</div>
-                    <div data-slot="multi-select-empty" data-multi-select-target="empty" hidden>No options found.</div>
                 </div>
+                <div data-slot="multi-select-empty" data-multi-select-target="empty" hidden>No options found.</div>
             </div>
         </div>
     `);
@@ -52,6 +52,7 @@ test("search clear button is tabbable and Space toggles focused options", async 
     await expect(empty).toBeVisible();
     await expect(empty).toHaveText("No options found.");
     await expect(selectAll).toBeHidden();
+    await expect(selectAll).toHaveAttribute("aria-pressed", "false");
 
     await search.fill("act");
     await expect(empty).toBeHidden();

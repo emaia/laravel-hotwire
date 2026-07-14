@@ -131,6 +131,22 @@ test.serial("list-all summary is capped and keeps the full summary in the title"
     expect(value().title).toBe("Active, Paused, Archived");
 });
 
+test.serial("list-all hidden count text can be customized", async () => {
+    await mount({
+        values: `
+            data-multi-select-list-all-value="true"
+            data-multi-select-list-all-limit-value="2"
+            data-multi-select-list-all-more-text-value="+:count itens"
+        `,
+    });
+
+    option("active").dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    option("paused").dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    option("archived").dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+    expect(value().textContent).toBe("Active, Paused, +1 itens");
+});
+
 test.serial("list-all limit can be disabled", async () => {
     await mount({ values: 'data-multi-select-list-all-value="true" data-multi-select-list-all-limit-value="0"' });
 
@@ -197,7 +213,7 @@ test.serial("select all stays enabled to clear a maxed-out full selection", asyn
     selectAll.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
     expect(selectedValues()).toEqual(["active", "paused"]);
-    expect(selectAll.getAttribute("aria-selected")).toBe("true");
+    expect(selectAll.getAttribute("aria-pressed")).toBe("true");
     expect(selectAll.getAttribute("aria-disabled")).toBe("false");
 
     selectAll.dispatchEvent(new MouseEvent("click", { bubbles: true }));
@@ -214,7 +230,7 @@ test.serial("search refreshes select-all state for the visible options", async (
     search.dispatchEvent(new Event("input", { bubbles: true }));
 
     const selectAll = document.querySelector('[data-multi-select-target="selectAll"]');
-    expect(selectAll.getAttribute("aria-selected")).toBe("true");
+    expect(selectAll.getAttribute("aria-pressed")).toBe("true");
 });
 
 test.serial("ArrowDown from search focuses select-all before options", async () => {
@@ -488,15 +504,15 @@ async function mount({ values = "", options = null, optionMarkup = null, validat
             </button>
             <div data-multi-select-target="content" data-open="false" class="hidden">
                 ${search ? searchMarkup : ""}
-                ${selectAll ? '<button type="button" data-multi-select-target="selectAll">Select all</button>' : ""}
+                ${selectAll ? '<button type="button" data-multi-select-target="selectAll" aria-pressed="false">Select all</button>' : ""}
                 <div data-multi-select-target="list" role="listbox" aria-multiselectable="true">
                     ${optionMarkup ?? `
                         <div data-slot="multi-select-option" data-multi-select-target="option" data-value="active" data-selected="false" role="option" aria-selected="false" tabindex="-1">Active</div>
                         <div data-slot="multi-select-option" data-multi-select-target="option" data-value="paused" data-selected="false" role="option" aria-selected="false" tabindex="-1">Paused</div>
                         <div data-slot="multi-select-option" data-multi-select-target="option" data-value="archived" data-selected="false" role="option" aria-selected="false" tabindex="-1">Archived</div>
                     `}
-                    <div data-slot="multi-select-empty" data-multi-select-target="empty" hidden>No options found.</div>
                 </div>
+                <div data-slot="multi-select-empty" data-multi-select-target="empty" hidden>No options found.</div>
             </div>
             ${validation ? '<input data-multi-select-target="validation" type="text" required tabindex="-1">' : ""}
         </div>`,

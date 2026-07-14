@@ -15,6 +15,7 @@ export default class extends Controller {
         flip: { type: Boolean, default: true },
         listAll: { type: Boolean, default: false },
         listAllLimit: { type: Number, default: 3 },
+        listAllMoreText: { type: String, default: '+:count more' },
         max: Number,
         open: { type: Boolean, default: false },
         placeholder: { type: String, default: "Select options" },
@@ -290,7 +291,7 @@ export default class extends Controller {
 
     updateSummary() {
         const selected = this.selectedOptions();
-        const summaryText = summary(selected, this.placeholderValue, this.listAllValue, this.listAllLimitValue);
+        const summaryText = summary(selected, this.placeholderValue, this.listAllValue, this.listAllLimitValue, this.listAllMoreTextValue);
         const fullSummaryText = fullSummary(selected, this.placeholderValue);
 
         this.valueTarget.textContent = summaryText;
@@ -306,7 +307,8 @@ export default class extends Controller {
 
         const allSelected = options.length > 0 && options.every((option) => option.dataset.selected === "true");
         this.selectAllTarget.dataset.selected = String(allSelected);
-        this.selectAllTarget.setAttribute("aria-selected", String(allSelected));
+        this.selectAllTarget.removeAttribute("aria-selected");
+        this.selectAllTarget.setAttribute("aria-pressed", String(allSelected));
         const text = this.selectAllTarget.querySelector('[data-slot="multi-select-option-text"]');
         if (text) text.textContent = allSelected ? this.deselectAllTextValue : this.selectAllTextValue;
     }
@@ -452,20 +454,24 @@ function labelFor(option) {
     return option.querySelector('[data-slot="multi-select-option-text"]')?.textContent?.trim() || option.textContent.trim();
 }
 
-function summary(selected, placeholder, listAll, listAllLimit) {
+function summary(selected, placeholder, listAll, listAllLimit, listAllMoreText) {
     if (selected.length === 0) return placeholder;
     if (listAll) {
         const labels = selected.map(labelFor);
         const limit = Number(listAllLimit);
 
         if (limit > 0 && labels.length > limit) {
-            return `${labels.slice(0, limit).join(", ")}, +${labels.length - limit} more`;
+            return `${labels.slice(0, limit).join(", ")}, ${formatMoreText(listAllMoreText, labels.length - limit)}`;
         }
 
         return labels.join(", ");
     }
 
     return `${selected.length} selected`;
+}
+
+function formatMoreText(template, count) {
+    return String(template).replaceAll(":count", String(count));
 }
 
 function fullSummary(selected, placeholder) {

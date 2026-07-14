@@ -7,6 +7,9 @@ positioning.
 The list search uses `<hw:input clearable>` so the clear button is an actual tabbable control instead of the
 browser-native `type="search"` clear affordance, which is not consistently reachable by keyboard tab order.
 
+The popup keeps action/status controls outside the listbox semantics: `select-all` is a button action, while the empty
+message is a status message shown next to the list rather than a listbox option.
+
 ## Usage
 
 ```blade
@@ -50,10 +53,11 @@ Use `strategy="absolute"` only when you explicitly want the panel positioned wit
 | `placeholder` | `Select options` | Trigger text when nothing is selected. |
 | `search` | `true` | Render the search input. |
 | `empty-text` | `No options found.` | Message shown when the option list is empty or the search has no matches. |
-| `select-all` | `false` | Render the select-all action. |
+| `select-all` | `false` | Render a select-all action button before the listbox. |
 | `max` | `null` | Maximum selected options. |
 | `list-all` | `false` | Show selected labels instead of a count. |
-| `list-all-limit` | `3` | Maximum labels shown when `list-all` is enabled before appending `+N more`; use `0` to show every label. |
+| `list-all-limit` | `3` | Maximum labels shown when `list-all` is enabled before appending the hidden count text; use `0` to show every label. |
+| `list-all-more-text` | `+:count more` | Template appended after the visible labels when `list-all-limit` is exceeded; use `:count` for the hidden count. |
 | `sort-selected` | `false` | Move selected options to the top of the list while preserving their original relative order. |
 | `close-list-on-item-select` | `false` | Close after selecting an option. |
 | `side` | `bottom` | Preferred side for the floating listbox: `top`, `right`, `bottom` or `left`. |

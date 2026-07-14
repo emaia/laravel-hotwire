@@ -4,6 +4,8 @@ Enhances server-rendered multi-select markup with open/close behavior, search, m
 maximum selection limits, validation proxy updates and Floating UI positioning.
 
 When the search input is rendered with the package `clear-input` controller, `inputCleared` resets the option filter.
+The optional select-all target is treated as a button action, and the empty target is a status message outside the
+listbox option semantics.
 
 **Identifier:** `multi-select`
 **Install:** `php artisan hotwire:controllers multi-select`
@@ -23,8 +25,8 @@ When the search input is rendered with the package `clear-input` controller, `in
 | `option` | Selectable options. |
 | `value` | Trigger summary text. |
 | `search` | Optional search input. |
-| `selectAll` | Optional select-all action. |
-| `empty` | Empty-state message shown when no options are visible. |
+| `selectAll` | Optional select-all action button before the listbox. |
+| `empty` | Empty-state message shown when no options are visible; keep it outside the listbox. |
 | `validation` | Optional required validation proxy. |
 
 ## Values
@@ -36,7 +38,8 @@ When the search input is rendered with the package `clear-input` controller, `in
 | `select-all` | `false` | Enables select-all behavior. |
 | `max` | unset | Maximum selected options. |
 | `list-all` | `false` | Show selected labels instead of a count. |
-| `list-all-limit` | `3` | Maximum labels shown when `list-all` is enabled before appending `+N more`; use `0` to show every label. |
+| `list-all-limit` | `3` | Maximum labels shown when `list-all` is enabled before appending the hidden count text; use `0` to show every label. |
+| `list-all-more-text` | `+:count more` | Template appended after the visible labels when `list-all-limit` is exceeded; use `:count` for the hidden count. |
 | `sort-selected` | `false` | Move selected options to the top of the list while preserving their original relative order. |
 | `close-list-on-item-select` | `false` | Close after option selection. |
 | `side` | `bottom` | Preferred side for the floating listbox: `top`, `right`, `bottom` or `left`. |

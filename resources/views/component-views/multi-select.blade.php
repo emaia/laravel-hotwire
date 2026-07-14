@@ -14,6 +14,7 @@
         'data-multi-select-max-value' => $max,
         'data-multi-select-list-all-value' => $listAll ? 'true' : 'false',
         'data-multi-select-list-all-limit-value' => $listAllLimit,
+        'data-multi-select-list-all-more-text-value' => $listAllMoreText,
         'data-multi-select-sort-selected-value' => $sortSelected ? 'true' : 'false',
         'data-multi-select-close-list-on-item-select-value' => $closeListOnItemSelect ? 'true' : 'false',
         'data-multi-select-required-value' => $isRequired ? 'true' : 'false',
@@ -92,21 +93,20 @@
             />
         @endif
 
-        <div data-slot="multi-select-list" data-multi-select-target="list" role="listbox" aria-multiselectable="true">
-            @if ($selectAll)
-                <button
-                    type="button"
-                    data-slot="multi-select-select-all"
-                    data-multi-select-target="selectAll"
-                    role="option"
-                    aria-selected="false"
-                    tabindex="-1"
-                >
-                    <span data-slot="multi-select-indicator" aria-hidden="true"></span>
-                    <span data-slot="multi-select-option-text">{{ $selectAllText }}</span>
-                </button>
-            @endif
+        @if ($selectAll)
+            <button
+                type="button"
+                data-slot="multi-select-select-all"
+                data-multi-select-target="selectAll"
+                aria-pressed="false"
+                tabindex="-1"
+            >
+                <span data-slot="multi-select-indicator" aria-hidden="true"></span>
+                <span data-slot="multi-select-option-text">{{ $selectAllText }}</span>
+            </button>
+        @endif
 
+        <div data-slot="multi-select-list" data-multi-select-target="list" role="listbox" aria-multiselectable="true">
             @foreach ($options as $value => $label)
                 @php $selected = in_array((string) $value, $selectedSet, true); @endphp
                 <div
@@ -123,9 +123,9 @@
                     <span data-slot="multi-select-option-text">{{ $label }}</span>
                 </div>
             @endforeach
-
-            <div data-slot="multi-select-empty" data-multi-select-target="empty" @if (count($options) > 0) hidden @endif>{{ $emptyText }}</div>
         </div>
+
+        <div data-slot="multi-select-empty" data-multi-select-target="empty" @if (count($options) > 0) hidden @endif>{{ $emptyText }}</div>
     </div>
 
     @if ($isRequired)

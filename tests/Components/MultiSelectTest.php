@@ -86,6 +86,7 @@ it('emits search, select-all, max and positioning values', function () {
     $view->assertSee('data-multi-select-select-all-value="true"', false);
     $view->assertSee('data-multi-select-max-value="2"', false);
     $view->assertSee('data-multi-select-list-all-limit-value="3"', false);
+    $view->assertSee('data-multi-select-list-all-more-text-value="+:count more"', false);
     $view->assertSee('data-multi-select-sort-selected-value="false"', false);
     $view->assertSee('data-multi-select-side-value="right"', false);
     $view->assertSee('data-multi-select-align-value="end"', false);
@@ -95,6 +96,32 @@ it('emits search, select-all, max and positioning values', function () {
     $view->assertSee('data-multi-select-flip-value="false"', false);
     $view->assertSee('data-multi-select-shift-value="false"', false);
     $view->assertSee('data-slot="multi-select-select-all"', false);
+    $view->assertSee('aria-pressed="false"', false);
+});
+
+it('keeps the select-all action and empty state outside the listbox semantics', function () {
+    $view = $this->blade('<x-hw::multi-select name="status[]" select-all :options="[\'active\' => \'Active\']" />');
+    $html = (string) $view;
+
+    preg_match('/<button[^>]*data-slot="multi-select-select-all"[^>]*>/i', $html, $selectAllMatches);
+
+    expect($selectAllMatches[0] ?? '')
+        ->toContain('aria-pressed="false"')
+        ->not->toContain('role="option"')
+        ->not->toContain('aria-selected');
+
+    $dom = new DOMDocument;
+    $previous = libxml_use_internal_errors(true);
+    $dom->loadHTML('<?xml encoding="utf-8" ?>'.$html);
+    libxml_clear_errors();
+    libxml_use_internal_errors($previous);
+
+    $xpath = new DOMXPath($dom);
+    $listbox = $xpath->query('//*[@role="listbox"]')->item(0);
+
+    expect($listbox)->not->toBeNull()
+        ->and($xpath->query('.//*[@data-slot="multi-select-select-all"]', $listbox))->toHaveCount(0)
+        ->and($xpath->query('.//*[@data-slot="multi-select-empty"]', $listbox))->toHaveCount(0);
 });
 
 it('caps long list-all summaries while keeping the full labels in the title', function () {
@@ -102,6 +129,13 @@ it('caps long list-all summaries while keeping the full labels in the title', fu
 
     $view->assertSee('Argentina, Australia, Austria, +1 more', false);
     $view->assertSee('title="Argentina, Australia, Austria, Brazil"', false);
+});
+
+it('allows customizing the list-all hidden count text', function () {
+    $view = $this->blade('<x-hw::multi-select name="countries[]" list-all list-all-more-text="+:count itens" :options="[\'AR\' => \'Argentina\', \'AU\' => \'Australia\', \'AT\' => \'Austria\', \'BR\' => \'Brazil\']" :selected="[\'AR\', \'AU\', \'AT\', \'BR\']" />');
+
+    $view->assertSee('Argentina, Australia, Austria, +1 itens', false);
+    $view->assertSee('data-multi-select-list-all-more-text-value="+:count itens"', false);
 });
 
 it('can list every selected label when the list-all limit is disabled', function () {
