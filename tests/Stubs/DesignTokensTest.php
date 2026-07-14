@@ -455,3 +455,11 @@ it('defines marker slots and variants in the nova preset', function () use ($nov
         ->toContain('text-muted-foreground')
         ->toContain('border-border');
 });
+
+it('keeps spinner size and animation aligned with the shadcn base-nova reference', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain('[data-slot="spinner"] { @apply size-4 animate-spin')
+        ->toContain('text-foreground/60');
+});
