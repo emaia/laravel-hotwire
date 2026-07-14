@@ -40,7 +40,7 @@
         tabindex="0"
         aria-label="Clear"
     >
-        <hw:icon name="circle-x" />
+        <x-hw::icon name="circle-x" />
     </button>
 </span>
 @endif

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, expect, mock, test } from "bun:test";
 
-import { mountController, wait } from "../../resources/js/helpers/test_stimulus.js";
+import { mountController, mountMultipleControllers, wait } from "../../resources/js/helpers/test_stimulus.js";
+import DrawerController from "../../resources/js/controllers/drawer_controller.js";
 
 const floatingCleanup = mock(() => {});
 const autoUpdate = mock((_anchor, _floating, update) => {
@@ -52,6 +53,10 @@ function clickTrigger() {
 
 function press(key) {
     document.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));
+}
+
+function pressTarget(element, key) {
+    element.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true }));
 }
 
 // --- open / close ---
@@ -144,6 +149,59 @@ test.serial("starts open when open-value is true", async () => {
     expect(trigger().getAttribute("aria-expanded")).toBe("true");
 });
 
+// --- keyboard behavior ---
+
+test.serial("does not intercept arrow keys on the trigger", async () => {
+    await mount();
+
+    const event = new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true, cancelable: true });
+    trigger().dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(isOpen()).toBe(false);
+});
+
+test.serial("does not move focus with arrow keys, Home or End inside the menu", async () => {
+    await mount();
+    clickTrigger();
+
+    const link = menu().querySelector("a");
+    link.focus();
+
+    for (const key of ["ArrowDown", "ArrowUp", "Home", "End"]) {
+        const event = new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true });
+        link.dispatchEvent(event);
+
+        expect(event.defaultPrevented).toBe(false);
+        expect(document.activeElement).toBe(link);
+    }
+});
+
+test.serial("does not intercept arrow keys from form controls inside the menu", async () => {
+    mounted = await mountController(
+        "dropdown",
+        DropdownController,
+        `
+        <div data-controller="dropdown" data-dropdown-close-on-select-value="false">
+            <button data-dropdown-target="trigger" data-action="dropdown#toggle" aria-expanded="false">Filters</button>
+            <div data-dropdown-target="menu" class="hidden">
+                <input id="filter" type="text" value="abc">
+                <button id="apply" type="button">Apply</button>
+            </div>
+        </div>`,
+    );
+
+    clickTrigger();
+    const input = document.getElementById("filter");
+    input.focus();
+
+    const event = new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true, cancelable: true });
+    input.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(document.activeElement).toBe(input);
+});
+
 // --- dismissal ---
 
 test.serial("closes when clicking outside", async () => {
@@ -186,6 +244,54 @@ test.serial("Escape closes and returns focus to the trigger", async () => {
 
     expect(isOpen()).toBe(false);
     expect(document.activeElement).toBe(trigger());
+});
+
+test.serial("Escape inside an open drawer closes only the dropdown first", async () => {
+    mounted = await mountMultipleControllers(
+        {
+            drawer: DrawerController,
+            dropdown: DropdownController,
+        },
+        `
+        <div data-controller="drawer"
+             data-drawer-open-duration-value="1"
+             data-drawer-close-duration-value="1"
+             data-drawer-hidden-class="pointer-events-none"
+             data-drawer-visible-class="pointer-events-auto"
+             data-drawer-backdrop-hidden-class="opacity-0"
+             data-drawer-backdrop-visible-class="opacity-100"
+             data-drawer-dialog-hidden-class="translate-x-full"
+             data-drawer-dialog-visible-class="translate-x-0"
+             data-drawer-lock-scroll-class="overflow-hidden">
+            <button id="drawer-trigger" data-drawer-target="trigger" data-action="drawer#toggle">Open drawer</button>
+            <div data-drawer-target="modal" data-open="false" hidden class="pointer-events-none">
+                <div data-drawer-target="backdrop" data-action="click->drawer#clickOutside" class="opacity-0"></div>
+                <div data-drawer-target="dialog" class="translate-x-full">
+                    <div data-controller="dropdown">
+                        <button type="button" data-dropdown-target="trigger" data-action="dropdown#toggle" aria-expanded="false">Menu</button>
+                        <div data-dropdown-target="menu" class="hidden">
+                            <a id="nested-dropdown-item" href="#item">Item</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>`,
+    );
+
+    document.getElementById("drawer-trigger").dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    await wait(10);
+    clickTrigger();
+
+    pressTarget(document.getElementById("nested-dropdown-item"), "Escape");
+    await wait(10);
+
+    expect(isOpen()).toBe(false);
+    expect(mounted.controller.isOpen).toBe(true);
+
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+    await wait(10);
+
+    expect(mounted.controller.isOpen).toBe(false);
 });
 
 test.serial("closes on turbo:before-cache", async () => {

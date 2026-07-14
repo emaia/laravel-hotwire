@@ -179,6 +179,19 @@ it('omits close-on-select by default and emits it when disabled', function () {
         </x-hw::dropdown>
     ');
     $off->assertSee('data-dropdown-close-on-select-value="false"', false);
+
+    $dom = new DOMDocument;
+    $previous = libxml_use_internal_errors(true);
+    $dom->loadHTML('<?xml encoding="utf-8" ?>'.(string) $off);
+    libxml_clear_errors();
+    libxml_use_internal_errors($previous);
+
+    $xpath = new DOMXPath($dom);
+    $root = $xpath->query('//*[@data-controller="dropdown"]')->item(0);
+    $menu = $xpath->query('//*[@data-dropdown-target="menu"]')->item(0);
+
+    expect($root?->getAttribute('data-dropdown-close-on-select-value'))->toBe('false')
+        ->and($menu?->hasAttribute('data-dropdown-close-on-select-value'))->toBeFalse();
 });
 
 it('includes default transitions, and omits them when disabled', function () {

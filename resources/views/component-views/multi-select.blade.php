@@ -64,7 +64,7 @@
             data-multi-select-target="value"
             @if ($selectedSummary !== $selectedFullSummary) title="{{ $selectedFullSummary }}" @endif
         >{{ $selectedSummary }}</span>
-        <hw:icon name="chevron-down" data-slot="multi-select-trigger-icon" aria-hidden="true" />
+        <x-hw::icon name="chevron-down" data-slot="multi-select-trigger-icon" aria-hidden="true" />
     </button>
 
     <div
@@ -77,7 +77,7 @@
         @if ($contentClassValue !== '') class="{{ $contentClassValue }}" @endif
     >
         @if ($search)
-            <hw:input
+            <x-hw::input
                 name=""
                 id="{{ $resolvedId }}-search"
                 error-key=""

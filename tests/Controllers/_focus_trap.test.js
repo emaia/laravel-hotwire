@@ -25,7 +25,10 @@ function mountTrap(html) {
 }
 
 function dispatchTab({ shift = false } = {}) {
-    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", shiftKey: shift }));
+    const event = new KeyboardEvent("keydown", { key: "Tab", shiftKey: shift, cancelable: true });
+    document.dispatchEvent(event);
+
+    return event;
 }
 
 // --- activate (initial focus) ---
@@ -120,6 +123,50 @@ test.serial("Shift+Tab on the first focusable cycles to the last", () => {
     dispatchTab({ shift: true });
 
     expect(document.activeElement.id).toBe("c");
+});
+
+test.serial("Tab from outside an active trap moves into the first focusable", () => {
+    const { container, trap } = mountTrap(`
+        <div data-trap></div>
+        <button id="outside">Outside</button>
+    `);
+    const outside = document.getElementById("outside");
+    outside.focus();
+
+    trap.activate();
+    expect(document.activeElement).toBe(outside);
+
+    container.innerHTML = `
+        <input id="first" type="text" />
+        <button id="last">Last</button>
+    `;
+
+    const event = dispatchTab();
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(document.activeElement.id).toBe("first");
+});
+
+test.serial("Shift+Tab from outside an active trap moves into the last focusable", () => {
+    const { container, trap } = mountTrap(`
+        <div data-trap></div>
+        <button id="outside">Outside</button>
+    `);
+    const outside = document.getElementById("outside");
+    outside.focus();
+
+    trap.activate();
+    expect(document.activeElement).toBe(outside);
+
+    container.innerHTML = `
+        <input id="first" type="text" />
+        <button id="last">Last</button>
+    `;
+
+    const event = dispatchTab({ shift: true });
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(document.activeElement.id).toBe("last");
 });
 
 // --- guards ---

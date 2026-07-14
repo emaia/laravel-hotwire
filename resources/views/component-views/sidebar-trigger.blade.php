@@ -9,6 +9,6 @@
         'aria-label' => $label,
     ]) }}
 >
-    <hw:icon name="panel-left" aria-hidden="true" />
+    <x-hw::icon name="panel-left" aria-hidden="true" />
     <span hidden>{{ $label }}</span>
 </button>

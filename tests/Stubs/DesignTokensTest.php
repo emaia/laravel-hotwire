@@ -324,6 +324,13 @@ it('hides the native select arrow when rendering a custom select icon', function
         ->toContain('[data-slot="select-icon"]');
 });
 
+it('uses dark color scheme for native date and time picker inputs', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain('[data-theme="dark"] :is([data-slot="input"][type="date"], [data-slot="input"][type="datetime-local"], [data-slot="input"][type="month"], [data-slot="input"][type="time"], [data-slot="input"][type="week"]) { color-scheme: dark; }');
+});
+
 it('does not hard-code clear input visibility in the preset', function () use ($novaPresetPath) {
     $css = file_get_contents($novaPresetPath);
 

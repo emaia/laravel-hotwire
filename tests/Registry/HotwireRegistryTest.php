@@ -71,3 +71,15 @@ it('every controller and component has a non-empty description', function () {
             ->not->toBeEmpty("Component \"{$key}\" is missing a description");
     }
 });
+
+it('keeps catalog entries alphabetized by key', function () {
+    $catalog = require __DIR__.'/../../src/Registry/catalog.php';
+
+    foreach (['components', 'controllers'] as $section) {
+        $keys = array_keys($catalog[$section]);
+        $sorted = $keys;
+        sort($sorted);
+
+        expect($keys)->toBe($sorted, "Catalog section [{$section}] is not alphabetized.");
+    }
+});

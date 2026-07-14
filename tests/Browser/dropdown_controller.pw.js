@@ -87,6 +87,82 @@ test("positions the menu with Floating UI", async ({ page }) => {
     await expect(menu).toHaveCSS("width", "160px");
 });
 
+test("native Tab navigation and nested Escape close before the parent drawer", async ({ page }) => {
+    await page.setContent(`
+        <style>
+            .hidden { display: none; }
+            .pointer-events-none { pointer-events: none; }
+            .pointer-events-auto { pointer-events: auto; }
+            .opacity-0 { opacity: 0; }
+            .opacity-100 { opacity: 1; }
+            .translate-x-full { transform: translateX(100%); }
+            .translate-x-0 { transform: translateX(0); }
+        </style>
+        <div data-controller="drawer"
+             data-drawer-open-duration-value="0"
+             data-drawer-close-duration-value="0"
+             data-drawer-hidden-class="pointer-events-none"
+             data-drawer-visible-class="pointer-events-auto"
+             data-drawer-backdrop-hidden-class="opacity-0"
+             data-drawer-backdrop-visible-class="opacity-100"
+             data-drawer-dialog-hidden-class="translate-x-full"
+             data-drawer-dialog-visible-class="translate-x-0"
+             data-drawer-lock-scroll-class="overflow-hidden">
+            <button id="drawer-trigger" data-drawer-target="trigger" data-action="drawer#toggle">Open drawer</button>
+            <div data-drawer-target="modal" data-open="false" hidden class="pointer-events-none">
+                <div data-drawer-target="backdrop" data-action="click->drawer#clickOutside" class="opacity-0"></div>
+                <div data-drawer-target="dialog" class="translate-x-full">
+                    <div data-controller="dropdown">
+                        <button data-dropdown-target="trigger" data-action="dropdown#toggle" aria-expanded="false">Menu</button>
+                        <div data-dropdown-target="menu" class="hidden">
+                            <a id="first" href="#first">First</a>
+                            <button id="disabled" type="button" disabled>Disabled</button>
+                            <button id="second" type="button">Second</button>
+                            <a id="third" href="#third">Third</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `);
+
+    await installControllers(page);
+
+    const modal = page.locator('[data-drawer-target="modal"]');
+    const trigger = page.locator('[data-dropdown-target="trigger"]');
+    const menu = page.locator('[data-dropdown-target="menu"]');
+    const first = page.locator("#first");
+    const second = page.locator("#second");
+
+    await page.locator("#drawer-trigger").click();
+    await expect(modal).toHaveAttribute("data-open", "true");
+
+    await trigger.focus();
+    await page.keyboard.press("ArrowDown");
+    await expect(menu).toBeHidden();
+    await expect(trigger).toBeFocused();
+
+    await trigger.click();
+    await expect(menu).toBeVisible();
+
+    await page.keyboard.press("Tab");
+    await expect(first).toBeFocused();
+
+    await page.keyboard.press("Tab");
+    await expect(second).toBeFocused();
+
+    await page.keyboard.press("ArrowDown");
+    await expect(second).toBeFocused();
+
+    await page.keyboard.press("Escape");
+    await expect(menu).toBeHidden();
+    await expect(trigger).toBeFocused();
+    await expect(modal).toHaveAttribute("data-open", "true");
+
+    await page.keyboard.press("Escape");
+    await expect(modal).toHaveAttribute("data-open", "false");
+});
+
 async function installControllers(page) {
     await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
     await page.addScriptTag({ path: "node_modules/@floating-ui/core/dist/floating-ui.core.umd.min.js" });
@@ -95,10 +171,21 @@ async function installControllers(page) {
     await page.evaluate(() => {
         window.app = window.Stimulus.Application.start();
         window.app.register("dropdown", window.DropdownController);
+        window.app.register("drawer", window.DrawerController);
     });
 }
 
 async function bundle() {
+    const focusTrap = (await readFile("resources/js/controllers/_focus_trap.js", "utf8"))
+        .replace("export class FocusTrap", "class FocusTrap");
+
+    const overlay = (await readFile("resources/js/controllers/_overlay.js", "utf8"))
+        .replace(/import \{[^}]*\} from "\.\/_focus_trap\.js";\s*/, "")
+        .replace("export function createOverlay", "function createOverlay");
+
+    const frameOverlay = (await readFile("resources/js/controllers/_frame_overlay.js", "utf8"))
+        .replace("export function createFrameOverlay", "function createFrameOverlay");
+
     const floating = (await readFile("resources/js/controllers/_floating.js", "utf8"))
         .replace(/import \{[^}]*\} from "@floating-ui\/dom";\s*/, "")
         .replace("export function createFloating", "function createFloating");
@@ -112,12 +199,23 @@ async function bundle() {
         .replace(/import \{[^}]*\} from "\.\/_transition\.js";/, "")
         .replace("export default class extends Controller", "class DropdownController extends Controller");
 
+    const drawer = (await readFile("resources/js/controllers/drawer_controller.js", "utf8"))
+        .replace('import { Controller } from "@hotwired/stimulus";', "")
+        .replace(/import \{[^}]*\} from "\.\/_overlay\.js";\s*/, "")
+        .replace(/import \{[^}]*\} from "\.\/_frame_overlay\.js";\s*/, "")
+        .replace("export default class DrawerController extends Controller", "class DrawerController extends Controller");
+
     return `
         const { Controller } = window.Stimulus;
         const { autoUpdate, computePosition, flip, offset, shift, size } = window.FloatingUIDOM;
+        ${focusTrap}
+        ${overlay}
+        ${frameOverlay}
         ${floating}
         ${transition}
         ${controller}
+        ${drawer}
         window.DropdownController = DropdownController;
+        window.DrawerController = DrawerController;
     `;
 }

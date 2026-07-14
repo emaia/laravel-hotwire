@@ -43,6 +43,7 @@ export default class extends Controller {
         document.removeEventListener("click", this.onOutsideClick);
         document.removeEventListener("keydown", this.onKeydown);
         document.removeEventListener("turbo:before-cache", this.closeForCache);
+        this.element.removeAttribute("data-hotwire-escape-scope");
         this.cleanupFloating();
     }
 
@@ -103,11 +104,14 @@ export default class extends Controller {
     }
 
     rememberTrigger(event) {
-        const trigger = event?.currentTarget;
+        const trigger = event?.currentTarget && this.triggerTargets.includes(event.currentTarget)
+            ? event.currentTarget
+            : event?.target?.closest?.('[data-dropdown-target~="trigger"]');
         if (trigger && this.triggerTargets.includes(trigger)) this.activeTrigger = trigger;
     }
 
     syncState() {
+        this.element.toggleAttribute("data-hotwire-escape-scope", this.openValue);
         this.triggerTargets.forEach((trigger) => trigger.setAttribute("aria-expanded", String(this.openValue)));
         this.menuTarget.dataset.open = String(this.openValue);
     }

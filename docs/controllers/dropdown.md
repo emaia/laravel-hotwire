@@ -211,13 +211,22 @@ By default, clicking an `<a>` or `<button>` inside the menu closes it. To opt ou
 </div>
 ```
 
+## Keyboard navigation
+
+Dropdown stays a disclosure-style popup. It does not capture arrow keys, `Home` or `End`, so action lists and custom form
+panels keep native browser focus behavior. Users move through focusable content with `Tab`/`Shift+Tab`.
+
+`Escape` closes the dropdown and returns focus to the trigger that opened it. Inside a Drawer, Modal or Sidebar,
+`Escape` closes the open dropdown before the parent overlay handles a later `Escape`.
+
 ## Accessibility
 
 - `aria-expanded` is kept in sync on the trigger(s).
 - `Escape` closes the menu and returns focus to the trigger.
+- Focus order is the DOM's native `Tab` order; the controller does not implement roving tabindex.
 - Set `aria-haspopup` and, if you give the menu an `id`, `aria-controls` on the trigger.
 - This is the **disclosure** pattern (a button revealing a panel), which is correct for menus of links/actions. It does
-  not impose `role="menu"`/`menuitem` semantics or arrow-key roving — that strict ARIA menu pattern is out of scope.
+  not impose `role="menu"`/`menuitem` semantics or roving tabindex — that strict ARIA menu pattern is out of scope.
 
 ## Turbo
 

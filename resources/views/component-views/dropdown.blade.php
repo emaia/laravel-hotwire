@@ -14,6 +14,7 @@
         'data-dropdown-strategy-value' => $strategy,
         'data-dropdown-flip-value' => $flip ? 'true' : 'false',
         'data-dropdown-shift-value' => $shift ? 'true' : 'false',
+        'data-dropdown-close-on-select-value' => $closeOnSelect ? null : 'false',
     ], $attributes, $stimulus, protectedPrefixes: ['data-dropdown-']);
 @endphp
 
@@ -45,7 +46,6 @@
         data-side="{{ $side }}"
         data-align="{{ $align }}"
         data-dropdown-target="menu"
-        @unless ($closeOnSelect) data-dropdown-close-on-select-value="false" @endunless
         @if ($open) data-dropdown-open-value="true" @endif
         @if ($transition)
             data-transition-enter="transition ease-out duration-100"
