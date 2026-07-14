@@ -222,6 +222,35 @@ test.serial("frame content opens the drawer and empty streams close after the an
     expect(frame.innerHTML).toBe("");
 });
 
+test.serial("Tab enters a dynamically loaded form after the drawer opened with loading content", async () => {
+    await mount(frameHtml());
+    const link = document.querySelector('a[href="/items/1/edit"]');
+    const frame = document.getElementById("drawer-frame");
+
+    link.focus();
+    frame.innerHTML = "<p>Loading...</p>";
+    frame.dispatchEvent(new CustomEvent("turbo:frame-load", { bubbles: true }));
+    await wait(10);
+
+    expect(mounted.controller.isOpen).toBe(true);
+    expect(document.activeElement).toBe(link);
+
+    frame.innerHTML = `
+        <form>
+            <input id="drawer-name" type="text" />
+            <button id="drawer-save" type="submit">Save</button>
+        </form>
+    `;
+    frame.dispatchEvent(new CustomEvent("turbo:frame-load", { bubbles: true }));
+    await wait(0);
+
+    const event = new KeyboardEvent("keydown", { key: "Tab", bubbles: true, cancelable: true });
+    document.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(document.getElementById("drawer-name"));
+});
+
 test.serial("empty streams for the drawer root wait for the close animation", async () => {
     await mount(frameHtml());
     const root = document.getElementById("drawer-shell");
