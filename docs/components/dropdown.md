@@ -72,7 +72,7 @@ passing attributes on the slot tag (`<x-slot:trigger class="...">`) or with `tri
 | `dropdown` | `close-on-select` | `true` | Close when an `<a>` or `<button>` inside the menu is clicked. |
 | `dropdown` | `transition` | `true` | Include the default enter/leave transition attributes. |
 | `dropdown` | `trigger-class` | `''` | Trigger button classes; the Nova preset styles the trigger by default. |
-| `dropdown` | `width` | `''` | Menu width classes; defaults to trigger width via `--anchor-width`. |
+| `dropdown` | `width` | `''` | Menu width classes; overrides the trigger-width default when set. |
 | `dropdown` | `menu-class` | `''` | Extra classes appended to the menu. |
 | `dropdown.label` | `inset` | `false` | Align the label with inset items. |
 | `dropdown.item` | `href` | `null` | Render an anchor instead of a button. |
@@ -102,23 +102,103 @@ menus can still be clipped by an ancestor with `overflow: hidden`.
 </hw:dropdown>
 ```
 
+## Menu Width
+
+By default, the Nova preset makes the menu match the trigger width with `w-(--anchor-width)` and hides horizontal
+overflow. That works for command menus and short action lists, but custom form content often needs more room.
+
+Set the width on `<hw:dropdown>` with the `width` prop. Do not put `min-w-*` only on an inner wrapper; the menu itself
+will still be trigger-width and clip the wider child.
+
+```blade
+<hw:dropdown width="w-64 max-w-[calc(100vw-2rem)]">
+    <x-slot:trigger>Filters</x-slot:trigger>
+
+    <hw:field.group class="p-2">
+        <!-- custom content -->
+    </hw:field.group>
+</hw:dropdown>
+```
+
+Use `width="min-w-64 w-max max-w-[calc(100vw-2rem)]"` when the menu should be at least a certain width but still grow
+with its content.
+
 ## Keeping The Menu Open
 
 Disable `close-on-select` for menus with interactive content that should not dismiss the dropdown, and close manually
 where needed with `data-action="dropdown#close"`.
 
 ```blade
-<hw:dropdown :close-on-select="false">
-    <x-slot:trigger>Filters</x-slot:trigger>
+<hw:form :action="route('projects.index')" method="get" clean-query-params>
+    <hw:dropdown width="w-64 max-w-[calc(100vw-2rem)]" :close-on-select="false">
+        <x-slot:trigger>
+            Filters
+            <hw:icon name="chevron-down" data-slot="dropdown-trigger-icon" />
+        </x-slot:trigger>
 
-    <label>
-        <input type="checkbox" name="active" />
-        Active
-    </label>
+        <hw:field.group class="p-2">
+            <hw:field
+                name="status[]"
+                orientation="horizontal"
+                :error="false"
+                class="rounded-md px-1.5 py-1 hover:bg-accent"
+            >
+                <hw:input
+                    id="status-active"
+                    type="checkbox"
+                    value="active"
+                    :checked="in_array('active', (array) request('status', []), true)"
+                />
+                <hw:field.label for="status-active">Active</hw:field.label>
+            </hw:field>
 
-    <hw:dropdown.item data-action="dropdown#close">Apply</hw:dropdown.item>
-</hw:dropdown>
+            <hw:field
+                name="status[]"
+                orientation="horizontal"
+                :error="false"
+                class="rounded-md px-1.5 py-1 hover:bg-accent"
+            >
+                <hw:input
+                    id="status-paused"
+                    type="checkbox"
+                    value="paused"
+                    :checked="in_array('paused', (array) request('status', []), true)"
+                />
+                <hw:field.label for="status-paused">Paused</hw:field.label>
+            </hw:field>
+
+            <hw:field
+                name="status[]"
+                orientation="horizontal"
+                :error="false"
+                class="rounded-md px-1.5 py-1 hover:bg-accent"
+            >
+                <hw:input
+                    id="status-archived"
+                    type="checkbox"
+                    value="archived"
+                    :checked="in_array('archived', (array) request('status', []), true)"
+                />
+                <hw:field.label for="status-archived">Archived</hw:field.label>
+            </hw:field>
+
+            <hw:dropdown.separator />
+
+            <hw:button-group class="justify-end">
+                <hw:button as="a" href="{{ route('projects.index') }}" variant="ghost" size="sm">
+                    Clear
+                </hw:button>
+
+                <hw:button type="submit" size="sm" data-action="dropdown#close">
+                    Apply
+                </hw:button>
+            </hw:button-group>
+        </hw:field.group>
+    </hw:dropdown>
+</hw:form>
 ```
+
+Use form components for interactive form content. `dropdown.item` is best for link/button actions, not checkbox rows.
 
 ## Components
 
@@ -164,8 +244,9 @@ where needed with `data-action="dropdown#close"`.
 - `data-slot="dropdown-separator"`
 - `data-slot="dropdown-shortcut"`
 
-`width` and `menu-class` are explicit escape hatches. By default, the Nova preset sizes the menu with
-`w-(--anchor-width)`, constrains it with `max-h-(--available-height)`, and animates from `--transform-origin`.
+`width` and `menu-class` are explicit escape hatches on the menu element itself. By default, the Nova preset sizes the
+menu with `w-(--anchor-width)`, constrains it with `max-h-(--available-height)`, hides horizontal overflow, and animates
+from `--transform-origin`.
 
 ## Token Reference
 
