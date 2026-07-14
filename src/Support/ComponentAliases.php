@@ -116,6 +116,8 @@ final class ComponentAliases
             'item.separator' => Components\Item\Separator::class,
             'item.title' => Components\Item\Title::class,
             'kbd.group' => Components\Kbd\Group::class,
+            'marker.icon' => Components\Marker\Icon::class,
+            'marker.content' => Components\Marker\Content::class,
             'pagination.content' => Components\Pagination\Content::class,
             'pagination.item' => Components\Pagination\Item::class,
             'pagination.link' => Components\Pagination\Link::class,

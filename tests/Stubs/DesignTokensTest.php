@@ -219,6 +219,9 @@ it('defines component styles in the nova preset via data-slot selectors', functi
         ->toContain('[data-slot="empty-state-media"]')
         ->toContain('[data-slot="kbd"]')
         ->toContain('[data-slot="kbd-group"]')
+        ->toContain('[data-slot="marker"]')
+        ->toContain('[data-slot="marker-icon"]')
+        ->toContain('[data-slot="marker-content"]')
         ->toContain('[data-slot="skeleton"]')
         ->toContain('[data-slot="separator"]')
         ->toContain('[data-slot="alert"]')
@@ -438,4 +441,17 @@ it('defines progress slots in the nova preset', function () use ($novaPresetPath
         ->toContain('width: var(--progress-value)')
         ->toContain('[data-slot="progress-label"]')
         ->toContain('[data-slot="progress-value"]');
+});
+
+it('defines marker slots and variants in the nova preset', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain('[data-slot="marker"]')
+        ->toContain('[data-slot="marker"][data-variant="separator"]')
+        ->toContain('[data-slot="marker"][data-variant="border"]')
+        ->toContain('[data-slot="marker-icon"]')
+        ->toContain('[data-slot="marker-content"]')
+        ->toContain('text-muted-foreground')
+        ->toContain('border-border');
 });
