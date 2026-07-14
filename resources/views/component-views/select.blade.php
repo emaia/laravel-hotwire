@@ -28,5 +28,5 @@
     @endforeach
 </select>
 
-<hw:icon name="chevron-down" aria-hidden="true" data-slot="select-icon" />
+<x-hw::icon name="chevron-down" aria-hidden="true" data-slot="select-icon" />
 </span>

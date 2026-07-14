@@ -63,7 +63,7 @@
                     @if (isset($button['level'])) data-level="{{ $button['level'] }}" @endif
                     aria-label="{{ $button['label'] }}"
                 >
-                    <hw:icon name="{{ $button['icon'] }}" aria-hidden="true" />
+                    <x-hw::icon name="{{ $button['icon'] }}" aria-hidden="true" />
                 </button>
             @endforeach
         </div>

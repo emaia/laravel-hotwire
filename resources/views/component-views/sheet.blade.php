@@ -36,7 +36,7 @@
                     data-action="sheet#close"
                     aria-label="Close sheet"
                 >
-                    <hw:icon name="x" />
+                    <x-hw::icon name="x" />
                 </button>
             </div>
         </div>
