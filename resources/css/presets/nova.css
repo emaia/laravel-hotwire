@@ -437,7 +437,7 @@
     [data-slot="progress-label"] { @apply text-sm font-medium; }
     [data-slot="progress-value"] { @apply ml-auto text-sm text-muted-foreground tabular-nums; }
 
-    [data-slot="spinner"] { @apply size-4 animate-spin text-foreground/60; }
+    [data-slot="spinner"] { @apply size-4 animate-spin; }
     [data-slot="scroll-progress"] { @apply fixed left-0 top-0 z-50 h-1 bg-primary; }
     [data-slot="timeago"] { @apply text-muted-foreground; }
     [data-slot="flash-container"] { @apply contents; }

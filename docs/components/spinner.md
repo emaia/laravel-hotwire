@@ -13,8 +13,9 @@ The component renders an accessible SVG status indicator with `data-slot="spinne
 
 ## Size
 
-The Nova preset matches the shadcn base-nova reference with a default `size-4` spinner. Override it with any size utility
-or custom class:
+The Nova preset matches the shadcn base-nova reference with a default `size-4` spinner. The spinner inherits the current
+text color, so it keeps contrast inside buttons, badges and other colored containers. Override the size or color with any
+utility class:
 
 ```blade
 <hw:spinner />
