@@ -32,6 +32,8 @@
     [data-slot="badge"][data-variant="ghost"] { @apply hover:bg-muted hover:text-muted-foreground dark:hover:bg-muted/50; }
     [data-slot="badge"][data-variant="link"] { @apply text-primary underline-offset-4 hover:underline; }
 
+    [data-slot="aspect-ratio"] { @apply relative aspect-(--ratio); }
+
     [data-slot="avatar"] { @apply relative isolate inline-flex size-8 shrink-0 items-center justify-center rounded-full align-middle select-none after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:border-border after:mix-blend-darken dark:after:mix-blend-lighten; }
     [data-slot="avatar"][data-size="xs"] { @apply size-5 text-xs; }
     [data-slot="avatar"][data-size="sm"] { @apply size-6 text-xs; }

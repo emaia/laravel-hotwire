@@ -2,6 +2,7 @@
 
 use Emaia\LaravelHotwire\Components\Alert;
 use Emaia\LaravelHotwire\Components\AlertDialog;
+use Emaia\LaravelHotwire\Components\AspectRatio;
 use Emaia\LaravelHotwire\Components\Avatar;
 use Emaia\LaravelHotwire\Components\Badge;
 use Emaia\LaravelHotwire\Components\Breadcrumb;
@@ -86,6 +87,14 @@ return [
             'docs' => 'docs/components/alert.md',
             'category' => 'feedback',
             'description' => 'Inline alert with title, description, action and semantic variants',
+            'controllers' => [],
+        ],
+        'aspect-ratio' => [
+            'class' => AspectRatio::class,
+            'view' => 'hotwire::component-views.aspect-ratio',
+            'docs' => 'docs/components/aspect-ratio.md',
+            'category' => 'display',
+            'description' => 'Static media wrapper that preserves a configurable aspect ratio',
             'controllers' => [],
         ],
         'avatar' => [
