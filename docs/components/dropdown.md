@@ -200,6 +200,16 @@ where needed with `data-action="dropdown#close"`.
 
 Use form components for interactive form content. `dropdown.item` is best for link/button actions, not checkbox rows.
 
+## Keyboard Navigation
+
+Dropdown stays a disclosure component, not a strict ARIA menu. It does not add `role="menu"` automatically, does not use
+roving tabindex and does not capture arrow keys, `Home` or `End`. Users navigate the open panel with the browser's native
+`Tab`/`Shift+Tab` focus order, which keeps both simple action lists and custom form content predictable.
+
+`Escape` closes the dropdown and restores focus to the trigger. When the dropdown is nested inside an overlay such as a
+Drawer, Modal or Sidebar, the dropdown consumes the first `Escape`; the parent overlay handles a later `Escape` after the
+dropdown has closed.
+
 ## Components
 
 | Component | Element | Slot |
@@ -275,5 +285,6 @@ etc.). Those are layout hooks, not theme tokens.
 ## Accessibility
 
 This is the disclosure pattern: `aria-expanded`/`aria-controls`/`aria-haspopup` are wired automatically, `Escape` closes
-and restores focus to the trigger, and clicking outside dismisses. It does not impose `role="menu"` semantics; for a
-strict ARIA menu with arrow-key roving, build it directly on the controller.
+and restores focus to the trigger, clicking outside dismisses, and the open panel follows native `Tab` order. For a
+strict ARIA menu with arrow-key navigation and roving tabindex, build it directly instead of using this disclosure
+component.
