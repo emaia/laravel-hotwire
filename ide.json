@@ -459,6 +459,21 @@
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Map"
                 },
                 {
+                    "name": "marker",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Marker"
+                },
+                {
+                    "name": "marker.content",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Marker\\Content"
+                },
+                {
+                    "name": "marker.icon",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Marker\\Icon"
+                },
+                {
                     "name": "modal",
                     "namespace": "hw",
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Modal"

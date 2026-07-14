@@ -31,6 +31,7 @@ use Emaia\LaravelHotwire\Components\Input;
 use Emaia\LaravelHotwire\Components\Item;
 use Emaia\LaravelHotwire\Components\Kbd;
 use Emaia\LaravelHotwire\Components\Map;
+use Emaia\LaravelHotwire\Components\Marker;
 use Emaia\LaravelHotwire\Components\Modal;
 use Emaia\LaravelHotwire\Components\Optimistic;
 use Emaia\LaravelHotwire\Components\Pagination;
@@ -144,6 +145,14 @@ return [
             'docs' => 'docs/components/progress.md',
             'category' => 'display',
             'description' => 'Server-rendered progress primitive with label, value, track and indicator slots',
+            'controllers' => [],
+        ],
+        'marker' => [
+            'class' => Marker::class,
+            'view' => 'hotwire::component-views.marker',
+            'docs' => 'docs/components/marker.md',
+            'category' => 'display',
+            'description' => 'Lightweight visual primitive for timelines, activity feeds and lists',
             'controllers' => [],
         ],
         'card' => [
