@@ -30,6 +30,7 @@ it('excludes every com-dep controller in core-only mode (empty opt-in)', functio
     expect($content)
         ->toContain('"!**/carousel_controller.js"')
         ->toContain('"!**/chart_controller.js"')
+        ->toContain('"!**/dropdown_controller.js"')
         ->toContain('"!**/map_controller.js"')
         ->toContain('"!**/rich_text_controller.js"')
         ->toContain('"!**/tooltip_controller.js"');
@@ -41,6 +42,7 @@ it('keeps the opted-in com-dep controllers and excludes the rest', function () {
     expect($content)
         ->not->toContain('"!**/carousel_controller.js"')
         ->not->toContain('"!**/chart_controller.js"')
+        ->toContain('"!**/dropdown_controller.js"')
         ->toContain('"!**/map_controller.js"')
         ->toContain('"!**/rich_text_controller.js"');
 });
@@ -48,10 +50,9 @@ it('keeps the opted-in com-dep controllers and excludes the rest', function () {
 it('never excludes zero-dep controllers', function () {
     $content = LoaderStub::generate($this->registry, []);
 
-    // modal, dropdown, auto-submit, etc. are zero-dep
+    // modal, auto-submit, etc. are zero-dep
     expect($content)
         ->not->toContain('"!**/modal_controller.js"')
-        ->not->toContain('"!**/dropdown_controller.js"')
         ->not->toContain('"!**/auto_submit_controller.js"');
 });
 
@@ -99,6 +100,7 @@ it('reports every com-dep controller as included when no exclusions are present'
     expect($included)
         ->toContain('carousel')
         ->toContain('chart')
+        ->toContain('dropdown')
         ->toContain('map')
         ->toContain('rich-text')
         ->toContain('tooltip');

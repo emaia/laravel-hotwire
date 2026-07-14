@@ -1,6 +1,7 @@
 // @hotwire-package
 import { Controller } from "@hotwired/stimulus";
 
+import { createFloating } from "./_floating.js";
 import { cancel, enter, leave } from "./_transition.js";
 
 export default class extends Controller {
@@ -9,6 +10,13 @@ export default class extends Controller {
     static values = {
         open: { type: Boolean, default: false },
         closeOnSelect: { type: Boolean, default: true },
+        side: { type: String, default: "bottom" },
+        align: { type: String, default: "start" },
+        sideOffset: { type: Number, default: 4 },
+        alignOffset: { type: Number, default: 0 },
+        strategy: { type: String, default: "absolute" },
+        flip: { type: Boolean, default: true },
+        shift: { type: Boolean, default: true },
     };
 
     initialize() {
@@ -18,6 +26,7 @@ export default class extends Controller {
         this.closeForCache = this.closeForCache.bind(this);
         this.activeTrigger = null;
         this.toggleEvent = null;
+        this.floating = null;
     }
 
     connect() {
@@ -27,12 +36,14 @@ export default class extends Controller {
 
         this.hiddenClassList.forEach((cls) => this.menuTarget.classList.toggle(cls, !this.openValue));
         this.syncState();
+        if (this.openValue) this.startFloating();
     }
 
     disconnect() {
         document.removeEventListener("click", this.onOutsideClick);
         document.removeEventListener("keydown", this.onKeydown);
         document.removeEventListener("turbo:before-cache", this.closeForCache);
+        this.cleanupFloating();
     }
 
     menuTargetConnected(menu) {
@@ -55,12 +66,14 @@ export default class extends Controller {
         this.openValue = true;
         this.syncState();
         enter(this.menuTarget, { hidden: this.hiddenClassList });
+        this.startFloating();
     }
 
     close({ focusTrigger = false } = {}) {
         if (!this.openValue) return;
         this.openValue = false;
         this.syncState();
+        this.cleanupFloating();
         leave(this.menuTarget, { hidden: this.hiddenClassList });
         if (focusTrigger) (this.activeTrigger ?? (this.hasTriggerTarget ? this.triggerTarget : null))?.focus();
     }
@@ -82,6 +95,7 @@ export default class extends Controller {
     }
 
     closeForCache() {
+        this.cleanupFloating();
         cancel(this.menuTarget);
         this.openValue = false;
         this.syncState();
@@ -96,6 +110,28 @@ export default class extends Controller {
     syncState() {
         this.triggerTargets.forEach((trigger) => trigger.setAttribute("aria-expanded", String(this.openValue)));
         this.menuTarget.dataset.open = String(this.openValue);
+    }
+
+    startFloating() {
+        if (!this.hasMenuTarget || !this.hasTriggerTarget) return;
+
+        const anchor = this.activeTrigger ?? this.triggerTarget;
+        this.floating ??= createFloating(anchor, this.menuTarget, {
+            side: this.sideValue,
+            align: this.alignValue,
+            sideOffset: this.sideOffsetValue,
+            alignOffset: this.alignOffsetValue,
+            strategy: this.strategyValue,
+            flip: this.flipValue,
+            shift: this.shiftValue,
+        });
+
+        void this.floating.start();
+    }
+
+    cleanupFloating() {
+        this.floating?.cleanup();
+        this.floating = null;
     }
 
     get hiddenClassList() {

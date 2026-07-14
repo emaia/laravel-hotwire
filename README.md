@@ -167,7 +167,7 @@ php artisan hotwire:controllers auto-select auto-submit turbo/progress
 | [Alert Dialog](docs/controllers/alert-dialog.md)               | `alert-dialog`        | `overlay`  | —                | [readme](docs/controllers/alert-dialog.md)        |
 | [Copy To Clipboard](docs/controllers/copy-to-clipboard.md)     | `copy-to-clipboard`   | `utility`  | —                | [readme](docs/controllers/copy-to-clipboard.md)   |
 | [Disclosure](docs/controllers/disclosure.md)                   | `disclosure`          | `utility`  | —                | [readme](docs/controllers/disclosure.md)          |
-| [Dropdown](docs/controllers/dropdown.md)                       | `dropdown`            | `overlay`  | —                | [readme](docs/controllers/dropdown.md)            |
+| [Dropdown](docs/controllers/dropdown.md)                       | `dropdown`            | `overlay`  | `@floating-ui/dom` | [readme](docs/controllers/dropdown.md)            |
 | [Error Scroll](docs/controllers/error-scroll.md)               | `error-scroll`        | `forms`    | —                | [readme](docs/controllers/error-scroll.md)        |
 | [File Preserve](docs/controllers/file-preserve.md)             | `file-preserve`       | `forms`    | —                | [readme](docs/controllers/file-preserve.md)       |
 | [GTM](docs/controllers/gtm.md)                                 | `gtm`                 | `utility`  | —                | [readme](docs/controllers/gtm.md)                 |

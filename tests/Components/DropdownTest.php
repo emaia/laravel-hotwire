@@ -1,5 +1,6 @@
 <?php
 
+use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
 
 it('renders the controller, trigger button and menu wiring', function () {
@@ -109,6 +110,45 @@ it('aligns to the start by default (RTL-safe logical position)', function () {
 
     $view->assertSee('data-align="start"', false);
     $view->assertDontSee('data-align="end"', false);
+});
+
+it('emits dropdown positioning defaults for anchored placement', function () {
+    $view = $this->blade('
+        <x-hw::dropdown>
+            <x-slot:trigger>M</x-slot:trigger>
+            <a href="/x">x</a>
+        </x-hw::dropdown>
+    ');
+
+    $view->assertSee('data-dropdown-side-value="bottom"', false);
+    $view->assertSee('data-dropdown-align-value="start"', false);
+    $view->assertSee('data-dropdown-side-offset-value="4"', false);
+    $view->assertSee('data-dropdown-align-offset-value="0"', false);
+    $view->assertSee('data-dropdown-strategy-value="absolute"', false);
+    $view->assertSee('data-dropdown-flip-value="true"', false);
+    $view->assertSee('data-dropdown-shift-value="true"', false);
+    $view->assertSee('data-side="bottom"', false);
+    $view->assertSee('data-align="start"', false);
+    $view->assertDontSee('data-width="default"', false);
+});
+
+it('emits custom dropdown positioning values', function () {
+    $view = $this->blade('
+        <x-hw::dropdown side="right" align="end" :side-offset="12" :align-offset="-4" strategy="fixed" :flip="false" :shift="false">
+            <x-slot:trigger>M</x-slot:trigger>
+            <a href="/x">x</a>
+        </x-hw::dropdown>
+    ');
+
+    $view->assertSee('data-dropdown-side-value="right"', false);
+    $view->assertSee('data-dropdown-align-value="end"', false);
+    $view->assertSee('data-dropdown-side-offset-value="12"', false);
+    $view->assertSee('data-dropdown-align-offset-value="-4"', false);
+    $view->assertSee('data-dropdown-strategy-value="fixed"', false);
+    $view->assertSee('data-dropdown-flip-value="false"', false);
+    $view->assertSee('data-dropdown-shift-value="false"', false);
+    $view->assertSee('data-side="right"', false);
+    $view->assertSee('data-align="end"', false);
 });
 
 it('aligns to the end when requested', function () {
@@ -287,4 +327,9 @@ it('registers dropdown subcomponent aliases', function () {
         ->toHaveKey('dropdown.separator')
         ->toHaveKey('dropdown.shortcut')
         ->toHaveKey('dropdown.group');
+});
+
+it('registers Floating UI as the dropdown controller dependency', function () {
+    expect(HotwireRegistry::make()->controller('dropdown')->npm)
+        ->toHaveKey('@floating-ui/dom', '^1.8.0');
 });

@@ -62,6 +62,16 @@ it('deduplicates a dependency reached more than once', function () {
         ->toBe([realpath($this->dir.'/_shared.js')]);
 });
 
+it('resolves the dropdown controller shared positioning helpers', function () {
+    $base = realpath(__DIR__.'/../../resources/js/controllers');
+    $source = realpath($base.'/dropdown_controller.js');
+    $dependencies = array_map('basename', $this->imports->sharedDependencies($source, $base));
+
+    expect($dependencies)
+        ->toContain('_floating.js')
+        ->toContain('_transition.js');
+});
+
 // --- targetPath ---
 
 it('maps a resolved dependency to its published path', function () {
