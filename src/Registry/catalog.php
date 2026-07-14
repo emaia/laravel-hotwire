@@ -33,6 +33,7 @@ use Emaia\LaravelHotwire\Components\Kbd;
 use Emaia\LaravelHotwire\Components\Map;
 use Emaia\LaravelHotwire\Components\Marker;
 use Emaia\LaravelHotwire\Components\Modal;
+use Emaia\LaravelHotwire\Components\MultiSelect;
 use Emaia\LaravelHotwire\Components\Optimistic;
 use Emaia\LaravelHotwire\Components\Pagination;
 use Emaia\LaravelHotwire\Components\Progress;
@@ -290,6 +291,14 @@ return [
             'category' => 'forms',
             'description' => 'Select dropdown with auto id/errorKey, ARIA, old() merge and placeholder support',
             'controllers' => [],
+        ],
+        'multi-select' => [
+            'class' => MultiSelect::class,
+            'view' => 'hotwire::component-views.multi-select',
+            'docs' => 'docs/components/multi-select.md',
+            'category' => 'forms',
+            'description' => 'Searchable multi-value select with Floating UI positioning and native form submission',
+            'controllers' => ['multi-select', 'clear-input'],
         ],
         'rich-text' => [
             'class' => RichText::class,
@@ -610,6 +619,13 @@ return [
             'category' => 'utility',
             'description' => 'Leaflet wrapper — center/zoom/markers values, GeoJSON URL fetch, ResizeObserver, subclass hooks for tile layer and event listeners',
             'npm' => ['leaflet' => '^1.9.4'],
+        ],
+        'multi-select' => [
+            'source' => 'resources/js/controllers/multi_select_controller.js',
+            'docs' => 'docs/controllers/multi-select.md',
+            'category' => 'forms',
+            'description' => 'Searchable multi-value select with select-all, max selection and Floating UI positioning',
+            'npm' => ['@floating-ui/dom' => '^1.8.0'],
         ],
         'modal' => [
             'source' => 'resources/js/controllers/modal_controller.js',

@@ -176,6 +176,7 @@ php artisan hotwire:controllers auto-select auto-submit turbo/progress
 | [Lazy Image](docs/controllers/lazy-image.md)                   | `lazy-image`          | `utility`  | —                | [readme](docs/controllers/lazy-image.md)          |
 | [Modal](docs/controllers/modal.md)                             | `modal`               | `overlay`  | —                | [readme](docs/controllers/modal.md)               |
 | [Modal Auto Close](docs/controllers/modal-auto-close.md)       | `modal-auto-close`    | `overlay`  | —                | [readme](docs/controllers/modal-auto-close.md)    |
+| [Multi Select](docs/controllers/multi-select.md)               | `multi-select`        | `forms`    | `@floating-ui/dom` | [readme](docs/controllers/multi-select.md)        |
 | [Money Input](docs/controllers/money-input.md)                 | `money-input`         | `forms`    | —                | [readme](docs/controllers/money-input.md)         |
 | [OEmbed](docs/controllers/oembed.md)                           | `oembed`              | `utility`  | —                | [readme](docs/controllers/oembed.md)              |
 | [Password Visibility](docs/controllers/password-visibility.md) | `password-visibility` | `forms`    | —                | [readme](docs/controllers/password-visibility.md) |
@@ -345,6 +346,7 @@ stacking multiple controllers, attribute-bag merging and the escaping rules.
 | [Modal](docs/components/modal.md)                         | `<hw:modal>`             | `overlay`  | `modal`                                                                | [readme](docs/components/modal.md)              |
 | [Alert Dialog](docs/components/alert-dialog.md)           | `<hw:alert-dialog>`      | `overlay`  | `alert-dialog`                                                         | [readme](docs/components/alert-dialog.md)       |
 | [Dropdown](docs/components/dropdown.md)                   | `<hw:dropdown>`          | `overlay`  | `dropdown`                                                             | [readme](docs/components/dropdown.md)           |
+| [Multi Select](docs/components/multi-select.md)           | `<hw:multi-select>`      | `forms`    | `multi-select`, `clear-input`                                          | [readme](docs/components/multi-select.md)       |
 | [Optimistic](docs/components/optimistic.md)               | `<hw:optimistic>`        | `turbo`    | —                                                                      | [readme](docs/components/optimistic.md)         |
 | [Carousel](docs/components/carousel.md)                   | `<hw:carousel>`          | `utility`  | `carousel`                                                             | [readme](docs/components/carousel.md)           |
 | [Chart](docs/components/chart.md)                         | `<hw:chart>`             | `utility`  | `chart`                                                                | [readme](docs/components/chart.md)              |

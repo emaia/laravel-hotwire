@@ -474,6 +474,7 @@ it('writes a loader stub with com-dep exclusions in --core-only mode', function 
         ->toContain('"!**/chart_controller.js"')
         ->toContain('"!**/dropdown_controller.js"')
         ->toContain('"!**/map_controller.js"')
+        ->toContain('"!**/multi_select_controller.js"')
         ->not->toContain('"!**/modal_controller.js"');
 });
 
@@ -490,6 +491,7 @@ it('writes a loader stub with only non-opted-in com-deps excluded with --with-de
         ->not->toContain('"!**/chart_controller.js"')
         ->toContain('"!**/dropdown_controller.js"')
         ->toContain('"!**/map_controller.js"')
+        ->toContain('"!**/multi_select_controller.js"')
         ->toContain('"!**/rich_text_controller.js"');
 });
 
