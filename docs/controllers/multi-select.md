@@ -5,7 +5,7 @@ maximum selection limits, validation proxy updates and Floating UI positioning.
 
 When the search input is rendered with the package `clear-input` controller, `inputCleared` resets the option filter.
 
-**Identifier:** `multi-select`  
+**Identifier:** `multi-select`
 **Install:** `php artisan hotwire:controllers multi-select`
 
 ## Requirements
