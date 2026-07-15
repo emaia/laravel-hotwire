@@ -2,7 +2,8 @@
 const FOCUSABLE_SELECTOR =
     'a[href], area[href], input:not([disabled]):not([type="hidden"]), ' +
     "select:not([disabled]), textarea:not([disabled]), " +
-    'button:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    'button:not([disabled]), details:not([aria-disabled="true"]):not([data-disabled="true"]) > summary:not([aria-disabled="true"]):not([tabindex="-1"]), ' +
+    '[tabindex]:not([tabindex="-1"])';
 
 export class FocusTrap {
     constructor(container) {
