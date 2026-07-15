@@ -4,6 +4,7 @@
     $formAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
         'data-slot' => 'form',
         'data-controller' => $controller ?: null,
+        'data-turbo-frame' => $frame,
         'method' => $isSpoofMethod ? 'post' : $method,
         'enctype' => $enctype,
     ], $attributes, $stimulus, except: [
@@ -14,6 +15,7 @@
         'error-scroll',
         'clean-query-params',
         'track-frame-src',
+        'frame',
     ], protectedPrefixes: array_values(array_filter([
         $autoSubmit ? 'data-auto-submit-' : null,
         $unsavedChanges ? 'data-unsaved-changes-' : null,

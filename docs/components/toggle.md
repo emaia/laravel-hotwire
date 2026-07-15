@@ -34,11 +34,15 @@ Passing `name` renders a hidden input associated with the toggle. The input is e
 so unpressed toggles are omitted from the submitted form data:
 
 ```blade
-<hw:form method="get" action="/posts" auto-submit>
+<hw:form method="get" action="/posts" frame="posts" auto-submit>
     <hw:toggle name="filters[]" value="featured" :pressed="request()->collect('filters')->contains('featured')" auto-submit>
         Featured
     </hw:toggle>
 </hw:form>
+
+<turbo-frame id="posts">
+    ...
+</turbo-frame>
 ```
 
 This keeps Toggle suitable for filters and action state without replacing checkbox/switch behavior. If your server needs

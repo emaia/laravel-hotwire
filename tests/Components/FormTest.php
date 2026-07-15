@@ -198,6 +198,25 @@ it('renders method exactly once for spoofed forms', function () {
 
 // --- Track Frame Src ---
 
+it('renders data-turbo-frame from the frame prop', function () {
+    $view = $this->blade('<x-hw::form frame="results"><span>x</span></x-hw::form>');
+
+    $view->assertSee('data-turbo-frame="results"', false);
+});
+
+it('does not render frame as an html attribute', function () {
+    $view = $this->blade('<x-hw::form frame="results"><span>x</span></x-hw::form>');
+
+    $view->assertDontSee(' frame="results"', false);
+});
+
+it('lets explicit data-turbo-frame override the frame prop', function () {
+    $view = $this->blade('<x-hw::form frame="results" data-turbo-frame="modal"><span>x</span></x-hw::form>');
+
+    $view->assertSee('data-turbo-frame="modal"', false)
+        ->assertDontSee('data-turbo-frame="results"', false);
+});
+
 it('outputs hidden _turbo_frame_src input when track-frame-src is true', function () {
     $view = $this->blade('<x-hw::form track-frame-src><span>x</span></x-hw::form>');
 

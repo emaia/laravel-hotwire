@@ -22,6 +22,7 @@ Form wrapper that composes optional Stimulus behaviors via boolean props. Render
 | `error-scroll`       | `bool`         | `false` | Scrolls to the first validation error after form submission                                                                                                      |
 | `clean-query-params` | `bool`         | `false` | Strips empty fields from GET query strings before submission                                                                                                     |
 | `track-frame-src`    | `bool`         | `false` | Includes a hidden `_turbo_frame_src` input for correct redirect resolution inside Turbo Frames                                                                   |
+| `frame`              | `string\|null` | `null`  | Sets `data-turbo-frame` on the form so Turbo submits into that frame                                                                                             |
 | `enctype`            | `string\|null` | `null`  | HTML `enctype` attribute. Set to `"multipart/form-data"` for file uploads. Default `null` omits the attribute (browser uses `application/x-www-form-urlencoded`) |
 
 Any other HTML attribute (`action`, `method`, `class`, `data-*`, `aria-*`) passes through to the `<form>` element.
@@ -58,6 +59,25 @@ Submits the form automatically in response to events. You still wire individual 
 ```
 
 See [auto-submit controller](../controllers/auto-submit.md).
+
+### Turbo Frame target
+
+Use `frame` when a form should submit into a Turbo Frame. This is equivalent to writing `data-turbo-frame`, but keeps the
+common Hotwire form path declarative:
+
+```blade
+<hw:form method="get" action="/tasks" frame="results" auto-submit>
+    <hw:toggle name="status" value="done" :pressed="request('status') === 'done'" auto-submit>
+        Done
+    </hw:toggle>
+</hw:form>
+
+<turbo-frame id="results">
+    ...
+</turbo-frame>
+```
+
+If both `frame` and `data-turbo-frame` are present, the explicit `data-turbo-frame` attribute wins.
 
 ### unsaved-changes
 
