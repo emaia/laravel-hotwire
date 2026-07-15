@@ -55,6 +55,50 @@ test("opens when dynamic content is inserted and closes cleanly through the publ
     await expect(frame).toBeEmpty();
 });
 
+test("tabs from the modal close button into native accordion summaries", async ({ page }) => {
+    await page.setContent(`
+        <style>.hidden { display: none; }</style>
+        <div data-controller="modal" data-modal-open-duration-value="0" data-modal-close-duration-value="0">
+            <button id="open-modal" data-action="modal#open">Open modal</button>
+            <div
+                data-modal-target="modal"
+                data-modal-hidden-class="hidden"
+                data-modal-visible-class="visible"
+                data-modal-backdrop-hidden-class="backdrop-hidden"
+                data-modal-backdrop-visible-class="backdrop-visible"
+                data-modal-dialog-hidden-class="dialog-hidden"
+                data-modal-dialog-visible-class="dialog-visible"
+                data-modal-lock-scroll-class="overflow-hidden"
+                hidden
+            >
+                <div data-modal-target="backdrop"></div>
+                <div data-modal-target="dialog">
+                    <button id="close-modal" type="button" data-action="modal#close">Close</button>
+                    <section data-controller="accordion" data-accordion-type-value="single">
+                        <details data-accordion-target="item" data-value="billing">
+                            <summary id="billing-summary">Billing</summary>
+                            <section>Billing answers.</section>
+                        </details>
+                    </section>
+                </div>
+            </div>
+        </div>
+    `);
+
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ content: await browserControllerScript("resources/js/controllers/modal_controller.js") });
+    await page.evaluate(() => {
+        window.StimulusApplication = window.Stimulus.Application.start();
+        window.StimulusApplication.register("modal", window.ModalController);
+    });
+
+    await page.locator("#open-modal").click();
+    await expect(page.locator("#close-modal")).toBeFocused();
+
+    await page.keyboard.press("Tab");
+    await expect(page.locator("#billing-summary")).toBeFocused();
+});
+
 async function browserControllerScript(path) {
     // Inline helper modules alongside the controller — ES `import` is not valid
     // inside a regular <script>, so the harness concatenates the source instead.
