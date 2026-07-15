@@ -214,9 +214,19 @@
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Chart"
                 },
                 {
+                    "name": "checkbox",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Checkbox"
+                },
+                {
                     "name": "checkbox-group",
                     "namespace": "hw",
                     "className": "\\Emaia\\LaravelHotwire\\Components\\CheckboxGroup"
+                },
+                {
+                    "name": "checkbox-group.item",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\CheckboxGroup\\Item"
                 },
                 {
                     "name": "conditional-field",
@@ -782,6 +792,11 @@
                     "name": "spinner",
                     "namespace": "hw",
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Spinner"
+                },
+                {
+                    "name": "switch",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\SwitchInput"
                 },
                 {
                     "name": "table",

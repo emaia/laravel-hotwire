@@ -45,6 +45,7 @@ final class ComponentAliases
             'card.footer' => Components\Card\Footer::class,
             'card.header' => Components\Card\Header::class,
             'card.title' => Components\Card\Title::class,
+            'checkbox-group.item' => Components\CheckboxGroup\Item::class,
             'drawer.trigger' => Components\Drawer\Trigger::class,
             'drawer.content' => Components\Drawer\Content::class,
             'drawer.header' => Components\Drawer\Header::class,

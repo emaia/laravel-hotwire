@@ -1,7 +1,7 @@
 # Checkbox Group
 
-Renders a group of checkboxes from an `options` array, with optional "select-all" master checkbox via the
-`checkbox-select-all` Stimulus controller.
+Renders a group of checkboxes from an `options` array or from rich `<hw:checkbox-group.item>` children, with optional
+"select-all" master checkbox via the `checkbox-select-all` Stimulus controller.
 
 Each checkbox gets a unique `id` derived from the group name and option value. All checkboxes share the same
 `aria-describedby` pointing to the group's error element.
@@ -32,6 +32,7 @@ Flat (non-associative) options arrays are automatically normalized: `['main', 'd
 | `wrapper-class`    | `string`       | `""`           | Merged on the wrapper `<div>`                                        |
 | `label-class`      | `string`       | `""`           | Merged on each item `<label>`                                        |
 | `old`              | `bool`         | `true`         | When `true`, merges `old()` input over `selected`                    |
+| `auto-submit`      | `bool`         | `false`        | Add `change->auto-submit#submit` to each item checkbox               |
 | `id`               | `string\|null` | derived        | Base id for per-checkbox ids and error reference                     |
 | `errorKey`         | `string\|null` | derived        | Override when HTML `name` ≠ Laravel validation key                   |
 
@@ -72,6 +73,27 @@ The select-all checkbox gets `id="{baseId}-all"`.
 ```
 
 Each checkbox renders inside a `<label>` with the option label as its text node.
+
+## Rich items
+
+Use `<hw:checkbox-group.item>` when each option needs custom markup. The item inherits `name`, `selected`, `old`,
+`errorKey`, `select-all`, and `auto-submit` from the parent group.
+
+```blade
+<hw:checkbox-group name="roles[]" :selected="$user->roles ?? []" select-all>
+    <hw:checkbox-group.item value="admin">
+        <span class="font-medium">Admin</span>
+        <span class="text-muted-foreground">Can manage billing and users.</span>
+    </hw:checkbox-group.item>
+
+    <hw:checkbox-group.item value="editor">
+        <span class="font-medium">Editor</span>
+        <span class="text-muted-foreground">Can publish and update content.</span>
+    </hw:checkbox-group.item>
+</hw:checkbox-group>
+```
+
+You can combine `options` and rich items in the same group; options render first, then the slot content.
 
 ## With select-all
 
@@ -126,6 +148,18 @@ behavior and only toggle between fully checked and unchecked:
 />
 ```
 
+## Auto-submit
+
+`auto-submit` adds `change->auto-submit#submit` to every item checkbox. The `auto-submit` controller should live on an
+ancestor form:
+
+```blade
+<hw:form auto-submit>
+    <hw:checkbox-group name="tags[]" :options="$tags" auto-submit />
+</hw:form>
+```
+
 ## Required controllers
 
-`hotwire:check` looks for `checkbox-select-all` when you use the `select-all` prop.
+`hotwire:check` looks for `checkbox-select-all` when you use the `select-all` prop and `auto-submit` when you use the
+`auto-submit` prop.

@@ -35,6 +35,24 @@ it('renders a single checkbox', function () {
     $view->assertSee('Active');
 });
 
+it('renders rich item slot content alongside option checkboxes', function () {
+    $view = $this->blade('
+        <x-hw::checkbox-group name="roles[]" :options="[\'admin\' => \'Admin\']">
+            <x-hw::checkbox-group.item value="editor">
+                <span data-test="title">Editor</span>
+                <span data-test="description">Can publish content.</span>
+            </x-hw::checkbox-group.item>
+        </x-hw::checkbox-group>
+    ');
+
+    $html = (string) $view;
+    expect($html)->toContain('value="admin"')
+        ->and($html)->toContain('Admin')
+        ->and($html)->toContain('value="editor"')
+        ->and($html)->toContain('data-test="title"')
+        ->and($html)->toContain('Can publish content.');
+});
+
 // --- Non-associative options ---
 
 it('normalizes flat options array so keys equal values', function () {
@@ -57,6 +75,17 @@ it('checks selected values', function () {
 it('checks multiple selected values', function () {
     $view = $this->blade('<x-hw::checkbox-group name="ids[]" :options="[1 => \'One\', 2 => \'Two\', 3 => \'Three\']" :selected="[1, 3]" />');
 
+    $view->assertSee('checked', false);
+});
+
+it('checks rich item values from selected values', function () {
+    $view = $this->blade('
+        <x-hw::checkbox-group name="roles[]" :selected="[\'editor\']">
+            <x-hw::checkbox-group.item value="editor">Editor</x-hw::checkbox-group.item>
+        </x-hw::checkbox-group>
+    ');
+
+    $view->assertSee('value="editor"', false);
     $view->assertSee('checked', false);
 });
 
@@ -100,6 +129,22 @@ it('casts old() scalar value to array', function () {
     $html = (string) $view;
     // Old scalar 'main' should be cast to array and checked
     expect($html)->toContain('value="main"')
+        ->and($html)->toContain('checked');
+    $this->assertEquals(1, substr_count($html, 'checked'));
+});
+
+it('restores rich item checked state from old input', function () {
+    session()->put('_old_input', ['roles' => ['editor']]);
+
+    $view = $this->blade('
+        <x-hw::checkbox-group name="roles[]" :selected="[\'admin\']">
+            <x-hw::checkbox-group.item value="admin">Admin</x-hw::checkbox-group.item>
+            <x-hw::checkbox-group.item value="editor">Editor</x-hw::checkbox-group.item>
+        </x-hw::checkbox-group>
+    ');
+
+    $html = (string) $view;
+    expect($html)->toContain('value="editor"')
         ->and($html)->toContain('checked');
     $this->assertEquals(1, substr_count($html, 'checked'));
 });
@@ -150,6 +195,16 @@ it('adds controller wrapper with select-all', function () {
 
     $view->assertSee('data-controller="checkbox-select-all"', false);
     $view->assertSee('data-checkbox-select-all-target="checkboxAll"', false);
+    $view->assertSee('data-checkbox-select-all-target="checkbox"', false);
+});
+
+it('marks rich items as select-all targets when select-all is active', function () {
+    $view = $this->blade('
+        <x-hw::checkbox-group name="roles[]" select-all>
+            <x-hw::checkbox-group.item value="editor">Editor</x-hw::checkbox-group.item>
+        </x-hw::checkbox-group>
+    ');
+
     $view->assertSee('data-checkbox-select-all-target="checkbox"', false);
 });
 
@@ -247,6 +302,17 @@ it('filters data-checkbox-select-all prefix when select-all is active', function
     $view->assertDontSee('data-checkbox-select-all-target="override"', false);
 });
 
+it('adds auto-submit change action to option and rich item checkboxes', function () {
+    $view = $this->blade('
+        <x-hw::checkbox-group name="roles[]" :options="[\'admin\' => \'Admin\']" auto-submit>
+            <x-hw::checkbox-group.item value="editor">Editor</x-hw::checkbox-group.item>
+        </x-hw::checkbox-group>
+    ');
+
+    $html = (string) $view;
+    expect(substr_count($html, 'data-action="change->auto-submit#submit"'))->toBe(2);
+});
+
 // --- Pass-through ---
 
 it('passes through arbitrary attributes', function () {
@@ -306,6 +372,16 @@ it('uses explicit id as base for per-checkbox ids', function () {
     $view->assertSee('id="my-group-dev"', false);
 });
 
+it('derives rich item id from group name and value', function () {
+    $view = $this->blade('
+        <x-hw::checkbox-group name="roles[]">
+            <x-hw::checkbox-group.item value="content editor">Editor</x-hw::checkbox-group.item>
+        </x-hw::checkbox-group>
+    ');
+
+    $view->assertSee('id="roles-content-editor"', false);
+});
+
 it('does not set id when no name and no explicit id', function () {
     $view = $this->blade('<x-hw::checkbox-group :options="[1 => \'One\']" />');
 
@@ -350,6 +426,20 @@ it('uses explicit error key override', function () {
     $view = $this->blade('<x-hw::checkbox-group name="ids[]" error-key="custom.path" :options="[1 => \'One\']" />');
 
     $view->assertSee('aria-invalid="true"', false);
+});
+
+it('applies validation state to rich item checkboxes', function () {
+    shareCheckboxGroupErrors(['roles' => ['Required.']]);
+
+    $view = $this->blade('
+        <x-hw::checkbox-group name="roles[]">
+            <x-hw::checkbox-group.item value="editor">Editor</x-hw::checkbox-group.item>
+        </x-hw::checkbox-group>
+    ');
+
+    $view->assertSee('aria-describedby="roles-error"', false);
+    $view->assertSee('aria-invalid="true"', false);
+    $view->assertSee('data-invalid', false);
 });
 
 it('uses error key for error lookup, aria-describedby from name', function () {

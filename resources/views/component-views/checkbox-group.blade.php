@@ -7,7 +7,7 @@
         'data-slot' => 'checkbox-group',
         'data-controller' => $wrapperController ?: null,
         'class' => filled($wrapperClass) ? $wrapperClass : null,
-    ], $attributes, $stimulus, except: ['select-all'], protectedPrefixes: $internalPrefixes);
+    ], $attributes, $stimulus, except: ['select-all', 'auto-submit'], protectedPrefixes: $internalPrefixes);
 @endphp
 
 <div
@@ -27,6 +27,7 @@
                 @if ($selectAllId) id="{{ $selectAllId }}" @endif
                 @if ($errorId) aria-describedby="{{ $errorId }}" @endif
                 @if ($hasErrors) aria-invalid="true" data-invalid @endif
+                @if ($elementAction) data-action="{!! $elementAction !!}" @endif
             />
             {{ $selectAllLabel ?: 'Select all' }}
         </label>
@@ -48,9 +49,12 @@
                 @if ($errorId) aria-describedby="{{ $errorId }}" @endif
                 @if ($hasErrors) aria-invalid="true" data-invalid @endif
                 @if ($selectAll) data-checkbox-select-all-target="checkbox" @endif
+                @if ($elementAction) data-action="{!! $elementAction !!}" @endif
                 @if (in_array($value, $resolvedSelected)) checked @endif
             />
             {{ $label }}
         </label>
     @endforeach
+
+    {{ $slot }}
 </div>

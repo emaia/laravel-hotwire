@@ -27,6 +27,7 @@ class CheckboxGroup extends Component
         public ?string $id = null,
         public ?string $errorKey = null,
         public ?Htmlable $stimulus = null,
+        public bool $autoSubmit = false,
     ) {
         if ($options !== [] && array_keys($options) === range(0, count($options) - 1)) {
             $this->options = array_combine($options, $options);
@@ -41,7 +42,7 @@ class CheckboxGroup extends Component
     public function data(): array
     {
         $data = parent::data();
-        $data['internalPrefixes'] = ['data-checkbox-select-all-'];
+        $data['internalPrefixes'] = $this->selectAll ? ['data-checkbox-select-all-'] : [];
         $data['compute'] = $this->computeResolved(...);
 
         return $this->stripNullProps($data, ['name', 'id', 'errorKey']);
@@ -96,6 +97,7 @@ class CheckboxGroup extends Component
             'resolvedSelected' => $resolvedSelected,
             'wrapperController' => $wrapperController,
             'hasErrors' => $hasErrors,
+            'elementAction' => $this->autoSubmit ? 'change->auto-submit#submit' : '',
         ];
     }
 }

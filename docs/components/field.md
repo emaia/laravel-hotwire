@@ -42,7 +42,7 @@ A single control with label, helper text, and validation feedback.
 ```text
 field
 ├── field.label
-├── input / select / textarea / checkbox-group / file / file-upload
+├── input / checkbox / switch / select / textarea / checkbox-group / file / file-upload
 ├── field.description
 └── field.error
 ```
@@ -109,7 +109,7 @@ Use `field.content` when a horizontal control needs a title and description besi
 
 ```blade
 <hw:field name="marketing" orientation="horizontal">
-    <hw:input type="checkbox" value="1" />
+    <hw:switch value="1" />
 
     <hw:field.content>
         <hw:field.title>Marketing emails</hw:field.title>
@@ -122,7 +122,7 @@ Use `field.label` instead of `field.title` when a real label association is need
 
 ```blade
 <hw:field name="remember" orientation="horizontal">
-    <hw:input type="checkbox" value="1" />
+    <hw:checkbox value="1" />
     <hw:field.label>Remember me</hw:field.label>
 </hw:field>
 ```
@@ -168,7 +168,7 @@ Use `field.label` instead of `field.title` when a real label association is need
 
 | Context    | Used By                                                                                              | Purpose                                                                          |
 |------------|------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|
-| `name`     | `field.label`, `input`, `select`, `textarea`, `checkbox-group`, `file`, `file-upload`, `field.error` | Derives `for`, `id`, `name`, `aria-describedby`, and validation keys.            |
+| `name`     | `field.label`, `input`, `checkbox`, `switch`, `select`, `textarea`, `checkbox-group`, `file`, `file-upload`, `field.error` | Derives `for`, `id`, `name`, `aria-describedby`, and validation keys.            |
 | `errorKey` | Controls and `field.error`                                                                           | Looks up Laravel validation messages when HTML name differs from validation key. |
 | `required` | `field.label` and controls                                                                           | Renders the required marker and ARIA required state.                             |
 
@@ -195,6 +195,9 @@ field.
 | `vertical`   | Default. Stacks label, control, description, and error.                                    |
 | `horizontal` | Aligns direct children in a row. Pair with `field.content` for title and description text. |
 | `responsive` | Starts vertical and switches to a horizontal row at the `md` breakpoint.                   |
+
+Pass `disabled` or `invalid` to emit `data-disabled="true"` / `data-invalid="true"` on the field wrapper. These states are
+used by card-style labels and other CSS presets; they do not disable nested controls by themselves.
 
 ```blade
 <hw:field name="email" label="Email" orientation="responsive">

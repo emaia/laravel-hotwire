@@ -12,7 +12,9 @@ use Emaia\LaravelHotwire\Components\ButtonGroup;
 use Emaia\LaravelHotwire\Components\Card;
 use Emaia\LaravelHotwire\Components\Carousel;
 use Emaia\LaravelHotwire\Components\Chart;
+use Emaia\LaravelHotwire\Components\Checkbox;
 use Emaia\LaravelHotwire\Components\CheckboxGroup;
+use Emaia\LaravelHotwire\Components\CheckboxGroup\Item as CheckboxGroupItem;
 use Emaia\LaravelHotwire\Components\ConditionalField;
 use Emaia\LaravelHotwire\Components\Drawer;
 use Emaia\LaravelHotwire\Components\Dropdown;
@@ -46,6 +48,7 @@ use Emaia\LaravelHotwire\Components\Sheet;
 use Emaia\LaravelHotwire\Components\Sidebar;
 use Emaia\LaravelHotwire\Components\Skeleton;
 use Emaia\LaravelHotwire\Components\Spinner;
+use Emaia\LaravelHotwire\Components\SwitchInput;
 use Emaia\LaravelHotwire\Components\Table;
 use Emaia\LaravelHotwire\Components\Tabs;
 use Emaia\LaravelHotwire\Components\Textarea;
@@ -149,13 +152,29 @@ return [
             'description' => 'Apache ECharts wrapper — inline option or URL-fetched, theme + sizing props, controller swap for subclass extensibility',
             'controllers' => ['chart'],
         ],
+        'checkbox' => [
+            'class' => Checkbox::class,
+            'view' => 'hotwire::component-views.checkbox',
+            'docs' => 'docs/components/checkbox.md',
+            'category' => 'forms',
+            'description' => 'Standalone native checkbox with old input restore, unchecked hidden value and optional indeterminate state',
+            'controllers' => ['checkbox', 'auto-submit'],
+        ],
         'checkbox-group' => [
             'class' => CheckboxGroup::class,
             'view' => 'hotwire::component-views.checkbox-group',
             'docs' => 'docs/components/checkbox-group.md',
             'category' => 'forms',
-            'description' => 'Checkbox group with optional select-all master checkbox',
-            'controllers' => ['checkbox-select-all'],
+            'description' => 'Checkbox group with options, rich item composition and optional select-all master checkbox',
+            'controllers' => ['checkbox-select-all', 'auto-submit'],
+        ],
+        'checkbox-group.item' => [
+            'class' => CheckboxGroupItem::class,
+            'view' => 'hotwire::component-views.checkbox-group-item',
+            'docs' => 'docs/components/checkbox-group.md',
+            'category' => 'forms',
+            'description' => 'Rich checkbox-group item that inherits name, selected state, validation and select-all wiring',
+            'controllers' => ['checkbox-select-all', 'auto-submit'],
         ],
         'conditional-field' => [
             'class' => ConditionalField::class,
@@ -421,6 +440,14 @@ return [
             'description' => 'Animated SVG spinner — no JavaScript required',
             'controllers' => [],
         ],
+        'switch' => [
+            'class' => SwitchInput::class,
+            'view' => 'hotwire::component-views.switch',
+            'docs' => 'docs/components/switch.md',
+            'category' => 'forms',
+            'description' => 'Native checkbox rendered as an accessible switch with old input restore and unchecked hidden value',
+            'controllers' => ['auto-submit'],
+        ],
         'table' => [
             'class' => Table::class,
             'view' => 'hotwire::component-views.table',
@@ -528,6 +555,12 @@ return [
             'category' => 'utility',
             'description' => 'Apache ECharts wrapper — server-rendered option, optional URL fetch, ResizeObserver, subclass-friendly defaults',
             'npm' => ['echarts' => '^6.1.0'],
+        ],
+        'checkbox' => [
+            'source' => 'resources/js/controllers/checkbox_controller.js',
+            'docs' => 'docs/controllers/checkbox.md',
+            'category' => 'forms',
+            'description' => 'Applies native checkbox indeterminate state from Stimulus values and re-syncs after Turbo renders',
         ],
         'checkbox-select-all' => [
             'source' => 'resources/js/controllers/checkbox_select_all_controller.js',

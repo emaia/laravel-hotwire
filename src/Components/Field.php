@@ -19,6 +19,8 @@ class Field extends Component
         public bool $error = true,
         public string $orientation = 'vertical',
         public string $class = '',
+        public bool $disabled = false,
+        public bool $invalid = false,
     ) {}
 
     public function render()
