@@ -4,6 +4,26 @@
         "components": {
             "list": [
                 {
+                    "name": "accordion",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Accordion"
+                },
+                {
+                    "name": "accordion.content",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Accordion\\Content"
+                },
+                {
+                    "name": "accordion.item",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Accordion\\Item"
+                },
+                {
+                    "name": "accordion.trigger",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Accordion\\Trigger"
+                },
+                {
                     "name": "alert",
                     "namespace": "hw",
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Alert"

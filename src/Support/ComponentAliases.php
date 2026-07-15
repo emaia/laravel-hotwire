@@ -10,6 +10,9 @@ final class ComponentAliases
     public static function subComponents(): array
     {
         return [
+            'accordion.item' => Components\Accordion\Item::class,
+            'accordion.trigger' => Components\Accordion\Trigger::class,
+            'accordion.content' => Components\Accordion\Content::class,
             'modal.header' => Components\Modal\Header::class,
             'modal.title' => Components\Modal\Title::class,
             'modal.description' => Components\Modal\Description::class,

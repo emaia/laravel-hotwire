@@ -188,6 +188,10 @@ it('defines component styles in the nova preset via data-slot selectors', functi
     $css = file_get_contents($novaPresetPath);
 
     expect($css)
+        ->toContain('[data-slot="accordion"]')
+        ->toContain('[data-slot="accordion-item"]')
+        ->toContain('[data-slot="accordion-trigger"]')
+        ->toContain('[data-slot="accordion-content"]')
         ->toContain('[data-slot="field-group"]')
         ->toContain('[data-slot="field-description"]')
         ->toContain('[data-slot="field-description"] > a')
@@ -234,6 +238,18 @@ it('defines component styles in the nova preset via data-slot selectors', functi
         ->toContain('[data-slot="input"]')
         ->toContain('[data-slot="modal-panel"]')
         ->toContain('[data-slot="alert-dialog-panel"]');
+});
+
+it('smooths accordion details content without measuring height in JavaScript', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain('[data-slot="accordion-item"]::details-content')
+        ->toContain('[data-slot="accordion-item"][aria-disabled="true"] > [data-slot="accordion-trigger"]')
+        ->toContain('block-size: 0')
+        ->toContain('block-size: calc-size(auto, size)')
+        ->toContain('transition-behavior: allow-discrete')
+        ->toContain('prefers-reduced-motion: reduce');
 });
 
 it('keeps item icon media unframed like the shadcn base-nova reference', function () use ($novaPresetPath) {

@@ -150,6 +150,7 @@ php artisan hotwire:controllers auto-select auto-submit turbo/progress
 
 | Controller                                                     | Identifier            | Category   | Dependencies     | Docs                                              |
 |----------------------------------------------------------------|-----------------------|------------|------------------|---------------------------------------------------|
+| [Accordion](docs/controllers/accordion.md)                     | `accordion`           | `utility`  | —                | [readme](docs/controllers/accordion.md)          |
 | [Animated Number](docs/controllers/animated-number.md)         | `animated-number`     | `utility`  | —                | [readme](docs/controllers/animated-number.md)     |
 | [Auto Save](docs/controllers/auto-save.md)                     | `auto-save`           | `forms`    | —                | [readme](docs/controllers/auto-save.md)           |
 | [Auto Resize](docs/controllers/auto-resize.md)                 | `auto-resize`         | `forms`    | —                | [readme](docs/controllers/auto-resize.md)         |
@@ -345,6 +346,7 @@ stacking multiple controllers, attribute-bag merging and the escaping rules.
 | [Flash Message](docs/components/flash-message.md)         | `<hw:flash-message>`     | `feedback` | `toast`                                                                | [readme](docs/components/flash-message.md)      |
 | [Skeleton](docs/components/skeleton.md)                   | `<hw:skeleton>`          | `feedback` | —                                                                      | [readme](docs/components/skeleton.md)           |
 | [Spinner](docs/components/spinner.md)                     | `<hw:spinner>`           | `feedback` | —                                                                      | [readme](docs/components/spinner.md)            |
+| [Accordion](docs/components/accordion.md)                 | `<hw:accordion>`        | `display`  | `accordion`                                                            | [readme](docs/components/accordion.md)          |
 | [Aspect Ratio](docs/components/aspect-ratio.md)           | `<hw:aspect-ratio>`      | `display`  | —                                                                      | [readme](docs/components/aspect-ratio.md)       |
 | [Avatar](docs/components/avatar.md)                       | `<hw:avatar>`            | `display`  | —                                                                      | [readme](docs/components/avatar.md)             |
 | [Badge](docs/components/badge.md)                         | `<hw:badge>`             | `display`  | —                                                                      | [readme](docs/components/badge.md)              |
