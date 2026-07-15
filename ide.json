@@ -867,6 +867,11 @@
                     "name": "timeago",
                     "namespace": "hw",
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Timeago"
+                },
+                {
+                    "name": "toggle",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Toggle"
                 }
             ],
             "phpNamespaces": [

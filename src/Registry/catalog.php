@@ -53,6 +53,7 @@ use Emaia\LaravelHotwire\Components\Table;
 use Emaia\LaravelHotwire\Components\Tabs;
 use Emaia\LaravelHotwire\Components\Textarea;
 use Emaia\LaravelHotwire\Components\Timeago;
+use Emaia\LaravelHotwire\Components\Toggle;
 
 return [
     'components' => [
@@ -480,6 +481,14 @@ return [
             'description' => 'Self-refreshing relative timestamp element wrapping the timeago controller',
             'controllers' => ['timeago'],
         ],
+        'toggle' => [
+            'class' => Toggle::class,
+            'view' => 'hotwire::component-views.toggle',
+            'docs' => 'docs/components/toggle.md',
+            'category' => 'forms',
+            'description' => 'Accessible two-state button with optional hidden input and auto-submit integration',
+            'controllers' => ['toggle', 'auto-submit'],
+        ],
     ],
     'controllers' => [
         'accordion' => [
@@ -804,6 +813,12 @@ return [
             'category' => 'feedback',
             'description' => 'Initializes the Sonner toaster and persists it across Turbo Drive navigations',
             'npm' => ['@emaia/sonner' => '^2.1.0'],
+        ],
+        'toggle' => [
+            'source' => 'resources/js/controllers/toggle_controller.js',
+            'docs' => 'docs/controllers/toggle.md',
+            'category' => 'forms',
+            'description' => 'Synchronizes a two-state button with aria-pressed, data-state and an optional hidden input',
         ],
         'tooltip' => [
             'source' => 'resources/js/controllers/tooltip_controller.js',

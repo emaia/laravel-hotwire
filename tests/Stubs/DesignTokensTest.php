@@ -383,6 +383,18 @@ it('styles checkable inputs when they are wrapped by labels', function () use ($
         ->toContain('aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20');
 });
 
+it('keeps toggle sizing aligned with shadcn', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain('[data-slot="toggle"][data-size="default"] { @apply h-9 min-w-9 px-2; }')
+        ->toContain('[data-slot="toggle"][data-size="sm"] { @apply h-8 min-w-8 px-1.5; }')
+        ->toContain('[data-slot="toggle"][data-size="lg"] { @apply h-10 min-w-10 px-2.5; }')
+        ->toContain('[data-slot="toggle"][data-variant="outline"] { @apply border border-input bg-transparent shadow-xs hover:bg-accent hover:text-accent-foreground; }')
+        ->not->toContain('[data-slot="toggle"][data-size="sm"] { @apply h-8 min-w-8 px-1.5 text-xs; }')
+        ->not->toContain('[data-slot="toggle"] { @apply inline-flex shrink-0 items-center justify-center gap-2 rounded-md border border-transparent');
+});
+
 it('styles rich text via granular slots instead of textarea-only styles', function () use ($novaPresetPath) {
     $css = file_get_contents($novaPresetPath);
 

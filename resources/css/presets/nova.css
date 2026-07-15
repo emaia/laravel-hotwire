@@ -52,6 +52,14 @@
     :is([data-slot="button"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"])[data-size="icon-sm"] { @apply size-7 rounded-[min(var(--radius-md),12px)]; }
     :is([data-slot="button"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"])[data-size="icon-lg"] { @apply size-9; }
 
+    [data-slot="toggle"] { @apply inline-flex shrink-0 items-center justify-center gap-2 rounded-md bg-transparent text-sm font-medium whitespace-nowrap transition-all outline-none hover:bg-muted hover:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4; }
+    [data-slot="toggle"][data-variant="default"] { @apply hover:bg-muted hover:text-muted-foreground; }
+    [data-slot="toggle"][data-variant="outline"] { @apply border border-input bg-transparent shadow-xs hover:bg-accent hover:text-accent-foreground; }
+    [data-slot="toggle"][data-state="on"] { @apply bg-accent text-accent-foreground; }
+    [data-slot="toggle"][data-size="default"] { @apply h-9 min-w-9 px-2; }
+    [data-slot="toggle"][data-size="sm"] { @apply h-8 min-w-8 px-1.5; }
+    [data-slot="toggle"][data-size="lg"] { @apply h-10 min-w-10 px-2.5; }
+
     [data-slot="badge"] { @apply inline-flex h-5 w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-4xl border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-all focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3; }
     [data-slot="badge"][data-variant="default"] { @apply bg-primary text-primary-foreground hover:bg-primary/80; }
     [data-slot="badge"][data-variant="secondary"] { @apply bg-secondary text-secondary-foreground hover:bg-secondary/80; }
