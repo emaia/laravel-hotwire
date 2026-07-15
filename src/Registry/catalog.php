@@ -1,5 +1,6 @@
 <?php
 
+use Emaia\LaravelHotwire\Components\Accordion;
 use Emaia\LaravelHotwire\Components\Alert;
 use Emaia\LaravelHotwire\Components\AlertDialog;
 use Emaia\LaravelHotwire\Components\AspectRatio;
@@ -52,6 +53,14 @@ use Emaia\LaravelHotwire\Components\Timeago;
 
 return [
     'components' => [
+        'accordion' => [
+            'class' => Accordion::class,
+            'view' => 'hotwire::component-views.accordion',
+            'docs' => 'docs/components/accordion.md',
+            'category' => 'display',
+            'description' => 'Native details/summary accordion primitives with single or multiple item coordination',
+            'controllers' => ['accordion'],
+        ],
         'alert' => [
             'class' => Alert::class,
             'view' => 'hotwire::component-views.alert',
@@ -446,6 +455,12 @@ return [
         ],
     ],
     'controllers' => [
+        'accordion' => [
+            'source' => 'resources/js/controllers/accordion_controller.js',
+            'docs' => 'docs/controllers/accordion.md',
+            'category' => 'utility',
+            'description' => 'Coordinates native details/summary accordion items for single, multiple and disabled behavior',
+        ],
         'alert-dialog' => [
             'source' => 'resources/js/controllers/alert_dialog_controller.js',
             'docs' => 'docs/controllers/alert-dialog.md',
