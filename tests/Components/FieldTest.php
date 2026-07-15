@@ -44,6 +44,20 @@ it('merges custom class on wrapper', function () {
     $view->assertSee('class="space-y-1"', false);
 });
 
+it('passes through arbitrary attributes on wrapper', function () {
+    $view = $this->blade('<x-hw::field name="email" data-disabled data-invalid><span>x</span></x-hw::field>');
+
+    $view->assertSee('data-disabled', false);
+    $view->assertSee('data-invalid', false);
+});
+
+it('emits disabled and invalid data state props', function () {
+    $view = $this->blade('<x-hw::field name="email" disabled invalid><span>x</span></x-hw::field>');
+
+    $view->assertSee('data-disabled="true"', false);
+    $view->assertSee('data-invalid="true"', false);
+});
+
 it('does not auto-render label or description', function () {
     $view = $this->blade('<x-hw::field name="email"><span>x</span></x-hw::field>');
 

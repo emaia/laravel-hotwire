@@ -68,6 +68,9 @@ Unknown presets pass through as raw Maska strings.
 
 ## Checkbox and radio
 
+For new standalone checkboxes and switches, prefer `<hw:checkbox>` and `<hw:switch>`. The low-level checkable branch on
+`<hw:input>` remains available for compatibility and custom composition.
+
 For `type="checkbox"` and `type="radio"`, `value` is the HTML value attribute (what is posted when the input is marked),
 and `checked` controls the initial state.
 

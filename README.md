@@ -161,6 +161,7 @@ php artisan hotwire:controllers auto-select auto-submit turbo/progress
 | [Carousel](docs/controllers/carousel.md)                       | `carousel`            | `utility`  | `embla-carousel` | [readme](docs/controllers/carousel.md)            |
 | [Char Counter](docs/controllers/char-counter.md)               | `char-counter`        | `forms`    | —                | [readme](docs/controllers/char-counter.md)        |
 | [Chart](docs/controllers/chart.md)                             | `chart`               | `utility`  | `echarts`        | [readme](docs/controllers/chart.md)               |
+| [Checkbox](docs/controllers/checkbox.md)                       | `checkbox`            | `forms`    | —                | [readme](docs/controllers/checkbox.md)            |
 | [Checkbox Select All](docs/controllers/checkbox-select-all.md) | `checkbox-select-all` | `forms`    | —                | [readme](docs/controllers/checkbox-select-all.md) |
 | [Clean Query Params](docs/controllers/clean-query-params.md)   | `clean-query-params`  | `forms`    | —                | [readme](docs/controllers/clean-query-params.md)  |
 | [Clear Input](docs/controllers/clear-input.md)                 | `clear-input`         | `forms`    | —                | [readme](docs/controllers/clear-input.md)         |
@@ -332,7 +333,9 @@ stacking multiple controllers, attribute-bag merging and the escaping rules.
 | [Field Group](docs/components/field.md#hwfieldgroup)      | `<hw:field.group>`       | `forms`    | —                                                                      | [readme](docs/components/field.md#hwfieldgroup) |
 | [Field Label](docs/components/field.md#hwfieldlabel)      | `<hw:field.label>`       | `forms`    | —                                                                      | [readme](docs/components/field.md#hwfieldlabel) |
 | [Field Error](docs/components/field.md#hwfielderror)      | `<hw:field.error>`       | `forms`    | —                                                                      | [readme](docs/components/field.md#hwfielderror) |
-| [Checkbox Group](docs/components/checkbox-group.md)       | `<hw:checkbox-group>`    | `forms`    | `checkbox-select-all`                                                  | [readme](docs/components/checkbox-group.md)     |
+| [Checkbox](docs/components/checkbox.md)                   | `<hw:checkbox>`          | `forms`    | `checkbox`, `auto-submit`                                              | [readme](docs/components/checkbox.md)           |
+| [Checkbox Group](docs/components/checkbox-group.md)       | `<hw:checkbox-group>`    | `forms`    | `checkbox-select-all`, `auto-submit`                                   | [readme](docs/components/checkbox-group.md)     |
+| [Checkbox Group Item](docs/components/checkbox-group.md)  | `<hw:checkbox-group.item>` | `forms`  | `checkbox-select-all`, `auto-submit`                                   | [readme](docs/components/checkbox-group.md)     |
 | [Conditional Field](docs/components/conditional-field.md) | `<hw:conditional-field>` | `forms`    | `conditional-fields`                                                   | [readme](docs/components/conditional-field.md)  |
 | [File](docs/components/file.md)                           | `<hw:file>`              | `forms`    | `file-preserve`, `reset-files`                                         | [readme](docs/components/file.md)               |
 | [File Upload](docs/components/file-upload.md)             | `<hw:file-upload>`       | `forms`    | `file-upload`                                                          | [readme](docs/components/file-upload.md)        |
@@ -340,6 +343,7 @@ stacking multiple controllers, attribute-bag merging and the escaping rules.
 | [Multi Select](docs/components/multi-select.md)           | `<hw:multi-select>`      | `forms`    | `multi-select`, `clear-input`                                          | [readme](docs/components/multi-select.md)       |
 | [Rich Text](docs/components/rich-text.md)                 | `<hw:rich-text>`         | `forms`    | `rich-text`, `rich-text-toolbar`                                       | [readme](docs/components/rich-text.md)          |
 | [Select](docs/components/select.md)                       | `<hw:select>`            | `forms`    | —                                                                      | [readme](docs/components/select.md)             |
+| [Switch](docs/components/switch.md)                       | `<hw:switch>`            | `forms`    | `auto-submit`                                                          | [readme](docs/components/switch.md)             |
 | [Textarea](docs/components/textarea.md)                   | `<hw:textarea>`          | `forms`    | `auto-resize`, `char-counter`                                          | [readme](docs/components/textarea.md)           |
 | [Alert](docs/components/alert.md)                         | `<hw:alert>`             | `feedback` | —                                                                      | [readme](docs/components/alert.md)              |
 | [Flash Container](docs/components/flash-container.md)     | `<hw:flash-container>`   | `feedback` | `toaster`                                                              | [readme](docs/components/flash-container.md)    |

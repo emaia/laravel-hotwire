@@ -2,9 +2,14 @@
     $name = $name ?? null;
     $errorKey = $errorKey ?? null;
     $required = $required ?? null;
+
+    $fieldAttributes = $attributes->merge([
+        'data-disabled' => $disabled ? 'true' : null,
+        'data-invalid' => $invalid ? 'true' : null,
+    ])->class($class ?: null);
 @endphp
 
-<div role="group" data-slot="field" data-orientation="{{ $orientation }}" {{ $attributes->class($class ?: null)->only('class') }}>
+<div role="group" data-slot="field" data-orientation="{{ $orientation }}" {{ $fieldAttributes }}>
     @if ($label !== null && $label !== '')
         <x-hw::field.label :required-label="$requiredLabel">{{ $label }}</x-hw::field.label>
     @endif
