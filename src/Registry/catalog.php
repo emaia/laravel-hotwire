@@ -28,6 +28,7 @@ use Emaia\LaravelHotwire\Components\FileUpload;
 use Emaia\LaravelHotwire\Components\FlashContainer;
 use Emaia\LaravelHotwire\Components\FlashMessage;
 use Emaia\LaravelHotwire\Components\Form;
+use Emaia\LaravelHotwire\Components\Frame;
 use Emaia\LaravelHotwire\Components\FrameOrPage;
 use Emaia\LaravelHotwire\Components\Icon;
 use Emaia\LaravelHotwire\Components\Input;
@@ -280,6 +281,14 @@ return [
             'category' => 'forms',
             'description' => 'Form wrapper with optional Stimulus behaviors, CSRF, and Turbo Frame redirect support',
             'controllers' => ['auto-submit', 'unsaved-changes', 'error-scroll', 'clean-query-params'],
+        ],
+        'frame' => [
+            'class' => Frame::class,
+            'view' => 'hotwire::component-views.frame',
+            'docs' => 'docs/components/frame.md',
+            'category' => 'turbo',
+            'description' => 'DX-friendly Turbo Frame wrapper with lazy, advance and replace aliases',
+            'controllers' => [],
         ],
         'frame-or-page' => [
             'class' => FrameOrPage::class,

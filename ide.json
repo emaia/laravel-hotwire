@@ -409,6 +409,11 @@
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Form"
                 },
                 {
+                    "name": "frame",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Frame"
+                },
+                {
                     "name": "frame-or-page",
                     "namespace": "hw",
                     "className": "\\Emaia\\LaravelHotwire\\Components\\FrameOrPage"
