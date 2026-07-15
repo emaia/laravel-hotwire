@@ -2,7 +2,7 @@
 
 Injects the `X-Turbo-Frame-Src` header on Turbo Frame requests so the server can resolve the correct redirect URL when a form submission inside a frame fails validation.
 
-**Identifier:** `frame-src`
+**Identifier:** `turbo--frame-src`
 **Install:** `php artisan hotwire:controllers turbo/frame-src`
 
 ## Requirements
@@ -16,7 +16,7 @@ Add the controller to any element inside a Turbo Frame — typically the form or
 ```html
 <turbo-frame id="content" src="/posts/create">
     <form
-        data-controller="frame-src"
+        data-controller="turbo--frame-src"
         method="post"
         action="/posts"
     >

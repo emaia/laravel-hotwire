@@ -94,6 +94,37 @@ it('lets explicit data-turbo-action win over action props', function () {
         ->assertDontSee('data-turbo-action="advance"', false);
 });
 
+// --- Controller integrations ---
+
+it('can enable frame view transitions', function () {
+    $view = $this->blade('<x-hw::frame id="results" view-transition>Content</x-hw::frame>');
+
+    $view->assertSee('data-controller="turbo--view-transition"', false)
+        ->assertDontSee(' view-transition', false);
+});
+
+it('can enable polling with the default interval', function () {
+    $view = $this->blade('<x-hw::frame id="stats" poll src="/stats">Loading</x-hw::frame>');
+
+    $view->assertSee('data-controller="turbo--polling"', false)
+        ->assertDontSee('data-turbo--polling-timeout-value', false)
+        ->assertDontSee(' poll', false);
+});
+
+it('can configure polling interval', function () {
+    $view = $this->blade('<x-hw::frame id="stats" poll poll-interval="30000" src="/stats">Loading</x-hw::frame>');
+
+    $view->assertSee('data-controller="turbo--polling"', false)
+        ->assertSee('data-turbo--polling-timeout-value="30000"', false)
+        ->assertDontSee('poll-interval', false);
+});
+
+it('merges user controllers with frame integrations', function () {
+    $view = $this->blade('<x-hw::frame id="stats" poll view-transition data-controller="analytics">Loading</x-hw::frame>');
+
+    $view->assertSee('data-controller="turbo--polling turbo--view-transition analytics"', false);
+});
+
 // --- Pass-through ---
 
 it('passes through arbitrary frame attributes', function () {
@@ -115,5 +146,5 @@ it('registers frame in the component catalog', function () {
     expect($frame->class)->toBe(Frame::class)
         ->and($frame->view)->toBe('hotwire::component-views.frame')
         ->and($frame->docs)->toBe('docs/components/frame.md')
-        ->and($frame->controllers)->toBe([]);
+        ->and($frame->controllers)->toBe(['turbo--polling', 'turbo--view-transition']);
 });

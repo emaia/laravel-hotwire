@@ -3,7 +3,7 @@
 Automatically reloads a Turbo Frame at regular intervals. Useful for dashboards, feeds and areas that need up-to-date
 data without user interaction.
 
-**Identifier:** `polling`
+**Identifier:** `turbo--polling`
 **Install:** `php artisan hotwire:controllers turbo/polling`
 
 ## Requirements
@@ -28,9 +28,9 @@ data without user interaction.
 
 ```html
 <div
-    data-controller="polling"
-    data-polling-frame-value="notifications"
-    data-polling-timeout-value="10000"
+    data-controller="turbo--polling"
+    data-turbo--polling-frame-value="notifications"
+    data-turbo--polling-timeout-value="10000"
 >
     <turbo-frame id="notifications" src="/notifications">
         ...
@@ -38,17 +38,29 @@ data without user interaction.
 </div>
 ```
 
-The `notifications` frame will reload every 10 seconds.
+The `notifications` frame will reload every 10 seconds. When the controller is mounted directly on a `<turbo-frame>`,
+`frame` is inferred from the frame's own `id`:
+
+```html
+<turbo-frame
+    id="notifications"
+    src="/notifications"
+    data-controller="turbo--polling"
+    data-turbo--polling-timeout-value="10000"
+>
+    ...
+</turbo-frame>
+```
 
 ## With polling toggle
 
 ```html
 <div
-    data-controller="polling"
-    data-polling-frame-value="feed"
-    data-polling-enabled-value="true"
+    data-controller="turbo--polling"
+    data-turbo--polling-frame-value="feed"
+    data-turbo--polling-enabled-value="true"
 >
-    <button data-action="polling#refresh">
+    <button data-action="turbo--polling#refresh">
         Refresh now
     </button>
 
@@ -62,9 +74,9 @@ The `notifications` frame will reload every 10 seconds.
 
 ```html
 <div
-    data-controller="polling"
-    data-polling-frame-value="stats"
-    data-polling-timeout-value="30000"
+    data-controller="turbo--polling"
+    data-turbo--polling-frame-value="stats"
+    data-turbo--polling-timeout-value="30000"
 >
     <turbo-frame id="stats" src="/dashboard/stats">
         ...
@@ -72,9 +84,9 @@ The `notifications` frame will reload every 10 seconds.
 </div>
 
 <div
-    data-controller="polling"
-    data-polling-frame-value="activity"
-    data-polling-timeout-value="5000"
+    data-controller="turbo--polling"
+    data-turbo--polling-frame-value="activity"
+    data-turbo--polling-timeout-value="5000"
 >
     <turbo-frame id="activity" src="/dashboard/activity">
         ...

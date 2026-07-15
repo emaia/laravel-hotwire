@@ -288,7 +288,7 @@ return [
             'docs' => 'docs/components/frame.md',
             'category' => 'turbo',
             'description' => 'DX-friendly Turbo Frame wrapper with lazy, advance and replace aliases',
-            'controllers' => [],
+            'controllers' => ['turbo--polling', 'turbo--view-transition'],
         ],
         'frame-or-page' => [
             'class' => FrameOrPage::class,

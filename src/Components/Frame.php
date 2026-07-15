@@ -21,6 +21,9 @@ class Frame extends Component
         public ?string $action = null,
         public bool $advance = false,
         public bool $replace = false,
+        public bool $poll = false,
+        public ?int $pollInterval = null,
+        public bool $viewTransition = false,
     ) {
         $this->frameId = is_object($id) ? dom_id($id) : $id;
 
@@ -55,6 +58,7 @@ class Frame extends Component
     private function computeResolved(ComponentAttributeBag $attributes): array
     {
         $hasRawAction = $attributes->has('data-turbo-action') && $attributes->get('data-turbo-action') !== false;
+        $protectedPrefixes = $this->poll ? ['data-turbo--polling-'] : [];
 
         if ($this->advance && $this->replace && $this->action === null && ! $hasRawAction) {
             throw new InvalidArgumentException('The advance and replace props cannot be used together unless action or data-turbo-action is set.');
@@ -68,6 +72,8 @@ class Frame extends Component
                 'target' => $this->target,
                 'autoscroll' => $this->autoscroll,
                 'data-turbo-action' => $this->resolvedAction(),
+                'data-controller' => $this->resolvedController() ?: null,
+                'data-turbo--polling-timeout-value' => $this->poll ? $this->pollInterval : null,
             ], $attributes, except: [
                 'id',
                 'src',
@@ -78,7 +84,10 @@ class Frame extends Component
                 'action',
                 'advance',
                 'replace',
-            ]),
+                'poll',
+                'poll-interval',
+                'view-transition',
+            ], protectedPrefixes: $protectedPrefixes),
         ];
     }
 
@@ -94,5 +103,13 @@ class Frame extends Component
             $this->replace => 'replace',
             default => null,
         };
+    }
+
+    private function resolvedController(): string
+    {
+        return trim(implode(' ', array_filter([
+            $this->poll ? 'turbo--polling' : null,
+            $this->viewTransition ? 'turbo--view-transition' : null,
+        ])));
     }
 }
