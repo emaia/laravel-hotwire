@@ -36,6 +36,100 @@ it('wraps the slot directly in the layout when no Turbo-Frame header is present'
     $view->assertDontSee('<turbo-frame id="modal"', false);
 });
 
+it('uses the frame content slot for matching Turbo-Frame requests', function () {
+    request()->headers->set('Turbo-Frame', 'modal');
+
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::frame-or-page frame="modal" layout="dashboard-shell">
+            Fallback content
+
+            <x-slot:frameContent>
+                Frame-only form
+            </x-slot:frameContent>
+
+            <x-slot:pageContent>
+                Full-page chrome
+            </x-slot:pageContent>
+        </x-hw::frame-or-page>
+    BLADE);
+
+    $view->assertSee('<turbo-frame id="modal"', false);
+    $view->assertSee('Frame-only form');
+    $view->assertDontSee('Full-page chrome');
+    $view->assertDontSee('Fallback content');
+    $view->assertDontSee('data-test-layout', false);
+});
+
+it('uses the page content slot for direct navigation', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::frame-or-page frame="modal" layout="dashboard-shell">
+            Fallback content
+
+            <x-slot:frameContent>
+                Frame-only form
+            </x-slot:frameContent>
+
+            <x-slot:pageContent>
+                Full-page chrome
+            </x-slot:pageContent>
+        </x-hw::frame-or-page>
+    BLADE);
+
+    $view->assertSee('data-test-layout="dashboard"', false);
+    $view->assertSee('Full-page chrome');
+    $view->assertDontSee('Frame-only form');
+    $view->assertDontSee('Fallback content');
+    $view->assertDontSee('<turbo-frame id="modal"', false);
+});
+
+it('falls back to the default slot when a contextual slot is missing', function () {
+    request()->headers->set('Turbo-Frame', 'modal');
+
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::frame-or-page frame="modal" layout="dashboard-shell">
+            Fallback content
+
+            <x-slot:pageContent>
+                Full-page chrome
+            </x-slot:pageContent>
+        </x-hw::frame-or-page>
+    BLADE);
+
+    $view->assertSee('<turbo-frame id="modal"', false);
+    $view->assertSee('Fallback content');
+    $view->assertDontSee('Full-page chrome');
+});
+
+it('uses the frame content slot when no layout is given', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::frame-or-page frame="modal">
+            Fallback content
+
+            <x-slot:frameContent>
+                Frame-only form
+            </x-slot:frameContent>
+        </x-hw::frame-or-page>
+    BLADE);
+
+    $view->assertSee('<turbo-frame id="modal"', false);
+    $view->assertSee('Frame-only form');
+    $view->assertDontSee('Fallback content');
+});
+
+it('resolves simple layout names to layouts components when they exist', function () {
+    $view = $this->blade('<x-hw::frame-or-page frame="modal" layout="dashboard">Content</x-hw::frame-or-page>');
+
+    $view->assertSee('data-test-layout="nested-dashboard"', false);
+    $view->assertSee('Content');
+});
+
+it('preserves existing simple layout aliases before trying layouts components', function () {
+    $view = $this->blade('<x-hw::frame-or-page frame="modal" layout="direct-shell">Content</x-hw::frame-or-page>');
+
+    $view->assertSee('data-test-layout="direct-shell"', false);
+    $view->assertDontSee('data-test-layout="nested-direct-shell"', false);
+});
+
 it('renders only the frame when the Turbo-Frame header matches', function () {
     request()->headers->set('Turbo-Frame', 'modal');
 
@@ -73,6 +167,16 @@ it('forwards extra attributes to the inner turbo-frame', function () {
 
     $view->assertSee('src="/edit"', false);
     $view->assertSee('loading="lazy"', false);
+});
+
+it('supports frame component aliases when rendering as a frame', function () {
+    $view = $this->blade('<x-hw::frame-or-page frame="modal" lazy advance>Content</x-hw::frame-or-page>');
+
+    $view->assertSee('<turbo-frame id="modal"', false)
+        ->assertSee('loading="lazy"', false)
+        ->assertSee('data-turbo-action="advance"', false)
+        ->assertDontSee(' lazy', false)
+        ->assertDontSee(' advance', false);
 });
 
 it('does NOT emit a duplicate frame id when the layout already hosts a frame with the same id', function () {

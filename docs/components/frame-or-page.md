@@ -9,7 +9,7 @@ This component is the declarative form of the [frame-or-page recipe](../recipes/
 
 ```blade
 {{-- resources/views/messages/edit.blade.php --}}
-<hw:frame-or-page frame="modal" layout="layouts.dashboard">
+<hw:frame-or-page frame="modal" layout="dashboard">
     <form method="POST" action="{{ route('messages.update', $message) }}">
         @csrf
         @method('PUT')
@@ -43,27 +43,65 @@ The view itself stays oblivious to how it was requested.
 The first link asks Turbo to scope the request to the `modal` frame, sending the `Turbo-Frame`
 request header. The second link navigates normally; the layout renders the standalone page.
 
-Pair with a frame host in your dashboard layout so the overlay opens automatically when the frame receives content. The common hosts are [`<hw:modal frame="modal">`](./modal.md), [`<hw:sheet frame="settings-panel">`](./sheet.md), and [`<hw:drawer frame="drawer-panel">`](./drawer.md).
+Pair with a frame host in your dashboard layout so the overlay opens automatically when the frame receives content. The
+common hosts are [`<hw:modal frame="modal">`](./modal.md), [`<hw:sheet frame="settings-panel">`](./sheet.md), and
+[`<hw:drawer frame="drawer-panel">`](./drawer.md).
 
 ## Props
 
-| Prop     | Type             | Default | Description                                                                     |
-|----------|------------------|---------|---------------------------------------------------------------------------------|
-| `frame`  | `string\|object` | —       | DOM id of the frame. Accepts a string or any object resolvable via `dom_id()`.  |
-| `layout` | `?string`        | `null`  | Blade component name (e.g. `layouts.dashboard`) or class-string of the wrapper. |
+| Prop     | Type             | Default | Description                                                                                    |
+|----------|------------------|---------|------------------------------------------------------------------------------------------------|
+| `frame`  | `string\|object` | —       | DOM id of the frame. Accepts a string or any object resolvable via `dom_id()`.                 |
+| `layout` | `?string`        | `null`  | Blade component name (e.g. `dashboard` or `layouts.dashboard`) or class-string of the wrapper. |
 
 `frame` is required. Passing an empty string or whitespace throws `InvalidArgumentException`.
 
 When `layout` is `null` the component always renders just the raw `<turbo-frame>`, regardless of the
 request header. Useful for nested frames that never need a standalone presentation.
 
+Simple layout names resolve ergonomically: `layout="dashboard"` uses an existing `dashboard` component
+when one is registered, otherwise it tries `layouts.dashboard` before falling back to the original value.
+Names that already contain `.`, `::`, or `\` are used as-is.
+
+## Context-specific content
+
+Use `frameContent` and `pageContent` when the frame payload should be smaller than the standalone page.
+For example, an edit form can open in a modal without page chrome, while the same URL still renders a
+complete page when opened directly:
+
+```blade
+{{-- resources/views/parks/topics/edit.blade.php --}}
+<hw:frame-or-page frame="modal" layout="dashboard">
+    <x-slot:frameContent>
+        @include('parks.topics._form')
+    </x-slot:frameContent>
+
+    <x-slot:pageContent>
+        @include('parks._edit_header')
+        @include('parks._edit_navigation', ['active' => 'topics'])
+        @include('parks.topics._form')
+        @include('parks.topics._list')
+    </x-slot:pageContent>
+</hw:frame-or-page>
+```
+
+The selection rules are:
+
+- Frame requests render `frameContent` when present, otherwise the default slot.
+- Direct navigation with a layout renders `pageContent` when present, otherwise the default slot.
+- When `layout` is omitted, the component still renders as a frame and uses `frameContent` when present.
+
+Partials included inside either slot use the same Blade scope as the surrounding view, so variables like
+models, option lists, selected values, and validation state remain available. Pass data explicitly to
+`@include` when you want to make the dependency clear or override a value for one context.
+
 ## Forwarded attributes
 
 When the component renders **as a frame** — that is, when the request came from a Turbo Frame OR
 when `layout` is omitted — extra HTML attributes on `<hw:frame-or-page>` are forwarded to the
-inner `<turbo-frame>`. This includes the named props of
-[`<x-turbo::frame>`](https://github.com/emaia/laravel-hotwire-turbo) (`src`, `loading`, `target`,
-`refresh`, `autoscroll`, …) and arbitrary `data-*` hooks:
+inner [`<hw:frame>`](./frame.md). This includes native Turbo Frame attributes (`src`, `loading`,
+`target`, `refresh`, `autoscroll`, …), frame aliases like `lazy`, `advance`, `replace`, `poll`,
+and arbitrary `data-*` hooks:
 
 ```blade
 <hw:frame-or-page frame="messages" src="{{ route('messages.index') }}" loading="lazy">
@@ -154,7 +192,8 @@ Three options, in order of how much they cost you:
 ## See also
 
 - [Frame-or-page recipe](../recipes/frame-or-page.md) — the manual pattern this component encapsulates.
-- [`<hw:modal>`](./modal.md), [`<hw:sheet>`](./sheet.md), and [`<hw:drawer>`](./drawer.md) — frame hosts that receive dynamic content.
+- [`<hw:modal>`](./modal.md), [`<hw:sheet>`](./sheet.md), and [`<hw:drawer>`](./drawer.md) — frame hosts that receive
+  dynamic content.
 - [`<hw:frame>`](./frame.md) — render a regular Turbo Frame with ergonomic aliases like `lazy` and `advance`.
 - [`<hw:form>`](./form.md) — the `track-frame-src` variant that preserves the originating frame URL.
 - [`turbo--frame-src` controller](../controllers/turbo/frame-src.md) — client-side fallback for frame-aware redirects.
