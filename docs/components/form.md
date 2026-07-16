@@ -22,9 +22,11 @@ Form wrapper that composes optional Stimulus behaviors via boolean props. Render
 | `unsaved-changes`    | `bool`              | `false` | Warns before navigating away with unsaved changes                                                                                                                |
 | `error-scroll`       | `bool`              | `false` | Scrolls to the first validation error after form submission                                                                                                      |
 | `clean-query-params` | `bool`              | `false` | Strips empty fields from GET query strings before submission                                                                                                     |
+| `conditional-fields` | `bool`              | `false` | Adds the `conditional-fields` controller for nested `<hw:conditional-field>` dependents                                                                          |
 | `track-frame-src`    | `bool`              | `false` | Includes a hidden `_turbo_frame_src` input for correct redirect resolution inside Turbo Frames                                                                   |
 | `frame`              | `string\|null`      | `null`  | Sets `data-turbo-frame` on the form so Turbo submits into that frame                                                                                             |
 | `enctype`            | `string\|null`      | `null`  | HTML `enctype` attribute. Set to `"multipart/form-data"` for file uploads. Default `null` omits the attribute (browser uses `application/x-www-form-urlencoded`) |
+| `state`              | `mixed`             | `null`  | Initial form state inherited by conditional fields for server-rendered visibility                                                                                |
 
 Any other HTML attribute (`action`, `method`, `class`, `data-*`, `aria-*`) passes through to the `<form>` element.
 Method defaults to `post` unless overridden.
@@ -116,6 +118,30 @@ Removes empty parameters from the query string before submitting a GET form, avo
 
 See [clean-query-params controller](../controllers/clean-query-params.md).
 
+### conditional-fields
+
+Show or hide dependent fields as users edit the form. Add `conditional-fields` to the form, then declare each dependent
+with `<hw:conditional-field>`:
+
+```blade
+<hw:form conditional-fields :state="['type' => $selectedType]">
+    <hw:field name="type" label="Type">
+        <hw:select :options="$types" :selected="$selectedType" />
+    </hw:field>
+
+    <hw:conditional-field when="type=link">
+        <hw:field name="url" label="URL">
+            <hw:input type="url" />
+        </hw:field>
+    </hw:conditional-field>
+</hw:form>
+```
+
+`state` is the server-side fallback used for the first render before JavaScript connects. It can be an Eloquent model,
+array, or object readable by `data_get()`. On validation retries, Laravel's `old()` input still wins.
+
+See [conditional-field](./conditional-field.md) and [conditional-fields controller](../controllers/conditional-fields.md).
+
 ### error-scroll
 
 Scrolls to the first validation error after a form submission fails. Listens to `turbo:frame-render` (inside a Turbo
@@ -176,5 +202,6 @@ controller. See [frame-src controller](../controllers/turbo/frame-src.md).
 
 ## Required controllers
 
-`hotwire:check` looks for `auto-submit`, `unsaved-changes`, `error-scroll`, and `clean-query-params`. Only the ones you
-actually use need to be published — `hotwire:check` will warn for the others even if you do not enable them.
+`hotwire:check` looks for `auto-submit`, `unsaved-changes`, `error-scroll`, `clean-query-params`, and
+`conditional-fields`. Only the ones you actually use need to be published — `hotwire:check` will warn for the others
+even if you do not enable them.

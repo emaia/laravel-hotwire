@@ -85,6 +85,13 @@ it('adds error-scroll controller when error-scroll is true', function () {
     $view->assertSee('data-controller="error-scroll"', false);
 });
 
+it('adds conditional-fields controller when conditional-fields is true', function () {
+    $view = $this->blade('<x-hw::form conditional-fields><span>x</span></x-hw::form>');
+
+    $view->assertSee('data-controller="conditional-fields"', false)
+        ->assertDontSee(' conditional-fields', false);
+});
+
 it('combines multiple controllers separated by space', function () {
     $view = $this->blade('<x-hw::form auto-submit unsaved-changes><span>x</span></x-hw::form>');
 
@@ -92,15 +99,31 @@ it('combines multiple controllers separated by space', function () {
 });
 
 it('combines all controllers', function () {
-    $view = $this->blade('<x-hw::form auto-submit unsaved-changes error-scroll clean-query-params><span>x</span></x-hw::form>');
+    $view = $this->blade('<x-hw::form auto-submit unsaved-changes error-scroll clean-query-params conditional-fields><span>x</span></x-hw::form>');
 
-    $view->assertSee('data-controller="auto-submit unsaved-changes error-scroll clean-query-params"', false);
+    $view->assertSee('data-controller="auto-submit unsaved-changes error-scroll clean-query-params conditional-fields"', false);
 });
 
 it('merges user data-controller with internal controllers', function () {
-    $view = $this->blade('<x-hw::form data-controller="foo" auto-submit unsaved-changes error-scroll><span>x</span></x-hw::form>');
+    $view = $this->blade('<x-hw::form data-controller="foo" auto-submit unsaved-changes error-scroll conditional-fields><span>x</span></x-hw::form>');
 
-    $view->assertSee('data-controller="auto-submit unsaved-changes error-scroll foo"', false);
+    $view->assertSee('data-controller="auto-submit unsaved-changes error-scroll conditional-fields foo"', false);
+});
+
+it('provides form state to nested conditional fields', function () {
+    $view = $this->blade(
+        <<<'BLADE'
+        <x-hw::form conditional-fields :state="$state">
+            <x-hw::conditional-field when="type=link">URL</x-hw::conditional-field>
+        </x-hw::form>
+        BLADE,
+        ['state' => ['type' => 'link']],
+    );
+
+    $view->assertSee('data-controller="conditional-fields"', false)
+        ->assertSee('data-when-type="link"', false)
+        ->assertDontSee(' hidden', false)
+        ->assertDontSee(' disabled', false);
 });
 
 it('merges inline stimulus attributes with internal controllers', function () {

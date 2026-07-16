@@ -28,6 +28,31 @@ it('emits a data-when-* attribute for a single string value', function () {
     $view->assertSee('data-when-reason="other"', false);
 });
 
+it('accepts field equals value string grammar', function () {
+    $view = $this->blade('<x-hw::conditional-field when="type=link">inside</x-hw::conditional-field>');
+
+    $view->assertSee('data-when-type="link"', false);
+});
+
+it('accepts pipe-separated OR values in string grammar', function () {
+    $view = $this->blade('<x-hw::conditional-field when="type=link|text">inside</x-hw::conditional-field>');
+
+    $view->assertSee('data-when-type="link|text"', false);
+});
+
+it('accepts space-separated AND conditions in string grammar', function () {
+    $view = $this->blade('<x-hw::conditional-field when="type=link location=sidebar">inside</x-hw::conditional-field>');
+
+    $view->assertSee('data-when-type="link"', false);
+    $view->assertSee('data-when-location="sidebar"', false);
+});
+
+it('accepts checked tokens in string grammar', function () {
+    $view = $this->blade('<x-hw::conditional-field when="active=:checked">inside</x-hw::conditional-field>');
+
+    $view->assertSee('data-when-active=":checked"', false);
+});
+
 it('emits a pipe-separated data-when-* attribute for an array value', function () {
     $view = $this->blade('<x-hw::conditional-field :when="[\'reason\' => [\'bug\', \'feature\']]">inside</x-hw::conditional-field>');
 
@@ -80,36 +105,62 @@ it('renders hidden after validation retry when old() value does not match', func
     $view->assertSee('disabled', false);
 });
 
-it('falls back to the model attribute when old() is empty', function () {
+it('falls back to object state when old() is empty', function () {
     $message = new ConditionalFieldMessage(['reason' => 'other']);
 
     $component = new ConditionalField(
         when: ['reason' => 'other'],
-        model: $message,
+        state: $message,
     );
 
     expect($component->matches)->toBeTrue();
 });
 
-it('old() value wins over the model attribute on validation retry', function () {
+it('falls back to state when old() is empty', function () {
+    $component = new ConditionalField(
+        when: 'type=link',
+        state: ['type' => 'link'],
+    );
+
+    expect($component->matches)->toBeTrue();
+});
+
+it('lets local state override inherited state', function () {
+    $view = $this->blade(
+        <<<'BLADE'
+        <x-hw::form conditional-fields :state="$formState">
+            <x-hw::conditional-field when="type=link" :state="$fieldState">URL</x-hw::conditional-field>
+        </x-hw::form>
+        BLADE,
+        [
+            'formState' => ['type' => 'text'],
+            'fieldState' => ['type' => 'link'],
+        ],
+    );
+
+    $view->assertDontSee(' hidden', false)
+        ->assertDontSee(' disabled', false);
+});
+
+it('old() value wins over state on validation retry', function () {
     seedOldInput(['reason' => 'bug']);
 
     $message = new ConditionalFieldMessage(['reason' => 'other']);
 
     $component = new ConditionalField(
         when: ['reason' => 'other'],
-        model: $message,
+        state: $message,
     );
 
     expect($component->matches)->toBeFalse();
 });
 
-it('matches :checked token when the model attribute is truthy', function () {
+it('matches :checked token when state is truthy', function () {
     $message = new ConditionalFieldMessage(['ship_different' => '1']);
 
     $component = new ConditionalField(
         when: ['ship_different' => ':checked'],
-        model: $message,
+        state: $message,
     );
 
     expect($component->matches)->toBeTrue();

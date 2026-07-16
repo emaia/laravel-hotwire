@@ -1,127 +1,142 @@
 # Conditional Field
 
 Renders a dependent block for the [`conditional-fields`](../controllers/conditional-fields.md)
-controller — the show/hide rule lives in **exactly one place**, the `when` prop, and the
-component takes care of both the server-side initial visibility and the runtime data attributes
-the controller reads.
+controller. The show/hide rule lives in the `when` prop, and the component renders both the
+server-side initial visibility and the runtime `data-when-*` attributes the controller reads.
 
-The component eliminates the classic "rule duplication" pitfall: without it, the dependent
-markup has to encode the rule twice (once in `data-when-*` attributes for the client, once in
-`@if (...) hidden disabled @endif` for the server), and any drift between the two flashes the
-wrong fields on first paint.
+The component eliminates the classic rule duplication pitfall: dependent markup should not encode
+the same rule once for JavaScript and once for first paint. Drift between those two copies flashes
+the wrong fields before the controller connects.
 
-## Wrapping with the controller
+## Form Integration
 
-Put `data-controller="conditional-fields"` on the form (or any parent of the dependents and their
-triggers). The component handles the rest:
+Add `conditional-fields` to `<hw:form>` so it mounts the controller. Use `state` when the first
+render needs model-backed trigger values, such as edit forms:
 
 ```blade
-<form data-controller="conditional-fields" action="/feedback" method="POST">
-    @csrf
+<hw:form conditional-fields :state="['reason' => $selectedReason]">
+    <hw:field name="reason" label="Reason">
+        <hw:select
+            :selected="$selectedReason"
+            :options="[
+                'bug'     => 'Bug',
+                'feature' => 'Feature',
+                'other'   => 'Other',
+            ]"
+        />
+    </hw:field>
 
-    <hw:select
-        name="reason"
-        placeholder="Pick one…"
-        :options="[
-            'bug'     => 'Bug',
-            'feature' => 'Feature',
-            'other'   => 'Other',
-        ]"
-    />
-
-    <hw:conditional-field :when="['reason' => ['bug', 'feature']]">
+    <hw:conditional-field when="reason=bug|feature">
         <hw:field name="details" label="What happened?">
-            <hw:textarea name="details" />
+            <hw:textarea />
         </hw:field>
     </hw:conditional-field>
 
-    <hw:conditional-field :when="['reason' => 'other']">
+    <hw:conditional-field when="reason=other">
         <hw:field name="other_reason" label="Tell us">
-            <hw:input name="other_reason" />
+            <hw:input />
         </hw:field>
     </hw:conditional-field>
 
-    <button type="submit">Send</button>
-</form>
+    <hw:button type="submit">Send</hw:button>
+</hw:form>
 ```
 
-## Edit forms — the `model` prop
+`state` can be an Eloquent model, array, or object readable by `data_get()`. Validation retries still
+win over state via `old()`, so the initial visibility matches the values the user just submitted.
 
-`<hw:input>`, `<hw:select>`, and `<hw:textarea>` each render **one field** with the
-value you hand them via `:value` / `:selected`, merging `old()` on top automatically.
+## String Rules
 
-`<hw:conditional-field>` decides visibility for the **whole block** by resolving the `when`
-rule server-side, often across multiple fields. It can't peek at the sibling form fields — they
-are separate components — so it does its own `old($field, data_get($model, $field))` lookup.
-`:model` hands it the same source the fields already read from. No parallel state map.
+For common rules, pass a compact `field=value` string:
 
 ```blade
-<form data-controller="conditional-fields" action="/messages/{{ $message->id }}" method="POST">
-    @csrf @method('PATCH')
+<hw:conditional-field when="type=link" />
+<hw:conditional-field when="type=link|text" />
+<hw:conditional-field when="active=:checked" />
+<hw:conditional-field when="type=link location=sidebar" />
+```
 
-    <hw:select
-        name="reason"
-        :options="$reasons"
-        :selected="$message->reason"
-    />
+- `=` separates the trigger field from the expected value.
+- `|` means OR for a single field.
+- A space means AND across fields.
+- `:checked` and `:unchecked` match checkbox state.
 
-    <hw:conditional-field :model="$message" :when="['reason' => 'other']">
+Use the array form when it is clearer for complex rules:
+
+```blade
+<hw:conditional-field :when="[
+    'type' => ['link', 'text'],
+    'active' => ':checked',
+]">
+    ...
+</hw:conditional-field>
+```
+
+## Server-Rendered State
+
+`<hw:input>`, `<hw:select>`, and `<hw:textarea>` each render one field with the value you hand them
+via `:value` / `:selected`, merging `old()` on top automatically.
+
+`<hw:conditional-field>` decides visibility for the whole block by resolving the `when` rule
+server-side, often across multiple fields. It cannot peek at sibling form fields because they are
+separate components, so it resolves trigger values with:
+
+```text
+old($field, data_get($state, $field))
+```
+
+Put `state` on the form to share the same source the trigger fields already read from:
+
+```blade
+<hw:form conditional-fields :state="$message" :action="route('messages.update', $message)" method="patch">
+    <hw:field name="reason" label="Reason">
+        <hw:select :options="$reasons" :selected="$message->reason" />
+    </hw:field>
+
+    <hw:conditional-field when="reason=other">
+        <hw:field name="other_reason" label="Tell us">
+            <hw:input :value="$message->other_reason" />
+        </hw:field>
+    </hw:conditional-field>
+</hw:form>
+```
+
+A failed validation retry still wins over state. `old()` returns the user's last value, the component
+matches against it, and the dependent's initial visibility lines up with what the user just submitted.
+
+### State Is About The Triggers
+
+The fields inside the block are irrelevant to whether you pass `state`. What matters is whether the
+trigger fields named in `when` carry an initial value.
+
+```blade
+<hw:form conditional-fields :state="$message">
+    {{-- 1 trigger, 1 input inside — state is what makes it visible on edit --}}
+    <hw:conditional-field when="reason=other">
         <hw:input name="other_reason" :value="$message->other_reason" />
     </hw:conditional-field>
-</form>
+
+    {{-- 2 triggers AND, 1 input inside — state resolves both trigger keys --}}
+    <hw:conditional-field when="authorized=no needs_visa=yes">
+        <hw:select name="sponsorship_country" :options="$countries" :selected="$message->sponsorship_country" />
+    </hw:conditional-field>
+</hw:form>
 ```
 
-A failed validation retry still wins over the model — `old()` returns the user's last value, the
-component matches against it, and the dependent's initial visibility lines up with what the
-user just submitted.
+Create forms can skip `state` entirely. Fresh GET requests start hidden, and validation retries still
+use `old()` to restore the submitted trigger values.
 
-### `:model` is about the triggers, not the contents
+### When The Trigger Name Does Not Match The State Key
 
-The fields **inside** the block (the dependent inputs that appear and disappear together) are
-irrelevant to whether you pass `:model`. What matters is whether the **trigger fields** named
-on the `when` keys carry an initial value from a model — that's the value `:model` resolves.
-
-```blade
-{{-- 1 trigger, 1 input inside the block — `:model` is what makes it visible on edit --}}
-<hw:conditional-field :model="$message" :when="['reason' => 'other']">
-    <hw:input name="other_reason" :value="$message->other_reason" />
-</hw:conditional-field>
-
-{{-- 1 trigger, 3 inputs inside the block — still the same `:model`, same lookup --}}
-<hw:conditional-field :model="$message" :when="['ship_different' => ':checked']">
-    <hw:input name="shipping_address" :value="$message->shipping_address" />
-    <hw:input name="shipping_city"    :value="$message->shipping_city" />
-    <hw:input name="shipping_zip"     :value="$message->shipping_zip" />
-</hw:conditional-field>
-
-{{-- 2 triggers AND, 1 input inside — `:model` resolves both keys for the rule --}}
-<hw:conditional-field
-    :model="$message"
-    :when="['authorized' => 'no', 'needs_visa' => 'yes']"
->
-    <hw:select name="sponsorship_country" :options="$countries" :selected="$message->sponsorship_country" />
-</hw:conditional-field>
-```
-
-Create forms (no model) skip `:model` entirely — `old()` alone handles fresh GET (everything
-starts hidden) and validation retry (`old()` returns the submitted value).
-
-### When the trigger name doesn't match the model attribute
-
-The `when` key plays two roles: at runtime the controller looks for `[name="<key>"]` in the
-form; at SSR the component calls `data_get($model, '<key>')`. In standard Laravel forms the
-two align naturally. They diverge when the data lives on a related model
-(`$user->address->country`), on a different case convention (`shipToCountry` vs
-`ship_to_country`), or behind a display-only field (form name `customer_type`, value at
-`$invoice->customer->type`). The `data_get` call silently returns `null` and the dependent
-flashes `hidden` on first paint.
+The `when` key plays two roles: at runtime the controller looks for `[name="<key>"]` in the form; at
+SSR the component calls `data_get($state, '<key>')`. In standard Laravel forms those align naturally.
+They diverge when data lives on a related model, uses a different case convention, or sits behind a
+display-only field.
 
 Two ways out:
 
-- **Define an accessor on the model.** `Attribute::get(fn () => $this->address?->country)` lets
-  `data_get($user, 'country')` resolve transparently — zero change in the Blade.
-- **Pass an associative array as `:model`.** `data_get` accepts arrays, so a `$state` map at
-  the top of the form can resolve each `when` key to whatever its real source is.
+- Define an accessor on the model so `data_get($model, 'country')` resolves transparently.
+- Pass an associative array as form `state` so each `when` key maps to the right source.
 
 ```blade
 @php
@@ -131,64 +146,51 @@ $state = [
 ];
 @endphp
 
-<hw:conditional-field :model="$state" :when="['country' => 'US']">
-    ...
-</hw:conditional-field>
+<hw:form conditional-fields :state="$state">
+    <hw:conditional-field when="country=US">
+        ...
+    </hw:conditional-field>
+</hw:form>
 ```
 
 ## Props
 
-| Prop    | Type     | Default      | Description                                                                                                |
-|---------|----------|--------------|------------------------------------------------------------------------------------------------------------|
-| `when`  | `array`  | (required)   | The rule: `['field' => 'value']`, `['field' => ['v1', 'v2']]` (OR), or `['field' => ':checked']`. Multiple entries AND-match. |
-| `model` | `mixed`  | `null`       | Source of attribute fallbacks for edit forms. Anything `data_get()` can read — Eloquent model, array, stdClass. The component evaluates `old($field, data_get($model, $field))` per trigger. |
-| `tag`   | `string` | `'fieldset'` | Wrapper element. `<fieldset>` is recommended — the `disabled` cascade reaches every descendant control for free. |
+| Prop    | Type            | Default      | Description                                                                                                |
+|---------|-----------------|--------------|------------------------------------------------------------------------------------------------------------|
+| `when`  | `string\|array` | (required)   | Show/hide rule. Use `field=value` strings for common cases or an array for complex rules.                  |
+| `state` | `mixed`         | inherited    | Optional local state override. Usually set `state` on `<hw:form>` instead. Anything `data_get()` can read. |
+| `tag`   | `string`        | `'fieldset'` | Wrapper element. `<fieldset>` is recommended because the `disabled` cascade reaches descendant controls.   |
 
-## How the initial value is resolved
+## Token Shortcuts
 
-For each `field` in `when`, the component reads the current value via:
+| Rule                           | Meaning                                          |
+|--------------------------------|--------------------------------------------------|
+| `ship_different=:checked`      | Match when the field's resolved value is truthy. |
+| `agree=:unchecked`             | Match when the field is empty / unchecked.       |
+| `plan=enterprise`              | Equality.                                        |
+| `plan=pro\|enterprise`         | OR.                                              |
+| `authorized=no needs_visa=yes` | AND across two fields.                           |
 
-```
-old($field, data_get($model, $field))
-```
-
-- After validation retry — `old()` returns the failed-submission value from session. The model fallback is skipped.
-- Fresh GET on an edit form (model passed) — `old()` is empty, falls back to `$model->$field`.
-- Fresh GET with no model — `null`. Dependent renders `hidden disabled` by default.
-
-This is the same lookup `<hw:input>`, `<hw:select>`, and `<hw:textarea>` already perform when you set `:value="$message->field"` or `:selected="$message->field"` on them — evaluated once on the server, no duplicate state map to maintain.
-
-## Token shortcuts
-
-| Rule                                          | Meaning                                                                |
-|-----------------------------------------------|------------------------------------------------------------------------|
-| `['ship_different' => ':checked']`            | Match when the named field's resolved value (`old()` / model fallback) is truthy. |
-| `['agree' => ':unchecked']`                   | Match when the named field is empty / unchecked.                       |
-| `['plan' => 'enterprise']`                    | Equality.                                                              |
-| `['plan' => ['pro', 'enterprise']]`           | OR.                                                                    |
-| `['authorized' => 'no', 'needs_visa' => 'yes']` | AND across two fields.                                                |
-
-## When to use `<div>` instead of `<fieldset>`
+## When To Use `<div>` Instead Of `<fieldset>`
 
 For a single-field dependent that does not need a `<legend>`, `<div>` is acceptable:
 
 ```blade
-<hw:conditional-field tag="div" :when="['mode' => 'advanced']" class="mt-4">
+<hw:conditional-field tag="div" when="mode=advanced" class="mt-4">
     <hw:input name="threshold" />
 </hw:conditional-field>
 ```
 
 The controller walks descendant inputs and toggles their `disabled` state instead of using the
-`<fieldset>` cascade. Slightly more work at runtime but the markup stays flatter.
+`<fieldset>` cascade. Slightly more work at runtime, but the markup stays flatter.
 
-## Multiple dependents reuse the same controller
+## Multiple Dependents Reuse The Same Controller
 
-A single `data-controller="conditional-fields"` on the form is enough — every `<hw:conditional-field>`
-under it registers as a dependent target automatically. No per-dependent wiring.
+A single `conditional-fields` prop on the form is enough. Every `<hw:conditional-field>` under it
+registers as a dependent target automatically. No per-dependent wiring.
 
-## See also
+## See Also
 
-- [Conditional fields controller](../controllers/conditional-fields.md) — the underlying
-  Stimulus controller, with the full rule grammar reference.
-- [Conditional fields recipe](../recipes/conditional-fields.md) — real-world form patterns
-  (checkout shipping, subscription tiers, NPS survey, newsletter preferences).
+- [`<hw:form>`](./form.md) — mounts the controller and shares `state` with conditional fields.
+- [Conditional fields controller](../controllers/conditional-fields.md) — the underlying Stimulus controller.
+- [Conditional fields recipe](../recipes/conditional-fields.md) — real-world form patterns.

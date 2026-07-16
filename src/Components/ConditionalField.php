@@ -9,16 +9,20 @@ class ConditionalField extends Component
 {
     public bool $matches;
 
+    /** @var array<string, string|array<int, string>> */
+    public array $conditions;
+
     /**
-     * @param  array<string, string|array<int, string>>  $when
+     * @param  array<string, string|array<int, string>>|string  $when
      */
     public function __construct(
-        public array $when,
-        public mixed $model = null,
+        public array|string $when,
+        public mixed $state = null,
         public string $tag = 'fieldset',
         public ?Htmlable $stimulus = null,
     ) {
-        $this->matches = $this->evaluate();
+        $this->conditions = $this->normaliseWhen($when);
+        $this->matches = $this->evaluate($this->state);
     }
 
     /**
@@ -28,7 +32,7 @@ class ConditionalField extends Component
     {
         $attributes = [];
 
-        foreach ($this->when as $name => $expected) {
+        foreach ($this->conditions as $name => $expected) {
             $values = is_array($expected) ? $expected : [$expected];
             $attributes[] = [
                 'name' => $name,
@@ -45,10 +49,15 @@ class ConditionalField extends Component
         return view('hotwire::component-views.conditional-field');
     }
 
-    private function evaluate(): bool
+    public function matchesWith(mixed $state): bool
     {
-        foreach ($this->when as $field => $expected) {
-            if (! $this->fieldMatches($field, $expected)) {
+        return $this->evaluate($state);
+    }
+
+    private function evaluate(mixed $state): bool
+    {
+        foreach ($this->conditions as $field => $expected) {
+            if (! $this->fieldMatches($field, $expected, $state)) {
                 return false;
             }
         }
@@ -56,9 +65,9 @@ class ConditionalField extends Component
         return true;
     }
 
-    private function fieldMatches(string $field, string|array $expected): bool
+    private function fieldMatches(string $field, string|array $expected, mixed $state): bool
     {
-        $current = $this->currentValue($field);
+        $current = $this->currentValue($field, $state);
         $tokens = is_array($expected) ? $expected : [$expected];
 
         foreach ($tokens as $token) {
@@ -94,9 +103,9 @@ class ConditionalField extends Component
         return false;
     }
 
-    private function currentValue(string $field): mixed
+    private function currentValue(string $field, mixed $state): mixed
     {
-        $default = $this->model !== null ? data_get($this->model, $field) : null;
+        $default = $state !== null ? data_get($state, $field) : null;
 
         return old($field, $default);
     }
@@ -108,5 +117,40 @@ class ConditionalField extends Component
         }
 
         return ! in_array($value, [null, '', '0', 0, false], true);
+    }
+
+    /**
+     * @return array<string, string|array<int, string>>
+     */
+    private function normaliseWhen(array|string $when): array
+    {
+        if (is_array($when)) {
+            return $when;
+        }
+
+        $conditions = [];
+
+        foreach (preg_split('/\s+/', trim($when)) ?: [] as $condition) {
+            if ($condition === '' || ! str_contains($condition, '=')) {
+                continue;
+            }
+
+            [$field, $expected] = explode('=', $condition, 2);
+            $field = trim($field);
+            $expected = trim($expected);
+
+            if ($field === '' || $expected === '') {
+                continue;
+            }
+
+            $values = array_values(array_filter(
+                array_map('trim', explode('|', $expected)),
+                fn (string $value): bool => $value !== '',
+            ));
+
+            $conditions[$field] = count($values) === 1 ? $values[0] : $values;
+        }
+
+        return $conditions;
     }
 }
