@@ -58,6 +58,24 @@ an explicit false value, use `<hw:checkbox unchecked-value="0">` or `<hw:switch 
 <hw:toggle size="lg">Large</hw:toggle>
 ```
 
+## Icon state
+
+The toggle root includes a `group/toggle` marker so icons can react to the pressed state without adding a class to the
+button manually:
+
+```blade
+<hw:toggle name="status" value="done" :pressed="request('status') === 'done">
+    <x-lucide-check-circle class="text-muted-foreground group-data-[state=on]/toggle:text-foreground" />
+    Done
+</hw:toggle>
+```
+
+For fillable icons, use the same named group marker for `fill-*` utilities:
+
+```blade
+<x-lucide-star class="group-aria-pressed/toggle:fill-foreground" />
+```
+
 ## Events
 
 The controller dispatches a bubbling native `change` event after user interaction:

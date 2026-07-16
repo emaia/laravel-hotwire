@@ -50,6 +50,19 @@ it('emits disabled state for styling and behavior', function () {
         ->assertSee('data-disabled="true"', false);
 });
 
+it('adds a named group marker for pressed-state icon styling', function () {
+    $view = $this->blade('<x-hw::toggle>Favorite</x-hw::toggle>');
+
+    $view->assertSee('class="group/toggle"', false);
+});
+
+it('does not duplicate the group marker when the user provides it', function () {
+    $html = (string) $this->blade('<x-hw::toggle class="group/toggle w-full">Favorite</x-hw::toggle>');
+
+    expect(substr_count($html, 'group/toggle'))->toBe(1)
+        ->and($html)->toContain('class="group/toggle w-full"');
+});
+
 // --- Semantic styling contract ---
 
 it('does not emit package Tailwind classes inline', function () {
@@ -126,7 +139,7 @@ it('passes through arbitrary HTML attributes', function () {
     $view = $this->blade('<x-hw::toggle id="bold" class="w-full" aria-label="Toggle bold" data-test="x">Bold</x-hw::toggle>');
 
     $view->assertSee('id="bold"', false)
-        ->assertSee('class="w-full"', false)
+        ->assertSee('class="group/toggle w-full"', false)
         ->assertSee('aria-label="Toggle bold"', false)
         ->assertSee('data-test="x"', false);
 });

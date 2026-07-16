@@ -2,6 +2,9 @@
     $resolvedName = $name ?? null;
     extract($compute($resolvedName, $attributes));
 
+    $userClasses = preg_split('/\s+/', trim((string) $attributes->get('class', ''))) ?: [];
+    $toggleGroupClass = in_array('group/toggle', $userClasses, true) ? null : 'group/toggle';
+
     $toggleAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
         'type' => $type,
         'data-slot' => 'toggle',
@@ -15,6 +18,7 @@
         'data-toggle-pressed-value' => $isPressed ? 'true' : 'false',
         'data-toggle-value-value' => $htmlValue,
         'data-toggle-input-id-value' => $inputId,
+        'class' => $toggleGroupClass,
     ], $attributes, $stimulus, except: ['name', 'value', 'pressed', 'variant', 'size', 'type', 'auto-submit'], protectedPrefixes: ['data-toggle-']);
 @endphp
 
