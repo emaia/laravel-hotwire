@@ -359,10 +359,10 @@ it('styles checkable inputs when they are wrapped by labels', function () use ($
     $css = file_get_contents($novaPresetPath);
 
     expect($css)
-        ->toContain('[data-slot="field-label"]:has(> :is([data-slot="input"], [data-slot="checkbox"], [data-slot="checkbox-group-input"], [data-slot="switch"])[data-checkable="true"])')
+        ->toContain('[data-slot="field-label"]:has(> :is([data-slot="input"], [data-slot="checkbox"], [data-slot="checkbox-group-input"], [data-slot="radio-group-input"], [data-slot="switch"])[data-checkable="true"])')
         ->toContain('[data-slot="field"][data-orientation="horizontal"]:has(> [data-slot="field-content"])')
         ->toContain('[data-slot="field"]:has(> [data-slot="field-content"]) > :is([role="checkbox"], [role="radio"], [role="switch"], [data-checkable="true"])')
-        ->toContain(':is([data-slot="input"], [data-slot="checkbox"], [data-slot="checkbox-group-input"])[data-checkable="true"]')
+        ->toContain(':is([data-slot="input"], [data-slot="checkbox"], [data-slot="checkbox-group-input"], [data-slot="radio-group-input"])[data-checkable="true"]')
         ->toContain('[data-slot="switch"]')
         ->toContain('[data-slot="switch"][data-size="default"]')
         ->toContain('[data-slot="switch"][data-size="sm"]')
@@ -371,6 +371,7 @@ it('styles checkable inputs when they are wrapped by labels', function () use ($
         ->toContain('[data-slot="field-label"]:has(> [data-slot="field"] [data-slot="switch"]:checked)')
         ->toContain('[data-slot="field-label"]:has(> [data-slot="field"][data-disabled="true"])')
         ->toContain('[data-slot="checkbox-group-item"]')
+        ->toContain('[data-slot="radio-group-item"]')
         ->toContain('appearance-none')
         ->toContain('aspect-square h-4 max-h-4 min-h-4 w-4 min-w-4 max-w-4')
         ->toContain('checked:border-primary checked:bg-primary')

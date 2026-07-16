@@ -2,8 +2,8 @@
 
 Pressed-button group for single or multiple lightweight choices.
 
-Use `<hw:toggle-group>` when the UI should behave like a set of toggles with `aria-pressed`. Use native radios for
-mutually exclusive form choices that must always submit one value, and `<hw:checkbox-group>` for checkbox semantics.
+Use `<hw:toggle-group>` when the UI should behave like a set of toggles with `aria-pressed`. Use `<hw:radio-group>` for
+mutually exclusive form choices that must submit one value, and `<hw:checkbox-group>` for checkbox semantics.
 
 ## Quick example
 
@@ -61,8 +61,8 @@ receives an array.
 </hw:toggle-group>
 ```
 
-Single groups allow the current item to be cleared. If the submitted field must always have exactly one value, use a
-radio group instead.
+Single groups allow the current item to be cleared. If the submitted field must always have exactly one value, use
+`<hw:radio-group>` instead.
 
 ## Form Filters
 

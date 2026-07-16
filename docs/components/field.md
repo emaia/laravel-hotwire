@@ -42,7 +42,7 @@ A single control with label, helper text, and validation feedback.
 ```text
 field
 ├── field.label
-├── input / checkbox / switch / select / textarea / checkbox-group / file / file-upload
+├── input / checkbox / switch / select / textarea / checkbox-group / radio-group / file / file-upload
 ├── field.description
 └── field.error
 ```
@@ -168,7 +168,7 @@ Use `field.label` instead of `field.title` when a real label association is need
 
 | Context    | Used By                                                                                              | Purpose                                                                          |
 |------------|------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|
-| `name`     | `field.label`, `input`, `checkbox`, `switch`, `select`, `textarea`, `checkbox-group`, `file`, `file-upload`, `field.error` | Derives `for`, `id`, `name`, `aria-describedby`, and validation keys.            |
+| `name`     | `field.label`, `input`, `checkbox`, `switch`, `select`, `textarea`, `checkbox-group`, `radio-group`, `file`, `file-upload`, `field.error` | Derives `for`, `id`, `name`, `aria-describedby`, and validation keys.            |
 | `errorKey` | Controls and `field.error`                                                                           | Looks up Laravel validation messages when HTML name differs from validation key. |
 | `required` | `field.label` and controls                                                                           | Renders the required marker and ARIA required state.                             |
 
