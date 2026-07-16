@@ -15,14 +15,17 @@
         'unsaved-changes',
         'error-scroll',
         'clean-query-params',
+        'conditional-fields',
         'track-frame-src',
         'auto-submit-delay',
         'frame',
+        'state',
     ], protectedPrefixes: array_values(array_filter([
         $autoSubmit ? 'data-auto-submit-' : null,
         $unsavedChanges ? 'data-unsaved-changes-' : null,
         $errorScroll ? 'data-error-scroll-' : null,
         $cleanQueryParams ? 'data-clean-query-params-' : null,
+        $conditionalFields ? 'data-conditional-fields-' : null,
     ])));
 @endphp
 

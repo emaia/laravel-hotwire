@@ -8,20 +8,26 @@ use Illuminate\View\ComponentAttributeBag;
 
 class Form extends Component
 {
+    public mixed $formState;
+
     public function __construct(
         public bool $autoSubmit = false,
         public bool $unsavedChanges = false,
         public bool $errorScroll = false,
         public bool $cleanQueryParams = false,
+        public bool $conditionalFields = false,
         public bool $trackFrameSrc = false,
         public int|string|null $autoSubmitDelay = null,
         public ?string $frame = null,
         public ?string $enctype = null,
+        public mixed $state = null,
         public ?Htmlable $stimulus = null,
     ) {
         if ($this->frame === '') {
             $this->frame = null;
         }
+
+        $this->formState = $this->state;
     }
 
     public function render()
@@ -50,6 +56,7 @@ class Form extends Component
             $this->unsavedChanges ? 'unsaved-changes' : null,
             $this->errorScroll ? 'error-scroll' : null,
             $this->cleanQueryParams ? 'clean-query-params' : null,
+            $this->conditionalFields ? 'conditional-fields' : null,
         ])));
 
         return [
