@@ -10,12 +10,13 @@ This component is the declarative form of the [frame-or-page recipe](../recipes/
 ```blade
 {{-- resources/views/messages/edit.blade.php --}}
 <hw:frame-or-page frame="modal" layout="dashboard">
-    <form method="POST" action="{{ route('messages.update', $message) }}">
-        @csrf
-        @method('PUT')
-        <textarea name="body">{{ old('body', $message->body) }}</textarea>
-        <button type="submit">Save</button>
-    </form>
+    <hw:form :action="route('messages.update', $message)" method="put">
+        <hw:field name="body" label="Message">
+            <hw:textarea :value="$message->body" auto-resize />
+        </hw:field>
+
+        <hw:button type="submit">Save</hw:button>
+    </hw:form>
 </hw:frame-or-page>
 ```
 
