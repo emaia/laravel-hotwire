@@ -65,9 +65,8 @@ Names that already contain `.`, `::`, or `\` are used as-is.
 
 ## Context-specific content
 
-Use `frameContent` and `pageContent` when the frame payload should be smaller than the standalone page.
-For example, an edit form can open in a modal without page chrome, while the same URL still renders a
-complete page when opened directly:
+Use `frameContent` when the frame payload should be smaller than the standalone page. Keep the full
+page content in the default slot so direct navigation stays natural:
 
 ```blade
 {{-- resources/views/parks/topics/edit.blade.php --}}
@@ -76,20 +75,38 @@ complete page when opened directly:
         @include('parks.topics._form')
     </x-slot:frameContent>
 
-    <x-slot:pageContent>
-        @include('parks._edit_header')
-        @include('parks._edit_navigation', ['active' => 'topics'])
-        @include('parks.topics._form')
-        @include('parks.topics._list')
-    </x-slot:pageContent>
+    @include('parks._edit_header')
+    @include('parks._edit_navigation', ['active' => 'topics'])
+    @include('parks.topics._form')
+    @include('parks.topics._list')
 </hw:frame-or-page>
 ```
+
+In this example, opening the route in `<hw:modal frame="modal">` renders only the form. Opening the
+same URL directly renders the dashboard page with header, navigation, form, and list.
 
 The selection rules are:
 
 - Frame requests render `frameContent` when present, otherwise the default slot.
 - Direct navigation with a layout renders `pageContent` when present, otherwise the default slot.
 - When `layout` is omitted, the component still renders as a frame and uses `frameContent` when present.
+
+Use `pageContent` only when naming both contexts makes the view clearer, or when the default slot is
+better treated as shared fallback content:
+
+```blade
+<hw:frame-or-page frame="modal" layout="dashboard">
+    Shared fallback content
+
+    <x-slot:frameContent>
+        Modal-only content
+    </x-slot:frameContent>
+
+    <x-slot:pageContent>
+        Full-page content
+    </x-slot:pageContent>
+</hw:frame-or-page>
+```
 
 Partials included inside either slot use the same Blade scope as the surrounding view, so variables like
 models, option lists, selected values, and validation state remain available. Pass data explicitly to
