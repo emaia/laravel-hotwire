@@ -41,6 +41,8 @@ use Emaia\LaravelHotwire\Components\MultiSelect;
 use Emaia\LaravelHotwire\Components\Optimistic;
 use Emaia\LaravelHotwire\Components\Pagination;
 use Emaia\LaravelHotwire\Components\Progress;
+use Emaia\LaravelHotwire\Components\RadioGroup;
+use Emaia\LaravelHotwire\Components\RadioGroup\Item as RadioGroupItem;
 use Emaia\LaravelHotwire\Components\RichText;
 use Emaia\LaravelHotwire\Components\ScrollProgress;
 use Emaia\LaravelHotwire\Components\Select;
@@ -387,6 +389,22 @@ return [
             'category' => 'display',
             'description' => 'Server-rendered progress primitive with label, value, track and indicator slots',
             'controllers' => [],
+        ],
+        'radio-group' => [
+            'class' => RadioGroup::class,
+            'view' => 'hotwire::component-views.radio-group',
+            'docs' => 'docs/components/radio-group.md',
+            'category' => 'forms',
+            'description' => 'Native radio group with options, rich item composition, old input restore and validation wiring',
+            'controllers' => ['auto-submit'],
+        ],
+        'radio-group.item' => [
+            'class' => RadioGroupItem::class,
+            'view' => 'hotwire::component-views.radio-group-item',
+            'docs' => 'docs/components/radio-group.md',
+            'category' => 'forms',
+            'description' => 'Rich radio-group item that inherits name, selected state and validation wiring',
+            'controllers' => ['auto-submit'],
         ],
         'rich-text' => [
             'class' => RichText::class,

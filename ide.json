@@ -609,6 +609,16 @@
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Progress\\Value"
                 },
                 {
+                    "name": "radio-group",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\RadioGroup"
+                },
+                {
+                    "name": "radio-group.item",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\RadioGroup\\Item"
+                },
+                {
                     "name": "rich-text",
                     "namespace": "hw",
                     "className": "\\Emaia\\LaravelHotwire\\Components\\RichText"
