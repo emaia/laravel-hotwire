@@ -198,6 +198,7 @@ php artisan hotwire:controllers auto-select auto-submit turbo/progress
 | [Toast](docs/controllers/toast.md)                             | `toast`               | `feedback` | `@emaia/sonner`  | [readme](docs/controllers/toast.md)               |
 | [Toaster](docs/controllers/toaster.md)                         | `toaster`             | `feedback` | `@emaia/sonner`  | [readme](docs/controllers/toaster.md)             |
 | [Toggle](docs/controllers/toggle.md)                           | `toggle`              | `forms`    | —                | [readme](docs/controllers/toggle.md)              |
+| [Toggle Group](docs/controllers/toggle-group.md)               | `toggle-group`        | `forms`    | —                | [readme](docs/controllers/toggle-group.md)        |
 | [Tooltip](docs/controllers/tooltip.md)                         | `tooltip`             | `utility`  | `tippy.js`       | [readme](docs/controllers/tooltip.md)             |
 | [Unsaved Changes](docs/controllers/unsaved-changes.md)         | `unsaved-changes`     | `forms`    | —                | [readme](docs/controllers/unsaved-changes.md)     |
 
@@ -347,6 +348,8 @@ stacking multiple controllers, attribute-bag merging and the escaping rules.
 | [Switch](docs/components/switch.md)                       | `<hw:switch>`            | `forms`    | `auto-submit`                                                          | [readme](docs/components/switch.md)             |
 | [Textarea](docs/components/textarea.md)                   | `<hw:textarea>`          | `forms`    | `auto-resize`, `char-counter`, `auto-submit`                           | [readme](docs/components/textarea.md)           |
 | [Toggle](docs/components/toggle.md)                       | `<hw:toggle>`            | `forms`    | `toggle`, `auto-submit`                                                | [readme](docs/components/toggle.md)             |
+| [Toggle Group](docs/components/toggle-group.md)           | `<hw:toggle-group>`      | `forms`    | `toggle-group`, `toggle`, `auto-submit`                                | [readme](docs/components/toggle-group.md)       |
+| [Toggle Group Item](docs/components/toggle-group.md)      | `<hw:toggle-group.item>` | `forms`    | `toggle-group`, `toggle`, `auto-submit`                                | [readme](docs/components/toggle-group.md)       |
 | [Alert](docs/components/alert.md)                         | `<hw:alert>`             | `feedback` | —                                                                      | [readme](docs/components/alert.md)              |
 | [Flash Container](docs/components/flash-container.md)     | `<hw:flash-container>`   | `feedback` | `toaster`                                                              | [readme](docs/components/flash-container.md)    |
 | [Flash Message](docs/components/flash-message.md)         | `<hw:flash-message>`     | `feedback` | `toast`                                                                | [readme](docs/components/flash-message.md)      |

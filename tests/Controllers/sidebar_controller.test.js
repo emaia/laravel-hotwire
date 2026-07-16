@@ -111,6 +111,18 @@ function navLink() {
     return document.querySelector("[data-testid='nav-link']");
 }
 
+async function waitForMobileState(state, timeout = 250) {
+    const startedAt = Date.now();
+
+    while (Date.now() - startedAt < timeout) {
+        if (sidebar().dataset.mobileState === state) return;
+
+        await wait(5);
+    }
+
+    expect(sidebar().dataset.mobileState).toBe(state);
+}
+
 test("connect syncs expanded state to root, sidebar and trigger", async () => {
     await mount(template(true));
 
@@ -203,7 +215,7 @@ test("mobile toggle opens and closes the mobile drawer without changing desktop 
     forceMobile();
 
     trigger().click();
-    await wait(50);
+    await waitForMobileState("open");
 
     expect(root().dataset.state).toBe("expanded");
     expect(sidebar().dataset.mobileState).toBe("open");
@@ -211,7 +223,7 @@ test("mobile toggle opens and closes the mobile drawer without changing desktop 
     expect(trigger().getAttribute("aria-expanded")).toBe("true");
 
     trigger().click();
-    await wait(50);
+    await waitForMobileState("closed");
 
     expect(root().dataset.state).toBe("expanded");
     expect(sidebar().dataset.mobileState).toBe("closed");
@@ -230,7 +242,7 @@ test("mobile open paints the offscreen state before sliding into view", async ()
     expect(dialog().classList.contains("-translate-x-full")).toBe(true);
     expect(dialog().classList.contains("translate-x-0")).toBe(false);
 
-    await wait(50);
+    await waitForMobileState("open");
 
     expect(sidebar().dataset.mobileState).toBe("open");
     expect(dialog().classList.contains("-translate-x-full")).toBe(false);
@@ -243,7 +255,7 @@ test("mobile close keeps the overlay mounted while the panel slides out", async 
     forceMobile();
 
     trigger().click();
-    await wait(50);
+    await waitForMobileState("open");
 
     trigger().click();
 
@@ -257,7 +269,7 @@ test("mobile close keeps the overlay mounted while the panel slides out", async 
     expect(sidebar().dataset.mobileState).toBe("closing");
     expect(sidebar().hidden).toBe(false);
 
-    await wait(60);
+    await waitForMobileState("closed");
 
     expect(sidebar().dataset.mobileState).toBe("closed");
     expect(sidebar().hidden).toBe(true);
@@ -269,17 +281,17 @@ test("mobile Escape and backdrop close only the mobile drawer", async () => {
     forceMobile();
 
     trigger().click();
-    await wait(50);
+    await waitForMobileState("open");
     document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
-    await wait(50);
+    await waitForMobileState("closed");
 
     expect(sidebar().dataset.mobileState).toBe("closed");
     expect(root().dataset.state).toBe("expanded");
 
     trigger().click();
-    await wait(50);
+    await waitForMobileState("open");
     document.querySelector('[data-slot="sidebar-backdrop"]').click();
-    await wait(50);
+    await waitForMobileState("closed");
 
     expect(sidebar().dataset.mobileState).toBe("closed");
 });
@@ -290,7 +302,7 @@ test("mobile link clicks wait for the close animation before navigating", async 
     forceMobile();
 
     trigger().click();
-    await wait(50);
+    await waitForMobileState("open");
 
     let navigations = 0;
     navLink().addEventListener("click", (event) => {
@@ -304,7 +316,7 @@ test("mobile link clicks wait for the close animation before navigating", async 
     expect(sidebar().dataset.mobileState).toBe("closing");
     expect(sidebar().hidden).toBe(false);
 
-    await wait(60);
+    await waitForMobileState("closed");
 
     expect(navigations).toBe(1);
     expect(sidebar().dataset.mobileState).toBe("closed");
@@ -317,7 +329,7 @@ test("mobile modified link clicks are not intercepted", async () => {
     forceMobile();
 
     trigger().click();
-    await wait(50);
+    await waitForMobileState("open");
 
     const event = new MouseEvent("click", { bubbles: true, cancelable: true, metaKey: true });
     navLink().dispatchEvent(event);

@@ -87,6 +87,7 @@ final class ComponentAliases
             'tabs.list' => Components\Tabs\TabList::class,
             'tabs.trigger' => Components\Tabs\Trigger::class,
             'tabs.panel' => Components\Tabs\Panel::class,
+            'toggle-group.item' => Components\ToggleGroup\Item::class,
             'sidebar.provider' => Components\Sidebar\Provider::class,
             'sidebar.trigger' => Components\Sidebar\Trigger::class,
             'sidebar.rail' => Components\Sidebar\Rail::class,
