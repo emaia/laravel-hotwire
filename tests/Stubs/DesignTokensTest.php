@@ -150,9 +150,19 @@ it('safelists runtime classes applied by Stimulus controllers', function () use 
 
     expect($css)
         ->toContain('@source inline(')
+        ->toContain('block')
         ->toContain('pointer-events-none')
         ->toContain('scale-95')
+        ->toContain('duration-150')
         ->toContain('duration-100');
+});
+
+it('lets popover leave transitions remain visible until hidden is applied by JavaScript', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain('[data-slot="popover-content"][data-open="false"] { @apply pointer-events-none scale-95 opacity-0; }')
+        ->toContain('[data-slot="popover-content"][data-open="false"]:not(.block) { @apply hidden; }');
 });
 
 it('preserves existing @custom-variant rules', function () use ($variantsPath) {

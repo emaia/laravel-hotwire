@@ -40,6 +40,7 @@ use Emaia\LaravelHotwire\Components\Modal;
 use Emaia\LaravelHotwire\Components\MultiSelect;
 use Emaia\LaravelHotwire\Components\Optimistic;
 use Emaia\LaravelHotwire\Components\Pagination;
+use Emaia\LaravelHotwire\Components\Popover;
 use Emaia\LaravelHotwire\Components\Progress;
 use Emaia\LaravelHotwire\Components\RadioGroup;
 use Emaia\LaravelHotwire\Components\RadioGroup\Item as RadioGroupItem;
@@ -381,6 +382,14 @@ return [
             'category' => 'display',
             'description' => 'Pagination navigation primitives with Laravel paginator display modes and Turbo Frame support',
             'controllers' => [],
+        ],
+        'popover' => [
+            'class' => Popover::class,
+            'view' => 'hotwire::component-views.popover',
+            'docs' => 'docs/components/popover.md',
+            'category' => 'overlay',
+            'description' => 'Anchored click-triggered popover for rich arbitrary content using Floating UI positioning',
+            'controllers' => ['popover'],
         ],
         'progress' => [
             'class' => Progress::class,
@@ -776,6 +785,13 @@ return [
             'docs' => 'docs/controllers/password-visibility.md',
             'category' => 'forms',
             'description' => 'Toggles a password input between hidden and visible, keeping the trigger ARIA state in sync',
+        ],
+        'popover' => [
+            'source' => 'resources/js/controllers/popover_controller.js',
+            'docs' => 'docs/controllers/popover.md',
+            'category' => 'overlay',
+            'description' => 'Anchored click-triggered popover with outside-click/Escape dismissal, focus return and Floating UI positioning',
+            'npm' => ['@floating-ui/dom' => '^1.8.0'],
         ],
         'remote-form' => [
             'source' => 'resources/js/controllers/remote_form_controller.js',
