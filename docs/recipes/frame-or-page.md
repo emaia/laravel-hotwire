@@ -6,6 +6,8 @@ how the user reached it. One controller, one view, no duplication.
 > The pattern below is also packaged as [`<hw:frame-or-page>`](../components/frame-or-page.md).
 > Use this recipe when you want to understand the moving parts or when you need to customize the
 > dashboard layout itself; reach for the component when you just want the behavior.
+> The component also supports `frameContent` when the modal payload should be smaller than the
+> standalone page.
 
 ## The problem
 
@@ -27,9 +29,9 @@ caller is a frame or a page.
 ```blade
 {{-- resources/views/components/layouts/modal-base.blade.php --}}
 @if (request()->wasFromTurboFrame('modal'))
-    <turbo-frame id="modal">
+    <hw:frame id="modal">
         {{ $slot }}
-    </turbo-frame>
+    </hw:frame>
 @else
     <x-layouts.dashboard>
         {{ $slot }}
@@ -48,12 +50,13 @@ caller is a frame or a page.
     <div class="modal:p-5">
         <x-headings.main-section>Change password</x-headings.main-section>
 
-        <form method="POST" action="{{ route('users.update', $user) }}">
-            @csrf
-            @method('PATCH')
-            {{-- fields --}}
-            <button type="submit">Save</button>
-        </form>
+        <hw:form :action="route('users.update', $user)" method="patch">
+            <hw:field name="password" label="New password">
+                <hw:input type="password" />
+            </hw:field>
+
+            <hw:button type="submit">Save</hw:button>
+        </hw:form>
     </div>
 </x-layouts.modal-base>
 ```
