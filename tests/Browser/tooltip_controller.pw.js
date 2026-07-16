@@ -30,7 +30,7 @@ test("shows sidebar icon tooltips only after the sidebar collapses", async ({ pa
                     data-slot="sidebar-menu-button"
                     data-controller="tooltip"
                     data-tooltip-content-value="Map"
-                    data-tooltip-placement-value="right"
+                    data-tooltip-side-value="right"
                     data-tooltip-enabled-when-value="[data-slot=sidebar][data-collapsible=icon]"
                 >
                     <svg></svg>
