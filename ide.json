@@ -584,6 +584,36 @@
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Pagination\\Previous"
                 },
                 {
+                    "name": "popover",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Popover"
+                },
+                {
+                    "name": "popover.content",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Popover\\Content"
+                },
+                {
+                    "name": "popover.description",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Popover\\Description"
+                },
+                {
+                    "name": "popover.header",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Popover\\Header"
+                },
+                {
+                    "name": "popover.title",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Popover\\Title"
+                },
+                {
+                    "name": "popover.trigger",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Popover\\Trigger"
+                },
+                {
                     "name": "progress",
                     "namespace": "hw",
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Progress"
