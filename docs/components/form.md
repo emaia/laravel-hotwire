@@ -7,7 +7,7 @@ Form wrapper that composes optional Stimulus behaviors via boolean props. Render
 
 ```blade
 <hw:form :action="route('items.index')" method="get" auto-submit clean-query-params>
-    <hw:input type="search" name="q" placeholder="Search..." />
+    <hw:input type="search" name="q" placeholder="Search..." auto-submit />
     <hw:input type="hidden" name="category" value="books" />
     <button type="submit">Search</button>
 </hw:form>
@@ -15,15 +15,16 @@ Form wrapper that composes optional Stimulus behaviors via boolean props. Render
 
 ## Props
 
-| Prop                 | Type           | Default | Description                                                                                                                                                      |
-|----------------------|----------------|---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `auto-submit`        | `bool`         | `false` | Adds `auto-submit` controller (submit on input/change — requires `data-action` on fields)                                                                        |
-| `unsaved-changes`    | `bool`         | `false` | Warns before navigating away with unsaved changes                                                                                                                |
-| `error-scroll`       | `bool`         | `false` | Scrolls to the first validation error after form submission                                                                                                      |
-| `clean-query-params` | `bool`         | `false` | Strips empty fields from GET query strings before submission                                                                                                     |
-| `track-frame-src`    | `bool`         | `false` | Includes a hidden `_turbo_frame_src` input for correct redirect resolution inside Turbo Frames                                                                   |
-| `frame`              | `string\|null` | `null`  | Sets `data-turbo-frame` on the form so Turbo submits into that frame                                                                                             |
-| `enctype`            | `string\|null` | `null`  | HTML `enctype` attribute. Set to `"multipart/form-data"` for file uploads. Default `null` omits the attribute (browser uses `application/x-www-form-urlencoded`) |
+| Prop                 | Type                | Default | Description                                                                                                                                                      |
+|----------------------|---------------------|---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `auto-submit`        | `bool`              | `false` | Adds the `auto-submit` controller for fields that opt into automatic submission                                                                                  |
+| `auto-submit-delay`  | `int\|string\|null` | `null`  | Global debounce delay for `auto-submit#debouncedSubmit`; the controller default is `300` ms when omitted                                                         |
+| `unsaved-changes`    | `bool`              | `false` | Warns before navigating away with unsaved changes                                                                                                                |
+| `error-scroll`       | `bool`              | `false` | Scrolls to the first validation error after form submission                                                                                                      |
+| `clean-query-params` | `bool`              | `false` | Strips empty fields from GET query strings before submission                                                                                                     |
+| `track-frame-src`    | `bool`              | `false` | Includes a hidden `_turbo_frame_src` input for correct redirect resolution inside Turbo Frames                                                                   |
+| `frame`              | `string\|null`      | `null`  | Sets `data-turbo-frame` on the form so Turbo submits into that frame                                                                                             |
+| `enctype`            | `string\|null`      | `null`  | HTML `enctype` attribute. Set to `"multipart/form-data"` for file uploads. Default `null` omits the attribute (browser uses `application/x-www-form-urlencoded`) |
 
 Any other HTML attribute (`action`, `method`, `class`, `data-*`, `aria-*`) passes through to the `<form>` element.
 Method defaults to `post` unless overridden.
@@ -32,7 +33,7 @@ The component automatically includes `@csrf` for all non-GET methods and `@metho
 
 ## Controllers
 
-Each boolean prop activates a Stimulus controller on `data-controller`. Multiple props compose automatically:
+Controller props activate Stimulus controllers on `data-controller`. Multiple props compose automatically:
 
 ```blade
 {{-- Renders: data-controller="auto-submit unsaved-changes" --}}
@@ -43,20 +44,24 @@ Each boolean prop activates a Stimulus controller on `data-controller`. Multiple
 
 ### auto-submit
 
-Submits the form automatically in response to events. You still wire individual fields via `data-action`:
+Submits the form automatically in response to field events. Hotwire form components with an `auto-submit` prop wire the
+right event for their control type:
 
 ```blade
-<hw:form action="/search" method="get" auto-submit>
-    <input
-        type="search"
-        name="q"
-        data-action="input->auto-submit#debouncedSubmit"
-    />
-    <select name="category" data-action="change->auto-submit#submit">
-        ...
-    </select>
+<hw:form action="/search" method="get" auto-submit auto-submit-delay="300">
+    <hw:input type="search" name="q" auto-submit auto-submit-delay="600" />
+    <hw:select name="category" :options="$categories" auto-submit />
 </hw:form>
 ```
+
+Text fields default to debounced submit. Discrete controls like select, checkbox, switch and toggle default to immediate
+submit. Use `auto-submit="debounced"` to force debounce on a discrete control:
+
+```blade
+<hw:select name="category" :options="$categories" auto-submit="debounced" auto-submit-delay="500" />
+```
+
+For custom markup, wire actions manually with `input->auto-submit#debouncedSubmit` or `change->auto-submit#submit`.
 
 See [auto-submit controller](../controllers/auto-submit.md).
 

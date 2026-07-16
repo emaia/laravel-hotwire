@@ -15,15 +15,16 @@ settings that must always submit an explicit on/off value.
 
 ## Props
 
-| Prop          | Type           | Default     | Description                                                                 |
-|---------------|----------------|-------------|-----------------------------------------------------------------------------|
-| `name`        | `string\|null` | —           | Render a hidden input with this name for optional form/filter submission     |
-| `value`       | `mixed`        | `"on"`      | Hidden input value and `change` event detail value                           |
-| `pressed`     | `bool\|string` | `false`     | Initial pressed state                                                        |
-| `variant`     | `string`       | `"default"` | `default` or `outline` in the Nova preset                                    |
-| `size`        | `string`       | `"default"` | `default`, `sm` or `lg` in the Nova preset                                   |
-| `type`        | `string`       | `"button"`  | Native button type                                                           |
-| `auto-submit` | `bool`         | `false`     | Add `change->auto-submit#submit`; requires an ancestor `auto-submit` controller |
+| Prop                | Type                | Default     | Description                                                              |
+|---------------------|---------------------|-------------|--------------------------------------------------------------------------|
+| `name`              | `string\|null`      | —           | Render a hidden input with this name for optional form/filter submission |
+| `value`             | `mixed`             | `"on"`      | Hidden input value and `change` event detail value                       |
+| `pressed`           | `bool\|string`      | `false`     | Initial pressed state                                                    |
+| `variant`           | `string`            | `"default"` | `default` or `outline` in the Nova preset                                |
+| `size`              | `string`            | `"default"` | `default`, `sm` or `lg` in the Nova preset                               |
+| `type`              | `string`            | `"button"`  | Native button type                                                       |
+| `auto-submit`       | `bool\|string`      | `false`     | Add auto-submit wiring; toggles default to immediate change submit       |
+| `auto-submit-delay` | `int\|string\|null` | `null`      | Per-field debounce override when `auto-submit="debounced"` is used       |
 
 Any other HTML attribute (`id`, `class`, `disabled`, `aria-*`, `data-*`) passes through to the button. Internal
 `data-toggle-*` attributes are protected; use props instead.
@@ -47,6 +48,8 @@ so unpressed toggles are omitted from the submitted form data:
 
 This keeps Toggle suitable for filters and action state without replacing checkbox/switch behavior. If your server needs
 an explicit false value, use `<hw:checkbox unchecked-value="0">` or `<hw:switch unchecked-value="0">` instead.
+
+Toggles submit immediately by default. Use `auto-submit="debounced" auto-submit-delay="..."` to delay the submit.
 
 ## Variants and sizes
 

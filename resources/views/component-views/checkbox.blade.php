@@ -19,8 +19,9 @@
         'data-controller' => $elementController ?: null,
         'data-checkbox-indeterminate-value' => $indeterminate ? 'true' : null,
         'data-action' => $elementAction ?: null,
+        'data-auto-submit-delay-param' => $autoSubmitDelayParam,
         'class' => $class ?: null,
-    ], $attributes, $stimulus, except: ['checked', 'required', 'indeterminate', 'auto-submit', 'unchecked-value'], protectedPrefixes: $internalPrefixes);
+    ], $attributes, $stimulus, except: ['checked', 'required', 'indeterminate', 'auto-submit', 'auto-submit-delay', 'unchecked-value'], protectedPrefixes: $internalPrefixes);
 @endphp
 
 @if ($renderUncheckedValue)

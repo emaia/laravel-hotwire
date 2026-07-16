@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Components;
 
 use Emaia\LaravelHotwire\Components\Concerns\StripsNullProps;
+use Emaia\LaravelHotwire\Support\AutoSubmit;
 use Emaia\LaravelHotwire\Support\FieldKey;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\ViewErrorBag;
@@ -27,7 +28,8 @@ class CheckboxGroup extends Component
         public ?string $id = null,
         public ?string $errorKey = null,
         public ?Htmlable $stimulus = null,
-        public bool $autoSubmit = false,
+        public bool|string $autoSubmit = false,
+        public int|string|null $autoSubmitDelay = null,
     ) {
         if ($options !== [] && array_keys($options) === range(0, count($options) - 1)) {
             $this->options = array_combine($options, $options);
@@ -42,7 +44,10 @@ class CheckboxGroup extends Component
     public function data(): array
     {
         $data = parent::data();
-        $data['internalPrefixes'] = $this->selectAll ? ['data-checkbox-select-all-'] : [];
+        $data['internalPrefixes'] = array_values(array_filter([
+            $this->selectAll ? 'data-checkbox-select-all-' : null,
+            AutoSubmit::enabled($this->autoSubmit) ? 'data-auto-submit-' : null,
+        ]));
         $data['compute'] = $this->computeResolved(...);
 
         return $this->stripNullProps($data, ['name', 'id', 'errorKey']);
@@ -97,7 +102,8 @@ class CheckboxGroup extends Component
             'resolvedSelected' => $resolvedSelected,
             'wrapperController' => $wrapperController,
             'hasErrors' => $hasErrors,
-            'elementAction' => $this->autoSubmit ? 'change->auto-submit#submit' : '',
+            'elementAction' => AutoSubmit::action($this->autoSubmit, 'change', 'submit'),
+            'autoSubmitDelayParam' => AutoSubmit::delayParam($this->autoSubmit, $this->autoSubmitDelay, 'submit'),
         ];
     }
 }

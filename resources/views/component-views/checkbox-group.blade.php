@@ -7,7 +7,7 @@
         'data-slot' => 'checkbox-group',
         'data-controller' => $wrapperController ?: null,
         'class' => filled($wrapperClass) ? $wrapperClass : null,
-    ], $attributes, $stimulus, except: ['select-all', 'auto-submit'], protectedPrefixes: $internalPrefixes);
+    ], $attributes, $stimulus, except: ['select-all', 'auto-submit', 'auto-submit-delay'], protectedPrefixes: $internalPrefixes);
 @endphp
 
 <div
@@ -28,6 +28,7 @@
                 @if ($errorId) aria-describedby="{{ $errorId }}" @endif
                 @if ($hasErrors) aria-invalid="true" data-invalid @endif
                 @if ($elementAction) data-action="{!! $elementAction !!}" @endif
+                @if ($autoSubmitDelayParam !== null) data-auto-submit-delay-param="{{ $autoSubmitDelayParam }}" @endif
             />
             {{ $selectAllLabel ?: 'Select all' }}
         </label>
@@ -50,6 +51,7 @@
                 @if ($hasErrors) aria-invalid="true" data-invalid @endif
                 @if ($selectAll) data-checkbox-select-all-target="checkbox" @endif
                 @if ($elementAction) data-action="{!! $elementAction !!}" @endif
+                @if ($autoSubmitDelayParam !== null) data-auto-submit-delay-param="{{ $autoSubmitDelayParam }}" @endif
                 @if (in_array($value, $resolvedSelected)) checked @endif
             />
             {{ $label }}

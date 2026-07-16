@@ -13,10 +13,12 @@
         'aria-required' => $isRequired ? 'true' : null,
         'required' => $isRequired ? true : null,
         'data-controller' => $elementController ?: null,
+        'data-action' => $elementAction,
+        'data-auto-submit-delay-param' => $autoSubmitDelayParam,
         'data-char-counter-target' => $counter !== null ? 'input' : null,
         'maxlength' => $counter,
         'class' => $class ?: null,
-    ], $attributes, $stimulus, except: ['required'], protectedPrefixes: $internalPrefixes);
+    ], $attributes, $stimulus, except: ['required', 'auto-submit', 'auto-submit-delay'], protectedPrefixes: $internalPrefixes);
 @endphp
 
 @if ($needsWrapper)

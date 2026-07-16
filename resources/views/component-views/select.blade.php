@@ -1,18 +1,26 @@
 @aware(['name' => null, 'id' => null, 'errorKey' => null, 'required' => false])
 
-@php extract($compute($name, $id, $errorKey, $required, $errors, $attributes)) @endphp
+@php
+    extract($compute($name, $id, $errorKey, $required, $errors, $attributes));
+
+    $selectAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
+        'data-slot' => 'select',
+        'id' => $resolvedId,
+        'name' => $name ?: null,
+        'aria-describedby' => $errorId,
+        'aria-invalid' => $hasErrors ? 'true' : null,
+        'data-invalid' => $hasErrors ? true : null,
+        'aria-required' => $isRequired ? 'true' : null,
+        'required' => $isRequired ? true : null,
+        'data-action' => $elementAction,
+        'data-auto-submit-delay-param' => $autoSubmitDelayParam,
+        'class' => $class ?: null,
+    ], $attributes, null, except: ['required', 'auto-submit', 'auto-submit-delay'], protectedPrefixes: $internalPrefixes);
+@endphp
 
 <span data-slot="select-wrapper">
 <select
-    data-slot="select"
-    id="{{ $resolvedId }}"
-    @if ($name) name="{{ $name }}" @endif
-    aria-describedby="{{ $errorId }}"
-    @if ($hasErrors) aria-invalid="true" data-invalid @endif
-    @if ($isRequired) aria-required="true" required @endif
-    {{ $attributes->merge([
-            'class' => $class ?: null,
-        ])->except(['required']) }}
+    {{ $selectAttributes }}
 >
     @if (! $isMultiple && ($placeholder || $nullable))
         <option value="" @if ($placeholderSelected) selected @endif>{{ $placeholder ?? '' }}</option>

@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Components;
 
 use Emaia\LaravelHotwire\Components\Concerns\StripsNullProps;
+use Emaia\LaravelHotwire\Support\AutoSubmit;
 use Emaia\LaravelHotwire\Support\FieldKey;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\ViewErrorBag;
@@ -22,7 +23,8 @@ class Checkbox extends Component
         public bool $old = true,
         public ?string $uncheckedValue = null,
         public bool $indeterminate = false,
-        public bool $autoSubmit = false,
+        public bool|string $autoSubmit = false,
+        public int|string|null $autoSubmitDelay = null,
         public string $class = '',
         public ?Htmlable $stimulus = null,
     ) {}
@@ -35,7 +37,10 @@ class Checkbox extends Component
     public function data(): array
     {
         $data = parent::data();
-        $data['internalPrefixes'] = $this->indeterminate ? ['data-checkbox-'] : [];
+        $data['internalPrefixes'] = array_values(array_filter([
+            $this->indeterminate ? 'data-checkbox-' : null,
+            AutoSubmit::enabled($this->autoSubmit) ? 'data-auto-submit-' : null,
+        ]));
         $data['compute'] = $this->computeResolved(...);
 
         return $this->stripNullProps($data, ['name', 'id', 'errorKey', 'uncheckedValue']);
@@ -77,7 +82,8 @@ class Checkbox extends Component
             'hasErrors' => $hasErrors,
             'isRequired' => $isRequired,
             'elementController' => $this->indeterminate ? 'checkbox' : '',
-            'elementAction' => $this->autoSubmit ? 'change->auto-submit#submit' : '',
+            'elementAction' => AutoSubmit::action($this->autoSubmit, 'change', 'submit'),
+            'autoSubmitDelayParam' => AutoSubmit::delayParam($this->autoSubmit, $this->autoSubmitDelay, 'submit'),
             'renderUncheckedValue' => $hasName && $this->uncheckedValue !== null,
             'hiddenDisabled' => $attributes->has('disabled') && $attributes->get('disabled') !== false,
         ];

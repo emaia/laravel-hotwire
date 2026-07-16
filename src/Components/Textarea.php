@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Components;
 
 use Emaia\LaravelHotwire\Components\Concerns\StripsNullProps;
+use Emaia\LaravelHotwire\Support\AutoSubmit;
 use Emaia\LaravelHotwire\Support\FieldKey;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\ViewErrorBag;
@@ -22,6 +23,8 @@ class Textarea extends Component
         public bool $autoResize = false,
         public ?int $counter = null,
         public bool $countdown = false,
+        public bool|string $autoSubmit = false,
+        public int|string|null $autoSubmitDelay = null,
         public string $class = '',
         public string $wrapperClass = '',
         public ?Htmlable $stimulus = null,
@@ -39,6 +42,7 @@ class Textarea extends Component
         $data['internalPrefixes'] = array_values(array_filter([
             $this->counter !== null ? 'data-char-counter-' : null,
             $this->autoResize ? 'data-auto-resize-' : null,
+            AutoSubmit::enabled($this->autoSubmit) ? 'data-auto-submit-' : null,
         ]));
         $data['compute'] = $this->computeResolved(...);
 
@@ -81,6 +85,8 @@ class Textarea extends Component
             'hasErrors' => $hasErrors,
             'isRequired' => $isRequired,
             'elementController' => $elementController,
+            'elementAction' => AutoSubmit::action($this->autoSubmit, 'input', 'debounced'),
+            'autoSubmitDelayParam' => AutoSubmit::delayParam($this->autoSubmit, $this->autoSubmitDelay, 'debounced'),
         ];
     }
 }

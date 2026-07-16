@@ -20,8 +20,9 @@
         'aria-required' => $isRequired ? 'true' : null,
         'required' => $isRequired ? true : null,
         'data-action' => $elementAction ?: null,
+        'data-auto-submit-delay-param' => $autoSubmitDelayParam,
         'class' => $class ?: null,
-    ], $attributes, $stimulus, except: ['checked', 'required', 'auto-submit', 'unchecked-value', 'size']);
+    ], $attributes, $stimulus, except: ['checked', 'required', 'auto-submit', 'auto-submit-delay', 'unchecked-value', 'size'], protectedPrefixes: $internalPrefixes);
 @endphp
 
 @if ($renderUncheckedValue)

@@ -12,17 +12,35 @@ Submits the form automatically in response to events, with optional debounce.
 ## Actions
 
 | Action                        | Description                                                                    |
-|-------------------------------|-------------------------------------------------------------------------------|
+|-------------------------------|--------------------------------------------------------------------------------|
 | `auto-submit#submit`          | Submits the form immediately, cancelling any pending debounced submit          |
 | `auto-submit#debouncedSubmit` | Submits after `delay` ms of inactivity; set `delay` to `0` to submit instantly |
 
 ## Values
 
-| Value   | Type     | Default | Description                                                                       |
-|---------|----------|---------|-----------------------------------------------------------------------------------|
+| Value   | Type     | Default | Description                                                                           |
+|---------|----------|---------|---------------------------------------------------------------------------------------|
 | `delay` | `Number` | `300`   | Debounce window in milliseconds for `debouncedSubmit`. Set to `0` to submit instantly |
 
 `delay` only affects `debouncedSubmit` — `submit` is always immediate.
+
+## Action params
+
+| Param   | Type     | Description                                                              |
+|---------|----------|--------------------------------------------------------------------------|
+| `delay` | `Number` | Per-field debounce override for `debouncedSubmit`; falls back to `delay` |
+
+This lets a form keep a global debounce while one field uses a longer or shorter window:
+
+```html
+<form data-controller="auto-submit" data-auto-submit-delay-value="300">
+    <input
+        name="q"
+        data-action="input->auto-submit#debouncedSubmit"
+        data-auto-submit-delay-param="600"
+    />
+</form>
+```
 
 ## Basic usage — submit on select change
 
@@ -65,6 +83,15 @@ Tune the debounce window with `data-auto-submit-delay-value`:
         data-action="input->auto-submit#debouncedSubmit"
     />
 </form>
+```
+
+Field-level component props render the same wiring:
+
+```blade
+<hw:form method="get" action="/items" auto-submit auto-submit-delay="300">
+    <hw:input name="q" type="search" auto-submit auto-submit-delay="600" />
+    <hw:select name="category" :options="$categories" auto-submit />
+</hw:form>
 ```
 
 ## Combined filters

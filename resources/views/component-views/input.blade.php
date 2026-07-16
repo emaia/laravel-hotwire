@@ -17,10 +17,12 @@
         'aria-required' => $isRequired ? 'true' : null,
         'required' => $isRequired ? true : null,
         'data-controller' => $elementController ?: null,
+        'data-action' => $elementAction,
+        'data-auto-submit-delay-param' => $autoSubmitDelayParam,
         'data-input-mask-mask-value' => $mask !== null ? e($resolvedMask) : null,
         'data-clear-input-target' => $clearable ? 'input' : null,
         'class' => $class ?: null,
-    ], $attributes, $stimulus, except: ['required', 'checked'], protectedPrefixes: $internalPrefixes);
+    ], $attributes, $stimulus, except: ['required', 'checked', 'auto-submit', 'auto-submit-delay'], protectedPrefixes: $internalPrefixes);
 @endphp
 
 @if ($clearable)

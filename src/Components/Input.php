@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Components;
 
 use Emaia\LaravelHotwire\Components\Concerns\StripsNullProps;
+use Emaia\LaravelHotwire\Support\AutoSubmit;
 use Emaia\LaravelHotwire\Support\FieldKey;
 use Emaia\LaravelHotwire\Support\MaskPresets;
 use Illuminate\Contracts\Support\Htmlable;
@@ -26,6 +27,8 @@ class Input extends Component
         public bool $clearable = false,
         public bool $autoSelect = false,
         public ?string $mask = null,
+        public bool|string $autoSubmit = false,
+        public int|string|null $autoSubmitDelay = null,
         public string $class = '',
         public string $wrapperClass = '',
         public ?Htmlable $stimulus = null,
@@ -52,6 +55,7 @@ class Input extends Component
         $data['internalPrefixes'] = array_values(array_filter([
             $this->clearable ? 'data-clear-input-' : null,
             $this->mask !== null ? 'data-input-mask-' : null,
+            AutoSubmit::enabled($this->autoSubmit) ? 'data-auto-submit-' : null,
         ]));
 
         $data['compute'] = $this->computeResolved(...);
@@ -123,6 +127,14 @@ class Input extends Component
             (! $isCheckable && $this->autoSelect) ? 'auto-select' : null,
             (! $isCheckable && $this->mask !== null) ? 'input-mask' : null,
         ])));
+        $autoSubmitEvent = $isCheckable ? 'change' : 'input';
+        $autoSubmitMode = $isCheckable ? 'submit' : 'debounced';
+        $elementAction = trim(implode(' ', array_filter([
+            AutoSubmit::action($this->autoSubmit, $autoSubmitEvent, $autoSubmitMode),
+            (! $isCheckable && $this->clearable && AutoSubmit::enabled($this->autoSubmit))
+                ? 'inputCleared->auto-submit#submit'
+                : null,
+        ])));
 
         return [
             'resolvedId' => $resolvedId,
@@ -133,6 +145,8 @@ class Input extends Component
             'hasErrors' => $hasErrors,
             'isRequired' => $isRequired,
             'elementController' => $elementController,
+            'elementAction' => $elementAction !== '' ? $elementAction : null,
+            'autoSubmitDelayParam' => AutoSubmit::delayParam($this->autoSubmit, $this->autoSubmitDelay, $autoSubmitMode),
         ];
     }
 

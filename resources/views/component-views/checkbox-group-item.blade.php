@@ -6,10 +6,11 @@
     'old' => true,
     'selectAll' => false,
     'autoSubmit' => false,
+    'autoSubmitDelay' => null,
 ])
 
 @php
-    extract($compute($name, $id, $errorKey, $selected, $old, $selectAll, $autoSubmit, $errors, $attributes));
+    extract($compute($name, $id, $errorKey, $selected, $old, $selectAll, $autoSubmit, $autoSubmitDelay, $errors, $attributes));
 @endphp
 
 <label
@@ -28,6 +29,7 @@
         @if ($hasErrors) aria-invalid="true" data-invalid @endif
         @if ($selectAllTarget) data-checkbox-select-all-target="{{ $selectAllTarget }}" @endif
         @if ($elementAction) data-action="{!! $elementAction !!}" @endif
+        @if ($autoSubmitDelayParam !== null) data-auto-submit-delay-param="{{ $autoSubmitDelayParam }}" @endif
         @if ($isChecked) checked @endif
     />
 

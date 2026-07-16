@@ -159,6 +159,23 @@ it('does not add auto-resize by default', function () {
     $view->assertDontSee('auto-resize', false);
 });
 
+// --- auto-submit ---
+
+it('can opt into debounced auto-submit by default', function () {
+    $view = $this->blade('<x-hw::textarea name="bio" auto-submit />');
+
+    $view->assertSee('data-action="input->auto-submit#debouncedSubmit"', false)
+        ->assertDontSee(' auto-submit', false);
+});
+
+it('can set a per-textarea auto-submit delay', function () {
+    $view = $this->blade('<x-hw::textarea name="bio" auto-submit auto-submit-delay="800" />');
+
+    $view->assertSee('data-action="input->auto-submit#debouncedSubmit"', false)
+        ->assertSee('data-auto-submit-delay-param="800"', false)
+        ->assertDontSee(' auto-submit-delay="800"', false);
+});
+
 // --- counter ---
 
 it('renders wrapper with char-counter controller when counter is set', function () {

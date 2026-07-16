@@ -19,20 +19,22 @@ Renders an `<input>` with:
 
 ## Props
 
-| Prop            | Type           | Default             | Description                                                  |
-|-----------------|----------------|---------------------|--------------------------------------------------------------|
-| `name`          | `string\|null` | —                   | Pass-through. Drives `id` and `errorKey` if those aren't set |
-| `id`            | `string\|null` | derived from `name` | Override the auto-derived id                                 |
-| `type`          | `string`       | `"text"`            | Pass-through                                                 |
-| `value`         | `mixed`        | `null`              | Merged with `old($errorKey, $value)` unless `:old="false"`   |
-| `checked`       | `bool`         | `false`             | Initial checked state for `type="checkbox"` / `type="radio"` |
-| `errorKey`      | `string\|null` | derived from `name` | Override for arrays where HTML `name` ≠ validation key       |
-| `old`           | `bool`         | `true`              | Disable `old()` auto-merge                                   |
-| `clearable`     | `bool`         | `false`             | Wrapper + clear button (controller `clear-input`)            |
-| `auto-select`   | `bool`         | `false`             | Selects content on focus (controller `auto-select`)          |
-| `mask`          | `string\|null` | `null`              | Preset (`cpf`, `phone-br`, ...) or raw Maska string          |
-| `class`         | `string`       | `""`                | Merged on `<input>`                                          |
-| `wrapper-class` | `string`       | `""`                | Merged on the wrapper when one is present                    |
+| Prop                | Type                | Default             | Description                                                  |
+|---------------------|---------------------|---------------------|--------------------------------------------------------------|
+| `name`              | `string\|null`      | —                   | Pass-through. Drives `id` and `errorKey` if those aren't set |
+| `id`                | `string\|null`      | derived from `name` | Override the auto-derived id                                 |
+| `type`              | `string`            | `"text"`            | Pass-through                                                 |
+| `value`             | `mixed`             | `null`              | Merged with `old($errorKey, $value)` unless `:old="false"`   |
+| `checked`           | `bool`              | `false`             | Initial checked state for `type="checkbox"` / `type="radio"` |
+| `errorKey`          | `string\|null`      | derived from `name` | Override for arrays where HTML `name` ≠ validation key       |
+| `old`               | `bool`              | `true`              | Disable `old()` auto-merge                                   |
+| `clearable`         | `bool`              | `false`             | Wrapper + clear button (controller `clear-input`)            |
+| `auto-select`       | `bool`              | `false`             | Selects content on focus (controller `auto-select`)          |
+| `mask`              | `string\|null`      | `null`              | Preset (`cpf`, `phone-br`, ...) or raw Maska string          |
+| `auto-submit`       | `bool\|string`      | `false`             | Add auto-submit wiring; text inputs default to debounced     |
+| `auto-submit-delay` | `int\|string\|null` | `null`              | Per-field debounce override when auto-submit is debounced    |
+| `class`             | `string`            | `""`                | Merged on `<input>`                                          |
+| `wrapper-class`     | `string`            | `""`                | Merged on the wrapper when one is present                    |
 
 Any other HTML attribute (`placeholder`, `pattern`, `disabled`, `data-*`, `aria-*`) passes through.
 
@@ -65,6 +67,22 @@ Use `error-key` when the HTML name and the validation key diverge:
 | `time`     | `##:##`                                    |
 
 Unknown presets pass through as raw Maska strings.
+
+## Auto-submit
+
+Text-like inputs submit with debounce by default when `auto-submit` is set. Put the controller on an ancestor form:
+
+```blade
+<hw:form method="get" action="/items" auto-submit auto-submit-delay="300">
+    <hw:input name="q" type="search" auto-submit auto-submit-delay="600" />
+</hw:form>
+```
+
+Use `auto-submit="immediate"` to submit a text input without debounce. Checkable inputs use immediate `change` submit by
+default.
+
+When `clearable` and `auto-submit` are both enabled, clearing the field submits immediately so pending debounced typing is
+cancelled and the empty result set is shown right away.
 
 ## Checkbox and radio
 
@@ -138,5 +156,5 @@ Passing an explicit `id` opts out of the auto-derivation: the component uses you
 
 ## Required controllers
 
-`hotwire:check` looks for `auto-select`, `clear-input`, and `input-mask`. Only the ones you actually use need to be
-published.
+`hotwire:check` looks for `auto-select`, `clear-input`, `input-mask`, and `auto-submit`. Only the ones you actually use
+need to be published.

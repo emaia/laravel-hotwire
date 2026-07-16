@@ -59,6 +59,14 @@ it('adds auto-submit controller when auto-submit is true', function () {
     $view->assertSee('data-controller="auto-submit"', false);
 });
 
+it('renders auto-submit delay on the form controller', function () {
+    $view = $this->blade('<x-hw::form auto-submit auto-submit-delay="500"><span>x</span></x-hw::form>');
+
+    $view->assertSee('data-controller="auto-submit"', false)
+        ->assertSee('data-auto-submit-delay-value="500"', false)
+        ->assertDontSee(' auto-submit-delay="500"', false);
+});
+
 it('adds unsaved-changes controller when unsaved-changes is true', function () {
     $view = $this->blade('<x-hw::form unsaved-changes><span>x</span></x-hw::form>');
 

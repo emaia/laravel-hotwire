@@ -103,6 +103,14 @@ it('can opt into auto-submit change action', function () {
     $view->assertSee('data-action="change->auto-submit#submit"', false);
 });
 
+it('can force debounced auto-submit with a field delay', function () {
+    $view = $this->blade('<x-hw::switch name="enabled" auto-submit="debounced" auto-submit-delay="600" />');
+
+    $view->assertSee('data-action="change->auto-submit#debouncedSubmit"', false)
+        ->assertSee('data-auto-submit-delay-param="600"', false)
+        ->assertDontSee(' auto-submit-delay="600"', false);
+});
+
 // --- ARIA + field integration ---
 
 it('sets aria-describedby and validation state', function () {

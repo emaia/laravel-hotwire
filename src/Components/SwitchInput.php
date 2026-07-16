@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Components;
 
 use Emaia\LaravelHotwire\Components\Concerns\StripsNullProps;
+use Emaia\LaravelHotwire\Support\AutoSubmit;
 use Emaia\LaravelHotwire\Support\FieldKey;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\ViewErrorBag;
@@ -21,7 +22,8 @@ class SwitchInput extends Component
         public ?string $errorKey = null,
         public bool $old = true,
         public ?string $uncheckedValue = null,
-        public bool $autoSubmit = false,
+        public bool|string $autoSubmit = false,
+        public int|string|null $autoSubmitDelay = null,
         public string $size = 'default',
         public string $class = '',
         public ?Htmlable $stimulus = null,
@@ -35,6 +37,7 @@ class SwitchInput extends Component
     public function data(): array
     {
         $data = parent::data();
+        $data['internalPrefixes'] = AutoSubmit::enabled($this->autoSubmit) ? ['data-auto-submit-'] : [];
         $data['compute'] = $this->computeResolved(...);
 
         return $this->stripNullProps($data, ['name', 'id', 'errorKey', 'uncheckedValue']);
@@ -75,7 +78,8 @@ class SwitchInput extends Component
             'isChecked' => $isChecked,
             'hasErrors' => $hasErrors,
             'isRequired' => $isRequired,
-            'elementAction' => $this->autoSubmit ? 'change->auto-submit#submit' : '',
+            'elementAction' => AutoSubmit::action($this->autoSubmit, 'change', 'submit'),
+            'autoSubmitDelayParam' => AutoSubmit::delayParam($this->autoSubmit, $this->autoSubmitDelay, 'submit'),
             'renderUncheckedValue' => $hasName && $this->uncheckedValue !== null,
             'hiddenDisabled' => $attributes->has('disabled') && $attributes->get('disabled') !== false,
             'isDisabled' => $attributes->has('disabled') && $attributes->get('disabled') !== false,

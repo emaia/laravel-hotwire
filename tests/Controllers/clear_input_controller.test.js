@@ -161,6 +161,27 @@ test.serial("hides button when input value becomes empty", async () => {
     expect(button.classList.contains("hidden")).toBe(true);
 });
 
+test.serial("dispatches native input before inputCleared when cleared", async () => {
+    await mount(`
+        <span data-controller="clear-input">
+            <input data-clear-input-target="input" value="hello" />
+            <button data-clear-input-target="clearButton"></button>
+        </span>
+    `);
+
+    const input = document.querySelector("input");
+    const button = document.querySelector("[data-clear-input-target='clearButton']");
+    const events = [];
+
+    input.addEventListener("input", () => events.push(`input:${input.value}`));
+    input.addEventListener("inputCleared", () => events.push(`inputCleared:${input.value}`));
+
+    button.click();
+
+    expect(input.value).toBe("");
+    expect(events).toEqual(["input:", "inputCleared:"]);
+});
+
 async function mount(html) {
     mounted = await mountController("clear-input", ClearInputController, html);
 }

@@ -4,6 +4,7 @@
     $formAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
         'data-slot' => 'form',
         'data-controller' => $controller ?: null,
+        'data-auto-submit-delay-value' => $autoSubmit ? $autoSubmitDelay : null,
         'data-turbo-frame' => $frame,
         'method' => $isSpoofMethod ? 'post' : $method,
         'enctype' => $enctype,
@@ -15,6 +16,7 @@
         'error-scroll',
         'clean-query-params',
         'track-frame-src',
+        'auto-submit-delay',
         'frame',
     ], protectedPrefixes: array_values(array_filter([
         $autoSubmit ? 'data-auto-submit-' : null,

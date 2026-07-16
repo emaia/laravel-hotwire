@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Components;
 
 use Emaia\LaravelHotwire\Components\Concerns\StripsNullProps;
+use Emaia\LaravelHotwire\Support\AutoSubmit;
 use Emaia\LaravelHotwire\Support\FieldKey;
 use Illuminate\Support\ViewErrorBag;
 use Illuminate\View\Component;
@@ -22,6 +23,8 @@ class Select extends Component
         public bool $old = true,
         public ?string $placeholder = null,
         public bool $nullable = false,
+        public bool|string $autoSubmit = false,
+        public int|string|null $autoSubmitDelay = null,
         public string $class = '',
     ) {}
 
@@ -33,6 +36,7 @@ class Select extends Component
     public function data(): array
     {
         $data = parent::data();
+        $data['internalPrefixes'] = AutoSubmit::enabled($this->autoSubmit) ? ['data-auto-submit-'] : [];
         $data['compute'] = $this->computeResolved(...);
 
         return $this->stripNullProps($data, ['name', 'id', 'errorKey']);
@@ -87,6 +91,8 @@ class Select extends Component
             'placeholderSelected' => $placeholderSelected,
             'hasErrors' => $hasErrors,
             'isRequired' => $isRequired,
+            'elementAction' => AutoSubmit::action($this->autoSubmit, 'change', 'submit'),
+            'autoSubmitDelayParam' => AutoSubmit::delayParam($this->autoSubmit, $this->autoSubmitDelay, 'submit'),
         ];
     }
 }

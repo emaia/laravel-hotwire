@@ -16,18 +16,19 @@ array, and keep `<hw:input type="checkbox">` available for low-level compatibili
 
 ## Props
 
-| Prop              | Type           | Default             | Description                                                                   |
-|-------------------|----------------|---------------------|-------------------------------------------------------------------------------|
-| `name`            | `string\|null` | —                   | Input name. Inherited from `<hw:field>` when omitted                          |
-| `id`              | `string\|null` | derived from `name` | Override the auto-derived id                                                   |
-| `value`           | `mixed`        | `null`              | Posted value when checked. Browser default is `on` when omitted               |
-| `checked`         | `bool\|string` | `false`             | Initial checked state                                                          |
-| `old`             | `bool`         | `true`              | Restore checked state from flashed old input                                   |
-| `errorKey`        | `string\|null` | derived from `name` | Override when HTML `name` differs from the Laravel validation key              |
-| `unchecked-value` | `string\|null` | `null`              | Render a hidden input with this value before the checkbox                      |
-| `indeterminate`   | `bool`         | `false`             | Activate the `checkbox` controller to set the native indeterminate property    |
-| `auto-submit`     | `bool`         | `false`             | Add `change->auto-submit#submit`; requires an ancestor `auto-submit` controller |
-| `class`           | `string`       | `""`                | Merged on the checkbox input                                                   |
+| Prop                | Type                | Default             | Description                                                                 |
+|---------------------|---------------------|---------------------|-----------------------------------------------------------------------------|
+| `name`              | `string\|null`      | —                   | Input name. Inherited from `<hw:field>` when omitted                        |
+| `id`                | `string\|null`      | derived from `name` | Override the auto-derived id                                                |
+| `value`             | `mixed`             | `null`              | Posted value when checked. Browser default is `on` when omitted             |
+| `checked`           | `bool\|string`      | `false`             | Initial checked state                                                       |
+| `old`               | `bool`              | `true`              | Restore checked state from flashed old input                                |
+| `errorKey`          | `string\|null`      | derived from `name` | Override when HTML `name` differs from the Laravel validation key           |
+| `unchecked-value`   | `string\|null`      | `null`              | Render a hidden input with this value before the checkbox                   |
+| `indeterminate`     | `bool`              | `false`             | Activate the `checkbox` controller to set the native indeterminate property |
+| `auto-submit`       | `bool\|string`      | `false`             | Add auto-submit wiring; checkboxes default to immediate change submit       |
+| `auto-submit-delay` | `int\|string\|null` | `null`              | Per-field debounce override when `auto-submit="debounced"` is used          |
+| `class`             | `string`            | `""`                | Merged on the checkbox input                                                |
 
 Any other HTML attribute (`disabled`, `data-*`, `aria-*`) passes through to the checkbox input.
 
@@ -78,6 +79,9 @@ The controller also re-syncs after `turbo:render`, so a Turbo morph does not lea
     <hw:checkbox name="notify" value="1" auto-submit />
 </hw:form>
 ```
+
+Checkboxes submit immediately by default. Use `auto-submit="debounced" auto-submit-delay="..."` when a checkbox should
+share a debounced filter flow.
 
 ## Required controllers
 

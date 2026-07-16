@@ -11,17 +11,19 @@ placeholder.
 
 ## Props
 
-| Prop          | Type           | Default             | Description                                                                                                    |
-|---------------|----------------|---------------------|----------------------------------------------------------------------------------------------------------------|
-| `name`        | `string\|null` | —                   | Pass-through. Drives `id` and `errorKey` if those aren't set                                                   |
-| `id`          | `string\|null` | derived from `name` | Override the auto-derived id                                                                                   |
-| `options`     | `array`        | `[]`                | `[value => label]` pairs                                                                                       |
-| `selected`    | `mixed`        | `null`              | Selected value (or array when `multiple` — see [Multiple](#multiple)), merged with `old($errorKey, $selected)` |
-| `errorKey`    | `string\|null` | derived from `name` | Override for arrays where HTML `name` ≠ validation key                                                         |
-| `old`         | `bool`         | `true`              | Disable `old()` auto-merge                                                                                     |
-| `placeholder` | `string\|null` | `null`              | Placeholder option as the first item (re-selectable)                                                           |
-| `nullable`    | `bool`         | `false`             | Render an empty first option even without a placeholder string                                                 |
-| `class`       | `string`       | `""`                | Merged on `<select>`                                                                                           |
+| Prop                | Type                | Default             | Description                                                                                                    |
+|---------------------|---------------------|---------------------|----------------------------------------------------------------------------------------------------------------|
+| `name`              | `string\|null`      | —                   | Pass-through. Drives `id` and `errorKey` if those aren't set                                                   |
+| `id`                | `string\|null`      | derived from `name` | Override the auto-derived id                                                                                   |
+| `options`           | `array`             | `[]`                | `[value => label]` pairs                                                                                       |
+| `selected`          | `mixed`             | `null`              | Selected value (or array when `multiple` — see [Multiple](#multiple)), merged with `old($errorKey, $selected)` |
+| `errorKey`          | `string\|null`      | derived from `name` | Override for arrays where HTML `name` ≠ validation key                                                         |
+| `old`               | `bool`              | `true`              | Disable `old()` auto-merge                                                                                     |
+| `placeholder`       | `string\|null`      | `null`              | Placeholder option as the first item (re-selectable)                                                           |
+| `nullable`          | `bool`              | `false`             | Render an empty first option even without a placeholder string                                                 |
+| `auto-submit`       | `bool\|string`      | `false`             | Add auto-submit wiring; selects default to immediate `change` submit                                           |
+| `auto-submit-delay` | `int\|string\|null` | `null`              | Per-field debounce override when `auto-submit="debounced"` is used                                             |
+| `class`             | `string`            | `""`                | Merged on `<select>`                                                                                           |
 
 Any other HTML attribute (`disabled`, `multiple`, `data-*`, `aria-*`) passes through. `multiple` changes how `selected`
 is interpreted — see [Multiple](#multiple).
@@ -79,6 +81,22 @@ array.
 </hw:field>
 ```
 
+## Auto-submit
+
+Select controls submit immediately by default:
+
+```blade
+<hw:form method="get" action="/items" auto-submit>
+    <hw:select name="category" :options="$categories" auto-submit />
+</hw:form>
+```
+
+To debounce a select, make the mode explicit:
+
+```blade
+<hw:select name="category" :options="$categories" auto-submit="debounced" auto-submit-delay="500" />
+```
+
 ## Required controllers
 
-This component does not depend on any Stimulus controller.
+`auto-submit` is only required when the `auto-submit` prop is used.
