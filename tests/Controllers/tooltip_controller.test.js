@@ -62,16 +62,22 @@ test.serial("always passes allowHTML: true", async () => {
     expect(state.calls[0].options.allowHTML).toBe(true);
 });
 
-test.serial("default placement is 'top'", async () => {
+test.serial("default side creates top placement", async () => {
     await mount(`<button data-controller="tooltip">Hover me</button>`);
 
     expect(state.calls[0].options.placement).toBe("top");
 });
 
-test.serial("passes placement value to tippy", async () => {
-    await mount(`<button data-controller="tooltip" data-tooltip-placement-value="bottom-end">Hover me</button>`);
+test.serial("passes side and align values to tippy placement", async () => {
+    await mount(`<button data-controller="tooltip" data-tooltip-side-value="bottom" data-tooltip-align-value="end">Hover me</button>`);
 
     expect(state.calls[0].options.placement).toBe("bottom-end");
+});
+
+test.serial("omits the placement suffix for center alignment", async () => {
+    await mount(`<button data-controller="tooltip" data-tooltip-side-value="right">Hover me</button>`);
+
+    expect(state.calls[0].options.placement).toBe("right");
 });
 
 // --- conditional enablement ---
@@ -141,7 +147,7 @@ test.serial("enables sidebar icon rail tooltips after the sidebar collapses", as
                     data-slot="sidebar-menu-button"
                     data-controller="tooltip"
                     data-tooltip-content-value="Map"
-                    data-tooltip-placement-value="right"
+                    data-tooltip-side-value="right"
                     data-tooltip-enabled-when-value="[data-slot=sidebar][data-collapsible=icon]"
                 >
                     <svg></svg>

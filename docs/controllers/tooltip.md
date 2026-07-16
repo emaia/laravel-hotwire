@@ -14,11 +14,12 @@ Adds tooltips to any element using [Tippy.js](https://atomiks.github.io/tippyjs/
 
 ## Stimulus Values
 
-| Value | Type | Default | Description |
-|-------|------|---------|-------------|
-| `content` | `String` | `"Tooltip"` | Tooltip content. Supports HTML |
-| `placement` | `String` | `"top"` | Where the tooltip appears relative to the element. See [tippy placements](https://atomiks.github.io/tippyjs/v6/all-props/#placement) |
-| `enabledWhen` | `String` | `""` | Optional ancestor selector. When set, the tooltip only opens while the element is inside a matching ancestor. |
+| Value         | Type     | Default     | Description                                                                                                   |
+|---------------|----------|-------------|---------------------------------------------------------------------------------------------------------------|
+| `content`     | `String` | `"Tooltip"` | Tooltip content. Supports HTML                                                                                |
+| `side`        | `String` | `"top"`     | Side where the tooltip appears: `top`, `right`, `bottom`, or `left`.                                          |
+| `align`       | `String` | `"center"`  | Alignment on that side: `start`, `center`, or `end`.                                                          |
+| `enabledWhen` | `String` | `""`        | Optional ancestor selector. When set, the tooltip only opens while the element is inside a matching ancestor. |
 
 ## Basic usage
 
@@ -42,13 +43,14 @@ Adds tooltips to any element using [Tippy.js](https://atomiks.github.io/tippyjs/
 </span>
 ```
 
-## Custom placement
+## Custom position
 
 ```html
 <button
     data-controller="tooltip"
     data-tooltip-content-value="Saved"
-    data-tooltip-placement-value="bottom-end"
+    data-tooltip-side-value="bottom"
+    data-tooltip-align-value="end"
 >
     Save
 </button>
@@ -62,7 +64,7 @@ Use `enabledWhen` when the tooltip should only be active in a specific DOM state
 <button
     data-controller="tooltip"
     data-tooltip-content-value="Map"
-    data-tooltip-placement-value="right"
+    data-tooltip-side-value="right"
     data-tooltip-enabled-when-value="[data-slot=sidebar][data-collapsible=icon]"
 >
     Map

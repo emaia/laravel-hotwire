@@ -88,6 +88,65 @@ Use `frame` to render `data-turbo-frame` without writing the raw attribute manua
 
 This renders `data-turbo-frame="modal"`. If you pass an explicit `data-turbo-frame` attribute, it wins over `frame`.
 
+## Keyboard shortcuts
+
+Use `hotkey` to mount the `hotkey` controller on the button and click it from a global keydown action:
+
+```blade
+<hw:button type="submit" hotkey="ctrl+s">
+    Save
+</hw:button>
+```
+
+Multiple shortcuts are separated by spaces. `cmd` is normalized to Stimulus' `meta` modifier; no platform detection is
+performed.
+
+```blade
+<hw:button hotkey="cmd+s ctrl+s">
+    Save
+</hw:button>
+```
+
+This renders actions for `keydown.meta+s@window->hotkey#click` and `keydown.ctrl+s@window->hotkey#click`.
+
+Shortcut behavior and shortcut display are separate. If the key should be visible, compose `<hw:kbd>` in the button
+slot; `hotkey` only wires the action:
+
+```blade
+<hw:button type="submit" hotkey="cmd+s">
+    Save <hw:kbd>⌘S</hw:kbd>
+</hw:button>
+```
+
+## Tooltip
+
+Use `tooltip` to mount the `tooltip` controller and set concise string content:
+
+```blade
+<hw:button tooltip="Save changes" tooltip-side="bottom" tooltip-align="end">
+    Save
+</hw:button>
+```
+
+The `tooltip` prop is intentionally a lightweight Button convenience. Do not put Blade component markup in the
+attribute. For rich content such as `Save Changes <hw:kbd>S</hw:kbd>`, use an explicit tooltip composition instead of a
+Button prop.
+
+For conditional display, pass `tooltip-enabled-when` with the selector expected by the tooltip controller:
+
+```blade
+<hw:button
+    tooltip="Only shown while collapsed"
+    tooltip-side="right"
+    tooltip-enabled-when="[data-slot=sidebar][data-collapsible=icon]"
+>
+    <hw:icon name="settings" />
+</hw:button>
+```
+
+When `tooltip` is active, configure tooltip values through Button props. Raw `data-tooltip-*` attributes are reserved for
+the internal controller wiring and are ignored in favour of the explicit props.
+
 ## Rendering as a different tag
 
 By default the component renders `<button>`. Pass `as="a"` to render an anchor with the same look — useful when the action navigates to a different page:
@@ -104,15 +163,20 @@ When `as="a"` is used, the `type` attribute is omitted (it has no meaning on `<a
 
 ## Props
 
-| Prop      | Type     | Default     | Description                                                                                   |
-|-----------|----------|-------------|-----------------------------------------------------------------------------------------------|
-| `variant` | `string` | `'default'` | One of `default`, `destructive`, `outline`, `secondary`, `ghost`, `link`                       |
-| `size`    | `string` | `'default'` | One of `xs`, `sm`, `default`, `lg`, `icon-xs`, `icon-sm`, `icon`, `icon-lg`                    |
-| `type`    | `string` | `'button'`  | Rendered as `<button type="...">`. Use `submit` inside forms. Ignored when `as` is not `button`. |
-| `as`      | `string` | `'button'`  | HTML tag to render. Use `a` for links.                                                         |
-| `slotName`| `string` | `'button'` | Internal escape hatch for shipped components that need a button element with a more specific `data-slot`. Most apps should not set this. |
-| `frame`   | `string\|null` | `null` | Render `data-turbo-frame` for links/actions targeting a Turbo Frame. Explicit `data-turbo-frame` wins. |
-| `stimulus`| `Htmlable\|null` | `null` | Optional Stimulus binding from `stimulus()`, `stimulus_controller()`, `stimulus_action()` or `stimulus_target()`. Pass via `:stimulus="..."`; merged with regular attributes. |
+| Prop                   | Type             | Default     | Description                                                                                                                                                                   |
+|------------------------|------------------|-------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `variant`              | `string`         | `'default'` | One of `default`, `destructive`, `outline`, `secondary`, `ghost`, `link`                                                                                                      |
+| `size`                 | `string`         | `'default'` | One of `xs`, `sm`, `default`, `lg`, `icon-xs`, `icon-sm`, `icon`, `icon-lg`                                                                                                   |
+| `type`                 | `string`         | `'button'`  | Rendered as `<button type="...">`. Use `submit` inside forms. Ignored when `as` is not `button`.                                                                              |
+| `as`                   | `string`         | `'button'`  | HTML tag to render. Use `a` for links.                                                                                                                                        |
+| `slotName`             | `string`         | `'button'`  | Internal escape hatch for shipped components that need a button element with a more specific `data-slot`. Most apps should not set this.                                      |
+| `frame`                | `string\|null`   | `null`      | Render `data-turbo-frame` for links/actions targeting a Turbo Frame. Explicit `data-turbo-frame` wins.                                                                        |
+| `hotkey`               | `string\|null`   | `null`      | Mount `hotkey` and click the button from one or more global keyboard shortcuts. `cmd` maps to `meta`.                                                                         |
+| `tooltip`              | `string\|null`   | `null`      | Mount `tooltip` and set `data-tooltip-content-value`.                                                                                                                         |
+| `tooltip-side`         | `string\|null`   | `null`      | Set `data-tooltip-side-value` when `tooltip` is active.                                                                                                                       |
+| `tooltip-align`        | `string\|null`   | `null`      | Set `data-tooltip-align-value` when `tooltip` is active.                                                                                                                      |
+| `tooltip-enabled-when` | `string\|null`   | `null`      | Set `data-tooltip-enabled-when-value` when `tooltip` is active.                                                                                                               |
+| `stimulus`             | `Htmlable\|null` | `null`      | Optional Stimulus binding from `stimulus()`, `stimulus_controller()`, `stimulus_action()` or `stimulus_target()`. Pass via `:stimulus="..."`; merged with regular attributes. |
 
 All other HTML attributes (`id`, `name`, `disabled`, `aria-*`, `data-*`, `href`, `target`, `class`) pass through to the rendered element. Package styling is not emitted as inline classes; presets target the data attributes below.
 

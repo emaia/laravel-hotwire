@@ -122,7 +122,7 @@ return [
             'docs' => 'docs/components/button.md',
             'category' => 'utility',
             'description' => 'Displays a button or a component that looks like a button.',
-            'controllers' => [],
+            'controllers' => ['hotkey', 'tooltip'],
         ],
         'button-group' => [
             'class' => ButtonGroup::class,

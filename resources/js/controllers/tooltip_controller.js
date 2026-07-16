@@ -9,9 +9,13 @@ export default class extends Controller {
             type: String,
             default: "Tooltip",
         },
-        placement: {
+        side: {
             type: String,
             default: "top",
+        },
+        align: {
+            type: String,
+            default: "center",
         },
         enabledWhen: {
             type: String,
@@ -25,7 +29,7 @@ export default class extends Controller {
         this.tippy?.destroy();
         this.tippy = tippy(this.element, {
             content: this.contentValue,
-            placement: this.placementValue,
+            placement: this.tippyPlacement,
             allowHTML: true,
             onShow: () => this.isEnabled() ? undefined : false,
         });
@@ -52,6 +56,10 @@ export default class extends Controller {
         } catch (_error) {
             return false;
         }
+    }
+
+    get tippyPlacement() {
+        return this.alignValue === "center" ? this.sideValue : `${this.sideValue}-${this.alignValue}`;
     }
 
     observeEnablement() {
