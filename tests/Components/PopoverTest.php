@@ -62,7 +62,7 @@ it('emits positioning defaults for Floating UI', function () {
         ->assertSee('data-popover-align-value="start"', false)
         ->assertSee('data-popover-side-offset-value="4"', false)
         ->assertSee('data-popover-align-offset-value="0"', false)
-        ->assertSee('data-popover-strategy-value="absolute"', false)
+        ->assertSee('data-popover-strategy-value="fixed"', false)
         ->assertSee('data-popover-flip-value="true"', false)
         ->assertSee('data-popover-shift-value="true"', false)
         ->assertSee('data-side="bottom"', false)
@@ -71,7 +71,7 @@ it('emits positioning defaults for Floating UI', function () {
 
 it('emits custom positioning values', function () {
     $view = $this->blade('
-        <x-hw::popover side="right" align="end" :side-offset="12" :align-offset="-4" strategy="fixed" :flip="false" :shift="false">
+        <x-hw::popover side="right" align="end" :side-offset="12" :align-offset="-4" strategy="absolute" :flip="false" :shift="false">
             <x-hw::popover.trigger>Open</x-hw::popover.trigger>
             <x-hw::popover.content>Content</x-hw::popover.content>
         </x-hw::popover>
@@ -81,7 +81,7 @@ it('emits custom positioning values', function () {
         ->assertSee('data-popover-align-value="end"', false)
         ->assertSee('data-popover-side-offset-value="12"', false)
         ->assertSee('data-popover-align-offset-value="-4"', false)
-        ->assertSee('data-popover-strategy-value="fixed"', false)
+        ->assertSee('data-popover-strategy-value="absolute"', false)
         ->assertSee('data-popover-flip-value="false"', false)
         ->assertSee('data-popover-shift-value="false"', false)
         ->assertSee('data-side="right"', false)

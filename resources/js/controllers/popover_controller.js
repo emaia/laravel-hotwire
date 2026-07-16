@@ -22,7 +22,7 @@ export default class extends Controller {
         align: { type: String, default: "start" },
         sideOffset: { type: Number, default: 4 },
         alignOffset: { type: Number, default: 0 },
-        strategy: { type: String, default: "absolute" },
+        strategy: { type: String, default: "fixed" },
         flip: { type: Boolean, default: true },
         shift: { type: Boolean, default: true },
     };

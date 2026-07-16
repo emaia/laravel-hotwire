@@ -13,7 +13,7 @@ class Popover extends Component
         public string $side = 'bottom',
         public int|float|string $sideOffset = 4,
         public int|float|string $alignOffset = 0,
-        public string $strategy = 'absolute',
+        public string $strategy = 'fixed',
         public bool $flip = true,
         public bool $shift = true,
         public bool $open = false,
@@ -26,7 +26,7 @@ class Popover extends Component
 
         $this->side = $this->oneOf($this->side, ['top', 'right', 'bottom', 'left'], 'bottom');
         $this->align = $this->oneOf($this->align, ['start', 'center', 'end'], 'start');
-        $this->strategy = $this->oneOf($this->strategy, ['absolute', 'fixed'], 'absolute');
+        $this->strategy = $this->oneOf($this->strategy, ['absolute', 'fixed'], 'fixed');
         $this->sideOffset = $this->number($this->sideOffset, 4);
         $this->alignOffset = $this->number($this->alignOffset, 0);
     }

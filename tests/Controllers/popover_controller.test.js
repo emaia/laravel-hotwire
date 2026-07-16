@@ -140,6 +140,7 @@ test.serial("starts floating positioning when opened and stops when closed", asy
     expect(content().style.top).toBe("32px");
     expect(content().dataset.side).toBe("bottom");
     expect(content().dataset.align).toBe("start");
+    expect(computePosition.mock.calls[0][2].strategy).toBe("fixed");
 
     clickTrigger();
 
@@ -156,7 +157,7 @@ test.serial("passes popover positioning values to Floating UI", async () => {
              data-popover-align-value="end"
              data-popover-side-offset-value="12"
              data-popover-align-offset-value="-4"
-             data-popover-strategy-value="fixed"
+             data-popover-strategy-value="absolute"
              data-popover-flip-value="false"
              data-popover-shift-value="false">
             <button type="button" data-popover-target="trigger" data-action="popover#toggle" aria-expanded="false">Open</button>
@@ -169,7 +170,7 @@ test.serial("passes popover positioning values to Floating UI", async () => {
 
     const options = computePosition.mock.calls[0][2];
     expect(options.placement).toBe("right-end");
-    expect(options.strategy).toBe("fixed");
+    expect(options.strategy).toBe("absolute");
     expect(offset).toHaveBeenCalledWith({ mainAxis: 12, crossAxis: -4 });
     expect(flip).not.toHaveBeenCalled();
     expect(shift).not.toHaveBeenCalled();

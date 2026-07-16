@@ -29,7 +29,7 @@ return, Turbo cache cleanup and Floating UI positioning.
 | `align`       | `String`  | `"start"`    | Alignment on that side: `start`, `center` or `end`.    |
 | `sideOffset`  | `Number`  | `4`          | Main-axis gap between trigger and content.             |
 | `alignOffset` | `Number`  | `0`          | Cross-axis offset along the trigger edge.              |
-| `strategy`    | `String`  | `"absolute"` | Floating UI strategy: `absolute` or `fixed`.           |
+| `strategy`    | `String`  | `"fixed"`    | Floating UI strategy: `fixed` or `absolute`.           |
 | `flip`        | `Boolean` | `true`       | Flip when there is not enough space.                   |
 | `shift`       | `Boolean` | `true`       | Shift within the viewport when content would overflow. |
 

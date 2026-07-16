@@ -35,17 +35,18 @@ sync.
 
 ## Positioning
 
-Popover uses the same anchored positioning contract as Dropdown and MultiSelect:
+Popover uses `strategy="fixed"` by default so the panel can cross Drawer, Modal, Turbo Frame and scroll-container
+boundaries more reliably:
 
 ```blade
-<hw:popover side="right" align="end" :side-offset="8" strategy="fixed">
+<hw:popover side="right" align="end" :side-offset="8">
     <hw:popover.trigger>Filters</hw:popover.trigger>
     <hw:popover.content><!-- content --></hw:popover.content>
 </hw:popover>
 ```
 
-`strategy="fixed"` helps when the trigger sits inside transformed or complex scrolling layouts. This is not a portal;
-the content can still be clipped by an ancestor with `overflow: hidden`.
+Use `strategy="absolute"` only when you explicitly want the panel positioned within the nearest positioned ancestor.
+This is not a portal; transformed or contained ancestors can still affect the positioning context.
 
 ## Sizing
 
@@ -83,7 +84,7 @@ trigger.
 | `align`        | `start`              | Content alignment: `start`, `center` or `end`.                                    |
 | `side-offset`  | `4`                  | Main-axis gap between the trigger and content.                                    |
 | `align-offset` | `0`                  | Cross-axis offset along the trigger edge.                                         |
-| `strategy`     | `absolute`           | Floating UI strategy: `absolute` or `fixed`.                                      |
+| `strategy`     | `fixed`              | Floating UI strategy: `fixed` or `absolute`.                                      |
 | `flip`         | `true`               | Flip to the opposite side when the preferred side lacks room.                     |
 | `shift`        | `true`               | Shift within the viewport when the content would overflow.                        |
 | `open`         | `false`              | Start open without an enter animation.                                            |
@@ -108,7 +109,7 @@ trigger.
 - `data-popover-align-value="start|center|end"`
 - `data-popover-side-offset-value`
 - `data-popover-align-offset-value`
-- `data-popover-strategy-value="absolute|fixed"`
+- `data-popover-strategy-value="fixed|absolute"`
 - `data-popover-flip-value="true|false"`
 - `data-popover-shift-value="true|false"`
 - `data-slot="popover-trigger"`
@@ -130,4 +131,4 @@ trigger.
 
 - No portal or top-layer support in this release.
 - Popover is not a strict ARIA menu and does not implement roving tabindex or arrow-key menu navigation.
-- Content can be clipped by overflow ancestors; use `strategy="fixed"` for positioning math, but it still renders in place.
+- Popover is not portalled or moved to the top layer; transformed or contained ancestors can still affect positioning.
