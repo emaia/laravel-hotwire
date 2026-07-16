@@ -63,6 +63,7 @@ export default class extends Controller {
         this.inputTarget.classList.remove("clear-input--touched");
         this.clearButtonTarget.classList.add("hidden");
 
+        this.inputTarget.dispatchEvent(new Event("input", { bubbles: true }));
         this.inputTarget.dispatchEvent(new CustomEvent("inputCleared", { detail: event.detail, bubbles: true }));
     }
 

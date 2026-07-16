@@ -18,8 +18,12 @@
         'data-toggle-pressed-value' => $isPressed ? 'true' : 'false',
         'data-toggle-value-value' => $htmlValue,
         'data-toggle-input-id-value' => $inputId,
+        'data-auto-submit-delay-param' => $autoSubmitDelayParam,
         'class' => $toggleGroupClass,
-    ], $attributes, $stimulus, except: ['name', 'value', 'pressed', 'variant', 'size', 'type', 'auto-submit'], protectedPrefixes: ['data-toggle-']);
+    ], $attributes, $stimulus, except: ['name', 'value', 'pressed', 'variant', 'size', 'type', 'auto-submit', 'auto-submit-delay'], protectedPrefixes: array_values(array_filter([
+        'data-toggle-',
+        \Emaia\LaravelHotwire\Support\AutoSubmit::enabled($autoSubmit) ? 'data-auto-submit-' : null,
+    ])));
 @endphp
 
 @if ($resolvedName)

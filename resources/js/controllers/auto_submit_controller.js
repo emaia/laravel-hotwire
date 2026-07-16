@@ -18,14 +18,25 @@ export default class extends Controller {
         this.element.requestSubmit();
     }
 
-    debouncedSubmit() {
-        if (this.delayValue <= 0) {
+    debouncedSubmit(event) {
+        const delay = this.submitDelay(event);
+
+        if (delay <= 0) {
             this.submit();
             return;
         }
 
         this.clearSubmitTimer(this.timeout);
-        this.timeout = this.setSubmitTimer(() => this.element.requestSubmit(), this.delayValue);
+        this.timeout = this.setSubmitTimer(() => this.element.requestSubmit(), delay);
+    }
+
+    submitDelay(event) {
+        const param = event?.params?.delay;
+        if (param === undefined || param === null || param === "") return this.delayValue;
+
+        const delay = Number(param);
+
+        return Number.isNaN(delay) ? this.delayValue : delay;
     }
 
     setSubmitTimer(callback, delay) {

@@ -11,18 +11,20 @@ Auto-resizing the textarea with an optional character counter. Mirrors the same 
 
 ## Props
 
-| Prop            | Type           | Default             | Description                                                  |
-|-----------------|----------------|---------------------|--------------------------------------------------------------|
-| `name`          | `string\|null` | —                   | Pass-through. Drives `id` and `errorKey` if those aren't set |
-| `id`            | `string\|null` | derived from `name` | Override the auto-derived id                                 |
-| `value`         | `mixed`        | `null`              | Default content, merged with `old($errorKey, $value)`        |
-| `errorKey`      | `string\|null` | derived from `name` | Override for arrays where HTML `name` ≠ validation key       |
-| `old`           | `bool`         | `true`              | Disable `old()` auto-merge                                   |
-| `auto-resize`   | `bool`         | `false`             | Automatically grows the textarea to fit content              |
-| `counter`       | `int\|null`    | `null`              | Enables char counter and sets `maxlength`                    |
-| `countdown`     | `bool`         | `false`             | Counter shows remaining instead of used                      |
-| `class`         | `string`       | `""`                | Merged on `<textarea>`                                       |
-| `wrapper-class` | `string`       | `""`                | Merged on the wrapper when counter is active                 |
+| Prop                | Type                | Default             | Description                                                  |
+|---------------------|---------------------|---------------------|--------------------------------------------------------------|
+| `name`              | `string\|null`      | —                   | Pass-through. Drives `id` and `errorKey` if those aren't set |
+| `id`                | `string\|null`      | derived from `name` | Override the auto-derived id                                 |
+| `value`             | `mixed`             | `null`              | Default content, merged with `old($errorKey, $value)`        |
+| `errorKey`          | `string\|null`      | derived from `name` | Override for arrays where HTML `name` ≠ validation key       |
+| `old`               | `bool`              | `true`              | Disable `old()` auto-merge                                   |
+| `auto-resize`       | `bool`              | `false`             | Automatically grows the textarea to fit content              |
+| `counter`           | `int\|null`         | `null`              | Enables char counter and sets `maxlength`                    |
+| `countdown`         | `bool`              | `false`             | Counter shows remaining instead of used                      |
+| `auto-submit`       | `bool\|string`      | `false`             | Add debounced auto-submit wiring                             |
+| `auto-submit-delay` | `int\|string\|null` | `null`              | Per-field debounce override                                  |
+| `class`             | `string`            | `""`                | Merged on `<textarea>`                                       |
+| `wrapper-class`     | `string`            | `""`                | Merged on the wrapper when counter is active                 |
 
 Any other HTML attribute (`placeholder`, `rows`, `disabled`, `data-*`, `aria-*`) passes through.
 
@@ -64,6 +66,16 @@ Customize the counter markup with the `counter` slot:
 </hw:textarea>
 ```
 
+## Auto-submit
+
+Textareas submit with debounce by default when `auto-submit` is set:
+
+```blade
+<hw:form method="get" action="/notes" auto-submit auto-submit-delay="300">
+    <hw:textarea name="q" auto-submit auto-submit-delay="800" />
+</hw:form>
+```
+
 ## Inheriting from `<hw:field>`
 
 ```blade
@@ -74,4 +86,4 @@ Customize the counter markup with the `counter` slot:
 
 ## Required controllers
 
-`hotwire:check` looks for `auto-resize` and `char-counter`. Only the ones you use need to be published.
+`hotwire:check` looks for `auto-resize`, `char-counter`, and `auto-submit`. Only the ones you use need to be published.

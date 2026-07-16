@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Components\CheckboxGroup;
 
 use Emaia\LaravelHotwire\Components\Concerns\StripsNullProps;
+use Emaia\LaravelHotwire\Support\AutoSubmit;
 use Emaia\LaravelHotwire\Support\FieldKey;
 use Illuminate\Support\Str;
 use Illuminate\Support\ViewErrorBag;
@@ -47,7 +48,8 @@ class Item extends Component
         array $selected,
         bool $old,
         bool $selectAll,
-        bool $autoSubmit,
+        bool|string $autoSubmit,
+        int|string|null $autoSubmitDelay,
         ViewErrorBag $errorsBag,
         ComponentAttributeBag $attributes,
     ): array {
@@ -81,7 +83,8 @@ class Item extends Component
             'isChecked' => $isChecked,
             'hasErrors' => $hasErrors,
             'selectAllTarget' => $selectAll ? 'checkbox' : null,
-            'elementAction' => $autoSubmit ? 'change->auto-submit#submit' : '',
+            'elementAction' => AutoSubmit::action($autoSubmit, 'change', 'submit'),
+            'autoSubmitDelayParam' => AutoSubmit::delayParam($autoSubmit, $autoSubmitDelay, 'submit'),
         ];
     }
 

@@ -212,6 +212,30 @@ it('sets aria-required when required attribute is present', function () {
     $view->assertSee('aria-required="true"', false);
 });
 
+// --- Auto-submit ---
+
+it('can opt into immediate auto-submit by default', function () {
+    $view = $this->blade('<x-hw::select name="status" :options="[1 => \'Active\']" auto-submit />');
+
+    $view->assertSee('data-action="change->auto-submit#submit"', false)
+        ->assertDontSee(' auto-submit', false);
+});
+
+it('does not apply auto-submit delay unless select is debounced', function () {
+    $view = $this->blade('<x-hw::select name="status" :options="[1 => \'Active\']" auto-submit auto-submit-delay="600" />');
+
+    $view->assertSee('data-action="change->auto-submit#submit"', false)
+        ->assertDontSee('data-auto-submit-delay-param', false)
+        ->assertDontSee('auto-submit-delay', false);
+});
+
+it('can force debounced auto-submit on select with a field delay', function () {
+    $view = $this->blade('<x-hw::select name="status" :options="[1 => \'Active\']" auto-submit="debounced" auto-submit-delay="600" />');
+
+    $view->assertSee('data-action="change->auto-submit#debouncedSubmit"', false)
+        ->assertSee('data-auto-submit-delay-param="600"', false);
+});
+
 // --- Class merge ---
 
 it('merges custom class on select element', function () {

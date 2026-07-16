@@ -45,6 +45,21 @@ test.serial("debouncedSubmit coalesces rapid events into a single request", asyn
     expect(submits()).toBe(1);
 });
 
+test.serial("debouncedSubmit can use a per-field delay action param", async () => {
+    await setup(`
+        <form data-controller="auto-submit" data-auto-submit-delay-value="20">
+            <input data-action="input->auto-submit#debouncedSubmit" data-auto-submit-delay-param="75">
+        </form>
+    `);
+
+    const { input } = elements();
+    const scheduler = installFakeSubmitScheduler();
+
+    dispatchEvent(input, "input");
+
+    expect(scheduler.pending()[0].delay).toBe(75);
+});
+
 test.serial("debouncedSubmit is debounced by default", async () => {
     await setup(`
         <form data-controller="auto-submit">
@@ -63,6 +78,20 @@ test.serial("a delay of 0 makes debouncedSubmit immediate", async () => {
     await setup(`
         <form data-controller="auto-submit" data-auto-submit-delay-value="0">
             <input data-action="input->auto-submit#debouncedSubmit">
+        </form>
+    `);
+
+    const { input, submits } = elements();
+
+    dispatchEvent(input, "input");
+
+    expect(submits()).toBe(1);
+});
+
+test.serial("a per-field delay of 0 makes debouncedSubmit immediate", async () => {
+    await setup(`
+        <form data-controller="auto-submit" data-auto-submit-delay-value="50">
+            <input data-action="input->auto-submit#debouncedSubmit" data-auto-submit-delay-param="0">
         </form>
     `);
 

@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Components;
 
 use Emaia\LaravelHotwire\Components\Concerns\StripsNullProps;
+use Emaia\LaravelHotwire\Support\AutoSubmit;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\Component;
 use Illuminate\View\ComponentAttributeBag;
@@ -18,7 +19,8 @@ class Toggle extends Component
         public string $variant = 'default',
         public string $size = 'default',
         public string $type = 'button',
-        public bool $autoSubmit = false,
+        public bool|string $autoSubmit = false,
+        public int|string|null $autoSubmitDelay = null,
         public ?Htmlable $stimulus = null,
     ) {}
 
@@ -51,8 +53,9 @@ class Toggle extends Component
             'state' => $isPressed ? 'on' : 'off',
             'elementAction' => trim(implode(' ', array_filter([
                 'click->toggle#toggle',
-                $this->autoSubmit ? 'change->auto-submit#submit' : null,
+                AutoSubmit::action($this->autoSubmit, 'change', 'submit'),
             ]))),
+            'autoSubmitDelayParam' => AutoSubmit::delayParam($this->autoSubmit, $this->autoSubmitDelay, 'submit'),
             'hiddenDisabled' => $isDisabled || ! $isPressed,
         ];
     }

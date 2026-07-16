@@ -19,18 +19,19 @@ Use `<hw:switch>` for boolean on/off settings while keeping native form submissi
 
 ## Props
 
-| Prop              | Type           | Default             | Description                                                                   |
-|-------------------|----------------|---------------------|-------------------------------------------------------------------------------|
-| `name`            | `string\|null` | —                   | Input name. Inherited from `<hw:field>` when omitted                          |
-| `id`              | `string\|null` | derived from `name` | Override the auto-derived id                                                   |
-| `value`           | `mixed`        | `null`              | Posted value when checked. Browser default is `on` when omitted               |
-| `checked`         | `bool\|string` | `false`             | Initial checked state                                                          |
-| `old`             | `bool`         | `true`              | Restore checked state from flashed old input                                   |
-| `errorKey`        | `string\|null` | derived from `name` | Override when HTML `name` differs from the Laravel validation key              |
-| `unchecked-value` | `string\|null` | `null`              | Render a hidden input with this value before the switch                        |
-| `auto-submit`     | `bool`         | `false`             | Add `change->auto-submit#submit`; requires an ancestor `auto-submit` controller |
-| `size`            | `string`       | `"default"`         | `default` or `sm`                                                              |
-| `class`           | `string`       | `""`                | Merged on the switch input                                                     |
+| Prop                | Type                | Default             | Description                                                         |
+|---------------------|---------------------|---------------------|---------------------------------------------------------------------|
+| `name`              | `string\|null`      | —                   | Input name. Inherited from `<hw:field>` when omitted                |
+| `id`                | `string\|null`      | derived from `name` | Override the auto-derived id                                        |
+| `value`             | `mixed`             | `null`              | Posted value when checked. Browser default is `on` when omitted     |
+| `checked`           | `bool\|string`      | `false`             | Initial checked state                                               |
+| `old`               | `bool`              | `true`              | Restore checked state from flashed old input                        |
+| `errorKey`          | `string\|null`      | derived from `name` | Override when HTML `name` differs from the Laravel validation key   |
+| `unchecked-value`   | `string\|null`      | `null`              | Render a hidden input with this value before the switch             |
+| `auto-submit`       | `bool\|string`      | `false`             | Add auto-submit wiring; switches default to immediate change submit |
+| `auto-submit-delay` | `int\|string\|null` | `null`              | Per-field debounce override when `auto-submit="debounced"` is used  |
+| `size`              | `string`            | `"default"`         | `default` or `sm`                                                   |
+| `class`             | `string`            | `""`                | Merged on the switch input                                          |
 
 Any other HTML attribute (`disabled`, `data-*`, `aria-*`) passes through to the switch input.
 
@@ -119,6 +120,8 @@ has validation errors.
     <hw:switch name="enabled" value="1" auto-submit />
 </hw:form>
 ```
+
+Switches submit immediately by default. Use `auto-submit="debounced" auto-submit-delay="..."` for delayed filter flows.
 
 ## Required controllers
 

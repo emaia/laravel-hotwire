@@ -19,9 +19,10 @@ it is empty.
 
 ## Events
 
-| Event          | Description                                 |
-|----------------|---------------------------------------------|
-| `inputCleared` | Fired on the input after clearing. Bubbles. |
+| Event          | Description                                         |
+|----------------|-----------------------------------------------------|
+| `input`        | Native input event fired after the value is cleared |
+| `inputCleared` | Fired on the input after clearing. Bubbles.         |
 
 ## Basic usage
 
@@ -85,9 +86,10 @@ The `clear-input--touched` class is added/removed automatically as the input rec
 </form>
 ```
 
-When the user clicks "X", the `inputCleared` event triggers the form submit automatically. It uses `submit`
-so the cleared results show instantly — and because `submit` cancels a debounce still pending from typing,
-the clear produces a single request — while typing stays debounced via `debouncedSubmit`.
+When the user clicks "X", the controller dispatches native `input` first and then `inputCleared`. The `inputCleared`
+event triggers the form submit automatically. It uses `submit` so the cleared results show instantly — and because
+`submit` cancels a debounce still pending from typing, the clear produces a single request — while typing stays
+debounced via `debouncedSubmit`.
 
 ## With a pre-filled value
 

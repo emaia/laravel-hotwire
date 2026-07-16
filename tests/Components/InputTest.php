@@ -183,6 +183,41 @@ it('combines element controllers with a space', function () {
     $view->assertSee('data-controller="auto-select input-mask"', false);
 });
 
+// --- Auto-submit ---
+
+it('can opt into debounced auto-submit by default', function () {
+    $view = $this->blade('<x-hw::input name="q" auto-submit />');
+
+    $view->assertSee('data-action="input->auto-submit#debouncedSubmit"', false)
+        ->assertDontSee(' auto-submit', false);
+});
+
+it('can set a per-input auto-submit delay', function () {
+    $view = $this->blade('<x-hw::input name="q" auto-submit auto-submit-delay="600" />');
+
+    $view->assertSee('data-action="input->auto-submit#debouncedSubmit"', false)
+        ->assertSee('data-auto-submit-delay-param="600"', false)
+        ->assertDontSee(' auto-submit-delay="600"', false);
+});
+
+it('submits immediately when a clearable auto-submit input is cleared', function () {
+    $view = $this->blade('<x-hw::input name="search" auto-submit clearable />');
+
+    $view->assertSee('data-action="input->auto-submit#debouncedSubmit inputCleared->auto-submit#submit"', false);
+});
+
+it('can force immediate auto-submit on text inputs', function () {
+    $view = $this->blade('<x-hw::input name="q" auto-submit="immediate" />');
+
+    $view->assertSee('data-action="input->auto-submit#submit"', false);
+});
+
+it('uses change events for checkable input auto-submit', function () {
+    $view = $this->blade('<x-hw::input type="checkbox" name="notify" auto-submit />');
+
+    $view->assertSee('data-action="change->auto-submit#submit"', false);
+});
+
 // --- Wrapper: clearable ---
 
 it('renders wrapper with clear-input controller when clearable', function () {

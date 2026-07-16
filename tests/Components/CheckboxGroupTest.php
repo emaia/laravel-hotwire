@@ -313,6 +313,18 @@ it('adds auto-submit change action to option and rich item checkboxes', function
     expect(substr_count($html, 'data-action="change->auto-submit#submit"'))->toBe(2);
 });
 
+it('can force debounced auto-submit on option and rich item checkboxes', function () {
+    $view = $this->blade('
+        <x-hw::checkbox-group name="roles[]" :options="[\'admin\' => \'Admin\']" auto-submit="debounced" auto-submit-delay="600">
+            <x-hw::checkbox-group.item value="editor">Editor</x-hw::checkbox-group.item>
+        </x-hw::checkbox-group>
+    ');
+
+    $html = (string) $view;
+    expect(substr_count($html, 'data-action="change->auto-submit#debouncedSubmit"'))->toBe(2)
+        ->and(substr_count($html, 'data-auto-submit-delay-param="600"'))->toBe(2);
+});
+
 // --- Pass-through ---
 
 it('passes through arbitrary attributes', function () {

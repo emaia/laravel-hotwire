@@ -14,6 +14,7 @@ class Form extends Component
         public bool $errorScroll = false,
         public bool $cleanQueryParams = false,
         public bool $trackFrameSrc = false,
+        public int|string|null $autoSubmitDelay = null,
         public ?string $frame = null,
         public ?string $enctype = null,
         public ?Htmlable $stimulus = null,

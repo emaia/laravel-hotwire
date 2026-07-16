@@ -21,20 +21,21 @@ Flat (non-associative) options arrays are automatically normalized: `['main', 'd
 
 ## Props
 
-| Prop               | Type           | Default        | Description                                                          |
-|--------------------|----------------|----------------|----------------------------------------------------------------------|
-| `name`             | `string\|null` | —              | Input name. Auto-normalized to `foo[]` if you pass `foo` (see below) |
-| `options`          | `array`        | `[]`           | `[value => label]` pairs                                             |
-| `selected`         | `array`        | `[]`           | Values that should be checked                                        |
-| `select-all`       | `bool`         | `false`        | Renders a master checkbox that toggles all items                     |
-| `select-all-label` | `string\|null` | `"Select all"` | Custom label for the master checkbox                                 |
-| `class`            | `string`       | `""`           | Merged on each checkbox `<input>`                                    |
-| `wrapper-class`    | `string`       | `""`           | Merged on the wrapper `<div>`                                        |
-| `label-class`      | `string`       | `""`           | Merged on each item `<label>`                                        |
-| `old`              | `bool`         | `true`         | When `true`, merges `old()` input over `selected`                    |
-| `auto-submit`      | `bool`         | `false`        | Add `change->auto-submit#submit` to each item checkbox               |
-| `id`               | `string\|null` | derived        | Base id for per-checkbox ids and error reference                     |
-| `errorKey`         | `string\|null` | derived        | Override when HTML `name` ≠ Laravel validation key                   |
+| Prop                | Type                | Default        | Description                                                          |
+|---------------------|---------------------|----------------|----------------------------------------------------------------------|
+| `name`              | `string\|null`      | —              | Input name. Auto-normalized to `foo[]` if you pass `foo` (see below) |
+| `options`           | `array`             | `[]`           | `[value => label]` pairs                                             |
+| `selected`          | `array`             | `[]`           | Values that should be checked                                        |
+| `select-all`        | `bool`              | `false`        | Renders a master checkbox that toggles all items                     |
+| `select-all-label`  | `string\|null`      | `"Select all"` | Custom label for the master checkbox                                 |
+| `class`             | `string`            | `""`           | Merged on each checkbox `<input>`                                    |
+| `wrapper-class`     | `string`            | `""`           | Merged on the wrapper `<div>`                                        |
+| `label-class`       | `string`            | `""`           | Merged on each item `<label>`                                        |
+| `old`               | `bool`              | `true`         | When `true`, merges `old()` input over `selected`                    |
+| `auto-submit`       | `bool\|string`      | `false`        | Add auto-submit wiring to each item checkbox                         |
+| `auto-submit-delay` | `int\|string\|null` | `null`         | Per-field debounce override when `auto-submit="debounced"` is used   |
+| `id`                | `string\|null`      | derived        | Base id for per-checkbox ids and error reference                     |
+| `errorKey`          | `string\|null`      | derived        | Override when HTML `name` ≠ Laravel validation key                   |
 
 ## Name auto-normalization
 
@@ -150,7 +151,7 @@ behavior and only toggle between fully checked and unchecked:
 
 ## Auto-submit
 
-`auto-submit` adds `change->auto-submit#submit` to every item checkbox. The `auto-submit` controller should live on an
+`auto-submit` adds auto-submit wiring to every item checkbox. The `auto-submit` controller should live on an
 ancestor form:
 
 ```blade
@@ -158,6 +159,9 @@ ancestor form:
     <hw:checkbox-group name="tags[]" :options="$tags" auto-submit />
 </hw:form>
 ```
+
+Groups submit immediately by default. Use `auto-submit="debounced" auto-submit-delay="..."` to debounce every item in the
+group.
 
 ## Required controllers
 

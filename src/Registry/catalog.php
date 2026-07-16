@@ -312,7 +312,7 @@ return [
             'docs' => 'docs/components/input.md',
             'category' => 'forms',
             'description' => 'Form input with auto id/errorKey, ARIA, optional mask/clear/auto-select',
-            'controllers' => ['auto-select', 'clear-input', 'input-mask'],
+            'controllers' => ['auto-select', 'clear-input', 'input-mask', 'auto-submit'],
         ],
         'item' => [
             'class' => Item::class,
@@ -408,7 +408,7 @@ return [
             'docs' => 'docs/components/select.md',
             'category' => 'forms',
             'description' => 'Select dropdown with auto id/errorKey, ARIA, old() merge and placeholder support',
-            'controllers' => [],
+            'controllers' => ['auto-submit'],
         ],
         'separator' => [
             'class' => Separator::class,
@@ -480,7 +480,7 @@ return [
             'docs' => 'docs/components/textarea.md',
             'category' => 'forms',
             'description' => 'Textarea with auto-resize and optional char counter',
-            'controllers' => ['auto-resize', 'char-counter'],
+            'controllers' => ['auto-resize', 'char-counter', 'auto-submit'],
         ],
         'timeago' => [
             'class' => Timeago::class,
