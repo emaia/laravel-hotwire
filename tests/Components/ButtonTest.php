@@ -74,6 +74,21 @@ it('keeps the data-slot/variant/size attributes on the <a> render', function () 
         ->assertSee('data-size="default"', false);
 });
 
+it('renders frame as a Turbo Frame target', function () {
+    $view = $this->blade('<x-hw::button as="a" href="/tasks/create" frame="modal">New task</x-hw::button>');
+
+    $view->assertSee('data-turbo-frame="modal"', false)
+        ->assertDontSee(' frame="modal"', false);
+});
+
+it('lets an explicit data-turbo-frame attribute override the frame prop', function () {
+    $view = $this->blade('<x-hw::button as="a" href="/tasks/create" frame="modal" data-turbo-frame="drawer">New task</x-hw::button>');
+
+    $view->assertSee('data-turbo-frame="drawer"', false)
+        ->assertDontSee('data-turbo-frame="modal"', false)
+        ->assertDontSee(' frame="modal"', false);
+});
+
 it('uses semantic variant attributes regardless of the rendered tag', function () {
     $view = $this->blade('<x-hw::button as="a" variant="destructive" href="/x">Delete</x-hw::button>');
 

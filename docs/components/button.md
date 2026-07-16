@@ -76,6 +76,18 @@ The `:stimulus` prop accepts the output of `stimulus()`, `stimulus_controller()`
 
 If you don't have a Stimulus binding, omit the prop — the rendered button has no extra `data-*` overhead.
 
+## Targeting a Turbo Frame
+
+Use `frame` to render `data-turbo-frame` without writing the raw attribute manually:
+
+```blade
+<hw:button as="a" href="{{ route('tasks.create') }}" frame="modal">
+    New task
+</hw:button>
+```
+
+This renders `data-turbo-frame="modal"`. If you pass an explicit `data-turbo-frame` attribute, it wins over `frame`.
+
 ## Rendering as a different tag
 
 By default the component renders `<button>`. Pass `as="a"` to render an anchor with the same look — useful when the action navigates to a different page:
@@ -99,6 +111,7 @@ When `as="a"` is used, the `type` attribute is omitted (it has no meaning on `<a
 | `type`    | `string` | `'button'`  | Rendered as `<button type="...">`. Use `submit` inside forms. Ignored when `as` is not `button`. |
 | `as`      | `string` | `'button'`  | HTML tag to render. Use `a` for links.                                                         |
 | `slotName`| `string` | `'button'` | Internal escape hatch for shipped components that need a button element with a more specific `data-slot`. Most apps should not set this. |
+| `frame`   | `string\|null` | `null` | Render `data-turbo-frame` for links/actions targeting a Turbo Frame. Explicit `data-turbo-frame` wins. |
 | `stimulus`| `Htmlable\|null` | `null` | Optional Stimulus binding from `stimulus()`, `stimulus_controller()`, `stimulus_action()` or `stimulus_target()`. Pass via `:stimulus="..."`; merged with regular attributes. |
 
 All other HTML attributes (`id`, `name`, `disabled`, `aria-*`, `data-*`, `href`, `target`, `class`) pass through to the rendered element. Package styling is not emitted as inline classes; presets target the data attributes below.

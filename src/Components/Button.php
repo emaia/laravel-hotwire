@@ -13,6 +13,7 @@ class Button extends Component
         public string $type = 'button',
         public string $as = 'button',
         public string $slotName = 'button',
+        public ?string $frame = null,
         public ?Htmlable $stimulus = null,
     ) {}
 

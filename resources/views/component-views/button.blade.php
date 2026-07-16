@@ -6,6 +6,7 @@
         'data-slot' => $slotName,
         'data-variant' => $variant,
         'data-size' => $size,
+        'data-turbo-frame' => $frame,
     ], $attributes, $stimulus);
 @endphp
 
