@@ -877,6 +877,16 @@
                     "name": "toggle",
                     "namespace": "hw",
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Toggle"
+                },
+                {
+                    "name": "toggle-group",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\ToggleGroup"
+                },
+                {
+                    "name": "toggle-group.item",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\ToggleGroup\\Item"
                 }
             ],
             "phpNamespaces": [

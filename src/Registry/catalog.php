@@ -55,6 +55,8 @@ use Emaia\LaravelHotwire\Components\Tabs;
 use Emaia\LaravelHotwire\Components\Textarea;
 use Emaia\LaravelHotwire\Components\Timeago;
 use Emaia\LaravelHotwire\Components\Toggle;
+use Emaia\LaravelHotwire\Components\ToggleGroup;
+use Emaia\LaravelHotwire\Components\ToggleGroup\Item as ToggleGroupItem;
 
 return [
     'components' => [
@@ -498,6 +500,22 @@ return [
             'description' => 'Accessible two-state button with optional hidden input and auto-submit integration',
             'controllers' => ['toggle', 'auto-submit'],
         ],
+        'toggle-group' => [
+            'class' => ToggleGroup::class,
+            'view' => 'hotwire::component-views.toggle-group',
+            'docs' => 'docs/components/toggle-group.md',
+            'category' => 'forms',
+            'description' => 'Single or multiple pressed-button group with hidden-input form submission',
+            'controllers' => ['toggle-group', 'toggle', 'auto-submit'],
+        ],
+        'toggle-group.item' => [
+            'class' => ToggleGroupItem::class,
+            'view' => 'hotwire::component-views.toggle-group-item',
+            'docs' => 'docs/components/toggle-group.md',
+            'category' => 'forms',
+            'description' => 'Button item for toggle groups with aria-pressed and hidden-input synchronization',
+            'controllers' => ['toggle-group', 'toggle', 'auto-submit'],
+        ],
     ],
     'controllers' => [
         'accordion' => [
@@ -828,6 +846,12 @@ return [
             'docs' => 'docs/controllers/toggle.md',
             'category' => 'forms',
             'description' => 'Synchronizes a two-state button with aria-pressed, data-state and an optional hidden input',
+        ],
+        'toggle-group' => [
+            'source' => 'resources/js/controllers/toggle_group_controller.js',
+            'docs' => 'docs/controllers/toggle-group.md',
+            'category' => 'forms',
+            'description' => 'Coordinates pressed-button groups so single groups keep one active item and form inputs stay synchronized',
         ],
         'tooltip' => [
             'source' => 'resources/js/controllers/tooltip_controller.js',
