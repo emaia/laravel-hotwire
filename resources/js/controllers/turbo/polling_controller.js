@@ -40,15 +40,18 @@ export default class extends Controller {
     }
 
     scheduleRefresh() {
-        if (!this.isConnected || !this.enabledValue || !this.frameValue) {
+        if (!this.isConnected || !this.enabledValue || !this.frameIdentifier) {
             return;
         }
 
         this.cancelRefresh();
 
         this.timeoutId = this.setRefreshTimer(() => {
+            this.timeoutId = null;
+
             if (this.isConnected && this.enabledValue) {
                 this.performRefresh();
+                this.scheduleRefresh();
             }
         }, this.timeoutValue);
     }
@@ -70,15 +73,17 @@ export default class extends Controller {
 
     performRefresh() {
         try {
-            Turbo.visit(window.location.href, {
-                frame: this.frameValue,
+            if (this.targetFrame?.reload) {
+                this.targetFrame.reload();
+                return;
+            }
+
+            Turbo.visit(this.visitUrl, {
+                frame: this.frameIdentifier,
                 action: "replace",
             });
         } catch (error) {
             console.error("Turbo frame refresh failed:", error);
-            if (this.isConnected) {
-                this.scheduleRefresh();
-            }
         }
     }
 
@@ -88,5 +93,27 @@ export default class extends Controller {
         if (this.enabledValue) {
             this.scheduleRefresh();
         }
+    }
+
+    get frameIdentifier() {
+        if (this.hasFrameValue && this.frameValue) return this.frameValue;
+        if (this.isFrameElement) return this.element.id;
+
+        return "";
+    }
+
+    get targetFrame() {
+        if (!this.frameIdentifier) return null;
+        if (this.isFrameElement && this.element.id === this.frameIdentifier) return this.element;
+
+        return document.getElementById(this.frameIdentifier);
+    }
+
+    get visitUrl() {
+        return this.targetFrame?.getAttribute("src") || window.location.href;
+    }
+
+    get isFrameElement() {
+        return this.element.tagName === "TURBO-FRAME";
     }
 }

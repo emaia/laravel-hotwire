@@ -2,7 +2,7 @@
 
 Applies the [View Transitions API](https://developer.mozilla.org/en-US/docs/Web/API/Document/startViewTransition) when rendering Turbo Frame content, adding native browser transition animations.
 
-**Identifier:** `view-transition`
+**Identifier:** `turbo--view-transition`
 **Install:** `php artisan hotwire:controllers turbo/view-transition`
 
 ## Requirements
@@ -17,7 +17,7 @@ Add the controller directly on the `<turbo-frame>`:
 ```html
 <turbo-frame
     id="content"
-    data-controller="view-transition"
+    data-controller="turbo--view-transition"
     src="/items"
 >
     ...
@@ -55,7 +55,7 @@ The View Transitions API uses CSS pseudo-elements to control animations:
 ```html
 <turbo-frame
     id="items-list"
-    data-controller="view-transition"
+    data-controller="turbo--view-transition"
 >
     @foreach ($items as $item)
         <div>{{ $item->title }}</div>

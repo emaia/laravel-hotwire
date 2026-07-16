@@ -28,6 +28,7 @@ use Emaia\LaravelHotwire\Components\FileUpload;
 use Emaia\LaravelHotwire\Components\FlashContainer;
 use Emaia\LaravelHotwire\Components\FlashMessage;
 use Emaia\LaravelHotwire\Components\Form;
+use Emaia\LaravelHotwire\Components\Frame;
 use Emaia\LaravelHotwire\Components\FrameOrPage;
 use Emaia\LaravelHotwire\Components\Icon;
 use Emaia\LaravelHotwire\Components\Input;
@@ -53,6 +54,7 @@ use Emaia\LaravelHotwire\Components\Table;
 use Emaia\LaravelHotwire\Components\Tabs;
 use Emaia\LaravelHotwire\Components\Textarea;
 use Emaia\LaravelHotwire\Components\Timeago;
+use Emaia\LaravelHotwire\Components\Toggle;
 
 return [
     'components' => [
@@ -280,6 +282,14 @@ return [
             'description' => 'Form wrapper with optional Stimulus behaviors, CSRF, and Turbo Frame redirect support',
             'controllers' => ['auto-submit', 'unsaved-changes', 'error-scroll', 'clean-query-params'],
         ],
+        'frame' => [
+            'class' => Frame::class,
+            'view' => 'hotwire::component-views.frame',
+            'docs' => 'docs/components/frame.md',
+            'category' => 'turbo',
+            'description' => 'DX-friendly Turbo Frame wrapper with lazy, advance and replace aliases',
+            'controllers' => ['turbo--polling', 'turbo--view-transition'],
+        ],
         'frame-or-page' => [
             'class' => FrameOrPage::class,
             'view' => 'hotwire::component-views.frame-or-page',
@@ -479,6 +489,14 @@ return [
             'category' => 'utility',
             'description' => 'Self-refreshing relative timestamp element wrapping the timeago controller',
             'controllers' => ['timeago'],
+        ],
+        'toggle' => [
+            'class' => Toggle::class,
+            'view' => 'hotwire::component-views.toggle',
+            'docs' => 'docs/components/toggle.md',
+            'category' => 'forms',
+            'description' => 'Accessible two-state button with optional hidden input and auto-submit integration',
+            'controllers' => ['toggle', 'auto-submit'],
         ],
     ],
     'controllers' => [
@@ -804,6 +822,12 @@ return [
             'category' => 'feedback',
             'description' => 'Initializes the Sonner toaster and persists it across Turbo Drive navigations',
             'npm' => ['@emaia/sonner' => '^2.1.0'],
+        ],
+        'toggle' => [
+            'source' => 'resources/js/controllers/toggle_controller.js',
+            'docs' => 'docs/controllers/toggle.md',
+            'category' => 'forms',
+            'description' => 'Synchronizes a two-state button with aria-pressed, data-state and an optional hidden input',
         ],
         'tooltip' => [
             'source' => 'resources/js/controllers/tooltip_controller.js',

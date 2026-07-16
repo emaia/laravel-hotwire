@@ -41,6 +41,34 @@ test.serial("calls Turbo.visit with the frame value after the scheduled timer fi
     expect(visitCalls[0].options.action).toBe("replace");
 });
 
+test.serial("reschedules after a successful scheduled refresh", async () => {
+    await mount({ timeout: 20, enabled: false });
+    const scheduler = installFakeScheduler();
+
+    setEnabled(true);
+    scheduler.runNext();
+
+    expect(visitFn).toHaveBeenCalledTimes(1);
+    expect(scheduler.pending()).toHaveLength(1);
+
+    scheduler.runNext();
+
+    expect(visitFn).toHaveBeenCalledTimes(2);
+    expect(scheduler.pending()).toHaveLength(1);
+});
+
+test.serial("uses the frame element reload method when mounted directly on a turbo-frame", async () => {
+    await mountFrame({ timeout: 20, enabled: false });
+    const scheduler = installFakeScheduler();
+    mounted.root.reload = mock(() => {});
+
+    setEnabled(true);
+    scheduler.runNext();
+
+    expect(mounted.root.reload).toHaveBeenCalledTimes(1);
+    expect(visitFn).not.toHaveBeenCalled();
+});
+
 test.serial("does not fire when frame value is empty", async () => {
     await mount({ timeout: 20, frame: "", enabled: false });
     const scheduler = installFakeScheduler();
@@ -163,6 +191,18 @@ async function mount({ timeout = 100, frame = "posts", enabled = true } = {}) {
         "turbo--polling",
         PollingController,
         `<div data-controller="turbo--polling" ${attrs}></div>`,
+    );
+}
+
+async function mountFrame({ timeout = 100, enabled = true } = {}) {
+    const attrs = [
+        `data-turbo--polling-timeout-value="${timeout}"`,
+        `data-turbo--polling-enabled-value="${enabled}"`,
+    ].join(" ");
+    mounted = await mountController(
+        "turbo--polling",
+        PollingController,
+        `<turbo-frame id="posts" data-controller="turbo--polling" ${attrs}></turbo-frame>`,
     );
 }
 

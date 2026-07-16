@@ -14,9 +14,14 @@ class Form extends Component
         public bool $errorScroll = false,
         public bool $cleanQueryParams = false,
         public bool $trackFrameSrc = false,
+        public ?string $frame = null,
         public ?string $enctype = null,
         public ?Htmlable $stimulus = null,
-    ) {}
+    ) {
+        if ($this->frame === '') {
+            $this->frame = null;
+        }
+    }
 
     public function render()
     {

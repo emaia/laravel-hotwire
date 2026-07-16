@@ -155,5 +155,6 @@ Three options, in order of how much they cost you:
 
 - [Frame-or-page recipe](../recipes/frame-or-page.md) — the manual pattern this component encapsulates.
 - [`<hw:modal>`](./modal.md), [`<hw:sheet>`](./sheet.md), and [`<hw:drawer>`](./drawer.md) — frame hosts that receive dynamic content.
+- [`<hw:frame>`](./frame.md) — render a regular Turbo Frame with ergonomic aliases like `lazy` and `advance`.
 - [`<hw:form>`](./form.md) — the `track-frame-src` variant that preserves the originating frame URL.
 - [`turbo--frame-src` controller](../controllers/turbo/frame-src.md) — client-side fallback for frame-aware redirects.
