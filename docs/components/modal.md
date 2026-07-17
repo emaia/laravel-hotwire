@@ -85,7 +85,6 @@ Use `<hw:modal.close>` for semantic footer or inline close actions.
 | `close-button`         | `bool`    | `true`             | Shows the X close icon                          |
 | `fixed-top`            | `bool`    | `false`            | Pins the modal to the top with a margin (ignored when `size="full"`) |
 | `frame`                | `?string` | `null`             | Renders a Turbo Frame dynamic content target    |
-| `prevent-reopen-delay` | `int`     | `1000`             | Delay (ms) before allowing reopen after closing |
 | `stimulus`             | `Htmlable\|null` | `null`     | Optional extra Stimulus binding merged into the root element |
 
 ## Subcomponents
@@ -191,7 +190,6 @@ Arbitrary attributes are forwarded to the root modal element. Regular `data-cont
 | `lock-scroll`            | `Boolean` | `true`  | Locks body scroll when open              |
 | `close-on-escape`        | `Boolean` | `true`  | Closes on Escape key                     |
 | `close-on-click-outside` | `Boolean` | `true`  | Closes when clicking outside the modal   |
-| `prevent-reopen-delay`   | `Number`  | `300`   | Anti-bounce delay in the controller (ms) |
 
 ## Actions
 

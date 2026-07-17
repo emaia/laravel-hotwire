@@ -157,12 +157,6 @@ it('emits fixed-top semantic state', function () {
     $view->assertSee('data-fixed-top="true"', false);
 });
 
-it('applies custom prevent-reopen-delay', function () {
-    $view = $this->blade('<x-hw::modal :prevent-reopen-delay="2000">Content</x-hw::modal>');
-
-    $view->assertSee('data-modal-prevent-reopen-delay-value="2000"', false);
-});
-
 it('emits size=md by default', function () {
     $view = $this->blade('<x-hw::modal><x-hw::modal.content>Content</x-hw::modal.content></x-hw::modal>');
 

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, expect, mock, test } from "bun:test";
 
-import { mountController, mountControllers, wait } from "../../resources/js/helpers/test_stimulus.js";
+import { mountController, mountControllers, mountMultipleControllers, wait } from "../../resources/js/helpers/test_stimulus.js";
+import ModalController from "../../resources/js/controllers/modal_controller.js";
 
 const floatingCleanup = mock(() => {});
 const autoUpdate = mock((_anchor, _floating, update) => {
@@ -267,6 +268,52 @@ test.serial("hover cards operate independently", async () => {
 
     expect(contents[0].classList.contains("hidden")).toBe(false);
     expect(contents[1].classList.contains("hidden")).toBe(true);
+});
+
+test.serial("Escape inside an open modal closes only the hover card when the hover card listener runs first", async () => {
+    mounted = await mountMultipleControllers(
+        {
+            "hover-card": HoverCardController,
+            modal: ModalController,
+        },
+        `
+        <div id="modal" data-controller="modal"
+             data-modal-open-duration-value="1"
+             data-modal-close-duration-value="1"
+             data-modal-hidden-class="pointer-events-none"
+             data-modal-visible-class="pointer-events-auto"
+             data-modal-backdrop-hidden-class="opacity-0"
+             data-modal-backdrop-visible-class="opacity-100"
+             data-modal-dialog-hidden-class="scale-80 opacity-0"
+             data-modal-dialog-visible-class="scale-100 opacity-100"
+             data-modal-lock-scroll-class="overflow-hidden">
+            <button id="modal-trigger" data-action="modal#open">Open modal</button>
+            <div data-modal-target="modal" data-open="false" hidden class="pointer-events-none">
+                <div data-modal-target="backdrop"></div>
+                <div data-modal-target="dialog">
+                    <div data-controller="hover-card" data-hover-card-open-delay-value="0" data-hover-card-close-delay-value="0">
+                        <span id="hover-trigger" data-hover-card-target="trigger" data-action="focusin->hover-card#focusIn focusout->hover-card#focusOut" tabindex="0" aria-expanded="false">User</span>
+                        <div id="hover-content" data-hover-card-target="content" class="hidden">Preview</div>
+                    </div>
+                </div>
+            </div>
+        </div>`,
+    );
+
+    const modal = mounted.getController("modal", document.getElementById("modal"));
+    const hoverCard = mounted.getController("hover-card", document.querySelector('[data-controller="hover-card"]'));
+
+    document.getElementById("modal-trigger").dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    await wait(10);
+
+    document.getElementById("hover-trigger").dispatchEvent(new Event("focusin", { bubbles: true, cancelable: true }));
+    await wait(0);
+
+    press("Escape", document.getElementById("hover-content"));
+    await wait(10);
+
+    expect(hoverCard.isOpen).toBe(false);
+    expect(modal.isOpen).toBe(true);
 });
 
 // --- helpers ---

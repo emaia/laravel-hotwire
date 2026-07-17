@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, expect, test } from "bun:test";
+import { afterEach, beforeEach, expect, mock, test } from "bun:test";
 import { Window } from "happy-dom";
 
 import { FocusTrap } from "../../resources/js/controllers/_focus_trap.js";
@@ -56,10 +56,15 @@ test.serial("activate focuses the first focusable when nothing inside is focused
             <button id="b">B</button>
         </div>
     `);
+    const first = document.getElementById("a");
+    const focus = first.focus.bind(first);
+    const focusSpy = mock((options) => focus(options));
+    first.focus = focusSpy;
 
     trap.activate();
 
     expect(document.activeElement.id).toBe("a");
+    expect(focusSpy).toHaveBeenCalledWith({ focusVisible: true });
 });
 
 test.serial("activate leaves focus untouched when an element inside is already focused", () => {

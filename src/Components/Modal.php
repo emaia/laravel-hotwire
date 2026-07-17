@@ -16,7 +16,6 @@ class Modal extends Component
         public bool $closeButton = true,
         public bool $fixedTop = false,
         public ?string $frame = null,
-        public int $preventReopenDelay = 1000,
         public ?Htmlable $stimulus = null,
     ) {
         if ($this->id === '') {

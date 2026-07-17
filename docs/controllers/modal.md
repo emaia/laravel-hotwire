@@ -29,7 +29,6 @@ Accessible modal with backdrop, animations, focus trap and dynamic content suppo
 | `lock-scroll`            | `Boolean` | `true`  | Locks body scroll when open                     |
 | `close-on-escape`        | `Boolean` | `true`  | Closes on Escape key                            |
 | `close-on-click-outside` | `Boolean` | `true`  | Closes when clicking outside the modal          |
-| `prevent-reopen-delay`   | `Number`  | `300`   | Anti-bounce delay between close and reopen (ms) |
 
 ## Stimulus Classes
 

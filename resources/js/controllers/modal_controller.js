@@ -23,10 +23,8 @@ export default class ModalController extends Controller {
         lockScroll: { type: Boolean, default: true },
         closeOnEscape: { type: Boolean, default: true },
         closeOnClickOutside: { type: Boolean, default: true },
-        preventReopenDelay: { type: Number, default: 300 },
     };
 
-    lastCloseTime = 0;
     frameOverlay = null;
     overlay = null;
 
@@ -80,13 +78,6 @@ export default class ModalController extends Controller {
         if (event && (event.ctrlKey || event.metaKey || event.shiftKey)) return;
         if (event && event.button !== undefined && event.button !== 0) return;
 
-        const currentTime = Date.now();
-        const clickedElement = event?.target;
-
-        if (clickedElement === this.triggerElement && currentTime - this.lastCloseTime < this.preventReopenDelayValue) {
-            return;
-        }
-
         if (this.overlay?.isOpening || this.overlay?.isClosing || this.isOpen) return;
 
         this.triggerElement = event?.target || document.activeElement;
@@ -96,7 +87,6 @@ export default class ModalController extends Controller {
     close() {
         if (!this.overlay?.isOpen) return;
 
-        this.lastCloseTime = Date.now();
         this.frameOverlay?.markDismissedWhileLoading();
         this.overlay?.close();
     }

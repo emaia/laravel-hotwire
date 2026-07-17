@@ -139,6 +139,7 @@ export default class extends Controller {
         if (!this.openValue || event.key !== "Escape") return;
 
         event.preventDefault();
+        event.stopImmediatePropagation();
         this.pointerInside = false;
         this.focusInside = false;
         this.close({ focusTrigger: true });

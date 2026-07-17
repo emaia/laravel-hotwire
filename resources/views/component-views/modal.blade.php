@@ -3,7 +3,6 @@
         'id' => $id,
         'data-slot' => 'modal',
         'data-controller' => 'modal',
-        'data-modal-prevent-reopen-delay-value' => $preventReopenDelay,
         'data-modal-hidden-class' => 'pointer-events-none',
         'data-modal-visible-class' => 'pointer-events-auto',
         'data-modal-backdrop-hidden-class' => 'opacity-0',
