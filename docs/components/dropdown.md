@@ -47,7 +47,7 @@ element instead of rendering a nested button.
                 <span class="truncate font-medium">{{ $user->name }}</span>
                 <span class="truncate text-xs">{{ $user->email }}</span>
             </span>
-            <hw:icon name="chevrons-up-down" class="ml-auto" />
+            <hw:icon name="chevron-down" class="ml-auto" />
         </hw:sidebar.menu-button>
     </hw:dropdown.trigger>
 
@@ -75,13 +75,13 @@ mobile opens below the trigger:
             <hw:dropdown.trigger as-child>
                 <hw:sidebar.menu-button size="lg">
                     <span class="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                        <hw:icon name="gallery-vertical-end" />
+                        <x-lucide-gallery-vertical-end class="size-4" />
                     </span>
                     <span class="grid flex-1 text-left text-sm leading-tight">
                         <span class="truncate font-medium">{{ $activeTeam->name }}</span>
                         <span class="truncate text-xs">{{ $activeTeam->plan }}</span>
                     </span>
-                    <hw:icon name="chevrons-up-down" class="ml-auto" />
+                    <hw:icon name="chevron-down" class="ml-auto" />
                 </hw:sidebar.menu-button>
             </hw:dropdown.trigger>
 
@@ -97,7 +97,7 @@ mobile opens below the trigger:
 
                 <hw:dropdown.separator />
                 <hw:dropdown.item>
-                    <hw:icon name="plus" />
+                    <x-lucide-plus class="size-4" />
                     Add team
                 </hw:dropdown.item>
             </hw:dropdown.content>

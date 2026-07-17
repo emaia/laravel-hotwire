@@ -77,19 +77,42 @@
         @if ($contentClassValue !== '') class="{{ $contentClassValue }}" @endif
     >
         @if ($search)
-            <x-hw::input
-                name=""
-                id="{{ $resolvedId }}-search"
-                error-key=""
-                :old="false"
-                type="text"
-                clearable
-                data-slot="multi-select-search"
-                data-multi-select-target="search"
-                placeholder="{{ $searchPlaceholder }}"
-                aria-label="{{ $searchPlaceholder }}"
-                wrapper-class="relative"
-            />
+            <x-hw::input-group>
+                <x-hw::input
+                    name=""
+                    id="{{ $resolvedId }}-search"
+                    error-key=""
+                    :old="false"
+                    type="text"
+                    clearable
+                    data-slot="multi-select-search"
+                    data-multi-select-target="search"
+                    placeholder="{{ $searchPlaceholder }}"
+                    aria-label="{{ $searchPlaceholder }}"
+                    wrapper-class="relative"
+                />
+
+                <x-hw::input-group.addon align="inline-start">
+                    @isset($searchIcon)
+                        {{ $searchIcon }}
+                    @else
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            data-slot="multi-select-search-icon"
+                            aria-hidden="true"
+                        >
+                            <circle cx="11" cy="11" r="8" />
+                            <path d="m21 21-4.3-4.3" />
+                        </svg>
+                    @endisset
+                </x-hw::input-group.addon>
+            </x-hw::input-group>
         @endif
 
         @if ($selectAll)

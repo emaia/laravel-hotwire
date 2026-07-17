@@ -6,7 +6,7 @@ use Emaia\LaravelHotwire\Support\ComponentAliases;
 it('renders marker root with icon and content subcomponents', function () {
     $view = $this->blade(<<<'BLADE'
         <x-hw::marker id="activity-marker">
-            <x-hw::marker.icon><x-hw::icon name="git-branch" /></x-hw::marker.icon>
+            <x-hw::marker.icon><x-hw::icon name="check" /></x-hw::marker.icon>
             <x-hw::marker.content>Switched to a new branch</x-hw::marker.content>
         </x-hw::marker>
     BLADE);

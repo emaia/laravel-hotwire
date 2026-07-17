@@ -25,7 +25,7 @@ Composable app sidebar with collapsible navigation primitives.
             <hw:sidebar.group>
                 <hw:sidebar.group-label>Platform</hw:sidebar.group-label>
                 <hw:sidebar.group-action aria-label="Add project">
-                    <hw:icon name="plus" />
+                    <x-lucide-plus class="size-4" />
                 </hw:sidebar.group-action>
 
                 <hw:sidebar.group-content>
@@ -47,12 +47,12 @@ Composable app sidebar with collapsible navigation primitives.
 
                         <hw:sidebar.menu-item>
                             <hw:sidebar.menu-button href="/projects">
-                                <hw:icon name="folder" />
+                                <x-lucide-folder class="size-4" />
                                 <span>Projects</span>
                             </hw:sidebar.menu-button>
 
                             <hw:sidebar.menu-action show-on-hover aria-label="Create project">
-                                <hw:icon name="plus" />
+                                <x-lucide-plus class="size-4" />
                             </hw:sidebar.menu-action>
 
                             <hw:sidebar.menu-sub>
@@ -81,7 +81,7 @@ Composable app sidebar with collapsible navigation primitives.
             <hw:sidebar.menu>
                 <hw:sidebar.menu-item>
                     <hw:sidebar.menu-button href="/account" size="lg">
-                        <hw:icon name="user" />
+                        <x-lucide-user class="size-4" />
                         <span>Account</span>
                     </hw:sidebar.menu-button>
                 </hw:sidebar.menu-item>

@@ -79,6 +79,9 @@ it('emits search, select-all, max and positioning values', function () {
 
     $view->assertSee('data-multi-select-search-value="true"', false);
     $view->assertSee('type="text"', false);
+    $view->assertSee('data-slot="input-group"', false);
+    $view->assertSee('data-slot="input-group-addon"', false);
+    $view->assertSee('data-slot="multi-select-search-icon"', false);
     $view->assertSee('data-slot="multi-select-search"', false);
     $view->assertSee('data-controller="clear-input"', false);
     $view->assertSee('data-clear-input-target="input"', false);
@@ -97,6 +100,19 @@ it('emits search, select-all, max and positioning values', function () {
     $view->assertSee('data-multi-select-shift-value="false"', false);
     $view->assertSee('data-slot="multi-select-select-all"', false);
     $view->assertSee('aria-pressed="false"', false);
+});
+
+it('allows overriding the search icon slot', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::multi-select name="status[]" :options="['active' => 'Active']">
+            <x-slot:searchIcon>
+                <svg data-test="custom-search-icon"></svg>
+            </x-slot:searchIcon>
+        </x-hw::multi-select>
+    BLADE);
+
+    $view->assertSee('data-test="custom-search-icon"', false);
+    $view->assertDontSee('data-slot="multi-select-search-icon"', false);
 });
 
 it('keeps the select-all action and empty state outside the listbox semantics', function () {

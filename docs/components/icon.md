@@ -2,6 +2,10 @@
 
 Inline SVG icon from the embedded Lucide subset.
 
+The subset is intentionally small and reserved for package UI affordances such as close buttons, chevrons, status icons,
+arrows and rich-text toolbar controls. For app-specific icons, compose your own icon component directly, for example
+`<x-lucide-search class="size-4" />`.
+
 ## Usage
 
 ```blade
