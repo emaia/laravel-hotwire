@@ -55,4 +55,14 @@ class Modal extends Component
     {
         return view('hotwire::component-views.modal');
     }
+
+    public function dialogHiddenClass(): string
+    {
+        return 'scale-80 opacity-0';
+    }
+
+    public function dialogVisibleClass(): string
+    {
+        return 'scale-100 opacity-100';
+    }
 }

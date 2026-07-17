@@ -4,34 +4,76 @@ Accessible modal with backdrop, animations, focus trap and Turbo integration.
 
 ## Basic usage
 
-```html
-
+```blade
 <hw:modal>
-    <x-slot:trigger>
-        <button data-action="modal#open" type="button">Open modal</button>
-    </x-slot:trigger>
+    <hw:modal.trigger>
+        Open modal
+    </hw:modal.trigger>
 
-    <div class="p-6">
-        <h2>Title</h2>
-        <p>Modal content.</p>
-    </div>
+    <hw:modal.content>
+        <hw:modal.header>
+            <hw:modal.title>Edit profile</hw:modal.title>
+            <hw:modal.description>
+                Update your account details.
+            </hw:modal.description>
+        </hw:modal.header>
+
+        <form class="grid gap-4">
+            ...
+        </form>
+
+        <hw:modal.footer>
+            <hw:modal.close>Cancel</hw:modal.close>
+            <hw:button>Save</hw:button>
+        </hw:modal.footer>
+    </hw:modal.content>
 </hw:modal>
 ```
 
-## With a close button
+`<hw:modal>` owns the Stimulus controller and configuration. `<hw:modal.content>` renders the overlay, backdrop, dialog surface and optional close icon exactly where it is placed.
 
-The X button is shown by default (`close-button` is `true`). To hide it:
+## Trigger
 
-```html
+`<hw:modal.trigger>` renders a button that opens the modal. It supports the same visual variants and sizes as `<hw:button>`.
 
+```blade
+<hw:modal.trigger variant="outline" size="sm">
+    Edit
+</hw:modal.trigger>
+
+<hw:modal.trigger as="a" href="/users/1/edit">
+    Edit user
+</hw:modal.trigger>
+```
+
+| Prop      | Type     | Default     | Description                         |
+|-----------|----------|-------------|-------------------------------------|
+| `variant` | `string` | `'default'` | Button variant                      |
+| `size`    | `string` | `'default'` | Button size                         |
+| `as`      | `string` | `'button'`  | Rendered tag                        |
+| `type`    | `string` | `'button'`  | Button type when `as="button"`     |
+
+## Close Actions
+
+The X close icon is shown by default. Hide it with `:close-button="false"`.
+
+```blade
 <hw:modal :close-button="false">
-    <x-slot:trigger>
-        <button data-action="modal#open" type="button">Open</button>
-    </x-slot:trigger>
-
-    <p class="p-6">Modal without the X button.</p>
+    <hw:modal.trigger>Open</hw:modal.trigger>
+    <hw:modal.content>Modal without the X close icon.</hw:modal.content>
 </hw:modal>
 ```
+
+Use `<hw:modal.close>` for semantic footer or inline close actions.
+
+```blade
+<hw:modal.footer>
+    <hw:modal.close variant="outline">Cancel</hw:modal.close>
+    <hw:button>Save</hw:button>
+</hw:modal.footer>
+```
+
+`modal.close` supports `variant`, `size`, `as` and `type` with the same defaults as `modal.trigger`, except `variant` defaults to `outline`.
 
 ## Props
 
@@ -39,68 +81,95 @@ The X button is shown by default (`close-button` is `true`). To hide it:
 |------------------------|-----------|--------------------|-------------------------------------------------|
 | `id`                   | `string`  | `uniqid('modal-')` | Root element ID                                 |
 | `size`                 | `string`  | `'md'`             | Preset (`sm`/`md`/`lg`/`xl`/`full`/`auto`) or arbitrary width (`800px`, `60vw`) |
-| `class`                | `string`  | `''`               | Additional CSS classes on the content container |
-| `close-button`         | `bool`    | `true`             | Shows X button to close                         |
+| `class`                | `string`  | `''`               | Additional CSS classes on the panel             |
+| `close-button`         | `bool`    | `true`             | Shows the X close icon                          |
 | `fixed-top`            | `bool`    | `false`            | Pins the modal to the top with a margin (ignored when `size="full"`) |
 | `frame`                | `?string` | `null`             | Renders a Turbo Frame dynamic content target    |
 | `prevent-reopen-delay` | `int`     | `1000`             | Delay (ms) before allowing reopen after closing |
 | `stimulus`             | `Htmlable\|null` | `null`     | Optional extra Stimulus binding merged into the root element |
 
-### Size presets
+## Subcomponents
 
-All presets except `auto` apply `w-full` plus a fixed `max-w-*` cap, so the dialog fills the available
-width up to the preset's cap. The caps follow a monotonically increasing scale — `sm < md < lg < xl` at
-**any** viewport — so the choice is predictable regardless of screen size or browser zoom.
+| Component                | Description                               |
+|--------------------------|-------------------------------------------|
+| `modal.trigger`          | Button-like control that opens the modal  |
+| `modal.content`          | Overlay, backdrop and dialog content      |
+| `modal.header`           | Header layout inside content              |
+| `modal.title`            | Modal title                               |
+| `modal.description`      | Supporting text                           |
+| `modal.footer`           | Footer action layout                      |
+| `modal.close`            | Button-like control that closes the modal |
 
-| `size`         | Width                                | px cap (md+) | Height                          | Notes                                   |
-|----------------|--------------------------------------|--------------|---------------------------------|-----------------------------------------|
-| `sm`           | `w-full md:max-w-md`                 | 448          | auto                            | Compact dialogs                         |
-| `md` (default) | `w-full md:max-w-xl`                 | 576          | auto                            | Standard form/dialog size               |
-| `lg`           | `w-full md:max-w-3xl`                | 768          | auto                            | Forms with multiple fields              |
-| `xl`           | `w-full md:max-w-5xl`                | 1024         | auto                            | Wide content (tables, dashboards)       |
-| `full`         | `w-full`                             | n/a          | `h-full` (viewport - padding)   | Fills the viewport; close button moves inside |
-| `auto`         | No cap, no `w-full`                  | n/a          | auto                            | Sizes to content — use when you want the dialog to shrink-wrap |
+## Size presets
 
-Need "half the viewport" or another fluid value? Pass an arbitrary `size`:
+All presets except `auto` apply `w-full` plus a fixed `max-w-*` cap, so the dialog fills the available width up to the preset's cap.
 
-```blade
-<hw:modal size="50vw">...</hw:modal>
-```
+| `size`         | Width                                | px cap (md+) | Height                        |
+|----------------|--------------------------------------|--------------|-------------------------------|
+| `sm`           | `w-full md:max-w-md`                 | 448          | auto                          |
+| `md` (default) | `w-full md:max-w-xl`                 | 576          | auto                          |
+| `lg`           | `w-full md:max-w-3xl`                | 768          | auto                          |
+| `xl`           | `w-full md:max-w-5xl`                | 1024         | auto                          |
+| `full`         | `w-full`                             | n/a          | `h-full` within viewport pad  |
+| `auto`         | No cap, no `w-full`                  | n/a          | auto                          |
 
-### Arbitrary size
-
-Any non-preset value is forwarded as `style="max-width: <value>"` on the dialog, alongside the same
-`w-full` that the presets use — so the dialog fills the available width up to that arbitrary cap (same
-behavior as the presets, just with a custom number):
+Pass an arbitrary size to set an inline max width on the dialog positioner:
 
 ```blade
 <hw:modal size="800px">...</hw:modal>
 <hw:modal size="60vw">...</hw:modal>
-<hw:modal size="42rem">...</hw:modal>
 ```
 
-If you instead want the dialog to **shrink to content** with a custom cap, use `size="auto"` and add the
-cap via the `class` prop on the inner panel:
+## Dynamic content with Turbo Frames
+
+For a global modal shell in a layout, provide `frame` and leave the default slot empty. The root renders the content fallback automatically.
 
 ```blade
-<hw:modal size="auto" class="md:max-w-[800px]">...</hw:modal>
+<a href="/posts/1/edit" data-turbo-frame="modal">
+    Edit post
+</a>
+
+<hw:modal id="modal-shell" frame="modal">
+    <x-slot:loading_template>
+        <div class="flex items-center justify-center p-8">
+            Loading...
+        </div>
+    </x-slot:loading_template>
+</hw:modal>
 ```
 
-### Migrating from `allow-small-width` / `allow-full-width`
+This renders a frame inside the modal content:
 
-The previous boolean props have been replaced by `size`. Map your usage:
+```html
+<turbo-frame id="modal" data-modal-target="dynamicContent"></turbo-frame>
+```
 
-| Before                                                       | After                       |
-|--------------------------------------------------------------|-----------------------------|
-| `<hw:modal>` (defaults)                                  | `<hw:modal size="50vw">` to keep the old "half-viewport" behavior — or just `<hw:modal>` for the new 576px cap |
-| `<hw:modal :allow-small-width="true">`                   | `<hw:modal size="auto">` |
-| `<hw:modal :allow-full-width="false">`                   | `<hw:modal size="50vw">` (or pick a preset) |
-| `<hw:modal :allow-small-width="true" :allow-full-width="false">` | `<hw:modal size="md">` (576px cap, allows shrinking on `sm`) |
+When the Turbo Frame receives content, the modal opens automatically. Return an empty `update` or `replace` stream for the frame id, or a `refresh` stream, to close it after a successful action.
+
+## Loading template
+
+The `loading_template` slot lives on the root modal and is used while dynamic frame content is loading.
+
+Resolution order: per-link `data-loading-template` -> modal's `loading_template` slot -> no loading template.
+
+```blade
+<a href="/posts/1/edit"
+   data-turbo-frame="modal"
+   data-loading-template="#form-skeleton">
+    Edit post
+</a>
+
+<template id="form-skeleton">
+    <div class="grid gap-3 p-4">
+        <hw:skeleton class="h-6 w-1/3" />
+        <hw:skeleton class="h-32 w-full" />
+    </div>
+</template>
+```
 
 ## Root attributes
 
-Arbitrary attributes are forwarded to the root modal element. Use this for ARIA attributes, ids, data
-hooks, and additional Stimulus controllers/actions:
+Arbitrary attributes are forwarded to the root modal element. Regular `data-controller` / `data-action` attributes and the `stimulus` prop are merged and deduplicated with the internal `modal` controller. Component-owned `data-modal-*` attributes are protected; configure supported behavior with props instead.
 
 ```blade
 <hw:modal
@@ -113,129 +182,7 @@ hooks, and additional Stimulus controllers/actions:
 </hw:modal>
 ```
 
-Regular `data-controller` / `data-action` attributes and the `stimulus` prop are merged and deduplicated with the
-internal `modal` controller. Component-owned `data-modal-*` attributes are protected; configure supported modal behavior
-with props instead of overriding those attributes directly.
-
-## Slots
-
-| Slot               | Description                                |
-|--------------------|--------------------------------------------|
-| `trigger`          | Element that triggers the modal opening    |
-| `slot` (default)   | Main modal content                         |
-| `loading_template` | Template shown while dynamic content loads |
-
-## Dynamic content with Turbo Frames
-
-The modal supports content loaded via Turbo Frame. Use the `frame` prop to render a dynamic content
-target that the controller observes and opens when content arrives:
-
-```blade
-<a href="/items/1/edit" data-turbo-frame="modal">
-    Edit
-</a>
-
-<hw:modal frame="modal">
-    <x-slot:loading_template>
-        <div class="flex items-center justify-center p-12">
-            <span>Loading...</span>
-        </div>
-    </x-slot:loading_template>
-</hw:modal>
-```
-
-`frame="modal"` renders this frame inside the modal body:
-
-```html
-<turbo-frame id="modal" data-modal-target="dynamicContent"></turbo-frame>
-```
-
-Use a different root `id` if you set one manually:
-
-```blade
-<hw:modal id="modal-shell" frame="modal" />
-```
-
-When the Turbo Frame receives content, the modal opens automatically. Return an empty `update` or
-`replace` stream for the modal root or frame id, or a `refresh` stream, to close it after a
-successful action. The modal also listens globally for clicks on `a[data-turbo-frame="<its frame id>"]`, so
-the loading template fires even when the trigger lives outside the modal element (typical when the
-modal sits in a shared layout).
-
-## Loading template
-
-The `loading_template` slot defines what fills the dynamic content while the Turbo Frame request is
-in flight. The lifecycle:
-
-1. User clicks `<a data-turbo-frame="<frame id>">` — anywhere on the page.
-2. Turbo dispatches `turbo:before-fetch-request` on the matching frame just before the network call.
-3. The modal catches that event, resolves a template and injects it into its `dynamicContent`
-   target synchronously.
-4. The content observer sees the inserted markup and opens the modal.
-5. The frame response arrives → its content replaces the loading template.
-
-Cached or preview responses that Turbo serves without a fetch never reach `turbo:before-fetch-request`,
-so the modal opens straight to the final content without flashing the template. If no per-link or
-slot template exists, there is no loading state; the modal waits for the real frame content and opens
-when that content arrives.
-
-### Default template
-
-Provided once via the slot — used for every trigger:
-
-```blade
-<hw:modal frame="modal">
-    <x-slot:loading_template>
-        <div class="flex items-center justify-center p-12">
-            <span class="animate-spin">⏳</span>
-            <span>Loading...</span>
-        </div>
-    </x-slot:loading_template>
-</hw:modal>
-```
-
-### Per-link template override
-
-A trigger can point to its own template via `data-loading-template="<selector>"`. Useful when
-different actions need different loading skeletons (a form skeleton vs. a list skeleton, for
-example):
-
-```blade
-<a href="/posts/1/edit"
-   data-turbo-frame="modal"
-   data-loading-template="#form-skeleton">
-    Edit post
-</a>
-
-<a href="/posts/1/comments"
-   data-turbo-frame="modal"
-   data-loading-template="#list-skeleton">
-    View comments
-</a>
-
-<template id="form-skeleton">
-    <div class="space-y-3 p-6">
-        <div class="h-6 w-1/3 animate-pulse rounded bg-gray-200"></div>
-        <div class="h-32 w-full animate-pulse rounded bg-gray-200"></div>
-    </div>
-</template>
-
-<template id="list-skeleton">
-    <ul class="divide-y p-6">
-        @for ($i = 0; $i < 5; $i++)
-            <li class="h-12 animate-pulse bg-gray-100"></li>
-        @endfor
-    </ul>
-</template>
-```
-
-Resolution order: per-link `data-loading-template` → modal's `loading_template` slot → no loading
-template. Without a loading template, the modal stays closed until the real frame content arrives.
-
 ## Stimulus values
-
-The underlying controller uses these values. On `<hw:modal>`, configure supported behavior through props; root
-`data-modal-*` attributes are reserved for the component's internal wiring.
 
 | Value                    | Type      | Default | Description                              |
 |--------------------------|-----------|---------|------------------------------------------|
@@ -260,67 +207,19 @@ The underlying controller uses these values. On `<hw:modal>`, configure supporte
 | `modal:opened` | Fired after the opening animation completes |
 | `modal:closed` | Fired after the closing animation completes |
 
-```javascript
-element.addEventListener("modal:opened", (event) => {
-    console.log("Modal opened", event.detail.controller);
-});
-```
-
 ## Accessibility
 
 - `role="dialog"` and `aria-modal="true"` on the overlay
 - Focus trap: Tab/Shift+Tab cycle through focusable elements inside the modal
 - Focus returns to the element that triggered the modal on close
-- Closes on Escape (configurable)
-
-## Ignore outside click
-
-Elements outside the modal that should not close it can use `data-modal-ignore`:
-
-```html
-
-<div data-modal-ignore>
-    This dropdown will not close the modal when clicked.
-</div>
-```
+- Closes on Escape, configurable through the controller value
 
 ## Turbo integration
 
 The modal closes automatically on `turbo:before-cache`, preventing ghost modals when navigating with Turbo Drive.
 
-### Closing a modal from the server
-
 For modals driven by a Turbo Frame, clearing the frame closes them via the content observer:
 
 ```php
 return turbo_stream()->update('modal');
-```
-
-### Convenience macro
-
-`TurboStreamBuilder` is `Macroable` — register a `closeModal()` shortcut once in a service provider:
-
-```php
-// app/Providers/AppServiceProvider.php
-use Emaia\LaravelHotwireTurbo\TurboStreamBuilder;
-
-public function boot(): void
-{
-    TurboStreamBuilder::macro('closeModal', function (string $id = 'modal') {
-        return $this->update($id);
-    });
-}
-```
-
-Then any controller becomes a one-liner:
-
-```php
-return turbo_stream()->closeModal();
-return turbo_stream()->closeModal('edit-users');
-
-// or chained with a flash and a refresh
-return turbo_stream()
-    ->refresh(method: 'morph')
-    ->closeModal()
-    ->flash('success', 'Post updated');
 ```

@@ -529,6 +529,11 @@
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Modal"
                 },
                 {
+                    "name": "modal.close",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Modal\\Close"
+                },
+                {
                     "name": "modal.content",
                     "namespace": "hw",
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Modal\\Content"
@@ -552,6 +557,11 @@
                     "name": "modal.title",
                     "namespace": "hw",
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Modal\\Title"
+                },
+                {
+                    "name": "modal.trigger",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Modal\\Trigger"
                 },
                 {
                     "name": "multi-select",
