@@ -382,6 +382,15 @@ it('uses dark color scheme for native date and time picker inputs', function () 
         ->toContain('[data-theme="dark"] :is([data-slot="input"][type="date"], [data-slot="input"][type="datetime-local"], [data-slot="input"][type="month"], [data-slot="input"][type="time"], [data-slot="input"][type="week"]) { color-scheme: dark; }');
 });
 
+it('keeps the flash container eligible for top layer stacking above overlays', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain('[data-hotwire-top-layer][popover]:is([data-slot="modal-overlay"], [data-slot="alert-dialog-overlay"], [data-slot="drawer-overlay"], [data-slot="sheet-overlay"], [data-slot="sidebar"], [data-slot="flash-container"])')
+        ->toContain('[data-slot="flash-container"] { @apply pointer-events-none fixed inset-0; }')
+        ->not->toContain('[data-slot="flash-container"] { @apply contents; }');
+});
+
 it('does not hard-code clear input visibility in the preset', function () use ($novaPresetPath) {
     $css = file_get_contents($novaPresetPath);
 

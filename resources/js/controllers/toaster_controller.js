@@ -2,6 +2,8 @@
 import { Controller } from "@hotwired/stimulus";
 import { createToaster } from "@emaia/sonner/vanilla";
 
+import { createTopLayer } from "./_top_layer.js";
+
 export default class extends Controller {
     static values = {
         autoDisconnect: { type: Boolean, default: false },
@@ -25,11 +27,17 @@ export default class extends Controller {
     };
 
     #themeObserver;
+    #topLayer;
 
     connect() {
-        if (window.toaster) return;
+        this.#topLayer = createTopLayer(this.element);
+        this.#topLayer.show();
+        document.addEventListener("hotwire:top-layer:show", this.#handleTopLayerShow);
 
-        window.toaster = this.createToaster(this.#buildOptions());
+        if (!window.toaster) {
+            window.toaster = this.createToaster(this.#buildOptions());
+        }
+
         this.#setupThemeObserver();
     }
 
@@ -38,13 +46,23 @@ export default class extends Controller {
     }
 
     disconnect() {
+        document.removeEventListener("hotwire:top-layer:show", this.#handleTopLayerShow);
+        this.#topLayer?.cleanup();
+        this.#topLayer = null;
         this.#themeObserver?.disconnect();
+        this.#themeObserver = null;
 
         if (this.autoDisconnectValue && window.toaster) {
             window.toaster.destroy();
             window.toaster = null;
         }
     }
+
+    #handleTopLayerShow = (event) => {
+        if (event.detail?.element === this.element) return;
+
+        this.#topLayer?.bringToFront();
+    };
 
     #getSystemTheme() {
         return window.matchMedia("(prefers-color-scheme: dark)").matches

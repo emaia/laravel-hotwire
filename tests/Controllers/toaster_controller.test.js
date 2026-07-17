@@ -9,6 +9,19 @@ const { default: ToasterController } = await import(
 );
 
 class TestToasterController extends ToasterController {
+    connect() {
+        this.element.showPopoverCalls = 0;
+        this.element.hidePopoverCalls = 0;
+        this.element.showPopover = () => {
+            this.element.showPopoverCalls += 1;
+        };
+        this.element.hidePopover = () => {
+            this.element.hidePopoverCalls += 1;
+        };
+
+        super.connect();
+    }
+
     createToaster(options) {
         createCalls.push(options);
         return { destroy: destroyMock };
@@ -45,6 +58,36 @@ test.serial("creates toaster on connect with default options", async () => {
     expect(createCalls[0].closeButton).toBe(true);
     expect(createCalls[0].duration).toBe(4000);
     expect(window.toaster).toBeDefined();
+});
+
+test.serial("shows the toaster container in the top layer when supported", async () => {
+    await mount(`<div data-controller="toaster"></div>`);
+
+    expect(mounted.root.getAttribute("popover")).toBe("manual");
+    expect(mounted.root.hasAttribute("data-hotwire-top-layer")).toBe(true);
+    expect(mounted.root.showPopoverCalls).toBe(1);
+});
+
+test.serial("moves the toaster above newly shown top-layer overlays", async () => {
+    await mount(`<div data-controller="toaster"></div>`);
+
+    document.dispatchEvent(new CustomEvent("hotwire:top-layer:show", {
+        detail: { element: document.createElement("div") },
+    }));
+
+    expect(mounted.root.hidePopoverCalls).toBe(1);
+    expect(mounted.root.showPopoverCalls).toBe(2);
+});
+
+test.serial("ignores its own top-layer show event", async () => {
+    await mount(`<div data-controller="toaster"></div>`);
+
+    document.dispatchEvent(new CustomEvent("hotwire:top-layer:show", {
+        detail: { element: mounted.root },
+    }));
+
+    expect(mounted.root.hidePopoverCalls ?? 0).toBe(0);
+    expect(mounted.root.showPopoverCalls).toBe(1);
 });
 
 test.serial("resolves theme from html[data-theme] when theme is system", async () => {
