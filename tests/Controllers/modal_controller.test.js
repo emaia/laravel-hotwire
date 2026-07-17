@@ -370,3 +370,51 @@ test.serial("AlertDialog opened inside a modal handles Escape without closing th
     expect(modal.isOpen).toBe(true);
     expect(document.body.classList.contains("overflow-hidden")).toBe(true);
 });
+
+test.serial("clicking the backdrop does not block the next trigger click", async () => {
+    mounted = await mountController(
+        "modal",
+        ModalController,
+        `
+            <div id="modal" data-controller="modal"
+                 data-modal-open-duration-value="1"
+                 data-modal-close-duration-value="1"
+                 data-modal-hidden-class="hidden"
+                 data-modal-visible-class="visible"
+                 data-modal-backdrop-hidden-class="backdrop-hidden"
+                 data-modal-backdrop-visible-class="backdrop-visible"
+                 data-modal-dialog-hidden-class="dialog-hidden"
+                 data-modal-dialog-visible-class="dialog-visible"
+                 data-modal-lock-scroll-class="overflow-hidden">
+                <button id="modal-trigger" data-action="modal#open">Open modal</button>
+                <div data-modal-target="modal" data-action="click->modal#clickOutside" hidden>
+                    <div id="modal-backdrop" data-modal-target="backdrop"></div>
+                    <div data-modal-target="dialog">
+                        <button id="inside">Inside</button>
+                    </div>
+                </div>
+            </div>
+        `,
+    );
+
+    const modal = mounted.controller;
+    const trigger = document.getElementById("modal-trigger");
+    const backdrop = document.getElementById("modal-backdrop");
+
+    modal.dialogTarget.getBoundingClientRect = () => ({ top: 100, right: 200, bottom: 200, left: 100 });
+
+    trigger.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, button: 0 }));
+    await wait(10);
+
+    expect(modal.isOpen).toBe(true);
+
+    backdrop.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, button: 0, clientX: 10, clientY: 10 }));
+    await wait(10);
+
+    expect(modal.isOpen).toBe(false);
+
+    trigger.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, button: 0 }));
+    await wait(10);
+
+    expect(modal.isOpen).toBe(true);
+});

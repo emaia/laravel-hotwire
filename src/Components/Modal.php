@@ -16,7 +16,6 @@ class Modal extends Component
         public bool $closeButton = true,
         public bool $fixedTop = false,
         public ?string $frame = null,
-        public int $preventReopenDelay = 1000,
         public ?Htmlable $stimulus = null,
     ) {
         if ($this->id === '') {
@@ -54,5 +53,15 @@ class Modal extends Component
     public function render()
     {
         return view('hotwire::component-views.modal');
+    }
+
+    public function dialogHiddenClass(): string
+    {
+        return 'scale-80 opacity-0';
+    }
+
+    public function dialogVisibleClass(): string
+    {
+        return 'scale-100 opacity-100';
     }
 }

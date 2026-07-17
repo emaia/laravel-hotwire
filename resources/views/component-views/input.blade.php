@@ -23,17 +23,36 @@
         'data-clear-input-target' => $clearable ? 'input' : null,
         'class' => $class ?: null,
     ], $attributes, $stimulus, except: ['required', 'checked', 'auto-submit', 'auto-submit-delay'], protectedPrefixes: $internalPrefixes);
+
+    $hasIconStart = ! $isCheckable && $iconStart !== null && $iconStart !== '';
+    $hasIconEnd = ! $isCheckable && $iconEnd !== null && $iconEnd !== '';
+    $hasWrapper = $clearable || $hasIconStart || $hasIconEnd;
 @endphp
 
-@if ($clearable)
-<span data-slot="input-wrapper" data-clearable="true" @if ($wrapperClass !== '') class="{{ $wrapperClass }}" @endif data-controller="clear-input">
+@if ($hasWrapper)
+<span
+    data-slot="input-wrapper"
+    data-clearable="{{ $clearable ? 'true' : 'false' }}"
+    data-icon-start="{{ $hasIconStart ? 'true' : 'false' }}"
+    data-icon-end="{{ $hasIconEnd ? 'true' : 'false' }}"
+    @if ($wrapperClass !== '') class="{{ $wrapperClass }}" @endif
+    @if ($clearable) data-controller="clear-input" @endif
+>
+    @if ($hasIconStart)
+        <x-hw::icon :name="$iconStart" data-slot="input-icon-start" aria-hidden="true" />
+    @endif
 @endif
 
 <input
     {{ $inputAttributes }}
 />
 
-@if ($clearable)
+@if ($hasWrapper)
+    @if ($hasIconEnd)
+        <x-hw::icon :name="$iconEnd" data-slot="input-icon-end" aria-hidden="true" />
+    @endif
+
+    @if ($clearable)
     <button
         type="button"
         class="hidden"
@@ -44,5 +63,6 @@
     >
         <x-hw::icon name="circle-x" />
     </button>
+    @endif
 </span>
 @endif

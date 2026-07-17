@@ -83,12 +83,12 @@
                 error-key=""
                 :old="false"
                 type="text"
+                icon-start="search"
                 clearable
                 data-slot="multi-select-search"
                 data-multi-select-target="search"
                 placeholder="{{ $searchPlaceholder }}"
                 aria-label="{{ $searchPlaceholder }}"
-                class="pr-8"
                 wrapper-class="relative"
             />
         @endif
@@ -99,6 +99,8 @@
                 data-slot="multi-select-select-all"
                 data-multi-select-target="selectAll"
                 aria-pressed="false"
+                data-selected="false"
+                data-indeterminate="false"
                 tabindex="-1"
             >
                 <span data-slot="multi-select-indicator" aria-hidden="true"></span>

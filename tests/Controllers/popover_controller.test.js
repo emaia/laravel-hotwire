@@ -2,6 +2,7 @@ import { afterEach, beforeEach, expect, mock, test } from "bun:test";
 
 import { mountController, mountMultipleControllers, wait } from "../../resources/js/helpers/test_stimulus.js";
 import DrawerController from "../../resources/js/controllers/drawer_controller.js";
+import ModalController from "../../resources/js/controllers/modal_controller.js";
 
 const floatingCleanup = mock(() => {});
 const autoUpdate = mock((_anchor, _floating, update) => {
@@ -280,6 +281,50 @@ test.serial("Escape inside an open drawer closes only the popover first", async 
 
     expect(isOpen()).toBe(false);
     expect(mounted.controller.isOpen).toBe(true);
+});
+
+test.serial("Escape inside an open modal closes only the popover when the popover listener runs first", async () => {
+    mounted = await mountMultipleControllers(
+        {
+            popover: PopoverController,
+            modal: ModalController,
+        },
+        `
+        <div id="modal" data-controller="modal"
+             data-modal-open-duration-value="1"
+             data-modal-close-duration-value="1"
+             data-modal-hidden-class="pointer-events-none"
+             data-modal-visible-class="pointer-events-auto"
+             data-modal-backdrop-hidden-class="opacity-0"
+             data-modal-backdrop-visible-class="opacity-100"
+             data-modal-dialog-hidden-class="scale-80 opacity-0"
+             data-modal-dialog-visible-class="scale-100 opacity-100"
+             data-modal-lock-scroll-class="overflow-hidden">
+            <button id="modal-trigger" data-action="modal#open">Open modal</button>
+            <div data-modal-target="modal" data-open="false" hidden class="pointer-events-none">
+                <div data-modal-target="backdrop"></div>
+                <div data-modal-target="dialog">
+                    <div data-controller="popover">
+                        <button type="button" data-popover-target="trigger" data-action="popover#toggle" aria-expanded="false">Open</button>
+                        <div data-popover-target="content" class="hidden"><input id="modal-popover-input"></div>
+                    </div>
+                </div>
+            </div>
+        </div>`,
+    );
+
+    const modal = mounted.getController("modal", document.getElementById("modal"));
+
+    document.getElementById("modal-trigger").dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    await wait(10);
+    clickTrigger();
+    await wait(0);
+
+    press("Escape", document.getElementById("modal-popover-input"));
+    await wait(10);
+
+    expect(isOpen()).toBe(false);
+    expect(modal.isOpen).toBe(true);
 });
 
 // --- cleanup ---

@@ -127,6 +127,7 @@ export default class extends Controller {
     onDocumentKeydown(event) {
         if (this.openValue && event.key === "Escape") {
             event.preventDefault();
+            event.stopImmediatePropagation();
             this.close({ focusTrigger: true });
         }
     }
@@ -197,6 +198,7 @@ export default class extends Controller {
             this.firstEnabledOption()?.focus();
         } else if (event.key === "Escape") {
             event.preventDefault();
+            event.stopImmediatePropagation();
             this.close({ focusTrigger: true });
         }
     }
@@ -308,9 +310,11 @@ export default class extends Controller {
         this.selectAllTarget.hidden = options.length === 0;
 
         const allSelected = options.length > 0 && options.every((option) => option.dataset.selected === "true");
+        const someSelected = !allSelected && options.some((option) => option.dataset.selected === "true");
         this.selectAllTarget.dataset.selected = String(allSelected);
+        this.selectAllTarget.dataset.indeterminate = String(someSelected);
         this.selectAllTarget.removeAttribute("aria-selected");
-        this.selectAllTarget.setAttribute("aria-pressed", String(allSelected));
+        this.selectAllTarget.setAttribute("aria-pressed", someSelected ? "mixed" : String(allSelected));
         const text = this.selectAllTarget.querySelector('[data-slot="multi-select-option-text"]');
         if (text) text.textContent = allSelected ? this.deselectAllTextValue : this.selectAllTextValue;
     }

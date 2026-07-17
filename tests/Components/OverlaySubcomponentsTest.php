@@ -5,18 +5,24 @@ use Illuminate\Support\Facades\Blade;
 
 it('renders modal subcomponents with semantic slots', function () {
     $view = $this->blade('
-        <x-hw::modal.header class="gap-4">
-            <x-hw::modal.title>Title</x-hw::modal.title>
-            <x-hw::modal.description>Description</x-hw::modal.description>
-        </x-hw::modal.header>
-        <x-hw::modal.content>Body</x-hw::modal.content>
-        <x-hw::modal.footer>Footer</x-hw::modal.footer>
+        <x-hw::modal>
+            <x-hw::modal.trigger>Open</x-hw::modal.trigger>
+            <x-hw::modal.content>
+                <x-hw::modal.header class="gap-4">
+                    <x-hw::modal.title>Title</x-hw::modal.title>
+                    <x-hw::modal.description>Description</x-hw::modal.description>
+                </x-hw::modal.header>
+                Body
+                <x-hw::modal.footer>Footer</x-hw::modal.footer>
+            </x-hw::modal.content>
+        </x-hw::modal>
     ');
 
-    $view->assertSee('data-slot="modal-header"', false)
+    $view->assertSee('data-slot="modal-trigger"', false)
+        ->assertSee('data-slot="modal-content"', false)
+        ->assertSee('data-slot="modal-header"', false)
         ->assertSee('data-slot="modal-title"', false)
         ->assertSee('data-slot="modal-description"', false)
-        ->assertSee('data-slot="modal-body"', false)
         ->assertSee('data-slot="modal-footer"', false)
         ->assertSee('class="gap-4"', false);
 });
@@ -46,5 +52,7 @@ it('registers subcomponents with custom prefix', function () {
 
     expect(Blade::getClassComponentAliases())
         ->toHaveKey('custom::modal.header')
+        ->toHaveKey('custom::modal.trigger')
+        ->toHaveKey('custom::modal.close')
         ->toHaveKey('custom::alert-dialog.title');
 });

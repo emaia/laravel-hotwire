@@ -89,6 +89,7 @@ export default class extends Controller {
     onKeydown(event) {
         if (this.openValue && event.key === "Escape") {
             event.preventDefault();
+            event.stopImmediatePropagation();
             this.close({ focusTrigger: true });
         }
     }
