@@ -91,7 +91,17 @@ async function installControllers(page) {
 async function browserControllersScript() {
     const overlay = (await readFile("resources/js/controllers/_overlay.js", "utf8"))
         .replace(/import \{[^}]*\} from "\.\/_focus_trap\.js";\s*/, "")
+        .replace(/import \{[^}]*\} from "\.\/_overlay_stack\.js";\s*/, "")
+        .replace(/import \{[^}]*\} from "\.\/_top_layer\.js";\s*/, "")
         .replace("export function createOverlay", "function createOverlay");
+
+    const overlayStack = (await readFile("resources/js/controllers/_overlay_stack.js", "utf8"))
+        .replace("export function registerOverlay", "function registerOverlay")
+        .replace("export function unregisterOverlay", "function unregisterOverlay")
+        .replace("export function isTopOverlay", "function isTopOverlay");
+
+    const topLayer = (await readFile("resources/js/controllers/_top_layer.js", "utf8"))
+        .replace("export function createTopLayer", "function createTopLayer");
 
     const sidebar = (await readFile("resources/js/controllers/sidebar_controller.js", "utf8"))
         .replace('import { Controller } from "@hotwired/stimulus";', "")
@@ -110,6 +120,8 @@ async function browserControllersScript() {
     return `
         const { Controller } = window.Stimulus;
         const { arrow, autoUpdate, computePosition, flip, hide, offset, shift, size } = window.FloatingUIDOM;
+        ${overlayStack}
+        ${topLayer}
         ${overlay}
         ${floating}
         ${sidebar}
