@@ -27,8 +27,6 @@ class Input extends Component
         public bool $clearable = false,
         public bool $autoSelect = false,
         public ?string $mask = null,
-        public ?string $iconStart = null,
-        public ?string $iconEnd = null,
         public bool|string $autoSubmit = false,
         public int|string|null $autoSubmitDelay = null,
         public string $class = '',
@@ -49,8 +47,6 @@ class Input extends Component
             $this->autoSelect = false;
             $this->mask = null;
             $this->clearable = false;
-            $this->iconStart = null;
-            $this->iconEnd = null;
         }
 
         $data = parent::data();

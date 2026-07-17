@@ -25,6 +25,9 @@ export function createTopLayer(element, { enabled = true } = {}) {
         try {
             element.showPopover();
             shown = true;
+            document.dispatchEvent(new CustomEvent("hotwire:top-layer:show", {
+                detail: { element },
+            }));
         } catch (_error) {
             restoreAttributes();
         }
@@ -63,6 +66,12 @@ export function createTopLayer(element, { enabled = true } = {}) {
         hideTimer = setTimeout(() => hide(), delay);
     }
 
+    function bringToFront() {
+        if (shown) hide();
+
+        show();
+    }
+
     function restoreAttributes() {
         element.removeAttribute("data-hotwire-top-layer");
 
@@ -81,6 +90,7 @@ export function createTopLayer(element, { enabled = true } = {}) {
         show,
         hide,
         hideAfterTransition,
+        bringToFront,
         cleanup,
     };
 }

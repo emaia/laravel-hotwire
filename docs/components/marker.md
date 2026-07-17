@@ -7,7 +7,7 @@ Lightweight visual primitive for timelines, activity feeds and inline list marke
 ```blade
 <hw:marker>
     <hw:marker.icon>
-        <hw:icon name="git-branch" />
+        <x-lucide-git-branch class="size-4" />
     </hw:marker.icon>
     <hw:marker.content>Switched to a new branch</hw:marker.content>
 </hw:marker>

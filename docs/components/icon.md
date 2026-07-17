@@ -2,12 +2,16 @@
 
 Inline SVG icon from the embedded Lucide subset.
 
+The subset is intentionally small and reserved for package UI affordances such as close buttons, chevrons, status icons,
+arrows and rich-text toolbar controls. For app-specific icons, compose your own icon component directly, for example
+`<x-lucide-search class="size-4" />`.
+
 ## Usage
 
 ```blade
 <hw:icon name="check" />
 <hw:icon name="x" class="w-6 h-6" />
-<hw:icon name="search" aria-label="Search" />
+<hw:icon name="chevron-down" aria-hidden="true" />
 ```
 
 ## Available Icons
@@ -20,7 +24,6 @@ Inline SVG icon from the embedded Lucide subset.
 | Chevron Up | `chevron-up` |
 | Chevron Left | `chevron-left` |
 | Chevron Right | `chevron-right` |
-| Search | `search` |
 | Circle X | `circle-x` |
 | Info | `info` |
 | Alert Triangle | `alert-triangle` |

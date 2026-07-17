@@ -82,6 +82,7 @@ final class ComponentAliases
             'field.separator' => Components\Field\Separator::class,
             'field.set' => Components\Field\Set::class,
             'field.title' => Components\Field\Title::class,
+            'input-group.addon' => Components\InputGroup\Addon::class,
             'hover-card.trigger' => Components\HoverCard\Trigger::class,
             'hover-card.content' => Components\HoverCard\Content::class,
             'table.header' => Components\Table\Header::class,

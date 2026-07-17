@@ -8,7 +8,7 @@ Composable empty state for zero-results, first-run and unavailable-content scree
 <hw:empty-state>
     <hw:empty-state.header>
         <hw:empty-state.media variant="icon">
-            <hw:icon name="search" />
+            <hw:icon name="info" />
         </hw:empty-state.media>
         <hw:empty-state.title>No results</hw:empty-state.title>
         <hw:empty-state.description>

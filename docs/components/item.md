@@ -8,7 +8,7 @@ Composable list item primitive for menus, notifications, search results and sett
 <hw:item.group>
     <hw:item variant="outline">
         <hw:item.media variant="icon">
-            <hw:icon name="bell" />
+            <x-lucide-bell class="size-4" />
         </hw:item.media>
         <hw:item.content>
             <hw:item.title>Notifications</hw:item.title>

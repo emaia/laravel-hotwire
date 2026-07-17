@@ -33,6 +33,7 @@ use Emaia\LaravelHotwire\Components\FrameOrPage;
 use Emaia\LaravelHotwire\Components\HoverCard;
 use Emaia\LaravelHotwire\Components\Icon;
 use Emaia\LaravelHotwire\Components\Input;
+use Emaia\LaravelHotwire\Components\InputGroup;
 use Emaia\LaravelHotwire\Components\Item;
 use Emaia\LaravelHotwire\Components\Kbd;
 use Emaia\LaravelHotwire\Components\Map;
@@ -330,6 +331,14 @@ return [
             'category' => 'forms',
             'description' => 'Form input with auto id/errorKey, ARIA, optional mask/clear/auto-select',
             'controllers' => ['auto-select', 'clear-input', 'input-mask', 'auto-submit'],
+        ],
+        'input-group' => [
+            'class' => InputGroup::class,
+            'view' => 'hotwire::component-views.input-group',
+            'docs' => 'docs/components/input-group.md',
+            'category' => 'forms',
+            'description' => 'Composable input shell for addons, actions, shortcuts and helper content',
+            'controllers' => [],
         ],
         'item' => [
             'class' => Item::class,

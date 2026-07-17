@@ -1,7 +1,7 @@
 @aware(['name' => null, 'id' => null, 'errorKey' => null, 'required' => false])
 
 @php
-    extract($compute($name, $id, $errorKey, $required, $errors, $attributes));
+    extract($compute($name, $id, $errorKey, $required, $errors ?? new \Illuminate\Support\ViewErrorBag, $attributes));
 
     $textareaAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
         'data-slot' => 'textarea',

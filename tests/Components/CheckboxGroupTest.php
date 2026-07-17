@@ -272,7 +272,42 @@ it('emits semantic slots on the select-all master and item labels', function () 
 
     $html = (string) $view;
     expect(substr_count($html, 'data-slot="checkbox-group-input"'))->toBe(2)
-        ->and(substr_count($html, 'data-slot="field-label"'))->toBe(2);
+        ->and(substr_count($html, 'data-slot="checkbox-group-item"'))->toBe(2)
+        ->and(substr_count($html, 'data-slot="checkbox-group-item-content"'))->toBe(2)
+        ->and($html)->not->toContain('data-slot="field-label"');
+});
+
+it('renders orientation data attribute', function () {
+    $view = $this->blade('<x-hw::checkbox-group name="ids[]" orientation="horizontal" :options="[1 => \'One\']" />');
+
+    $view->assertSee('data-orientation="horizontal"', false);
+    $view->assertDontSee(' orientation="horizontal"', false);
+});
+
+it('falls back to vertical orientation for invalid values', function () {
+    $view = $this->blade('<x-hw::checkbox-group name="ids[]" orientation="sideways" :options="[1 => \'One\']" />');
+
+    $view->assertSee('data-orientation="vertical"', false);
+});
+
+it('disables all option and rich item checkboxes when disabled', function () {
+    $view = $this->blade('
+        <x-hw::checkbox-group name="ids[]" :options="[1 => \'One\']" disabled>
+            <x-hw::checkbox-group.item value="2">Two</x-hw::checkbox-group.item>
+        </x-hw::checkbox-group>
+    ');
+
+    expect(substr_count((string) $view, 'disabled'))->toBe(2);
+});
+
+it('allows a rich item to override the group disabled state', function () {
+    $view = $this->blade('
+        <x-hw::checkbox-group name="ids[]" disabled>
+            <x-hw::checkbox-group.item value="1" :disabled="false">One</x-hw::checkbox-group.item>
+        </x-hw::checkbox-group>
+    ');
+
+    expect((string) $view)->not->toContain('disabled');
 });
 
 // --- User data-controller merge ---

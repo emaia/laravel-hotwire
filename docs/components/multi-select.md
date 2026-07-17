@@ -4,7 +4,8 @@ Multi-value select control for forms. It renders a native hidden `<select multip
 `multi-select` Stimulus controller for the custom trigger, searchable listbox, selection state and Floating UI
 positioning.
 
-The list search uses `<hw:input icon-start="search" clearable>` so the clear button is an actual tabbable control instead of the
+The list search uses `<hw:input-group>` with a clearable `<hw:input>`, so the search icon is composed through the same
+addon primitive available to applications and the clear button is an actual tabbable control instead of the
 browser-native `type="search"` clear affordance, which is not consistently reachable by keyboard tab order.
 
 The popup keeps action/status controls outside the listbox semantics: `select-all` is a button action, while the empty
@@ -43,6 +44,19 @@ The listbox uses the shared Floating UI helper and supports the same positioning
 
 Use `strategy="absolute"` only when you explicitly want the panel positioned within the nearest positioned ancestor.
 
+## Search Icon
+
+Multi Select renders a small inline search SVG by default. Override the `searchIcon` slot when your application uses a
+specific icon set:
+
+```blade
+<hw:multi-select name="status[]" :options="$statuses">
+    <x-slot:searchIcon>
+        <x-lucide-search class="size-4" />
+    </x-slot:searchIcon>
+</hw:multi-select>
+```
+
 ## Props
 
 | Prop | Default | Description |
@@ -78,6 +92,7 @@ Use `strategy="absolute"` only when you explicitly want the panel positioned wit
 - `data-slot="multi-select-value"`
 - `data-slot="multi-select-content"`
 - `data-slot="multi-select-search"`
+- `data-slot="multi-select-search-icon"`
 - `data-slot="multi-select-list"`
 - `data-slot="multi-select-select-all"`
 - `data-slot="multi-select-option"`

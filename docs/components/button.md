@@ -140,7 +140,7 @@ For conditional display, pass `tooltip-enabled-when` with the selector expected 
     tooltip-side="right"
     tooltip-enabled-when="[data-slot=sidebar][data-collapsible=icon]"
 >
-    <hw:icon name="settings" />
+    <x-lucide-settings class="size-4" />
 </hw:button>
 ```
 
