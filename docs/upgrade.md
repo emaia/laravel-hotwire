@@ -21,7 +21,7 @@ The `hotwire:install` command exposes three modes for adding npm dependencies to
 
 | Command | What it adds | Loader stub shape |
 |---|---|---|
-| `php artisan hotwire:install` | Core deps (`@hotwired/stimulus`, `@hotwired/turbo`, `@emaia/stimulus-lazy-loader`) **plus every catalog dep** declared by package controllers (echarts, leaflet, embla-carousel, tiptap stack, dropzone, maska, tippy.js, date-fns, sonner). Everything works without further setup. | Globs every package controller — no exclusions |
+| `php artisan hotwire:install` | Core deps (`@hotwired/stimulus`, `@hotwired/turbo`, `@emaia/stimulus-lazy-loader`) **plus every catalog dep** declared by package controllers (Floating UI, echarts, leaflet, embla-carousel, tiptap stack, dropzone, maska, date-fns, sonner). Everything works without further setup. | Globs every package controller — no exclusions |
 | `php artisan hotwire:install --with-deps=carousel,chart,map` | Core deps **plus only the npm deps required by the listed controllers**. Accepts comma-separated values or repeated `--with-deps=X` flags. | Globs zero-dep controllers + only the opted-in com-dep controllers; everything else is excluded so `vite build` never resolves their missing imports |
 | `php artisan hotwire:install --core-only` | Core deps **only**. No catalog deps. | Globs zero-dep controllers only; every com-dep controller excluded |
 

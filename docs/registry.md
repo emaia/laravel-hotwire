@@ -39,7 +39,7 @@ It lives in [`src/Registry/catalog.php`](../src/Registry/catalog.php) and is con
     'source'   => 'resources/js/controllers/tooltip_controller.js',
     'docs'     => 'docs/controllers/tooltip.md',
     'category' => 'utility',
-    'npm'      => ['tippy.js' => '^6.3.7'],
+    'npm'      => ['@floating-ui/dom' => '^1.8.0'],
 ],
 ```
 

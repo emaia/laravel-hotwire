@@ -201,7 +201,7 @@ php artisan hotwire:controllers auto-select auto-submit turbo/progress
 | [Toaster](docs/controllers/toaster.md)                         | `toaster`             | `feedback` | `@emaia/sonner`                                                                                                                 | [readme](docs/controllers/toaster.md)             |
 | [Toggle](docs/controllers/toggle.md)                           | `toggle`              | `forms`    | —                                                                                                                               | [readme](docs/controllers/toggle.md)              |
 | [Toggle Group](docs/controllers/toggle-group.md)               | `toggle-group`        | `forms`    | —                                                                                                                               | [readme](docs/controllers/toggle-group.md)        |
-| [Tooltip](docs/controllers/tooltip.md)                         | `tooltip`             | `utility`  | `tippy.js`                                                                                                                      | [readme](docs/controllers/tooltip.md)             |
+| [Tooltip](docs/controllers/tooltip.md)                         | `tooltip`             | `utility`  | `@floating-ui/dom`                                                                                                              | [readme](docs/controllers/tooltip.md)             |
 | [Unsaved Changes](docs/controllers/unsaved-changes.md)         | `unsaved-changes`     | `forms`    | —                                                                                                                               | [readme](docs/controllers/unsaved-changes.md)     |
 
 ### Turbo
@@ -419,7 +419,7 @@ attributes and the `stimulus_controller()` / `stimulus()->controller()` / `->con
 
 1. **Stimulus controllers** — every controller required by a used component, or referenced directly, is published and up
    to date.
-2. **npm dependencies** — every external package imported by those controllers (e.g. `@emaia/sonner`, `tippy.js`)
+2. **npm dependencies** — every external package imported by those controllers (e.g. `@emaia/sonner`, `@floating-ui/dom`)
    is declared in your `package.json` (`dependencies` or `devDependencies`).
 
 Exits with code `1` if either has pending items (useful for CI).
@@ -448,7 +448,7 @@ Example output:
 
 Required npm dependencies:
   ✓  @emaia/sonner ^2.1.0  (used by toaster, toast)
-  ✗  tippy.js ^6.3.7       missing from package.json (used by tooltip)
+  ✗  @floating-ui/dom ^1.8.0  missing from package.json (used by dropdown, tooltip)
 ```
 
 > In interactive mode, `hotwire:check` asks whether to run the detected package manager install command after adding
@@ -523,7 +523,7 @@ Example controller entry:
     'source' => 'resources/js/controllers/tooltip_controller.js',
     'docs' => 'docs/controllers/tooltip.md',
     'category' => 'utility',
-    'npm' => ['tippy.js' => '^6.3.7'],
+    'npm' => ['@floating-ui/dom' => '^1.8.0'],
 ],
 ```
 

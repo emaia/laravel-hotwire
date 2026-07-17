@@ -143,7 +143,7 @@ async function bundle() {
 
     return `
         const { Controller } = window.Stimulus;
-        const { autoUpdate, computePosition, flip, offset, shift, size } = window.FloatingUIDOM;
+        const { arrow, autoUpdate, computePosition, flip, hide, offset, shift, size } = window.FloatingUIDOM;
         ${floating}
         ${transition}
         ${hoverCard}

@@ -1,25 +1,25 @@
 # Tooltip
 
-Adds tooltips to any element using [Tippy.js](https://atomiks.github.io/tippyjs/).
+Adds accessible hover/focus tooltips to any element using Floating UI positioning.
 
 **Identifier:** `tooltip`  
 **Install:** `php artisan hotwire:controllers tooltip`
 
-## Requirements
-
-- `tippy.js` (`npm install tippy.js` or `bun add tippy.js`)
-
-> If any component in your views pulls this controller in, `php artisan hotwire:check --fix` will add `tippy.js` to your
-> `package.json` `devDependencies` automatically.
-
 ## Stimulus Values
 
-| Value         | Type     | Default     | Description                                                                                                   |
-|---------------|----------|-------------|---------------------------------------------------------------------------------------------------------------|
-| `content`     | `String` | `"Tooltip"` | Tooltip content. Supports HTML                                                                                |
-| `side`        | `String` | `"top"`     | Side where the tooltip appears: `top`, `right`, `bottom`, or `left`.                                          |
-| `align`       | `String` | `"center"`  | Alignment on that side: `start`, `center`, or `end`.                                                          |
-| `enabledWhen` | `String` | `""`        | Optional ancestor selector. When set, the tooltip only opens while the element is inside a matching ancestor. |
+| Value         | Type      | Default     | Description                                                                                                   |
+|---------------|-----------|-------------|---------------------------------------------------------------------------------------------------------------|
+| `content`     | `String`  | `"Tooltip"` | Tooltip content. Supports HTML.                                                                               |
+| `side`        | `String`  | `"top"`     | Side where the tooltip appears: `top`, `right`, `bottom`, or `left`.                                          |
+| `align`       | `String`  | `"center"`  | Alignment on that side: `start`, `center`, or `end`.                                                          |
+| `sideOffset`  | `Number`  | `8`         | Distance between trigger and tooltip.                                                                         |
+| `alignOffset` | `Number`  | `0`         | Cross-axis offset.                                                                                            |
+| `strategy`    | `String`  | `"fixed"`   | Floating UI positioning strategy: `fixed` or `absolute`.                                                      |
+| `flip`        | `Boolean` | `true`      | Allow Floating UI to flip to another side when there is not enough room.                                      |
+| `shift`       | `Boolean` | `true`      | Allow Floating UI to shift the tooltip inside the viewport.                                                   |
+| `delay`       | `Number`  | `0`         | Delay before opening, in milliseconds.                                                                        |
+| `closeDelay`  | `Number`  | `100`       | Delay before closing after hover/focus leaves, in milliseconds.                                               |
+| `enabledWhen` | `String`  | `""`        | Optional ancestor selector. When set, the tooltip only opens while the element is inside a matching ancestor. |
 
 ## Basic usage
 
@@ -42,6 +42,8 @@ Adds tooltips to any element using [Tippy.js](https://atomiks.github.io/tippyjs/
     Name *
 </span>
 ```
+
+Tooltips are hoverable and dismissible with Escape. They set `role="tooltip"` on the generated tooltip element and add `aria-describedby` to the trigger while open. Tooltip content should not contain links, buttons or form controls; use Popover for interactive content.
 
 ## Custom position
 

@@ -934,8 +934,8 @@ return [
             'source' => 'resources/js/controllers/tooltip_controller.js',
             'docs' => 'docs/controllers/tooltip.md',
             'category' => 'utility',
-            'description' => 'Adds Tippy.js tooltips to any element via data attributes',
-            'npm' => ['tippy.js' => '^6.3.7'],
+            'description' => 'Adds accessible hover/focus tooltips positioned with Floating UI',
+            'npm' => ['@floating-ui/dom' => '^1.8.0'],
         ],
         'turbo--frame-src' => [
             'source' => 'resources/js/controllers/turbo/frame_src_controller.js',

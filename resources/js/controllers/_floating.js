@@ -1,5 +1,5 @@
 // @hotwire-package
-import { autoUpdate, computePosition, flip, offset, shift, size } from "@floating-ui/dom";
+import { arrow, autoUpdate, computePosition, flip, hide, offset, shift, size } from "@floating-ui/dom";
 
 const SIDES = ["top", "right", "bottom", "left"];
 const ALIGNS = ["start", "center", "end"];
@@ -10,7 +10,7 @@ export function createFloating(anchor, floating, options = {}) {
     let cleanupAutoUpdate = null;
 
     async function update() {
-        const { x, y, placement } = await computePosition(anchor, floating, {
+        const { x, y, placement, middlewareData = {} } = await computePosition(anchor, floating, {
             placement: placementValue(config.side, config.align),
             strategy: config.strategy,
             middleware: middleware(config, floating),
@@ -27,6 +27,9 @@ export function createFloating(anchor, floating, options = {}) {
         floating.dataset.side = resolved.side;
         floating.dataset.align = resolved.align;
         floating.style.setProperty("--transform-origin", transformOrigin(resolved.side, resolved.align));
+
+        positionArrow(config.arrowElement, resolved.side, middlewareData.arrow);
+        syncAnchorVisibility(floating, config.hideWhenDetached, middlewareData.hide);
     }
 
     return {
@@ -56,16 +59,21 @@ function middleware(config, floating) {
     ];
 
     if (config.flip) middleware.push(flip());
-    if (config.shift) middleware.push(shift({ padding: 8 }));
+    if (config.shift) middleware.push(shift({ padding: config.shiftPadding }));
 
-    middleware.push(size({
-        apply({ availableWidth, availableHeight, rects }) {
-            floating.style.setProperty("--anchor-width", `${rects.reference.width}px`);
-            floating.style.setProperty("--anchor-height", `${rects.reference.height}px`);
-            floating.style.setProperty("--available-width", `${availableWidth}px`);
-            floating.style.setProperty("--available-height", `${availableHeight}px`);
-        },
-    }));
+    if (config.size) {
+        middleware.push(size({
+            apply({ availableWidth, availableHeight, rects }) {
+                floating.style.setProperty("--anchor-width", `${rects.reference.width}px`);
+                floating.style.setProperty("--anchor-height", `${rects.reference.height}px`);
+                floating.style.setProperty("--available-width", `${availableWidth}px`);
+                floating.style.setProperty("--available-height", `${availableHeight}px`);
+            },
+        }));
+    }
+
+    if (config.arrowElement) middleware.push(arrow({ element: config.arrowElement, padding: config.arrowPadding }));
+    if (config.hideWhenDetached) middleware.push(hide());
 
     return middleware;
 }
@@ -79,6 +87,11 @@ function normalizeOptions(options) {
         strategy: STRATEGIES.includes(options.strategy) ? options.strategy : "absolute",
         flip: options.flip !== false,
         shift: options.shift !== false,
+        shiftPadding: number(options.shiftPadding, 8),
+        size: options.size !== false,
+        arrowElement: isElement(options.arrowElement) ? options.arrowElement : null,
+        arrowPadding: number(options.arrowPadding, 4),
+        hideWhenDetached: options.hideWhenDetached === true,
     };
 }
 
@@ -86,6 +99,10 @@ function number(value, fallback) {
     const parsed = Number(value);
 
     return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function isElement(value) {
+    return value?.nodeType === 1;
 }
 
 function placementValue(side, align) {
@@ -107,6 +124,33 @@ function transformOrigin(side, align) {
     if (side === "left") return `right ${blockOrigin(align)}`;
 
     return `left ${blockOrigin(align)}`;
+}
+
+function positionArrow(arrowElement, side, data = {}) {
+    if (!arrowElement) return;
+
+    const staticSide = {
+        top: "bottom",
+        right: "left",
+        bottom: "top",
+        left: "right",
+    }[side];
+
+    Object.assign(arrowElement.style, {
+        left: data.x != null ? `${data.x}px` : "",
+        top: data.y != null ? `${data.y}px` : "",
+        right: "",
+        bottom: "",
+    });
+
+    arrowElement.dataset.side = side;
+    if (staticSide) arrowElement.style[staticSide] = "-5px";
+}
+
+function syncAnchorVisibility(floating, enabled, data = {}) {
+    if (!enabled) return;
+
+    floating.toggleAttribute("data-anchor-hidden", data.referenceHidden === true || data.escaped === true);
 }
 
 function inlineOrigin(align) {

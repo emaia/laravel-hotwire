@@ -513,6 +513,18 @@
     [data-slot="dropdown-separator"] { @apply -mx-1 my-1 h-px bg-border; }
     [data-slot="dropdown-shortcut"] { @apply ml-auto text-xs tracking-widest text-muted-foreground; }
 
+    [data-slot="tooltip"] { @apply pointer-events-auto z-50 w-fit max-w-64 origin-(--transform-origin) rounded-md bg-foreground px-3 py-1.5 text-xs text-balance text-background shadow-md transition duration-150 ease-out; will-change: transform, opacity; }
+    [data-slot="tooltip"]:has(> [data-slot="kbd"]) { @apply inline-flex items-center gap-1.5; }
+    [data-slot="tooltip"][data-anchor-hidden] { @apply invisible; }
+    [data-slot="tooltip"][data-state="open"] { @apply translate-x-0 translate-y-0 scale-100 opacity-100; }
+    [data-slot="tooltip"][data-state="closed"] { @apply pointer-events-none scale-95 opacity-0; }
+    [data-slot="tooltip"][data-state="closed"][data-side="bottom"] { @apply -translate-y-1; }
+    [data-slot="tooltip"][data-state="closed"][data-side="top"] { @apply translate-y-1; }
+    [data-slot="tooltip"][data-state="closed"][data-side="left"] { @apply translate-x-1; }
+    [data-slot="tooltip"][data-state="closed"][data-side="right"] { @apply -translate-x-1; }
+    [data-slot="tooltip"] [data-slot="kbd"] { @apply bg-background/20 text-background dark:bg-background/10; }
+    [data-slot="tooltip-arrow"] { @apply pointer-events-none absolute z-50 size-2.5 rotate-45 rounded-[2px] bg-foreground; }
+
     [data-slot="hover-card"] { @apply inline-block; }
     [data-slot="hover-card-content"] { @apply z-50 max-h-(--available-height) w-64 max-w-[calc(100vw-2rem)] origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-md border border-border bg-popover p-4 text-popover-foreground shadow-md outline-none transition duration-150 ease-out; }
     [data-slot="hover-card-content"][data-open="false"] { @apply pointer-events-none scale-95 opacity-0; }
