@@ -9,7 +9,7 @@ class AlertDialog extends Component
 {
     public function __construct(
         public string $title = '',
-        public string $message = '',
+        public string $description = '',
         public string $confirmLabel = 'Confirm',
         public string $cancelLabel = 'Cancel',
         public string $confirmVariant = 'default',

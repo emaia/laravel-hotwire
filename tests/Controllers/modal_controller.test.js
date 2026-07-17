@@ -1,6 +1,7 @@
 import { afterEach, expect, test } from "bun:test";
 
-import { dispatchEvent, mountController, wait } from "../../resources/js/helpers/test_stimulus.js";
+import { dispatchEvent, mountController, mountMultipleControllers, wait } from "../../resources/js/helpers/test_stimulus.js";
+import AlertDialogController from "../../resources/js/controllers/alert_dialog_controller.js";
 import ModalController from "../../resources/js/controllers/modal_controller.js";
 
 let mounted;
@@ -246,4 +247,126 @@ test.serial("defers an empty turbo stream update for dynamic content until after
 
     expect(rendered).toBe(true);
     expect(frame.innerHTML).toBe("");
+});
+
+test.serial("Escape closes only the top modal when modals are nested", async () => {
+    mounted = await mountMultipleControllers({ modal: ModalController }, `
+        <div id="outer" data-controller="modal"
+             data-modal-open-duration-value="1"
+             data-modal-close-duration-value="1"
+             data-modal-hidden-class="hidden"
+             data-modal-visible-class="visible"
+             data-modal-backdrop-hidden-class="backdrop-hidden"
+             data-modal-backdrop-visible-class="backdrop-visible"
+             data-modal-dialog-hidden-class="dialog-hidden"
+             data-modal-dialog-visible-class="dialog-visible"
+             data-modal-lock-scroll-class="overflow-hidden">
+            <button id="outer-trigger" data-action="modal#open">Open outer</button>
+            <div data-modal-target="modal" hidden>
+                <div data-modal-target="backdrop"></div>
+                <div data-modal-target="dialog">
+                    <button id="outer-close" data-action="modal#close">Close outer</button>
+
+                    <div id="inner" data-controller="modal"
+                         data-modal-open-duration-value="1"
+                         data-modal-close-duration-value="1"
+                         data-modal-hidden-class="hidden"
+                         data-modal-visible-class="visible"
+                         data-modal-backdrop-hidden-class="backdrop-hidden"
+                         data-modal-backdrop-visible-class="backdrop-visible"
+                         data-modal-dialog-hidden-class="dialog-hidden"
+                         data-modal-dialog-visible-class="dialog-visible"
+                         data-modal-lock-scroll-class="overflow-hidden">
+                        <button id="inner-trigger" data-action="modal#open">Open inner</button>
+                        <div data-modal-target="modal" hidden>
+                            <div data-modal-target="backdrop"></div>
+                            <div data-modal-target="dialog">
+                                <button id="inner-close" data-action="modal#close">Close inner</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `);
+
+    const outer = mounted.getController("modal", document.getElementById("outer"));
+    const inner = mounted.getController("modal", document.getElementById("inner"));
+
+    outer.open({ target: document.getElementById("outer-trigger") });
+    await wait(10);
+    inner.open({ target: document.getElementById("inner-trigger") });
+    await wait(10);
+
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+    await wait(10);
+
+    expect(inner.isOpen).toBe(false);
+    expect(outer.isOpen).toBe(true);
+    expect(document.body.classList.contains("overflow-hidden")).toBe(true);
+
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+    await wait(10);
+
+    expect(outer.isOpen).toBe(false);
+    expect(document.body.classList.contains("overflow-hidden")).toBe(false);
+});
+
+test.serial("AlertDialog opened inside a modal handles Escape without closing the modal", async () => {
+    mounted = await mountMultipleControllers({ modal: ModalController, "alert-dialog": AlertDialogController }, `
+        <div id="modal" data-controller="modal"
+             data-modal-open-duration-value="1"
+             data-modal-close-duration-value="1"
+             data-modal-hidden-class="hidden"
+             data-modal-visible-class="visible"
+             data-modal-backdrop-hidden-class="backdrop-hidden"
+             data-modal-backdrop-visible-class="backdrop-visible"
+             data-modal-dialog-hidden-class="dialog-hidden"
+             data-modal-dialog-visible-class="dialog-visible"
+             data-modal-lock-scroll-class="overflow-hidden">
+            <button id="modal-trigger" data-action="modal#open">Open modal</button>
+            <div data-modal-target="modal" hidden>
+                <div data-modal-target="backdrop"></div>
+                <div data-modal-target="dialog">
+                    <button id="modal-close" data-action="modal#close">Close modal</button>
+
+                    <div id="confirm" data-controller="alert-dialog"
+                         data-alert-dialog-hidden-class="hidden"
+                         data-alert-dialog-visible-class="visible"
+                         data-alert-dialog-backdrop-hidden-class="backdrop-hidden"
+                         data-alert-dialog-backdrop-visible-class="backdrop-visible"
+                         data-alert-dialog-dialog-hidden-class="dialog-hidden"
+                         data-alert-dialog-dialog-visible-class="dialog-visible"
+                         data-alert-dialog-lock-scroll-class="overflow-hidden"
+                         data-alert-dialog-open-duration-value="1"
+                         data-alert-dialog-close-duration-value="1">
+                        <button id="delete" data-action="click->alert-dialog#intercept">Delete</button>
+                        <div data-alert-dialog-target="modal" data-open="false" data-action="click->alert-dialog#clickOutside" hidden>
+                            <div data-alert-dialog-target="backdrop"></div>
+                            <div data-alert-dialog-target="dialog">
+                                <button id="cancel" data-action="alert-dialog#cancel">Cancel</button>
+                                <button id="confirm-action" data-action="alert-dialog#confirm">Confirm</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `);
+
+    const modal = mounted.getController("modal", document.getElementById("modal"));
+    const alertDialog = mounted.getController("alert-dialog", document.getElementById("confirm"));
+
+    modal.open({ target: document.getElementById("modal-trigger") });
+    await wait(10);
+    document.getElementById("delete").dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    await wait(10);
+
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+    await wait(10);
+
+    expect(alertDialog.isOpen).toBe(false);
+    expect(alertDialog.pendingElement).toBeNull();
+    expect(modal.isOpen).toBe(true);
+    expect(document.body.classList.contains("overflow-hidden")).toBe(true);
 });

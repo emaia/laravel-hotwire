@@ -9,7 +9,7 @@ The default slot **is** the trigger — anything inside the component is wrapped
 button uses the `default` variant by default:
 
 ```html
-<hw:alert-dialog title="Continue?" message="This will proceed.">
+<hw:alert-dialog title="Continue?" description="This will proceed.">
     <button type="button">Continue</button>
 </hw:alert-dialog>
 ```
@@ -21,7 +21,7 @@ Use `confirm-variant="destructive"` when the confirmed action is destructive:
 ```html
 <hw:alert-dialog
     title="Delete item?"
-    message="This action cannot be undone."
+    description="This action cannot be undone."
     confirm-label="Delete"
     confirm-variant="destructive"
 >
@@ -34,7 +34,7 @@ Use `confirm-variant="destructive"` when the confirmed action is destructive:
 ```html
 <hw:alert-dialog
     title="Delete item?"
-    message="This action cannot be undone."
+    description="This action cannot be undone."
     confirm-label="Delete"
     confirm-variant="destructive"
 >
@@ -44,23 +44,23 @@ Use `confirm-variant="destructive"` when the confirmed action is destructive:
 
 ## Rich body content
 
-When `message` isn't enough — lists of consequences, multiple paragraphs, embedded links — use the `body` slot:
+When `description` isn't enough — lists of consequences, multiple paragraphs, embedded links — use the `content` slot:
 
 ```html
-<hw:alert-dialog title="Archive project?" message="This will hide the project from the dashboard.">
+<hw:alert-dialog title="Archive project?" description="This will hide the project from the dashboard.">
     <button type="button">Archive</button>
 
-    <x-slot:body>
+    <x-slot:content>
         <ul class="mt-2 list-disc pl-5 text-sm text-muted-foreground">
             <li>Existing links keep working.</li>
             <li>Members lose write access.</li>
             <li>Restoring takes one click from the archive view.</li>
         </ul>
-    </x-slot:body>
+    </x-slot:content>
 </hw:alert-dialog>
 ```
 
-The `body` slot renders below `message` and above the action buttons.
+The `content` slot renders below `description` and above the action buttons.
 
 ## Tweaking behavior
 
@@ -85,7 +85,7 @@ Animation speed, scroll lock, and click-outside behavior are exposed as Blade pr
 |--------------------------|----------|--------------------|-------------------------------------------------|
 | `id`                     | `string` | `uniqid('alert-')` | Root element ID                                 |
 | `title`                  | `string` | `''`               | Dialog heading                                  |
-| `message`                | `string` | `''`               | Body text below the title                       |
+| `description`            | `string` | `''`               | Body text below the title                       |
 | `confirm-label`          | `string` | `'Confirm'`        | Action button label                             |
 | `cancel-label`           | `string` | `'Cancel'`         | Cancel button label                             |
 | `confirm-variant`        | `string` | `'default'`        | Action button variant                           |
@@ -107,7 +107,7 @@ dialog behavior with props instead of overriding those attributes directly.
 | Slot             | Description                                                          |
 |------------------|----------------------------------------------------------------------|
 | `slot` (default) | Trigger element whose click is intercepted to open the dialog        |
-| `body`           | Optional rich content rendered below `message` and above the buttons |
+| `content`        | Optional rich content rendered below `description` and above the buttons |
 
 ## How it works
 

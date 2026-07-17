@@ -108,7 +108,7 @@ export default class ModalController extends Controller {
     // --- Modal-specific helpers ---
 
     clickOutside(event) {
-        if (this.closeOnClickOutsideValue && this.isOpen) {
+        if (this.closeOnClickOutsideValue && this.isOpen && this.overlay?.isTop) {
             if (event.target !== this.dialogTarget
                 && !this.#isClickInsideModal(event)
                 && !this.#isClickOnModalRelatedElement(event.target)) {

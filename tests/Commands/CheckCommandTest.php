@@ -104,7 +104,7 @@ it('detects component used in a blade file', function () {
 });
 
 it('detects component with attributes', function () {
-    writeView('page.blade.php', '<x-hw::alert-dialog title="Continue?" message="Sure?"><button>x</button></x-hw::alert-dialog>');
+    writeView('page.blade.php', '<x-hw::alert-dialog title="Continue?" description="Sure?"><button>x</button></x-hw::alert-dialog>');
 
     $this->artisan('hotwire:check --no-interaction')
         ->expectsOutputToContain('alert-dialog')

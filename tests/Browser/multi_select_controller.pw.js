@@ -282,14 +282,19 @@ async function bundle() {
     const multiSelect = (await readFile("resources/js/controllers/multi_select_controller.js", "utf8"))
         .replace('import { Controller } from "@hotwired/stimulus";', "")
         .replace(/import \{[^}]*\} from "\.\/_floating\.js";\s*/, "")
+        .replace(/import \{[^}]*\} from "\.\/_top_layer\.js";\s*/, "")
         .replace(/import \{[^}]*\} from "\.\/_transition\.js";/, "")
         .replace("export default class extends Controller", "class MultiSelectController extends Controller");
+
+    const topLayer = (await readFile("resources/js/controllers/_top_layer.js", "utf8"))
+        .replace("export function createTopLayer", "function createTopLayer");
 
     return `
         const { Controller } = window.Stimulus;
         const { arrow, autoUpdate, computePosition, flip, hide, offset, shift, size } = window.FloatingUIDOM;
         ${floating}
         ${transition}
+        ${topLayer}
         ${clearInput}
         ${multiSelect}
         window.ClearInputController = ClearInputController;

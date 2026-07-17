@@ -4,6 +4,8 @@
 // focus return and enter/exit class toggling with configurable durations.
 
 import { FocusTrap } from "./_focus_trap.js";
+import { registerOverlay, unregisterOverlay, isTopOverlay } from "./_overlay_stack.js";
+import { createTopLayer } from "./_top_layer.js";
 
 const ESCAPE_SCOPE_SELECTOR = "[data-hotwire-escape-scope]";
 
@@ -31,6 +33,8 @@ export function createOverlay(controller, {
     escapeCapture = false,
     stopEscapePropagation = false,
     closeOnClickOutside = true,
+    topLayer = true,
+    onEscape,
     onOpen,
     onClose,
     getTriggerElement,
@@ -41,13 +45,18 @@ export function createOverlay(controller, {
     let isClosing = false;
     let focusTrap = null;
     let triggerElement = null;
+    let stackEntry = null;
+    let unregisterStackEntry = null;
+    let topLayerHandle = null;
 
     if (modalTarget) {
         focusTrap = new FocusTrap(modalTarget);
+        topLayerHandle = createTopLayer(modalTarget, { enabled: topLayer });
     }
 
     function handleEscapeKey(event) {
         if (!closeOnEscape || event.key !== "Escape" || !isOpen) return;
+        if (!isTop()) return;
         if (isNestedEscapeScopeEvent(event, dialogTarget)) return;
 
         if (stopEscapePropagation) {
@@ -55,7 +64,11 @@ export function createOverlay(controller, {
             event.preventDefault();
         }
 
-        close();
+        if (typeof onEscape === "function") {
+            onEscape(event);
+        } else {
+            close();
+        }
     }
 
     function handleClickOutside(event) {
@@ -85,9 +98,11 @@ export function createOverlay(controller, {
             : document.activeElement;
 
         modalTarget.hidden = false;
+        topLayerHandle?.show();
         modalTarget.setAttribute("data-open", "true");
 
         if (lockScroll) lockBodyScroll(lockScrollClasses);
+        registerStack();
 
         requestAnimationFrame(() => {
             modalTarget.classList.remove(...hiddenClasses);
@@ -98,8 +113,6 @@ export function createOverlay(controller, {
 
             dialogTarget.classList.remove(...dialogHiddenClasses);
             dialogTarget.classList.add(...dialogVisibleClasses);
-
-            focusTrap?.activate();
 
             setTimeout(() => {
                 isOpening = false;
@@ -131,6 +144,7 @@ export function createOverlay(controller, {
 
         setTimeout(() => {
             modalTarget.hidden = true;
+            topLayerHandle?.hide();
             isClosing = false;
 
             if (typeof onClose === "function") {
@@ -139,6 +153,7 @@ export function createOverlay(controller, {
         }, closeDuration);
 
         if (lockScroll) unlockBodyScroll();
+        unregisterStack();
 
         if (triggerElement && !triggerElement.disabled && typeof triggerElement.focus === "function") {
             triggerElement.focus();
@@ -148,6 +163,7 @@ export function createOverlay(controller, {
     function cleanup() {
         document.removeEventListener("keydown", handleEscapeKey, escapeCapture);
         focusTrap?.deactivate();
+        topLayerHandle?.cleanup();
 
         if (isOpen && !isClosing) {
             closeNow({ restoreFocus: false });
@@ -173,8 +189,10 @@ export function createOverlay(controller, {
         dialogTarget.classList.add(...dialogHiddenClasses);
 
         modalTarget.hidden = true;
+        topLayerHandle?.hide();
 
         if (lockScroll) unlockBodyScroll();
+        unregisterStack();
 
         if (restoreFocus && triggerElement && !triggerElement.disabled && typeof triggerElement.focus === "function") {
             triggerElement.focus();
@@ -193,6 +211,7 @@ export function createOverlay(controller, {
         isClosing = false;
 
         modalTarget.hidden = false;
+        topLayerHandle?.show();
         modalTarget.setAttribute("data-open", "true");
         modalTarget.classList.remove(...hiddenClasses);
         modalTarget.classList.add(...visibleClasses);
@@ -204,8 +223,7 @@ export function createOverlay(controller, {
         dialogTarget.classList.add(...dialogVisibleClasses);
 
         if (lockScroll) lockBodyScroll(lockScrollClasses);
-
-        focusTrap?.activate();
+        registerStack();
 
         if (typeof onOpen === "function") {
             onOpen();
@@ -215,9 +233,36 @@ export function createOverlay(controller, {
     // Set initial state after a renderFrame so the DOM is ready
     Object.defineProperty(close, "isClosing", { get: () => isClosing });
 
+    function registerStack() {
+        if (unregisterStackEntry) return;
+
+        stackEntry ??= {
+            activateFocusTrap: () => focusTrap?.activate(),
+            deactivateFocusTrap: () => focusTrap?.deactivate(),
+        };
+
+        unregisterStackEntry = registerOverlay(stackEntry);
+    }
+
+    function unregisterStack() {
+        if (unregisterStackEntry) {
+            unregisterStackEntry();
+            unregisterStackEntry = null;
+
+            return;
+        }
+
+        if (stackEntry) unregisterOverlay(stackEntry);
+    }
+
+    function isTop() {
+        return !stackEntry || isTopOverlay(stackEntry);
+    }
+
     return {
         get isOpen() { return isOpen; },
         get isClosing() { return isClosing; },
+        get isTop() { return isTop(); },
         setOpen,
         open,
         close,

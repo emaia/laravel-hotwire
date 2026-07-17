@@ -176,6 +176,7 @@ async function bundle() {
     const popover = (await readFile("resources/js/controllers/popover_controller.js", "utf8"))
         .replace('import { Controller } from "@hotwired/stimulus";', "")
         .replace(/import \{[^}]*\} from "\.\/_floating\.js";\s*/, "")
+        .replace(/import \{[^}]*\} from "\.\/_top_layer\.js";\s*/, "")
         .replace(/import \{[^}]*\} from "\.\/_transition\.js";\s*/, "")
         .replace("export default class extends Controller", "class PopoverController extends Controller");
 
@@ -184,7 +185,17 @@ async function bundle() {
 
     const overlay = (await readFile("resources/js/controllers/_overlay.js", "utf8"))
         .replace(/import \{[^}]*\} from "\.\/_focus_trap\.js";\s*/, "")
+        .replace(/import \{[^}]*\} from "\.\/_overlay_stack\.js";\s*/, "")
+        .replace(/import \{[^}]*\} from "\.\/_top_layer\.js";\s*/, "")
         .replace("export function createOverlay", "function createOverlay");
+
+    const overlayStack = (await readFile("resources/js/controllers/_overlay_stack.js", "utf8"))
+        .replace("export function registerOverlay", "function registerOverlay")
+        .replace("export function unregisterOverlay", "function unregisterOverlay")
+        .replace("export function isTopOverlay", "function isTopOverlay");
+
+    const topLayer = (await readFile("resources/js/controllers/_top_layer.js", "utf8"))
+        .replace("export function createTopLayer", "function createTopLayer");
 
     const frameOverlay = (await readFile("resources/js/controllers/_frame_overlay.js", "utf8"))
         .replace("export function createFrameOverlay", "function createFrameOverlay");
@@ -200,8 +211,10 @@ async function bundle() {
         const { arrow, autoUpdate, computePosition, flip, hide, offset, shift, size } = window.FloatingUIDOM;
         ${floating}
         ${transition}
+        ${topLayer}
         ${popover}
         ${focusTrap}
+        ${overlayStack}
         ${overlay}
         ${frameOverlay}
         ${modal}

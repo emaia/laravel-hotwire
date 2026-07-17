@@ -2,6 +2,7 @@
 import { Controller } from "@hotwired/stimulus";
 
 import { createFloating } from "./_floating.js";
+import { createTopLayer } from "./_top_layer.js";
 import { cancel, enter, leave } from "./_transition.js";
 
 const POPOVER_FOCUSABLE_SELECTOR = [
@@ -34,6 +35,7 @@ export default class extends Controller {
         this.activeTrigger = null;
         this.toggleEvent = null;
         this.floating = null;
+        this.topLayer = null;
     }
 
     get isOpen() {
@@ -136,6 +138,8 @@ export default class extends Controller {
         if (!this.hasContentTarget || !this.hasTriggerTarget) return;
 
         const anchor = this.activeTrigger ?? this.triggerTarget;
+        this.topLayer ??= createTopLayer(this.contentTarget);
+        this.topLayer.show();
         this.floating ??= createFloating(anchor, this.contentTarget, {
             side: this.sideValue,
             align: this.alignValue,
@@ -152,6 +156,7 @@ export default class extends Controller {
     cleanupFloating() {
         this.floating?.cleanup();
         this.floating = null;
+        this.topLayer?.hideAfterTransition();
     }
 
     focusContent() {

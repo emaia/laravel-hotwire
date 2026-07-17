@@ -107,6 +107,7 @@ export default class extends Controller {
 
     clickOutside(event) {
         if (!this.currentMobileOpen || this.dialogTarget.contains(event.target)) return;
+        if (!this.overlay?.isTop) return;
 
         this.closeMobile();
     }

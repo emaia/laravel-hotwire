@@ -15,6 +15,8 @@ Each recipe is self-contained — pick the one that matches your use case.
 - [Server-driven confirmation](./server-driven-confirmation.md) — destructive actions where the
   server paints the confirmation modal with computed context (counts, policy warnings, type-the-name
   guards).
+- [Nested overlays](./nested-overlays.md) — admin workflows where Turbo Frame modals, alert dialogs
+  and floating components stack without losing page context.
 - [Multi-stage forms](./multi-stage-forms.md) — wizards built on a persistent draft model and a
   single Turbo Frame. Per-step validation, browser back, resume-where-you-left-off, no client state.
 - [Composing streams](./composing-streams.md) — chain `refresh`, `update`, `flash` and friends to
