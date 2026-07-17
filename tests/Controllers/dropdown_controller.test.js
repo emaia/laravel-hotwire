@@ -32,8 +32,10 @@ mock.module("@floating-ui/dom", () => ({
 const { default: DropdownController } = await import("../../resources/js/controllers/dropdown_controller.js");
 
 let mounted;
+let originalMatchMedia;
 
 beforeEach(() => {
+    originalMatchMedia = globalThis.window?.matchMedia;
     floatingCleanup.mockClear();
     autoUpdate.mockClear();
     computePosition.mockClear();
@@ -48,6 +50,7 @@ beforeEach(() => {
 afterEach(async () => {
     await mounted?.cleanup();
     mounted = null;
+    if (globalThis.window) window.matchMedia = originalMatchMedia;
 });
 
 const trigger = () => document.querySelector('[data-dropdown-target="trigger"]');
@@ -76,6 +79,39 @@ test.serial("starts closed with aria-expanded false", async () => {
     expect(menu().dataset.open).toBe("false");
 });
 
+test.serial("connects without a menu target and wires one added later", async () => {
+    const consoleError = console.error;
+    const error = mock(() => {});
+    console.error = error;
+
+    try {
+        mounted = await mountController(
+            "dropdown",
+            DropdownController,
+            `
+            <div data-controller="dropdown">
+                <button data-dropdown-target="trigger" data-action="dropdown#toggle" aria-expanded="false">M</button>
+            </div>`,
+        );
+
+        expect(error).not.toHaveBeenCalled();
+
+        const menuEl = document.createElement("div");
+        menuEl.dataset.dropdownTarget = "menu";
+        menuEl.className = "hidden";
+        menuEl.innerHTML = '<a href="#x">x</a>';
+        mounted.root.append(menuEl);
+        mounted.controller.menuTargetConnected(menuEl);
+
+        clickTrigger();
+
+        expect(menuEl.classList.contains("hidden")).toBe(false);
+        expect(trigger().getAttribute("aria-expanded")).toBe("true");
+    } finally {
+        console.error = consoleError;
+    }
+});
+
 test.serial("toggles open and closed on the trigger", async () => {
     await mount();
 
@@ -88,6 +124,61 @@ test.serial("toggles open and closed on the trigger", async () => {
     expect(isOpen()).toBe(false);
     expect(trigger().getAttribute("aria-expanded")).toBe("false");
     expect(menu().dataset.open).toBe("false");
+});
+
+test.serial("toggles from an as-child sidebar menu button trigger", async () => {
+    mounted = await mountController(
+        "dropdown",
+        DropdownController,
+        `
+        <div data-controller="dropdown">
+            <button type="button"
+                    data-slot="sidebar-menu-button"
+                    data-sidebar="menu-button"
+                    data-dropdown-target="trigger"
+                    data-action="dropdown#toggle"
+                    aria-haspopup="true"
+                    aria-expanded="false"
+                    aria-controls="account-menu"
+                    data-state="closed">
+                <span>Ednilson Maia</span>
+                <svg data-slot="dropdown-trigger-icon"></svg>
+            </button>
+            <div id="account-menu"
+                 data-slot="dropdown-menu"
+                 data-open="false"
+                 data-side="top"
+                 data-align="start"
+                 data-dropdown-target="menu"
+                 data-dropdown-side-value="top"
+                 data-dropdown-align-value="start">
+                <a href="/profile">Profile</a>
+            </div>
+        </div>`,
+    );
+
+    clickTrigger();
+
+    expect(trigger().getAttribute("aria-expanded")).toBe("true");
+    expect(trigger().dataset.state).toBe("open");
+    expect(menu().dataset.open).toBe("true");
+});
+
+test.serial("delegates trigger clicks when no data-action is present", async () => {
+    mounted = await mountController(
+        "dropdown",
+        DropdownController,
+        `
+        <div data-controller="dropdown">
+            <button type="button" data-dropdown-target="trigger" aria-expanded="false">M</button>
+            <div data-dropdown-target="menu" data-open="false" class="hidden"><a href="#x">x</a></div>
+        </div>`,
+    );
+
+    clickTrigger();
+
+    expect(isOpen()).toBe(true);
+    expect(trigger().getAttribute("aria-expanded")).toBe("true");
 });
 
 test.serial("open() and close() are idempotent", async () => {
@@ -147,6 +238,163 @@ test.serial("passes dropdown positioning values to Floating UI", async () => {
     expect(offset).toHaveBeenCalledWith({ mainAxis: 12, crossAxis: -4 });
     expect(flip).not.toHaveBeenCalled();
     expect(shift).not.toHaveBeenCalled();
+});
+
+test.serial("reads positioning values from the menu target", async () => {
+    mounted = await mountController(
+        "dropdown",
+        DropdownController,
+        `
+        <div data-controller="dropdown">
+            <button data-dropdown-target="trigger" data-action="dropdown#toggle" aria-expanded="false">M</button>
+            <div data-dropdown-target="menu"
+                 data-dropdown-side-value="right"
+                 data-dropdown-align-value="end"
+                 data-dropdown-side-offset-value="12"
+                 data-dropdown-align-offset-value="-4"
+                 data-dropdown-strategy-value="fixed"
+                 data-dropdown-flip-value="false"
+                 data-dropdown-shift-value="false"
+                 class="hidden"><a href="#x">x</a></div>
+        </div>`,
+    );
+
+    clickTrigger();
+    await wait(0);
+
+    const options = computePosition.mock.calls[0][2];
+    expect(options.placement).toBe("right-end");
+    expect(options.strategy).toBe("fixed");
+    expect(offset).toHaveBeenCalledWith({ mainAxis: 12, crossAxis: -4 });
+    expect(flip).not.toHaveBeenCalled();
+    expect(shift).not.toHaveBeenCalled();
+});
+
+test.serial("uses responsive side and align overrides and recalculates while open", async () => {
+    mounted = await mountController(
+        "dropdown",
+        DropdownController,
+        `
+        <div data-controller="dropdown">
+            <button data-dropdown-target="trigger" data-action="dropdown#toggle" aria-expanded="false">M</button>
+            <div data-dropdown-target="menu"
+                 data-dropdown-side-value="right"
+                 data-dropdown-align-value="start"
+                 data-dropdown-mobile-side-value="bottom"
+                 data-dropdown-mobile-align-value="end"
+                 class="hidden"><a href="#x">x</a></div>
+        </div>`,
+    );
+    const media = installMatchMedia(true);
+    mounted.controller.connectMediaQuery();
+    mounted.controller.syncState();
+
+    clickTrigger();
+    await wait(0);
+
+    expect(computePosition.mock.calls[0][2].placement).toBe("bottom-end");
+
+    media.setMatches(false);
+    await wait(0);
+
+    expect(floatingCleanup).toHaveBeenCalledTimes(1);
+    expect(computePosition.mock.calls.at(-1)[2].placement).toBe("right-start");
+});
+
+test.serial("uses collapsed side and align overrides inside a collapsed sidebar", async () => {
+    mounted = await mountController(
+        "dropdown",
+        DropdownController,
+        `
+        <div data-slot="sidebar" data-state="collapsed">
+            <div data-controller="dropdown">
+                <button data-dropdown-target="trigger" data-action="dropdown#toggle" aria-expanded="false">M</button>
+                <div data-dropdown-target="menu"
+                     data-dropdown-side-value="top"
+                     data-dropdown-align-value="start"
+                     data-dropdown-collapsed-side-value="right"
+                     data-dropdown-collapsed-align-value="end"
+                     class="hidden"><a href="#x">x</a></div>
+            </div>
+        </div>`,
+    );
+
+    clickTrigger();
+    await wait(0);
+
+    expect(computePosition.mock.calls[0][2].placement).toBe("right-end");
+});
+
+test.serial("uses collapsed overrides inside an icon-collapsible sidebar rail", async () => {
+    mounted = await mountController(
+        "dropdown",
+        DropdownController,
+        `
+        <div data-slot="sidebar" data-collapsible="icon">
+            <div data-controller="dropdown">
+                <button data-dropdown-target="trigger" data-action="dropdown#toggle" aria-expanded="false">M</button>
+                <div data-dropdown-target="menu"
+                     data-dropdown-side-value="top"
+                     data-dropdown-align-value="start"
+                     data-dropdown-collapsed-side-value="right"
+                     data-dropdown-collapsed-align-value="end"
+                     class="hidden"><a href="#x">x</a></div>
+            </div>
+        </div>`,
+    );
+
+    clickTrigger();
+    await wait(0);
+
+    expect(computePosition.mock.calls[0][2].placement).toBe("right-end");
+});
+
+test.serial("uses collapsed overrides when only the sidebar wrapper carries collapsed state", async () => {
+    mounted = await mountController(
+        "dropdown",
+        DropdownController,
+        `
+        <div data-slot="sidebar-wrapper" data-state="collapsed">
+            <div data-controller="dropdown">
+                <button data-dropdown-target="trigger" data-action="dropdown#toggle" aria-expanded="false">M</button>
+                <div data-dropdown-target="menu"
+                     data-dropdown-side-value="top"
+                     data-dropdown-align-value="start"
+                     data-dropdown-collapsed-side-value="right"
+                     data-dropdown-collapsed-align-value="end"
+                     class="hidden"><a href="#x">x</a></div>
+            </div>
+        </div>`,
+    );
+
+    clickTrigger();
+    await wait(0);
+
+    expect(computePosition.mock.calls[0][2].placement).toBe("right-end");
+});
+
+test.serial("uses collapsed overrides when sidebar has persisted collapsed state and icon collapsible mode", async () => {
+    mounted = await mountController(
+        "dropdown",
+        DropdownController,
+        `
+        <div data-slot="sidebar" data-sidebar-collapsible="icon" data-state="collapsed" data-collapsible="">
+            <div data-controller="dropdown">
+                <button data-dropdown-target="trigger" data-action="dropdown#toggle" aria-expanded="false">M</button>
+                <div data-dropdown-target="menu"
+                     data-dropdown-side-value="top"
+                     data-dropdown-align-value="start"
+                     data-dropdown-collapsed-side-value="right"
+                     data-dropdown-collapsed-align-value="end"
+                     class="hidden"><a href="#x">x</a></div>
+            </div>
+        </div>`,
+    );
+
+    clickTrigger();
+    await wait(0);
+
+    expect(computePosition.mock.calls[0][2].placement).toBe("right-end");
 });
 
 test.serial("starts open when open-value is true", async () => {
@@ -570,4 +818,25 @@ async function mountControllers() {
             <div data-dropdown-target="menu" class="hidden"><a href="#b">b</a></div>
         </div>`,
     );
+}
+
+function installMatchMedia(initialMatches) {
+    let matches = initialMatches;
+    const listeners = new Set();
+    const media = {
+        get matches() {
+            return matches;
+        },
+        media: "(max-width: 767px)",
+        addEventListener: (_event, listener) => listeners.add(listener),
+        removeEventListener: (_event, listener) => listeners.delete(listener),
+        setMatches(next) {
+            matches = next;
+            listeners.forEach((listener) => listener({ matches, media: this.media }));
+        },
+    };
+
+    window.matchMedia = mock(() => media);
+
+    return media;
 }

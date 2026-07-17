@@ -56,6 +56,8 @@ final class ComponentAliases
             'drawer.description' => Components\Drawer\Description::class,
             'drawer.footer' => Components\Drawer\Footer::class,
             'drawer.close' => Components\Drawer\Close::class,
+            'dropdown.trigger' => Components\Dropdown\Trigger::class,
+            'dropdown.content' => Components\Dropdown\Content::class,
             'dropdown.item' => Components\Dropdown\Item::class,
             'dropdown.label' => Components\Dropdown\Label::class,
             'dropdown.separator' => Components\Dropdown\Separator::class,

@@ -223,8 +223,10 @@
     [data-slot="sidebar-menu"] { @apply flex w-full min-w-0 flex-col gap-1; }
     [data-slot="sidebar-menu-item"] { @apply relative; }
     [data-slot="sidebar-menu-button"] { @apply flex w-full appearance-none items-center gap-2 overflow-hidden rounded-md border-0 bg-transparent p-2 text-left text-sm outline-none transition-[width,height,padding] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0; }
+    [data-slot="sidebar-menu-button"][data-state="open"] { @apply bg-sidebar-accent text-sidebar-accent-foreground; }
     [data-slot="sidebar-menu-item"]:has([data-sidebar="menu-action"]) > [data-slot="sidebar-menu-button"] { @apply pr-8; }
     [data-slot="sidebar"][data-collapsible="icon"] [data-slot="sidebar-menu-button"] { @apply size-8 p-2; }
+    [data-slot="sidebar"][data-collapsible="icon"] [data-slot="sidebar-menu-button"] > span:not([data-slot="avatar"]) { @apply sr-only; }
     [data-slot="sidebar-menu-button"][data-variant="outline"] { @apply bg-background shadow-[0_0_0_1px_var(--sidebar-border)] hover:bg-sidebar-accent hover:shadow-[0_0_0_1px_var(--sidebar-accent)]; }
     [data-slot="sidebar-menu-button"][data-size="default"] { @apply h-8; }
     [data-slot="sidebar-menu-button"][data-size="sm"] { @apply h-7 text-xs; }
@@ -503,6 +505,7 @@
     [data-slot="dropdown-trigger"] { @apply inline-flex h-8 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-border bg-background px-2.5 text-sm font-medium transition-all outline-none active:not-aria-[haspopup]:translate-y-px hover:bg-muted hover:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4; }
     [data-slot="dropdown-trigger-icon"] { @apply transition-transform; }
     [data-slot="dropdown-trigger"][aria-expanded="true"] [data-slot="dropdown-trigger-icon"] { @apply rotate-180; }
+    [data-dropdown-target~="trigger"][data-state="open"] [data-slot="dropdown-trigger-icon"] { @apply rotate-180; }
     [data-slot="dropdown-menu"] { @apply z-50 max-h-(--available-height) w-(--anchor-width) min-w-32 origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10 transition duration-150 ease-out; }
     [data-slot="dropdown-menu"][data-open="false"] { @apply hidden pointer-events-none scale-95 opacity-0; }
     [data-slot="dropdown-menu"][data-open="false"][data-side="bottom"] { @apply -translate-y-1; }
