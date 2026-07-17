@@ -126,6 +126,7 @@ final class ComponentAliases
             'kbd.group' => Components\Kbd\Group::class,
             'marker.icon' => Components\Marker\Icon::class,
             'marker.content' => Components\Marker\Content::class,
+            'navbar.item' => Components\Navbar\Item::class,
             'pagination.content' => Components\Pagination\Content::class,
             'pagination.item' => Components\Pagination\Item::class,
             'pagination.link' => Components\Pagination\Link::class,

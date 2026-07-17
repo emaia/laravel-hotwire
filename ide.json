@@ -559,6 +559,16 @@
                     "className": "\\Emaia\\LaravelHotwire\\Components\\MultiSelect"
                 },
                 {
+                    "name": "navbar",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Navbar"
+                },
+                {
+                    "name": "navbar.item",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Navbar\\Item"
+                },
+                {
                     "name": "optimistic",
                     "namespace": "hw",
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Optimistic"
@@ -852,6 +862,11 @@
                     "name": "spinner",
                     "namespace": "hw",
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Spinner"
+                },
+                {
+                    "name": "sticky",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Sticky"
                 },
                 {
                     "name": "switch",

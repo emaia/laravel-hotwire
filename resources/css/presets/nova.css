@@ -331,6 +331,22 @@
     [data-slot="tabs"][data-orientation="vertical"] [data-slot="tabs-list"][data-variant="line"] [data-slot="tabs-trigger"] { @apply after:inset-y-0 after:-right-1 after:w-0.5; }
     [data-slot="tabs-panel"] { @apply flex-1 outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50; }
 
+    [data-slot="sticky"] { @apply sticky z-20; }
+    [data-slot="sticky"][data-side="top"] { @apply top-(--sticky-offset); }
+    [data-slot="sticky"][data-side="bottom"] { @apply bottom-(--sticky-offset); }
+    [data-slot="sticky"][data-surface="true"] { @apply border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80; }
+    [data-slot="sticky"][data-surface="true"][data-side="top"] { @apply border-b; }
+    [data-slot="sticky"][data-surface="true"][data-side="bottom"] { @apply border-t; }
+    [data-slot="navbar"] { @apply flex gap-1 text-sm; }
+    [data-slot="navbar"][data-orientation="horizontal"] { @apply flex-row items-center; }
+    [data-slot="navbar"][data-orientation="vertical"] { @apply flex-col items-stretch; }
+    [data-slot="navbar"][data-overflow="scroll"][data-orientation="horizontal"] { @apply overflow-x-auto; }
+    [data-slot="navbar-item"] { @apply inline-flex min-h-9 items-center justify-center gap-2 rounded-md px-3 py-1 text-sm font-medium text-muted-foreground transition-colors outline-none hover:bg-accent hover:text-accent-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50; }
+    [data-slot="navbar"][data-orientation="vertical"] [data-slot="navbar-item"] { @apply justify-start; }
+    [data-slot="navbar"][data-variant="line"][data-orientation="horizontal"] [data-slot="navbar-item"] { @apply relative rounded-none bg-transparent after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:rounded-full after:bg-transparent hover:bg-transparent hover:text-foreground data-[current=true]:text-foreground data-[current=true]:after:bg-primary; }
+    [data-slot="navbar"][data-variant="line"][data-orientation="vertical"] [data-slot="navbar-item"] { @apply relative rounded-none bg-transparent after:absolute after:inset-y-2 after:left-0 after:w-0.5 after:rounded-full after:bg-transparent hover:bg-transparent hover:text-foreground data-[current=true]:text-foreground data-[current=true]:after:bg-primary; }
+    [data-slot="navbar"][data-variant="pills"] [data-slot="navbar-item"] { @apply data-[current=true]:bg-accent data-[current=true]:text-accent-foreground; }
+
     [data-slot="field-group"] { @apply flex w-full flex-col gap-5; }
     [data-slot="field-group"] > [data-slot="field-group"] { @apply gap-4; }
     [data-slot="field-set"] { @apply flex flex-col gap-4; }

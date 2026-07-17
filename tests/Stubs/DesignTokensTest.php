@@ -411,6 +411,22 @@ it('keeps toggle sizing aligned with shadcn', function () use ($novaPresetPath) 
         ->not->toContain('[data-slot="toggle"] { @apply inline-flex shrink-0 items-center justify-center gap-2 rounded-md border border-transparent');
 });
 
+it('styles sticky surfaces and navbar navigation', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain('[data-slot="sticky"] { @apply sticky z-20; }')
+        ->toContain('[data-slot="sticky"][data-side="top"] { @apply top-(--sticky-offset); }')
+        ->toContain('[data-slot="sticky"][data-side="bottom"] { @apply bottom-(--sticky-offset); }')
+        ->toContain('[data-slot="sticky"][data-surface="true"]')
+        ->toContain('[data-slot="navbar"] { @apply flex gap-1 text-sm; }')
+        ->toContain('[data-slot="navbar"][data-orientation="horizontal"]')
+        ->toContain('[data-slot="navbar"][data-orientation="vertical"]')
+        ->toContain('[data-slot="navbar-item"]')
+        ->toContain('data-[current=true]:after:bg-primary')
+        ->toContain('[data-slot="navbar"][data-variant="pills"] [data-slot="navbar-item"]');
+});
+
 it('styles rich text via granular slots instead of textarea-only styles', function () use ($novaPresetPath) {
     $css = file_get_contents($novaPresetPath);
 

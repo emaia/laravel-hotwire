@@ -39,6 +39,8 @@ use Emaia\LaravelHotwire\Components\Map;
 use Emaia\LaravelHotwire\Components\Marker;
 use Emaia\LaravelHotwire\Components\Modal;
 use Emaia\LaravelHotwire\Components\MultiSelect;
+use Emaia\LaravelHotwire\Components\Navbar;
+use Emaia\LaravelHotwire\Components\Navbar\Item as NavbarItem;
 use Emaia\LaravelHotwire\Components\Optimistic;
 use Emaia\LaravelHotwire\Components\Pagination;
 use Emaia\LaravelHotwire\Components\Popover;
@@ -53,6 +55,7 @@ use Emaia\LaravelHotwire\Components\Sheet;
 use Emaia\LaravelHotwire\Components\Sidebar;
 use Emaia\LaravelHotwire\Components\Skeleton;
 use Emaia\LaravelHotwire\Components\Spinner;
+use Emaia\LaravelHotwire\Components\Sticky;
 use Emaia\LaravelHotwire\Components\SwitchInput;
 use Emaia\LaravelHotwire\Components\Table;
 use Emaia\LaravelHotwire\Components\Tabs;
@@ -376,6 +379,22 @@ return [
             'description' => 'Searchable multi-value select with Floating UI positioning and native form submission',
             'controllers' => ['multi-select', 'clear-input'],
         ],
+        'navbar' => [
+            'class' => Navbar::class,
+            'view' => 'hotwire::component-views.navbar',
+            'docs' => 'docs/components/navbar.md',
+            'category' => 'navigation',
+            'description' => 'Horizontal or vertical navigation bar for real links with current-page state and optional sticky sugar',
+            'controllers' => [],
+        ],
+        'navbar.item' => [
+            'class' => NavbarItem::class,
+            'view' => 'hotwire::component-views.navbar-item',
+            'docs' => 'docs/components/navbar.md',
+            'category' => 'navigation',
+            'description' => 'Navbar item that renders as a link or button with current and disabled semantics',
+            'controllers' => [],
+        ],
         'optimistic' => [
             'class' => Optimistic::class,
             'view' => 'hotwire::component-views.optimistic',
@@ -486,6 +505,14 @@ return [
             'docs' => 'docs/components/spinner.md',
             'category' => 'feedback',
             'description' => 'Animated SVG spinner — no JavaScript required',
+            'controllers' => [],
+        ],
+        'sticky' => [
+            'class' => Sticky::class,
+            'view' => 'hotwire::component-views.sticky',
+            'docs' => 'docs/components/sticky.md',
+            'category' => 'layout',
+            'description' => 'Generic top or bottom sticky surface primitive with configurable offset and tag',
             'controllers' => [],
         ],
         'switch' => [
