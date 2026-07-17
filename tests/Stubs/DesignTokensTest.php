@@ -347,8 +347,14 @@ it('keeps sidebar menu labels in flow during icon collapse', function () use ($n
 
     expect($css)
         ->toContain('[data-slot="sidebar-menu-button"] { @apply flex w-full appearance-none items-center gap-2 overflow-hidden')
+        ->toContain('text-left text-sm whitespace-nowrap outline-none transition-[width,height,padding]')
+        ->toContain('[data-slot="sidebar-menu-button"] > span:not([data-slot="avatar"]) { @apply min-w-0 truncate; }')
         ->toContain('[data-slot="sidebar"][data-collapsible="icon"] [data-slot="sidebar-menu-button"] { @apply size-8 p-2; }')
-        ->not->toContain('[data-slot="sidebar"][data-collapsible="icon"] [data-slot="sidebar-menu-button"] > span { @apply sr-only; }');
+        ->toContain('[data-slot="sidebar-menu-sub-button"] { @apply flex h-7 min-w-0 -translate-x-px appearance-none items-center gap-2 overflow-hidden rounded-md border-0 bg-transparent px-2 text-sidebar-foreground whitespace-nowrap')
+        ->not->toContain('[data-slot="sidebar"][data-collapsible="icon"] [data-slot="sidebar-menu-button"] > span { @apply sr-only; }')
+        ->not->toContain('[data-slot="sidebar"][data-collapsible="icon"] [data-slot="sidebar-menu-button"] > span:not([data-slot="avatar"]) { @apply sr-only; }')
+        ->not->toContain('[data-slot="sidebar"][data-collapsible="icon"] [data-slot="sidebar-menu-button"] > span:not([data-slot="avatar"]) { @apply opacity-0; }')
+        ->not->toContain('[data-slot="sidebar-menu-button"] > span:not([data-slot="avatar"]) { @apply min-w-0 truncate transition-opacity');
 });
 
 it('keeps sidebar inset sizing aligned with shadcn', function () use ($novaPresetPath) {
