@@ -127,6 +127,7 @@ export default class extends Controller {
     onDocumentKeydown(event) {
         if (this.openValue && event.key === "Escape") {
             event.preventDefault();
+            event.stopImmediatePropagation();
             this.close({ focusTrigger: true });
         }
     }
@@ -197,6 +198,7 @@ export default class extends Controller {
             this.firstEnabledOption()?.focus();
         } else if (event.key === "Escape") {
             event.preventDefault();
+            event.stopImmediatePropagation();
             this.close({ focusTrigger: true });
         }
     }

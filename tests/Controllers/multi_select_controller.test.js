@@ -2,6 +2,7 @@ import { afterEach, beforeEach, expect, mock, test } from "bun:test";
 
 import { mountController, mountMultipleControllers, wait } from "../../resources/js/helpers/test_stimulus.js";
 import DrawerController from "../../resources/js/controllers/drawer_controller.js";
+import ModalController from "../../resources/js/controllers/modal_controller.js";
 
 const floatingCleanup = mock(() => {});
 const autoUpdate = mock((_anchor, _floating, update) => {
@@ -65,6 +66,10 @@ function clickTrigger() {
 
 function pressDocument(key) {
     document.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));
+}
+
+function pressTarget(element, key) {
+    element.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true }));
 }
 
 test.serial("starts closed and opens with Floating UI positioning", async () => {
@@ -450,6 +455,61 @@ test.serial("Escape inside an open drawer closes only the multi-select first", a
     await wait(10);
 
     expect(mounted.controller.isOpen).toBe(false);
+});
+
+test.serial("Escape inside an open modal closes only the multi-select when the multi-select listener runs first", async () => {
+    mounted = await mountMultipleControllers(
+        {
+            "multi-select": MultiSelectController,
+            modal: ModalController,
+        },
+        `
+        <div id="modal" data-controller="modal"
+             data-modal-open-duration-value="1"
+             data-modal-close-duration-value="1"
+             data-modal-hidden-class="pointer-events-none"
+             data-modal-visible-class="pointer-events-auto"
+             data-modal-backdrop-hidden-class="opacity-0"
+             data-modal-backdrop-visible-class="opacity-100"
+             data-modal-dialog-hidden-class="scale-80 opacity-0"
+             data-modal-dialog-visible-class="scale-100 opacity-100"
+             data-modal-lock-scroll-class="overflow-hidden">
+            <button id="modal-trigger" data-action="modal#open">Open modal</button>
+            <div data-modal-target="modal" data-open="false" hidden class="pointer-events-none">
+                <div data-modal-target="backdrop"></div>
+                <div data-modal-target="dialog">
+                    <div data-controller="multi-select" data-multi-select-placeholder-value="Select options">
+                        <select data-multi-select-target="select" name="status[]" multiple hidden>
+                            <option value="active">Active</option>
+                        </select>
+                        <button type="button" data-multi-select-target="trigger" aria-expanded="false" data-action="multi-select#toggle">
+                            <span data-multi-select-target="value">Select options</span>
+                        </button>
+                        <div data-multi-select-target="content" data-open="false" class="hidden">
+                            <input id="modal-multi-search" data-multi-select-target="search" type="text">
+                            <div data-multi-select-target="list" role="listbox" aria-multiselectable="true">
+                                <div data-slot="multi-select-option" data-multi-select-target="option" data-value="active" data-selected="false" role="option" aria-selected="false" tabindex="-1">Active</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>`,
+    );
+
+    const modal = mounted.getController("modal", document.getElementById("modal"));
+
+    document.getElementById("modal-trigger").dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    await wait(10);
+
+    clickTrigger();
+    await wait(0);
+
+    pressTarget(document.getElementById("modal-multi-search"), "Escape");
+    await wait(10);
+
+    expect(isOpen()).toBe(false);
+    expect(modal.isOpen).toBe(true);
 });
 
 test.serial("required validation proxy tracks whether anything is selected", async () => {
