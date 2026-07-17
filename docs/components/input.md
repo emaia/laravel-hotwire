@@ -31,12 +31,26 @@ Renders an `<input>` with:
 | `clearable`         | `bool`              | `false`             | Wrapper + clear button (controller `clear-input`)            |
 | `auto-select`       | `bool`              | `false`             | Selects content on focus (controller `auto-select`)          |
 | `mask`              | `string\|null`      | `null`              | Preset (`cpf`, `phone-br`, ...) or raw Maska string          |
+| `icon-start`        | `string\|null`      | `null`              | Icon name rendered inside the input at the inline start      |
+| `icon-end`          | `string\|null`      | `null`              | Icon name rendered inside the input at the inline end        |
 | `auto-submit`       | `bool\|string`      | `false`             | Add auto-submit wiring; text inputs default to debounced     |
 | `auto-submit-delay` | `int\|string\|null` | `null`              | Per-field debounce override when auto-submit is debounced    |
 | `class`             | `string`            | `""`                | Merged on `<input>`                                          |
 | `wrapper-class`     | `string`            | `""`                | Merged on the wrapper when one is present                    |
 
 Any other HTML attribute (`placeholder`, `pattern`, `disabled`, `data-*`, `aria-*`) passes through.
+
+## Icons
+
+Use `icon-start` and `icon-end` to render package icons inside text inputs. Icons create the same wrapper used by
+`clearable`, and can be combined with the clear button.
+
+```blade
+<hw:input name="q" icon-start="search" clearable placeholder="Search..." />
+<hw:input name="date" icon-end="calendar" />
+```
+
+Icon props are ignored for checkable inputs.
 
 ## Auto-derivation
 
@@ -118,7 +132,7 @@ Specifically:
 `old()`-driven derivation kicks in only while flash data exists; on a fresh load it falls back to `:checked`. Pass
 `:old="false"` to opt out entirely.
 
-The `clearable`, `mask`, and `auto-select` props are no-ops for checkable types.
+The `clearable`, `mask`, `auto-select`, `icon-start`, and `icon-end` props are no-ops for checkable types.
 
 ### Automatic unique ids for groups
 

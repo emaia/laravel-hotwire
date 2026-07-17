@@ -207,6 +207,38 @@ test.serial("select all toggles all options and respects max", async () => {
     expect(option("archived").getAttribute("aria-disabled")).toBe("true");
 });
 
+test.serial("select all becomes indeterminate when some visible options are selected", async () => {
+    await mount();
+
+    const selectAll = document.querySelector('[data-multi-select-target="selectAll"]');
+
+    option("active").dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+    expect(selectAll.dataset.selected).toBe("false");
+    expect(selectAll.dataset.indeterminate).toBe("true");
+    expect(selectAll.getAttribute("aria-pressed")).toBe("mixed");
+
+    option("paused").dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    option("archived").dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+    expect(selectAll.dataset.selected).toBe("true");
+    expect(selectAll.dataset.indeterminate).toBe("false");
+    expect(selectAll.getAttribute("aria-pressed")).toBe("true");
+
+    option("active").dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+    expect(selectAll.dataset.selected).toBe("false");
+    expect(selectAll.dataset.indeterminate).toBe("true");
+    expect(selectAll.getAttribute("aria-pressed")).toBe("mixed");
+
+    option("paused").dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    option("archived").dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+    expect(selectAll.dataset.selected).toBe("false");
+    expect(selectAll.dataset.indeterminate).toBe("false");
+    expect(selectAll.getAttribute("aria-pressed")).toBe("false");
+});
+
 test.serial("select all stays enabled to clear a maxed-out full selection", async () => {
     await mount({
         values: 'data-multi-select-max-value="2"',
