@@ -99,6 +99,14 @@ it('renders sidebar side variant collapsible and inner structure', function () {
         ->assertSeeText('Nav');
 });
 
+it('marks only the collapsible sidebar surface with the sidebar role marker', function () {
+    $html = (string) $this->blade('<x-hw::sidebar.provider><x-hw::sidebar>Nav</x-hw::sidebar></x-hw::sidebar.provider>');
+
+    expect(substr_count($html, 'data-sidebar="sidebar"'))->toBe(1)
+        ->and($html)->toMatch('/data-slot="sidebar-inner"\s+data-sidebar="sidebar"/')
+        ->and($html)->not->toMatch('/data-slot="sidebar"\s+data-sidebar="sidebar"/');
+});
+
 it('renders a non-collapsible sidebar without gap and container wrappers', function () {
     $view = $this->blade('<x-hw::sidebar.provider><x-hw::sidebar collapsible="none">Nav</x-hw::sidebar></x-hw::sidebar.provider>');
 

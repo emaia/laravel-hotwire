@@ -17,7 +17,6 @@
 @else
     <div
         data-slot="sidebar"
-        data-sidebar="sidebar"
         data-sidebar-target="modal"
         data-state="{{ $sidebarState }}"
         data-mobile-state="closed"
