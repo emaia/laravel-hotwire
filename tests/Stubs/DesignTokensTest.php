@@ -342,6 +342,15 @@ it('does not apply Tailwind marker-only classes inside presets', function () use
     expect($css)->not->toMatch('/@apply[^;]*\bgroup\b/');
 });
 
+it('keeps sidebar menu labels in flow during icon collapse', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain('[data-slot="sidebar-menu-button"] { @apply flex w-full appearance-none items-center gap-2 overflow-hidden')
+        ->toContain('[data-slot="sidebar"][data-collapsible="icon"] [data-slot="sidebar-menu-button"] { @apply size-8 p-2; }')
+        ->not->toContain('[data-slot="sidebar"][data-collapsible="icon"] [data-slot="sidebar-menu-button"] > span { @apply sr-only; }');
+});
+
 it('hides the native select arrow when rendering a custom select icon', function () use ($novaPresetPath) {
     $css = file_get_contents($novaPresetPath);
 
