@@ -30,6 +30,7 @@ use Emaia\LaravelHotwire\Components\FlashMessage;
 use Emaia\LaravelHotwire\Components\Form;
 use Emaia\LaravelHotwire\Components\Frame;
 use Emaia\LaravelHotwire\Components\FrameOrPage;
+use Emaia\LaravelHotwire\Components\HoverCard;
 use Emaia\LaravelHotwire\Components\Icon;
 use Emaia\LaravelHotwire\Components\Input;
 use Emaia\LaravelHotwire\Components\Item;
@@ -302,6 +303,14 @@ return [
             'category' => 'turbo',
             'description' => 'Renders a view as a Turbo Frame payload or wrapped in a layout, based on the Turbo-Frame request header',
             'controllers' => [],
+        ],
+        'hover-card' => [
+            'class' => HoverCard::class,
+            'view' => 'hotwire::component-views.hover-card',
+            'docs' => 'docs/components/hover-card.md',
+            'category' => 'overlay',
+            'description' => 'Anchored hover/focus preview card with delayed Floating UI positioning',
+            'controllers' => ['hover-card'],
         ],
         'icon' => [
             'class' => Icon::class,
@@ -710,6 +719,13 @@ return [
             'docs' => 'docs/controllers/hotkey.md',
             'category' => 'utility',
             'description' => 'Binds keyboard shortcuts to click or focus an element',
+        ],
+        'hover-card' => [
+            'source' => 'resources/js/controllers/hover_card_controller.js',
+            'docs' => 'docs/controllers/hover-card.md',
+            'category' => 'overlay',
+            'description' => 'Delayed hover/focus preview card with Escape dismissal, cleanup and Floating UI positioning',
+            'npm' => ['@floating-ui/dom' => '^1.8.0'],
         ],
         'input-mask' => [
             'source' => 'resources/js/controllers/input_mask_controller.js',

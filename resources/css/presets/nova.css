@@ -32,25 +32,25 @@
     [data-slot="accordion-item"][open] > [data-slot="accordion-trigger"] [data-slot="accordion-trigger-icon"] { @apply rotate-180; }
     [data-slot="accordion-content"] { @apply overflow-hidden pb-4 text-sm text-muted-foreground [&_a]:underline [&_a]:underline-offset-3 [&_a:hover]:text-foreground [&_p:not(:last-child)]:mb-4; }
 
-    :is([data-slot="button"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"]) {
+    :is([data-slot="button"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"], [data-slot="hover-card-trigger"]) {
         @apply inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-lg border border-transparent bg-clip-padding text-sm font-medium transition-all outline-none active:not-aria-[haspopup]:translate-y-px focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4;
     }
 
-    :is([data-slot="button"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"])[data-variant="default"] { @apply bg-primary text-primary-foreground hover:bg-primary/80; }
-    :is([data-slot="button"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"])[data-variant="destructive"] { @apply bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40; }
-    :is([data-slot="button"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"])[data-variant="outline"] { @apply border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50; }
-    :is([data-slot="button"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"])[data-variant="secondary"] { @apply bg-secondary text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] aria-expanded:bg-secondary aria-expanded:text-secondary-foreground; }
-    :is([data-slot="button"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"])[data-variant="ghost"] { @apply hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50; }
-    :is([data-slot="button"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"])[data-variant="link"] { @apply text-primary underline-offset-4 hover:underline; }
+    :is([data-slot="button"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"], [data-slot="hover-card-trigger"])[data-variant="default"] { @apply bg-primary text-primary-foreground hover:bg-primary/80; }
+    :is([data-slot="button"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"], [data-slot="hover-card-trigger"])[data-variant="destructive"] { @apply bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40; }
+    :is([data-slot="button"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"], [data-slot="hover-card-trigger"])[data-variant="outline"] { @apply border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50; }
+    :is([data-slot="button"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"], [data-slot="hover-card-trigger"])[data-variant="secondary"] { @apply bg-secondary text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] aria-expanded:bg-secondary aria-expanded:text-secondary-foreground; }
+    :is([data-slot="button"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"], [data-slot="hover-card-trigger"])[data-variant="ghost"] { @apply hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50; }
+    :is([data-slot="button"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"], [data-slot="hover-card-trigger"])[data-variant="link"] { @apply text-primary underline-offset-4 hover:underline; }
 
-    :is([data-slot="button"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"])[data-size="default"] { @apply h-8 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2; }
-    :is([data-slot="button"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"])[data-size="xs"] { @apply h-6 gap-1 rounded-[min(var(--radius-md),10px)] px-2 text-xs has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3; }
-    :is([data-slot="button"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"])[data-size="sm"] { @apply h-7 gap-1 rounded-[min(var(--radius-md),12px)] px-2.5 text-[0.8rem] has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5; }
-    :is([data-slot="button"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"])[data-size="lg"] { @apply h-9 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2; }
-    :is([data-slot="button"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"])[data-size="icon"] { @apply size-8; }
-    :is([data-slot="button"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"])[data-size="icon-xs"] { @apply size-6 rounded-[min(var(--radius-md),10px)] [&_svg:not([class*='size-'])]:size-3; }
-    :is([data-slot="button"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"])[data-size="icon-sm"] { @apply size-7 rounded-[min(var(--radius-md),12px)]; }
-    :is([data-slot="button"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"])[data-size="icon-lg"] { @apply size-9; }
+    :is([data-slot="button"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"], [data-slot="hover-card-trigger"])[data-size="default"] { @apply h-8 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2; }
+    :is([data-slot="button"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"], [data-slot="hover-card-trigger"])[data-size="xs"] { @apply h-6 gap-1 rounded-[min(var(--radius-md),10px)] px-2 text-xs has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3; }
+    :is([data-slot="button"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"], [data-slot="hover-card-trigger"])[data-size="sm"] { @apply h-7 gap-1 rounded-[min(var(--radius-md),12px)] px-2.5 text-[0.8rem] has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5; }
+    :is([data-slot="button"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"], [data-slot="hover-card-trigger"])[data-size="lg"] { @apply h-9 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2; }
+    :is([data-slot="button"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"], [data-slot="hover-card-trigger"])[data-size="icon"] { @apply size-8; }
+    :is([data-slot="button"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"], [data-slot="hover-card-trigger"])[data-size="icon-xs"] { @apply size-6 rounded-[min(var(--radius-md),10px)] [&_svg:not([class*='size-'])]:size-3; }
+    :is([data-slot="button"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"], [data-slot="hover-card-trigger"])[data-size="icon-sm"] { @apply size-7 rounded-[min(var(--radius-md),12px)]; }
+    :is([data-slot="button"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"], [data-slot="hover-card-trigger"])[data-size="icon-lg"] { @apply size-9; }
 
     [data-slot="toggle-group"] { @apply inline-flex w-fit items-center gap-1; }
     [data-slot="toggle-group"][data-orientation="vertical"] { @apply flex-col items-stretch; }
@@ -496,6 +496,16 @@
     [data-slot="dropdown-item"][data-variant="destructive"] { @apply text-destructive hover:bg-destructive/10 hover:text-destructive focus-visible:bg-destructive/10 focus-visible:text-destructive dark:hover:bg-destructive/20 dark:focus-visible:bg-destructive/20 [&_svg]:text-destructive; }
     [data-slot="dropdown-separator"] { @apply -mx-1 my-1 h-px bg-border; }
     [data-slot="dropdown-shortcut"] { @apply ml-auto text-xs tracking-widest text-muted-foreground; }
+
+    [data-slot="hover-card"] { @apply inline-block; }
+    [data-slot="hover-card-content"] { @apply z-50 max-h-(--available-height) w-64 max-w-[calc(100vw-2rem)] origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-md border border-border bg-popover p-4 text-popover-foreground shadow-md outline-none transition duration-150 ease-out; }
+    [data-slot="hover-card-content"][data-open="false"] { @apply pointer-events-none scale-95 opacity-0; }
+    [data-slot="hover-card-content"][data-open="false"]:not(.block) { @apply hidden; }
+    [data-slot="hover-card-content"][data-open="false"][data-side="bottom"] { @apply -translate-y-1; }
+    [data-slot="hover-card-content"][data-open="false"][data-side="top"] { @apply translate-y-1; }
+    [data-slot="hover-card-content"][data-open="false"][data-side="left"] { @apply translate-x-1; }
+    [data-slot="hover-card-content"][data-open="false"][data-side="right"] { @apply -translate-x-1; }
+    [data-slot="hover-card-content"][data-open="true"] { @apply translate-x-0 translate-y-0 scale-100 opacity-100; }
 
     [data-slot="popover"] { @apply inline-block; }
     [data-slot="popover-trigger"] { @apply inline-flex h-8 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-border bg-background px-2.5 text-sm font-medium transition-all outline-none active:not-aria-[haspopup]:translate-y-px hover:bg-muted hover:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4; }

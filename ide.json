@@ -419,6 +419,21 @@
                     "className": "\\Emaia\\LaravelHotwire\\Components\\FrameOrPage"
                 },
                 {
+                    "name": "hover-card",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\HoverCard"
+                },
+                {
+                    "name": "hover-card.content",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\HoverCard\\Content"
+                },
+                {
+                    "name": "hover-card.trigger",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\HoverCard\\Trigger"
+                },
+                {
                     "name": "icon",
                     "namespace": "hw",
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Icon"
