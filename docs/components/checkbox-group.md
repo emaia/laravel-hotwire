@@ -29,6 +29,7 @@ Flat (non-associative) options arrays are automatically normalized: `['main', 'd
 | `select-all`        | `bool`              | `false`        | Renders a master checkbox that toggles all items                     |
 | `select-all-label`  | `string\|null`      | `"Select all"` | Custom label for the master checkbox                                 |
 | `orientation`       | `string`            | `"vertical"`   | `vertical` or `horizontal`, matching `<hw:radio-group>`              |
+| `disabled`          | `bool`              | `false`        | Disables every generated checkbox and rich item by default           |
 | `class`             | `string`            | `""`           | Merged on each checkbox `<input>`                                    |
 | `wrapper-class`     | `string`            | `""`           | Merged on the wrapper `<div>`                                        |
 | `label-class`       | `string`            | `""`           | Merged on each item `<label>`                                        |

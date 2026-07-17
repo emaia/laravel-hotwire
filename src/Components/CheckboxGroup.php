@@ -22,6 +22,7 @@ class CheckboxGroup extends Component
         public bool $selectAll = false,
         public ?string $selectAllLabel = null,
         public string $orientation = 'vertical',
+        public bool $disabled = false,
         public string $class = '',
         public string $wrapperClass = '',
         public string $labelClass = '',
@@ -49,6 +50,7 @@ class CheckboxGroup extends Component
     public function data(): array
     {
         $data = parent::data();
+        $data['checkboxGroupDisabled'] = $this->disabled;
         $data['internalPrefixes'] = array_values(array_filter([
             $this->selectAll ? 'data-checkbox-select-all-' : null,
             AutoSubmit::enabled($this->autoSubmit) ? 'data-auto-submit-' : null,

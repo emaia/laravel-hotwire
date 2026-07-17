@@ -419,7 +419,9 @@
     :is([data-slot="input"], [data-slot="checkbox"], [data-slot="checkbox-group-input"], [data-slot="radio-group-input"])[data-checkable="true"][type="radio"] { @apply rounded-full; }
     :is([data-slot="input"], [data-slot="checkbox"], [data-slot="checkbox-group-input"], [data-slot="radio-group-input"])[data-checkable="true"][type="radio"]::before { width: 0.375rem; height: 0.375rem; border-radius: 9999px; mask: none; }
     :is([data-slot="checkbox-group-item"], [data-slot="radio-group-item"]) { @apply flex items-start gap-2 text-sm leading-snug font-normal; }
+    :is([data-slot="checkbox-group-item"], [data-slot="radio-group-item"]):has(> :disabled) { @apply cursor-not-allowed; }
     :is([data-slot="checkbox-group-item-content"], [data-slot="radio-group-item-content"]) { @apply flex min-w-0 flex-1 flex-col gap-1; }
+    :is([data-slot="checkbox-group-item"], [data-slot="radio-group-item"]):has(> :disabled) > :is([data-slot="checkbox-group-item-content"], [data-slot="radio-group-item-content"]) { @apply opacity-50; }
     :is([data-slot="checkbox-group"], [data-slot="radio-group"]) { @apply flex gap-3; }
     :is([data-slot="checkbox-group"], [data-slot="radio-group"])[data-orientation="vertical"] { @apply flex-col; }
     :is([data-slot="checkbox-group"], [data-slot="radio-group"])[data-orientation="horizontal"] { @apply flex-row flex-wrap; }

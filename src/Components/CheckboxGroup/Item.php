@@ -22,6 +22,7 @@ class Item extends Component
         public ?string $name = null,
         public ?string $id = null,
         public ?string $errorKey = null,
+        public ?bool $disabled = null,
     ) {}
 
     public function render()
@@ -48,6 +49,7 @@ class Item extends Component
         array $selected,
         bool $old,
         bool $selectAll,
+        bool $checkboxGroupDisabled,
         bool|string $autoSubmit,
         int|string|null $autoSubmitDelay,
         ViewErrorBag $errorsBag,
@@ -81,6 +83,7 @@ class Item extends Component
             'resolvedId' => $resolvedId,
             'errorId' => $baseId ? $baseId.'-error' : '',
             'isChecked' => $isChecked,
+            'isDisabled' => $this->disabled ?? $checkboxGroupDisabled,
             'hasErrors' => $hasErrors,
             'selectAllTarget' => $selectAll ? 'checkbox' : null,
             'elementAction' => AutoSubmit::action($autoSubmit, 'change', 'submit'),

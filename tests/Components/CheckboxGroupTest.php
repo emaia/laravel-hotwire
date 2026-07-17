@@ -290,6 +290,26 @@ it('falls back to vertical orientation for invalid values', function () {
     $view->assertSee('data-orientation="vertical"', false);
 });
 
+it('disables all option and rich item checkboxes when disabled', function () {
+    $view = $this->blade('
+        <x-hw::checkbox-group name="ids[]" :options="[1 => \'One\']" disabled>
+            <x-hw::checkbox-group.item value="2">Two</x-hw::checkbox-group.item>
+        </x-hw::checkbox-group>
+    ');
+
+    expect(substr_count((string) $view, 'disabled'))->toBe(2);
+});
+
+it('allows a rich item to override the group disabled state', function () {
+    $view = $this->blade('
+        <x-hw::checkbox-group name="ids[]" disabled>
+            <x-hw::checkbox-group.item value="1" :disabled="false">One</x-hw::checkbox-group.item>
+        </x-hw::checkbox-group>
+    ');
+
+    expect((string) $view)->not->toContain('disabled');
+});
+
 // --- User data-controller merge ---
 
 it('merges user data-controller with checkbox-select-all when select-all', function () {
