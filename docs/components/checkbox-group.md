@@ -28,6 +28,7 @@ Flat (non-associative) options arrays are automatically normalized: `['main', 'd
 | `selected`          | `array`             | `[]`           | Values that should be checked                                        |
 | `select-all`        | `bool`              | `false`        | Renders a master checkbox that toggles all items                     |
 | `select-all-label`  | `string\|null`      | `"Select all"` | Custom label for the master checkbox                                 |
+| `orientation`       | `string`            | `"vertical"`   | `vertical` or `horizontal`, matching `<hw:radio-group>`              |
 | `class`             | `string`            | `""`           | Merged on each checkbox `<input>`                                    |
 | `wrapper-class`     | `string`            | `""`           | Merged on the wrapper `<div>`                                        |
 | `label-class`       | `string`            | `""`           | Merged on each item `<label>`                                        |
@@ -73,7 +74,9 @@ The select-all checkbox gets `id="{baseId}-all"`.
 />
 ```
 
-Each checkbox renders inside a `<label>` with the option label as its text node.
+The wrapper renders `data-orientation="vertical"` by default and accepts `orientation="horizontal"`, matching
+`<hw:radio-group>`. Each checkbox renders inside a `<label data-slot="checkbox-group-item">` with the option label
+wrapped in `data-slot="checkbox-group-item-content"`, matching the item spacing used by `<hw:radio-group>`.
 
 ## Rich items
 

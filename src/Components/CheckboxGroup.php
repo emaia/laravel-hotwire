@@ -21,6 +21,7 @@ class CheckboxGroup extends Component
         public array $selected = [],
         public bool $selectAll = false,
         public ?string $selectAllLabel = null,
+        public string $orientation = 'vertical',
         public string $class = '',
         public string $wrapperClass = '',
         public string $labelClass = '',
@@ -34,6 +35,10 @@ class CheckboxGroup extends Component
         if ($options !== [] && array_keys($options) === range(0, count($options) - 1)) {
             $this->options = array_combine($options, $options);
         }
+
+        $this->orientation = in_array($this->orientation, ['horizontal', 'vertical'], true)
+            ? $this->orientation
+            : 'vertical';
     }
 
     public function render()

@@ -401,6 +401,11 @@ it('styles checkable inputs when they are wrapped by labels', function () use ($
         ->toContain('[data-slot="field-label"]:has(> [data-slot="field"][data-disabled="true"])')
         ->toContain('[data-slot="checkbox-group-item"]')
         ->toContain('[data-slot="radio-group-item"]')
+        ->toContain(':is([data-slot="checkbox-group"], [data-slot="radio-group"]) { @apply flex gap-3; }')
+        ->toContain(':is([data-slot="checkbox-group"], [data-slot="radio-group"])[data-orientation="vertical"] { @apply flex-col; }')
+        ->toContain(':is([data-slot="checkbox-group"], [data-slot="radio-group"])[data-orientation="horizontal"] { @apply flex-row flex-wrap; }')
+        ->toContain(':is([data-slot="checkbox-group-item"], [data-slot="radio-group-item"]) { @apply flex items-start gap-2 text-sm leading-snug font-normal; }')
+        ->toContain(':is([data-slot="checkbox-group-item-content"], [data-slot="radio-group-item-content"]) { @apply flex min-w-0 flex-1 flex-col gap-1; }')
         ->toContain('appearance-none')
         ->toContain('aspect-square h-4 max-h-4 min-h-4 w-4 min-w-4 max-w-4')
         ->toContain('checked:border-primary checked:bg-primary')
@@ -521,7 +526,7 @@ it('defines multi-select slots in the nova preset', function () use ($novaPreset
         ->toContain('[data-slot="multi-select"] { @apply relative block w-full max-w-full; }')
         ->toContain('[data-slot="multi-select-native"]')
         ->toContain('[data-slot="multi-select-trigger"]')
-        ->toContain('[data-slot="multi-select-trigger"] { @apply inline-flex min-h-9 w-full max-w-full shrink-0 items-center justify-between gap-2 overflow-hidden')
+        ->toContain('[data-slot="multi-select-trigger"] { @apply inline-flex h-8 w-full max-w-full shrink-0 items-center justify-between gap-2 overflow-hidden')
         ->toContain('[data-slot="multi-select-trigger-icon"]')
         ->toContain('[data-slot="multi-select-value"]')
         ->toContain('[data-slot="multi-select-value"] { @apply min-w-0 flex-1 truncate; }')
@@ -537,6 +542,52 @@ it('defines multi-select slots in the nova preset', function () use ($novaPreset
         ->toContain('[data-slot="multi-select-indicator"]')
         ->toContain('[data-slot="multi-select-empty"]')
         ->toContain('[data-slot="multi-select-validation"]');
+});
+
+it('keeps input group inline addons in layout flow', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain('[data-slot="input-group-addon"][data-align="inline-start"], [data-slot="input-group-addon"][data-align="inline-end"] { @apply shrink-0; }')
+        ->toContain('[data-slot="input-group-addon"][data-align="inline-start"] { @apply order-first pl-3; }')
+        ->toContain('[data-slot="input-group-addon"][data-align="inline-end"] { @apply order-last pr-3; }')
+        ->toContain('[data-slot="input-group"]:has(> [data-slot="input-group-addon"][data-align="inline-start"]) > :is([data-slot="input"')
+        ->toContain('{ @apply pl-1; }')
+        ->toContain('[data-slot="input-group"]:has(> [data-slot="input-group-addon"][data-align="inline-end"]) > :is([data-slot="input"')
+        ->toContain('{ @apply pr-1; }')
+        ->toContain('[data-slot="input-group"]:has(> [data-slot="input-group-addon"][data-align="inline-start"] > :is(svg, button, [data-slot="button"], [data-slot="kbd"])) > :is([data-slot="input"')
+        ->toContain('{ @apply pl-2; }')
+        ->toContain('[data-slot="input-group"]:has(> [data-slot="input-group-addon"][data-align="inline-end"] > :is(svg, button, [data-slot="button"], [data-slot="kbd"])) > :is([data-slot="input"')
+        ->toContain('{ @apply pr-2; }')
+        ->not->toContain('[data-slot="input-group-addon"][data-align="inline-start"], [data-slot="input-group-addon"][data-align="inline-end"] { @apply absolute')
+        ->not->toContain('[data-slot="input-group"]:has(> [data-slot="input-group-addon"][data-align="inline-start"]) > :is([data-slot="input"], [data-slot="textarea"], [data-slot="multi-select-search"], [data-slot="input-group-control"]) { @apply pl-8; }')
+        ->not->toContain('[data-slot="input-group"]:has(> [data-slot="input-group-addon"][data-align="inline-end"]) > :is([data-slot="input"], [data-slot="textarea"], [data-slot="multi-select-search"], [data-slot="input-group-control"]) { @apply pr-8; }');
+});
+
+it('uses compact one-line form control heights in the nova preset', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain('[data-slot="input"], [data-slot="select"] { @apply flex h-8 w-full')
+        ->toContain('[data-slot="file-input"] { @apply flex min-h-9 w-full')
+        ->toContain('file:inline-flex file:h-7')
+        ->toContain('[data-slot="input-group"] { @apply relative flex h-8 w-full')
+        ->toContain('[data-slot="input-group"]:has(> [data-slot="input-group-addon"][data-align^="block-"]) { @apply h-auto flex-col items-stretch; }')
+        ->toContain('[data-slot="input-group"]:has(> :is([data-slot="textarea"], [data-slot="textarea-wrapper"])) { @apply h-auto; }')
+        ->toContain('[data-slot="multi-select-trigger"] { @apply inline-flex h-8 w-full')
+        ->toContain('[data-slot="textarea"] { @apply flex min-h-16 w-full')
+        ->not->toContain('[data-slot="input"], [data-slot="select"], [data-slot="textarea"], [data-slot="file-input"] { @apply flex min-h-9')
+        ->not->toContain('[data-slot="input-group"] { @apply relative flex min-h-9')
+        ->not->toContain('[data-slot="multi-select-trigger"] { @apply inline-flex min-h-9');
+});
+
+it('styles custom input group controls without a duplicate focus ring', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain('[data-slot="input-group"] > [data-slot="input-group-control"] { @apply min-h-8 w-full px-3 py-1 text-base text-foreground outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50 md:text-sm; }')
+        ->toContain('[data-slot="input-group"] > :is([data-slot="input"')
+        ->toContain('border-0 bg-transparent shadow-none focus-visible:ring-0');
 });
 
 it('defines breadcrumb slots in the nova preset', function () use ($novaPresetPath) {

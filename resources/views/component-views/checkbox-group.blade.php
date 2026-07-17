@@ -5,9 +5,10 @@
 
     $checkboxGroupAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
         'data-slot' => 'checkbox-group',
+        'data-orientation' => $orientation,
         'data-controller' => $wrapperController ?: null,
         'class' => filled($wrapperClass) ? $wrapperClass : null,
-    ], $attributes, $stimulus, except: ['select-all', 'auto-submit', 'auto-submit-delay'], protectedPrefixes: $internalPrefixes);
+    ], $attributes, $stimulus, except: ['select-all', 'auto-submit', 'auto-submit-delay', 'orientation'], protectedPrefixes: $internalPrefixes);
 @endphp
 
 <div
@@ -17,7 +18,7 @@
         @php
             $selectAllId = $baseId ? $baseId.'-all' : null;
         @endphp
-        <label data-slot="field-label" @if (filled($labelClass)) class="{{ $labelClass }}" @endif>
+        <label data-slot="checkbox-group-item" @if (filled($labelClass)) class="{{ $labelClass }}" @endif>
             <input
                 data-slot="checkbox-group-input"
                 data-checkable="true"
@@ -30,7 +31,7 @@
                 @if ($elementAction) data-action="{!! $elementAction !!}" @endif
                 @if ($autoSubmitDelayParam !== null) data-auto-submit-delay-param="{{ $autoSubmitDelayParam }}" @endif
             />
-            {{ $selectAllLabel ?: 'Select all' }}
+            <span data-slot="checkbox-group-item-content">{{ $selectAllLabel ?: 'Select all' }}</span>
         </label>
     @endif
 
@@ -38,7 +39,7 @@
         @php
             $resolvedId = $baseId ? $baseId.'-'.\Illuminate\Support\Str::slug((string) $value) : null;
         @endphp
-        <label data-slot="field-label" @if (filled($labelClass)) class="{{ $labelClass }}" @endif>
+        <label data-slot="checkbox-group-item" @if (filled($labelClass)) class="{{ $labelClass }}" @endif>
             <input
                 data-slot="checkbox-group-input"
                 data-checkable="true"
@@ -54,7 +55,7 @@
                 @if ($autoSubmitDelayParam !== null) data-auto-submit-delay-param="{{ $autoSubmitDelayParam }}" @endif
                 @if (in_array($value, $resolvedSelected)) checked @endif
             />
-            {{ $label }}
+            <span data-slot="checkbox-group-item-content">{{ $label }}</span>
         </label>
     @endforeach
 

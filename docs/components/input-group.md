@@ -19,8 +19,12 @@ the group so their validation, `old()` restoration, Stimulus wiring and accessib
 
 ## Addons
 
-Addons render after the form control in the DOM for predictable focus navigation. Use `align` to choose their visual
-position:
+Addons render after the form control in the DOM for predictable focus navigation. Inline addons stay in the flex layout,
+so text prefixes such as `https://` reserve their own width instead of overlapping the input value. Use `align` to choose
+their visual position:
+
+Text addons use a compact gap next to the control. Icon, button and keyboard-shortcut addons keep the roomier Nova
+spacing from the shadcn reference.
 
 | Align | Description |
 | --- | --- |
@@ -62,7 +66,7 @@ and layout styles.
 
 ```blade
 <hw:input-group>
-    <input data-slot="input-group-control" name="amount" inputmode="decimal" />
+    <input data-slot="input-group-control" name="amount" inputmode="decimal" placeholder="0.00" />
 
     <hw:input-group.addon align="inline-end">
         USD

@@ -385,20 +385,28 @@
     [data-slot="input-wrapper"], [data-slot="textarea-wrapper"], [data-slot="file-wrapper"] { @apply relative; }
     [data-slot="input-wrapper"][data-clearable="true"] { @apply flex flex-col justify-center items-center; }
     [data-slot="input-wrapper"][data-clearable="true"] :is([data-slot="input"], [data-slot="multi-select-search"]) { @apply pr-8; }
-    [data-slot="input"], [data-slot="select"], [data-slot="textarea"], [data-slot="file-input"] { @apply flex min-h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-base text-foreground shadow-xs transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 md:text-sm; }
-    [data-slot="input-group"] { @apply relative flex min-h-9 w-full items-center rounded-md border border-input bg-background shadow-xs transition-colors focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50 has-[[aria-invalid=true]]:border-destructive has-[[aria-invalid=true]]:ring-destructive/20; }
-    [data-slot="input-group"]:has(> [data-slot="input-group-addon"][data-align^="block-"]) { @apply flex-col items-stretch; }
+    [data-slot="input"], [data-slot="select"] { @apply flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-base text-foreground shadow-xs transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 md:text-sm; }
+    [data-slot="file-input"] { @apply flex min-h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-base text-foreground shadow-xs transition-colors outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 md:text-sm; }
+    [data-slot="textarea"] { @apply flex min-h-16 w-full rounded-md border border-input bg-background px-3 py-2 text-base text-foreground shadow-xs transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 md:text-sm; }
+    [data-slot="input-group"] { @apply relative flex h-8 w-full items-center rounded-md border border-input bg-background shadow-xs transition-colors focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50 has-[[aria-invalid=true]]:border-destructive has-[[aria-invalid=true]]:ring-destructive/20; }
+    [data-slot="input-group"]:has(> [data-slot="input-group-addon"][data-align^="block-"]) { @apply h-auto flex-col items-stretch; }
+    [data-slot="input-group"]:has(> :is([data-slot="textarea"], [data-slot="textarea-wrapper"])) { @apply h-auto; }
     [data-slot="input-group"] > :is([data-slot="input"], [data-slot="textarea"], [data-slot="multi-select-search"], [data-slot="input-group-control"]) { @apply min-w-0 flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0; }
+    [data-slot="input-group"] > [data-slot="input-group-control"] { @apply min-h-8 w-full px-3 py-1 text-base text-foreground outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50 md:text-sm; }
     [data-slot="input-group"] > :is([data-slot="input-wrapper"], [data-slot="textarea-wrapper"]) { @apply min-w-0 flex-1; }
     [data-slot="input-group"] > :is([data-slot="input-wrapper"], [data-slot="textarea-wrapper"]) > :is([data-slot="input"], [data-slot="textarea"], [data-slot="multi-select-search"]) { @apply border-0 bg-transparent shadow-none focus-visible:ring-0; }
-    [data-slot="input-group"]:has(> [data-slot="input-group-addon"][data-align="inline-start"]) > :is([data-slot="input"], [data-slot="textarea"], [data-slot="multi-select-search"], [data-slot="input-group-control"]) { @apply pl-8; }
-    [data-slot="input-group"]:has(> [data-slot="input-group-addon"][data-align="inline-start"]) > :is([data-slot="input-wrapper"], [data-slot="textarea-wrapper"]) > :is([data-slot="input"], [data-slot="textarea"], [data-slot="multi-select-search"]) { @apply pl-8; }
-    [data-slot="input-group"]:has(> [data-slot="input-group-addon"][data-align="inline-end"]) > :is([data-slot="input"], [data-slot="textarea"], [data-slot="multi-select-search"], [data-slot="input-group-control"]) { @apply pr-8; }
-    [data-slot="input-group"]:has(> [data-slot="input-group-addon"][data-align="inline-end"]) > :is([data-slot="input-wrapper"], [data-slot="textarea-wrapper"]) > :is([data-slot="input"], [data-slot="textarea"], [data-slot="multi-select-search"]) { @apply pr-8; }
+    [data-slot="input-group"]:has(> [data-slot="input-group-addon"][data-align="inline-start"]) > :is([data-slot="input"], [data-slot="textarea"], [data-slot="multi-select-search"], [data-slot="input-group-control"]) { @apply pl-1; }
+    [data-slot="input-group"]:has(> [data-slot="input-group-addon"][data-align="inline-start"]) > :is([data-slot="input-wrapper"], [data-slot="textarea-wrapper"]) > :is([data-slot="input"], [data-slot="textarea"], [data-slot="multi-select-search"]) { @apply pl-1; }
+    [data-slot="input-group"]:has(> [data-slot="input-group-addon"][data-align="inline-end"]) > :is([data-slot="input"], [data-slot="textarea"], [data-slot="multi-select-search"], [data-slot="input-group-control"]) { @apply pr-1; }
+    [data-slot="input-group"]:has(> [data-slot="input-group-addon"][data-align="inline-end"]) > :is([data-slot="input-wrapper"], [data-slot="textarea-wrapper"]) > :is([data-slot="input"], [data-slot="textarea"], [data-slot="multi-select-search"]) { @apply pr-1; }
+    [data-slot="input-group"]:has(> [data-slot="input-group-addon"][data-align="inline-start"] > :is(svg, button, [data-slot="button"], [data-slot="kbd"])) > :is([data-slot="input"], [data-slot="textarea"], [data-slot="multi-select-search"], [data-slot="input-group-control"]) { @apply pl-2; }
+    [data-slot="input-group"]:has(> [data-slot="input-group-addon"][data-align="inline-start"] > :is(svg, button, [data-slot="button"], [data-slot="kbd"])) > :is([data-slot="input-wrapper"], [data-slot="textarea-wrapper"]) > :is([data-slot="input"], [data-slot="textarea"], [data-slot="multi-select-search"]) { @apply pl-2; }
+    [data-slot="input-group"]:has(> [data-slot="input-group-addon"][data-align="inline-end"] > :is(svg, button, [data-slot="button"], [data-slot="kbd"])) > :is([data-slot="input"], [data-slot="textarea"], [data-slot="multi-select-search"], [data-slot="input-group-control"]) { @apply pr-2; }
+    [data-slot="input-group"]:has(> [data-slot="input-group-addon"][data-align="inline-end"] > :is(svg, button, [data-slot="button"], [data-slot="kbd"])) > :is([data-slot="input-wrapper"], [data-slot="textarea-wrapper"]) > :is([data-slot="input"], [data-slot="textarea"], [data-slot="multi-select-search"]) { @apply pr-2; }
     [data-slot="input-group-addon"] { @apply z-10 flex items-center gap-1 text-sm text-muted-foreground; }
-    [data-slot="input-group-addon"][data-align="inline-start"], [data-slot="input-group-addon"][data-align="inline-end"] { @apply absolute top-1/2 -translate-y-1/2; }
-    [data-slot="input-group-addon"][data-align="inline-start"] { @apply left-2; }
-    [data-slot="input-group-addon"][data-align="inline-end"] { @apply right-2; }
+    [data-slot="input-group-addon"][data-align="inline-start"], [data-slot="input-group-addon"][data-align="inline-end"] { @apply shrink-0; }
+    [data-slot="input-group-addon"][data-align="inline-start"] { @apply order-first pl-3; }
+    [data-slot="input-group-addon"][data-align="inline-end"] { @apply order-last pr-3; }
     [data-slot="input-group-addon"][data-align="block-start"], [data-slot="input-group-addon"][data-align="block-end"] { @apply w-full px-3 py-1.5; }
     [data-slot="input-group-addon"][data-align="block-start"] { @apply order-first border-b border-border; }
     [data-slot="input-group-addon"][data-align="block-end"] { @apply border-t border-border; }
@@ -412,9 +420,9 @@
     :is([data-slot="input"], [data-slot="checkbox"], [data-slot="checkbox-group-input"], [data-slot="radio-group-input"])[data-checkable="true"][type="radio"]::before { width: 0.375rem; height: 0.375rem; border-radius: 9999px; mask: none; }
     :is([data-slot="checkbox-group-item"], [data-slot="radio-group-item"]) { @apply flex items-start gap-2 text-sm leading-snug font-normal; }
     :is([data-slot="checkbox-group-item-content"], [data-slot="radio-group-item-content"]) { @apply flex min-w-0 flex-1 flex-col gap-1; }
-    [data-slot="radio-group"] { @apply flex gap-3; }
-    [data-slot="radio-group"][data-orientation="vertical"] { @apply flex-col; }
-    [data-slot="radio-group"][data-orientation="horizontal"] { @apply flex-row flex-wrap; }
+    :is([data-slot="checkbox-group"], [data-slot="radio-group"]) { @apply flex gap-3; }
+    :is([data-slot="checkbox-group"], [data-slot="radio-group"])[data-orientation="vertical"] { @apply flex-col; }
+    :is([data-slot="checkbox-group"], [data-slot="radio-group"])[data-orientation="horizontal"] { @apply flex-row flex-wrap; }
     [data-slot="switch"] { @apply inline-flex shrink-0 cursor-pointer appearance-none items-center rounded-full border border-transparent bg-input p-0 shadow-xs transition-all outline-none checked:bg-primary focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:bg-input/80 dark:checked:bg-primary dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40; }
     [data-slot="switch"][data-disabled="true"] { @apply cursor-not-allowed opacity-50; }
     [data-slot="switch"][data-size="default"] { @apply h-[1.15rem] w-8; }
@@ -571,7 +579,7 @@
 
     [data-slot="multi-select"] { @apply relative block w-full max-w-full; }
     [data-slot="multi-select-native"] { @apply hidden; }
-    [data-slot="multi-select-trigger"] { @apply inline-flex min-h-9 w-full max-w-full shrink-0 items-center justify-between gap-2 overflow-hidden rounded-md border border-input bg-background px-3 py-1 text-left text-base text-foreground shadow-xs transition-colors outline-none hover:bg-muted/50 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm; }
+    [data-slot="multi-select-trigger"] { @apply inline-flex h-8 w-full max-w-full shrink-0 items-center justify-between gap-2 overflow-hidden rounded-md border border-input bg-background px-3 py-1 text-left text-base text-foreground shadow-xs transition-colors outline-none hover:bg-muted/50 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm; }
     [data-slot="multi-select-trigger-icon"] { @apply size-4 shrink-0 opacity-50 transition-transform; }
     [data-slot="multi-select-trigger"][aria-expanded="true"] [data-slot="multi-select-trigger-icon"] { @apply rotate-180; }
     [data-slot="multi-select-value"] { @apply min-w-0 flex-1 truncate; }
