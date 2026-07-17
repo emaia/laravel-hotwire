@@ -279,6 +279,11 @@
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Dropdown"
                 },
                 {
+                    "name": "dropdown.content",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Dropdown\\Content"
+                },
+                {
                     "name": "dropdown.group",
                     "namespace": "hw",
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Dropdown\\Group"
@@ -302,6 +307,11 @@
                     "name": "dropdown.shortcut",
                     "namespace": "hw",
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Dropdown\\Shortcut"
+                },
+                {
+                    "name": "dropdown.trigger",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Dropdown\\Trigger"
                 },
                 {
                     "name": "empty-state",

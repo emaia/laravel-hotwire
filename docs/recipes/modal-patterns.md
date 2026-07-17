@@ -10,16 +10,16 @@ modal belongs to one specific spot on the page.
 
 ```blade
 <hw:modal>
-    <x-slot:trigger>
-        <button type="button" data-action="modal#open">Edit profile</button>
-    </x-slot:trigger>
+    <hw:modal.trigger>Edit profile</hw:modal.trigger>
 
-    <form method="POST" action="{{ route('profile.update') }}" class="p-6">
-        @csrf
-        @method('PATCH')
-        {{-- fields --}}
-        <button type="submit">Save</button>
-    </form>
+    <hw:modal.content>
+        <form method="POST" action="{{ route('profile.update') }}" class="p-6">
+            @csrf
+            @method('PATCH')
+            {{-- fields --}}
+            <button type="submit">Save</button>
+        </form>
+    </hw:modal.content>
 </hw:modal>
 ```
 
@@ -105,18 +105,18 @@ No Turbo Frame, no dynamic content. The modal body is rendered server-side once 
 
 ```blade
 <hw:modal id="welcome-modal">
-    <x-slot:trigger>
-        <button type="button" data-action="modal#open">What's new?</button>
-    </x-slot:trigger>
+    <hw:modal.trigger>What's new?</hw:modal.trigger>
 
-    <div class="p-6 space-y-4">
-        <h2 class="text-xl font-semibold">Welcome to v2</h2>
-        <p>Here's what changed since you were last here.</p>
-        <ul class="list-disc pl-6">
-            <li>Inline comments</li>
-            <li>Faster search</li>
-        </ul>
-    </div>
+    <hw:modal.content>
+        <div class="p-6 space-y-4">
+            <h2 class="text-xl font-semibold">Welcome to v2</h2>
+            <p>Here's what changed since you were last here.</p>
+            <ul class="list-disc pl-6">
+                <li>Inline comments</li>
+                <li>Faster search</li>
+            </ul>
+        </div>
+    </hw:modal.content>
 </hw:modal>
 ```
 
