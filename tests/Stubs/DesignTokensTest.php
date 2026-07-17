@@ -351,6 +351,16 @@ it('keeps sidebar menu labels in flow during icon collapse', function () use ($n
         ->not->toContain('[data-slot="sidebar"][data-collapsible="icon"] [data-slot="sidebar-menu-button"] > span { @apply sr-only; }');
 });
 
+it('keeps sidebar inset sizing aligned with shadcn', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain('[data-slot="sidebar-inset"] { @apply relative flex min-h-svh max-w-full w-full flex-1 flex-col bg-background; }')
+        ->toContain('[data-slot="sidebar"][data-variant="inset"] ~ [data-slot="sidebar-inset"] { @apply md:m-2 md:ml-0 md:min-h-[calc(100svh-1rem)] md:rounded-xl md:shadow-sm; }')
+        ->toContain('[data-slot="sidebar"][data-variant="inset"][data-state="collapsed"] ~ [data-slot="sidebar-inset"] { @apply md:ml-0; }')
+        ->not->toContain('[data-slot="sidebar"][data-variant="inset"][data-state="collapsed"] ~ [data-slot="sidebar-inset"] { @apply md:ml-2; }');
+});
+
 it('hides the native select arrow when rendering a custom select icon', function () use ($novaPresetPath) {
     $css = file_get_contents($novaPresetPath);
 
