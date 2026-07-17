@@ -83,7 +83,6 @@
                 error-key=""
                 :old="false"
                 type="text"
-                icon-start="search"
                 clearable
                 data-slot="multi-select-search"
                 data-multi-select-target="search"

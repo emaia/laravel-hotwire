@@ -19,7 +19,7 @@ it('renders empty subcomponents with semantic slots', function () {
     $view = $this->blade(<<<'BLADE'
         <x-hw::empty-state>
             <x-hw::empty-state.header>
-                <x-hw::empty-state.media variant="icon"><x-hw::icon name="search" /></x-hw::empty-state.media>
+                <x-hw::empty-state.media variant="icon"><x-hw::icon name="info" /></x-hw::empty-state.media>
                 <x-hw::empty-state.title>No projects</x-hw::empty-state.title>
                 <x-hw::empty-state.description>Create your first project to get started.</x-hw::empty-state.description>
             </x-hw::empty-state.header>

@@ -80,8 +80,6 @@ it('emits search, select-all, max and positioning values', function () {
     $view->assertSee('data-multi-select-search-value="true"', false);
     $view->assertSee('type="text"', false);
     $view->assertSee('data-slot="multi-select-search"', false);
-    $view->assertSee('data-icon-start="true"', false);
-    $view->assertSee('data-slot="input-icon-start"', false);
     $view->assertSee('data-controller="clear-input"', false);
     $view->assertSee('data-clear-input-target="input"', false);
     $view->assertSee('data-clear-input-target="clearButton"', false);

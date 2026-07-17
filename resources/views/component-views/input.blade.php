@@ -1,7 +1,7 @@
 @aware(['name' => null, 'id' => null, 'errorKey' => null, 'required' => false])
 
 @php
-    extract($compute($name, $id, $errorKey, $required, $errors, $attributes));
+    extract($compute($name, $id, $errorKey, $required, $errors ?? new \Illuminate\Support\ViewErrorBag, $attributes));
 
     $inputAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
         'data-slot' => 'input',
@@ -24,23 +24,16 @@
         'class' => $class ?: null,
     ], $attributes, $stimulus, except: ['required', 'checked', 'auto-submit', 'auto-submit-delay'], protectedPrefixes: $internalPrefixes);
 
-    $hasIconStart = ! $isCheckable && $iconStart !== null && $iconStart !== '';
-    $hasIconEnd = ! $isCheckable && $iconEnd !== null && $iconEnd !== '';
-    $hasWrapper = $clearable || $hasIconStart || $hasIconEnd;
+    $hasWrapper = $clearable;
 @endphp
 
 @if ($hasWrapper)
 <span
     data-slot="input-wrapper"
     data-clearable="{{ $clearable ? 'true' : 'false' }}"
-    data-icon-start="{{ $hasIconStart ? 'true' : 'false' }}"
-    data-icon-end="{{ $hasIconEnd ? 'true' : 'false' }}"
     @if ($wrapperClass !== '') class="{{ $wrapperClass }}" @endif
     @if ($clearable) data-controller="clear-input" @endif
 >
-    @if ($hasIconStart)
-        <x-hw::icon :name="$iconStart" data-slot="input-icon-start" aria-hidden="true" />
-    @endif
 @endif
 
 <input
@@ -48,10 +41,6 @@
 />
 
 @if ($hasWrapper)
-    @if ($hasIconEnd)
-        <x-hw::icon :name="$iconEnd" data-slot="input-icon-end" aria-hidden="true" />
-    @endif
-
     @if ($clearable)
     <button
         type="button"

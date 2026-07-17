@@ -242,35 +242,6 @@ it('renders clear button hidden state as a removable class', function () {
         ->toMatch('/<button[^>]*\bclass="[^"]*\bhidden\b[^"]*"[^>]*data-slot="clear-input-button"|<button[^>]*data-slot="clear-input-button"[^>]*\bclass="[^"]*\bhidden\b[^"]*"/');
 });
 
-it('renders start and end icons inside the input wrapper', function () {
-    $view = $this->blade('<x-hw::input name="q" icon-start="search" icon-end="calendar" />');
-
-    $view->assertSee('data-slot="input-wrapper"', false);
-    $view->assertSee('data-icon-start="true"', false);
-    $view->assertSee('data-icon-end="true"', false);
-    $view->assertSee('data-slot="input-icon-start"', false);
-    $view->assertSee('data-slot="input-icon-end"', false);
-    $view->assertDontSee('data-controller="clear-input"', false);
-});
-
-it('combines input icons with clearable inputs', function () {
-    $view = $this->blade('<x-hw::input name="q" icon-start="search" clearable />');
-
-    $view->assertSee('data-icon-start="true"', false);
-    $view->assertSee('data-clearable="true"', false);
-    $view->assertSee('data-controller="clear-input"', false);
-    $view->assertSee('data-slot="clear-input-button"', false);
-});
-
-it('ignores icon props on checkable inputs', function () {
-    $view = $this->blade('<x-hw::input type="checkbox" name="notify" icon-start="search" icon-end="calendar" />');
-
-    $view->assertSee('data-checkable="true"', false);
-    $view->assertDontSee('data-slot="input-wrapper"', false);
-    $view->assertDontSee('data-slot="input-icon-start"', false);
-    $view->assertDontSee('data-slot="input-icon-end"', false);
-});
-
 // --- Wrapper: combination ---
 
 it('combines element + wrapper controllers correctly', function () {

@@ -454,6 +454,16 @@
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Input"
                 },
                 {
+                    "name": "input-group",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\InputGroup"
+                },
+                {
+                    "name": "input-group.addon",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\InputGroup\\Addon"
+                },
+                {
                     "name": "item",
                     "namespace": "hw",
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Item"
