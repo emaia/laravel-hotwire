@@ -30,13 +30,13 @@ it('uses the default slot as the trigger', function () {
     $view->assertSee('Continue');
 });
 
-it('renders the body slot for rich content', function () {
+it('renders the content slot for rich content', function () {
     $view = $this->blade('
         <x-hw::alert-dialog title="Archive project?">
             <button>Archive</button>
-            <x-slot:body>
+            <x-slot:content>
                 <p data-test="extra">Extra detail.</p>
-            </x-slot:body>
+            </x-slot:content>
         </x-hw::alert-dialog>
     ');
 
@@ -44,13 +44,13 @@ it('renders the body slot for rich content', function () {
     $view->assertSee('data-test="extra"', false);
 });
 
-it('renders the message when provided', function () {
-    $view = $this->blade('<x-hw::alert-dialog title="Continue?" message="This will proceed."><button>x</button></x-hw::alert-dialog>');
+it('renders the description when provided', function () {
+    $view = $this->blade('<x-hw::alert-dialog title="Continue?" description="This will proceed."><button>x</button></x-hw::alert-dialog>');
 
     $view->assertSee('This will proceed.');
 });
 
-it('does not render message element when empty', function () {
+it('does not render description element when empty', function () {
     $view = $this->blade('<x-hw::alert-dialog title="Continue?"><button>x</button></x-hw::alert-dialog>');
 
     $view->assertDontSee('data-slot="alert-dialog-description"', false);

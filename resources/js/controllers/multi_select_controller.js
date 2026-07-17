@@ -2,6 +2,7 @@
 import { Controller } from "@hotwired/stimulus";
 
 import { createFloating } from "./_floating.js";
+import { createTopLayer } from "./_top_layer.js";
 import { cancel, enter, leave } from "./_transition.js";
 
 export default class extends Controller {
@@ -41,6 +42,7 @@ export default class extends Controller {
         this.closeForCache = this.closeForCache.bind(this);
         this.handleSubmitEnd = this.handleSubmitEnd.bind(this);
         this.floating = null;
+        this.topLayer = null;
         this.nativeOptionsByValue = new Map();
         this.sortingOptions = false;
     }
@@ -360,6 +362,8 @@ export default class extends Controller {
     startFloating() {
         if (!this.hasTriggerTarget || !this.hasContentTarget) return;
 
+        this.topLayer ??= createTopLayer(this.contentTarget);
+        this.topLayer.show();
         this.floating ??= createFloating(this.triggerTarget, this.contentTarget, {
             side: this.sideValue,
             align: this.alignValue,
@@ -376,6 +380,7 @@ export default class extends Controller {
     cleanupFloating() {
         this.floating?.cleanup();
         this.floating = null;
+        this.topLayer?.hideAfterTransition();
     }
 
     selectedValues() {

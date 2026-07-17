@@ -32,9 +32,6 @@ export default class AlertDialogController extends Controller {
     }
 
     connect() {
-        this.handleEscapeKey = this.handleEscapeKey.bind(this);
-        document.addEventListener("keydown", this.handleEscapeKey, true);
-
         this.overlay = createOverlay(this, {
             modalTarget: this.modalTarget,
             backdropTarget: this.backdropTarget,
@@ -50,12 +47,14 @@ export default class AlertDialogController extends Controller {
             openDuration: this.openDurationValue,
             closeDuration: this.closeDurationValue,
             closeOnEscape: true,
+            escapeCapture: true,
+            stopEscapePropagation: true,
             closeOnClickOutside: this.closeOnClickOutsideValue,
+            onEscape: () => this.cancel(),
         });
     }
 
     disconnect() {
-        document.removeEventListener("keydown", this.handleEscapeKey, true);
         this.overlay?.cleanup();
     }
 
@@ -97,6 +96,7 @@ export default class AlertDialogController extends Controller {
         if (
             this.closeOnClickOutsideValue &&
             this.overlay?.isOpen &&
+            this.overlay?.isTop &&
             !this.dialogTarget.contains(event.target) &&
             event.target !== this.dialogTarget
         ) {
@@ -104,11 +104,4 @@ export default class AlertDialogController extends Controller {
         }
     }
 
-    handleEscapeKey(event) {
-        if (event.key !== "Escape" || !this.overlay?.isOpen) return;
-
-        event.stopImmediatePropagation();
-        event.preventDefault();
-        this.cancel();
-    }
 }

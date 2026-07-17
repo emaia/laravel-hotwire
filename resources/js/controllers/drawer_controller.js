@@ -93,6 +93,7 @@ export default class DrawerController extends Controller {
 
     clickOutside(event) {
         if (!this.closeOnClickOutsideValue || !this.isOpen) return;
+        if (!this.overlay?.isTop) return;
         if (this.dialogTarget.contains(event.target)) return;
 
         this.close();

@@ -48,12 +48,12 @@
                     <h2 data-slot="alert-dialog-title">{{ $title }}</h2>
                 @endif
 
-                @if ($message)
-                    <p data-slot="alert-dialog-description" style="text-wrap-mode: wrap">{{ $message }}</p>
+                @if ($description)
+                    <p data-slot="alert-dialog-description" style="text-wrap-mode: wrap">{{ $description }}</p>
                 @endif
 
-                @isset($body)
-                    {{ $body }}
+                @isset($content)
+                    {{ $content }}
                 @endisset
             </div>
 
