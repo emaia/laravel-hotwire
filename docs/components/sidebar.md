@@ -101,8 +101,8 @@ Composable app sidebar with collapsible navigation primitives.
 </hw:sidebar.provider>
 ```
 
-The tooltip controller depends on `tippy.js`. Run `php artisan hotwire:check --fix` to add missing controller
-dependencies detected in your views, or install it manually with `npm install tippy.js`.
+The tooltip controller uses the package's Floating UI dependency and only appears while the sidebar is collapsed when
+`data-tooltip-enabled-when-value` targets the icon rail state.
 
 ## Components
 

@@ -13,6 +13,8 @@ const offset = mock((options) => ({ name: "offset", options }));
 const flip = mock((options = {}) => ({ name: "flip", options }));
 const shift = mock((options = {}) => ({ name: "shift", options }));
 const size = mock((options) => ({ name: "size", options }));
+const arrow = mock((options) => ({ name: "arrow", options }));
+const hide = mock((options = {}) => ({ name: "hide", options }));
 
 mock.module("@floating-ui/dom", () => ({
     autoUpdate,
@@ -21,6 +23,8 @@ mock.module("@floating-ui/dom", () => ({
     flip,
     shift,
     size,
+    arrow,
+    hide,
 }));
 
 const { default: HoverCardController } = await import("../../resources/js/controllers/hover_card_controller.js");
@@ -35,6 +39,8 @@ beforeEach(() => {
     flip.mockClear();
     shift.mockClear();
     size.mockClear();
+    arrow.mockClear();
+    hide.mockClear();
 });
 
 afterEach(async () => {

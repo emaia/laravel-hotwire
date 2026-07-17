@@ -12,7 +12,28 @@ test("shows a basic tooltip on hover", async ({ page }) => {
 
     await page.locator('[data-controller="tooltip"]').hover();
 
-    await expect(page.locator("[data-tippy-root]")).toContainText("Hello tooltip");
+    await expect(page.locator('[data-slot="tooltip"]')).toContainText("Hello tooltip");
+    await expect(page.locator('[data-slot="tooltip"]')).toHaveAttribute("role", "tooltip");
+});
+
+test("opens on focus and closes on Escape", async ({ page }) => {
+    await page.setContent(`
+        <button data-controller="tooltip" data-tooltip-content-value="Focused tooltip">
+            Focus me
+        </button>
+    `);
+
+    await installControllers(page);
+
+    const button = page.locator('[data-controller="tooltip"]');
+
+    await button.focus();
+    await expect(page.locator('[data-slot="tooltip"]')).toContainText("Focused tooltip");
+    await expect(button).toHaveAttribute("aria-describedby", /hw-tooltip-/);
+
+    await page.keyboard.press("Escape");
+    await expect(page.locator('[data-slot="tooltip"]')).toHaveCount(0);
+    await expect(button).not.toHaveAttribute("aria-describedby", /hw-tooltip-/);
 });
 
 test("shows sidebar icon tooltips only after the sidebar collapses", async ({ page }) => {
@@ -45,19 +66,20 @@ test("shows sidebar icon tooltips only after the sidebar collapses", async ({ pa
     const button = page.locator('[data-slot="sidebar-menu-button"]');
 
     await button.hover();
-    await expect(page.locator("[data-tippy-root]")).toHaveCount(0);
+    await expect(page.locator('[data-slot="tooltip"]')).toHaveCount(0);
 
     await page.locator('[data-slot="sidebar-trigger"]').click();
     await expect(page.locator('[data-slot="sidebar"]')).toHaveAttribute("data-collapsible", "icon");
 
     await button.hover();
-    await expect(page.locator("[data-tippy-root]")).toContainText("Map");
+    await expect(page.locator('[data-slot="tooltip"]')).toContainText("Map");
+    await expect(page.locator('[data-slot="tooltip"]')).toHaveAttribute("data-side", "right");
 });
 
 async function installControllers(page) {
     await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
-    await page.addScriptTag({ path: "node_modules/@popperjs/core/dist/umd/popper.min.js" });
-    await page.addScriptTag({ path: "node_modules/tippy.js/dist/tippy.umd.min.js" });
+    await page.addScriptTag({ path: "node_modules/@floating-ui/core/dist/floating-ui.core.umd.min.js" });
+    await page.addScriptTag({ path: "node_modules/@floating-ui/dom/dist/floating-ui.dom.umd.min.js" });
     await page.addScriptTag({ content: await browserControllersScript() });
     await page.evaluate(() => {
         window.StimulusApplication = window.Stimulus.Application.start();
@@ -78,14 +100,18 @@ async function browserControllersScript() {
 
     const tooltip = (await readFile("resources/js/controllers/tooltip_controller.js", "utf8"))
         .replace('import { Controller } from "@hotwired/stimulus";', "")
-        .replace('import tippy from "tippy.js"; // https://atomiks.github.io/tippyjs', "")
-        .replace('import "tippy.js/dist/tippy.css";', "")
+        .replace(/import \{[^}]*\} from "\.\/_floating\.js";\s*/, "")
         .replace("export default class extends Controller", "class TooltipController extends Controller");
+
+    const floating = (await readFile("resources/js/controllers/_floating.js", "utf8"))
+        .replace(/import \{[^}]*\} from "@floating-ui\/dom";\s*/, "")
+        .replace("export function createFloating", "function createFloating");
 
     return `
         const { Controller } = window.Stimulus;
-        const tippy = window.tippy;
+        const { arrow, autoUpdate, computePosition, flip, hide, offset, shift, size } = window.FloatingUIDOM;
         ${overlay}
+        ${floating}
         ${sidebar}
         ${tooltip}
         window.SidebarController = SidebarController;

@@ -13,7 +13,17 @@ const autoUpdate = mock((anchor, floating, update) => {
     return cleanup;
 });
 
-const computePosition = mock(async () => ({ x: 12, y: 34, placement: "top-end" }));
+const computeState = {
+    placement: "top-end",
+    middlewareData: {},
+};
+
+const computePosition = mock(async () => ({
+    x: 12,
+    y: 34,
+    placement: computeState.placement,
+    middlewareData: computeState.middlewareData,
+}));
 const offset = mock((options) => ({ name: "offset", options }));
 const flip = mock((options = {}) => ({ name: "flip", options }));
 const shift = mock((options = {}) => ({ name: "shift", options }));
@@ -28,6 +38,8 @@ const size = mock((options) => {
 
     return { name: "size", options };
 });
+const arrow = mock((options) => ({ name: "arrow", options }));
+const hide = mock((options = {}) => ({ name: "hide", options }));
 
 mock.module("@floating-ui/dom", () => ({
     autoUpdate,
@@ -36,6 +48,8 @@ mock.module("@floating-ui/dom", () => ({
     flip,
     shift,
     size,
+    arrow,
+    hide,
 }));
 
 const { createFloating } = await import("../../resources/js/controllers/_floating.js");
@@ -55,7 +69,11 @@ beforeEach(() => {
     flip.mockClear();
     shift.mockClear();
     size.mockClear();
+    arrow.mockClear();
+    hide.mockClear();
     state.update = null;
+    computeState.placement = "top-end";
+    computeState.middlewareData = {};
 });
 
 afterEach(() => {
@@ -103,6 +121,52 @@ test("omits flip and shift middleware when disabled", async () => {
 
     expect(flip).not.toHaveBeenCalled();
     expect(shift).not.toHaveBeenCalled();
+});
+
+test("supports arrow, hide and disabled size middleware", async () => {
+    const anchor = document.createElement("button");
+    const floating = document.createElement("div");
+    const arrowElement = document.createElement("div");
+    computeState.placement = "top";
+    computeState.middlewareData = {
+        arrow: { x: 6 },
+        hide: { referenceHidden: true },
+    };
+
+    const instance = createFloating(anchor, floating, {
+        arrowElement,
+        arrowPadding: 6,
+        hideWhenDetached: true,
+        shiftPadding: 12,
+        size: false,
+    });
+
+    await instance.update();
+
+    expect(shift).toHaveBeenCalledWith({ padding: 12 });
+    expect(size).not.toHaveBeenCalled();
+    expect(arrow).toHaveBeenCalledWith({ element: arrowElement, padding: 6 });
+    expect(hide).toHaveBeenCalled();
+    expect(arrowElement.style.left).toBe("6px");
+    expect(arrowElement.dataset.side).toBe("top");
+    expect(arrowElement.style.bottom).toBe("-5px");
+    expect(floating.hasAttribute("data-anchor-hidden")).toBe(true);
+});
+
+test("removes data-anchor-hidden when the anchor is visible", async () => {
+    const floating = document.createElement("div");
+    floating.setAttribute("data-anchor-hidden", "");
+    computeState.middlewareData = {
+        hide: { referenceHidden: false, escaped: false },
+    };
+
+    const instance = createFloating(document.createElement("button"), floating, {
+        hideWhenDetached: true,
+    });
+
+    await instance.update();
+
+    expect(floating.hasAttribute("data-anchor-hidden")).toBe(false);
 });
 
 test("does not start auto-update twice and cleans up on stop", async () => {

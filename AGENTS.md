@@ -86,7 +86,7 @@ registered here**, or the commands won't see it.
   identifiers the component depends on — keep it in sync with what the Blade view actually mounts, since
   `hotwire:check` verifies these are published).
 - `controllers` entries: `source` (path to the `.js`/`.ts` file), `docs`, `category`, `description`, and optional
-  `npm` (a `package => version` map for third-party deps like `maska`, `tippy.js`, `date-fns`, `@emaia/sonner`).
+  `npm` (a `package => version` map for third-party deps like `@floating-ui/dom`, `maska`, `date-fns`, `@emaia/sonner`).
 - Identifiers follow the Stimulus naming rules above — substrate-folder controllers use the `--` separator
   (`turbo--progress`, `optimistic--form`, `dev--log`).
 - Every registered component/controller should ship a matching doc file under `docs/` at the path given in the entry.
