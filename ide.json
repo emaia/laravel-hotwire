@@ -229,6 +229,16 @@
                     "className": "\\Emaia\\LaravelHotwire\\Components\\CheckboxGroup\\Item"
                 },
                 {
+                    "name": "color-scheme.script",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\ColorScheme\\Script"
+                },
+                {
+                    "name": "color-scheme.toggle",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\ColorScheme\\Toggle"
+                },
+                {
                     "name": "conditional-field",
                     "namespace": "hw",
                     "className": "\\Emaia\\LaravelHotwire\\Components\\ConditionalField"
