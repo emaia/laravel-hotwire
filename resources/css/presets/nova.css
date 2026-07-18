@@ -452,8 +452,8 @@
     [data-slot="file-upload"][data-dragging="true"] [data-slot="file-upload-dropzone"] { @apply border-primary bg-primary/5 text-foreground; }
     [data-slot="file-upload"][aria-invalid="true"] [data-slot="file-upload-dropzone"] { @apply border-destructive ring-3 ring-destructive/20; }
 
-    [data-slot="attachment-group"] { @apply flex min-w-0 scroll-px-1 gap-3 overflow-x-auto overscroll-x-contain py-1; }
-    [data-slot="attachment-group"] > [data-slot="attachment"] { @apply flex-none; }
+    [data-slot="attachment-group"] { @apply flex min-w-0 flex-col gap-3 py-1; }
+    [data-slot="attachment-group"] > [data-slot="attachment"] { @apply w-full; }
     [data-slot="attachment"] { @apply relative flex w-fit max-w-full min-w-0 shrink-0 flex-wrap rounded-xl border bg-card text-card-foreground transition-colors focus-within:ring-1 focus-within:ring-ring/50 has-[>a]:hover:bg-muted/50 has-[>button]:hover:bg-muted/50 data-[state=error]:border-destructive/30 data-[state=idle]:border-dashed; }
     [data-slot="attachment"][data-size="default"] { @apply gap-2 text-sm has-data-[slot=attachment-content]:px-2.5 has-data-[slot=attachment-content]:py-2 has-data-[slot=attachment-media]:p-2; }
     [data-slot="attachment"][data-size="sm"] { @apply gap-2.5 text-xs has-data-[slot=attachment-content]:px-2 has-data-[slot=attachment-content]:py-1.5 has-data-[slot=attachment-media]:p-1.5; }

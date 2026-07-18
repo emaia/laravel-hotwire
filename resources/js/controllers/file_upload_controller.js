@@ -258,7 +258,7 @@ export default class extends Controller {
         this.activeUploads = item.state === "uploading" ? Math.max(0, this.activeUploads - 1) : this.activeUploads;
         this.maybeRenderStream(xhr?.responseText ?? null);
 
-        const text = this.extractErrorMessage(message);
+        const text = this.extractErrorMessage(message, xhr);
         item.state = "error";
         this.setState(item, "error");
         this.showProgress(item, false);
@@ -334,8 +334,14 @@ export default class extends Controller {
         return response[this.responseKeyValue] ?? null;
     }
 
-    extractErrorMessage(raw) {
-        if (typeof raw === "string") return raw || this.message("uploadFailed");
+    extractErrorMessage(raw, xhr = null) {
+        if (xhr?.status === 413) return this.message("fileTooBig");
+
+        if (typeof raw === "string") {
+            if (this.isHtmlResponse(raw, xhr)) return this.message("uploadFailed");
+
+            return raw || this.message("uploadFailed");
+        }
         if (raw == null) return this.message("uploadFailed");
 
         if (typeof raw === "object") {
@@ -349,6 +355,13 @@ export default class extends Controller {
         }
 
         return String(raw);
+    }
+
+    isHtmlResponse(body, xhr = null) {
+        const contentType = xhr?.getResponseHeader?.("content-type")?.toLowerCase() ?? "";
+
+        return contentType.includes("html")
+            || /^\s*(?:<!doctype\s+html|<html[\s>]|<head[\s>]|<body[\s>])/i.test(body);
     }
 
     appendHidden(item, value) {

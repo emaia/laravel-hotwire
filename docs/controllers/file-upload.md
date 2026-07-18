@@ -71,6 +71,9 @@ field error as the user-facing message:
 When `turboStream` is true, string responses are parsed and only bodies with an actual `<turbo-stream>` element are
 passed to `Turbo.renderStreamMessage` on success and error.
 
+For non-JSON failures, `413 Payload Too Large` uses the `fileTooBig` message and HTML error pages fall back to the
+generic `uploadFailed` message instead of rendering the full response body in the attachment card.
+
 Malformed JSON-like responses are not treated as upload tokens, so they do not append hidden inputs. In `multiple` mode,
 selecting a file that is already queued, uploading or done is ignored.
 

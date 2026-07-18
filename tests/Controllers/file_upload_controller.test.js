@@ -287,6 +287,49 @@ test("server errors normalize Laravel validation JSON and mark the attachment er
     expect(description?.textContent).toBe("The file must be an image.");
 });
 
+test("413 HTML responses use the file-too-big message instead of rendering the response body", async () => {
+    await mount(defaultHtml('data-file-upload-multiple-value="true"'));
+    const errors = [];
+    mounted.root.addEventListener("file-upload:error", (event) => errors.push(event.detail.text));
+
+    mounted.controller.select({
+        target: { files: [file("small.txt"), file("huge.zip", { size: 1024 })], value: "x" },
+    });
+    requests[0].respond(201, { token: "small" });
+    requests[1].respond(
+        413,
+        "<!doctype html><html><body>Request Entity Too Large</body></html>",
+        { "content-type": "text/html" }
+    );
+    await wait(0);
+
+    const descriptions = [...mounted.root.querySelectorAll("[data-file-upload-description]")]
+        .map((element) => element.textContent);
+
+    expect(errors).toEqual(["File is too large"]);
+    expect(descriptions).toContain("File is too large");
+    expect(descriptions.some((text) => text.includes("<!doctype") || text.includes("<html"))).toBe(false);
+    expect(mounted.root.querySelector('input[type="hidden"][name="avatar"]')?.value).toBe("small");
+});
+
+test("HTML error pages fall back to the generic upload failure message", async () => {
+    await mount();
+    const errors = [];
+    mounted.root.addEventListener("file-upload:error", (event) => errors.push(event.detail.text));
+
+    mounted.controller.select({ target: { files: [file("photo.png")], value: "x" } });
+    requests[0].respond(
+        500,
+        "<html><body>Server Error</body></html>",
+        { "content-type": "text/html; charset=UTF-8" }
+    );
+    await wait(0);
+
+    const description = mounted.root.querySelector("[data-file-upload-description]");
+    expect(errors).toEqual(["Upload failed"]);
+    expect(description?.textContent).toBe("Upload failed");
+});
+
 test("malformed JSON responses do not become hidden input values", async () => {
     await mount();
     mounted.controller.select({ target: { files: [file("photo.png")], value: "x" } });
