@@ -4,6 +4,7 @@ use Emaia\LaravelHotwire\Components\Accordion;
 use Emaia\LaravelHotwire\Components\Alert;
 use Emaia\LaravelHotwire\Components\AlertDialog;
 use Emaia\LaravelHotwire\Components\AspectRatio;
+use Emaia\LaravelHotwire\Components\Attachment;
 use Emaia\LaravelHotwire\Components\Avatar;
 use Emaia\LaravelHotwire\Components\Badge;
 use Emaia\LaravelHotwire\Components\Breadcrumb;
@@ -100,6 +101,14 @@ return [
             'docs' => 'docs/components/aspect-ratio.md',
             'category' => 'display',
             'description' => 'Static media wrapper that preserves a configurable aspect ratio',
+            'controllers' => [],
+        ],
+        'attachment' => [
+            'class' => Attachment::class,
+            'view' => 'hotwire::component-views.attachment',
+            'docs' => 'docs/components/attachment.md',
+            'category' => 'display',
+            'description' => 'Composable file attachment primitive with media, metadata, state and actions',
             'controllers' => [],
         ],
         'avatar' => [
@@ -283,7 +292,7 @@ return [
             'view' => 'hotwire::component-views.file-upload',
             'docs' => 'docs/components/file-upload.md',
             'category' => 'forms',
-            'description' => 'Dropzone wrapper — drag-drop, queue, progress, server-side endpoint, optional hidden input and DELETE',
+            'description' => 'Native drag-drop upload with queue, progress, attachment UI, optional hidden input and DELETE',
             'controllers' => ['file-upload'],
         ],
         'flash-container' => [
@@ -765,8 +774,7 @@ return [
             'source' => 'resources/js/controllers/file_upload_controller.js',
             'docs' => 'docs/controllers/file-upload.md',
             'category' => 'forms',
-            'description' => 'Dropzone-backed multi file upload — drag-drop, queue, progress, emits success/error/progress events, optional hidden input and DELETE',
-            'npm' => ['@deltablot/dropzone' => '^7.4.0'],
+            'description' => 'Native multi file upload — drag-drop, queue, progress, emits success/error/progress events, optional hidden input and DELETE',
         ],
         'gtm' => [
             'source' => 'resources/js/controllers/gtm_controller.js',

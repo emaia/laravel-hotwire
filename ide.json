@@ -79,6 +79,51 @@
                     "className": "\\Emaia\\LaravelHotwire\\Components\\AspectRatio"
                 },
                 {
+                    "name": "attachment",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Attachment"
+                },
+                {
+                    "name": "attachment.action",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Attachment\\Action"
+                },
+                {
+                    "name": "attachment.actions",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Attachment\\Actions"
+                },
+                {
+                    "name": "attachment.content",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Attachment\\Content"
+                },
+                {
+                    "name": "attachment.description",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Attachment\\Description"
+                },
+                {
+                    "name": "attachment.group",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Attachment\\Group"
+                },
+                {
+                    "name": "attachment.media",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Attachment\\Media"
+                },
+                {
+                    "name": "attachment.title",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Attachment\\Title"
+                },
+                {
+                    "name": "attachment.trigger",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Attachment\\Trigger"
+                },
+                {
                     "name": "avatar",
                     "namespace": "hw",
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Avatar"

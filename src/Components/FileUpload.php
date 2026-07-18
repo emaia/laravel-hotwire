@@ -14,27 +14,19 @@ class FileUpload extends Component
 {
     use StripsNullProps;
 
-    /**
-     * Short `:messages` keys → Dropzone `dict*` option keys. The shapes are deliberately
-     * the camelCased part of the dict* name (with `Message` suffix dropped for the two
-     * keys that have it), so `:messages="['default' => '…', 'fileTooBig' => '…']"` reads
-     * naturally. Unknown short keys throw so typos surface early; Dropzone-specific dict
-     * additions can always be passed through `:options` directly.
-     */
-    private const MESSAGE_DICT_MAP = [
-        'default' => 'dictDefaultMessage',
-        'fallback' => 'dictFallbackMessage',
-        'fallbackText' => 'dictFallbackText',
-        'fileTooBig' => 'dictFileTooBig',
-        'invalidFileType' => 'dictInvalidFileType',
-        'responseError' => 'dictResponseError',
-        'cancelUpload' => 'dictCancelUpload',
-        'cancelUploadConfirmation' => 'dictCancelUploadConfirmation',
-        'uploadCanceled' => 'dictUploadCanceled',
-        'removeFile' => 'dictRemoveFile',
-        'removeFileConfirmation' => 'dictRemoveFileConfirmation',
-        'maxFilesExceeded' => 'dictMaxFilesExceeded',
-        'fileSizeUnits' => 'dictFileSizeUnits',
+    private const MESSAGE_KEYS = [
+        'idle',
+        'idleMultiple',
+        'hint',
+        'button',
+        'uploading',
+        'uploaded',
+        'uploadFailed',
+        'removed',
+        'removeFile',
+        'fileTooBig',
+        'invalidFileType',
+        'maxFilesExceeded',
     ];
 
     public string $identifier;
@@ -57,7 +49,6 @@ class FileUpload extends Component
         public bool $turboStream = false,
         public mixed $value = null,
         public ?array $messages = null,
-        public ?array $options = null,
         public string $class = '',
         public string $controller = 'file-upload',
         public ?Htmlable $stimulus = null,
@@ -66,16 +57,21 @@ class FileUpload extends Component
             throw new InvalidArgumentException('hw:file-upload requires a `url` prop.');
         }
 
+        if (! preg_match('/^[a-z0-9][a-z0-9_-]*(?:--[a-z0-9][a-z0-9_-]*)*$/', $controller)) {
+            throw new InvalidArgumentException('Invalid file-upload controller identifier.');
+        }
+
         foreach ($messages ?? [] as $key => $_value) {
-            if (! isset(self::MESSAGE_DICT_MAP[$key])) {
-                $supported = implode(', ', array_keys(self::MESSAGE_DICT_MAP));
+            if (! in_array($key, self::MESSAGE_KEYS, true)) {
+                $supported = implode(', ', self::MESSAGE_KEYS);
                 throw new InvalidArgumentException(
                     "Unknown file-upload message key [{$key}]. Supported keys: {$supported}. ".
-                    'Pass uncommon Dropzone dict* options via `:options` instead.'
+                    'Use one of the native message keys.'
                 );
             }
         }
 
+        $this->accept = $this->normalizeAccept($accept);
         $this->identifier = $this->controller;
     }
 
@@ -101,7 +97,7 @@ class FileUpload extends Component
             "data-{$this->identifier}-delete-url-",
             "data-{$this->identifier}-parallel-uploads-",
             "data-{$this->identifier}-turbo-stream-",
-            "data-{$this->identifier}-options-",
+            "data-{$this->identifier}-messages-",
         ];
         $data['compute'] = $this->computeResolved(...);
 
@@ -124,6 +120,7 @@ class FileUpload extends Component
         $resolvedId = $id ?: ($hasName ? FieldKey::toId($name) : 'hw-file-upload-'.uniqid());
         $resolvedErrorKey = $errorKey ?: ($hasName ? FieldKey::toErrorKey($name) : '');
         $errorId = $resolvedId.'-error';
+        $describedBy = null;
 
         $hiddenName = null;
         if ($hasName) {
@@ -134,52 +131,51 @@ class FileUpload extends Component
 
         $hasErrors = $resolvedErrorKey !== ''
             && ($errorsBag->has($resolvedErrorKey) || $errorsBag->has($resolvedErrorKey.'.*'));
+        if ($hasErrors) {
+            $describedBy = $errorId;
+        }
 
         $isRequired = ($attributes->has('required') && $attributes->get('required') !== false) || $required;
-
-        $keyActions = "keydown.enter->{$this->identifier}#openPicker keydown.space->{$this->identifier}#openPicker";
-
-        $hasAriaLabel = $attributes->has('aria-label');
 
         $initialValues = $hasName ? $this->resolveInitialValues($name) : [];
 
         return [
             'resolvedId' => $resolvedId,
+            'inputId' => $resolvedId.'-input',
+            'inputFormId' => $resolvedId.'-input-owner',
             'resolvedErrorKey' => $resolvedErrorKey,
             'errorId' => $errorId,
+            'describedBy' => $describedBy,
             'hiddenName' => $hiddenName,
             'hasErrors' => $hasErrors,
             'isRequired' => $isRequired,
             'mergedController' => $this->identifier,
-            'mergedAction' => $keyActions,
-            'hasAriaLabel' => $hasAriaLabel,
             'initialValues' => $initialValues,
-            'optionsJson' => $this->resolveOptionsJson(),
+            'messagesJson' => $this->resolveMessagesJson(),
         ];
     }
 
-    /**
-     * Build the JSON-encoded Dropzone options bag from the `messages` + `options` props.
-     *
-     * `messages` short keys (`default`, `fileTooBig`) map to Dropzone's `dict*` form
-     * (`dictDefaultMessage`, `dictFileTooBig`). `options` is the escape hatch — it merges
-     * last and wins on key collision, so an explicit `dictDefaultMessage` overrides any
-     * mapping from `messages`. Returns null when both inputs are empty.
-     */
-    private function resolveOptionsJson(): ?string
+    private function resolveMessagesJson(): ?string
     {
-        $dictFromMessages = [];
-        foreach ($this->messages ?? [] as $key => $value) {
-            $dictFromMessages[self::MESSAGE_DICT_MAP[$key]] = $value;
-        }
-
-        $merged = array_merge($dictFromMessages, $this->options ?? []);
-
-        if ($merged === []) {
+        if (($this->messages ?? []) === []) {
             return null;
         }
 
-        return json_encode($merged, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        return json_encode($this->messages, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    }
+
+    private function normalizeAccept(?string $accept): ?string
+    {
+        if ($accept === null) {
+            return null;
+        }
+
+        $rules = array_values(array_filter(
+            array_map(fn (string $rule): string => strtolower(trim($rule)), explode(',', $accept)),
+            fn (string $rule): bool => $rule !== '',
+        ));
+
+        return $rules === [] ? null : implode(',', $rules);
     }
 
     /**

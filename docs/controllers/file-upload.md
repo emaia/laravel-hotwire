@@ -1,197 +1,90 @@
-# File upload
+# File Upload
 
-Wrapper around [Dropzone](https://github.com/NicolasCARPi/dropzone) 7.x (the actively maintained
-`@deltablot/dropzone` fork). Instantiates Dropzone on the controller element, wires the 5 lifecycle
-events into Stimulus dispatches, optionally appends a hidden input on success, fires DELETE on
-removal, writes upload progress to an `aria-live` status region and exposes `defaultOptions()` /
-`afterInit()` hooks for subclasses.
+Native upload controller for `<hw:file-upload>`. It owns file selection, drag/drop, validation, queueing, XHR upload
+progress, hidden input lifecycle, optional DELETE-on-remove and Turbo Stream responses.
 
 **Identifier:** `file-upload`  
-**Install:** `php artisan hotwire:controllers file-upload`  
-**npm dep:** `@deltablot/dropzone ^7.4.0`
-
-## Requirements
-
-- `@deltablot/dropzone ^7.4.0` (`hotwire:check` reports it as required when the controller is in use)
-
-The upstream `dropzone` package on npm is stuck at a 2021 beta — this controller wraps the
-maintained fork. The fork's API is API-compatible for everything the wrapper uses
-(`acceptedFiles`, `maxFilesize`, `maxFiles`, `paramName`, `parallelUploads`, `uploadMultiple`,
-`previewsContainer`, `headers`, plus the `addedfile` / `uploadprogress` / `success` / `error` /
-`removedfile` events).
+**Install:** controllers auto-load after `php artisan hotwire:install`; publish only when customising with `php artisan hotwire:controllers file-upload`.
+**npm deps:** none
 
 ## Values
 
-| Value             | Type    | Default       | Description                                                                                              |
-|-------------------|---------|---------------|----------------------------------------------------------------------------------------------------------|
-| `url`             | String  | *(required)*  | Endpoint that accepts a `multipart/form-data` POST per file and returns JSON                              |
-| `hiddenName`      | String  | `""`          | `name` attribute used when appending the hidden input on success. The Blade component computes this from `name` (+ `[]` when `multiple`); when wiring the controller manually, set it explicitly |
-| `accept`          | String  | `""`          | MIME pattern or extension list (`"image/*"`, `".pdf,.csv"`) — forwarded to Dropzone's `acceptedFiles`     |
-| `maxSizeBytes`    | Number  | `0`           | Per-file size limit. Converted to MB before reaching Dropzone (`maxFilesize`). `0` disables the limit    |
-| `maxFiles`        | Number  | `0`           | Maximum number of files the queue accepts. `0` disables the cap                                          |
-| `multiple`        | Boolean | `false`       | Multi-file selection. Mirrored from the Blade component; not consumed directly by the controller         |
-| `preview`         | Boolean | `true`        | When `false`, Dropzone runs with `previewsContainer: false` — no client-side preview list                 |
-| `emitHidden`      | Boolean | `true`        | When `false`, the controller does not append a hidden input on success                                   |
-| `paramName`       | String  | `"file"`      | Multipart field name used in each XHR                                                                    |
-| `responseKey`     | String  | `"token"`     | Key read from the JSON response to extract the value written into the hidden input                        |
-| `deleteUrl`       | String  | `""`          | DELETE endpoint hit when a queued file is removed. `:token` is substituted with the extracted value      |
-| `parallelUploads` | Number  | `3`           | Concurrent XHRs in the queue                                                                             |
-| `turboStream`     | Boolean | `false`       | When `true`, sends `Accept: text/vnd.turbo-stream.html, application/json` on every upload XHR; on success/error, if the response body looks like a Turbo Stream, hands it to `Turbo.renderStreamMessage` and skips the automatic hidden input on success |
-| `options`         | Object  | `{}`          | Extra Dropzone options, JSON-encoded into the value. Spread over the wrapper's per-prop defaults; subclass `defaultOptions()` still takes precedence. Use for `dict*` localization, `thumbnailMethod`, `resizeQuality`, etc. The Blade component populates this from the `:options` + `:messages` props |
+| Value             | Type    | Default  | Description                                                                                 |
+|-------------------|---------|----------|---------------------------------------------------------------------------------------------|
+| `url`             | String  | required | Upload endpoint.                                                                            |
+| `hiddenName`      | String  | `""`     | Hidden input name appended on success.                                                      |
+| `accept`          | String  | `""`     | Native accept list, also checked client-side.                                               |
+| `maxSizeBytes`    | Number  | `0`      | Per-file client-side size limit. `0` disables it.                                           |
+| `maxFiles`        | Number  | `0`      | Maximum queued files. `0` disables it.                                                      |
+| `multiple`        | Boolean | `false`  | Allows multiple files. Single mode replaces current local items before queueing a new file. |
+| `preview`         | Boolean | `true`   | Renders client-side attachment cards when true.                                             |
+| `emitHidden`      | Boolean | `true`   | Appends a hidden input on success when a value is extracted.                                |
+| `paramName`       | String  | `file`   | Multipart field name.                                                                       |
+| `responseKey`     | String  | `token`  | JSON key used as the hidden input value.                                                    |
+| `deleteUrl`       | String  | `""`     | DELETE endpoint with one or more `:token` placeholders.                                     |
+| `parallelUploads` | Number  | `3`      | Concurrent native XHR uploads.                                                              |
+| `turboStream`     | Boolean | `false`  | Sends Turbo Stream Accept header and renders stream bodies.                                 |
+| `messages`        | Object  | `{}`     | Native labels and validation messages.                                                      |
 
 ## Targets
 
-| Target            | Required | Description                                                                                  |
-|-------------------|----------|----------------------------------------------------------------------------------------------|
-| `announcer`       | optional | `aria-live="polite"` region. Controller writes upload milestones to its `textContent`        |
-| `previewTemplate` | optional | A `<template>` element whose `innerHTML` is forwarded as Dropzone's `previewTemplate` option. The Blade component populates this from `<x-slot:preview_template>`. Subclass `defaultOptions()` still wins over the slot |
+| Target      | Required                | Description                                  |
+|-------------|-------------------------|----------------------------------------------|
+| `input`     | yes                     | Hidden native `<input type="file">`.         |
+| `dropzone`  | yes                     | Keyboard/click/drag-drop activation surface. |
+| `list`      | yes                     | Attachment list container.                   |
+| `template`  | yes when `preview=true` | Attachment card template cloned per file.    |
+| `announcer` | optional                | `aria-live` status region.                   |
 
 ## Actions
 
-| Action       | Description                                                                                  |
-|--------------|----------------------------------------------------------------------------------------------|
-| `openPicker` | Calls `preventDefault()` on the triggering event (so Space does not scroll) and clicks Dropzone's hidden file input. Wired via `data-action="keydown.enter->file-upload#openPicker keydown.space->file-upload#openPicker"` |
+| Action                                 | Description                                                    |
+|----------------------------------------|----------------------------------------------------------------|
+| `openPicker`                           | Opens the native file picker.                                  |
+| `select`                               | Queues files from the native input.                            |
+| `dragEnter` / `dragOver` / `dragLeave` | Manage drag state on the root.                                 |
+| `drop`                                 | Queues dropped files.                                          |
+| `remove`                               | Aborts or removes an upload and cleans up hidden/remote state. |
 
 ## Events
 
-| Event                  | Detail                          | Fires when                                                                          |
-|------------------------|---------------------------------|-------------------------------------------------------------------------------------|
-| `file-upload:ready`    | `{}`                            | Dropzone is instantiated and event handlers are wired                                |
-| `file-upload:added`    | `{ file }`                      | A file is added to the queue (drag-drop, picker or programmatic)                     |
-| `file-upload:progress` | `{ file, percent, bytes }`      | XHR upload progress tick                                                             |
-| `file-upload:success`  | `{ file, response, value }`     | Endpoint returned 2xx. `value` is the extracted result of `responseKey` lookup. `null` when a Turbo Stream was rendered (the server-rendered card owns the hidden input) |
-| `file-upload:error`    | `{ file, message, xhr, text }`  | Endpoint returned non-2xx or network error. `text` is a normalised user-facing string (handles Laravel's `{ message }` and `{ errors: { field: [...] } }` JSON shapes; falls back to `"Upload failed"`) |
-| `file-upload:removed`  | `{ file }`                      | File is removed from the queue (UI button, programmatic `removeFile`, or abort)      |
+| Event                  | Detail                         | Fires when                                                                               |
+|------------------------|--------------------------------|------------------------------------------------------------------------------------------|
+| `file-upload:ready`    | `{}`                           | Controller connects.                                                                     |
+| `file-upload:added`    | `{ file }`                     | A file enters the queue.                                                                 |
+| `file-upload:progress` | `{ file, percent, bytes }`     | Native XHR upload progress updates.                                                      |
+| `file-upload:success`  | `{ file, response, value }`    | Upload returns 2xx. `value` is extracted from `responseKey`; stream success uses `null`. |
+| `file-upload:error`    | `{ file, message, xhr, text }` | Client validation fails, network fails or server returns non-2xx.                        |
+| `file-upload:removed`  | `{ file }`                     | User removes an attachment.                                                              |
 
-Event names use the controller identifier. When subclassed via `controller="my-upload"`, the
-dispatched names become `my-upload:added`, etc.
+Event names follow the controller identifier when subclassed.
 
-## Basic usage (raw, without the Blade component)
+## Response Handling
 
-```html
-<div data-controller="file-upload"
-     data-action="keydown.enter->file-upload#openPicker keydown.space->file-upload#openPicker"
-     data-file-upload-url-value="/uploads"
-     data-file-upload-hidden-name-value="avatar"
-     tabindex="0"
-     role="button"
-     aria-label="Choose files">
-    <div role="status" aria-live="polite" data-file-upload-target="announcer"></div>
-</div>
+JSON responses are parsed automatically. Plain strings are treated as the value. Laravel validation JSON uses the first
+field error as the user-facing message:
+
+```json
+{ "errors": { "file": ["The file must be an image."] } }
 ```
 
-The `<hw:file-upload>` Blade component handles the boilerplate (id/errorKey derivation,
-keyboard wiring, announcer, attribute filtering); reach for raw HTML only when the component's
-props are too restrictive.
+When `turboStream` is true, string responses are parsed and only bodies with an actual `<turbo-stream>` element are
+passed to `Turbo.renderStreamMessage` on success and error.
 
-## Value extraction (`responseKey`)
-
-On `success`, the controller calls `extractValue(response)`:
-
-- `null` → `null` (no hidden appended)
-- plain `string` → used as-is
-- object → returns `response[responseKey]` or `null` if missing
-
-Three patterns that flow naturally:
-
-```js
-// 1. Plain token endpoint — default
-{ "token": "01HQVZ…" }                             // responseKey="token"
-
-// 2. Spatie media library — UUID is the canonical reference
-{ "uuid": "9b…" }                                  // responseKey="uuid"
-
-// 3. Direct S3 (presigned URL upload) — public URL is what the form persists
-{ "url": "https://cdn.example.com/uploads/…" }     // responseKey="url"
-```
-
-## Hidden input append / remove
-
-On `success`, when `emitHidden` is true and the extracted value is non-null, the controller
-appends `<input type="hidden" name="{hiddenName}" value="{value}" data-hw-upload>` to the
-controller element. The input is keyed to the file via a `WeakMap`, so on `removedfile` the right
-input is removed without needing identifiers in the DOM.
-
-When `hiddenName` is empty the append is skipped — useful when the server-rendered card embeds its
-own hidden input (see the [stream-rendered recipe](../components/file-upload.md#3-stream-rendered-card-turbo-streams-mode)).
-
-## DELETE on remove
-
-When `deleteUrl` is set and the removed file has a recorded value, the controller fires:
-
-```
-DELETE {deleteUrl with :token substituted}
-  X-CSRF-TOKEN: {value from <meta name="csrf-token">}
-```
-
-The placeholder `:token` is URI-encoded. Failures are logged to `console.error` and do not block
-the rest of the flow — the hidden input is removed regardless. When `deleteUrl` is empty, removal
-is local only (the queue drops the file and the hidden input goes away, the server is never told).
-
-## Announcer messages
-
-When the `announcer` target is present, the controller writes:
-
-| Event        | Message               |
-|--------------|-----------------------|
-| `addedfile`  | `Uploading {name}`    |
-| `success`    | `Uploaded {name}`     |
-| `error`      | `Upload failed: {msg}` |
-| `removedfile`| `Removed {name}`      |
-
-Per-tick `uploadprogress` is intentionally not announced — screen readers would read it on every
-update, which is noise. To override the messages, subclass and override `announce(message)` or
-override the individual event handlers via `defaultOptions()`/`afterInit()`.
+Malformed JSON-like responses are not treated as upload tokens, so they do not append hidden inputs. In `multiple` mode,
+selecting a file that is already queued, uploading or done is ignored.
 
 ## CSRF
 
-The controller reads `<meta name="csrf-token">` at construction time and forwards the token to
-Dropzone via the `headers` option (`X-CSRF-TOKEN`). The same header is sent on the DELETE request.
-Apps without the meta tag (public forms behind explicit middleware overrides) skip the header.
-
-## Extending via subclass
-
-The `defaultOptions()` and `afterInit()` hooks mirror the chart/map pattern:
-
-```js
-// resources/js/controllers/medialibrary_upload_controller.js
-import FileUploadController from "@hotwire/file_upload_controller.js";
-
-export default class extends FileUploadController {
-    defaultOptions() {
-        return {
-            // Spatie Media Library's preview wants the original filename in the UI
-            renameFile: (file) => `${Date.now()}-${file.name}`,
-            // Custom thumbnail template
-            previewTemplate: document.querySelector("#media-preview-template").innerHTML,
-        };
-    }
-
-    afterInit() {
-        // Custom Dropzone events not covered by the base dispatches
-        this.dropzone.on("thumbnail", (file, dataUrl) => {
-            this.dispatch("thumbnail", { detail: { file, dataUrl } });
-        });
-    }
-}
-```
-
-Mount it via the Blade component's `controller=` prop:
-
-```blade
-<hw:file-upload controller="medialibrary-upload" name="avatar_uuid" url="..." response-key="uuid" />
-```
-
-All `data-*-value` and `data-*-target` attributes follow the new identifier (`data-medialibrary-upload-url-value`, etc.).
+The controller reads `<meta name="csrf-token">` and sends `X-CSRF-TOKEN` on upload and DELETE requests when present.
 
 ## Cleanup
 
-`disconnect()` destroys the Dropzone instance, aborting any in-flight XHRs and removing the
-preview DOM. The `WeakMap` keyed by file is dropped along with the controller. Re-connecting (e.g.
-after a Turbo morph) starts fresh — the previous queue does not survive.
+`disconnect()` aborts in-flight native XHR uploads and ignores any late XHR callbacks, so removed or disconnected
+uploads cannot append hidden inputs later. On reconnect, completed cards already in the DOM are hydrated before new IDs
+are assigned, which avoids ID collisions across Turbo morphs.
 
-## See also
+## See Also
 
-- [`<hw:file-upload>`](../components/file-upload.md) — Blade props, field composition, recipes
-- [`<hw:file>`](../components/file.md) / [`file-preserve`](file-preserve.md) — the simpler
-  input variant for forms that don't need previews or progress
+- [`<hw:file-upload>`](../components/file-upload.md)
+- [`Attachment`](../components/attachment.md)
