@@ -11,6 +11,7 @@ it('renders an inline color scheme script with default configuration', function 
         ->assertSee('hotwire.colorScheme', false)
         ->assertSee('system', false)
         ->assertSee('data-theme', false)
+        ->assertSee('data-color-scheme-mode', false)
         ->assertSee('localStorage.getItem', false)
         ->assertSee('prefers-color-scheme: dark', false)
         ->assertSee('document.documentElement.style.colorScheme', false)

@@ -19,8 +19,9 @@ Use `<hw:color-scheme.script>` in the document head to avoid a flash of the wron
 </html>
 ```
 
-The script reads `localStorage`, resolves `system` through `prefers-color-scheme`, sets `data-theme` on `<html>` and
-updates `style.colorScheme` before CSS paints.
+The script reads `localStorage`, resolves `system` through `prefers-color-scheme`, sets `data-theme` and
+`data-color-scheme-mode` on `<html>`, then updates `style.colorScheme` before CSS paints. The mode attribute lets the
+toggle show the correct icon before Stimulus connects.
 
 ## Script Props
 
@@ -59,12 +60,15 @@ This keeps the stored mode to explicit `light` or `dark` and skips `system` whil
 
 - `data-slot="color-scheme-toggle"`
 - `data-slot="color-scheme-icon"`
+- `html[data-color-scheme-mode="light|dark|system"]`
 - `data-mode="light|dark|system"`
 - `data-scheme="light|dark"`
 - `data-scheme-icon="light|dark"`
 - `data-mode-icon="system"`
 
-The Nova preset shows the system icon when `data-mode="system"`; otherwise it shows the icon for the resolved scheme.
+The Nova preset reads `html[data-color-scheme-mode]` when the script has run, so the initial icon matches the stored
+mode before Stimulus connects. Without the script, it falls back to the toggle's local `data-mode` and `data-scheme`
+attributes.
 
 ## Required Controllers
 
