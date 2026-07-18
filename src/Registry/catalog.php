@@ -15,6 +15,8 @@ use Emaia\LaravelHotwire\Components\Chart;
 use Emaia\LaravelHotwire\Components\Checkbox;
 use Emaia\LaravelHotwire\Components\CheckboxGroup;
 use Emaia\LaravelHotwire\Components\CheckboxGroup\Item as CheckboxGroupItem;
+use Emaia\LaravelHotwire\Components\ColorScheme\Script as ColorSchemeScript;
+use Emaia\LaravelHotwire\Components\ColorScheme\Toggle as ColorSchemeToggle;
 use Emaia\LaravelHotwire\Components\ConditionalField;
 use Emaia\LaravelHotwire\Components\Drawer;
 use Emaia\LaravelHotwire\Components\Dropdown;
@@ -187,6 +189,22 @@ return [
             'category' => 'forms',
             'description' => 'Rich checkbox-group item that inherits name, selected state, validation and select-all wiring',
             'controllers' => ['checkbox-select-all', 'auto-submit'],
+        ],
+        'color-scheme.script' => [
+            'class' => ColorSchemeScript::class,
+            'view' => 'hotwire::component-views.color-scheme-script',
+            'docs' => 'docs/components/color-scheme.md',
+            'category' => 'utility',
+            'description' => 'Inline anti-flash script that applies the initial light or dark color scheme before CSS paints',
+            'controllers' => [],
+        ],
+        'color-scheme.toggle' => [
+            'class' => ColorSchemeToggle::class,
+            'view' => 'hotwire::component-views.color-scheme-toggle',
+            'docs' => 'docs/components/color-scheme.md',
+            'category' => 'utility',
+            'description' => 'Button that cycles persisted light, dark and system color scheme modes',
+            'controllers' => ['color-scheme', 'tooltip'],
         ],
         'conditional-field' => [
             'class' => ConditionalField::class,
@@ -687,6 +705,12 @@ return [
             'docs' => 'docs/controllers/clear-input.md',
             'category' => 'forms',
             'description' => 'Adds a clear button that appears when the input has a value',
+        ],
+        'color-scheme' => [
+            'source' => 'resources/js/controllers/color_scheme_controller.js',
+            'docs' => 'docs/controllers/color-scheme.md',
+            'category' => 'utility',
+            'description' => 'Persists light, dark or system color scheme mode and synchronizes html[data-theme]',
         ],
         'conditional-fields' => [
             'source' => 'resources/js/controllers/conditional_fields_controller.js',

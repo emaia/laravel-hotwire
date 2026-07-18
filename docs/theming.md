@@ -92,7 +92,10 @@ Dark mode activates when `<html>` has `data-theme="dark"`:
 <html data-theme="dark">
 ```
 
-Without `data-theme`, the `:root` (light) defaults apply. A packaged color-scheme toggle is planned separately; until then, set `data-theme` server-side or with your own script.
+Without `data-theme`, the `:root` (light) defaults apply. Use `<hw:color-scheme.script>` in the document head to apply
+the stored scheme before CSS paints, and `<hw:color-scheme.toggle>` for user switching.
+
+See [`docs/components/color-scheme.md`](components/color-scheme.md) for the packaged script and toggle.
 
 ## Colour space
 
