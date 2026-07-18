@@ -165,6 +165,16 @@ it('lets popover leave transitions remain visible until hidden is applied by Jav
         ->toContain('[data-slot="popover-content"][data-open="false"]:not(.block) { @apply hidden; }');
 });
 
+it('uses the pre-connect color scheme mode to avoid toggle icon flicker', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain('html[data-color-scheme-mode="system"] [data-slot="color-scheme-toggle"] [data-mode-icon="system"]')
+        ->toContain('html[data-color-scheme-mode="light"] [data-slot="color-scheme-toggle"] [data-scheme-icon="light"]')
+        ->toContain('html[data-color-scheme-mode="dark"] [data-slot="color-scheme-toggle"] [data-scheme-icon="dark"]')
+        ->toContain('html:not([data-color-scheme-mode]) [data-slot="color-scheme-toggle"][data-mode="system"] [data-mode-icon="system"]');
+});
+
 it('preserves existing @custom-variant rules', function () use ($variantsPath) {
     $css = file_get_contents($variantsPath);
 

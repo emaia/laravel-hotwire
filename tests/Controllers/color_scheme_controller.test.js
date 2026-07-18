@@ -20,6 +20,7 @@ afterEach(async () => {
 
     if (typeof document !== "undefined") {
         document.documentElement.removeAttribute("data-theme");
+        document.documentElement.removeAttribute("data-color-scheme-mode");
         document.documentElement.style.colorScheme = "";
     }
 });
@@ -32,6 +33,7 @@ test("applies stored dark mode on connect", async () => {
     });
 
     expect(document.documentElement.getAttribute("data-theme")).toBe("dark");
+    expect(document.documentElement.getAttribute("data-color-scheme-mode")).toBe("dark");
     expect(document.documentElement.style.colorScheme).toBe("dark");
     expect(mounted.root.dataset.mode).toBe("dark");
     expect(mounted.root.dataset.scheme).toBe("dark");
@@ -43,6 +45,7 @@ test("resolves system mode from prefers-color-scheme", async () => {
     await mount(`<button data-controller="color-scheme"></button>`);
 
     expect(document.documentElement.getAttribute("data-theme")).toBe("dark");
+    expect(document.documentElement.getAttribute("data-color-scheme-mode")).toBe("system");
     expect(mounted.root.dataset.mode).toBe("system");
     expect(mounted.root.dataset.scheme).toBe("dark");
 });
@@ -59,11 +62,13 @@ test("cycle walks through configured modes and dispatches change", async () => {
 
     expect(window.localStorage.getItem("hotwire.colorScheme")).toBe("light");
     expect(document.documentElement.getAttribute("data-theme")).toBe("light");
+    expect(document.documentElement.getAttribute("data-color-scheme-mode")).toBe("light");
     expect(changes.at(-1)).toEqual({ mode: "light", scheme: "light" });
 
     mounted.controller.cycle();
 
     expect(window.localStorage.getItem("hotwire.colorScheme")).toBe("dark");
+    expect(document.documentElement.getAttribute("data-color-scheme-mode")).toBe("dark");
     expect(changes.at(-1)).toEqual({ mode: "dark", scheme: "dark" });
 });
 

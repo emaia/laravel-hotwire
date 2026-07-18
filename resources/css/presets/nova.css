@@ -54,9 +54,12 @@
 
     [data-slot="color-scheme-toggle"] { @apply relative; }
     [data-slot="color-scheme-icon"] { @apply hidden; }
-    [data-slot="color-scheme-toggle"][data-mode="system"] [data-mode-icon="system"],
-    [data-slot="color-scheme-toggle"]:not([data-mode="system"])[data-scheme="light"] [data-scheme-icon="light"],
-    [data-slot="color-scheme-toggle"]:not([data-mode="system"])[data-scheme="dark"] [data-scheme-icon="dark"] { @apply block; }
+    html[data-color-scheme-mode="system"] [data-slot="color-scheme-toggle"] [data-mode-icon="system"],
+    html[data-color-scheme-mode="light"] [data-slot="color-scheme-toggle"] [data-scheme-icon="light"],
+    html[data-color-scheme-mode="dark"] [data-slot="color-scheme-toggle"] [data-scheme-icon="dark"],
+    html:not([data-color-scheme-mode]) [data-slot="color-scheme-toggle"][data-mode="system"] [data-mode-icon="system"],
+    html:not([data-color-scheme-mode]) [data-slot="color-scheme-toggle"]:not([data-mode="system"])[data-scheme="light"] [data-scheme-icon="light"],
+    html:not([data-color-scheme-mode]) [data-slot="color-scheme-toggle"]:not([data-mode="system"])[data-scheme="dark"] [data-scheme-icon="dark"] { @apply block; }
 
     [data-slot="toggle-group"] { @apply inline-flex w-fit items-center gap-1; }
     [data-slot="toggle-group"][data-orientation="vertical"] { @apply flex-col items-stretch; }

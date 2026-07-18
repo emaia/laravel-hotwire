@@ -18,6 +18,7 @@
             : mode;
 
         document.documentElement.setAttribute(attribute, scheme);
+        document.documentElement.setAttribute('data-color-scheme-mode', mode);
         document.documentElement.style.colorScheme = scheme;
     })();
 </script>

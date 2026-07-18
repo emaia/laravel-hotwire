@@ -70,6 +70,7 @@ export default class extends Controller {
         const scheme = this.resolveScheme(nextMode);
 
         document.documentElement.setAttribute("data-theme", scheme);
+        document.documentElement.setAttribute("data-color-scheme-mode", nextMode);
         document.documentElement.style.colorScheme = scheme;
         this.element.dataset.mode = nextMode;
         this.element.dataset.scheme = scheme;
