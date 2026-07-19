@@ -7,11 +7,26 @@ const FileUploadController = (await import("../../resources/js/controllers/file_
 let mounted;
 let requests;
 let fetchCalls;
+let objectUrls;
+let revokedUrls;
+let originalCreateObjectURL;
+let originalRevokeObjectURL;
 
 beforeEach(() => {
     requests = [];
     fetchCalls = [];
+    objectUrls = [];
+    revokedUrls = [];
+    originalCreateObjectURL = globalThis.URL?.createObjectURL;
+    originalRevokeObjectURL = globalThis.URL?.revokeObjectURL;
     globalThis.XMLHttpRequest = FakeXMLHttpRequest;
+    globalThis.URL.createObjectURL = mock((blob) => {
+        const url = `blob:${blob.name}-${objectUrls.length}`;
+        objectUrls.push({ blob, url });
+
+        return url;
+    });
+    globalThis.URL.revokeObjectURL = mock((url) => revokedUrls.push(url));
     globalThis.fetch = mock((url, init) => {
         fetchCalls.push({ url, init });
         return Promise.resolve({ ok: true });
@@ -22,6 +37,17 @@ afterEach(async () => {
     await mounted?.cleanup();
     mounted = undefined;
     delete globalThis.Turbo;
+    if (originalCreateObjectURL) {
+        globalThis.URL.createObjectURL = originalCreateObjectURL;
+    } else {
+        delete globalThis.URL.createObjectURL;
+    }
+
+    if (originalRevokeObjectURL) {
+        globalThis.URL.revokeObjectURL = originalRevokeObjectURL;
+    } else {
+        delete globalThis.URL.revokeObjectURL;
+    }
 });
 
 function defaultHtml(extraAttrs = "", extraChildren = "", controllers = "file-upload") {
@@ -33,9 +59,13 @@ function defaultHtml(extraAttrs = "", extraChildren = "", controllers = "file-up
                   ${extraAttrs}>
                 <input type="file" hidden data-file-upload-target="input" data-action="change->file-upload#select">
                 <div data-file-upload-target="dropzone"></div>
+                <div data-slot="file-upload-actions">
+                    <button type="button" hidden data-file-upload-clear data-action="file-upload#clear">Clear all</button>
+                </div>
                 <div data-file-upload-target="list"></div>
                 <template data-file-upload-target="template">
                     <div data-slot="attachment" data-state="idle" data-file-upload-attachment>
+                        <div data-slot="attachment-media" data-variant="icon"><svg></svg></div>
                         <span data-file-upload-name></span>
                         <span data-file-upload-description></span>
                         <div data-file-upload-progress hidden>
@@ -43,6 +73,7 @@ function defaultHtml(extraAttrs = "", extraChildren = "", controllers = "file-up
                                 <div data-slot="progress-track"><div data-slot="progress-indicator"></div></div>
                             </div>
                         </div>
+                        <button type="button" hidden data-file-upload-retry data-action="file-upload#retry">Retry</button>
                         <button type="button" data-file-upload-remove data-action="file-upload#remove">Remove</button>
                     </div>
                 </template>
@@ -77,6 +108,7 @@ test("select adds files, starts a native XHR upload and dispatches added", async
     expect(requests[0].url).toBe("/upload");
     expect(requests[0].body).toBeInstanceOf(FormData);
     expect(mounted.root.querySelector('[data-slot="attachment"]')?.dataset.state).toBe("uploading");
+    expect(mounted.root.querySelector("[data-file-upload-clear]").hidden).toBe(false);
 });
 
 test("drop adds files and toggles drag state off", async () => {
@@ -287,6 +319,53 @@ test("server errors normalize Laravel validation JSON and mark the attachment er
     expect(description?.textContent).toBe("The file must be an image.");
 });
 
+test("retry requeues retryable server errors in the same attachment", async () => {
+    await mount();
+    const upload = file("photo.png");
+    mounted.controller.select({ target: { files: [upload], value: "x" } });
+
+    requests[0].respond(500, "Server error", { "content-type": "text/plain" });
+    await wait(0);
+
+    const attachment = mounted.root.querySelector('[data-slot="attachment"]');
+    const retry = mounted.root.querySelector("[data-file-upload-retry]");
+    const id = attachment.dataset.fileUploadId;
+    expect(attachment.dataset.state).toBe("error");
+    expect(retry.hidden).toBe(false);
+
+    mounted.controller.retry({ preventDefault() {}, params: { id } });
+
+    expect(requests).toHaveLength(2);
+    expect(attachment.dataset.state).toBe("uploading");
+    expect(retry.hidden).toBe(true);
+
+    requests[1].respond(201, { token: "retry-token" });
+    await wait(0);
+
+    expect(attachment.dataset.state).toBe("done");
+    expect(mounted.root.querySelector('input[type="hidden"][name="avatar"]')?.value).toBe("retry-token");
+});
+
+test("network errors with status zero are retryable", async () => {
+    await mount();
+    mounted.controller.select({ target: { files: [file("photo.png")], value: "x" } });
+
+    requests[0].fail(0);
+    await wait(0);
+
+    expect(mounted.root.querySelector('[data-slot="attachment"]')?.dataset.state).toBe("error");
+    expect(mounted.root.querySelector("[data-file-upload-retry]").hidden).toBe(false);
+});
+
+test("validation errors do not expose retry action", async () => {
+    await mount();
+    mounted.controller.select({ target: { files: [file("photo.png")], value: "x" } });
+    requests[0].respond(422, { message: "Invalid", errors: { file: ["The file must be an image."] } });
+    await wait(0);
+
+    expect(mounted.root.querySelector("[data-file-upload-retry]").hidden).toBe(true);
+});
+
 test("413 HTML responses use the file-too-big message instead of rendering the response body", async () => {
     await mount(defaultHtml('data-file-upload-multiple-value="true"'));
     const errors = [];
@@ -435,6 +514,126 @@ test("remove deletes a completed remote upload and removes its hidden input", as
     expect(fetchCalls).toEqual([{ url: "/uploads/abc%20123/revisions/abc%20123", init: { method: "DELETE", headers: {} } }]);
 });
 
+test("clear aborts active uploads, deletes completed uploads and dispatches cleared", async () => {
+    await mount(defaultHtml('data-file-upload-multiple-value="true" data-file-upload-delete-url-value="/uploads/:token"'));
+    const cleared = [];
+    const removed = [];
+    mounted.root.addEventListener("file-upload:cleared", (event) => cleared.push(event.detail));
+    mounted.root.addEventListener("file-upload:removed", (event) => removed.push(event.detail));
+
+    const uploaded = file("uploaded.txt");
+    const active = file("active.txt");
+    mounted.controller.select({ target: { files: [uploaded, active], value: "x" } });
+    requests[0].respond(201, { token: "uploaded-token" });
+    await wait(0);
+
+    mounted.controller.clear({ preventDefault() {} });
+    await wait(0);
+
+    expect(requests[1].aborted).toBe(true);
+    expect(mounted.root.querySelectorAll('[data-slot="attachment"]')).toHaveLength(0);
+    expect(mounted.root.querySelector('input[type="hidden"][name="avatar"]')).toBeNull();
+    expect(mounted.root.querySelector("[data-file-upload-clear]").hidden).toBe(true);
+    expect(mounted.root.querySelector("[data-file-upload-target='announcer']")?.textContent).toBe("Cleared files · 2");
+    expect(fetchCalls).toEqual([{ url: "/uploads/uploaded-token", init: { method: "DELETE", headers: {} } }]);
+    expect(cleared).toEqual([{ files: [uploaded, active], count: 2 }]);
+    expect(removed).toEqual([]);
+});
+
+test("clear removes preserved hidden upload tokens even when no card is hydrated", async () => {
+    await mount(defaultHtml(
+        'data-file-upload-multiple-value="true"',
+        '<input type="hidden" name="avatar" value="old-a" data-hw-upload-preserved><input type="hidden" name="avatar" value="old-b" data-hw-upload-preserved>'
+    ));
+    const cleared = [];
+    mounted.root.addEventListener("file-upload:cleared", (event) => cleared.push(event.detail));
+
+    expect(mounted.root.querySelector("[data-file-upload-clear]").hidden).toBe(false);
+
+    mounted.controller.clear({ preventDefault() {} });
+
+    expect(mounted.root.querySelectorAll("[data-hw-upload-preserved]")).toHaveLength(0);
+    expect(mounted.root.querySelector("[data-file-upload-clear]").hidden).toBe(true);
+    expect(mounted.root.querySelector("[data-file-upload-target='announcer']")?.textContent).toBe("Cleared files · 2");
+    expect(cleared).toEqual([{ files: [], count: 2 }]);
+});
+
+test("clear action stays visible while retrying a failed item", async () => {
+    await mount();
+    mounted.controller.select({ target: { files: [file("photo.png")], value: "x" } });
+    requests[0].respond(500, "Server error", { "content-type": "text/plain" });
+    await wait(0);
+
+    mounted.controller.retry({ preventDefault() {}, params: { id: "1" } });
+
+    expect(mounted.root.querySelector("[data-file-upload-clear]").hidden).toBe(false);
+});
+
+test("grid view renders local thumbnails for image files and revokes object URLs", async () => {
+    await mount(defaultHtml('data-file-upload-multiple-value="true" data-file-upload-view-value="grid"'));
+
+    const image = file("photo.png", { type: "image/png" });
+    const pdf = file("document.pdf", { type: "application/pdf" });
+    mounted.controller.select({ target: { files: [image, pdf], value: "x" } });
+
+    const attachments = [...mounted.root.querySelectorAll('[data-slot="attachment"]')];
+    const imageMedia = attachments[0].querySelector('[data-slot="attachment-media"]');
+    const documentMedia = attachments[1].querySelector('[data-slot="attachment-media"]');
+
+    expect(attachments.map((attachment) => attachment.dataset.orientation)).toEqual(["vertical", "vertical"]);
+    expect(imageMedia.dataset.variant).toBe("image");
+    expect(imageMedia.querySelector("img")?.getAttribute("src")).toBe("blob:photo.png-0");
+    expect(imageMedia.querySelector("img")?.getAttribute("alt")).toBe("photo.png");
+    expect(documentMedia.dataset.variant).toBe("icon");
+    expect(documentMedia.querySelector("img")).toBeNull();
+
+    const id = attachments[0].dataset.fileUploadId;
+    mounted.controller.remove({ preventDefault() {}, params: { id } });
+
+    expect(revokedUrls).toEqual(["blob:photo.png-0"]);
+});
+
+test("clear throttles remote deletes by parallel-uploads", async () => {
+    await mount(defaultHtml('data-file-upload-multiple-value="true" data-file-upload-delete-url-value="/uploads/:token" data-file-upload-parallel-uploads-value="2"'));
+    mounted.controller.select({ target: { files: [file("a.txt"), file("b.txt"), file("c.txt")], value: "x" } });
+    requests[0].respond(201, { token: "a" });
+    requests[1].respond(201, { token: "b" });
+    await wait(0);
+    requests[2].respond(201, { token: "c" });
+    await wait(0);
+
+    const resolvers = [];
+    const started = [];
+    let activeDeletes = 0;
+    let maxActiveDeletes = 0;
+    globalThis.fetch = mock((url, init) => {
+        started.push({ url, init });
+        activeDeletes++;
+        maxActiveDeletes = Math.max(maxActiveDeletes, activeDeletes);
+
+        return new Promise((resolve) => {
+            resolvers.push(() => {
+                activeDeletes--;
+                resolve({ ok: true });
+            });
+        });
+    });
+
+    mounted.controller.clear({ preventDefault() {} });
+    await wait(0);
+
+    expect(started.map((call) => call.url)).toEqual(["/uploads/a", "/uploads/b"]);
+    expect(maxActiveDeletes).toBe(2);
+
+    resolvers.shift()();
+    await wait(0);
+
+    expect(started.map((call) => call.url)).toEqual(["/uploads/a", "/uploads/b", "/uploads/c"]);
+    expect(maxActiveDeletes).toBe(2);
+
+    resolvers.forEach((resolve) => resolve());
+});
+
 test("reconnect derives the next upload id from existing attachment cards", async () => {
     await mount(defaultHtml('data-file-upload-multiple-value="true"'));
     mounted.controller.select({ target: { files: [file("a.txt")], value: "x" } });
@@ -527,6 +726,12 @@ class FakeXMLHttpRequest {
         );
         this.responseText = typeof body === "string" ? body : JSON.stringify(body);
         this.emit("load", {});
+    }
+
+    fail(status = 0) {
+        this.status = status;
+        this.responseText = "";
+        this.emit("error", {});
     }
 
     emit(type, event) {

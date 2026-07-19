@@ -9,6 +9,8 @@
     $dropzoneTitle = $defaultTitle ?: $dropzoneLabel;
     $dropzoneDescription = $messageCopy['hint'] ?? ($multiple ? 'Drop files here or click to choose' : 'Drop a file here or click to choose');
     $removeLabel = $messageCopy['removeFile'] ?? 'Remove file';
+    $clearAllLabel = $messageCopy['clearAll'] ?? 'Clear all';
+    $retryLabel = $messageCopy['retry'] ?? 'Retry upload';
     $dropzoneActions = implode(' ', [
         "click->{$identifier}#openPicker",
         "keydown.enter->{$identifier}#openPicker",
@@ -23,6 +25,8 @@
         'data-slot' => 'file-upload',
         'id' => $resolvedId,
         'data-controller' => $mergedController,
+        'data-density' => $density,
+        'data-view' => $view,
         "data-{$identifier}-url-value" => $url,
         "data-{$identifier}-hidden-name-value" => $hiddenName,
         "data-{$identifier}-accept-value" => $accept,
@@ -36,6 +40,7 @@
         "data-{$identifier}-delete-url-value" => $deleteUrl,
         "data-{$identifier}-parallel-uploads-value" => $parallelUploads !== 3 ? $parallelUploads : null,
         "data-{$identifier}-turbo-stream-value" => $turboStream ? 'true' : null,
+        "data-{$identifier}-view-value" => $view !== 'list' ? $view : null,
         "data-{$identifier}-messages-value" => $messagesJson,
         'aria-describedby' => $describedBy,
         'aria-invalid' => $hasErrors ? 'true' : null,
@@ -81,10 +86,18 @@
         </x-hw::empty-state>
     </div>
 
+    @if ($isClearable)
+        <div data-slot="file-upload-actions">
+            <x-hw::button type="button" variant="ghost" size="sm" hidden data-file-upload-clear data-action="{{ $identifier }}#clear">
+                {{ $clearAllLabel }}
+            </x-hw::button>
+        </div>
+    @endif
+
     <div data-slot="attachment-group" role="list" data-{{ $identifier }}-target="list"></div>
 
     <template data-{{ $identifier }}-target="template">
-        <x-hw::attachment state="idle" role="listitem" data-file-upload-attachment>
+        <x-hw::attachment state="idle" :orientation="$attachmentOrientation" role="listitem" data-file-upload-attachment>
             <x-hw::attachment.media variant="icon">
                 <x-hw::icon name="copy" />
             </x-hw::attachment.media>
@@ -96,6 +109,9 @@
                 </div>
             </x-hw::attachment.content>
             <x-hw::attachment.actions>
+                <x-hw::attachment.action hidden data-file-upload-retry data-action="{{ $identifier }}#retry" aria-label="{{ $retryLabel }}">
+                    <x-hw::icon name="redo-2" />
+                </x-hw::attachment.action>
                 <x-hw::attachment.action data-file-upload-remove data-action="{{ $identifier }}#remove" aria-label="{{ $removeLabel }}">
                     <x-hw::icon name="x" />
                 </x-hw::attachment.action>

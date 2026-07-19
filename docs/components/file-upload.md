@@ -36,7 +36,10 @@ Successful JSON responses write a hidden input with `response.token` by default.
 | `response-key`     | `string`       | `token`       | JSON key used for the hidden input value.                                                                                                                                                   |
 | `delete-url`       | `string\|null` | `null`        | DELETE endpoint used when removing an uploaded file. Every `:token` placeholder is URI-encoded.                                                                                              |
 | `parallel-uploads` | `int`          | `3`           | Concurrent upload count.                                                                                                                                                                    |
-| `messages`         | `array\|null`  | `null`        | Native labels/errors. Supported keys: `idle`, `idleMultiple`, `hint`, `button`, `uploading`, `uploaded`, `uploadFailed`, `removed`, `removeFile`, `fileTooBig`, `invalidFileType`, `maxFilesExceeded`. |
+| `clearable`        | `bool\|null`   | `multiple`    | Renders a Clear all action. Defaults to true for `multiple` uploads and false for single uploads; pass false to disable.                                                                     |
+| `density`          | `string`       | `default`     | Drop area density: `default` or `compact`.                                                                                                                                                  |
+| `view`             | `string`       | `list`        | Attachment view: `list` or `grid`. Grid uses vertical cards and image thumbnails.                                                                                                           |
+| `messages`         | `array\|null`  | `null`        | Native labels/errors. Supported keys: `idle`, `idleMultiple`, `hint`, `button`, `uploading`, `uploaded`, `uploadFailed`, `clearAll`, `cleared`, `removed`, `removeFile`, `retry`, `fileTooBig`, `invalidFileType`, `maxFilesExceeded`. |
 | `controller`       | `string`       | `file-upload` | Stimulus identifier for subclassing.                                                                                                                                                        |
 | `class`            | `string`       | `''`          | Merged on the root.                                                                                                                                                                         |
 
@@ -73,6 +76,36 @@ Route::post('/uploads', function (Request $request) {
 Hidden inputs render as `attachments[]` per successful file.
 
 Selecting the same file more than once while it is already queued/uploading/done is ignored.
+
+Multiple uploads render a Clear all action by default. It aborts active uploads, removes queued/errored cards, removes hidden
+inputs, clears preserved `value`/`old()` tokens and calls `delete-url` for completed remote uploads. Bulk remote deletes
+are capped by `parallel-uploads` so clearing a large list does not fan out unlimited DELETE requests.
+
+Clear all emits one aggregate `file-upload:cleared` event and does not emit `file-upload:removed` for every item.
+
+## Compact And Grid Views
+
+Use `density="compact"` when the large drop area competes with surrounding form content:
+
+```blade
+<hw:file-upload name="attachments" url="{{ route('uploads.store') }}" multiple density="compact" />
+```
+
+Use `view="grid"` for media-heavy uploaders. Image files get a temporary local thumbnail via `URL.createObjectURL`; other
+files keep the generic attachment icon. Object URLs are revoked when an item is removed or the controller disconnects.
+
+```blade
+<hw:file-upload
+    name="photos"
+    url="{{ route('uploads.store') }}"
+    accept="image/*,application/pdf"
+    multiple
+    view="grid"
+/>
+```
+
+Failed `5xx`/network uploads expose a retry action on the card. Validation-style failures (`422`) and file-size failures
+(`413`) stay non-retryable so users fix the input instead of resubmitting the same rejected file.
 
 ## Edit Forms
 
@@ -142,14 +175,20 @@ Override the dropzone label with `aria-label`:
 
 - `data-slot="file-upload"`
 - `data-slot="file-upload-dropzone"`
+- `data-slot="file-upload-actions"`
 - `data-slot="file-upload-announcer"`
+- `data-density="default|compact"`
+- `data-view="list|grid"`
 - `data-dragging="true|false"`
 - `data-slot="attachment-group"`
 - `data-slot="attachment"`
 - `data-state="idle|uploading|processing|error|done"`
+- `data-slot="attachment-media"`
 - `data-file-upload-name`
 - `data-file-upload-description`
 - `data-file-upload-progress`
+- `data-file-upload-clear`
+- `data-file-upload-retry`
 - `data-file-upload-remove`
 
 The attachment cards use the [`Attachment`](attachment.md) primitive and the package [`Progress`](progress.md) styles.

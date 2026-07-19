@@ -18,6 +18,7 @@ export default class extends Controller {
         deleteUrl: { type: String, default: "" },
         parallelUploads: { type: Number, default: 3 },
         turboStream: { type: Boolean, default: false },
+        view: { type: String, default: "list" },
         messages: { type: Object, default: {} },
     };
 
@@ -26,6 +27,7 @@ export default class extends Controller {
         this.items = this.hydrateItems();
         this.nextId = this.nextAvailableId();
         this.activeUploads = 0;
+        this.updateClearAction();
         this.dispatch("ready");
     }
 
@@ -33,6 +35,7 @@ export default class extends Controller {
         this.disconnected = true;
         for (const item of this.items) {
             if (item.state === "uploading") item.xhr?.abort();
+            this.revokePreviewUrl(item);
         }
         this.activeUploads = 0;
     }
@@ -88,6 +91,7 @@ export default class extends Controller {
             this.dispatch("added", { detail: { file } });
         }
 
+        this.updateClearAction();
         this.processQueue();
     }
 
@@ -102,6 +106,54 @@ export default class extends Controller {
         if (!item) return;
 
         this.removeItem(item, { dispatch: true });
+        this.processQueue();
+    }
+
+    clear(event) {
+        event?.preventDefault?.();
+        const items = [...this.items].filter((item) => !item.removed);
+        const preserved = this.preservedHiddens();
+        if (items.length === 0 && preserved.length === 0) return;
+
+        const remoteValues = items.map((item) => item.value).filter((value) => value != null && value !== "");
+
+        for (const item of items) {
+            this.removeItem(item, { dispatch: false, announce: false, deleteRemote: false });
+        }
+
+        preserved.forEach((element) => element.remove());
+        this.updateClearAction();
+
+        if (remoteValues.length > 0 && this.deleteUrlValue !== "") {
+            this.deleteRemoteValues(remoteValues).catch((error) => console.error("file-upload delete failed:", error));
+        }
+
+        const files = items.map((item) => item.file);
+        const count = files.length + preserved.length;
+        this.announce(`${this.message("cleared")} · ${count}`);
+        this.dispatch("cleared", { detail: { files, count } });
+        this.processQueue();
+    }
+
+    retry(event) {
+        event?.preventDefault?.();
+        const rawId = event?.params?.id ?? event?.currentTarget?.closest?.("[data-file-upload-id]")?.dataset.fileUploadId;
+        if (rawId == null) return;
+
+        const item = this.items.find((candidate) => candidate.id === String(rawId));
+        if (!item || item.removed || !item.retryable) return;
+
+        item.state = "queued";
+        item.progress = 0;
+        item.xhr = null;
+        item.retryable = false;
+        this.setState(item, "queued");
+        this.setDescription(item, this.fileDescription(item.file));
+        this.updateProgress(item, 0);
+        this.showProgress(item, false);
+        this.setRetryAction(item, false);
+        this.announce(`${this.message("uploading")} ${item.file.name}`);
+        this.dispatch("retry", { detail: { file: item.file } });
         this.processQueue();
     }
 
@@ -135,17 +187,23 @@ export default class extends Controller {
         const id = String(this.nextId++);
         const element = this.previewValue ? this.renderItem(id, file) : null;
 
-        return {
+        const item = {
             id,
             file,
             element,
             hidden: null,
             progress: 0,
+            previewUrl: null,
             removed: false,
+            retryable: false,
             state: "queued",
             value: null,
             xhr: null,
         };
+
+        this.configureItemPresentation(item);
+
+        return item;
     }
 
     renderItem(id, file) {
@@ -161,6 +219,10 @@ export default class extends Controller {
         const remove = element.querySelector("[data-file-upload-remove]");
         remove?.setAttribute("data-file-upload-id-param", id);
         remove?.setAttribute("aria-label", `${this.message("removeFile")} ${file.name}`);
+
+        const retry = element.querySelector("[data-file-upload-retry]");
+        retry?.setAttribute("data-file-upload-id-param", id);
+        retry?.setAttribute("aria-label", `${this.message("retry")} ${file.name}`);
 
         this.listTarget.appendChild(fragment);
 
@@ -182,6 +244,7 @@ export default class extends Controller {
         item.state = "uploading";
         this.activeUploads++;
         this.setState(item, "uploading");
+        this.setRetryAction(item, false);
         this.showProgress(item, true);
 
         xhr.open("POST", this.urlValue);
@@ -245,6 +308,8 @@ export default class extends Controller {
 
         item.state = "done";
         this.setState(item, "done");
+        item.retryable = false;
+        this.setRetryAction(item, false);
         this.updateProgress(item, 100);
         this.showProgress(item, false);
         this.setDescription(item, `${this.message("uploaded")} · ${this.fileDescription(item.file)}`);
@@ -259,30 +324,34 @@ export default class extends Controller {
         this.maybeRenderStream(xhr?.responseText ?? null);
 
         const text = this.extractErrorMessage(message, xhr);
+        item.retryable = this.isRetryableError(xhr);
         item.state = "error";
         this.setState(item, "error");
         this.showProgress(item, false);
+        this.setRetryAction(item, item.retryable);
         this.setDescription(item, text);
         this.announce(`${this.message("uploadFailed")}: ${text}`);
         this.dispatch("error", { detail: { file: item.file, message, xhr, text } });
         this.processQueue();
     }
 
-    removeItem(item, { dispatch = false } = {}) {
+    removeItem(item, { dispatch = false, announce = true, deleteRemote = true } = {}) {
         item.removed = true;
         if (item.state === "uploading") {
             this.activeUploads = Math.max(0, this.activeUploads - 1);
             item.xhr?.abort();
         }
 
+        this.revokePreviewUrl(item);
         this.removeHidden(item);
-        if (item.value && this.deleteUrlValue !== "") {
+        if (deleteRemote && item.value && this.deleteUrlValue !== "") {
             this.deleteRemote(item.value).catch((error) => console.error("file-upload delete failed:", error));
         }
 
         item.element?.remove();
         this.items = this.items.filter((candidate) => candidate !== item);
-        this.announce(`${this.message("removed")} ${item.file.name}`);
+        this.updateClearAction();
+        if (announce) this.announce(`${this.message("removed")} ${item.file.name}`);
 
         if (dispatch) this.dispatch("removed", { detail: { file: item.file } });
     }
@@ -328,6 +397,38 @@ export default class extends Controller {
         return template.content.querySelector("turbo-stream") !== null;
     }
 
+    configureItemPresentation(item) {
+        if (!item.element) return;
+
+        if (this.viewValue === "grid") {
+            item.element.dataset.orientation = "vertical";
+        }
+
+        const media = item.element.querySelector('[data-slot="attachment-media"]');
+        if (!media || !this.shouldPreviewImage(item.file)) return;
+        if (typeof globalThis.URL?.createObjectURL !== "function") return;
+
+        const url = globalThis.URL.createObjectURL(item.file);
+        const image = document.createElement("img");
+        image.src = url;
+        image.alt = item.file.name;
+
+        item.previewUrl = url;
+        media.dataset.variant = "image";
+        media.replaceChildren(image);
+    }
+
+    shouldPreviewImage(file) {
+        return typeof file.type === "string" && file.type.toLowerCase().startsWith("image/");
+    }
+
+    revokePreviewUrl(item) {
+        if (!item.previewUrl) return;
+
+        globalThis.URL?.revokeObjectURL?.(item.previewUrl);
+        item.previewUrl = null;
+    }
+
     extractValue(response) {
         if (response == null) return null;
         if (typeof response === "string") return response;
@@ -364,6 +465,12 @@ export default class extends Controller {
             || /^\s*(?:<!doctype\s+html|<html[\s>]|<head[\s>]|<body[\s>])/i.test(body);
     }
 
+    isRetryableError(xhr) {
+        const status = Number(xhr?.status ?? 0);
+
+        return status === 0 || status >= 500;
+    }
+
     appendHidden(item, value) {
         if (value == null || this.hiddenNameValue === "") return;
 
@@ -383,12 +490,34 @@ export default class extends Controller {
     }
 
     removePreservedHiddens() {
-        this.element.querySelectorAll("[data-hw-upload-preserved]").forEach((element) => element.remove());
+        this.preservedHiddens().forEach((element) => element.remove());
+    }
+
+    preservedHiddens() {
+        return [...this.element.querySelectorAll("[data-hw-upload-preserved]")];
     }
 
     async deleteRemote(token) {
         const url = this.deleteUrlValue.split(":token").join(encodeURIComponent(token));
         await fetch(url, { method: "DELETE", headers: this.csrfHeaders() });
+    }
+
+    async deleteRemoteValues(values) {
+        const queue = [...values];
+        const limit = Math.max(1, this.parallelUploadsValue);
+        const workers = Array.from({ length: Math.min(limit, queue.length) }, async () => {
+            while (queue.length > 0) {
+                const value = queue.shift();
+
+                try {
+                    await this.deleteRemote(value);
+                } catch (error) {
+                    console.error("file-upload delete failed:", error);
+                }
+            }
+        });
+
+        await Promise.all(workers);
     }
 
     requestHeaders() {
@@ -494,6 +623,18 @@ export default class extends Controller {
             ?.replaceChildren(document.createTextNode(text));
     }
 
+    setRetryAction(item, visible) {
+        const retry = item.element?.querySelector("[data-file-upload-retry]");
+        if (retry) retry.hidden = !visible;
+    }
+
+    updateClearAction() {
+        const clear = this.element.querySelector("[data-file-upload-clear]");
+        if (!clear) return;
+
+        clear.hidden = this.items.filter((item) => !item.removed).length + this.preservedHiddens().length === 0;
+    }
+
     showProgress(item, visible) {
         const progress = item.element?.querySelector("[data-file-upload-progress]");
         if (progress) progress.hidden = !visible;
@@ -551,8 +692,11 @@ export default class extends Controller {
             uploading: "Uploading",
             uploaded: "Uploaded",
             uploadFailed: "Upload failed",
+            clearAll: "Clear all",
+            cleared: "Cleared files",
             removed: "Removed",
             removeFile: "Remove",
+            retry: "Retry upload",
             fileTooBig: "File is too large",
             invalidFileType: "File type is not allowed",
             maxFilesExceeded: "Maximum number of files reached",

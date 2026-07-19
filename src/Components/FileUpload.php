@@ -22,12 +22,19 @@ class FileUpload extends Component
         'uploading',
         'uploaded',
         'uploadFailed',
+        'clearAll',
+        'cleared',
         'removed',
         'removeFile',
+        'retry',
         'fileTooBig',
         'invalidFileType',
         'maxFilesExceeded',
     ];
+
+    private const DENSITIES = ['default', 'compact'];
+
+    private const VIEWS = ['list', 'grid'];
 
     public string $identifier;
 
@@ -47,6 +54,9 @@ class FileUpload extends Component
         public ?string $deleteUrl = null,
         public int $parallelUploads = 3,
         public bool $turboStream = false,
+        public ?bool $clearable = null,
+        public string $density = 'default',
+        public string $view = 'list',
         public mixed $value = null,
         public ?array $messages = null,
         public string $class = '',
@@ -59,6 +69,14 @@ class FileUpload extends Component
 
         if (! preg_match('/^[a-z0-9][a-z0-9_-]*(?:--[a-z0-9][a-z0-9_-]*)*$/', $controller)) {
             throw new InvalidArgumentException('Invalid file-upload controller identifier.');
+        }
+
+        if (! in_array($density, self::DENSITIES, true)) {
+            throw new InvalidArgumentException('Unsupported file-upload density. Supported values: default, compact.');
+        }
+
+        if (! in_array($view, self::VIEWS, true)) {
+            throw new InvalidArgumentException('Unsupported file-upload view. Supported values: list, grid.');
         }
 
         foreach ($messages ?? [] as $key => $_value) {
@@ -83,6 +101,8 @@ class FileUpload extends Component
     public function data(): array
     {
         $data = parent::data();
+        $data['density'] = $this->density;
+        $data['view'] = $this->view;
         $data['internalPrefixes'] = [
             "data-{$this->identifier}-url-",
             "data-{$this->identifier}-hidden-name-",
@@ -97,6 +117,7 @@ class FileUpload extends Component
             "data-{$this->identifier}-delete-url-",
             "data-{$this->identifier}-parallel-uploads-",
             "data-{$this->identifier}-turbo-stream-",
+            "data-{$this->identifier}-view-",
             "data-{$this->identifier}-messages-",
         ];
         $data['compute'] = $this->computeResolved(...);
@@ -149,6 +170,8 @@ class FileUpload extends Component
             'hiddenName' => $hiddenName,
             'hasErrors' => $hasErrors,
             'isRequired' => $isRequired,
+            'isClearable' => $this->clearable ?? $this->multiple,
+            'attachmentOrientation' => $this->view === 'grid' ? 'vertical' : 'horizontal',
             'mergedController' => $this->identifier,
             'initialValues' => $initialValues,
             'messagesJson' => $this->resolveMessagesJson(),

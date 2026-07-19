@@ -45,6 +45,14 @@ by `<hw:file-upload>` and can be used directly for server-rendered upload lists.
 </hw:attachment>
 ```
 
+## States
+
+`uploading` and `processing` apply a lightweight CSS shimmer to the title. `error` switches the card to the destructive
+treatment; keep the failure reason in `attachment.description` so the state is not conveyed by color alone.
+
+The shimmer motion is also available as the CSS hook `data-shimmer="true"` for package or app UI that needs the same
+text shimmer without introducing another component.
+
 ## Props
 
 | Component            | Prop          | Default      | Description                                         |

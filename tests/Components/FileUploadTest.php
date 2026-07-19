@@ -40,6 +40,16 @@ it('throws when controller identifier is not a valid stimulus identifier', funct
         ->toThrow(InvalidArgumentException::class, 'Invalid file-upload controller identifier');
 });
 
+it('throws when density is not supported', function () {
+    expect(fn () => new FileUpload(url: '/uploads', density: 'tiny'))
+        ->toThrow(InvalidArgumentException::class, 'Unsupported file-upload density');
+});
+
+it('throws when view is not supported', function () {
+    expect(fn () => new FileUpload(url: '/uploads', view: 'gallery'))
+        ->toThrow(InvalidArgumentException::class, 'Unsupported file-upload view');
+});
+
 // --- Base rendering ---
 
 it('renders a native file-upload controller host without Dropzone classes', function () {
@@ -105,6 +115,41 @@ it('uses native message keys for the dropzone copy', function () {
         ->assertSee('PDF or image files only', false);
 });
 
+it('renders clear-all controls for multiple uploads and explicit opt-in', function () {
+    $multiple = $this->blade('<x-hw::file-upload name="attachments" url="/uploads" multiple />');
+    $single = $this->blade('<x-hw::file-upload name="avatar" url="/uploads" />');
+    $disabled = $this->blade('<x-hw::file-upload name="attachments" url="/uploads" multiple :clearable="false" />');
+    $explicit = $this->blade('<x-hw::file-upload name="avatar" url="/uploads" clearable />');
+
+    $multiple->assertSee('data-slot="file-upload-actions"', false)
+        ->assertSee('data-file-upload-clear', false)
+        ->assertSee('data-action="file-upload#clear"', false)
+        ->assertSee('Clear all', false);
+
+    $single->assertDontSee('data-file-upload-clear', false);
+    $disabled->assertDontSee('data-file-upload-clear', false);
+    $explicit->assertSee('data-file-upload-clear', false);
+});
+
+it('renders compact grid uploads with retry action and custom action labels', function () {
+    $view = $this->blade('<x-hw::file-upload
+        name="media"
+        url="/uploads"
+        density="compact"
+        view="grid"
+        :messages="[\'clearAll\' => \'Remove all\', \'retry\' => \'Try again\']"
+    />');
+
+    $view->assertSee('data-density="compact"', false)
+        ->assertSee('data-view="grid"', false)
+        ->assertSee('data-file-upload-view-value="grid"', false)
+        ->assertSee('data-orientation="vertical"', false)
+        ->assertSee('data-file-upload-retry', false)
+        ->assertSee('data-action="file-upload#retry"', false)
+        ->assertSee('Try again', false)
+        ->assertSee('Remove all', false);
+});
+
 it('wires click, keyboard and drag-drop actions to the native controller', function () {
     $view = $this->blade('<x-hw::file-upload name="avatar" url="/uploads" />');
 
@@ -135,7 +180,10 @@ it('emits controller data values for the native uploader', function () {
         delete-url="/uploads/:token"
         :parallel-uploads="6"
         :turbo-stream="true"
-        :messages="[\'idle\' => \'Drop files\', \'fileTooBig\' => \'Too large\', \'removed\' => \'Removed\']"
+        view="grid"
+        density="compact"
+        :clearable="false"
+        :messages="[\'idle\' => \'Drop files\', \'fileTooBig\' => \'Too large\', \'removed\' => \'Removed\', \'retry\' => \'Retry upload\']"
     />');
 
     $view->assertSee('data-file-upload-url-value="/uploads"', false)
@@ -152,10 +200,14 @@ it('emits controller data values for the native uploader', function () {
         ->assertSee('data-file-upload-delete-url-value="/uploads/:token"', false)
         ->assertSee('data-file-upload-parallel-uploads-value="6"', false)
         ->assertSee('data-file-upload-turbo-stream-value="true"', false)
+        ->assertSee('data-file-upload-view-value="grid"', false)
+        ->assertSee('data-density="compact"', false)
         ->assertSee('data-file-upload-messages-value=', false)
         ->assertSee('Drop files', false)
         ->assertSee('Too large', false)
         ->assertSee('Removed', false)
+        ->assertSee('Retry upload', false)
+        ->assertDontSee('data-file-upload-clear', false)
         ->assertSee('multiple', false);
 });
 
@@ -176,6 +228,7 @@ it('omits default-valued data attrs', function () {
         ->assertDontSee('param-name-value', false)
         ->assertDontSee('response-key-value', false)
         ->assertDontSee('parallel-uploads-value', false)
+        ->assertDontSee('view-value', false)
         ->assertDontSee('turbo-stream-value', false)
         ->assertDontSee('messages-value', false)
         ->assertDontSee('options-value', false);
