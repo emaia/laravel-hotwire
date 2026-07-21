@@ -18,32 +18,68 @@ Successful JSON responses write a hidden input with `response.token` by default.
 
 ## Props
 
-| Prop               | Type           | Default       | Description                                                                                                                                                                                 |
-|--------------------|----------------|---------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `url`              | `string`       | required      | Endpoint that accepts each upload request.                                                                                                                                                  |
-| `name`             | `string\|null` | `null`        | Hidden input name. With `multiple`, `[]` is appended automatically.                                                                                                                         |
-| `value`            | `mixed`        | `null`        | Initial token(s). Overridden by `old($name)` after validation redirect-back.                                                                                                                |
-| `id`               | `string\|null` | derived       | Root id. Falls back to `hw-file-upload-{uniqid}` without a name.                                                                                                                            |
-| `error-key`        | `string\|null` | derived       | Validation key override.                                                                                                                                                                    |
-| `accept`           | `string\|null` | `null`        | Native accept list (`image/*`, `.pdf,.csv`). Values are trimmed/lowercased and also validated before upload.                                                                                 |
-| `max-size-bytes`   | `int\|null`    | `null`        | Per-file client-side size limit. Server validation is still required.                                                                                                                       |
-| `max-files`        | `int\|null`    | `null`        | Maximum queued files.                                                                                                                                                                       |
-| `multiple`         | `bool`         | `false`       | Allows several files and accumulates hidden inputs.                                                                                                                                         |
-| `preview`          | `bool`         | `true`        | When false, skips client-side attachment cards. Useful with Turbo Stream galleries.                                                                                                         |
-| `emit-hidden`      | `bool`         | `true`        | When false, the controller does not append hidden inputs.                                                                                                                                   |
-| `turbo-stream`     | `bool`         | `false`       | Sends a Turbo Stream Accept header and renders stream responses.                                                                                                                            |
-| `param-name`       | `string`       | `file`        | Multipart field name for each upload request.                                                                                                                                               |
-| `response-key`     | `string`       | `token`       | JSON key used for the hidden input value.                                                                                                                                                   |
-| `delete-url`       | `string\|null` | `null`        | DELETE endpoint used when removing an uploaded file. Every `:token` placeholder is URI-encoded.                                                                                              |
-| `parallel-uploads` | `int`          | `3`           | Concurrent upload count.                                                                                                                                                                    |
-| `clearable`        | `bool\|null`   | `multiple`    | Renders a Clear all action. Defaults to true for `multiple` uploads and false for single uploads; pass false to disable.                                                                     |
-| `density`          | `string`       | `default`     | Drop area density: `default` or `compact`.                                                                                                                                                  |
-| `view`             | `string`       | `list`        | Attachment view: `list` or `grid`. Grid uses vertical cards and image thumbnails.                                                                                                           |
-| `messages`         | `array\|null`  | `null`        | Native labels/errors. Supported keys: `idle`, `idleMultiple`, `hint`, `button`, `uploading`, `uploaded`, `uploadFailed`, `clearAll`, `cleared`, `removed`, `removeFile`, `retry`, `fileTooBig`, `invalidFileType`, `maxFilesExceeded`. |
-| `controller`       | `string`       | `file-upload` | Stimulus identifier for subclassing.                                                                                                                                                        |
-| `class`            | `string`       | `''`          | Merged on the root.                                                                                                                                                                         |
+| Prop               | Type           | Default       | Description                                                                                                              |
+|--------------------|----------------|---------------|--------------------------------------------------------------------------------------------------------------------------|
+| `url`              | `string`       | required      | Endpoint that accepts each upload request.                                                                               |
+| `name`             | `string\|null` | `null`        | Hidden input name. With `multiple`, `[]` is appended automatically.                                                      |
+| `value`            | `mixed`        | `null`        | Initial token(s). Overridden by `old($name)` after validation redirect-back.                                             |
+| `id`               | `string\|null` | derived       | Root id. Falls back to `hw-file-upload-{uniqid}` without a name.                                                         |
+| `error-key`        | `string\|null` | derived       | Validation key override.                                                                                                 |
+| `accept`           | `string\|null` | `null`        | Native accept list (`image/*`, `.pdf,.csv`). Values are trimmed/lowercased and also validated before upload.             |
+| `max-size-bytes`   | `int\|null`    | `null`        | Per-file client-side size limit. Server validation is still required.                                                    |
+| `max-files`        | `int\|null`    | `null`        | Maximum queued files.                                                                                                    |
+| `multiple`         | `bool`         | `false`       | Allows several files and accumulates hidden inputs.                                                                      |
+| `preview`          | `bool`         | `true`        | When false, skips client-side attachment cards. Useful with Turbo Stream galleries.                                      |
+| `emit-hidden`      | `bool`         | `true`        | When false, the controller does not append hidden inputs.                                                                |
+| `turbo-stream`     | `bool`         | `false`       | Sends a Turbo Stream Accept header and renders stream responses.                                                         |
+| `param-name`       | `string`       | `file`        | Multipart field name for each upload request.                                                                            |
+| `response-key`     | `string`       | `token`       | JSON key used for the hidden input value.                                                                                |
+| `delete-url`       | `string\|null` | `null`        | DELETE endpoint used when removing an uploaded file. Every `:token` placeholder is URI-encoded.                          |
+| `parallel-uploads` | `int`          | `3`           | Concurrent upload count.                                                                                                 |
+| `clearable`        | `bool\|null`   | `multiple`    | Renders a Clear all action. Defaults to true for `multiple` uploads and false for single uploads; pass false to disable. |
+| `density`          | `string`       | `default`     | Drop area density: `default` or `compact`.                                                                               |
+| `view`             | `string`       | `list`        | Attachment view: `list` or `grid`. Grid uses vertical cards and image thumbnails.                                        |
+| `messages`         | `array\|null`  | `null`        | Native labels/errors. See [Messages](#messages) for supported keys.                                                      |
+| `controller`       | `string`       | `file-upload` | Stimulus identifier for subclassing.                                                                                     |
+| `class`            | `string`       | `''`          | Merged on the root.                                                                                                      |
 
 Any other attributes pass to the root except internal `data-{identifier}-*` values, which are owned by props.
+
+## Messages
+
+Pass only the keys you want to override. Unknown keys throw an `InvalidArgumentException` so typos fail before render.
+
+```blade
+<hw:file-upload
+    name="attachments"
+    url="{{ route('uploads.store') }}"
+    multiple
+    accept="image/*,.pdf"
+    :messages="[
+        'idleMultiple' => 'Drop your files',
+        'hint' => 'PDF or image files only',
+        'uploadFailed' => 'Could not upload this file',
+    ]"
+/>
+```
+
+| Key                | Default message                                                              | Used for                                                               |
+|--------------------|------------------------------------------------------------------------------|------------------------------------------------------------------------|
+| `idle`             | `Choose files`                                                               | Dropzone title/label for single-file uploads when `button` is not set. |
+| `idleMultiple`     | `Choose files`                                                               | Dropzone title/label for multiple uploads when `button` is not set.    |
+| `hint`             | `Drop a file here or click to choose` / `Drop files here or click to choose` | Dropzone description; the plural default is used with `multiple`.      |
+| `button`           | `Choose files`                                                               | Explicit dropzone title/label; takes precedence over `idle` values.    |
+| `uploading`        | `Uploading`                                                                  | Live announcement when a file starts uploading or is retried.          |
+| `uploaded`         | `Uploaded`                                                                   | Successful card description prefix and live announcement.              |
+| `uploadFailed`     | `Upload failed`                                                              | Generic error fallback and live announcement prefix.                   |
+| `clearAll`         | `Clear all`                                                                  | Clear action label.                                                    |
+| `cleared`          | `Cleared files`                                                              | Live announcement after clearing current attachments.                  |
+| `removed`          | `Removed`                                                                    | Live announcement after removing one attachment.                       |
+| `removeFile`       | `Remove`                                                                     | Per-file remove action `aria-label` prefix.                            |
+| `retry`            | `Retry upload`                                                               | Per-file retry action `aria-label` prefix.                             |
+| `fileTooBig`       | `File is too large`                                                          | Client size validation and `413 Payload Too Large` fallback.           |
+| `invalidFileType`  | `File type is not allowed`                                                   | Client accept-list validation.                                         |
+| `maxFilesExceeded` | `Maximum number of files reached`                                            | Client max-file-count validation.                                      |
 
 ## Single File
 

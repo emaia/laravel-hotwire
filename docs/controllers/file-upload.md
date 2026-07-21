@@ -24,7 +24,7 @@ progress, hidden input lifecycle, optional DELETE-on-remove and Turbo Stream res
 | `deleteUrl`       | String  | `""`     | DELETE endpoint with one or more `:token` placeholders.                                     |
 | `parallelUploads` | Number  | `3`      | Concurrent native XHR uploads.                                                              |
 | `turboStream`     | Boolean | `false`  | Sends Turbo Stream Accept header and renders stream bodies.                                 |
-| `view`            | String  | `list`   | `list` or `grid`. Grid marks generated cards vertical and enables image thumbnails.          |
+| `view`            | String  | `list`   | `list` or `grid`. Grid marks generated cards vertical and enables image thumbnails.         |
 | `messages`        | Object  | `{}`     | Native labels and validation messages.                                                      |
 
 ## Targets
@@ -51,15 +51,15 @@ progress, hidden input lifecycle, optional DELETE-on-remove and Turbo Stream res
 
 ## Events
 
-| Event                  | Detail                         | Fires when                                                                               |
-|------------------------|--------------------------------|------------------------------------------------------------------------------------------|
-| `file-upload:ready`    | `{}`                           | Controller connects.                                                                     |
-| `file-upload:added`    | `{ file }`                     | A file enters the queue.                                                                 |
-| `file-upload:progress` | `{ file, percent, bytes }`     | Native XHR upload progress updates.                                                      |
-| `file-upload:success`  | `{ file, response, value }`    | Upload returns 2xx. `value` is extracted from `responseKey`; stream success uses `null`. |
-| `file-upload:retry`    | `{ file }`                     | A retryable failed upload is queued again.                                               |
-| `file-upload:error`    | `{ file, message, xhr, text }` | Client validation fails, network fails or server returns non-2xx.                        |
-| `file-upload:removed`  | `{ file }`                     | User removes a single attachment.                                                        |
+| Event                  | Detail                         | Fires when                                                                                        |
+|------------------------|--------------------------------|---------------------------------------------------------------------------------------------------|
+| `file-upload:ready`    | `{}`                           | Controller connects.                                                                              |
+| `file-upload:added`    | `{ file }`                     | A file enters the queue.                                                                          |
+| `file-upload:progress` | `{ file, percent, bytes }`     | Native XHR upload progress updates.                                                               |
+| `file-upload:success`  | `{ file, response, value }`    | Upload returns 2xx. `value` is extracted from `responseKey`; stream success uses `null`.          |
+| `file-upload:retry`    | `{ file }`                     | A retryable failed upload is queued again.                                                        |
+| `file-upload:error`    | `{ file, message, xhr, text }` | Client validation fails, network fails or server returns non-2xx.                                 |
+| `file-upload:removed`  | `{ file }`                     | User removes a single attachment.                                                                 |
 | `file-upload:cleared`  | `{ files, count }`             | User clears all current attachments; this is aggregate and does not emit per-item removed events. |
 
 Event names follow the controller identifier when subclassed.

@@ -78,7 +78,7 @@
         <x-hw::empty-state>
             <x-hw::empty-state.header>
                 <x-hw::empty-state.media variant="icon">
-                    <x-hw::icon name="arrow-up" />
+                    <x-hw::icon name="file-up" />
                 </x-hw::empty-state.media>
                 <x-hw::empty-state.title>{{ $dropzoneTitle }}</x-hw::empty-state.title>
                 <x-hw::empty-state.description>{{ $dropzoneDescription }}</x-hw::empty-state.description>
