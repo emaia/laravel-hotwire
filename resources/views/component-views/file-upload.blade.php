@@ -3,14 +3,30 @@
 @php
     extract($compute($name, $id, $errorKey, $required, $errors, $attributes));
 
+    $messageCopy = $messages ?? [];
+    $defaultTitle = $messageCopy['button'] ?? $messageCopy[$multiple ? 'idleMultiple' : 'idle'] ?? 'Choose files';
+    $dropzoneLabel = (string) ($attributes->get('aria-label') ?: $defaultTitle);
+    $dropzoneTitle = $defaultTitle ?: $dropzoneLabel;
+    $dropzoneDescription = $messageCopy['hint'] ?? ($multiple ? 'Drop files here or click to choose' : 'Drop a file here or click to choose');
+    $removeLabel = $messageCopy['removeFile'] ?? 'Remove file';
+    $clearAllLabel = $messageCopy['clearAll'] ?? 'Clear all';
+    $retryLabel = $messageCopy['retry'] ?? 'Retry upload';
+    $dropzoneActions = implode(' ', [
+        "click->{$identifier}#openPicker",
+        "keydown.enter->{$identifier}#openPicker",
+        "keydown.space->{$identifier}#openPicker",
+        "dragenter->{$identifier}#dragEnter",
+        "dragover->{$identifier}#dragOver",
+        "dragleave->{$identifier}#dragLeave",
+        "drop->{$identifier}#drop",
+    ]);
+
     $fileUploadAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
         'data-slot' => 'file-upload',
         'id' => $resolvedId,
-        'tabindex' => '0',
-        'role' => 'button',
-        'aria-label' => $hasAriaLabel ? null : 'Choose files',
         'data-controller' => $mergedController,
-        'data-action' => $mergedAction,
+        'data-density' => $density,
+        'data-view' => $view,
         "data-{$identifier}-url-value" => $url,
         "data-{$identifier}-hidden-name-value" => $hiddenName,
         "data-{$identifier}-accept-value" => $accept,
@@ -24,26 +40,85 @@
         "data-{$identifier}-delete-url-value" => $deleteUrl,
         "data-{$identifier}-parallel-uploads-value" => $parallelUploads !== 3 ? $parallelUploads : null,
         "data-{$identifier}-turbo-stream-value" => $turboStream ? 'true' : null,
-        "data-{$identifier}-options-value" => $optionsJson !== null ? e($optionsJson) : null,
-        'aria-describedby' => $errorId,
+        "data-{$identifier}-view-value" => $view !== 'list' ? $view : null,
+        "data-{$identifier}-messages-value" => $messagesJson,
+        'aria-describedby' => $describedBy,
         'aria-invalid' => $hasErrors ? 'true' : null,
         'data-invalid' => $hasErrors ? true : null,
         'aria-required' => $isRequired ? 'true' : null,
-        'class' => trim('dropzone '.$class),
-    ], $attributes, $stimulus, except: ['required'], protectedPrefixes: $internalPrefixes);
+        'class' => $class ?: null,
+    ], $attributes->except(['aria-label', 'options']), $stimulus, except: ['required', 'options'], protectedPrefixes: $internalPrefixes);
 @endphp
 
-<div
-    {{ $fileUploadAttributes }}
->
+<div {{ $fileUploadAttributes }}>
     @foreach ($initialValues as $val)
         <input type="hidden" name="{{ $hiddenName }}" value="{{ $val }}" data-hw-upload-preserved>
     @endforeach
-    @isset($preview_template)
-        @if ($preview_template->isNotEmpty())
-            <template data-{{ $identifier }}-target="previewTemplate">{!! $preview_template !!}</template>
-        @endif
-    @endisset
+
+    <input
+        type="file"
+        hidden
+        id="{{ $inputId }}"
+        name="{{ $paramName }}"
+        form="{{ $inputFormId }}"
+        @if ($accept) accept="{{ $accept }}" @endif
+        @if ($multiple) multiple @endif
+        data-{{ $identifier }}-target="input"
+        data-action="change->{{ $identifier }}#select"
+    >
+
+    <div
+        data-slot="file-upload-dropzone"
+        data-{{ $identifier }}-target="dropzone"
+        data-action="{{ $dropzoneActions }}"
+        role="button"
+        tabindex="0"
+        aria-label="{{ $dropzoneLabel }}"
+    >
+        <x-hw::empty-state>
+            <x-hw::empty-state.header>
+                <x-hw::empty-state.media variant="icon">
+                    <x-hw::icon name="file-up" />
+                </x-hw::empty-state.media>
+                <x-hw::empty-state.title>{{ $dropzoneTitle }}</x-hw::empty-state.title>
+                <x-hw::empty-state.description>{{ $dropzoneDescription }}</x-hw::empty-state.description>
+            </x-hw::empty-state.header>
+        </x-hw::empty-state>
+    </div>
+
+    @if ($isClearable)
+        <div data-slot="file-upload-actions">
+            <x-hw::button type="button" variant="ghost" size="sm" hidden data-file-upload-clear data-action="{{ $identifier }}#clear">
+                {{ $clearAllLabel }}
+            </x-hw::button>
+        </div>
+    @endif
+
+    <div data-slot="attachment-group" role="list" data-{{ $identifier }}-target="list"></div>
+
+    <template data-{{ $identifier }}-target="template">
+        <x-hw::attachment state="idle" :orientation="$attachmentOrientation" role="listitem" data-file-upload-attachment>
+            <x-hw::attachment.media variant="icon">
+                <x-hw::icon name="copy" />
+            </x-hw::attachment.media>
+            <x-hw::attachment.content>
+                <x-hw::attachment.title data-file-upload-name></x-hw::attachment.title>
+                <x-hw::attachment.description data-file-upload-description></x-hw::attachment.description>
+                <div data-file-upload-progress hidden>
+                    <x-hw::progress value="0" data-file-upload-progressbar />
+                </div>
+            </x-hw::attachment.content>
+            <x-hw::attachment.actions>
+                <x-hw::attachment.action hidden data-file-upload-retry data-action="{{ $identifier }}#retry" aria-label="{{ $retryLabel }}">
+                    <x-hw::icon name="redo-2" />
+                </x-hw::attachment.action>
+                <x-hw::attachment.action data-file-upload-remove data-action="{{ $identifier }}#remove" aria-label="{{ $removeLabel }}">
+                    <x-hw::icon name="x" />
+                </x-hw::attachment.action>
+            </x-hw::attachment.actions>
+        </x-hw::attachment>
+    </template>
+
     <div
         data-slot="file-upload-announcer"
         role="status"

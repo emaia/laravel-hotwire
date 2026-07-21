@@ -280,6 +280,17 @@ it('keeps item icon media unframed like the shadcn base-nova reference', functio
         ->not->toContain('[data-slot="item-media"][data-variant="icon"] { @apply size-8 rounded-md border border-border bg-background');
 });
 
+it('keeps attachment image previews covered and uses the shared shimmer motion', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain('[data-slot="attachment-media"] > img')
+        ->toContain('@apply size-full object-cover')
+        ->toContain('[data-shimmer="true"]')
+        ->toContain('hotwire-shimmer')
+        ->toContain('prefers-reduced-motion: reduce');
+});
+
 it('defines aspect ratio styling in the nova preset', function () use ($novaPresetPath) {
     $css = file_get_contents($novaPresetPath);
 

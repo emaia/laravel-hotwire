@@ -361,7 +361,7 @@ Keeping these as separate forms avoids the "form inside a form" footgun.
 Key file-upload props:
 
 - `:turbo-stream="true"` — accept stream responses on upload XHR
-- `:preview="false"` — Dropzone doesn't render previews (the server-rendered list does)
+- `:preview="false"` — native client-side attachment cards are skipped because the server-rendered list owns the UI
 - `:emit-hidden="false"` — no hidden inputs in the upload area (cards own their state)
 
 ### The card partial — single source of truth
