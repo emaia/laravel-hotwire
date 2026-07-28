@@ -157,6 +157,17 @@ it('safelists runtime classes applied by Stimulus controllers', function () use 
         ->toContain('duration-100');
 });
 
+it('applies shared button styles to attachment actions', function () use ($novaPresetPath) {
+    $lines = collect(explode("\n", file_get_contents($novaPresetPath)));
+    $base = $lines->first(fn (string $line): bool => str_contains($line, ':is([data-slot="button"]'));
+    $ghost = $lines->first(fn (string $line): bool => str_contains($line, '[data-variant="ghost"]'));
+    $iconXs = $lines->first(fn (string $line): bool => str_contains($line, '[data-size="icon-xs"]'));
+
+    expect($base)->toContain('[data-slot="attachment-action"]')
+        ->and($ghost)->toContain('[data-slot="attachment-action"]')
+        ->and($iconXs)->toContain('[data-slot="attachment-action"]');
+});
+
 it('lets popover leave transitions remain visible until hidden is applied by JavaScript', function () use ($novaPresetPath) {
     $css = file_get_contents($novaPresetPath);
 

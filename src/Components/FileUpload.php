@@ -170,7 +170,7 @@ class FileUpload extends Component
             'hiddenName' => $hiddenName,
             'hasErrors' => $hasErrors,
             'isRequired' => $isRequired,
-            'isClearable' => $this->clearable ?? $this->multiple,
+            'isClearable' => $this->clearable ?? ($this->multiple && ($this->preview || $this->emitHidden)),
             'attachmentOrientation' => $this->view === 'grid' ? 'vertical' : 'horizontal',
             'mergedController' => $this->identifier,
             'initialValues' => $initialValues,

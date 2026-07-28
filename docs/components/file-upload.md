@@ -36,7 +36,7 @@ Successful JSON responses write a hidden input with `response.token` by default.
 | `response-key`     | `string`       | `token`       | JSON key used for the hidden input value.                                                                                |
 | `delete-url`       | `string\|null` | `null`        | DELETE endpoint used when removing an uploaded file. Every `:token` placeholder is URI-encoded.                          |
 | `parallel-uploads` | `int`          | `3`           | Concurrent upload count.                                                                                                 |
-| `clearable`        | `bool\|null`   | `multiple`    | Renders a Clear all action. Defaults to true for `multiple` uploads and false for single uploads; pass false to disable. |
+| `clearable`        | `bool\|null`   | automatic     | Renders a Clear all action. Defaults to true for `multiple` unless both `preview` and `emit-hidden` are false.             |
 | `density`          | `string`       | `default`     | Drop area density: `default` or `compact`.                                                                               |
 | `view`             | `string`       | `list`        | Attachment view: `list` or `grid`. Grid uses vertical cards and image thumbnails.                                        |
 | `messages`         | `array\|null`  | `null`        | Native labels/errors. See [Messages](#messages) for supported keys.                                                      |

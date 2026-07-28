@@ -115,7 +115,10 @@ export default class extends Controller {
         const preserved = this.preservedHiddens();
         if (items.length === 0 && preserved.length === 0) return;
 
-        const remoteValues = items.map((item) => item.value).filter((value) => value != null && value !== "");
+        const remoteValues = [...new Set([
+            ...items.map((item) => item.value),
+            ...preserved.map((element) => element.value),
+        ].filter((value) => value != null && value !== ""))];
 
         for (const item of items) {
             this.removeItem(item, { dispatch: false, announce: false, deleteRemote: false });
@@ -142,6 +145,14 @@ export default class extends Controller {
 
         const item = this.items.find((candidate) => candidate.id === String(rawId));
         if (!item || item.removed || !item.retryable) return;
+
+        if (this.maxFilesValue > 0 && this.acceptedItems().length >= this.maxFilesValue) {
+            const text = this.message("maxFilesExceeded");
+            this.setDescription(item, text);
+            this.announce(`${this.message("uploadFailed")}: ${text}`);
+            this.dispatch("error", { detail: { file: item.file, message: text, xhr: null, text } });
+            return;
+        }
 
         item.state = "queued";
         item.progress = 0;
@@ -521,8 +532,11 @@ export default class extends Controller {
     }
 
     requestHeaders() {
-        const headers = this.csrfHeaders();
-        if (this.turboStreamValue) headers.Accept = "text/vnd.turbo-stream.html, application/json";
+        const headers = {
+            ...this.csrfHeaders(),
+            Accept: this.turboStreamValue ? "text/vnd.turbo-stream.html, application/json" : "application/json",
+            "X-Requested-With": "XMLHttpRequest",
+        };
         return headers;
     }
 
@@ -560,10 +574,10 @@ export default class extends Controller {
     hydrateItems() {
         if (!this.hasListTarget) return [];
 
-        return [...this.listTarget.querySelectorAll("[data-file-upload-attachment][data-file-upload-id]")].map((element) => {
+        const hiddens = [...this.element.querySelectorAll('input[type="hidden"][data-hw-upload]')];
+        const items = [...this.listTarget.querySelectorAll("[data-file-upload-attachment][data-file-upload-id]")].map((element) => {
             const id = element.dataset.fileUploadId;
-            const hidden = [...this.element.querySelectorAll('input[type="hidden"][data-hw-upload]')]
-                .find((input) => input.dataset.fileUploadId === id) ?? null;
+            const hidden = hiddens.find((input) => input.dataset.fileUploadId === id) ?? null;
 
             return {
                 id,
@@ -571,24 +585,46 @@ export default class extends Controller {
                 element,
                 hidden,
                 progress: Number(element.querySelector('[data-slot="progress"]')?.dataset.value ?? 100),
+                previewUrl: null,
                 removed: false,
+                retryable: false,
                 state: element.dataset.state ?? "done",
                 value: hidden?.value ?? null,
                 xhr: null,
             };
         });
+
+        const hydratedIds = new Set(items.map((item) => item.id));
+        for (const hidden of hiddens) {
+            const id = hidden.dataset.fileUploadId;
+            if (!id || hydratedIds.has(id)) continue;
+
+            items.push({
+                id,
+                file: this.fileFromElement(null, hidden.value),
+                element: null,
+                hidden,
+                progress: 100,
+                previewUrl: null,
+                removed: false,
+                retryable: false,
+                state: "done",
+                value: hidden.value,
+                xhr: null,
+            });
+        }
+
+        return items;
     }
 
     nextAvailableId() {
-        const ids = this.hasListTarget
-            ? [...this.listTarget.querySelectorAll("[data-file-upload-id]")].map((element) => Number(element.dataset.fileUploadId))
-            : [];
+        const ids = this.items.map((item) => Number(item.id));
 
         return Math.max(0, ...ids.filter(Number.isFinite)) + 1;
     }
 
     fileFromElement(element, value) {
-        const name = element.querySelector("[data-file-upload-name]")?.textContent?.trim() || value || "file";
+        const name = element?.querySelector("[data-file-upload-name]")?.textContent?.trim() || value || "file";
         return { name, size: 0, type: "" };
     }
 

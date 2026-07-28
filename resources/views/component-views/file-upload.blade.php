@@ -41,11 +41,8 @@
         "data-{$identifier}-parallel-uploads-value" => $parallelUploads !== 3 ? $parallelUploads : null,
         "data-{$identifier}-turbo-stream-value" => $turboStream ? 'true' : null,
         "data-{$identifier}-view-value" => $view !== 'list' ? $view : null,
-        "data-{$identifier}-messages-value" => $messagesJson,
-        'aria-describedby' => $describedBy,
-        'aria-invalid' => $hasErrors ? 'true' : null,
+        "data-{$identifier}-messages-value" => $messagesJson !== null ? e($messagesJson) : null,
         'data-invalid' => $hasErrors ? true : null,
-        'aria-required' => $isRequired ? 'true' : null,
         'class' => $class ?: null,
     ], $attributes->except(['aria-label', 'options']), $stimulus, except: ['required', 'options'], protectedPrefixes: $internalPrefixes);
 @endphp
@@ -74,6 +71,9 @@
         role="button"
         tabindex="0"
         aria-label="{{ $dropzoneLabel }}"
+        @if ($describedBy) aria-describedby="{{ $describedBy }}" @endif
+        @if ($hasErrors) aria-invalid="true" @endif
+        @if ($isRequired) aria-required="true" @endif
     >
         <x-hw::empty-state>
             <x-hw::empty-state.header>

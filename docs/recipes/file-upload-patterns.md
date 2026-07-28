@@ -3,39 +3,187 @@
 Five real-world patterns for the native [`<hw:file-upload>`](../components/file-upload.md) component plus the
 [`file-upload`](../controllers/file-upload.md) Stimulus controller.
 
-- [1. Spatie Media Library](#1-spatie-media-library)
+- [1. MediaMan gallery with lazy thumbnails](#1-mediaman-gallery-with-lazy-thumbnails)
 - [2. Async thumbnail via broadcast](#2-async-thumbnail-via-broadcast)
 - [3. Stream-rendered gallery with server-side EXIF](#3-stream-rendered-gallery-with-server-side-exif)
 - [4. Single-file edit form with a stream-replaced card](#4-single-file-edit-form-with-a-stream-replaced-card)
 - [5. Rich media library list with rename and reorder](#5-rich-media-library-list-with-rename-and-reorder)
 
-## 1. Spatie Media Library
+## 1. MediaMan Gallery With Lazy Thumbnails
 
-Pin uploaded files to a temporary collection and claim them on final submit. The endpoint returns the media UUID;
-`response-key="uuid"` writes it into the hidden input.
+Let `<hw:file-upload>` handle selection, drag/drop, upload progress and Turbo Stream delivery while
+[`emaia/laravel-mediaman`](https://github.com/emaia/laravel-mediaman) stores the file and owns the media relationship.
+Each upload returns a server-rendered attachment card; that card carries the hidden input for the final form and uses
+[`lazy-image`](../controllers/lazy-image.md) to poll the generated thumbnail URL until the conversion exists.
+
+Keep the media list outside the final form so each card can have its own DELETE form. The hidden inputs point back to the
+real form with the native `form` attribute.
 
 ```blade
-<hw:file-upload
-    name="avatar_uuid"
-    url="{{ route('uploads.store') }}"
-    response-key="uuid"
-    :delete-url="route('uploads.destroy', ':token')"
-    :value="$user->avatar_media_uuid"
-    accept="image/*"
-/>
+<hw:form id="post-form" action="{{ route('posts.update', $post) }}" method="put">
+    <hw:field name="title" label="Title">
+        <hw:input name="title" :value="$post->title" />
+    </hw:field>
+</hw:form>
+
+<hw:field name="media_ids" label="Gallery">
+    <hw:file-upload
+        name="media_ids"
+        url="{{ route('posts.media.store', $post) }}"
+        multiple
+        turbo-stream
+        :preview="false"
+        :emit-hidden="false"
+        :clearable="false"
+        accept="image/*"
+        view="grid"
+        :max-size-bytes="10 * 1024 * 1024"
+        :messages="['idleMultiple' => 'Drop images or click to upload']"
+    />
+</hw:field>
+
+<hw:attachment.group id="post-media-gallery">
+    @foreach ($post->getMedia('gallery') as $media)
+        @include('posts._media-card', ['post' => $post, 'media' => $media, 'formId' => 'post-form'])
+    @endforeach
+</hw:attachment.group>
+
+<hw:button type="submit" form="post-form">Save post</hw:button>
+```
+
+The upload endpoint creates a MediaMan `Media` row, starts the thumbnail conversion, and appends the card. The card is
+the source of truth for the submitted media id, so `emit-hidden` stays disabled on the uploader.
+
+```php
+use App\Models\Post;
+use Emaia\MediaMan\Jobs\PerformConversions;
+use Emaia\MediaMan\MediaUploader;
+use Emaia\MediaMan\Models\Media;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Validation\Rule;
+
+Route::middleware('auth')->group(function () {
+    Route::post('/posts/{post}/media', [PostMediaController::class, 'store'])->name('posts.media.store');
+    Route::delete('/posts/{post}/media/{media}', [PostMediaController::class, 'destroy'])->name('posts.media.destroy');
+});
 ```
 
 ```php
-Route::post('/uploads', function (Request $request) {
-    $request->validate(['file' => ['required', 'image', 'max:2048']]);
+class PostMediaController
+{
+    public function store(Request $request, Post $post)
+    {
+        $request->validate([
+            'file' => ['required', 'image', 'max:10240'],
+        ]);
 
-    $media = $request->user()
-        ->addMedia($request->file('file'))
-        ->toMediaCollection('avatars');
+        $media = MediaUploader::fromRequest('file', $request)
+            ->useCollection('Post uploads')
+            ->withCustomProperties([
+                'uploaded_by' => $request->user()->id,
+                'post_id' => $post->id,
+            ])
+            ->upload();
 
-    return response()->json(['uuid' => $media->uuid]);
-})->middleware(['auth', 'throttle:20,1'])->name('uploads.store');
+        PerformConversions::dispatch($media, ['thumb']);
+
+        return turbo_stream()->append(
+            'post-media-gallery',
+            view('posts._media-card', ['post' => $post, 'media' => $media, 'formId' => 'post-form'])
+        );
+    }
+
+    public function destroy(Request $request, Post $post, Media $media)
+    {
+        abort_unless(
+            (int) $media->getCustomProperty('uploaded_by') === (int) $request->user()->id
+            && (int) $media->getCustomProperty('post_id') === (int) $post->id,
+            403
+        );
+
+        $post->detachMedia($media);
+        $media->delete();
+
+        return turbo_stream()->remove("media-{$media->id}");
+    }
+}
 ```
+
+Render the card with `lazy-image`. The placeholder appears immediately; the controller replaces it with the thumb when
+the conversion URL starts returning 200 OK.
+
+```blade
+{{-- resources/views/posts/_media-card.blade.php --}}
+<hw:attachment id="media-{{ $media->id }}" orientation="vertical" role="listitem" data-media-card>
+    <hw:attachment.media variant="image">
+        <picture
+            {{
+                stimulus()->controller('lazy-image', [
+                    'url' => $media->getUrl('thumb'),
+                    'alt' => $media->name,
+                    'interval' => 1500,
+                    'maxAttempts' => 40,
+                    'width' => $media->getImageWidth(),
+                    'height' => $media->getImageHeight(),
+                    'imgClass' => 'h-full w-full object-cover',
+                ])
+            }}
+            class="block aspect-square bg-muted"
+        >
+            @if ($media->getPlaceholder())
+                <img src="{{ $media->getPlaceholder() }}" alt="" class="h-full w-full object-cover" aria-hidden="true">
+            @else
+                <hw:skeleton class="h-full w-full" />
+            @endif
+        </picture>
+    </hw:attachment.media>
+
+    <hw:attachment.content>
+        <hw:attachment.title>{{ $media->name }}</hw:attachment.title>
+        <hw:attachment.description>{{ strtoupper($media->extension) }} · {{ $media->friendly_size }}</hw:attachment.description>
+        <input type="hidden" name="media_ids[]" value="{{ $media->id }}" form="{{ $formId }}">
+    </hw:attachment.content>
+
+    <hw:attachment.actions>
+        <form action="{{ route('posts.media.destroy', [$post, $media]) }}" method="post">
+            @csrf
+            @method('delete')
+            <hw:attachment.action type="submit" aria-label="Remove {{ $media->name }}">
+                <hw:icon name="x" />
+            </hw:attachment.action>
+        </form>
+    </hw:attachment.actions>
+</hw:attachment>
+```
+
+On final submit, validate the submitted ids and sync the model channel. `syncMedia()` is still the ownership boundary;
+the upload endpoint only stages Media rows and returns visible cards.
+
+```php
+public function update(Request $request, Post $post)
+{
+    $validated = $request->validate([
+        'title' => ['required', 'string', 'max:255'],
+        'media_ids' => ['array'],
+        'media_ids.*' => [
+            'integer',
+            Rule::exists(config('mediaman.tables.media'), 'id')
+                ->where('custom_properties->uploaded_by', $request->user()->id)
+                ->where('custom_properties->post_id', $post->id),
+        ],
+    ]);
+
+    $post->update(['title' => $validated['title']]);
+    $post->syncMedia($validated['media_ids'] ?? [], 'gallery');
+
+    return back();
+}
+```
+
+If your `gallery` channel already runs `performConversions('thumb')`, skip the explicit `PerformConversions::dispatch()`
+unless you need the thumbnail before the final submit. If the same Media can be shared by several models, detach it in
+the destroy action instead of deleting the Media row. Add a scheduled prune for uploaded rows that are never claimed.
 
 ## 2. Async Thumbnail Via Broadcast
 

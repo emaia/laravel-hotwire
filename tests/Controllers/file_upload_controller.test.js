@@ -111,6 +111,15 @@ test("select adds files, starts a native XHR upload and dispatches added", async
     expect(mounted.root.querySelector("[data-file-upload-clear]").hidden).toBe(false);
 });
 
+test("uploads negotiate Laravel JSON responses", async () => {
+    await mount();
+
+    mounted.controller.select({ target: { files: [file("photo.png")], value: "x" } });
+
+    expect(requests[0].headers.Accept).toBe("application/json");
+    expect(requests[0].headers["X-Requested-With"]).toBe("XMLHttpRequest");
+});
+
 test("drop adds files and toggles drag state off", async () => {
     await mount();
     const dropped = file("document.pdf", { type: "application/pdf" });
@@ -346,6 +355,29 @@ test("retry requeues retryable server errors in the same attachment", async () =
     expect(mounted.root.querySelector('input[type="hidden"][name="avatar"]')?.value).toBe("retry-token");
 });
 
+test("retry respects max-files and remains available after capacity is freed", async () => {
+    await mount(defaultHtml('data-file-upload-multiple-value="true" data-file-upload-max-files-value="1"'));
+    mounted.controller.select({ target: { files: [file("failed.png")], value: "x" } });
+    requests[0].respond(500, "Server error", { "content-type": "text/plain" });
+    await wait(0);
+
+    const failed = mounted.root.querySelector('[data-file-upload-id]');
+    const failedId = failed.dataset.fileUploadId;
+    mounted.controller.select({ target: { files: [file("active.png")], value: "x" } });
+
+    mounted.controller.retry({ preventDefault() {}, params: { id: failedId } });
+
+    expect(requests).toHaveLength(2);
+    expect(failed.querySelector("[data-file-upload-description]")?.textContent).toBe("Maximum number of files reached");
+    expect(failed.querySelector("[data-file-upload-retry]")?.hidden).toBe(false);
+
+    const activeId = [...mounted.root.querySelectorAll('[data-file-upload-id]')][1].dataset.fileUploadId;
+    mounted.controller.remove({ preventDefault() {}, params: { id: activeId } });
+    mounted.controller.retry({ preventDefault() {}, params: { id: failedId } });
+
+    expect(requests).toHaveLength(3);
+});
+
 test("network errors with status zero are retryable", async () => {
     await mount();
     mounted.controller.select({ target: { files: [file("photo.png")], value: "x" } });
@@ -558,6 +590,18 @@ test("clear removes preserved hidden upload tokens even when no card is hydrated
     expect(cleared).toEqual([{ files: [], count: 2 }]);
 });
 
+test("clear deletes preserved remote upload tokens", async () => {
+    await mount(defaultHtml(
+        'data-file-upload-multiple-value="true" data-file-upload-delete-url-value="/uploads/:token"',
+        '<input type="hidden" name="avatar" value="old-a" data-hw-upload-preserved><input type="hidden" name="avatar" value="old-b" data-hw-upload-preserved>'
+    ));
+
+    mounted.controller.clear({ preventDefault() {} });
+    await wait(0);
+
+    expect(fetchCalls.map((call) => call.url)).toEqual(["/uploads/old-a", "/uploads/old-b"]);
+});
+
 test("clear action stays visible while retrying a failed item", async () => {
     await mount();
     mounted.controller.select({ target: { files: [file("photo.png")], value: "x" } });
@@ -663,6 +707,24 @@ test("reconnect hydrates completed uploads so remove still clears their hidden i
 
     expect(mounted.root.querySelector('[data-slot="attachment"]')).toBeNull();
     expect(mounted.root.querySelector('input[type="hidden"]')).toBeNull();
+    expect(fetchCalls).toEqual([{ url: "/uploads/abc", init: { method: "DELETE", headers: {} } }]);
+});
+
+test("reconnect hydrates hidden-only uploads when preview is disabled", async () => {
+    await mount(defaultHtml('data-file-upload-preview-value="false" data-file-upload-delete-url-value="/uploads/:token"'));
+    mounted.controller.select({ target: { files: [file("photo.png")], value: "x" } });
+    requests[0].respond(201, { token: "abc" });
+    await wait(0);
+
+    expect(mounted.root.querySelector('[data-file-upload-attachment]')).toBeNull();
+    expect(mounted.root.querySelector('input[data-hw-upload]')?.value).toBe("abc");
+
+    mounted.controller.disconnect();
+    mounted.controller.connect();
+    mounted.controller.clear({ preventDefault() {} });
+    await wait(0);
+
+    expect(mounted.root.querySelector('input[data-hw-upload]')).toBeNull();
     expect(fetchCalls).toEqual([{ url: "/uploads/abc", init: { method: "DELETE", headers: {} } }]);
 });
 

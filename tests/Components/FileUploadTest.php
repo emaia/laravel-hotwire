@@ -119,6 +119,7 @@ it('renders clear-all controls for multiple uploads and explicit opt-in', functi
     $multiple = $this->blade('<x-hw::file-upload name="attachments" url="/uploads" multiple />');
     $single = $this->blade('<x-hw::file-upload name="avatar" url="/uploads" />');
     $disabled = $this->blade('<x-hw::file-upload name="attachments" url="/uploads" multiple :clearable="false" />');
+    $serverRendered = $this->blade('<x-hw::file-upload name="attachments" url="/uploads" multiple :preview="false" :emit-hidden="false" />');
     $explicit = $this->blade('<x-hw::file-upload name="avatar" url="/uploads" clearable />');
 
     $multiple->assertSee('data-slot="file-upload-actions"', false)
@@ -128,6 +129,7 @@ it('renders clear-all controls for multiple uploads and explicit opt-in', functi
 
     $single->assertDontSee('data-file-upload-clear', false);
     $disabled->assertDontSee('data-file-upload-clear', false);
+    $serverRendered->assertDontSee('data-file-upload-clear', false);
     $explicit->assertSee('data-file-upload-clear', false);
 });
 
@@ -219,6 +221,13 @@ it('escapes messages once for the stimulus object value', function () {
         ->assertDontSee('&amp;lt;here&amp;gt;', false);
 });
 
+it('renders messages as HTML-safe Stimulus object JSON', function () {
+    $view = $this->blade('<x-hw::file-upload name="media" url="/uploads" :messages="[\'idleMultiple\' => \'Drop images\']" />');
+
+    $view->assertSee('data-file-upload-messages-value="{&quot;idleMultiple&quot;:&quot;Drop images&quot;}"', false)
+        ->assertDontSee('{\\"idleMultiple\\"', false);
+});
+
 it('omits default-valued data attrs', function () {
     $view = $this->blade('<x-hw::file-upload name="avatar" url="/uploads" />');
 
@@ -276,6 +285,25 @@ it('sets invalid state when direct or sub-key errors are present', function () {
     $view->assertSee('aria-invalid="true"', false)
         ->assertSee('aria-describedby="attachments-error"', false)
         ->assertSee('data-invalid', false);
+});
+
+it('puts validation aria attributes on the focusable dropzone', function () {
+    shareFileUploadErrors(['attachments.0' => ['too big']]);
+
+    $view = $this->blade('<x-hw::file-upload name="attachments" url="/uploads" multiple required />');
+    $html = (string) $view;
+
+    preg_match('/<div\s+([^>]*data-slot="file-upload"[^>]*)>/s', $html, $root);
+    preg_match('/<div\s+([^>]*data-slot="file-upload-dropzone"[^>]*)>/s', $html, $dropzone);
+
+    expect($root[1])
+        ->not->toContain('aria-describedby')
+        ->not->toContain('aria-invalid')
+        ->not->toContain('aria-required')
+        ->and($dropzone[1])
+        ->toContain('aria-describedby="attachments-error"')
+        ->toContain('aria-invalid="true"')
+        ->toContain('aria-required="true"');
 });
 
 it('uses explicit error-key override', function () {

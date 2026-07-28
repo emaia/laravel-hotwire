@@ -330,7 +330,7 @@ Keeping these as separate forms avoids the "form inside a form" footgun.
             :turbo-stream="true"
             :preview="false"
             :emit-hidden="false"
-            :messages="['default' => 'Drag images or click to upload']"
+            :messages="['idleMultiple' => 'Drag images or click to upload']"
             class="mt-2"
         />
 

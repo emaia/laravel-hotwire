@@ -35,3 +35,9 @@ it('keeps public documentation examples on the short configurable tag syntax', f
 
     expect($offenders)->toBe([]);
 });
+
+it('keeps the draft gallery recipe on supported file-upload message keys', function () {
+    $contents = file_get_contents(__DIR__.'/../../docs/recipes/draft-as-state-gallery.md');
+
+    expect($contents)->not->toContain(":messages=\"['default' =>");
+});
