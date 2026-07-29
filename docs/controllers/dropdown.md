@@ -1,8 +1,8 @@
 # Dropdown
 
 Accessible disclosure dropdown: a trigger button toggles a Floating UI-positioned menu. It dismisses on outside click,
-on `Escape` (returning focus to the trigger) and — by default — when an actionable item inside the menu is clicked. The
-show/hide animation is optional and driven by CSS classes and positioning data attributes.
+on `Escape` (returning focus to the trigger) and — by default — when an actionable item inside the menu is clicked. Its
+state-driven Presence lifecycle supports CSS motion without keeping closed content interactive.
 
 **Identifier:** `dropdown`  
 **Install:** `php artisan hotwire:controllers dropdown`
@@ -10,15 +10,17 @@ show/hide animation is optional and driven by CSS classes and positioning data a
 ## Requirements
 
 - `@floating-ui/dom` for viewport-aware anchored positioning.
-- Ships with `_floating.js` and `_transition.js` helpers, which `hotwire:controllers` publishes alongside the controller
-  automatically.
+- Ships with `_floating.js`, `_presence.js`, and `_top_layer.js`, which `hotwire:controllers` publishes alongside the
+  controller automatically.
+- Without the Nova preset, reset native Popover positioning with
+  `[data-hotwire-top-layer][popover] { inset: auto; margin: 0; }` and define the floating element's border and padding.
 
 ## Targets
 
 | Target    | Required | Description                                                                                            |
 | --------- | :------: | ------------------------------------------------------------------------------------------------------ |
-| `trigger` |    ✅    | The element that toggles the menu; `aria-expanded` and `data-state` are synced and it receives focus back on `Escape` |
-| `menu`    |    ✅    | The element shown/hidden                                                                               |
+| `trigger` |    ✅    | The element that toggles the menu; `aria-expanded` and `data-dropdown-state` are synced and it receives focus back on `Escape` |
+| `menu`    |    ✅    | The floating element whose `data-state`, `hidden`, and `inert` presence state is managed             |
 
 ## Stimulus Values
 
@@ -43,11 +45,8 @@ show/hide animation is optional and driven by CSS classes and positioning data a
 Positioning values may live on the controller root or on the `menu` target. The packaged Blade component writes them to
 `dropdown.content`, so each content element carries the placement configuration it needs.
 
-## Stimulus Classes
-
-| Class    | Default    | Description                    |
-| -------- | ---------- | ------------------------------ |
-| `hidden` | `"hidden"` | Class toggled to hide the menu |
+Motion is configured on the menu itself with `data-motion="default|none"`; it is not a controller value. The
+`dropdown.content` Blade component renders this attribute from its `motion` prop.
 
 ## Actions
 
@@ -69,7 +68,7 @@ The controller positions the menu for you:
         data-action="dropdown#toggle"
         aria-haspopup="true"
         aria-expanded="false"
-        data-state="closed"
+        data-dropdown-state="closed"
         class="inline-flex items-center gap-1"
     >
         Options
@@ -81,7 +80,11 @@ The controller positions the menu for you:
         data-dropdown-target="menu"
         data-dropdown-side-value="bottom"
         data-dropdown-align-value="end"
-        class="hidden max-h-(--available-height) w-(--anchor-width) min-w-32 rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10"
+        data-state="closed"
+        data-motion="default"
+        hidden
+        inert
+        class="max-h-(--available-height) w-(--anchor-width) min-w-32 rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10"
     >
         <a href="/account" class="block px-4 py-2 text-sm">Account</a>
         <a href="/support" class="block px-4 py-2 text-sm">Support</a>
@@ -93,13 +96,17 @@ The controller positions the menu for you:
 ```
 
 The chevron rotates for free in the package preset when it carries `data-slot="dropdown-trigger-icon"`: the controller
-keeps `aria-expanded` and `data-state` in sync on the trigger, and the preset targets the open state. If you are styling
-without the preset, use the same selector instead of relying on `group-*` classes.
+keeps `aria-expanded` and `data-dropdown-state` in sync on the trigger, and the preset targets the open state. The
+namespaced state avoids clobbering `data-state` owned by a Toggle, Sidebar button, or another controller composed on the
+same trigger.
 
 ## Positioning
 
 The controller uses Floating UI's `computePosition`, `autoUpdate`, `offset`, `flip`, `shift`, and `size` middleware. The
-menu is positioned only while open; `autoUpdate` is cleaned up on close, `disconnect()`, and `turbo:before-cache`.
+menu is positioned only while present. Presence waits for the first successful placement before changing the menu to
+`data-state="open"`, and stale results from stopped or superseded positioning runs cannot mutate its coordinates or CSS
+variables. `autoUpdate` is cleaned up after exit, on target replacement, on `disconnect()`, and on
+`turbo:before-cache`.
 
 The helper writes these hooks to the menu:
 
@@ -111,110 +118,52 @@ The helper writes these hooks to the menu:
 - `--available-height`
 - `--transform-origin`
 
-The Nova preset uses those hooks for trigger-width matching, viewport-constrained height and side-aware animations. The
-controller promotes the menu to the browser top layer when supported; fallback rendering can still be clipped by ancestors
-with `overflow: hidden`.
+The Nova preset uses those hooks for trigger-width matching, viewport-constrained height and side-aware motion.
+`data-side` and `data-align` describe the resolved placement returned by Floating UI after `flip`, not just the requested
+values. The controller promotes the menu to the browser top layer when supported; fallback rendering can still be clipped
+by ancestors with `overflow: hidden`.
+
+While native top layer is active, `fixed` uses viewport-relative coordinates and `absolute` uses page/document
+coordinates; `absolute` does not use the trigger's nearest positioned ancestor in that mode. Without native Popover
+support, `absolute` falls back to normal offset-parent behavior.
 
 When `mobile-side` or `mobile-align` is present, the controller watches `mobile-media` and recalculates Floating UI while
-open if the media query changes.
+open if the media query changes. While that query matches, mobile placement wins as a complete `(side, align)` profile:
+an absent mobile value falls back to the corresponding normal `side` or `align`, never to a collapsed value.
 
 When `collapsed-side` or `collapsed-align` is present, that placement is used while the dropdown root, active trigger or
-menu target matches the `collapsed-when` ancestor selector. The packaged default targets collapsed Sidebars.
+menu target matches the `collapsed-when` ancestor selector. The packaged default targets collapsed Sidebars. Collapsed
+placement is considered only when the mobile query does not match.
 
-## Transitions
+## Presence And Motion
 
-Declare enter/leave transitions with `data-transition-*` on the menu (Vue/`stimulus-use` style). They are optional —
-without them the menu just toggles the hidden class.
+Server-render menus with `data-state="closed" hidden inert`, even when `open` starts as `true`; this avoids an
+unpositioned flash before Stimulus connects. Opening removes `hidden`, obtains the first Floating UI placement while the
+menu remains closed and inert, then sets `data-state="open"` and removes `inert`. Closing sets `data-state="closed"` and
+`inert` immediately, but keeps the menu present until its CSS motion finishes; only then does Presence add `hidden`.
 
-```html
-<div
-    data-slot="dropdown-menu"
-    data-dropdown-target="menu"
-    class="hidden max-h-(--available-height) w-(--anchor-width) min-w-32 origin-(--transform-origin) rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10"
-    data-transition-enter="transition ease-out duration-100"
-    data-transition-enter-from="opacity-0 scale-95"
-    data-transition-enter-to="opacity-100 scale-100"
-    data-transition-leave="transition ease-in duration-75"
-    data-transition-leave-from="opacity-100 scale-100"
-    data-transition-leave-to="opacity-0 scale-95"
->
-    …
-</div>
-```
-
-| Attribute                    | Applied                                  |
-| ---------------------------- | ---------------------------------------- |
-| `data-transition-enter`      | Throughout the enter transition (timing) |
-| `data-transition-enter-from` | Enter start state                        |
-| `data-transition-enter-to`   | Enter end state                          |
-| `data-transition-leave`      | Throughout the leave transition (timing) |
-| `data-transition-leave-from` | Leave start state                        |
-| `data-transition-leave-to`   | Leave end state                          |
-
-<details>
-<summary><strong>CSS-only transitions (Tailwind v4)</strong></summary>
-
-You can skip the `data-transition-*` attributes entirely and animate with CSS, keyed off the hidden class — the
-controller then just toggles `hidden` instantly and CSS does the rest. This needs three pieces, because `hidden` is
-`display: none`:
-
-1. **`@starting-style`** — the state the menu animates _from_ when it leaves `display: none` (the enter start).
-2. **`transition-behavior: allow-discrete`** (Tailwind `transition-discrete`) — lets `display` take part in the
-   transition, deferring `display: none` until the leave animation finishes.
-3. **`display` in the transitioned properties** (hence `transition-all`).
-
-In plain CSS:
+The Nova preset transitions only `opacity`, `scale`, and `translate`. Custom CSS can define transitions or finite
+animations using `data-state`:
 
 ```css
-.menu {
-    transition:
-        opacity 150ms ease,
-        transform 150ms ease,
-        display 150ms allow-discrete;
+[data-dropdown-target~="menu"] {
     opacity: 1;
-    transform: scale(1);
+    scale: 1;
+    translate: 0 0;
+    transition: opacity 150ms ease, scale 150ms ease, translate 150ms ease;
 }
 
-/* hidden state — the class the controller toggles */
-.menu.hidden {
-    display: none;
+[data-dropdown-target~="menu"][data-state="closed"] {
     opacity: 0;
-    transform: scale(0.95);
-}
-
-/* where the enter animation starts (coming out of display: none) */
-@starting-style {
-    .menu:not(.hidden) {
-        opacity: 0;
-        transform: scale(0.95);
-    }
+    scale: .95;
+    translate: 0 -.25rem;
+    pointer-events: none;
 }
 ```
 
-The same thing with Tailwind v4 utilities — no `data-transition-*` needed:
-
-```html
-<div
-    data-slot="dropdown-menu"
-    data-dropdown-target="menu"
-    class="hidden max-h-(--available-height) w-(--anchor-width) min-w-32 origin-(--transform-origin) scale-100 rounded-lg bg-popover p-1 text-popover-foreground opacity-100 shadow-md ring-1 ring-foreground/10 transition-all transition-discrete duration-150 ease-out starting:scale-95 starting:opacity-0 [&.hidden]:scale-95 [&.hidden]:opacity-0"
->
-    …
-</div>
-```
-
-| Utility                                    | Role                                                          |
-| ------------------------------------------ | ------------------------------------------------------------- |
-| `transition-all transition-discrete`       | Transition everything (incl. `display`) with `allow-discrete` |
-| `opacity-100 scale-100`                    | Resting (visible) state                                       |
-| `starting:opacity-0 starting:scale-95`     | `@starting-style` — where the enter starts                    |
-| `[&.hidden]:opacity-0 [&.hidden]:scale-95` | Leave state, matched to the hidden class                      |
-
-> The two approaches are mutually exclusive: provide `data-transition-*` and the JS engine drives the animation (any
-> browser/Tailwind); omit them and the CSS path above takes over (needs `@starting-style`/`allow-discrete`, i.e. recent
-> browsers + Tailwind v4).
-
-</details>
+Never set `display: none` or otherwise hide the menu in the closed-state CSS rule. Presence owns the `hidden` attribute
+so exit motion can complete. Set `data-motion="none"` for immediate open/close. Reduced-motion preference also skips
+motion, and a rapid reopen cancels stale hiding and top-layer teardown so CSS transitions can reverse naturally.
 
 ## Closing on select
 
@@ -222,8 +171,10 @@ By default, clicking an `<a>` or `<button>` inside the menu closes it. To opt ou
 
 ```html
 <div data-controller="dropdown" data-dropdown-close-on-select-value="false">
-    <button data-dropdown-target="trigger" data-action="dropdown#toggle" aria-expanded="false">Filters</button>
-    <div data-dropdown-target="menu" class="hidden">
+    <button data-dropdown-target="trigger" data-action="dropdown#toggle" aria-expanded="false" data-dropdown-state="closed">
+        Filters
+    </button>
+    <div data-dropdown-target="menu" data-state="closed" data-motion="default" hidden inert>
         <!-- interactive content that should not dismiss the menu -->
         <button type="button" data-action="dropdown#close">Apply</button>
     </div>
@@ -249,4 +200,7 @@ panels keep native browser focus behavior. Users move through focusable content 
 
 ## Turbo
 
-The dropdown closes on `turbo:before-cache`, so a cached page snapshot is never restored with the menu open.
+The dropdown closes synchronously on `turbo:before-cache`, applies `hidden inert`, cancels pending placement, and leaves
+the top layer, so a cached page snapshot is never restored with the menu open. Replacing the menu target during a Turbo
+morph tears down Presence, Floating UI, top-layer state, and target listeners for the old node immediately before the new
+target is initialized.

@@ -53,6 +53,7 @@
         data-action="multi-select#toggle keydown->multi-select#onTriggerKeydown"
         aria-haspopup="listbox"
         aria-expanded="false"
+        data-multi-select-state="closed"
         aria-controls="{{ $contentId }}"
         aria-describedby="{{ $errorId }}"
         @if ($hasErrors) aria-invalid="true" data-invalid @endif
@@ -71,9 +72,12 @@
         id="{{ $contentId }}"
         data-slot="multi-select-content"
         data-multi-select-target="content"
-        data-open="false"
+        data-state="closed"
+        data-motion="{{ $motion }}"
         data-side="{{ $side }}"
         data-align="{{ $align }}"
+        hidden
+        inert
         @if ($contentClassValue !== '') class="{{ $contentClassValue }}" @endif
     >
         @if ($search)

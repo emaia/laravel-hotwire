@@ -37,7 +37,7 @@ Composable app sidebar with collapsible navigation primitives.
                                 data-controller="tooltip"
                                 data-tooltip-content-value="Dashboard"
                                 data-tooltip-side-value="right"
-                                data-tooltip-enabled-when-value="[data-slot=sidebar][data-collapsible=icon]"
+                                data-tooltip-enabled-when-value="[data-slot=sidebar][data-collapsible=icon][data-mobile-state=closed]"
                             >
                                 <hw:icon name="panel-left" />
                                 <span>Dashboard</span>
@@ -208,7 +208,7 @@ the sidebar is expanded and the label is already visible:
                         data-controller="tooltip"
                         data-tooltip-content-value="Map"
                         data-tooltip-side-value="right"
-                        data-tooltip-enabled-when-value="[data-slot=sidebar][data-collapsible=icon]"
+                        data-tooltip-enabled-when-value="[data-slot=sidebar][data-collapsible=icon][data-mobile-state=closed]"
                     >
                         <x-lucide-map class="size-5" />
                         <span>Map</span>

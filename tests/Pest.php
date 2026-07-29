@@ -57,3 +57,14 @@ function releaseIsolatedAppPaths(?string $base): void
         File::deleteDirectory($base);
     }
 }
+
+function dom(string $html): DOMDocument
+{
+    $dom = new DOMDocument;
+    $previous = libxml_use_internal_errors(true);
+    $dom->loadHTML('<?xml encoding="utf-8" ?>'.$html);
+    libxml_clear_errors();
+    libxml_use_internal_errors($previous);
+
+    return $dom;
+}

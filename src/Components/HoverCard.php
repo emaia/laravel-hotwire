@@ -19,7 +19,6 @@ class HoverCard extends Component
         public int|string $openDelay = 10,
         public int|string $closeDelay = 100,
         public bool $open = false,
-        public bool $transition = true,
         public ?Htmlable $stimulus = null,
     ) {
         if ($this->id === '') {

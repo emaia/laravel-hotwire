@@ -18,6 +18,7 @@ it('renders the controller, trigger button and menu wiring', function () {
     $view->assertSee('data-action="dropdown#toggle"', false);
     $view->assertSee('aria-haspopup="true"', false);
     $view->assertSee('aria-expanded="false"', false);
+    $view->assertSee('data-dropdown-state="closed"', false);
     $view->assertSee('data-state="closed"', false);
     $view->assertSee('data-dropdown-target="menu"', false);
     $view->assertSee('Options');
@@ -66,7 +67,7 @@ it('uses an existing child component as the trigger when requested', function ()
         ->assertSee('aria-haspopup="true"', false)
         ->assertSee('aria-expanded="false"', false)
         ->assertSee('aria-controls="team-menu"', false)
-        ->assertSee('data-state="closed"', false)
+        ->assertSee('data-dropdown-state="closed"', false)
         ->assertSee('team-trigger', false)
         ->assertDontSee('<buttontype', false)
         ->assertDontSee('data-slot="dropdown-trigger"', false);
@@ -118,10 +119,16 @@ it('is hidden and closed by default', function () {
         </x-hw::dropdown>
     ');
 
-    $view->assertSee('data-open="false"', false);
     $view->assertSee('aria-expanded="false"', false);
     $view->assertDontSee('data-dropdown-open-value', false);
-    expect((string) $view)->not->toMatch('/[\s"]hidden[\s"]/');
+
+    $xpath = new DOMXPath(dom((string) $view));
+    $menu = $xpath->query('//*[@data-dropdown-target="menu"]')->item(0);
+
+    expect($menu?->getAttribute('data-state'))->toBe('closed')
+        ->and($menu?->getAttribute('data-motion'))->toBe('default')
+        ->and($menu?->hasAttribute('hidden'))->toBeTrue()
+        ->and($menu?->hasAttribute('inert'))->toBeTrue();
 });
 
 it('starts open when open is true', function () {
@@ -134,8 +141,31 @@ it('starts open when open is true', function () {
 
     $view->assertSee('data-dropdown-open-value="true"', false);
     $view->assertSee('aria-expanded="true"', false);
-    $view->assertSee('data-state="open"', false);
-    $view->assertSee('data-open="true"', false);
+    $view->assertSee('data-dropdown-state="open"', false);
+
+    $xpath = new DOMXPath(dom((string) $view));
+    $menu = $xpath->query('//*[@data-dropdown-target="menu"]')->item(0);
+
+    expect($menu?->getAttribute('data-state'))->toBe('closed')
+        ->and($menu?->hasAttribute('hidden'))->toBeTrue()
+        ->and($menu?->hasAttribute('inert'))->toBeTrue();
+});
+
+it('preserves a composed child state on an as-child trigger', function () {
+    $view = $this->blade('
+        <x-hw::dropdown>
+            <x-hw::dropdown.trigger as-child>
+                <button type="button" data-state="on">Toggle</button>
+            </x-hw::dropdown.trigger>
+            <x-hw::dropdown.content>Content</x-hw::dropdown.content>
+        </x-hw::dropdown>
+    ');
+
+    $xpath = new DOMXPath(dom((string) $view));
+    $trigger = $xpath->query('//*[@data-dropdown-target="trigger"]')->item(0);
+
+    expect($trigger?->getAttribute('data-state'))->toBe('on')
+        ->and($trigger?->getAttribute('data-dropdown-state'))->toBe('closed');
 });
 
 it('emits dropdown positioning defaults from content', function () {
@@ -209,22 +239,24 @@ it('omits close-on-select by default and emits it when disabled', function () {
         ->and($menu?->hasAttribute('data-dropdown-close-on-select-value'))->toBeFalse();
 });
 
-it('includes default transitions, and omits them when disabled', function () {
+it('uses semantic motion values without transition class attributes', function () {
     $on = $this->blade('
         <x-hw::dropdown>
             <x-hw::dropdown.trigger>M</x-hw::dropdown.trigger>
             <x-hw::dropdown.content><a href="/x">x</a></x-hw::dropdown.content>
         </x-hw::dropdown>
     ');
-    $on->assertSee('data-transition-enter-from="opacity-0 scale-95"', false);
+    $on->assertSee('data-motion="default"', false)
+        ->assertDontSee('data-transition-', false);
 
     $off = $this->blade('
         <x-hw::dropdown>
             <x-hw::dropdown.trigger>M</x-hw::dropdown.trigger>
-            <x-hw::dropdown.content :transition="false"><a href="/x">x</a></x-hw::dropdown.content>
+            <x-hw::dropdown.content motion="none"><a href="/x">x</a></x-hw::dropdown.content>
         </x-hw::dropdown>
     ');
-    $off->assertDontSee('data-transition-enter', false);
+    $off->assertSee('data-motion="none"', false)
+        ->assertDontSee('data-transition-', false);
 });
 
 it('unions a user-supplied data-controller', function () {
@@ -352,17 +384,6 @@ it('registers Floating UI as the dropdown controller dependency', function () {
     expect(HotwireRegistry::make()->controller('dropdown')->npm)
         ->toHaveKey('@floating-ui/dom', '^1.8.0');
 });
-
-function dom(string $html): DOMDocument
-{
-    $dom = new DOMDocument;
-    $previous = libxml_use_internal_errors(true);
-    $dom->loadHTML('<?xml encoding="utf-8" ?>'.$html);
-    libxml_clear_errors();
-    libxml_use_internal_errors($previous);
-
-    return $dom;
-}
 
 function countElements(string $html, string $query): int
 {

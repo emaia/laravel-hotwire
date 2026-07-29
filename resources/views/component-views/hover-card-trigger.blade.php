@@ -14,6 +14,7 @@
         'data-action' => 'mouseenter->hover-card#pointerEnter mouseleave->hover-card#pointerLeave focusin->hover-card#focusIn focusout->hover-card#focusOut',
         'aria-describedby' => $id,
         'aria-expanded' => $open ? 'true' : 'false',
+        'data-hover-card-state' => $open ? 'open' : 'closed',
         'tabindex' => $nativeFocusable ? null : '0',
     ], $attributes, except: ['data-slot', 'aria-describedby', 'aria-expanded'], protectedPrefixes: ['data-hover-card-']);
 @endphp

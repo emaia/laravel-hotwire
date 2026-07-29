@@ -123,7 +123,7 @@ slot; `hotkey` only wires the action:
 Use `tooltip` to mount the `tooltip` controller and set concise string content:
 
 ```blade
-<hw:button tooltip="Save changes" tooltip-side="bottom" tooltip-align="end">
+<hw:button tooltip="Save changes" tooltip-side="bottom" tooltip-align="end" tooltip-motion="none">
     Save
 </hw:button>
 ```
@@ -138,7 +138,7 @@ For conditional display, pass `tooltip-enabled-when` with the selector expected 
 <hw:button
     tooltip="Only shown while collapsed"
     tooltip-side="right"
-    tooltip-enabled-when="[data-slot=sidebar][data-collapsible=icon]"
+    tooltip-enabled-when="[data-slot=sidebar][data-collapsible=icon][data-mobile-state=closed]"
 >
     <x-lucide-settings class="size-4" />
 </hw:button>
@@ -175,6 +175,7 @@ When `as="a"` is used, the `type` attribute is omitted (it has no meaning on `<a
 | `tooltip`              | `string\|null`   | `null`      | Mount `tooltip` and set `data-tooltip-content-value`.                                                                                                                         |
 | `tooltip-side`         | `string\|null`   | `null`      | Set `data-tooltip-side-value` when `tooltip` is active.                                                                                                                       |
 | `tooltip-align`        | `string\|null`   | `null`      | Set `data-tooltip-align-value` when `tooltip` is active.                                                                                                                      |
+| `tooltip-motion`       | `string\|null`   | `null`      | Set `data-tooltip-motion-value` to `default` or `none` when `tooltip` is active.                                                                                              |
 | `tooltip-enabled-when` | `string\|null`   | `null`      | Set `data-tooltip-enabled-when-value` when `tooltip` is active.                                                                                                               |
 | `stimulus`             | `Htmlable\|null` | `null`      | Optional Stimulus binding from `stimulus()`, `stimulus_controller()`, `stimulus_action()` or `stimulus_target()`. Pass via `:stimulus="..."`; merged with regular attributes. |
 

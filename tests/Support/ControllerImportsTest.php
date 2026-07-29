@@ -69,7 +69,9 @@ it('resolves the dropdown controller shared positioning helpers', function () {
 
     expect($dependencies)
         ->toContain('_floating.js')
-        ->toContain('_transition.js');
+        ->toContain('_presence.js')
+        ->toContain('_top_layer.js')
+        ->not->toContain('_transition.js');
 });
 
 // --- targetPath ---

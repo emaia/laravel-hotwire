@@ -10,7 +10,8 @@ const autoUpdate = mock((_anchor, _floating, update) => {
 
     return floatingCleanup;
 });
-const computePosition = mock(async () => ({ x: 20, y: 32, placement: "bottom-start" }));
+const defaultComputePosition = async () => ({ x: 20, y: 32, placement: "bottom-start" });
+const computePosition = mock(defaultComputePosition);
 const offset = mock((options) => ({ name: "offset", options }));
 const flip = mock((options = {}) => ({ name: "flip", options }));
 const shift = mock((options = {}) => ({ name: "shift", options }));
@@ -37,6 +38,7 @@ beforeEach(() => {
     floatingCleanup.mockClear();
     autoUpdate.mockClear();
     computePosition.mockClear();
+    computePosition.mockImplementation(defaultComputePosition);
     offset.mockClear();
     flip.mockClear();
     shift.mockClear();
@@ -52,7 +54,7 @@ afterEach(async () => {
 
 const trigger = () => document.querySelector('[data-popover-target="trigger"]');
 const content = () => document.querySelector('[data-popover-target="content"]');
-const isOpen = () => !content().classList.contains("hidden");
+const isOpen = () => !content().hidden;
 
 function clickTrigger() {
     trigger().dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
@@ -69,7 +71,8 @@ test.serial("starts closed with aria-expanded false", async () => {
 
     expect(isOpen()).toBe(false);
     expect(trigger().getAttribute("aria-expanded")).toBe("false");
-    expect(content().dataset.open).toBe("false");
+    expect(content().dataset.state).toBe("closed");
+    expect(content().hasAttribute("inert")).toBe(true);
 });
 
 test.serial("toggles open and closed from the trigger", async () => {
@@ -80,14 +83,14 @@ test.serial("toggles open and closed from the trigger", async () => {
 
     expect(isOpen()).toBe(true);
     expect(trigger().getAttribute("aria-expanded")).toBe("true");
-    expect(content().dataset.open).toBe("true");
+    expect(content().dataset.state).toBe("open");
     expect(document.activeElement).toBe(content().querySelector("input"));
 
     clickTrigger();
 
     expect(isOpen()).toBe(false);
     expect(trigger().getAttribute("aria-expanded")).toBe("false");
-    expect(content().dataset.open).toBe("false");
+    expect(content().dataset.state).toBe("closed");
 });
 
 test.serial("open() and close() are idempotent", async () => {
@@ -168,7 +171,7 @@ test.serial("passes popover positioning values to Floating UI", async () => {
              data-popover-flip-value="false"
              data-popover-shift-value="false">
             <button type="button" data-popover-target="trigger" data-action="popover#toggle" aria-expanded="false">Open</button>
-            <div data-popover-target="content" class="hidden"><input id="name"></div>
+            <div data-popover-target="content" data-state="closed" data-motion="default" hidden inert><input id="name"></div>
         </div>`,
     );
 
@@ -181,6 +184,183 @@ test.serial("passes popover positioning values to Floating UI", async () => {
     expect(offset).toHaveBeenCalledWith({ mainAxis: 12, crossAxis: -4 });
     expect(flip).not.toHaveBeenCalled();
     expect(shift).not.toHaveBeenCalled();
+});
+
+test.serial("rolls back when the first placement fails", async () => {
+    computePosition.mockRejectedValueOnce(new Error("positioning failed"));
+    await mount();
+    const handleError = mock(() => {});
+    mounted.application.handleError = handleError;
+
+    clickTrigger();
+    await wait(0);
+    await wait(0);
+
+    expect(mounted.controller.isOpen).toBe(false);
+    expect(trigger().getAttribute("aria-expanded")).toBe("false");
+    expect(trigger().dataset.popoverState).toBe("closed");
+    expect(content().hidden).toBe(true);
+    expect(content().hasAttribute("inert")).toBe(true);
+    expect(floatingCleanup).toHaveBeenCalledTimes(1);
+    expect(handleError).toHaveBeenCalledTimes(1);
+});
+
+test.serial("waits for placement before focusing content and dispatching opened", async () => {
+    const placement = deferred();
+    computePosition.mockImplementationOnce(() => placement.promise);
+    await mount();
+    const opened = mock(() => {});
+    mounted.root.addEventListener("popover:opened", opened);
+
+    clickTrigger();
+    await wait(0);
+
+    expect(content().dataset.state).toBe("closed");
+    expect(content().hasAttribute("inert")).toBe(true);
+    expect(document.activeElement).not.toBe(content().querySelector("input"));
+    expect(opened).not.toHaveBeenCalled();
+
+    placement.resolve({ x: 20, y: 32, placement: "bottom-start" });
+    await wait(0);
+
+    expect(content().dataset.state).toBe("open");
+    expect(document.activeElement).toBe(content().querySelector("input"));
+    expect(opened).toHaveBeenCalledTimes(1);
+});
+
+test.serial("re-anchors open content when its active trigger is replaced", async () => {
+    await mount();
+    clickTrigger();
+    await wait(0);
+    const oldTrigger = trigger();
+    const replacement = oldTrigger.cloneNode(true);
+
+    oldTrigger.replaceWith(replacement);
+    mounted.controller.triggerTargetDisconnected(oldTrigger);
+    mounted.controller.triggerTargetConnected(replacement);
+    await wait(0);
+
+    expect(replacement.getAttribute("aria-expanded")).toBe("true");
+    expect(replacement.dataset.popoverState).toBe("open");
+    expect(computePosition.mock.calls.at(-1)[0]).toBe(replacement);
+    expect(floatingCleanup).toHaveBeenCalledTimes(1);
+});
+
+test.serial("keeps a replacement of the active secondary trigger as the anchor", async () => {
+    mounted = await mountController(
+        "popover",
+        PopoverController,
+        `
+        <div data-controller="popover">
+            <button id="first-trigger" data-popover-target="trigger" data-action="popover#toggle">First</button>
+            <button id="active-trigger" data-popover-target="trigger" data-action="popover#toggle">Active</button>
+            <div data-popover-target="content" data-state="closed" data-motion="default" hidden inert><input></div>
+        </div>`,
+    );
+    const active = document.getElementById("active-trigger");
+    active.click();
+    await wait(0);
+    const replacement = active.cloneNode(true);
+
+    active.replaceWith(replacement);
+    mounted.controller.triggerTargetDisconnected(active);
+    mounted.controller.triggerTargetConnected(replacement);
+    await wait(0);
+
+    expect(computePosition.mock.calls.at(-1)[0]).toBe(replacement);
+    press("Escape");
+    expect(document.activeElement).toBe(replacement);
+});
+
+test.serial("restores managed focus when open content is replaced", async () => {
+    await mount();
+    clickTrigger();
+    await wait(0);
+    const oldContent = content();
+    const replacement = oldContent.cloneNode(true);
+
+    oldContent.replaceWith(replacement);
+    mounted.controller.contentTargetDisconnected(oldContent);
+    mounted.controller.contentTargetConnected(replacement);
+    await wait(0);
+
+    expect(mounted.controller.isOpen).toBe(true);
+    expect(document.activeElement).toBe(replacement.querySelector("input"));
+});
+
+test.serial("rolls back when positioning a replacement trigger fails", async () => {
+    await mount();
+    clickTrigger();
+    await wait(0);
+    const handleError = mock(() => {});
+    mounted.application.handleError = handleError;
+    computePosition.mockRejectedValueOnce(new Error("replacement positioning failed"));
+    const oldTrigger = trigger();
+    const replacement = oldTrigger.cloneNode(true);
+
+    oldTrigger.replaceWith(replacement);
+    mounted.controller.triggerTargetDisconnected(oldTrigger);
+    mounted.controller.triggerTargetConnected(replacement);
+    await wait(0);
+    await wait(0);
+
+    expect(mounted.controller.isOpen).toBe(false);
+    expect(content().hidden).toBe(true);
+    expect(handleError).toHaveBeenCalledTimes(1);
+});
+
+test.serial("preserves focus and opened-event intent when the trigger changes during opening", async () => {
+    const firstPlacement = deferred();
+    computePosition.mockImplementationOnce(() => firstPlacement.promise);
+    await mount();
+    const opened = mock(() => {});
+    mounted.root.addEventListener("popover:opened", opened);
+
+    clickTrigger();
+    await wait(0);
+    const oldTrigger = trigger();
+    const replacement = oldTrigger.cloneNode(true);
+    oldTrigger.replaceWith(replacement);
+    mounted.controller.triggerTargetDisconnected(oldTrigger);
+    mounted.controller.triggerTargetConnected(replacement);
+    await wait(0);
+
+    expect(document.activeElement).toBe(content().querySelector("input"));
+    expect(opened).toHaveBeenCalledTimes(1);
+
+    firstPlacement.resolve({ x: 100, y: 100, placement: "left-start" });
+    await wait(0);
+    expect(opened).toHaveBeenCalledTimes(1);
+});
+
+test.serial("does not steal focus back when enter motion finishes", async () => {
+    const enterMotion = fakeAnimation();
+    await mount();
+    content().getAnimations = () => content().dataset.state === "open" ? [enterMotion.animation] : [];
+
+    clickTrigger();
+    await wait(0);
+    expect(document.activeElement).toBe(content().querySelector("input"));
+
+    const action = content().querySelector("button");
+    action.focus();
+    enterMotion.finish();
+    await wait(0);
+
+    expect(document.activeElement).toBe(action);
+});
+
+test.serial("closes logical state when content is removed without replacement", async () => {
+    await mount();
+    clickTrigger();
+    await wait(0);
+    const removed = content();
+
+    removed.remove();
+    mounted.controller.contentTargetDisconnected(removed);
+
+    expect(mounted.controller.isOpen).toBe(false);
+    expect(trigger().getAttribute("aria-expanded")).toBe("false");
 });
 
 // --- focus / dismissal ---
@@ -264,7 +444,7 @@ test.serial("Escape inside an open drawer closes only the popover first", async 
                 <div data-drawer-target="dialog" class="translate-x-full">
                     <div data-controller="popover">
                         <button type="button" data-popover-target="trigger" data-action="popover#toggle" aria-expanded="false">Open</button>
-                        <div data-popover-target="content" class="hidden"><input id="nested-input"></div>
+                        <div data-popover-target="content" data-state="closed" data-motion="default" hidden inert><input id="nested-input"></div>
                     </div>
                 </div>
             </div>
@@ -306,7 +486,7 @@ test.serial("Escape inside an open modal closes only the popover when the popove
                 <div data-modal-target="dialog">
                     <div data-controller="popover">
                         <button type="button" data-popover-target="trigger" data-action="popover#toggle" aria-expanded="false">Open</button>
-                        <div data-popover-target="content" class="hidden"><input id="modal-popover-input"></div>
+                        <div data-popover-target="content" data-state="closed" data-motion="default" hidden inert><input id="modal-popover-input"></div>
                     </div>
                 </div>
             </div>
@@ -332,13 +512,14 @@ test.serial("Escape inside an open modal closes only the popover when the popove
 test.serial("closes on turbo:before-cache", async () => {
     await mount();
     clickTrigger();
+    await wait(0);
     expect(isOpen()).toBe(true);
-    expect(content().dataset.open).toBe("true");
+    expect(content().dataset.state).toBe("open");
 
     document.dispatchEvent(new CustomEvent("turbo:before-cache", { bubbles: true }));
 
     expect(isOpen()).toBe(false);
-    expect(content().dataset.open).toBe("false");
+    expect(content().dataset.state).toBe("closed");
     expect(floatingCleanup).toHaveBeenCalled();
 });
 
@@ -352,34 +533,26 @@ test.serial("disconnect cleans up floating positioning", async () => {
     expect(floatingCleanup).toHaveBeenCalled();
 });
 
-test.serial("turbo:before-cache cancels a pending transition and hides cleanly", async () => {
-    mounted = await mountController(
-        "popover",
-        PopoverController,
-        `
-        <div data-controller="popover">
-            <button type="button" data-popover-target="trigger" data-action="popover#toggle" aria-expanded="false">Open</button>
-            <div data-popover-target="content" class="hidden"
-                 data-transition-enter="t-enter" data-transition-enter-from="ef" data-transition-enter-to="et">
-                <input>
-            </div>
-        </div>`,
-    );
+test.serial("turbo:before-cache cancels pending positioning and hides cleanly", async () => {
+    let resolvePosition;
+    computePosition.mockImplementation(() => new Promise((resolve) => { resolvePosition = resolve; }));
+    await mount();
 
-    const contentEl = content();
     mounted.controller.open();
-    expect(contentEl.classList.contains("t-enter")).toBe(true);
-    expect(contentEl.classList.contains("ef")).toBe(true);
+    await wait(0);
+    expect(content().hidden).toBe(false);
+    expect(content().dataset.state).toBe("closed");
 
     document.dispatchEvent(new CustomEvent("turbo:before-cache", { bubbles: true }));
 
-    expect(contentEl.classList.contains("hidden")).toBe(true);
-    expect(contentEl.classList.contains("t-enter")).toBe(false);
-    expect(contentEl.classList.contains("ef")).toBe(false);
+    expect(content().hidden).toBe(true);
+    expect(content().hasAttribute("inert")).toBe(true);
 
+    resolvePosition({ x: 20, y: 32, placement: "bottom-start" });
     await wait(0);
-    expect(contentEl.classList.contains("hidden")).toBe(true);
-    expect(contentEl.classList.contains("et")).toBe(false);
+
+    expect(content().hidden).toBe(true);
+    expect(content().dataset.state).toBe("closed");
 });
 
 test.serial("popovers operate independently", async () => {
@@ -391,11 +564,11 @@ test.serial("popovers operate independently", async () => {
         `
         <div data-controller="popover">
             <button type="button" data-popover-target="trigger" data-action="popover#toggle" aria-expanded="false">A</button>
-            <div data-popover-target="content" class="hidden"><input></div>
+            <div data-popover-target="content" data-state="closed" data-motion="default" hidden inert><input></div>
         </div>
         <div data-controller="popover">
             <button type="button" data-popover-target="trigger" data-action="popover#toggle" aria-expanded="false">B</button>
-            <div data-popover-target="content" class="hidden"><input></div>
+            <div data-popover-target="content" data-state="closed" data-motion="default" hidden inert><input></div>
         </div>`,
     );
 
@@ -404,8 +577,8 @@ test.serial("popovers operate independently", async () => {
 
     triggers[0].dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
-    expect(contents[0].classList.contains("hidden")).toBe(false);
-    expect(contents[1].classList.contains("hidden")).toBe(true);
+    expect(contents[0].hidden).toBe(false);
+    expect(contents[1].hidden).toBe(true);
 });
 
 // --- helpers ---
@@ -421,11 +594,33 @@ async function mount({ open = false } = {}) {
             <button type="button" data-popover-target="trigger" data-action="popover#toggle" aria-haspopup="dialog" aria-expanded="false">
                 Open
             </button>
-            <div data-popover-target="content" data-open="${open ? "true" : "false"}" class="hidden" tabindex="-1">
+            <div data-popover-target="content" data-state="closed" data-motion="default" hidden inert tabindex="-1">
                 <label>Name <input id="name"></label>
                 <button type="button">Action</button>
                 <button type="button" data-action="popover#close">Done</button>
             </div>
         </div>`,
     );
+}
+
+function deferred() {
+    let resolve;
+    const promise = new Promise((settle) => {
+        resolve = settle;
+    });
+
+    return { promise, resolve };
+}
+
+function fakeAnimation() {
+    const finished = deferred();
+
+    return {
+        animation: {
+            effect: { getComputedTiming: () => ({ endTime: 100 }) },
+            finished: finished.promise,
+            playState: "running",
+        },
+        finish: finished.resolve,
+    };
 }

@@ -54,7 +54,7 @@ it('renders color scheme toggle icons for light dark and system', function () {
 });
 
 it('accepts color scheme toggle configuration and tooltip integration', function () {
-    $view = $this->blade('<x-hw::color-scheme.toggle variant="ghost" size="sm" modes="dark light" storage-key="app.theme" default="dark" tooltip="Theme" tooltip-side="bottom" />');
+    $view = $this->blade('<x-hw::color-scheme.toggle variant="ghost" size="sm" modes="dark light" storage-key="app.theme" default="dark" tooltip="Theme" tooltip-side="bottom" tooltip-motion="none" />');
 
     $view->assertSee('data-controller="color-scheme tooltip"', false)
         ->assertSee('data-variant="ghost"', false)
@@ -64,6 +64,8 @@ it('accepts color scheme toggle configuration and tooltip integration', function
         ->assertSee('data-color-scheme-default-value="dark"', false)
         ->assertSee('data-tooltip-content-value="Theme"', false)
         ->assertSee('data-tooltip-side-value="bottom"', false)
+        ->assertSee('data-tooltip-motion-value="none"', false)
+        ->assertDontSee(' tooltip-motion="none"', false)
         ->assertDontSee(' tooltip="Theme"', false);
 });
 

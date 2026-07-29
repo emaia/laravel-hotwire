@@ -52,7 +52,7 @@ test("shows sidebar icon tooltips only after the sidebar collapses", async ({ pa
                     data-controller="tooltip"
                     data-tooltip-content-value="Map"
                     data-tooltip-side-value="right"
-                    data-tooltip-enabled-when-value="[data-slot=sidebar][data-collapsible=icon]"
+                    data-tooltip-enabled-when-value="[data-slot=sidebar][data-collapsible=icon][data-mobile-state=closed]"
                 >
                     <svg></svg>
                     <span>Map</span>
@@ -76,7 +76,28 @@ test("shows sidebar icon tooltips only after the sidebar collapses", async ({ pa
     await expect(page.locator('[data-slot="tooltip"]')).toHaveAttribute("data-side", "right");
 });
 
+test("does not show an icon-rail tooltip while the mobile sidebar is open", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.setContent(`
+        <div data-slot="sidebar" data-collapsible="icon" data-mobile-state="open">
+            <button
+                data-controller="tooltip"
+                data-tooltip-content-value="Map"
+                data-tooltip-enabled-when-value="[data-slot=sidebar][data-collapsible=icon][data-mobile-state=closed]"
+            >
+                Map
+            </button>
+        </div>
+    `);
+    await installControllers(page);
+
+    await page.locator('[data-controller="tooltip"]').hover();
+
+    await expect(page.locator('[data-slot="tooltip"]')).toHaveCount(0);
+});
+
 async function installControllers(page) {
+    await page.addStyleTag({ content: '[data-hotwire-top-layer][popover] { border: 0; inset: auto; margin: 0; }' });
     await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
     await page.addScriptTag({ path: "node_modules/@floating-ui/core/dist/floating-ui.core.umd.min.js" });
     await page.addScriptTag({ path: "node_modules/@floating-ui/dom/dist/floating-ui.dom.umd.min.js" });
@@ -111,11 +132,16 @@ async function browserControllersScript() {
     const tooltip = (await readFile("resources/js/controllers/tooltip_controller.js", "utf8"))
         .replace('import { Controller } from "@hotwired/stimulus";', "")
         .replace(/import \{[^}]*\} from "\.\/_floating\.js";\s*/, "")
+        .replace(/import \{[^}]*\} from "\.\/_presence\.js";\s*/, "")
+        .replace(/import \{[^}]*\} from "\.\/_top_layer\.js";\s*/, "")
         .replace("export default class extends Controller", "class TooltipController extends Controller");
 
     const floating = (await readFile("resources/js/controllers/_floating.js", "utf8"))
         .replace(/import \{[^}]*\} from "@floating-ui\/dom";\s*/, "")
         .replace("export function createFloating", "function createFloating");
+
+    const presence = (await readFile("resources/js/controllers/_presence.js", "utf8"))
+        .replace("export function createPresence", "function createPresence");
 
     return `
         const { Controller } = window.Stimulus;
@@ -124,6 +150,7 @@ async function browserControllersScript() {
         ${topLayer}
         ${overlay}
         ${floating}
+        ${presence}
         ${sidebar}
         ${tooltip}
         window.SidebarController = SidebarController;

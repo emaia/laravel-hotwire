@@ -6,24 +6,26 @@ const state = {
     update: null,
 };
 
-const autoUpdate = mock((anchor, floating, update) => {
+const defaultAutoUpdate = (anchor, floating, update) => {
     state.update = update;
     update();
 
     return cleanup;
-});
+};
+const autoUpdate = mock(defaultAutoUpdate);
 
 const computeState = {
     placement: "top-end",
     middlewareData: {},
 };
 
-const computePosition = mock(async () => ({
+const defaultComputePosition = async () => ({
     x: 12,
     y: 34,
     placement: computeState.placement,
     middlewareData: computeState.middlewareData,
-}));
+});
+const computePosition = mock(defaultComputePosition);
 const offset = mock((options) => ({ name: "offset", options }));
 const flip = mock((options = {}) => ({ name: "flip", options }));
 const shift = mock((options = {}) => ({ name: "shift", options }));
@@ -64,7 +66,9 @@ beforeEach(() => {
 
     cleanup.mockClear();
     autoUpdate.mockClear();
+    autoUpdate.mockImplementation(defaultAutoUpdate);
     computePosition.mockClear();
+    computePosition.mockImplementation(defaultComputePosition);
     offset.mockClear();
     flip.mockClear();
     shift.mockClear();
@@ -91,9 +95,10 @@ test("starts auto-update and positions the floating element", async () => {
         strategy: "fixed",
     });
 
-    await instance.start();
+    expect(await instance.start()).toBe(true);
 
     expect(autoUpdate).toHaveBeenCalledTimes(1);
+    expect(computePosition).toHaveBeenCalledTimes(1);
     expect(computePosition).toHaveBeenCalledWith(anchor, floating, expect.objectContaining({
         placement: "bottom-end",
         strategy: "fixed",
@@ -172,14 +177,42 @@ test("removes data-anchor-hidden when the anchor is visible", async () => {
 test("does not start auto-update twice and cleans up on stop", async () => {
     const instance = createFloating(document.createElement("button"), document.createElement("div"));
 
-    await instance.start();
-    await instance.start();
+    const firstStart = instance.start();
+    const secondStart = instance.start();
+
+    expect(secondStart).toBe(firstStart);
+    expect(await firstStart).toBe(true);
 
     expect(autoUpdate).toHaveBeenCalledTimes(1);
+    expect(computePosition).toHaveBeenCalledTimes(1);
 
     instance.stop();
 
     expect(cleanup).toHaveBeenCalledTimes(1);
+});
+
+test("cleans up a failed first placement and allows a retry", async () => {
+    const instance = createFloating(document.createElement("button"), document.createElement("div"));
+    computePosition.mockRejectedValueOnce(new Error("placement failed"));
+
+    await expect(instance.start()).rejects.toThrow("placement failed");
+
+    expect(cleanup).toHaveBeenCalledTimes(1);
+    expect(await instance.start()).toBe(true);
+    expect(autoUpdate).toHaveBeenCalledTimes(2);
+    expect(computePosition).toHaveBeenCalledTimes(2);
+});
+
+test("turns a synchronous auto-update failure into a retryable rejection", async () => {
+    const instance = createFloating(document.createElement("button"), document.createElement("div"));
+    autoUpdate.mockImplementationOnce(() => {
+        throw new Error("auto-update failed");
+    });
+
+    await expect(instance.start()).rejects.toThrow("auto-update failed");
+
+    expect(await instance.start()).toBe(true);
+    expect(autoUpdate).toHaveBeenCalledTimes(2);
 });
 
 test("cleanup is idempotent", () => {
@@ -190,3 +223,117 @@ test("cleanup is idempotent", () => {
 
     expect(cleanup).not.toHaveBeenCalled();
 });
+
+test("stop invalidates an in-flight first placement", async () => {
+    const pending = deferred();
+    const floating = document.createElement("div");
+    computePosition.mockImplementation(() => pending.promise);
+    const instance = createFloating(document.createElement("button"), floating);
+
+    const started = instance.start();
+    instance.stop();
+
+    expect(await started).toBe(false);
+
+    pending.resolve(position({ x: 99, y: 88, placement: "left-start" }));
+    await tick();
+
+    expect(floating.style.left).toBe("");
+    expect(floating.dataset.side).toBeUndefined();
+});
+
+test("restart ignores an older placement that resolves last", async () => {
+    const first = deferred();
+    const second = deferred();
+    const results = [first, second];
+    const floating = document.createElement("div");
+    computePosition.mockImplementation(() => results.shift().promise);
+    const instance = createFloating(document.createElement("button"), floating);
+
+    const firstStart = instance.start();
+    instance.stop();
+    const secondStart = instance.start();
+
+    second.resolve(position({ x: 20, y: 30, placement: "right-end" }));
+    expect(await secondStart).toBe(true);
+
+    first.resolve(position({ x: 90, y: 100, placement: "top-start" }));
+    await firstStart;
+    await tick();
+
+    expect(floating.style.left).toBe("20px");
+    expect(floating.style.top).toBe("30px");
+    expect(floating.dataset.side).toBe("right");
+    expect(floating.dataset.align).toBe("end");
+});
+
+test("the latest update wins when computations resolve out of order", async () => {
+    const first = deferred();
+    const second = deferred();
+    const results = [first, second];
+    const floating = document.createElement("div");
+    computePosition.mockImplementation(() => results.shift().promise);
+    const instance = createFloating(document.createElement("button"), floating);
+
+    const started = instance.start();
+    const updated = instance.update();
+
+    second.resolve(position({ x: 40, y: 50, placement: "bottom-end" }));
+    expect(await updated).toBe(true);
+    expect(await started).toBe(true);
+
+    first.resolve(position({ x: 4, y: 5, placement: "left-start" }));
+    await tick();
+
+    expect(floating.style.left).toBe("40px");
+    expect(floating.style.top).toBe("50px");
+    expect(floating.dataset.side).toBe("bottom");
+});
+
+test("stale size middleware cannot mutate floating variables", async () => {
+    const pending = deferred();
+    const floating = document.createElement("div");
+    computePosition.mockImplementation(() => pending.promise);
+    const instance = createFloating(document.createElement("button"), floating);
+
+    const started = instance.start();
+    const apply = size.mock.calls[0][0].apply;
+    instance.stop();
+
+    floating.style.removeProperty("--anchor-width");
+    floating.style.removeProperty("--available-width");
+    apply({
+        availableWidth: 900,
+        availableHeight: 800,
+        rects: { reference: { width: 700, height: 600 } },
+    });
+
+    expect(floating.style.getPropertyValue("--anchor-width")).toBe("");
+    expect(floating.style.getPropertyValue("--available-width")).toBe("");
+
+    pending.resolve(position());
+    expect(await started).toBe(false);
+});
+
+function position(overrides = {}) {
+    return {
+        x: 12,
+        y: 34,
+        placement: "top-end",
+        middlewareData: {},
+        ...overrides,
+    };
+}
+
+function deferred() {
+    let resolve;
+    const promise = new Promise((settle) => {
+        resolve = settle;
+    });
+
+    return { promise, resolve };
+}
+
+function tick() {
+    return new Promise((resolve) => setTimeout(resolve, 0));
+}
