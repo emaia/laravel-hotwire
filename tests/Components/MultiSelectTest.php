@@ -28,12 +28,20 @@ it('renders the multi-select controller, trigger, content and native select', fu
     $view->assertSee('hidden', false);
     $view->assertSee('data-slot="multi-select-trigger"', false);
     $view->assertSee('data-multi-select-target="trigger"', false);
+    $view->assertSee('data-multi-select-state="closed"', false);
     $view->assertSee('data-slot="multi-select-content"', false);
     $view->assertSee('data-multi-select-target="content"', false);
     $view->assertSee('role="listbox"', false);
     $view->assertSee('aria-multiselectable="true"', false);
     $view->assertSee('data-slot="multi-select-empty"', false);
     $view->assertSee('No options found.', false);
+
+    preg_match('/<div[^>]*data-slot="multi-select-content"[^>]*>/i', (string) $view, $content);
+    expect($content[0] ?? '')
+        ->toContain('data-state="closed"')
+        ->toContain('data-motion="default"')
+        ->toContain('hidden')
+        ->toContain('inert');
 });
 
 it('allows custom empty text', function () {
@@ -212,6 +220,14 @@ it('overrides content width and accepts extra content classes', function () {
 
     $view->assertSee('w-72', false);
     $view->assertSee('text-sm', false);
+});
+
+it('supports disabling content motion semantically', function () {
+    $view = $this->blade('<x-hw::multi-select name="status[]" motion="none" :options="[\'active\' => \'Active\']" />');
+
+    $view->assertSee('data-motion="none"', false)
+        ->assertDontSee('data-transition-', false)
+        ->assertDontSee('data-open=', false);
 });
 
 it('registers multi-select in the catalog with Floating UI dependency', function () {

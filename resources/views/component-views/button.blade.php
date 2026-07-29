@@ -12,8 +12,9 @@
         'data-tooltip-content-value' => $hasTooltip ? $tooltip : null,
         'data-tooltip-side-value' => $hasTooltip ? $tooltipSide : null,
         'data-tooltip-align-value' => $hasTooltip ? $tooltipAlign : null,
+        'data-tooltip-motion-value' => $hasTooltip ? $tooltipMotion : null,
         'data-tooltip-enabled-when-value' => $hasTooltip ? $tooltipEnabledWhen : null,
-    ], $attributes, $stimulus, except: ['frame', 'hotkey', 'tooltip', 'tooltip-side', 'tooltip-align', 'tooltip-enabled-when'], protectedPrefixes: $buttonProtectedPrefixes);
+    ], $attributes, $stimulus, except: ['frame', 'hotkey', 'tooltip', 'tooltip-side', 'tooltip-align', 'tooltip-motion', 'tooltip-enabled-when'], protectedPrefixes: $buttonProtectedPrefixes);
 @endphp
 
 <{{ $as }}

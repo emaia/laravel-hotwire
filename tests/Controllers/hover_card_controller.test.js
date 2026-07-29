@@ -9,7 +9,8 @@ const autoUpdate = mock((_anchor, _floating, update) => {
 
     return floatingCleanup;
 });
-const computePosition = mock(async () => ({ x: 18, y: 42, placement: "bottom-start" }));
+const defaultComputePosition = async () => ({ x: 18, y: 42, placement: "bottom-start" });
+const computePosition = mock(defaultComputePosition);
 const offset = mock((options) => ({ name: "offset", options }));
 const flip = mock((options = {}) => ({ name: "flip", options }));
 const shift = mock((options = {}) => ({ name: "shift", options }));
@@ -36,6 +37,7 @@ beforeEach(() => {
     floatingCleanup.mockClear();
     autoUpdate.mockClear();
     computePosition.mockClear();
+    computePosition.mockImplementation(defaultComputePosition);
     offset.mockClear();
     flip.mockClear();
     shift.mockClear();
@@ -51,14 +53,14 @@ afterEach(async () => {
 
 const trigger = () => document.querySelector('[data-hover-card-target="trigger"]');
 const content = () => document.querySelector('[data-hover-card-target="content"]');
-const isOpen = () => !content().classList.contains("hidden");
+const isOpen = () => !content().hidden;
 
-function mouse(type, target = trigger()) {
-    target.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true }));
+function mouse(type, target = trigger(), relatedTarget = null) {
+    target.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, relatedTarget }));
 }
 
 function focus(type, target = trigger(), relatedTarget = null) {
-    target.dispatchEvent(new Event(type, { bubbles: true, cancelable: true, relatedTarget }));
+    target.dispatchEvent(new window.FocusEvent(type, { bubbles: true, cancelable: true, relatedTarget }));
 }
 
 function press(key, target = document) {
@@ -72,26 +74,21 @@ test.serial("starts closed with aria-expanded false", async () => {
 
     expect(isOpen()).toBe(false);
     expect(trigger().getAttribute("aria-expanded")).toBe("false");
-    expect(content().dataset.open).toBe("false");
+    expect(content().dataset.state).toBe("closed");
+    expect(content().hasAttribute("inert")).toBe(true);
 });
 
 test.serial("opens after hover delay and closes after leave delay", async () => {
     await mount({ openDelay: 10, closeDelay: 10 });
 
     mouse("mouseenter");
-    await wait(5);
-    expect(isOpen()).toBe(false);
-
-    await wait(10);
+    await waitUntil(() => content().dataset.state === "open");
     expect(isOpen()).toBe(true);
     expect(trigger().getAttribute("aria-expanded")).toBe("true");
-    expect(content().dataset.open).toBe("true");
+    expect(content().dataset.state).toBe("open");
 
     mouse("mouseleave");
-    await wait(5);
-    expect(isOpen()).toBe(true);
-
-    await wait(10);
+    await waitUntil(() => !isOpen());
     expect(isOpen()).toBe(false);
     expect(trigger().getAttribute("aria-expanded")).toBe("false");
 });
@@ -115,7 +112,39 @@ test.serial("opens from focus and closes from blur", async () => {
     expect(isOpen()).toBe(true);
 
     focus("focusout");
+    await wait(0);
     expect(isOpen()).toBe(false);
+});
+
+test.serial("keeps open while focus moves from trigger to content with zero close delay", async () => {
+    await mount({ openDelay: 0, closeDelay: 0 });
+    const closed = mock(() => {});
+    mounted.root.addEventListener("hover-card:closed", closed);
+    content().tabIndex = 0;
+
+    trigger().focus();
+    await wait(0);
+    content().focus();
+    await wait(0);
+
+    expect(document.activeElement).toBe(content());
+    expect(isOpen()).toBe(true);
+    expect(closed).not.toHaveBeenCalled();
+});
+
+test.serial("keeps open while the pointer moves from trigger to content with zero close delay", async () => {
+    await mount({ openDelay: 0, closeDelay: 0 });
+    const closed = mock(() => {});
+    mounted.root.addEventListener("hover-card:closed", closed);
+
+    mouse("mouseenter");
+    await wait(0);
+    mouse("mouseleave", trigger(), content());
+    mouse("mouseenter", content(), trigger());
+    await wait(0);
+
+    expect(isOpen()).toBe(true);
+    expect(closed).not.toHaveBeenCalled();
 });
 
 test.serial("keeps open while moving pointer from trigger to content", async () => {
@@ -149,6 +178,7 @@ test.serial("starts floating positioning when opened and stops when closed", asy
     expect(computePosition.mock.calls[0][2].strategy).toBe("fixed");
 
     mouse("mouseleave");
+    await wait(0);
 
     expect(floatingCleanup).toHaveBeenCalledTimes(1);
 });
@@ -168,7 +198,7 @@ test.serial("passes hover card positioning values to Floating UI", async () => {
              data-hover-card-flip-value="false"
              data-hover-card-shift-value="false">
             <span data-hover-card-target="trigger" data-action="mouseenter->hover-card#pointerEnter mouseleave->hover-card#pointerLeave focusin->hover-card#focusIn focusout->hover-card#focusOut">User</span>
-            <div data-hover-card-target="content" data-action="mouseenter->hover-card#pointerEnter mouseleave->hover-card#pointerLeave focusin->hover-card#focusIn focusout->hover-card#focusOut" class="hidden">Content</div>
+            <div data-hover-card-target="content" data-action="mouseenter->hover-card#pointerEnter mouseleave->hover-card#pointerLeave focusin->hover-card#focusIn focusout->hover-card#focusOut" data-state="closed" data-motion="default" hidden inert>Content</div>
         </div>`,
     );
 
@@ -181,6 +211,142 @@ test.serial("passes hover card positioning values to Floating UI", async () => {
     expect(offset).toHaveBeenCalledWith({ mainAxis: 12, crossAxis: -4 });
     expect(flip).not.toHaveBeenCalled();
     expect(shift).not.toHaveBeenCalled();
+});
+
+test.serial("rolls back when the first placement fails", async () => {
+    computePosition.mockRejectedValueOnce(new Error("positioning failed"));
+    await mount({ openDelay: 0, closeDelay: 0 });
+    const handleError = mock(() => {});
+    mounted.application.handleError = handleError;
+
+    mouse("mouseenter");
+    await wait(0);
+    await wait(0);
+
+    expect(mounted.controller.isOpen).toBe(false);
+    expect(trigger().getAttribute("aria-expanded")).toBe("false");
+    expect(trigger().dataset.hoverCardState).toBe("closed");
+    expect(content().hidden).toBe(true);
+    expect(content().hasAttribute("inert")).toBe(true);
+    expect(floatingCleanup).toHaveBeenCalledTimes(1);
+    expect(handleError).toHaveBeenCalledTimes(1);
+});
+
+test.serial("waits for placement before dispatching opened", async () => {
+    const placement = deferred();
+    computePosition.mockImplementationOnce(() => placement.promise);
+    await mount({ openDelay: 0 });
+    const opened = mock(() => {});
+    mounted.root.addEventListener("hover-card:opened", opened);
+
+    mouse("mouseenter");
+    await wait(0);
+
+    expect(content().dataset.state).toBe("closed");
+    expect(content().hasAttribute("inert")).toBe(true);
+    expect(opened).not.toHaveBeenCalled();
+
+    placement.resolve({ x: 18, y: 42, placement: "bottom-start" });
+    await wait(0);
+
+    expect(content().dataset.state).toBe("open");
+    expect(opened).toHaveBeenCalledTimes(1);
+});
+
+test.serial("re-anchors an open card when its active trigger is replaced", async () => {
+    await mount({ openDelay: 0, closeDelay: 0 });
+    mouse("mouseenter");
+    await wait(0);
+    const oldTrigger = trigger();
+    const replacement = oldTrigger.cloneNode(true);
+
+    oldTrigger.replaceWith(replacement);
+    mounted.controller.triggerTargetDisconnected(oldTrigger);
+    mounted.controller.triggerTargetConnected(replacement);
+    await wait(0);
+
+    expect(replacement.getAttribute("aria-expanded")).toBe("true");
+    expect(replacement.dataset.hoverCardState).toBe("open");
+    expect(computePosition.mock.calls.at(-1)[0]).toBe(replacement);
+    expect(floatingCleanup).toHaveBeenCalledTimes(1);
+});
+
+test.serial("restores focus when the active focused trigger is replaced", async () => {
+    await mount({ openDelay: 0, closeDelay: 0 });
+    trigger().focus();
+    await waitUntil(() => content().dataset.state === "open");
+    const oldTrigger = trigger();
+    const replacement = oldTrigger.cloneNode(true);
+
+    oldTrigger.replaceWith(replacement);
+    mounted.controller.triggerTargetDisconnected(oldTrigger);
+    mounted.controller.triggerTargetConnected(replacement);
+    await wait(0);
+
+    expect(document.activeElement).toBe(replacement);
+    expect(isOpen()).toBe(true);
+});
+
+test.serial("rolls back when positioning a replacement trigger fails", async () => {
+    await mount({ openDelay: 0, closeDelay: 100 });
+    mouse("mouseenter");
+    await wait(0);
+    const handleError = mock(() => {});
+    mounted.application.handleError = handleError;
+    computePosition.mockRejectedValueOnce(new Error("replacement positioning failed"));
+    const oldTrigger = trigger();
+    const replacement = oldTrigger.cloneNode(true);
+
+    oldTrigger.replaceWith(replacement);
+    mounted.controller.triggerTargetDisconnected(oldTrigger);
+    mounted.controller.triggerTargetConnected(replacement);
+    await wait(0);
+    await wait(0);
+
+    expect(mounted.controller.isOpen).toBe(false);
+    expect(content().hidden).toBe(true);
+    expect(handleError).toHaveBeenCalledTimes(1);
+});
+
+test.serial("closes after a hovered trigger is removed even when another trigger remains", async () => {
+    await mount({ openDelay: 0, closeDelay: 10 });
+    const active = trigger();
+    const fallback = active.cloneNode(true);
+    active.after(fallback);
+    mounted.controller.triggerTargetConnected(fallback);
+    mouse("mouseenter", active);
+    await waitUntil(() => content().dataset.state === "open");
+
+    active.remove();
+    mounted.controller.triggerTargetDisconnected(active);
+    await waitUntil(() => !isOpen());
+
+    expect(fallback.getAttribute("aria-expanded")).toBe("false");
+    expect(content().hidden).toBe(true);
+});
+
+test.serial("does not let a closed trigger replacement steal a later active trigger", async () => {
+    await mount({ openDelay: 0, closeDelay: 0 });
+    const first = trigger();
+    const second = first.cloneNode(true);
+    first.after(second);
+    mounted.controller.triggerTargetConnected(second);
+    mouse("mouseenter", first);
+    await waitUntil(() => content().dataset.state === "open");
+    mounted.controller.close();
+    await waitUntil(() => !isOpen());
+
+    first.remove();
+    mounted.controller.triggerTargetDisconnected(first);
+    mouse("mouseenter", second);
+    await waitUntil(() => content().dataset.state === "open");
+
+    const third = second.cloneNode(true);
+    second.after(third);
+    mounted.controller.triggerTargetConnected(third);
+    await wait(0);
+
+    expect(computePosition.mock.calls.at(-1)[0]).toBe(second);
 });
 
 // --- dismissal / cleanup ---
@@ -204,12 +370,13 @@ test.serial("closes on turbo:before-cache", async () => {
     await mount({ openDelay: 0, closeDelay: 0 });
     mouse("mouseenter");
     expect(isOpen()).toBe(true);
-    expect(content().dataset.open).toBe("true");
+    await wait(0);
+    expect(content().dataset.state).toBe("open");
 
     document.dispatchEvent(new CustomEvent("turbo:before-cache", { bubbles: true }));
 
     expect(isOpen()).toBe(false);
-    expect(content().dataset.open).toBe("false");
+    expect(content().dataset.state).toBe("closed");
     expect(floatingCleanup).toHaveBeenCalled();
 });
 
@@ -253,11 +420,11 @@ test.serial("hover cards operate independently", async () => {
         `
         <div data-controller="hover-card" data-hover-card-open-delay-value="0">
             <span data-hover-card-target="trigger" data-action="mouseenter->hover-card#pointerEnter mouseleave->hover-card#pointerLeave focusin->hover-card#focusIn focusout->hover-card#focusOut">A</span>
-            <div data-hover-card-target="content" class="hidden">A content</div>
+            <div data-hover-card-target="content" data-state="closed" data-motion="default" hidden inert>A content</div>
         </div>
         <div data-controller="hover-card" data-hover-card-open-delay-value="0">
             <span data-hover-card-target="trigger" data-action="mouseenter->hover-card#pointerEnter mouseleave->hover-card#pointerLeave focusin->hover-card#focusIn focusout->hover-card#focusOut">B</span>
-            <div data-hover-card-target="content" class="hidden">B content</div>
+            <div data-hover-card-target="content" data-state="closed" data-motion="default" hidden inert>B content</div>
         </div>`,
     );
 
@@ -266,8 +433,8 @@ test.serial("hover cards operate independently", async () => {
 
     triggers[0].dispatchEvent(new MouseEvent("mouseenter", { bubbles: true }));
 
-    expect(contents[0].classList.contains("hidden")).toBe(false);
-    expect(contents[1].classList.contains("hidden")).toBe(true);
+    expect(contents[0].hidden).toBe(false);
+    expect(contents[1].hidden).toBe(true);
 });
 
 test.serial("Escape inside an open modal closes only the hover card when the hover card listener runs first", async () => {
@@ -293,7 +460,7 @@ test.serial("Escape inside an open modal closes only the hover card when the hov
                 <div data-modal-target="dialog">
                     <div data-controller="hover-card" data-hover-card-open-delay-value="0" data-hover-card-close-delay-value="0">
                         <span id="hover-trigger" data-hover-card-target="trigger" data-action="focusin->hover-card#focusIn focusout->hover-card#focusOut" tabindex="0" aria-expanded="false">User</span>
-                        <div id="hover-content" data-hover-card-target="content" class="hidden">Preview</div>
+                        <div id="hover-content" data-hover-card-target="content" data-state="closed" data-motion="default" hidden inert>Preview</div>
                     </div>
                 </div>
             </div>
@@ -330,7 +497,25 @@ async function mount({ openDelay = 10, closeDelay = 100, open = false } = {}) {
              data-hover-card-close-delay-value="${closeDelay}"
              ${openAttr}>
             <span data-hover-card-target="trigger" data-action="mouseenter->hover-card#pointerEnter mouseleave->hover-card#pointerLeave focusin->hover-card#focusIn focusout->hover-card#focusOut" tabindex="0" aria-expanded="false">User</span>
-            <div data-hover-card-target="content" data-action="mouseenter->hover-card#pointerEnter mouseleave->hover-card#pointerLeave focusin->hover-card#focusIn focusout->hover-card#focusOut" data-open="${open ? "true" : "false"}" class="hidden">Preview</div>
+            <div data-hover-card-target="content" data-action="mouseenter->hover-card#pointerEnter mouseleave->hover-card#pointerLeave focusin->hover-card#focusIn focusout->hover-card#focusOut" data-state="closed" data-motion="default" hidden inert>Preview</div>
         </div>`,
     );
+}
+
+async function waitUntil(predicate, timeout = 500) {
+    const deadline = Date.now() + timeout;
+
+    while (!predicate()) {
+        if (Date.now() >= deadline) throw new Error("Timed out waiting for Hover Card state");
+        await wait(5);
+    }
+}
+
+function deferred() {
+    let resolve;
+    const promise = new Promise((settle) => {
+        resolve = settle;
+    });
+
+    return { promise, resolve };
 }

@@ -28,7 +28,8 @@ accessibility attributes for you.
 ```
 
 `dropdown.trigger` renders a button, links it to `dropdown.content` with `aria-controls`, and keeps `aria-expanded` and
-`data-state="open|closed"` in sync. Clicking an `<a>` or `<button>` inside the content closes the dropdown by default.
+`data-dropdown-state="open|closed"` in sync. The content uses `data-state="open|closed"` for Presence styling. Clicking
+an `<a>` or `<button>` inside the content closes the dropdown by default.
 
 Add `data-slot="dropdown-trigger-icon"` to a chevron inside the trigger when you want it to rotate with the open state.
 The Nova preset targets the trigger's `aria-expanded="true"` state, so no group class is required.
@@ -127,7 +128,7 @@ mobile opens below the trigger:
 | `dropdown.content` | `strategy` | `absolute` | Floating UI strategy: `absolute` or `fixed`. |
 | `dropdown.content` | `flip` | `true` | Flip to the opposite side when the preferred side lacks room. |
 | `dropdown.content` | `shift` | `true` | Shift within the viewport when the content would overflow. |
-| `dropdown.content` | `transition` | `true` | Include the default enter/leave transition attributes. |
+| `dropdown.content` | `motion` | `default` | Presence motion: `default` or `none`. |
 | `dropdown.content` | `width` | `''` | Content width classes; overrides the trigger-width default when set. |
 | `dropdown.label` | `inset` | `false` | Align the label with inset items. |
 | `dropdown.item` | `href` | `null` | Render an anchor instead of a button. |
@@ -157,13 +158,16 @@ Use responsive overrides when the same dropdown should open differently on small
 </hw:dropdown.content>
 ```
 
-When the media query changes while the dropdown is open, the controller recalculates Floating UI positioning.
+When the media query changes while the dropdown is open, the controller recalculates Floating UI positioning. The
+mobile profile wins as a complete `(side, align)` tuple whenever `mobile-media` matches. A missing `mobile-side` falls
+back to the normal `side`, and a missing `mobile-align` falls back to the normal `align`; neither falls through to a
+collapsed override.
 
-Use collapsed overrides for icon-only sidebars or other collapsed containers. This is separate from mobile sizing: a
-desktop sidebar rail is still a desktop viewport. The default collapsed selector matches the package Sidebar while it is
-rendering its icon rail (`data-collapsible="icon"`), while the wrapper is collapsed, or while the Sidebar reports
-`data-sidebar-collapsible="icon"` with collapsed state. The default selector avoids quoted attribute values so it can be
-rendered safely as an HTML attribute.
+Use collapsed overrides for icon-only sidebars or other collapsed containers. They apply only while the mobile media
+query does not match. A desktop sidebar rail is still a desktop viewport. The default collapsed selector matches the
+package Sidebar while it is rendering its icon rail (`data-collapsible="icon"`), while the wrapper is collapsed, or
+while the Sidebar reports `data-sidebar-collapsible="icon"` with collapsed state. The default selector avoids quoted
+attribute values so it can be rendered safely as an HTML attribute.
 
 ```blade
 <hw:dropdown.content side="top" align="start" collapsed-side="right" collapsed-align="end">
@@ -171,8 +175,55 @@ rendered safely as an HTML attribute.
 </hw:dropdown.content>
 ```
 
-Use `strategy="fixed"` when the trigger sits inside complex scrolling or transformed layouts. Menus are promoted to the
-browser top layer when supported, so they avoid common clipping issues inside overlays.
+Menus are promoted to the browser top layer when supported, so both strategies avoid common clipping issues inside
+overlays. `fixed` uses viewport-relative coordinates; the default `absolute` uses page/document coordinates while in the
+top layer, not the nearest positioned ancestor. In the non-Popover fallback, `absolute` uses its normal offset parent and
+can be affected by transformed or clipped ancestors. Prefer `fixed` for complex scrolling or transformed layouts.
+
+The enter motion starts only after Floating UI resolves the first placement. If `flip` changes the preferred placement,
+`data-side` and `data-align` expose the resolved placement used on screen. Superseded asynchronous positioning results
+are ignored.
+
+## Motion And Presence
+
+Closed content is server-rendered with `data-state="closed" hidden inert`. This is also true for `open="true"`, which
+prevents an unpositioned flash before Stimulus connects; the controller positions it and opens without enter motion. On
+open, Presence removes `hidden`, waits for the first resolved placement, removes `inert`, and changes the state to `open`.
+On close, it changes the state to `closed` and applies `inert` immediately, but leaves `hidden` off until CSS motion
+finishes.
+
+The Nova preset transitions only `opacity`, `scale`, and `translate`. Use `motion="none"` when the menu should show and
+hide immediately:
+
+```blade
+<hw:dropdown.content motion="none">
+    ...
+</hw:dropdown.content>
+```
+
+Custom CSS may use transitions or finite animations keyed by `data-state`. Never apply `display: none` or `hidden` from
+the closed-state selector; Presence owns the `hidden` attribute and applies it after exit motion completes.
+
+```css
+[data-slot="dropdown-menu"] {
+    transition: opacity 180ms ease, scale 180ms ease, translate 180ms ease;
+}
+
+[data-slot="dropdown-menu"][data-state="closed"] {
+    opacity: 0;
+    scale: .96;
+    translate: 0 -.25rem;
+}
+
+[data-slot="dropdown-menu"][data-state="open"] {
+    opacity: 1;
+    scale: 1;
+    translate: 0 0;
+}
+```
+
+Presence waits for the element's actual CSS motion, supports reopening while exit is still running, and skips motion
+when `prefers-reduced-motion: reduce` is active.
 
 ## Menu Width
 
@@ -244,16 +295,17 @@ closed.
 - `data-slot="dropdown"`
 - `data-slot="dropdown-trigger"`
 - `aria-expanded="true|false"`
-- `data-state="open|closed"`
+- `data-dropdown-state="open|closed"` on the trigger
+- `data-state="open|closed"` on the content
 - `data-slot="dropdown-trigger-icon"`
 - `data-slot="dropdown-menu"`
+- `data-motion="default|none"`
 - `data-dropdown-side-value="top|right|bottom|left"`
 - `data-dropdown-align-value="start|center|end"`
 - `data-dropdown-mobile-side-value="top|right|bottom|left"`
 - `data-dropdown-mobile-align-value="start|center|end"`
 - `data-dropdown-collapsed-side-value="top|right|bottom|left"`
 - `data-dropdown-collapsed-align-value="start|center|end"`
-- `data-open="true|false"`
 - `data-side="top|right|bottom|left"`
 - `data-align="start|center|end"`
 - `--anchor-width`
@@ -272,7 +324,8 @@ closed.
 
 `width` is an explicit escape hatch on the content element itself. By default, the Nova preset sizes the menu with
 `w-(--anchor-width)`, constrains it with `max-h-(--available-height)`, hides horizontal overflow, and animates from
-`--transform-origin`.
+`--transform-origin`. `data-side` and `data-align` are the resolved Floating UI placement after any flip, not merely the
+preferred `side` and `align` props.
 
 ## Required Controllers
 

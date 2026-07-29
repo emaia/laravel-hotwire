@@ -13,7 +13,9 @@ listbox option semantics.
 ## Requirements
 
 - `@floating-ui/dom` for anchored positioning.
-- Ships with `_floating.js` and `_transition.js` helpers.
+- Ships with `_floating.js`, `_presence.js`, and `_top_layer.js`; publishing the controller publishes these helpers too.
+- Without the Nova preset, reset native Popover positioning with
+  `[data-hotwire-top-layer][popover] { inset: auto; margin: 0; }` and define the floating element's border and padding.
 
 ## Targets
 
@@ -42,13 +44,93 @@ listbox option semantics.
 | `list-all-more-text` | `+:count more` | Template appended after the visible labels when `list-all-limit` is exceeded; use `:count` for the hidden count. |
 | `sort-selected` | `false` | Move selected options to the top of the list while preserving their original relative order. |
 | `close-list-on-item-select` | `false` | Close after option selection. |
+| `open` | `false` | Initial/reflected open state. |
 | `side` | `bottom` | Preferred side for the floating listbox: `top`, `right`, `bottom` or `left`. |
 | `align` | `start` | Alignment on the selected side: `start`, `center` or `end`. |
 | `side-offset` | `4` | Distance between the trigger and listbox on the main axis. |
 | `align-offset` | `0` | Offset along the cross axis. |
-| `strategy` | `fixed` | Floating UI positioning strategy. Use `absolute` only when the listbox should stay within the nearest positioned ancestor. |
+| `strategy` | `fixed` | Floating UI positioning strategy: viewport-relative `fixed` or page-relative `absolute` while in the top layer. |
 | `flip` | `true` | Allow Floating UI to flip the listbox when there is not enough room. |
 | `shift` | `true` | Allow Floating UI to shift the listbox to stay in view. |
+
+Motion is configured on the content target with `data-motion="default|none"`, not as a Stimulus value. The
+`<hw:multi-select>` component renders it from its root `motion` prop.
+
+## Markup
+
+Use the Blade component unless you need fully custom HTML. A custom closed panel must start with
+`data-state="closed" hidden inert`:
+
+```html
+<div data-controller="multi-select">
+    <select data-multi-select-target="select" name="status[]" multiple hidden>
+        <option value="active">Active</option>
+        <option value="paused">Paused</option>
+    </select>
+
+    <button
+        type="button"
+        data-multi-select-target="trigger"
+        data-action="multi-select#toggle keydown->multi-select#onTriggerKeydown"
+        aria-expanded="false"
+        data-multi-select-state="closed"
+    >
+        <span data-multi-select-target="value">Select options</span>
+    </button>
+
+    <div
+        data-multi-select-target="content"
+        data-state="closed"
+        data-motion="default"
+        data-side="bottom"
+        data-align="start"
+        hidden
+        inert
+    >
+        <input data-multi-select-target="search" type="text">
+        <div data-multi-select-target="list" role="listbox" aria-multiselectable="true">
+            <div
+                data-multi-select-target="option"
+                data-value="active"
+                data-selected="false"
+                role="option"
+                aria-selected="false"
+                tabindex="-1"
+            >Active</div>
+        </div>
+    </div>
+</div>
+```
+
+## Positioning And Top Layer
+
+The controller uses Floating UI `offset`, `flip`, `shift`, and `size` middleware and promotes content to the native top
+layer when the browser supports the Popover API. The normal DOM fallback remains available in older browsers and can be
+clipped by ancestors.
+
+While native top layer is active, `fixed` uses viewport-relative coordinates and `absolute` uses page/document
+coordinates; `absolute` does not use the nearest positioned ancestor in that mode. Without native Popover support,
+`absolute` falls back to normal offset-parent behavior.
+
+Presence waits for the first placement before entering. The content receives `data-side`, `data-align`,
+`--anchor-width`, `--anchor-height`, `--available-width`, `--available-height`, and `--transform-origin`.
+`data-side` and `data-align` represent the resolved placement after any flip. Results from superseded positioning runs
+are ignored.
+
+## Presence And Motion
+
+Opening removes `hidden` but leaves content at `data-state="closed"` and inert until the first placement resolves. It then
+sets content to `data-state="open"`, trigger state to `data-multi-select-state="open"`, and makes the panel interactive.
+Closing immediately restores both closed states and `inert`, waits for the content's CSS transition or finite animation,
+then adds `hidden`.
+
+The Nova preset transitions only `opacity`, `scale`, and `translate`. Custom closed-state CSS must not set
+`display: none` or otherwise hide the panel; Presence owns `hidden`. Set `data-motion="none"` for immediate changes.
+Reduced-motion preference skips motion, and reopening during exit cancels stale hiding and top-layer teardown.
+
+Replacing the content target tears down Presence, Floating UI, top-layer state, and content listeners for the old node;
+replacing the trigger re-anchors open content. `disconnect()` and `turbo:before-cache` synchronously apply `hidden inert`,
+cancel pending positioning, and leave the top layer so Turbo does not cache an open listbox.
 
 ## Events
 

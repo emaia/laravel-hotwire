@@ -42,7 +42,7 @@ The complete Hotwire stack for Laravel — Turbo Drive, Turbo Streams, Stimulus 
   `data-controller="turbo--progress"`.
 - **No UI-role folders** (no `form/`, `modal/`, `utils/`, `lib/`, `media/`, `notification/`). Names themselves
   describe intent — prefer compound names (`copy-to-clipboard`, `lazy-image`, `input-mask`) over namespace buckets.
-- **Internal helpers** prefixed with `_` (e.g. `_focus_trap.js`, `_transition.js`, `_form_errors.js`) are shared
+- **Internal helpers** prefixed with `_` (e.g. `_focus_trap.js`, `_presence.js`, `_form_errors.js`) are shared
   utility modules imported by controllers. They are **not** Stimulus controllers and are never registered via
   `data-controller`.
 - **Package marker.** Every controller, helper, and shared dependency shipped by the package begins with

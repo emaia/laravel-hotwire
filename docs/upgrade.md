@@ -4,6 +4,155 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 
 ---
 
+## Upgrading to `0.57.0`
+
+`0.57.0` replaces the class-driven floating transition engine with state-driven Presence for Dropdown, Popover, Hover
+Card, Multi Select and Tooltip. The change makes exit motion interruptible, waits for resolved Floating UI placement
+before enter, and coordinates `hidden`, `inert`, and native top-layer cleanup.
+
+### Replace floating `data-open` selectors
+
+The floating content of all five surfaces now uses `data-state="open|closed"`; Tooltip applies it to its generated
+floating element. Replace selectors scoped to floating content:
+
+```diff
+- [data-slot="popover-content"][data-open="false"] {
++ [data-slot="popover-content"][data-state="closed"] {
+      opacity: 0;
+  }
+```
+
+Closed server-rendered content starts with `hidden inert`. During exit it is already `data-state="closed"` and inert, but
+remains without `hidden` until motion finishes. Do not add `display: none`, a `hidden` utility, or equivalent hiding to a
+floating closed-state selector; Presence owns the `hidden` attribute.
+
+Trigger state is namespaced so composing a Dropdown trigger with Toggle, Sidebar, or another controller does not overwrite
+that component's generic `data-state`:
+
+| Surface | Trigger state |
+|---|---|
+| Dropdown | `data-dropdown-state="open|closed"` |
+| Popover | `data-popover-state="open|closed"` |
+| Hover Card | `data-hover-card-state="open|closed"` |
+| Multi Select | `data-multi-select-state="open|closed"` |
+
+`aria-expanded` remains synchronized on each trigger. Replace any trigger-only `data-state` selectors with the matching
+namespaced attribute; keep `data-state` selectors on floating content.
+
+This state migration is limited to Dropdown, Popover, Hover Card, Multi Select and Tooltip. Modal-style overlays continue
+to use their existing overlay state contract.
+
+### Replace component motion options
+
+Boolean `transition` props have been removed. Use the semantic `default|none` motion API instead:
+
+| Surface | Before | After |
+|---|---|---|
+| Dropdown content | `<hw:dropdown.content :transition="false">` | `<hw:dropdown.content motion="none">` |
+| Popover content | `<hw:popover :transition="false">` | `<hw:popover.content motion="none">` |
+| Hover Card content | `<hw:hover-card :transition="false">` | `<hw:hover-card.content motion="none">` |
+| Multi Select root | No per-instance option | `<hw:multi-select motion="none" />` |
+| Tooltip controller | Fixed built-in timing | `data-tooltip-motion-value="default|none"` |
+
+`default` is the default and can be omitted. Tooltip remains a standalone controller API; use its Stimulus value rather
+than a Blade content prop.
+
+### Migrate custom floating CSS
+
+The `_transition.js` helper and all `data-transition-*` attributes have been removed. Delete those attributes from custom
+markup and move visual states into CSS keyed by `data-state`:
+
+```css
+[data-slot="dropdown-menu"] {
+    opacity: 1;
+    scale: 1;
+    translate: 0 0;
+    transition: opacity 150ms ease, scale 150ms ease, translate 150ms ease;
+}
+
+[data-slot="dropdown-menu"][data-state="closed"] {
+    opacity: 0;
+    scale: .95;
+    translate: 0 -.25rem;
+    pointer-events: none;
+}
+```
+
+The Nova preset transitions only `opacity`, `scale`, and `translate`; it no longer transitions `display`. Custom finite
+CSS animations are also supported. Presence suppresses transition and animation while preparing the first placement,
+temporarily enforces that suppression for `motion="none"` and `prefers-reduced-motion: reduce`, detects the actual CSS
+duration otherwise, and invalidates stale teardown on rapid reopen. CSS transitions reverse naturally from their current
+interpolated state.
+
+The Stimulus `hidden` classes were also removed from Dropdown, Popover, Hover Card, and Multi Select. Remove
+`data-dropdown-hidden-class`, `data-popover-hidden-class`, `data-hover-card-hidden-class`, and
+`data-multi-select-hidden-class` from custom roots, and remove their corresponding class from floating content. Presence
+now owns the native `hidden` attribute; a leftover class such as `class="hidden"` will prevent the surface from opening.
+
+### Refresh published controllers
+
+Applications using controllers directly from `vendor` receive the new helpers automatically after Composer updates. If
+you published any of the five controllers for customization, refresh package-owned copies and their shared helpers:
+
+```bash
+php artisan hotwire:check --fix
+```
+
+The command replaces outdated files that still carry the package marker. It refuses to overwrite user-owned files without
+that marker; manually port custom changes in those files, remove imports of `_transition.js`, and add `_presence.js` plus
+`_top_layer.js` where the updated controller requires them. Delete any stale published `_transition.js` after its imports
+are gone.
+
+### Review Dropdown mobile placement
+
+Mobile placement now has priority over collapsed placement as a complete `(side, align)` profile. While `mobile-media`
+matches, a missing `mobile-side` falls back to normal `side`, and a missing `mobile-align` falls back to normal `align`.
+Neither missing value falls through to `collapsed-side` or `collapsed-align`; collapsed overrides apply only outside the
+mobile viewport.
+
+For example, `side="top" align="start" mobile-side="bottom" collapsed-side="right" collapsed-align="end"` resolves to
+`bottom-start` on mobile, including inside a collapsed Sidebar.
+
+### Update collapsed Sidebar tooltip selectors
+
+If an icon-only Sidebar uses conditional tooltips, include the mobile state so a persisted desktop collapse does not show
+redundant tooltips over visible labels in the mobile drawer:
+
+```html
+<!-- Before -->
+data-tooltip-enabled-when-value="[data-slot=sidebar][data-collapsible=icon]"
+
+<!-- After -->
+data-tooltip-enabled-when-value="[data-slot=sidebar][data-collapsible=icon][data-mobile-state=closed]"
+```
+
+### Placement and top-layer behavior
+
+Floating content remains closed and inert until its first placement resolves. Even `open="true"` is server-rendered as
+`data-state="closed" hidden inert` to avoid an unpositioned flash; the controller then opens it without enter motion.
+Triggers still reflect the configured logical open state. These Floating UI surfaces require Stimulus and do not provide
+a no-JavaScript expanded fallback.
+`data-side` and `data-align` always describe the resolved placement after any flip, and stale asynchronous results are
+ignored. All five surfaces use native top-layer promotion when supported; Tooltip can therefore render above Modal and
+Drawer. Toaster remains separate.
+
+`popover:opened` and `hover-card:opened` now fire after the first placement, as soon as content becomes interactive and
+enter motion begins. They do not wait for the CSS transition to finish. Their `closed` events continue to fire when
+closing begins.
+
+Top-layer promotion changes the containing block. `strategy="fixed"` uses viewport-relative coordinates;
+`strategy="absolute"` uses page/document coordinates while native top layer is active, not the nearest positioned
+ancestor. In browsers without native Popover support, `absolute` falls back to normal offset-parent behavior and may be
+clipped by ancestors.
+
+When the Nova preset is not loaded, reset the browser's native Popover positioning defaults with
+`[data-hotwire-top-layer][popover] { inset: auto; margin: 0; }` and define border and padding for each floating surface.
+Standalone Tooltip CSS must also set `overflow: visible` so its arrow is not clipped.
+
+Target replacement and `turbo:before-cache` now clean up Presence, positioning, and top-layer state immediately.
+
+---
+
 ## Upgrading to `0.32.0`
 
 `0.32.0` introduces the design system foundation (semantic tokens, OKLCH palette, dark mode via `data-theme`, `Variants` helper, embedded icon subset). All shipped components were repainted to consume the new tokens — visible without code changes in the host app, but the painted result is different.

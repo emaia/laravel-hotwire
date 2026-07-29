@@ -491,8 +491,11 @@ it('groups OK output as components -> standalones -> helpers', function () {
 
     $componentPos = strpos($output, '  dropdown  up to date  ');
     $standalonePos = strpos($output, '  disclosure  up to date  ');
-    $helperPos = strpos($output, '  _transition.js  up to date  ');
+    $helperPos = strpos($output, '  _presence.js  up to date  ');
 
+    expect($componentPos)->not->toBeFalse();
+    expect($standalonePos)->not->toBeFalse();
+    expect($helperPos)->not->toBeFalse();
     expect($componentPos)->toBeLessThan($standalonePos);
     expect($standalonePos)->toBeLessThan($helperPos);
 });

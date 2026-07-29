@@ -18,7 +18,7 @@ test("search clear button is tabbable and Space toggles focused options", async 
                 <span data-multi-select-target="value">Select options</span>
             </button>
 
-            <div data-multi-select-target="content" data-open="false" class="hidden">
+            <div data-multi-select-target="content" data-state="closed" data-motion="default" hidden inert>
                 <span data-controller="clear-input">
                     <input data-slot="multi-select-search" data-multi-select-target="search" data-clear-input-target="input" type="text">
                     <button type="button" class="hidden" data-slot="clear-input-button" data-clear-input-target="clearButton">Clear</button>
@@ -121,7 +121,7 @@ test("fixed strategy lets the panel cross drawer clipping boundaries", async ({ 
                         <button type="button" data-multi-select-target="trigger" data-action="multi-select#toggle" aria-expanded="false">
                             <span data-multi-select-target="value">Select options</span>
                         </button>
-                        <div data-multi-select-target="content" data-open="false" class="hidden">
+                        <div data-multi-select-target="content" data-state="closed" data-motion="default" hidden inert>
                             <input data-multi-select-target="search" type="text">
                             <div role="listbox" aria-multiselectable="true">
                                 <div data-slot="multi-select-option" data-multi-select-target="option" data-value="active" data-selected="false" role="option" aria-selected="false" tabindex="-1">Active</div>
@@ -152,6 +152,41 @@ test("fixed strategy lets the panel cross drawer clipping boundaries", async ({ 
     });
 
     expect(hit).toBe(true);
+});
+
+test("preserves managed focus when open content is morphed", async ({ page }) => {
+    await page.setContent(`
+        <div data-controller="multi-select">
+            <select data-multi-select-target="select" multiple hidden>
+                <option value="active">Active</option>
+            </select>
+            <button type="button" data-multi-select-target="trigger" data-action="multi-select#toggle">
+                <span data-multi-select-target="value">Select options</span>
+            </button>
+            <div data-multi-select-target="content" data-state="closed" data-motion="default" hidden inert>
+                <input id="morphed-search" data-multi-select-target="search" type="text">
+                <div data-multi-select-target="list">
+                    <div data-multi-select-target="option" data-value="active" data-selected="false">Active</div>
+                </div>
+            </div>
+        </div>
+    `);
+    await installControllers(page);
+
+    const content = page.locator('[data-multi-select-target="content"]');
+    await page.locator('[data-multi-select-target="trigger"]').click();
+    await expect(page.locator("#morphed-search")).toBeFocused();
+
+    await content.evaluate((element) => element.replaceWith(element.cloneNode(true)));
+
+    await expect(content).toBeVisible();
+    await expect(page.locator("#morphed-search")).toBeFocused();
+
+    await page.locator('[data-multi-select-target="trigger"]').focus();
+    await content.evaluate((element) => element.replaceWith(element.cloneNode(true)));
+
+    await expect(content).toBeVisible();
+    await expect(page.locator('[data-multi-select-target="trigger"]')).toBeFocused();
 });
 
 test("list-all summaries are capped before they can size the trigger", async ({ page }) => {
@@ -195,7 +230,7 @@ test("list-all summaries are capped before they can size the trigger", async ({ 
                 <span data-slot="multi-select-value" data-multi-select-target="value">Select countries</span>
                 <span data-slot="multi-select-trigger-icon" aria-hidden="true">v</span>
             </button>
-            <div data-multi-select-target="content" data-open="false" hidden>
+            <div data-multi-select-target="content" data-state="closed" data-motion="default" hidden inert>
                 <input data-multi-select-target="search" type="text">
                 <div role="listbox" aria-multiselectable="true">
                     ${["AR", "AU", "BR", "CA", "CL", "CO", "DE", "ES", "FR", "GB"].map((value) => `
@@ -232,7 +267,7 @@ test("sort-selected keeps the menu open after selecting an option", async ({ pag
             <button type="button" data-multi-select-target="trigger" data-action="multi-select#toggle" aria-expanded="false">
                 <span data-multi-select-target="value">Select status</span>
             </button>
-            <div data-multi-select-target="content" data-open="false" class="hidden">
+            <div data-multi-select-target="content" data-state="closed" data-motion="default" hidden inert>
                 <input data-multi-select-target="search" type="text">
                 <div data-multi-select-target="list" role="listbox" aria-multiselectable="true">
                     <div data-slot="multi-select-option" data-multi-select-target="option" data-value="active" data-selected="false" role="option" aria-selected="false" tabindex="-1">Active</div>
@@ -272,18 +307,16 @@ async function bundle() {
     const floating = (await readFile("resources/js/controllers/_floating.js", "utf8"))
         .replace(/import \{[^}]*\} from "@floating-ui\/dom";\s*/, "")
         .replace("export function createFloating", "function createFloating");
-    const transition = (await readFile("resources/js/controllers/_transition.js", "utf8")).replaceAll(
-        "export function",
-        "function",
-    );
+    const presence = (await readFile("resources/js/controllers/_presence.js", "utf8"))
+        .replace("export function createPresence", "function createPresence");
     const clearInput = (await readFile("resources/js/controllers/clear_input_controller.js", "utf8"))
         .replace('import { Controller } from "@hotwired/stimulus";', "")
         .replace("export default class extends Controller", "class ClearInputController extends Controller");
     const multiSelect = (await readFile("resources/js/controllers/multi_select_controller.js", "utf8"))
         .replace('import { Controller } from "@hotwired/stimulus";', "")
         .replace(/import \{[^}]*\} from "\.\/_floating\.js";\s*/, "")
+        .replace(/import \{[^}]*\} from "\.\/_presence\.js";\s*/, "")
         .replace(/import \{[^}]*\} from "\.\/_top_layer\.js";\s*/, "")
-        .replace(/import \{[^}]*\} from "\.\/_transition\.js";/, "")
         .replace("export default class extends Controller", "class MultiSelectController extends Controller");
 
     const topLayer = (await readFile("resources/js/controllers/_top_layer.js", "utf8"))
@@ -293,7 +326,7 @@ async function bundle() {
         const { Controller } = window.Stimulus;
         const { arrow, autoUpdate, computePosition, flip, hide, offset, shift, size } = window.FloatingUIDOM;
         ${floating}
-        ${transition}
+        ${presence}
         ${topLayer}
         ${clearInput}
         ${multiSelect}

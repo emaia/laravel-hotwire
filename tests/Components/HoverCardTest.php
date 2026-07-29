@@ -22,9 +22,14 @@ it('renders hover card controller, trigger and content wiring', function () {
         ->assertSee('focusin->hover-card#focusIn', false)
         ->assertSee('aria-describedby="hover-card-', false)
         ->assertSee('aria-expanded="false"', false)
+        ->assertSee('data-hover-card-state="closed"', false)
         ->assertDontSee('tabindex="0"', false)
         ->assertSee('data-slot="hover-card-content"', false)
         ->assertSee('data-hover-card-target="content"', false)
+        ->assertSee('data-state="closed"', false)
+        ->assertSee('data-motion="default"', false)
+        ->assertSee('hidden', false)
+        ->assertSee('inert', false)
         ->assertSee('role="tooltip"', false)
         ->assertSee('User')
         ->assertSee('Preview content');
@@ -92,9 +97,31 @@ it('starts open when open is true', function () {
         </x-hw::hover-card>
     ');
 
-    $view->assertSee('data-hover-card-open-value="true"', false)
-        ->assertSee('aria-expanded="true"', false)
-        ->assertSee('data-open="true"', false);
+    $xpath = new DOMXPath(dom((string) $view));
+    $trigger = $xpath->query('//*[@data-hover-card-target="trigger"]')->item(0);
+    $content = $xpath->query('//*[@data-hover-card-target="content"]')->item(0);
+
+    expect((string) $view)->toContain('data-hover-card-open-value="true"')
+        ->and($trigger?->getAttribute('aria-expanded'))->toBe('true')
+        ->and($trigger?->getAttribute('data-hover-card-state'))->toBe('open')
+        ->and($content?->getAttribute('data-state'))->toBe('closed')
+        ->and($content?->hasAttribute('hidden'))->toBeTrue()
+        ->and($content?->hasAttribute('inert'))->toBeTrue();
+});
+
+it('does not overwrite a trigger state owned by another behavior', function () {
+    $view = $this->blade('
+        <x-hw::hover-card>
+            <x-hw::hover-card.trigger data-state="on">User</x-hw::hover-card.trigger>
+            <x-hw::hover-card.content>Content</x-hw::hover-card.content>
+        </x-hw::hover-card>
+    ');
+
+    $xpath = new DOMXPath(dom((string) $view));
+    $trigger = $xpath->query('//*[@data-hover-card-target="trigger"]')->item(0);
+
+    expect($trigger?->getAttribute('data-state'))->toBe('on')
+        ->and($trigger?->getAttribute('data-hover-card-state'))->toBe('closed');
 });
 
 it('renders configurable trigger elements, variants and sizes', function () {
@@ -114,7 +141,7 @@ it('renders configurable trigger elements, variants and sizes', function () {
         ->assertDontSee('tabindex="0"', false);
 });
 
-it('includes default transitions and can omit them', function () {
+it('uses semantic motion values without transition class attributes', function () {
     $on = $this->blade('
         <x-hw::hover-card>
             <x-hw::hover-card.trigger>User</x-hw::hover-card.trigger>
@@ -122,19 +149,18 @@ it('includes default transitions and can omit them', function () {
         </x-hw::hover-card>
     ');
 
-    $on->assertSee('data-transition-enter="transition ease-out duration-150"', false)
-        ->assertSee('data-transition-enter-from="opacity-0 scale-95"', false)
-        ->assertSee('data-transition-leave="transition ease-out duration-150"', false)
-        ->assertSee('data-transition-leave-to="block opacity-0 scale-95"', false);
+    $on->assertSee('data-motion="default"', false)
+        ->assertDontSee('data-transition-', false);
 
     $off = $this->blade('
-        <x-hw::hover-card :transition="false">
+        <x-hw::hover-card>
             <x-hw::hover-card.trigger>User</x-hw::hover-card.trigger>
-            <x-hw::hover-card.content>Content</x-hw::hover-card.content>
+            <x-hw::hover-card.content motion="none">Content</x-hw::hover-card.content>
         </x-hw::hover-card>
     ');
 
-    $off->assertDontSee('data-transition-enter', false);
+    $off->assertSee('data-motion="none"', false)
+        ->assertDontSee('data-transition-', false);
 });
 
 it('merges stimulus attributes and filters hover card owned data attributes', function () {
@@ -158,7 +184,7 @@ it('keeps hover card owned trigger and content wiring protected', function () {
                 User
             </x-hw::hover-card.trigger>
 
-            <x-hw::hover-card.content id="wrong" data-open="manual" data-side="top" data-hover-card-target="wrong">
+            <x-hw::hover-card.content id="wrong" data-state="manual" data-motion="manual" data-side="top" data-hover-card-target="wrong">
                 Content
             </x-hw::hover-card.content>
         </x-hw::hover-card>
@@ -168,13 +194,15 @@ it('keeps hover card owned trigger and content wiring protected', function () {
         ->assertSee('data-hover-card-target="trigger"', false)
         ->assertSee('aria-expanded="false"', false)
         ->assertSee('id="protected-hover-card"', false)
-        ->assertSee('data-open="false"', false)
+        ->assertSee('data-state="closed"', false)
+        ->assertSee('data-motion="default"', false)
         ->assertSee('data-side="right"', false)
         ->assertSee('data-hover-card-target="content"', false)
         ->assertDontSee('data-hover-card-target="wrong"', false)
         ->assertDontSee('aria-expanded="manual"', false)
         ->assertDontSee('id="wrong"', false)
-        ->assertDontSee('data-open="manual"', false)
+        ->assertDontSee('data-state="manual"', false)
+        ->assertDontSee('data-motion="manual"', false)
         ->assertDontSee('data-side="top"', false);
 });
 

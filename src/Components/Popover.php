@@ -17,7 +17,6 @@ class Popover extends Component
         public bool $flip = true,
         public bool $shift = true,
         public bool $open = false,
-        public bool $transition = true,
         public ?Htmlable $stimulus = null,
     ) {
         if ($this->id === '') {

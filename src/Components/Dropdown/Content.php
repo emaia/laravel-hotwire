@@ -20,7 +20,7 @@ class Content extends Component
         public ?string $collapsedSide = null,
         public ?string $collapsedAlign = null,
         public string $collapsedWhen = '[data-slot=sidebar][data-collapsible=icon], [data-slot=sidebar][data-state=collapsed], [data-slot=sidebar-wrapper][data-state=collapsed], [data-sidebar-collapsible=icon][data-state=collapsed]',
-        public bool $transition = true,
+        public string $motion = 'default',
         public string $width = '',
         public string $menuClass = '',
     ) {
@@ -31,6 +31,7 @@ class Content extends Component
         $this->collapsedSide = $this->collapsedSide === null ? null : $this->oneOf($this->collapsedSide, ['top', 'right', 'bottom', 'left'], 'right');
         $this->collapsedAlign = $this->collapsedAlign === null ? null : $this->oneOf($this->collapsedAlign, ['start', 'center', 'end'], 'start');
         $this->strategy = $this->oneOf($this->strategy, ['absolute', 'fixed'], 'absolute');
+        $this->motion = $this->oneOf($this->motion, ['default', 'none'], 'default');
         $this->sideOffset = $this->number($this->sideOffset, 4);
         $this->alignOffset = $this->number($this->alignOffset, 0);
     }

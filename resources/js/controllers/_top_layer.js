@@ -1,6 +1,20 @@
 // @hotwire-package
 
+const ORIGINAL_POPOVER_ATTRIBUTE = "data-hotwire-top-layer-popover";
+const ABSENT_POPOVER = "__hotwire_absent__";
+
 export function createTopLayer(element, { enabled = true } = {}) {
+    if (element?.hasAttribute("data-hotwire-top-layer") && element.getAttribute("popover") === "manual") {
+        const originalPopover = element.getAttribute(ORIGINAL_POPOVER_ATTRIBUTE);
+        element.removeAttribute("data-hotwire-top-layer");
+        element.removeAttribute(ORIGINAL_POPOVER_ATTRIBUTE);
+        if (originalPopover && originalPopover !== ABSENT_POPOVER) {
+            element.setAttribute("popover", originalPopover);
+        } else {
+            element.removeAttribute("popover");
+        }
+    }
+
     const supported = Boolean(
         enabled &&
         element &&
@@ -10,15 +24,12 @@ export function createTopLayer(element, { enabled = true } = {}) {
 
     let shown = false;
     let previousPopover = null;
-    let hideTimer = null;
 
     function show() {
-        clearTimeout(hideTimer);
-        hideTimer = null;
-
         if (!supported || shown) return;
 
         previousPopover = element.getAttribute("popover");
+        element.setAttribute(ORIGINAL_POPOVER_ATTRIBUTE, previousPopover ?? ABSENT_POPOVER);
         element.setAttribute("popover", "manual");
         element.setAttribute("data-hotwire-top-layer", "");
 
@@ -34,9 +45,6 @@ export function createTopLayer(element, { enabled = true } = {}) {
     }
 
     function hide() {
-        clearTimeout(hideTimer);
-        hideTimer = null;
-
         if (!shown) return;
 
         try {
@@ -53,19 +61,6 @@ export function createTopLayer(element, { enabled = true } = {}) {
         hide();
     }
 
-    function hideAfterTransition() {
-        clearTimeout(hideTimer);
-
-        const delay = transitionDuration(element);
-        if (delay <= 0) {
-            hide();
-
-            return;
-        }
-
-        hideTimer = setTimeout(() => hide(), delay);
-    }
-
     function bringToFront() {
         if (shown) hide();
 
@@ -74,6 +69,7 @@ export function createTopLayer(element, { enabled = true } = {}) {
 
     function restoreAttributes() {
         element.removeAttribute("data-hotwire-top-layer");
+        element.removeAttribute(ORIGINAL_POPOVER_ATTRIBUTE);
 
         if (previousPopover === null) {
             element.removeAttribute("popover");
@@ -89,25 +85,7 @@ export function createTopLayer(element, { enabled = true } = {}) {
         get isSupported() { return supported; },
         show,
         hide,
-        hideAfterTransition,
         bringToFront,
         cleanup,
     };
-}
-
-function transitionDuration(element) {
-    const style = getComputedStyle(element);
-
-    return longest(style.transitionDuration) + longest(style.transitionDelay);
-}
-
-function longest(value) {
-    if (!value) return 0;
-
-    return value.split(",").reduce((max, part) => {
-        const trimmed = part.trim();
-        const ms = trimmed.endsWith("ms") ? parseFloat(trimmed) : parseFloat(trimmed) * 1000;
-
-        return Number.isFinite(ms) ? Math.max(max, ms) : max;
-    }, 0);
 }

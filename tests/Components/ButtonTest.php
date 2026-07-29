@@ -118,16 +118,18 @@ it('merges hotkey actions with raw and fluent stimulus attributes', function () 
 });
 
 it('renders tooltip values from props', function () {
-    $view = $this->blade('<x-hw::button tooltip="Save changes" tooltip-side="bottom" tooltip-align="end" tooltip-enabled-when="[data-ready=true]">Save</x-hw::button>');
+    $view = $this->blade('<x-hw::button tooltip="Save changes" tooltip-side="bottom" tooltip-align="end" tooltip-motion="none" tooltip-enabled-when="[data-ready=true]">Save</x-hw::button>');
 
     $view->assertSee('data-controller="tooltip"', false)
         ->assertSee('data-tooltip-content-value="Save changes"', false)
         ->assertSee('data-tooltip-side-value="bottom"', false)
         ->assertSee('data-tooltip-align-value="end"', false)
+        ->assertSee('data-tooltip-motion-value="none"', false)
         ->assertSee('data-tooltip-enabled-when-value="[data-ready=true]"', false)
         ->assertDontSee(' tooltip="Save changes"', false)
         ->assertDontSee(' tooltip-side="bottom"', false)
         ->assertDontSee(' tooltip-align="end"', false)
+        ->assertDontSee(' tooltip-motion="none"', false)
         ->assertDontSee(' tooltip-enabled-when="[data-ready=true]"', false);
 });
 

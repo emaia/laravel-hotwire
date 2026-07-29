@@ -4,7 +4,6 @@ import { mountController, mountMultipleControllers, wait } from "../../resources
 import SidebarController from "../../resources/js/controllers/sidebar_controller.js";
 
 const FRAME_WAIT = 20;
-const ANIMATION_WAIT = 180;
 
 const floatingCleanup = mock(() => {});
 const floatingState = {
@@ -83,6 +82,7 @@ test.serial("opens a tooltip on pointerenter and positions it with Floating UI",
     expect(tooltip()?.innerHTML).toContain("Hello <strong>tooltip</strong>");
     expect(tooltip()?.getAttribute("role")).toBe("tooltip");
     expect(tooltip()?.dataset.state).toBe("open");
+    expect(tooltip()?.dataset.motion).toBe("default");
     expect(tooltip()?.style.left).toBe("16px");
     expect(tooltip()?.style.top).toBe("24px");
     expect(tooltip()?.dataset.side).toBe("bottom");
@@ -108,6 +108,22 @@ test.serial("opens a tooltip on focusin", async () => {
     expect(tooltip()?.textContent).toContain("Focused");
 });
 
+test.serial("removes a tooltip and its ARIA reference when first placement fails", async () => {
+    computePosition.mockRejectedValueOnce(new Error("positioning failed"));
+    await mount(`<button data-controller="tooltip">Hover me</button>`);
+    const handleError = mock(() => {});
+    mounted.application.handleError = handleError;
+
+    dispatchPointer(mounted.root, "pointerenter");
+    await wait(FRAME_WAIT);
+
+    expect(mounted.controller.isOpen).toBe(false);
+    expect(tooltip()).toBeNull();
+    expect(mounted.root.hasAttribute("aria-describedby")).toBe(false);
+    expect(floatingCleanup).toHaveBeenCalledTimes(1);
+    expect(handleError).toHaveBeenCalledTimes(1);
+});
+
 test.serial("ignores touch pointer hover", async () => {
     await mount(`<button data-controller="tooltip">Hover me</button>`);
 
@@ -126,10 +142,39 @@ test.serial("closes after pointerleave and close delay", async () => {
     dispatchPointer(mounted.root, "pointerleave");
     await wait(5);
 
-    expect(tooltip()?.dataset.state).toBe("closed");
+    expect(tooltip()).toBeNull();
     expect(floatingCleanup).toHaveBeenCalledTimes(1);
+});
 
-    await wait(ANIMATION_WAIT);
+test.serial("reentering during exit keeps the tooltip and cancels stale teardown", async () => {
+    await openWithPointer(`<button data-controller="tooltip" data-tooltip-close-delay-value="0">Hover me</button>`);
+    const element = tooltip();
+    const exitMotion = fakeAnimation();
+    element.getAnimations = () => element.dataset.state === "closed" ? [exitMotion.animation] : [];
+
+    dispatchPointer(mounted.root, "pointerleave");
+
+    expect(tooltip()).toBe(element);
+    expect(element.dataset.state).toBe("closed");
+    expect(element.hidden).toBe(false);
+
+    dispatchPointer(element, "pointerenter");
+    await wait(FRAME_WAIT);
+    exitMotion.finish();
+    await wait(0);
+
+    expect(tooltip()).toBe(element);
+    expect(element.dataset.state).toBe("open");
+    expect(element.hidden).toBe(false);
+    expect(floatingCleanup).not.toHaveBeenCalled();
+});
+
+test.serial("motion none removes the tooltip immediately", async () => {
+    await openWithPointer(`<button data-controller="tooltip" data-tooltip-motion-value="none">Hover me</button>`);
+    const element = tooltip();
+    element.getAnimations = () => [fakeAnimation().animation];
+
+    mounted.controller.hide();
 
     expect(tooltip()).toBeNull();
 });
@@ -147,10 +192,6 @@ test.serial("stays open while the tooltip itself is hovered", async () => {
     dispatchPointer(element, "pointerleave");
     await wait(5);
 
-    expect(tooltip()?.dataset.state).toBe("closed");
-
-    await wait(ANIMATION_WAIT);
-
     expect(tooltip()).toBeNull();
 });
 
@@ -161,10 +202,6 @@ test.serial("closes on focusout when the tooltip is not hovered", async () => {
     await wait(FRAME_WAIT);
     mounted.root.dispatchEvent(new Event("focusout", { bubbles: true }));
     await wait(5);
-
-    expect(tooltip()?.dataset.state).toBe("closed");
-
-    await wait(ANIMATION_WAIT);
 
     expect(tooltip()).toBeNull();
 });
@@ -178,10 +215,6 @@ test.serial("closes on Escape without moving focus", async () => {
 
     expect(event.defaultPrevented).toBe(true);
     expect(document.activeElement).toBe(mounted.root);
-    expect(tooltip()?.dataset.state).toBe("closed");
-
-    await wait(ANIMATION_WAIT);
-
     expect(tooltip()).toBeNull();
 });
 
@@ -189,10 +222,6 @@ test.serial("closes when the trigger is activated", async () => {
     await openWithPointer(`<button data-controller="tooltip">Hover me</button>`);
 
     mounted.root.click();
-
-    expect(tooltip()?.dataset.state).toBe("closed");
-
-    await wait(ANIMATION_WAIT);
 
     expect(tooltip()).toBeNull();
 });
@@ -294,10 +323,6 @@ test.serial("hides the tooltip when enabledWhen stops matching", async () => {
     mounted.root.closest('[data-slot="sidebar"]').dataset.collapsible = "";
     mounted.controller.syncEnabledState();
 
-    expect(tooltip()?.dataset.state).toBe("closed");
-
-    await wait(ANIMATION_WAIT);
-
     expect(tooltip()).toBeNull();
 });
 
@@ -374,4 +399,20 @@ function dispatchPointer(element, type, pointerType = "mouse") {
     const event = new Event(type, { bubbles: false, cancelable: true });
     Object.defineProperty(event, "pointerType", { value: pointerType });
     element.dispatchEvent(event);
+}
+
+function fakeAnimation() {
+    let resolve;
+    const finished = new Promise((settle) => {
+        resolve = settle;
+    });
+
+    return {
+        animation: {
+            effect: { getComputedTiming: () => ({ endTime: 150 }) },
+            finished,
+            playState: "running",
+        },
+        finish: resolve,
+    };
 }

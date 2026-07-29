@@ -227,7 +227,7 @@ return [
             'view' => 'hotwire::component-views.dropdown',
             'docs' => 'docs/components/dropdown.md',
             'category' => 'overlay',
-            'description' => 'Accessible disclosure dropdown — a trigger toggles a menu, with outside-click/Escape dismissal',
+            'description' => 'Accessible disclosure dropdown with state-driven presence, responsive positioning and outside-click/Escape dismissal',
             'controllers' => ['dropdown'],
         ],
         'empty-state' => [
@@ -331,7 +331,7 @@ return [
             'view' => 'hotwire::component-views.hover-card',
             'docs' => 'docs/components/hover-card.md',
             'category' => 'overlay',
-            'description' => 'Anchored hover/focus preview card with delayed Floating UI positioning',
+            'description' => 'Anchored hover/focus preview card with delayed Floating UI positioning and state-driven presence',
             'controllers' => ['hover-card'],
         ],
         'icon' => [
@@ -403,7 +403,7 @@ return [
             'view' => 'hotwire::component-views.multi-select',
             'docs' => 'docs/components/multi-select.md',
             'category' => 'forms',
-            'description' => 'Searchable multi-value select with Floating UI positioning and native form submission',
+            'description' => 'Searchable multi-value select with state-driven floating presence and native form submission',
             'controllers' => ['multi-select', 'clear-input'],
         ],
         'navbar' => [
@@ -443,7 +443,7 @@ return [
             'view' => 'hotwire::component-views.popover',
             'docs' => 'docs/components/popover.md',
             'category' => 'overlay',
-            'description' => 'Anchored click-triggered popover for rich arbitrary content using Floating UI positioning',
+            'description' => 'Anchored click-triggered popover with state-driven presence for rich arbitrary content',
             'controllers' => ['popover'],
         ],
         'progress' => [
@@ -746,7 +746,7 @@ return [
             'source' => 'resources/js/controllers/dropdown_controller.js',
             'docs' => 'docs/controllers/dropdown.md',
             'category' => 'overlay',
-            'description' => 'Accessible disclosure dropdown with outside-click/Escape dismissal and optional transitions',
+            'description' => 'Accessible disclosure dropdown with state-driven presence, responsive positioning and outside-click/Escape dismissal',
             'npm' => ['@floating-ui/dom' => '^1.8.0'],
         ],
         'error-scroll' => [
@@ -784,7 +784,7 @@ return [
             'source' => 'resources/js/controllers/hover_card_controller.js',
             'docs' => 'docs/controllers/hover-card.md',
             'category' => 'overlay',
-            'description' => 'Delayed hover/focus preview card with Escape dismissal, cleanup and Floating UI positioning',
+            'description' => 'Delayed hover/focus preview card with state-driven presence, Escape dismissal and Floating UI positioning',
             'npm' => ['@floating-ui/dom' => '^1.8.0'],
         ],
         'input-mask' => [
@@ -829,7 +829,7 @@ return [
             'source' => 'resources/js/controllers/multi_select_controller.js',
             'docs' => 'docs/controllers/multi-select.md',
             'category' => 'forms',
-            'description' => 'Searchable multi-value select with select-all, max selection and Floating UI positioning',
+            'description' => 'Searchable multi-value select with select-all, max selection and state-driven Floating UI presence',
             'npm' => ['@floating-ui/dom' => '^1.8.0'],
         ],
         'oembed' => [
@@ -866,7 +866,7 @@ return [
             'source' => 'resources/js/controllers/popover_controller.js',
             'docs' => 'docs/controllers/popover.md',
             'category' => 'overlay',
-            'description' => 'Anchored click-triggered popover with outside-click/Escape dismissal, focus return and Floating UI positioning',
+            'description' => 'Anchored click-triggered popover with state-driven presence, focus return and Floating UI positioning',
             'npm' => ['@floating-ui/dom' => '^1.8.0'],
         ],
         'remote-form' => [
@@ -967,7 +967,7 @@ return [
             'source' => 'resources/js/controllers/tooltip_controller.js',
             'docs' => 'docs/controllers/tooltip.md',
             'category' => 'utility',
-            'description' => 'Adds accessible hover/focus tooltips positioned with Floating UI',
+            'description' => 'Adds accessible hover/focus tooltips with state-driven presence, Floating UI positioning and top-layer promotion',
             'npm' => ['@floating-ui/dom' => '^1.8.0'],
         ],
         'turbo--frame-src' => [
