@@ -445,17 +445,9 @@ test.serial("Escape inside an open modal closes only the hover card when the hov
         },
         `
         <div id="modal" data-controller="modal"
-             data-modal-open-duration-value="1"
-             data-modal-close-duration-value="1"
-             data-modal-hidden-class="pointer-events-none"
-             data-modal-visible-class="pointer-events-auto"
-             data-modal-backdrop-hidden-class="opacity-0"
-             data-modal-backdrop-visible-class="opacity-100"
-             data-modal-dialog-hidden-class="scale-80 opacity-0"
-             data-modal-dialog-visible-class="scale-100 opacity-100"
              data-modal-lock-scroll-class="overflow-hidden">
             <button id="modal-trigger" data-action="modal#open">Open modal</button>
-            <div data-modal-target="modal" data-open="false" hidden class="pointer-events-none">
+            <div data-modal-target="modal" data-state="closed" data-motion="none" hidden inert>
                 <div data-modal-target="backdrop"></div>
                 <div data-modal-target="dialog">
                     <div data-controller="hover-card" data-hover-card-open-delay-value="0" data-hover-card-close-delay-value="0">

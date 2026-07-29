@@ -2,6 +2,7 @@
 
 const ORIGINAL_POPOVER_ATTRIBUTE = "data-hotwire-top-layer-popover";
 const ABSENT_POPOVER = "__hotwire_absent__";
+const topLayers = [];
 
 export function createTopLayer(element, { enabled = true } = {}) {
     if (element?.hasAttribute("data-hotwire-top-layer") && element.getAttribute("popover") === "manual") {
@@ -24,10 +25,21 @@ export function createTopLayer(element, { enabled = true } = {}) {
 
     let shown = false;
     let previousPopover = null;
+    const entry = { raise };
 
-    function show() {
+    function show(position = null) {
         if (!supported || shown) return;
+        if (!showNative()) return;
 
+        removeEntry();
+        const index = Number.isInteger(position) && position >= 0
+            ? Math.min(position, topLayers.length)
+            : topLayers.length;
+        topLayers.splice(index, 0, entry);
+        topLayers.slice(index + 1).forEach((topLayer) => topLayer.raise());
+    }
+
+    function showNative() {
         previousPopover = element.getAttribute("popover");
         element.setAttribute(ORIGINAL_POPOVER_ATTRIBUTE, previousPopover ?? ABSENT_POPOVER);
         element.setAttribute("popover", "manual");
@@ -39,12 +51,23 @@ export function createTopLayer(element, { enabled = true } = {}) {
             document.dispatchEvent(new CustomEvent("hotwire:top-layer:show", {
                 detail: { element },
             }));
+
+            return true;
         } catch (_error) {
             restoreAttributes();
+
+            return false;
         }
     }
 
     function hide() {
+        if (!shown) return;
+
+        hideNative();
+        removeEntry();
+    }
+
+    function hideNative() {
         if (!shown) return;
 
         try {
@@ -62,9 +85,24 @@ export function createTopLayer(element, { enabled = true } = {}) {
     }
 
     function bringToFront() {
-        if (shown) hide();
+        if (shown) {
+            hideNative();
+            removeEntry();
+        }
 
         show();
+    }
+
+    function raise() {
+        if (!shown) return;
+
+        hideNative();
+        if (!showNative()) removeEntry();
+    }
+
+    function removeEntry() {
+        const index = topLayers.indexOf(entry);
+        if (index >= 0) topLayers.splice(index, 1);
     }
 
     function restoreAttributes() {
@@ -83,6 +121,7 @@ export function createTopLayer(element, { enabled = true } = {}) {
     return {
         get isShown() { return shown; },
         get isSupported() { return supported; },
+        get position() { return topLayers.indexOf(entry); },
         show,
         hide,
         bringToFront,

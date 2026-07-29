@@ -17,6 +17,11 @@ it('renders sheet markup and controller hooks', function () {
         ->assertSee('aria-label="Close sheet"', false)
         ->assertSee('role="dialog"', false)
         ->assertSee('aria-modal="true"', false)
+        ->assertSee('data-state="closed"', false)
+        ->assertSee('data-motion="default"', false)
+        ->assertSee('inert', false)
+        ->assertDontSee('data-sheet-hidden-class', false)
+        ->assertDontSee('data-sheet-open-duration-value', false)
         ->assertSee('--sheet-width: 75%', false)
         ->assertSeeText('Body');
 });
@@ -48,14 +53,22 @@ it('renders trigger close and semantic subcomponents', function () {
         ->assertSee('data-action="sheet#close"', false);
 });
 
-it('maps side to transform classes and size axis', function () {
+it('maps side to semantic state and size axis', function () {
     $right = $this->blade('<x-hw::sheet side="right" size="24rem"><x-hw::sheet.content /></x-hw::sheet>');
-    $right->assertSee('data-sheet-dialog-hidden-class="translate-x-10 opacity-0"', false)
+    $right->assertSee('data-side="right"', false)
         ->assertSee('--sheet-width: 24rem', false);
 
     $bottom = $this->blade('<x-hw::sheet side="bottom" size="50vh"><x-hw::sheet.content /></x-hw::sheet>');
-    $bottom->assertSee('data-sheet-dialog-hidden-class="translate-y-10 opacity-0"', false)
+    $bottom->assertSee('data-side="bottom"', false)
         ->assertSee('--sheet-height: 50vh', false);
+});
+
+it('normalizes sheet motion', function () {
+    $none = $this->blade('<x-hw::sheet motion="none"><x-hw::sheet.content /></x-hw::sheet>');
+    $invalid = $this->blade('<x-hw::sheet motion="spin"><x-hw::sheet.content /></x-hw::sheet>');
+
+    $none->assertSee('data-motion="none"', false);
+    $invalid->assertSee('data-motion="default"', false);
 });
 
 it('renders frame content and loading template when frame is configured', function () {

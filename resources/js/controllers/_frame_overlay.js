@@ -60,6 +60,13 @@ export function createFrameOverlay(controller) {
         });
     }
 
+    function refreshContentObserver() {
+        observer?.disconnect();
+        observer = null;
+        dynamicContentId = null;
+        initializeContentObserver();
+    }
+
     function trackClickedLink(event) {
         if (event.ctrlKey || event.metaKey || event.shiftKey) return;
         if (event.button !== undefined && event.button !== 0) return;
@@ -221,6 +228,7 @@ export function createFrameOverlay(controller) {
             clearContent();
         },
         clearContent,
+        refresh: refreshContentObserver,
         cleanup() {
             observer?.disconnect();
             observer = null;

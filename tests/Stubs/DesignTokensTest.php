@@ -558,6 +558,23 @@ it('drives floating presence from semantic state and motion hooks', function () 
         ->not->toContain(':not(.block)');
 });
 
+it('drives modal overlay motion from semantic presence state', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain(':is([data-slot="modal-overlay"], [data-slot="alert-dialog-overlay"], [data-slot="drawer-overlay"], [data-slot="sheet-overlay"])[data-state="open"]')
+        ->toContain('[data-slot="drawer-overlay"][data-state="closed"] > [data-slot="drawer-popup"][data-direction="right"]')
+        ->toContain('[data-slot="sheet-overlay"][data-state="closed"] > [data-slot="sheet-content"][data-side="right"]')
+        ->toContain('[data-slot="sidebar"][data-mobile-state="closed"] > [data-slot="sidebar-container"][data-side="right"]')
+        ->toContain('[data-presence="leaving"]')
+        ->toContain('[data-slot="sidebar"][data-presence="preparing"]')
+        ->toContain(':is([data-motion="none"], [data-presence="instant"])')
+        ->toContain('@media (prefers-reduced-motion: reduce)')
+        ->not->toContain('data-modal-dialog-hidden-class')
+        ->not->toContain('data-drawer-dialog-hidden-class')
+        ->not->toContain('[data-slot="sidebar"][data-mobile-state]:not([hidden])');
+});
+
 it('keeps dropdown menu subcomponent styling aligned with the nova reference', function () use ($novaPresetPath) {
     $css = file_get_contents($novaPresetPath);
 

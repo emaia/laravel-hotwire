@@ -167,17 +167,9 @@ test("nested inside a modal, Escape closes the popover before the modal", async 
             .scale-100 { transform: scale(1); }
         </style>
         <div data-controller="modal"
-             data-modal-open-duration-value="0"
-             data-modal-close-duration-value="0"
-             data-modal-hidden-class="pointer-events-none"
-             data-modal-visible-class="pointer-events-auto"
-             data-modal-backdrop-hidden-class="opacity-0"
-             data-modal-backdrop-visible-class="opacity-100"
-             data-modal-dialog-hidden-class="scale-80 opacity-0"
-             data-modal-dialog-visible-class="scale-100 opacity-100"
              data-modal-lock-scroll-value="false">
             <button id="modal-trigger" data-action="modal#open">Open modal</button>
-            <div data-modal-target="modal" data-open="false" hidden class="pointer-events-none" role="dialog" aria-modal="true">
+            <div data-modal-target="modal" data-state="closed" data-motion="none" hidden inert role="dialog" aria-modal="true">
                 <div data-modal-target="backdrop" data-action="click->modal#clickOutside" class="opacity-0"></div>
                 <div data-modal-target="dialog" class="scale-80 opacity-0">
                     <div data-controller="popover">
@@ -195,17 +187,28 @@ test("nested inside a modal, Escape closes the popover before the modal", async 
     const popover = page.locator('[data-popover-target="content"]');
 
     await page.locator("#modal-trigger").click();
-    await expect(modal).toHaveAttribute("data-open", "true");
+    await expect(modal).toHaveAttribute("data-state", "open");
 
     await page.locator('[data-popover-target="trigger"]').click();
     await expect(popover).toBeVisible();
 
-    await page.keyboard.press("Escape");
-    await expect(popover).toBeHidden();
-    await expect(modal).toHaveAttribute("data-open", "true");
+    await modal.locator(':scope > [data-modal-target="backdrop"]').evaluate((element) => {
+        element.replaceWith(element.cloneNode(true));
+    });
+    await page.waitForTimeout(0);
+    await expect.poll(async () => popover.evaluate((element) => {
+        const rect = element.getBoundingClientRect();
+        const target = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+
+        return target?.closest('[data-popover-target="content"]') === element;
+    })).toBe(true);
 
     await page.keyboard.press("Escape");
-    await expect(modal).toHaveAttribute("data-open", "false");
+    await expect(popover).toBeHidden();
+    await expect(modal).toHaveAttribute("data-state", "open");
+
+    await page.keyboard.press("Escape");
+    await expect(modal).toHaveAttribute("data-state", "closed");
 });
 
 async function installControllers(page, controllers) {
@@ -241,13 +244,15 @@ async function bundle() {
     const overlay = (await readFile("resources/js/controllers/_overlay.js", "utf8"))
         .replace(/import \{[^}]*\} from "\.\/_focus_trap\.js";\s*/, "")
         .replace(/import \{[^}]*\} from "\.\/_overlay_stack\.js";\s*/, "")
+        .replace(/import \{[^}]*\} from "\.\/_presence\.js";\s*/, "")
         .replace(/import \{[^}]*\} from "\.\/_top_layer\.js";\s*/, "")
         .replace("export function createOverlay", "function createOverlay");
 
     const overlayStack = (await readFile("resources/js/controllers/_overlay_stack.js", "utf8"))
         .replace("export function registerOverlay", "function registerOverlay")
         .replace("export function unregisterOverlay", "function unregisterOverlay")
-        .replace("export function isTopOverlay", "function isTopOverlay");
+        .replace("export function isTopOverlay", "function isTopOverlay")
+        .replace("export function overlayPosition", "function overlayPosition");
 
     const topLayer = (await readFile("resources/js/controllers/_top_layer.js", "utf8"))
         .replace("export function createTopLayer", "function createTopLayer");

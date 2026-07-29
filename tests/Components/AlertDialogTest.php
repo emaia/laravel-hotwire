@@ -12,11 +12,12 @@ it('renders with default props', function () {
     $view->assertSee('role="dialog"', false);
     $view->assertSee('aria-modal="true"', false);
     $view->assertSee('data-slot="alert-dialog-overlay"', false);
-    $view->assertSee('data-open="false"', false);
-    $view->assertSee('data-alert-dialog-hidden-class="pointer-events-none"', false);
-    $view->assertSee('data-alert-dialog-visible-class="pointer-events-auto"', false);
-    $view->assertSee('data-alert-dialog-backdrop-hidden-class="opacity-0"', false);
-    $view->assertSee('data-alert-dialog-backdrop-visible-class="opacity-100"', false);
+    $view->assertSee('data-state="closed"', false);
+    $view->assertSee('data-motion="default"', false);
+    $view->assertSee('hidden', false);
+    $view->assertSee('inert', false);
+    $view->assertDontSee('data-alert-dialog-hidden-class', false);
+    $view->assertDontSee('data-alert-dialog-open-duration-value', false);
 });
 
 it('uses the default slot as the trigger', function () {
@@ -107,18 +108,15 @@ it('allows the cancel button variant to be customized', function () {
 it('renders default stimulus values on the root', function () {
     $view = $this->blade('<x-hw::alert-dialog title="Continue?"><button>x</button></x-hw::alert-dialog>');
 
-    $view->assertSee('data-alert-dialog-open-duration-value="200"', false);
-    $view->assertSee('data-alert-dialog-close-duration-value="200"', false);
     $view->assertSee('data-alert-dialog-lock-scroll-value="true"', false);
     $view->assertSee('data-alert-dialog-close-on-click-outside-value="true"', false);
 });
 
-it('overrides stimulus values via blade props', function () {
+it('overrides behavior and motion via blade props', function () {
     $view = $this->blade('
         <x-hw::alert-dialog
             title="Continue?"
-            :open-duration="500"
-            :close-duration="100"
+            motion="none"
             :lock-scroll="false"
             :close-on-click-outside="false"
         >
@@ -126,10 +124,15 @@ it('overrides stimulus values via blade props', function () {
         </x-hw::alert-dialog>
     ');
 
-    $view->assertSee('data-alert-dialog-open-duration-value="500"', false);
-    $view->assertSee('data-alert-dialog-close-duration-value="100"', false);
+    $view->assertSee('data-motion="none"', false);
     $view->assertSee('data-alert-dialog-lock-scroll-value="false"', false);
     $view->assertSee('data-alert-dialog-close-on-click-outside-value="false"', false);
+});
+
+it('normalizes invalid alert dialog motion', function () {
+    $view = $this->blade('<x-hw::alert-dialog title="Continue?" motion="spin"><button>x</button></x-hw::alert-dialog>');
+
+    $view->assertSee('data-motion="default"', false);
 });
 
 it('sets custom id', function () {
@@ -178,7 +181,7 @@ it('renders using :: namespace syntax', function () {
 it('renders turbo cache action', function () {
     $view = $this->blade('<x-hw::alert-dialog title="Continue?"><button>x</button></x-hw::alert-dialog>');
 
-    $view->assertSee('turbo:before-cache@window->alert-dialog#cancel', false);
+    $view->assertSee('turbo:before-cache@window->alert-dialog#closeForCache', false);
 });
 
 it('merges arbitrary stimulus attributes while protecting internal alert-dialog attributes', function () {
@@ -194,7 +197,7 @@ it('merges arbitrary stimulus attributes while protecting internal alert-dialog 
     ');
 
     $view->assertSee('data-controller="alert-dialog custom"', false);
-    $view->assertSee('data-action="turbo:before-cache@window->alert-dialog#cancel click->custom#run"', false);
+    $view->assertSee('data-action="turbo:before-cache@window->alert-dialog#closeForCache click->custom#run"', false);
     $view->assertDontSee('data-alert-dialog-lock-scroll-value="false"', false);
 });
 
@@ -202,5 +205,5 @@ it('merges inline stimulus attributes with the internal alert-dialog controller'
     $view = $this->blade('<x-hw::alert-dialog title="Continue?" :stimulus="stimulus()->controller(\'analytics\')->action(\'analytics\', \'track\', \'modal:opened\')"><button>x</button></x-hw::alert-dialog>');
 
     $view->assertSee('data-controller="alert-dialog analytics"', false);
-    $view->assertSee('turbo:before-cache@window->alert-dialog#cancel modal:opened->analytics#track', false);
+    $view->assertSee('turbo:before-cache@window->alert-dialog#closeForCache modal:opened->analytics#track', false);
 });

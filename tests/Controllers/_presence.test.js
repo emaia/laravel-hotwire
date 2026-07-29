@@ -54,6 +54,7 @@ test("open keeps a newly mounted element closed until preparation finishes", asy
     expect(presence.phase).toBe("opening");
     expect(element.hidden).toBe(false);
     expect(element.dataset.state).toBe("closed");
+    expect(element.dataset.presence).toBe("preparing");
     expect(element.hasAttribute("inert")).toBe(true);
 
     prepared.resolve(true);
@@ -108,6 +109,43 @@ test("close keeps the element present and inert until its motion finishes", asyn
     expect(presence.phase).toBe("closed");
     expect(element.hidden).toBe(true);
     expect(element.hasAttribute("data-presence")).toBe(false);
+});
+
+test("close waits for motion owned by explicit descendant elements", async () => {
+    const motion = fakeAnimation();
+    const element = makeElement();
+    const panel = document.createElement("div");
+    panel.getAnimations = () => [motion.animation];
+    element.appendChild(panel);
+    const presence = createPresence(element, { motionElements: [panel] });
+    presence.sync(true);
+
+    const closing = presence.close();
+    await tick();
+
+    expect(element.hidden).toBe(false);
+    expect(element.hasAttribute("inert")).toBe(true);
+
+    motion.finish();
+
+    expect(await closing).toBe(true);
+    expect(element.hidden).toBe(true);
+});
+
+test("supports a dedicated state attribute without overwriting another state", async () => {
+    const element = makeElement();
+    element.dataset.state = "expanded";
+    element.dataset.mobileState = "closed";
+    const presence = createPresence(element, { stateAttribute: "mobileState" });
+    presence.sync(false);
+
+    expect(await presence.open({ immediate: true })).toBe(true);
+    expect(element.dataset.state).toBe("expanded");
+    expect(element.dataset.mobileState).toBe("open");
+
+    expect(await presence.close({ immediate: true })).toBe(true);
+    expect(element.dataset.state).toBe("expanded");
+    expect(element.dataset.mobileState).toBe("closed");
 });
 
 test("onEnter runs when content becomes interactive instead of after enter motion", async () => {

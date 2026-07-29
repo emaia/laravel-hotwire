@@ -7,19 +7,9 @@ import { createFrameOverlay } from "./_frame_overlay.js";
 export default class ModalController extends Controller {
     static targets = ["modal", "backdrop", "dialog", "dynamicContent", "loadingTemplate"];
 
-    static classes = [
-        "hidden",
-        "visible",
-        "backdropHidden",
-        "backdropVisible",
-        "dialogHidden",
-        "dialogVisible",
-        "lockScroll",
-    ];
+    static classes = ["lockScroll"];
 
     static values = {
-        openDuration: { type: Number, default: 300 },
-        closeDuration: { type: Number, default: 300 },
         lockScroll: { type: Boolean, default: true },
         closeOnEscape: { type: Boolean, default: true },
         closeOnClickOutside: { type: Boolean, default: true },
@@ -27,28 +17,60 @@ export default class ModalController extends Controller {
 
     frameOverlay = null;
     overlay = null;
+    connected = false;
+    overlayRefreshQueued = false;
 
     get isOpen() {
         return this.overlay?.isOpen ?? false;
     }
 
     connect() {
+        this.connected = true;
+        this.#setupOverlay();
+    }
+
+    disconnect() {
+        this.connected = false;
+        this.overlayRefreshQueued = false;
+        this.frameOverlay?.cleanup();
+        this.frameOverlay = null;
+
+        this.overlay?.cleanup();
+        this.overlay = null;
+    }
+
+    modalTargetConnected() {
+        this.#queueOverlayRefresh();
+    }
+
+    modalTargetDisconnected() {
+        this.#queueOverlayRefresh();
+    }
+
+    backdropTargetConnected() {
+        this.#queueOverlayRefresh();
+    }
+
+    backdropTargetDisconnected() {
+        this.#queueOverlayRefresh();
+    }
+
+    dialogTargetConnected() {
+        this.#queueOverlayRefresh();
+    }
+
+    dialogTargetDisconnected() {
+        this.#queueOverlayRefresh();
+    }
+
+    #setupOverlay(forceOpen = false, stackPosition = null, topLayerPosition = null) {
         this.overlay = createOverlay(this, {
             modalTarget: this.modalTarget,
             backdropTarget: this.backdropTarget,
             dialogTarget: this.dialogTarget,
-            hiddenClasses: this.hiddenClasses,
-            visibleClasses: this.visibleClasses,
-            backdropHiddenClasses: this.backdropHiddenClasses,
-            backdropVisibleClasses: this.backdropVisibleClasses,
-            dialogHiddenClasses: this.dialogHiddenClasses,
-            dialogVisibleClasses: this.dialogVisibleClasses,
             lockScrollClasses: this.lockScrollClasses,
             lockScroll: this.lockScrollValue,
-            openDuration: this.openDurationValue,
-            closeDuration: this.closeDurationValue,
             closeOnEscape: this.closeOnEscapeValue,
-            closeOnClickOutside: this.closeOnClickOutsideValue,
             onOpen: () => {
                 this.#dispatchEvent("modal:opened");
             },
@@ -57,42 +79,72 @@ export default class ModalController extends Controller {
                 this.frameOverlay?.handleOverlayClosed();
             },
             getTriggerElement: () => this.triggerElement,
-            isClickInsideCheck: (event) => this.#isClickInsideModal(event),
         });
 
-        this.frameOverlay = createFrameOverlay(this);
+        this.frameOverlay ??= createFrameOverlay(this);
 
-        if (this.modalTarget.getAttribute("data-open") === "true") {
+        if (forceOpen) {
+            this.overlay.setOpen({ notify: false, stackPosition, topLayerPosition });
+        } else if (this.modalTarget.dataset.state === "open" && !this.modalTarget.hidden) {
             this.overlay.setOpen();
         }
-    }
-
-    disconnect() {
-        this.frameOverlay?.cleanup();
-        this.frameOverlay = null;
-
-        this.overlay?.cleanup();
     }
 
     open(event) {
         if (event && (event.ctrlKey || event.metaKey || event.shiftKey)) return;
         if (event && event.button !== undefined && event.button !== 0) return;
 
-        if (this.overlay?.isOpening || this.overlay?.isClosing || this.isOpen) return;
+        if (this.overlay?.isOpening || this.isOpen) return;
 
-        this.triggerElement = event?.target || document.activeElement;
-        this.overlay?.open();
+        this.triggerElement = event?.currentTarget ?? event?.target ?? document.activeElement;
+
+        return this.overlay?.open();
     }
 
     close() {
         if (!this.overlay?.isOpen) return;
 
         this.frameOverlay?.markDismissedWhileLoading();
-        this.overlay?.close();
+        return this.overlay?.close();
+    }
+
+    closeForCache() {
+        this.frameOverlay?.clearContent();
+        this.overlay?.closeNow({ restoreFocus: false });
     }
 
     clearContent() {
         this.frameOverlay?.clearContent();
+    }
+
+    #queueOverlayRefresh() {
+        if (!this.connected) return;
+
+        if (this.overlayRefreshQueued) return;
+
+        this.overlayRefreshQueued = true;
+        queueMicrotask(() => {
+            this.overlayRefreshQueued = false;
+            if (!this.connected) return;
+            if (this.overlay?.isOpening || this.overlay?.isClosing) {
+                void this.overlay.settled.then(
+                    () => this.#queueOverlayRefresh(),
+                    () => this.#queueOverlayRefresh(),
+                );
+
+                return;
+            }
+
+            const reopen = this.overlay?.isOpen ?? false;
+            const stackPosition = this.overlay?.stackPosition ?? -1;
+            const topLayerPosition = this.overlay?.topLayerPosition ?? -1;
+            this.overlay?.cleanup();
+            this.overlay = null;
+            if (!this.hasModalTarget || !this.hasBackdropTarget || !this.hasDialogTarget) return;
+
+            this.#setupOverlay(reopen, stackPosition, topLayerPosition);
+            this.frameOverlay?.refresh();
+        });
     }
 
     // --- Modal-specific helpers ---

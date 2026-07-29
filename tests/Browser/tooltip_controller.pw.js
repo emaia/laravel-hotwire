@@ -96,6 +96,86 @@ test("does not show an icon-rail tooltip while the mobile sidebar is open", asyn
     await expect(page.locator('[data-slot="tooltip"]')).toHaveCount(0);
 });
 
+test("mobile sidebar preserves desktop state and closes synchronously for Turbo cache", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.setContent(`
+        <style>
+            [hidden] { display: none !important; }
+            [data-slot="sidebar-container"] { opacity: 0; transition: opacity 10s linear; }
+            [data-slot="sidebar"][data-mobile-state="open"] > [data-slot="sidebar-container"] { opacity: 1; }
+        </style>
+        <div
+            data-controller="sidebar"
+            data-sidebar-open-value="true"
+            data-sidebar-persist-value="false"
+            data-sidebar-lock-scroll-class="overflow-hidden"
+            data-action="turbo:before-cache@window->sidebar#closeForCache"
+            data-state="expanded"
+        >
+            <button id="sidebar-trigger" data-slot="sidebar-trigger" data-action="sidebar#toggle" aria-expanded="false">Toggle</button>
+            <div
+                data-slot="sidebar"
+                data-sidebar-target="modal"
+                data-sidebar-collapsible="offcanvas"
+                data-state="expanded"
+                data-mobile-state="closed"
+                data-motion="none"
+                hidden inert
+            >
+                <div data-slot="sidebar-backdrop" data-sidebar-target="backdrop" data-action="click->sidebar#clickOutside"></div>
+                <div data-slot="sidebar-container" data-sidebar-target="dialog"><a href="#inside">Inside</a></div>
+            </div>
+        </div>
+    `);
+
+    await installControllers(page);
+
+    const trigger = page.locator("#sidebar-trigger");
+    const sidebar = page.locator('[data-sidebar-target="modal"]');
+
+    await trigger.click();
+    await expect(sidebar).toHaveAttribute("data-mobile-state", "open");
+    await expect(sidebar).toHaveAttribute("data-state", "expanded");
+    await expect(sidebar).not.toHaveAttribute("hidden", "");
+    await expect(sidebar).not.toHaveAttribute("inert", "");
+    await expect(trigger).toHaveAttribute("aria-expanded", "true");
+    await expect(page.locator("body")).toHaveClass(/overflow-hidden/);
+
+    await page.keyboard.press("Escape");
+    await expect(sidebar).toHaveAttribute("data-mobile-state", "closed");
+    await expect(sidebar).toHaveAttribute("data-state", "expanded");
+    await expect(sidebar).toHaveAttribute("hidden", "");
+    await expect(trigger).toBeFocused();
+
+    await sidebar.evaluate((element) => {
+        element.dataset.motion = "default";
+    });
+    await trigger.click();
+    await expect(sidebar).toHaveAttribute("data-mobile-state", "open");
+    await expect.poll(async () => sidebar.locator('[data-sidebar-target="dialog"]').evaluate((element) => element.getAnimations().some((animation) => (animation.currentTime ?? 0) > 100))).toBe(true);
+
+    const cachedState = await page.evaluate(() => {
+        window.dispatchEvent(new CustomEvent("turbo:before-cache"));
+        const element = document.querySelector('[data-sidebar-target="modal"]');
+
+        return {
+            mobileState: element.dataset.mobileState,
+            desktopState: element.dataset.state,
+            hidden: element.hidden,
+            inert: element.hasAttribute("inert"),
+            scrollLocked: document.body.classList.contains("overflow-hidden"),
+        };
+    });
+
+    expect(cachedState).toEqual({
+        mobileState: "closed",
+        desktopState: "expanded",
+        hidden: true,
+        inert: true,
+        scrollLocked: false,
+    });
+});
+
 async function installControllers(page) {
     await page.addStyleTag({ content: '[data-hotwire-top-layer][popover] { border: 0; inset: auto; margin: 0; }' });
     await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
@@ -110,16 +190,21 @@ async function installControllers(page) {
 }
 
 async function browserControllersScript() {
+    const focusTrap = (await readFile("resources/js/controllers/_focus_trap.js", "utf8"))
+        .replace("export class FocusTrap", "class FocusTrap");
+
     const overlay = (await readFile("resources/js/controllers/_overlay.js", "utf8"))
         .replace(/import \{[^}]*\} from "\.\/_focus_trap\.js";\s*/, "")
         .replace(/import \{[^}]*\} from "\.\/_overlay_stack\.js";\s*/, "")
+        .replace(/import \{[^}]*\} from "\.\/_presence\.js";\s*/, "")
         .replace(/import \{[^}]*\} from "\.\/_top_layer\.js";\s*/, "")
         .replace("export function createOverlay", "function createOverlay");
 
     const overlayStack = (await readFile("resources/js/controllers/_overlay_stack.js", "utf8"))
         .replace("export function registerOverlay", "function registerOverlay")
         .replace("export function unregisterOverlay", "function unregisterOverlay")
-        .replace("export function isTopOverlay", "function isTopOverlay");
+        .replace("export function isTopOverlay", "function isTopOverlay")
+        .replace("export function overlayPosition", "function overlayPosition");
 
     const topLayer = (await readFile("resources/js/controllers/_top_layer.js", "utf8"))
         .replace("export function createTopLayer", "function createTopLayer");
@@ -146,11 +231,12 @@ async function browserControllersScript() {
     return `
         const { Controller } = window.Stimulus;
         const { arrow, autoUpdate, computePosition, flip, hide, offset, shift, size } = window.FloatingUIDOM;
+        ${focusTrap}
         ${overlayStack}
         ${topLayer}
+        ${presence}
         ${overlay}
         ${floating}
-        ${presence}
         ${sidebar}
         ${tooltip}
         window.SidebarController = SidebarController;

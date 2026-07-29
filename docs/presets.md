@@ -28,11 +28,16 @@ Add app CSS after the preset import and target semantic slots:
 }
 ```
 
-## Floating surface motion
+## Surface motion
 
 Dropdown, Popover, Hover Card, Multi Select and Tooltip share state-driven Presence styling. Their floating content uses
 `data-state="open|closed"` and `data-motion="default|none"`; server-rendered closed content also starts with
 `hidden inert`.
+
+Modal, Alert Dialog, Drawer and Sheet use the same `data-state`, `data-motion`, `hidden`, and `inert` contract on their
+overlay target. Sidebar keeps desktop `data-state="expanded|collapsed"` and uses `data-mobile-state="open|closed"` for
+mobile Presence. Their backdrop and panel transitions are observed together, so the longest finite motion determines
+settlement.
 
 The Nova preset transitions only `opacity`, `scale`, and `translate`. Presence suppresses transition and animation while
 the first placement is prepared, so a resolved flip cannot animate the closed transform before enter begins. During
@@ -64,6 +69,15 @@ The same state hooks can drive custom CSS animations. `motion="none"` on support
 `data-tooltip-motion-value="none"` for the standalone Tooltip controller, skips motion. The shared Presence helper
 temporarily suppresses custom CSS transition and animation in this mode, does the same for
 `prefers-reduced-motion: reduce`, and cancels stale exit cleanup when a surface rapidly reopens.
+
+Scope overlay state selectors to direct children. A descendant selector from an open parent Modal can otherwise apply
+the open visual state to a nested Modal or Alert Dialog before that child opens:
+
+```css
+[data-slot="modal-overlay"][data-state="open"] > [data-slot="modal-positioner"] {
+    opacity: 1;
+}
+```
 
 Side-aware styles should use `data-side` and `data-align`; these attributes reflect Floating UI's resolved placement
 after any flip. The preset also resets native Popover margins and removes the browser border only from borderless

@@ -91,7 +91,7 @@ return [
             'view' => 'hotwire::component-views.alert-dialog',
             'docs' => 'docs/components/alert-dialog.md',
             'category' => 'overlay',
-            'description' => 'Accessible alert dialog that intercepts clicks before proceeding',
+            'description' => 'Accessible alert dialog with state-driven motion that intercepts clicks before proceeding',
             'controllers' => ['alert-dialog'],
         ],
         'aspect-ratio' => [
@@ -219,7 +219,7 @@ return [
             'view' => 'hotwire::component-views.drawer',
             'docs' => 'docs/components/drawer.md',
             'category' => 'overlay',
-            'description' => 'Off-canvas drawer with backdrop, focus trap and Escape/click-outside dismissal',
+            'description' => 'Off-canvas drawer with state-driven motion, focus trap and Escape/click-outside dismissal',
             'controllers' => ['drawer'],
         ],
         'dropdown' => [
@@ -395,7 +395,7 @@ return [
             'view' => 'hotwire::component-views.modal',
             'docs' => 'docs/components/modal.md',
             'category' => 'overlay',
-            'description' => 'Accessible modal with backdrop, animations, focus trap and Turbo integration',
+            'description' => 'Accessible modal with state-driven motion, focus trap and Turbo integration',
             'controllers' => ['modal'],
         ],
         'multi-select' => [
@@ -507,7 +507,7 @@ return [
             'view' => 'hotwire::component-views.sheet',
             'docs' => 'docs/components/sheet.md',
             'category' => 'overlay',
-            'description' => 'Off-canvas sheet with backdrop, close button, focus trap and side-aware slide transitions',
+            'description' => 'Off-canvas sheet with state-driven motion, focus trap and side-aware slide transitions',
             'controllers' => ['sheet'],
         ],
         'sidebar' => [
@@ -515,7 +515,7 @@ return [
             'view' => 'hotwire::component-views.sidebar',
             'docs' => 'docs/components/sidebar.md',
             'category' => 'utility',
-            'description' => 'Composable app sidebar with provider state, trigger, rail, menu and content primitives',
+            'description' => 'Composable app sidebar with provider state, mobile Presence and navigation primitives',
             'controllers' => ['sidebar'],
         ],
         'skeleton' => [
@@ -618,7 +618,7 @@ return [
             'source' => 'resources/js/controllers/alert_dialog_controller.js',
             'docs' => 'docs/controllers/alert-dialog.md',
             'category' => 'overlay',
-            'description' => 'Intercepts clicks and requires user confirmation before proceeding',
+            'description' => 'Intercepts clicks and waits for state-driven dialog confirmation before proceeding',
         ],
         'animated-number' => [
             'source' => 'resources/js/controllers/animated_number_controller.js',
@@ -740,7 +740,7 @@ return [
             'source' => 'resources/js/controllers/drawer_controller.js',
             'docs' => 'docs/controllers/drawer.md',
             'category' => 'overlay',
-            'description' => 'Off-canvas drawer with backdrop, focus trap and Escape/click-outside dismissal',
+            'description' => 'Off-canvas drawer with state-driven motion, focus trap and Escape/click-outside dismissal',
         ],
         'dropdown' => [
             'source' => 'resources/js/controllers/dropdown_controller.js',
@@ -811,7 +811,7 @@ return [
             'source' => 'resources/js/controllers/modal_controller.js',
             'docs' => 'docs/controllers/modal.md',
             'category' => 'overlay',
-            'description' => 'Accessible modal with backdrop, focus trap and Turbo integration',
+            'description' => 'Accessible modal with state-driven motion, focus trap and Turbo integration',
         ],
         'modal-auto-close' => [
             'source' => 'resources/js/controllers/modal_auto_close_controller.js',
@@ -910,13 +910,13 @@ return [
             'source' => 'resources/js/controllers/sheet_controller.js',
             'docs' => 'docs/controllers/sheet.md',
             'category' => 'overlay',
-            'description' => 'Off-canvas sheet with backdrop, close button, focus trap and side-aware slide transitions',
+            'description' => 'Off-canvas sheet with state-driven motion, focus trap and side-aware slide transitions',
         ],
         'sidebar' => [
             'source' => 'resources/js/controllers/sidebar_controller.js',
             'docs' => 'docs/controllers/sidebar.md',
             'category' => 'utility',
-            'description' => 'Controls sidebar expanded/collapsed state, trigger clicks and the Cmd/Ctrl+B shortcut',
+            'description' => 'Controls desktop sidebar state and a Presence-driven mobile overlay',
         ],
         'slug' => [
             'source' => 'resources/js/controllers/slug_controller.js',

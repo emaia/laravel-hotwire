@@ -20,6 +20,7 @@
         data-sidebar-target="modal"
         data-state="{{ $sidebarState }}"
         data-mobile-state="closed"
+        data-motion="{{ $motion }}"
         data-side="{{ $side }}"
         data-variant="{{ $variant }}"
         data-collapsible="{{ $collapsed ? $collapsible : '' }}"

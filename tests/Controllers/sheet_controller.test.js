@@ -13,19 +13,11 @@ afterEach(async () => {
 
 async function mount(markup = `
         <div data-controller="sheet"
-             data-sheet-open-duration-value="1"
-             data-sheet-close-duration-value="1"
-             data-sheet-hidden-class="pointer-events-none"
-             data-sheet-visible-class="pointer-events-auto"
-             data-sheet-backdrop-hidden-class="opacity-0"
-             data-sheet-backdrop-visible-class="opacity-100"
-             data-sheet-dialog-hidden-class="translate-x-full"
-             data-sheet-dialog-visible-class="translate-x-0"
              data-sheet-lock-scroll-class="overflow-hidden">
             <button id="trigger" data-action="sheet#toggle">Open</button>
-            <div data-sheet-target="modal" data-open="false" hidden class="pointer-events-none">
-                <div data-sheet-target="backdrop" data-action="click->sheet#clickOutside" class="opacity-0"></div>
-                <div data-sheet-target="dialog" class="translate-x-full">
+            <div data-sheet-target="modal" data-state="closed" data-motion="none" hidden inert>
+                <div data-sheet-target="backdrop" data-action="click->sheet#clickOutside"></div>
+                <div data-sheet-target="dialog">
                     <button id="close" data-action="sheet#close">Close</button>
                 </div>
             </div>
@@ -39,19 +31,11 @@ async function mountFrame() {
     mounted = await mountController("sheet", SheetController, `
         <div id="sheet-shell"
              data-controller="sheet"
-             data-sheet-open-duration-value="1"
-             data-sheet-close-duration-value="1"
-             data-sheet-hidden-class="pointer-events-none"
-             data-sheet-visible-class="pointer-events-auto"
-             data-sheet-backdrop-hidden-class="opacity-0"
-             data-sheet-backdrop-visible-class="opacity-100"
-             data-sheet-dialog-hidden-class="translate-x-full"
-             data-sheet-dialog-visible-class="translate-x-0"
              data-sheet-lock-scroll-class="overflow-hidden">
             <a href="/settings" data-turbo-frame="settings-panel">Settings</a>
-            <div data-sheet-target="modal" data-open="false" hidden class="pointer-events-none">
-                <div data-sheet-target="backdrop" data-action="click->sheet#clickOutside" class="opacity-0"></div>
-                <div data-sheet-target="dialog" class="translate-x-full">
+            <div data-sheet-target="modal" data-state="closed" data-motion="none" hidden inert>
+                <div data-sheet-target="backdrop" data-action="click->sheet#clickOutside"></div>
+                <div data-sheet-target="dialog">
                     <turbo-frame id="settings-panel" data-sheet-target="dynamicContent"></turbo-frame>
                     <template data-sheet-target="loadingTemplate"><div class="loading-state">Loading sheet...</div></template>
                 </div>
@@ -73,7 +57,7 @@ test("toggle opens and closes the sheet", async () => {
 
     expect(mounted.controller.isOpen).toBe(true);
     expect(document.querySelector('[data-sheet-target="modal"]').hidden).toBe(false);
-    expect(document.querySelector('[data-sheet-target="dialog"]').classList.contains("translate-x-0")).toBe(true);
+    expect(document.querySelector('[data-sheet-target="modal"]').dataset.state).toBe("open");
 
     click(document.getElementById("close"));
     await wait(10);
@@ -85,16 +69,10 @@ test("toggle opens and closes the sheet", async () => {
 test("connect applies visible state when the sheet is pre-rendered open", async () => {
     await mount(`
         <div data-controller="sheet"
-             data-sheet-hidden-class="pointer-events-none"
-             data-sheet-visible-class="pointer-events-auto"
-             data-sheet-backdrop-hidden-class="opacity-0"
-             data-sheet-backdrop-visible-class="opacity-100"
-             data-sheet-dialog-hidden-class="translate-x-full"
-             data-sheet-dialog-visible-class="translate-x-0"
              data-sheet-lock-scroll-class="overflow-hidden">
-            <div data-sheet-target="modal" data-open="true" hidden class="pointer-events-none">
-                <div data-sheet-target="backdrop" class="opacity-0"></div>
-                <div data-sheet-target="dialog" class="translate-x-full">
+            <div data-sheet-target="modal" data-state="open" data-motion="none">
+                <div data-sheet-target="backdrop"></div>
+                <div data-sheet-target="dialog">
                     <p>Sheet content</p>
                 </div>
             </div>
@@ -103,13 +81,9 @@ test("connect applies visible state when the sheet is pre-rendered open", async 
 
     expect(mounted.controller.isOpen).toBe(true);
     expect(document.querySelector('[data-sheet-target="modal"]').hidden).toBe(false);
-    expect(document.querySelector('[data-sheet-target="modal"]').dataset.open).toBe("true");
-    expect(document.querySelector('[data-sheet-target="modal"]').classList.contains("pointer-events-auto")).toBe(true);
-    expect(document.querySelector('[data-sheet-target="backdrop"]').classList.contains("opacity-100")).toBe(true);
-    expect(document.querySelector('[data-sheet-target="dialog"]').classList.contains("translate-x-0")).toBe(true);
+    expect(document.querySelector('[data-sheet-target="modal"]').dataset.state).toBe("open");
+    expect(document.querySelector('[data-sheet-target="modal"]').hasAttribute("inert")).toBe(false);
     expect(document.body.classList.contains("overflow-hidden")).toBe(true);
-    expect(mounted.controller.openDurationValue).toBe(300);
-    expect(mounted.controller.closeDurationValue).toBe(300);
 });
 
 test("frame content opens the sheet and loading templates are injected", async () => {
@@ -149,7 +123,7 @@ test("refresh streams wait for the sheet close animation", async () => {
 
     expect(refreshed).toBe(false);
     expect(mounted.controller.isOpen).toBe(false);
-    expect(document.querySelector('[data-sheet-target="modal"]').hidden).toBe(false);
+    expect(document.querySelector('[data-sheet-target="modal"]').hidden).toBe(true);
 
     await wait(10);
 
