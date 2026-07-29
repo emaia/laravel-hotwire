@@ -331,14 +331,14 @@ test.serial("does not let a closed trigger replacement steal a later active trig
     const second = first.cloneNode(true);
     first.after(second);
     mounted.controller.triggerTargetConnected(second);
-    mouse("mouseenter", first);
+    mounted.controller.pointerEnter({ currentTarget: first });
     await waitUntil(() => content().dataset.state === "open");
     mounted.controller.close();
     await waitUntil(() => !isOpen());
 
     first.remove();
     mounted.controller.triggerTargetDisconnected(first);
-    mouse("mouseenter", second);
+    mounted.controller.pointerEnter({ currentTarget: second });
     await waitUntil(() => content().dataset.state === "open");
 
     const third = second.cloneNode(true);
