@@ -2,8 +2,8 @@
 import { Controller } from "@hotwired/stimulus";
 
 import { createFloating } from "./_floating.js";
-
-const ANIMATION_DURATION = 150;
+import { createPresence } from "./_presence.js";
+import { createTopLayer } from "./_top_layer.js";
 
 let tooltipId = 0;
 
@@ -20,6 +20,7 @@ export default class extends Controller {
         delay: { type: Number, default: 0 },
         closeDelay: { type: Number, default: 100 },
         enabledWhen: { type: String, default: "" },
+        motion: { type: String, default: "default" },
     };
 
     initialize() {
@@ -43,9 +44,9 @@ export default class extends Controller {
         this.tooltip = null;
         this.arrow = null;
         this.floating = null;
+        this.presence = null;
+        this.topLayer = null;
         this.observer = null;
-        this.openAnimationFrame = null;
-        this.closeAnimationTimer = null;
     }
 
     get isOpen() {
@@ -92,6 +93,7 @@ export default class extends Controller {
     onTooltipPointerEnter() {
         this.hoveredTooltip = true;
         this.clearCloseTimer();
+        if (!this.open) this.scheduleOpen();
     }
 
     onTooltipPointerLeave() {
@@ -159,12 +161,11 @@ export default class extends Controller {
         if (this.open || !this.isEnabled()) return;
 
         this.open = true;
-        this.clearCloseAnimationTimer();
         this.createTooltip();
         this.addDescribedBy();
         document.addEventListener("keydown", this.onDocumentKeydown, true);
 
-        this.floating = createFloating(this.element, this.tooltip, {
+        this.floating ??= createFloating(this.element, this.tooltip, {
             side: this.sideValue,
             align: this.alignValue,
             sideOffset: this.sideOffsetValue,
@@ -178,7 +179,18 @@ export default class extends Controller {
             arrowPadding: 4,
         });
 
-        void this.floating.start().then(() => this.queueOpenState());
+        const presence = this.presence;
+        void presence.open({ beforeEnter: () => {
+            if (!this.open || presence !== this.presence) return false;
+
+            this.topLayer?.show();
+
+            return this.floating?.start() ?? false;
+        } }).then((opened) => {
+            if (!opened) this.finishShow(presence);
+        }).catch((error) => {
+            this.finishShow(presence, error);
+        });
     }
 
     hide({ immediate = false } = {}) {
@@ -189,19 +201,31 @@ export default class extends Controller {
         this.open = false;
         document.removeEventListener("keydown", this.onDocumentKeydown, true);
         this.removeDescribedBy();
-        this.cleanupFloating();
-        this.clearOpenAnimationFrame();
 
         if (immediate) {
-            this.clearCloseAnimationTimer();
+            this.presence?.sync(false);
+            this.finishHide(this.presence);
+
+            return;
+        }
+
+        const presence = this.presence;
+        if (!presence) {
             this.destroyTooltip();
 
             return;
         }
 
-        if (this.tooltip) this.tooltip.dataset.state = "closed";
-        this.clearCloseAnimationTimer();
-        this.closeAnimationTimer = setTimeout(() => this.destroyTooltip(), ANIMATION_DURATION);
+        const closing = presence.close();
+        if (!presence.isPresent) {
+            this.finishHide(presence);
+
+            return;
+        }
+
+        void closing.then((closed) => {
+            if (closed) this.finishHide(presence);
+        });
     }
 
     closeForCache() {
@@ -252,6 +276,9 @@ export default class extends Controller {
         this.tooltip.setAttribute("role", "tooltip");
         this.tooltip.dataset.slot = "tooltip";
         this.tooltip.dataset.state = "closed";
+        this.tooltip.dataset.motion = ["default", "none"].includes(this.motionValue) ? this.motionValue : "default";
+        this.tooltip.hidden = true;
+        this.tooltip.setAttribute("inert", "");
         this.tooltip.innerHTML = this.contentValue;
         this.tooltip.addEventListener("pointerenter", this.onTooltipPointerEnter);
         this.tooltip.addEventListener("pointerleave", this.onTooltipPointerLeave);
@@ -261,28 +288,23 @@ export default class extends Controller {
         this.tooltip.append(this.arrow);
 
         document.body.append(this.tooltip);
+        this.presence = createPresence(this.tooltip);
+        this.presence.sync(false);
+        this.topLayer = createTopLayer(this.tooltip);
     }
 
     destroyTooltip() {
         if (!this.tooltip) return;
 
-        this.clearCloseAnimationTimer();
-        this.tooltip.dataset.state = "closed";
+        this.presence?.cleanup();
+        this.topLayer?.cleanup();
         this.tooltip.removeEventListener("pointerenter", this.onTooltipPointerEnter);
         this.tooltip.removeEventListener("pointerleave", this.onTooltipPointerLeave);
         this.tooltip.remove();
         this.tooltip = null;
         this.arrow = null;
-    }
-
-    queueOpenState() {
-        if (!this.open || !this.tooltip) return;
-
-        this.clearOpenAnimationFrame();
-        this.openAnimationFrame = requestAnimationFrame(() => {
-            if (this.open && this.tooltip) this.tooltip.dataset.state = "open";
-            this.openAnimationFrame = null;
-        });
+        this.presence = null;
+        this.topLayer = null;
     }
 
     addDescribedBy() {
@@ -309,6 +331,31 @@ export default class extends Controller {
         this.floating = null;
     }
 
+    finishHide(presence) {
+        if (presence !== this.presence || this.open || presence?.isPresent) return;
+
+        this.cleanupFloating();
+        this.topLayer?.hide();
+        this.destroyTooltip();
+    }
+
+    finishShow(presence, error = null) {
+        if (presence !== this.presence || !this.open) return;
+        if (presence.phase !== "closed" || presence.isPresent) return;
+
+        if (error) {
+            this.application.handleError(error, "Error opening tooltip", {
+                controller: this,
+                element: this.element,
+            });
+        }
+
+        this.open = false;
+        document.removeEventListener("keydown", this.onDocumentKeydown, true);
+        this.removeDescribedBy();
+        this.finishHide(presence);
+    }
+
     clearTimers() {
         this.clearOpenTimer();
         this.clearCloseTimer();
@@ -322,18 +369,6 @@ export default class extends Controller {
     clearCloseTimer() {
         clearTimeout(this.closeTimer);
         this.closeTimer = null;
-    }
-
-    clearOpenAnimationFrame() {
-        if (this.openAnimationFrame === null) return;
-
-        cancelAnimationFrame(this.openAnimationFrame);
-        this.openAnimationFrame = null;
-    }
-
-    clearCloseAnimationTimer() {
-        clearTimeout(this.closeAnimationTimer);
-        this.closeAnimationTimer = null;
     }
 
     get describedByTokens() {

@@ -8,8 +8,8 @@
         'aria-haspopup' => 'true',
         'aria-expanded' => $open ? 'true' : 'false',
         'aria-controls' => $id,
-        'data-state' => $state,
-    ], $attributes, except: ['data-dropdown-target', 'aria-haspopup', 'aria-expanded', 'aria-controls', 'data-state'], protectedPrefixes: ['data-dropdown-']);
+        'data-dropdown-state' => $state,
+    ], $attributes, except: ['data-dropdown-target', 'aria-haspopup', 'aria-expanded', 'aria-controls'], protectedPrefixes: ['data-dropdown-']);
 @endphp
 
 @if ($asChild)

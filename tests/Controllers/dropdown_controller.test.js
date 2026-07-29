@@ -10,7 +10,8 @@ const autoUpdate = mock((_anchor, _floating, update) => {
 
     return floatingCleanup;
 });
-const computePosition = mock(async () => ({ x: 16, y: 24, placement: "bottom-start" }));
+const defaultComputePosition = async () => ({ x: 16, y: 24, placement: "bottom-start" });
+const computePosition = mock(defaultComputePosition);
 const offset = mock((options) => ({ name: "offset", options }));
 const flip = mock((options = {}) => ({ name: "flip", options }));
 const shift = mock((options = {}) => ({ name: "shift", options }));
@@ -39,6 +40,7 @@ beforeEach(() => {
     floatingCleanup.mockClear();
     autoUpdate.mockClear();
     computePosition.mockClear();
+    computePosition.mockImplementation(defaultComputePosition);
     offset.mockClear();
     flip.mockClear();
     shift.mockClear();
@@ -55,7 +57,7 @@ afterEach(async () => {
 
 const trigger = () => document.querySelector('[data-dropdown-target="trigger"]');
 const menu = () => document.querySelector('[data-dropdown-target="menu"]');
-const isOpen = () => !menu().classList.contains("hidden");
+const isOpen = () => !menu().hidden;
 
 function clickTrigger() {
     trigger().dispatchEvent(new MouseEvent("click", { bubbles: true }));
@@ -76,7 +78,8 @@ test.serial("starts closed with aria-expanded false", async () => {
 
     expect(isOpen()).toBe(false);
     expect(trigger().getAttribute("aria-expanded")).toBe("false");
-    expect(menu().dataset.open).toBe("false");
+    expect(menu().dataset.state).toBe("closed");
+    expect(menu().hasAttribute("inert")).toBe(true);
 });
 
 test.serial("connects without a menu target and wires one added later", async () => {
@@ -98,14 +101,17 @@ test.serial("connects without a menu target and wires one added later", async ()
 
         const menuEl = document.createElement("div");
         menuEl.dataset.dropdownTarget = "menu";
-        menuEl.className = "hidden";
+        menuEl.dataset.state = "closed";
+        menuEl.dataset.motion = "default";
+        menuEl.hidden = true;
+        menuEl.setAttribute("inert", "");
         menuEl.innerHTML = '<a href="#x">x</a>';
         mounted.root.append(menuEl);
         mounted.controller.menuTargetConnected(menuEl);
 
         clickTrigger();
 
-        expect(menuEl.classList.contains("hidden")).toBe(false);
+        expect(menuEl.hidden).toBe(false);
         expect(trigger().getAttribute("aria-expanded")).toBe("true");
     } finally {
         console.error = consoleError;
@@ -116,14 +122,15 @@ test.serial("toggles open and closed on the trigger", async () => {
     await mount();
 
     clickTrigger();
+    await wait(0);
     expect(isOpen()).toBe(true);
     expect(trigger().getAttribute("aria-expanded")).toBe("true");
-    expect(menu().dataset.open).toBe("true");
+    expect(menu().dataset.state).toBe("open");
 
     clickTrigger();
     expect(isOpen()).toBe(false);
     expect(trigger().getAttribute("aria-expanded")).toBe("false");
-    expect(menu().dataset.open).toBe("false");
+    expect(menu().dataset.state).toBe("closed");
 });
 
 test.serial("toggles from an as-child sidebar menu button trigger", async () => {
@@ -140,28 +147,31 @@ test.serial("toggles from an as-child sidebar menu button trigger", async () => 
                     aria-haspopup="true"
                     aria-expanded="false"
                     aria-controls="account-menu"
-                    data-state="closed">
+                    data-state="on">
                 <span>Ednilson Maia</span>
                 <svg data-slot="dropdown-trigger-icon"></svg>
             </button>
             <div id="account-menu"
                  data-slot="dropdown-menu"
-                 data-open="false"
+                 data-state="closed"
+                 data-motion="default"
                  data-side="top"
                  data-align="start"
                  data-dropdown-target="menu"
                  data-dropdown-side-value="top"
-                 data-dropdown-align-value="start">
+                 data-dropdown-align-value="start" hidden inert>
                 <a href="/profile">Profile</a>
             </div>
         </div>`,
     );
 
     clickTrigger();
+    await wait(0);
 
     expect(trigger().getAttribute("aria-expanded")).toBe("true");
-    expect(trigger().dataset.state).toBe("open");
-    expect(menu().dataset.open).toBe("true");
+    expect(trigger().dataset.state).toBe("on");
+    expect(trigger().dataset.dropdownState).toBe("open");
+    expect(menu().dataset.state).toBe("open");
 });
 
 test.serial("delegates trigger clicks when no data-action is present", async () => {
@@ -171,7 +181,7 @@ test.serial("delegates trigger clicks when no data-action is present", async () 
         `
         <div data-controller="dropdown">
             <button type="button" data-dropdown-target="trigger" aria-expanded="false">M</button>
-            <div data-dropdown-target="menu" data-open="false" class="hidden"><a href="#x">x</a></div>
+            <div data-dropdown-target="menu" data-state="closed" data-motion="default" hidden inert><a href="#x">x</a></div>
         </div>`,
     );
 
@@ -191,6 +201,18 @@ test.serial("open() and close() are idempotent", async () => {
     mounted.controller.close();
     mounted.controller.close();
     expect(isOpen()).toBe(false);
+});
+
+test.serial("a synchronous close prevents deferred positioning from starting", async () => {
+    await mount();
+
+    mounted.controller.open();
+    mounted.controller.close();
+    await wait(0);
+
+    expect(autoUpdate).not.toHaveBeenCalled();
+    expect(menu().hidden).toBe(true);
+    expect(trigger().getAttribute("aria-expanded")).toBe("false");
 });
 
 test.serial("starts floating positioning when opened and stops when closed", async () => {
@@ -225,7 +247,7 @@ test.serial("passes dropdown positioning values to Floating UI", async () => {
              data-dropdown-flip-value="false"
              data-dropdown-shift-value="false">
             <button data-dropdown-target="trigger" data-action="dropdown#toggle" aria-expanded="false">M</button>
-            <div data-dropdown-target="menu" class="hidden"><a href="#x">x</a></div>
+            <div data-dropdown-target="menu" data-state="closed" data-motion="default" hidden inert><a href="#x">x</a></div>
         </div>`,
     );
 
@@ -255,7 +277,7 @@ test.serial("reads positioning values from the menu target", async () => {
                  data-dropdown-strategy-value="fixed"
                  data-dropdown-flip-value="false"
                  data-dropdown-shift-value="false"
-                 class="hidden"><a href="#x">x</a></div>
+                 data-state="closed" data-motion="default" hidden inert><a href="#x">x</a></div>
         </div>`,
     );
 
@@ -282,7 +304,7 @@ test.serial("uses responsive side and align overrides and recalculates while ope
                  data-dropdown-align-value="start"
                  data-dropdown-mobile-side-value="bottom"
                  data-dropdown-mobile-align-value="end"
-                 class="hidden"><a href="#x">x</a></div>
+                 data-state="closed" data-motion="default" hidden inert><a href="#x">x</a></div>
         </div>`,
     );
     const media = installMatchMedia(true);
@@ -314,7 +336,7 @@ test.serial("uses collapsed side and align overrides inside a collapsed sidebar"
                      data-dropdown-align-value="start"
                      data-dropdown-collapsed-side-value="right"
                      data-dropdown-collapsed-align-value="end"
-                     class="hidden"><a href="#x">x</a></div>
+                     data-state="closed" data-motion="default" hidden inert><a href="#x">x</a></div>
             </div>
         </div>`,
     );
@@ -338,7 +360,7 @@ test.serial("uses collapsed overrides inside an icon-collapsible sidebar rail", 
                      data-dropdown-align-value="start"
                      data-dropdown-collapsed-side-value="right"
                      data-dropdown-collapsed-align-value="end"
-                     class="hidden"><a href="#x">x</a></div>
+                     data-state="closed" data-motion="default" hidden inert><a href="#x">x</a></div>
             </div>
         </div>`,
     );
@@ -362,7 +384,7 @@ test.serial("uses collapsed overrides when only the sidebar wrapper carries coll
                      data-dropdown-align-value="start"
                      data-dropdown-collapsed-side-value="right"
                      data-dropdown-collapsed-align-value="end"
-                     class="hidden"><a href="#x">x</a></div>
+                     data-state="closed" data-motion="default" hidden inert><a href="#x">x</a></div>
             </div>
         </div>`,
     );
@@ -386,7 +408,7 @@ test.serial("uses collapsed overrides when sidebar has persisted collapsed state
                      data-dropdown-align-value="start"
                      data-dropdown-collapsed-side-value="right"
                      data-dropdown-collapsed-align-value="end"
-                     class="hidden"><a href="#x">x</a></div>
+                     data-state="closed" data-motion="default" hidden inert><a href="#x">x</a></div>
             </div>
         </div>`,
     );
@@ -419,6 +441,7 @@ test.serial("does not intercept arrow keys on the trigger", async () => {
 test.serial("does not move focus with arrow keys, Home or End inside the menu", async () => {
     await mount();
     clickTrigger();
+    await wait(0);
 
     const link = menu().querySelector("a");
     link.focus();
@@ -439,7 +462,7 @@ test.serial("does not intercept arrow keys from form controls inside the menu", 
         `
         <div data-controller="dropdown" data-dropdown-close-on-select-value="false">
             <button data-dropdown-target="trigger" data-action="dropdown#toggle" aria-expanded="false">Filters</button>
-            <div data-dropdown-target="menu" class="hidden">
+            <div data-dropdown-target="menu" data-state="closed" data-motion="default" hidden inert>
                 <input id="filter" type="text" value="abc">
                 <button id="apply" type="button">Apply</button>
             </div>
@@ -447,6 +470,7 @@ test.serial("does not intercept arrow keys from form controls inside the menu", 
     );
 
     clickTrigger();
+    await wait(0);
     const input = document.getElementById("filter");
     input.focus();
 
@@ -509,22 +533,14 @@ test.serial("Escape inside an open drawer closes only the dropdown first", async
         },
         `
         <div data-controller="drawer"
-             data-drawer-open-duration-value="1"
-             data-drawer-close-duration-value="1"
-             data-drawer-hidden-class="pointer-events-none"
-             data-drawer-visible-class="pointer-events-auto"
-             data-drawer-backdrop-hidden-class="opacity-0"
-             data-drawer-backdrop-visible-class="opacity-100"
-             data-drawer-dialog-hidden-class="translate-x-full"
-             data-drawer-dialog-visible-class="translate-x-0"
              data-drawer-lock-scroll-class="overflow-hidden">
             <button id="drawer-trigger" data-drawer-target="trigger" data-action="drawer#toggle">Open drawer</button>
-            <div data-drawer-target="modal" data-open="false" hidden class="pointer-events-none">
+            <div data-drawer-target="modal" data-state="closed" data-motion="none" hidden inert>
                 <div data-drawer-target="backdrop" data-action="click->drawer#clickOutside" class="opacity-0"></div>
                 <div data-drawer-target="dialog" class="translate-x-full">
                     <div data-controller="dropdown">
                         <button type="button" data-dropdown-target="trigger" data-action="dropdown#toggle" aria-expanded="false">Menu</button>
-                        <div data-dropdown-target="menu" class="hidden">
+                        <div data-dropdown-target="menu" data-state="closed" data-motion="default" hidden inert>
                             <a id="nested-dropdown-item" href="#item">Item</a>
                         </div>
                     </div>
@@ -557,22 +573,14 @@ test.serial("Escape inside an open modal closes only the dropdown when the dropd
         },
         `
         <div id="modal" data-controller="modal"
-             data-modal-open-duration-value="1"
-             data-modal-close-duration-value="1"
-             data-modal-hidden-class="pointer-events-none"
-             data-modal-visible-class="pointer-events-auto"
-             data-modal-backdrop-hidden-class="opacity-0"
-             data-modal-backdrop-visible-class="opacity-100"
-             data-modal-dialog-hidden-class="scale-80 opacity-0"
-             data-modal-dialog-visible-class="scale-100 opacity-100"
              data-modal-lock-scroll-class="overflow-hidden">
             <button id="modal-trigger" data-action="modal#open">Open modal</button>
-            <div data-modal-target="modal" data-open="false" hidden class="pointer-events-none">
+            <div data-modal-target="modal" data-state="closed" data-motion="none" hidden inert>
                 <div data-modal-target="backdrop"></div>
                 <div data-modal-target="dialog">
                     <div data-controller="dropdown">
                         <button type="button" data-dropdown-target="trigger" data-action="dropdown#toggle" aria-expanded="false">Menu</button>
-                        <div data-dropdown-target="menu" class="hidden">
+                        <div data-dropdown-target="menu" data-state="closed" data-motion="default" hidden inert>
                             <a id="modal-dropdown-item" href="#item">Item</a>
                         </div>
                     </div>
@@ -597,13 +605,14 @@ test.serial("Escape inside an open modal closes only the dropdown when the dropd
 test.serial("closes on turbo:before-cache", async () => {
     await mount();
     clickTrigger();
+    await wait(0);
     expect(isOpen()).toBe(true);
-    expect(menu().dataset.open).toBe("true");
+    expect(menu().dataset.state).toBe("open");
 
     document.dispatchEvent(new CustomEvent("turbo:before-cache", { bubbles: true }));
 
     expect(isOpen()).toBe(false);
-    expect(menu().dataset.open).toBe("false");
+    expect(menu().dataset.state).toBe("closed");
     expect(floatingCleanup).toHaveBeenCalled();
 });
 
@@ -651,29 +660,8 @@ test.serial("dropdowns operate independently", async () => {
 
     triggers[0].dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
-    expect(menus[0].classList.contains("hidden")).toBe(false);
-    expect(menus[1].classList.contains("hidden")).toBe(true);
-});
-
-// --- custom hidden class ---
-
-test.serial("uses a custom hidden class", async () => {
-    mounted = await mountController(
-        "dropdown",
-        DropdownController,
-        `
-        <div data-controller="dropdown" data-dropdown-hidden-class="is-closed">
-            <button data-dropdown-target="trigger" data-action="dropdown#toggle" aria-expanded="false">M</button>
-            <div data-dropdown-target="menu" class="is-closed"><a href="#x">x</a></div>
-        </div>`,
-    );
-
-    const menuEl = document.querySelector('[data-dropdown-target="menu"]');
-    document
-        .querySelector('[data-dropdown-target="trigger"]')
-        .dispatchEvent(new MouseEvent("click", { bubbles: true }));
-
-    expect(menuEl.classList.contains("is-closed")).toBe(false);
+    expect(menus[0].hidden).toBe(false);
+    expect(menus[1].hidden).toBe(true);
 });
 
 // --- close action ---
@@ -685,7 +673,7 @@ test.serial("the close action dismisses the menu", async () => {
         `
         <div data-controller="dropdown" data-dropdown-close-on-select-value="false">
             <button data-dropdown-target="trigger" data-action="dropdown#toggle" aria-expanded="false">M</button>
-            <div data-dropdown-target="menu" class="hidden">
+            <div data-dropdown-target="menu" data-state="closed" data-motion="default" hidden inert>
                 <button type="button" data-action="dropdown#close">Apply</button>
             </div>
         </div>`,
@@ -695,11 +683,11 @@ test.serial("the close action dismisses the menu", async () => {
     document
         .querySelector('[data-dropdown-target="trigger"]')
         .dispatchEvent(new MouseEvent("click", { bubbles: true }));
-    expect(menuEl.classList.contains("hidden")).toBe(false);
+    expect(menuEl.hidden).toBe(false);
 
     menuEl.querySelector("button").dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
-    expect(menuEl.classList.contains("hidden")).toBe(true);
+    expect(menuEl.hidden).toBe(true);
 });
 
 // --- focus return with multiple triggers ---
@@ -712,7 +700,7 @@ test.serial("Escape returns focus to the trigger that opened the menu", async ()
         <div data-controller="dropdown">
             <button id="t1" data-dropdown-target="trigger" data-action="dropdown#toggle" aria-expanded="false">One</button>
             <button id="t2" data-dropdown-target="trigger" data-action="dropdown#toggle" aria-expanded="false">Two</button>
-            <div data-dropdown-target="menu" class="hidden"><a href="#x">x</a></div>
+            <div data-dropdown-target="menu" data-state="closed" data-motion="default" hidden inert><a href="#x">x</a></div>
         </div>`,
     );
 
@@ -740,44 +728,284 @@ test.serial("re-attaches the menu click listener when the menu node is replaced"
 
     replacement.querySelector("a").dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
-    expect(replacement.classList.contains("hidden")).toBe(true);
+    expect(replacement.hidden).toBe(true);
 });
 
-// --- before-cache with a pending transition ---
+test.serial("closes logical state when the menu target is removed without replacement", async () => {
+    await mount();
+    clickTrigger();
+    await wait(0);
+    const removed = menu();
 
-test.serial("turbo:before-cache cancels a pending transition and hides cleanly", async () => {
+    removed.remove();
+    mounted.controller.menuTargetDisconnected(removed);
+
+    expect(mounted.controller.openValue).toBe(false);
+    expect(trigger().getAttribute("aria-expanded")).toBe("false");
+    expect(trigger().dataset.dropdownState).toBe("closed");
+});
+
+// --- before-cache with pending presence ---
+
+test.serial("turbo:before-cache cancels pending positioning and hides cleanly", async () => {
+    const positioning = deferred();
+    computePosition.mockImplementation(() => positioning.promise);
+    await mount();
+
+    mounted.controller.open();
+    expect(menu().hidden).toBe(false);
+    expect(menu().dataset.state).toBe("closed");
+
+    document.dispatchEvent(new CustomEvent("turbo:before-cache", { bubbles: true }));
+
+    expect(menu().hidden).toBe(true);
+    expect(menu().hasAttribute("inert")).toBe(true);
+    expect(menu().dataset.state).toBe("closed");
+
+    positioning.resolve({ x: 99, y: 88, placement: "right-end" });
+    await wait(0);
+
+    expect(menu().hidden).toBe(true);
+    expect(menu().dataset.state).toBe("closed");
+});
+
+// --- state-driven presence and resolved positioning ---
+
+test.serial("waits for the first placement before entering", async () => {
+    const positioning = deferred();
+    computePosition.mockImplementation(() => positioning.promise);
+    await mount();
+
+    clickTrigger();
+
+    expect(menu().hidden).toBe(false);
+    expect(menu().dataset.state).toBe("closed");
+    expect(menu().hasAttribute("inert")).toBe(true);
+
+    positioning.resolve({ x: 16, y: 24, placement: "top-start" });
+    await wait(0);
+
+    expect(menu().dataset.state).toBe("open");
+    expect(menu().dataset.side).toBe("top");
+    expect(menu().hasAttribute("inert")).toBe(false);
+});
+
+test.serial("rolls logical and rendered state back when the first placement fails", async () => {
+    computePosition.mockRejectedValueOnce(new Error("positioning failed"));
+    await mount();
+    const handleError = mock(() => {});
+    mounted.application.handleError = handleError;
+
+    clickTrigger();
+    await wait(0);
+    await wait(0);
+
+    expect(mounted.controller.openValue).toBe(false);
+    expect(trigger().getAttribute("aria-expanded")).toBe("false");
+    expect(trigger().dataset.dropdownState).toBe("closed");
+    expect(menu().dataset.state).toBe("closed");
+    expect(menu().hidden).toBe(true);
+    expect(menu().hasAttribute("inert")).toBe(true);
+    expect(floatingCleanup).toHaveBeenCalledTimes(1);
+    expect(handleError).toHaveBeenCalledTimes(1);
+});
+
+test.serial("keeps the resolved placement and top-layer resources until exit finishes", async () => {
+    const exitMotion = fakeAnimation();
+    computePosition.mockImplementation(async () => ({ x: 16, y: 24, placement: "top-end" }));
+    await mount();
+    clickTrigger();
+    await wait(0);
+    menu().getAnimations = () => menu().dataset.state === "closed" ? [exitMotion.animation] : [];
+
+    mounted.controller.close();
+
+    expect(menu().dataset.state).toBe("closed");
+    expect(menu().dataset.side).toBe("top");
+    expect(menu().dataset.align).toBe("end");
+    expect(menu().hidden).toBe(false);
+    expect(floatingCleanup).not.toHaveBeenCalled();
+
+    exitMotion.finish();
+    await wait(0);
+
+    expect(menu().hidden).toBe(true);
+    expect(floatingCleanup).toHaveBeenCalledTimes(1);
+});
+
+test.serial("reopening during exit cancels the stale hide and teardown", async () => {
+    const exitMotion = fakeAnimation();
+    await mount();
+    clickTrigger();
+    await wait(0);
+    menu().getAnimations = () => menu().dataset.state === "closed" ? [exitMotion.animation] : [];
+
+    mounted.controller.close();
+    mounted.controller.open();
+    await wait(0);
+
+    exitMotion.finish();
+    await wait(0);
+
+    expect(menu().dataset.state).toBe("open");
+    expect(menu().hidden).toBe(false);
+    expect(floatingCleanup).not.toHaveBeenCalled();
+});
+
+test.serial("reopening after a breakpoint change during exit uses the new profile", async () => {
+    const exitMotion = fakeAnimation();
+    await mount();
+    const media = installMatchMedia(false);
+    mounted.controller.connectMediaQuery();
+    clickTrigger();
+    await wait(0);
+    menu().getAnimations = () => menu().dataset.state === "closed" ? [exitMotion.animation] : [];
+
+    mounted.controller.close();
+    media.setMatches(true);
+    mounted.controller.open();
+    await wait(0);
+
+    expect(computePosition.mock.calls.at(-1)[2].placement).toBe("bottom-start");
+    expect(autoUpdate).toHaveBeenCalledTimes(2);
+});
+
+test.serial("an obsolete positioning restart cannot roll back a newer restart", async () => {
+    const first = deferred();
+    const second = deferred();
+    await mount();
+    clickTrigger();
+    await wait(0);
+    computePosition.mockImplementationOnce(() => first.promise).mockImplementationOnce(() => second.promise);
+
+    mounted.controller.onMediaChange();
+    await wait(0);
+    mounted.controller.onMediaChange();
+    await wait(0);
+
+    second.resolve({ x: 30, y: 40, placement: "right-start" });
+    await wait(0);
+    first.resolve({ x: 90, y: 100, placement: "left-end" });
+    await wait(0);
+
+    expect(mounted.controller.openValue).toBe(true);
+    expect(menu().hidden).toBe(false);
+    expect(menu().dataset.state).toBe("open");
+    expect(menu().style.left).toBe("30px");
+});
+
+test.serial("rolls back when breakpoint repositioning fails", async () => {
+    await mount();
+    clickTrigger();
+    await wait(0);
+    const handleError = mock(() => {});
+    mounted.application.handleError = handleError;
+    computePosition.mockRejectedValueOnce(new Error("breakpoint positioning failed"));
+
+    mounted.controller.onMediaChange();
+    await wait(0);
+    await wait(0);
+
+    expect(mounted.controller.openValue).toBe(false);
+    expect(menu().hidden).toBe(true);
+    expect(handleError).toHaveBeenCalledTimes(1);
+});
+
+test.serial("re-anchors an open menu when its active trigger is replaced", async () => {
+    await mount();
+    clickTrigger();
+    await wait(0);
+    const oldTrigger = trigger();
+    const replacement = oldTrigger.cloneNode(true);
+
+    oldTrigger.replaceWith(replacement);
+    mounted.controller.triggerTargetDisconnected(oldTrigger);
+    mounted.controller.triggerTargetConnected(replacement);
+    await wait(0);
+
+    expect(replacement.getAttribute("aria-expanded")).toBe("true");
+    expect(replacement.dataset.dropdownState).toBe("open");
+    expect(computePosition.mock.calls.at(-1)[0]).toBe(replacement);
+    expect(floatingCleanup).toHaveBeenCalledTimes(1);
+});
+
+test.serial("keeps a replacement of the active secondary trigger as the anchor", async () => {
     mounted = await mountController(
         "dropdown",
         DropdownController,
         `
         <div data-controller="dropdown">
-            <button data-dropdown-target="trigger" data-action="dropdown#toggle" aria-expanded="false">M</button>
-            <div data-dropdown-target="menu" class="hidden"
-                 data-transition-enter="t-enter" data-transition-enter-from="ef" data-transition-enter-to="et">
-                <a href="#x">x</a>
+            <button id="first-trigger" data-dropdown-target="trigger" data-action="dropdown#toggle">First</button>
+            <button id="active-trigger" data-dropdown-target="trigger" data-action="dropdown#toggle">Active</button>
+            <div data-dropdown-target="menu" data-state="closed" data-motion="default" hidden inert>Menu</div>
+        </div>`,
+    );
+    const active = document.getElementById("active-trigger");
+    active.click();
+    await wait(0);
+    const replacement = active.cloneNode(true);
+
+    active.replaceWith(replacement);
+    mounted.controller.triggerTargetDisconnected(active);
+    mounted.controller.triggerTargetConnected(replacement);
+    await wait(0);
+
+    expect(computePosition.mock.calls.at(-1)[0]).toBe(replacement);
+    press("Escape");
+    expect(document.activeElement).toBe(replacement);
+});
+
+test.serial("re-anchors to another trigger when the active trigger is removed", async () => {
+    mounted = await mountController(
+        "dropdown",
+        DropdownController,
+        `
+        <div data-controller="dropdown">
+            <button id="first-trigger" data-dropdown-target="trigger" data-action="dropdown#toggle" aria-expanded="false">First</button>
+            <button id="active-trigger" data-dropdown-target="trigger" data-action="dropdown#toggle" aria-expanded="false">Active</button>
+            <div data-dropdown-target="menu" data-state="closed" data-motion="default" hidden inert><a href="#x">x</a></div>
+        </div>`,
+    );
+    document.getElementById("active-trigger").click();
+    await wait(0);
+    const removed = document.getElementById("active-trigger");
+
+    removed.remove();
+    mounted.controller.triggerTargetDisconnected(removed);
+    await wait(0);
+
+    expect(mounted.controller.openValue).toBe(true);
+    expect(computePosition.mock.calls.at(-1)[0]).toBe(document.getElementById("first-trigger"));
+    expect(menu().hidden).toBe(false);
+});
+
+test.serial("mobile positioning overrides the complete collapsed profile", async () => {
+    mounted = await mountController(
+        "dropdown",
+        DropdownController,
+        `
+        <div data-slot="sidebar" data-state="collapsed">
+            <div data-controller="dropdown">
+                <button data-dropdown-target="trigger" data-action="dropdown#toggle" aria-expanded="false">M</button>
+                <div data-dropdown-target="menu"
+                     data-state="closed"
+                     data-motion="default"
+                     data-dropdown-side-value="top"
+                     data-dropdown-align-value="start"
+                     data-dropdown-mobile-side-value="bottom"
+                     data-dropdown-collapsed-side-value="right"
+                     data-dropdown-collapsed-align-value="end"
+                     hidden inert><a href="#x">x</a></div>
             </div>
         </div>`,
     );
+    installMatchMedia(true);
+    mounted.controller.connectMediaQuery();
 
-    const menuEl = document.querySelector('[data-dropdown-target="menu"]');
-
-    // Start opening: the enter transition applies its active/from classes and
-    // schedules a frame, but it has not completed yet.
-    mounted.controller.open();
-    expect(menuEl.classList.contains("t-enter")).toBe(true);
-    expect(menuEl.classList.contains("ef")).toBe(true);
-
-    document.dispatchEvent(new CustomEvent("turbo:before-cache", { bubbles: true }));
-
-    // Cancelled and hidden, with no stale transition classes left behind.
-    expect(menuEl.classList.contains("hidden")).toBe(true);
-    expect(menuEl.classList.contains("t-enter")).toBe(false);
-    expect(menuEl.classList.contains("ef")).toBe(false);
-
-    // The cancelled frame must not fire and re-dirty the element.
+    clickTrigger();
     await wait(0);
-    expect(menuEl.classList.contains("hidden")).toBe(true);
-    expect(menuEl.classList.contains("et")).toBe(false);
+
+    expect(computePosition.mock.calls[0][2].placement).toBe("bottom-start");
 });
 
 // --- helpers ---
@@ -794,7 +1022,7 @@ async function mount({ open = false, closeOnSelect = null } = {}) {
             <button data-dropdown-target="trigger" data-action="dropdown#toggle" aria-haspopup="true" aria-expanded="false">
                 Menu
             </button>
-            <div data-dropdown-target="menu" data-open="${open ? "true" : "false"}" class="hidden">
+            <div data-dropdown-target="menu" data-state="closed" data-motion="default" hidden inert>
                 <span>label</span>
                 <a href="#item">Item</a>
                 <button type="button">Action</button>
@@ -811,11 +1039,11 @@ async function mountControllers() {
         `
         <div data-controller="dropdown">
             <button data-dropdown-target="trigger" data-action="dropdown#toggle" aria-expanded="false">A</button>
-            <div data-dropdown-target="menu" class="hidden"><a href="#a">a</a></div>
+            <div data-dropdown-target="menu" data-state="closed" data-motion="default" hidden inert><a href="#a">a</a></div>
         </div>
         <div data-controller="dropdown">
             <button data-dropdown-target="trigger" data-action="dropdown#toggle" aria-expanded="false">B</button>
-            <div data-dropdown-target="menu" class="hidden"><a href="#b">b</a></div>
+            <div data-dropdown-target="menu" data-state="closed" data-motion="default" hidden inert><a href="#b">b</a></div>
         </div>`,
     );
 }
@@ -839,4 +1067,26 @@ function installMatchMedia(initialMatches) {
     window.matchMedia = mock(() => media);
 
     return media;
+}
+
+function fakeAnimation() {
+    const finished = deferred();
+
+    return {
+        animation: {
+            effect: { getComputedTiming: () => ({ endTime: 100 }) },
+            finished: finished.promise,
+            playState: "running",
+        },
+        finish: finished.resolve,
+    };
+}
+
+function deferred() {
+    let resolve;
+    const promise = new Promise((settle) => {
+        resolve = settle;
+    });
+
+    return { promise, resolve };
 }

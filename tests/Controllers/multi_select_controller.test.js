@@ -10,7 +10,8 @@ const autoUpdate = mock((_anchor, _floating, update) => {
 
     return floatingCleanup;
 });
-const computePosition = mock(async () => ({ x: 12, y: 18, placement: "bottom-start" }));
+const defaultComputePosition = async () => ({ x: 12, y: 18, placement: "bottom-start" });
+const computePosition = mock(defaultComputePosition);
 const offset = mock((options) => ({ name: "offset", options }));
 const flip = mock((options = {}) => ({ name: "flip", options }));
 const shift = mock((options = {}) => ({ name: "shift", options }));
@@ -37,6 +38,7 @@ beforeEach(() => {
     floatingCleanup.mockClear();
     autoUpdate.mockClear();
     computePosition.mockClear();
+    computePosition.mockImplementation(defaultComputePosition);
     offset.mockClear();
     flip.mockClear();
     shift.mockClear();
@@ -58,7 +60,7 @@ const select = () => document.querySelector('[data-multi-select-target="select"]
 const option = (value) => document.querySelector(`[data-multi-select-target="option"][data-value="${value}"]`);
 const empty = () => document.querySelector('[data-multi-select-target="empty"]');
 const selectedValues = () => [...select().selectedOptions].map((option) => option.value);
-const isOpen = () => content().dataset.open === "true" && !content().classList.contains("hidden");
+const isOpen = () => content().dataset.state === "open" && !content().hidden;
 
 function clickTrigger() {
     trigger().dispatchEvent(new MouseEvent("click", { bubbles: true }));
@@ -112,6 +114,145 @@ test.serial("passes positioning values to Floating UI", async () => {
     expect(offset).toHaveBeenCalledWith({ mainAxis: 10, crossAxis: -3 });
     expect(flip).not.toHaveBeenCalled();
     expect(shift).not.toHaveBeenCalled();
+});
+
+test.serial("rolls back when the first placement fails", async () => {
+    computePosition.mockRejectedValueOnce(new Error("positioning failed"));
+    await mount();
+    const handleError = mock(() => {});
+    mounted.application.handleError = handleError;
+
+    clickTrigger();
+    await wait(0);
+    await wait(0);
+
+    expect(mounted.controller.openValue).toBe(false);
+    expect(trigger().getAttribute("aria-expanded")).toBe("false");
+    expect(trigger().dataset.multiSelectState).toBe("closed");
+    expect(content().hidden).toBe(true);
+    expect(content().hasAttribute("inert")).toBe(true);
+    expect(floatingCleanup).toHaveBeenCalledTimes(1);
+    expect(handleError).toHaveBeenCalledTimes(1);
+});
+
+test.serial("waits for placement before moving focus into content", async () => {
+    const placement = deferred();
+    computePosition.mockImplementationOnce(() => placement.promise);
+    await mount();
+
+    trigger().focus();
+    clickTrigger();
+    await wait(0);
+
+    expect(content().dataset.state).toBe("closed");
+    expect(content().hasAttribute("inert")).toBe(true);
+    expect(document.activeElement).toBe(trigger());
+
+    placement.resolve({ x: 12, y: 18, placement: "bottom-start" });
+    await wait(0);
+
+    expect(content().dataset.state).toBe("open");
+    expect(document.activeElement).toBe(document.querySelector('[data-multi-select-target="search"]'));
+});
+
+test.serial("re-anchors open content when the trigger is replaced", async () => {
+    await mount();
+    clickTrigger();
+    await wait(0);
+    const oldTrigger = trigger();
+    const replacement = oldTrigger.cloneNode(true);
+
+    oldTrigger.replaceWith(replacement);
+    mounted.controller.triggerTargetDisconnected(oldTrigger);
+    mounted.controller.triggerTargetConnected(replacement);
+    await wait(0);
+
+    expect(replacement.getAttribute("aria-expanded")).toBe("true");
+    expect(replacement.dataset.multiSelectState).toBe("open");
+    expect(computePosition.mock.calls.at(-1)[0]).toBe(replacement);
+    expect(floatingCleanup).toHaveBeenCalledTimes(1);
+});
+
+test.serial("keeps managed focus and ignores a stale focus frame when content is replaced", async () => {
+    await mount();
+    clickTrigger();
+    await wait(0);
+    const oldContent = content();
+    const oldSearch = oldContent.querySelector('[data-multi-select-target="search"]');
+    const replacement = oldContent.cloneNode(true);
+    mounted.controller.onFocusOut(new window.FocusEvent("focusout", {
+        bubbles: true,
+        relatedTarget: null,
+    }));
+
+    oldContent.replaceWith(replacement);
+    mounted.controller.contentTargetDisconnected(oldContent);
+    mounted.controller.contentTargetConnected(replacement);
+    await wait(20);
+
+    expect(oldSearch.isConnected).toBe(false);
+    expect(isOpen()).toBe(true);
+    expect(document.activeElement).toBe(replacement.querySelector('[data-multi-select-target="search"]'));
+});
+
+test.serial("rolls back when positioning a replacement trigger fails", async () => {
+    await mount();
+    clickTrigger();
+    await wait(0);
+    const handleError = mock(() => {});
+    mounted.application.handleError = handleError;
+    computePosition.mockRejectedValueOnce(new Error("replacement positioning failed"));
+    const oldTrigger = trigger();
+    const replacement = oldTrigger.cloneNode(true);
+
+    oldTrigger.replaceWith(replacement);
+    mounted.controller.triggerTargetDisconnected(oldTrigger);
+    mounted.controller.triggerTargetConnected(replacement);
+    await wait(0);
+    await wait(0);
+
+    expect(mounted.controller.openValue).toBe(false);
+    expect(content().hidden).toBe(true);
+    expect(handleError).toHaveBeenCalledTimes(1);
+});
+
+test.serial("synchronizes every trigger before and after fallback re-anchoring", async () => {
+    await mount();
+    const first = trigger();
+    const second = first.cloneNode(true);
+    first.after(second);
+    mounted.controller.triggerTargetConnected(second);
+
+    clickTrigger();
+    await wait(0);
+
+    expect(second.getAttribute("aria-expanded")).toBe("true");
+    expect(second.dataset.multiSelectState).toBe("open");
+
+    first.remove();
+    mounted.controller.triggerTargetDisconnected(first);
+    await wait(0);
+
+    expect(second.getAttribute("aria-expanded")).toBe("true");
+    expect(second.dataset.multiSelectState).toBe("open");
+    expect(computePosition.mock.calls.at(-1)[0]).toBe(second);
+});
+
+test.serial("does not steal focus back when enter motion finishes", async () => {
+    const enterMotion = fakeAnimation();
+    await mount();
+    content().getAnimations = () => content().dataset.state === "open" ? [enterMotion.animation] : [];
+
+    clickTrigger();
+    await wait(0);
+    const search = document.querySelector('[data-multi-select-target="search"]');
+    expect(document.activeElement).toBe(search);
+
+    option("active").focus();
+    enterMotion.finish();
+    await wait(0);
+
+    expect(document.activeElement).toBe(option("active"));
 });
 
 test.serial("selects and deselects options while syncing the native select", async () => {
@@ -279,6 +420,7 @@ test.serial("search refreshes select-all state for the visible options", async (
 test.serial("ArrowDown from search focuses select-all before options", async () => {
     await mount();
     clickTrigger();
+    await wait(0);
 
     const search = document.querySelector('[data-multi-select-target="search"]');
     search.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }));
@@ -297,6 +439,7 @@ test.serial("ArrowDown from search focuses select-all before options", async () 
 test.serial("ArrowUp from the first option returns focus to search when select-all is absent", async () => {
     await mount({ selectAll: false });
     clickTrigger();
+    await wait(0);
 
     const search = document.querySelector('[data-multi-select-target="search"]');
     search.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }));
@@ -309,6 +452,7 @@ test.serial("ArrowUp from the first option returns focus to search when select-a
 test.serial("Space toggles the option focused from search keyboard navigation", async () => {
     await mount({ selectAll: false });
     clickTrigger();
+    await wait(0);
 
     const search = document.querySelector('[data-multi-select-target="search"]');
     search.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }));
@@ -323,6 +467,8 @@ test.serial("Space toggles the option focused from search keyboard navigation", 
 
 test.serial("clicking an option focuses it so Space can toggle it again", async () => {
     await mount();
+    clickTrigger();
+    await wait(0);
 
     option("active").dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
@@ -397,6 +543,7 @@ test.serial("clearable search reset restores filtered options", async () => {
 test.serial("Tab from search can move to the clear button without closing", async () => {
     await mount({ clearableSearch: true });
     clickTrigger();
+    await wait(0);
     const search = document.querySelector('[data-multi-select-target="search"]');
     const clearButton = document.querySelector('[data-clear-input-target="clearButton"]');
     search.focus();
@@ -440,17 +587,9 @@ test.serial("Escape inside an open drawer closes only the multi-select first", a
         },
         `
         <div data-controller="drawer"
-             data-drawer-open-duration-value="1"
-             data-drawer-close-duration-value="1"
-             data-drawer-hidden-class="pointer-events-none"
-             data-drawer-visible-class="pointer-events-auto"
-             data-drawer-backdrop-hidden-class="opacity-0"
-             data-drawer-backdrop-visible-class="opacity-100"
-             data-drawer-dialog-hidden-class="translate-x-full"
-             data-drawer-dialog-visible-class="translate-x-0"
              data-drawer-lock-scroll-class="overflow-hidden">
             <button id="drawer-trigger" data-drawer-target="trigger" data-action="drawer#toggle">Open drawer</button>
-            <div data-drawer-target="modal" data-open="false" hidden class="pointer-events-none">
+            <div data-drawer-target="modal" data-state="closed" data-motion="none" hidden inert>
                 <div data-drawer-target="backdrop" data-action="click->drawer#clickOutside" class="opacity-0"></div>
                 <div data-drawer-target="dialog" class="translate-x-full">
                     <div data-controller="multi-select" data-multi-select-placeholder-value="Select options">
@@ -460,7 +599,7 @@ test.serial("Escape inside an open drawer closes only the multi-select first", a
                         <button type="button" data-multi-select-target="trigger" aria-expanded="false" data-action="multi-select#toggle">
                             <span data-multi-select-target="value">Select options</span>
                         </button>
-                        <div data-multi-select-target="content" data-open="false" class="hidden">
+                        <div data-multi-select-target="content" data-state="closed" data-motion="default" hidden inert>
                             <div data-multi-select-target="list" role="listbox" aria-multiselectable="true">
                                 <div data-slot="multi-select-option" data-multi-select-target="option" data-value="active" data-selected="false" role="option" aria-selected="false" tabindex="-1">Active</div>
                             </div>
@@ -497,17 +636,9 @@ test.serial("Escape inside an open modal closes only the multi-select when the m
         },
         `
         <div id="modal" data-controller="modal"
-             data-modal-open-duration-value="1"
-             data-modal-close-duration-value="1"
-             data-modal-hidden-class="pointer-events-none"
-             data-modal-visible-class="pointer-events-auto"
-             data-modal-backdrop-hidden-class="opacity-0"
-             data-modal-backdrop-visible-class="opacity-100"
-             data-modal-dialog-hidden-class="scale-80 opacity-0"
-             data-modal-dialog-visible-class="scale-100 opacity-100"
              data-modal-lock-scroll-class="overflow-hidden">
             <button id="modal-trigger" data-action="modal#open">Open modal</button>
-            <div data-modal-target="modal" data-open="false" hidden class="pointer-events-none">
+            <div data-modal-target="modal" data-state="closed" data-motion="none" hidden inert>
                 <div data-modal-target="backdrop"></div>
                 <div data-modal-target="dialog">
                     <div data-controller="multi-select" data-multi-select-placeholder-value="Select options">
@@ -517,7 +648,7 @@ test.serial("Escape inside an open modal closes only the multi-select when the m
                         <button type="button" data-multi-select-target="trigger" aria-expanded="false" data-action="multi-select#toggle">
                             <span data-multi-select-target="value">Select options</span>
                         </button>
-                        <div data-multi-select-target="content" data-open="false" class="hidden">
+                        <div data-multi-select-target="content" data-state="closed" data-motion="default" hidden inert>
                             <input id="modal-multi-search" data-multi-select-target="search" type="text">
                             <div data-multi-select-target="list" role="listbox" aria-multiselectable="true">
                                 <div data-slot="multi-select-option" data-multi-select-target="option" data-value="active" data-selected="false" role="option" aria-selected="false" tabindex="-1">Active</div>
@@ -574,6 +705,20 @@ test.serial("turbo:before-cache closes and disconnect cleans up positioning", as
     expect(floatingCleanup).toHaveBeenCalledTimes(2);
 });
 
+test.serial("disconnect tolerates content removed by a morph", async () => {
+    await mount();
+    clickTrigger();
+    await wait(0);
+    const removed = content();
+
+    removed.remove();
+    mounted.controller.contentTargetDisconnected(removed);
+
+    expect(() => mounted.controller.disconnect()).not.toThrow();
+    expect(mounted.controller.openValue).toBe(false);
+    expect(trigger().getAttribute("aria-expanded")).toBe("false");
+});
+
 async function mount({ values = "", options = null, optionMarkup = null, validation = false, search = true, selectAll = true, clearableSearch = false } = {}) {
     const searchMarkup = clearableSearch
         ? `<span data-controller="clear-input">
@@ -600,7 +745,7 @@ async function mount({ values = "", options = null, optionMarkup = null, validat
             <button type="button" data-multi-select-target="trigger" aria-expanded="false" data-action="multi-select#toggle">
                 <span data-multi-select-target="value">Select options</span>
             </button>
-            <div data-multi-select-target="content" data-open="false" class="hidden">
+            <div data-multi-select-target="content" data-state="closed" data-motion="default" hidden inert>
                 ${search ? searchMarkup : ""}
                 ${selectAll ? '<button type="button" data-multi-select-target="selectAll" aria-pressed="false">Select all</button>' : ""}
                 <div data-multi-select-target="list" role="listbox" aria-multiselectable="true">
@@ -615,4 +760,26 @@ async function mount({ values = "", options = null, optionMarkup = null, validat
             ${validation ? '<input data-multi-select-target="validation" type="text" required tabindex="-1">' : ""}
         </div>`,
     );
+}
+
+function deferred() {
+    let resolve;
+    const promise = new Promise((settle) => {
+        resolve = settle;
+    });
+
+    return { promise, resolve };
+}
+
+function fakeAnimation() {
+    const finished = deferred();
+
+    return {
+        animation: {
+            effect: { getComputedTiming: () => ({ endTime: 100 }) },
+            finished: finished.promise,
+            playState: "running",
+        },
+        finish: finished.resolve,
+    };
 }

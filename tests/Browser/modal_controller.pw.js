@@ -3,17 +3,13 @@ import { readFile } from "node:fs/promises";
 
 test("opens when dynamic content is inserted and closes cleanly through the public API", async ({ page }) => {
     await page.setContent(`
-        <div data-controller="modal" data-modal-open-duration-value="0" data-modal-close-duration-value="0">
+        <div data-controller="modal">
             <div
                 data-modal-target="modal"
-                data-modal-hidden-class="hidden"
-                data-modal-visible-class="visible"
-                data-modal-backdrop-hidden-class="backdrop-hidden"
-                data-modal-backdrop-visible-class="backdrop-visible"
-                data-modal-dialog-hidden-class="dialog-hidden"
-                data-modal-dialog-visible-class="dialog-visible"
+                data-state="closed"
+                data-motion="none"
                 data-modal-lock-scroll-class="overflow-hidden"
-                hidden
+                hidden inert
             >
                 <div data-modal-target="backdrop"></div>
                 <div data-modal-target="dialog">
@@ -39,7 +35,7 @@ test("opens when dynamic content is inserted and closes cleanly through the publ
         element.appendChild(content);
     });
 
-    await expect(modal).toHaveAttribute("data-open", "true");
+    await expect(modal).toHaveAttribute("data-state", "open");
     await expect(modal).not.toHaveAttribute("hidden", "");
     await expect(frame).toContainText("Loaded content");
 
@@ -50,7 +46,7 @@ test("opens when dynamic content is inserted and closes cleanly through the publ
         controller.close();
     });
 
-    await expect(modal).toHaveAttribute("data-open", "false");
+    await expect(modal).toHaveAttribute("data-state", "closed");
     await expect(modal).toHaveAttribute("hidden", "");
     await expect(frame).toBeEmpty();
 });
@@ -58,18 +54,14 @@ test("opens when dynamic content is inserted and closes cleanly through the publ
 test("tabs from the modal close button into native accordion summaries", async ({ page }) => {
     await page.setContent(`
         <style>.hidden { display: none; }</style>
-        <div data-controller="modal" data-modal-open-duration-value="0" data-modal-close-duration-value="0">
+        <div data-controller="modal">
             <button id="open-modal" data-action="modal#open">Open modal</button>
             <div
                 data-modal-target="modal"
-                data-modal-hidden-class="hidden"
-                data-modal-visible-class="visible"
-                data-modal-backdrop-hidden-class="backdrop-hidden"
-                data-modal-backdrop-visible-class="backdrop-visible"
-                data-modal-dialog-hidden-class="dialog-hidden"
-                data-modal-dialog-visible-class="dialog-visible"
+                data-state="closed"
+                data-motion="none"
                 data-modal-lock-scroll-class="overflow-hidden"
-                hidden
+                hidden inert
             >
                 <div data-modal-target="backdrop"></div>
                 <div data-modal-target="dialog">
@@ -112,15 +104,15 @@ test("nested modal overlay enters the browser top layer", async ({ page }) => {
             .dialog-hidden { opacity: 0; transform: scale(.8); }
             .dialog-visible { opacity: 1; transform: scale(1); }
         </style>
-        <div id="outer" data-controller="modal" data-modal-open-duration-value="0" data-modal-close-duration-value="0">
+        <div id="outer" data-controller="modal" data-modal-lock-scroll-class="overflow-hidden">
             <button id="open-outer" data-action="modal#open">Open outer</button>
-            <div data-slot="modal-overlay" data-modal-target="modal" data-modal-hidden-class="hidden" data-modal-visible-class="visible" data-modal-backdrop-hidden-class="hidden" data-modal-backdrop-visible-class="visible" data-modal-dialog-hidden-class="dialog-hidden" data-modal-dialog-visible-class="dialog-visible" data-modal-lock-scroll-class="overflow-hidden" hidden>
+            <div data-slot="modal-overlay" data-modal-target="modal" data-state="closed" data-motion="none" data-modal-lock-scroll-class="overflow-hidden" hidden inert>
                 <div data-slot="modal-backdrop" data-modal-target="backdrop"></div>
                 <div data-slot="modal-positioner" data-modal-target="dialog">
                     <section style="width: 260px; height: 140px; overflow: hidden; transform: scale(.95); border-radius: 16px; background: white;">
                         <button id="open-inner" data-action="modal#open">Open inner</button>
-                        <div id="inner" data-controller="modal" data-modal-open-duration-value="0" data-modal-close-duration-value="0">
-                            <div data-slot="modal-overlay" data-modal-target="modal" data-modal-hidden-class="hidden" data-modal-visible-class="visible" data-modal-backdrop-hidden-class="hidden" data-modal-backdrop-visible-class="visible" data-modal-dialog-hidden-class="dialog-hidden" data-modal-dialog-visible-class="dialog-visible" data-modal-lock-scroll-class="overflow-hidden" hidden>
+                        <div id="inner" data-controller="modal">
+                            <div data-slot="modal-overlay" data-modal-target="modal" data-state="closed" data-motion="none" data-modal-lock-scroll-class="overflow-hidden" hidden inert>
                                 <div data-slot="modal-backdrop" data-modal-target="backdrop"></div>
                                 <div data-slot="modal-positioner" data-modal-target="dialog">
                                     <button id="inner-close" data-action="modal#close">Close inner</button>
@@ -173,21 +165,21 @@ test("nested modal and alert dialog close one layer at a time with Escape", asyn
             .dialog-hidden { opacity: 0; transform: scale(.8); }
             .dialog-visible { opacity: 1; transform: scale(1); }
         </style>
-        <div id="outer" data-controller="modal" data-modal-open-duration-value="0" data-modal-close-duration-value="0">
+        <div id="outer" data-controller="modal" data-modal-lock-scroll-class="overflow-hidden">
             <button id="open-outer" data-action="modal#open">Open outer</button>
-            <div data-slot="modal-overlay" data-modal-target="modal" data-modal-hidden-class="hidden" data-modal-visible-class="visible" data-modal-backdrop-hidden-class="hidden" data-modal-backdrop-visible-class="visible" data-modal-dialog-hidden-class="dialog-hidden" data-modal-dialog-visible-class="dialog-visible" data-modal-lock-scroll-class="overflow-hidden" hidden>
+            <div data-slot="modal-overlay" data-modal-target="modal" data-state="closed" data-motion="none" data-modal-lock-scroll-class="overflow-hidden" hidden inert>
                 <div data-slot="modal-backdrop" data-modal-target="backdrop"></div>
                 <div data-slot="modal-positioner" data-modal-target="dialog">
                     <button id="outer-close" data-action="modal#close">Close outer</button>
-                    <div id="inner" data-controller="modal" data-modal-open-duration-value="0" data-modal-close-duration-value="0">
+                    <div id="inner" data-controller="modal" data-modal-lock-scroll-class="overflow-hidden">
                         <button id="open-inner" data-action="modal#open">Open inner</button>
-                        <div data-slot="modal-overlay" data-modal-target="modal" data-modal-hidden-class="hidden" data-modal-visible-class="visible" data-modal-backdrop-hidden-class="hidden" data-modal-backdrop-visible-class="visible" data-modal-dialog-hidden-class="dialog-hidden" data-modal-dialog-visible-class="dialog-visible" data-modal-lock-scroll-class="overflow-hidden" hidden>
+                        <div data-slot="modal-overlay" data-modal-target="modal" data-state="closed" data-motion="none" data-modal-lock-scroll-class="overflow-hidden" hidden inert>
                             <div data-slot="modal-backdrop" data-modal-target="backdrop"></div>
                             <div data-slot="modal-positioner" data-modal-target="dialog">
                                 <button id="inner-close" data-action="modal#close">Close inner</button>
-                                <div id="confirm" data-controller="alert-dialog" data-alert-dialog-open-duration-value="0" data-alert-dialog-close-duration-value="0" data-alert-dialog-hidden-class="hidden" data-alert-dialog-visible-class="visible" data-alert-dialog-backdrop-hidden-class="hidden" data-alert-dialog-backdrop-visible-class="visible" data-alert-dialog-dialog-hidden-class="dialog-hidden" data-alert-dialog-dialog-visible-class="dialog-visible" data-alert-dialog-lock-scroll-class="overflow-hidden">
+                                <div id="confirm" data-controller="alert-dialog" data-alert-dialog-lock-scroll-class="overflow-hidden">
                                     <button id="delete" data-action="click->alert-dialog#intercept">Delete</button>
-                                    <div data-slot="alert-dialog-overlay" data-alert-dialog-target="modal" data-open="false" data-action="click->alert-dialog#clickOutside" hidden>
+                                    <div data-slot="alert-dialog-overlay" data-alert-dialog-target="modal" data-state="closed" data-motion="none" data-action="click->alert-dialog#clickOutside" hidden inert>
                                         <div data-slot="alert-dialog-backdrop" data-alert-dialog-target="backdrop"></div>
                                         <div data-slot="alert-dialog-panel" data-alert-dialog-target="dialog">
                                             <button id="cancel" data-action="alert-dialog#cancel">Cancel</button>
@@ -224,17 +216,279 @@ test("nested modal and alert dialog close one layer at a time with Escape", asyn
     await expect(outerOverlay).not.toHaveAttribute("hidden", "");
     await expect.poll(async () => alertOverlay.evaluate((element) => element.matches(":popover-open"))).toBe(true);
 
+    await outerOverlay.locator(':scope > [data-modal-target="backdrop"]').evaluate((element) => {
+        element.replaceWith(element.cloneNode(true));
+    });
+    await page.waitForTimeout(0);
+    await expect.poll(async () => page.evaluate(() => {
+        const target = document.elementFromPoint(window.innerWidth / 2, window.innerHeight / 2);
+
+        return target?.closest('[data-slot="alert-dialog-overlay"]') !== null;
+    })).toBe(true);
+
     await page.keyboard.press("Escape");
     await expect(alertOverlay).toHaveAttribute("hidden", "");
+    await expect(page.locator("#delete")).toBeFocused();
     await expect(innerOverlay).not.toHaveAttribute("hidden", "");
     await expect(outerOverlay).not.toHaveAttribute("hidden", "");
+    await expect(page.locator("body")).toHaveClass(/overflow-hidden/);
 
     await page.keyboard.press("Escape");
     await expect(innerOverlay).toHaveAttribute("hidden", "");
+    await expect(page.locator("#open-inner")).toBeFocused();
     await expect(outerOverlay).not.toHaveAttribute("hidden", "");
+    await expect(page.locator("body")).toHaveClass(/overflow-hidden/);
 
     await page.keyboard.press("Escape");
     await expect(outerOverlay).toHaveAttribute("hidden", "");
+    await expect(page.locator("#open-outer")).toBeFocused();
+    await expect(page.locator("body")).not.toHaveClass(/overflow-hidden/);
+});
+
+for (const identifier of ["drawer", "sheet"]) {
+    test(`${identifier} and alert dialog close one layer at a time with Escape`, async ({ page }) => {
+        await page.setContent(`
+            <style>
+                [hidden] { display: none !important; }
+                [data-slot$="-overlay"] { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
+                [data-hotwire-top-layer][popover][data-slot$="-overlay"] { margin: 0; width: 100vw; height: 100dvh; max-width: none; max-height: none; border: 0; padding: 0; background: transparent; overflow: visible; }
+                [data-slot$="-backdrop"] { position: absolute; inset: 0; }
+                [data-slot="${identifier}-popup"], [data-slot="alert-dialog-panel"] { position: relative; z-index: 1; background: white; }
+            </style>
+            <div id="parent" data-controller="${identifier}" data-${identifier}-lock-scroll-class="overflow-hidden">
+                <button id="open-parent" data-action="${identifier}#open">Open ${identifier}</button>
+                <div data-slot="${identifier}-overlay" data-${identifier}-target="modal" data-state="closed" data-motion="none" hidden inert>
+                    <div data-slot="${identifier}-backdrop" data-${identifier}-target="backdrop" data-action="click->${identifier}#clickOutside"></div>
+                    <div data-slot="${identifier}-popup" data-${identifier}-target="dialog">
+                        <div id="confirm" data-controller="alert-dialog" data-alert-dialog-lock-scroll-class="overflow-hidden">
+                            <button id="delete" data-action="click->alert-dialog#intercept">Delete</button>
+                            <div data-slot="alert-dialog-overlay" data-alert-dialog-target="modal" data-state="closed" data-motion="none" data-action="click->alert-dialog#clickOutside" hidden inert>
+                                <div data-slot="alert-dialog-backdrop" data-alert-dialog-target="backdrop"></div>
+                                <div data-slot="alert-dialog-panel" data-alert-dialog-target="dialog">
+                                    <button id="cancel" data-action="alert-dialog#cancel">Cancel</button>
+                                    <button data-action="alert-dialog#confirm">Confirm</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `);
+
+        await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+        await page.addScriptTag({ content: await browserOverlayControllerScript() });
+        await page.evaluate((controllerIdentifier) => {
+            window.StimulusApplication = window.Stimulus.Application.start();
+            window.StimulusApplication.register(controllerIdentifier, controllerIdentifier === "drawer" ? window.DrawerController : window.SheetController);
+            window.StimulusApplication.register("alert-dialog", window.AlertDialogController);
+        }, identifier);
+
+        await page.locator("#open-parent").click();
+        await page.locator("#delete").click();
+
+        const parentOverlay = page.locator(`#parent > [data-${identifier}-target="modal"]`);
+        const alertOverlay = page.locator('#confirm [data-alert-dialog-target="modal"]');
+
+        await expect(parentOverlay).toHaveAttribute("data-state", "open");
+        await expect(alertOverlay).toHaveAttribute("data-state", "open");
+        await expect.poll(async () => alertOverlay.evaluate((element) => element.matches(":popover-open"))).toBe(true);
+        await expect(page.locator("body")).toHaveClass(/overflow-hidden/);
+
+        await page.keyboard.press("Escape");
+        await expect(alertOverlay).toHaveAttribute("hidden", "");
+        await expect(page.locator("#delete")).toBeFocused();
+        await expect(parentOverlay).not.toHaveAttribute("hidden", "");
+        await expect(page.locator("body")).toHaveClass(/overflow-hidden/);
+
+        await page.keyboard.press("Escape");
+        await expect(parentOverlay).toHaveAttribute("hidden", "");
+        await expect(page.locator("#open-parent")).toBeFocused();
+        await expect(page.locator("body")).not.toHaveClass(/overflow-hidden/);
+    });
+}
+
+test("a modal nested in another modal animates after entering the top layer", async ({ page }) => {
+    await page.setContent(`
+        <style>
+            [hidden] { display: none !important; }
+            [data-slot="modal-overlay"] { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+            [data-slot="modal-overlay"][data-state="open"] { pointer-events: auto; }
+            [data-hotwire-top-layer][popover][data-slot="modal-overlay"] { margin: 0; width: 100vw; height: 100dvh; max-width: none; max-height: none; border: 0; padding: 0; background: transparent; overflow: visible; }
+            [data-slot="modal-positioner"] { position: relative; z-index: 1; opacity: 0; transform: scale(.8); transition: opacity 400ms linear, transform 400ms linear; }
+            [data-slot="modal-overlay"][data-state="open"] > [data-slot="modal-positioner"] { opacity: 1; transform: scale(1); }
+            [data-slot="modal-overlay"][data-motion="none"] > [data-slot="modal-positioner"] { transition: none !important; }
+        </style>
+        <div id="outer" data-controller="modal" data-modal-lock-scroll-class="overflow-hidden">
+            <button id="open-outer" data-action="modal#open">Open outer</button>
+            <div data-slot="modal-overlay" data-modal-target="modal" data-state="closed" data-motion="none" hidden inert>
+                <div data-modal-target="backdrop"></div>
+                <div data-slot="modal-positioner" data-modal-target="dialog">
+                    <div id="inner" data-controller="modal" data-modal-lock-scroll-class="overflow-hidden">
+                        <button id="open-inner" data-action="modal#open">Open inner</button>
+                        <div data-slot="modal-overlay" data-modal-target="modal" data-state="closed" data-motion="default" hidden inert>
+                            <div data-modal-target="backdrop"></div>
+                            <div data-slot="modal-positioner" data-modal-target="dialog">
+                                <button id="close-inner" data-action="modal#close">Close inner</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `);
+
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ content: await browserControllerScript("resources/js/controllers/modal_controller.js") });
+    await page.evaluate(() => {
+        window.StimulusApplication = window.Stimulus.Application.start();
+        window.StimulusApplication.register("modal", window.ModalController);
+    });
+
+    await page.locator("#open-outer").click();
+    await page.locator("#open-inner").click();
+
+    const innerOverlay = page.locator("#inner > [data-modal-target='modal']");
+    const innerDialog = page.locator("#inner > [data-modal-target='modal'] > [data-modal-target='dialog']");
+
+    await expect(innerOverlay).toHaveAttribute("data-state", "open");
+    await expect.poll(async () => innerDialog.evaluate((element) => element.getAnimations().some((animation) => animation.playState === "running"))).toBe(true);
+    await expect.poll(async () => innerDialog.evaluate((element) => parseFloat(getComputedStyle(element).opacity))).toBeLessThan(1);
+});
+
+test("rapid reopen cancels stale modal exit teardown", async ({ page }) => {
+    await page.setContent(`
+        <style>
+            [hidden] { display: none !important; }
+            [data-slot="modal-overlay"] { position: fixed; inset: 0; display: flex; }
+            [data-slot="modal-positioner"] { opacity: 0; transition: opacity 300ms linear; }
+            [data-slot="modal-overlay"][data-state="open"] > [data-slot="modal-positioner"] { opacity: 1; }
+        </style>
+        <div data-controller="modal" data-modal-lock-scroll-class="overflow-hidden">
+            <button id="open" data-action="modal#open">Open</button>
+            <div data-slot="modal-overlay" data-modal-target="modal" data-state="closed" data-motion="default" hidden inert>
+                <div data-modal-target="backdrop"></div>
+                <div data-slot="modal-positioner" data-modal-target="dialog"><button data-action="modal#close">Close</button></div>
+            </div>
+        </div>
+    `);
+
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ content: await browserControllerScript("resources/js/controllers/modal_controller.js") });
+    await page.evaluate(() => {
+        window.StimulusApplication = window.Stimulus.Application.start();
+        window.StimulusApplication.register("modal", window.ModalController);
+    });
+
+    await page.locator("#open").click();
+    const modal = page.locator('[data-modal-target="modal"]');
+    await expect(modal).toHaveAttribute("data-state", "open");
+    await page.waitForTimeout(350);
+
+    await page.evaluate(() => {
+        const root = document.querySelector('[data-controller~="modal"]');
+        const controller = window.StimulusApplication.getControllerForElementAndIdentifier(root, "modal");
+        controller.close();
+        controller.open({ currentTarget: document.querySelector("#open") });
+    });
+    await page.waitForTimeout(350);
+
+    await expect(modal).toHaveAttribute("data-state", "open");
+    await expect(modal).not.toHaveAttribute("hidden", "");
+    await expect(modal).not.toHaveAttribute("inert", "");
+    await expect(page.locator("body")).toHaveClass(/overflow-hidden/);
+});
+
+test("Turbo cache synchronously closes a modal during motion", async ({ page }) => {
+    await page.setContent(`
+        <style>
+            [hidden] { display: none !important; }
+            [data-slot="modal-overlay"] { position: fixed; inset: 0; display: flex; }
+            [data-slot="modal-positioner"] { opacity: 0; transition: opacity 10s linear; }
+            [data-slot="modal-overlay"][data-state="open"] > [data-slot="modal-positioner"] { opacity: 1; }
+        </style>
+        <div
+            data-controller="modal"
+            data-action="turbo:before-cache@window->modal#closeForCache"
+            data-modal-lock-scroll-class="overflow-hidden"
+        >
+            <button id="open" data-action="modal#open">Open</button>
+            <div data-slot="modal-overlay" data-modal-target="modal" data-state="closed" data-motion="default" hidden inert>
+                <div data-modal-target="backdrop"></div>
+                <div data-slot="modal-positioner" data-modal-target="dialog"><button>Close</button></div>
+            </div>
+        </div>
+    `);
+
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ content: await browserControllerScript("resources/js/controllers/modal_controller.js") });
+    await page.evaluate(() => {
+        window.StimulusApplication = window.Stimulus.Application.start();
+        window.StimulusApplication.register("modal", window.ModalController);
+    });
+
+    await page.locator("#open").click();
+    const modal = page.locator('[data-modal-target="modal"]');
+    const dialog = page.locator('[data-modal-target="dialog"]');
+    await expect(modal).toHaveAttribute("data-state", "open");
+    await expect.poll(async () => dialog.evaluate((element) => element.getAnimations().some((animation) => (animation.currentTime ?? 0) > 100))).toBe(true);
+
+    const cachedState = await page.evaluate(() => {
+        window.dispatchEvent(new CustomEvent("turbo:before-cache"));
+        const element = document.querySelector('[data-modal-target="modal"]');
+
+        return {
+            state: element.dataset.state,
+            hidden: element.hidden,
+            inert: element.hasAttribute("inert"),
+            topLayer: element.matches(":popover-open"),
+            scrollLocked: document.body.classList.contains("overflow-hidden"),
+        };
+    });
+
+    expect(cachedState).toEqual({
+        state: "closed",
+        hidden: true,
+        inert: true,
+        topLayer: false,
+        scrollLocked: false,
+    });
+});
+
+test("reduced motion closes a modal without waiting for CSS motion", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.setContent(`
+        <style>
+            [hidden] { display: none !important; }
+            [data-slot="modal-overlay"] { position: fixed; inset: 0; display: flex; }
+            [data-slot="modal-positioner"] { opacity: 0; transition: opacity 10s linear; }
+            [data-slot="modal-overlay"][data-state="open"] > [data-slot="modal-positioner"] { opacity: 1; }
+            @media (prefers-reduced-motion: reduce) { [data-slot="modal-positioner"] { transition: none !important; animation: none !important; } }
+        </style>
+        <div data-controller="modal" data-modal-lock-scroll-class="overflow-hidden">
+            <button id="open" data-action="modal#open">Open</button>
+            <div data-slot="modal-overlay" data-modal-target="modal" data-state="closed" data-motion="default" hidden inert>
+                <div data-modal-target="backdrop"></div>
+                <div data-slot="modal-positioner" data-modal-target="dialog"><button>Close</button></div>
+            </div>
+        </div>
+    `);
+
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ content: await browserControllerScript("resources/js/controllers/modal_controller.js") });
+    await page.evaluate(async () => {
+        window.StimulusApplication = window.Stimulus.Application.start();
+        window.StimulusApplication.register("modal", window.ModalController);
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        const root = document.querySelector('[data-controller~="modal"]');
+        const controller = window.StimulusApplication.getControllerForElementAndIdentifier(root, "modal");
+        await controller.open({ currentTarget: document.querySelector("#open") });
+        await controller.close();
+    });
+
+    const modal = page.locator('[data-modal-target="modal"]');
+    await expect(modal).toHaveAttribute("data-state", "closed");
+    await expect(modal).toHaveAttribute("hidden", "");
+    await expect.poll(async () => page.locator('[data-modal-target="dialog"]').evaluate((element) => element.getAnimations().length)).toBe(0);
 });
 
 async function browserControllerScript(path) {
@@ -246,14 +500,19 @@ async function browserControllerScript(path) {
     const overlayStack = (await readFile("resources/js/controllers/_overlay_stack.js", "utf8"))
         .replace("export function registerOverlay", "function registerOverlay")
         .replace("export function unregisterOverlay", "function unregisterOverlay")
-        .replace("export function isTopOverlay", "function isTopOverlay");
+        .replace("export function isTopOverlay", "function isTopOverlay")
+        .replace("export function overlayPosition", "function overlayPosition");
 
     const topLayer = (await readFile("resources/js/controllers/_top_layer.js", "utf8"))
         .replace("export function createTopLayer", "function createTopLayer");
 
+    const presence = (await readFile("resources/js/controllers/_presence.js", "utf8"))
+        .replace("export function createPresence", "function createPresence");
+
     const overlay = (await readFile("resources/js/controllers/_overlay.js", "utf8"))
         .replace(/import \{[^}]*\} from "\.\/_focus_trap\.js";\s*/, "")
         .replace(/import \{[^}]*\} from "\.\/_overlay_stack\.js";\s*/, "")
+        .replace(/import \{[^}]*\} from "\.\/_presence\.js";\s*/, "")
         .replace(/import \{[^}]*\} from "\.\/_top_layer\.js";\s*/, "")
         .replace("export function createOverlay", "function createOverlay");
 
@@ -272,6 +531,7 @@ async function browserControllerScript(path) {
         ${focusTrap}
         ${overlayStack}
         ${topLayer}
+        ${presence}
         ${overlay}
         ${frameOverlay}
         ${source}
@@ -285,11 +545,23 @@ async function browserOverlayControllerScript() {
         .replace('import { Controller } from "@hotwired/stimulus";', "")
         .replace(/import \{[^}]*\} from "\.\/_overlay\.js";\s*/, "")
         .replace("export default class AlertDialogController extends Controller", "class AlertDialogController extends Controller");
+    const drawer = (await readFile("resources/js/controllers/drawer_controller.js", "utf8"))
+        .replace('import { Controller } from "@hotwired/stimulus";', "")
+        .replace(/import \{[^}]*\} from "\.\/_overlay\.js";\s*/, "")
+        .replace(/import \{[^}]*\} from "\.\/_frame_overlay\.js";\s*/, "")
+        .replace("export default class DrawerController extends Controller", "class DrawerController extends Controller");
+    const sheet = (await readFile("resources/js/controllers/sheet_controller.js", "utf8"))
+        .replace('import DrawerController from "./drawer_controller.js";', "")
+        .replace("export default class SheetController extends DrawerController", "class SheetController extends DrawerController");
 
     return `
         ${base.replace("window.ModalController = ModalController;", "")}
         ${alertDialog}
+        ${drawer}
+        ${sheet}
         window.ModalController = ModalController;
         window.AlertDialogController = AlertDialogController;
+        window.DrawerController = DrawerController;
+        window.SheetController = SheetController;
     `;
 }

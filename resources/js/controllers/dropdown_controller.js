@@ -2,14 +2,14 @@
 import { Controller } from "@hotwired/stimulus";
 
 import { createFloating } from "./_floating.js";
+import { createPresence } from "./_presence.js";
 import { createTopLayer } from "./_top_layer.js";
-import { cancel, enter, leave } from "./_transition.js";
 
 const MOBILE_QUERY = "(max-width: 767px)";
+const TRIGGER_KEY_ATTRIBUTE = "data-hotwire-dropdown-trigger-key";
 
 export default class extends Controller {
     static targets = ["trigger", "menu"];
-    static classes = ["hidden"];
     static values = {
         open: { type: Boolean, default: false },
         closeOnSelect: { type: Boolean, default: true },
@@ -33,11 +33,20 @@ export default class extends Controller {
         this.onTriggerClick = this.onTriggerClick.bind(this);
         this.onKeydown = this.onKeydown.bind(this);
         this.onMenuClick = this.onMenuClick.bind(this);
+        this.onDocumentFocusIn = this.onDocumentFocusIn.bind(this);
         this.closeForCache = this.closeForCache.bind(this);
         this.onMediaChange = this.onMediaChange.bind(this);
         this.activeTrigger = null;
+        this.focusedTrigger = null;
+        this.pendingTriggerReplacement = null;
         this.toggleEvent = null;
         this.floating = null;
+        this.floatingAnchor = null;
+        this.floatingElement = null;
+        this.floatingProfile = null;
+        this.positioningGeneration = 0;
+        this.presence = null;
+        this.presenceElement = null;
         this.topLayer = null;
         this.mediaQuery = null;
     }
@@ -46,36 +55,79 @@ export default class extends Controller {
         this.element.addEventListener("click", this.onTriggerClick);
         document.addEventListener("click", this.onOutsideClick);
         document.addEventListener("keydown", this.onKeydown);
+        document.addEventListener("focusin", this.onDocumentFocusIn);
         document.addEventListener("turbo:before-cache", this.closeForCache);
         this.connectMediaQuery();
-
-        if (!this.hasMenuTarget) return;
-
-        this.hiddenClassList.forEach((cls) => this.menuTarget.classList.toggle(cls, !this.openValue));
         this.syncState();
-        if (this.openValue) this.startFloating();
+        if (this.hasMenuTarget && this.presenceElement !== this.menuTarget) this.setupMenu(this.menuTarget);
     }
 
     disconnect() {
         this.element.removeEventListener("click", this.onTriggerClick);
         document.removeEventListener("click", this.onOutsideClick);
         document.removeEventListener("keydown", this.onKeydown);
+        document.removeEventListener("focusin", this.onDocumentFocusIn);
         document.removeEventListener("turbo:before-cache", this.closeForCache);
         this.disconnectMediaQuery();
         this.element.removeAttribute("data-hotwire-escape-scope");
-        this.cleanupFloating();
+        this.focusedTrigger = null;
+        this.pendingTriggerReplacement = null;
+        if (this.hasMenuTarget) this.menuTarget.removeEventListener("click", this.onMenuClick);
+        this.teardownMenu();
     }
 
     menuTargetConnected(menu) {
         menu.addEventListener("click", this.onMenuClick);
         this.connectMediaQuery();
-        this.hiddenClassList.forEach((cls) => menu.classList.toggle(cls, !this.openValue));
+        this.setupMenu(menu);
         this.syncState();
-        if (this.openValue) this.startFloating();
     }
 
     menuTargetDisconnected(menu) {
         menu.removeEventListener("click", this.onMenuClick);
+        if (menu !== this.presenceElement) return;
+
+        this.teardownMenu();
+        if (this.openValue && !this.hasMenuTarget) this.close();
+    }
+
+    triggerTargetConnected(trigger) {
+        if (matchesTrigger(trigger, this.pendingTriggerReplacement) && this.openValue) {
+            const replacement = this.pendingTriggerReplacement;
+            this.pendingTriggerReplacement = null;
+            this.activeTrigger = trigger;
+            if (replacement.focused) trigger.focus({ preventScroll: true });
+        }
+        ensureTriggerKey(trigger);
+        this.syncTrigger(trigger);
+        this.refreshTriggerAnchor();
+    }
+
+    triggerTargetDisconnected(trigger) {
+        const wasActive = this.activeTrigger === trigger;
+        const focused = this.focusedTrigger === trigger;
+        if (focused) this.focusedTrigger = null;
+        if (wasActive) {
+            const identity = triggerIdentity(trigger);
+            this.activeTrigger = null;
+            if (this.openValue) {
+                const replacement = { focused, ...identity };
+                this.pendingTriggerReplacement = replacement;
+                setTimeout(() => {
+                    if (this.pendingTriggerReplacement !== replacement) return;
+
+                    this.pendingTriggerReplacement = null;
+                    if (!this.openValue) return;
+
+                    this.hasTriggerTarget ? this.refreshTriggerAnchor() : this.close();
+                }, 0);
+            }
+        }
+        if (!this.openValue) return;
+
+        if (wasActive) return;
+
+        this.hasTriggerTarget ? this.refreshTriggerAnchor() : this.close();
     }
 
     toggle(event) {
@@ -87,20 +139,20 @@ export default class extends Controller {
 
     open(event) {
         this.rememberTrigger(event);
-        if (this.openValue) return;
+        if (this.openValue || !this.presence) return;
         this.openValue = true;
         this.syncState();
-        enter(this.menuTarget, { hidden: this.hiddenClassList });
-        this.startFloating();
+        this.present();
     }
 
     close({ focusTrigger = false } = {}) {
         if (!this.openValue) return;
+        this.invalidatePositioning();
+        this.pendingTriggerReplacement = null;
         this.openValue = false;
         this.syncState();
-        this.cleanupFloating();
-        leave(this.menuTarget, { hidden: this.hiddenClassList });
-        if (focusTrigger) (this.activeTrigger ?? (this.hasTriggerTarget ? this.triggerTarget : null))?.focus();
+        this.dismiss();
+        if (focusTrigger) this.currentTrigger?.focus();
     }
 
     onOutsideClick(event) {
@@ -125,47 +177,58 @@ export default class extends Controller {
         }
     }
 
+    onDocumentFocusIn(event) {
+        const trigger = event.target.closest?.('[data-dropdown-target~="trigger"]');
+        this.focusedTrigger = trigger && this.element.contains(trigger) ? trigger : null;
+    }
+
     onMenuClick(event) {
         if (this.closeOnSelectValue && event.target.closest("a, button")) this.close();
     }
 
     closeForCache() {
-        this.cleanupFloating();
-        cancel(this.menuTarget);
+        this.invalidatePositioning();
+        this.pendingTriggerReplacement = null;
         this.openValue = false;
         this.syncState();
-        this.menuTarget.classList.add(...this.hiddenClassList);
+        this.presence?.sync(false);
+        this.cleanupFloating();
+        this.topLayer?.hide();
     }
 
     rememberTrigger(event) {
         const trigger = event?.currentTarget && this.triggerTargets.includes(event.currentTarget)
             ? event.currentTarget
             : event?.target?.closest?.('[data-dropdown-target~="trigger"]');
-        if (trigger && this.triggerTargets.includes(trigger)) this.activeTrigger = trigger;
+        if (trigger && this.triggerTargets.includes(trigger)) {
+            ensureTriggerKey(trigger);
+            this.activeTrigger = trigger;
+        }
     }
 
     syncState() {
         this.element.toggleAttribute("data-hotwire-escape-scope", this.openValue);
-        this.triggerTargets.forEach((trigger) => {
-            trigger.setAttribute("aria-expanded", String(this.openValue));
-            trigger.dataset.state = this.openValue ? "open" : "closed";
-        });
+        this.triggerTargets.forEach((trigger) => this.syncTrigger(trigger));
         if (!this.hasMenuTarget) return;
 
-        this.menuTarget.dataset.open = String(this.openValue);
-        this.menuTarget.dataset.side = this.effectiveSide;
-        this.menuTarget.dataset.align = this.effectiveAlign;
         this.menuTarget.dataset.dropdownEffectiveSide = this.effectiveSide;
         this.menuTarget.dataset.dropdownEffectiveAlign = this.effectiveAlign;
+
+        if (!this.presence?.isPresent || !this.floating) {
+            this.menuTarget.dataset.side = this.effectiveSide;
+            this.menuTarget.dataset.align = this.effectiveAlign;
+        }
     }
 
     startFloating() {
-        if (!this.hasMenuTarget || !this.hasTriggerTarget) return;
+        if (!this.openValue || !this.hasMenuTarget || !this.hasTriggerTarget || !this.topLayer) {
+            return Promise.resolve(false);
+        }
 
-        const anchor = this.activeTrigger ?? this.triggerTarget;
-        this.topLayer ??= createTopLayer(this.menuTarget);
-        this.topLayer.show();
-        this.floating ??= createFloating(anchor, this.menuTarget, {
+        const anchor = this.currentTrigger;
+        if (!anchor) return Promise.resolve(false);
+
+        const options = {
             side: this.effectiveSide,
             align: this.effectiveAlign,
             sideOffset: this.configNumber("sideOffset", this.sideOffsetValue),
@@ -173,15 +236,33 @@ export default class extends Controller {
             strategy: this.configString("strategy", this.strategyValue),
             flip: this.configBoolean("flip", this.flipValue),
             shift: this.configBoolean("shift", this.shiftValue),
-        });
+        };
+        const profile = JSON.stringify(options);
+        if (this.floating && (
+            this.floatingAnchor !== anchor ||
+            this.floatingElement !== this.menuTarget ||
+            this.floatingProfile !== profile
+        )) {
+            this.cleanupFloating();
+        }
 
-        void this.floating.start();
+        this.topLayer.show();
+        if (!this.floating) {
+            this.floatingAnchor = anchor;
+            this.floatingElement = this.menuTarget;
+            this.floatingProfile = profile;
+            this.floating = createFloating(anchor, this.menuTarget, options);
+        }
+
+        return this.floating.start();
     }
 
-    cleanupFloating({ hideTopLayer = true } = {}) {
+    cleanupFloating() {
         this.floating?.cleanup();
         this.floating = null;
-        if (hideTopLayer) this.topLayer?.hideAfterTransition();
+        this.floatingAnchor = null;
+        this.floatingElement = null;
+        this.floatingProfile = null;
     }
 
     connectMediaQuery() {
@@ -199,10 +280,19 @@ export default class extends Controller {
 
     onMediaChange() {
         this.syncState();
-        if (!this.openValue) return;
+        if (!this.openValue) {
+            this.floatingProfile = null;
 
-        this.cleanupFloating({ hideTopLayer: false });
-        this.startFloating();
+            return;
+        }
+
+        this.cleanupFloating();
+        this.invalidatePositioning();
+        if (this.presence?.phase === "opening") {
+            this.present();
+        } else {
+            this.restartPositioning(this.presence);
+        }
     }
 
     configString(name, fallback = "") {
@@ -228,19 +318,25 @@ export default class extends Controller {
     }
 
     get effectiveSide() {
+        const side = this.configString("side", this.sideValue);
         const mobileSide = this.configString("mobileSide", this.mobileSideValue);
         const collapsedSide = this.configString("collapsedSide", this.collapsedSideValue);
 
-        if (this.isCollapsedContext && collapsedSide !== "") return collapsedSide;
-        return this.mediaQuery?.matches && mobileSide !== "" ? mobileSide : this.configString("side", this.sideValue);
+        if (this.mediaQuery?.matches) return mobileSide || side;
+        if (this.isCollapsedContext) return collapsedSide || side;
+
+        return side;
     }
 
     get effectiveAlign() {
+        const align = this.configString("align", this.alignValue);
         const mobileAlign = this.configString("mobileAlign", this.mobileAlignValue);
         const collapsedAlign = this.configString("collapsedAlign", this.collapsedAlignValue);
 
-        if (this.isCollapsedContext && collapsedAlign !== "") return collapsedAlign;
-        return this.mediaQuery?.matches && mobileAlign !== "" ? mobileAlign : this.configString("align", this.alignValue);
+        if (this.mediaQuery?.matches) return mobileAlign || align;
+        if (this.isCollapsedContext) return collapsedAlign || align;
+
+        return align;
     }
 
     get isCollapsedContext() {
@@ -272,13 +368,176 @@ export default class extends Controller {
     get contextElements() {
         return [
             this.element,
-            this.activeTrigger,
+            this.currentTrigger,
             this.hasTriggerTarget ? this.triggerTarget : null,
             this.hasMenuTarget ? this.menuTarget : null,
         ].filter(Boolean);
     }
 
-    get hiddenClassList() {
-        return this.hasHiddenClass ? this.hiddenClasses : ["hidden"];
+    get currentTrigger() {
+        if (this.activeTrigger?.isConnected && this.triggerTargets.includes(this.activeTrigger)) {
+            return this.activeTrigger;
+        }
+
+        return this.hasTriggerTarget ? this.triggerTarget : null;
     }
+
+    setupMenu(menu) {
+        if (this.presenceElement === menu) return;
+
+        this.teardownMenu();
+        this.presenceElement = menu;
+        this.topLayer = createTopLayer(menu);
+        this.presence = createPresence(menu);
+
+        if (this.openValue) {
+            this.presence.sync(false);
+            this.present({ animate: false });
+        } else {
+            this.presence.sync(false);
+        }
+    }
+
+    teardownMenu() {
+        this.invalidatePositioning();
+        this.presence?.cleanup();
+        this.cleanupFloating();
+        this.topLayer?.cleanup();
+        this.presence = null;
+        this.presenceElement = null;
+        this.topLayer = null;
+    }
+
+    present({ animate = true } = {}) {
+        const presence = this.presence;
+        if (!presence) return;
+        const generation = ++this.positioningGeneration;
+
+        void presence.open({
+            beforeEnter: () => this.isPositioningCurrent(generation, presence) ? this.startFloating() : false,
+            immediate: !animate,
+        }).then((opened) => {
+            if (this.isPositioningCurrent(generation, presence)) {
+                this.finishPresent(presence, opened, null, generation);
+            }
+        }).catch((error) => {
+            if (this.isPositioningCurrent(generation, presence)) {
+                this.finishPresent(presence, false, error, generation);
+            }
+        });
+    }
+
+    dismiss() {
+        const presence = this.presence;
+        if (!presence) return;
+
+        const closing = presence.close();
+        if (!presence.isPresent) {
+            this.finishDismiss(presence);
+
+            return;
+        }
+
+        void closing.then((closed) => {
+            if (closed) this.finishDismiss(presence);
+        });
+    }
+
+    finishDismiss(presence) {
+        if (presence !== this.presence || this.openValue || presence.isPresent) return;
+
+        this.invalidatePositioning();
+        this.cleanupFloating();
+        this.topLayer?.hide();
+    }
+
+    syncTrigger(trigger) {
+        trigger.setAttribute("aria-expanded", String(this.openValue));
+        trigger.dataset.dropdownState = this.openValue ? "open" : "closed";
+    }
+
+    refreshTriggerAnchor() {
+        if (!this.openValue || !this.presence?.isPresent || !this.currentTrigger) return;
+        if (this.floating && this.floatingAnchor === this.currentTrigger) return;
+
+        this.invalidatePositioning();
+        this.cleanupFloating();
+        if (this.presence.phase === "opening") {
+            this.present();
+        } else {
+            this.restartPositioning(this.presence);
+        }
+    }
+
+    restartPositioning(presence) {
+        if (!presence) return;
+        const generation = ++this.positioningGeneration;
+
+        void Promise.resolve().then(() => {
+            return this.isPositioningCurrent(generation, presence) ? this.startFloating() : false;
+        }).then((started) => {
+            if (!this.isPositioningCurrent(generation, presence)) return;
+            if (!started) this.rollbackOpen(presence, null, generation);
+        }).catch((error) => {
+            if (this.isPositioningCurrent(generation, presence)) {
+                this.rollbackOpen(presence, error, generation);
+            }
+        });
+    }
+
+    finishPresent(presence, opened, error, generation) {
+        if (opened || presence !== this.presence || !this.openValue) return;
+        if (presence.phase !== "closed" || presence.isPresent) return;
+
+        this.rollbackOpen(presence, error, generation);
+    }
+
+    rollbackOpen(presence, error, generation) {
+        if (!this.isPositioningCurrent(generation, presence)) return;
+
+        if (error) {
+            this.application.handleError(error, "Error opening dropdown", {
+                controller: this,
+                element: this.element,
+            });
+        }
+
+        this.invalidatePositioning();
+        this.pendingTriggerReplacement = null;
+        this.openValue = false;
+        this.syncState();
+        presence.sync(false);
+        this.cleanupFloating();
+        this.topLayer?.hide();
+    }
+
+    isPositioningCurrent(generation, presence) {
+        return generation === this.positioningGeneration && presence === this.presence && this.openValue;
+    }
+
+    invalidatePositioning() {
+        this.positioningGeneration++;
+    }
+}
+
+function matchesTrigger(trigger, identity) {
+    if (!identity) return false;
+
+    const key = trigger.getAttribute(TRIGGER_KEY_ATTRIBUTE);
+
+    return Boolean((key && key === identity.key) || (trigger.id && trigger.id === identity.id));
+}
+
+function triggerIdentity(trigger) {
+    return { id: trigger.id || null, key: ensureTriggerKey(trigger) };
+}
+
+function ensureTriggerKey(trigger) {
+    let key = trigger.getAttribute(TRIGGER_KEY_ATTRIBUTE);
+    if (key) return key;
+
+    key = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
+    trigger.setAttribute(TRIGGER_KEY_ATTRIBUTE, key);
+
+    return key;
 }

@@ -41,6 +41,7 @@ class MultiSelect extends Component
         public string $strategy = 'fixed',
         public bool $flip = true,
         public bool $shift = true,
+        public string $motion = 'default',
         public string $width = '',
         public string $triggerClass = '',
         public string $contentClass = '',
@@ -53,6 +54,7 @@ class MultiSelect extends Component
         $this->side = $this->oneOf($this->side, ['top', 'right', 'bottom', 'left'], 'bottom');
         $this->align = $this->oneOf($this->align, ['start', 'center', 'end'], 'start');
         $this->strategy = $this->oneOf($this->strategy, ['absolute', 'fixed'], 'fixed');
+        $this->motion = $this->oneOf($this->motion, ['default', 'none'], 'default');
         $this->sideOffset = $this->number($this->sideOffset, 4);
         $this->alignOffset = $this->number($this->alignOffset, 0);
         $this->listAllLimit = $this->wholeNumber($this->listAllLimit, 3);

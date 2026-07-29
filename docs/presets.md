@@ -28,6 +28,61 @@ Add app CSS after the preset import and target semantic slots:
 }
 ```
 
+## Surface motion
+
+Dropdown, Popover, Hover Card, Multi Select and Tooltip share state-driven Presence styling. Their floating content uses
+`data-state="open|closed"` and `data-motion="default|none"`; server-rendered closed content also starts with
+`hidden inert`.
+
+Modal, Alert Dialog, Drawer and Sheet use the same `data-state`, `data-motion`, `hidden`, and `inert` contract on their
+overlay target. Sidebar keeps desktop `data-state="expanded|collapsed"` and uses `data-mobile-state="open|closed"` for
+mobile Presence. Their backdrop and panel transitions are observed together, so the longest finite motion determines
+settlement.
+
+The Nova preset transitions only `opacity`, `scale`, and `translate`. Presence suppresses transition and animation while
+the first placement is prepared, so a resolved flip cannot animate the closed transform before enter begins. During
+exit, Presence sets `data-state="closed"`
+and `inert` immediately but waits for the element's CSS transition or finite animation before applying `hidden`. A
+closed-state rule must therefore remain a visual state and must never set `display: none` or otherwise hide the element.
+
+Override motion after importing the preset:
+
+```css
+[data-slot="popover-content"] {
+    transition: opacity 200ms ease, scale 200ms ease, translate 200ms ease;
+}
+
+[data-slot="popover-content"][data-state="closed"] {
+    opacity: 0;
+    scale: .97;
+    translate: 0 -.25rem;
+}
+
+[data-slot="popover-content"][data-state="open"] {
+    opacity: 1;
+    scale: 1;
+    translate: 0 0;
+}
+```
+
+The same state hooks can drive custom CSS animations. `motion="none"` on supported Blade APIs, or
+`data-tooltip-motion-value="none"` for the standalone Tooltip controller, skips motion. The shared Presence helper
+temporarily suppresses custom CSS transition and animation in this mode, does the same for
+`prefers-reduced-motion: reduce`, and cancels stale exit cleanup when a surface rapidly reopens.
+
+Scope overlay state selectors to direct children. A descendant selector from an open parent Modal can otherwise apply
+the open visual state to a nested Modal or Alert Dialog before that child opens:
+
+```css
+[data-slot="modal-overlay"][data-state="open"] > [data-slot="modal-positioner"] {
+    opacity: 1;
+}
+```
+
+Side-aware styles should use `data-side` and `data-align`; these attributes reflect Floating UI's resolved placement
+after any flip. The preset also resets native Popover margins and removes the browser border only from borderless
+floating slots, preserving component borders and overflow while a surface participates in the top layer.
+
 ## Scoped overrides
 
 The selected preset applies globally. Preset files may also include scoped selectors, so app CSS can opt a page region into targeted overrides with `data-preset`:

@@ -17,6 +17,7 @@ class Modal extends Component
         public bool $fixedTop = false,
         public ?string $frame = null,
         public ?Htmlable $stimulus = null,
+        public string $motion = 'default',
     ) {
         if ($this->id === '') {
             $this->id = uniqid('modal-');
@@ -29,6 +30,8 @@ class Modal extends Component
         if ($this->frame !== null && $this->frame === $this->id) {
             throw new \InvalidArgumentException('The modal root id and frame id must be different.');
         }
+
+        $this->motion = in_array($this->motion, ['default', 'none'], true) ? $this->motion : 'default';
     }
 
     public function isFullSize(): bool
@@ -53,15 +56,5 @@ class Modal extends Component
     public function render()
     {
         return view('hotwire::component-views.modal');
-    }
-
-    public function dialogHiddenClass(): string
-    {
-        return 'scale-80 opacity-0';
-    }
-
-    public function dialogVisibleClass(): string
-    {
-        return 'scale-100 opacity-100';
     }
 }

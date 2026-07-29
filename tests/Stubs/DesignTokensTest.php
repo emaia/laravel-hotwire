@@ -168,12 +168,12 @@ it('applies shared button styles to attachment actions', function () use ($novaP
         ->and($iconXs)->toContain('[data-slot="attachment-action"]');
 });
 
-it('lets popover leave transitions remain visible until hidden is applied by JavaScript', function () use ($novaPresetPath) {
+it('keeps closed floating surfaces visible until Presence applies hidden', function () use ($novaPresetPath) {
     $css = file_get_contents($novaPresetPath);
 
     expect($css)
-        ->toContain('[data-slot="popover-content"][data-open="false"] { @apply pointer-events-none scale-95 opacity-0; }')
-        ->toContain('[data-slot="popover-content"][data-open="false"]:not(.block) { @apply hidden; }');
+        ->toContain('[data-slot="multi-select-content"])[data-state="closed"] { @apply pointer-events-none scale-95 opacity-0; }')
+        ->not->toContain('[data-state="closed"] { @apply hidden');
 });
 
 it('uses the pre-connect color scheme mode to avoid toggle icon flicker', function () use ($novaPresetPath) {
@@ -374,14 +374,17 @@ it('does not apply Tailwind marker-only classes inside presets', function () use
     expect($css)->not->toMatch('/@apply[^;]*\bgroup\b/');
 });
 
-it('keeps sidebar menu labels in flow during icon collapse', function () use ($novaPresetPath) {
+it('keeps sidebar icon collapse desktop-only and labels in flow', function () use ($novaPresetPath) {
     $css = file_get_contents($novaPresetPath);
 
     expect($css)
         ->toContain('[data-slot="sidebar-menu-button"] { @apply flex w-full appearance-none items-center gap-2 overflow-hidden')
         ->toContain('text-left text-sm whitespace-nowrap outline-none transition-[width,height,padding]')
         ->toContain('[data-slot="sidebar-menu-button"] > span:not([data-slot="avatar"]) { @apply min-w-0 truncate; }')
-        ->toContain('[data-slot="sidebar"][data-collapsible="icon"] [data-slot="sidebar-menu-button"] { @apply size-8 p-2; }')
+        ->toContain('[data-slot="sidebar"][data-collapsible="icon"] [data-slot="sidebar-menu-button"] { @apply md:size-8 md:p-2; }')
+        ->toContain('[data-slot="sidebar"][data-collapsible="icon"] [data-slot="sidebar-content"] { @apply md:overflow-hidden; }')
+        ->toContain('[data-slot="sidebar"][data-collapsible="icon"] [data-slot="sidebar-menu-sub"] { @apply md:hidden; }')
+        ->toContain('[data-slot="sidebar-menu-button"][data-dropdown-state="open"]')
         ->toContain('[data-slot="sidebar-menu-sub-button"] { @apply flex h-7 min-w-0 -translate-x-px appearance-none items-center gap-2 overflow-hidden rounded-md border-0 bg-transparent px-2 text-sidebar-foreground whitespace-nowrap')
         ->not->toContain('[data-slot="sidebar"][data-collapsible="icon"] [data-slot="sidebar-menu-button"] > span { @apply sr-only; }')
         ->not->toContain('[data-slot="sidebar"][data-collapsible="icon"] [data-slot="sidebar-menu-button"] > span:not([data-slot="avatar"]) { @apply sr-only; }')
@@ -531,10 +534,10 @@ it('defines overlay and menu slots in the nova preset', function () use ($novaPr
         ->toContain('[data-slot="dropdown-item"]')
         ->toContain('[data-slot="dropdown-separator"]')
         ->toContain('[data-slot="dropdown-shortcut"]')
-        ->toContain('[data-slot="dropdown-menu"][data-open="false"][data-side="bottom"]')
-        ->toContain('[data-slot="dropdown-menu"][data-open="false"][data-side="top"]')
-        ->toContain('[data-slot="dropdown-menu"][data-open="false"][data-side="left"]')
-        ->toContain('[data-slot="dropdown-menu"][data-open="false"][data-side="right"]');
+        ->toContain('[data-state="closed"][data-side="bottom"]')
+        ->toContain('[data-state="closed"][data-side="top"]')
+        ->toContain('[data-state="closed"][data-side="left"]')
+        ->toContain('[data-state="closed"][data-side="right"]');
 });
 
 it('uses anchored dropdown positioning tokens instead of css-only offsets', function () use ($novaPresetPath) {
@@ -546,12 +549,52 @@ it('uses anchored dropdown positioning tokens instead of css-only offsets', func
         ->toContain('w-(--anchor-width)')
         ->toContain('min-w-32')
         ->toContain('origin-(--transform-origin)')
-        ->toContain('[data-slot="dropdown-menu"][data-open="false"][data-side="bottom"]')
+        ->toContain('[data-state="closed"][data-side="bottom"]')
         ->toContain('-translate-y-1')
         ->not->toContain('[data-slot="dropdown-menu"][data-width="default"]')
         ->not->toContain('[data-slot="dropdown-menu"][data-align="start"]')
         ->not->toContain('[data-slot="dropdown-menu"] { @apply absolute z-50 mt-2')
         ->not->toContain('slide-in-from');
+});
+
+it('drives floating presence from semantic state and motion hooks', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain(':is([data-slot="dropdown-menu"], [data-slot="tooltip"], [data-slot="hover-card-content"], [data-slot="popover-content"], [data-slot="multi-select-content"])[data-state="closed"]')
+        ->toContain('[data-state="open"]')
+        ->toContain('[data-motion="none"]')
+        ->toContain('[data-presence="instant"]')
+        ->toContain('@media (prefers-reduced-motion: reduce)')
+        ->toContain('transition-property: opacity, scale, translate')
+        ->toContain(':where([data-hotwire-top-layer][popover]) { margin: 0; }')
+        ->toContain(':where([data-hotwire-top-layer][popover]:is([data-slot="modal-overlay"], [data-slot="alert-dialog-overlay"], [data-slot="drawer-overlay"], [data-slot="sheet-overlay"], [data-slot="sidebar"], [data-slot="flash-container"]))')
+        ->toContain(':where([data-hotwire-top-layer][popover]:is([data-slot="dropdown-menu"], [data-slot="tooltip"], [data-slot="multi-select-content"])) { border: 0; }')
+        ->toContain('[data-slot="tooltip"] { @apply pointer-events-auto z-50 w-fit max-w-64 origin-(--transform-origin) overflow-visible')
+        ->not->toContain('[data-hotwire-top-layer][popover] { @apply m-0 text-inherit overflow-visible; }')
+        ->not->toContain('[data-slot="multi-select-content"]) { inset: auto; border: 0; }')
+        ->not->toContain('[data-slot="dropdown-menu"][data-open')
+        ->not->toContain('[data-slot="popover-content"][data-open')
+        ->not->toContain('[data-slot="hover-card-content"][data-open')
+        ->not->toContain('[data-slot="multi-select-content"][data-open')
+        ->not->toContain(':not(.block)');
+});
+
+it('drives modal overlay motion from semantic presence state', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain(':is([data-slot="modal-overlay"], [data-slot="alert-dialog-overlay"], [data-slot="drawer-overlay"], [data-slot="sheet-overlay"])[data-state="open"]')
+        ->toContain('[data-slot="drawer-overlay"][data-state="closed"] > [data-slot="drawer-popup"][data-direction="right"]')
+        ->toContain('[data-slot="sheet-overlay"][data-state="closed"] > [data-slot="sheet-content"][data-side="right"]')
+        ->toContain('[data-slot="sidebar"][data-mobile-state="closed"] > [data-slot="sidebar-container"][data-side="right"]')
+        ->toContain('[data-presence="leaving"]')
+        ->toContain('[data-slot="sidebar"][data-presence="preparing"]')
+        ->toContain(':is([data-motion="none"], [data-presence="instant"])')
+        ->toContain('@media (prefers-reduced-motion: reduce)')
+        ->not->toContain('data-modal-dialog-hidden-class')
+        ->not->toContain('data-drawer-dialog-hidden-class')
+        ->not->toContain('[data-slot="sidebar"][data-mobile-state]:not([hidden])');
 });
 
 it('keeps dropdown menu subcomponent styling aligned with the nova reference', function () use ($novaPresetPath) {
@@ -580,6 +623,8 @@ it('defines multi-select slots in the nova preset', function () use ($novaPreset
         ->toContain('[data-slot="multi-select-value"]')
         ->toContain('[data-slot="multi-select-value"] { @apply min-w-0 flex-1 truncate; }')
         ->toContain('[data-slot="multi-select-content"]')
+        ->toContain('[data-state="closed"]')
+        ->toContain('[data-motion="none"]')
         ->toContain('max-h-(--available-height)')
         ->toContain('w-(--anchor-width)')
         ->toContain('origin-(--transform-origin)')

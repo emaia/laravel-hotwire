@@ -22,14 +22,10 @@ const LOADING_TEMPLATE_HTML = `
 
         <div
             data-modal-target="modal"
-            data-modal-hidden-class="hidden"
-            data-modal-visible-class="visible"
-            data-modal-backdrop-hidden-class="backdrop-hidden"
-            data-modal-backdrop-visible-class="backdrop-visible"
-            data-modal-dialog-hidden-class="dialog-hidden"
-            data-modal-dialog-visible-class="dialog-visible"
             data-modal-lock-scroll-class="overflow-hidden"
-            hidden
+            data-state="closed"
+            data-motion="none"
+            hidden inert
         >
             <div data-modal-target="backdrop"></div>
             <div data-modal-target="dialog">
@@ -49,15 +45,9 @@ test.serial("connect applies visible state when the overlay is pre-rendered open
         `
             <div
                 data-controller="modal"
-                data-modal-hidden-class="hidden"
-                data-modal-visible-class="visible"
-                data-modal-backdrop-hidden-class="backdrop-hidden"
-                data-modal-backdrop-visible-class="backdrop-visible"
-                data-modal-dialog-hidden-class="dialog-hidden"
-                data-modal-dialog-visible-class="dialog-visible"
                 data-modal-lock-scroll-class="overflow-hidden"
             >
-                <div data-modal-target="modal" data-open="true" class="hidden" hidden>
+                <div data-modal-target="modal" data-state="open" data-motion="none">
                     <div data-modal-target="backdrop" class="backdrop-hidden"></div>
                     <div data-modal-target="dialog" class="dialog-hidden">
                         <p>Modal content</p>
@@ -73,10 +63,8 @@ test.serial("connect applies visible state when the overlay is pre-rendered open
 
     expect(mounted.controller.isOpen).toBe(true);
     expect(modal.hidden).toBe(false);
-    expect(modal.dataset.open).toBe("true");
-    expect(modal.classList.contains("visible")).toBe(true);
-    expect(backdrop.classList.contains("backdrop-visible")).toBe(true);
-    expect(dialog.classList.contains("dialog-visible")).toBe(true);
+    expect(modal.dataset.state).toBe("open");
+    expect(modal.hasAttribute("inert")).toBe(false);
     expect(document.body.classList.contains("overflow-hidden")).toBe(true);
 });
 
@@ -143,17 +131,9 @@ test.serial("defers an empty turbo stream update for the modal root until after 
             <div
                 id="modal"
                 data-controller="modal"
-                data-modal-open-duration-value="1"
-                data-modal-close-duration-value="1"
-                data-modal-hidden-class="hidden"
-                data-modal-visible-class="visible"
-                data-modal-backdrop-hidden-class="backdrop-hidden"
-                data-modal-backdrop-visible-class="backdrop-visible"
-                data-modal-dialog-hidden-class="dialog-hidden"
-                data-modal-dialog-visible-class="dialog-visible"
                 data-modal-lock-scroll-class="overflow-hidden"
             >
-                <div data-modal-target="modal" hidden>
+                <div data-modal-target="modal" data-state="closed" data-motion="none" hidden inert>
                     <div data-modal-target="backdrop"></div>
                     <div data-modal-target="dialog">
                         <p>Modal content</p>
@@ -200,17 +180,9 @@ test.serial("defers an empty turbo stream update for dynamic content until after
             <div
                 id="modal-shell"
                 data-controller="modal"
-                data-modal-open-duration-value="1"
-                data-modal-close-duration-value="1"
-                data-modal-hidden-class="hidden"
-                data-modal-visible-class="visible"
-                data-modal-backdrop-hidden-class="backdrop-hidden"
-                data-modal-backdrop-visible-class="backdrop-visible"
-                data-modal-dialog-hidden-class="dialog-hidden"
-                data-modal-dialog-visible-class="dialog-visible"
                 data-modal-lock-scroll-class="overflow-hidden"
             >
-                <div data-modal-target="modal" hidden>
+                <div data-modal-target="modal" data-state="closed" data-motion="none" hidden inert>
                     <div data-modal-target="backdrop"></div>
                     <div data-modal-target="dialog">
                         <turbo-frame id="modal" data-modal-target="dynamicContent">
@@ -252,33 +224,17 @@ test.serial("defers an empty turbo stream update for dynamic content until after
 test.serial("Escape closes only the top modal when modals are nested", async () => {
     mounted = await mountMultipleControllers({ modal: ModalController }, `
         <div id="outer" data-controller="modal"
-             data-modal-open-duration-value="1"
-             data-modal-close-duration-value="1"
-             data-modal-hidden-class="hidden"
-             data-modal-visible-class="visible"
-             data-modal-backdrop-hidden-class="backdrop-hidden"
-             data-modal-backdrop-visible-class="backdrop-visible"
-             data-modal-dialog-hidden-class="dialog-hidden"
-             data-modal-dialog-visible-class="dialog-visible"
              data-modal-lock-scroll-class="overflow-hidden">
             <button id="outer-trigger" data-action="modal#open">Open outer</button>
-            <div data-modal-target="modal" hidden>
+            <div data-modal-target="modal" data-state="closed" data-motion="none" hidden inert>
                 <div data-modal-target="backdrop"></div>
                 <div data-modal-target="dialog">
                     <button id="outer-close" data-action="modal#close">Close outer</button>
 
                     <div id="inner" data-controller="modal"
-                         data-modal-open-duration-value="1"
-                         data-modal-close-duration-value="1"
-                         data-modal-hidden-class="hidden"
-                         data-modal-visible-class="visible"
-                         data-modal-backdrop-hidden-class="backdrop-hidden"
-                         data-modal-backdrop-visible-class="backdrop-visible"
-                         data-modal-dialog-hidden-class="dialog-hidden"
-                         data-modal-dialog-visible-class="dialog-visible"
                          data-modal-lock-scroll-class="overflow-hidden">
                         <button id="inner-trigger" data-action="modal#open">Open inner</button>
-                        <div data-modal-target="modal" hidden>
+                        <div data-modal-target="modal" data-state="closed" data-motion="none" hidden inert>
                             <div data-modal-target="backdrop"></div>
                             <div data-modal-target="dialog">
                                 <button id="inner-close" data-action="modal#close">Close inner</button>
@@ -315,33 +271,17 @@ test.serial("Escape closes only the top modal when modals are nested", async () 
 test.serial("AlertDialog opened inside a modal handles Escape without closing the modal", async () => {
     mounted = await mountMultipleControllers({ modal: ModalController, "alert-dialog": AlertDialogController }, `
         <div id="modal" data-controller="modal"
-             data-modal-open-duration-value="1"
-             data-modal-close-duration-value="1"
-             data-modal-hidden-class="hidden"
-             data-modal-visible-class="visible"
-             data-modal-backdrop-hidden-class="backdrop-hidden"
-             data-modal-backdrop-visible-class="backdrop-visible"
-             data-modal-dialog-hidden-class="dialog-hidden"
-             data-modal-dialog-visible-class="dialog-visible"
              data-modal-lock-scroll-class="overflow-hidden">
             <button id="modal-trigger" data-action="modal#open">Open modal</button>
-            <div data-modal-target="modal" hidden>
+            <div data-modal-target="modal" data-state="closed" data-motion="none" hidden inert>
                 <div data-modal-target="backdrop"></div>
                 <div data-modal-target="dialog">
                     <button id="modal-close" data-action="modal#close">Close modal</button>
 
                     <div id="confirm" data-controller="alert-dialog"
-                         data-alert-dialog-hidden-class="hidden"
-                         data-alert-dialog-visible-class="visible"
-                         data-alert-dialog-backdrop-hidden-class="backdrop-hidden"
-                         data-alert-dialog-backdrop-visible-class="backdrop-visible"
-                         data-alert-dialog-dialog-hidden-class="dialog-hidden"
-                         data-alert-dialog-dialog-visible-class="dialog-visible"
-                         data-alert-dialog-lock-scroll-class="overflow-hidden"
-                         data-alert-dialog-open-duration-value="1"
-                         data-alert-dialog-close-duration-value="1">
+                         data-alert-dialog-lock-scroll-class="overflow-hidden">
                         <button id="delete" data-action="click->alert-dialog#intercept">Delete</button>
-                        <div data-alert-dialog-target="modal" data-open="false" data-action="click->alert-dialog#clickOutside" hidden>
+                        <div data-alert-dialog-target="modal" data-state="closed" data-motion="none" data-action="click->alert-dialog#clickOutside" hidden inert>
                             <div data-alert-dialog-target="backdrop"></div>
                             <div data-alert-dialog-target="dialog">
                                 <button id="cancel" data-action="alert-dialog#cancel">Cancel</button>
@@ -377,17 +317,9 @@ test.serial("clicking the backdrop does not block the next trigger click", async
         ModalController,
         `
             <div id="modal" data-controller="modal"
-                 data-modal-open-duration-value="1"
-                 data-modal-close-duration-value="1"
-                 data-modal-hidden-class="hidden"
-                 data-modal-visible-class="visible"
-                 data-modal-backdrop-hidden-class="backdrop-hidden"
-                 data-modal-backdrop-visible-class="backdrop-visible"
-                 data-modal-dialog-hidden-class="dialog-hidden"
-                 data-modal-dialog-visible-class="dialog-visible"
                  data-modal-lock-scroll-class="overflow-hidden">
                 <button id="modal-trigger" data-action="modal#open">Open modal</button>
-                <div data-modal-target="modal" data-action="click->modal#clickOutside" hidden>
+                <div data-modal-target="modal" data-state="closed" data-motion="none" data-action="click->modal#clickOutside" hidden inert>
                     <div id="modal-backdrop" data-modal-target="backdrop"></div>
                     <div data-modal-target="dialog">
                         <button id="inside">Inside</button>
@@ -418,3 +350,211 @@ test.serial("clicking the backdrop does not block the next trigger click", async
 
     expect(modal.isOpen).toBe(true);
 });
+
+test.serial("Turbo cache synchronously cancels a pending exit", async () => {
+    mounted = await mountController("modal", ModalController, `
+        <div data-controller="modal" data-modal-lock-scroll-class="overflow-hidden">
+            <button id="trigger">Open</button>
+            <div data-modal-target="modal" data-state="closed" data-motion="default" hidden inert>
+                <div data-modal-target="backdrop"></div>
+                <div data-modal-target="dialog"><button>Close</button></div>
+            </div>
+        </div>
+    `);
+    const modal = mounted.controller.modalTarget;
+    const motion = fakeAnimation();
+
+    await mounted.controller.open({ currentTarget: document.getElementById("trigger") });
+    mounted.controller.dialogTarget.getAnimations = () => modal.dataset.state === "closed" ? [motion.animation] : [];
+    const closing = mounted.controller.close();
+    await wait(0);
+
+    expect(modal.hidden).toBe(false);
+
+    mounted.controller.closeForCache();
+
+    expect(modal.hidden).toBe(true);
+    expect(modal.hasAttribute("inert")).toBe(true);
+    expect(document.body.classList.contains("overflow-hidden")).toBe(false);
+
+    motion.finish();
+    expect(await closing).toBe(false);
+});
+
+test.serial("Turbo morph rebuilds an open overlay around replacement targets", async () => {
+    mounted = await mountController("modal", ModalController, `
+        <div data-controller="modal" data-modal-lock-scroll-class="overflow-hidden">
+            <button id="trigger">Open</button>
+            <div data-modal-target="modal" data-state="closed" data-motion="none" hidden inert>
+                <div data-modal-target="backdrop"></div>
+                <div data-modal-target="dialog"><button>Close</button></div>
+            </div>
+        </div>
+    `);
+
+    const trigger = document.getElementById("trigger");
+    let openedEvents = 0;
+    mounted.root.addEventListener("modal:opened", () => openedEvents++);
+    await mounted.controller.open({ currentTarget: trigger });
+    const previous = mounted.controller.modalTarget;
+    const replacement = document.createElement("div");
+    replacement.setAttribute("data-modal-target", "modal");
+    replacement.dataset.state = "closed";
+    replacement.dataset.motion = "none";
+    replacement.hidden = true;
+    replacement.setAttribute("inert", "");
+    replacement.innerHTML = `
+        <div data-modal-target="backdrop"></div>
+        <div data-modal-target="dialog"><button>Replacement</button></div>
+    `;
+
+    previous.replaceWith(replacement);
+    mounted.controller.modalTargetDisconnected(previous);
+    mounted.controller.modalTargetConnected(replacement);
+    await waitUntil(() => mounted.controller.modalTarget === replacement && replacement.dataset.state === "open");
+
+    expect(mounted.controller.modalTarget).toBe(replacement);
+    expect(mounted.controller.isOpen).toBe(true);
+    expect(replacement.dataset.state).toBe("open");
+    expect(replacement.hidden).toBe(false);
+    expect(replacement.hasAttribute("inert")).toBe(false);
+    expect(document.body.classList.contains("overflow-hidden")).toBe(true);
+    expect(openedEvents).toBe(1);
+
+    await mounted.controller.close();
+    expect(document.activeElement).toBe(trigger);
+});
+
+test.serial("target morph during exit preserves a deferred Turbo Stream", async () => {
+    mounted = await mountController("modal", ModalController, `
+        <div id="modal-shell" data-controller="modal" data-modal-lock-scroll-class="overflow-hidden">
+            <div data-modal-target="modal" data-state="closed" data-motion="default" hidden inert>
+                <div data-modal-target="backdrop"></div>
+                <div data-modal-target="dialog">
+                    <turbo-frame id="modal-frame" data-modal-target="dynamicContent"><p>Content</p></turbo-frame>
+                </div>
+            </div>
+        </div>
+    `);
+    await mounted.controller.open();
+    const motion = fakeAnimation();
+    mounted.controller.dialogTarget.getAnimations = () => mounted.controller.modalTarget.dataset.state === "closed" ? [motion.animation] : [];
+    const frame = document.getElementById("modal-frame");
+    const stream = document.createElement("turbo-stream");
+    stream.setAttribute("action", "update");
+    stream.setAttribute("target", "modal-frame");
+    stream.innerHTML = "<template></template>";
+    let rendered = false;
+    stream.performAction = () => {
+        rendered = true;
+        frame.innerHTML = "";
+    };
+
+    document.body.appendChild(stream);
+    stream.dispatchEvent(new CustomEvent("turbo:before-stream-render", { bubbles: true }));
+    mounted.controller.backdropTarget.replaceWith(mounted.controller.backdropTarget.cloneNode(true));
+    await wait(0);
+
+    expect(rendered).toBe(false);
+
+    motion.finish();
+    await wait(10);
+
+    expect(rendered).toBe(true);
+    expect(frame.innerHTML).toBe("");
+});
+
+test.serial("close during an opening target morph is not undone by stale reopen intent", async () => {
+    mounted = await mountController("modal", ModalController, `
+        <div data-controller="modal" data-modal-lock-scroll-class="overflow-hidden">
+            <button id="trigger">Open</button>
+            <div data-modal-target="modal" data-state="closed" data-motion="default" hidden inert>
+                <div data-modal-target="backdrop"></div>
+                <div data-modal-target="dialog"><button>Close</button></div>
+            </div>
+        </div>
+    `);
+    const motion = fakeAnimation();
+    mounted.controller.dialogTarget.getAnimations = () => mounted.controller.modalTarget.dataset.state === "open" ? [motion.animation] : [];
+
+    const opening = mounted.controller.open({ currentTarget: document.getElementById("trigger") });
+    await wait(0);
+    mounted.controller.backdropTarget.replaceWith(mounted.controller.backdropTarget.cloneNode(true));
+    await wait(0);
+    const closing = mounted.controller.close();
+
+    motion.finish();
+    await Promise.all([opening, closing]);
+    await wait(10);
+
+    expect(mounted.controller.isOpen).toBe(false);
+    expect(mounted.controller.overlay.phase).toBe("closed");
+    expect(mounted.controller.modalTarget.dataset.state).toBe("closed");
+    expect(mounted.controller.modalTarget.hidden).toBe(true);
+});
+
+test.serial("morphing an outer modal preserves the nested modal as the top overlay", async () => {
+    mounted = await mountMultipleControllers({ modal: ModalController }, `
+        <div id="outer" data-controller="modal" data-modal-lock-scroll-class="overflow-hidden">
+            <button id="outer-trigger">Open outer</button>
+            <div data-modal-target="modal" data-state="closed" data-motion="none" hidden inert>
+                <div data-modal-target="backdrop"></div>
+                <div data-modal-target="dialog">
+                    <div id="inner" data-controller="modal" data-modal-lock-scroll-class="overflow-hidden">
+                        <button id="inner-trigger">Open inner</button>
+                        <div data-modal-target="modal" data-state="closed" data-motion="none" hidden inert>
+                            <div data-modal-target="backdrop"></div>
+                            <div data-modal-target="dialog"><button>Close inner</button></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `);
+    const outerRoot = document.getElementById("outer");
+    const innerRoot = document.getElementById("inner");
+    const outer = mounted.getController("modal", outerRoot);
+    const inner = mounted.getController("modal", innerRoot);
+
+    await outer.open({ currentTarget: document.getElementById("outer-trigger") });
+    await inner.open({ currentTarget: document.getElementById("inner-trigger") });
+    outer.backdropTarget.replaceWith(outer.backdropTarget.cloneNode(true));
+    await wait(10);
+
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+    await wait(0);
+
+    expect(inner.isOpen).toBe(false);
+    expect(outer.isOpen).toBe(true);
+});
+
+function fakeAnimation() {
+    const finished = deferred();
+
+    return {
+        animation: {
+            effect: { getComputedTiming: () => ({ endTime: 100 }) },
+            finished: finished.promise,
+            playState: "running",
+        },
+        finish: () => finished.resolve(),
+    };
+}
+
+async function waitUntil(predicate, timeout = 2_000) {
+    const deadline = Date.now() + timeout;
+
+    while (!predicate()) {
+        if (Date.now() >= deadline) throw new Error("Timed out waiting for Modal state");
+        await wait(5);
+    }
+}
+
+function deferred() {
+    let resolve;
+    const promise = new Promise((settle) => {
+        resolve = settle;
+    });
+
+    return { promise, resolve };
+}

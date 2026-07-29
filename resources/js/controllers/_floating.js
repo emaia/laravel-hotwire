@@ -8,13 +8,30 @@ const STRATEGIES = ["absolute", "fixed"];
 export function createFloating(anchor, floating, options = {}) {
     const config = normalizeOptions(options);
     let cleanupAutoUpdate = null;
+    let active = false;
+    let lifecycle = 0;
+    let latestRequest = 0;
+    let readiness = null;
 
-    async function update() {
-        const { x, y, placement, middlewareData = {} } = await computePosition(anchor, floating, {
-            placement: placementValue(config.side, config.align),
-            strategy: config.strategy,
-            middleware: middleware(config, floating),
-        });
+    async function requestUpdate(run = lifecycle) {
+        const request = ++latestRequest;
+        const isCurrent = () => run === lifecycle && request === latestRequest;
+        let result;
+
+        try {
+            result = await computePosition(anchor, floating, {
+                placement: placementValue(config.side, config.align),
+                strategy: config.strategy,
+                middleware: middleware(config, floating, isCurrent),
+            });
+        } catch (error) {
+            if (!isCurrent()) return false;
+            throw error;
+        }
+
+        if (!isCurrent()) return false;
+
+        const { x, y, placement, middlewareData = {} } = result;
 
         const resolved = parsePlacement(placement);
 
@@ -30,30 +47,69 @@ export function createFloating(anchor, floating, options = {}) {
 
         positionArrow(config.arrowElement, resolved.side, middlewareData.arrow);
         syncAnchorVisibility(floating, config.hideWhenDetached, middlewareData.hide);
+
+        if (readiness?.run === run) readiness.resolve(true);
+
+        return true;
+    }
+
+    function start() {
+        if (active) return readiness.promise;
+
+        active = true;
+        const run = ++lifecycle;
+        readiness = { run, ...deferred() };
+        const starting = readiness;
+
+        try {
+            cleanupAutoUpdate = autoUpdate(anchor, floating, () => {
+                void requestUpdate(run).catch((error) => {
+                    failStart(run, error);
+                });
+            });
+        } catch (error) {
+            failStart(run, error);
+        }
+
+        return starting.promise;
+    }
+
+    function stop() {
+        active = false;
+        lifecycle++;
+        latestRequest++;
+
+        cleanupAutoUpdate?.();
+        cleanupAutoUpdate = null;
+
+        readiness?.resolve(false);
+        readiness = null;
+    }
+
+    function failStart(run, error) {
+        if (readiness?.run !== run || readiness.settled) return;
+
+        const failed = readiness;
+        active = false;
+        lifecycle++;
+        latestRequest++;
+        cleanupAutoUpdate?.();
+        cleanupAutoUpdate = null;
+        readiness = null;
+        failed.reject(error);
     }
 
     return {
-        start() {
-            if (cleanupAutoUpdate) return update();
-
-            cleanupAutoUpdate = autoUpdate(anchor, floating, () => {
-                void update();
-            });
-
-            return update();
-        },
-        stop() {
-            cleanupAutoUpdate?.();
-            cleanupAutoUpdate = null;
-        },
-        update,
+        start,
+        stop,
+        update: requestUpdate,
         cleanup() {
-            this.stop();
+            stop();
         },
     };
 }
 
-function middleware(config, floating) {
+function middleware(config, floating, isCurrent) {
     const middleware = [
         offset({ mainAxis: config.sideOffset, crossAxis: config.alignOffset }),
     ];
@@ -64,6 +120,8 @@ function middleware(config, floating) {
     if (config.size) {
         middleware.push(size({
             apply({ availableWidth, availableHeight, rects }) {
+                if (!isCurrent()) return;
+
                 floating.style.setProperty("--anchor-width", `${rects.reference.width}px`);
                 floating.style.setProperty("--anchor-height", `${rects.reference.height}px`);
                 floating.style.setProperty("--available-width", `${availableWidth}px`);
@@ -76,6 +134,31 @@ function middleware(config, floating) {
     if (config.hideWhenDetached) middleware.push(hide());
 
     return middleware;
+}
+
+function deferred() {
+    let rejectPromise;
+    let resolvePromise;
+    let settled = false;
+    const promise = new Promise((resolve, reject) => {
+        resolvePromise = resolve;
+        rejectPromise = reject;
+    });
+
+    return {
+        get settled() { return settled; },
+        promise,
+        resolve(value) {
+            if (settled) return;
+            settled = true;
+            resolvePromise(value);
+        },
+        reject(error) {
+            if (settled) return;
+            settled = true;
+            rejectPromise(error);
+        },
+    };
 }
 
 function normalizeOptions(options) {

@@ -26,8 +26,9 @@ wiring and positions the content with Floating UI.
 ```
 
 `hover-card.trigger` renders a `button` with `variant="link"` by default, links it to `hover-card.content` with
-`aria-describedby`, and keeps `aria-expanded` in sync. Pass `as="a"`, `href`, `variant` or `size` when the trigger
-should use another semantic element or button style:
+`aria-describedby`, and keeps `aria-expanded` and `data-hover-card-state="open|closed"` in sync. The content uses
+`data-state="open|closed"` for Presence styling. Pass `as="a"`, `href`, `variant` or `size` when the trigger should use
+another semantic element or button style:
 
 ```blade
 <hw:hover-card.trigger as="a" href="/users/1" variant="link">
@@ -50,8 +51,8 @@ Set either delay to `0` when the card should respond immediately.
 
 ## Positioning
 
-Hover Card uses `strategy="fixed"` by default so the preview can cross Drawer, Modal, Turbo Frame and scroll-container
-boundaries more reliably:
+Hover Card uses `strategy="fixed"` by default and promotes the preview to the browser's native top layer when supported,
+so it can cross Drawer, Modal, Turbo Frame and scroll-container boundaries more reliably:
 
 ```blade
 <hw:hover-card side="right" align="center" :side-offset="8">
@@ -60,8 +61,14 @@ boundaries more reliably:
 </hw:hover-card>
 ```
 
-Use `strategy="absolute"` only when you explicitly want the panel positioned within the nearest positioned ancestor. This
-is not a portal; transformed or contained ancestors can still affect the positioning context.
+Both strategies retain top-layer promotion. `fixed` uses viewport-relative coordinates; `absolute` uses page/document
+coordinates while in the top layer, not the nearest positioned ancestor. Top-layer promotion does not move the node
+elsewhere in the DOM. Browsers without the native Popover API use the normal DOM fallback, where `absolute` uses its
+offset parent and transformed, contained, or clipped ancestors can still affect rendering.
+
+The enter motion starts only after Floating UI resolves the first placement. If `flip` changes the preferred placement,
+`data-side` and `data-align` expose the resolved placement used on screen. Superseded asynchronous positioning results
+are ignored.
 
 ## Content Guidance
 
@@ -69,23 +76,42 @@ Hover Card opens on hover and focus, and closes on mouse leave, blur, `Escape`, 
 content short and mostly non-interactive. Links or buttons can work while the pointer or focus remains inside the card,
 but a Popover is usually the better fit for deliberate interaction.
 
+## Motion And Presence
+
+Closed content is server-rendered with `data-state="closed" hidden inert`, including when `open="true"`; the controller
+positions an initially open card before showing it without enter motion. During exit, `data-state="closed"` and `inert`
+apply immediately, while `hidden` is deferred until CSS motion finishes. This keeps the preview non-interactive without
+cutting off its exit.
+
+The Nova preset transitions only `opacity`, `scale`, and `translate`. Set motion on the content component:
+
+```blade
+<hw:hover-card.content motion="none">
+    <!-- preview -->
+</hw:hover-card.content>
+```
+
+Custom CSS may use transitions or finite animations keyed by `data-state`. A closed-state selector must never apply
+`display: none` or `hidden`; Presence owns the `hidden` attribute. Rapid reopen cancels stale exit cleanup, and
+`prefers-reduced-motion: reduce` skips motion automatically.
+
 ## Props
 
-| Prop           | Default                  | Description                                                                       |
-|----------------|--------------------------|-----------------------------------------------------------------------------------|
-| `id`           | `uniqid('hover-card-')`  | Content id and trigger `aria-describedby`.                                        |
-| `side`         | `bottom`                 | Preferred side: `top`, `right`, `bottom` or `left`.                               |
-| `align`        | `start`                  | Content alignment: `start`, `center` or `end`.                                    |
-| `side-offset`  | `4`                      | Main-axis gap between the trigger and content.                                    |
-| `align-offset` | `0`                      | Cross-axis offset along the trigger edge.                                         |
-| `strategy`     | `fixed`                  | Floating UI strategy: `fixed` or `absolute`.                                      |
-| `flip`         | `true`                   | Flip to the opposite side when the preferred side lacks room.                     |
-| `shift`        | `true`                   | Shift within the viewport when the content would overflow.                        |
-| `open-delay`   | `10`                     | Delay in milliseconds before opening after hover or focus.                        |
-| `close-delay`  | `100`                    | Delay in milliseconds before closing after mouse leave or blur.                   |
-| `open`         | `false`                  | Start open without waiting for hover or focus.                                    |
-| `transition`   | `true`                   | Include the default enter/leave transition attributes.                            |
-| `stimulus`     | `null`                   | Optional Stimulus binding from `stimulus()`, merged with the internal controller. |
+| Component | Prop | Default | Description |
+|---|---|---|---|
+| `hover-card` | `id` | `uniqid('hover-card-')` | Content id and trigger `aria-describedby`. |
+| `hover-card` | `side` | `bottom` | Preferred side: `top`, `right`, `bottom` or `left`. |
+| `hover-card` | `align` | `start` | Content alignment: `start`, `center` or `end`. |
+| `hover-card` | `side-offset` | `4` | Main-axis gap between the trigger and content. |
+| `hover-card` | `align-offset` | `0` | Cross-axis offset along the trigger edge. |
+| `hover-card` | `strategy` | `fixed` | Floating UI strategy: `fixed` or `absolute`. |
+| `hover-card` | `flip` | `true` | Flip to the opposite side when the preferred side lacks room. |
+| `hover-card` | `shift` | `true` | Shift within the viewport when the content would overflow. |
+| `hover-card` | `open-delay` | `10` | Delay in milliseconds before opening after hover or focus. |
+| `hover-card` | `close-delay` | `100` | Delay in milliseconds before closing after mouse leave or blur. |
+| `hover-card` | `open` | `false` | Start open without waiting for hover or focus. |
+| `hover-card` | `stimulus` | `null` | Optional Stimulus binding from `stimulus()`, merged with the internal controller. |
+| `hover-card.content` | `motion` | `default` | Presence motion: `default` or `none`. |
 
 ## Trigger Props
 
@@ -120,8 +146,10 @@ but a Popover is usually the better fit for deliberate interaction.
 - `data-variant`
 - `data-size`
 - `aria-expanded="true|false"`
+- `data-hover-card-state="open|closed"` on the trigger
+- `data-state="open|closed"` on the content
 - `data-slot="hover-card-content"`
-- `data-open="true|false"`
+- `data-motion="default|none"`
 - `data-side="top|right|bottom|left"`
 - `data-align="start|center|end"`
 - `--anchor-width`
@@ -132,7 +160,7 @@ but a Popover is usually the better fit for deliberate interaction.
 
 ## Limitations
 
-- No portal or top-layer support in this release.
 - Hover Card is not a strict ARIA tooltip implementation because its content can contain richer preview markup.
 - Hover Card is not intended for complex interactive panels; use Popover when the user needs to intentionally open and
   interact with controls.
+- Native top-layer promotion depends on browser Popover API support; the fallback can still be clipped by ancestors.

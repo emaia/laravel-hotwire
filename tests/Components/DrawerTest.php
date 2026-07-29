@@ -9,8 +9,6 @@ it('renders drawer markup and controller hooks', function () {
 
     $view->assertSee('data-slot="drawer"', false)
         ->assertSee('data-controller="drawer"', false)
-        ->assertSee('data-drawer-open-duration-value="450"', false)
-        ->assertSee('data-drawer-close-duration-value="450"', false)
         ->assertSee('data-slot="drawer-overlay"', false)
         ->assertSee('data-drawer-target="modal"', false)
         ->assertSee('data-slot="drawer-popup"', false)
@@ -18,6 +16,11 @@ it('renders drawer markup and controller hooks', function () {
         ->assertSee('data-slot="drawer-content"', false)
         ->assertSee('data-direction="down"', false)
         ->assertSee('data-axis="y"', false)
+        ->assertSee('data-state="closed"', false)
+        ->assertSee('data-motion="default"', false)
+        ->assertSee('inert', false)
+        ->assertDontSee('data-drawer-hidden-class', false)
+        ->assertDontSee('data-drawer-open-duration-value', false)
         ->assertSee('role="dialog"', false)
         ->assertSee('aria-modal="true"', false)
         ->assertSeeText('Body');
@@ -51,16 +54,23 @@ it('renders trigger close and semantic content subcomponents', function () {
         ->assertSee('data-action="drawer#close"', false);
 });
 
-it('maps side to transform classes and size axis', function () {
+it('maps side to semantic direction and size axis', function () {
     $right = $this->blade('<x-hw::drawer direction="right" size="24rem"><x-hw::drawer.content /></x-hw::drawer>');
-    $right->assertSee('data-drawer-dialog-hidden-class="translate-x-full"', false)
+    $right->assertSee('data-direction="right"', false)
         ->assertSee('--drawer-width: 24rem', false)
         ->assertSee('--drawer-max-width: 24rem', false);
 
     $bottom = $this->blade('<x-hw::drawer side="bottom" size="50vh"><x-hw::drawer.content /></x-hw::drawer>');
-    $bottom->assertSee('data-drawer-dialog-hidden-class="translate-y-full"', false)
-        ->assertSee('data-direction="down"', false)
+    $bottom->assertSee('data-direction="down"', false)
         ->assertSee('--drawer-height: 50vh', false);
+});
+
+it('normalizes drawer motion', function () {
+    $none = $this->blade('<x-hw::drawer motion="none"><x-hw::drawer.content /></x-hw::drawer>');
+    $invalid = $this->blade('<x-hw::drawer motion="spin"><x-hw::drawer.content /></x-hw::drawer>');
+
+    $none->assertSee('data-motion="none"', false);
+    $invalid->assertSee('data-motion="default"', false);
 });
 
 it('renders frame content and loading template when frame is configured', function () {

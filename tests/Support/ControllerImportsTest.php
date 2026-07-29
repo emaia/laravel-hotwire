@@ -69,7 +69,23 @@ it('resolves the dropdown controller shared positioning helpers', function () {
 
     expect($dependencies)
         ->toContain('_floating.js')
-        ->toContain('_transition.js');
+        ->toContain('_presence.js')
+        ->toContain('_top_layer.js')
+        ->not->toContain('_transition.js');
+});
+
+it('resolves the modal controller transitive overlay helpers', function () {
+    $base = realpath(__DIR__.'/../../resources/js/controllers');
+    $source = realpath($base.'/modal_controller.js');
+    $dependencies = array_map('basename', $this->imports->sharedDependencies($source, $base));
+
+    expect($dependencies)
+        ->toContain('_overlay.js')
+        ->toContain('_presence.js')
+        ->toContain('_overlay_stack.js')
+        ->toContain('_focus_trap.js')
+        ->toContain('_top_layer.js')
+        ->toContain('_frame_overlay.js');
 });
 
 // --- targetPath ---

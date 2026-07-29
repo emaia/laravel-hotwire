@@ -22,8 +22,6 @@ low-level Stimulus controller used by [`<hw:alert-dialog>`](../components/alert-
 
 | Value                    | Type      | Default | Description                                               |
 |--------------------------|-----------|---------|-----------------------------------------------------------|
-| `open-duration`          | `Number`  | `200`   | Opening animation duration in milliseconds                |
-| `close-duration`         | `Number`  | `200`   | Closing animation duration in milliseconds                |
 | `lock-scroll`            | `Boolean` | `true`  | Adds and removes the configured body scroll-lock class    |
 | `close-on-click-outside` | `Boolean` | `true`  | Cancels the dialog when the user clicks outside the panel |
 
@@ -31,9 +29,6 @@ low-level Stimulus controller used by [`<hw:alert-dialog>`](../components/alert-
 
 | Class                                  | Description                                                                |
 |----------------------------------------|----------------------------------------------------------------------------|
-| `hidden` / `visible`                   | Applied to the `modal` target during close/open                            |
-| `backdrop-hidden` / `backdrop-visible` | Applied to the `backdrop` target                                           |
-| `dialog-hidden` / `dialog-visible`     | Applied to the `dialog` target                                             |
 | `lock-scroll`                          | Applied to `<body>` while the dialog is open when `lock-scroll` is enabled |
 
 ## Actions
@@ -44,19 +39,15 @@ low-level Stimulus controller used by [`<hw:alert-dialog>`](../components/alert-
 | `alert-dialog#confirm`      | Closes the dialog and re-fires the original click after the close animation |
 | `alert-dialog#cancel`       | Cancels the pending action and closes the dialog                            |
 | `alert-dialog#clickOutside` | Cancels when clicking outside the dialog panel                              |
+| `alert-dialog#closeForCache` | Clears the pending action and closes synchronously for Turbo cache          |
 
 ## Basic usage
 
 ```html
 <div
     data-controller="alert-dialog"
-    data-alert-dialog-hidden-class="opacity-0 pointer-events-none"
-    data-alert-dialog-visible-class="opacity-100 pointer-events-auto"
-    data-alert-dialog-backdrop-hidden-class="opacity-0"
-    data-alert-dialog-backdrop-visible-class="opacity-100"
-    data-alert-dialog-dialog-hidden-class="scale-90 opacity-0"
-    data-alert-dialog-dialog-visible-class="scale-100 opacity-100"
     data-alert-dialog-lock-scroll-class="overflow-hidden"
+    data-action="turbo:before-cache@window->alert-dialog#closeForCache"
 >
     <div data-action="click->alert-dialog#intercept">
         <button type="button">Continue</button>
@@ -64,8 +55,10 @@ low-level Stimulus controller used by [`<hw:alert-dialog>`](../components/alert-
 
     <div
         data-alert-dialog-target="modal"
+        data-state="closed"
+        data-motion="default"
         data-action="click->alert-dialog#clickOutside"
-        hidden
+        hidden inert
     >
         <div data-alert-dialog-target="backdrop"></div>
 
@@ -127,7 +120,7 @@ Cancel the dialog on `turbo:before-cache` to avoid restoring an open modal from 
 ```html
 <div
     data-controller="alert-dialog"
-    data-action="turbo:before-cache@window->alert-dialog#cancel"
+    data-action="turbo:before-cache@window->alert-dialog#closeForCache"
 >
     ...
 </div>

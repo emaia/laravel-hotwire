@@ -43,6 +43,7 @@ toggle show the correct icon before Stimulus connects.
 | `tooltip` | `string\|null` | `null` | Mounts the `tooltip` controller with this content. |
 | `tooltip-side` | `string\|null` | `null` | Tooltip side when `tooltip` is set. |
 | `tooltip-align` | `string\|null` | `null` | Tooltip alignment when `tooltip` is set. |
+| `tooltip-motion` | `string\|null` | `null` | Tooltip motion: `default` or `none`. |
 | `tooltip-enabled-when` | `string\|null` | `null` | Selector that controls tooltip visibility. |
 
 Any other HTML attribute passes through to the button. Internal `data-color-scheme-*` attributes are protected; configure

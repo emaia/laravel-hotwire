@@ -18,6 +18,7 @@ class Button extends Component
         public ?string $tooltip = null,
         public ?string $tooltipSide = null,
         public ?string $tooltipAlign = null,
+        public ?string $tooltipMotion = null,
         public ?string $tooltipEnabledWhen = null,
         public ?Htmlable $stimulus = null,
     ) {}

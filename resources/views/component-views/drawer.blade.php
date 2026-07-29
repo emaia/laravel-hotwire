@@ -9,10 +9,12 @@
         <div
             data-slot="drawer-overlay"
             data-drawer-target="modal"
-            data-open="false"
+            data-state="closed"
+            data-motion="{{ $motion }}"
             role="dialog"
             aria-modal="true"
             hidden
+            inert
         >
             @if ($backdrop)
                 <div
@@ -27,7 +29,6 @@
                 data-direction="{{ $direction }}"
                 data-axis="{{ $axis }}"
                 data-drawer-target="dialog"
-                class="{{ $drawerHiddenClass }}"
             >
                 <div data-slot="drawer-content">
                     <turbo-frame id="{{ $frame }}" data-drawer-target="dynamicContent"></turbo-frame>

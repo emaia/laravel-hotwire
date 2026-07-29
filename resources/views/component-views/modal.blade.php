@@ -3,14 +3,8 @@
         'id' => $id,
         'data-slot' => 'modal',
         'data-controller' => 'modal',
-        'data-modal-hidden-class' => 'pointer-events-none',
-        'data-modal-visible-class' => 'pointer-events-auto',
-        'data-modal-backdrop-hidden-class' => 'opacity-0',
-        'data-modal-backdrop-visible-class' => 'opacity-100',
-        'data-modal-dialog-hidden-class' => $dialogHiddenClass(),
-        'data-modal-dialog-visible-class' => $dialogVisibleClass(),
         'data-modal-lock-scroll-class' => 'overflow-hidden',
-        'data-action' => 'turbo:before-cache@window->modal#close',
+        'data-action' => 'turbo:before-cache@window->modal#closeForCache',
     ], $attributes, $stimulus, protectedPrefixes: ['data-modal-']);
 @endphp
 

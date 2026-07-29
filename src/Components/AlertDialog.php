@@ -17,8 +17,7 @@ class AlertDialog extends Component
         public string $confirmClass = '',
         public string $cancelClass = '',
         public string $id = '',
-        public int $openDuration = 200,
-        public int $closeDuration = 200,
+        public string $motion = 'default',
         public bool $lockScroll = true,
         public bool $closeOnClickOutside = true,
         public ?Htmlable $stimulus = null,
@@ -26,6 +25,8 @@ class AlertDialog extends Component
         if ($this->id === '') {
             $this->id = uniqid('alert-');
         }
+
+        $this->motion = in_array($this->motion, ['default', 'none'], true) ? $this->motion : 'default';
     }
 
     public function render()

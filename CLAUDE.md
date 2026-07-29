@@ -42,7 +42,7 @@ The complete Hotwire stack for Laravel — Turbo Drive, Turbo Streams, Stimulus 
   `data-controller="turbo--progress"`.
 - **No UI-role folders** (no `form/`, `modal/`, `utils/`, `lib/`, `media/`, `notification/`). Names themselves
   describe intent — prefer compound names (`copy-to-clipboard`, `lazy-image`, `input-mask`) over namespace buckets.
-- **Internal helpers** prefixed with `_` (e.g. `_focus_trap.js`, `_transition.js`, `_form_errors.js`) are shared
+- **Internal helpers** prefixed with `_` (e.g. `_focus_trap.js`, `_presence.js`, `_form_errors.js`) are shared
   utility modules imported by controllers. They are **not** Stimulus controllers and are never registered via
   `data-controller`.
 - **Package marker.** Every controller, helper, and shared dependency shipped by the package begins with
@@ -305,10 +305,9 @@ Every PR that introduces a new component or controller must include:
 
 ## New internal helpers (since `0.32.0`)
 
-- `_overlay.js` — shared overlay lifecycle (open/close class toggling, FocusTrap, body scroll lock,
-  outside-click dismiss, Escape key, focus return, configurable durations). Consumed by `modal_controller`,
-  `alert_dialog_controller` and future Sheet/Drawer/Sidebar controllers. Exports `createOverlay(controller, options)`
-  returning `{ open(), close(), cleanup(), isOpen }`.
+- `_overlay.js` — shared Presence-driven overlay lifecycle (`data-state`, `hidden`, `inert`, FocusTrap, body scroll lock,
+  Escape key, focus return and cancelable CSS motion). Consumed by Modal, Alert Dialog, Drawer, Sheet and Sidebar.
+  Exports `createOverlay(controller, options)` with animated and immediate open/close lifecycle methods.
 
 ## Controller auto-loading (since `0.32.0`)
 

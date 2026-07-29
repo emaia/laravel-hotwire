@@ -9,6 +9,7 @@ The default slot **is** the trigger — anything inside the component is wrapped
 button uses the `default` variant by default:
 
 ```html
+
 <hw:alert-dialog title="Continue?" description="This will proceed.">
     <button type="button">Continue</button>
 </hw:alert-dialog>
@@ -19,6 +20,7 @@ button uses the `default` variant by default:
 Use `confirm-variant="destructive"` when the confirmed action is destructive:
 
 ```html
+
 <hw:alert-dialog
     title="Delete item?"
     description="This action cannot be undone."
@@ -32,6 +34,7 @@ Use `confirm-variant="destructive"` when the confirmed action is destructive:
 ## With Turbo method
 
 ```html
+
 <hw:alert-dialog
     title="Delete item?"
     description="This action cannot be undone."
@@ -47,6 +50,7 @@ Use `confirm-variant="destructive"` when the confirmed action is destructive:
 When `description` isn't enough — lists of consequences, multiple paragraphs, embedded links — use the `content` slot:
 
 ```html
+
 <hw:alert-dialog title="Archive project?" description="This will hide the project from the dashboard.">
     <button type="button">Archive</button>
 
@@ -64,14 +68,13 @@ The `content` slot renders below `description` and above the action buttons.
 
 ## Tweaking behavior
 
-Animation speed, scroll lock, and click-outside behavior are exposed as Blade props — no need to write
-`data-*-value` attributes:
+Motion, scroll lock, and click-outside behavior are exposed as Blade props — no need to write `data-*-value` attributes:
 
 ```html
+
 <hw:alert-dialog
     title="Are you sure?"
-    :open-duration="500"
-    :close-duration="100"
+    motion="none"
     :lock-scroll="false"
     :close-on-click-outside="false"
 >
@@ -81,22 +84,21 @@ Animation speed, scroll lock, and click-outside behavior are exposed as Blade pr
 
 ## Props
 
-| Prop                     | Type     | Default            | Description                                     |
-|--------------------------|----------|--------------------|-------------------------------------------------|
-| `id`                     | `string` | `uniqid('alert-')` | Root element ID                                 |
-| `title`                  | `string` | `''`               | Dialog heading                                  |
-| `description`            | `string` | `''`               | Body text below the title                       |
-| `confirm-label`          | `string` | `'Confirm'`        | Action button label                             |
-| `cancel-label`           | `string` | `'Cancel'`         | Cancel button label                             |
-| `confirm-variant`        | `string` | `'default'`        | Action button variant                           |
-| `cancel-variant`         | `string` | `'outline'`        | Cancel button variant                           |
-| `confirm-class`          | `string` | `''`               | Extra CSS classes for the action button         |
-| `cancel-class`           | `string` | `''`               | Extra CSS classes for the cancel button         |
-| `open-duration`          | `int`    | `200`              | Opening animation duration (ms)                 |
-| `close-duration`         | `int`    | `200`              | Closing animation duration (ms)                 |
-| `lock-scroll`            | `bool`   | `true`             | Locks body scroll when the dialog is open       |
-| `close-on-click-outside` | `bool`   | `true`             | Closes when clicking the backdrop               |
-| `stimulus`               | `Htmlable\|null` | `null`   | Optional extra Stimulus binding merged into the root element |
+| Prop                     | Type             | Default            | Description                                                  |
+|--------------------------|------------------|--------------------|--------------------------------------------------------------|
+| `id`                     | `string`         | `uniqid('alert-')` | Root element ID                                              |
+| `title`                  | `string`         | `''`               | Dialog heading                                               |
+| `description`            | `string`         | `''`               | Body text below the title                                    |
+| `confirm-label`          | `string`         | `'Confirm'`        | Action button label                                          |
+| `cancel-label`           | `string`         | `'Cancel'`         | Cancel button label                                          |
+| `confirm-variant`        | `string`         | `'default'`        | Action button variant                                        |
+| `cancel-variant`         | `string`         | `'outline'`        | Cancel button variant                                        |
+| `confirm-class`          | `string`         | `''`               | Extra CSS classes for the action button                      |
+| `cancel-class`           | `string`         | `''`               | Extra CSS classes for the cancel button                      |
+| `motion`                 | `string`         | `'default'`        | `default` follows CSS motion; `none` disables it             |
+| `lock-scroll`            | `bool`           | `true`             | Locks body scroll when the dialog is open                    |
+| `close-on-click-outside` | `bool`           | `true`             | Closes when clicking the backdrop                            |
+| `stimulus`               | `Htmlable\|null` | `null`             | Optional extra Stimulus binding merged into the root element |
 
 Regular `data-controller` / `data-action` attributes and the `stimulus` prop are merged and deduplicated with the
 internal `alert-dialog` controller. Component-owned `data-alert-dialog-*` attributes are protected; configure supported
@@ -104,16 +106,17 @@ dialog behavior with props instead of overriding those attributes directly.
 
 ## Slots
 
-| Slot             | Description                                                          |
-|------------------|----------------------------------------------------------------------|
-| `slot` (default) | Trigger element whose click is intercepted to open the dialog        |
+| Slot             | Description                                                              |
+|------------------|--------------------------------------------------------------------------|
+| `slot` (default) | Trigger element whose click is intercepted to open the dialog            |
 | `content`        | Optional rich content rendered below `description` and above the buttons |
 
 ## How it works
 
 The default slot is wrapped in a click-intercept zone. When the user clicks any element inside, the click is canceled
 and the alert dialog opens. If the user clicks **Confirm**, the original click is re-fired on the same element
-(bypassing the intercept). If the user clicks **Cancel** or presses `Escape`, the dialog closes and nothing happens.
+(bypassing the intercept) after the actual exit motion settles. If the user clicks **Cancel** or presses `Escape`, the
+dialog closes and nothing happens. Rapid reopen cancels stale close completion.
 
 The trigger element needs no special attributes — place it as the default slot.
 
@@ -128,7 +131,7 @@ The trigger element needs no special attributes — place it as the default slot
 
 ## Turbo integration
 
-The dialog cancels automatically on `turbo:before-cache`, preventing ghost dialogs when navigating with Turbo Drive.
+The dialog closes synchronously on `turbo:before-cache`, preventing ghost dialogs when navigating with Turbo Drive.
 
 ## Need more control?
 

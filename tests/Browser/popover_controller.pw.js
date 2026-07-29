@@ -4,17 +4,17 @@ import { readFile } from "node:fs/promises";
 test("opens with a transition, focuses content and closes on Escape", async ({ page }) => {
     await page.setContent(`
         <style>
-            .hidden { display: none; }
-            .t-enter, .t-leave { transition: opacity 60ms linear; }
-            .op0 { opacity: 0; }
-            .op100 { opacity: 1; }
+            [data-popover-target="content"] { transition: opacity 300ms linear, scale 300ms linear; }
+            [data-popover-target="content"][data-state="closed"] { opacity: 0; pointer-events: none; scale: .95; }
+            [data-popover-target="content"][data-state="open"] { opacity: 1; scale: 1; }
+            [data-popover-target="content"][data-presence="instant"] { transition: none; }
+            [data-hotwire-top-layer][popover] { border: 0; inset: auto; margin: 0; }
         </style>
         <div data-controller="popover">
             <button type="button" data-popover-target="trigger" data-action="popover#toggle" aria-expanded="false">Open</button>
-            <div data-popover-target="content" class="hidden" tabindex="-1"
-                 data-transition-enter="t-enter" data-transition-enter-from="op0" data-transition-enter-to="op100"
-                 data-transition-leave="t-leave" data-transition-leave-from="op100" data-transition-leave-to="op0">
+            <div data-popover-target="content" data-state="closed" data-motion="default" hidden inert tabindex="-1">
                 <input id="name" aria-label="Name">
+                <button id="action" type="button">Action</button>
             </div>
         </div>
     `);
@@ -27,7 +27,11 @@ test("opens with a transition, focuses content and closes on Escape", async ({ p
     await trigger.click();
     await expect(content).toBeVisible();
     await expect(trigger).toHaveAttribute("aria-expanded", "true");
-    await expect(page.locator("#name")).toBeFocused();
+    await expect(page.locator("#name")).toBeFocused({ timeout: 200 });
+
+    await page.locator("#action").focus();
+    await page.waitForTimeout(350);
+    await expect(page.locator("#action")).toBeFocused();
 
     await page.keyboard.press("Escape");
     await expect(content).toBeHidden();
@@ -38,7 +42,6 @@ test("opens with a transition, focuses content and closes on Escape", async ({ p
 test("positions content inside a Turbo Frame with Floating UI", async ({ page }) => {
     await page.setContent(`
         <style>
-            .hidden { display: none; }
             body { margin: 0; }
             [data-popover-target="trigger"] { margin-left: 120px; margin-top: 80px; width: 140px; height: 32px; }
             [data-popover-target="content"] { width: var(--anchor-width); min-width: 8rem; }
@@ -46,7 +49,7 @@ test("positions content inside a Turbo Frame with Floating UI", async ({ page })
         <turbo-frame id="settings-frame">
             <div data-controller="popover" data-popover-side-offset-value="4">
                 <button type="button" data-popover-target="trigger" data-action="popover#toggle" aria-expanded="false">Filters</button>
-                <div data-popover-target="content" class="hidden" tabindex="-1">
+                <div data-popover-target="content" data-state="closed" data-motion="default" hidden inert tabindex="-1">
                     <input aria-label="Filter">
                 </div>
             </div>
@@ -69,12 +72,67 @@ test("positions content inside a Turbo Frame with Floating UI", async ({ page })
     await expect(content).toHaveCSS("width", "140px");
 });
 
+test("preserves managed focus when open content is morphed", async ({ page }) => {
+    await page.setContent(`
+        <div data-controller="popover">
+            <button type="button" data-popover-target="trigger" data-action="popover#toggle">Open</button>
+            <div data-popover-target="content" data-state="closed" data-motion="default" hidden inert>
+                <input id="morphed-input">
+            </div>
+        </div>
+    `);
+    await installControllers(page, ["popover"]);
+
+    const content = page.locator('[data-popover-target="content"]');
+    await page.locator('[data-popover-target="trigger"]').click();
+    await expect(page.locator("#morphed-input")).toBeFocused();
+
+    await content.evaluate((element) => element.replaceWith(element.cloneNode(true)));
+
+    await expect(content).toBeVisible();
+    await expect(page.locator("#morphed-input")).toBeFocused();
+
+    await page.locator('[data-popover-target="trigger"]').focus();
+    await content.evaluate((element) => element.replaceWith(element.cloneNode(true)));
+
+    await expect(content).toBeVisible();
+    await expect(page.locator('[data-popover-target="trigger"]')).toBeFocused();
+});
+
+test("correlates the active trigger across a batched morph", async ({ page }) => {
+    await page.setContent(`
+        <div data-controller="popover">
+            <button id="first-trigger" data-popover-target="trigger" data-action="popover#toggle">First</button>
+            <button id="active-trigger" data-popover-target="trigger" data-action="popover#toggle">Active</button>
+            <div data-popover-target="content" data-state="closed" data-motion="default" hidden inert><input></div>
+        </div>
+    `);
+    await installControllers(page, ["popover"]);
+
+    await page.locator("#active-trigger").click();
+    await expect(page.locator('[data-popover-target="content"]')).toBeVisible();
+    await page.locator("#active-trigger").evaluate((trigger) => {
+        const root = trigger.parentElement;
+        const content = root.querySelector('[data-popover-target="content"]');
+        const replacements = [...root.querySelectorAll('[data-popover-target="trigger"]')]
+            .map((candidate) => candidate.cloneNode(true));
+        const inserted = document.createElement("button");
+        inserted.id = "inserted-trigger";
+        inserted.dataset.popoverTarget = "trigger";
+        inserted.dataset.action = "popover#toggle";
+        inserted.textContent = "Inserted";
+        root.replaceChildren(inserted, ...replacements, content);
+    });
+
+    await page.keyboard.press("Escape");
+    await expect(page.locator("#active-trigger")).toBeFocused();
+});
+
 test("closes on outside click and before Turbo cache", async ({ page }) => {
     await page.setContent(`
-        <style>.hidden { display: none; }</style>
         <div data-controller="popover">
             <button type="button" data-popover-target="trigger" data-action="popover#toggle" aria-expanded="false">Open</button>
-            <div data-popover-target="content" class="hidden" tabindex="-1"><input></div>
+            <div data-popover-target="content" data-state="closed" data-motion="default" hidden inert tabindex="-1"><input></div>
         </div>
         <button id="outside">Outside</button>
     `);
@@ -95,13 +153,12 @@ test("closes on outside click and before Turbo cache", async ({ page }) => {
 
     await page.evaluate(() => document.dispatchEvent(new CustomEvent("turbo:before-cache", { bubbles: true })));
     await expect(content).toBeHidden();
-    await expect(content).toHaveAttribute("data-open", "false");
+    await expect(content).toHaveAttribute("data-state", "closed");
 });
 
 test("nested inside a modal, Escape closes the popover before the modal", async ({ page }) => {
     await page.setContent(`
         <style>
-            .hidden { display: none; }
             .pointer-events-none { pointer-events: none; }
             .pointer-events-auto { pointer-events: auto; }
             .opacity-0 { opacity: 0; }
@@ -110,22 +167,14 @@ test("nested inside a modal, Escape closes the popover before the modal", async 
             .scale-100 { transform: scale(1); }
         </style>
         <div data-controller="modal"
-             data-modal-open-duration-value="0"
-             data-modal-close-duration-value="0"
-             data-modal-hidden-class="pointer-events-none"
-             data-modal-visible-class="pointer-events-auto"
-             data-modal-backdrop-hidden-class="opacity-0"
-             data-modal-backdrop-visible-class="opacity-100"
-             data-modal-dialog-hidden-class="scale-80 opacity-0"
-             data-modal-dialog-visible-class="scale-100 opacity-100"
              data-modal-lock-scroll-value="false">
             <button id="modal-trigger" data-action="modal#open">Open modal</button>
-            <div data-modal-target="modal" data-open="false" hidden class="pointer-events-none" role="dialog" aria-modal="true">
+            <div data-modal-target="modal" data-state="closed" data-motion="none" hidden inert role="dialog" aria-modal="true">
                 <div data-modal-target="backdrop" data-action="click->modal#clickOutside" class="opacity-0"></div>
                 <div data-modal-target="dialog" class="scale-80 opacity-0">
                     <div data-controller="popover">
                         <button type="button" data-popover-target="trigger" data-action="popover#toggle" aria-expanded="false">Open popover</button>
-                        <div data-popover-target="content" class="hidden" tabindex="-1"><input id="nested-input"></div>
+                        <div data-popover-target="content" data-state="closed" data-motion="default" hidden inert tabindex="-1"><input id="nested-input"></div>
                     </div>
                 </div>
             </div>
@@ -138,17 +187,28 @@ test("nested inside a modal, Escape closes the popover before the modal", async 
     const popover = page.locator('[data-popover-target="content"]');
 
     await page.locator("#modal-trigger").click();
-    await expect(modal).toHaveAttribute("data-open", "true");
+    await expect(modal).toHaveAttribute("data-state", "open");
 
     await page.locator('[data-popover-target="trigger"]').click();
     await expect(popover).toBeVisible();
 
-    await page.keyboard.press("Escape");
-    await expect(popover).toBeHidden();
-    await expect(modal).toHaveAttribute("data-open", "true");
+    await modal.locator(':scope > [data-modal-target="backdrop"]').evaluate((element) => {
+        element.replaceWith(element.cloneNode(true));
+    });
+    await page.waitForTimeout(0);
+    await expect.poll(async () => popover.evaluate((element) => {
+        const rect = element.getBoundingClientRect();
+        const target = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+
+        return target?.closest('[data-popover-target="content"]') === element;
+    })).toBe(true);
 
     await page.keyboard.press("Escape");
-    await expect(modal).toHaveAttribute("data-open", "false");
+    await expect(popover).toBeHidden();
+    await expect(modal).toHaveAttribute("data-state", "open");
+
+    await page.keyboard.press("Escape");
+    await expect(modal).toHaveAttribute("data-state", "closed");
 });
 
 async function installControllers(page, controllers) {
@@ -168,16 +228,14 @@ async function bundle() {
         .replace(/import \{[^}]*\} from "@floating-ui\/dom";\s*/, "")
         .replace("export function createFloating", "function createFloating");
 
-    const transition = (await readFile("resources/js/controllers/_transition.js", "utf8"))
-        .replace("export function enter", "function enter")
-        .replace("export function leave", "function leave")
-        .replace("export function cancel", "function cancel");
+    const presence = (await readFile("resources/js/controllers/_presence.js", "utf8"))
+        .replace("export function createPresence", "function createPresence");
 
     const popover = (await readFile("resources/js/controllers/popover_controller.js", "utf8"))
         .replace('import { Controller } from "@hotwired/stimulus";', "")
         .replace(/import \{[^}]*\} from "\.\/_floating\.js";\s*/, "")
+        .replace(/import \{[^}]*\} from "\.\/_presence\.js";\s*/, "")
         .replace(/import \{[^}]*\} from "\.\/_top_layer\.js";\s*/, "")
-        .replace(/import \{[^}]*\} from "\.\/_transition\.js";\s*/, "")
         .replace("export default class extends Controller", "class PopoverController extends Controller");
 
     const focusTrap = (await readFile("resources/js/controllers/_focus_trap.js", "utf8"))
@@ -186,13 +244,15 @@ async function bundle() {
     const overlay = (await readFile("resources/js/controllers/_overlay.js", "utf8"))
         .replace(/import \{[^}]*\} from "\.\/_focus_trap\.js";\s*/, "")
         .replace(/import \{[^}]*\} from "\.\/_overlay_stack\.js";\s*/, "")
+        .replace(/import \{[^}]*\} from "\.\/_presence\.js";\s*/, "")
         .replace(/import \{[^}]*\} from "\.\/_top_layer\.js";\s*/, "")
         .replace("export function createOverlay", "function createOverlay");
 
     const overlayStack = (await readFile("resources/js/controllers/_overlay_stack.js", "utf8"))
         .replace("export function registerOverlay", "function registerOverlay")
         .replace("export function unregisterOverlay", "function unregisterOverlay")
-        .replace("export function isTopOverlay", "function isTopOverlay");
+        .replace("export function isTopOverlay", "function isTopOverlay")
+        .replace("export function overlayPosition", "function overlayPosition");
 
     const topLayer = (await readFile("resources/js/controllers/_top_layer.js", "utf8"))
         .replace("export function createTopLayer", "function createTopLayer");
@@ -210,7 +270,7 @@ async function bundle() {
         const { Controller } = window.Stimulus;
         const { arrow, autoUpdate, computePosition, flip, hide, offset, shift, size } = window.FloatingUIDOM;
         ${floating}
-        ${transition}
+        ${presence}
         ${topLayer}
         ${popover}
         ${focusTrap}

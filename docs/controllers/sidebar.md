@@ -10,8 +10,6 @@ you, but the controller also works with hand-written HTML.
 | Value | Type | Default | Description |
 |-------|------|---------|-------------|
 | `open` | `boolean` | `true` | Current open state. |
-| `openDuration` | `number` | `500` | Mobile drawer open transition duration in milliseconds. |
-| `closeDuration` | `number` | `300` | Mobile drawer close transition duration in milliseconds. |
 | `persist` | `boolean` | `true` | Whether state changes write a cookie. |
 | `cookieName` | `string` | `sidebar_state` | Cookie name used when persistence is enabled. |
 
@@ -48,9 +46,11 @@ The child sidebar's `data-sidebar-collapsible` value is the mode restored when t
 Use `icon` to keep an icon rail visible, `offcanvas` to move the sidebar fully out of view, or
 `none` for a static sidebar.
 
-Mobile viewports use a separate drawer state exposed as `data-mobile-state="open|closed"` on the sidebar element. Desktop `data-state` remains unchanged while the mobile drawer opens or closes.
+Mobile viewports use a separate Presence state exposed as `data-mobile-state="open|closed"` on the sidebar element.
+Desktop `data-state` remains unchanged while the mobile drawer opens or closes. Set `data-motion="default|none"` on the
+sidebar target; Presence owns `hidden` and `inert` only for its mobile lifecycle.
 
-When the mobile drawer is open, normal clicks on links inside the drawer wait for the close animation before the click is replayed. Modified clicks, non-primary mouse buttons, non-`_self` `target` links, downloads, empty hashes, `mailto:` and `tel:` links are left alone.
+When the mobile drawer is open, normal clicks on links inside the drawer wait for actual exit motion before the click is replayed. Modified clicks, non-primary mouse buttons, non-`_self` `target` links, downloads, empty hashes, `mailto:` and `tel:` links are left alone.
 
 ## Standalone Usage
 

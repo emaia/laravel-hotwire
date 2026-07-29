@@ -18,8 +18,13 @@ it('renders popover controller, trigger and content wiring', function () {
         ->assertSee('data-action="popover#toggle"', false)
         ->assertSee('aria-haspopup="dialog"', false)
         ->assertSee('aria-expanded="false"', false)
+        ->assertSee('data-popover-state="closed"', false)
         ->assertSee('data-slot="popover-content"', false)
         ->assertSee('data-popover-target="content"', false)
+        ->assertSee('data-state="closed"', false)
+        ->assertSee('data-motion="default"', false)
+        ->assertSee('hidden', false)
+        ->assertSee('inert', false)
         ->assertSee('role="dialog"', false)
         ->assertSee('tabindex="-1"', false)
         ->assertSee('Details')
@@ -96,12 +101,34 @@ it('starts open when open is true', function () {
         </x-hw::popover>
     ');
 
-    $view->assertSee('data-popover-open-value="true"', false)
-        ->assertSee('aria-expanded="true"', false)
-        ->assertSee('data-open="true"', false);
+    $xpath = new DOMXPath(dom((string) $view));
+    $trigger = $xpath->query('//*[@data-popover-target="trigger"]')->item(0);
+    $content = $xpath->query('//*[@data-popover-target="content"]')->item(0);
+
+    expect((string) $view)->toContain('data-popover-open-value="true"')
+        ->and($trigger?->getAttribute('aria-expanded'))->toBe('true')
+        ->and($trigger?->getAttribute('data-popover-state'))->toBe('open')
+        ->and($content?->getAttribute('data-state'))->toBe('closed')
+        ->and($content?->hasAttribute('hidden'))->toBeTrue()
+        ->and($content?->hasAttribute('inert'))->toBeTrue();
 });
 
-it('includes default transitions and can omit them', function () {
+it('does not overwrite a trigger state owned by another behavior', function () {
+    $view = $this->blade('
+        <x-hw::popover>
+            <x-hw::popover.trigger data-state="on">Open</x-hw::popover.trigger>
+            <x-hw::popover.content>Content</x-hw::popover.content>
+        </x-hw::popover>
+    ');
+
+    $xpath = new DOMXPath(dom((string) $view));
+    $trigger = $xpath->query('//*[@data-popover-target="trigger"]')->item(0);
+
+    expect($trigger?->getAttribute('data-state'))->toBe('on')
+        ->and($trigger?->getAttribute('data-popover-state'))->toBe('closed');
+});
+
+it('uses semantic motion values without transition class attributes', function () {
     $on = $this->blade('
         <x-hw::popover>
             <x-hw::popover.trigger>Open</x-hw::popover.trigger>
@@ -109,19 +136,18 @@ it('includes default transitions and can omit them', function () {
         </x-hw::popover>
     ');
 
-    $on->assertSee('data-transition-enter="transition ease-out duration-150"', false)
-        ->assertSee('data-transition-enter-from="opacity-0 scale-95"', false)
-        ->assertSee('data-transition-leave="transition ease-out duration-150"', false)
-        ->assertSee('data-transition-leave-to="block opacity-0 scale-95"', false);
+    $on->assertSee('data-motion="default"', false)
+        ->assertDontSee('data-transition-', false);
 
     $off = $this->blade('
-        <x-hw::popover :transition="false">
+        <x-hw::popover>
             <x-hw::popover.trigger>Open</x-hw::popover.trigger>
-            <x-hw::popover.content>Content</x-hw::popover.content>
+            <x-hw::popover.content motion="none">Content</x-hw::popover.content>
         </x-hw::popover>
     ');
 
-    $off->assertDontSee('data-transition-enter', false);
+    $off->assertSee('data-motion="none"', false)
+        ->assertDontSee('data-transition-', false);
 });
 
 it('merges stimulus attributes and filters popover-owned data attributes', function () {
@@ -159,7 +185,7 @@ it('keeps popover-owned trigger and content wiring protected', function () {
                 Open
             </x-hw::popover.trigger>
 
-            <x-hw::popover.content id="wrong" data-open="manual" data-side="top" data-popover-target="wrong">
+            <x-hw::popover.content id="wrong" data-state="manual" data-motion="manual" data-side="top" data-popover-target="wrong">
                 Content
             </x-hw::popover.content>
         </x-hw::popover>
@@ -169,13 +195,15 @@ it('keeps popover-owned trigger and content wiring protected', function () {
         ->assertSee('data-popover-target="trigger"', false)
         ->assertSee('aria-expanded="false"', false)
         ->assertSee('id="protected-popover"', false)
-        ->assertSee('data-open="false"', false)
+        ->assertSee('data-state="closed"', false)
+        ->assertSee('data-motion="default"', false)
         ->assertSee('data-side="right"', false)
         ->assertSee('data-popover-target="content"', false)
         ->assertDontSee('data-popover-target="wrong"', false)
         ->assertDontSee('aria-expanded="manual"', false)
         ->assertDontSee('id="wrong"', false)
-        ->assertDontSee('data-open="manual"', false)
+        ->assertDontSee('data-state="manual"', false)
+        ->assertDontSee('data-motion="manual"', false)
         ->assertDontSee('data-side="top"', false);
 });
 

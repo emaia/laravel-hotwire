@@ -37,7 +37,7 @@ Composable app sidebar with collapsible navigation primitives.
                                 data-controller="tooltip"
                                 data-tooltip-content-value="Dashboard"
                                 data-tooltip-side-value="right"
-                                data-tooltip-enabled-when-value="[data-slot=sidebar][data-collapsible=icon]"
+                                data-tooltip-enabled-when-value="[data-slot=sidebar][data-collapsible=icon][data-mobile-state=closed]"
                             >
                                 <hw:icon name="panel-left" />
                                 <span>Dashboard</span>
@@ -138,16 +138,17 @@ The tooltip controller uses the package's Floating UI dependency and only appear
 
 ### `<hw:sidebar>`
 
-| Prop          | Default     | Description                        |
-|---------------|-------------|------------------------------------|
-| `side`        | `left`      | `left` or `right`.                 |
-| `variant`     | `sidebar`   | `sidebar`, `floating`, or `inset`. |
-| `collapsible` | `offcanvas` | `offcanvas`, `icon`, or `none`.    |
+| Prop          | Default     | Description                                              |
+|---------------|-------------|----------------------------------------------------------|
+| `side`        | `left`      | `left` or `right`.                                       |
+| `variant`     | `sidebar`   | `sidebar`, `floating`, or `inset`.                       |
+| `collapsible` | `offcanvas` | `offcanvas`, `icon`, or `none`.                          |
+| `motion`      | `default`   | `default` follows mobile CSS motion; `none` disables it. |
 
 ### Menu buttons
 
-`sidebar.menu-button` accepts `href`, `active`, `variant`, and `size`. When `href` is present it
-renders an anchor; otherwise it renders a `button type="button"`.
+`sidebar.menu-button` accepts `href`, `active`, `variant`, and `size`. When `href` is present it renders an anchor;
+otherwise it renders a `button type="button"`.
 
 `sidebar.menu-sub-button` accepts `href`, `active`, and `size`.
 
@@ -172,8 +173,8 @@ If the `icon` slot is omitted, the brand keeps rendering the default slot in eve
 
 ## Collapse Modes
 
-Use `collapsible="icon"` when the collapsed sidebar should keep an icon rail visible. Put the label
-inside a `<span>` after the icon so the NOVA preset can visually hide that text in collapsed mode:
+Use `collapsible="icon"` when the collapsed sidebar should keep an icon rail visible. Put the label inside a `<span>`
+after the icon so the NOVA preset can visually hide that text in collapsed mode:
 
 ```blade
 <hw:sidebar.provider>
@@ -208,7 +209,7 @@ the sidebar is expanded and the label is already visible:
                         data-controller="tooltip"
                         data-tooltip-content-value="Map"
                         data-tooltip-side-value="right"
-                        data-tooltip-enabled-when-value="[data-slot=sidebar][data-collapsible=icon]"
+                        data-tooltip-enabled-when-value="[data-slot=sidebar][data-collapsible=icon][data-mobile-state=closed]"
                     >
                         <x-lucide-map class="size-5" />
                         <span>Map</span>
@@ -241,12 +242,13 @@ The provider stores the current state as `data-state="expanded|collapsed"`. Trig
 The controller writes the cookie named by `cookieName` by default, and the provider reads it automatically when
 `defaultOpen` is omitted. Pass `defaultOpen` explicitly when a page should ignore the persisted state.
 
-On mobile viewports, the trigger opens a temporary drawer using `--sidebar-width-mobile`. This mobile open state is
+On mobile viewports, the trigger opens a temporary drawer using `--sidebar-width-mobile`. This mobile Presence state is
 separate from the desktop expanded/collapsed state, so opening the mobile sidebar does not change the persisted desktop
-state.
+state. `data-mobile-state="open|closed"`, `hidden`, and `inert` coordinate the mobile lifecycle; reduced motion and
+`motion="none"` complete without waiting.
 
-Clicking a normal link inside the open mobile drawer closes it with the configured animation before navigation
-continues. Modified clicks, non-`_self` `target` links, downloads and `mailto:`/`tel:` links are not intercepted.
+Clicking a normal link inside the open mobile drawer waits for the actual exit motion before navigation continues.
+Modified clicks, non-`_self` `target` links, downloads and `mailto:`/`tel:` links are not intercepted.
 
 ## Styling
 

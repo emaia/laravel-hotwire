@@ -30,13 +30,13 @@ and positions the content with Floating UI.
 </hw:popover>
 ```
 
-`popover.trigger` renders the button, links it to `popover.content` with `aria-controls`, and keeps `aria-expanded` in
-sync.
+`popover.trigger` renders the button, links it to `popover.content` with `aria-controls`, and keeps `aria-expanded` and
+`data-popover-state="open|closed"` in sync. The content uses `data-state="open|closed"` for Presence styling.
 
 ## Positioning
 
-Popover uses `strategy="fixed"` by default so the panel can cross Drawer, Modal, Turbo Frame and scroll-container
-boundaries more reliably:
+Popover uses `strategy="fixed"` by default and promotes the panel to the browser's native top layer when supported, so it
+can cross Drawer, Modal, Turbo Frame and scroll-container boundaries more reliably:
 
 ```blade
 <hw:popover side="right" align="end" :side-offset="8">
@@ -45,8 +45,14 @@ boundaries more reliably:
 </hw:popover>
 ```
 
-Use `strategy="absolute"` only when you explicitly want the panel positioned within the nearest positioned ancestor.
-This is not a portal; transformed or contained ancestors can still affect the positioning context.
+Both strategies retain top-layer promotion. `fixed` uses viewport-relative coordinates; `absolute` uses page/document
+coordinates while in the top layer, not the nearest positioned ancestor. Top-layer promotion does not move the node
+elsewhere in the DOM. Browsers without the native Popover API use the normal DOM fallback, where `absolute` uses its
+offset parent and transformed, contained, or clipped ancestors can still affect rendering.
+
+The enter motion starts only after Floating UI resolves the first placement. If `flip` changes the preferred placement,
+`data-side` and `data-align` expose the resolved placement used on screen. Superseded asynchronous positioning results
+are ignored.
 
 ## Sizing
 
@@ -75,21 +81,40 @@ Close it explicitly where needed:
 Outside click, `Escape`, and Turbo's `before-cache` event close the popover automatically. `Escape` returns focus to the
 trigger.
 
+## Motion And Presence
+
+Closed content is server-rendered with `data-state="closed" hidden inert`, including when `open="true"`; the controller
+positions an initially open panel before showing it without enter motion. During exit, `data-state="closed"` and `inert`
+apply immediately, while `hidden` is deferred until CSS motion finishes. This keeps the panel non-interactive without
+cutting off its exit.
+
+The Nova preset transitions only `opacity`, `scale`, and `translate`. Set motion on the content component:
+
+```blade
+<hw:popover.content motion="none">
+    <!-- content -->
+</hw:popover.content>
+```
+
+Custom CSS may use transitions or finite animations keyed by `data-state`. A closed-state selector must never apply
+`display: none` or `hidden`; Presence owns the `hidden` attribute. Rapid reopen cancels stale exit cleanup, and
+`prefers-reduced-motion: reduce` skips motion automatically.
+
 ## Props
 
-| Prop           | Default              | Description                                                                       |
-|----------------|----------------------|-----------------------------------------------------------------------------------|
-| `id`           | `uniqid('popover-')` | Content id and trigger `aria-controls`.                                           |
-| `side`         | `bottom`             | Preferred side: `top`, `right`, `bottom` or `left`.                               |
-| `align`        | `start`              | Content alignment: `start`, `center` or `end`.                                    |
-| `side-offset`  | `4`                  | Main-axis gap between the trigger and content.                                    |
-| `align-offset` | `0`                  | Cross-axis offset along the trigger edge.                                         |
-| `strategy`     | `fixed`              | Floating UI strategy: `fixed` or `absolute`.                                      |
-| `flip`         | `true`               | Flip to the opposite side when the preferred side lacks room.                     |
-| `shift`        | `true`               | Shift within the viewport when the content would overflow.                        |
-| `open`         | `false`              | Start open without an enter animation.                                            |
-| `transition`   | `true`               | Include the default enter/leave transition attributes.                            |
-| `stimulus`     | `null`               | Optional Stimulus binding from `stimulus()`, merged with the internal controller. |
+| Component | Prop | Default | Description |
+|---|---|---|---|
+| `popover` | `id` | `uniqid('popover-')` | Content id and trigger `aria-controls`. |
+| `popover` | `side` | `bottom` | Preferred side: `top`, `right`, `bottom` or `left`. |
+| `popover` | `align` | `start` | Content alignment: `start`, `center` or `end`. |
+| `popover` | `side-offset` | `4` | Main-axis gap between the trigger and content. |
+| `popover` | `align-offset` | `0` | Cross-axis offset along the trigger edge. |
+| `popover` | `strategy` | `fixed` | Floating UI strategy: `fixed` or `absolute`. |
+| `popover` | `flip` | `true` | Flip to the opposite side when the preferred side lacks room. |
+| `popover` | `shift` | `true` | Shift within the viewport when the content would overflow. |
+| `popover` | `open` | `false` | Start open without enter motion. |
+| `popover` | `stimulus` | `null` | Optional Stimulus binding from `stimulus()`, merged with the internal controller. |
+| `popover.content` | `motion` | `default` | Presence motion: `default` or `none`. |
 
 ## Components
 
@@ -114,8 +139,10 @@ trigger.
 - `data-popover-shift-value="true|false"`
 - `data-slot="popover-trigger"`
 - `aria-expanded="true|false"`
+- `data-popover-state="open|closed"` on the trigger
+- `data-state="open|closed"` on the content
 - `data-slot="popover-content"`
-- `data-open="true|false"`
+- `data-motion="default|none"`
 - `data-side="top|right|bottom|left"`
 - `data-align="start|center|end"`
 - `--anchor-width`
@@ -129,6 +156,5 @@ trigger.
 
 ## Limitations
 
-- No portal or top-layer support in this release.
 - Popover is not a strict ARIA menu and does not implement roving tabindex or arrow-key menu navigation.
-- Popover is not portalled or moved to the top layer; transformed or contained ancestors can still affect positioning.
+- Native top-layer promotion depends on browser Popover API support; the fallback can still be clipped by ancestors.

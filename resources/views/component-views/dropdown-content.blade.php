@@ -4,9 +4,12 @@
     $contentAttributes = [
         'id' => $id,
         'data-slot' => 'dropdown-menu',
-        'data-open' => $open ? 'true' : 'false',
+        'data-state' => 'closed',
+        'data-motion' => $motion,
         'data-side' => $side,
         'data-align' => $align,
+        'hidden' => true,
+        'inert' => true,
         'data-dropdown-target' => 'menu',
         'data-dropdown-side-value' => $side,
         'data-dropdown-align-value' => $align,
@@ -24,21 +27,10 @@
         'class' => trim($width.' '.$menuClass) ?: null,
     ];
 
-    if ($transition) {
-        $contentAttributes += [
-            'data-transition-enter' => 'transition ease-out duration-100',
-            'data-transition-enter-from' => 'opacity-0 scale-95',
-            'data-transition-enter-to' => 'opacity-100 scale-100',
-            'data-transition-leave' => 'transition ease-in duration-75',
-            'data-transition-leave-from' => 'opacity-100 scale-100',
-            'data-transition-leave-to' => 'opacity-0 scale-95',
-        ];
-    }
-
     $contentAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge(
         $contentAttributes,
         $attributes,
-        except: ['id', 'data-slot', 'data-open', 'data-side', 'data-align'],
+        except: ['id', 'data-slot', 'data-state', 'data-motion', 'data-side', 'data-align', 'hidden', 'inert'],
         protectedPrefixes: ['data-dropdown-'],
     );
 @endphp

@@ -35,14 +35,41 @@ message is a status message shown next to the list rather than a listbox option.
 
 ## Positioning
 
-The listbox uses the shared Floating UI helper and supports the same positioning props as Dropdown. Multi Select uses
-`strategy="fixed"` by default so the panel can cross clipped Drawer, Modal and scroll-container boundaries:
+The listbox uses the shared Floating UI helper and supports Dropdown's core side, alignment, offset, strategy, flip, and
+shift props. Multi Select uses `strategy="fixed"` by default and promotes the panel to the browser's native top layer
+when supported, so it can cross clipped Drawer, Modal and scroll-container boundaries:
 
 ```blade
 <hw:multi-select side="bottom" align="end" width="w-72" />
 ```
 
-Use `strategy="absolute"` only when you explicitly want the panel positioned within the nearest positioned ancestor.
+Both strategies retain top-layer promotion. `fixed` uses viewport-relative coordinates; `absolute` uses page/document
+coordinates while in the top layer, not the nearest positioned ancestor. In browsers without native Popover support,
+`absolute` uses its normal offset parent and can still be clipped by ancestors.
+
+The enter motion starts only after Floating UI resolves the first placement. If `flip` changes the preferred placement,
+`data-side` and `data-align` expose the resolved placement used on screen. Superseded asynchronous positioning results
+are ignored.
+
+## Motion And Presence
+
+The floating content is server-rendered with `data-state="closed" hidden inert`. During exit, `data-state="closed"` and
+`inert` apply immediately, while `hidden` is deferred until the CSS motion finishes. The trigger also keeps
+`data-multi-select-state="open|closed"` synchronized.
+
+Use the root `motion` prop to disable motion:
+
+```blade
+<hw:multi-select
+    name="status[]"
+    :options="$statuses"
+    motion="none"
+/>
+```
+
+The Nova preset transitions only `opacity`, `scale`, and `translate`. Custom CSS may use transitions or finite animations
+keyed by the content's `data-state`, but the closed-state selector must never apply `display: none` or `hidden`; Presence
+owns the `hidden` attribute. Rapid reopen cancels stale exit cleanup, and `prefers-reduced-motion: reduce` skips motion.
 
 ## Search Icon
 
@@ -78,19 +105,33 @@ specific icon set:
 | `align` | `start` | Alignment on the selected side: `start`, `center` or `end`. |
 | `side-offset` | `4` | Distance between the trigger and listbox on the main axis. |
 | `align-offset` | `0` | Offset along the cross axis. |
-| `strategy` | `fixed` | Floating UI positioning strategy. Use `absolute` only when the listbox should stay within the nearest positioned ancestor. |
+| `strategy` | `fixed` | Floating UI positioning strategy: viewport-relative `fixed` or page-relative `absolute` while in the top layer. |
 | `flip` | `true` | Allow Floating UI to flip the listbox when there is not enough room. |
 | `shift` | `true` | Allow Floating UI to shift the listbox to stay in view. |
+| `motion` | `default` | Presence motion for the floating content: `default` or `none`. |
 | `width` | `''` | Content width classes. |
+| `trigger-class` | `''` | Additional classes on the trigger button. |
+| `content-class` | `''` | Additional classes on the floating content panel. |
 
 ## Styling Hooks
 
 - `data-slot="multi-select"`
 - `data-slot="multi-select-native"`
 - `data-slot="multi-select-trigger"`
+- `aria-expanded="true|false"`
+- `data-multi-select-state="open|closed"` on the trigger
+- `data-state="open|closed"` on the floating content
 - `data-slot="multi-select-trigger-icon"`
 - `data-slot="multi-select-value"`
 - `data-slot="multi-select-content"`
+- `data-motion="default|none"`
+- `data-side="top|right|bottom|left"`
+- `data-align="start|center|end"`
+- `--anchor-width`
+- `--anchor-height`
+- `--available-width`
+- `--available-height`
+- `--transform-origin`
 - `data-slot="multi-select-search"`
 - `data-slot="multi-select-search-icon"`
 - `data-slot="multi-select-list"`
@@ -101,7 +142,10 @@ specific icon set:
 - `data-slot="multi-select-empty"`
 - `data-slot="multi-select-validation"`
 
+`data-side` and `data-align` report the resolved Floating UI placement after any flip. `width` and `content-class` are
+applied directly to `data-slot="multi-select-content"`; `trigger-class` is applied to the trigger.
+
 ## Required Controllers
 
-Uses the `multi-select` controller, which depends on `@floating-ui/dom`. The component search also uses `clear-input`
-for its accessible clear button.
+Uses the `multi-select` controller, which depends on `@floating-ui/dom` and ships with `_floating.js`, `_presence.js`,
+and `_top_layer.js`. The component search also uses `clear-input` for its accessible clear button.
