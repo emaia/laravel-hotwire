@@ -409,7 +409,9 @@ test.serial("Turbo morph rebuilds an open overlay around replacement targets", a
     `;
 
     previous.replaceWith(replacement);
-    await wait(10);
+    mounted.controller.modalTargetDisconnected(previous);
+    mounted.controller.modalTargetConnected(replacement);
+    await waitUntil(() => mounted.controller.modalTarget === replacement && replacement.dataset.state === "open");
 
     expect(mounted.controller.modalTarget).toBe(replacement);
     expect(mounted.controller.isOpen).toBe(true);
@@ -537,6 +539,15 @@ function fakeAnimation() {
         },
         finish: () => finished.resolve(),
     };
+}
+
+async function waitUntil(predicate, timeout = 2_000) {
+    const deadline = Date.now() + timeout;
+
+    while (!predicate()) {
+        if (Date.now() >= deadline) throw new Error("Timed out waiting for Modal state");
+        await wait(5);
+    }
 }
 
 function deferred() {
