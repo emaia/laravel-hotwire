@@ -1,12 +1,14 @@
-@aware(['side' => 'right', 'backdrop' => true, 'sheetHiddenClass' => 'translate-x-full', 'frame' => null])
+@aware(['side' => 'right', 'backdrop' => true, 'frame' => null, 'motion' => 'default'])
 
 <div
     data-slot="sheet-overlay"
     data-sheet-target="modal"
-    data-open="false"
+    data-state="closed"
+    data-motion="{{ $motion }}"
     role="dialog"
     aria-modal="true"
     hidden
+    inert
 >
     @if ($backdrop)
         <div
@@ -20,7 +22,7 @@
         data-slot="sheet-content"
         data-side="{{ $side }}"
         data-sheet-target="dialog"
-        {{ $attributes->merge(['class' => $sheetHiddenClass]) }}
+        {{ $attributes }}
     >
         @if ($frame !== null)
             <turbo-frame id="{{ $frame }}" data-sheet-target="dynamicContent">

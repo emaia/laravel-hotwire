@@ -9,20 +9,10 @@ const MOBILE_QUERY = "(max-width: 767px)";
 export default class extends Controller {
     static targets = ["modal", "backdrop", "dialog"];
 
-    static classes = [
-        "hidden",
-        "visible",
-        "backdropHidden",
-        "backdropVisible",
-        "dialogHidden",
-        "dialogVisible",
-        "lockScroll",
-    ];
+    static classes = ["lockScroll"];
 
     static values = {
         open: { type: Boolean, default: true },
-        openDuration: { type: Number, default: 500 },
-        closeDuration: { type: Number, default: 300 },
         persist: { type: Boolean, default: true },
         cookieName: { type: String, default: "sidebar_state" },
     };
@@ -33,59 +23,69 @@ export default class extends Controller {
     currentMobileOpen = false;
     mediaQuery = null;
     overlay = null;
-    mobileOpenFrame = null;
+    overlayRefreshQueued = false;
     pendingNavigationLink = null;
     skipNavigationLink = null;
+    mobileTriggerElement = null;
 
     connect() {
         this.currentOpen = this.hasOpenValue ? this.openValue : this.element.dataset.state !== "collapsed";
         this.mediaQuery = window.matchMedia?.(MOBILE_QUERY) ?? null;
         this.mediaQuery?.addEventListener?.("change", this.handleMediaChange);
 
-        if (this.hasModalTarget && this.hasBackdropTarget && this.hasDialogTarget) {
-            this.overlay = createOverlay(this, {
-                modalTarget: this.modalTarget,
-                backdropTarget: this.backdropTarget,
-                dialogTarget: this.dialogTarget,
-                hiddenClasses: this.hiddenClasses,
-                visibleClasses: this.visibleClasses,
-                backdropHiddenClasses: this.backdropHiddenClasses,
-                backdropVisibleClasses: this.backdropVisibleClasses,
-                dialogHiddenClasses: this.mobileDialogHiddenClasses,
-                dialogVisibleClasses: this.mobileDialogVisibleClasses,
-                lockScrollClasses: this.lockScrollClasses,
-                openDuration: this.openDurationValue,
-                closeDuration: this.closeDurationValue,
-                escapeCapture: true,
-                stopEscapePropagation: true,
-                onOpen: () => this.syncMobileState("open"),
-                onClose: () => {
-                    this.syncMobileState("closed");
-                    this.followPendingNavigationLink();
-                },
-                getTriggerElement: () => document.activeElement,
-            });
-        }
+        this.#setupOverlay();
 
         this.element.addEventListener("click", this.handleNavigationClick, true);
         this.connected = true;
+        if (this.isMobile) {
+            this.overlay?.closeNow({ restoreFocus: false });
+        } else {
+            this.revealDesktopOverlay();
+        }
         this.sync();
         this.syncMobileState("closed");
     }
 
     disconnect() {
+        this.connected = false;
+        this.overlayRefreshQueued = false;
         this.element.removeEventListener("click", this.handleNavigationClick, true);
         this.mediaQuery?.removeEventListener?.("change", this.handleMediaChange);
-        this.cancelPendingMobileOpen();
         this.pendingNavigationLink = null;
         this.skipNavigationLink = null;
+        this.mobileTriggerElement = null;
         this.overlay?.cleanup();
-        this.connected = false;
+        this.overlay = null;
+        if (!this.isMobile) this.revealDesktopOverlay();
     }
 
-    toggle() {
+    modalTargetConnected() {
+        this.#queueOverlayRefresh();
+    }
+
+    modalTargetDisconnected() {
+        this.#queueOverlayRefresh();
+    }
+
+    backdropTargetConnected() {
+        this.#queueOverlayRefresh();
+    }
+
+    backdropTargetDisconnected() {
+        this.#queueOverlayRefresh();
+    }
+
+    dialogTargetConnected() {
+        this.#queueOverlayRefresh();
+    }
+
+    dialogTargetDisconnected() {
+        this.#queueOverlayRefresh();
+    }
+
+    toggle(event) {
         if (this.isMobile) {
-            this.toggleMobile();
+            this.toggleMobile(event);
             return;
         }
 
@@ -113,15 +113,14 @@ export default class extends Controller {
     }
 
     closeForCache() {
-        this.cancelPendingMobileOpen();
-
-        if (this.currentMobileOpen || this.mobileState !== "closed") {
+        this.pendingNavigationLink = null;
+        if (this.overlay?.phase !== "closed" || (this.isMobile && this.hasModalTarget && !this.modalTarget.hidden)) {
             this.overlay?.closeNow({ restoreFocus: false });
-        } else if (this.hasModalTarget) {
-            this.modalTarget.hidden = false;
         }
 
         this.syncMobileState("closed");
+        this.mobileTriggerElement = null;
+        if (!this.isMobile) this.revealDesktopOverlay();
     }
 
     preserveStateForRender(event) {
@@ -159,33 +158,27 @@ export default class extends Controller {
         this.dispatch("change", { detail: { open: this.openValue, state: this.state } });
     }
 
-    toggleMobile() {
-        this.currentMobileOpen ? this.closeMobile() : this.openMobile();
+    toggleMobile(event) {
+        this.currentMobileOpen ? this.closeMobile() : this.openMobile(event);
     }
 
-    openMobile() {
+    openMobile(event) {
+        if (this.currentMobileOpen) return;
+
+        this.mobileTriggerElement = event?.currentTarget ?? document.activeElement;
         this.currentMobileOpen = true;
-        this.prepareMobileOverlayForOpen();
-        this.syncMobileState("opening");
+        this.sync();
 
-        if (this.hasModalTarget) {
-            this.modalTarget.hidden = false;
-        }
-
-        this.cancelPendingMobileOpen();
-        this.mobileOpenFrame = requestAnimationFrame(() => {
-            this.mobileOpenFrame = null;
-            if (!this.currentMobileOpen) return;
-
-            this.overlay?.open();
-        });
+        return this.overlay?.open();
     }
 
     closeMobile() {
+        if (!this.currentMobileOpen && !this.overlay?.isOpening) return;
+
         this.currentMobileOpen = false;
-        this.cancelPendingMobileOpen();
-        this.syncMobileState("closing");
-        this.overlay?.close();
+        this.sync();
+
+        return this.overlay?.close();
     }
 
     handleNavigationClick = (event) => {
@@ -213,26 +206,12 @@ export default class extends Controller {
         });
     }
 
-    prepareMobileOverlayForOpen() {
-        if (!this.hasModalTarget || !this.hasBackdropTarget || !this.hasDialogTarget) return;
-
-        this.modalTarget.classList.add(...this.hiddenClasses);
-        this.modalTarget.classList.remove(...this.visibleClasses);
-        this.backdropTarget.classList.add(...this.backdropHiddenClasses);
-        this.backdropTarget.classList.remove(...this.backdropVisibleClasses);
-        this.dialogTarget.classList.add(...this.mobileDialogHiddenClasses);
-        this.dialogTarget.classList.remove(...this.mobileDialogVisibleClasses);
-    }
-
-    cancelPendingMobileOpen() {
-        if (this.mobileOpenFrame === null) return;
-
-        cancelAnimationFrame(this.mobileOpenFrame);
-        this.mobileOpenFrame = null;
-    }
-
     handleMediaChange = () => {
         if (!this.isMobile) {
+            this.overlay?.closeNow({ restoreFocus: false });
+            this.syncMobileState("closed");
+            this.revealDesktopOverlay();
+        } else {
             this.overlay?.closeNow({ restoreFocus: false });
             this.syncMobileState("closed");
         }
@@ -328,13 +307,72 @@ export default class extends Controller {
         return this.sidebarElements[0]?.dataset.mobileState ?? "closed";
     }
 
-    get mobileDialogHiddenClasses() {
-        const side = this.hasDialogTarget ? this.dialogTarget.dataset.side : "left";
+    revealDesktopOverlay() {
+        if (!this.hasModalTarget) return;
 
-        return side === "right" ? ["translate-x-full"] : ["-translate-x-full"];
+        this.modalTarget.hidden = false;
+        this.modalTarget.removeAttribute("inert");
+        delete this.modalTarget.dataset.presence;
     }
 
-    get mobileDialogVisibleClasses() {
-        return ["translate-x-0"];
+    #setupOverlay(forceOpen = false, stackPosition = null, topLayerPosition = null) {
+        if (!this.hasModalTarget || !this.hasBackdropTarget || !this.hasDialogTarget) return;
+
+        this.overlay = createOverlay(this, {
+            modalTarget: this.modalTarget,
+            backdropTarget: this.backdropTarget,
+            dialogTarget: this.dialogTarget,
+            lockScrollClasses: this.lockScrollClasses,
+            escapeCapture: true,
+            stopEscapePropagation: true,
+            stateAttribute: "mobileState",
+            onOpen: () => this.syncMobileState("open"),
+            onClose: () => {
+                this.syncMobileState("closed");
+                this.followPendingNavigationLink();
+                this.mobileTriggerElement = null;
+            },
+            getTriggerElement: () => this.mobileTriggerElement ?? document.activeElement,
+        });
+
+        if (forceOpen && this.isMobile) this.overlay.setOpen({ notify: false, stackPosition, topLayerPosition });
+    }
+
+    #queueOverlayRefresh() {
+        if (!this.connected) return;
+
+        if (this.overlayRefreshQueued) return;
+
+        this.overlayRefreshQueued = true;
+        queueMicrotask(() => {
+            this.overlayRefreshQueued = false;
+            if (!this.connected) return;
+            if (this.overlay?.isOpening || this.overlay?.isClosing) {
+                void this.overlay.settled.then(
+                    () => this.#queueOverlayRefresh(),
+                    () => this.#queueOverlayRefresh(),
+                );
+
+                return;
+            }
+
+            const reopen = this.currentMobileOpen && (this.overlay?.isOpen ?? false);
+            const stackPosition = this.overlay?.stackPosition ?? -1;
+            const topLayerPosition = this.overlay?.topLayerPosition ?? -1;
+            this.overlay?.cleanup();
+            this.overlay = null;
+            if (!this.hasModalTarget || !this.hasBackdropTarget || !this.hasDialogTarget) return;
+
+            this.#setupOverlay(reopen, stackPosition, topLayerPosition);
+            if (reopen && this.isMobile) {
+                this.syncMobileState("open");
+            } else if (this.isMobile) {
+                this.overlay?.closeNow({ restoreFocus: false });
+                this.syncMobileState("closed");
+            } else {
+                this.syncMobileState("closed");
+                this.revealDesktopOverlay();
+            }
+        });
     }
 }

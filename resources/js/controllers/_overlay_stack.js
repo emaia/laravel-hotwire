@@ -2,14 +2,17 @@
 
 const stack = [];
 
-export function registerOverlay(entry) {
+export function registerOverlay(entry, position = null) {
     unregisterOverlay(entry);
 
     const current = topOverlay();
     current?.deactivateFocusTrap?.();
 
-    stack.push(entry);
-    entry.activateFocusTrap?.();
+    const index = Number.isInteger(position) && position >= 0
+        ? Math.min(position, stack.length)
+        : stack.length;
+    stack.splice(index, 0, entry);
+    topOverlay()?.activateFocusTrap?.();
 
     return () => unregisterOverlay(entry);
 }
@@ -29,6 +32,10 @@ export function unregisterOverlay(entry) {
 
 export function isTopOverlay(entry) {
     return topOverlay() === entry;
+}
+
+export function overlayPosition(entry) {
+    return stack.indexOf(entry);
 }
 
 function topOverlay() {

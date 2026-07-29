@@ -1,63 +1,58 @@
 // @hotwire-package
 // Shared overlay lifecycle for modal, sheet, drawer and sidebar controllers.
-// Wires FocusTrap, body scroll lock, outside-click dismiss, Escape key,
-// focus return and enter/exit class toggling with configurable durations.
 
 import { FocusTrap } from "./_focus_trap.js";
-import { registerOverlay, unregisterOverlay, isTopOverlay } from "./_overlay_stack.js";
+import { registerOverlay, unregisterOverlay, isTopOverlay, overlayPosition } from "./_overlay_stack.js";
+import { createPresence } from "./_presence.js";
 import { createTopLayer } from "./_top_layer.js";
 
 const ESCAPE_SCOPE_SELECTOR = "[data-hotwire-escape-scope]";
+const handledEscapeEvents = new WeakSet();
 
 const bodyScrollLock = {
     count: 0,
-    classes: new Set(),
+    classes: new Map(),
     paddingRight: null,
 };
 
-export function createOverlay(controller, {
+export function createOverlay(_controller, {
     modalTarget,
     backdropTarget,
     dialogTarget,
-    hiddenClasses,
-    visibleClasses,
-    backdropHiddenClasses,
-    backdropVisibleClasses,
-    dialogHiddenClasses,
-    dialogVisibleClasses,
-    lockScrollClasses,
+    lockScrollClasses = [],
     lockScroll = true,
-    openDuration = 300,
-    closeDuration = 300,
     closeOnEscape = true,
     escapeCapture = false,
     stopEscapePropagation = false,
-    closeOnClickOutside = true,
     topLayer = true,
     onEscape,
     onOpen,
     onClose,
     getTriggerElement,
-    isClickInsideCheck,
+    stateAttribute = "state",
 }) {
-    let isOpen = false;
-    let isOpening = false;
-    let isClosing = false;
-    let focusTrap = null;
+    const presence = createPresence(modalTarget, {
+        motionElements: [backdropTarget, dialogTarget],
+        stateAttribute,
+    });
+    const focusTrap = new FocusTrap(modalTarget);
+    const topLayerHandle = createTopLayer(modalTarget, { enabled: topLayer });
+    let desiredOpen = false;
+    let destroyed = false;
     let triggerElement = null;
     let stackEntry = null;
     let unregisterStackEntry = null;
-    let topLayerHandle = null;
-
-    if (modalTarget) {
-        focusTrap = new FocusTrap(modalTarget);
-        topLayerHandle = createTopLayer(modalTarget, { enabled: topLayer });
-    }
+    let scrollLocked = false;
+    let opening = null;
+    let closing = null;
 
     function handleEscapeKey(event) {
-        if (!closeOnEscape || event.key !== "Escape" || !isOpen) return;
+        if (!closeOnEscape || event.key !== "Escape" || !desiredOpen) return;
+        if (handledEscapeEvents.has(event)) return;
         if (!isTop()) return;
         if (isNestedEscapeScopeEvent(event, dialogTarget)) return;
+
+        handledEscapeEvents.add(event);
 
         if (stopEscapePropagation) {
             event.stopImmediatePropagation();
@@ -71,177 +66,123 @@ export function createOverlay(controller, {
         }
     }
 
-    function handleClickOutside(event) {
-        if (!closeOnClickOutside || !isOpen) return;
-
-        if (event.target === dialogTarget) return;
-
-        if (isClickInsideCheck) {
-            const inside = isClickInsideCheck(event);
-            if (inside) return;
-        } else if (dialogTarget?.contains(event.target)) {
-            return;
-        }
-
-        close();
-    }
-
     document.addEventListener("keydown", handleEscapeKey, escapeCapture);
 
-    function open() {
-        if (isOpening || isClosing || isOpen) return;
+    async function open() {
+        if (destroyed) return false;
+        if (desiredOpen && presence.phase !== "closing") return opening ?? true;
 
-        isOpen = true;
-        isOpening = true;
+        desiredOpen = true;
         triggerElement = typeof getTriggerElement === "function"
             ? getTriggerElement()
             : document.activeElement;
 
-        modalTarget.hidden = false;
-        topLayerHandle?.show();
-        modalTarget.setAttribute("data-open", "true");
-
-        if (lockScroll) lockBodyScroll(lockScrollClasses);
-        registerStack();
-
-        requestAnimationFrame(() => {
-            modalTarget.classList.remove(...hiddenClasses);
-            modalTarget.classList.add(...visibleClasses);
-
-            backdropTarget?.classList.remove(...backdropHiddenClasses);
-            backdropTarget?.classList.add(...backdropVisibleClasses);
-
-            dialogTarget.classList.remove(...dialogHiddenClasses);
-            dialogTarget.classList.add(...dialogVisibleClasses);
-
-            setTimeout(() => {
-                isOpening = false;
-
-                if (typeof onOpen === "function") {
-                    onOpen();
-                }
-            }, openDuration);
+        const operation = presence.open({
+            beforeEnter: () => desiredOpen,
+            onEnter: () => registerStack(),
         });
+        topLayerHandle.show();
+        lockScrollIfNeeded();
+        opening = operation;
+        let completed;
+        try {
+            completed = await operation;
+        } catch (error) {
+            if (desiredOpen) {
+                desiredOpen = false;
+                unregisterStack();
+                unlockScrollIfNeeded();
+                topLayerHandle.hide();
+            }
+
+            throw error;
+        }
+        if (opening === operation) opening = null;
+
+        if (!completed || !desiredOpen || destroyed) return false;
+
+        onOpen?.();
+
+        return true;
     }
 
-    function close() {
-        if (isClosing || !isOpen) return;
+    async function close({ restoreFocus = true } = {}) {
+        if (destroyed) return false;
+        if (!desiredOpen && presence.phase === "closing") return closing;
+        if (!desiredOpen && presence.phase === "closed") return true;
 
-        isOpen = false;
-        isClosing = true;
-
-        focusTrap?.deactivate();
-
-        modalTarget.setAttribute("data-open", "false");
-        modalTarget.classList.remove(...visibleClasses);
-        modalTarget.classList.add(...hiddenClasses);
-
-        backdropTarget?.classList.remove(...backdropVisibleClasses);
-        backdropTarget?.classList.add(...backdropHiddenClasses);
-
-        dialogTarget.classList.remove(...dialogVisibleClasses);
-        dialogTarget.classList.add(...dialogHiddenClasses);
-
-        setTimeout(() => {
-            modalTarget.hidden = true;
-            topLayerHandle?.hide();
-            isClosing = false;
-
-            if (typeof onClose === "function") {
-                onClose();
-            }
-        }, closeDuration);
-
-        if (lockScroll) unlockBodyScroll();
+        desiredOpen = false;
+        const operation = presence.close();
+        closing = operation;
         unregisterStack();
+        unlockScrollIfNeeded();
+        if (restoreFocus) restoreTriggerFocus();
 
-        if (triggerElement && !triggerElement.disabled && typeof triggerElement.focus === "function") {
-            triggerElement.focus();
-        }
+        const completed = await operation;
+        if (closing === operation) closing = null;
+
+        if (!completed || desiredOpen || destroyed) return false;
+
+        topLayerHandle.hide();
+        onClose?.();
+
+        return true;
     }
 
     function cleanup() {
-        document.removeEventListener("keydown", handleEscapeKey, escapeCapture);
-        focusTrap?.deactivate();
-        topLayerHandle?.cleanup();
+        if (destroyed) return;
 
-        if (isOpen && !isClosing) {
-            closeNow({ restoreFocus: false });
-        }
+        destroyed = true;
+        document.removeEventListener("keydown", handleEscapeKey, escapeCapture);
+        desiredOpen = false;
+        presence.cleanup();
+        unregisterStack();
+        unlockScrollIfNeeded();
+        focusTrap.deactivate();
+        topLayerHandle.cleanup();
+        triggerElement = null;
     }
 
     function closeNow({ restoreFocus = false } = {}) {
-        const wasOpen = isOpen || isOpening || isClosing || modalTarget.getAttribute("data-open") === "true";
+        if (destroyed) return false;
 
-        isOpen = false;
-        isOpening = false;
-        isClosing = false;
-        focusTrap?.deactivate();
-
-        modalTarget.setAttribute("data-open", "false");
-        modalTarget.classList.remove(...visibleClasses);
-        modalTarget.classList.add(...hiddenClasses);
-
-        backdropTarget?.classList.remove(...backdropVisibleClasses);
-        backdropTarget?.classList.add(...backdropHiddenClasses);
-
-        dialogTarget.classList.remove(...dialogVisibleClasses);
-        dialogTarget.classList.add(...dialogHiddenClasses);
-
-        modalTarget.hidden = true;
-        topLayerHandle?.hide();
-
-        if (lockScroll) unlockBodyScroll();
+        const wasOpen = desiredOpen || presence.phase !== "closed";
+        desiredOpen = false;
+        presence.sync(false);
         unregisterStack();
+        unlockScrollIfNeeded();
+        topLayerHandle.hide();
+        if (restoreFocus) restoreTriggerFocus();
+        if (wasOpen) onClose?.();
 
-        if (restoreFocus && triggerElement && !triggerElement.disabled && typeof triggerElement.focus === "function") {
-            triggerElement.focus();
-        }
-
-        if (wasOpen && typeof onClose === "function") {
-            onClose();
-        }
+        return true;
     }
 
-    function setOpen() {
-        if (isOpen) return;
+    function setOpen({ notify = true, stackPosition = null, topLayerPosition = null } = {}) {
+        if (destroyed || desiredOpen) return false;
 
-        isOpen = true;
-        isOpening = false;
-        isClosing = false;
+        desiredOpen = true;
+        triggerElement = typeof getTriggerElement === "function"
+            ? getTriggerElement()
+            : document.activeElement;
+        presence.sync(true);
+        topLayerHandle.show(topLayerPosition);
+        lockScrollIfNeeded();
+        registerStack(stackPosition);
+        if (notify) onOpen?.();
 
-        modalTarget.hidden = false;
-        topLayerHandle?.show();
-        modalTarget.setAttribute("data-open", "true");
-        modalTarget.classList.remove(...hiddenClasses);
-        modalTarget.classList.add(...visibleClasses);
-
-        backdropTarget?.classList.remove(...backdropHiddenClasses);
-        backdropTarget?.classList.add(...backdropVisibleClasses);
-
-        dialogTarget.classList.remove(...dialogHiddenClasses);
-        dialogTarget.classList.add(...dialogVisibleClasses);
-
-        if (lockScroll) lockBodyScroll(lockScrollClasses);
-        registerStack();
-
-        if (typeof onOpen === "function") {
-            onOpen();
-        }
+        return true;
     }
 
-    // Set initial state after a renderFrame so the DOM is ready
-    Object.defineProperty(close, "isClosing", { get: () => isClosing });
-
-    function registerStack() {
+    function registerStack(position = null) {
         if (unregisterStackEntry) return;
 
         stackEntry ??= {
-            activateFocusTrap: () => focusTrap?.activate(),
-            deactivateFocusTrap: () => focusTrap?.deactivate(),
+            activateFocusTrap: () => focusTrap.activate(),
+            deactivateFocusTrap: () => focusTrap.deactivate(),
         };
 
-        unregisterStackEntry = registerOverlay(stackEntry);
+        unregisterStackEntry = registerOverlay(stackEntry, position);
     }
 
     function unregisterStack() {
@@ -259,9 +200,34 @@ export function createOverlay(controller, {
         return !stackEntry || isTopOverlay(stackEntry);
     }
 
+    function lockScrollIfNeeded() {
+        if (!lockScroll || scrollLocked) return;
+
+        lockBodyScroll(lockScrollClasses);
+        scrollLocked = true;
+    }
+
+    function unlockScrollIfNeeded() {
+        if (!scrollLocked) return;
+
+        unlockBodyScroll(lockScrollClasses);
+        scrollLocked = false;
+    }
+
+    function restoreTriggerFocus() {
+        if (!triggerElement || triggerElement.disabled || typeof triggerElement.focus !== "function") return;
+
+        triggerElement.focus();
+    }
+
     return {
-        get isOpen() { return isOpen; },
-        get isClosing() { return isClosing; },
+        get isOpen() { return desiredOpen; },
+        get isOpening() { return presence.phase === "opening"; },
+        get isClosing() { return presence.phase === "closing"; },
+        get phase() { return presence.phase; },
+        get settled() { return opening ?? closing ?? Promise.resolve(true); },
+        get stackPosition() { return stackEntry ? overlayPosition(stackEntry) : -1; },
+        get topLayerPosition() { return topLayerHandle.position; },
         get isTop() { return isTop(); },
         setOpen,
         open,
@@ -293,22 +259,35 @@ function lockBodyScroll(classes) {
         }
     }
 
-    for (const className of classes) {
-        bodyScrollLock.classes.add(className);
+    for (const className of new Set(classes)) {
+        const entry = bodyScrollLock.classes.get(className) ?? {
+            count: 0,
+            preexisting: document.body.classList.contains(className),
+        };
+        entry.count++;
+        bodyScrollLock.classes.set(className, entry);
+        document.body.classList.add(className);
     }
 
-    document.body.classList.add(...classes);
     bodyScrollLock.count++;
 }
 
-function unlockBodyScroll() {
+function unlockBodyScroll(classes) {
     if (bodyScrollLock.count === 0) return;
 
     bodyScrollLock.count--;
+    for (const className of new Set(classes)) {
+        const entry = bodyScrollLock.classes.get(className);
+        if (!entry) continue;
+
+        entry.count--;
+        if (entry.count > 0) continue;
+
+        if (!entry.preexisting) document.body.classList.remove(className);
+        bodyScrollLock.classes.delete(className);
+    }
     if (bodyScrollLock.count > 0) return;
 
-    document.body.classList.remove(...bodyScrollLock.classes);
-    bodyScrollLock.classes.clear();
     document.body.style.paddingRight = bodyScrollLock.paddingRight ?? "";
     bodyScrollLock.paddingRight = null;
 }

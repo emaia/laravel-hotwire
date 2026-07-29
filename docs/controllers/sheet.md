@@ -2,7 +2,9 @@
 
 Controls `<hw:sheet>` open and close behavior.
 
-`sheet` extends the drawer controller, so it supports the same dynamic frame targets and stream-close behavior with the `data-sheet-*` target names. Empty `update`/`replace` streams and `refresh` streams wait for the close animation before rendering.
+`sheet` extends the drawer controller, so it supports the same Presence lifecycle, dynamic frame targets and stream-close
+behavior with the `data-sheet-*` target names. Empty `update`/`replace` streams and `refresh` streams wait for actual exit
+motion before rendering. The overlay contract is `data-state="closed" data-motion="default" hidden inert`.
 
 ## Actions
 

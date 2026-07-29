@@ -31,34 +31,35 @@ Use `Sheet` for side-panel dialogs. Use [`<hw:drawer>`](./drawer.md) for the Bas
 
 ## Props
 
-| Prop | Default | Description |
-|------|---------|-------------|
-| `id` | auto | Root element id. |
-| `side` | `right` | `left`, `right`, `top`, or `bottom`. |
-| `size` | `75%` for side sheets, `auto` for vertical sheets | CSS length assigned to `--sheet-width` or `--sheet-height`. |
-| `frame` | `null` | Turbo Frame id for layout-shared, server-loaded sheet content. |
-| `backdrop` | `true` | Render the backdrop and click-outside target. |
-| `openDuration` | `300` | Open transition duration in milliseconds. |
-| `closeDuration` | `300` | Close transition duration in milliseconds. |
-| `lockScroll` | `true` | Lock body scroll while open. |
-| `closeOnEscape` | `true` | Close when Escape is pressed. |
-| `closeOnClickOutside` | `true` | Close when the backdrop is clicked. |
+| Prop                  | Default                                           | Description                                                    |
+|-----------------------|---------------------------------------------------|----------------------------------------------------------------|
+| `id`                  | auto                                              | Root element id.                                               |
+| `side`                | `right`                                           | `left`, `right`, `top`, or `bottom`.                           |
+| `size`                | `75%` for side sheets, `auto` for vertical sheets | CSS length assigned to `--sheet-width` or `--sheet-height`.    |
+| `frame`               | `null`                                            | Turbo Frame id for layout-shared, server-loaded sheet content. |
+| `backdrop`            | `true`                                            | Render the backdrop and click-outside target.                  |
+| `motion`              | `default`                                         | `default` follows CSS motion; `none` disables it.              |
+| `lockScroll`          | `true`                                            | Lock body scroll while open.                                   |
+| `closeOnEscape`       | `true`                                            | Close when Escape is pressed.                                  |
+| `closeOnClickOutside` | `true`                                            | Close when the backdrop is clicked.                            |
 
 ## Components
 
-| Component | Description |
-|-----------|-------------|
-| `sheet.trigger` | Button that toggles the sheet. |
-| `sheet.content` | Overlay, backdrop and sliding panel wrapper. |
-| `sheet.header` | Header region. |
-| `sheet.title` | Sheet title. |
-| `sheet.description` | Sheet description text. |
-| `sheet.footer` | Footer actions region. |
-| `sheet.close` | Button that closes the sheet. |
+| Component           | Description                                  |
+|---------------------|----------------------------------------------|
+| `sheet.trigger`     | Button that toggles the sheet.               |
+| `sheet.content`     | Overlay, backdrop and sliding panel wrapper. |
+| `sheet.header`      | Header region.                               |
+| `sheet.title`       | Sheet title.                                 |
+| `sheet.description` | Sheet description text.                      |
+| `sheet.footer`      | Footer actions region.                       |
+| `sheet.close`       | Button that closes the sheet.                |
 
 ## Behavior
 
-The sheet traps focus while open, restores focus to the trigger on close, locks body scroll by default and closes before Turbo caches the page.
+The sheet traps focus while open, restores focus to the trigger on close, locks body scroll by default and closes
+synchronously before Turbo caches the page. Presence derives completion from actual finite CSS motion and supports rapid
+reopen, `motion="none"`, and reduced motion without duration timers.
 
 ## Frame Content
 
@@ -80,7 +81,8 @@ Use `frame` when one sheet host in your layout should receive many server-render
 </a>
 ```
 
-Pair the destination view with [`<hw:frame-or-page>`](./frame-or-page.md) so direct navigation renders as a full page and frame navigation renders only the panel payload:
+Pair the destination view with [`<hw:frame-or-page>`](./frame-or-page.md) so direct navigation renders as a full page
+and frame navigation renders only the panel payload:
 
 ```blade
 <hw:frame-or-page frame="settings-panel" layout="layouts.app">
@@ -90,9 +92,11 @@ Pair the destination view with [`<hw:frame-or-page>`](./frame-or-page.md) so dir
 </hw:frame-or-page>
 ```
 
-When the frame receives content, the sheet opens automatically. A trigger can override the loading state with `data-loading-template="#template-id"`; otherwise the `loading_template` slot is used.
+When the frame receives content, the sheet opens automatically. A trigger can override the loading state with
+`data-loading-template="#template-id"`; otherwise the `loading_template` slot is used.
 
-On successful submit, close the sheet by returning an empty update or replace for the sheet root or frame, or a refresh stream. Stream rendering waits for the close animation to finish:
+On successful submit, close the sheet by returning an empty update or replace for the sheet root or frame, or a refresh
+stream. Stream rendering waits for the actual exit motion to finish:
 
 ```php
 return turbo_stream()

@@ -22,7 +22,7 @@ async function mount(html = template()) {
 
 function forceMobile() {
     mounted.controller.mediaQuery = { matches: true };
-    mounted.controller.sync();
+    mounted.controller.handleMediaChange();
 }
 
 function template(open = true) {
@@ -44,22 +44,16 @@ function mobileTemplate(open = true) {
     return `
         <div data-controller="sidebar"
              data-sidebar-open-value="${open}"
-             data-sidebar-open-duration-value="1"
-             data-sidebar-close-duration-value="1"
-             data-sidebar-hidden-class="pointer-events-none"
-             data-sidebar-visible-class="pointer-events-auto"
-             data-sidebar-backdrop-hidden-class="opacity-0"
-             data-sidebar-backdrop-visible-class="opacity-100"
-             data-sidebar-dialog-hidden-class="-translate-x-full"
-             data-sidebar-dialog-visible-class="translate-x-0"
              data-sidebar-lock-scroll-class="overflow-hidden"
              data-state="${open ? "expanded" : "collapsed"}">
             <button data-slot="sidebar-trigger" data-action="click->sidebar#toggle">Toggle</button>
             <div data-slot="sidebar"
                  data-sidebar-target="modal"
                  data-sidebar-collapsible="offcanvas"
-                 data-state="${open ? "expanded" : "collapsed"}"
-                 data-collapsible="${open ? "" : "offcanvas"}"
+                  data-state="${open ? "expanded" : "collapsed"}"
+                  data-mobile-state="closed"
+                  data-motion="default"
+                  data-collapsible="${open ? "" : "offcanvas"}"
                  hidden>
                 <div data-slot="sidebar-backdrop" data-sidebar-target="backdrop" data-action="click->sidebar#clickOutside"></div>
                 <div data-slot="sidebar-container" data-sidebar-target="dialog">
@@ -70,21 +64,15 @@ function mobileTemplate(open = true) {
     `;
 }
 
-function mobileTemplateWithDurations({ open = true, openDuration = 1, closeDuration = 1 } = {}) {
-    return mobileTemplate(open)
-        .replace('data-sidebar-open-duration-value="1"', `data-sidebar-open-duration-value="${openDuration}"`)
-        .replace('data-sidebar-close-duration-value="1"', `data-sidebar-close-duration-value="${closeDuration}"`);
-}
-
 function mockMobile(matches) {
     originalMatchMedia ??= window.matchMedia;
     const listeners = new Set();
     Object.defineProperty(window, "matchMedia", {
         configurable: true,
         writable: true,
-        value: () => ({
-            matches,
-            media: "(max-width: 767px)",
+        value: (query) => ({
+            matches: query === "(max-width: 767px)" ? matches : false,
+            media: query,
             addEventListener: (_event, listener) => listeners.add(listener),
             removeEventListener: (_event, listener) => listeners.delete(listener),
         }),
@@ -209,6 +197,32 @@ test("Turbo before-cache does not hide the desktop sidebar", async () => {
     expect(sidebar().dataset.collapsible).toBe("offcanvas");
 });
 
+test("Turbo before-cache synchronously closes the mobile overlay", async () => {
+    await mount(mobileTemplate(true));
+    forceMobile();
+
+    trigger().click();
+    await waitForMobileState("open");
+    const motion = fakeAnimation();
+    dialog().getAnimations = () => sidebar().dataset.mobileState === "closed" ? [motion.animation] : [];
+    mounted.controller.closeMobile();
+    await wait(0);
+
+    expect(sidebar().hidden).toBe(false);
+
+    mounted.controller.closeForCache();
+
+    expect(sidebar().dataset.mobileState).toBe("closed");
+    expect(sidebar().dataset.state).toBe("expanded");
+    expect(sidebar().hidden).toBe(true);
+    expect(sidebar().hasAttribute("inert")).toBe(true);
+    expect(document.body.classList.contains("overflow-hidden")).toBe(false);
+
+    motion.finish();
+    await wait(0);
+    expect(sidebar().hidden).toBe(true);
+});
+
 test("mobile toggle opens and closes the mobile drawer without changing desktop state", async () => {
     mockMobile(true);
     await mount(mobileTemplate(true));
@@ -230,46 +244,46 @@ test("mobile toggle opens and closes the mobile drawer without changing desktop 
     expect(sidebar().hidden).toBe(true);
 });
 
-test("mobile open paints the offscreen state before sliding into view", async () => {
+test("mobile open keeps the closed state inert until the enter frame", async () => {
     mockMobile(true);
     await mount(mobileTemplate(true));
     forceMobile();
 
     trigger().click();
 
-    expect(sidebar().dataset.mobileState).toBe("opening");
+    expect(sidebar().dataset.mobileState).toBe("closed");
     expect(sidebar().hidden).toBe(false);
-    expect(dialog().classList.contains("-translate-x-full")).toBe(true);
-    expect(dialog().classList.contains("translate-x-0")).toBe(false);
+    expect(sidebar().hasAttribute("inert")).toBe(true);
 
     await waitForMobileState("open");
 
     expect(sidebar().dataset.mobileState).toBe("open");
-    expect(dialog().classList.contains("-translate-x-full")).toBe(false);
-    expect(dialog().classList.contains("translate-x-0")).toBe(true);
+    expect(sidebar().hasAttribute("inert")).toBe(false);
 });
 
 test("mobile close keeps the overlay mounted while the panel slides out", async () => {
     mockMobile(true);
-    await mount(mobileTemplateWithDurations({ closeDuration: 40 }));
+    await mount(mobileTemplate());
     forceMobile();
 
     trigger().click();
     await waitForMobileState("open");
+    const motion = fakeAnimation();
+    dialog().getAnimations = () => sidebar().dataset.mobileState === "closed" ? [motion.animation] : [];
 
     trigger().click();
 
-    expect(sidebar().dataset.mobileState).toBe("closing");
+    expect(sidebar().dataset.mobileState).toBe("closed");
     expect(sidebar().hidden).toBe(false);
-    expect(dialog().classList.contains("-translate-x-full")).toBe(true);
-    expect(dialog().classList.contains("translate-x-0")).toBe(false);
+    expect(sidebar().hasAttribute("inert")).toBe(true);
 
     await wait(10);
 
-    expect(sidebar().dataset.mobileState).toBe("closing");
+    expect(sidebar().dataset.mobileState).toBe("closed");
     expect(sidebar().hidden).toBe(false);
 
-    await waitForMobileState("closed");
+    motion.finish();
+    await wait(0);
 
     expect(sidebar().dataset.mobileState).toBe("closed");
     expect(sidebar().hidden).toBe(true);
@@ -298,7 +312,7 @@ test("mobile Escape and backdrop close only the mobile drawer", async () => {
 
 test("mobile link clicks wait for the close animation before navigating", async () => {
     mockMobile(true);
-    await mount(mobileTemplateWithDurations({ closeDuration: 40 }));
+    await mount(mobileTemplate());
     forceMobile();
 
     trigger().click();
@@ -309,18 +323,38 @@ test("mobile link clicks wait for the close animation before navigating", async 
         navigations++;
         event.preventDefault();
     });
+    const motion = fakeAnimation();
+    dialog().getAnimations = () => sidebar().dataset.mobileState === "closed" ? [motion.animation] : [];
 
     navLink().click();
 
     expect(navigations).toBe(0);
-    expect(sidebar().dataset.mobileState).toBe("closing");
+    expect(sidebar().dataset.mobileState).toBe("closed");
     expect(sidebar().hidden).toBe(false);
 
-    await waitForMobileState("closed");
+    motion.finish();
+    await wait(0);
 
     expect(navigations).toBe(1);
     expect(sidebar().dataset.mobileState).toBe("closed");
     expect(sidebar().hidden).toBe(true);
+});
+
+test("mobile target morph preserves focus return to the external trigger", async () => {
+    await mount(mobileTemplate());
+    forceMobile();
+
+    trigger().click();
+    await waitForMobileState("open");
+    navLink().focus();
+    document.querySelector('[data-slot="sidebar-backdrop"]').replaceWith(
+        document.querySelector('[data-slot="sidebar-backdrop"]').cloneNode(true),
+    );
+    await wait(10);
+
+    await mounted.controller.closeMobile();
+
+    expect(document.activeElement).toBe(trigger());
 });
 
 test("mobile modified link clicks are not intercepted", async () => {
@@ -337,3 +371,25 @@ test("mobile modified link clicks are not intercepted", async () => {
     expect(event.defaultPrevented).toBe(false);
     expect(sidebar().dataset.mobileState).toBe("open");
 });
+
+function fakeAnimation() {
+    const finished = deferred();
+
+    return {
+        animation: {
+            effect: { getComputedTiming: () => ({ endTime: 100 }) },
+            finished: finished.promise,
+            playState: "running",
+        },
+        finish: () => finished.resolve(),
+    };
+}
+
+function deferred() {
+    let resolve;
+    const promise = new Promise((settle) => {
+        resolve = settle;
+    });
+
+    return { promise, resolve };
+}

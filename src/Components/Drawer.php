@@ -11,8 +11,6 @@ class Drawer extends Component
 {
     private const DIRECTIONS = ['up', 'right', 'down', 'left'];
 
-    public string $drawerHiddenClass;
-
     public string $axis;
 
     public function __construct(
@@ -22,8 +20,7 @@ class Drawer extends Component
         public string $size = '',
         public ?string $frame = null,
         public bool $backdrop = true,
-        public int $openDuration = 450,
-        public int $closeDuration = 450,
+        public string $motion = 'default',
         public bool $lockScroll = true,
         public bool $closeOnEscape = true,
         public bool $closeOnClickOutside = true,
@@ -48,7 +45,7 @@ class Drawer extends Component
             throw new \InvalidArgumentException('Drawer direction must be one of: '.implode(', ', self::DIRECTIONS).". Got: {$this->direction}");
         }
 
-        $this->drawerHiddenClass = $this->hiddenClass();
+        $this->motion = in_array($this->motion, ['default', 'none'], true) ? $this->motion : 'default';
     }
 
     public function render()
@@ -73,42 +70,14 @@ class Drawer extends Component
                 'id' => $this->id,
                 'data-slot' => 'drawer',
                 'data-controller' => 'drawer',
-                'data-drawer-open-duration-value' => $this->openDuration,
-                'data-drawer-close-duration-value' => $this->closeDuration,
                 'data-drawer-lock-scroll-value' => $this->lockScroll ? 'true' : 'false',
                 'data-drawer-close-on-escape-value' => $this->closeOnEscape ? 'true' : 'false',
                 'data-drawer-close-on-click-outside-value' => $this->closeOnClickOutside ? 'true' : 'false',
-                'data-drawer-hidden-class' => 'pointer-events-none',
-                'data-drawer-visible-class' => 'pointer-events-auto',
-                'data-drawer-backdrop-hidden-class' => 'opacity-0',
-                'data-drawer-backdrop-visible-class' => 'opacity-100',
-                'data-drawer-dialog-hidden-class' => $this->hiddenClass(),
-                'data-drawer-dialog-visible-class' => $this->visibleClass(),
                 'data-drawer-lock-scroll-class' => 'overflow-hidden',
                 'data-action' => 'turbo:before-cache@window->drawer#closeForCache',
                 'style' => $this->style(),
             ], $attributes, $this->stimulus, protectedPrefixes: ['data-drawer-']),
         ];
-    }
-
-    private function hiddenClass(): string
-    {
-        return match ($this->direction) {
-            'left' => '-translate-x-full',
-            'right' => 'translate-x-full',
-            'up' => '-translate-y-full',
-            'down' => 'translate-y-full',
-            default => throw new \LogicException("Invalid drawer direction: {$this->direction}"),
-        };
-    }
-
-    private function visibleClass(): string
-    {
-        return match ($this->direction) {
-            'left', 'right' => 'translate-x-0',
-            'up', 'down' => 'translate-y-0',
-            default => throw new \LogicException("Invalid drawer direction: {$this->direction}"),
-        };
     }
 
     private function style(): string

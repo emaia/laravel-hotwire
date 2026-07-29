@@ -247,17 +247,9 @@ test("native Tab navigation and nested Escape close before the parent drawer", a
             .translate-x-0 { transform: translateX(0); }
         </style>
         <div data-controller="drawer"
-             data-drawer-open-duration-value="0"
-             data-drawer-close-duration-value="0"
-             data-drawer-hidden-class="pointer-events-none"
-             data-drawer-visible-class="pointer-events-auto"
-             data-drawer-backdrop-hidden-class="opacity-0"
-             data-drawer-backdrop-visible-class="opacity-100"
-             data-drawer-dialog-hidden-class="translate-x-full"
-             data-drawer-dialog-visible-class="translate-x-0"
              data-drawer-lock-scroll-class="overflow-hidden">
             <button id="drawer-trigger" data-drawer-target="trigger" data-action="drawer#toggle">Open drawer</button>
-            <div data-drawer-target="modal" data-open="false" hidden class="pointer-events-none">
+            <div data-drawer-target="modal" data-state="closed" data-motion="none" hidden inert>
                 <div data-drawer-target="backdrop" data-action="click->drawer#clickOutside" class="opacity-0"></div>
                 <div data-drawer-target="dialog" class="translate-x-full">
                     <div data-controller="dropdown">
@@ -283,7 +275,7 @@ test("native Tab navigation and nested Escape close before the parent drawer", a
     const second = page.locator("#second");
 
     await page.locator("#drawer-trigger").click();
-    await expect(modal).toHaveAttribute("data-open", "true");
+    await expect(modal).toHaveAttribute("data-state", "open");
 
     await trigger.focus();
     await page.keyboard.press("ArrowDown");
@@ -305,10 +297,10 @@ test("native Tab navigation and nested Escape close before the parent drawer", a
     await page.keyboard.press("Escape");
     await expect(menu).toBeHidden();
     await expect(trigger).toBeFocused();
-    await expect(modal).toHaveAttribute("data-open", "true");
+    await expect(modal).toHaveAttribute("data-state", "open");
 
     await page.keyboard.press("Escape");
-    await expect(modal).toHaveAttribute("data-open", "false");
+    await expect(modal).toHaveAttribute("data-state", "closed");
 });
 
 async function installControllers(page) {
@@ -330,13 +322,15 @@ async function bundle() {
     const overlay = (await readFile("resources/js/controllers/_overlay.js", "utf8"))
         .replace(/import \{[^}]*\} from "\.\/_focus_trap\.js";\s*/, "")
         .replace(/import \{[^}]*\} from "\.\/_overlay_stack\.js";\s*/, "")
+        .replace(/import \{[^}]*\} from "\.\/_presence\.js";\s*/, "")
         .replace(/import \{[^}]*\} from "\.\/_top_layer\.js";\s*/, "")
         .replace("export function createOverlay", "function createOverlay");
 
     const overlayStack = (await readFile("resources/js/controllers/_overlay_stack.js", "utf8"))
         .replace("export function registerOverlay", "function registerOverlay")
         .replace("export function unregisterOverlay", "function unregisterOverlay")
-        .replace("export function isTopOverlay", "function isTopOverlay");
+        .replace("export function isTopOverlay", "function isTopOverlay")
+        .replace("export function overlayPosition", "function overlayPosition");
 
     const topLayer = (await readFile("resources/js/controllers/_top_layer.js", "utf8"))
         .replace("export function createTopLayer", "function createTopLayer");
@@ -368,10 +362,10 @@ async function bundle() {
         ${focusTrap}
         ${overlayStack}
         ${topLayer}
+        ${presence}
         ${overlay}
         ${frameOverlay}
         ${floating}
-        ${presence}
         ${controller}
         ${drawer}
         window.DropdownController = DropdownController;

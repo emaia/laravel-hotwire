@@ -10,7 +10,10 @@ class Sidebar extends Component
         public string $side = 'left',
         public string $variant = 'sidebar',
         public string $collapsible = 'offcanvas',
-    ) {}
+        public string $motion = 'default',
+    ) {
+        $this->motion = in_array($this->motion, ['default', 'none'], true) ? $this->motion : 'default';
+    }
 
     public function render()
     {

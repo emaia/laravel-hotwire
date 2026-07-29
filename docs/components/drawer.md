@@ -1,6 +1,7 @@
 # `<hw:drawer>`
 
-Base drawer overlay with direction-aware slide transitions, backdrop, focus trap, Escape dismissal and click-outside dismissal.
+Base drawer overlay with direction-aware slide transitions, backdrop, focus trap, Escape dismissal and click-outside
+dismissal.
 
 ## Usage
 
@@ -29,35 +30,36 @@ Base drawer overlay with direction-aware slide transitions, backdrop, focus trap
 
 ## Props
 
-| Prop | Default | Description |
-|------|---------|-------------|
-| `id` | auto | Root element id. |
-| `direction` | `down` | `up`, `right`, `down`, or `left`. |
-| `side` | `null` | Legacy alias for `direction`; `top` maps to `up`, `bottom` maps to `down`. |
-| `size` | `75vw`/`24rem` for side drawers, `auto` for vertical drawers | CSS length assigned to the drawer width or height variable. |
-| `frame` | `null` | Turbo Frame id for layout-shared, server-loaded drawer content. |
-| `backdrop` | `true` | Render the backdrop and click-outside target. |
-| `openDuration` | `450` | Open transition duration in milliseconds. |
-| `closeDuration` | `450` | Close transition duration in milliseconds. |
-| `lockScroll` | `true` | Lock body scroll while open. |
-| `closeOnEscape` | `true` | Close when Escape is pressed. |
-| `closeOnClickOutside` | `true` | Close when the backdrop is clicked. |
+| Prop                  | Default                                                      | Description                                                                |
+|-----------------------|--------------------------------------------------------------|----------------------------------------------------------------------------|
+| `id`                  | auto                                                         | Root element id.                                                           |
+| `direction`           | `down`                                                       | `up`, `right`, `down`, or `left`.                                          |
+| `side`                | `null`                                                       | Legacy alias for `direction`; `top` maps to `up`, `bottom` maps to `down`. |
+| `size`                | `75vw`/`24rem` for side drawers, `auto` for vertical drawers | CSS length assigned to the drawer width or height variable.                |
+| `frame`               | `null`                                                       | Turbo Frame id for layout-shared, server-loaded drawer content.            |
+| `backdrop`            | `true`                                                       | Render the backdrop and click-outside target.                              |
+| `motion`              | `default`                                                    | `default` follows CSS motion; `none` disables it.                          |
+| `lockScroll`          | `true`                                                       | Lock body scroll while open.                                               |
+| `closeOnEscape`       | `true`                                                       | Close when Escape is pressed.                                              |
+| `closeOnClickOutside` | `true`                                                       | Close when the backdrop is clicked.                                        |
 
 ## Components
 
-| Component | Description |
-|-----------|-------------|
-| `drawer.trigger` | Button that toggles the drawer. |
-| `drawer.content` | Overlay, backdrop and sliding popup wrapper. |
-| `drawer.header` | Header region. |
-| `drawer.title` | Drawer title. |
-| `drawer.description` | Drawer description text. |
-| `drawer.footer` | Footer actions region. |
-| `drawer.close` | Button that closes the drawer. |
+| Component            | Description                                  |
+|----------------------|----------------------------------------------|
+| `drawer.trigger`     | Button that toggles the drawer.              |
+| `drawer.content`     | Overlay, backdrop and sliding popup wrapper. |
+| `drawer.header`      | Header region.                               |
+| `drawer.title`       | Drawer title.                                |
+| `drawer.description` | Drawer description text.                     |
+| `drawer.footer`      | Footer actions region.                       |
+| `drawer.close`       | Button that closes the drawer.               |
 
 ## Behavior
 
-The drawer traps focus while open, restores focus to the trigger on close, locks body scroll by default and closes before Turbo caches the page.
+The drawer traps focus while open, restores focus to the trigger on close, locks body scroll by default and closes
+synchronously before Turbo caches the page. Its overlay uses `data-state="open|closed"`; Presence waits for actual
+finite CSS motion and cancels stale teardown when the drawer rapidly reopens. Customize transition duration in CSS.
 
 Use `<hw:sheet>` instead when you want a side panel with an always-visible close button.
 
@@ -88,8 +90,11 @@ In the destination view, use [`<hw:frame-or-page>`](./frame-or-page.md):
 </hw:frame-or-page>
 ```
 
-The drawer opens when the frame receives content. Per-link `data-loading-template="#template-id"` overrides the drawer's `loading_template` slot. Return an empty `update` or `replace` stream for the drawer root or frame id, or a `refresh` stream, to close it after a successful action. Stream rendering waits for the close animation to finish.
+The drawer opens when the frame receives content. Per-link `data-loading-template="#template-id"` overrides the drawer's
+`loading_template` slot. Return an empty `update` or `replace` stream for the drawer root or frame id, or a `refresh`
+stream, to close it after a successful action. Stream rendering waits for the actual exit motion to finish.
 
 ## Future Enhancements
 
-Swipe gestures, nested drawers and snap points are planned as separate enhancements after the base drawer behavior is stable.
+Swipe gestures, nested drawers and snap points are planned as separate enhancements after the base drawer behavior is
+stable.

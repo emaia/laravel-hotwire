@@ -30,11 +30,13 @@ Accessible modal with backdrop, animations, focus trap and Turbo integration.
 </hw:modal>
 ```
 
-`<hw:modal>` owns the Stimulus controller and configuration. `<hw:modal.content>` renders the overlay, backdrop, dialog surface and optional close icon exactly where it is placed.
+`<hw:modal>` owns the Stimulus controller and configuration. `<hw:modal.content>` renders the overlay, backdrop, dialog
+surface and optional close icon exactly where it is placed.
 
 ## Trigger
 
-`<hw:modal.trigger>` renders a button that opens the modal. It supports the same visual variants and sizes as `<hw:button>`.
+`<hw:modal.trigger>` renders a button that opens the modal. It supports the same visual variants and sizes as
+`<hw:button>`.
 
 ```blade
 <hw:modal.trigger variant="outline" size="sm">
@@ -46,12 +48,12 @@ Accessible modal with backdrop, animations, focus trap and Turbo integration.
 </hw:modal.trigger>
 ```
 
-| Prop      | Type     | Default     | Description                         |
-|-----------|----------|-------------|-------------------------------------|
-| `variant` | `string` | `'default'` | Button variant                      |
-| `size`    | `string` | `'default'` | Button size                         |
-| `as`      | `string` | `'button'`  | Rendered tag                        |
-| `type`    | `string` | `'button'`  | Button type when `as="button"`     |
+| Prop      | Type     | Default     | Description                    |
+|-----------|----------|-------------|--------------------------------|
+| `variant` | `string` | `'default'` | Button variant                 |
+| `size`    | `string` | `'default'` | Button size                    |
+| `as`      | `string` | `'button'`  | Rendered tag                   |
+| `type`    | `string` | `'button'`  | Button type when `as="button"` |
 
 ## Close Actions
 
@@ -73,44 +75,47 @@ Use `<hw:modal.close>` for semantic footer or inline close actions.
 </hw:modal.footer>
 ```
 
-`modal.close` supports `variant`, `size`, `as` and `type` with the same defaults as `modal.trigger`, except `variant` defaults to `outline`.
+`modal.close` supports `variant`, `size`, `as` and `type` with the same defaults as `modal.trigger`, except `variant`
+defaults to `outline`.
 
 ## Props
 
-| Prop                   | Type      | Default            | Description                                     |
-|------------------------|-----------|--------------------|-------------------------------------------------|
-| `id`                   | `string`  | `uniqid('modal-')` | Root element ID                                 |
-| `size`                 | `string`  | `'md'`             | Preset (`sm`/`md`/`lg`/`xl`/`full`/`auto`) or arbitrary width (`800px`, `60vw`) |
-| `class`                | `string`  | `''`               | Additional CSS classes on the panel             |
-| `close-button`         | `bool`    | `true`             | Shows the X close icon                          |
-| `fixed-top`            | `bool`    | `false`            | Pins the modal to the top with a margin (ignored when `size="full"`) |
-| `frame`                | `?string` | `null`             | Renders a Turbo Frame dynamic content target    |
-| `stimulus`             | `Htmlable\|null` | `null`     | Optional extra Stimulus binding merged into the root element |
+| Prop           | Type             | Default            | Description                                                                     |
+|----------------|------------------|--------------------|---------------------------------------------------------------------------------|
+| `id`           | `string`         | `uniqid('modal-')` | Root element ID                                                                 |
+| `size`         | `string`         | `'md'`             | Preset (`sm`/`md`/`lg`/`xl`/`full`/`auto`) or arbitrary width (`800px`, `60vw`) |
+| `class`        | `string`         | `''`               | Additional CSS classes on the panel                                             |
+| `close-button` | `bool`           | `true`             | Shows the X close icon                                                          |
+| `fixed-top`    | `bool`           | `false`            | Pins the modal to the top with a margin (ignored when `size="full"`)            |
+| `frame`        | `?string`        | `null`             | Renders a Turbo Frame dynamic content target                                    |
+| `motion`       | `string`         | `'default'`        | `default` follows CSS motion; `none` disables it                                |
+| `stimulus`     | `Htmlable\|null` | `null`             | Optional extra Stimulus binding merged into the root element                    |
 
 ## Subcomponents
 
-| Component                | Description                               |
-|--------------------------|-------------------------------------------|
-| `modal.trigger`          | Button-like control that opens the modal  |
-| `modal.content`          | Overlay, backdrop and dialog content      |
-| `modal.header`           | Header layout inside content              |
-| `modal.title`            | Modal title                               |
-| `modal.description`      | Supporting text                           |
-| `modal.footer`           | Footer action layout                      |
-| `modal.close`            | Button-like control that closes the modal |
+| Component           | Description                               |
+|---------------------|-------------------------------------------|
+| `modal.trigger`     | Button-like control that opens the modal  |
+| `modal.content`     | Overlay, backdrop and dialog content      |
+| `modal.header`      | Header layout inside content              |
+| `modal.title`       | Modal title                               |
+| `modal.description` | Supporting text                           |
+| `modal.footer`      | Footer action layout                      |
+| `modal.close`       | Button-like control that closes the modal |
 
 ## Size presets
 
-All presets except `auto` apply `w-full` plus a fixed `max-w-*` cap, so the dialog fills the available width up to the preset's cap.
+All presets except `auto` apply `w-full` plus a fixed `max-w-*` cap, so the dialog fills the available width up to the
+preset's cap.
 
-| `size`         | Width                                | px cap (md+) | Height                        |
-|----------------|--------------------------------------|--------------|-------------------------------|
-| `sm`           | `w-full md:max-w-md`                 | 448          | auto                          |
-| `md` (default) | `w-full md:max-w-xl`                 | 576          | auto                          |
-| `lg`           | `w-full md:max-w-3xl`                | 768          | auto                          |
-| `xl`           | `w-full md:max-w-5xl`                | 1024         | auto                          |
-| `full`         | `w-full`                             | n/a          | `h-full` within viewport pad  |
-| `auto`         | No cap, no `w-full`                  | n/a          | auto                          |
+| `size`         | Width                 | px cap (md+) | Height                       |
+|----------------|-----------------------|--------------|------------------------------|
+| `sm`           | `w-full md:max-w-md`  | 448          | auto                         |
+| `md` (default) | `w-full md:max-w-xl`  | 576          | auto                         |
+| `lg`           | `w-full md:max-w-3xl` | 768          | auto                         |
+| `xl`           | `w-full md:max-w-5xl` | 1024         | auto                         |
+| `full`         | `w-full`              | n/a          | `h-full` within viewport pad |
+| `auto`         | No cap, no `w-full`   | n/a          | auto                         |
 
 Pass an arbitrary size to set an inline max width on the dialog positioner:
 
@@ -121,7 +126,8 @@ Pass an arbitrary size to set an inline max width on the dialog positioner:
 
 ## Dynamic content with Turbo Frames
 
-For a global modal shell in a layout, provide `frame` and leave the default slot empty. The root renders the content fallback automatically.
+For a global modal shell in a layout, provide `frame` and leave the default slot empty. The root renders the content
+fallback automatically.
 
 ```blade
 <a href="/posts/1/edit" data-turbo-frame="modal">
@@ -140,10 +146,12 @@ For a global modal shell in a layout, provide `frame` and leave the default slot
 This renders a frame inside the modal content:
 
 ```html
+
 <turbo-frame id="modal" data-modal-target="dynamicContent"></turbo-frame>
 ```
 
-When the Turbo Frame receives content, the modal opens automatically. Return an empty `update` or `replace` stream for the frame id, or a `refresh` stream, to close it after a successful action.
+When the Turbo Frame receives content, the modal opens automatically. Return an empty `update` or `replace` stream for
+the frame id, or a `refresh` stream, to close it after a successful action.
 
 ## Loading template
 
@@ -168,7 +176,9 @@ Resolution order: per-link `data-loading-template` -> modal's `loading_template`
 
 ## Root attributes
 
-Arbitrary attributes are forwarded to the root modal element. Regular `data-controller` / `data-action` attributes and the `stimulus` prop are merged and deduplicated with the internal `modal` controller. Component-owned `data-modal-*` attributes are protected; configure supported behavior with props instead.
+Arbitrary attributes are forwarded to the root modal element. Regular `data-controller` / `data-action` attributes and
+the `stimulus` prop are merged and deduplicated with the internal `modal` controller. Component-owned `data-modal-*`
+attributes are protected; configure supported behavior with props instead.
 
 ```blade
 <hw:modal
@@ -183,20 +193,19 @@ Arbitrary attributes are forwarded to the root modal element. Regular `data-cont
 
 ## Stimulus values
 
-| Value                    | Type      | Default | Description                              |
-|--------------------------|-----------|---------|------------------------------------------|
-| `open-duration`          | `Number`  | `300`   | Opening animation duration (ms)          |
-| `close-duration`         | `Number`  | `300`   | Closing animation duration (ms)          |
-| `lock-scroll`            | `Boolean` | `true`  | Locks body scroll when open              |
-| `close-on-escape`        | `Boolean` | `true`  | Closes on Escape key                     |
-| `close-on-click-outside` | `Boolean` | `true`  | Closes when clicking outside the modal   |
+| Value                    | Type      | Default | Description                            |
+|--------------------------|-----------|---------|----------------------------------------|
+| `lock-scroll`            | `Boolean` | `true`  | Locks body scroll when open            |
+| `close-on-escape`        | `Boolean` | `true`  | Closes on Escape key                   |
+| `close-on-click-outside` | `Boolean` | `true`  | Closes when clicking outside the modal |
 
 ## Actions
 
-| Action        | Description       |
-|---------------|-------------------|
-| `modal#open`  | Opens the modal   |
-| `modal#close` | Closes the modal  |
+| Action                | Description                                       |
+|-----------------------|---------------------------------------------------|
+| `modal#open`          | Opens the modal                                   |
+| `modal#close`         | Closes the modal                                  |
+| `modal#closeForCache` | Closes synchronously before Turbo caches the page |
 
 ## Events
 
@@ -204,6 +213,11 @@ Arbitrary attributes are forwarded to the root modal element. Regular `data-cont
 |----------------|---------------------------------------------|
 | `modal:opened` | Fired after the opening animation completes |
 | `modal:closed` | Fired after the closing animation completes |
+
+The overlay uses `data-state="open|closed"`, `data-motion="default|none"`, `hidden`, and `inert`. Presence observes the
+actual finite CSS motion on the backdrop and dialog, so custom timing belongs in CSS rather than a duration prop. During
+exit the overlay becomes closed and inert immediately, remains rendered until motion settles, and can be reopened
+without stale teardown. Reduced-motion preference skips the wait.
 
 ## Accessibility
 

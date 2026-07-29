@@ -429,17 +429,9 @@ test.serial("Escape inside an open drawer closes only the popover first", async 
         },
         `
         <div data-controller="drawer"
-             data-drawer-open-duration-value="1"
-             data-drawer-close-duration-value="1"
-             data-drawer-hidden-class="pointer-events-none"
-             data-drawer-visible-class="pointer-events-auto"
-             data-drawer-backdrop-hidden-class="opacity-0"
-             data-drawer-backdrop-visible-class="opacity-100"
-             data-drawer-dialog-hidden-class="translate-x-full"
-             data-drawer-dialog-visible-class="translate-x-0"
              data-drawer-lock-scroll-class="overflow-hidden">
             <button id="drawer-trigger" data-drawer-target="trigger" data-action="drawer#toggle">Open drawer</button>
-            <div data-drawer-target="modal" data-open="false" hidden class="pointer-events-none">
+            <div data-drawer-target="modal" data-state="closed" data-motion="none" hidden inert>
                 <div data-drawer-target="backdrop" data-action="click->drawer#clickOutside" class="opacity-0"></div>
                 <div data-drawer-target="dialog" class="translate-x-full">
                     <div data-controller="popover">
@@ -471,17 +463,9 @@ test.serial("Escape inside an open modal closes only the popover when the popove
         },
         `
         <div id="modal" data-controller="modal"
-             data-modal-open-duration-value="1"
-             data-modal-close-duration-value="1"
-             data-modal-hidden-class="pointer-events-none"
-             data-modal-visible-class="pointer-events-auto"
-             data-modal-backdrop-hidden-class="opacity-0"
-             data-modal-backdrop-visible-class="opacity-100"
-             data-modal-dialog-hidden-class="scale-80 opacity-0"
-             data-modal-dialog-visible-class="scale-100 opacity-100"
              data-modal-lock-scroll-class="overflow-hidden">
             <button id="modal-trigger" data-action="modal#open">Open modal</button>
-            <div data-modal-target="modal" data-open="false" hidden class="pointer-events-none">
+            <div data-modal-target="modal" data-state="closed" data-motion="none" hidden inert>
                 <div data-modal-target="backdrop"></div>
                 <div data-modal-target="dialog">
                     <div data-controller="popover">

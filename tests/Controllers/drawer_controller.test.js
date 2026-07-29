@@ -11,22 +11,14 @@ afterEach(async () => {
     document.body.className = "";
 });
 
-function html(panelHidden = "translate-x-full", panelVisible = "translate-x-0") {
+function html() {
     return `
         <div data-controller="drawer"
-             data-drawer-open-duration-value="1"
-             data-drawer-close-duration-value="1"
-             data-drawer-hidden-class="pointer-events-none"
-             data-drawer-visible-class="pointer-events-auto"
-             data-drawer-backdrop-hidden-class="opacity-0"
-             data-drawer-backdrop-visible-class="opacity-100"
-             data-drawer-dialog-hidden-class="${panelHidden}"
-             data-drawer-dialog-visible-class="${panelVisible}"
              data-drawer-lock-scroll-class="overflow-hidden">
             <button id="trigger" data-drawer-target="trigger" data-action="drawer#toggle">Open</button>
-            <div data-drawer-target="modal" data-open="false" hidden class="pointer-events-none">
-                <div data-drawer-target="backdrop" data-action="click->drawer#clickOutside" class="opacity-0"></div>
-                <div data-drawer-target="dialog" class="${panelHidden}">
+            <div data-drawer-target="modal" data-state="closed" data-motion="none" hidden inert>
+                <div data-drawer-target="backdrop" data-action="click->drawer#clickOutside"></div>
+                <div data-drawer-target="dialog">
                     <button id="close" data-action="drawer#close">Close</button>
                     <a id="inside" href="#inside">Inside</a>
                 </div>
@@ -39,21 +31,13 @@ function frameHtml(identifier = "drawer") {
     return `
         <div id="${identifier}-shell"
              data-controller="${identifier}"
-             data-${identifier}-open-duration-value="1"
-             data-${identifier}-close-duration-value="1"
-             data-${identifier}-hidden-class="pointer-events-none"
-             data-${identifier}-visible-class="pointer-events-auto"
-             data-${identifier}-backdrop-hidden-class="opacity-0"
-             data-${identifier}-backdrop-visible-class="opacity-100"
-             data-${identifier}-dialog-hidden-class="translate-x-full"
-             data-${identifier}-dialog-visible-class="translate-x-0"
              data-${identifier}-lock-scroll-class="overflow-hidden">
             <a href="/items/1/edit" data-turbo-frame="${identifier}-frame">Edit</a>
             <a href="/items/1/comments" data-turbo-frame="${identifier}-frame" data-loading-template="#${identifier}-comments-skeleton">Comments</a>
             <template id="${identifier}-comments-skeleton"><div class="comments-skeleton">Loading comments...</div></template>
-            <div data-${identifier}-target="modal" data-open="false" hidden class="pointer-events-none">
-                <div data-${identifier}-target="backdrop" data-action="click->${identifier}#clickOutside" class="opacity-0"></div>
-                <div data-${identifier}-target="dialog" class="translate-x-full">
+            <div data-${identifier}-target="modal" data-state="closed" data-motion="none" hidden inert>
+                <div data-${identifier}-target="backdrop" data-action="click->${identifier}#clickOutside"></div>
+                <div data-${identifier}-target="dialog">
                     <turbo-frame id="${identifier}-frame" data-${identifier}-target="dynamicContent"></turbo-frame>
                     <template data-${identifier}-target="loadingTemplate"><div class="loading-state">Loading...</div></template>
                 </div>
@@ -87,8 +71,8 @@ test.serial("toggle opens and closes the drawer", async () => {
 
     expect(mounted.controller.isOpen).toBe(true);
     expect(modal().hidden).toBe(false);
-    expect(modal().dataset.open).toBe("true");
-    expect(panel().classList.contains("translate-x-0")).toBe(true);
+    expect(modal().dataset.state).toBe("open");
+    expect(modal().hasAttribute("inert")).toBe(false);
     expect(document.body.classList.contains("overflow-hidden")).toBe(true);
 
     click(document.getElementById("trigger"));
@@ -96,23 +80,17 @@ test.serial("toggle opens and closes the drawer", async () => {
 
     expect(mounted.controller.isOpen).toBe(false);
     expect(modal().hidden).toBe(true);
-    expect(panel().classList.contains("translate-x-full")).toBe(true);
+    expect(modal().dataset.state).toBe("closed");
     expect(document.body.classList.contains("overflow-hidden")).toBe(false);
 });
 
 test.serial("connect applies visible state when the drawer is pre-rendered open", async () => {
     await mount(`
         <div data-controller="drawer"
-             data-drawer-hidden-class="pointer-events-none"
-             data-drawer-visible-class="pointer-events-auto"
-             data-drawer-backdrop-hidden-class="opacity-0"
-             data-drawer-backdrop-visible-class="opacity-100"
-             data-drawer-dialog-hidden-class="translate-x-full"
-             data-drawer-dialog-visible-class="translate-x-0"
              data-drawer-lock-scroll-class="overflow-hidden">
-            <div data-drawer-target="modal" data-open="true" hidden class="pointer-events-none">
-                <div data-drawer-target="backdrop" class="opacity-0"></div>
-                <div data-drawer-target="dialog" class="translate-x-full">
+            <div data-drawer-target="modal" data-state="open" data-motion="none">
+                <div data-drawer-target="backdrop"></div>
+                <div data-drawer-target="dialog">
                     <p>Drawer content</p>
                 </div>
             </div>
@@ -121,13 +99,9 @@ test.serial("connect applies visible state when the drawer is pre-rendered open"
 
     expect(mounted.controller.isOpen).toBe(true);
     expect(modal().hidden).toBe(false);
-    expect(modal().dataset.open).toBe("true");
-    expect(modal().classList.contains("pointer-events-auto")).toBe(true);
-    expect(document.querySelector('[data-drawer-target="backdrop"]').classList.contains("opacity-100")).toBe(true);
-    expect(panel().classList.contains("translate-x-0")).toBe(true);
+    expect(modal().dataset.state).toBe("open");
+    expect(modal().hasAttribute("inert")).toBe(false);
     expect(document.body.classList.contains("overflow-hidden")).toBe(true);
-    expect(mounted.controller.openDurationValue).toBe(450);
-    expect(mounted.controller.closeDurationValue).toBe(450);
 });
 
 test.serial("backdrop and Escape close the drawer", async () => {
@@ -164,14 +138,14 @@ test.serial("Escape stops peer document handlers while open", async () => {
     document.removeEventListener("keydown", peer);
 });
 
-test.serial("supports vertical transform classes", async () => {
-    await mount(html("translate-y-full", "translate-y-0"));
+test.serial("preserves directional styling hooks on the dialog", async () => {
+    await mount(html().replace('data-drawer-target="dialog"', 'data-drawer-target="dialog" data-direction="up"'));
 
     click(document.getElementById("trigger"));
     await wait(10);
 
-    expect(panel().classList.contains("translate-y-0")).toBe(true);
-    expect(panel().classList.contains("translate-y-full")).toBe(false);
+    expect(panel().dataset.direction).toBe("up");
+    expect(modal().dataset.state).toBe("open");
 });
 
 test.serial("closeForCache closes immediately without waiting for transitions", async () => {
@@ -306,7 +280,7 @@ test.serial("refresh streams wait for the drawer close animation", async () => {
 
     expect(rendered).toBe(false);
     expect(mounted.controller.isOpen).toBe(false);
-    expect(modal().hidden).toBe(false);
+    expect(modal().hidden).toBe(true);
 
     await wait(10);
 

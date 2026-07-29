@@ -4,6 +4,7 @@
     'closeButton' => true,
     'fixedTop' => false,
     'frame' => null,
+    'motion' => 'default',
 ])
 
 @php
@@ -13,12 +14,14 @@
 
 <div
     data-slot="modal-overlay"
-    data-open="false"
+    data-state="closed"
+    data-motion="{{ $motion }}"
     data-modal-target="modal"
     data-action="click->modal#clickOutside"
     role="dialog"
     aria-modal="true"
     hidden
+    inert
 >
     <div
         data-slot="modal-backdrop"

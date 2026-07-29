@@ -3,7 +3,9 @@
 export function createPresence(element, options = {}) {
     const reducedMotion = options.reducedMotion ?? prefersReducedMotion;
     const maxWait = number(options.maxWait, 30_000);
-    let phase = element.hidden || element.dataset.state !== "open" ? "closed" : "open";
+    const stateAttribute = options.stateAttribute ?? "state";
+    const motionElements = uniqueElements(element, options.motionElements);
+    let phase = element.hidden || state(element, stateAttribute) !== "open" ? "closed" : "open";
     let generation = 0;
     let operation = null;
     let motionSuppression = null;
@@ -14,7 +16,7 @@ export function createPresence(element, options = {}) {
 
         invalidate();
         restoreMotion();
-        applyStableState(element, open);
+        applyStableState(element, open, stateAttribute);
         phase = open ? "open" : "closed";
 
         return true;
@@ -30,7 +32,8 @@ export function createPresence(element, options = {}) {
 
         if (!wasPresent) {
             suppressMotion(current);
-            element.dataset.state = "closed";
+            element.dataset.presence = "preparing";
+            setState(element, stateAttribute, "closed");
             element.hidden = false;
             setInert(element, true);
         }
@@ -48,10 +51,10 @@ export function createPresence(element, options = {}) {
             const animate = !immediate && motionEnabled(element, reducedMotion);
 
             if (!wasPresent && animate) {
-                forceStyle(element);
+                forceStyles(motionElements);
                 restoreMotion(current);
                 element.dataset.presence = "entering";
-                forceStyle(element);
+                forceStyles(motionElements);
                 if (!await nextFrame(current.signal) || !isCurrent(current)) return false;
             } else if (!animate && !isMotionSuppressed(current)) {
                 suppressMotion(current);
@@ -59,20 +62,20 @@ export function createPresence(element, options = {}) {
 
             element.dataset.presence = animate ? "entering" : "instant";
             setInert(element, false);
-            element.dataset.state = "open";
+            setState(element, stateAttribute, "open");
             onEnter?.({ signal: current.signal });
             if (!isCurrent(current)) return false;
 
             if (!animate) {
-                forceStyle(element);
+                forceStyles(motionElements);
                 restoreMotion(current);
             }
 
-            const enterMotion = animate ? waitForMotion(element, current.signal, maxWait) : null;
+            const enterMotion = animate ? waitForMotion(motionElements, current.signal, maxWait) : null;
             if (enterMotion && !await enterMotion) return false;
             if (!isCurrent(current)) return false;
 
-            forceStyle(element);
+            forceStyles(motionElements);
             delete element.dataset.presence;
             phase = "open";
             finish(current);
@@ -95,16 +98,16 @@ export function createPresence(element, options = {}) {
         phase = "closing";
         setInert(element, true);
         element.dataset.presence = immediate ? "instant" : "leaving";
-        element.dataset.state = "closed";
+        setState(element, stateAttribute, "closed");
 
         if (!immediate && motionEnabled(element, reducedMotion)) {
-            const exitMotion = waitForMotion(element, current.signal, maxWait);
+            const exitMotion = waitForMotion(motionElements, current.signal, maxWait);
             if (exitMotion && !await exitMotion) return false;
         }
 
         if (!isCurrent(current)) return false;
 
-        applyStableState(element, false);
+        applyStableState(element, false, stateAttribute);
         phase = "closed";
         finish(current);
 
@@ -117,7 +120,7 @@ export function createPresence(element, options = {}) {
         invalidate();
         restoreMotion();
         destroyed = true;
-        applyStableState(element, false);
+        applyStableState(element, false, stateAttribute);
         phase = "closed";
     }
 
@@ -152,7 +155,7 @@ export function createPresence(element, options = {}) {
     }
 
     function failOpen(current) {
-        applyStableState(element, false);
+        applyStableState(element, false, stateAttribute);
         phase = "closed";
         finish(current);
     }
@@ -160,32 +163,39 @@ export function createPresence(element, options = {}) {
     function suppressMotion(current) {
         restoreMotion();
         const properties = ["transition-property", "animation-name"];
-        const previous = properties.map((property) => ({
-            property,
-            value: element.style.getPropertyValue(property),
-            priority: element.style.getPropertyPriority(property),
+        const entries = motionElements.map((motionElement) => ({
+            animations: new Set(ownAnimations(motionElement)),
+            element: motionElement,
+            previous: properties.map((property) => ({
+                property,
+                value: motionElement.style.getPropertyValue(property),
+                priority: motionElement.style.getPropertyPriority(property),
+            })),
         }));
-        const animations = new Set(ownAnimations(element));
 
-        properties.forEach((property) => element.style.setProperty(property, "none", "important"));
-        motionSuppression = { animations, generation: current.generation, previous };
+        entries.forEach(({ element: motionElement }) => {
+            properties.forEach((property) => motionElement.style.setProperty(property, "none", "important"));
+        });
+        motionSuppression = { entries, generation: current.generation };
     }
 
     function restoreMotion(current = null) {
         if (!motionSuppression) return;
         if (current && motionSuppression.generation !== current.generation) return;
 
-        const { animations, previous } = motionSuppression;
+        const { entries } = motionSuppression;
         motionSuppression = null;
-        previous.forEach(({ property, value, priority }) => {
-            if (value) {
-                element.style.setProperty(property, value, priority);
-            } else {
-                element.style.removeProperty(property);
-            }
-        });
-        ownAnimations(element).forEach((animation) => {
-            if (!animations.has(animation) && isCssMotion(animation, element)) animation.cancel?.();
+        entries.forEach(({ animations, element: motionElement, previous }) => {
+            previous.forEach(({ property, value, priority }) => {
+                if (value) {
+                    motionElement.style.setProperty(property, value, priority);
+                } else {
+                    motionElement.style.removeProperty(property);
+                }
+            });
+            ownAnimations(motionElement).forEach((animation) => {
+                if (!animations.has(animation) && isCssMotion(animation, motionElement)) animation.cancel?.();
+            });
         });
     }
 
@@ -211,11 +221,19 @@ async function prepare(beforeEnter, signal) {
     return abortable(Promise.resolve().then(() => signal.aborted ? aborted : beforeEnter({ signal })), signal);
 }
 
-function applyStableState(element, open) {
+function applyStableState(element, open, stateAttribute) {
     delete element.dataset.presence;
-    element.dataset.state = open ? "open" : "closed";
+    setState(element, stateAttribute, open ? "open" : "closed");
     setInert(element, !open);
     element.hidden = !open;
+}
+
+function state(element, attribute) {
+    return element.dataset[attribute];
+}
+
+function setState(element, attribute, value) {
+    element.dataset[attribute] = value;
 }
 
 function setInert(element, inert) {
@@ -230,31 +248,34 @@ function prefersReducedMotion() {
     return window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false;
 }
 
-function waitForMotion(element, signal, maxWait) {
-    forceStyle(element);
+function waitForMotion(elements, signal, maxWait) {
+    forceStyles(elements);
 
-    const animations = ownFiniteAnimations(element);
+    const animations = ownFiniteAnimations(elements);
+    const durationFromStyles = elements.reduce((longest, element) => Math.max(longest, motionDuration(element)), 0);
     if (animations.length > 0) {
-        const duration = Math.min(maxWait, Math.max(animationEndTime(animations), motionDuration(element), 0) + 50);
-        const finished = Promise.allSettled(animations.map((animation) => animation.finished));
+        const duration = Math.min(maxWait, Math.max(animationEndTime(animations), durationFromStyles, 0) + 50);
+        const finished = Promise.allSettled(animations.map(({ animation }) => animation.finished));
 
         return waitForSettlement(finished, duration, signal);
     }
 
-    const duration = Math.min(maxWait, motionDuration(element));
+    const duration = Math.min(maxWait, durationFromStyles);
     if (duration <= 0) return null;
 
     return waitForSettlement(null, duration, signal);
 }
 
-function ownFiniteAnimations(element) {
-    return ownAnimations(element).filter((animation) => {
-        if (!animation?.finished || animation.playState === "finished") return false;
+function ownFiniteAnimations(elements) {
+    return elements.flatMap((element) => ownAnimations(element)
+        .filter((animation) => {
+            if (!animation?.finished || animation.playState === "finished") return false;
 
-        const endTime = animation.effect?.getComputedTiming?.().endTime;
+            const endTime = animation.effect?.getComputedTiming?.().endTime;
 
-        return endTime !== Infinity;
-    });
+            return endTime !== Infinity;
+        })
+        .map((animation) => ({ animation, element })));
 }
 
 function ownAnimations(element) {
@@ -275,7 +296,7 @@ function isCssMotion(animation, element) {
 }
 
 function animationEndTime(animations) {
-    return animations.reduce((longest, animation) => {
+    return animations.reduce((longest, { animation }) => {
         const endTime = animation.effect?.getComputedTiming?.().endTime;
 
         return Number.isFinite(endTime) ? Math.max(longest, endTime) : longest;
@@ -336,8 +357,18 @@ function number(value, fallback) {
     return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function forceStyles(elements) {
+    elements.forEach(forceStyle);
+}
+
 function forceStyle(element) {
     void getComputedStyle(element).opacity;
+}
+
+function uniqueElements(element, additional) {
+    const elements = Array.isArray(additional) ? additional : [];
+
+    return [...new Set([element, ...elements].filter(Boolean))];
 }
 
 function nextFrame(signal) {

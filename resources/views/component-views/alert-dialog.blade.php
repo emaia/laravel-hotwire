@@ -3,18 +3,10 @@
         'id' => $id,
         'data-slot' => 'alert-dialog',
         'data-controller' => 'alert-dialog',
-        'data-alert-dialog-open-duration-value' => $openDuration,
-        'data-alert-dialog-close-duration-value' => $closeDuration,
         'data-alert-dialog-lock-scroll-value' => $lockScroll ? 'true' : 'false',
         'data-alert-dialog-close-on-click-outside-value' => $closeOnClickOutside ? 'true' : 'false',
-        'data-alert-dialog-hidden-class' => 'pointer-events-none',
-        'data-alert-dialog-visible-class' => 'pointer-events-auto',
-        'data-alert-dialog-backdrop-hidden-class' => 'opacity-0',
-        'data-alert-dialog-backdrop-visible-class' => 'opacity-100',
-        'data-alert-dialog-dialog-hidden-class' => 'scale-90 opacity-0',
-        'data-alert-dialog-dialog-visible-class' => 'scale-100 opacity-100',
         'data-alert-dialog-lock-scroll-class' => 'overflow-hidden',
-        'data-action' => 'turbo:before-cache@window->alert-dialog#cancel',
+        'data-action' => 'turbo:before-cache@window->alert-dialog#closeForCache',
     ], $attributes, $stimulus, protectedPrefixes: ['data-alert-dialog-']);
 @endphp
 
@@ -27,12 +19,14 @@
 
     <div
         data-slot="alert-dialog-overlay"
-        data-open="false"
+        data-state="closed"
+        data-motion="{{ $motion }}"
         data-alert-dialog-target="modal"
         data-action="click->alert-dialog#clickOutside"
         role="dialog"
         aria-modal="true"
         hidden
+        inert
     >
         <div
             data-slot="alert-dialog-backdrop"

@@ -11,16 +11,13 @@ class Sheet extends Component
 {
     private const SIDES = ['left', 'right', 'top', 'bottom'];
 
-    public string $sheetHiddenClass;
-
     public function __construct(
         public string $id = '',
         public string $side = 'right',
         public string $size = '',
         public ?string $frame = null,
         public bool $backdrop = true,
-        public int $openDuration = 300,
-        public int $closeDuration = 300,
+        public string $motion = 'default',
         public bool $lockScroll = true,
         public bool $closeOnEscape = true,
         public bool $closeOnClickOutside = true,
@@ -42,7 +39,7 @@ class Sheet extends Component
             throw new \InvalidArgumentException('Sheet side must be one of: '.implode(', ', self::SIDES).". Got: {$this->side}");
         }
 
-        $this->sheetHiddenClass = $this->hiddenClass();
+        $this->motion = in_array($this->motion, ['default', 'none'], true) ? $this->motion : 'default';
     }
 
     public function render()
@@ -67,42 +64,14 @@ class Sheet extends Component
                 'id' => $this->id,
                 'data-slot' => 'sheet',
                 'data-controller' => 'sheet',
-                'data-sheet-open-duration-value' => $this->openDuration,
-                'data-sheet-close-duration-value' => $this->closeDuration,
                 'data-sheet-lock-scroll-value' => $this->lockScroll ? 'true' : 'false',
                 'data-sheet-close-on-escape-value' => $this->closeOnEscape ? 'true' : 'false',
                 'data-sheet-close-on-click-outside-value' => $this->closeOnClickOutside ? 'true' : 'false',
-                'data-sheet-hidden-class' => 'pointer-events-none',
-                'data-sheet-visible-class' => 'pointer-events-auto',
-                'data-sheet-backdrop-hidden-class' => 'opacity-0',
-                'data-sheet-backdrop-visible-class' => 'opacity-100',
-                'data-sheet-dialog-hidden-class' => $this->hiddenClass(),
-                'data-sheet-dialog-visible-class' => $this->visibleClass(),
                 'data-sheet-lock-scroll-class' => 'overflow-hidden',
                 'data-action' => 'turbo:before-cache@window->sheet#closeForCache',
                 'style' => $this->style(),
             ], $attributes, $this->stimulus, protectedPrefixes: ['data-sheet-']),
         ];
-    }
-
-    private function hiddenClass(): string
-    {
-        return match ($this->side) {
-            'left' => '-translate-x-10 opacity-0',
-            'right' => 'translate-x-10 opacity-0',
-            'top' => '-translate-y-10 opacity-0',
-            'bottom' => 'translate-y-10 opacity-0',
-            default => throw new \LogicException("Invalid sheet side: {$this->side}"),
-        };
-    }
-
-    private function visibleClass(): string
-    {
-        return match ($this->side) {
-            'left', 'right' => 'translate-x-0',
-            'top', 'bottom' => 'translate-y-0',
-            default => throw new \LogicException("Invalid sheet side: {$this->side}"),
-        };
     }
 
     private function style(): string

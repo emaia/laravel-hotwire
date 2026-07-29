@@ -3,6 +3,7 @@
 use Emaia\LaravelHotwire\Components\Modal;
 use Emaia\LaravelHotwire\LaravelHotwireServiceProvider;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\HtmlString;
 use Illuminate\View\ViewException;
 
 it('renders with default props', function () {
@@ -39,11 +40,20 @@ it('renders modal content as the dialog surface', function () {
     $view->assertSee('data-slot="modal-description"', false);
     $view->assertSee('Body content');
     $view->assertSee('data-slot="modal-footer"', false);
-    $view->assertSee('data-open="false"', false);
-    $view->assertSee('data-modal-hidden-class="pointer-events-none"', false);
-    $view->assertSee('data-modal-visible-class="pointer-events-auto"', false);
-    $view->assertSee('data-modal-backdrop-hidden-class="opacity-0"', false);
-    $view->assertSee('data-modal-backdrop-visible-class="opacity-100"', false);
+    $view->assertSee('data-state="closed"', false);
+    $view->assertSee('data-motion="default"', false);
+    $view->assertSee('hidden', false);
+    $view->assertSee('inert', false);
+    $view->assertDontSee('data-modal-hidden-class', false);
+    $view->assertDontSee('data-modal-open-duration-value', false);
+});
+
+it('normalizes modal motion', function () {
+    $none = $this->blade('<x-hw::modal motion="none"><x-hw::modal.content>Content</x-hw::modal.content></x-hw::modal>');
+    $invalid = $this->blade('<x-hw::modal motion="spin"><x-hw::modal.content>Content</x-hw::modal.content></x-hw::modal>');
+
+    $none->assertSee('data-motion="none"', false);
+    $invalid->assertSee('data-motion="default"', false);
 });
 
 it('renders a semantic trigger with button variants', function () {
@@ -149,6 +159,14 @@ it('generates unique id when not provided', function () {
     $component = new Modal;
 
     expect($component->id)->toStartWith('modal-');
+});
+
+it('keeps stimulus as the seventh positional constructor argument', function () {
+    $stimulus = new HtmlString('data-controller="custom"');
+    $component = new Modal('', 'md', '', true, false, null, $stimulus);
+
+    expect($component->stimulus)->toBe($stimulus)
+        ->and($component->motion)->toBe('default');
 });
 
 it('emits fixed-top semantic state', function () {
@@ -273,7 +291,7 @@ it('merges arbitrary stimulus attributes while protecting internal modal attribu
     ');
 
     $view->assertSee('data-controller="modal custom"', false);
-    $view->assertSee('data-action="turbo:before-cache@window->modal#close click->custom#run"', false);
+    $view->assertSee('data-action="turbo:before-cache@window->modal#closeForCache click->custom#run"', false);
     $view->assertDontSee('data-modal-close-on-escape-value="false"', false);
 });
 
@@ -281,7 +299,7 @@ it('merges inline stimulus attributes with the internal modal controller', funct
     $view = $this->blade('<x-hw::modal :stimulus="stimulus()->controller(\'hotkey\')->action(\'hotkey\', \'click\', \'keydown.m@window\')">Content</x-hw::modal>');
 
     $view->assertSee('data-controller="modal hotkey"', false);
-    $view->assertSee('turbo:before-cache@window->modal#close keydown.m@window->hotkey#click', false);
+    $view->assertSee('turbo:before-cache@window->modal#closeForCache keydown.m@window->hotkey#click', false);
 });
 
 it('clips horizontal overflow on the scroll container', function () {

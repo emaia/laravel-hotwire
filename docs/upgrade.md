@@ -4,6 +4,98 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 
 ---
 
+## Upgrading to `0.58.0`
+
+`0.58.0` migrates Modal, Alert Dialog, Drawer, Sheet and mobile Sidebar to the state-driven Presence lifecycle. Fixed
+JavaScript duration timers and visual Stimulus classes are removed; lifecycle completion now follows actual finite CSS
+motion and supports interruptible rapid reopen, `motion="none"`, and reduced motion.
+
+### Replace duration props
+
+Alert Dialog, Drawer and Sheet no longer accept `open-duration` or `close-duration`. Modal and mobile Sidebar no longer
+support their equivalent raw Stimulus values. Use the uniform motion API to disable motion:
+
+```diff
+- <hw:alert-dialog :open-duration="500" :close-duration="100">
++ <hw:alert-dialog motion="default">
+
+- <hw:drawer :open-duration="450" :close-duration="450">
++ <hw:drawer>
+
+- <hw:sheet :open-duration="300" :close-duration="300">
++ <hw:sheet>
+
++ <hw:modal motion="none">
++ <hw:sidebar motion="none">
+```
+
+`default` is implied. Customize speed in CSS on the animated backdrop or panel instead of passing milliseconds to
+JavaScript.
+
+### Replace raw overlay state and classes
+
+Modal, Alert Dialog, Drawer and Sheet overlay targets now start with:
+
+```html
+data-state="closed"
+data-motion="default"
+hidden
+inert
+```
+
+Replace custom `data-open` selectors with `data-state` selectors. Remove the following visual class attributes for each
+controller identifier:
+
+```text
+data-*-hidden-class
+data-*-visible-class
+data-*-backdrop-hidden-class
+data-*-backdrop-visible-class
+data-*-dialog-hidden-class
+data-*-dialog-visible-class
+data-*-open-duration-value
+data-*-close-duration-value
+```
+
+Keep `data-*-lock-scroll-class` when body scroll locking is enabled. Presence owns native `hidden` and `inert`; closed
+CSS must define only a visual state and must not use `display: none`.
+
+Scope state rules to the overlay's direct animated children. Broad descendant selectors leak parent state into nested
+overlays and can make a child Modal or Alert Dialog open without motion:
+
+```diff
+- [data-slot="modal-overlay"][data-state="open"] [data-slot="modal-positioner"] {
++ [data-slot="modal-overlay"][data-state="open"] > [data-slot="modal-positioner"] {
+      opacity: 1;
+  }
+```
+
+Mobile Sidebar preserves `data-state="expanded|collapsed"` for desktop state and uses
+`data-mobile-state="open|closed"` for Presence. Put `data-motion="default|none"` on the sidebar surface.
+
+### Review lifecycle timing
+
+- `opened` and `closed` events now follow actual finite CSS motion instead of configured milliseconds.
+- Alert Dialog replays the confirmed click only after actual exit motion settles.
+- Deferred Turbo Streams and mobile Sidebar navigation also wait for actual exit motion.
+- `turbo:before-cache` closes synchronously without restoring trigger focus.
+- Target replacement during Turbo morph rebuilds Presence, focus trap and top-layer ownership around the new nodes.
+- Rapid reopen invalidates stale close callbacks and top-layer teardown.
+- With no transition or finite animation, completion is immediate.
+
+### Refresh published controllers
+
+Vendor-loaded controllers update automatically. Refresh package-owned published copies and transitive helpers with:
+
+```bash
+php artisan hotwire:check --fix
+```
+
+The command will not overwrite marker-free customized controllers. Port those manually, including the new `_presence.js`
+dependency reached through `_overlay.js`.
+
+---
+
 ## Upgrading to `0.57.0`
 
 `0.57.0` replaces the class-driven floating transition engine with state-driven Presence for Dropdown, Popover, Hover

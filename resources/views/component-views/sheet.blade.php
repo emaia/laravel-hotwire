@@ -9,10 +9,12 @@
         <div
             data-slot="sheet-overlay"
             data-sheet-target="modal"
-            data-open="false"
+            data-state="closed"
+            data-motion="{{ $motion }}"
             role="dialog"
             aria-modal="true"
             hidden
+            inert
         >
             @if ($backdrop)
                 <div
@@ -26,7 +28,6 @@
                 data-slot="sheet-content"
                 data-side="{{ $side }}"
                 data-sheet-target="dialog"
-                class="{{ $sheetHiddenClass }}"
             >
                 <turbo-frame id="{{ $frame }}" data-sheet-target="dynamicContent"></turbo-frame>
 

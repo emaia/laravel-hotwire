@@ -24,8 +24,6 @@ Accessible modal with backdrop, animations, focus trap and dynamic content suppo
 
 | Value                    | Type      | Default | Description                                     |
 |--------------------------|-----------|---------|-------------------------------------------------|
-| `open-duration`          | `Number`  | `300`   | Opening animation duration (ms)                 |
-| `close-duration`         | `Number`  | `300`   | Closing animation duration (ms)                 |
 | `lock-scroll`            | `Boolean` | `true`  | Locks body scroll when open                     |
 | `close-on-escape`        | `Boolean` | `true`  | Closes on Escape key                            |
 | `close-on-click-outside` | `Boolean` | `true`  | Closes when clicking outside the modal          |
@@ -34,9 +32,6 @@ Accessible modal with backdrop, animations, focus trap and dynamic content suppo
 
 | Class                                  | Description                                      |
 |----------------------------------------|--------------------------------------------------|
-| `hidden` / `visible`                   | Applied to the `modal` target on open/close      |
-| `backdrop-hidden` / `backdrop-visible` | Applied to the `backdrop` target                 |
-| `dialog-hidden` / `dialog-visible`     | Applied to the `dialog` target                   |
 | `lock-scroll`                          | Applied to `<body>` when `lock-scroll` is `true` |
 
 ## Actions
@@ -46,6 +41,7 @@ Accessible modal with backdrop, animations, focus trap and dynamic content suppo
 | `modal#open`         | Opens the modal                                                  |
 | `modal#close`        | Closes the modal                                                 |
 | `modal#clickOutside` | Closes when clicking outside (use with `click` event on overlay) |
+| `modal#closeForCache` | Closes immediately for `turbo:before-cache`                    |
 
 ## Events
 
@@ -59,18 +55,13 @@ Accessible modal with backdrop, animations, focus trap and dynamic content suppo
 ```html
 <div
     data-controller="modal"
-    data-modal-hidden-class="opacity-0 pointer-events-none"
-    data-modal-visible-class="opacity-100"
-    data-modal-backdrop-hidden-class="opacity-0"
-    data-modal-backdrop-visible-class="opacity-50"
-    data-modal-dialog-hidden-class="opacity-0 scale-95"
-    data-modal-dialog-visible-class="opacity-100 scale-100"
     data-modal-lock-scroll-class="overflow-hidden"
+    data-action="turbo:before-cache@window->modal#closeForCache"
 >
     <!-- Trigger -->
     <button type="button" data-action="modal#open">Open modal</button>
 
-    <div data-modal-target="modal" hidden>
+    <div data-modal-target="modal" data-state="closed" data-motion="default" hidden inert>
         <!-- Backdrop -->
         <div
             class="fixed inset-0 bg-black transition-opacity"
@@ -93,6 +84,16 @@ Accessible modal with backdrop, animations, focus trap and dynamic content suppo
     </div>
 </div>
 ```
+
+Style closed and open visuals from the overlay state, scoped to direct children so nested modals keep independent motion:
+
+```css
+[data-modal-target="modal"][data-state="closed"] > [data-modal-target="dialog"] { opacity: 0; scale: .95; }
+[data-modal-target="modal"][data-state="open"] > [data-modal-target="dialog"] { opacity: 1; scale: 1; }
+```
+
+Presence waits for actual finite CSS motion on the backdrop and dialog. Never set `display: none` in the closed-state
+rule; Presence owns `hidden` and keeps exit content rendered but inert until motion settles.
 
 Stimulus actions are delegated by ancestry — the trigger must live inside the
 `[data-controller="modal"]` element so the click reaches the controller. The Blade component

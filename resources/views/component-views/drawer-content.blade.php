@@ -1,12 +1,14 @@
-@aware(['direction' => 'down', 'axis' => 'y', 'backdrop' => true, 'drawerHiddenClass' => 'translate-y-full', 'frame' => null])
+@aware(['direction' => 'down', 'axis' => 'y', 'backdrop' => true, 'frame' => null, 'motion' => 'default'])
 
 <div
     data-slot="drawer-overlay"
     data-drawer-target="modal"
-    data-open="false"
+    data-state="closed"
+    data-motion="{{ $motion }}"
     role="dialog"
     aria-modal="true"
     hidden
+    inert
 >
     @if ($backdrop)
         <div
@@ -21,7 +23,7 @@
         data-direction="{{ $direction }}"
         data-axis="{{ $axis }}"
         data-drawer-target="dialog"
-        {{ $attributes->merge(['class' => $drawerHiddenClass]) }}
+        {{ $attributes }}
     >
         <div data-slot="drawer-content">
             @if ($frame !== null)

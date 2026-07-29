@@ -92,11 +92,21 @@ it('renders sidebar side variant collapsible and inner structure', function () {
         ->assertSee('data-side="right"', false)
         ->assertSee('data-variant="floating"', false)
         ->assertSee('data-collapsible=""', false)
+        ->assertSee('data-mobile-state="closed"', false)
+        ->assertSee('data-motion="default"', false)
         ->assertSee('data-action="click->sidebar#clickOutside"', false)
         ->assertSee('data-slot="sidebar-gap"', false)
         ->assertSee('data-slot="sidebar-container"', false)
         ->assertSee('data-slot="sidebar-inner"', false)
         ->assertSeeText('Nav');
+});
+
+it('normalizes mobile sidebar motion', function () {
+    $none = $this->blade('<x-hw::sidebar.provider><x-hw::sidebar motion="none">Nav</x-hw::sidebar></x-hw::sidebar.provider>');
+    $invalid = $this->blade('<x-hw::sidebar.provider><x-hw::sidebar motion="spin">Nav</x-hw::sidebar></x-hw::sidebar.provider>');
+
+    $none->assertSee('data-motion="none"', false);
+    $invalid->assertSee('data-motion="default"', false);
 });
 
 it('marks only the collapsible sidebar surface with the sidebar role marker', function () {

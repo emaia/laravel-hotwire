@@ -14,22 +14,15 @@ afterEach(async () => {
 
 const HTML = `
     <div data-controller="alert-dialog"
-         data-alert-dialog-hidden-class="hidden"
-         data-alert-dialog-visible-class="visible"
-         data-alert-dialog-backdrop-hidden-class="bd-hidden"
-         data-alert-dialog-backdrop-visible-class="bd-visible"
-         data-alert-dialog-dialog-hidden-class="dlg-hidden"
-         data-alert-dialog-dialog-visible-class="dlg-visible"
          data-alert-dialog-lock-scroll-class="overflow-hidden"
-         data-alert-dialog-close-on-click-outside-value="true"
-         data-alert-dialog-open-duration-value="1"
-         data-alert-dialog-close-duration-value="1">
+         data-alert-dialog-close-on-click-outside-value="true">
         <a href="/items/1" data-action="click->alert-dialog#intercept" id="trigger">Delete</a>
 
         <div data-alert-dialog-target="modal"
-             data-open="false"
+             data-state="closed"
+             data-motion="none"
              data-action="click->alert-dialog#clickOutside"
-             hidden>
+             hidden inert>
             <div data-alert-dialog-target="backdrop"></div>
             <div data-alert-dialog-target="dialog">
                 <button id="cancel" data-action="click->alert-dialog#cancel">Cancel</button>
@@ -56,7 +49,13 @@ test.serial("intercept prevents the click and opens the dialog", async () => {
 
     expect(defaultPrevented).toBe(true);
     expect(modal.hidden).toBe(false);
-    expect(modal.dataset.open).toBe("true");
+    expect(modal.dataset.state).toBe("closed");
+    expect(modal.hasAttribute("inert")).toBe(true);
+
+    await wait(0);
+
+    expect(modal.dataset.state).toBe("open");
+    expect(modal.hasAttribute("inert")).toBe(false);
     expect(mounted.controller.isOpen).toBe(true);
 });
 
@@ -81,9 +80,9 @@ test.serial("intercept ignores click with modifier keys", async () => {
     expect(mounted.controller.isOpen).toBe(false);
 });
 
-// --- visible/hidden classes applied after rAF ---
+// --- semantic presence state ---
 
-test.serial("after open, modal gets the visible class and lock-scroll is applied to body", async () => {
+test.serial("after open, modal becomes interactive and lock-scroll is applied to body", async () => {
     await mount();
     const trigger = document.getElementById("trigger");
     const modal = document.querySelector('[data-alert-dialog-target="modal"]');
@@ -91,7 +90,8 @@ test.serial("after open, modal gets the visible class and lock-scroll is applied
     clickWith(trigger);
     await wait(10); // rAF tick
 
-    expect(modal.classList.contains("visible")).toBe(true);
+    expect(modal.dataset.state).toBe("open");
+    expect(modal.hasAttribute("inert")).toBe(false);
     expect(document.body.classList.contains("overflow-hidden")).toBe(true);
 });
 
@@ -152,10 +152,40 @@ test.serial("confirm re-issues the click on the original trigger and lets it thr
 
     clickWith(trigger);                          // first click → intercepted
     mounted.controller.confirm();
-    await wait(20);                              // wait for closeDuration + re-click
+    await wait(20);
 
     expect(secondClickReached).toBe(true);
     expect(mounted.controller.isOpen).toBe(false);
+});
+
+test.serial("confirm waits for the actual exit motion before re-issuing the click", async () => {
+    await mount();
+    const trigger = document.getElementById("trigger");
+    const modal = document.querySelector('[data-alert-dialog-target="modal"]');
+    const dialog = document.querySelector('[data-alert-dialog-target="dialog"]');
+    const motion = fakeAnimation();
+    let secondClickReached = false;
+
+    modal.dataset.motion = "default";
+    dialog.getAnimations = () => modal.dataset.state === "closed" ? [motion.animation] : [];
+    trigger.addEventListener("click", () => {
+        if (!mounted.controller.isOpen && !mounted.controller.confirmed) secondClickReached = true;
+    });
+
+    clickWith(trigger);
+    await wait(0);
+    const confirming = mounted.controller.confirm();
+    await wait(0);
+
+    expect(secondClickReached).toBe(false);
+    expect(modal.hidden).toBe(false);
+    expect(modal.hasAttribute("inert")).toBe(true);
+
+    motion.finish();
+    await confirming;
+
+    expect(secondClickReached).toBe(true);
+    expect(modal.hidden).toBe(true);
 });
 
 // --- cancel() closes without re-clicking ---
@@ -168,7 +198,7 @@ test.serial("cancel closes the dialog and clears the pending element", async () 
     mounted.controller.cancel();
 
     expect(mounted.controller.isOpen).toBe(false);
-    expect(document.querySelector('[data-alert-dialog-target="modal"]').dataset.open).toBe("false");
+    expect(document.querySelector('[data-alert-dialog-target="modal"]').dataset.state).toBe("closed");
     expect(mounted.controller.pendingElement).toBeNull();
 });
 
@@ -242,7 +272,7 @@ test.serial("confirm re-click bubbles past the dialog so ancestors can react", a
     expect(ancestorClicks).toBe(0);
 
     clickWith(confirmBtn);
-    await wait(20); // closeDuration (1ms) + re-click
+    await wait(20);
 
     expect(mounted.controller.isOpen).toBe(false);
     // The synthetic re-click on the original trigger reaches ancestor listeners,
@@ -325,4 +355,26 @@ async function mount() {
 function setViewportWidth(innerWidth, clientWidth) {
     Object.defineProperty(window, "innerWidth", { configurable: true, value: innerWidth });
     Object.defineProperty(document.documentElement, "clientWidth", { configurable: true, value: clientWidth });
+}
+
+function fakeAnimation() {
+    const finished = deferred();
+
+    return {
+        animation: {
+            effect: { getComputedTiming: () => ({ endTime: 100 }) },
+            finished: finished.promise,
+            playState: "running",
+        },
+        finish: () => finished.resolve(),
+    };
+}
+
+function deferred() {
+    let resolve;
+    const promise = new Promise((settle) => {
+        resolve = settle;
+    });
+
+    return { promise, resolve };
 }

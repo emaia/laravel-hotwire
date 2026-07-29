@@ -79,6 +79,7 @@ test("keeps focus inside content when close delay is zero", async ({ page }) => 
 
     await trigger.focus();
     await expect(content).toBeVisible();
+    await expect(content).toHaveAttribute("data-state", "open");
     await page.keyboard.press("Tab");
 
     await expect(link).toBeFocused();
