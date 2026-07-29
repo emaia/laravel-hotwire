@@ -4,11 +4,13 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 
 ---
 
-## Upgrading to `0.58.0`
+## Upgrading to `0.57.0`
 
-`0.58.0` migrates Modal, Alert Dialog, Drawer, Sheet and mobile Sidebar to the state-driven Presence lifecycle. Fixed
-JavaScript duration timers and visual Stimulus classes are removed; lifecycle completion now follows actual finite CSS
-motion and supports interruptible rapid reopen, `motion="none"`, and reduced motion.
+`0.57.0` unifies floating surfaces and modal overlays on the state-driven Presence lifecycle, with actual finite CSS
+motion, interruptible rapid reopen, `motion="none"`, and reduced motion.
+
+**Modal overlays.** Modal, Alert Dialog, Drawer, Sheet and mobile Sidebar no longer use fixed JavaScript duration timers
+or visual Stimulus classes.
 
 ### Replace duration props
 
@@ -94,13 +96,9 @@ php artisan hotwire:check --fix
 The command will not overwrite marker-free customized controllers. Port those manually, including the new `_presence.js`
 dependency reached through `_overlay.js`.
 
----
-
-## Upgrading to `0.57.0`
-
-`0.57.0` replaces the class-driven floating transition engine with state-driven Presence for Dropdown, Popover, Hover
-Card, Multi Select and Tooltip. The change makes exit motion interruptible, waits for resolved Floating UI placement
-before enter, and coordinates `hidden`, `inert`, and native top-layer cleanup.
+**Floating surfaces.** Dropdown, Popover, Hover Card, Multi Select and Tooltip replace the class-driven transition engine
+with Presence. Exit motion is interruptible, enter waits for resolved Floating UI placement, and the lifecycle coordinates
+`hidden`, `inert`, and native top-layer cleanup.
 
 ### Replace floating `data-open` selectors
 
