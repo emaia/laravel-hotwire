@@ -302,6 +302,14 @@ it('keeps attachment image previews covered and uses the shared shimmer motion',
         ->toContain('prefers-reduced-motion: reduce');
 });
 
+it('styles previewless file upload errors with destructive feedback', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain('[data-slot="file-upload-dropzone"][data-state="error"] [data-slot="empty-state-description"]')
+        ->toContain('@apply text-destructive');
+});
+
 it('defines aspect ratio styling in the nova preset', function () use ($novaPresetPath) {
     $css = file_get_contents($novaPresetPath);
 

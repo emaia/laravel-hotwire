@@ -4,7 +4,9 @@ Native upload controller for `<hw:file-upload>`. It owns file selection, drag/dr
 progress, hidden input lifecycle, optional DELETE-on-remove and Turbo Stream responses.
 
 **Identifier:** `file-upload`  
-**Install:** controllers auto-load after `php artisan hotwire:install`; publish only when customising with `php artisan hotwire:controllers file-upload`.
+**Install:** controllers auto-load after `php artisan hotwire:install`; publish only when customising with
+`php artisan hotwire:controllers file-upload`.
+
 **npm deps:** none
 
 ## Values
@@ -16,7 +18,7 @@ progress, hidden input lifecycle, optional DELETE-on-remove and Turbo Stream res
 | `accept`          | String  | `""`     | Native accept list, also checked client-side.                                               |
 | `maxSizeBytes`    | Number  | `0`      | Per-file client-side size limit. `0` disables it.                                           |
 | `maxFiles`        | Number  | `0`      | Maximum queued files. `0` disables it.                                                      |
-| `multiple`        | Boolean | `false`  | Allows multiple files. Single mode replaces current local items before queueing a new file. |
+| `multiple`        | Boolean | `false`  | Allows multiple files. Single mode keeps a completed upload until its replacement succeeds. |
 | `preview`         | Boolean | `true`   | Renders client-side attachment cards when true.                                             |
 | `emitHidden`      | Boolean | `true`   | Appends a hidden input on success when a value is extracted.                                |
 | `paramName`       | String  | `file`   | Multipart field name.                                                                       |
@@ -29,13 +31,14 @@ progress, hidden input lifecycle, optional DELETE-on-remove and Turbo Stream res
 
 ## Targets
 
-| Target      | Required                | Description                                  |
-|-------------|-------------------------|----------------------------------------------|
-| `input`     | yes                     | Hidden native `<input type="file">`.         |
-| `dropzone`  | yes                     | Keyboard/click/drag-drop activation surface. |
-| `list`      | yes                     | Attachment list container.                   |
-| `template`  | yes when `preview=true` | Attachment card template cloned per file.    |
-| `announcer` | optional                | `aria-live` status region.                   |
+| Target      | Required                | Description                                                          |
+|-------------|-------------------------|----------------------------------------------------------------------|
+| `input`     | yes                     | Hidden native `<input type="file">`.                                 |
+| `dropzone`  | yes                     | Keyboard/click/drag-drop activation surface.                         |
+| `feedback`  | optional                | Visible dropzone progress and error copy when previews are disabled. |
+| `list`      | yes                     | Attachment list container.                                           |
+| `template`  | yes when `preview=true` | Attachment card template cloned per file.                            |
+| `announcer` | optional                | `aria-live` status region.                                           |
 
 ## Actions
 
@@ -51,16 +54,17 @@ progress, hidden input lifecycle, optional DELETE-on-remove and Turbo Stream res
 
 ## Events
 
-| Event                  | Detail                         | Fires when                                                                                        |
-|------------------------|--------------------------------|---------------------------------------------------------------------------------------------------|
-| `file-upload:ready`    | `{}`                           | Controller connects.                                                                              |
-| `file-upload:added`    | `{ file }`                     | A file enters the queue.                                                                          |
-| `file-upload:progress` | `{ file, percent, bytes }`     | Native XHR upload progress updates.                                                               |
-| `file-upload:success`  | `{ file, response, value }`    | Upload returns 2xx. `value` is extracted from `responseKey`; stream success uses `null`.          |
-| `file-upload:retry`    | `{ file }`                     | A retryable failed upload is queued again.                                                        |
-| `file-upload:error`    | `{ file, message, xhr, text }` | Client validation fails, network fails or server returns non-2xx.                                 |
-| `file-upload:removed`  | `{ file }`                     | User removes a single attachment.                                                                 |
-| `file-upload:cleared`  | `{ files, count }`             | User clears all current attachments; this is aggregate and does not emit per-item removed events. |
+| Event                      | Detail                                   | Fires when                                                                                                 |
+|----------------------------|------------------------------------------|------------------------------------------------------------------------------------------------------------|
+| `file-upload:ready`        | `{}`                                     | Controller connects.                                                                                       |
+| `file-upload:added`        | `{ file }`                               | A file enters the queue.                                                                                   |
+| `file-upload:progress`     | `{ file, percent, bytes }`               | Native XHR upload progress updates.                                                                        |
+| `file-upload:success`      | `{ file, response, value }`              | Upload returns a usable 2xx response. `value` is extracted from `responseKey`; stream success uses `null`. |
+| `file-upload:retry`        | `{ file }`                               | A retryable failed upload is queued again.                                                                 |
+| `file-upload:error`        | `{ file, message, xhr, text }`           | Client validation fails, the response lacks a required token, network fails or server returns non-2xx.     |
+| `file-upload:delete-error` | `{ error, file, response, text, value }` | A remote DELETE request fails or returns non-2xx.                                                          |
+| `file-upload:removed`      | `{ file }`                               | User removes a single attachment.                                                                          |
+| `file-upload:cleared`      | `{ files, count }`                       | User clears all current attachments; this is aggregate and does not emit per-item removed events.          |
 
 Event names follow the controller identifier when subclassed.
 
@@ -70,27 +74,41 @@ JSON responses are parsed automatically. Plain strings are treated as the value.
 field error as the user-facing message:
 
 ```json
-{ "errors": { "file": ["The file must be an image."] } }
+{
+    "errors": {
+        "file": [
+            "The file must be an image."
+        ]
+    }
+}
 ```
 
 When `turboStream` is true, string responses are parsed and only bodies with an actual `<turbo-stream>` element are
 passed to `Turbo.renderStreamMessage` on success and error.
 
-For non-JSON failures, `413 Payload Too Large` uses the `fileTooBig` message and HTML error pages fall back to the
-generic `uploadFailed` message instead of rendering the full response body in the attachment card.
+For non-JSON failures, `413 Payload Too Large` uses the `fileTooBig` message and non-2xx HTML error pages fall back to
+`uploadFailed` instead of rendering the full response body in the attachment card.
 
-Network errors (`status === 0`) and `5xx` failures are retryable while the page is alive because the original `File` stays in memory on
-the failed item. Validation failures such as `422`, file-size failures such as `413`, and client-side validation errors
-do not expose retry.
+Full HTML documents are also treated as errors when a redirect turns an upload failure into a final `200` response. They
+use the actionable `serverRejected` fallback because this commonly happens when PHP rejects a file before Laravel
+validation and the application redirects back with a flash error. Turbo Stream uploads prefer JSON in the `Accept` header
+while still advertising `text/vnd.turbo-stream.html`. Laravel therefore returns structured validation errors, and
+`wantsTurboStream()` continues to recognize successful stream responses.
 
-When generated image attachments are previewed, the controller creates local object URLs and revokes them when an item is
-removed or when `disconnect()` runs.
+Network errors (`status === 0`) and `5xx` failures are retryable while the page is alive because the original `File`
+stays in memory on the failed item. Validation failures such as `422`, file-size failures such as `413`, and client-side
+validation errors do not expose retry.
 
-Clear all also removes preserved hidden tokens rendered from `value`/`old()` and announces the number of cleared entries.
-Remote DELETE cleanup for completed uploads is capped by `parallelUploads`.
+When generated image attachments are previewed, the controller creates local object URLs and revokes them when an item
+is removed or when `disconnect()` runs. Before Turbo caches the page, local previews return to the generic attachment
+icon and interrupted or failed cards are removed because their in-memory `File` objects cannot survive a reconnect.
 
-Malformed JSON-like responses are not treated as upload tokens, so they do not append hidden inputs. In `multiple` mode,
-selecting a file that is already queued, uploading or done is ignored.
+Clear all also removes preserved hidden tokens rendered from `value`/`old()` and announces the number of cleared
+entries. Remote DELETE cleanup for completed uploads is capped by `parallelUploads`. Failed cleanup dispatches
+`file-upload:delete-error`; non-2xx responses are failures even when `fetch()` resolves normally.
+
+Malformed JSON-like responses are treated as upload errors rather than tokens, so they do not append hidden inputs. In
+`multiple` mode, selecting a file that is already queued, uploading or done is ignored.
 
 ## CSRF
 
@@ -99,8 +117,8 @@ The controller reads `<meta name="csrf-token">` and sends `X-CSRF-TOKEN` on uplo
 ## Cleanup
 
 `disconnect()` aborts in-flight native XHR uploads and ignores any late XHR callbacks, so removed or disconnected
-uploads cannot append hidden inputs later. On reconnect, completed cards already in the DOM are hydrated before new IDs
-are assigned, which avoids ID collisions across Turbo morphs.
+uploads cannot append hidden inputs later. On reconnect, transient cards are discarded and completed cards already in
+the DOM are hydrated before new IDs are assigned, which avoids stale uploads and ID collisions across Turbo morphs.
 
 ## See Also
 

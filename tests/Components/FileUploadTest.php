@@ -76,6 +76,8 @@ it('renders the native file input, dropzone, attachment list, template and annou
         ->assertSee('role="button"', false)
         ->assertSee('tabindex="0"', false)
         ->assertSee('data-file-upload-target="dropzone"', false)
+        ->assertSee('data-file-upload-target="feedback"', false)
+        ->assertSee('data-file-upload-default-feedback="Drop a file here or click to choose"', false)
         ->assertSee('data-slot="attachment-group"', false)
         ->assertSee('role="list"', false)
         ->assertSee('data-file-upload-target="list"', false)
@@ -185,7 +187,7 @@ it('emits controller data values for the native uploader', function () {
         view="grid"
         density="compact"
         :clearable="false"
-        :messages="[\'idle\' => \'Drop files\', \'fileTooBig\' => \'Too large\', \'removed\' => \'Removed\', \'retry\' => \'Retry upload\']"
+        :messages="[\'idle\' => \'Drop files\', \'fileTooBig\' => \'Too large\', \'serverRejected\' => \'Server rejected the file\', \'removed\' => \'Removed\', \'retry\' => \'Retry upload\']"
     />');
 
     $view->assertSee('data-file-upload-url-value="/uploads"', false)
@@ -207,6 +209,7 @@ it('emits controller data values for the native uploader', function () {
         ->assertSee('data-file-upload-messages-value=', false)
         ->assertSee('Drop files', false)
         ->assertSee('Too large', false)
+        ->assertSee('Server rejected the file', false)
         ->assertSee('Removed', false)
         ->assertSee('Retry upload', false)
         ->assertDontSee('data-file-upload-clear', false)
@@ -250,6 +253,7 @@ it('swaps the Stimulus identifier when controller prop is set', function () {
         ->assertSee('data-my-upload-url-value="/uploads"', false)
         ->assertSee('data-my-upload-hidden-name-value="cover[]"', false)
         ->assertSee('data-my-upload-target="input"', false)
+        ->assertSee('data-my-upload-target="feedback"', false)
         ->assertSee('my-upload#openPicker', false)
         ->assertDontSee('data-file-upload-url-value', false)
         ->assertDontSee('data-file-upload-hidden-name-value', false)

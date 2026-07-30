@@ -4,6 +4,80 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 
 ---
 
+## Upgrading to `0.58.0`
+
+`0.58.0` replaces the Dropzone-backed File Upload component and controller with a native file input, drag-and-drop
+handling and `XMLHttpRequest` uploads. This is a breaking migration for applications that used Dropzone-specific props,
+markup, CSS or controller extensions.
+
+### Replace Dropzone component options
+
+The `options` prop and `preview_template` slot have been removed. Replace Dropzone configuration with the File Upload
+props for that behavior, such as `accept`, `max-size-bytes`, `max-files`, `parallel-uploads`, `param-name`, `delete-url`,
+`turbo-stream`, `preview` and `emit-hidden`. Native attachment cards now use the package's
+[`Attachment`](components/attachment.md) primitive. When the server owns the visible card through Turbo Streams, disable
+the built-in card and hidden input explicitly:
+
+```blade
+<hw:file-upload
+    url="{{ route('uploads.store') }}"
+    turbo-stream
+    :preview="false"
+    :emit-hidden="false"
+/>
+```
+
+Dropzone `dict*` option names are no longer accepted, and `messages` no longer maps short keys to Dropzone dictionaries.
+Use the native keys documented in [`File Upload`](components/file-upload.md#messages), including `idle`, `idleMultiple`,
+`hint`, `button`, `uploading`, `uploaded`, `uploadFailed`, `serverRejected`, `clearAll`, `cleared`, `removed`, `removeFile`, `retry`,
+`fileTooBig`, `invalidFileType`, `maxFilesExceeded` and `deleteFailed`:
+
+```diff
+- :options="['dictDefaultMessage' => 'Drop files', 'dictFileTooBig' => 'Too large']"
++ :messages="['idleMultiple' => 'Drop files', 'fileTooBig' => 'Too large']"
+```
+
+There is no native equivalent for Dropzone-only options or messages outside the documented File Upload API.
+
+### Replace Dropzone markup and CSS
+
+Remove custom `.dropzone`, `.dz-*`, `data-dz-*` and `preview_template` markup. Restyle the native UI through its semantic
+hooks: `data-slot="file-upload"`, `data-slot="file-upload-dropzone"`, `data-slot="attachment-group"`,
+`data-slot="attachment"`, `data-state="idle|uploading|processing|error|done"`, `data-density` and `data-view`. See the
+complete [File Upload styling hooks](components/file-upload.md#styling-hooks).
+
+### Port customized controllers
+
+The `defaultOptions()` and `afterInit()` extension hooks, `this.dropzone` instance and Dropzone events have been removed.
+Move supported configuration to component props. In controller subclasses, use normal Stimulus lifecycle overrides and
+the public `file-upload:*` events instead; call `super.connect()`/`super.disconnect()` when overriding lifecycle methods
+and clean up any app listeners in `disconnect()`.
+
+Applications loading the controller from `vendor` receive the native implementation after the Composer update. Refresh
+package-owned published copies with:
+
+```bash
+php artisan hotwire:check --fix
+```
+
+The command replaces outdated files that still carry the `// @hotwire-package` marker. It will not overwrite a
+marker-free customized `file_upload_controller.js`; manually port those customizations to the native controller and
+remove any Dropzone imports or assumptions.
+
+### Remove Dropzone from the application
+
+File Upload no longer declares `@deltablot/dropzone`. `hotwire:check --fix` does not remove unused application
+dependencies, so remove it explicitly with your package manager, for example:
+
+```bash
+npm uninstall @deltablot/dropzone
+```
+
+Use the equivalent `bun remove`, `pnpm remove` or `yarn remove` command when applicable, and remove any app-level
+Dropzone CSS imports.
+
+---
+
 ## Upgrading to `0.57.0`
 
 `0.57.0` unifies floating surfaces and modal overlays on the state-driven Presence lifecycle, with actual finite CSS

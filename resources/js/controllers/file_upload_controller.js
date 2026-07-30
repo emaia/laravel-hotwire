@@ -2,7 +2,7 @@
 import { Controller } from "@hotwired/stimulus";
 
 export default class extends Controller {
-    static targets = ["announcer", "dropzone", "input", "list", "template"];
+    static targets = ["announcer", "dropzone", "feedback", "input", "list", "template"];
 
     static values = {
         url: String,
@@ -22,21 +22,35 @@ export default class extends Controller {
         messages: { type: Object, default: {} },
     };
 
+    initialize() {
+        this.prepareForCache = this.prepareForCache.bind(this);
+    }
+
     connect() {
         this.disconnected = false;
+        this.feedbackError = null;
+        this.feedbackDefault = this.hasFeedbackTarget
+            ? this.feedbackTarget.dataset.fileUploadDefaultFeedback ?? this.feedbackTarget.textContent
+            : "";
         this.items = this.hydrateItems();
         this.nextId = this.nextAvailableId();
         this.activeUploads = 0;
+        document.addEventListener("turbo:before-cache", this.prepareForCache);
         this.updateClearAction();
         this.dispatch("ready");
     }
 
     disconnect() {
         this.disconnected = true;
-        for (const item of this.items) {
-            if (item.state === "uploading") item.xhr?.abort();
-            this.revokePreviewUrl(item);
-        }
+        document.removeEventListener("turbo:before-cache", this.prepareForCache);
+        this.normalizeDisconnectedItems();
+        this.restoreUploadFeedback();
+        this.activeUploads = 0;
+    }
+
+    prepareForCache() {
+        this.normalizeDisconnectedItems();
+        this.restoreUploadFeedback();
         this.activeUploads = 0;
     }
 
@@ -74,10 +88,11 @@ export default class extends Controller {
 
     addFiles(files) {
         const selected = this.multipleValue ? files : files.slice(0, 1);
-        if (!this.multipleValue && selected.length > 0) this.removeLocalItems();
+        if (selected.length > 0) this.beginSelection();
+        if (!this.multipleValue && selected.length > 0) this.removePendingItems();
 
         for (const file of selected) {
-            if (this.isDuplicateFile(file)) continue;
+            if (this.multipleValue && this.isDuplicateFile(file)) continue;
 
             const validationError = this.validateFile(file);
             if (validationError) {
@@ -87,7 +102,6 @@ export default class extends Controller {
 
             const item = this.createItem(file);
             this.items.push(item);
-            this.announce(`${this.message("uploading")} ${file.name}`);
             this.dispatch("added", { detail: { file } });
         }
 
@@ -126,6 +140,7 @@ export default class extends Controller {
 
         preserved.forEach((element) => element.remove());
         this.updateClearAction();
+        this.restoreUploadFeedback();
 
         if (remoteValues.length > 0 && this.deleteUrlValue !== "") {
             this.deleteRemoteValues(remoteValues).catch((error) => console.error("file-upload delete failed:", error));
@@ -146,7 +161,7 @@ export default class extends Controller {
         const item = this.items.find((candidate) => candidate.id === String(rawId));
         if (!item || item.removed || !item.retryable) return;
 
-        if (this.maxFilesValue > 0 && this.acceptedItems().length >= this.maxFilesValue) {
+        if (this.hasReachedMaxFiles(item)) {
             const text = this.message("maxFilesExceeded");
             this.setDescription(item, text);
             this.announce(`${this.message("uploadFailed")}: ${text}`);
@@ -158,18 +173,18 @@ export default class extends Controller {
         item.progress = 0;
         item.xhr = null;
         item.retryable = false;
+        this.feedbackError = null;
         this.setState(item, "queued");
         this.setDescription(item, this.fileDescription(item.file));
         this.updateProgress(item, 0);
         this.showProgress(item, false);
         this.setRetryAction(item, false);
-        this.announce(`${this.message("uploading")} ${item.file.name}`);
         this.dispatch("retry", { detail: { file: item.file } });
         this.processQueue();
     }
 
     validateFile(file) {
-        if (this.maxFilesValue > 0 && this.acceptedItems().length >= this.maxFilesValue) {
+        if (this.hasReachedMaxFiles()) {
             return this.message("maxFilesExceeded");
         }
 
@@ -191,6 +206,7 @@ export default class extends Controller {
         this.setState(item, "error");
         this.setDescription(item, text);
         this.announce(`${this.message("uploadFailed")}: ${text}`);
+        this.setUploadFeedback(text, "error");
         this.dispatch("error", { detail: { file, message: text, xhr: null, text } });
     }
 
@@ -210,6 +226,7 @@ export default class extends Controller {
             state: "queued",
             value: null,
             xhr: null,
+            mediaFallback: null,
         };
 
         this.configureItemPresentation(item);
@@ -257,6 +274,8 @@ export default class extends Controller {
         this.setState(item, "uploading");
         this.setRetryAction(item, false);
         this.showProgress(item, true);
+        const feedback = `${this.message("uploading")} ${item.file.name}`;
+        if (this.setUploadFeedback(feedback, "uploading")) this.announce(feedback);
 
         xhr.open("POST", this.urlValue);
         for (const [name, value] of Object.entries(this.requestHeaders())) {
@@ -286,8 +305,13 @@ export default class extends Controller {
         if (this.isStale(item, xhr)) return;
 
         if (xhr.status >= 200 && xhr.status < 300) {
-            this.activeUploads = Math.max(0, this.activeUploads - 1);
-            this.handleSuccess(item, this.parseResponse(xhr));
+            const response = this.parseResponse(xhr);
+            if (this.isUsableSuccessResponse(response)) {
+                this.activeUploads = Math.max(0, this.activeUploads - 1);
+                this.handleSuccess(item, response);
+            } else {
+                this.handleError(item, this.message("uploadFailed"), xhr);
+            }
         } else {
             this.handleError(item, this.parseResponse(xhr), xhr);
         }
@@ -299,12 +323,14 @@ export default class extends Controller {
         if (this.isStale(item)) return;
 
         if (this.maybeRenderStream(typeof response === "string" ? response : null)) {
+            this.commitSingleReplacement(item);
             this.finishSuccess(item, response, null);
             return;
         }
 
         const value = this.extractValue(response);
         item.value = value;
+        this.commitSingleReplacement(item);
 
         if (this.emitHiddenValue) {
             if (!this.multipleValue) this.removePreservedHiddens();
@@ -324,6 +350,11 @@ export default class extends Controller {
         this.updateProgress(item, 100);
         this.showProgress(item, false);
         this.setDescription(item, `${this.message("uploaded")} · ${this.fileDescription(item.file)}`);
+        const pending = this.pendingUpload();
+        const feedback = pending
+            ? `${this.message("uploading")} ${pending.file.name}`
+            : `${this.message("uploaded")} ${item.file.name}`;
+        this.setUploadFeedback(feedback, pending ? "uploading" : "done");
         this.announce(`${this.message("uploaded")} ${item.file.name}`);
         this.dispatch("success", { detail: { file: item.file, response, value } });
     }
@@ -342,6 +373,7 @@ export default class extends Controller {
         this.setRetryAction(item, item.retryable);
         this.setDescription(item, text);
         this.announce(`${this.message("uploadFailed")}: ${text}`);
+        this.setUploadFeedback(text, "error");
         this.dispatch("error", { detail: { file: item.file, message, xhr, text } });
         this.processQueue();
     }
@@ -356,20 +388,33 @@ export default class extends Controller {
         this.revokePreviewUrl(item);
         this.removeHidden(item);
         if (deleteRemote && item.value && this.deleteUrlValue !== "") {
-            this.deleteRemote(item.value).catch((error) => console.error("file-upload delete failed:", error));
+            this.deleteRemote(item.value).catch((error) => this.handleDeleteError(item, error));
         }
 
         item.element?.remove();
         this.items = this.items.filter((candidate) => candidate !== item);
+        this.syncFeedbackAfterRemoval(item);
         this.updateClearAction();
         if (announce) this.announce(`${this.message("removed")} ${item.file.name}`);
 
         if (dispatch) this.dispatch("removed", { detail: { file: item.file } });
     }
 
-    removeLocalItems() {
+    removePendingItems() {
         for (const item of [...this.items]) {
-            this.removeItem(item, { dispatch: false });
+            if (item.state !== "done") {
+                this.removeItem(item, { dispatch: false, announce: false, deleteRemote: false });
+            }
+        }
+    }
+
+    commitSingleReplacement(item) {
+        if (this.multipleValue) return;
+
+        for (const previous of [...this.items]) {
+            if (previous !== item) {
+                this.removeItem(previous, { dispatch: false, announce: false });
+            }
         }
     }
 
@@ -419,6 +464,7 @@ export default class extends Controller {
         if (!media || !this.shouldPreviewImage(item.file)) return;
         if (typeof globalThis.URL?.createObjectURL !== "function") return;
 
+        item.mediaFallback = [...media.childNodes].map((node) => node.cloneNode(true));
         const url = globalThis.URL.createObjectURL(item.file);
         const image = document.createElement("img");
         image.src = url;
@@ -440,17 +486,58 @@ export default class extends Controller {
         item.previewUrl = null;
     }
 
+    restoreItemPreview(item) {
+        const media = item.element?.querySelector('[data-slot="attachment-media"]');
+        const image = media?.querySelector("img");
+        const imageSource = image?.getAttribute("src") ?? "";
+        const blobSource = imageSource.startsWith("blob:");
+        if (!media || (!item.previewUrl && !blobSource)) return;
+
+        if (item.previewUrl) {
+            this.revokePreviewUrl(item);
+        } else {
+            globalThis.URL?.revokeObjectURL?.(imageSource);
+        }
+        const fallback = item.mediaFallback ?? this.templateMediaFallback();
+        media.dataset.variant = "icon";
+        media.replaceChildren(...fallback.map((node) => node.cloneNode(true)));
+    }
+
+    templateMediaFallback() {
+        if (!this.hasTemplateTarget) return [];
+
+        const media = this.templateTarget.content.querySelector('[data-slot="attachment-media"]');
+
+        return media ? [...media.childNodes].map((node) => node.cloneNode(true)) : [];
+    }
+
     extractValue(response) {
         if (response == null) return null;
         if (typeof response === "string") return response;
         return response[this.responseKeyValue] ?? null;
     }
 
+    isUsableSuccessResponse(response) {
+        if (this.isHtmlDocument(response)) return false;
+        if (this.turboStreamValue && this.hasTurboStreamElement(response)) return true;
+        if (!this.emitHiddenValue || this.hiddenNameValue === "") return true;
+
+        const value = this.extractValue(response);
+
+        return value != null && value !== "";
+    }
+
     extractErrorMessage(raw, xhr = null) {
         if (xhr?.status === 413) return this.message("fileTooBig");
 
         if (typeof raw === "string") {
-            if (this.isHtmlResponse(raw, xhr)) return this.message("uploadFailed");
+            if (this.isHtmlResponse(raw, xhr)) {
+                const status = Number(xhr?.status ?? 0);
+
+                return status >= 200 && status < 300
+                    ? this.message("serverRejected")
+                    : this.message("uploadFailed");
+            }
 
             return raw || this.message("uploadFailed");
         }
@@ -472,8 +559,12 @@ export default class extends Controller {
     isHtmlResponse(body, xhr = null) {
         const contentType = xhr?.getResponseHeader?.("content-type")?.toLowerCase() ?? "";
 
-        return contentType.includes("html")
-            || /^\s*(?:<!doctype\s+html|<html[\s>]|<head[\s>]|<body[\s>])/i.test(body);
+        return contentType.includes("html") || this.isHtmlDocument(body);
+    }
+
+    isHtmlDocument(body) {
+        return typeof body === "string"
+            && /^\s*(?:<!doctype\s+html|<html[\s>]|<head[\s>]|<body[\s>])/i.test(body);
     }
 
     isRetryableError(xhr) {
@@ -510,7 +601,14 @@ export default class extends Controller {
 
     async deleteRemote(token) {
         const url = this.deleteUrlValue.split(":token").join(encodeURIComponent(token));
-        await fetch(url, { method: "DELETE", headers: this.csrfHeaders() });
+        const response = await fetch(url, { method: "DELETE", headers: this.csrfHeaders() });
+        if (!response.ok) {
+            const error = new Error(this.message("deleteFailed"));
+            error.response = response;
+            throw error;
+        }
+
+        return response;
     }
 
     async deleteRemoteValues(values) {
@@ -523,7 +621,7 @@ export default class extends Controller {
                 try {
                     await this.deleteRemote(value);
                 } catch (error) {
-                    console.error("file-upload delete failed:", error);
+                    this.handleDeleteError({ file: null, value }, error);
                 }
             }
         });
@@ -534,7 +632,7 @@ export default class extends Controller {
     requestHeaders() {
         const headers = {
             ...this.csrfHeaders(),
-            Accept: this.turboStreamValue ? "text/vnd.turbo-stream.html, application/json" : "application/json",
+            Accept: this.turboStreamValue ? "application/json, text/vnd.turbo-stream.html" : "application/json",
             "X-Requested-With": "XMLHttpRequest",
         };
         return headers;
@@ -563,6 +661,23 @@ export default class extends Controller {
         return this.items.filter((item) => !item.removed && item.state !== "error");
     }
 
+    hasReachedMaxFiles(excluded = null) {
+        if (this.maxFilesValue <= 0) return false;
+
+        const accepted = this.acceptedItems().filter((item) => item !== excluded);
+        const counted = this.multipleValue ? accepted : accepted.filter((item) => item.state !== "done");
+
+        return counted.length >= this.maxFilesValue;
+    }
+
+    pendingUpload() {
+        return this.items.find((item) => !item.removed && ["queued", "uploading"].includes(item.state)) ?? null;
+    }
+
+    hasPendingUploads() {
+        return this.pendingUpload() !== null;
+    }
+
     isDuplicateFile(file) {
         return this.acceptedItems().some((item) => this.fileSignature(item.file) === this.fileSignature(file));
     }
@@ -575,11 +690,17 @@ export default class extends Controller {
         if (!this.hasListTarget) return [];
 
         const hiddens = [...this.element.querySelectorAll('input[type="hidden"][data-hw-upload]')];
-        const items = [...this.listTarget.querySelectorAll("[data-file-upload-attachment][data-file-upload-id]")].map((element) => {
+        const items = [];
+        for (const element of this.listTarget.querySelectorAll("[data-file-upload-attachment][data-file-upload-id]")) {
+            const state = element.dataset.state ?? "done";
+            if (state !== "done") {
+                element.remove();
+                continue;
+            }
+
             const id = element.dataset.fileUploadId;
             const hidden = hiddens.find((input) => input.dataset.fileUploadId === id) ?? null;
-
-            return {
+            const item = {
                 id,
                 file: this.fileFromElement(element, hidden?.value),
                 element,
@@ -588,11 +709,14 @@ export default class extends Controller {
                 previewUrl: null,
                 removed: false,
                 retryable: false,
-                state: element.dataset.state ?? "done",
+                state,
                 value: hidden?.value ?? null,
                 xhr: null,
+                mediaFallback: null,
             };
-        });
+            this.restoreItemPreview(item);
+            items.push(item);
+        }
 
         const hydratedIds = new Set(items.map((item) => item.id));
         for (const hidden of hiddens) {
@@ -611,10 +735,23 @@ export default class extends Controller {
                 state: "done",
                 value: hidden.value,
                 xhr: null,
+                mediaFallback: null,
             });
         }
 
         return items;
+    }
+
+    normalizeDisconnectedItems() {
+        for (const item of [...this.items]) {
+            if (item.state === "done") {
+                this.restoreItemPreview(item);
+            } else {
+                this.removeItem(item, { dispatch: false, announce: false, deleteRemote: false });
+            }
+        }
+
+        this.updateClearAction();
     }
 
     nextAvailableId() {
@@ -719,6 +856,93 @@ export default class extends Controller {
         this.announcerTarget.textContent = message;
     }
 
+    beginSelection() {
+        this.feedbackError = null;
+
+        if (this.hasFeedbackTarget) {
+            this.feedbackTarget.replaceChildren(document.createTextNode(this.feedbackDefault));
+        }
+        if (!this.hasDropzoneTarget) return;
+
+        delete this.dropzoneTarget.dataset.state;
+        this.dropzoneTarget.removeAttribute("aria-busy");
+        if (!this.element.hasAttribute("data-invalid")) this.dropzoneTarget.removeAttribute("aria-invalid");
+
+        const pending = this.pendingUpload();
+        if (!this.previewValue && pending) {
+            this.setUploadFeedback(`${this.message("uploading")} ${pending.file.name}`, "uploading");
+        }
+    }
+
+    setUploadFeedback(text, state, { force = false } = {}) {
+        if (state === "error") {
+            this.feedbackError = text;
+        } else if (this.feedbackError && !force) {
+            if (!this.previewValue && this.hasDropzoneTarget) {
+                this.dropzoneTarget.toggleAttribute("aria-busy", this.hasPendingUploads());
+            }
+
+            return false;
+        }
+
+        if (this.previewValue && !force) return true;
+
+        if (this.hasFeedbackTarget) this.feedbackTarget.replaceChildren(document.createTextNode(text));
+        if (!this.hasDropzoneTarget) return true;
+
+        this.dropzoneTarget.dataset.state = state;
+        this.dropzoneTarget.toggleAttribute("aria-busy", state === "uploading" || this.hasPendingUploads());
+        if (state === "error") {
+            this.dropzoneTarget.setAttribute("aria-invalid", "true");
+        } else if (!this.element.hasAttribute("data-invalid")) {
+            this.dropzoneTarget.removeAttribute("aria-invalid");
+        }
+
+        return true;
+    }
+
+    restoreUploadFeedback() {
+        this.element.dataset.dragging = "false";
+        this.feedbackError = null;
+
+        if (this.hasFeedbackTarget) {
+            this.feedbackTarget.replaceChildren(document.createTextNode(this.feedbackDefault));
+        }
+        if (!this.hasDropzoneTarget) return;
+
+        delete this.dropzoneTarget.dataset.state;
+        this.dropzoneTarget.removeAttribute("aria-busy");
+        if (!this.element.hasAttribute("data-invalid")) this.dropzoneTarget.removeAttribute("aria-invalid");
+    }
+
+    syncFeedbackAfterRemoval(item) {
+        if (item.state !== "error" || this.items.some((candidate) => candidate.state === "error")) return;
+
+        this.feedbackError = null;
+        const pending = this.pendingUpload();
+        if (pending) {
+            this.setUploadFeedback(`${this.message("uploading")} ${pending.file.name}`, "uploading");
+        } else {
+            this.restoreUploadFeedback();
+        }
+    }
+
+    handleDeleteError(item, error) {
+        const text = this.message("deleteFailed");
+        const name = item.file?.name;
+        this.announce(name ? `${text}: ${name}` : text);
+        this.setUploadFeedback(name ? `${text}: ${name}` : text, "error", { force: true });
+        this.dispatch("delete-error", {
+            detail: {
+                error,
+                file: item.file,
+                response: error.response ?? null,
+                text,
+                value: item.value,
+            },
+        });
+    }
+
     get defaultMessages() {
         return {
             idle: "Choose files",
@@ -728,10 +952,12 @@ export default class extends Controller {
             uploading: "Uploading",
             uploaded: "Uploaded",
             uploadFailed: "Upload failed",
+            serverRejected: "The server rejected this file. Check the file type and server upload-size limit.",
             clearAll: "Clear all",
             cleared: "Cleared files",
             removed: "Removed",
             removeFile: "Remove",
+            deleteFailed: "Failed to remove file",
             retry: "Retry upload",
             fileTooBig: "File is too large",
             invalidFileType: "File type is not allowed",

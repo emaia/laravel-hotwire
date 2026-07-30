@@ -477,6 +477,7 @@
     [data-slot="file-upload"][data-density="compact"] [data-slot="empty-state-description"] { @apply text-xs leading-normal; }
     [data-slot="file-upload"][data-dragging="true"] [data-slot="file-upload-dropzone"] { @apply border-primary bg-primary/5 text-foreground; }
     [data-slot="file-upload-dropzone"][aria-invalid="true"] { @apply border-destructive ring-3 ring-destructive/20; }
+    [data-slot="file-upload-dropzone"][data-state="error"] [data-slot="empty-state-description"] { @apply text-destructive; }
 
     [data-slot="attachment-group"] { @apply flex min-w-0 flex-col gap-3 py-1; }
     [data-slot="attachment-group"] > [data-slot="attachment"] { @apply w-full; }

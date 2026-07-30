@@ -650,6 +650,17 @@ test.serial("keeps open on item click when close-on-select is false", async () =
     expect(isOpen()).toBe(true);
 });
 
+test.serial("keeps open when a clicked item removes itself and close-on-select is false", async () => {
+    await mount({ closeOnSelect: false });
+    clickTrigger();
+    const item = menu().querySelector("a");
+    item.addEventListener("click", () => item.remove());
+
+    item.dispatchEvent(new MouseEvent("click", { bubbles: true, composed: true }));
+
+    expect(isOpen()).toBe(true);
+});
+
 // --- multiple instances ---
 
 test.serial("dropdowns operate independently", async () => {
@@ -662,6 +673,18 @@ test.serial("dropdowns operate independently", async () => {
 
     expect(menus[0].hidden).toBe(false);
     expect(menus[1].hidden).toBe(true);
+});
+
+test.serial("clicking another dropdown closes the open dropdown", async () => {
+    mounted = await mountControllers();
+    const triggers = [...document.querySelectorAll('[data-dropdown-target="trigger"]')];
+    const menus = [...document.querySelectorAll('[data-dropdown-target="menu"]')];
+
+    triggers[0].dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    triggers[1].dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+    expect(menus[0].hidden).toBe(true);
+    expect(menus[1].hidden).toBe(false);
 });
 
 // --- close action ---

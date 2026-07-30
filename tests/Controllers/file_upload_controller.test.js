@@ -58,7 +58,9 @@ function defaultHtml(extraAttrs = "", extraChildren = "", controllers = "file-up
                   data-file-upload-hidden-name-value="avatar"
                   ${extraAttrs}>
                 <input type="file" hidden data-file-upload-target="input" data-action="change->file-upload#select">
-                <div data-file-upload-target="dropzone"></div>
+                <div data-file-upload-target="dropzone">
+                    <span data-file-upload-target="feedback" data-file-upload-default-feedback="Drop files here">Drop files here</span>
+                </div>
                 <div data-slot="file-upload-actions">
                     <button type="button" hidden data-file-upload-clear data-action="file-upload#clear">Clear all</button>
                 </div>
@@ -195,6 +197,76 @@ test("rejects files over max-size-bytes", async () => {
     expect(errors).toEqual(["File is too large"]);
 });
 
+test("preview-disabled uploads over 2 MB still send and show server size errors", async () => {
+    await mount(defaultHtml(
+        'data-file-upload-preview-value="false" data-file-upload-emit-hidden-value="false" data-file-upload-max-size-bytes-value="10485760"'
+    ));
+
+    mounted.controller.select({
+        target: { files: [file("large.png", { type: "image/png", size: 3 * 1024 * 1024 })], value: "x" },
+    });
+
+    expect(requests).toHaveLength(1);
+    expect(mounted.root.querySelector("[data-file-upload-target='feedback']")?.textContent)
+        .toBe("Uploading large.png");
+
+    requests[0].respond(
+        413,
+        "<html><body>Request Entity Too Large</body></html>",
+        { "content-type": "text/html" }
+    );
+    await wait(0);
+
+    expect(mounted.root.querySelector("[data-file-upload-target='dropzone']")?.getAttribute("aria-invalid"))
+        .toBe("true");
+    expect(mounted.root.querySelector("[data-file-upload-target='feedback']")?.textContent)
+        .toBe("File is too large");
+});
+
+test("preview-disabled uploads expose client size errors without sending a request", async () => {
+    await mount(defaultHtml(
+        'data-file-upload-preview-value="false" data-file-upload-emit-hidden-value="false" data-file-upload-max-size-bytes-value="10485760"'
+    ));
+
+    mounted.controller.select({
+        target: { files: [file("too-large.png", { type: "image/png", size: 11 * 1024 * 1024 })], value: "x" },
+    });
+
+    expect(requests).toHaveLength(0);
+    expect(mounted.root.querySelector("[data-file-upload-target='dropzone']")?.getAttribute("aria-invalid"))
+        .toBe("true");
+    expect(mounted.root.querySelector("[data-file-upload-target='feedback']")?.textContent)
+        .toBe("File is too large");
+});
+
+test("preview-disabled mixed selections keep validation errors visible while valid files upload", async () => {
+    await mount(defaultHtml(
+        'data-file-upload-preview-value="false" data-file-upload-emit-hidden-value="false" data-file-upload-multiple-value="true" data-file-upload-max-size-bytes-value="3"'
+    ));
+
+    mounted.controller.select({
+        target: { files: [file("too-large.png", { size: 4 }), file("valid.png", { size: 3 })], value: "x" },
+    });
+
+    expect(requests).toHaveLength(1);
+    expect(mounted.root.querySelector("[data-file-upload-target='feedback']")?.textContent)
+        .toBe("File is too large");
+    expect(mounted.root.querySelector("[data-file-upload-target='dropzone']")?.hasAttribute("aria-busy"))
+        .toBe(true);
+
+    requests[0].respond(201, { token: "valid" });
+    await wait(0);
+
+    expect(mounted.root.querySelector("[data-file-upload-target='dropzone']")?.getAttribute("aria-invalid"))
+        .toBe("true");
+    expect(mounted.root.querySelector("[data-file-upload-target='feedback']")?.textContent)
+        .toBe("File is too large");
+    expect(mounted.root.querySelector("[data-file-upload-target='dropzone']")?.hasAttribute("aria-busy"))
+        .toBe(false);
+    expect(mounted.root.querySelector("[data-file-upload-target='announcer']")?.textContent)
+        .toBe("Uploaded valid.png");
+});
+
 test("rejects files beyond max-files", async () => {
     await mount(defaultHtml('data-file-upload-multiple-value="true" data-file-upload-max-files-value="1"'));
     const errors = [];
@@ -275,6 +347,68 @@ test("single mode replaces preserved hiddens when a new upload succeeds", async 
     const hiddens = mounted.root.querySelectorAll('input[type="hidden"][name="avatar"]');
     expect(hiddens).toHaveLength(1);
     expect(hiddens[0].value).toBe("new-token");
+});
+
+test("single mode keeps the completed upload when a replacement is invalid", async () => {
+    await mount(defaultHtml('data-file-upload-accept-value="image/*"'));
+    mounted.controller.select({ target: { files: [file("old.png", { type: "image/png" })], value: "x" } });
+    requests[0].respond(201, { token: "old-token" });
+    await wait(0);
+
+    mounted.controller.select({ target: { files: [file("notes.txt")], value: "x" } });
+
+    expect(mounted.root.querySelector('input[type="hidden"]')?.value).toBe("old-token");
+    expect([...mounted.root.querySelectorAll('[data-slot="attachment"]')].map((item) => item.dataset.state))
+        .toEqual(["done", "error"]);
+});
+
+test("single mode keeps the completed upload when a replacement fails", async () => {
+    await mount();
+    mounted.controller.select({ target: { files: [file("old.png")], value: "x" } });
+    requests[0].respond(201, { token: "old-token" });
+    await wait(0);
+
+    mounted.controller.select({ target: { files: [file("new.png")], value: "x" } });
+    requests[1].respond(500, "Server error", { "content-type": "text/plain" });
+    await wait(0);
+
+    expect(mounted.root.querySelector('input[type="hidden"]')?.value).toBe("old-token");
+    expect([...mounted.root.querySelectorAll('[data-slot="attachment"]')].map((item) => item.dataset.state))
+        .toEqual(["done", "error"]);
+});
+
+test("single mode removes the previous upload only after its replacement succeeds", async () => {
+    await mount(defaultHtml('data-file-upload-delete-url-value="/uploads/:token"'));
+    mounted.controller.select({ target: { files: [file("old.png")], value: "x" } });
+    requests[0].respond(201, { token: "old-token" });
+    await wait(0);
+
+    mounted.controller.select({ target: { files: [file("new.png")], value: "x" } });
+
+    expect(mounted.root.querySelector('input[type="hidden"]')?.value).toBe("old-token");
+    expect(mounted.root.querySelectorAll('[data-slot="attachment"]')).toHaveLength(2);
+    expect(fetchCalls).toHaveLength(0);
+
+    requests[1].respond(201, { token: "new-token" });
+    await wait(0);
+
+    expect(mounted.root.querySelector('input[type="hidden"]')?.value).toBe("new-token");
+    expect(mounted.root.querySelectorAll('[data-slot="attachment"]')).toHaveLength(1);
+    expect(mounted.root.querySelector("[data-file-upload-name]")?.textContent).toBe("new.png");
+    expect(fetchCalls).toEqual([{ url: "/uploads/old-token", init: { method: "DELETE", headers: {} } }]);
+});
+
+test("single mode lets the same file replace its completed upload", async () => {
+    await mount();
+    const upload = file("photo.png");
+    mounted.controller.select({ target: { files: [upload], value: "x" } });
+    requests[0].respond(201, { token: "old-token" });
+    await wait(0);
+
+    mounted.controller.select({ target: { files: [upload], value: "x" } });
+
+    expect(requests).toHaveLength(2);
+    expect(mounted.root.querySelectorAll('[data-slot="attachment"]')).toHaveLength(2);
 });
 
 test("emit-hidden=false skips hidden input append", async () => {
@@ -441,14 +575,30 @@ test("HTML error pages fall back to the generic upload failure message", async (
     expect(description?.textContent).toBe("Upload failed");
 });
 
-test("malformed JSON responses do not become hidden input values", async () => {
+test("malformed JSON responses become upload errors without hidden input values", async () => {
     await mount();
     mounted.controller.select({ target: { files: [file("photo.png")], value: "x" } });
     requests[0].respond(201, "{not valid json", { "content-type": "application/json" });
     await wait(0);
 
     expect(mounted.root.querySelector('input[type="hidden"]')).toBeNull();
-    expect(mounted.root.querySelector('[data-slot="attachment"]')?.dataset.state).toBe("done");
+    expect(mounted.root.querySelector('[data-slot="attachment"]')?.dataset.state).toBe("error");
+});
+
+test("single mode keeps the completed upload when a replacement response has no token", async () => {
+    await mount(defaultHtml('data-file-upload-delete-url-value="/uploads/:token"'));
+    mounted.controller.select({ target: { files: [file("old.png")], value: "x" } });
+    requests[0].respond(201, { token: "old-token" });
+    await wait(0);
+
+    mounted.controller.select({ target: { files: [file("new.png")], value: "x" } });
+    requests[1].respond(201, {}, { "content-type": "application/json" });
+    await wait(0);
+
+    expect(mounted.root.querySelector('input[type="hidden"]')?.value).toBe("old-token");
+    expect([...mounted.root.querySelectorAll('[data-slot="attachment"]')].map((item) => item.dataset.state))
+        .toEqual(["done", "error"]);
+    expect(fetchCalls).toHaveLength(0);
 });
 
 test("turbo-stream=true negotiates stream responses and renders stream success without hidden input", async () => {
@@ -458,7 +608,7 @@ test("turbo-stream=true negotiates stream responses and renders stream success w
 
     const stream = '<turbo-stream action="append" target="files"><template>ok</template></turbo-stream>';
     mounted.controller.select({ target: { files: [file("photo.png")], value: "x" } });
-    expect(requests[0].headers.Accept).toBe("text/vnd.turbo-stream.html, application/json");
+    expect(requests[0].headers.Accept).toBe("application/json, text/vnd.turbo-stream.html");
     requests[0].respond(200, stream, { "content-type": "text/vnd.turbo-stream.html" });
     await wait(0);
 
@@ -492,6 +642,31 @@ test("turbo-stream=true only renders actual turbo-stream elements", async () => 
 
     expect(rendered).toEqual([]);
     expect(mounted.root.querySelector('input[type="hidden"]').value).toBe(text);
+});
+
+test("preview-disabled Turbo uploads treat redirected HTML documents as visible errors", async () => {
+    await mount(defaultHtml(
+        'data-file-upload-preview-value="false" data-file-upload-emit-hidden-value="false" data-file-upload-turbo-stream-value="true"'
+    ));
+    const errors = [];
+    const successes = [];
+    mounted.root.addEventListener("file-upload:error", (event) => errors.push(event.detail.text));
+    mounted.root.addEventListener("file-upload:success", (event) => successes.push(event.detail));
+    mounted.controller.select({ target: { files: [file("large.png", { type: "image/png" })], value: "x" } });
+
+    requests[0].respond(
+        200,
+        '<!DOCTYPE html><html><body><div data-toast-message-value="The file failed to upload."></div></body></html>',
+        { "content-type": "text/html; charset=UTF-8" }
+    );
+    await wait(0);
+
+    expect(errors).toEqual(["The server rejected this file. Check the file type and server upload-size limit."]);
+    expect(successes).toEqual([]);
+    expect(mounted.root.querySelector("[data-file-upload-target='dropzone']")?.getAttribute("aria-invalid"))
+        .toBe("true");
+    expect(mounted.root.querySelector("[data-file-upload-target='feedback']")?.textContent)
+        .toBe("The server rejected this file. Check the file type and server upload-size limit.");
 });
 
 // --- Removal and concurrency ---
@@ -546,6 +721,39 @@ test("remove deletes a completed remote upload and removes its hidden input", as
     expect(fetchCalls).toEqual([{ url: "/uploads/abc%20123/revisions/abc%20123", init: { method: "DELETE", headers: {} } }]);
 });
 
+test("non-successful remote deletes dispatch a cleanup error", async () => {
+    const response = { ok: false, status: 500 };
+    globalThis.fetch = mock((url, init) => {
+        fetchCalls.push({ url, init });
+        return Promise.resolve(response);
+    });
+    await mount(defaultHtml('data-file-upload-delete-url-value="/uploads/:token"'));
+    const upload = file("photo.png");
+    const errors = [];
+    mounted.root.addEventListener("file-upload:delete-error", (event) => errors.push(event.detail));
+    mounted.controller.select({ target: { files: [upload], value: "x" } });
+    requests[0].respond(201, { token: "abc" });
+    await wait(0);
+
+    const id = mounted.root.querySelector('[data-file-upload-id]').dataset.fileUploadId;
+    mounted.controller.remove({ preventDefault() {}, params: { id } });
+    await wait(0);
+
+    expect(errors).toEqual([{
+        error: expect.any(Error),
+        file: upload,
+        response,
+        text: "Failed to remove file",
+        value: "abc",
+    }]);
+    expect(mounted.root.querySelector("[data-file-upload-target='announcer']")?.textContent)
+        .toBe("Failed to remove file: photo.png");
+    expect(mounted.root.querySelector("[data-file-upload-target='dropzone']")?.getAttribute("aria-invalid"))
+        .toBe("true");
+    expect(mounted.root.querySelector("[data-file-upload-target='feedback']")?.textContent)
+        .toBe("Failed to remove file: photo.png");
+});
+
 test("clear aborts active uploads, deletes completed uploads and dispatches cleared", async () => {
     await mount(defaultHtml('data-file-upload-multiple-value="true" data-file-upload-delete-url-value="/uploads/:token"'));
     const cleared = [];
@@ -588,6 +796,42 @@ test("clear removes preserved hidden upload tokens even when no card is hydrated
     expect(mounted.root.querySelector("[data-file-upload-clear]").hidden).toBe(true);
     expect(mounted.root.querySelector("[data-file-upload-target='announcer']")?.textContent).toBe("Cleared files · 2");
     expect(cleared).toEqual([{ files: [], count: 2 }]);
+});
+
+test("clear resets preview-disabled upload feedback", async () => {
+    await mount(defaultHtml(
+        'data-file-upload-preview-value="false" data-file-upload-emit-hidden-value="false" data-file-upload-multiple-value="true"'
+    ));
+    mounted.controller.select({ target: { files: [file("active.png")], value: "x" } });
+
+    expect(mounted.root.querySelector("[data-file-upload-target='dropzone']")?.hasAttribute("aria-busy"))
+        .toBe(true);
+
+    mounted.controller.clear({ preventDefault() {} });
+
+    expect(mounted.root.querySelector("[data-file-upload-target='feedback']")?.textContent)
+        .toBe("Drop files here");
+    expect(mounted.root.querySelector("[data-file-upload-target='dropzone']")?.hasAttribute("aria-busy"))
+        .toBe(false);
+    expect(mounted.root.querySelector("[data-file-upload-target='dropzone']")?.hasAttribute("aria-invalid"))
+        .toBe(false);
+});
+
+test("removing the final failed item allows pending upload feedback to resume", async () => {
+    await mount(defaultHtml(
+        'data-file-upload-multiple-value="true" data-file-upload-parallel-uploads-value="2"'
+    ));
+    mounted.controller.select({ target: { files: [file("failed.png"), file("active.png")], value: "x" } });
+    requests[0].respond(500, "Server error", { "content-type": "text/plain" });
+    await wait(0);
+
+    const failed = mounted.controller.items.find((item) => item.state === "error");
+    mounted.controller.remove({ preventDefault() {}, params: { id: failed.id } });
+    requests[1].respond(201, { token: "active-token" });
+    await wait(0);
+
+    expect(mounted.root.querySelector("[data-file-upload-target='announcer']")?.textContent)
+        .toBe("Uploaded active.png");
 });
 
 test("clear deletes preserved remote upload tokens", async () => {
@@ -728,6 +972,79 @@ test("reconnect hydrates hidden-only uploads when preview is disabled", async ()
     expect(fetchCalls).toEqual([{ url: "/uploads/abc", init: { method: "DELETE", headers: {} } }]);
 });
 
+test("reconnect removes interrupted uploads and allows the same file to be selected again", async () => {
+    await mount();
+    const upload = file("photo.png");
+    mounted.controller.select({ target: { files: [upload], value: "x" } });
+
+    mounted.controller.disconnect();
+    mounted.controller.connect();
+
+    expect(mounted.root.querySelector('[data-file-upload-attachment]')).toBeNull();
+
+    mounted.controller.select({ target: { files: [upload], value: "x" } });
+
+    expect(requests).toHaveLength(2);
+    expect(mounted.root.querySelectorAll('[data-file-upload-attachment]')).toHaveLength(1);
+    expect(mounted.root.querySelector('[data-file-upload-attachment]')?.dataset.state).toBe("uploading");
+});
+
+test("reconnect removes failed uploads that no longer have a retryable File", async () => {
+    await mount();
+    mounted.controller.select({ target: { files: [file("photo.png")], value: "x" } });
+    requests[0].respond(500, "Server error", { "content-type": "text/plain" });
+    await wait(0);
+
+    mounted.controller.disconnect();
+    mounted.controller.connect();
+
+    expect(mounted.root.querySelector('[data-file-upload-attachment]')).toBeNull();
+});
+
+test("reconnect restores the generic media after revoking a completed image preview", async () => {
+    await mount();
+    mounted.controller.select({ target: { files: [file("photo.png", { type: "image/png" })], value: "x" } });
+    requests[0].respond(201, { token: "abc" });
+    await wait(0);
+
+    mounted.controller.disconnect();
+    mounted.controller.connect();
+
+    const media = mounted.root.querySelector('[data-slot="attachment-media"]');
+    expect(revokedUrls).toEqual(["blob:photo.png-0"]);
+    expect(media?.dataset.variant).toBe("icon");
+    expect(media?.querySelector("img")).toBeNull();
+    expect(media?.querySelector("svg")).not.toBeNull();
+});
+
+test("reconnect revokes blob previews found in hydrated markup", async () => {
+    await mount();
+    mounted.controller.disconnect();
+    mounted.root.querySelector('[data-file-upload-target="list"]').innerHTML = `
+        <div data-file-upload-attachment data-file-upload-id="9" data-state="done">
+            <div data-slot="attachment-media" data-variant="image"><img src="blob:cached-preview"></div>
+            <span data-file-upload-name>photo.png</span>
+        </div>
+    `;
+
+    mounted.controller.connect();
+
+    const media = mounted.root.querySelector('[data-slot="attachment-media"]');
+    expect(revokedUrls).toContain("blob:cached-preview");
+    expect(media?.dataset.variant).toBe("icon");
+    expect(media?.querySelector("img")).toBeNull();
+    expect(media?.querySelector("svg")).not.toBeNull();
+});
+
+test("Turbo cache clears stale drag state", async () => {
+    await mount();
+    mounted.controller.dragEnter({ preventDefault() {} });
+
+    document.dispatchEvent(new CustomEvent("turbo:before-cache", { bubbles: true }));
+
+    expect(mounted.root.dataset.dragging).toBe("false");
+});
+
 test("parallel-uploads limits concurrent native XHRs", async () => {
     await mount(defaultHtml('data-file-upload-multiple-value="true" data-file-upload-parallel-uploads-value="2"'));
 
@@ -737,6 +1054,46 @@ test("parallel-uploads limits concurrent native XHRs", async () => {
     requests[0].respond(201, { token: "a" });
     await wait(0);
     expect(requests).toHaveLength(3);
+});
+
+test("preview-disabled parallel uploads stay busy until every upload finishes", async () => {
+    await mount(defaultHtml(
+        'data-file-upload-preview-value="false" data-file-upload-emit-hidden-value="false" data-file-upload-multiple-value="true" data-file-upload-parallel-uploads-value="2"'
+    ));
+    mounted.controller.select({ target: { files: [file("a.txt"), file("b.txt")], value: "x" } });
+
+    requests[0].respond(201, { token: "a" });
+    await wait(0);
+
+    expect(mounted.root.querySelector("[data-file-upload-target='feedback']")?.textContent)
+        .toBe("Uploading b.txt");
+    expect(mounted.root.querySelector("[data-file-upload-target='dropzone']")?.hasAttribute("aria-busy"))
+        .toBe(true);
+    expect(mounted.root.querySelector("[data-file-upload-target='announcer']")?.textContent)
+        .toBe("Uploaded a.txt");
+
+    requests[1].respond(201, { token: "b" });
+    await wait(0);
+
+    expect(mounted.root.querySelector("[data-file-upload-target='feedback']")?.textContent)
+        .toBe("Uploaded b.txt");
+    expect(mounted.root.querySelector("[data-file-upload-target='dropzone']")?.hasAttribute("aria-busy"))
+        .toBe(false);
+});
+
+test("adding to a saturated preview-disabled queue preserves active feedback", async () => {
+    await mount(defaultHtml(
+        'data-file-upload-preview-value="false" data-file-upload-emit-hidden-value="false" data-file-upload-multiple-value="true" data-file-upload-parallel-uploads-value="1"'
+    ));
+    mounted.controller.select({ target: { files: [file("active.txt")], value: "x" } });
+
+    mounted.controller.select({ target: { files: [file("queued.txt")], value: "x" } });
+
+    expect(requests).toHaveLength(1);
+    expect(mounted.root.querySelector("[data-file-upload-target='feedback']")?.textContent)
+        .toBe("Uploading active.txt");
+    expect(mounted.root.querySelector("[data-file-upload-target='dropzone']")?.hasAttribute("aria-busy"))
+        .toBe(true);
 });
 
 // --- Fakes ---

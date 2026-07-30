@@ -42,7 +42,7 @@ real form with the native `form` attribute.
     />
 </hw:field>
 
-<hw:attachment.group id="post-media-gallery">
+<hw:attachment.group id="post-media-gallery" class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
     @foreach ($post->getMedia('gallery') as $media)
         @include('posts._media-card', ['post' => $post, 'media' => $media, 'formId' => 'post-form'])
     @endforeach
@@ -276,6 +276,7 @@ whole card so there is only one hidden value at a time.
             url="{{ route('profile.avatar.upload') }}"
             accept="image/*"
             turbo-stream
+            :preview="false"
             :emit-hidden="false"
         />
     </hw:field>
@@ -303,8 +304,11 @@ Rules: do not pass `value` to the uploader, and always return a stream that `rep
 Use `<hw:file-upload>` as the upload transport and server-rendered `<hw:attachment>` cards as the rich list. This keeps
 rename, reorder and metadata app-owned while the package handles selection, upload progress and Turbo Stream delivery.
 
+The attachment list stays outside the final form so every remove action can own a valid DELETE micro-form. Card inputs
+and the Save button target the final form through the native `form` attribute.
+
 ```blade
-<hw:form action="{{ route('gallery.store') }}">
+<hw:form id="gallery-form" action="{{ route('gallery.store') }}">
     <hw:field name="attachments" label="Images">
         <hw:file-upload
             name="attachments"
@@ -318,15 +322,15 @@ rename, reorder and metadata app-owned while the package handles selection, uplo
             :messages="['idleMultiple' => 'Drag files or click to add media']"
         />
     </hw:field>
-
-    <hw:attachment.group id="media-list" data-controller="media-list">
-        @foreach ($gallery->items as $item)
-            @include('gallery.media-card', ['item' => $item])
-        @endforeach
-    </hw:attachment.group>
-
-    <hw:button type="submit">Save gallery</hw:button>
 </hw:form>
+
+<hw:attachment.group id="media-list" data-controller="media-list">
+    @foreach ($gallery->items as $item)
+        @include('gallery.media-card', ['item' => $item])
+    @endforeach
+</hw:attachment.group>
+
+<hw:button type="submit" form="gallery-form">Save gallery</hw:button>
 ```
 
 ```blade
@@ -338,17 +342,16 @@ rename, reorder and metadata app-owned while the package handles selection, uplo
     <hw:attachment.content>
         <hw:attachment.title>{{ $item->name }}</hw:attachment.title>
         <hw:attachment.description>{{ strtoupper($item->extension) }} · {{ $item->formatted_size }}</hw:attachment.description>
-        <input type="text" name="attachments[][name]" value="{{ $item->name }}" data-app-name>
-        <input type="hidden" name="attachments[][token]" value="{{ $item->token }}" data-app-token>
+        <input type="text" name="attachments[][name]" value="{{ $item->name }}" form="gallery-form" data-app-name>
+        <input type="hidden" name="attachments[][token]" value="{{ $item->token }}" form="gallery-form" data-app-token>
     </hw:attachment.content>
     <hw:attachment.actions>
         <hw:attachment.action data-app-drag aria-label="Reorder {{ $item->name }}">≡</hw:attachment.action>
-        <hw:attachment.action
-            data-controller="remote-form"
-            formaction="{{ route('uploads.destroy', $item) }}"
-            formmethod="delete"
-            aria-label="Remove {{ $item->name }}"
-        >×</hw:attachment.action>
+        <form action="{{ route('uploads.destroy', $item) }}" method="post">
+            @csrf
+            @method('DELETE')
+            <hw:attachment.action type="submit" aria-label="Remove {{ $item->name }}">×</hw:attachment.action>
+        </form>
     </hw:attachment.actions>
 </hw:attachment>
 ```

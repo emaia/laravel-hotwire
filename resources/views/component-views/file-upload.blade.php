@@ -81,7 +81,11 @@
                     <x-hw::icon name="file-up" />
                 </x-hw::empty-state.media>
                 <x-hw::empty-state.title>{{ $dropzoneTitle }}</x-hw::empty-state.title>
-                <x-hw::empty-state.description>{{ $dropzoneDescription }}</x-hw::empty-state.description>
+                <div
+                    data-slot="empty-state-description"
+                    data-{{ $identifier }}-target="feedback"
+                    data-file-upload-default-feedback="{{ $dropzoneDescription }}"
+                >{{ $dropzoneDescription }}</div>
             </x-hw::empty-state.header>
         </x-hw::empty-state>
     </div>
