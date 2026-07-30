@@ -32,8 +32,6 @@ real form with the native `form` attribute.
         url="{{ route('posts.media.store', $post) }}"
         multiple
         turbo-stream
-        :preview="false"
-        :emit-hidden="false"
         :clearable="false"
         accept="image/*"
         view="grid"
@@ -52,7 +50,7 @@ real form with the native `form` attribute.
 ```
 
 The upload endpoint creates a MediaMan `Media` row, starts the thumbnail conversion, and appends the card. The card is
-the source of truth for the submitted media id, so `emit-hidden` stays disabled on the uploader.
+the source of truth for the submitted media id; raw Turbo Stream mode disables automatic hidden inputs.
 
 ```php
 use App\Models\Post;
@@ -196,8 +194,6 @@ card; when processing finishes, your broadcaster replaces that card with the fin
     url="{{ route('uploads.store') }}"
     multiple
     turbo-stream
-    :preview="false"
-    :emit-hidden="false"
 />
 
 <ul id="attachments"></ul>
@@ -218,7 +214,7 @@ Route::post('/uploads', function (Request $request) {
 })->name('uploads.store');
 ```
 
-The server-rendered card carries its own hidden input, so `emit-hidden` stays false.
+The server-rendered card carries its own hidden input; raw Turbo Stream mode does not emit another one.
 
 ## 3. Stream-Rendered Gallery With Server-Side EXIF
 
@@ -234,8 +230,6 @@ server-side EXIF metadata.
             accept="image/*"
             multiple
             turbo-stream
-            :preview="false"
-            :emit-hidden="false"
         />
     </hw:field>
 
@@ -258,7 +252,7 @@ Route::post('/gallery/upload', function (Request $request) {
 })->name('gallery.upload');
 ```
 
-The native uploader sends `Accept: text/vnd.turbo-stream.html, application/json`, detects the stream body and calls
+The native uploader sends `Accept: application/json, text/vnd.turbo-stream.html`, detects the stream body and calls
 `Turbo.renderStreamMessage`.
 
 ## 4. Single-File Edit Form With A Stream-Replaced Card
@@ -276,8 +270,6 @@ whole card so there is only one hidden value at a time.
             url="{{ route('profile.avatar.upload') }}"
             accept="image/*"
             turbo-stream
-            :preview="false"
-            :emit-hidden="false"
         />
     </hw:field>
 
@@ -316,8 +308,6 @@ and the Save button target the final form through the native `form` attribute.
             multiple
             accept="image/*,application/pdf"
             turbo-stream
-            :preview="false"
-            :emit-hidden="false"
             :max-size-bytes="10 * 1024 * 1024"
             :messages="['idleMultiple' => 'Drag files or click to add media']"
         />

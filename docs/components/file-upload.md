@@ -1,7 +1,7 @@
 # File Upload
 
-Native drag-and-drop upload with an attachment queue, progress, optional hidden inputs, DELETE-on-remove and Turbo
-Stream response support. The upload endpoint, validation, storage and cleanup stay app-side.
+Native drag-and-drop upload with attachment list/grid views, single-image replacement, progress, optional hidden inputs,
+DELETE-on-remove and Turbo Stream response support. The upload endpoint, validation, storage and cleanup stay app-side.
 
 ```blade
 <hw:form action="{{ route('profile.update') }}" method="put">
@@ -25,20 +25,22 @@ Successful JSON responses write a hidden input with `response.token` by default.
 | `value`            | `mixed`        | `null`        | Initial token(s). Overridden by `old($name)` after validation redirect-back.                                   |
 | `id`               | `string\|null` | derived       | Root id. Falls back to `hw-file-upload-{uniqid}` without a name.                                               |
 | `error-key`        | `string\|null` | derived       | Validation key override.                                                                                       |
-| `accept`           | `string\|null` | `null`        | Native accept list (`image/*`, `.pdf,.csv`). Values are trimmed/lowercased and also validated before upload.   |
+| `accept`           | `string\|null` | `null`        | Native accept list (`image/*`, `.pdf,.csv`). Defaults to `image/*` for `view="image"`.                         |
 | `max-size-bytes`   | `int\|null`    | `null`        | Per-file client-side size limit. Server validation is still required.                                          |
 | `max-files`        | `int\|null`    | `null`        | Maximum queued files.                                                                                          |
 | `multiple`         | `bool`         | `false`       | Allows several files and accumulates hidden inputs.                                                            |
-| `preview`          | `bool`         | `true`        | When false, skips client-side attachment cards. Useful with Turbo Stream galleries.                            |
-| `emit-hidden`      | `bool`         | `true`        | When false, the controller does not append hidden inputs.                                                      |
-| `turbo-stream`     | `bool`         | `false`       | Sends a Turbo Stream Accept header and renders stream responses.                                               |
+| `preview`          | `bool\|null`   | contextual    | Defaults true for JSON and false for raw Turbo Stream responses.                                               |
+| `emit-hidden`      | `bool\|null`   | contextual    | Defaults true for JSON and false for raw Turbo Stream responses.                                               |
+| `turbo-stream`     | `bool`         | `false`       | Negotiates a raw Turbo Stream body and makes the server own rendering/value output.                            |
 | `param-name`       | `string`       | `file`        | Multipart field name for each upload request.                                                                  |
 | `response-key`     | `string`       | `token`       | JSON key used for the hidden input value.                                                                      |
+| `preview-url-key`  | `string`       | `preview_url` | Optional JSON key containing a durable image URL for `view="image"`.                                          |
 | `delete-url`       | `string\|null` | `null`        | DELETE endpoint used when removing an uploaded file. Every `:token` placeholder is URI-encoded.                |
 | `parallel-uploads` | `int`          | `3`           | Concurrent upload count.                                                                                       |
 | `clearable`        | `bool\|null`   | automatic     | Renders a Clear all action. Defaults to true for `multiple` unless both `preview` and `emit-hidden` are false. |
 | `density`          | `string`       | `default`     | Drop area density: `default` or `compact`.                                                                     |
-| `view`             | `string`       | `list`        | Attachment view: `list` or `grid`. Grid uses vertical cards and image thumbnails.                              |
+| `view`             | `string`       | `list`        | Client presentation: `list`, `grid` or single-file `image`.                                                    |
+| `dropzone-variant` | `string`       | `auto`        | `auto`, `default` or `bare`. Custom slots resolve `auto` to `bare`; explicit `bare` requires the named slot.  |
 | `messages`         | `array\|null`  | `null`        | Native labels/errors. See [Messages](#messages) for supported keys.                                            |
 | `controller`       | `string`       | `file-upload` | Stimulus identifier for subclassing.                                                                           |
 | `class`            | `string`       | `''`          | Merged on the root.                                                                                            |
@@ -146,6 +148,143 @@ disconnects.
 Failed `5xx`/network uploads expose a retry action on the card. Validation-style failures (`422`) and file-size failures
 (`413`) stay non-retryable so users fix the input instead of resubmitting the same rejected file.
 
+## Image View
+
+Use `view="image"` for avatar, banner, logo and other browser-renderable image replacement. It defaults to
+`accept="image/*"`, supports one file, omits Attachment markup and previews a valid selection immediately:
+
+```blade
+<hw:file-upload
+    name="avatar_token"
+    :value="$user->avatar_token"
+    url="{{ route('uploads.store') }}"
+    view="image"
+>
+    <x-slot:dropzone
+        class="rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        aria-label="Change profile picture"
+    >
+        <hw:avatar
+            :src="$user->avatar_url"
+            :name="$user->name"
+            size="lg"
+        />
+    </x-slot:dropzone>
+</hw:file-upload>
+```
+
+Named dropzones resolve `dropzone-variant="auto"` to `bare`. The package keeps only a content-sized preview surface and the
+interactive cursor; it does not impose dimensions, aspect ratio, border, background, hover, radius, padding, colors,
+clipping or state opacity. The Avatar therefore determines the surface size. The selected preview is positioned
+absolutely over that surface, so it cannot create another row or expand the uploader. The slot radius lets the preview
+inherit the same shape without requiring `overflow-hidden`.
+
+The same structure follows a horizontal or responsive banner:
+
+```blade
+<hw:file-upload
+    name="banner_token"
+    :value="$user->banner_token"
+    url="{{ route('uploads.banner') }}"
+    view="image"
+>
+    <x-slot:dropzone
+        class="w-full rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        aria-label="Change profile banner"
+    >
+        <img
+            src="{{ $user->banner_url }}"
+            alt=""
+            class="aspect-[3/1] w-full rounded-xl object-cover"
+        >
+    </x-slot:dropzone>
+</hw:file-upload>
+```
+
+Here the slot supplies the full width and its image supplies the `3:1` aspect ratio. The temporary and durable previews
+fill that resulting surface with `object-cover`; no square or circular assumption is built into `view="image"`.
+
+The selected image is displayed through `URL.createObjectURL` while the request runs. A failed upload revokes that URL
+and restores the last confirmed image. Single-file token replacement remains transactional: the previous hidden value
+is removed only after a usable success response.
+
+Return `preview_url` with the token to replace the temporary blob with a durable URL:
+
+```php
+$path = $request->file('file')->store('temporary-avatars');
+
+return response()->json([
+    'token' => $path,
+    'preview_url' => Storage::url($path),
+], 201);
+```
+
+The controller preloads the durable image before swapping it into the dropzone. If it cannot load, the valid local blob
+stays visible. Change the response key with `preview-url-key="cdn_url"` when needed.
+
+Without a durable URL, the local preview lasts for the current page session and returns to the server-rendered slot
+before Turbo caches the page. Set `:preview="false"` when a Turbo Stream or app controller owns all visible rendering.
+
+`view="image"` rejects `multiple` and explicit `clearable=true`. Non-image replacements should use `list`, `grid` or a
+server-rendered Turbo Stream composition.
+
+## Custom Dropzone
+
+Use the named `dropzone` slot to replace the default picker content while retaining the package-owned native input,
+keyboard support, drag/drop actions, upload queue and response handling:
+
+```blade
+<hw:file-upload
+    name="document_token"
+    url="{{ route('uploads.store') }}"
+>
+    <x-slot:dropzone
+        class="rounded-xl border p-4"
+        aria-label="Choose a document"
+    >
+        Choose a document
+    </x-slot:dropzone>
+</hw:file-upload>
+```
+
+`dropzone-variant="auto"` resolves to `default` without a named slot and `bare` with one. This makes the standard Empty
+State a complete styled picker while custom content owns its presentation. Set `dropzone-variant="default"` when the slot
+only replaces the copy or icon and should keep the package visual shell, hover, focus and invalid states:
+
+```blade
+<hw:file-upload url="{{ route('uploads.store') }}" dropzone-variant="default">
+    <x-slot:dropzone>Drop the signed contract here</x-slot:dropzone>
+</hw:file-upload>
+```
+
+Set `dropzone-variant="bare"` explicitly on a custom slot when you prefer not to rely on the automatic resolution. Bare
+surfaces retain their semantic attributes and publish `data-dragging`, `data-loading`, `data-upload-state` and
+`aria-invalid`; style those hooks on the slot when custom drag, loading, focus or error treatment is required.
+
+Slot classes, ARIA attributes and `data-action` tokens merge onto the interactive dropzone. Custom `aria-describedby`
+IDs are appended to the component's validation ID. The component preserves required validation ARIA, `role="button"`,
+`tabindex="0"`, `data-slot` and its internal Stimulus target, so slot attributes cannot replace them. A custom
+`data-action` augments rather than replaces picker, keyboard and drag/drop actions.
+
+The component renders a sibling `data-slot="file-upload-feedback"` element for custom dropzones. In list and grid views
+it is hidden while idle, then automatically shows upload, success and error messages. Image view reserves the visible
+feedback line for errors; use the root state attributes for custom uploading/success treatment. The native input remains
+package-owned; attachment list/template markup is included only when `preview=true`.
+
+Outside `view="image"`, the custom slot controls presentation only. Use `file-upload:success` or a Turbo Stream when
+app-owned markup should react to the upload.
+
+The root exposes stable lifecycle attributes for custom styling and integrations:
+
+| Attribute           | Values                                | Meaning                                                                                  |
+|---------------------|---------------------------------------|------------------------------------------------------------------------------------------|
+| `data-loading`      | `true`, `false`                       | True while at least one file is queued or uploading.                                     |
+| `data-upload-state` | `idle`, `uploading`, `error`, `done` | Aggregate lifecycle. Errors take precedence over pending and completed upload states.    |
+
+When no server-rendered validation error remains, clearing the uploader returns it to `idle` and hides custom feedback.
+`turbo:before-cache` also removes transient uploads and resets custom feedback so cached markup does not restore a stale
+loading state.
+
 ## Edit Forms
 
 `value` pre-populates hidden inputs for existing files. `old($name)` wins after validation redirect-back.
@@ -162,9 +301,31 @@ Failed `5xx`/network uploads expose a retry action on the card. Validation-style
 Single mode keeps the previous completed upload while a replacement is validating or uploading, then replaces it only
 after the new upload succeeds. Multiple mode keeps preserved inputs and appends new ones.
 
-## Turbo Streams
+## Hybrid JSON
 
-Use `turbo-stream` when the server renders the visible attachment/card.
+Any JSON response can include an optional `stream` string alongside its normal token and image URL. This works in every
+view and does not require the `turbo-stream` prop:
+
+```php
+return response()->json([
+    'token' => $path,
+    'preview_url' => Storage::url($path),
+    'stream' => turbo_stream()
+        ->flash('success', 'Upload completed')
+        ->render(),
+], 201);
+```
+
+The controller first commits its normal hidden input, current local preview, state and public event, then passes only the
+actual `<turbo-stream>` elements to `Turbo.renderStreamMessage`. Durable `preview_url` promotion may complete afterward
+because image loading is asynchronous. The same optional key is processed after normalizing a non-2xx error. Invalid
+strings and non-string values are ignored. Call `render()` or `toHtml()` on the stream builder before placing it in JSON;
+serializing the builder object does not produce the expected HTML.
+
+## Raw Turbo Streams
+
+Use `turbo-stream` when the endpoint returns a raw Turbo Stream body and the server renders the visible attachment/card
+and any form value:
 
 ```blade
 <hw:file-upload
@@ -173,15 +334,17 @@ Use `turbo-stream` when the server renders the visible attachment/card.
     accept="image/*"
     multiple
     turbo-stream
-    :preview="false"
-    :emit-hidden="false"
 />
 
 <ul id="photo-gallery"></ul>
 ```
 
-On success or error, a response with an actual `<turbo-stream>` element is passed to `Turbo.renderStreamMessage`. On
-stream success, the automatic hidden input is skipped because the server-rendered card should carry it.
+`preview` and `emit-hidden` default to false in this protocol, so no client Attachment list/template or automatic hidden
+input is produced. Explicit `preview=true` or `emit-hidden=true` is rejected because it would mix client and server
+ownership. On success or error, a body with an actual `<turbo-stream>` element is passed to
+`Turbo.renderStreamMessage`; the server-rendered output must carry any value needed by a later form submission.
+An explicit `value` or matching `old()` value still renders its preserved hidden input for edit and validation
+round-trips; `emit-hidden=false` only prevents the upload response from creating a new one.
 
 ## Internal File Input
 
@@ -199,6 +362,9 @@ input is intentionally isolated from the final form. Always enforce required upl
 
 - The dropzone is a real keyboard target with `role="button"`, `tabindex="0"`, Enter and Space activation.
 - The hidden file input receives native `id`, `name`, `accept` and `multiple` attributes.
+- Generated image previews are decorative; the dropzone's accessible label describes the replacement action.
+- The focusable dropzone references its live feedback with `aria-describedby`, so runtime errors remain available after
+  refocus.
 - The attachment container is a `role="list"`; generated attachment cards are `role="listitem"`.
 - Errored attachment cards set `aria-invalid="true"` and expose the error description as `role="alert"`.
 - An `aria-live="polite"` status region announces upload start, success, failure and removal.
@@ -214,12 +380,18 @@ Override the dropzone label with `aria-label`:
 
 - `data-slot="file-upload"`
 - `data-slot="file-upload-dropzone"`
+- `data-file-upload-dropzone-variant="default|bare"`
+- `data-slot="file-upload-feedback"`
 - `data-slot="file-upload-actions"`
 - `data-slot="file-upload-announcer"`
 - `data-density="default|compact"`
-- `data-view="list|grid"`
+- `data-view="list|grid|image"`
 - `data-dragging="true|false"`
+- `data-loading="true|false"`
+- `data-upload-state="idle|uploading|error|done"`
 - `data-slot="attachment-group"`
+- `data-slot="file-upload-image-base"`
+- `data-slot="file-upload-image-preview"`
 - `data-slot="attachment"`
 - `data-state="idle|uploading|processing|error|done"`
 - `data-slot="attachment-media"`
@@ -230,9 +402,10 @@ Override the dropzone label with `aria-label`:
 - `data-file-upload-retry`
 - `data-file-upload-remove`
 
-When `preview="false"`, upload progress and errors replace the dropzone description so server-rendered Turbo Stream
-workflows still have visible feedback. A `413 Payload Too Large` response commonly means PHP's `upload_max_filesize` or
-`post_max_size` is lower than `max-size-bytes`; align those server limits with the component prop.
+Outside image view, `:preview="false"` makes upload progress and errors replace the dropzone description so
+server-rendered Turbo Stream workflows still have visible feedback. Image view displays the error line and exposes
+uploading through `data-loading` and `data-upload-state`. A `413 Payload Too Large` response commonly means PHP's
+`upload_max_filesize` or `post_max_size` is lower than `max-size-bytes`; align those server limits with the component prop.
 
 The attachment cards use the [`Attachment`](attachment.md) primitive and the package [`Progress`](progress.md) styles.
 

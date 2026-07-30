@@ -328,8 +328,6 @@ Keeping these as separate forms avoids the "form inside a form" footgun.
             multiple
             :max-size-bytes="10 * 1024 * 1024"
             :turbo-stream="true"
-            :preview="false"
-            :emit-hidden="false"
             :messages="['idleMultiple' => 'Drag images or click to upload']"
             class="mt-2"
         />
@@ -360,9 +358,8 @@ Keeping these as separate forms avoids the "form inside a form" footgun.
 
 Key file-upload props:
 
-- `:turbo-stream="true"` — accept stream responses on upload XHR
-- `:preview="false"` — native client-side attachment cards are skipped because the server-rendered list owns the UI
-- `:emit-hidden="false"` — no hidden inputs in the upload area (cards own their state)
+- `:turbo-stream="true"` — accept raw stream responses and make the server-rendered list own UI/value output; client
+  previews and automatic hidden inputs default to false
 
 ### The card partial — single source of truth
 

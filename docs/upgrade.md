@@ -15,17 +15,21 @@ markup, CSS or controller extensions.
 The `options` prop and `preview_template` slot have been removed. Replace Dropzone configuration with the File Upload
 props for that behavior, such as `accept`, `max-size-bytes`, `max-files`, `parallel-uploads`, `param-name`, `delete-url`,
 `turbo-stream`, `preview` and `emit-hidden`. Native attachment cards now use the package's
-[`Attachment`](components/attachment.md) primitive. When the server owns the visible card through Turbo Streams, disable
-the built-in card and hidden input explicitly:
+[`Attachment`](components/attachment.md) primitive. When the endpoint returns a raw Turbo Stream body, the component now
+disables its built-in card and newly emitted upload-response input automatically:
 
 ```blade
 <hw:file-upload
     url="{{ route('uploads.store') }}"
     turbo-stream
-    :preview="false"
-    :emit-hidden="false"
 />
 ```
+
+Explicit `preview=true` or `emit-hidden=true` with `turbo-stream` now throws an `InvalidArgumentException`; raw stream
+responses are server-owned and must render any new visible card or hidden value themselves. Explicit `value` and matching
+`old()` values remain as preserved hidden inputs for edit and validation round-trips. An optional `stream` string inside a
+JSON response is a separate hybrid protocol: it works without the prop and preserves normal client preview and
+hidden-input behavior.
 
 Dropzone `dict*` option names are no longer accepted, and `messages` no longer maps short keys to Dropzone dictionaries.
 Use the native keys documented in [`File Upload`](components/file-upload.md#messages), including `idle`, `idleMultiple`,
@@ -38,6 +42,11 @@ Use the native keys documented in [`File Upload`](components/file-upload.md#mess
 ```
 
 There is no native equivalent for Dropzone-only options or messages outside the documented File Upload API.
+
+Named `dropzone` slots now resolve `dropzone-variant="auto"` to the content-sized `bare` surface. The slot owns its
+dimensions, aspect ratio, border, background, radius, clipping, hover, focus and state treatment; the package retains
+the interaction wiring and an absolute image preview layer that does not affect layout. If a custom slot should keep the
+package's dashed drop area, set `dropzone-variant="default"` explicitly.
 
 ### Replace Dropzone markup and CSS
 

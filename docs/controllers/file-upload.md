@@ -11,34 +11,49 @@ progress, hidden input lifecycle, optional DELETE-on-remove and Turbo Stream res
 
 ## Values
 
-| Value             | Type    | Default  | Description                                                                                 |
-|-------------------|---------|----------|---------------------------------------------------------------------------------------------|
-| `url`             | String  | required | Upload endpoint.                                                                            |
-| `hiddenName`      | String  | `""`     | Hidden input name appended on success.                                                      |
-| `accept`          | String  | `""`     | Native accept list, also checked client-side.                                               |
-| `maxSizeBytes`    | Number  | `0`      | Per-file client-side size limit. `0` disables it.                                           |
-| `maxFiles`        | Number  | `0`      | Maximum queued files. `0` disables it.                                                      |
-| `multiple`        | Boolean | `false`  | Allows multiple files. Single mode keeps a completed upload until its replacement succeeds. |
-| `preview`         | Boolean | `true`   | Renders client-side attachment cards when true.                                             |
-| `emitHidden`      | Boolean | `true`   | Appends a hidden input on success when a value is extracted.                                |
-| `paramName`       | String  | `file`   | Multipart field name.                                                                       |
-| `responseKey`     | String  | `token`  | JSON key used as the hidden input value.                                                    |
-| `deleteUrl`       | String  | `""`     | DELETE endpoint with one or more `:token` placeholders.                                     |
-| `parallelUploads` | Number  | `3`      | Concurrent native XHR uploads.                                                              |
-| `turboStream`     | Boolean | `false`  | Sends Turbo Stream Accept header and renders stream bodies.                                 |
-| `view`            | String  | `list`   | `list` or `grid`. Grid marks generated cards vertical and enables image thumbnails.         |
-| `messages`        | Object  | `{}`     | Native labels and validation messages.                                                      |
+| Value             | Type    | Default       | Description                                                                                 |
+|-------------------|---------|---------------|---------------------------------------------------------------------------------------------|
+| `url`             | String  | required      | Upload endpoint.                                                                            |
+| `hiddenName`      | String  | `""`          | Hidden input name appended on success.                                                      |
+| `accept`          | String  | `""`          | Native accept list, also checked client-side.                                               |
+| `maxSizeBytes`    | Number  | `0`           | Per-file client-side size limit. `0` disables it.                                           |
+| `maxFiles`        | Number  | `0`           | Maximum queued files. `0` disables it.                                                      |
+| `multiple`        | Boolean | `false`       | Allows multiple files. Single mode keeps a completed upload until its replacement succeeds. |
+| `preview`         | Boolean | `true`        | Renders client-side attachment cards or image replacement previews.                         |
+| `emitHidden`      | Boolean | `true`        | Appends a hidden input on success when a value is extracted.                                |
+| `paramName`       | String  | `file`        | Multipart field name.                                                                       |
+| `responseKey`     | String  | `token`       | JSON key used as the hidden input value.                                                    |
+| `previewUrlKey`   | String  | `preview_url` | Optional durable image URL key used by the `image` view.                                    |
+| `deleteUrl`       | String  | `""`          | DELETE endpoint with one or more `:token` placeholders.                                     |
+| `parallelUploads` | Number  | `3`           | Concurrent native XHR uploads.                                                              |
+| `turboStream`     | Boolean | `false`       | Negotiates and renders raw Turbo Stream response bodies.                                    |
+| `view`            | String  | `list`        | `list`, `grid` or single-file `image`.                                                       |
+| `messages`        | Object  | `{}`          | Native labels and validation messages.                                                      |
 
 ## Targets
 
-| Target      | Required                | Description                                                          |
-|-------------|-------------------------|----------------------------------------------------------------------|
-| `input`     | yes                     | Hidden native `<input type="file">`.                                 |
-| `dropzone`  | yes                     | Keyboard/click/drag-drop activation surface.                         |
-| `feedback`  | optional                | Visible dropzone progress and error copy when previews are disabled. |
-| `list`      | yes                     | Attachment list container.                                           |
-| `template`  | yes when `preview=true` | Attachment card template cloned per file.                            |
-| `announcer` | optional                | `aria-live` status region.                                           |
+| Target         | Required               | Description                                                       |
+|----------------|------------------------|-------------------------------------------------------------------|
+| `input`        | yes                    | Hidden native `<input type="file">`.                              |
+| `dropzone`     | yes                    | Keyboard/click/drag-drop activation surface.                      |
+| `feedback`     | optional               | Visible status for custom dropzones and preview-disabled defaults. |
+| `imagePreview` | image view only        | Package-owned local/durable replacement image.                    |
+| `list`         | list/grid with preview | Attachment list container.                                        |
+| `template`     | list/grid with preview | Attachment card template cloned per file.                         |
+| `announcer`    | optional               | `aria-live` status region.                                        |
+
+## Root State
+
+The controller keeps two aggregate state attributes on its root:
+
+| Attribute           | Values                                | Description                                                                              |
+|---------------------|---------------------------------------|------------------------------------------------------------------------------------------|
+| `data-loading`      | `true`, `false`                       | True while at least one item is queued or uploading.                                     |
+| `data-upload-state` | `idle`, `uploading`, `error`, `done` | Current lifecycle; runtime or server-rendered errors take precedence over other states.  |
+
+An uploader may have `data-loading="true"` and `data-upload-state="error"` at the same time when one item failed while
+another remains active. Before Turbo caches the page, transient uploads are removed, loading is reset and custom
+dropzone feedback returns to its initial hidden state.
 
 ## Actions
 
@@ -83,8 +98,19 @@ field error as the user-facing message:
 }
 ```
 
-When `turboStream` is true, string responses are parsed and only bodies with an actual `<turbo-stream>` element are
-passed to `Turbo.renderStreamMessage` on success and error.
+JSON may also contain a `stream` string. It is validated and rendered automatically in every view, without
+`turboStream=true`, after the controller commits success/error state. This lets one response provide a hidden token,
+durable image URL and server-driven DOM updates. Only strings containing an actual `<turbo-stream>` element are passed
+to `Turbo.renderStreamMessage`.
+
+In `image` view, an optional `preview_url` response value is preloaded before replacing the local object URL. Loading
+failure keeps the local blob. Upload failure revokes the candidate blob and restores the last completed preview. Setting
+`preview=false` disables both local and durable image handling so Turbo Stream or app code can own the presentation.
+
+When `turboStream` is true, successful responses must be raw strings containing an actual `<turbo-stream>` element;
+JSON envelopes are rejected as upload errors. Valid streams are passed to `Turbo.renderStreamMessage` on success and
+error. `<hw:file-upload>` emits `preview=false` and `emitHidden=false` for this protocol; direct controller markup must
+set those values itself to avoid mixing client and server rendering.
 
 For non-JSON failures, `413 Payload Too Large` uses the `fileTooBig` message and non-2xx HTML error pages fall back to
 `uploadFailed` instead of rendering the full response body in the attachment card.
@@ -99,9 +125,11 @@ Network errors (`status === 0`) and `5xx` failures are retryable while the page 
 stays in memory on the failed item. Validation failures such as `422`, file-size failures such as `413`, and client-side
 validation errors do not expose retry.
 
-When generated image attachments are previewed, the controller creates local object URLs and revokes them when an item
-is removed or when `disconnect()` runs. Before Turbo caches the page, local previews return to the generic attachment
-icon and interrupted or failed cards are removed because their in-memory `File` objects cannot survive a reconnect.
+When generated image attachments or image replacements are previewed, the controller creates local object URLs and
+revokes them when an item is removed or when `disconnect()` runs. Before Turbo caches the page, local previews return to
+the generic attachment icon or server-rendered image. Durable image URLs remain and are hydrated on reconnect even
+without an attachment list. Interrupted or failed items are removed because their in-memory `File` objects cannot
+survive a reconnect.
 
 Clear all also removes preserved hidden tokens rendered from `value`/`old()` and announces the number of cleared
 entries. Remote DELETE cleanup for completed uploads is capped by `parallelUploads`. Failed cleanup dispatches

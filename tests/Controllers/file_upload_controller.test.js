@@ -21,6 +21,8 @@ beforeEach(() => {
     originalRevokeObjectURL = globalThis.URL?.revokeObjectURL;
     globalThis.XMLHttpRequest = FakeXMLHttpRequest;
     globalThis.URL.createObjectURL = mock((blob) => {
+        if (!(blob instanceof Blob)) throw new TypeError("Object URL source must be a Blob");
+
         const url = `blob:${blob.name}-${objectUrls.length}`;
         objectUrls.push({ blob, url });
 
@@ -50,7 +52,14 @@ afterEach(async () => {
     }
 });
 
-function defaultHtml(extraAttrs = "", extraChildren = "", controllers = "file-upload") {
+function defaultHtml(extraAttrs = "", extraChildren = "", controllers = "file-upload", customDropzone = false) {
+    const dropzoneContent = customDropzone
+        ? '<span data-custom-uploader>Custom uploader</span>'
+        : '<span data-file-upload-target="feedback" data-file-upload-default-feedback="Drop files here">Drop files here</span>';
+    const customFeedback = customDropzone
+        ? '<p data-slot="file-upload-feedback" data-file-upload-target="feedback" data-file-upload-default-feedback="" hidden></p>'
+        : '';
+
     return `
         <form id="parent-form">
             <div data-controller="${controllers}"
@@ -59,8 +68,9 @@ function defaultHtml(extraAttrs = "", extraChildren = "", controllers = "file-up
                   ${extraAttrs}>
                 <input type="file" hidden data-file-upload-target="input" data-action="change->file-upload#select">
                 <div data-file-upload-target="dropzone">
-                    <span data-file-upload-target="feedback" data-file-upload-default-feedback="Drop files here">Drop files here</span>
+                    ${dropzoneContent}
                 </div>
+                ${customFeedback}
                 <div data-slot="file-upload-actions">
                     <button type="button" hidden data-file-upload-clear data-action="file-upload#clear">Clear all</button>
                 </div>
@@ -79,6 +89,32 @@ function defaultHtml(extraAttrs = "", extraChildren = "", controllers = "file-up
                         <button type="button" data-file-upload-remove data-action="file-upload#remove">Remove</button>
                     </div>
                 </template>
+                <div role="status" data-file-upload-target="announcer"></div>
+                ${extraChildren}
+            </div>
+        </form>
+    `;
+}
+
+function customHtml(extraAttrs = "") {
+    return defaultHtml(extraAttrs, "", "file-upload", true);
+}
+
+function imageHtml(extraAttrs = "", extraChildren = "") {
+    return `
+        <form id="parent-form">
+            <div data-controller="file-upload"
+                  data-file-upload-url-value="/upload"
+                  data-file-upload-hidden-name-value="avatar"
+                  data-file-upload-accept-value="image/*"
+                  data-file-upload-view-value="image"
+                  ${extraAttrs}>
+                <input type="file" hidden data-file-upload-target="input" data-action="change->file-upload#select">
+                <div data-file-upload-target="dropzone">
+                    <div data-slot="file-upload-image-base">Confirmed image</div>
+                    <img data-slot="file-upload-image-preview" data-file-upload-target="imagePreview" alt="" hidden>
+                </div>
+                <p data-slot="file-upload-feedback" data-file-upload-target="feedback" data-file-upload-default-feedback="" hidden></p>
                 <div role="status" data-file-upload-target="announcer"></div>
                 ${extraChildren}
             </div>
@@ -111,6 +147,420 @@ test("select adds files, starts a native XHR upload and dispatches added", async
     expect(requests[0].body).toBeInstanceOf(FormData);
     expect(mounted.root.querySelector('[data-slot="attachment"]')?.dataset.state).toBe("uploading");
     expect(mounted.root.querySelector("[data-file-upload-clear]").hidden).toBe(false);
+});
+
+test("image view previews locally without rendering attachment cards", async () => {
+    await mount(imageHtml('data-file-upload-preview-url-key-value="cdn_url"'));
+    const preview = mounted.root.querySelector('[data-slot="file-upload-image-preview"]');
+
+    mounted.controller.select({
+        target: { files: [file("avatar.png", { type: "image/png" })], value: "x" },
+    });
+
+    expect(requests).toHaveLength(1);
+    expect(mounted.root.querySelector('[data-slot="attachment"]')).toBeNull();
+    expect(preview.hidden).toBe(false);
+    expect(preview.getAttribute("src")).toBe("blob:avatar.png-0");
+    expect(mounted.root.dataset.uploadState).toBe("uploading");
+
+    requests[0].respond(201, { token: "avatar-token", cdn_url: "/uploads/avatar.png" });
+    await wait(0);
+
+    const item = mounted.controller.items[0];
+    expect(preview.getAttribute("src")).toBe("blob:avatar.png-0");
+    item.imageLoader.dispatchEvent(new Event("load"));
+
+    expect(preview.getAttribute("src")).toBe("/uploads/avatar.png");
+    expect(preview.dataset.fileUploadId).toBe(item.id);
+    expect(revokedUrls).toEqual(["blob:avatar.png-0"]);
+    expect(mounted.root.querySelector('input[type="hidden"][name="avatar"]')?.value).toBe("avatar-token");
+});
+
+test("image view keeps the local preview when the durable URL does not load", async () => {
+    await mount(imageHtml());
+    mounted.controller.select({
+        target: { files: [file("avatar.png", { type: "image/png" })], value: "x" },
+    });
+    requests[0].respond(201, { token: "avatar-token", preview_url: "/uploads/missing.png" });
+    await wait(0);
+
+    const item = mounted.controller.items[0];
+    item.imageLoader.dispatchEvent(new Event("error"));
+
+    expect(mounted.root.querySelector('[data-slot="file-upload-image-preview"]').getAttribute("src"))
+        .toBe("blob:avatar.png-0");
+    expect(item.imageLoader).toBeNull();
+    expect(revokedUrls).toEqual([]);
+});
+
+test("image view rolls a failed candidate back to the confirmed preview", async () => {
+    await mount(imageHtml());
+    mounted.controller.select({
+        target: { files: [file("saved.png", { type: "image/png" })], value: "x" },
+    });
+    requests[0].respond(201, { token: "saved-token", preview_url: "/uploads/saved.png" });
+    await wait(0);
+    mounted.controller.items[0].imageLoader.dispatchEvent(new Event("load"));
+
+    mounted.controller.select({
+        target: { files: [file("candidate.png", { type: "image/png" })], value: "x" },
+    });
+    const preview = mounted.root.querySelector('[data-slot="file-upload-image-preview"]');
+    expect(preview.getAttribute("src")).toBe("blob:candidate.png-1");
+
+    requests[1].respond(422, { errors: { file: ["The candidate is invalid."] } });
+    await wait(0);
+
+    expect(preview.getAttribute("src")).toBe("/uploads/saved.png");
+    expect(revokedUrls).toEqual(["blob:saved.png-0", "blob:candidate.png-1"]);
+    expect(mounted.root.querySelector('input[type="hidden"][name="avatar"]')?.value).toBe("saved-token");
+    expect(mounted.root.dataset.uploadState).toBe("error");
+});
+
+test("image view rejects non-image files before upload", async () => {
+    await mount(imageHtml());
+
+    mounted.controller.select({
+        target: { files: [file("document.pdf", { type: "application/pdf" })], value: "x" },
+    });
+
+    expect(requests).toHaveLength(0);
+    expect(objectUrls).toHaveLength(0);
+    expect(mounted.root.dataset.uploadState).toBe("error");
+    expect(mounted.root.querySelector('[data-slot="file-upload-feedback"]').textContent)
+        .toBe("File type is not allowed");
+});
+
+test("image view does not trust an image extension over a contradictory MIME", async () => {
+    await mount(imageHtml());
+
+    mounted.controller.select({
+        target: { files: [file("avatar.png", { type: "text/plain" })], value: "x" },
+    });
+
+    expect(requests).toHaveLength(0);
+    expect(objectUrls).toHaveLength(0);
+    expect(mounted.root.dataset.uploadState).toBe("error");
+});
+
+test("image view recognizes image extensions when MIME is unavailable", async () => {
+    await mount(imageHtml());
+
+    mounted.controller.select({
+        target: { files: [file("avatar.svg", { type: "" })], value: "x" },
+    });
+
+    expect(requests).toHaveLength(1);
+    expect(mounted.root.querySelector('[data-slot="file-upload-image-preview"]').getAttribute("src"))
+        .toBe("blob:avatar.svg-0");
+});
+
+test("preview false leaves image rendering to the server", async () => {
+    await mount(imageHtml('data-file-upload-preview-value="false"'));
+    mounted.controller.select({
+        target: { files: [file("avatar.png", { type: "image/png" })], value: "x" },
+    });
+
+    expect(objectUrls).toHaveLength(0);
+    expect(mounted.root.querySelector('[data-slot="file-upload-image-preview"]').hidden).toBe(true);
+
+    requests[0].respond(201, { token: "avatar-token", preview_url: "/uploads/avatar.png" });
+    await wait(0);
+
+    expect(mounted.controller.items[0].imageLoader).toBeNull();
+    expect(mounted.root.querySelector('[data-slot="file-upload-image-preview"]').hidden).toBe(true);
+});
+
+test("reconnect hydrates a durable image preview without an attachment list", async () => {
+    await mount(imageHtml());
+    mounted.controller.select({
+        target: { files: [file("avatar.png", { type: "image/png" })], value: "x" },
+    });
+    requests[0].respond(201, { token: "avatar-token", preview_url: "/uploads/avatar.png" });
+    await wait(0);
+    mounted.controller.items[0].imageLoader.dispatchEvent(new Event("load"));
+
+    mounted.controller.disconnect();
+    mounted.controller.connect();
+
+    const preview = mounted.root.querySelector('[data-slot="file-upload-image-preview"]');
+    expect(mounted.controller.items).toHaveLength(1);
+    expect(mounted.controller.items[0].state).toBe("done");
+    expect(preview.getAttribute("src")).toBe("/uploads/avatar.png");
+    expect(preview.hidden).toBe(false);
+    expect(mounted.root.dataset.uploadState).toBe("done");
+});
+
+test("Turbo morph restores a durable image preview and its hidden token", async () => {
+    await mount(imageHtml());
+    mounted.controller.select({
+        target: { files: [file("avatar.png", { type: "image/png" })], value: "x" },
+    });
+    requests[0].respond(201, { token: "avatar-token", preview_url: "/uploads/avatar.png" });
+    await wait(0);
+    mounted.controller.items[0].imageLoader.dispatchEvent(new Event("load"));
+
+    const oldPreview = mounted.root.querySelector('[data-slot="file-upload-image-preview"]');
+    oldPreview.remove();
+    mounted.root.querySelector('input[type="hidden"][name="avatar"]').remove();
+    mounted.root.insertAdjacentHTML(
+        "beforeend",
+        '<input type="hidden" name="avatar" value="stale-token" data-hw-upload-preserved>'
+    );
+    mounted.root.querySelector('[data-file-upload-target="dropzone"]').insertAdjacentHTML(
+        "beforeend",
+        '<img data-slot="file-upload-image-preview" data-file-upload-target="imagePreview" alt="" hidden>'
+    );
+    mounted.root.dispatchEvent(new CustomEvent("turbo:morph-element", { bubbles: true }));
+
+    const preview = mounted.root.querySelector('[data-slot="file-upload-image-preview"]');
+    expect(preview.getAttribute("src")).toBe("/uploads/avatar.png");
+    expect(preview.hidden).toBe(false);
+    expect(mounted.root.querySelector('input[type="hidden"][name="avatar"]')?.value).toBe("avatar-token");
+    expect(mounted.root.querySelectorAll('input[type="hidden"][name="avatar"]')).toHaveLength(1);
+    expect(mounted.root.querySelector('[data-hw-upload-preserved]')).toBeNull();
+    expect(mounted.controller.items[0].hidden?.isConnected).toBe(true);
+    expect(mounted.root.dataset.uploadState).toBe("done");
+});
+
+test("preview-enabled uploads write to any external feedback target", async () => {
+    await mount(imageHtml().replace('data-slot="file-upload-feedback" ', ""));
+    mounted.controller.select({
+        target: { files: [file("avatar.png", { type: "image/png" })], value: "x" },
+    });
+
+    const feedback = mounted.root.querySelector('[data-file-upload-target="feedback"]');
+    expect(feedback.hidden).toBe(false);
+    expect(feedback.textContent).toBe("Uploading avatar.png");
+});
+
+test("Turbo morph restores attachment cards and their actions", async () => {
+    await mount();
+    mounted.controller.select({
+        target: { files: [file("photo.png", { type: "image/png" })], value: "x" },
+    });
+    requests[0].respond(201, { token: "photo-token" });
+    await wait(0);
+
+    mounted.root.querySelector('[data-file-upload-attachment]').remove();
+    mounted.root.querySelector('input[type="hidden"][name="avatar"]').remove();
+    mounted.root.dispatchEvent(new CustomEvent("turbo:morph-element", { bubbles: true }));
+
+    const attachment = mounted.root.querySelector('[data-file-upload-attachment]');
+    expect(attachment).not.toBeNull();
+    expect(attachment.dataset.state).toBe("done");
+    expect(attachment.querySelector('[data-file-upload-remove]')).not.toBeNull();
+    expect(mounted.root.querySelector('input[type="hidden"][name="avatar"]')?.value).toBe("photo-token");
+    expect(revokedUrls).toEqual(["blob:photo.png-0"]);
+    expect(objectUrls).toHaveLength(2);
+});
+
+test("Turbo morph restores hydrated image cards without creating a URL from synthetic files", async () => {
+    await mount();
+    mounted.controller.select({
+        target: { files: [file("photo.png", { type: "image/png" })], value: "x" },
+    });
+    requests[0].respond(201, { token: "photo-token" });
+    await wait(0);
+    mounted.controller.disconnect();
+    mounted.controller.connect();
+
+    mounted.root.querySelector('[data-file-upload-attachment]').remove();
+    mounted.root.dispatchEvent(new CustomEvent("turbo:morph-element", { bubbles: true }));
+
+    const attachment = mounted.root.querySelector('[data-file-upload-attachment]');
+    expect(attachment).not.toBeNull();
+    expect(attachment.querySelector('[data-slot="attachment-media"] img')).toBeNull();
+    expect(objectUrls).toHaveLength(1);
+    expect(revokedUrls).toEqual(["blob:photo.png-0"]);
+});
+
+test("Turbo morph preserves initial values when hidden emission is disabled", async () => {
+    await mount(defaultHtml(
+        'data-file-upload-emit-hidden-value="false"',
+        '<input type="hidden" name="avatar" value="preserved-token" data-hw-upload-preserved>'
+    ));
+    mounted.controller.select({ target: { files: [file("photo.png")], value: "x" } });
+    requests[0].respond(201, { token: "unused-token" });
+    await wait(0);
+
+    mounted.root.dispatchEvent(new CustomEvent("turbo:morph-element", { bubbles: true }));
+
+    expect(mounted.root.querySelector('[data-hw-upload-preserved]')?.value).toBe("preserved-token");
+    expect(mounted.root.querySelectorAll('input[type="hidden"][name="avatar"]')).toHaveLength(1);
+});
+
+test("Turbo morph restores custom error feedback and dropzone ARIA", async () => {
+    await mount(customHtml('data-file-upload-preview-value="false" data-file-upload-emit-hidden-value="false"'));
+    mounted.controller.select({ target: { files: [file("avatar.png")], value: "x" } });
+    requests[0].respond(422, { errors: { file: ["The avatar is invalid."] } });
+    await wait(0);
+
+    const previousFeedback = mounted.root.querySelector('[data-file-upload-target="feedback"]');
+    previousFeedback.replaceWith(previousFeedback.cloneNode(false));
+    const dropzone = mounted.root.querySelector('[data-file-upload-target="dropzone"]');
+    dropzone.removeAttribute("aria-invalid");
+    delete dropzone.dataset.state;
+    mounted.root.dispatchEvent(new CustomEvent("turbo:morph-element", { bubbles: true }));
+
+    const feedback = mounted.root.querySelector('[data-file-upload-target="feedback"]');
+    expect(feedback.hidden).toBe(false);
+    expect(feedback.textContent).toBe("The avatar is invalid.");
+    expect(dropzone.getAttribute("aria-invalid")).toBe("true");
+    expect(dropzone.dataset.state).toBe("error");
+});
+
+test("Turbo cache revokes transient image previews and restores the confirmed base", async () => {
+    await mount(imageHtml());
+    mounted.controller.select({
+        target: { files: [file("avatar.png", { type: "image/png" })], value: "x" },
+    });
+    requests[0].respond(201, { token: "avatar-token" });
+    await wait(0);
+
+    const preview = mounted.root.querySelector('[data-slot="file-upload-image-preview"]');
+    expect(preview.getAttribute("src")).toBe("blob:avatar.png-0");
+
+    document.dispatchEvent(new CustomEvent("turbo:before-cache", { bubbles: true }));
+
+    expect(preview.hidden).toBe(true);
+    expect(preview.hasAttribute("src")).toBe(false);
+    expect(revokedUrls).toEqual(["blob:avatar.png-0"]);
+});
+
+test("custom dropzones expose loading and upload state through the root", async () => {
+    await mount(customHtml('data-file-upload-preview-value="false" data-file-upload-emit-hidden-value="false"'));
+    const feedback = mounted.root.querySelector('[data-slot="file-upload-feedback"]');
+
+    expect(mounted.root.dataset.loading).toBe("false");
+    expect(mounted.root.dataset.uploadState).toBe("idle");
+    expect(feedback.hidden).toBe(true);
+
+    mounted.controller.select({ target: { files: [file("avatar.png", { type: "image/png" })], value: "x" } });
+
+    expect(mounted.root.dataset.loading).toBe("true");
+    expect(mounted.root.dataset.uploadState).toBe("uploading");
+    expect(feedback.hidden).toBe(false);
+    expect(feedback.textContent).toBe("Uploading avatar.png");
+
+    requests[0].respond(201, { token: "avatar" });
+    await wait(0);
+
+    expect(mounted.root.dataset.loading).toBe("false");
+    expect(mounted.root.dataset.uploadState).toBe("done");
+    expect(feedback.textContent).toBe("Uploaded avatar.png");
+});
+
+test("custom dropzone feedback resets after errors are cleared", async () => {
+    await mount(customHtml('data-file-upload-preview-value="false" data-file-upload-emit-hidden-value="false"'));
+    const feedback = mounted.root.querySelector('[data-slot="file-upload-feedback"]');
+    mounted.controller.select({ target: { files: [file("avatar.png")], value: "x" } });
+    requests[0].respond(422, { message: "Invalid", errors: { file: ["The avatar is invalid."] } });
+    await wait(0);
+
+    expect(mounted.root.dataset.loading).toBe("false");
+    expect(mounted.root.dataset.uploadState).toBe("error");
+    expect(feedback.hidden).toBe(false);
+    expect(feedback.textContent).toBe("The avatar is invalid.");
+
+    mounted.controller.clear({ preventDefault() {} });
+
+    expect(mounted.root.dataset.uploadState).toBe("idle");
+    expect(feedback.hidden).toBe(true);
+    expect(feedback.textContent).toBe("");
+});
+
+test("Turbo cache resets custom dropzone loading and feedback", async () => {
+    await mount(customHtml('data-file-upload-preview-value="false" data-file-upload-emit-hidden-value="false"'));
+    const feedback = mounted.root.querySelector('[data-slot="file-upload-feedback"]');
+    mounted.controller.select({ target: { files: [file("avatar.png")], value: "x" } });
+
+    document.dispatchEvent(new CustomEvent("turbo:before-cache", { bubbles: true }));
+
+    expect(mounted.root.dataset.loading).toBe("false");
+    expect(mounted.root.dataset.uploadState).toBe("idle");
+    expect(feedback.hidden).toBe(true);
+});
+
+test("custom feedback follows the remaining completed item after removing an active upload", async () => {
+    await mount(customHtml(
+        'data-file-upload-preview-value="false" data-file-upload-emit-hidden-value="false" data-file-upload-multiple-value="true" data-file-upload-parallel-uploads-value="1"'
+    ));
+    mounted.controller.select({ target: { files: [file("saved.png"), file("active.png")], value: "x" } });
+    requests[0].respond(201, { token: "saved" });
+    await wait(0);
+
+    const active = mounted.controller.items.find((item) => item.file.name === "active.png");
+    mounted.controller.remove({ preventDefault() {}, params: { id: active.id } });
+
+    const feedback = mounted.root.querySelector('[data-slot="file-upload-feedback"]');
+    const dropzone = mounted.root.querySelector('[data-file-upload-target="dropzone"]');
+    expect(mounted.root.dataset.loading).toBe("false");
+    expect(mounted.root.dataset.uploadState).toBe("done");
+    expect(feedback.textContent).toBe("Uploaded saved.png");
+    expect(dropzone.dataset.state).toBe("done");
+    expect(dropzone.hasAttribute("aria-busy")).toBe(false);
+});
+
+test("custom feedback follows a remaining error after removing another failed item", async () => {
+    await mount(customHtml(
+        'data-file-upload-preview-value="false" data-file-upload-emit-hidden-value="false" data-file-upload-multiple-value="true"'
+    ));
+    mounted.controller.select({
+        target: { files: [file("first.png"), file("second.png")], value: "x" },
+    });
+    requests[0].respond(422, { errors: { file: ["The first file is invalid."] } });
+    requests[1].respond(422, { errors: { file: ["The second file is invalid."] } });
+    await wait(0);
+
+    const second = mounted.controller.items.find((item) => item.file.name === "second.png");
+    mounted.controller.remove({ preventDefault() {}, params: { id: second.id } });
+
+    expect(mounted.root.dataset.uploadState).toBe("error");
+    expect(mounted.root.querySelector('[data-slot="file-upload-feedback"]').textContent)
+        .toBe("The first file is invalid.");
+});
+
+test("Turbo page and frame morphs refresh server-rendered validation state", async () => {
+    await mount(customHtml());
+
+    mounted.root.setAttribute("data-invalid", "");
+    document.dispatchEvent(new CustomEvent("turbo:morph"));
+    expect(mounted.root.dataset.uploadState).toBe("error");
+
+    mounted.root.removeAttribute("data-invalid");
+    document.dispatchEvent(new CustomEvent("turbo:morph"));
+    expect(mounted.root.dataset.uploadState).toBe("idle");
+
+    mounted.root.setAttribute("data-invalid", "");
+    mounted.root.dispatchEvent(new CustomEvent("turbo:morph-element", { bubbles: true }));
+    expect(mounted.root.dataset.uploadState).toBe("error");
+});
+
+test("removing the last active upload recalculates busy state while preserving delete errors", async () => {
+    const response = { ok: false, status: 500 };
+    globalThis.fetch = mock(() => Promise.resolve(response));
+    await mount(customHtml(
+        'data-file-upload-preview-value="false" data-file-upload-multiple-value="true" data-file-upload-delete-url-value="/uploads/:token"'
+    ));
+    mounted.controller.select({ target: { files: [file("saved.png"), file("active.png")], value: "x" } });
+    requests[0].respond(201, { token: "saved" });
+    await wait(0);
+
+    const saved = mounted.controller.items.find((item) => item.file.name === "saved.png");
+    const active = mounted.controller.items.find((item) => item.file.name === "active.png");
+    mounted.controller.remove({ preventDefault() {}, params: { id: saved.id } });
+    await wait(0);
+
+    const dropzone = mounted.root.querySelector('[data-file-upload-target="dropzone"]');
+    expect(dropzone.hasAttribute("aria-busy")).toBe(true);
+    mounted.controller.remove({ preventDefault() {}, params: { id: active.id } });
+
+    expect(mounted.root.dataset.loading).toBe("false");
+    expect(mounted.root.dataset.uploadState).toBe("error");
+    expect(dropzone.hasAttribute("aria-busy")).toBe(false);
+    expect(mounted.root.querySelector('[data-slot="file-upload-feedback"]').textContent)
+        .toBe("Failed to remove file: saved.png");
 });
 
 test("uploads negotiate Laravel JSON responses", async () => {
@@ -265,6 +715,26 @@ test("preview-disabled mixed selections keep validation errors visible while val
         .toBe(false);
     expect(mounted.root.querySelector("[data-file-upload-target='announcer']")?.textContent)
         .toBe("Uploaded valid.png");
+});
+
+test("later selections keep previous multiple-upload errors visible", async () => {
+    await mount(customHtml(
+        'data-file-upload-preview-value="false" data-file-upload-emit-hidden-value="false" data-file-upload-multiple-value="true" data-file-upload-max-size-bytes-value="3"'
+    ));
+    mounted.controller.select({
+        target: { files: [file("too-large.png", { size: 4 })], value: "x" },
+    });
+    mounted.controller.select({
+        target: { files: [file("valid.png", { size: 3 })], value: "x" },
+    });
+    requests[0].respond(201, { token: "valid" });
+    await wait(0);
+
+    const dropzone = mounted.root.querySelector('[data-file-upload-target="dropzone"]');
+    expect(mounted.root.dataset.uploadState).toBe("error");
+    expect(dropzone.getAttribute("aria-invalid")).toBe("true");
+    expect(mounted.root.querySelector('[data-file-upload-target="feedback"]').textContent)
+        .toBe("File is too large");
 });
 
 test("rejects files beyond max-files", async () => {
@@ -489,6 +959,33 @@ test("retry requeues retryable server errors in the same attachment", async () =
     expect(mounted.root.querySelector('input[type="hidden"][name="avatar"]')?.value).toBe("retry-token");
 });
 
+test("failed list image previews restore their icon and retry with a fresh object URL", async () => {
+    await mount();
+    mounted.controller.select({
+        target: { files: [file("photo.png", { type: "image/png" })], value: "x" },
+    });
+
+    const attachment = mounted.root.querySelector('[data-slot="attachment"]');
+    const media = attachment.querySelector('[data-slot="attachment-media"]');
+    expect(media.querySelector("img")?.getAttribute("src")).toBe("blob:photo.png-0");
+
+    requests[0].respond(500, "Server error", { "content-type": "text/plain" });
+    await wait(0);
+
+    expect(media.dataset.variant).toBe("icon");
+    expect(media.querySelector("img")).toBeNull();
+    expect(media.querySelector("svg")).not.toBeNull();
+    expect(revokedUrls).toEqual(["blob:photo.png-0"]);
+
+    mounted.controller.retry({
+        preventDefault() {},
+        params: { id: attachment.dataset.fileUploadId },
+    });
+
+    expect(media.dataset.variant).toBe("image");
+    expect(media.querySelector("img")?.getAttribute("src")).toBe("blob:photo.png-1");
+});
+
 test("retry respects max-files and remains available after capacity is freed", async () => {
     await mount(defaultHtml('data-file-upload-multiple-value="true" data-file-upload-max-files-value="1"'));
     mounted.controller.select({ target: { files: [file("failed.png")], value: "x" } });
@@ -601,10 +1098,202 @@ test("single mode keeps the completed upload when a replacement response has no 
     expect(fetchCalls).toHaveLength(0);
 });
 
+test("JSON success renders an embedded stream after committing client state", async () => {
+    const rendered = [];
+    globalThis.Turbo = {
+        renderStreamMessage: (html) => rendered.push({
+            html,
+            state: mounted.root.dataset.uploadState,
+            token: mounted.root.querySelector('input[type="hidden"][name="avatar"]')?.value,
+        }),
+    };
+    await mount();
+
+    const stream = '<turbo-stream action="append" target="flash-container"><template>Saved</template></turbo-stream>';
+    mounted.controller.select({ target: { files: [file("photo.png")], value: "x" } });
+    requests[0].respond(201, { token: "photo-token", stream });
+    await wait(0);
+
+    expect(rendered).toEqual([{ html: stream, state: "done", token: "photo-token" }]);
+    expect(mounted.root.querySelector('[data-slot="attachment"]')?.dataset.state).toBe("done");
+});
+
+test("JSON errors render an embedded stream after normalizing error state", async () => {
+    const rendered = [];
+    globalThis.Turbo = {
+        renderStreamMessage: (html) => rendered.push({
+            html,
+            state: mounted.root.dataset.uploadState,
+            text: mounted.root.querySelector('[data-file-upload-description]')?.textContent,
+        }),
+    };
+    await mount();
+
+    const stream = '<turbo-stream action="append" target="flash-container"><template>Failed</template></turbo-stream>';
+    mounted.controller.select({ target: { files: [file("photo.png")], value: "x" } });
+    requests[0].respond(422, {
+        errors: { file: ["The file is invalid."] },
+        stream,
+    });
+    await wait(0);
+
+    expect(rendered).toEqual([{ html: stream, state: "error", text: "The file is invalid." }]);
+});
+
+test("JSON stream works with image view without Turbo negotiation", async () => {
+    const rendered = [];
+    globalThis.Turbo = { renderStreamMessage: (html) => rendered.push(html) };
+    await mount(imageHtml());
+
+    const stream = '<turbo-stream action="append" target="flash-container"><template>Image saved</template></turbo-stream>';
+    mounted.controller.select({
+        target: { files: [file("avatar.png", { type: "image/png" })], value: "x" },
+    });
+    requests[0].respond(201, { token: "avatar-token", stream });
+    await wait(0);
+
+    expect(rendered).toEqual([stream]);
+    expect(mounted.root.querySelector('input[type="hidden"][name="avatar"]')?.value).toBe("avatar-token");
+    expect(mounted.root.querySelector('[data-slot="file-upload-image-preview"]').getAttribute("src"))
+        .toBe("blob:avatar.png-0");
+});
+
+test("JSON responses ignore embedded HTML that is not a Turbo Stream", async () => {
+    const rendered = [];
+    globalThis.Turbo = { renderStreamMessage: (html) => rendered.push(html) };
+    await mount();
+
+    mounted.controller.select({ target: { files: [file("photo.png")], value: "x" } });
+    requests[0].respond(201, { token: "photo-token", stream: "<div>Not a stream</div>" });
+    await wait(0);
+
+    expect(rendered).toEqual([]);
+    expect(mounted.root.querySelector('input[type="hidden"][name="avatar"]')?.value).toBe("photo-token");
+});
+
+test("JSON streams strip surrounding non-stream markup before rendering", async () => {
+    const rendered = [];
+    globalThis.Turbo = { renderStreamMessage: (html) => rendered.push(html) };
+    await mount();
+
+    const stream = '<turbo-stream action="append" target="flash-container"><template>Saved</template></turbo-stream>';
+    mounted.controller.select({ target: { files: [file("photo.png")], value: "x" } });
+    requests[0].respond(201, {
+        token: "photo-token",
+        stream: `<div id="unexpected">Ignore me</div>${stream}`,
+    });
+    await wait(0);
+
+    expect(rendered).toEqual([stream]);
+});
+
+test("a response stream that removes the uploader does not start the next queued upload", async () => {
+    globalThis.Turbo = { renderStreamMessage: () => mounted.root.remove() };
+    await mount(defaultHtml(
+        'data-file-upload-multiple-value="true" data-file-upload-parallel-uploads-value="1"'
+    ));
+
+    const stream = '<turbo-stream action="remove" target="parent-form"></turbo-stream>';
+    mounted.controller.select({ target: { files: [file("first.png"), file("second.png")], value: "x" } });
+    requests[0].respond(201, { token: "first-token", stream });
+    await wait(0);
+
+    expect(requests).toHaveLength(1);
+});
+
+test("a pending response stream gates queue advancement from concurrent uploads", async () => {
+    let finishRendering;
+    globalThis.Turbo = {
+        renderStreamMessage: () => new Promise((resolve) => {
+            finishRendering = () => {
+                mounted.root.remove();
+                resolve();
+            };
+        }),
+    };
+    await mount(defaultHtml(
+        'data-file-upload-multiple-value="true" data-file-upload-parallel-uploads-value="2"'
+    ));
+
+    const stream = '<turbo-stream action="remove" target="parent-form"></turbo-stream>';
+    mounted.controller.select({
+        target: { files: [file("first.png"), file("second.png"), file("third.png")], value: "x" },
+    });
+    requests[0].respond(201, { token: "first-token", stream });
+    requests[1].respond(201, { token: "second-token" });
+    await wait(0);
+
+    expect(requests).toHaveLength(2);
+
+    finishRendering();
+    await wait(0);
+    expect(requests).toHaveLength(2);
+});
+
+test("all concurrent response streams settle before the queue advances", async () => {
+    const finishRendering = [];
+    globalThis.Turbo = {
+        renderStreamMessage: () => new Promise((resolve) => finishRendering.push(resolve)),
+    };
+    await mount(defaultHtml(
+        'data-file-upload-multiple-value="true" data-file-upload-parallel-uploads-value="2"'
+    ));
+
+    const stream = '<turbo-stream action="append" target="results"><template>ok</template></turbo-stream>';
+    mounted.controller.select({
+        target: { files: [file("first.png"), file("second.png"), file("third.png")], value: "x" },
+    });
+    requests[0].respond(201, { token: "first-token", stream });
+    requests[1].respond(201, { token: "second-token", stream });
+    await wait(0);
+
+    finishRendering[0]();
+    await wait(0);
+    expect(requests).toHaveLength(2);
+
+    finishRendering[1]();
+    await wait(0);
+    expect(requests).toHaveLength(3);
+});
+
+test("a stream completion from before Turbo cache cannot release the new queue", async () => {
+    const finishRendering = [];
+    globalThis.Turbo = {
+        renderStreamMessage: () => new Promise((resolve) => finishRendering.push(resolve)),
+    };
+    await mount(defaultHtml(
+        'data-file-upload-multiple-value="true" data-file-upload-parallel-uploads-value="1"'
+    ));
+
+    const stream = '<turbo-stream action="append" target="results"><template>ok</template></turbo-stream>';
+    mounted.controller.select({
+        target: { files: [file("old-active.png"), file("old-queued.png")], value: "x" },
+    });
+    requests[0].respond(201, { token: "old-token", stream });
+    await wait(0);
+
+    mounted.controller.prepareForCache();
+    mounted.controller.select({
+        target: { files: [file("new-active.png"), file("new-queued.png")], value: "x" },
+    });
+    requests[1].respond(201, { token: "new-token", stream });
+    await wait(0);
+
+    finishRendering[0]();
+    await wait(0);
+    expect(requests).toHaveLength(2);
+
+    finishRendering[1]();
+    await wait(0);
+    expect(requests).toHaveLength(3);
+});
+
 test("turbo-stream=true negotiates stream responses and renders stream success without hidden input", async () => {
     const rendered = [];
     globalThis.Turbo = { renderStreamMessage: (html) => rendered.push(html) };
-    await mount(defaultHtml('data-file-upload-turbo-stream-value="true"'));
+    await mount(defaultHtml(
+        'data-file-upload-preview-value="false" data-file-upload-emit-hidden-value="false" data-file-upload-turbo-stream-value="true"'
+    ));
 
     const stream = '<turbo-stream action="append" target="files"><template>ok</template></turbo-stream>';
     mounted.controller.select({ target: { files: [file("photo.png")], value: "x" } });
@@ -619,7 +1308,9 @@ test("turbo-stream=true negotiates stream responses and renders stream success w
 test("turbo-stream error responses are rendered too", async () => {
     const rendered = [];
     globalThis.Turbo = { renderStreamMessage: (html) => rendered.push(html) };
-    await mount(defaultHtml('data-file-upload-turbo-stream-value="true"'));
+    await mount(defaultHtml(
+        'data-file-upload-preview-value="false" data-file-upload-emit-hidden-value="false" data-file-upload-turbo-stream-value="true"'
+    ));
 
     const stream = '<turbo-stream action="replace" target="upload-error"><template>no</template></turbo-stream>';
     mounted.controller.select({ target: { files: [file("photo.png")], value: "x" } });
@@ -629,10 +1320,68 @@ test("turbo-stream error responses are rendered too", async () => {
     expect(rendered).toEqual([stream]);
 });
 
-test("turbo-stream=true only renders actual turbo-stream elements", async () => {
+test("raw Turbo Stream mode rejects successful responses without a stream", async () => {
+    const errors = [];
+    const successes = [];
+    await mount(defaultHtml(
+        'data-file-upload-preview-value="false" data-file-upload-emit-hidden-value="false" data-file-upload-turbo-stream-value="true"'
+    ));
+    mounted.root.addEventListener("file-upload:error", (event) => errors.push(event.detail.text));
+    mounted.root.addEventListener("file-upload:success", (event) => successes.push(event.detail));
+
+    mounted.controller.select({ target: { files: [file("photo.png")], value: "x" } });
+    requests[0].respond(204, "", { "content-type": "text/plain" });
+    await wait(0);
+
+    expect(successes).toEqual([]);
+    expect(errors).toEqual(["Upload failed"]);
+    expect(mounted.root.dataset.uploadState).toBe("error");
+});
+
+test("raw Turbo Stream mode rejects JSON envelopes even when they contain a stream", async () => {
     const rendered = [];
+    const errors = [];
+    globalThis.Turbo = { renderStreamMessage: (html) => rendered.push(html) };
+    await mount(defaultHtml(
+        'data-file-upload-preview-value="false" data-file-upload-emit-hidden-value="false" data-file-upload-turbo-stream-value="true"'
+    ));
+    mounted.root.addEventListener("file-upload:error", (event) => errors.push(event.detail.text));
+
+    const stream = '<turbo-stream action="append" target="files"><template>ok</template></turbo-stream>';
+    mounted.controller.select({ target: { files: [file("photo.png")], value: "x" } });
+    requests[0].respond(200, { stream });
+    await wait(0);
+
+    expect(rendered).toEqual([]);
+    expect(errors).toEqual(["Upload failed"]);
+    expect(mounted.root.dataset.uploadState).toBe("error");
+});
+
+test("raw Turbo Stream mode rejects a JSON scalar containing stream markup", async () => {
+    const rendered = [];
+    const errors = [];
+    globalThis.Turbo = { renderStreamMessage: (html) => rendered.push(html) };
+    await mount(defaultHtml(
+        'data-file-upload-preview-value="false" data-file-upload-emit-hidden-value="false" data-file-upload-turbo-stream-value="true"'
+    ));
+    mounted.root.addEventListener("file-upload:error", (event) => errors.push(event.detail.text));
+
+    const stream = '<turbo-stream action="append" target="files"><template>ok</template></turbo-stream>';
+    mounted.controller.select({ target: { files: [file("photo.png")], value: "x" } });
+    requests[0].respond(200, JSON.stringify(stream), { "content-type": "application/json" });
+    await wait(0);
+
+    expect(rendered).toEqual([]);
+    expect(errors).toEqual(["Upload failed"]);
+    expect(mounted.root.dataset.uploadState).toBe("error");
+});
+
+test("turbo-stream=true requires an actual stream when used on a controller directly", async () => {
+    const rendered = [];
+    const errors = [];
     globalThis.Turbo = { renderStreamMessage: (html) => rendered.push(html) };
     await mount(defaultHtml('data-file-upload-turbo-stream-value="true"'));
+    mounted.root.addEventListener("file-upload:error", (event) => errors.push(event.detail.text));
 
     const upload = file("photo.png");
     const text = "stored <turbo-streamish>not a stream</turbo-streamish>";
@@ -641,7 +1390,8 @@ test("turbo-stream=true only renders actual turbo-stream elements", async () => 
     await wait(0);
 
     expect(rendered).toEqual([]);
-    expect(mounted.root.querySelector('input[type="hidden"]').value).toBe(text);
+    expect(errors).toEqual(["The server rejected this file. Check the file type and server upload-size limit."]);
+    expect(mounted.root.querySelector('input[type="hidden"]')).toBeNull();
 });
 
 test("preview-disabled Turbo uploads treat redirected HTML documents as visible errors", async () => {

@@ -36,9 +36,15 @@ class FileUpload extends Component
 
     private const DENSITIES = ['default', 'compact'];
 
-    private const VIEWS = ['list', 'grid'];
+    private const DROPZONE_VARIANTS = ['auto', 'default', 'bare'];
+
+    private const VIEWS = ['list', 'grid', 'image'];
 
     public string $identifier;
+
+    public bool $preview;
+
+    public bool $emitHidden;
 
     public function __construct(
         public ?string $name = null,
@@ -49,8 +55,8 @@ class FileUpload extends Component
         public ?int $maxSizeBytes = null,
         public ?int $maxFiles = null,
         public bool $multiple = false,
-        public bool $preview = true,
-        public bool $emitHidden = true,
+        ?bool $preview = null,
+        ?bool $emitHidden = null,
         public string $paramName = 'file',
         public string $responseKey = 'token',
         public ?string $deleteUrl = null,
@@ -64,6 +70,8 @@ class FileUpload extends Component
         public string $class = '',
         public string $controller = 'file-upload',
         public ?Htmlable $stimulus = null,
+        public string $previewUrlKey = 'preview_url',
+        public string $dropzoneVariant = 'auto',
     ) {
         if ($url === null || $url === '') {
             throw new InvalidArgumentException('hw:file-upload requires a `url` prop.');
@@ -78,7 +86,27 @@ class FileUpload extends Component
         }
 
         if (! in_array($view, self::VIEWS, true)) {
-            throw new InvalidArgumentException('Unsupported file-upload view. Supported values: list, grid.');
+            throw new InvalidArgumentException('Unsupported file-upload view. Supported values: list, grid, image.');
+        }
+
+        if (! in_array($dropzoneVariant, self::DROPZONE_VARIANTS, true)) {
+            throw new InvalidArgumentException('Unsupported file-upload dropzone variant. Supported values: auto, default, bare.');
+        }
+
+        if ($view === 'image' && $multiple) {
+            throw new InvalidArgumentException('Image file-upload view only supports single-file uploads.');
+        }
+
+        if ($view === 'image' && $clearable === true) {
+            throw new InvalidArgumentException('Image file-upload view does not support clearable.');
+        }
+
+        if ($turboStream && $preview === true) {
+            throw new InvalidArgumentException('Turbo Stream file uploads do not support client previews.');
+        }
+
+        if ($turboStream && $emitHidden === true) {
+            throw new InvalidArgumentException('Turbo Stream file uploads do not support emitted hidden inputs.');
         }
 
         foreach ($messages ?? [] as $key => $_value) {
@@ -91,7 +119,9 @@ class FileUpload extends Component
             }
         }
 
-        $this->accept = $this->normalizeAccept($accept);
+        $this->accept = $this->normalizeAccept($accept ?? ($view === 'image' ? 'image/*' : null));
+        $this->preview = $preview ?? ! $turboStream;
+        $this->emitHidden = $emitHidden ?? ! $turboStream;
         $this->identifier = $this->controller;
     }
 
@@ -116,6 +146,7 @@ class FileUpload extends Component
             "data-{$this->identifier}-emit-hidden-",
             "data-{$this->identifier}-param-name-",
             "data-{$this->identifier}-response-key-",
+            "data-{$this->identifier}-preview-url-key-",
             "data-{$this->identifier}-delete-url-",
             "data-{$this->identifier}-parallel-uploads-",
             "data-{$this->identifier}-turbo-stream-",

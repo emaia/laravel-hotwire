@@ -292,7 +292,7 @@ return [
             'view' => 'hotwire::component-views.file-upload',
             'docs' => 'docs/components/file-upload.md',
             'category' => 'forms',
-            'description' => 'Native drag-drop upload with queue, progress, attachment UI, optional hidden input and DELETE',
+            'description' => 'Native upload with list/grid/image views, styled or bare dropzones, hybrid JSON streams, hidden inputs and DELETE',
             'controllers' => ['file-upload'],
         ],
         'flash-container' => [
@@ -774,7 +774,7 @@ return [
             'source' => 'resources/js/controllers/file_upload_controller.js',
             'docs' => 'docs/controllers/file-upload.md',
             'category' => 'forms',
-            'description' => 'Native multi file upload — drag-drop, queue, progress, emits success/error/progress events, optional hidden input and DELETE',
+            'description' => 'Native upload engine with queue, image replacement, hybrid/raw streams, events and hidden inputs',
         ],
         'gtm' => [
             'source' => 'resources/js/controllers/gtm_controller.js',

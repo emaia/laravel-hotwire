@@ -3,6 +3,7 @@
 use Emaia\LaravelHotwire\Components\FileUpload;
 use Illuminate\Support\MessageBag;
 use Illuminate\Support\ViewErrorBag;
+use Illuminate\View\ViewException;
 
 function shareFileUploadErrors(array $errorsByKey): void
 {
@@ -50,6 +51,51 @@ it('throws when view is not supported', function () {
         ->toThrow(InvalidArgumentException::class, 'Unsupported file-upload view');
 });
 
+it('throws when dropzone variant is not supported', function () {
+    expect(fn () => new FileUpload(url: '/uploads', dropzoneVariant: 'card'))
+        ->toThrow(InvalidArgumentException::class, 'Unsupported file-upload dropzone variant');
+});
+
+it('defaults image view to image files', function () {
+    $component = new FileUpload(url: '/uploads', view: 'image');
+
+    expect($component->accept)->toBe('image/*');
+});
+
+it('rejects multiple image view uploads', function () {
+    expect(fn () => new FileUpload(url: '/uploads', view: 'image', multiple: true))
+        ->toThrow(InvalidArgumentException::class, 'Image file-upload view only supports single-file uploads');
+});
+
+it('rejects clearable image view uploads', function () {
+    expect(fn () => new FileUpload(url: '/uploads', view: 'image', clearable: true))
+        ->toThrow(InvalidArgumentException::class, 'Image file-upload view does not support clearable');
+});
+
+it('uses server-owned defaults for raw Turbo Stream uploads', function () {
+    $component = new FileUpload(url: '/uploads', turboStream: true);
+
+    expect($component->preview)->toBeFalse()
+        ->and($component->emitHidden)->toBeFalse();
+});
+
+it('keeps client-owned defaults for JSON uploads', function () {
+    $component = new FileUpload(url: '/uploads');
+
+    expect($component->preview)->toBeTrue()
+        ->and($component->emitHidden)->toBeTrue();
+});
+
+it('rejects explicit client previews with raw Turbo Stream uploads', function () {
+    expect(fn () => new FileUpload(url: '/uploads', turboStream: true, preview: true))
+        ->toThrow(InvalidArgumentException::class, 'Turbo Stream file uploads do not support client previews');
+});
+
+it('rejects explicit hidden emission with raw Turbo Stream uploads', function () {
+    expect(fn () => new FileUpload(url: '/uploads', turboStream: true, emitHidden: true))
+        ->toThrow(InvalidArgumentException::class, 'Turbo Stream file uploads do not support emitted hidden inputs');
+});
+
 // --- Base rendering ---
 
 it('renders a native file-upload controller host without Dropzone classes', function () {
@@ -73,10 +119,13 @@ it('renders the native file input, dropzone, attachment list, template and annou
         ->assertSee('accept="image/*"', false)
         ->assertSee('data-file-upload-target="input"', false)
         ->assertSee('data-slot="file-upload-dropzone"', false)
+        ->assertSee('data-file-upload-dropzone-variant="default"', false)
         ->assertSee('role="button"', false)
         ->assertSee('tabindex="0"', false)
         ->assertSee('data-file-upload-target="dropzone"', false)
         ->assertSee('data-file-upload-target="feedback"', false)
+        ->assertSee('id="avatar-feedback"', false)
+        ->assertSee('aria-describedby="avatar-feedback"', false)
         ->assertSee('data-file-upload-default-feedback="Drop a file here or click to choose"', false)
         ->assertSee('data-slot="attachment-group"', false)
         ->assertSee('role="list"', false)
@@ -117,6 +166,162 @@ it('uses native message keys for the dropzone copy', function () {
         ->assertSee('PDF or image files only', false);
 });
 
+it('renders custom dropzone content inside the package-owned picker surface', function () {
+    $view = $this->blade('
+        <x-hw::file-upload name="avatar" url="/uploads">
+            <x-slot:dropzone class="custom-avatar" aria-label="Change avatar" data-file-upload-dropzone-variant="default">
+                <img id="avatar-preview" src="/avatar.png" alt="">
+            </x-slot:dropzone>
+        </x-hw::file-upload>
+    ');
+
+    $view->assertSee('id="avatar-preview"', false)
+        ->assertSee('class="custom-avatar"', false)
+        ->assertSee('aria-label="Change avatar"', false)
+        ->assertSee('data-file-upload-dropzone-variant="bare"', false)
+        ->assertDontSee('data-file-upload-dropzone-variant="default"', false)
+        ->assertSee('data-file-upload-target="dropzone"', false)
+        ->assertSee('click->file-upload#openPicker', false)
+        ->assertSee('data-slot="file-upload-feedback"', false)
+        ->assertSee('id="avatar-feedback"', false)
+        ->assertSee('data-file-upload-target="feedback"', false)
+        ->assertDontSee('data-slot="empty-state"', false);
+    expect((string) $view)->toMatch('/<p[^>]*data-slot="file-upload-feedback"[^>]*hidden/s');
+});
+
+it('renders image view without attachment UI', function () {
+    $view = $this->blade('
+        <x-hw::file-upload
+            name="avatar"
+            url="/uploads"
+            view="image"
+            preview-url-key="cdn_url"
+        >
+            <x-slot:dropzone class="size-20 rounded-full">
+                <img src="/avatar.png" alt="">
+            </x-slot:dropzone>
+        </x-hw::file-upload>
+    ');
+
+    $view->assertSee('data-view="image"', false)
+        ->assertSee('accept="image/*"', false)
+        ->assertSee('data-file-upload-view-value="image"', false)
+        ->assertSee('data-file-upload-preview-url-key-value="cdn_url"', false)
+        ->assertSee('data-file-upload-dropzone-variant="bare"', false)
+        ->assertSee('class="size-20 rounded-full"', false)
+        ->assertSee('data-slot="file-upload-image-base"', false)
+        ->assertSee('data-slot="file-upload-image-preview"', false)
+        ->assertSee('data-file-upload-target="imagePreview"', false)
+        ->assertSee('data-slot="file-upload-feedback"', false)
+        ->assertDontSee('data-slot="attachment-group"', false)
+        ->assertDontSee('data-file-upload-target="template"', false);
+});
+
+it('renders a default image picker when no dropzone slot is provided', function () {
+    $view = $this->blade('<x-hw::file-upload name="avatar" url="/uploads" view="image" />');
+
+    $view->assertSee('data-slot="file-upload-image-base"', false)
+        ->assertSee('data-slot="file-upload-image-preview"', false)
+        ->assertSee('data-file-upload-default-image', false)
+        ->assertSee('data-file-upload-dropzone-variant="default"', false)
+        ->assertDontSee('data-slot="empty-state"', false);
+});
+
+it('lets the dropzone variant override automatic slot styling', function () {
+    $styledSlot = $this->blade('
+        <x-hw::file-upload name="avatar" url="/uploads" dropzone-variant="default">
+            <x-slot:dropzone>Styled custom content</x-slot:dropzone>
+        </x-hw::file-upload>
+    ');
+
+    $styledSlot->assertSee('data-file-upload-dropzone-variant="default"', false);
+});
+
+it('rejects a bare dropzone without custom content', function () {
+    expect(fn () => $this->blade('<x-hw::file-upload name="avatar" url="/uploads" dropzone-variant="bare" />'))
+        ->toThrow(ViewException::class, 'Bare file-upload dropzones require a named `dropzone` slot');
+});
+
+it('keeps the new dropzone variant after existing positional constructor arguments', function () {
+    $component = new FileUpload(
+        null, null, null, '/uploads', null, null, null, false, null, null,
+        'file', 'token', null, 3, false, null, 'default', 'list', 'existing-token',
+    );
+
+    expect($component->value)->toBe('existing-token')
+        ->and($component->dropzoneVariant)->toBe('auto');
+});
+
+it('wires image preview to a custom controller identifier', function () {
+    $view = $this->blade('
+        <x-hw::file-upload name="avatar" url="/uploads" view="image" controller="avatar-upload">
+            <x-slot:dropzone>Avatar</x-slot:dropzone>
+        </x-hw::file-upload>
+    ');
+
+    $view->assertSee('data-avatar-upload-target="dropzone"', false)
+        ->assertSee('data-avatar-upload-target="imagePreview"', false)
+        ->assertSee('data-avatar-upload-target="feedback"', false)
+        ->assertDontSee('data-file-upload-target="imagePreview"', false);
+});
+
+it('merges custom dropzone actions while preserving required picker semantics', function () {
+    $view = $this->blade('
+        <x-hw::file-upload name="avatar" url="/uploads">
+            <x-slot:dropzone
+                role="group"
+                tabindex="-1"
+                data-slot="replacement"
+                data-file-upload-target="replacement"
+                data-action="click->analytics#track"
+            >Custom</x-slot:dropzone>
+        </x-hw::file-upload>
+    ');
+
+    $view->assertSee('role="button"', false)
+        ->assertSee('tabindex="0"', false)
+        ->assertSee('data-file-upload-target="dropzone"', false)
+        ->assertSee('data-action="click->file-upload#openPicker', false)
+        ->assertSee('click->analytics#track', false)
+        ->assertDontSee('role="group"', false)
+        ->assertDontSee('tabindex="-1"', false)
+        ->assertDontSee('data-slot="replacement"', false)
+        ->assertDontSee('data-file-upload-target="replacement"', false);
+});
+
+it('wires a custom dropzone and feedback to a custom controller identifier', function () {
+    $view = $this->blade('
+        <x-hw::file-upload name="avatar" url="/uploads" controller="avatar-upload">
+            <x-slot:dropzone>Custom</x-slot:dropzone>
+        </x-hw::file-upload>
+    ');
+
+    $view->assertSee('data-avatar-upload-target="dropzone"', false)
+        ->assertSee('data-avatar-upload-target="feedback"', false)
+        ->assertSee('avatar-upload#openPicker', false)
+        ->assertDontSee('data-file-upload-target="dropzone"', false);
+});
+
+it('preserves validation aria semantics on custom dropzones', function () {
+    shareFileUploadErrors(['attachments.0' => ['too big']]);
+
+    $view = $this->blade('
+        <x-hw::file-upload name="attachments" url="/uploads" multiple required>
+            <x-slot:dropzone
+                aria-describedby="upload-help"
+                aria-invalid="false"
+                aria-required="false"
+            >Custom</x-slot:dropzone>
+        </x-hw::file-upload>
+    ');
+
+    $view->assertSee('aria-describedby="attachments-error upload-help attachments-feedback"', false)
+        ->assertSee('aria-invalid="true"', false)
+        ->assertSee('aria-required="true"', false)
+        ->assertDontSee('aria-invalid="false"', false)
+        ->assertDontSee('aria-required="false"', false);
+});
+
 it('renders clear-all controls for multiple uploads and explicit opt-in', function () {
     $multiple = $this->blade('<x-hw::file-upload name="attachments" url="/uploads" multiple />');
     $single = $this->blade('<x-hw::file-upload name="avatar" url="/uploads" />');
@@ -152,6 +357,42 @@ it('renders compact grid uploads with retry action and custom action labels', fu
         ->assertSee('data-action="file-upload#retry"', false)
         ->assertSee('Try again', false)
         ->assertSee('Remove all', false);
+});
+
+it('omits newly client-owned UI and values for raw Turbo Stream uploads', function () {
+    $view = $this->blade('<x-hw::file-upload name="attachments" url="/uploads" turbo-stream multiple />');
+
+    $view->assertSee('data-file-upload-turbo-stream-value="true"', false)
+        ->assertSee('data-file-upload-preview-value="false"', false)
+        ->assertSee('data-file-upload-emit-hidden-value="false"', false)
+        ->assertDontSee('data-slot="attachment-group"', false)
+        ->assertDontSee('data-file-upload-target="template"', false)
+        ->assertDontSee('data-file-upload-clear', false);
+});
+
+it('preserves explicit existing values in raw Turbo Stream edit forms', function () {
+    $valueView = $this->blade('<x-hw::file-upload name="attachments" url="/uploads" turbo-stream :value="[\'existing-token\']" />');
+
+    session()->put('_old_input', ['attachments' => ['old-token']]);
+    $oldView = $this->blade('<x-hw::file-upload name="attachments" url="/uploads" turbo-stream :value="[\'existing-token\']" />');
+
+    $valueView->assertSee('data-file-upload-emit-hidden-value="false"', false)
+        ->assertSee('name="attachments"', false)
+        ->assertSee('value="existing-token"', false)
+        ->assertSee('data-hw-upload-preserved', false);
+    $oldView->assertSee('value="old-token"', false)
+        ->assertDontSee('value="existing-token"', false);
+});
+
+it('rejects invalid ownership combinations through Blade boolean attributes', function () {
+    expect(fn () => $this->blade('<x-hw::file-upload url="/uploads" turbo-stream preview />'))
+        ->toThrow(ViewException::class, 'Turbo Stream file uploads do not support client previews')
+        ->and(fn () => $this->blade('<x-hw::file-upload url="/uploads" turbo-stream emit-hidden />'))
+        ->toThrow(ViewException::class, 'Turbo Stream file uploads do not support emitted hidden inputs')
+        ->and(fn () => $this->blade('<x-hw::file-upload url="/uploads" view="image" multiple />'))
+        ->toThrow(ViewException::class, 'Image file-upload view only supports single-file uploads')
+        ->and(fn () => $this->blade('<x-hw::file-upload url="/uploads" view="image" clearable />'))
+        ->toThrow(ViewException::class, 'Image file-upload view does not support clearable');
 });
 
 it('wires click, keyboard and drag-drop actions to the native controller', function () {
@@ -239,6 +480,7 @@ it('omits default-valued data attrs', function () {
         ->assertDontSee('emit-hidden-value', false)
         ->assertDontSee('param-name-value', false)
         ->assertDontSee('response-key-value', false)
+        ->assertDontSee('preview-url-key-value', false)
         ->assertDontSee('parallel-uploads-value', false)
         ->assertDontSee('view-value', false)
         ->assertDontSee('turbo-stream-value', false)
@@ -287,7 +529,7 @@ it('sets invalid state when direct or sub-key errors are present', function () {
     $view = $this->blade('<x-hw::file-upload name="attachments" url="/uploads" multiple />');
 
     $view->assertSee('aria-invalid="true"', false)
-        ->assertSee('aria-describedby="attachments-error"', false)
+        ->assertSee('aria-describedby="attachments-error attachments-feedback"', false)
         ->assertSee('data-invalid', false);
 });
 
@@ -305,7 +547,7 @@ it('puts validation aria attributes on the focusable dropzone', function () {
         ->not->toContain('aria-invalid')
         ->not->toContain('aria-required')
         ->and($dropzone[1])
-        ->toContain('aria-describedby="attachments-error"')
+        ->toContain('aria-describedby="attachments-error attachments-feedback"')
         ->toContain('aria-invalid="true"')
         ->toContain('aria-required="true"');
 });
