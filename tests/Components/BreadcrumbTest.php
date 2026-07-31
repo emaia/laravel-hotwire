@@ -3,6 +3,27 @@
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
 
+it('targets generated and composed breadcrumb links with frame', function () {
+    $items = [
+        ['label' => 'Projects', 'href' => '/projects'],
+        ['label' => 'Archived', 'href' => '/projects/archived', 'frame' => false],
+        ['label' => 'Current'],
+    ];
+
+    $generated = $this->blade('<x-hw::breadcrumb :items="$items" frame="content" />', ['items' => $items]);
+    $composed = $this->blade('<x-hw::breadcrumb><x-hw::breadcrumb.link href="/projects" frame="content">Projects</x-hw::breadcrumb.link></x-hw::breadcrumb>');
+
+    expect(substr_count((string) $generated, 'data-turbo-frame="content"'))->toBe(1)
+        ->and((string) $generated)->not->toContain(' frame=')
+        ->and((string) $composed)->toContain('data-turbo-frame="content"');
+});
+
+it('omits frame metadata from href-less composed links', function () {
+    $view = $this->blade('<x-hw::breadcrumb.link frame="content">Current</x-hw::breadcrumb.link>');
+
+    $view->assertDontSee('data-turbo-frame', false);
+});
+
 it('renders a breadcrumb root with semantic markup', function () {
     $view = $this->blade('<x-hw::breadcrumb id="trail">Trail</x-hw::breadcrumb>');
 

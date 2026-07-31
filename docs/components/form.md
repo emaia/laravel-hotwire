@@ -24,7 +24,7 @@ Form wrapper that composes optional Stimulus behaviors via boolean props. Render
 | `clean-query-params` | `bool`              | `false` | Strips empty fields from GET query strings before submission                                                                                                     |
 | `conditional-fields` | `bool`              | `false` | Adds the `conditional-fields` controller for nested `<hw:conditional-field>` dependents                                                                          |
 | `track-frame-src`    | `bool`              | `false` | Includes a hidden `_turbo_frame_src` input for correct redirect resolution inside Turbo Frames                                                                   |
-| `frame`              | `string\|null`      | `null`  | Sets `data-turbo-frame` on the form so Turbo submits into that frame                                                                                             |
+| `frame`              | `string\|object\|false\|null` | `null` | Sets `data-turbo-frame` on the form so Turbo submits into that frame; objects use `dom_id()` and false/blank values omit it                                     |
 | `enctype`            | `string\|null`      | `null`  | HTML `enctype` attribute. Set to `"multipart/form-data"` for file uploads. Default `null` omits the attribute (browser uses `application/x-www-form-urlencoded`) |
 | `state`              | `mixed`             | `null`  | Initial form state inherited by conditional fields for server-rendered visibility                                                                                |
 
@@ -84,7 +84,9 @@ common Hotwire form path declarative:
 </turbo-frame>
 ```
 
-If both `frame` and `data-turbo-frame` are present, the explicit `data-turbo-frame` attribute wins.
+If both `frame` and `data-turbo-frame` are present, the explicit native attribute wins. Bind
+`:data-turbo-frame="false"` to suppress a `frame` prop. `null`, `false`, empty strings, and whitespace-only strings omit
+the destination; objects resolve through `dom_id()`.
 
 ### unsaved-changes
 
@@ -145,8 +147,10 @@ See [conditional-field](./conditional-field.md) and [conditional-fields controll
 ### error-scroll
 
 Scrolls to the first validation error after a form submission fails. Listens to `turbo:frame-render` (inside a Turbo
-Frame) or `turbo:render` (full-page morphs) and finds the first `[aria-invalid]` element to scroll it into view. Works
-automatically with `<hw:field>` and `<hw:input>`, which set `aria-invalid` on validation errors.
+Frame) or `turbo:render` (full-page morphs) and finds the first `[aria-invalid]` element to scroll it into view. Frame
+events are ignored unless the rendered frame owns, contains, or is contained by the mounted form; a page-level form
+wrapper still observes descendant frames. Works automatically with `<hw:field>` and `<hw:input>`, which set
+`aria-invalid` on validation errors.
 
 ```blade
 <hw:form :action="route('posts.store')" method="post" error-scroll>

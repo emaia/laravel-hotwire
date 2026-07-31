@@ -1,5 +1,19 @@
 <?php
 
+it('renders polymorphic item buttons with a safe type', function () {
+    $view = $this->blade('<x-hw::item as="button">Choose</x-hw::item>');
+
+    $view->assertSee('<button', false)
+        ->assertSee('type="button"', false);
+});
+
+it('preserves accessibility attributes on enabled items', function () {
+    $view = $this->blade('<x-hw::item tabindex="0" aria-disabled="false">Choose</x-hw::item>');
+
+    $view->assertSee('tabindex="0"', false)
+        ->assertSee('aria-disabled="false"', false);
+});
+
 it('renders an item with semantic variant and size state', function () {
     $view = $this->blade('<x-hw::item variant="outline" size="sm">Profile</x-hw::item>');
 
@@ -18,6 +32,13 @@ it('renders as a link via the as prop', function () {
         ->assertSee('data-slot="item"', false)
         ->assertSee('</a>', false)
         ->assertDontSee('<div data-slot="item"', false);
+});
+
+it('treats a null disabled binding on item links as enabled', function () {
+    $view = $this->blade('<x-hw::item as="a" href="/profile" :disabled="$disabled">Profile</x-hw::item>', ['disabled' => null]);
+
+    $view->assertSee('href="/profile"', false)
+        ->assertDontSee('aria-disabled="true"', false);
 });
 
 it('renders item subcomponents with semantic slots', function () {

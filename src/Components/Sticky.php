@@ -2,6 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Emaia\LaravelHotwire\Support\PolymorphicTag;
 use Illuminate\View\Component;
 
 class Sticky extends Component
@@ -12,6 +13,7 @@ class Sticky extends Component
         public bool $surface = true,
         public string $as = 'div',
     ) {
+        $this->as = PolymorphicTag::normalize($this->as, ['div', 'header', 'footer', 'aside', 'nav', 'section'], 'sticky');
         $this->side = in_array($this->side, ['top', 'bottom'], true) ? $this->side : 'top';
     }
 

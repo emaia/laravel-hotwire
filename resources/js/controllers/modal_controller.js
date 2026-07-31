@@ -91,17 +91,41 @@ export default class ModalController extends Controller {
     }
 
     open(event) {
-        if (event && (event.ctrlKey || event.metaKey || event.shiftKey)) return;
+        if (event && (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey)) return;
         if (event && event.button !== undefined && event.button !== 0) return;
+
+        const trigger = event?.currentTarget ?? event?.target;
+        if (trigger?.matches?.('[disabled], [aria-disabled="true"]')) {
+            event?.preventDefault?.();
+            return;
+        }
+        const frameLink = trigger?.matches?.("a[href][data-turbo-frame]");
+        if (trigger?.matches?.("a[href]") && !frameLink) {
+            event.preventDefault();
+        }
 
         if (this.overlay?.isOpening || this.isOpen) return;
 
-        this.triggerElement = event?.currentTarget ?? event?.target ?? document.activeElement;
+        this.triggerElement = trigger ?? this.triggerElement ?? document.activeElement;
+
+        if (frameLink) {
+            return this.overlay?.isClosing ? this.overlay.open() : undefined;
+        }
 
         return this.overlay?.open();
     }
 
-    close() {
+    close(event) {
+        if (event && (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey)) return;
+        if (event && event.button !== undefined && event.button !== 0) return;
+
+        const trigger = event?.currentTarget ?? event?.target;
+        if (trigger?.matches?.('[disabled], [aria-disabled="true"]')) {
+            event.preventDefault();
+            return;
+        }
+        if (!trigger?.matches?.("a[href]")) event?.preventDefault?.();
+
         if (!this.overlay?.isOpen) return;
 
         this.frameOverlay?.markDismissedWhileLoading();

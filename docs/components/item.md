@@ -27,7 +27,10 @@ Composable list item primitive for menus, notifications, search results and sett
 </hw:item.group>
 ```
 
-Use `as="a"`, `as="button"` or another tag and pass attributes directly to the item when it needs a different root element.
+Use `as="a"` or `as="button"` and pass attributes directly to the item when it needs an interactive root. `as` is
+trimmed, lowercased, and restricted to `div`, `a`, or `button`; unsupported values are rejected. Button items default to
+`type="button"`, with `submit` and `reset` also accepted. Disabled anchors omit `href` and receive
+`aria-disabled="true"` and `tabindex="-1"`.
 
 ## Props
 
@@ -35,7 +38,8 @@ Use `as="a"`, `as="button"` or another tag and pass attributes directly to the i
 | --- | --- | --- | --- |
 | `item` | `variant` | `default` | `default`, `outline` or `muted`. |
 | `item` | `size` | `default` | `default`, `sm` or `xs`. |
-| `item` | `as` | `div` | Render a different root element, usually `a` or `button`. |
+| `item` | `as` | `div` | Render `div`, `a`, or `button`. Values are normalized and validated. |
+| `item` | `type` | `button` | Native button type: `button`, `submit`, or `reset`. |
 | `item.media` | `variant` | `default` | `default`, `icon` or `image`. |
 
 ## Components

@@ -2,6 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components\Pagination;
 
+use Emaia\LaravelHotwire\Support\FrameTarget;
 use Illuminate\View\Component;
 
 class Previous extends Component
@@ -10,11 +11,13 @@ class Previous extends Component
         public ?string $href = null,
         public bool $disabled = false,
         public ?string $label = 'Previous',
-        public ?string $turboFrame = null,
+        public string|object|bool|null $frame = null,
         public string $size = 'default',
         public bool $turboStream = false,
         public string $ariaLabel = 'Go to previous page',
-    ) {}
+    ) {
+        $this->frame = FrameTarget::normalize($this->frame);
+    }
 
     public function render()
     {

@@ -55,7 +55,7 @@ it('renders composed pagination subcomponents', function () {
 it('renders links from a length-aware paginator', function () {
     $paginator = new LengthAwarePaginator(range(1, 10), 200, 10, 10, ['path' => '/users']);
 
-    $view = $this->blade('<x-hw::pagination :paginator="$paginator" turbo-frame="users" />', [
+    $view = $this->blade('<x-hw::pagination :paginator="$paginator" frame="users" />', [
         'paginator' => $paginator,
     ]);
 
@@ -71,6 +71,33 @@ it('renders links from a length-aware paginator', function () {
         ->toContain('aria-current="page"')
         ->toContain('data-active="true"')
         ->not->toContain('href="/users?page=10"');
+});
+
+it('uses only frame as the generated paginator target prop', function () {
+    $paginator = new LengthAwarePaginator(range(1, 10), 200, 10, 10, ['path' => '/users']);
+
+    $view = $this->blade('<x-hw::pagination :paginator="$paginator" frame=" users " />', [
+        'paginator' => $paginator,
+    ]);
+
+    expect((string) $view)
+        ->toContain('data-turbo-frame="users"')
+        ->not->toContain(' frame=')
+        ->not->toContain(' turbo-frame=');
+});
+
+it('omits frame metadata from inactive paginator controls', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::pagination>
+            <x-hw::pagination.content>
+                <x-hw::pagination.item><x-hw::pagination.link active frame="results">1</x-hw::pagination.link></x-hw::pagination.item>
+                <x-hw::pagination.item><x-hw::pagination.previous disabled frame="results" /></x-hw::pagination.item>
+                <x-hw::pagination.item><x-hw::pagination.next :frame="false" href="/users?page=2" /></x-hw::pagination.item>
+            </x-hw::pagination.content>
+        </x-hw::pagination>
+    BLADE);
+
+    $view->assertDontSee('data-turbo-frame', false);
 });
 
 it('adds turbo stream to generated paginator links', function () {

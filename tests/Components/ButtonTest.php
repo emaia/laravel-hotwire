@@ -1,6 +1,13 @@
 <?php
 
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\View\ViewException;
+
+class ButtonFrameRecord extends Model
+{
+    protected $guarded = [];
+}
 
 // --- Rendering basics ---
 
@@ -76,6 +83,28 @@ it('keeps the data-slot/variant/size attributes on the <a> render', function () 
         ->assertSee('data-size="default"', false);
 });
 
+it('removes navigation and frame metadata from disabled anchor buttons', function () {
+    $view = $this->blade('<x-hw::button as="a" href="/tasks" frame="content" disabled>Tasks</x-hw::button>');
+
+    $view->assertSee('aria-disabled="true"', false)
+        ->assertSee('tabindex="-1"', false)
+        ->assertDontSee('href=', false)
+        ->assertDontSee('data-turbo-frame', false)
+        ->assertDontSee(' disabled', false);
+});
+
+it('treats a null disabled binding as enabled', function () {
+    $view = $this->blade('<x-hw::button as="a" href="/tasks" frame="content" :disabled="$disabled">Tasks</x-hw::button>', ['disabled' => null]);
+
+    $view->assertSee('href="/tasks"', false)
+        ->assertSee('data-turbo-frame="content"', false)
+        ->assertDontSee('aria-disabled="true"', false);
+});
+
+it('rejects unsupported native button types', function () {
+    $this->blade('<x-hw::button type="invalid">Save</x-hw::button>');
+})->throws(ViewException::class, 'Unsupported button type');
+
 it('renders frame as a Turbo Frame target', function () {
     $view = $this->blade('<x-hw::button as="a" href="/tasks/create" frame="modal">New task</x-hw::button>');
 
@@ -89,6 +118,25 @@ it('lets an explicit data-turbo-frame attribute override the frame prop', functi
     $view->assertSee('data-turbo-frame="drawer"', false)
         ->assertDontSee('data-turbo-frame="modal"', false)
         ->assertDontSee(' frame="modal"', false);
+});
+
+it('normalizes optional and model-backed frame targets', function () {
+    $model = new ButtonFrameRecord;
+    $model->id = 7;
+
+    $modelView = $this->blade('<x-hw::button :frame="$model">Open</x-hw::button>', ['model' => $model]);
+    $blankView = $this->blade('<x-hw::button frame="   ">Open</x-hw::button>');
+    $falseView = $this->blade('<x-hw::button :frame="false">Open</x-hw::button>');
+
+    $modelView->assertSee('data-turbo-frame="button_frame_record_7"', false);
+    $blankView->assertDontSee('data-turbo-frame', false);
+    $falseView->assertDontSee('data-turbo-frame', false);
+});
+
+it('lets an explicit false data-turbo-frame suppress the frame prop', function () {
+    $view = $this->blade('<x-hw::button frame="modal" :data-turbo-frame="false">Open</x-hw::button>');
+
+    $view->assertDontSee('data-turbo-frame', false);
 });
 
 // --- Declarative controller integrations ---

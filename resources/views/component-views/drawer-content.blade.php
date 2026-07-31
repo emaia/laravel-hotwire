@@ -1,4 +1,4 @@
-@aware(['direction' => 'down', 'axis' => 'y', 'backdrop' => true, 'frame' => null, 'motion' => 'default'])
+@aware(['id' => '', 'direction' => 'down', 'axis' => 'y', 'backdrop' => true, 'frame' => null, 'motion' => 'default'])
 
 <div
     data-slot="drawer-overlay"
@@ -27,7 +27,7 @@
     >
         <div data-slot="drawer-content">
             @if ($frame !== null)
-                <turbo-frame id="{{ $frame }}" data-drawer-target="dynamicContent">
+                <turbo-frame id="{{ $frame }}" data-drawer-target="dynamicContent" data-drawer-frame-owner="{{ $id }}">
                     {{ $slot }}
                 </turbo-frame>
             @else

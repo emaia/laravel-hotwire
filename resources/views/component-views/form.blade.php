@@ -1,11 +1,12 @@
 @php
     extract($compute($attributes));
+    $resolvedFrame = \Emaia\LaravelHotwire\Support\FrameTarget::resolve($frame, $attributes);
 
     $formAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
         'data-slot' => 'form',
         'data-controller' => $controller ?: null,
         'data-auto-submit-delay-value' => $autoSubmit ? $autoSubmitDelay : null,
-        'data-turbo-frame' => $frame,
+        'data-turbo-frame' => $resolvedFrame,
         'method' => $isSpoofMethod ? 'post' : $method,
         'enctype' => $enctype,
     ], $attributes, $stimulus, except: [
@@ -19,6 +20,7 @@
         'track-frame-src',
         'auto-submit-delay',
         'frame',
+        'data-turbo-frame',
         'state',
     ], protectedPrefixes: array_values(array_filter([
         $autoSubmit ? 'data-auto-submit-' : null,

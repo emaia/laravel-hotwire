@@ -1,11 +1,18 @@
 @php
     extract($compute($attributes));
+    $frameHostCount = $frame === null ? 0 : \Emaia\LaravelHotwire\Support\OverlayFrameHost::count(
+        $slot->toHtml(),
+        $frame,
+        'data-drawer-frame-owner',
+        $id,
+        'drawer.content',
+    );
 @endphp
 
 <div {{ $drawerAttributes }}>
     {{ $slot }}
 
-    @if ($frame !== null && trim($slot->toHtml()) === '')
+    @if ($frame !== null && $frameHostCount === 0)
         <div
             data-slot="drawer-overlay"
             data-drawer-target="modal"
@@ -31,7 +38,7 @@
                 data-drawer-target="dialog"
             >
                 <div data-slot="drawer-content">
-                    <turbo-frame id="{{ $frame }}" data-drawer-target="dynamicContent"></turbo-frame>
+                    <turbo-frame id="{{ $frame }}" data-drawer-target="dynamicContent" data-drawer-frame-owner="{{ $id }}"></turbo-frame>
                 </div>
             </div>
         </div>

@@ -13,7 +13,7 @@ Clears file inputs (`<input type="file">`) automatically after a successful subm
 ## How it works
 
 1. On `turbo:submit-end`, records whether the submit of *this* element's form succeeded (HTTP 2xx/3xx).
-2. On the following render (`turbo:render` or `turbo:frame-render`), if the submit succeeded **and** the
+2. On the following render (`turbo:render` or a relevant `turbo:frame-render`), if the submit succeeded **and** the
    re-rendered form has no field marked `aria-invalid="true"`, the file input(s) are cleared. The controller may
    be mounted on the file `<input>` itself (how `<hw:file>` uses it), on the `<form>`, or on a wrapper.
 
@@ -21,6 +21,10 @@ The two-step success check matters: a `200` response that re-renders the form wi
 `success` on `turbo:submit-end`, so the `aria-invalid` guard is what actually distinguishes success from a failed
 validation. `<hw:file>` renders `aria-invalid="true"` on invalid fields automatically; standalone usage must do
 the same for the guard to work.
+
+Frame events affect an instance only when their frame is the controller element, an ancestor that owns it, or a
+descendant it contains. Unrelated sibling frames do not consume an armed reset. A controller mounted on a page-level
+wrapper still observes descendant frame renders.
 
 ## Usage
 

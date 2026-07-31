@@ -2,6 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Emaia\LaravelHotwire\Support\FrameTarget;
 use Emaia\LaravelHotwire\Support\StimulusAttributes;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\Component;
@@ -15,7 +16,7 @@ class Sheet extends Component
         public string $id = '',
         public string $side = 'right',
         public string $size = '',
-        public ?string $frame = null,
+        public string|object|bool|null $frame = null,
         public bool $backdrop = true,
         public string $motion = 'default',
         public bool $lockScroll = true,
@@ -27,9 +28,7 @@ class Sheet extends Component
             $this->id = uniqid('sheet-');
         }
 
-        if ($this->frame === '') {
-            $this->frame = null;
-        }
+        $this->frame = FrameTarget::normalize($this->frame);
 
         if ($this->frame !== null && $this->frame === $this->id) {
             throw new \InvalidArgumentException('The sheet root id and frame id must be different.');

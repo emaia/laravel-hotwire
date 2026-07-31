@@ -138,15 +138,17 @@ test.serial("target strategy does nothing when target is missing", async () => {
 
 test.serial("re-applies focus on turbo:frame-load when scope lost focus", async () => {
     await mount(`
-        <form data-controller="autofocus">
-            <input type="text" name="title" autofocus />
-        </form>
+        <turbo-frame id="editor">
+            <form data-controller="autofocus">
+                <input type="text" name="title" autofocus />
+            </form>
+        </turbo-frame>
     `);
 
     document.body.focus();
     expect(document.activeElement).toBe(document.body);
 
-    document.dispatchEvent(new Event("turbo:frame-load", { bubbles: true }));
+    document.getElementById("editor").dispatchEvent(new Event("turbo:frame-load", { bubbles: true }));
     await wait(0);
 
     expect(document.activeElement.name).toBe("title");
@@ -154,19 +156,38 @@ test.serial("re-applies focus on turbo:frame-load when scope lost focus", async 
 
 test.serial("does not re-steal focus on turbo:frame-load when something in scope is focused", async () => {
     await mount(`
-        <form data-controller="autofocus">
-            <input type="text" name="title" />
-            <input type="text" name="slug" autofocus />
-        </form>
+        <turbo-frame id="editor">
+            <form data-controller="autofocus">
+                <input type="text" name="title" />
+                <input type="text" name="slug" autofocus />
+            </form>
+        </turbo-frame>
     `);
 
     document.querySelector("[name='title']").focus();
     expect(document.activeElement.name).toBe("title");
 
-    document.dispatchEvent(new Event("turbo:frame-load", { bubbles: true }));
+    document.getElementById("editor").dispatchEvent(new Event("turbo:frame-load", { bubbles: true }));
     await wait(0);
 
     expect(document.activeElement.name).toBe("title");
+});
+
+test.serial("ignores turbo:frame-load from an unrelated frame", async () => {
+    await mount(`
+        <turbo-frame id="editor">
+            <form data-controller="autofocus">
+                <input type="text" name="title" autofocus />
+            </form>
+        </turbo-frame>
+        <turbo-frame id="sidebar"></turbo-frame>
+    `);
+
+    document.body.focus();
+    document.getElementById("sidebar").dispatchEvent(new Event("turbo:frame-load", { bubbles: true }));
+    await wait(0);
+
+    expect(document.activeElement).toBe(document.body);
 });
 
 test.serial("does NOT focus on turbo:render", async () => {

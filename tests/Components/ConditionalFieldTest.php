@@ -187,6 +187,14 @@ it('accepts a custom wrapper tag', function () {
     $view->assertSee('data-conditional-fields-target="dependent"', false);
 });
 
+it('renders a validated as prop without raw tag output', function () {
+    $view = $this->blade('<x-hw::conditional-field when="plan=pro" as="DIV"><input name="team"></x-hw::conditional-field>');
+
+    $view->assertSee('<div', false)
+        ->assertSee('</div>', false)
+        ->assertDontSee(' as=', false);
+});
+
 it('forwards extra attributes to the wrapper element', function () {
     $view = $this->blade('<x-hw::conditional-field :when="[\'reason\' => \'other\']" class="my-class">x</x-hw::conditional-field>');
 

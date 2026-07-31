@@ -19,6 +19,36 @@ afterEach(async () => {
     mounted = null;
 });
 
+test.serial("unrelated frame renders do not consume an armed reset", async () => {
+    await mount(`
+        <turbo-frame id="owner">
+            <div data-controller="reset-files" data-reset-on-success="true"><input type="file" /></div>
+        </turbo-frame>
+        <turbo-frame id="other"></turbo-frame>
+    `);
+
+    mounted.controller.armed = true;
+    mounted.controller.lastSubmitSucceeded = true;
+    document.getElementById("other").dispatchEvent(new Event("turbo:frame-render", { bubbles: true }));
+    expect(mounted.controller.armed).toBe(true);
+
+    document.getElementById("owner").dispatchEvent(new Event("turbo:frame-render", { bubbles: true }));
+    expect(mounted.controller.armed).toBe(false);
+});
+
+test.serial("a sibling frame targeted by the submitted form consumes an armed reset", async () => {
+    await mount(`
+        <form data-controller="reset-files" data-reset-on-success="true" data-turbo-frame="preview"><input type="file" /></form>
+        <turbo-frame id="preview"></turbo-frame>
+    `);
+
+    const form = document.querySelector("form");
+    mounted.controller.trackSubmit({ target: form, detail: { success: true } });
+    document.getElementById("preview").dispatchEvent(new Event("turbo:frame-render", { bubbles: true }));
+
+    expect(mounted.controller.armed).toBe(false);
+});
+
 // --- Successful submit resets ---
 
 test.serial("resets file input after successful submit (no errors)", async () => {

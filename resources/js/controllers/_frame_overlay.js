@@ -68,7 +68,7 @@ export function createFrameOverlay(controller) {
     }
 
     function trackClickedLink(event) {
-        if (event.ctrlKey || event.metaKey || event.shiftKey) return;
+        if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
         if (event.button !== undefined && event.button !== 0) return;
         if (!hasDynamicContent()) return;
 
@@ -81,15 +81,18 @@ export function createFrameOverlay(controller) {
             return;
         }
 
+        if (!controller.isOpen && !controller.overlay?.isOpening) {
+            controller.triggerElement = link;
+        }
         lastClickedLink = link.hasAttribute("data-loading-template") ? link : null;
     }
 
     function handleBeforeFetchRequest(event) {
         if (!hasDynamicContent()) return;
         if (event.target !== dynamicContent()) return;
-        if (!controller.modalTarget.hidden) return;
 
         dismissedWhileLoading = false;
+        if (!controller.modalTarget.hidden) return;
 
         const templateHtml = resolveLoadingTemplate();
         if (templateHtml) {

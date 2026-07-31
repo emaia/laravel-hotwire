@@ -2,6 +2,8 @@
 
 namespace Emaia\LaravelHotwire\Components\Navbar;
 
+use Emaia\LaravelHotwire\Support\FrameTarget;
+use Emaia\LaravelHotwire\Support\PolymorphicTag;
 use Illuminate\View\Component;
 
 class Item extends Component
@@ -14,8 +16,12 @@ class Item extends Component
         public bool $disabled = false,
         public ?string $as = null,
         public string $type = 'button',
+        public string|object|bool|null $frame = null,
     ) {
-        $this->tag = $this->as ?: ($this->href !== null ? 'a' : 'button');
+        $this->frame = FrameTarget::normalize($this->frame);
+        $this->tag = PolymorphicTag::normalize($this->as ?? ($this->href !== null ? 'a' : 'button'), ['a', 'button', 'span'], 'navbar item');
+        $this->as = $this->tag;
+        $this->type = PolymorphicTag::buttonType($this->type);
     }
 
     public function render()

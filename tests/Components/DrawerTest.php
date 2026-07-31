@@ -3,6 +3,7 @@
 use Emaia\LaravelHotwire\Components\Drawer;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
+use Illuminate\View\ViewException;
 
 it('renders drawer markup and controller hooks', function () {
     $view = $this->blade('<x-hw::drawer><x-hw::drawer.content>Body</x-hw::drawer.content></x-hw::drawer>');
@@ -81,7 +82,7 @@ it('renders frame content and loading template when frame is configured', functi
         </x-hw::drawer>
     BLADE);
 
-    $view->assertSee('<turbo-frame id="drawer-frame" data-drawer-target="dynamicContent">', false)
+    $view->assertSee('<turbo-frame id="drawer-frame" data-drawer-target="dynamicContent"', false)
         ->assertSee('Fallback')
         ->assertSee('<template data-drawer-target="loadingTemplate">', false)
         ->assertSee('Loading drawer...');
@@ -98,8 +99,34 @@ it('renders a complete frame host when drawer content is omitted', function () {
 
     $view->assertSee('data-drawer-target="modal"', false)
         ->assertSee('data-drawer-target="dialog"', false)
-        ->assertSee('<turbo-frame id="drawer-panel" data-drawer-target="dynamicContent">', false)
+        ->assertSee('<turbo-frame id="drawer-panel" data-drawer-target="dynamicContent"', false)
         ->assertSee('<template data-drawer-target="loadingTemplate">', false);
+});
+
+it('adds one frame host alongside trigger-only drawer content', function () {
+    $view = $this->blade('<x-hw::drawer frame="drawer-panel"><x-hw::drawer.trigger>Open</x-hw::drawer.trigger></x-hw::drawer>');
+
+    expect(substr_count((string) $view, '<turbo-frame'))->toBe(1);
+});
+
+it('rejects more than one drawer frame host', function () {
+    $this->blade('<x-hw::drawer frame="drawer-panel"><x-hw::drawer.content>One</x-hw::drawer.content><x-hw::drawer.content>Two</x-hw::drawer.content></x-hw::drawer>');
+})->throws(ViewException::class, 'A drawer with a frame prop must render exactly one drawer.content host.');
+
+it('does not mistake arbitrary drawer owner metadata for a frame host', function () {
+    $view = $this->blade('<x-hw::drawer id="drawer-shell" frame="drawer-panel"><div data-drawer-frame-owner="drawer-shell">Content</div></x-hw::drawer>');
+
+    expect(substr_count((string) $view, '<turbo-frame'))->toBe(1);
+});
+
+it('rejects an unmanaged turbo frame with the drawer frame id', function () {
+    $this->blade('<x-hw::drawer id="drawer-shell" frame="drawer-panel"><turbo-frame id="drawer-panel"></turbo-frame></x-hw::drawer>');
+})->throws(ViewException::class, 'A drawer with a frame prop must render exactly one drawer.content host.');
+
+it('keeps nested drawer frame hosts scoped to their owner', function () {
+    $view = $this->blade('<x-hw::drawer id="outer" frame="outer-frame"><x-hw::drawer id="inner" frame="inner-frame"></x-hw::drawer></x-hw::drawer>');
+
+    expect(substr_count((string) $view, '<turbo-frame'))->toBe(2);
 });
 
 it('rejects matching drawer root and frame ids', function () {

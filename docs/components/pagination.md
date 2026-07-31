@@ -77,7 +77,7 @@ Pass an empty or null control label when you want icon-only previous and next co
 ## Turbo Frames
 
 For frame pagination, wrap both the paginated content and the pagination controls in the same `<turbo-frame>`. Turbo
-automatically scopes clicks inside the frame back to that frame, so no `turbo-frame` prop is needed.
+automatically scopes clicks inside the frame back to that frame, so no destination prop is needed.
 
 ```blade
 <turbo-frame id="users">
@@ -90,22 +90,29 @@ automatically scopes clicks inside the frame back to that frame, so no `turbo-fr
 If the browser URL should track frame pagination, put `data-turbo-action="advance"` or `data-turbo-action="replace"`
 on the frame itself.
 
-Use `turbo-frame="_top"` when pagination renders inside a frame but should navigate the full page instead of updating
+Use `frame="_top"` when pagination renders inside a frame but should navigate the full page instead of updating
 only the frame.
 
 ```blade
 <turbo-frame id="users">
     @include('users.table', ['users' => $users])
 
-    <hw:pagination :paginator="$users" turbo-frame="_top" />
+    <hw:pagination :paginator="$users" frame="_top" />
 </turbo-frame>
 ```
 
-In manual mode, pass `data-turbo-frame` directly to each link component.
+In automatic mode, `frame` is copied to every generated actionable link. In manual mode, pass it to each link or
+control:
 
 ```blade
-<hw:pagination.link href="{{ $users->url(2) }}" data-turbo-frame="users">2</hw:pagination.link>
+<hw:pagination.link href="{{ $users->url(2) }}" frame="users">2</hw:pagination.link>
 ```
+
+Pagination exposes only `frame`; no prop alias is accepted. Raw `data-turbo-frame` remains a native escape hatch on
+manual link, previous, and next components, and wins over `frame`. Bind the raw attribute to
+`false` to suppress the prop. `frame` accepts strings or objects resolved with `dom_id()`; `null`, `false`, empty, and
+whitespace-only values are omitted. Current, disabled, and missing-URL controls render as non-actions and omit frame
+metadata.
 
 ## Turbo Streams
 
@@ -166,7 +173,7 @@ visible control text is hidden or when the paginator needs domain-specific wordi
 |-----------------------|---------------------|-----------------------|---------------------------------------------------------------------------|
 | `pagination`          | `paginator`         | `null`                | Optional Laravel paginator for automatic links.                           |
 | `pagination`          | `label`             | `Pagination`          | Accessible label for the root `nav`.                                      |
-| `pagination`          | `turboFrame`        | `null`                | Turbo Frame target for generated links.                                   |
+| `pagination`          | `frame`             | `null`                | Turbo Frame target for generated links; accepts string/object/false.       |
 | `pagination`          | `turboStream`       | `false`               | Adds `data-turbo-stream` to generated links.                              |
 | `pagination`          | `previousLabel`     | `Previous`            | Visible previous label; empty or null renders icon-only.                  |
 | `pagination`          | `nextLabel`         | `Next`                | Visible next label; empty or null renders icon-only.                      |
@@ -178,19 +185,19 @@ visible control text is hidden or when the paginator needs domain-specific wordi
 | `pagination.link`     | `active`            | `false`               | Renders the page as current and non-clickable.                            |
 | `pagination.link`     | `disabled`          | `false`               | Renders the page as non-clickable.                                        |
 | `pagination.link`     | `size`              | `icon`                | Link size token.                                                          |
-| `pagination.link`     | `turboFrame`        | `null`                | Adds `data-turbo-frame` when the link renders as `<a>`.                   |
+| `pagination.link`     | `frame`             | `null`                | Adds `data-turbo-frame` only when the link renders as `<a>`.              |
 | `pagination.link`     | `turboStream`       | `false`               | Adds `data-turbo-stream` when the link renders as `<a>`.                  |
 | `pagination.previous` | `href`              | `null`                | Previous-page URL.                                                        |
 | `pagination.previous` | `disabled`          | `false`               | Forces the previous control to render disabled.                           |
 | `pagination.previous` | `label`             | `Previous`            | Visible label; empty or null omits the label span and uses `size="icon"`. |
-| `pagination.previous` | `turboFrame`        | `null`                | Adds `data-turbo-frame` when the control renders as `<a>`.                |
+| `pagination.previous` | `frame`             | `null`                | Adds `data-turbo-frame` only when the control renders as `<a>`.           |
 | `pagination.previous` | `turboStream`       | `false`               | Adds `data-turbo-stream` when the control renders as `<a>`.               |
 | `pagination.previous` | `ariaLabel`         | `Go to previous page` | Accessible label for the control.                                         |
 | `pagination.previous` | `size`              | `default`             | Control size token. Empty labels force `icon`.                            |
 | `pagination.next`     | `href`              | `null`                | Next-page URL.                                                            |
 | `pagination.next`     | `disabled`          | `false`               | Forces the next control to render disabled.                               |
 | `pagination.next`     | `label`             | `Next`                | Visible label; empty or null omits the label span and uses `size="icon"`. |
-| `pagination.next`     | `turboFrame`        | `null`                | Adds `data-turbo-frame` when the control renders as `<a>`.                |
+| `pagination.next`     | `frame`             | `null`                | Adds `data-turbo-frame` only when the control renders as `<a>`.           |
 | `pagination.next`     | `turboStream`       | `false`               | Adds `data-turbo-stream` when the control renders as `<a>`.               |
 | `pagination.next`     | `ariaLabel`         | `Go to next page`     | Accessible label for the control.                                         |
 | `pagination.next`     | `size`              | `default`             | Control size token. Empty labels force `icon`.                            |

@@ -29,8 +29,12 @@ Use `items` when the trail is plain links plus the current page.
     ['label' => 'Dashboard', 'href' => route('dashboard')],
     ['label' => 'Projects', 'href' => route('projects.index')],
     ['label' => $project->name],
-]" />
+]" frame="content" />
 ```
+
+The root `frame` target is applied to generated links. An item descriptor can replace it with its own `frame`, or set
+`'frame' => false` to suppress targeting for that item. Current pages, items without `href`, and ellipses omit frame
+metadata.
 
 ## Ellipsis
 
@@ -52,7 +56,9 @@ In `items`, ellipsis is visual and accessible only. Compose with Dropdown manual
 | `breadcrumb`          | `label`         | `Breadcrumb` | Accessible label for the root `nav`.                                           |
 | `breadcrumb`          | `items`         | `null`       | Array of breadcrumb items. Use composed subcomponents for per-item attributes. |
 | `breadcrumb`          | `ellipsisLabel` | `More pages` | Fallback label for `type => 'ellipsis'` items.                                 |
+| `breadcrumb`          | `frame`         | `null`       | Turbo Frame target inherited by generated links.                              |
 | `breadcrumb.link`     | `href`          | `null`       | Link destination.                                                              |
+| `breadcrumb.link`     | `frame`         | `null`       | Turbo Frame target when the composed link has an `href`.                      |
 | `breadcrumb.ellipsis` | `label`         | `More pages` | Accessible label for the ellipsis.                                             |
 
 ## Items API
@@ -63,9 +69,14 @@ In `items`, ellipsis is visual and accessible only. Compose with Dropdown manual
 | `href`    | Optional URL. Use `route()` explicitly when you need named routes. |
 | `current` | Forces the item to render as the current page.                     |
 | `type`    | Use `ellipsis` to render a non-interactive ellipsis.               |
+| `frame`   | Override the root frame target; use `false` to suppress it.         |
 
 The last item without `href` is inferred as the current page. Automatic URL matching, nested dropdown data and per-item
 attributes are intentionally left out of v1.
+
+Frame values accept strings or objects resolved with `dom_id()`; null, false, empty, and whitespace-only values are
+omitted. Href-less links omit frame metadata. On `<hw:breadcrumb.link>`, an explicit `data-turbo-frame` wins over `frame`
+and can be bound to `false` to suppress it.
 
 ## Components
 

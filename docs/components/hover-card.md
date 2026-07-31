@@ -36,6 +36,10 @@ another semantic element or button style:
 </hw:hover-card.trigger>
 ```
 
+Trigger `as` values are trimmed, lowercased, and restricted to `button` or `a`. Native button `type` accepts `button`,
+`submit`, or `reset`. An anchor without `href` receives `tabindex="0"` so focus can still open the card. Disabled anchors
+omit `href` and receive `aria-disabled="true"` and `tabindex="-1"`.
+
 ## Delays
 
 Hover Card uses a short open delay and close delay by default to avoid flicker while users move across dense UI:
@@ -117,10 +121,10 @@ Custom CSS may use transitions or finite animations keyed by `data-state`. A clo
 
 | Prop      | Default   | Description                                                        |
 |-----------|-----------|--------------------------------------------------------------------|
-| `as`      | `button`  | Element rendered by the trigger.                                   |
+| `as`      | `button`  | Render `button` or `a`. Values are normalized and validated.       |
 | `variant` | `link`    | Button preset variant: `default`, `outline`, `ghost`, `link`, etc. |
 | `size`    | `default` | Button preset size.                                                |
-| `type`    | `button`  | Button type when `as="button"`.                                    |
+| `type`    | `button`  | Native button type: `button`, `submit`, or `reset`.                 |
 
 ## Components
 

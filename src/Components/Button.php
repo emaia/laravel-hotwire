@@ -2,6 +2,8 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Emaia\LaravelHotwire\Support\FrameTarget;
+use Emaia\LaravelHotwire\Support\PolymorphicTag;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\Component;
 
@@ -13,7 +15,7 @@ class Button extends Component
         public string $type = 'button',
         public string $as = 'button',
         public string $slotName = 'button',
-        public ?string $frame = null,
+        public string|object|bool|null $frame = null,
         public ?string $hotkey = null,
         public ?string $tooltip = null,
         public ?string $tooltipSide = null,
@@ -21,7 +23,11 @@ class Button extends Component
         public ?string $tooltipMotion = null,
         public ?string $tooltipEnabledWhen = null,
         public ?Htmlable $stimulus = null,
-    ) {}
+    ) {
+        $this->frame = FrameTarget::normalize($this->frame);
+        $this->as = PolymorphicTag::normalize($this->as, ['button', 'a'], 'button');
+        $this->type = PolymorphicTag::buttonType($this->type);
+    }
 
     public function render()
     {

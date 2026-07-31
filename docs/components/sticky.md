@@ -23,9 +23,11 @@ or compact summary bars. It does not add JavaScript and does not manage scrollsp
 | `side`    | `top\|bottom`        | `top`   | Viewport edge to stick to. Invalid values use top. |
 | `offset`  | `string\|int\|float` | `0`     | CSS variable value for the sticky edge offset.     |
 | `surface` | `bool`               | `true`  | Adds the Nova surface treatment when true.         |
-| `as`      | `string`             | `div`   | HTML tag for the wrapper.                          |
+| `as`      | `string`             | `div`   | Wrapper tag: `div`, `header`, `footer`, `aside`, `nav`, or `section`. |
 
 Any other HTML attribute passes through to the wrapper.
+
+`as` is trimmed, lowercased, and validated against its allowlist. Unsupported tags are rejected.
 
 ## Bottom action bar
 

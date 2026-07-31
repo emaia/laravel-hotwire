@@ -6,6 +6,13 @@
         'data-modal-lock-scroll-class' => 'overflow-hidden',
         'data-action' => 'turbo:before-cache@window->modal#closeForCache',
     ], $attributes, $stimulus, protectedPrefixes: ['data-modal-']);
+    $frameHostCount = $frame === null ? 0 : \Emaia\LaravelHotwire\Support\OverlayFrameHost::count(
+        $slot->toHtml(),
+        $frame,
+        'data-modal-frame-owner',
+        $id,
+        'modal.content',
+    );
 @endphp
 
 <div
@@ -13,7 +20,7 @@
 >
     {{ $slot }}
 
-    @if ($frame !== null && trim($slot->toHtml()) === '')
+    @if ($frame !== null && $frameHostCount === 0)
         <x-hw::modal.content />
     @endif
 

@@ -2,6 +2,39 @@
 
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
+use Illuminate\View\ViewException;
+
+it('targets sidebar navigation links with frame', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::sidebar.brand href="/" frame="content">Brand</x-hw::sidebar.brand>
+        <x-hw::sidebar.menu-button href="/tasks" frame="content">Tasks</x-hw::sidebar.menu-button>
+        <x-hw::sidebar.menu-sub-button href="/tasks/open" frame="content">Open</x-hw::sidebar.menu-sub-button>
+    BLADE);
+
+    expect(substr_count((string) $view, 'data-turbo-frame="content"'))->toBe(3)
+        ->and((string) $view)->not->toContain(' frame="content"');
+});
+
+it('rejects unsupported sidebar menu button types', function (string $component) {
+    $this->blade("<x-hw::{$component} type=\"invalid\">Action</x-hw::{$component}>");
+})->with(['sidebar.menu-button', 'sidebar.menu-sub-button'])
+    ->throws(ViewException::class, 'Unsupported button type');
+
+it('treats falsey but present sidebar destinations as links', function (string $component, string $href) {
+    $view = $this->blade("<x-hw::{$component} :href=\"\$href\">Action</x-hw::{$component}>", ['href' => $href]);
+
+    $view->assertSee('<a', false)
+        ->assertSee('href="'.$href.'"', false)
+        ->assertDontSee('<button', false)
+        ->assertDontSee('<div', false);
+})->with([
+    ['sidebar.brand', ''],
+    ['sidebar.brand', '0'],
+    ['sidebar.menu-button', ''],
+    ['sidebar.menu-button', '0'],
+    ['sidebar.menu-sub-button', ''],
+    ['sidebar.menu-sub-button', '0'],
+]);
 
 it('renders a sidebar provider with controller state and layout hooks', function () {
     $view = $this->blade('<x-hw::sidebar.provider id="app-shell"><x-hw::sidebar>Nav</x-hw::sidebar><x-hw::sidebar.inset>Main</x-hw::sidebar.inset></x-hw::sidebar.provider>');

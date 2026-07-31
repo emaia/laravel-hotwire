@@ -1,11 +1,18 @@
 @php
     extract($compute($attributes));
+    $frameHostCount = $frame === null ? 0 : \Emaia\LaravelHotwire\Support\OverlayFrameHost::count(
+        $slot->toHtml(),
+        $frame,
+        'data-sheet-frame-owner',
+        $id,
+        'sheet.content',
+    );
 @endphp
 
 <div {{ $sheetAttributes }}>
     {{ $slot }}
 
-    @if ($frame !== null && trim($slot->toHtml()) === '')
+    @if ($frame !== null && $frameHostCount === 0)
         <div
             data-slot="sheet-overlay"
             data-sheet-target="modal"
@@ -29,7 +36,7 @@
                 data-side="{{ $side }}"
                 data-sheet-target="dialog"
             >
-                <turbo-frame id="{{ $frame }}" data-sheet-target="dynamicContent"></turbo-frame>
+                <turbo-frame id="{{ $frame }}" data-sheet-target="dynamicContent" data-sheet-frame-owner="{{ $id }}"></turbo-frame>
 
                 <button
                     type="button"

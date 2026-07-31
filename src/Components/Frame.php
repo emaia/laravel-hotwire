@@ -25,19 +25,16 @@ class Frame extends Component
         public ?int $pollInterval = null,
         public bool $viewTransition = false,
     ) {
-        $this->frameId = is_object($id) ? dom_id($id) : $id;
+        $this->frameId = trim(is_object($id) ? dom_id($id) : $id);
 
-        if (trim($this->frameId) === '') {
+        if ($this->frameId === '') {
             throw new InvalidArgumentException('The id prop must be a non-empty string or an object resolvable via dom_id().');
         }
 
-        if ($this->loading === '') {
-            $this->loading = null;
-        }
-
-        if ($this->action === '') {
-            $this->action = null;
-        }
+        $this->src = $this->normalizeOptional($this->src);
+        $this->loading = $this->normalizeOptional($this->loading);
+        $this->target = $this->normalizeOptional($this->target);
+        $this->action = $this->normalizeOptional($this->action);
     }
 
     public function render()
@@ -111,5 +108,12 @@ class Frame extends Component
             $this->poll ? 'turbo--polling' : null,
             $this->viewTransition ? 'turbo--view-transition' : null,
         ])));
+    }
+
+    private function normalizeOptional(?string $value): ?string
+    {
+        $value = $value === null ? null : trim($value);
+
+        return $value === '' ? null : $value;
     }
 }

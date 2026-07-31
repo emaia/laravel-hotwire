@@ -36,8 +36,8 @@ The Nova preset targets the trigger's `aria-expanded="true"` state, so no group 
 
 ## Trigger As Child
 
-Use `as-child` when another component should be the trigger. Dropdown merges its trigger attributes into the first child
-element instead of rendering a nested button.
+Use `as-child` when another component should be the trigger. Dropdown merges its trigger attributes into that component's
+single root element instead of rendering a nested button.
 
 ```blade
 <hw:dropdown>
@@ -63,6 +63,9 @@ element instead of rendering a nested button.
 
 This mirrors Radix/shadcn `DropdownMenuTrigger asChild`: useful for `sidebar.menu-button`, `navbar.item`, custom buttons
 and other components that already own their visual styling.
+
+The slot must render exactly one root `<button>` or `<a>`. Empty slots, text-only content, multiple roots, and
+non-interactive roots are rejected rather than producing invalid nested controls.
 
 ## Sidebar Switcher
 
@@ -114,7 +117,7 @@ mobile opens below the trigger:
 | `dropdown` | `id` | `uniqid('dropdown-')` | Content `id` and trigger `aria-controls`. |
 | `dropdown` | `open` | `false` | Start open without an enter animation. |
 | `dropdown` | `close-on-select` | `true` | Close when an `<a>` or `<button>` inside the content is clicked. |
-| `dropdown.trigger` | `as-child` | `false` | Merge trigger behavior into the first child element instead of rendering a button. |
+| `dropdown.trigger` | `as-child` | `false` | Merge trigger behavior into one button or anchor root instead of rendering a button. |
 | `dropdown.content` | `side` | `bottom` | Preferred side: `top`, `right`, `bottom` or `left`. |
 | `dropdown.content` | `align` | `start` | Content alignment: `start`, `center` or `end`. |
 | `dropdown.content` | `mobile-side` | `null` | Side override while the mobile media query matches. |
@@ -132,9 +135,16 @@ mobile opens below the trigger:
 | `dropdown.content` | `width` | `''` | Content width classes; overrides the trigger-width default when set. |
 | `dropdown.label` | `inset` | `false` | Align the label with inset items. |
 | `dropdown.item` | `href` | `null` | Render an anchor instead of a button. |
+| `dropdown.item` | `frame` | `null` | Turbo Frame target for an enabled anchor item. |
 | `dropdown.item` | `variant` | `default` | `default` or `destructive`. |
 | `dropdown.item` | `disabled` | `false` | Disable the item. |
 | `dropdown.item` | `inset` | `false` | Add leading space for iconless items. |
+| `dropdown.item` | `type` | `button` | Native button type: `button`, `submit`, or `reset`. |
+
+`dropdown.item` frame values accept strings or objects resolved with `dom_id()`; null, false, empty, and whitespace-only
+values are omitted. An explicit `data-turbo-frame` wins and can be bound to `false` to suppress the prop. Button items
+and disabled links omit frame metadata. Disabled links also omit `href` and receive `aria-disabled="true"` and
+`tabindex="-1"`.
 
 ## Positioning
 
@@ -282,7 +292,7 @@ closed.
 | Component | Element | Slot |
 | --- | --- | --- |
 | `dropdown` | `div` | `dropdown` |
-| `dropdown.trigger` | `button` or first child with `as-child` | `dropdown-trigger` unless `as-child` |
+| `dropdown.trigger` | `button` or single child root with `as-child` | `dropdown-trigger` unless `as-child` |
 | `dropdown.content` | `div` | `dropdown-menu` |
 | `dropdown.group` | `div` with `role="group"` | `dropdown-group` |
 | `dropdown.label` | `div` | `dropdown-label` |

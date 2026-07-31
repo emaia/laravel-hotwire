@@ -3,6 +3,7 @@
 use Emaia\LaravelHotwire\Components\Sheet;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
+use Illuminate\View\ViewException;
 
 it('renders sheet markup and controller hooks', function () {
     $view = $this->blade('<x-hw::sheet><x-hw::sheet.content>Body</x-hw::sheet.content></x-hw::sheet>');
@@ -79,7 +80,7 @@ it('renders frame content and loading template when frame is configured', functi
         </x-hw::sheet>
     BLADE);
 
-    $view->assertSee('<turbo-frame id="sheet-frame" data-sheet-target="dynamicContent">', false)
+    $view->assertSee('<turbo-frame id="sheet-frame" data-sheet-target="dynamicContent"', false)
         ->assertSee('Fallback')
         ->assertSee('<template data-sheet-target="loadingTemplate">', false)
         ->assertSee('Loading sheet...');
@@ -96,8 +97,34 @@ it('renders a complete frame host when sheet content is omitted', function () {
 
     $view->assertSee('data-sheet-target="modal"', false)
         ->assertSee('data-sheet-target="dialog"', false)
-        ->assertSee('<turbo-frame id="sheet-panel" data-sheet-target="dynamicContent">', false)
+        ->assertSee('<turbo-frame id="sheet-panel" data-sheet-target="dynamicContent"', false)
         ->assertSee('<template data-sheet-target="loadingTemplate">', false);
+});
+
+it('adds one frame host alongside trigger-only sheet content', function () {
+    $view = $this->blade('<x-hw::sheet frame="sheet-panel"><x-hw::sheet.trigger>Open</x-hw::sheet.trigger></x-hw::sheet>');
+
+    expect(substr_count((string) $view, '<turbo-frame'))->toBe(1);
+});
+
+it('rejects more than one sheet frame host', function () {
+    $this->blade('<x-hw::sheet frame="sheet-panel"><x-hw::sheet.content>One</x-hw::sheet.content><x-hw::sheet.content>Two</x-hw::sheet.content></x-hw::sheet>');
+})->throws(ViewException::class, 'A sheet with a frame prop must render exactly one sheet.content host.');
+
+it('does not mistake arbitrary sheet owner metadata for a frame host', function () {
+    $view = $this->blade('<x-hw::sheet id="sheet-shell" frame="sheet-panel"><div data-sheet-frame-owner="sheet-shell">Content</div></x-hw::sheet>');
+
+    expect(substr_count((string) $view, '<turbo-frame'))->toBe(1);
+});
+
+it('rejects an unmanaged turbo frame with the sheet frame id', function () {
+    $this->blade('<x-hw::sheet id="sheet-shell" frame="sheet-panel"><turbo-frame id="sheet-panel"></turbo-frame></x-hw::sheet>');
+})->throws(ViewException::class, 'A sheet with a frame prop must render exactly one sheet.content host.');
+
+it('keeps nested sheet frame hosts scoped to their owner', function () {
+    $view = $this->blade('<x-hw::sheet id="outer" frame="outer-frame"><x-hw::sheet id="inner" frame="inner-frame"></x-hw::sheet></x-hw::sheet>');
+
+    expect(substr_count((string) $view, '<turbo-frame'))->toBe(2);
 });
 
 it('rejects matching sheet root and frame ids', function () {

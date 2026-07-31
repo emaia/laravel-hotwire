@@ -10,8 +10,8 @@
         'disabled' => $resolvedMatches ? null : true,
     ], collect($dataWhenAttributes())
         ->mapWithKeys(fn ($a) => [$a['attribute'] => $a['value']])
-        ->all()), $attributes, $stimulus, protectedPrefixes: ['data-conditional-fields-']);
+        ->all()), $attributes, $stimulus, except: ['as', 'tag'], protectedPrefixes: ['data-conditional-fields-']);
 @endphp
-<{!! $tag !!} {{ $conditionalFieldAttributes }}>
+<{{ $as }} {{ $conditionalFieldAttributes }}>
 {{ $slot }}
-</{!! $tag !!}>
+</{{ $as }}>

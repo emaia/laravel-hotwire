@@ -1,12 +1,14 @@
 // @hotwire-package
 import { Controller } from "@hotwired/stimulus";
 import { formHasErrors } from "./_form_errors";
+import { frameEventAffects, submissionFrameId } from "./_frame_events.js";
 
 const stash = new Map();
 
 export default class extends Controller {
     connect() {
         this.armed = false;
+        this.submissionFrameId = null;
         this.capture = this.capture.bind(this);
         this.restore = this.restore.bind(this);
         this.trackSubmit = this.trackSubmit.bind(this);
@@ -33,15 +35,21 @@ export default class extends Controller {
         const form = event.target;
         if (this.element === form || form?.contains(this.element)) {
             this.armed = true;
+            this.submissionFrameId = submissionFrameId(form, event);
         }
     }
 
-    capture() {
+    capture(event) {
+        if (event?.type?.includes("frame") && !frameEventAffects(this.element, event, this.submissionFrameId)) return;
+
         if (this.armed) this.#stashFiles();
     }
 
-    restore() {
+    restore(event) {
+        if (event?.type?.includes("frame") && !frameEventAffects(this.element, event, this.submissionFrameId)) return;
+
         this.armed = false;
+        this.submissionFrameId = null;
         if (!this.#hasStash()) return;
 
         requestAnimationFrame(() => {

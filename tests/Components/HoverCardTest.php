@@ -3,6 +3,46 @@
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
 
+it('keeps href-less anchors keyboard focusable', function () {
+    $view = $this->blade('<x-hw::hover-card><x-hw::hover-card.trigger as="a">Profile</x-hw::hover-card.trigger><x-hw::hover-card.content>Details</x-hw::hover-card.content></x-hw::hover-card>');
+
+    $view->assertSee('tabindex="0"', false);
+});
+
+it('preserves an explicit hover card trigger tabindex', function () {
+    $view = $this->blade('<x-hw::hover-card><x-hw::hover-card.trigger as="a" tabindex="2">Profile</x-hw::hover-card.trigger><x-hw::hover-card.content>Details</x-hw::hover-card.content></x-hw::hover-card>');
+
+    $view->assertSee('tabindex="2"', false);
+});
+
+it('uses the focus fallback when tabindex is bound to null', function () {
+    $view = $this->blade('<x-hw::hover-card><x-hw::hover-card.trigger as="a" :tabindex="$tabindex">Profile</x-hw::hover-card.trigger><x-hw::hover-card.content>Details</x-hw::hover-card.content></x-hw::hover-card>', ['tabindex' => null]);
+
+    $view->assertSee('tabindex="0"', false);
+});
+
+it('removes actions from disabled hover card anchors', function () {
+    $view = $this->blade('<x-hw::hover-card><x-hw::hover-card.trigger as="a" href="/users/1" disabled>Profile</x-hw::hover-card.trigger><x-hw::hover-card.content>Details</x-hw::hover-card.content></x-hw::hover-card>');
+
+    preg_match('/<a[^>]*data-slot="hover-card-trigger"[^>]*>/', (string) $view, $trigger);
+
+    expect($trigger[0] ?? '')
+        ->not->toContain('data-action=')
+        ->not->toContain('href=')
+        ->toContain('aria-disabled="true"');
+});
+
+it('treats a null disabled binding on hover card anchors as enabled', function () {
+    $view = $this->blade('<x-hw::hover-card><x-hw::hover-card.trigger as="a" href="/users/1" :disabled="$disabled">Profile</x-hw::hover-card.trigger><x-hw::hover-card.content>Details</x-hw::hover-card.content></x-hw::hover-card>', ['disabled' => null]);
+
+    preg_match('/<a[^>]*data-slot="hover-card-trigger"[^>]*>/', (string) $view, $trigger);
+
+    expect($trigger[0] ?? '')
+        ->toContain('data-action=')
+        ->toContain('href="/users/1"')
+        ->not->toContain('aria-disabled="true"');
+});
+
 it('renders hover card controller, trigger and content wiring', function () {
     $view = $this->blade('
         <x-hw::hover-card>

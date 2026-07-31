@@ -2,6 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components\HoverCard;
 
+use Emaia\LaravelHotwire\Support\PolymorphicTag;
 use Illuminate\View\Component;
 
 class Trigger extends Component
@@ -11,7 +12,10 @@ class Trigger extends Component
         public string $variant = 'link',
         public string $size = 'default',
         public string $type = 'button',
-    ) {}
+    ) {
+        $this->as = PolymorphicTag::normalize($this->as, ['button', 'a'], 'hover card trigger');
+        $this->type = PolymorphicTag::buttonType($this->type);
+    }
 
     public function render()
     {

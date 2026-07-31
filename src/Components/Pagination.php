@@ -2,6 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Emaia\LaravelHotwire\Support\FrameTarget;
 use Illuminate\Contracts\Pagination\CursorPaginator as CursorPaginatorContract;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator as LengthAwarePaginatorContract;
 use Illuminate\Contracts\Pagination\Paginator as PaginatorContract;
@@ -13,7 +14,7 @@ class Pagination extends Component
     public function __construct(
         public PaginatorContract|CursorPaginatorContract|null $paginator = null,
         public string $label = 'Pagination',
-        public ?string $turboFrame = null,
+        public string|object|bool|null $frame = null,
         public ?string $previousLabel = 'Previous',
         public ?string $nextLabel = 'Next',
         public string $ellipsisLabel = 'More pages',
@@ -21,7 +22,9 @@ class Pagination extends Component
         public bool $turboStream = false,
         public string $previousAriaLabel = 'Go to previous page',
         public string $nextAriaLabel = 'Go to next page',
-    ) {}
+    ) {
+        $this->frame = FrameTarget::normalize($this->frame);
+    }
 
     public function render()
     {

@@ -1,10 +1,13 @@
 @php
-    $tag = $href ? 'a' : 'div';
+    $tag = $href !== null ? 'a' : 'div';
+    $resolvedFrame = $tag === 'a' ? \Emaia\LaravelHotwire\Support\FrameTarget::resolve($frame, $attributes) : null;
+    $brandAttributes = $attributes->except(['frame', 'data-turbo-frame']);
 @endphp
 
 <{{ $tag }}
-    {{ $attributes->merge([
-        'href' => $href,
+    {{ $brandAttributes->merge([
+        'href' => $tag === 'a' ? $href : null,
+        'data-turbo-frame' => $resolvedFrame,
         'aria-label' => $label,
         'data-slot' => 'sidebar-brand',
         'data-sidebar' => 'brand',
