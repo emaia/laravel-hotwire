@@ -30,6 +30,7 @@ export default class extends Controller {
 
     initialize() {
         this.onOutsideClick = this.onOutsideClick.bind(this);
+        this.onInternalClick = this.onInternalClick.bind(this);
         this.onTriggerClick = this.onTriggerClick.bind(this);
         this.onKeydown = this.onKeydown.bind(this);
         this.onMenuClick = this.onMenuClick.bind(this);
@@ -52,6 +53,7 @@ export default class extends Controller {
     }
 
     connect() {
+        this.element.addEventListener("click", this.onInternalClick, true);
         this.element.addEventListener("click", this.onTriggerClick);
         document.addEventListener("click", this.onOutsideClick);
         document.addEventListener("keydown", this.onKeydown);
@@ -63,6 +65,7 @@ export default class extends Controller {
     }
 
     disconnect() {
+        this.element.removeEventListener("click", this.onInternalClick, true);
         this.element.removeEventListener("click", this.onTriggerClick);
         document.removeEventListener("click", this.onOutsideClick);
         document.removeEventListener("keydown", this.onKeydown);
@@ -157,7 +160,14 @@ export default class extends Controller {
 
     onOutsideClick(event) {
         if (event === this.toggleEvent) return;
-        if (this.openValue && !this.element.contains(event.target)) this.close();
+        if (event.hotwireDropdownInside?.has?.(this.element)) return;
+        const path = event.composedPath?.() ?? [];
+        if (this.openValue && !path.includes(this.element) && !this.element.contains(event.target)) this.close();
+    }
+
+    onInternalClick(event) {
+        if (!(event.hotwireDropdownInside instanceof Set)) event.hotwireDropdownInside = new Set();
+        event.hotwireDropdownInside.add(this.element);
     }
 
     onTriggerClick(event) {

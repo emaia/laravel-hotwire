@@ -1,129 +1,227 @@
-# File upload patterns
+# File Upload Patterns
 
-Five real-world patterns for the [`<hw:file-upload>`](../components/file-upload.md) component
-plus the [`file-upload`](../controllers/file-upload.md) Stimulus controller, ordered from simplest
-to most stream-driven. Each example assumes the package's defaults — `@deltablot/dropzone` is
-installed, `dropzone.css` is bundled, and the upload endpoint lives in your app.
+Five real-world patterns for the native [`<hw:file-upload>`](../components/file-upload.md) component plus the
+[`file-upload`](../controllers/file-upload.md) Stimulus controller.
 
-- [1. Spatie Media Library](#1-spatie-media-library)
+- [1. MediaMan gallery with lazy thumbnails](#1-mediaman-gallery-with-lazy-thumbnails)
 - [2. Async thumbnail via broadcast](#2-async-thumbnail-via-broadcast)
 - [3. Stream-rendered gallery with server-side EXIF](#3-stream-rendered-gallery-with-server-side-exif)
-- [4. Single-file edit form with a stream-replaced card (avatar pattern)](#4-single-file-edit-form-with-a-stream-replaced-card-avatar-pattern)
+- [4. Single-file edit form with a stream-replaced card](#4-single-file-edit-form-with-a-stream-replaced-card)
 - [5. Rich media library list with rename and reorder](#5-rich-media-library-list-with-rename-and-reorder)
 
-## 1. Spatie Media Library
+## 1. MediaMan Gallery With Lazy Thumbnails
 
-Pin uploaded files to a temporary collection and claim them on the final submit. The endpoint
-returns the media UUID; `response-key="uuid"` writes that into the hidden input.
+Let `<hw:file-upload>` handle selection, drag/drop, upload progress and Turbo Stream delivery while
+[`emaia/laravel-mediaman`](https://github.com/emaia/laravel-mediaman) stores the file and owns the media relationship.
+Each upload returns a server-rendered attachment card; that card carries the hidden input for the final form and uses
+[`lazy-image`](../controllers/lazy-image.md) to poll the generated thumbnail URL until the conversion exists.
+
+Keep the media list outside the final form so each card can have its own DELETE form. The hidden inputs point back to the
+real form with the native `form` attribute.
 
 ```blade
-<hw:file-upload
-    name="avatar_uuid"
-    url="{{ route('uploads.store') }}"
-    response-key="uuid"
-    :delete-url="route('uploads.destroy', ':token')"
-    :value="$user->avatar_media_uuid"
-    accept="image/*"
-/>
+<hw:form id="post-form" action="{{ route('posts.update', $post) }}" method="put">
+    <hw:field name="title" label="Title">
+        <hw:input name="title" :value="$post->title" />
+    </hw:field>
+</hw:form>
+
+<hw:field name="media_ids" label="Gallery">
+    <hw:file-upload
+        name="media_ids"
+        url="{{ route('posts.media.store', $post) }}"
+        multiple
+        mode="turbo-stream"
+        :clearable="false"
+        accept="image/*"
+        view="grid"
+        :max-size-bytes="10 * 1024 * 1024"
+        :messages="['idleMultiple' => 'Drop images or click to upload']"
+    />
+</hw:field>
+
+<hw:attachment.group id="post-media-gallery" class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+    @foreach ($post->getMedia('gallery') as $media)
+        @include('posts._media-card', ['post' => $post, 'media' => $media, 'formId' => 'post-form'])
+    @endforeach
+</hw:attachment.group>
+
+<hw:button type="submit" form="post-form">Save post</hw:button>
+```
+
+The upload endpoint creates a MediaMan `Media` row, starts the thumbnail conversion, and appends the card. The card is
+the source of truth for the submitted media id; raw Turbo Stream mode disables automatic hidden inputs.
+
+```php
+use App\Models\Post;
+use Emaia\MediaMan\Jobs\PerformConversions;
+use Emaia\MediaMan\MediaUploader;
+use Emaia\MediaMan\Models\Media;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Validation\Rule;
+
+Route::middleware('auth')->group(function () {
+    Route::post('/posts/{post}/media', [PostMediaController::class, 'store'])->name('posts.media.store');
+    Route::delete('/posts/{post}/media/{media}', [PostMediaController::class, 'destroy'])->name('posts.media.destroy');
+});
 ```
 
 ```php
-Route::post('/uploads', function (Request $r) {
-    $r->validate(['file' => 'required|image|max:2048']);
-
-    $media = $r->user()
-        ->addMedia($r->file('file'))
-        ->toMediaCollection('avatars');
-
-    return response()->json(['uuid' => $media->uuid]);
-})->middleware(['auth', 'throttle:20,1'])->name('uploads.store');
-
-Route::delete('/uploads/{media}', fn (Media $media) => tap($media)->delete())
-    ->middleware('auth')
-    ->name('uploads.destroy');
-
-// app/Http/Controllers/ProfileController.php
-public function update(UpdateProfileRequest $r)
+class PostMediaController
 {
-    $media = Media::where('uuid', $r->validated('avatar_uuid'))->firstOrFail();
-    $media->forgetCustomProperty('temporary');
-    $r->user()->media()->save($media);
+    public function store(Request $request, Post $post)
+    {
+        $request->validate([
+            'file' => ['required', 'image', 'max:10240'],
+        ]);
+
+        $media = MediaUploader::fromRequest('file', $request)
+            ->useCollection('Post uploads')
+            ->withCustomProperties([
+                'uploaded_by' => $request->user()->id,
+                'post_id' => $post->id,
+            ])
+            ->upload();
+
+        PerformConversions::dispatch($media, ['thumb']);
+
+        return turbo_stream()->append(
+            'post-media-gallery',
+            view('posts._media-card', ['post' => $post, 'media' => $media, 'formId' => 'post-form'])
+        );
+    }
+
+    public function destroy(Request $request, Post $post, Media $media)
+    {
+        abort_unless(
+            (int) $media->getCustomProperty('uploaded_by') === (int) $request->user()->id
+            && (int) $media->getCustomProperty('post_id') === (int) $post->id,
+            403
+        );
+
+        $post->detachMedia($media);
+        $media->delete();
+
+        return turbo_stream()->remove("media-{$media->id}");
+    }
 }
 ```
 
-A scheduled job sweeps unclaimed media older than N hours from the `avatars` collection. With
-`:value`, edit forms work transparently: the UUID is pre-loaded; a redirect-back from a sibling
-field's validation failure keeps the user's avatar selection.
+Render the card with `lazy-image`. The placeholder appears immediately; the controller replaces it with the thumb when
+the conversion URL starts returning 200 OK.
 
-## 2. Async thumbnail via broadcast
+```blade
+{{-- resources/views/posts/_media-card.blade.php --}}
+<hw:attachment id="media-{{ $media->id }}" orientation="vertical" role="listitem" data-media-card>
+    <hw:attachment.media variant="image">
+        <picture
+            {{
+                stimulus()->controller('lazy-image', [
+                    'url' => $media->getUrl('thumb'),
+                    'alt' => $media->name,
+                    'interval' => 1500,
+                    'maxAttempts' => 40,
+                    'width' => $media->getImageWidth(),
+                    'height' => $media->getImageHeight(),
+                    'imgClass' => 'h-full w-full object-cover',
+                ])
+            }}
+            class="block aspect-square bg-muted"
+        >
+            @if ($media->getPlaceholder())
+                <img src="{{ $media->getPlaceholder() }}" alt="" class="h-full w-full object-cover" aria-hidden="true">
+            @else
+                <hw:skeleton class="h-full w-full" />
+            @endif
+        </picture>
+    </hw:attachment.media>
 
-Heavy thumbnail generation moves to a queued job. The endpoint returns a Turbo Stream immediately
-with a "pending" card; when the job finishes, your broadcaster delivers a second stream that
-replaces the pending card with the final thumb.
+    <hw:attachment.content>
+        <hw:attachment.title>{{ $media->name }}</hw:attachment.title>
+        <hw:attachment.description>{{ strtoupper($media->extension) }} · {{ $media->friendly_size }}</hw:attachment.description>
+        <input type="hidden" name="media_ids[]" value="{{ $media->id }}" form="{{ $formId }}">
+    </hw:attachment.content>
+
+    <hw:attachment.actions>
+        <form action="{{ route('posts.media.destroy', [$post, $media]) }}" method="post">
+            @csrf
+            @method('delete')
+            <hw:attachment.action type="submit" aria-label="Remove {{ $media->name }}">
+                <hw:icon name="x" />
+            </hw:attachment.action>
+        </form>
+    </hw:attachment.actions>
+</hw:attachment>
+```
+
+On final submit, validate the submitted ids and sync the model channel. `syncMedia()` is still the ownership boundary;
+the upload endpoint only stages Media rows and returns visible cards.
+
+```php
+public function update(Request $request, Post $post)
+{
+    $validated = $request->validate([
+        'title' => ['required', 'string', 'max:255'],
+        'media_ids' => ['array'],
+        'media_ids.*' => [
+            'integer',
+            Rule::exists(config('mediaman.tables.media'), 'id')
+                ->where('custom_properties->uploaded_by', $request->user()->id)
+                ->where('custom_properties->post_id', $post->id),
+        ],
+    ]);
+
+    $post->update(['title' => $validated['title']]);
+    $post->syncMedia($validated['media_ids'] ?? [], 'gallery');
+
+    return back();
+}
+```
+
+If your `gallery` channel already runs `performConversions('thumb')`, skip the explicit `PerformConversions::dispatch()`
+unless you need the thumbnail before the final submit. If the same Media can be shared by several models, detach it in
+the destroy action instead of deleting the Media row. Add a scheduled prune for uploaded rows that are never claimed.
+
+## 2. Async Thumbnail Via Broadcast
+
+Heavy thumbnail generation moves to a queued job. The upload endpoint returns a Turbo Stream immediately with a pending
+card; when processing finishes, your broadcaster replaces that card with the final thumb.
 
 ```blade
 <hw:file-upload
     name="attachments"
     url="{{ route('uploads.store') }}"
     multiple
-    :turbo-stream="true"
-    :preview="false"
-    :emit-hidden="false"
+    mode="turbo-stream"
 />
 
 <ul id="attachments"></ul>
 ```
 
 ```php
-Route::post('/uploads', function (Request $r) {
-    $r->validate(['file' => 'required|file|max:51200']);
+Route::post('/uploads', function (Request $request) {
+    $request->validate(['file' => ['required', 'file', 'max:51200']]);
 
-    $upload = $r->user()->uploads()->create(['path' => $r->file('file')->store('uploads')]);
+    $upload = $request->user()->uploads()->create([
+        'path' => $request->file('file')->store('uploads'),
+        'original_name' => $request->file('file')->getClientOriginalName(),
+    ]);
+
     GenerateThumbnail::dispatch($upload);
 
     return turbo_stream()->append('attachments', view('uploads.card', ['upload' => $upload]));
-});
+})->name('uploads.store');
 ```
 
-```php
-// GenerateThumbnail job
-public function handle(): void
-{
-    $thumb = Image::load(Storage::path($this->upload->path))->fit(200, 200)->save();
-    $this->upload->update(['thumbnail_path' => $thumb]);
+The server-rendered card carries its own hidden input; raw Turbo Stream mode does not emit another one.
 
-    // Broadcast a Turbo Stream that replaces the pending card. Wire this through your
-    // broadcasting setup — Reverb/Pusher with Laravel Echo, Mercure, or any SSE bridge.
-    // The payload is a `<turbo-stream action="replace" target="upload-{id}">...</turbo-stream>`
-    // string that Turbo applies on receipt.
-    broadcast(new UploadProcessed($this->upload));
-}
-```
+## 3. Stream-Rendered Gallery With Server-Side EXIF
+
+User drops images; each upload returns a Turbo Stream appending a server-rendered `<li>` with thumbnail, file name and
+server-side EXIF metadata.
 
 ```blade
-{{-- resources/views/uploads/card.blade.php — same partial for "pending" and "ready" states --}}
-<li id="{{ dom_id($upload) }}">
-    @if ($upload->thumbnail_path)
-        <img data-controller="lazy-image" data-lazy-image-src-value="{{ Storage::url($upload->thumbnail_path) }}" alt="">
-    @else
-        <hw:spinner /> Processing…
-    @endif
-    <input type="hidden" name="attachments[]" value="{{ $upload->id }}">
-</li>
-```
-
-The hidden input lives inside the card from the moment it's appended — the form already has the
-reference even while the thumbnail is still rendering. `lazy-image` on the final thumb defers the
-GET until the card enters the viewport.
-
-## 3. Stream-rendered gallery with server-side EXIF
-
-User drops images; each upload returns a Turbo Stream that appends a server-rendered `<li>` card
-with the thumbnail, file name, and EXIF metadata (camera/date) the server extracted. Removal is
-also stream-driven via the package's `remote-form` controller — no app-side glue.
-
-```blade
-{{-- gallery.blade.php --}}
 <hw:form action="{{ route('gallery.save') }}" method="post">
     <hw:field name="photos" label="Add photos">
         <hw:file-upload
@@ -131,108 +229,39 @@ also stream-driven via the package's `remote-form` controller — no app-side gl
             url="{{ route('gallery.upload') }}"
             accept="image/*"
             multiple
-            :turbo-stream="true"
-            :preview="false"
-            :emit-hidden="false"
+            mode="turbo-stream"
         />
     </hw:field>
 
-    <ul id="photo-gallery" class="gallery"></ul>
+    <ul id="photo-gallery"></ul>
 
-    <button type="submit">Save gallery</button>
+    <hw:button type="submit">Save gallery</hw:button>
 </hw:form>
 ```
 
 ```php
-// routes/web.php
-Route::post('/gallery/upload', function (Request $r) {
-    $r->validate(['file' => 'required|image|max:10240']);
+Route::post('/gallery/upload', function (Request $request) {
+    $request->validate(['file' => ['required', 'image', 'max:10240']]);
 
-    $photo = $r->user()->photos()->create([
-        'path' => $r->file('file')->store('photos', 'public'),
-        'original_name' => $r->file('file')->getClientOriginalName(),
-        'exif' => collect(@exif_read_data($r->file('file')->getPathname()))
-            ->only(['Make', 'Model', 'DateTimeOriginal'])
-            ->filter()
-            ->all(),
+    $photo = $request->user()->photos()->create([
+        'path' => $request->file('file')->store('photos', 'public'),
+        'original_name' => $request->file('file')->getClientOriginalName(),
     ]);
 
     return turbo_stream()->append('photo-gallery', view('photos.card', ['photo' => $photo]));
-})->middleware('auth')->name('gallery.upload');
-
-Route::delete('/gallery/{photo}', function (Photo $photo) {
-    $photo->delete();
-    return turbo_stream()->remove(dom_id($photo));
-})->name('gallery.destroy');
+})->name('gallery.upload');
 ```
 
-```blade
-{{-- resources/views/photos/card.blade.php --}}
-<li id="{{ dom_id($photo) }}" class="photo-card">
-    <img
-        data-controller="lazy-image"
-        data-lazy-image-src-value="{{ Storage::url($photo->path) }}"
-        alt="{{ $photo->original_name }}"
-        loading="lazy" width="160" height="160"
-    >
-    <div class="photo-card__meta">
-        <strong>{{ Str::limit($photo->original_name, 24) }}</strong>
-        @if ($make = $photo->exif['Make'] ?? null)
-            <small>{{ $make }} {{ $photo->exif['Model'] ?? '' }}</small>
-        @endif
-        @if ($shot = $photo->exif['DateTimeOriginal'] ?? null)
-            <small>{{ $shot }}</small>
-        @endif
-    </div>
+The native uploader sends `Accept: application/json, text/vnd.turbo-stream.html`, detects the stream body and calls
+`Turbo.renderStreamMessage`.
 
-    {{-- The card carries its own hidden input — the file-upload component skips emitting one
-         because `:emit-hidden="false"`. --}}
-    <input type="hidden" name="photos[]" value="{{ $photo->id }}">
+## 4. Single-File Edit Form With A Stream-Replaced Card
 
-    {{-- Stream-driven removal: DELETE returns <turbo-stream action="remove"> which makes the
-         <li> (and its hidden) disappear. --}}
-    <button type="button"
-            data-controller="remote-form"
-            formaction="{{ route('gallery.destroy', $photo) }}"
-            formmethod="delete"
-            aria-label="Remove {{ $photo->original_name }}">×</button>
-</li>
-```
-
-End-to-end flow:
-
-1. User drops 3 photos → Dropzone fires 3 parallel XHRs (capped by `parallelUploads`).
-2. Each XHR carries `Accept: text/vnd.turbo-stream.html, application/json`.
-3. Server validates, persists, reads EXIF, creates the DB record. Responds with a Turbo Stream
-   appending the card into `#photo-gallery`.
-4. Controller detects the stream body and calls `Turbo.renderStreamMessage`. The `<li>` with
-   `<img>` + EXIF + hidden + remove button slides into the page.
-5. `lazy-image` defers the GET of each thumb until the card enters the viewport — a 20-photo
-   batch doesn't fire 20 image GETs at once.
-6. Parent form submit collects every `photos[]` hidden carried by every card → app persists the
-   final association.
-7. Per-card remove buttons fire DELETE via `remote-form`; server responds with another stream
-   (`<turbo-stream action="remove" target="photo_42">`) → card and its hidden disappear.
-
-Compose with `lazy-image`, `remote-form`, `alert-dialog`, and any other Stimulus controller you
-need on the card partial. Zero JS glue beyond what the package already ships.
-
-## 4. Single-file edit form with a stream-replaced card (avatar pattern)
-
-Single mode + `:turbo-stream="true"` needs slightly different lifecycle than the multi-file
-gallery: there can only be **one** hidden carrying the value at a time. Letting both the
-component's preserved hidden (from `:value`/`old()`) and the stream-rendered card emit a hidden
-would put two `<input name="avatar_token">` in the form — Laravel takes the last one but it's
-confusing.
-
-The clean pattern: **the visible card carries the hidden, the file-upload doesn't.** The stream
-replaces the whole card on each upload, so there's only ever one hidden in the form. Don't pass
-`:value` — the server-rendered card is the source of truth.
+For single-value resources, let the visible server-rendered card carry the hidden input. The upload stream replaces the
+whole card so there is only one hidden value at a time.
 
 ```blade
-{{-- profile/edit.blade.php --}}
 <hw:form action="{{ route('profile.update') }}" method="put">
-    {{-- The current state is server-rendered. The hidden lives inside. --}}
     @include('profile.avatar-card', ['user' => $user])
 
     <hw:field name="avatar_token" label="Change picture">
@@ -240,299 +269,113 @@ replaces the whole card on each upload, so there's only ever one hidden in the f
             name="avatar_token"
             url="{{ route('profile.avatar.upload') }}"
             accept="image/*"
-            :turbo-stream="true"
-            :emit-hidden="false"
+            mode="turbo-stream"
         />
     </hw:field>
 
-    <button type="submit">Save</button>
+    <hw:button type="submit">Save</hw:button>
 </hw:form>
 ```
 
 ```blade
-{{-- resources/views/profile/avatar-card.blade.php --}}
-<div id="avatar-card" class="avatar-card">
+{{-- profile/avatar-card.blade.php --}}
+<div id="avatar-card">
     @if ($user->avatar_path)
-        <img src="{{ Storage::url($user->avatar_path) }}" alt="Current avatar" width="120" height="120">
+        <img src="{{ Storage::url($user->avatar_path) }}" alt="Current avatar">
         <input type="hidden" name="avatar_token" value="{{ $user->avatar_token }}">
-        <button type="button"
-                data-controller="remote-form"
-                formaction="{{ route('profile.avatar.destroy') }}"
-                formmethod="delete"
-                aria-label="Remove avatar">Remove</button>
     @else
-        <span class="avatar-card__empty">No avatar yet — drop one below.</span>
+        <span>No avatar yet.</span>
     @endif
 </div>
 ```
 
-```php
-// routes/web.php
-Route::post('/profile/avatar', function (Request $r) {
-    $r->validate(['file' => 'required|image|max:2048']);
+Rules: do not pass `value` to the uploader, and always return a stream that `replace`s the card.
 
-    $token = $r->file('file')->store('temp-avatars');
-    $r->user()->update(['avatar_token' => $token, 'avatar_path' => $token]);
+## 5. Rich Media Library List With Rename And Reorder
 
-    // Replace the whole card — the old hidden goes with the old <div>, the new hidden ships inside the new <div>.
-    return turbo_stream()->replace('avatar-card', view('profile.avatar-card', ['user' => $r->user()]));
-})->middleware('auth')->name('profile.avatar.upload');
+Use `<hw:file-upload>` as the upload transport and server-rendered `<hw:attachment>` cards as the rich list. This keeps
+rename, reorder and metadata app-owned while the package handles selection, upload progress and Turbo Stream delivery.
 
-Route::delete('/profile/avatar', function (Request $r) {
-    $r->user()->update(['avatar_token' => null, 'avatar_path' => null]);
-
-    // Re-render the empty state.
-    return turbo_stream()->replace('avatar-card', view('profile.avatar-card', ['user' => $r->user()]));
-})->middleware('auth')->name('profile.avatar.destroy');
-```
-
-End-to-end:
-
-1. User loads the page → server renders `#avatar-card` with the current photo + hidden. The
-   file-upload sits next to it as the "change" affordance, no `:value`, no auto-hidden.
-2. User drops a new image → stream comes back with the new `#avatar-card` markup. Turbo's
-   `replace` swaps the entire `<div>`. The previous hidden and image are gone; the new hidden
-   inside the replacement carries forward.
-3. On form submit, exactly one `avatar_token` hidden ships in the payload.
-4. Clicking "Remove" fires DELETE; server replaces `#avatar-card` with the empty state — no
-   hidden in the form, the avatar field submits as null.
-
-The pattern generalises to any single-value resource (cover image, signature, certificate, …)
-that you want to manage with stream-driven UX. The two rules:
-
-- **Don't pass `:value`** — the visible card holds the canonical hidden
-- **Always `replace`, never `append`** — keeps the markup count at one
-
-## 5. Rich media library list with rename and reorder
-
-The UI from Dropzone's [Bootstrap demo](https://www.dropzone.dev/bootstrap.html) and Spatie media
-library: a vertical list of cards, each with a drag handle, thumbnail, file metadata (type, size,
-download link), an **editable name input**, and a remove button. Files can be **dragged to reorder**;
-the server receives them as an ordered array with `token` + `name` per entry.
-
-The package already has every primitive needed: `<x-slot:preview_template>` for the card markup,
-`:emit-hidden="false"` to let the slot own the hidden inputs, `:messages` for a custom empty state,
-and a subclass for the SortableJS + metadata wiring. No new package code required.
-
-### Blade
+The attachment list stays outside the final form so every remove action can own a valid DELETE micro-form. Card inputs
+and the Save button target the final form through the native `form` attribute.
 
 ```blade
-<hw:form action="{{ route('gallery.store') }}">
+<hw:form id="gallery-form" action="{{ route('gallery.store') }}">
     <hw:field name="attachments" label="Images">
         <hw:file-upload
-            controller="media-upload"
             name="attachments"
             url="{{ route('uploads.store') }}"
             multiple
             accept="image/*,application/pdf"
-            :emit-hidden="false"
+            mode="turbo-stream"
             :max-size-bytes="10 * 1024 * 1024"
-            :messages="['default' => '<span class=\'text-2xl mr-2\'>+</span> Drag files or click to set media']"
-            class="media-list"
-        >
-            <x-slot:preview_template>
-                <div class="dz-preview dz-file-preview flex items-center gap-4 p-3 border-b bg-white">
-                    <button type="button" data-app-drag class="cursor-move text-gray-400" tabindex="-1" aria-label="Reorder">≡</button>
-                    <img data-dz-thumbnail class="w-16 h-16 object-cover rounded bg-gray-100">
-                    <div class="w-32 shrink-0">
-                        <div class="text-xs text-gray-500 uppercase" data-app-type>—</div>
-                        <div class="text-xs text-gray-500" data-dz-size></div>
-                        <a hidden data-app-download href="#" target="_blank" class="text-xs text-blue-600 underline">Download</a>
-                    </div>
-                    <div class="flex-1">
-                        <label class="block text-xs text-gray-500">Name</label>
-                        <input type="text" name="attachments[][name]" data-app-name class="block w-full rounded border-gray-300">
-                    </div>
-                    <button type="button" data-dz-remove class="text-gray-400 hover:text-red-500" aria-label="Remove">×</button>
-                    <input type="hidden" name="attachments[][token]" data-app-token>
-                    <div data-dz-errormessage class="text-red-500 text-xs basis-full"></div>
-                    <div data-dz-uploadprogress class="absolute bottom-0 left-0 h-1 bg-blue-500" style="width:0"></div>
-                </div>
-            </x-slot:preview_template>
-        </hw:file-upload>
+            :messages="['idleMultiple' => 'Drag files or click to add media']"
+        />
     </hw:field>
-
-    <button type="submit">Save gallery</button>
 </hw:form>
+
+<hw:attachment.group id="media-list" data-controller="media-list">
+    @foreach ($gallery->items as $item)
+        @include('gallery.media-card', ['item' => $item])
+    @endforeach
+</hw:attachment.group>
+
+<hw:button type="submit" form="gallery-form">Save gallery</hw:button>
 ```
 
-The slot is a normal Blade fragment — Tailwind classes get JIT-scanned as usual. The two
-input names use empty `[]` brackets as placeholders; the subclass renumbers them to explicit
-indices (`attachments[0][token]`, `attachments[1][token]`, …) on every add/remove/reorder so
-the server receives a clean ordered array.
-
-### CSS overrides (neutralize Dropzone's grid layout)
-
-Dropzone's default `.dz-preview` is `display: inline-block` with `margin: 16px` — fights the
-vertical list. A targeted reset in your app stylesheet:
-
-```css
-.media-list .dz-preview {
-    display: flex;
-    margin: 0;
-    min-height: 0;
-    position: relative;
-}
-.media-list .dz-preview .dz-image,
-.media-list .dz-preview .dz-details,
-.media-list .dz-preview .dz-progress,
-.media-list .dz-preview .dz-success-mark,
-.media-list .dz-preview .dz-error-mark {
-    all: unset;
-}
+```blade
+{{-- gallery/media-card.blade.php --}}
+<hw:attachment id="media-{{ $item->id }}" data-media-card>
+    <hw:attachment.media variant="image">
+        <img src="{{ $item->thumbnail_url }}" alt="{{ $item->name }}">
+    </hw:attachment.media>
+    <hw:attachment.content>
+        <hw:attachment.title>{{ $item->name }}</hw:attachment.title>
+        <hw:attachment.description>{{ strtoupper($item->extension) }} · {{ $item->formatted_size }}</hw:attachment.description>
+        <input type="text" name="attachments[][name]" value="{{ $item->name }}" form="gallery-form" data-app-name>
+        <input type="hidden" name="attachments[][token]" value="{{ $item->token }}" form="gallery-form" data-app-token>
+    </hw:attachment.content>
+    <hw:attachment.actions>
+        <hw:attachment.action data-app-drag aria-label="Reorder {{ $item->name }}">≡</hw:attachment.action>
+        <form action="{{ route('uploads.destroy', $item) }}" method="post">
+            @csrf
+            @method('DELETE')
+            <hw:attachment.action type="submit" aria-label="Remove {{ $item->name }}">×</hw:attachment.action>
+        </form>
+    </hw:attachment.actions>
+</hw:attachment>
 ```
 
-### Stimulus subclass
+An app-side `media-list` controller can use SortableJS and renumber inputs after reorder:
 
 ```js
-// resources/js/controllers/media_upload_controller.js
-import FileUploadController from "@hotwire/file_upload_controller.js";
+import { Controller } from "@hotwired/stimulus";
 import Sortable from "sortablejs";
 
-export default class extends FileUploadController {
-    afterInit() {
-        this.dropzone.on("addedfile", (file) => this.populateMetadata(file));
-        this.dropzone.on("success", (file, response) => this.stampToken(file, response));
-        this.dropzone.on("removedfile", () => this.renumber());
-
+export default class extends Controller {
+    connect() {
         this.sortable = new Sortable(this.element, {
             handle: "[data-app-drag]",
             animation: 150,
-            draggable: ".dz-preview",
+            draggable: "[data-media-card]",
             onEnd: () => this.renumber(),
         });
+
+        this.renumber();
     }
 
     disconnect() {
         this.sortable?.destroy();
-        super.disconnect();
-    }
-
-    populateMetadata(file) {
-        const preview = file.previewElement;
-        if (!preview) return;
-        const nameInput = preview.querySelector("[data-app-name]");
-        if (nameInput && !nameInput.value) nameInput.value = file.name;
-        const typeSpan = preview.querySelector("[data-app-type]");
-        if (typeSpan) typeSpan.textContent = this.formatType(file.type);
-        this.renumber();
-    }
-
-    stampToken(file, response) {
-        const value = this.extractValue(response);
-        const preview = file.previewElement;
-        const tokenInput = preview?.querySelector("[data-app-token]");
-        if (tokenInput && value != null) tokenInput.value = value;
-        const downloadLink = preview?.querySelector("[data-app-download]");
-        if (downloadLink && response?.download_url) {
-            downloadLink.href = response.download_url;
-            downloadLink.hidden = false;
-        }
     }
 
     renumber() {
-        this.element.querySelectorAll(".dz-preview").forEach((preview, index) => {
-            preview.querySelectorAll("[name]").forEach((input) => {
+        this.element.querySelectorAll("[data-media-card]").forEach((card, index) => {
+            card.querySelectorAll("[name]").forEach((input) => {
                 input.name = input.name.replace(/^attachments\[\d*\]/, `attachments[${index}]`);
             });
         });
     }
-
-    formatType(mime) {
-        const map = {
-            "image/jpeg": "JPEG", "image/png": "PNG", "image/webp": "WebP",
-            "image/gif": "GIF", "application/pdf": "PDF",
-        };
-        return map[mime] ?? mime?.split("/")[1]?.toUpperCase() ?? "FILE";
-    }
 }
 ```
 
-Install the SortableJS dep app-side: `bun add sortablejs` (or `npm install sortablejs`).
-The subclass file lives in your app's controllers folder — `hotwire:make-controller` can
-scaffold it, then you swap the base class to extend the published `FileUploadController`.
-
-### Server-side controller
-
-```php
-public function store(Request $request)
-{
-    $data = $request->validate([
-        'attachments' => ['array', 'min:1'],
-        'attachments.*.token' => ['required', 'string'],
-        'attachments.*.name' => ['required', 'string', 'max:255'],
-    ]);
-
-    foreach ($data['attachments'] as $position => $entry) {
-        $finalPath = Storage::move(
-            $entry['token'],
-            'gallery/' . basename($entry['token'])
-        );
-        Gallery::create([
-            'user_id' => $request->user()->id,
-            'path' => $finalPath,
-            'name' => $entry['name'],
-            'position' => $position,
-        ]);
-    }
-
-    return redirect()->route('gallery.show');
-}
-```
-
-Validation errors come back as `attachments.0.name`, `attachments.1.token`, etc. Aggregate
-them under the field with `<hw:field.error name="attachments" />` (matches `attachments.*`), or
-render per-card with explicit `error-key`.
-
-### Edit forms — pre-existing media
-
-For an edit form where the gallery already has items, render those server-side as
-`.dz-preview` siblings inside the file-upload component before Dropzone instantiates. The
-subclass treats them identically to newly-uploaded files — Sortable lifts them, renumber
-indexes them:
-
-```blade
-<hw:file-upload controller="media-upload" name="attachments" url="..." multiple :emit-hidden="false">
-    @foreach ($gallery->items as $item)
-        <div class="dz-preview dz-file-preview flex items-center gap-4 p-3 border-b bg-white">
-            <button type="button" data-app-drag class="cursor-move text-gray-400">≡</button>
-            <img src="{{ $item->thumbnail_url }}" class="w-16 h-16 object-cover rounded">
-            <div class="w-32 shrink-0">
-                <div class="text-xs text-gray-500 uppercase">{{ strtoupper($item->extension) }}</div>
-                <div class="text-xs text-gray-500">{{ $item->formatted_size }}</div>
-                <a href="{{ $item->download_url }}" class="text-xs text-blue-600 underline">Download</a>
-            </div>
-            <div class="flex-1">
-                <input type="text" name="attachments[][name]" value="{{ $item->name }}" data-app-name class="block w-full rounded border-gray-300">
-            </div>
-            <button type="button" data-dz-remove class="text-gray-400 hover:text-red-500">×</button>
-            <input type="hidden" name="attachments[][token]" value="{{ $item->token }}" data-app-token>
-        </div>
-    @endforeach
-
-    <x-slot:preview_template>
-        {{-- same card markup as the create form --}}
-    </x-slot:preview_template>
-</hw:file-upload>
-```
-
-The default slot of `<hw:file-upload>` is rendered inside the wrapper — the loop above
-goes there, before the `<x-slot:preview_template>` named slot. On submit, both pre-existing
-and newly-uploaded cards send `attachments[N][token]` and `attachments[N][name]` in the same
-shape; the server treats them uniformly.
-
-### When this pattern fits
-
-- **Multi-file uploads** where the user needs to **rename** files before they're persisted (e.g.
-  uploaded filenames like `IMG_2034.jpeg` need human-readable display names).
-- **Ordered collections** where position matters (gallery, slideshow, document set).
-- **Cases where a single submit transaction** owns the whole list — for individually editable
-  records after persist, prefer a separate edit-each-item flow.
-
-For unordered single-token storage, use [#1 Spatie Media Library](#1-spatie-media-library)
-instead — simpler shape and no client-side state.
-
-**Need the draft to survive page reloads or cross-device sessions?** See the
-[draft-as-state gallery recipe](draft-as-state-gallery.md) — same UI, but each rename,
-reorder and removal hits the server immediately and persists to a `pending_*` table.
-Trades chatter for resumability and per-action validation.
+For reload-resumable drafts, see [draft-as-state gallery](draft-as-state-gallery.md).

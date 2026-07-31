@@ -32,25 +32,25 @@
     [data-slot="accordion-item"][open] > [data-slot="accordion-trigger"] [data-slot="accordion-trigger-icon"] { @apply rotate-180; }
     [data-slot="accordion-content"] { @apply overflow-hidden pb-4 text-sm text-muted-foreground [&_a]:underline [&_a]:underline-offset-3 [&_a:hover]:text-foreground [&_p:not(:last-child)]:mb-4; }
 
-    :is([data-slot="button"], [data-slot="modal-trigger"], [data-slot="modal-close"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"], [data-slot="hover-card-trigger"], [data-slot="color-scheme-toggle"]) {
+    :is([data-slot="button"], [data-slot="attachment-action"], [data-slot="modal-trigger"], [data-slot="modal-close"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"], [data-slot="hover-card-trigger"], [data-slot="color-scheme-toggle"]) {
         @apply inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-lg border border-transparent bg-clip-padding text-sm font-medium transition-all outline-none active:not-aria-[haspopup]:translate-y-px focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4;
     }
 
-    :is([data-slot="button"], [data-slot="modal-trigger"], [data-slot="modal-close"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"], [data-slot="hover-card-trigger"], [data-slot="color-scheme-toggle"])[data-variant="default"] { @apply bg-primary text-primary-foreground hover:bg-primary/80; }
-    :is([data-slot="button"], [data-slot="modal-trigger"], [data-slot="modal-close"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"], [data-slot="hover-card-trigger"], [data-slot="color-scheme-toggle"])[data-variant="destructive"] { @apply bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40; }
-    :is([data-slot="button"], [data-slot="modal-trigger"], [data-slot="modal-close"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"], [data-slot="hover-card-trigger"], [data-slot="color-scheme-toggle"])[data-variant="outline"] { @apply border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50; }
-    :is([data-slot="button"], [data-slot="modal-trigger"], [data-slot="modal-close"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"], [data-slot="hover-card-trigger"], [data-slot="color-scheme-toggle"])[data-variant="secondary"] { @apply bg-secondary text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] aria-expanded:bg-secondary aria-expanded:text-secondary-foreground; }
-    :is([data-slot="button"], [data-slot="modal-trigger"], [data-slot="modal-close"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"], [data-slot="hover-card-trigger"], [data-slot="color-scheme-toggle"])[data-variant="ghost"] { @apply hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50; }
-    :is([data-slot="button"], [data-slot="modal-trigger"], [data-slot="modal-close"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"], [data-slot="hover-card-trigger"], [data-slot="color-scheme-toggle"])[data-variant="link"] { @apply text-primary underline-offset-4 hover:underline; }
+    :is([data-slot="button"], [data-slot="attachment-action"], [data-slot="modal-trigger"], [data-slot="modal-close"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"], [data-slot="hover-card-trigger"], [data-slot="color-scheme-toggle"])[data-variant="default"] { @apply bg-primary text-primary-foreground hover:bg-primary/80; }
+    :is([data-slot="button"], [data-slot="attachment-action"], [data-slot="modal-trigger"], [data-slot="modal-close"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"], [data-slot="hover-card-trigger"], [data-slot="color-scheme-toggle"])[data-variant="destructive"] { @apply bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40; }
+    :is([data-slot="button"], [data-slot="attachment-action"], [data-slot="modal-trigger"], [data-slot="modal-close"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"], [data-slot="hover-card-trigger"], [data-slot="color-scheme-toggle"])[data-variant="outline"] { @apply border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50; }
+    :is([data-slot="button"], [data-slot="attachment-action"], [data-slot="modal-trigger"], [data-slot="modal-close"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"], [data-slot="hover-card-trigger"], [data-slot="color-scheme-toggle"])[data-variant="secondary"] { @apply bg-secondary text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] aria-expanded:bg-secondary aria-expanded:text-secondary-foreground; }
+    :is([data-slot="button"], [data-slot="attachment-action"], [data-slot="modal-trigger"], [data-slot="modal-close"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"], [data-slot="hover-card-trigger"], [data-slot="color-scheme-toggle"])[data-variant="ghost"] { @apply hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50; }
+    :is([data-slot="button"], [data-slot="attachment-action"], [data-slot="modal-trigger"], [data-slot="modal-close"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"], [data-slot="hover-card-trigger"], [data-slot="color-scheme-toggle"])[data-variant="link"] { @apply text-primary underline-offset-4 hover:underline; }
 
-    :is([data-slot="button"], [data-slot="modal-trigger"], [data-slot="modal-close"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"], [data-slot="hover-card-trigger"], [data-slot="color-scheme-toggle"])[data-size="default"] { @apply h-8 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2; }
-    :is([data-slot="button"], [data-slot="modal-trigger"], [data-slot="modal-close"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"], [data-slot="hover-card-trigger"], [data-slot="color-scheme-toggle"])[data-size="xs"] { @apply h-6 gap-1 rounded-[min(var(--radius-md),10px)] px-2 text-xs has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3; }
-    :is([data-slot="button"], [data-slot="modal-trigger"], [data-slot="modal-close"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"], [data-slot="hover-card-trigger"], [data-slot="color-scheme-toggle"])[data-size="sm"] { @apply h-7 gap-1 rounded-[min(var(--radius-md),12px)] px-2.5 text-[0.8rem] has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5; }
-    :is([data-slot="button"], [data-slot="modal-trigger"], [data-slot="modal-close"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"], [data-slot="hover-card-trigger"], [data-slot="color-scheme-toggle"])[data-size="lg"] { @apply h-9 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2; }
-    :is([data-slot="button"], [data-slot="modal-trigger"], [data-slot="modal-close"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"], [data-slot="hover-card-trigger"], [data-slot="color-scheme-toggle"])[data-size="icon"] { @apply size-8; }
-    :is([data-slot="button"], [data-slot="modal-trigger"], [data-slot="modal-close"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"], [data-slot="hover-card-trigger"], [data-slot="color-scheme-toggle"])[data-size="icon-xs"] { @apply size-6 rounded-[min(var(--radius-md),10px)] [&_svg:not([class*='size-'])]:size-3; }
-    :is([data-slot="button"], [data-slot="modal-trigger"], [data-slot="modal-close"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"], [data-slot="hover-card-trigger"], [data-slot="color-scheme-toggle"])[data-size="icon-sm"] { @apply size-7 rounded-[min(var(--radius-md),12px)]; }
-    :is([data-slot="button"], [data-slot="modal-trigger"], [data-slot="modal-close"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"], [data-slot="hover-card-trigger"], [data-slot="color-scheme-toggle"])[data-size="icon-lg"] { @apply size-9; }
+    :is([data-slot="button"], [data-slot="attachment-action"], [data-slot="modal-trigger"], [data-slot="modal-close"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"], [data-slot="hover-card-trigger"], [data-slot="color-scheme-toggle"])[data-size="default"] { @apply h-8 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2; }
+    :is([data-slot="button"], [data-slot="attachment-action"], [data-slot="modal-trigger"], [data-slot="modal-close"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"], [data-slot="hover-card-trigger"], [data-slot="color-scheme-toggle"])[data-size="xs"] { @apply h-6 gap-1 rounded-[min(var(--radius-md),10px)] px-2 text-xs has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3; }
+    :is([data-slot="button"], [data-slot="attachment-action"], [data-slot="modal-trigger"], [data-slot="modal-close"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"], [data-slot="hover-card-trigger"], [data-slot="color-scheme-toggle"])[data-size="sm"] { @apply h-7 gap-1 rounded-[min(var(--radius-md),12px)] px-2.5 text-[0.8rem] has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5; }
+    :is([data-slot="button"], [data-slot="attachment-action"], [data-slot="modal-trigger"], [data-slot="modal-close"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"], [data-slot="hover-card-trigger"], [data-slot="color-scheme-toggle"])[data-size="lg"] { @apply h-9 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2; }
+    :is([data-slot="button"], [data-slot="attachment-action"], [data-slot="modal-trigger"], [data-slot="modal-close"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"], [data-slot="hover-card-trigger"], [data-slot="color-scheme-toggle"])[data-size="icon"] { @apply size-8; }
+    :is([data-slot="button"], [data-slot="attachment-action"], [data-slot="modal-trigger"], [data-slot="modal-close"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"], [data-slot="hover-card-trigger"], [data-slot="color-scheme-toggle"])[data-size="icon-xs"] { @apply size-6 rounded-[min(var(--radius-md),10px)] [&_svg:not([class*='size-'])]:size-3; }
+    :is([data-slot="button"], [data-slot="attachment-action"], [data-slot="modal-trigger"], [data-slot="modal-close"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"], [data-slot="hover-card-trigger"], [data-slot="color-scheme-toggle"])[data-size="icon-sm"] { @apply size-7 rounded-[min(var(--radius-md),12px)]; }
+    :is([data-slot="button"], [data-slot="attachment-action"], [data-slot="modal-trigger"], [data-slot="modal-close"], [data-slot="alert-dialog-cancel"], [data-slot="alert-dialog-action"], [data-slot="hover-card-trigger"], [data-slot="color-scheme-toggle"])[data-size="icon-lg"] { @apply size-9; }
 
     [data-slot="color-scheme-toggle"] { @apply relative; }
     [data-slot="color-scheme-icon"] { @apply hidden; }
@@ -177,6 +177,24 @@
     [data-slot="empty-state-content"] { @apply flex w-full max-w-sm min-w-0 flex-col items-center gap-2.5 text-sm text-balance; }
 
     [data-slot="skeleton"] { @apply animate-pulse rounded-md bg-muted; }
+    @keyframes hotwire-shimmer {
+        100% { background-position: -200% 0; }
+    }
+
+    [data-shimmer="true"], [data-slot="attachment"][data-state="processing"] [data-slot="attachment-title"], [data-slot="attachment"][data-state="uploading"] [data-slot="attachment-title"] {
+        @apply bg-clip-text text-transparent;
+        background-image: linear-gradient(90deg, var(--muted-foreground) 0%, color-mix(in oklch, var(--muted-foreground), var(--background) 65%) 35%, var(--muted-foreground) 70%);
+        background-size: 200% 100%;
+        animation: hotwire-shimmer 1.35s linear infinite;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        [data-shimmer="true"], [data-slot="attachment"][data-state="processing"] [data-slot="attachment-title"], [data-slot="attachment"][data-state="uploading"] [data-slot="attachment-title"] {
+            color: inherit;
+            background-image: none;
+            animation: none;
+        }
+    }
 
     [data-slot="separator"], [data-slot="item-separator"], [data-slot="button-group-separator"] { @apply shrink-0 bg-border data-[orientation=horizontal]:h-px data-[orientation=horizontal]:w-full data-[orientation=vertical]:w-px data-[orientation=vertical]:self-stretch; }
     [data-slot="button-group-separator"] { @apply relative self-stretch bg-input data-[orientation=horizontal]:mx-px data-[orientation=horizontal]:w-auto data-[orientation=vertical]:my-px data-[orientation=vertical]:h-auto; }
@@ -448,8 +466,59 @@
     [data-slot="select-icon"] { @apply pointer-events-none absolute right-2 top-1/2 size-4 -translate-y-1/2 opacity-50; }
     [data-slot="clear-input-button"] { @apply absolute right-1.5 items-center inline-flex; }
     [data-slot="clear-input-button"] svg { @apply size-4 text-foreground/60; }
-    [data-slot="file-upload"] { @apply flex min-h-32 w-full cursor-pointer items-center justify-center rounded-lg border border-dashed border-border bg-background p-6 text-center text-sm text-muted-foreground transition-colors hover:bg-accent/50 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none aria-invalid:border-destructive aria-invalid:ring-destructive/20; }
-    [data-slot="file-upload"] .dz-message { @apply m-0; }
+    [data-slot="file-upload"] { @apply flex w-full min-w-0 flex-col gap-3 text-sm; }
+    :where([data-slot="file-upload-dropzone"]:not([data-file-upload-dropzone-variant="bare"])) { @apply flex min-h-32 w-full cursor-pointer items-center justify-center rounded-lg border border-dashed border-border bg-background p-6 text-center text-sm text-muted-foreground transition-colors hover:bg-accent/50 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none aria-invalid:border-destructive aria-invalid:ring-destructive/20; }
+    :where([data-slot="file-upload-dropzone"][data-file-upload-dropzone-variant="bare"]) { @apply w-fit max-w-full cursor-pointer; }
+    [data-slot="file-upload-actions"] { @apply flex justify-end; }
+    [data-slot="file-upload"][data-density="compact"] { @apply gap-2; }
+    :where([data-slot="file-upload"][data-density="compact"] [data-slot="file-upload-dropzone"]:not([data-file-upload-dropzone-variant="bare"])) { @apply min-h-14 justify-start p-3 text-left; }
+    :where([data-slot="file-upload"][data-density="compact"] [data-slot="file-upload-dropzone"]:not([data-file-upload-dropzone-variant="bare"]) [data-slot="empty-state"]) { @apply flex-row justify-start gap-3 p-0 text-left; }
+    :where([data-slot="file-upload"][data-density="compact"] [data-slot="file-upload-dropzone"]:not([data-file-upload-dropzone-variant="bare"]) [data-slot="empty-state-header"]) { @apply max-w-none flex-row items-center gap-3; }
+    :where([data-slot="file-upload"][data-density="compact"] [data-slot="file-upload-dropzone"]:not([data-file-upload-dropzone-variant="bare"]) [data-slot="empty-state-media"]) { @apply mb-0; }
+    :where([data-slot="file-upload"][data-density="compact"] [data-slot="file-upload-dropzone"]:not([data-file-upload-dropzone-variant="bare"]) [data-slot="empty-state-description"]) { @apply text-xs leading-normal; }
+    :where([data-slot="file-upload"][data-dragging="true"] [data-slot="file-upload-dropzone"]:not([data-file-upload-dropzone-variant="bare"])) { @apply border-primary bg-primary/5 text-foreground; }
+    :where([data-slot="file-upload-dropzone"]:not([data-file-upload-dropzone-variant="bare"])[aria-invalid="true"]) { @apply border-destructive ring-3 ring-destructive/20; }
+    :where([data-slot="file-upload-dropzone"]:not([data-file-upload-dropzone-variant="bare"])[data-state="error"] [data-slot="empty-state-description"]) { @apply text-destructive; }
+    [data-slot="file-upload-feedback"] { @apply text-sm text-muted-foreground; }
+    [data-slot="file-upload"][data-upload-state="error"] > [data-slot="file-upload-feedback"] { @apply text-destructive; }
+    :where([data-slot="file-upload"][data-view="image"] [data-slot="file-upload-dropzone"]:not([data-file-upload-dropzone-variant="bare"])) { @apply relative min-h-0 w-fit overflow-hidden p-0; }
+    :where([data-slot="file-upload"][data-view="image"] [data-slot="file-upload-dropzone"][data-file-upload-dropzone-variant="bare"]) { @apply relative; }
+    :where([data-slot="file-upload"][data-view="image"] [data-slot="file-upload-dropzone"][data-file-upload-dropzone-variant="bare"] > [data-slot="file-upload-image-base"]) { @apply flex min-w-0; }
+    :where([data-slot="file-upload"][data-view="image"] [data-file-upload-default-image]:not([data-file-upload-dropzone-variant="bare"])) { @apply size-24; }
+    :where([data-slot="file-upload"][data-view="image"] [data-slot="file-upload-dropzone"]:not([data-file-upload-dropzone-variant="bare"]) [data-slot="file-upload-image-base"]) { @apply flex size-full items-center justify-center; }
+    :where([data-slot="file-upload"][data-view="image"] [data-slot="file-upload-image-preview"]) { @apply pointer-events-none absolute inset-0 size-full rounded-[inherit] object-cover transition-opacity; }
+    :where([data-slot="file-upload"][data-view="image"] [data-slot="file-upload-dropzone"]:has(> [data-slot="file-upload-image-preview"]:not([hidden])) > [data-slot="file-upload-image-base"]) { visibility: hidden; }
+    :where([data-slot="file-upload"][data-view="image"][data-loading="true"] [data-slot="file-upload-dropzone"]:not([data-file-upload-dropzone-variant="bare"]) :is([data-slot="file-upload-image-base"], [data-slot="file-upload-image-preview"])) { @apply opacity-60; }
+    [data-slot="file-upload"][data-view="image"] > [data-slot="file-upload-feedback"] { @apply hidden; }
+    [data-slot="file-upload"][data-view="image"][data-upload-state="error"] > [data-slot="file-upload-feedback"] { @apply block; }
+
+    [data-slot="attachment-group"] { @apply flex min-w-0 flex-col gap-3 py-1; }
+    [data-slot="attachment-group"] > [data-slot="attachment"] { @apply w-full; }
+    [data-slot="file-upload"][data-view="grid"] [data-slot="attachment-group"] { @apply grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4; }
+    [data-slot="attachment"] { @apply relative flex w-fit max-w-full min-w-0 shrink-0 flex-wrap rounded-xl border bg-card text-card-foreground transition-colors focus-within:ring-1 focus-within:ring-ring/50 has-[>a]:hover:bg-muted/50 has-[>button]:hover:bg-muted/50 data-[state=error]:border-destructive/30 data-[state=idle]:border-dashed; }
+    [data-slot="attachment"][data-size="default"] { @apply gap-2 text-sm has-data-[slot=attachment-content]:px-2.5 has-data-[slot=attachment-content]:py-2 has-data-[slot=attachment-media]:p-2; }
+    [data-slot="attachment"][data-size="sm"] { @apply gap-2.5 text-xs has-data-[slot=attachment-content]:px-2 has-data-[slot=attachment-content]:py-1.5 has-data-[slot=attachment-media]:p-1.5; }
+    [data-slot="attachment"][data-size="xs"] { @apply gap-1.5 rounded-lg text-xs has-data-[slot=attachment-content]:px-1.5 has-data-[slot=attachment-content]:py-1 has-data-[slot=attachment-media]:p-1; }
+    [data-slot="attachment"][data-orientation="horizontal"] { @apply min-w-40 items-center; }
+    [data-slot="attachment"][data-orientation="vertical"] { @apply w-24 flex-col has-data-[slot=attachment-content]:w-30; }
+    [data-slot="file-upload"][data-view="grid"] [data-slot="attachment"][data-orientation="vertical"] { @apply w-full; }
+    [data-slot="attachment-media"] { @apply relative flex aspect-square w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-muted text-foreground [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4; }
+    [data-slot="attachment-media"] > img { @apply size-full object-cover; }
+    [data-slot="attachment"][data-orientation="vertical"] [data-slot="attachment-media"] { @apply w-full; }
+    [data-slot="attachment"][data-size="sm"] [data-slot="attachment-media"] { @apply w-8; }
+    [data-slot="attachment"][data-size="xs"] [data-slot="attachment-media"] { @apply w-7 rounded-md [&_svg:not([class*='size-'])]:size-3.5; }
+    [data-slot="attachment"][data-state="error"] [data-slot="attachment-media"] { @apply bg-destructive/10 text-destructive; }
+    [data-slot="attachment"][data-orientation="vertical"] [data-slot="attachment-media"] svg:not([class*='size-']) { @apply size-6; }
+    [data-slot="attachment-media"][data-variant="image"] { @apply opacity-60 [&_img]:aspect-square [&_img]:w-full [&_img]:object-cover; }
+    [data-slot="attachment"][data-state="done"] [data-slot="attachment-media"][data-variant="image"], [data-slot="attachment"][data-state="idle"] [data-slot="attachment-media"][data-variant="image"] { @apply opacity-100; }
+    [data-slot="attachment-content"] { @apply max-w-full min-w-0 flex-1 leading-tight; }
+    [data-slot="attachment"][data-orientation="vertical"] [data-slot="attachment-content"] { @apply px-1; }
+    [data-slot="attachment-title"] { @apply block max-w-full min-w-0 truncate font-medium; }
+    [data-slot="attachment-description"] { @apply mt-0.5 block max-w-full min-w-0 truncate text-xs text-muted-foreground; }
+    [data-slot="attachment"][data-state="error"] [data-slot="attachment-description"] { @apply text-destructive/80; }
+    [data-slot="attachment-actions"] { @apply relative z-20 flex shrink-0 items-center; }
+    [data-slot="attachment"][data-orientation="vertical"] [data-slot="attachment-actions"] { @apply absolute top-3 right-3 gap-1; }
+    [data-slot="attachment-trigger"] { @apply absolute inset-0 z-10 outline-none; }
 
     [data-slot="rich-text"] { @apply overflow-hidden rounded-md border border-input bg-background text-foreground shadow-xs transition-colors aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20; }
     [data-slot="rich-text"]:has(.ProseMirror:focus-visible) { @apply border-ring ring-[3px] ring-ring/50; }

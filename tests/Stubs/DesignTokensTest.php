@@ -157,6 +157,17 @@ it('safelists runtime classes applied by Stimulus controllers', function () use 
         ->toContain('duration-100');
 });
 
+it('applies shared button styles to attachment actions', function () use ($novaPresetPath) {
+    $lines = collect(explode("\n", file_get_contents($novaPresetPath)));
+    $base = $lines->first(fn (string $line): bool => str_contains($line, ':is([data-slot="button"]'));
+    $ghost = $lines->first(fn (string $line): bool => str_contains($line, '[data-variant="ghost"]'));
+    $iconXs = $lines->first(fn (string $line): bool => str_contains($line, '[data-size="icon-xs"]'));
+
+    expect($base)->toContain('[data-slot="attachment-action"]')
+        ->and($ghost)->toContain('[data-slot="attachment-action"]')
+        ->and($iconXs)->toContain('[data-slot="attachment-action"]');
+});
+
 it('keeps closed floating surfaces visible until Presence applies hidden', function () use ($novaPresetPath) {
     $css = file_get_contents($novaPresetPath);
 
@@ -278,6 +289,55 @@ it('keeps item icon media unframed like the shadcn base-nova reference', functio
     expect($css)
         ->toContain('[data-slot="item-media"][data-variant="icon"] { @apply [&>[data-slot=icon]]:size-4; }')
         ->not->toContain('[data-slot="item-media"][data-variant="icon"] { @apply size-8 rounded-md border border-border bg-background');
+});
+
+it('keeps attachment image previews covered and uses the shared shimmer motion', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain('[data-slot="attachment-media"] > img')
+        ->toContain('@apply size-full object-cover')
+        ->toContain('[data-shimmer="true"]')
+        ->toContain('hotwire-shimmer')
+        ->toContain('prefers-reduced-motion: reduce');
+    expect(substr_count($css, 'animation: hotwire-shimmer 1.35s linear infinite;'))->toBe(1);
+});
+
+it('styles default and custom file upload errors with destructive feedback', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain(':where([data-slot="file-upload-dropzone"]:not([data-file-upload-dropzone-variant="bare"])[data-state="error"] [data-slot="empty-state-description"]) { @apply text-destructive; }')
+        ->toContain('[data-slot="file-upload-feedback"] { @apply text-sm text-muted-foreground; }')
+        ->toContain('[data-slot="file-upload"][data-upload-state="error"] > [data-slot="file-upload-feedback"] { @apply text-destructive; }');
+});
+
+it('keeps the visual file upload preset off bare dropzones', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain(':where([data-slot="file-upload-dropzone"]:not([data-file-upload-dropzone-variant="bare"])) { @apply flex min-h-32 w-full cursor-pointer items-center justify-center rounded-lg border border-dashed border-border bg-background p-6 text-center text-sm text-muted-foreground transition-colors hover:bg-accent/50 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none aria-invalid:border-destructive aria-invalid:ring-destructive/20; }')
+        ->toContain(':where([data-slot="file-upload-dropzone"][data-file-upload-dropzone-variant="bare"]) { @apply w-fit max-w-full cursor-pointer; }')
+        ->toContain(':where([data-slot="file-upload"][data-dragging="true"] [data-slot="file-upload-dropzone"]:not([data-file-upload-dropzone-variant="bare"]))')
+        ->toContain(':where([data-slot="file-upload-dropzone"]:not([data-file-upload-dropzone-variant="bare"])[aria-invalid="true"])')
+        ->toContain(':where([data-slot="file-upload"][data-density="compact"] [data-slot="file-upload-dropzone"]:not([data-file-upload-dropzone-variant="bare"]) [data-slot="empty-state"])')
+        ->not->toContain('[data-slot="file-upload-dropzone"] { @apply flex min-h-32');
+});
+
+it('gives bare image uploads a content-sized absolute preview', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain(':where([data-slot="file-upload"][data-view="image"] [data-slot="file-upload-dropzone"]:not([data-file-upload-dropzone-variant="bare"])) { @apply relative min-h-0 w-fit overflow-hidden p-0; }')
+        ->toContain(':where([data-slot="file-upload"][data-view="image"] [data-slot="file-upload-dropzone"][data-file-upload-dropzone-variant="bare"]) { @apply relative; }')
+        ->toContain(':where([data-slot="file-upload"][data-view="image"] [data-slot="file-upload-dropzone"][data-file-upload-dropzone-variant="bare"] > [data-slot="file-upload-image-base"]) { @apply flex min-w-0; }')
+        ->toContain(':where([data-slot="file-upload"][data-view="image"] [data-file-upload-default-image]:not([data-file-upload-dropzone-variant="bare"])) { @apply size-24; }')
+        ->toContain(':where([data-slot="file-upload"][data-view="image"] [data-slot="file-upload-dropzone"]:not([data-file-upload-dropzone-variant="bare"]) [data-slot="file-upload-image-base"]) { @apply flex size-full items-center justify-center; }')
+        ->toContain(':where([data-slot="file-upload"][data-view="image"] [data-slot="file-upload-image-preview"]) { @apply pointer-events-none absolute inset-0 size-full rounded-[inherit] object-cover transition-opacity; }')
+        ->toContain(':where([data-slot="file-upload"][data-view="image"] [data-slot="file-upload-dropzone"]:has(> [data-slot="file-upload-image-preview"]:not([hidden])) > [data-slot="file-upload-image-base"]) { visibility: hidden; }')
+        ->not->toContain('grid-area: 1 / 1')
+        ->toContain('[data-slot="file-upload"][data-view="image"] > [data-slot="file-upload-feedback"] { @apply hidden; }')
+        ->toContain('[data-slot="file-upload"][data-view="image"][data-upload-state="error"] > [data-slot="file-upload-feedback"] { @apply block; }');
 });
 
 it('defines aspect ratio styling in the nova preset', function () use ($novaPresetPath) {

@@ -4,6 +4,103 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 
 ---
 
+## Upgrading to `0.58.0`
+
+`0.58.0` replaces the Dropzone-backed File Upload component and controller with a native file input, drag-and-drop
+handling and `XMLHttpRequest` uploads. This is a breaking migration for applications that used Dropzone-specific props,
+markup, CSS or controller extensions.
+
+### Replace Dropzone component options
+
+The `options` prop and `preview_template` slot have been removed. Replace Dropzone configuration with the File Upload
+props for that behavior, such as `accept`, `max-size-bytes`, `max-files`, `parallel-uploads`, `param-name`, `delete-url`,
+`mode` and `output-mode`. Native attachment cards now use the package's reusable
+[`Attachment`](components/attachment.md) primitive. When the endpoint returns a raw Turbo Stream body, the component now
+uses `mode="turbo-stream"` and disables its built-in card and newly emitted upload-response input automatically:
+
+```blade
+<hw:file-upload
+    url="{{ route('uploads.store') }}"
+    mode="turbo-stream"
+/>
+```
+
+The old `turbo-stream`, `preview` and `emit-hidden` props are replaced without aliases before this release. Managed JSON
+uploads use `output-mode="full|preview|hidden|none"`; `full` is the default. Raw stream responses are server-owned and
+require `output-mode="none"`, which is resolved automatically. Explicit `value` and matching `old()` values remain as
+preserved hidden inputs for edit and validation round-trips. An optional `stream` string inside a managed JSON response is
+a separate hybrid protocol: it works without another prop and preserves the selected output mode.
+
+```diff
+- <hw:file-upload turbo-stream />
++ <hw:file-upload mode="turbo-stream" />
+
+- <hw:file-upload :preview="false" :emit-hidden="false" />
++ <hw:file-upload output-mode="none" />
+
+- <hw:file-upload :preview="false" />
++ <hw:file-upload output-mode="hidden" />
+
+- <hw:file-upload :emit-hidden="false" />
++ <hw:file-upload output-mode="preview" />
+```
+
+Dropzone `dict*` option names are no longer accepted, and `messages` no longer maps short keys to Dropzone dictionaries.
+Use the native keys documented in [`File Upload`](components/file-upload.md#messages), including `idle`, `idleMultiple`,
+`hint`, `button`, `uploading`, `uploaded`, `uploadFailed`, `serverRejected`, `clearAll`, `cleared`, `removed`, `removeFile`, `retry`,
+`fileTooBig`, `invalidFileType`, `maxFilesExceeded` and `deleteFailed`:
+
+```diff
+- :options="['dictDefaultMessage' => 'Drop files', 'dictFileTooBig' => 'Too large']"
++ :messages="['idleMultiple' => 'Drop files', 'fileTooBig' => 'Too large']"
+```
+
+There is no native equivalent for Dropzone-only options or messages outside the documented File Upload API.
+
+Named `dropzone` slots now resolve `dropzone-variant="auto"` to the content-sized `bare` surface. The slot owns its
+dimensions, aspect ratio, border, background, radius, clipping, hover, focus and state treatment; the package retains
+the interaction wiring and an absolute image preview layer that does not affect layout. If a custom slot should keep the
+package's dashed drop area, set `dropzone-variant="default"` explicitly.
+
+### Replace Dropzone markup and CSS
+
+Remove custom `.dropzone`, `.dz-*`, `data-dz-*` and `preview_template` markup. Restyle the native UI through its semantic
+hooks: `data-slot="file-upload"`, `data-slot="file-upload-dropzone"`, `data-slot="attachment-group"`,
+`data-slot="attachment"`, `data-state="idle|uploading|processing|error|done"`, `data-density` and `data-view`. See the
+complete [File Upload styling hooks](components/file-upload.md#styling-hooks).
+
+### Port customized controllers
+
+The `defaultOptions()` and `afterInit()` extension hooks, `this.dropzone` instance and Dropzone events have been removed.
+Move supported configuration to component props. In controller subclasses, use normal Stimulus lifecycle overrides and
+the public `file-upload:*` events instead; call `super.connect()`/`super.disconnect()` when overriding lifecycle methods
+and clean up any app listeners in `disconnect()`.
+
+Applications loading the controller from `vendor` receive the native implementation after the Composer update. Refresh
+package-owned published copies with:
+
+```bash
+php artisan hotwire:check --fix
+```
+
+The command replaces outdated files that still carry the `// @hotwire-package` marker. It will not overwrite a
+marker-free customized `file_upload_controller.js`; manually port those customizations to the native controller and
+remove any Dropzone imports or assumptions.
+
+### Remove Dropzone from the application
+
+File Upload no longer declares `@deltablot/dropzone`. `hotwire:check --fix` does not remove unused application
+dependencies, so remove it explicitly with your package manager, for example:
+
+```bash
+npm uninstall @deltablot/dropzone
+```
+
+Use the equivalent `bun remove`, `pnpm remove` or `yarn remove` command when applicable, and remove any app-level
+Dropzone CSS imports.
+
+---
+
 ## Upgrading to `0.57.0`
 
 `0.57.0` unifies floating surfaces and modal overlays on the state-driven Presence lifecycle, with actual finite CSS
@@ -260,7 +357,7 @@ The `hotwire:install` command exposes three modes for adding npm dependencies to
 
 | Command | What it adds | Loader stub shape |
 |---|---|---|
-| `php artisan hotwire:install` | Core deps (`@hotwired/stimulus`, `@hotwired/turbo`, `@emaia/stimulus-lazy-loader`) **plus every catalog dep** declared by package controllers (Floating UI, echarts, leaflet, embla-carousel, tiptap stack, dropzone, maska, date-fns, sonner). Everything works without further setup. | Globs every package controller — no exclusions |
+| `php artisan hotwire:install` | Core deps (`@hotwired/stimulus`, `@hotwired/turbo`, `@emaia/stimulus-lazy-loader`) **plus every catalog dep** declared by package controllers (Floating UI, echarts, leaflet, embla-carousel, tiptap stack, maska, date-fns, sonner). Everything works without further setup. | Globs every package controller — no exclusions |
 | `php artisan hotwire:install --with-deps=carousel,chart,map` | Core deps **plus only the npm deps required by the listed controllers**. Accepts comma-separated values or repeated `--with-deps=X` flags. | Globs zero-dep controllers + only the opted-in com-dep controllers; everything else is excluded so `vite build` never resolves their missing imports |
 | `php artisan hotwire:install --core-only` | Core deps **only**. No catalog deps. | Globs zero-dep controllers only; every com-dep controller excluded |
 

@@ -15,3 +15,4 @@ Animated placeholder block for loading states.
 ## Styling Hooks
 
 - `data-slot="skeleton"`
+- `data-shimmer="true"` — reusable text shimmer hook used by attachment progress states.

@@ -41,7 +41,7 @@ independently.
 Schema::create('pending_media_items', function (Blueprint $table) {
     $table->id();
     $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-    $table->string('token');               // temp storage path returned by the upload
+    $table->string('path');                // server-owned temporary storage path
     $table->string('name');                // editable display name
     $table->unsignedSmallInteger('position');
     $table->string('mime_type');
@@ -59,7 +59,7 @@ Schema::create('pending_media_items', function (Blueprint $table) {
 class PendingMediaItem extends Model
 {
     protected $fillable = [
-        'user_id', 'token', 'name', 'position',
+        'user_id', 'path', 'name', 'position',
         'mime_type', 'size_bytes', 'thumbnail_path', 'expires_at',
     ];
 
@@ -84,9 +84,18 @@ class PendingMediaItem extends Model
         return $query->where('expires_at', '<', now());
     }
 
+    public function fileUrl(string $variant = 'original'): string
+    {
+        return URL::temporarySignedRoute(
+            'pending-media.show',
+            now()->addMinutes(10),
+            ['pendingMedia' => $this, 'variant' => $variant],
+        );
+    }
+
     public function thumbnailUrl(): string
     {
-        return $this->thumbnail_path ? Storage::url($this->thumbnail_path) : '';
+        return $this->thumbnail_path ? $this->fileUrl('thumbnail') : '';
     }
 
     public function formattedSize(): string
@@ -121,6 +130,11 @@ A matching policy enforces "user can only touch their own drafts":
 // app/Policies/PendingMediaItemPolicy.php
 class PendingMediaItemPolicy
 {
+    public function view(User $user, PendingMediaItem $item): bool
+    {
+        return $user->id === $item->user_id;
+    }
+
     public function update(User $user, PendingMediaItem $item): bool
     {
         return $user->id === $item->user_id;
@@ -135,7 +149,8 @@ class PendingMediaItemPolicy
 
 ## Routes
 
-Five endpoints in total. Four manage the draft incrementally; one publishes.
+Six endpoints in total. Five manage the draft incrementally; one publishes. Pending files stay private and are delivered
+through an authenticated, temporary signed route.
 
 ```php
 // routes/web.php
@@ -148,6 +163,7 @@ Route::middleware('auth')->group(function () {
         ->name('pending-media.')
         ->group(function () {
             Route::post('/', 'store')->name('store');
+            Route::get('/{pendingMedia}/file', 'show')->middleware('signed')->name('show');
             Route::patch('/{pendingMedia}', 'update')->name('update');
             Route::delete('/{pendingMedia}', 'destroy')->name('destroy');
             Route::post('/reorder', 'reorder')->name('reorder');
@@ -173,12 +189,12 @@ class PendingMediaController extends Controller
         ]);
 
         $file = $request->file('file');
-        $token = $file->store('pending-media', 'public');
+        $path = $file->store('pending-media');
         $thumbnail = $this->makeThumbnail($file);
 
         $item = PendingMediaItem::create([
             'user_id' => $request->user()->id,
-            'token' => $token,
+            'path' => $path,
             'name' => pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
             'position' => (PendingMediaItem::forUser($request->user())->max('position') ?? -1) + 1,
             'mime_type' => $file->getMimeType(),
@@ -188,6 +204,21 @@ class PendingMediaController extends Controller
         ]);
 
         return turbo_stream()->append('gallery-list', view('gallery._card', ['item' => $item]));
+    }
+
+    public function show(Request $request, PendingMediaItem $pendingMedia)
+    {
+        Gate::authorize('view', $pendingMedia);
+        abort_if($pendingMedia->expires_at->isPast(), 404);
+
+        $path = $request->string('variant')->toString() === 'thumbnail' && $pendingMedia->thumbnail_path
+            ? $pendingMedia->thumbnail_path
+            : $pendingMedia->path;
+
+        return Storage::response($path, $pendingMedia->name, [
+            'Content-Type' => Storage::mimeType($path) ?: $pendingMedia->mime_type,
+            'Content-Disposition' => 'inline',
+        ]);
     }
 
     public function update(Request $request, PendingMediaItem $pendingMedia)
@@ -205,8 +236,8 @@ class PendingMediaController extends Controller
     {
         Gate::authorize('delete', $pendingMedia);
 
-        Storage::disk('public')->delete(array_filter([
-            $pendingMedia->token,
+        Storage::delete(array_filter([
+            $pendingMedia->path,
             $pendingMedia->thumbnail_path,
         ]));
         $pendingMedia->delete();
@@ -266,37 +297,78 @@ class GalleryController extends Controller
             'title' => ['required', 'string', 'max:255'],
         ]);
 
-        $pending = PendingMediaItem::forUser($request->user())
+        $pendingIds = PendingMediaItem::forUser($request->user())
             ->orderBy('position')
-            ->get();
+            ->pluck('id');
 
-        if ($pending->isEmpty()) {
+        if ($pendingIds->isEmpty()) {
             return back()->withErrors(['images' => 'Add at least one image before publishing.']);
         }
 
-        $gallery = DB::transaction(function () use ($request, $data, $pending) {
-            $gallery = $request->user()->galleries()->create($data);
+        $promotedPaths = [];
+        $pending = collect();
 
-            foreach ($pending as $position => $item) {
-                $finalPath = "galleries/{$gallery->id}/".basename($item->token);
-                Storage::disk('public')->move($item->token, $finalPath);
+        try {
+            $gallery = DB::transaction(function () use ($request, $data, $pendingIds, &$pending, &$promotedPaths) {
+                $pending = PendingMediaItem::forUser($request->user())
+                    ->whereKey($pendingIds)
+                    ->lockForUpdate()
+                    ->orderBy('position')
+                    ->get();
+                throw_unless(
+                    $pending->count() === $pendingIds->count(),
+                    RuntimeException::class,
+                    'The draft changed while it was being published.',
+                );
 
-                $gallery->items()->create([
-                    'path' => $finalPath,
-                    'name' => $item->name,
-                    'position' => $position,
-                ]);
-            }
+                $gallery = $request->user()->galleries()->create($data);
 
-            PendingMediaItem::forUser($request->user())->delete();
+                foreach ($pending as $position => $item) {
+                    $finalPath = "galleries/{$gallery->id}/".basename($item->path);
+                    $stream = Storage::readStream($item->path);
+                    throw_unless(is_resource($stream), RuntimeException::class, 'Could not read pending media.');
+                    $promotedPaths[] = $finalPath;
 
-            return $gallery;
-        });
+                    try {
+                        $stored = Storage::disk('public')->put($finalPath, $stream);
+                    } finally {
+                        fclose($stream);
+                    }
+
+                    throw_unless($stored, RuntimeException::class, 'Could not promote pending media.');
+
+                    $gallery->items()->create([
+                        'path' => $finalPath,
+                        'name' => $item->name,
+                        'position' => $position,
+                    ]);
+                }
+
+                PendingMediaItem::forUser($request->user())
+                    ->whereKey($pendingIds)
+                    ->delete();
+
+                return $gallery;
+            });
+        } catch (Throwable $exception) {
+            Storage::disk('public')->delete($promotedPaths);
+
+            throw $exception;
+        }
+
+        Storage::delete($pending->flatMap(
+            fn (PendingMediaItem $item) => array_filter([$item->path, $item->thumbnail_path]),
+        )->all());
 
         return redirect()->route('gallery.show', $gallery);
     }
 }
 ```
+
+The private originals and thumbnails are deleted only after the database transaction commits. Failed promotion removes
+any public copies and leaves the pending rows plus private sources available for retry. Keep a storage lifecycle rule as
+a final safety net for rare cleanup failures after commit. This compact recipe assumes one active gallery draft per user;
+add a `draft_id` to every query, policy and unique/index boundary when concurrent tabs or multiple saved drafts are valid.
 
 ## Views
 
@@ -327,10 +399,8 @@ Keeping these as separate forms avoids the "form inside a form" footgun.
             accept="image/*"
             multiple
             :max-size-bytes="10 * 1024 * 1024"
-            :turbo-stream="true"
-            :preview="false"
-            :emit-hidden="false"
-            :messages="['default' => 'Drag images or click to upload']"
+            mode="turbo-stream"
+            :messages="['idleMultiple' => 'Drag images or click to upload']"
             class="mt-2"
         />
 
@@ -360,9 +430,8 @@ Keeping these as separate forms avoids the "form inside a form" footgun.
 
 Key file-upload props:
 
-- `:turbo-stream="true"` — accept stream responses on upload XHR
-- `:preview="false"` — Dropzone doesn't render previews (the server-rendered list does)
-- `:emit-hidden="false"` — no hidden inputs in the upload area (cards own their state)
+- `mode="turbo-stream"` — accept raw stream responses and make the server-rendered list own new UI/value output;
+  `output-mode` resolves to `none`
 
 ### The card partial — single source of truth
 
@@ -381,7 +450,7 @@ responses (`view('gallery._card', ...)` in the controller). One file, two caller
     </button>
 
     <img
-        src="{{ $item->thumbnailUrl() ?: Storage::disk('public')->url($item->token) }}"
+        src="{{ $item->thumbnailUrl() ?: $item->fileUrl() }}"
         alt=""
         class="w-16 h-16 object-cover rounded bg-gray-100 shrink-0"
     >
@@ -390,7 +459,7 @@ responses (`view('gallery._card', ...)` in the controller). One file, two caller
         <div class="text-xs text-gray-500 uppercase">{{ $item->typeLabel() }}</div>
         <div class="text-xs text-gray-500">{{ $item->formattedSize() }}</div>
         <a
-            href="{{ Storage::disk('public')->url($item->token) }}"
+            href="{{ $item->fileUrl() }}"
             target="_blank"
             class="text-xs text-blue-600 underline"
         >Download</a>
@@ -494,8 +563,8 @@ class PruneExpiredPendingMedia extends Command
         $expired = PendingMediaItem::expired()->get();
 
         foreach ($expired as $item) {
-            Storage::disk('public')->delete(array_filter([
-                $item->token,
+            Storage::delete(array_filter([
+                $item->path,
                 $item->thumbnail_path,
             ]));
         }
