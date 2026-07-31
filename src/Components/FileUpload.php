@@ -38,13 +38,17 @@ class FileUpload extends Component
 
     private const DROPZONE_VARIANTS = ['auto', 'default', 'bare'];
 
+    private const MODES = ['managed', 'turbo-stream'];
+
+    private const NON_EMPTY_MESSAGE_KEYS = ['idle', 'idleMultiple', 'button'];
+
+    private const OUTPUT_MODES = ['full', 'preview', 'hidden', 'none'];
+
     private const VIEWS = ['list', 'grid', 'image'];
 
     public string $identifier;
 
-    public bool $preview;
-
-    public bool $emitHidden;
+    public string $outputMode;
 
     public function __construct(
         public ?string $name = null,
@@ -55,13 +59,12 @@ class FileUpload extends Component
         public ?int $maxSizeBytes = null,
         public ?int $maxFiles = null,
         public bool $multiple = false,
-        ?bool $preview = null,
-        ?bool $emitHidden = null,
+        public string $mode = 'managed',
+        ?string $outputMode = null,
         public string $paramName = 'file',
         public string $responseKey = 'token',
         public ?string $deleteUrl = null,
         public int $parallelUploads = 3,
-        public bool $turboStream = false,
         public ?bool $clearable = null,
         public string $density = 'default',
         public string $view = 'list',
@@ -93,6 +96,20 @@ class FileUpload extends Component
             throw new InvalidArgumentException('Unsupported file-upload dropzone variant. Supported values: auto, default, bare.');
         }
 
+        if (! in_array($mode, self::MODES, true)) {
+            throw new InvalidArgumentException('Unsupported file-upload mode. Supported values: managed, turbo-stream.');
+        }
+
+        if ($outputMode !== null && ! in_array($outputMode, self::OUTPUT_MODES, true)) {
+            throw new InvalidArgumentException('Unsupported file-upload output mode. Supported values: full, preview, hidden, none.');
+        }
+
+        $this->outputMode = $outputMode ?? ($mode === 'turbo-stream' ? 'none' : 'full');
+
+        if ($mode === 'turbo-stream' && $this->outputMode !== 'none') {
+            throw new InvalidArgumentException('Turbo Stream file uploads require output-mode="none".');
+        }
+
         if ($view === 'image' && $multiple) {
             throw new InvalidArgumentException('Image file-upload view only supports single-file uploads.');
         }
@@ -101,27 +118,19 @@ class FileUpload extends Component
             throw new InvalidArgumentException('Image file-upload view does not support clearable.');
         }
 
-        if ($turboStream && $preview === true) {
-            throw new InvalidArgumentException('Turbo Stream file uploads do not support client previews.');
+        $globalMessages = config('hotwire.file_upload.messages', []);
+        if (! is_array($globalMessages)) {
+            throw new InvalidArgumentException('File-upload messages configuration must be an array.');
         }
 
-        if ($turboStream && $emitHidden === true) {
-            throw new InvalidArgumentException('Turbo Stream file uploads do not support emitted hidden inputs.');
-        }
-
-        foreach ($messages ?? [] as $key => $_value) {
-            if (! in_array($key, self::MESSAGE_KEYS, true)) {
-                $supported = implode(', ', self::MESSAGE_KEYS);
-                throw new InvalidArgumentException(
-                    "Unknown file-upload message key [{$key}]. Supported keys: {$supported}. ".
-                    'Use one of the native message keys.'
-                );
-            }
+        $this->validateMessages($globalMessages, 'hotwire.file_upload.messages');
+        $this->validateMessages($messages ?? []);
+        $this->messages = array_replace($globalMessages, $messages ?? []);
+        if ($this->messages === []) {
+            $this->messages = null;
         }
 
         $this->accept = $this->normalizeAccept($accept ?? ($view === 'image' ? 'image/*' : null));
-        $this->preview = $preview ?? ! $turboStream;
-        $this->emitHidden = $emitHidden ?? ! $turboStream;
         $this->identifier = $this->controller;
     }
 
@@ -142,14 +151,13 @@ class FileUpload extends Component
             "data-{$this->identifier}-max-size-bytes-",
             "data-{$this->identifier}-max-files-",
             "data-{$this->identifier}-multiple-",
-            "data-{$this->identifier}-preview-",
-            "data-{$this->identifier}-emit-hidden-",
+            "data-{$this->identifier}-mode-",
+            "data-{$this->identifier}-output-mode-",
             "data-{$this->identifier}-param-name-",
             "data-{$this->identifier}-response-key-",
             "data-{$this->identifier}-preview-url-key-",
             "data-{$this->identifier}-delete-url-",
             "data-{$this->identifier}-parallel-uploads-",
-            "data-{$this->identifier}-turbo-stream-",
             "data-{$this->identifier}-view-",
             "data-{$this->identifier}-messages-",
         ];
@@ -203,12 +211,23 @@ class FileUpload extends Component
             'hiddenName' => $hiddenName,
             'hasErrors' => $hasErrors,
             'isRequired' => $isRequired,
-            'isClearable' => $this->clearable ?? ($this->multiple && ($this->preview || $this->emitHidden)),
+            'isClearable' => $this->clearable ?? ($this->multiple && ($this->rendersPreview() || $this->emitsHidden())),
             'attachmentOrientation' => $this->view === 'grid' ? 'vertical' : 'horizontal',
             'mergedController' => $this->identifier,
             'initialValues' => $initialValues,
             'messagesJson' => $this->resolveMessagesJson(),
+            'rendersPreview' => $this->rendersPreview(),
         ];
+    }
+
+    private function rendersPreview(): bool
+    {
+        return in_array($this->outputMode, ['full', 'preview'], true);
+    }
+
+    private function emitsHidden(): bool
+    {
+        return in_array($this->outputMode, ['full', 'hidden'], true);
     }
 
     private function resolveMessagesJson(): ?string
@@ -218,6 +237,29 @@ class FileUpload extends Component
         }
 
         return json_encode($this->messages, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    }
+
+    /** @param array<string, mixed> $messages */
+    private function validateMessages(array $messages, ?string $configPath = null): void
+    {
+        foreach ($messages as $key => $value) {
+            $source = $configPath === null ? '' : " in config [{$configPath}]";
+            if (! in_array($key, self::MESSAGE_KEYS, true)) {
+                $supported = implode(', ', self::MESSAGE_KEYS);
+                throw new InvalidArgumentException(
+                    "Unknown file-upload message key [{$key}]{$source}. Supported keys: {$supported}. ".
+                    'Use one of the native message keys.'
+                );
+            }
+
+            if (! is_string($value)) {
+                throw new InvalidArgumentException("File-upload message [{$key}]{$source} must be a string.");
+            }
+
+            if (in_array($key, self::NON_EMPTY_MESSAGE_KEYS, true) && trim($value) === '') {
+                throw new InvalidArgumentException("File-upload message [{$key}]{$source} must not be empty.");
+            }
+        }
     }
 
     private function normalizeAccept(?string $accept): ?string

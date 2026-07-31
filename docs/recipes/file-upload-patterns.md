@@ -31,7 +31,7 @@ real form with the native `form` attribute.
         name="media_ids"
         url="{{ route('posts.media.store', $post) }}"
         multiple
-        turbo-stream
+        mode="turbo-stream"
         :clearable="false"
         accept="image/*"
         view="grid"
@@ -193,7 +193,7 @@ card; when processing finishes, your broadcaster replaces that card with the fin
     name="attachments"
     url="{{ route('uploads.store') }}"
     multiple
-    turbo-stream
+    mode="turbo-stream"
 />
 
 <ul id="attachments"></ul>
@@ -229,7 +229,7 @@ server-side EXIF metadata.
             url="{{ route('gallery.upload') }}"
             accept="image/*"
             multiple
-            turbo-stream
+            mode="turbo-stream"
         />
     </hw:field>
 
@@ -269,7 +269,7 @@ whole card so there is only one hidden value at a time.
             name="avatar_token"
             url="{{ route('profile.avatar.upload') }}"
             accept="image/*"
-            turbo-stream
+            mode="turbo-stream"
         />
     </hw:field>
 
@@ -307,7 +307,7 @@ and the Save button target the final form through the native `form` attribute.
             url="{{ route('uploads.store') }}"
             multiple
             accept="image/*,application/pdf"
-            turbo-stream
+            mode="turbo-stream"
             :max-size-bytes="10 * 1024 * 1024"
             :messages="['idleMultiple' => 'Drag files or click to add media']"
         />

@@ -15,6 +15,7 @@ function shareFileUploadErrors(array $errorsByKey): void
 beforeEach(function () {
     view()->share('errors', new ViewErrorBag);
     request()->setLaravelSession($this->app['session.store']);
+    config()->set('hotwire.file_upload.messages', []);
 });
 
 // --- Constructor validation ---
@@ -34,6 +35,31 @@ it('does not throw when url is provided', function () {
 it('throws when messages contains an unsupported key', function () {
     expect(fn () => new FileUpload(url: '/uploads', messages: ['defaultt' => 'typo']))
         ->toThrow(InvalidArgumentException::class, 'Unknown file-upload message key [defaultt]');
+});
+
+it('throws when a global message contains an unsupported key', function () {
+    config()->set('hotwire.file_upload.messages', ['defaultt' => 'typo']);
+
+    expect(fn () => new FileUpload(url: '/uploads'))
+        ->toThrow(
+            InvalidArgumentException::class,
+            'Unknown file-upload message key [defaultt] in config [hotwire.file_upload.messages]',
+        );
+});
+
+it('throws when a message value is not a string', function () {
+    expect(fn () => new FileUpload(url: '/uploads', messages: ['idle' => ['invalid']]))
+        ->toThrow(InvalidArgumentException::class, 'File-upload message [idle] must be a string');
+});
+
+it('throws when an accessible picker message is empty', function () {
+    expect(fn () => new FileUpload(url: '/uploads', messages: ['idle' => '  ']))
+        ->toThrow(InvalidArgumentException::class, 'File-upload message [idle] must not be empty');
+});
+
+it('allows an empty optional hint message', function () {
+    expect(fn () => new FileUpload(url: '/uploads', messages: ['hint' => '']))
+        ->not->toThrow(InvalidArgumentException::class);
 });
 
 it('throws when controller identifier is not a valid stimulus identifier', function () {
@@ -72,28 +98,30 @@ it('rejects clearable image view uploads', function () {
         ->toThrow(InvalidArgumentException::class, 'Image file-upload view does not support clearable');
 });
 
-it('uses server-owned defaults for raw Turbo Stream uploads', function () {
-    $component = new FileUpload(url: '/uploads', turboStream: true);
-
-    expect($component->preview)->toBeFalse()
-        ->and($component->emitHidden)->toBeFalse();
-});
-
-it('keeps client-owned defaults for JSON uploads', function () {
+it('uses managed full output by default', function () {
     $component = new FileUpload(url: '/uploads');
 
-    expect($component->preview)->toBeTrue()
-        ->and($component->emitHidden)->toBeTrue();
+    expect($component->mode)->toBe('managed')
+        ->and($component->outputMode)->toBe('full');
 });
 
-it('rejects explicit client previews with raw Turbo Stream uploads', function () {
-    expect(fn () => new FileUpload(url: '/uploads', turboStream: true, preview: true))
-        ->toThrow(InvalidArgumentException::class, 'Turbo Stream file uploads do not support client previews');
+it('uses no package output for raw Turbo Stream uploads', function () {
+    $component = new FileUpload(url: '/uploads', mode: 'turbo-stream');
+
+    expect($component->mode)->toBe('turbo-stream')
+        ->and($component->outputMode)->toBe('none');
 });
 
-it('rejects explicit hidden emission with raw Turbo Stream uploads', function () {
-    expect(fn () => new FileUpload(url: '/uploads', turboStream: true, emitHidden: true))
-        ->toThrow(InvalidArgumentException::class, 'Turbo Stream file uploads do not support emitted hidden inputs');
+it('rejects unsupported upload and output modes', function () {
+    expect(fn () => new FileUpload(url: '/uploads', mode: 'server'))
+        ->toThrow(InvalidArgumentException::class, 'Unsupported file-upload mode')
+        ->and(fn () => new FileUpload(url: '/uploads', outputMode: 'cards'))
+        ->toThrow(InvalidArgumentException::class, 'Unsupported file-upload output mode');
+});
+
+it('rejects package output with raw Turbo Stream uploads', function () {
+    expect(fn () => new FileUpload(url: '/uploads', mode: 'turbo-stream', outputMode: 'preview'))
+        ->toThrow(InvalidArgumentException::class, 'Turbo Stream file uploads require output-mode="none"');
 });
 
 // --- Base rendering ---
@@ -165,6 +193,23 @@ it('uses native message keys for the dropzone copy', function () {
     $view->assertSee('aria-label="Drop your files"', false)
         ->assertSee('Drop your files', false)
         ->assertSee('PDF or image files only', false);
+});
+
+it('merges global message defaults with per-instance overrides', function () {
+    config()->set('hotwire.file_upload.messages', [
+        'idle' => 'Choose globally',
+        'hint' => 'Global hint',
+        'uploading' => 'Sending globally',
+    ]);
+
+    $view = $this->blade('<x-hw::file-upload name="avatar" url="/uploads" :messages="[\'idle\' => \'Choose locally\']" />');
+
+    $view->assertSee('aria-label="Choose locally"', false)
+        ->assertSee('Global hint', false)
+        ->assertSee('data-file-upload-messages-value=', false)
+        ->assertSee('Choose locally', false)
+        ->assertSee('Sending globally', false)
+        ->assertDontSee('Choose globally', false);
 });
 
 it('renders custom dropzone content inside the package-owned picker surface', function () {
@@ -245,8 +290,8 @@ it('rejects a bare dropzone without custom content', function () {
 
 it('keeps the new dropzone variant after existing positional constructor arguments', function () {
     $component = new FileUpload(
-        null, null, null, '/uploads', null, null, null, false, null, null,
-        'file', 'token', null, 3, false, null, 'default', 'list', 'existing-token',
+        null, null, null, '/uploads', null, null, null, false, 'managed', null,
+        'file', 'token', null, 3, null, 'default', 'list', 'existing-token',
     );
 
     expect($component->value)->toBe('existing-token')
@@ -327,7 +372,7 @@ it('renders clear-all controls for multiple uploads and explicit opt-in', functi
     $multiple = $this->blade('<x-hw::file-upload name="attachments" url="/uploads" multiple />');
     $single = $this->blade('<x-hw::file-upload name="avatar" url="/uploads" />');
     $disabled = $this->blade('<x-hw::file-upload name="attachments" url="/uploads" multiple :clearable="false" />');
-    $serverRendered = $this->blade('<x-hw::file-upload name="attachments" url="/uploads" multiple :preview="false" :emit-hidden="false" />');
+    $serverRendered = $this->blade('<x-hw::file-upload name="attachments" url="/uploads" multiple output-mode="none" />');
     $explicit = $this->blade('<x-hw::file-upload name="avatar" url="/uploads" clearable />');
 
     $multiple->assertSee('data-slot="file-upload-actions"', false)
@@ -361,23 +406,22 @@ it('renders compact grid uploads with retry action and custom action labels', fu
 });
 
 it('omits newly client-owned UI and values for raw Turbo Stream uploads', function () {
-    $view = $this->blade('<x-hw::file-upload name="attachments" url="/uploads" turbo-stream multiple />');
+    $view = $this->blade('<x-hw::file-upload name="attachments" url="/uploads" mode="turbo-stream" multiple />');
 
-    $view->assertSee('data-file-upload-turbo-stream-value="true"', false)
-        ->assertSee('data-file-upload-preview-value="false"', false)
-        ->assertSee('data-file-upload-emit-hidden-value="false"', false)
+    $view->assertSee('data-file-upload-mode-value="turbo-stream"', false)
+        ->assertSee('data-file-upload-output-mode-value="none"', false)
         ->assertDontSee('data-slot="attachment-group"', false)
         ->assertDontSee('data-file-upload-target="template"', false)
         ->assertDontSee('data-file-upload-clear', false);
 });
 
 it('preserves explicit existing values in raw Turbo Stream edit forms', function () {
-    $valueView = $this->blade('<x-hw::file-upload name="attachments" url="/uploads" turbo-stream :value="[\'existing-token\']" />');
+    $valueView = $this->blade('<x-hw::file-upload name="attachments" url="/uploads" mode="turbo-stream" :value="[\'existing-token\']" />');
 
     session()->put('_old_input', ['attachments' => ['old-token']]);
-    $oldView = $this->blade('<x-hw::file-upload name="attachments" url="/uploads" turbo-stream :value="[\'existing-token\']" />');
+    $oldView = $this->blade('<x-hw::file-upload name="attachments" url="/uploads" mode="turbo-stream" :value="[\'existing-token\']" />');
 
-    $valueView->assertSee('data-file-upload-emit-hidden-value="false"', false)
+    $valueView->assertSee('data-file-upload-output-mode-value="none"', false)
         ->assertSee('name="attachments"', false)
         ->assertSee('value="existing-token"', false)
         ->assertSee('data-hw-upload-preserved', false);
@@ -385,11 +429,9 @@ it('preserves explicit existing values in raw Turbo Stream edit forms', function
         ->assertDontSee('value="existing-token"', false);
 });
 
-it('rejects invalid ownership combinations through Blade boolean attributes', function () {
-    expect(fn () => $this->blade('<x-hw::file-upload url="/uploads" turbo-stream preview />'))
-        ->toThrow(ViewException::class, 'Turbo Stream file uploads do not support client previews')
-        ->and(fn () => $this->blade('<x-hw::file-upload url="/uploads" turbo-stream emit-hidden />'))
-        ->toThrow(ViewException::class, 'Turbo Stream file uploads do not support emitted hidden inputs')
+it('rejects invalid mode combinations through Blade attributes', function () {
+    expect(fn () => $this->blade('<x-hw::file-upload url="/uploads" mode="turbo-stream" output-mode="hidden" />'))
+        ->toThrow(ViewException::class, 'Turbo Stream file uploads require output-mode="none"')
         ->and(fn () => $this->blade('<x-hw::file-upload url="/uploads" view="image" multiple />'))
         ->toThrow(ViewException::class, 'Image file-upload view only supports single-file uploads')
         ->and(fn () => $this->blade('<x-hw::file-upload url="/uploads" view="image" clearable />'))
@@ -419,13 +461,11 @@ it('emits controller data values for the native uploader', function () {
         :max-size-bytes="10485760"
         :max-files="5"
         multiple
-        :preview="false"
-        :emit-hidden="false"
+        output-mode="none"
         param-name="upload"
         response-key="uuid"
         delete-url="/uploads/:token"
         :parallel-uploads="6"
-        :turbo-stream="true"
         view="grid"
         density="compact"
         :clearable="false"
@@ -438,14 +478,12 @@ it('emits controller data values for the native uploader', function () {
         ->assertSee('data-file-upload-max-size-bytes-value="10485760"', false)
         ->assertSee('data-file-upload-max-files-value="5"', false)
         ->assertSee('data-file-upload-multiple-value="true"', false)
-        ->assertSee('data-file-upload-preview-value="false"', false)
-        ->assertSee('data-file-upload-emit-hidden-value="false"', false)
+        ->assertSee('data-file-upload-output-mode-value="none"', false)
         ->assertSee('name="upload"', false)
         ->assertSee('data-file-upload-param-name-value="upload"', false)
         ->assertSee('data-file-upload-response-key-value="uuid"', false)
         ->assertSee('data-file-upload-delete-url-value="/uploads/:token"', false)
         ->assertSee('data-file-upload-parallel-uploads-value="6"', false)
-        ->assertSee('data-file-upload-turbo-stream-value="true"', false)
         ->assertSee('data-file-upload-view-value="grid"', false)
         ->assertSee('data-density="compact"', false)
         ->assertSee('data-file-upload-messages-value=', false)
@@ -477,14 +515,13 @@ it('omits default-valued data attrs', function () {
     $view = $this->blade('<x-hw::file-upload name="avatar" url="/uploads" />');
 
     $view->assertDontSee('multiple-value', false)
-        ->assertDontSee('preview-value', false)
-        ->assertDontSee('emit-hidden-value', false)
+        ->assertDontSee('mode-value', false)
+        ->assertDontSee('output-mode-value', false)
         ->assertDontSee('param-name-value', false)
         ->assertDontSee('response-key-value', false)
         ->assertDontSee('preview-url-key-value', false)
         ->assertDontSee('parallel-uploads-value', false)
         ->assertDontSee('view-value', false)
-        ->assertDontSee('turbo-stream-value', false)
         ->assertDontSee('messages-value', false)
         ->assertDontSee('options-value', false);
 });

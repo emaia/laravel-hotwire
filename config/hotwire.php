@@ -16,4 +16,18 @@ return [
 
     'prefix' => 'hw',
 
+    /*
+    |--------------------------------------------------------------------------
+    | File Upload Messages
+    |--------------------------------------------------------------------------
+    |
+    | Override native File Upload copy for every instance. Per-component
+    | `messages` props take precedence over these values.
+    |
+    */
+
+    'file_upload' => [
+        'messages' => [],
+    ],
+
 ];

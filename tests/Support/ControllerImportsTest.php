@@ -88,6 +88,14 @@ it('resolves the modal controller transitive overlay helpers', function () {
         ->toContain('_frame_overlay.js');
 });
 
+it('resolves the file upload feedback presenter', function () {
+    $base = realpath(__DIR__.'/../../resources/js/controllers');
+    $source = realpath($base.'/file_upload_controller.js');
+    $dependencies = array_map('basename', $this->imports->sharedDependencies($source, $base));
+
+    expect($dependencies)->toContain('_upload_feedback.js');
+});
+
 // --- targetPath ---
 
 it('maps a resolved dependency to its published path', function () {

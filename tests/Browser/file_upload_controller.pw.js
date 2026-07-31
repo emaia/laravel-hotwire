@@ -48,7 +48,7 @@ test("server-side 422 — attachment shows an error and no hidden input is added
     await expect(page.locator('#parent-form input[type="hidden"][name="avatar"]')).toHaveCount(0);
 });
 
-test("preview-disabled uploads over 2 MB send and expose server size errors", async ({ page }) => {
+test("output-less uploads over 2 MB send and expose server size errors", async ({ page }) => {
     let uploadRequests = 0;
     await page.route("**/upload", async (route) => {
         uploadRequests++;
@@ -60,7 +60,7 @@ test("preview-disabled uploads over 2 MB send and expose server size errors", as
     });
 
     await mountPage(page, nativeUploadHtml(
-        'data-file-upload-preview-value="false" data-file-upload-emit-hidden-value="false" data-file-upload-max-size-bytes-value="10485760"'
+        'data-file-upload-output-mode-value="none" data-file-upload-max-size-bytes-value="10485760"'
     ));
 
     await page.locator('[data-file-upload-target="input"]').setInputFiles({
@@ -75,7 +75,7 @@ test("preview-disabled uploads over 2 MB send and expose server size errors", as
     await expect(page.locator('[data-slot="attachment"]')).toHaveCount(0);
 });
 
-test("preview-disabled Turbo uploads expose redirected HTML failures", async ({ page }) => {
+test("Turbo Stream uploads expose redirected HTML failures", async ({ page }) => {
     await page.route("**/upload", async (route) => {
         await route.fulfill({
             status: 200,
@@ -85,7 +85,7 @@ test("preview-disabled Turbo uploads expose redirected HTML failures", async ({ 
     });
 
     await mountPage(page, nativeUploadHtml(
-        'data-file-upload-preview-value="false" data-file-upload-emit-hidden-value="false" data-file-upload-turbo-stream-value="true"'
+        'data-file-upload-mode-value="turbo-stream"'
     ));
 
     await page.locator('[data-file-upload-target="input"]').setInputFiles({
@@ -916,9 +916,15 @@ async function bundleControllers() {
         .replace(/import \{[^}]*\} from "\.\/_top_layer\.js";\s*/, "")
         .replace("export default class extends Controller", "class DropdownController extends Controller");
 
+    const uploadFeedback = (await readFile("resources/js/controllers/_upload_feedback.js", "utf8")).replace(
+        "export function createUploadFeedback",
+        "function createUploadFeedback",
+    );
+
     const fileUpload = (await readFile("resources/js/controllers/file_upload_controller.js", "utf8"))
         .replace(/^\/\/ @hotwire-package\s*/m, "")
         .replace(/^import \{ Controller \} from "@hotwired\/stimulus";\s*/m, "")
+        .replace(/import \{[^}]*\} from "\.\/_upload_feedback\.js";\s*/, "")
         .replace("export default class extends Controller", "class FileUploadController extends Controller");
 
     return `
@@ -933,6 +939,7 @@ async function bundleControllers() {
         ${floating}
         ${modal}
         ${dropdown}
+        ${uploadFeedback}
         ${fileUpload}
         window.ModalController = ModalController;
         window.DropdownController = DropdownController;

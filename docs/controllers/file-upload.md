@@ -19,14 +19,13 @@ progress, hidden input lifecycle, optional DELETE-on-remove and Turbo Stream res
 | `maxSizeBytes`    | Number  | `0`           | Per-file client-side size limit. `0` disables it.                                           |
 | `maxFiles`        | Number  | `0`           | Maximum queued files. `0` disables it.                                                      |
 | `multiple`        | Boolean | `false`       | Allows multiple files. Single mode keeps a completed upload until its replacement succeeds. |
-| `preview`         | Boolean | `true`        | Renders client-side attachment cards or image replacement previews.                         |
-| `emitHidden`      | Boolean | `true`        | Appends a hidden input on success when a value is extracted.                                |
+| `mode`            | String  | `managed`     | `managed` accepts JSON; `turbo-stream` requires a raw Turbo Stream body.                    |
+| `outputMode`      | String  | `full`        | Managed output: `full`, `preview`, `hidden` or `none`. Raw streams always resolve to none.  |
 | `paramName`       | String  | `file`        | Multipart field name.                                                                       |
 | `responseKey`     | String  | `token`       | JSON key used as the hidden input value.                                                    |
 | `previewUrlKey`   | String  | `preview_url` | Optional durable image URL key used by the `image` view.                                    |
 | `deleteUrl`       | String  | `""`          | DELETE endpoint with one or more `:token` placeholders.                                     |
 | `parallelUploads` | Number  | `3`           | Concurrent native XHR uploads.                                                              |
-| `turboStream`     | Boolean | `false`       | Negotiates and renders raw Turbo Stream response bodies.                                    |
 | `view`            | String  | `list`        | `list`, `grid` or single-file `image`.                                                       |
 | `messages`        | Object  | `{}`          | Native labels and validation messages.                                                      |
 
@@ -36,10 +35,10 @@ progress, hidden input lifecycle, optional DELETE-on-remove and Turbo Stream res
 |----------------|------------------------|-------------------------------------------------------------------|
 | `input`        | yes                    | Hidden native `<input type="file">`.                              |
 | `dropzone`     | yes                    | Keyboard/click/drag-drop activation surface.                      |
-| `feedback`     | optional               | Visible status for custom dropzones and preview-disabled defaults. |
+| `feedback`     | optional               | Visible status for custom dropzones and output modes without preview. |
 | `imagePreview` | image view only        | Package-owned local/durable replacement image.                    |
-| `list`         | list/grid with preview | Attachment list container.                                        |
-| `template`     | list/grid with preview | Attachment card template cloned per file.                         |
+| `list`         | list/grid with preview output | Attachment list container.                                  |
+| `template`     | list/grid with preview output | Attachment card template cloned per file.                   |
 | `announcer`    | optional               | `aria-live` status region.                                        |
 
 ## Root State
@@ -98,19 +97,18 @@ field error as the user-facing message:
 }
 ```
 
-JSON may also contain a `stream` string. It is validated and rendered automatically in every view, without
-`turboStream=true`, after the controller commits success/error state. This lets one response provide a hidden token,
+JSON may also contain a `stream` string. It is validated and rendered automatically in every managed view after the
+controller commits success/error state. This lets one response provide a hidden token,
 durable image URL and server-driven DOM updates. Only strings containing an actual `<turbo-stream>` element are passed
 to `Turbo.renderStreamMessage`.
 
 In `image` view, an optional `preview_url` response value is preloaded before replacing the local object URL. Loading
-failure keeps the local blob. Upload failure revokes the candidate blob and restores the last completed preview. Setting
-`preview=false` disables both local and durable image handling so Turbo Stream or app code can own the presentation.
+failure keeps the local blob. Upload failure revokes the candidate blob and restores the last completed preview.
+`outputMode="hidden"` disables both local and durable image handling while retaining hidden response tokens.
 
-When `turboStream` is true, successful responses must be raw strings containing an actual `<turbo-stream>` element;
+When `mode="turbo-stream"`, successful responses must be raw strings containing an actual `<turbo-stream>` element;
 JSON envelopes are rejected as upload errors. Valid streams are passed to `Turbo.renderStreamMessage` on success and
-error. `<hw:file-upload>` emits `preview=false` and `emitHidden=false` for this protocol; direct controller markup must
-set those values itself to avoid mixing client and server rendering.
+error. Raw stream mode ignores managed outputs; direct controller markup needs only the mode value.
 
 For non-JSON failures, `413 Payload Too Large` uses the `fileTooBig` message and non-2xx HTML error pages fall back to
 `uploadFailed` instead of rendering the full response body in the attachment card.
@@ -146,7 +144,9 @@ The controller reads `<meta name="csrf-token">` and sends `X-CSRF-TOKEN` on uplo
 
 `disconnect()` aborts in-flight native XHR uploads and ignores any late XHR callbacks, so removed or disconnected
 uploads cannot append hidden inputs later. On reconnect, transient cards are discarded and completed cards already in
-the DOM are hydrated before new IDs are assigned, which avoids stale uploads and ID collisions across Turbo morphs.
+the DOM are hydrated before new IDs are assigned, which avoids stale uploads and ID collisions across Turbo morphs. A
+private upload feedback presenter restores morphed targets and is suspended when disconnected so late status writes are
+ignored.
 
 ## See Also
 

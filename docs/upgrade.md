@@ -14,22 +14,36 @@ markup, CSS or controller extensions.
 
 The `options` prop and `preview_template` slot have been removed. Replace Dropzone configuration with the File Upload
 props for that behavior, such as `accept`, `max-size-bytes`, `max-files`, `parallel-uploads`, `param-name`, `delete-url`,
-`turbo-stream`, `preview` and `emit-hidden`. Native attachment cards now use the package's
+`mode` and `output-mode`. Native attachment cards now use the package's reusable
 [`Attachment`](components/attachment.md) primitive. When the endpoint returns a raw Turbo Stream body, the component now
-disables its built-in card and newly emitted upload-response input automatically:
+uses `mode="turbo-stream"` and disables its built-in card and newly emitted upload-response input automatically:
 
 ```blade
 <hw:file-upload
     url="{{ route('uploads.store') }}"
-    turbo-stream
+    mode="turbo-stream"
 />
 ```
 
-Explicit `preview=true` or `emit-hidden=true` with `turbo-stream` now throws an `InvalidArgumentException`; raw stream
-responses are server-owned and must render any new visible card or hidden value themselves. Explicit `value` and matching
-`old()` values remain as preserved hidden inputs for edit and validation round-trips. An optional `stream` string inside a
-JSON response is a separate hybrid protocol: it works without the prop and preserves normal client preview and
-hidden-input behavior.
+The old `turbo-stream`, `preview` and `emit-hidden` props are replaced without aliases before this release. Managed JSON
+uploads use `output-mode="full|preview|hidden|none"`; `full` is the default. Raw stream responses are server-owned and
+require `output-mode="none"`, which is resolved automatically. Explicit `value` and matching `old()` values remain as
+preserved hidden inputs for edit and validation round-trips. An optional `stream` string inside a managed JSON response is
+a separate hybrid protocol: it works without another prop and preserves the selected output mode.
+
+```diff
+- <hw:file-upload turbo-stream />
++ <hw:file-upload mode="turbo-stream" />
+
+- <hw:file-upload :preview="false" :emit-hidden="false" />
++ <hw:file-upload output-mode="none" />
+
+- <hw:file-upload :preview="false" />
++ <hw:file-upload output-mode="hidden" />
+
+- <hw:file-upload :emit-hidden="false" />
++ <hw:file-upload output-mode="preview" />
+```
 
 Dropzone `dict*` option names are no longer accepted, and `messages` no longer maps short keys to Dropzone dictionaries.
 Use the native keys documented in [`File Upload`](components/file-upload.md#messages), including `idle`, `idleMultiple`,

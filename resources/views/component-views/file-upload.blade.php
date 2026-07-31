@@ -64,14 +64,13 @@
         "data-{$identifier}-max-size-bytes-value" => $maxSizeBytes,
         "data-{$identifier}-max-files-value" => $maxFiles,
         "data-{$identifier}-multiple-value" => $multiple ? 'true' : null,
-        "data-{$identifier}-preview-value" => $preview ? null : 'false',
-        "data-{$identifier}-emit-hidden-value" => $emitHidden ? null : 'false',
+        "data-{$identifier}-mode-value" => $mode !== 'managed' ? $mode : null,
+        "data-{$identifier}-output-mode-value" => $outputMode !== 'full' ? $outputMode : null,
         "data-{$identifier}-param-name-value" => $paramName !== 'file' ? $paramName : null,
         "data-{$identifier}-response-key-value" => $responseKey !== 'token' ? $responseKey : null,
         "data-{$identifier}-preview-url-key-value" => $previewUrlKey !== 'preview_url' ? $previewUrlKey : null,
         "data-{$identifier}-delete-url-value" => $deleteUrl,
         "data-{$identifier}-parallel-uploads-value" => $parallelUploads !== 3 ? $parallelUploads : null,
-        "data-{$identifier}-turbo-stream-value" => $turboStream ? 'true' : null,
         "data-{$identifier}-view-value" => $view !== 'list' ? $view : null,
         "data-{$identifier}-messages-value" => $messagesJson !== null ? e($messagesJson) : null,
         'data-invalid' => $hasErrors ? true : null,
@@ -192,7 +191,7 @@
         </div>
     @endif
 
-    @if ($view !== 'image' && $preview)
+    @if ($view !== 'image' && $rendersPreview)
         <div data-slot="attachment-group" role="list" data-{{ $identifier }}-target="list"></div>
 
         <template data-{{ $identifier }}-target="template">

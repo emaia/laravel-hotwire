@@ -281,6 +281,14 @@ it('publishes shared dependencies alongside controllers that import them', funct
         ->and(File::exists($this->targetDir.'/optimistic/_dispatch.js'))->toBeTrue();
 });
 
+it('publishes the file upload feedback presenter with its controller', function () {
+    $this->artisan('hotwire:controllers', ['controllers' => ['file-upload']])
+        ->assertSuccessful();
+
+    expect(File::exists($this->targetDir.'/file_upload_controller.js'))->toBeTrue()
+        ->and(File::exists($this->targetDir.'/_upload_feedback.js'))->toBeTrue();
+});
+
 it('does not duplicate shared dependency when publishing multiple controllers from same namespace', function () {
     $this->artisan('hotwire:controllers', ['controllers' => ['optimistic/form', 'optimistic/link']])
         ->assertSuccessful();

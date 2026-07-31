@@ -1,7 +1,9 @@
 # File Upload
 
-Native drag-and-drop upload with attachment list/grid views, single-image replacement, progress, optional hidden inputs,
-DELETE-on-remove and Turbo Stream response support. The upload endpoint, validation, storage and cleanup stay app-side.
+Native upload protocol built on the reusable [`Attachment`](attachment.md) primitive, with drag/drop, list/grid views,
+single-image replacement, progress, optional hidden inputs, DELETE-on-remove and Turbo Stream responses. Use Attachment
+directly for server-rendered media libraries, ticket files and download lists. The upload endpoint, validation, storage
+and cleanup stay app-side.
 
 ```blade
 <hw:form action="{{ route('profile.update') }}" method="put">
@@ -29,15 +31,14 @@ Successful JSON responses write a hidden input with `response.token` by default.
 | `max-size-bytes`   | `int\|null`    | `null`        | Per-file client-side size limit. Server validation is still required.                                          |
 | `max-files`        | `int\|null`    | `null`        | Maximum queued files.                                                                                          |
 | `multiple`         | `bool`         | `false`       | Allows several files and accumulates hidden inputs.                                                            |
-| `preview`          | `bool\|null`   | contextual    | Defaults true for JSON and false for raw Turbo Stream responses.                                               |
-| `emit-hidden`      | `bool\|null`   | contextual    | Defaults true for JSON and false for raw Turbo Stream responses.                                               |
-| `turbo-stream`     | `bool`         | `false`       | Negotiates a raw Turbo Stream body and makes the server own rendering/value output.                            |
+| `mode`             | `string`       | `managed`     | `managed` accepts JSON; `turbo-stream` requires a raw stream body and makes the server own new output.         |
+| `output-mode`      | `string\|null` | contextual    | Managed output: `full`, `preview`, `hidden` or `none`. Defaults to `full`, or `none` for Turbo Stream mode.    |
 | `param-name`       | `string`       | `file`        | Multipart field name for each upload request.                                                                  |
 | `response-key`     | `string`       | `token`       | JSON key used for the hidden input value.                                                                      |
 | `preview-url-key`  | `string`       | `preview_url` | Optional JSON key containing a durable image URL for `view="image"`.                                          |
 | `delete-url`       | `string\|null` | `null`        | DELETE endpoint used when removing an uploaded file. Every `:token` placeholder is URI-encoded.                |
 | `parallel-uploads` | `int`          | `3`           | Concurrent upload count.                                                                                       |
-| `clearable`        | `bool\|null`   | automatic     | Renders a Clear all action. Defaults to true for `multiple` unless both `preview` and `emit-hidden` are false. |
+| `clearable`        | `bool\|null`   | automatic     | Renders a Clear all action. Defaults to true for `multiple` unless `output-mode="none"`.                      |
 | `density`          | `string`       | `default`     | Drop area density: `default` or `compact`.                                                                     |
 | `view`             | `string`       | `list`        | Client presentation: `list`, `grid` or single-file `image`.                                                    |
 | `dropzone-variant` | `string`       | `auto`        | `auto`, `default` or `bare`. Custom slots resolve `auto` to `bare`; explicit `bare` requires the named slot.  |
@@ -47,9 +48,41 @@ Successful JSON responses write a hidden input with `response.token` by default.
 
 Any other attributes pass to the root except internal `data-{identifier}-*` values, which are owned by props.
 
+## Modes And Output
+
+Most uploads need no mode configuration. The default `managed` mode accepts JSON, renders the selected file and appends
+its returned token to the surrounding form. A JSON response may also include an optional Turbo Stream.
+
+`output-mode` is an advanced managed-mode escape hatch:
+
+| Output    | Visible result                  | New response token                                      |
+|-----------|---------------------------------|---------------------------------------------------------|
+| `full`    | Attachment cards/image preview  | Appended as a hidden input when `name` is present.      |
+| `preview` | Attachment cards/image preview  | Exposed through `file-upload:success`, not appended.    |
+| `hidden`  | Aggregate dropzone feedback only | Appended as a hidden input when `name` is present.     |
+| `none`    | Aggregate dropzone feedback only | Exposed through `file-upload:success`, not appended.   |
+
+Raw `mode="turbo-stream"` fixes the output mode to `none`: the response stream owns every new card and form value.
+Explicit `value`/`old()` values are initial form state and remain preserved regardless of output mode.
+
 ## Messages
 
-Pass only the keys you want to override. Unknown keys throw an `InvalidArgumentException` so typos fail before render.
+Pass only the keys you want to override. Unknown keys and blank picker labels (`idle`, `idleMultiple`, `button`) throw an
+`InvalidArgumentException` so typos and missing accessible names fail before render.
+Set reusable, locale-static overrides under `hotwire.file_upload.messages`; instance values take precedence:
+
+```php
+// config/hotwire.php
+'file_upload' => [
+    'messages' => [
+        'idle' => 'Escolher arquivo',
+        'uploading' => 'Enviando',
+    ],
+],
+```
+
+For request-dependent locales, pass a translated array through `messages` instead of calling `__()` inside a cached
+configuration file.
 
 ```blade
 <hw:file-upload
@@ -94,10 +127,25 @@ Pass only the keys you want to override. Unknown keys throw an `InvalidArgumentE
 ```php
 Route::post('/uploads', function (Request $request) {
     $file = $request->validate(['file' => ['required', 'image', 'max:2048']])['file'];
+    $token = Str::random(64);
+    $path = $file->store('temp-uploads');
 
-    return response()->json(['token' => $file->store('temp-uploads')]);
-})->name('uploads.store');
+    $pendingUpload = $request->user()->pendingUploads()->create([
+        'token_hash' => hash('sha256', $token),
+        'disk' => config('filesystems.default'),
+        'path' => $path,
+        'purpose' => 'profile.avatar',
+        'original_name' => $file->getClientOriginalName(),
+        'expires_at' => now()->addHour(),
+    ]);
+
+    return response()->json(['token' => $token], 201);
+})->middleware('auth')->name('uploads.store');
 ```
+
+Treat every submitted token as untrusted. Resolve its hash through an authenticated user's pending uploads, verify its
+expiry and intended purpose, then promote the stored path after the final form transaction commits. Never use the token
+itself as a filesystem path. Client DELETE is best-effort; schedule server-side pruning for abandoned records and files.
 
 ## Multiple Files
 
@@ -208,14 +256,17 @@ The selected image is displayed through `URL.createObjectURL` while the request 
 and restores the last confirmed image. Single-file token replacement remains transactional: the previous hidden value
 is removed only after a usable success response.
 
-Return `preview_url` with the token to replace the temporary blob with a durable URL:
+Return `preview_url` with the opaque token to replace the temporary blob with a durable URL. Here `$pendingUpload` is the
+authenticated pending record created by the upload flow above:
 
 ```php
-$path = $request->file('file')->store('temporary-avatars');
-
 return response()->json([
-    'token' => $path,
-    'preview_url' => Storage::url($path),
+    'token' => $token,
+    'preview_url' => URL::temporarySignedRoute(
+        'pending-uploads.show',
+        now()->addMinutes(10),
+        ['upload' => $pendingUpload],
+    ),
 ], 201);
 ```
 
@@ -223,7 +274,8 @@ The controller preloads the durable image before swapping it into the dropzone. 
 stays visible. Change the response key with `preview-url-key="cdn_url"` when needed.
 
 Without a durable URL, the local preview lasts for the current page session and returns to the server-rendered slot
-before Turbo caches the page. Set `:preview="false"` when a Turbo Stream or app controller owns all visible rendering.
+before Turbo caches the page. Set `output-mode="hidden"` when an app controller owns all visible rendering but the
+uploader should still append response tokens to the surrounding form.
 
 `view="image"` rejects `multiple` and explicit `clearable=true`. Non-image replacements should use `list`, `grid` or a
 server-rendered Turbo Stream composition.
@@ -269,7 +321,7 @@ IDs are appended to the component's validation ID. The component preserves requi
 The component renders a sibling `data-slot="file-upload-feedback"` element for custom dropzones. In list and grid views
 it is hidden while idle, then automatically shows upload, success and error messages. Image view reserves the visible
 feedback line for errors; use the root state attributes for custom uploading/success treatment. The native input remains
-package-owned; attachment list/template markup is included only when `preview=true`.
+package-owned; attachment list/template markup is included for `output-mode="full|preview"`.
 
 Outside `view="image"`, the custom slot controls presentation only. Use `file-upload:success` or a Turbo Stream when
 app-owned markup should react to the upload.
@@ -312,12 +364,12 @@ the previous `value`/`old()` token; clean up that superseded file after the fina
 ## Hybrid JSON
 
 Any JSON response can include an optional `stream` string alongside its normal token and image URL. This works in every
-view and does not require the `turbo-stream` prop:
+managed view and does not require another prop:
 
 ```php
 return response()->json([
-    'token' => $path,
-    'preview_url' => Storage::url($path),
+    'token' => $token,
+    'preview_url' => $previewUrl,
     'stream' => turbo_stream()
         ->flash('success', 'Upload completed')
         ->render(),
@@ -332,8 +384,8 @@ serializing the builder object does not produce the expected HTML.
 
 ## Raw Turbo Streams
 
-Use `turbo-stream` when the endpoint returns a raw Turbo Stream body and the server renders the visible attachment/card
-and any form value:
+Use `mode="turbo-stream"` when the endpoint returns a raw Turbo Stream body and the server renders the visible
+attachment/card and any form value:
 
 ```blade
 <hw:file-upload
@@ -341,18 +393,18 @@ and any form value:
     url="{{ route('photos.upload') }}"
     accept="image/*"
     multiple
-    turbo-stream
+    mode="turbo-stream"
 />
 
 <ul id="photo-gallery"></ul>
 ```
 
-`preview` and `emit-hidden` default to false in this protocol, so no client Attachment list/template or automatic hidden
-input is produced. Explicit `preview=true` or `emit-hidden=true` is rejected because it would mix client and server
-ownership. On success or error, a body with an actual `<turbo-stream>` element is passed to
+`output-mode` resolves to `none` in this mode, so no client Attachment list/template or automatic hidden input is
+produced. Any other explicit output mode is rejected because it would mix client and server ownership. On success or
+error, a body with an actual `<turbo-stream>` element is passed to
 `Turbo.renderStreamMessage`; the server-rendered output must carry any value needed by a later form submission.
 An explicit `value` or matching `old()` value still renders its preserved hidden input for edit and validation
-round-trips; `emit-hidden=false` only prevents the upload response from creating a new one.
+round-trips; `output-mode="none"` only prevents a new upload response from creating one.
 
 ## Internal File Input
 
@@ -410,7 +462,7 @@ Override the dropzone label with `aria-label`:
 - `data-file-upload-retry`
 - `data-file-upload-remove`
 
-Outside image view, `:preview="false"` makes upload progress and errors replace the dropzone description so
+Outside image view, `output-mode="hidden|none"` makes upload progress and errors replace the dropzone description so
 server-rendered Turbo Stream workflows still have visible feedback. Image view displays the error line and exposes
 uploading through `data-loading` and `data-upload-state`. A `413 Payload Too Large` response commonly means PHP's
 `upload_max_filesize` or `post_max_size` is lower than `max-size-bytes`; align those server limits with the component prop.

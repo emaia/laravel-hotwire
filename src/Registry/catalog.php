@@ -292,7 +292,7 @@ return [
             'view' => 'hotwire::component-views.file-upload',
             'docs' => 'docs/components/file-upload.md',
             'category' => 'forms',
-            'description' => 'Native upload with list/grid/image views, styled or bare dropzones, hybrid JSON streams, hidden inputs and DELETE',
+            'description' => 'Attachment-backed native upload protocol with managed JSON and server-owned Turbo Stream modes',
             'controllers' => ['file-upload'],
         ],
         'flash-container' => [
@@ -774,7 +774,7 @@ return [
             'source' => 'resources/js/controllers/file_upload_controller.js',
             'docs' => 'docs/controllers/file-upload.md',
             'category' => 'forms',
-            'description' => 'Native upload engine with queue, image replacement, hybrid/raw streams, events and hidden inputs',
+            'description' => 'Native upload transport with queueing, managed outputs, hybrid JSON and raw Turbo Streams',
         ],
         'gtm' => [
             'source' => 'resources/js/controllers/gtm_controller.js',

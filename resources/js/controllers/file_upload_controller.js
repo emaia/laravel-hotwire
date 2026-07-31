@@ -1,5 +1,6 @@
 // @hotwire-package
 import { Controller } from "@hotwired/stimulus";
+import { createUploadFeedback } from "./_upload_feedback.js";
 
 export default class extends Controller {
     static targets = ["announcer", "dropzone", "feedback", "imagePreview", "input", "list", "template"];
@@ -10,15 +11,14 @@ export default class extends Controller {
         maxSizeBytes: { type: Number, default: 0 },
         maxFiles: { type: Number, default: 0 },
         multiple: { type: Boolean, default: false },
-        preview: { type: Boolean, default: true },
-        emitHidden: { type: Boolean, default: true },
+        mode: { type: String, default: "managed" },
+        outputMode: { type: String, default: "full" },
         paramName: { type: String, default: "file" },
         responseKey: { type: String, default: "token" },
         previewUrlKey: { type: String, default: "preview_url" },
         hiddenName: { type: String, default: "" },
         deleteUrl: { type: String, default: "" },
         parallelUploads: { type: Number, default: 3 },
-        turboStream: { type: Boolean, default: false },
         view: { type: String, default: "list" },
         messages: { type: Object, default: {} },
     };
@@ -30,18 +30,18 @@ export default class extends Controller {
 
     connect() {
         this.disconnected = false;
-        this.feedbackError = null;
-        this.feedbackDefault = this.hasFeedbackTarget
-            ? this.feedbackTarget.dataset.fileUploadDefaultFeedback ?? this.feedbackTarget.textContent
-            : "";
-        this.feedbackDefaultHidden = this.hasFeedbackTarget
-            ? this.feedbackTarget.matches('[data-slot="file-upload-feedback"]') || this.feedbackTarget.hidden
-            : false;
         this.items = this.hydrateItems();
         this.nextId = this.nextAvailableId();
         this.activeUploads = 0;
         this.pendingStreamRenders = 0;
         this.streamRenderGeneration = {};
+        this.deleteGeneration = {};
+        this.feedback = createUploadFeedback({
+            dropzone: () => this.hasDropzoneTarget ? this.dropzoneTarget : null,
+            status: () => this.hasFeedbackTarget ? this.feedbackTarget : null,
+            announcer: () => this.hasAnnouncerTarget ? this.announcerTarget : null,
+            onChange: () => this.syncRootState(),
+        });
         this.syncImagePreview();
         document.addEventListener("turbo:before-cache", this.prepareForCache);
         document.addEventListener("turbo:morph", this.refreshRootState);
@@ -55,20 +55,25 @@ export default class extends Controller {
         this.disconnected = true;
         this.pendingStreamRenders = 0;
         this.streamRenderGeneration = {};
+        this.deleteGeneration = {};
         document.removeEventListener("turbo:before-cache", this.prepareForCache);
         document.removeEventListener("turbo:morph", this.refreshRootState);
         document.removeEventListener("turbo:morph-element", this.refreshRootState);
         this.normalizeDisconnectedItems();
-        this.restoreUploadFeedback();
+        this.element.dataset.dragging = "false";
+        this.feedback.reset(this.feedbackSnapshot());
         this.activeUploads = 0;
         this.syncRootState();
+        this.feedback.suspend();
     }
 
     prepareForCache() {
         this.pendingStreamRenders = 0;
         this.streamRenderGeneration = {};
+        this.deleteGeneration = {};
         this.normalizeDisconnectedItems();
-        this.restoreUploadFeedback();
+        this.element.dataset.dragging = "false";
+        this.feedback.reset(this.feedbackSnapshot());
         this.activeUploads = 0;
         this.syncRootState();
     }
@@ -107,7 +112,7 @@ export default class extends Controller {
 
     addFiles(files) {
         const selected = this.multipleValue ? files : files.slice(0, 1);
-        if (selected.length > 0) this.beginSelection();
+        if (selected.length > 0) this.feedback.beginSelection(this.feedbackSnapshot());
         if (!this.multipleValue && selected.length > 0) this.removePendingItems();
 
         for (const file of selected) {
@@ -160,15 +165,16 @@ export default class extends Controller {
 
         preserved.forEach((element) => element.remove());
         this.updateClearAction();
-        this.restoreUploadFeedback();
+        this.element.dataset.dragging = "false";
+        this.feedback.reset(this.feedbackSnapshot());
 
         if (remoteValues.length > 0 && this.deleteUrlValue !== "") {
-            void this.deleteRemoteValues(remoteValues);
+            void this.deleteRemoteValues(remoteValues, this.deleteGeneration);
         }
 
         const files = items.map((item) => item.file);
         const count = files.length + preserved.length;
-        this.announce(`${this.message("cleared")} · ${count}`);
+        this.feedback.announce(`${this.message("cleared")} · ${count}`);
         this.dispatch("cleared", { detail: { files, count } });
         this.processQueue();
     }
@@ -184,7 +190,7 @@ export default class extends Controller {
         if (this.hasReachedMaxFiles(item)) {
             const text = this.message("maxFilesExceeded");
             this.setDescription(item, text);
-            this.announce(`${this.message("uploadFailed")}: ${text}`);
+            this.feedback.announce(`${this.message("uploadFailed")}: ${text}`);
             this.dispatch("error", { detail: { file: item.file, message: text, xhr: null, text } });
             return;
         }
@@ -195,7 +201,7 @@ export default class extends Controller {
         item.retryable = false;
         item.message = null;
         this.configureItemPresentation(item);
-        this.feedbackError = null;
+        this.feedback.clearError();
         this.setState(item, "queued");
         this.setDescription(item, this.fileDescription(item.file));
         this.updateProgress(item, 0);
@@ -233,14 +239,14 @@ export default class extends Controller {
         this.items.push(item);
         this.setState(item, "error");
         this.setDescription(item, text);
-        this.announce(`${this.message("uploadFailed")}: ${text}`);
-        this.setUploadFeedback(text, "error");
+        this.feedback.announce(`${this.message("uploadFailed")}: ${text}`);
+        this.feedback.present({ text, state: "error" }, this.feedbackSnapshot());
         this.dispatch("error", { detail: { file, message: text, xhr: null, text } });
     }
 
     createItem(file, { imagePreview = true } = {}) {
         const id = String(this.nextId++);
-        const element = this.previewValue && this.viewValue !== "image" ? this.renderItem(id, file) : null;
+        const element = this.previewEnabled && this.viewValue !== "image" ? this.renderItem(id, file) : null;
 
         const item = {
             id,
@@ -313,8 +319,10 @@ export default class extends Controller {
         this.setState(item, "uploading");
         this.setRetryAction(item, false);
         this.showProgress(item, true);
-        const feedback = `${this.message("uploading")} ${item.file.name}`;
-        if (this.setUploadFeedback(feedback, "uploading")) this.announce(feedback);
+        const feedbackText = `${this.message("uploading")} ${item.file.name}`;
+        if (this.feedback.present({ text: feedbackText, state: "uploading" }, this.feedbackSnapshot())) {
+            this.feedback.announce(feedbackText);
+        }
 
         xhr.open("POST", this.urlValue);
         for (const [name, value] of Object.entries(this.requestHeaders())) {
@@ -373,7 +381,7 @@ export default class extends Controller {
         this.promoteImagePreview(item, response);
         this.commitSingleReplacement(item);
 
-        if (this.emitHiddenValue) {
+        if (this.hiddenOutputEnabled) {
             if (!this.multipleValue) this.removePreservedHiddens();
             this.appendHidden(item, value);
         }
@@ -395,11 +403,14 @@ export default class extends Controller {
         this.showProgress(item, false);
         this.setDescription(item, `${this.message("uploaded")} · ${this.fileDescription(item.file)}`);
         const pending = this.pendingUpload();
-        const feedback = pending
+        const feedbackText = pending
             ? `${this.message("uploading")} ${pending.file.name}`
             : `${this.message("uploaded")} ${item.file.name}`;
-        this.setUploadFeedback(feedback, pending ? "uploading" : "done");
-        this.announce(`${this.message("uploaded")} ${item.file.name}`);
+        this.feedback.present(
+            { text: feedbackText, state: pending ? "uploading" : "done" },
+            this.feedbackSnapshot(),
+        );
+        this.feedback.announce(`${this.message("uploaded")} ${item.file.name}`);
         this.syncRootState();
         this.dispatch("success", { detail: { file: item.file, response, value } });
     }
@@ -422,8 +433,8 @@ export default class extends Controller {
         this.showProgress(item, false);
         this.setRetryAction(item, item.retryable);
         this.setDescription(item, text);
-        this.announce(`${this.message("uploadFailed")}: ${text}`);
-        this.setUploadFeedback(text, "error");
+        this.feedback.announce(`${this.message("uploadFailed")}: ${text}`);
+        this.feedback.present({ text, state: "error" }, this.feedbackSnapshot());
         this.syncRootState();
         this.dispatch("error", { detail: { file: item.file, message, xhr, text } });
         this.processQueueAfterStream(this.renderStream(stream));
@@ -440,16 +451,21 @@ export default class extends Controller {
         this.revokePreviewUrl(item);
         this.removeHidden(item);
         if (deleteRemote && item.value && this.deleteUrlValue !== "") {
-            this.deleteRemote(item.value).catch((error) => this.handleDeleteError(item, error));
+            const generation = this.deleteGeneration;
+            this.deleteRemote(item.value).catch((error) => {
+                if (generation === this.deleteGeneration && !this.disconnected) {
+                    this.handleDeleteError(item, error);
+                }
+            });
         }
 
         item.element?.remove();
         this.items = this.items.filter((candidate) => candidate !== item);
         this.syncImagePreview();
-        this.syncFeedbackAfterRemoval(item);
+        this.feedback.reconcile(this.feedbackSnapshot(), { clearError: item.state === "error" });
         this.updateClearAction();
         this.syncRootState();
-        if (announce) this.announce(`${this.message("removed")} ${item.file.name}`);
+        if (announce) this.feedback.announce(`${this.message("removed")} ${item.file.name}`);
 
         if (dispatch) this.dispatch("removed", { detail: { file: item.file } });
     }
@@ -492,7 +508,7 @@ export default class extends Controller {
             return typeof response.stream === "string" ? response.stream : null;
         }
 
-        if (this.turboStreamValue && this.hasTurboStreamElement(response)) return response;
+        if (this.turboStreamMode && this.hasTurboStreamElement(response)) return response;
 
         return null;
     }
@@ -549,7 +565,7 @@ export default class extends Controller {
 
     configureItemPresentation(item, { imagePreview = true } = {}) {
         if (this.viewValue === "image") {
-            if (imagePreview && this.previewValue) this.configureImagePreview(item);
+            if (imagePreview && this.previewEnabled) this.configureImagePreview(item);
 
             return;
         }
@@ -596,7 +612,7 @@ export default class extends Controller {
     }
 
     promoteImagePreview(item, response) {
-        if (this.viewValue !== "image" || !this.previewValue || typeof response !== "object" || response === null) return;
+        if (this.viewValue !== "image" || !this.previewEnabled || typeof response !== "object" || response === null) return;
 
         const src = response[this.previewUrlKeyValue];
         if (typeof src !== "string" || src === "") return;
@@ -701,14 +717,15 @@ export default class extends Controller {
 
     isUsableSuccessResponse(response, xhr = null) {
         if (this.isHtmlDocument(response)) return false;
-        if (this.turboStreamValue) {
+        if (this.turboStreamMode) {
             const contentType = xhr?.getResponseHeader?.("content-type")?.toLowerCase() ?? "";
 
             return !contentType.includes("json")
                 && typeof response === "string"
                 && this.hasTurboStreamElement(response);
         }
-        if (!this.emitHiddenValue || this.hiddenNameValue === "") return true;
+        if (typeof response === "string" && this.hasTurboStreamElement(response)) return false;
+        if (!this.hiddenOutputEnabled || this.hiddenNameValue === "") return true;
 
         const value = this.extractValue(response);
 
@@ -799,7 +816,7 @@ export default class extends Controller {
         return response;
     }
 
-    async deleteRemoteValues(values) {
+    async deleteRemoteValues(values, generation = this.deleteGeneration) {
         const queue = [...values];
         const limit = Math.max(1, this.parallelUploadsValue);
         const workers = Array.from({ length: Math.min(limit, queue.length) }, async () => {
@@ -809,7 +826,9 @@ export default class extends Controller {
                 try {
                     await this.deleteRemote(value);
                 } catch (error) {
-                    this.handleDeleteError({ file: null, value }, error);
+                    if (generation === this.deleteGeneration && !this.disconnected) {
+                        this.handleDeleteError({ file: null, value }, error);
+                    }
                 }
             }
         });
@@ -820,7 +839,7 @@ export default class extends Controller {
     requestHeaders() {
         const headers = {
             ...this.csrfHeaders(),
-            Accept: this.turboStreamValue ? "application/json, text/vnd.turbo-stream.html" : "application/json",
+            Accept: this.turboStreamMode ? "application/json, text/vnd.turbo-stream.html" : "application/json",
             "X-Requested-With": "XMLHttpRequest",
         };
         return headers;
@@ -880,12 +899,12 @@ export default class extends Controller {
     }
 
     restoreMorphState() {
-        const hasCompletedSingle = this.emitHiddenValue && !this.multipleValue
+        const hasCompletedSingle = this.hiddenOutputEnabled && !this.multipleValue
             && this.items.some((item) => item.state === "done" && item.value != null && item.value !== "");
         if (hasCompletedSingle) this.removePreservedHiddens();
 
         for (const item of this.items) {
-            if (!this.emitHiddenValue || item.value == null || item.value === "") continue;
+            if (!this.hiddenOutputEnabled || item.value == null || item.value === "") continue;
 
             const hidden = [...this.element.querySelectorAll('input[type="hidden"][data-hw-upload]')]
                 .find((input) => input.dataset.fileUploadId === item.id);
@@ -899,12 +918,12 @@ export default class extends Controller {
 
         this.restoreAttachmentCards();
         this.syncImagePreview();
-        this.restoreFeedbackState();
+        this.feedback.reconcile(this.feedbackSnapshot());
         this.updateClearAction();
     }
 
     restoreAttachmentCards() {
-        if (this.viewValue === "image" || !this.previewValue || !this.hasListTarget || !this.hasTemplateTarget) return;
+        if (this.viewValue === "image" || !this.previewEnabled || !this.hasListTarget || !this.hasTemplateTarget) return;
 
         for (const item of this.items) {
             const current = [...this.listTarget.querySelectorAll("[data-file-upload-attachment][data-file-upload-id]")]
@@ -933,41 +952,23 @@ export default class extends Controller {
         this.setRetryAction(item, item.retryable);
     }
 
-    restoreFeedbackState() {
+    feedbackSnapshot() {
         const error = this.items.find((item) => !item.removed && item.state === "error");
-        const errorText = error?.message ?? this.feedbackError;
         const pending = this.pendingUpload();
         const completed = [...this.items].reverse().find((item) => !item.removed && item.state === "done");
 
-        if (this.previewValue && !this.hasExternalFeedback()) {
-            if (!this.hasDropzoneTarget) return;
-
-            this.dropzoneTarget.toggleAttribute("aria-busy", pending !== null);
-            if (errorText) {
-                this.dropzoneTarget.setAttribute("aria-invalid", "true");
-            } else if (!this.element.hasAttribute("data-invalid")) {
-                this.dropzoneTarget.removeAttribute("aria-invalid");
-            }
-
-            return;
-        }
-
-        if (errorText) {
-            this.feedbackError = errorText;
-            this.setUploadFeedback(errorText, "error", { force: true });
-        } else if (pending) {
-            this.feedbackError = null;
-            this.setUploadFeedback(`${this.message("uploading")} ${pending.file.name}`, "uploading", { force: true });
-        } else if (completed) {
-            this.feedbackError = null;
-            this.setUploadFeedback(`${this.message("uploaded")} ${completed.file.name}`, "done", { force: true });
-        } else {
-            this.restoreUploadFeedback();
-        }
+        return {
+            busy: pending !== null,
+            completedText: completed ? `${this.message("uploaded")} ${completed.file.name}` : null,
+            itemErrorText: error?.message ?? null,
+            pendingText: pending ? `${this.message("uploading")} ${pending.file.name}` : null,
+            preview: this.previewEnabled,
+            serverInvalid: this.element.hasAttribute("data-invalid"),
+        };
     }
 
     uploadState() {
-        if (this.feedbackError || this.element.hasAttribute("data-invalid")
+        if (this.feedback?.error || this.element.hasAttribute("data-invalid")
             || this.items.some((item) => !item.removed && item.state === "error")) {
             return "error";
         }
@@ -1166,142 +1167,28 @@ export default class extends Controller {
         return this.messagesValue[key] ?? this.defaultMessages[key] ?? key;
     }
 
-    announce(message) {
-        if (!this.hasAnnouncerTarget) return;
-        this.announcerTarget.textContent = message;
+    get previewEnabled() {
+        return !this.turboStreamMode && ["full", "preview"].includes(this.outputModeValue);
     }
 
-    beginSelection() {
-        const existingError = this.items.find((item) => !item.removed && item.state === "error");
-        if (existingError) {
-            this.feedbackError = existingError.message ?? this.message("uploadFailed");
-            this.setUploadFeedback(this.feedbackError, "error", { force: true });
-
-            return;
-        }
-
-        this.feedbackError = null;
-
-        if (this.hasFeedbackTarget) {
-            this.feedbackTarget.replaceChildren(document.createTextNode(this.feedbackDefault));
-            this.feedbackTarget.hidden = this.feedbackDefaultHidden;
-        }
-        if (!this.hasDropzoneTarget) return;
-
-        delete this.dropzoneTarget.dataset.state;
-        this.dropzoneTarget.removeAttribute("aria-busy");
-        if (!this.element.hasAttribute("data-invalid")) this.dropzoneTarget.removeAttribute("aria-invalid");
-
-        const pending = this.pendingUpload();
-        if (!this.previewValue && pending) {
-            this.setUploadFeedback(`${this.message("uploading")} ${pending.file.name}`, "uploading");
-        }
+    get hiddenOutputEnabled() {
+        return !this.turboStreamMode && ["full", "hidden"].includes(this.outputModeValue);
     }
 
-    setUploadFeedback(text, state, { force = false } = {}) {
-        if (state === "error") {
-            this.feedbackError = text;
-        } else if (this.feedbackError && !force) {
-            if (!this.previewValue && this.hasDropzoneTarget) {
-                this.dropzoneTarget.toggleAttribute("aria-busy", this.hasPendingUploads());
-            }
-
-            this.syncRootState();
-
-            return false;
-        }
-
-        if (this.previewValue && !this.hasExternalFeedback() && !force) {
-            this.syncRootState();
-
-            return true;
-        }
-
-        if (this.hasFeedbackTarget) {
-            this.feedbackTarget.hidden = false;
-            this.feedbackTarget.replaceChildren(document.createTextNode(text));
-        }
-        if (!this.hasDropzoneTarget) {
-            this.syncRootState();
-
-            return true;
-        }
-
-        this.dropzoneTarget.dataset.state = state;
-        this.dropzoneTarget.toggleAttribute("aria-busy", state === "uploading" || this.hasPendingUploads());
-        if (state === "error") {
-            this.dropzoneTarget.setAttribute("aria-invalid", "true");
-        } else if (!this.element.hasAttribute("data-invalid")) {
-            this.dropzoneTarget.removeAttribute("aria-invalid");
-        }
-
-        this.syncRootState();
-
-        return true;
-    }
-
-    hasExternalFeedback() {
-        return this.hasFeedbackTarget
-            && (!this.hasDropzoneTarget || !this.dropzoneTarget.contains(this.feedbackTarget));
-    }
-
-    restoreUploadFeedback() {
-        this.element.dataset.dragging = "false";
-        this.feedbackError = null;
-
-        if (this.hasFeedbackTarget) {
-            this.feedbackTarget.replaceChildren(document.createTextNode(this.feedbackDefault));
-            this.feedbackTarget.hidden = this.feedbackDefaultHidden;
-        }
-        if (!this.hasDropzoneTarget) {
-            this.syncRootState();
-
-            return;
-        }
-
-        delete this.dropzoneTarget.dataset.state;
-        this.dropzoneTarget.removeAttribute("aria-busy");
-        if (!this.element.hasAttribute("data-invalid")) this.dropzoneTarget.removeAttribute("aria-invalid");
-        this.syncRootState();
-    }
-
-    syncFeedbackAfterRemoval(item) {
-        const error = this.items.find((candidate) => candidate.state === "error");
-        if (error) {
-            this.setUploadFeedback(error.message ?? this.message("uploadFailed"), "error");
-
-            return;
-        }
-
-        if (item.state !== "error" && this.feedbackError) {
-            this.setUploadFeedback(this.feedbackError, "error", { force: true });
-
-            return;
-        }
-
-        this.feedbackError = null;
-        const pending = this.pendingUpload();
-        if (pending) {
-            this.setUploadFeedback(`${this.message("uploading")} ${pending.file.name}`, "uploading");
-
-            return;
-        }
-
-        const completed = [...this.items].reverse().find((candidate) => candidate.state === "done");
-        if (completed) {
-            this.setUploadFeedback(`${this.message("uploaded")} ${completed.file.name}`, "done");
-
-            return;
-        }
-
-        this.restoreUploadFeedback();
+    get turboStreamMode() {
+        return this.modeValue === "turbo-stream";
     }
 
     handleDeleteError(item, error) {
         const text = this.message("deleteFailed");
         const name = item.file?.name;
-        this.announce(name ? `${text}: ${name}` : text);
-        this.setUploadFeedback(name ? `${text}: ${name}` : text, "error", { force: true });
+        const feedbackText = name ? `${text}: ${name}` : text;
+        this.feedback.announce(feedbackText);
+        this.feedback.present(
+            { text: feedbackText, state: "error" },
+            this.feedbackSnapshot(),
+            { force: true },
+        );
         this.syncRootState();
         this.dispatch("delete-error", {
             detail: {
