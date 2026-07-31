@@ -2,6 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Emaia\LaravelHotwire\Support\FrameTarget;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\Component;
 use Illuminate\View\ComponentAttributeBag;
@@ -18,14 +19,12 @@ class Form extends Component
         public bool $conditionalFields = false,
         public bool $trackFrameSrc = false,
         public int|string|null $autoSubmitDelay = null,
-        public ?string $frame = null,
+        public string|object|bool|null $frame = null,
         public ?string $enctype = null,
         public mixed $state = null,
         public ?Htmlable $stimulus = null,
     ) {
-        if ($this->frame === '') {
-            $this->frame = null;
-        }
+        $this->frame = FrameTarget::normalize($this->frame);
 
         $this->formState = $this->state;
     }

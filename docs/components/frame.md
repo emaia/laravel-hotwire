@@ -125,6 +125,16 @@ Passing an object uses the Turbo package's `dom_id()` helper:
 
 This keeps frame ids aligned with Turbo Stream targets that also use `dom_id($task)`.
 
+## Destination `frame` props
+
+This component's required `id` identifies the frame host. Other components use an optional `frame` prop to emit
+`data-turbo-frame` on links, buttons, and forms that navigate to a host.
+
+Those optional destination props accept a string or an object resolvable with `dom_id()`. `null`, `false`, empty strings,
+and whitespace-only strings omit the metadata. Where a component also accepts native attributes, an explicit
+`data-turbo-frame` wins; binding that native attribute to `false` suppresses the `frame` prop. Disabled, current, or
+otherwise non-actionable elements omit frame metadata.
+
 ## See also
 
 - [`<hw:form>`](./form.md) — use `frame="results"` to submit a form into a frame.

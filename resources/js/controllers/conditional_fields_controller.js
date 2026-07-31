@@ -123,8 +123,6 @@ export default class extends Controller {
             if (prev !== null) {
                 field.disabled = prev === "true";
                 field.removeAttribute(PREV_DISABLED);
-            } else {
-                field.disabled = false;
             }
         }
     }

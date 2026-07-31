@@ -64,7 +64,7 @@ it('renders a semantic trigger with button variants', function () {
     ');
 
     $view->assertSee('data-slot="modal-trigger"', false);
-    $view->assertSee('data-action="modal#open"', false);
+    $view->assertSee('data-action="click->modal#open"', false);
     $view->assertSee('data-variant="outline"', false);
     $view->assertSee('data-size="sm"', false);
     $view->assertSee('Open');
@@ -79,8 +79,53 @@ it('renders a semantic trigger as a custom tag', function () {
 
     $view->assertSee('<a', false);
     $view->assertSee('href="/posts/1/edit"', false);
-    $view->assertSee('data-action="modal#open"', false);
+    $view->assertSee('data-action="click->modal#open"', false);
     $view->assertDontSee('type="button"', false);
+});
+
+it('targets the configured modal frame from an anchor trigger', function () {
+    $view = $this->blade('<x-hw::modal frame="modal-content"><x-hw::modal.trigger as="a" href="/posts/1/edit">Edit</x-hw::modal.trigger></x-hw::modal>');
+
+    $view->assertSee('data-turbo-frame="modal-content"', false)
+        ->assertSee('data-action="click->modal#open"', false);
+});
+
+it('lets anchor triggers override or suppress the inherited modal frame', function () {
+    $override = $this->blade('<x-hw::modal frame="modal-content"><x-hw::modal.trigger as="a" href="/open" frame="drawer-content">Open</x-hw::modal.trigger></x-hw::modal>');
+    $suppressed = $this->blade('<x-hw::modal frame="modal-content"><x-hw::modal.trigger as="a" href="/open" :frame="false">Open</x-hw::modal.trigger></x-hw::modal>');
+
+    $override->assertSee('data-turbo-frame="drawer-content"', false)
+        ->assertDontSee('data-turbo-frame="modal-content"', false);
+    $suppressed->assertDontSee('data-turbo-frame', false);
+});
+
+it('removes modal actions from disabled anchor controls', function () {
+    $view = $this->blade('<x-hw::modal><x-hw::modal.trigger as="a" href="/open" disabled>Open</x-hw::modal.trigger><x-hw::modal.content><x-hw::modal.close as="a" href="/back" disabled>Close</x-hw::modal.close></x-hw::modal.content></x-hw::modal>');
+
+    preg_match('/<a[^>]*data-slot="modal-trigger"[^>]*>/', (string) $view, $trigger);
+    preg_match('/<a[^>]*data-slot="modal-close"[^>]*>/', (string) $view, $close);
+
+    expect($trigger[0] ?? '')
+        ->not->toContain('data-action=')
+        ->not->toContain('href=')
+        ->and($close[0] ?? '')
+        ->not->toContain('data-action=')
+        ->not->toContain('href=');
+});
+
+it('treats null disabled bindings on modal anchors as enabled', function () {
+    $view = $this->blade('<x-hw::modal frame="modal-content"><x-hw::modal.trigger as="a" href="/open" :disabled="$disabled">Open</x-hw::modal.trigger><x-hw::modal.content><x-hw::modal.close as="a" href="/back" :disabled="$disabled">Close</x-hw::modal.close></x-hw::modal.content></x-hw::modal>', ['disabled' => null]);
+
+    preg_match('/<a[^>]*data-slot="modal-trigger"[^>]*>/', (string) $view, $trigger);
+    preg_match('/<a[^>]*data-slot="modal-close"[^>]*>/', (string) $view, $close);
+
+    expect($trigger[0] ?? '')
+        ->toContain('data-action=')
+        ->toContain('href="/open"')
+        ->toContain('data-turbo-frame="modal-content"')
+        ->and($close[0] ?? '')
+        ->toContain('data-action=')
+        ->toContain('href="/back"');
 });
 
 it('renders a semantic close action', function () {
@@ -93,7 +138,7 @@ it('renders a semantic close action', function () {
     ');
 
     $view->assertSee('data-slot="modal-close-icon"', false);
-    $view->assertSee('data-action="modal#close"', false);
+    $view->assertSee('data-action="click->modal#close"', false);
     $view->assertSee('data-variant="outline"', false);
     $view->assertSee('Cancel');
 });
@@ -102,13 +147,13 @@ it('renders close button by default', function () {
     $view = $this->blade('<x-hw::modal><x-hw::modal.content>Content</x-hw::modal.content></x-hw::modal>');
 
     $view->assertSee('data-slot="modal-close-icon"', false);
-    $view->assertSee('data-action="modal#close"', false);
+    $view->assertSee('data-action="click->modal#close"', false);
 });
 
 it('hides close button when disabled', function () {
     $view = $this->blade('<x-hw::modal :close-button="false">Content</x-hw::modal>');
 
-    $view->assertDontSee('data-action="modal#close"', false);
+    $view->assertDontSee('data-action="click->modal#close"', false);
 });
 
 it('renders loading template slot', function () {
@@ -125,17 +170,17 @@ it('renders loading template slot', function () {
     $view->assertSee('Loading...');
 });
 
-it('renders a dynamic turbo frame when frame is provided', function () {
+it('renders exactly one dynamic turbo frame when plain content is provided', function () {
     $view = $this->blade('<x-hw::modal id="modal-shell" frame="modal">Content</x-hw::modal>');
 
     $view->assertSee('Content');
-    $view->assertDontSee('<turbo-frame', false);
+    expect(substr_count((string) $view, '<turbo-frame'))->toBe(1);
 });
 
 it('renders a dynamic turbo frame fallback when frame is provided without content', function () {
     $view = $this->blade('<x-hw::modal id="modal-shell" frame="modal"></x-hw::modal>');
 
-    $view->assertSee('<turbo-frame id="modal" data-modal-target="dynamicContent">', false);
+    $view->assertSee('<turbo-frame id="modal" data-modal-target="dynamicContent"', false);
 });
 
 it('does not render a dynamic turbo frame when frame is empty', function () {
@@ -143,6 +188,31 @@ it('does not render a dynamic turbo frame when frame is empty', function () {
 
     $view->assertDontSee('<turbo-frame', false);
     $view->assertSee('Content');
+});
+
+it('rejects more than one dynamic modal frame host', function () {
+    $this->blade(<<<'BLADE'
+        <x-hw::modal frame="modal">
+            <x-hw::modal.content>First</x-hw::modal.content>
+            <x-hw::modal.content>Second</x-hw::modal.content>
+        </x-hw::modal>
+    BLADE);
+})->throws(ViewException::class, 'A modal with a frame prop must render exactly one modal.content host.');
+
+it('does not mistake arbitrary modal owner metadata for a frame host', function () {
+    $view = $this->blade('<x-hw::modal id="modal-shell" frame="modal"><div data-modal-frame-owner="modal-shell">Content</div></x-hw::modal>');
+
+    expect(substr_count((string) $view, '<turbo-frame'))->toBe(1);
+});
+
+it('rejects an unmanaged turbo frame with the modal frame id', function () {
+    $this->blade('<x-hw::modal id="modal-shell" frame="modal"><turbo-frame id="modal"></turbo-frame></x-hw::modal>');
+})->throws(ViewException::class, 'A modal with a frame prop must render exactly one modal.content host.');
+
+it('keeps nested modal frame hosts scoped to their owner', function () {
+    $view = $this->blade('<x-hw::modal id="outer" frame="outer-frame"><x-hw::modal id="inner" frame="inner-frame"></x-hw::modal></x-hw::modal>');
+
+    expect(substr_count((string) $view, '<turbo-frame'))->toBe(2);
 });
 
 it('rejects matching modal id and frame id', function () {

@@ -29,6 +29,14 @@ it('renders as a link via the as prop instead of React-style asChild', function 
         ->assertDontSee('<span', false);
 });
 
+it('omits false and null link destinations', function () {
+    $false = $this->blade('<x-hw::badge as="a" :href="false">Issues</x-hw::badge>');
+    $null = $this->blade('<x-hw::badge as="a" :href="$href">Issues</x-hw::badge>', ['href' => null]);
+
+    $false->assertDontSee('href=', false);
+    $null->assertDontSee('href=', false);
+});
+
 it('passes through arbitrary attributes', function () {
     $view = $this->blade('<x-hw::badge id="status" class="uppercase" aria-label="Status">Live</x-hw::badge>');
 

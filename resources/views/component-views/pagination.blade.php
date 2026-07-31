@@ -1,4 +1,4 @@
-<nav {{ $attributes->merge(['role' => 'navigation', 'aria-label' => $label, 'data-slot' => 'pagination']) }}>
+<nav {{ $attributes->except(['frame', 'turbo-frame'])->merge(['role' => 'navigation', 'aria-label' => $label, 'data-slot' => 'pagination']) }}>
     @if ($paginator !== null)
         <x-hw::pagination.content>
             @foreach ($links as $link)
@@ -9,7 +9,7 @@
                             :disabled="$link['disabled']"
                             :label="$link['label']"
                             :size="$link['size']"
-                            :turbo-frame="$turboFrame"
+                            :frame="$frame"
                             :turbo-stream="$turboStream"
                             :aria-label="$previousAriaLabel"
                         />
@@ -19,7 +19,7 @@
                             :disabled="$link['disabled']"
                             :label="$link['label']"
                             :size="$link['size']"
-                            :turbo-frame="$turboFrame"
+                            :frame="$frame"
                             :turbo-stream="$turboStream"
                             :aria-label="$nextAriaLabel"
                         />
@@ -30,7 +30,7 @@
                             :href="$link['url']"
                             :active="$link['active']"
                             :disabled="$link['disabled']"
-                            :turbo-frame="$turboFrame"
+                            :frame="$frame"
                             :turbo-stream="$turboStream"
                         >{{ $link['label'] }}</x-hw::pagination.link>
                     @endif

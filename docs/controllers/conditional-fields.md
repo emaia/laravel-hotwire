@@ -86,9 +86,11 @@ The recommended dependent element is `<fieldset>`: setting `fieldset.disabled = 
 to **every descendant form control** via the HTML5 spec, so the controller does no per-field
 bookkeeping.
 
-For `<div>` (or any non-`<fieldset>`), the controller walks descendant inputs, saves each
+For `<div>` (or any non-`<fieldset>`), the controller walks descendant controls, saves each
 field's original `disabled` state in `data-conditional-fields-prev-disabled`, then forces
-`disabled = true`. On show, it restores the saved values.
+`disabled = true`. On show, it restores the saved values, including controls that were disabled before the dependent was
+hidden. This is runtime behavior only: without JavaScript, a wrapper's `disabled` attribute cascades to descendants only
+when the wrapper is a `<fieldset>`, which is why the component recommends its default fieldset.
 
 The evaluation runs on `connect()` and on every `change` / `input` event inside the controller's
 scope — delegated, no per-field listener attachment.

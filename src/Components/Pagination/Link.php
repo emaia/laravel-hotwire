@@ -2,6 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components\Pagination;
 
+use Emaia\LaravelHotwire\Support\FrameTarget;
 use Illuminate\View\Component;
 
 class Link extends Component
@@ -11,9 +12,11 @@ class Link extends Component
         public bool $active = false,
         public bool $disabled = false,
         public string $size = 'icon',
-        public ?string $turboFrame = null,
+        public string|object|bool|null $frame = null,
         public bool $turboStream = false,
-    ) {}
+    ) {
+        $this->frame = FrameTarget::normalize($this->frame);
+    }
 
     public function render()
     {

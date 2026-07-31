@@ -1,4 +1,4 @@
-<nav data-slot="breadcrumb" aria-label="{{ $label }}" {{ $attributes }}>
+<nav data-slot="breadcrumb" aria-label="{{ $label }}" {{ $attributes->except('frame') }}>
     @if ($hasItems())
         <ol data-slot="breadcrumb-list">
             @foreach ($normalizedItems() as $item)
@@ -8,7 +8,7 @@
                     @elseif ($item['current'] || $item['href'] === null)
                         <span data-slot="breadcrumb-page" aria-current="page">{{ $item['label'] }}</span>
                     @else
-                        <a data-slot="breadcrumb-link" href="{{ $item['href'] }}">{{ $item['label'] }}</a>
+                        <a data-slot="breadcrumb-link" href="{{ $item['href'] }}" @if ($item['frame'] !== null) data-turbo-frame="{{ $item['frame'] }}" @endif>{{ $item['label'] }}</a>
                     @endif
                 </li>
 

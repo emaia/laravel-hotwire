@@ -134,7 +134,11 @@ Turbo morphs and frame navigations, so the user's file choice survives validatio
 - On `turbo:submit-end`: arms the controller if the form was submitted.
 - Before `turbo:before-render` / `turbo:before-frame-render`: captures the `FileList`.
 - After `turbo:render` / `turbo:frame-render`: if the re-rendered form has `aria-invalid="true"` (validation failure),
-  restores the files. Otherwise, the stash is discarded (files are not carried over after a successful submitting).
+  restores the files. Otherwise, the stash is discarded (files are not carried over after a successful submission).
+
+Frame render events are handled only when the rendered frame is the controller element, contains it, or is contained by
+it. Unrelated sibling frames do not consume preservation or reset state; page-level mounted controllers still observe
+descendant frames.
 
 Because preservation hinges on the field being marked invalid, multi-file validation needs the `cover.*` error detection
 described under [Multiple files](#multiple-files) — otherwise a per-file failure would look like a success and the

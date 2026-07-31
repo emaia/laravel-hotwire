@@ -32,8 +32,9 @@ tabs. Use `<hw:tabs>` only when the control switches tab panels in the same docu
 | `navbar.item` | `href`          | `string\|null`         | `null`       | URL. Items render as anchors when present.                      |
 | `navbar.item` | `current`       | `bool`                 | `false`      | Marks the item as the current page/section.                     |
 | `navbar.item` | `disabled`      | `bool`                 | `false`      | Disables buttons or makes links inert with ARIA-disabled state. |
-| `navbar.item` | `as`            | `string\|null`         | derived      | Override the rendered tag.                                      |
-| `navbar.item` | `type`          | `string`               | `button`     | Button type when rendering a button.                            |
+| `navbar.item` | `as`            | `a\|button\|span\|null` | derived    | Override the rendered tag with a validated allowed value.       |
+| `navbar.item` | `type`          | `button\|submit\|reset` | `button`   | Native type when rendering a button.                            |
+| `navbar.item` | `frame`         | `string\|object\|false\|null` | `null` | Turbo Frame target when rendering an enabled anchor.           |
 
 Any other HTML attribute on `<hw:navbar>` passes through to `<nav>`. Attributes on `<hw:navbar.item>` pass through to
 the item element.
@@ -94,6 +95,13 @@ Set `current` explicitly from your route or page state:
 
 Current links receive `data-current="true"` and `aria-current="page"`. Buttons receive `data-current="true"` without
 `aria-current`.
+
+`as` is trimmed, lowercased, and restricted to `a`, `button`, or `span`; unsupported values are rejected. By default an
+item with `href` renders as `a`, otherwise it renders as `button`.
+
+Use `frame` to target anchor navigation. Objects resolve through `dom_id()`; null, false, empty, and whitespace-only
+values omit the metadata. Explicit `data-turbo-frame` wins and can be bound to `false` to suppress the prop. Button,
+span, current non-link, and disabled items do not emit frame metadata.
 
 ## Protected links
 

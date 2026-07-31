@@ -25,7 +25,7 @@ test.serial("scrolls to first error on frame render", async () => {
     const firstError = root.querySelector("[aria-invalid]");
     firstError.scrollIntoView = mock(() => {});
 
-    document.dispatchEvent(new Event("turbo:frame-render", { bubbles: true }));
+    root.dispatchEvent(new Event("turbo:frame-render", { bubbles: true }));
     await wait(50);
 
     expect(firstError.scrollIntoView).toHaveBeenCalledTimes(1);
@@ -44,7 +44,7 @@ test.serial("does nothing when no error elements present", async () => {
         </turbo-frame>
     `);
 
-    document.dispatchEvent(new Event("turbo:frame-render", { bubbles: true }));
+    root.dispatchEvent(new Event("turbo:frame-render", { bubbles: true }));
     await wait(50);
 
     // Should not throw
@@ -65,7 +65,7 @@ test.serial("respects custom selector value", async () => {
     const target = root.querySelector(".has-error");
     target.scrollIntoView = mock(() => {});
 
-    document.dispatchEvent(new Event("turbo:frame-render", { bubbles: true }));
+    root.dispatchEvent(new Event("turbo:frame-render", { bubbles: true }));
     await wait(50);
 
     expect(target.scrollIntoView).toHaveBeenCalledTimes(1);
@@ -86,13 +86,30 @@ test.serial("respects custom block value", async () => {
     const target = root.querySelector("[aria-invalid]");
     target.scrollIntoView = mock(() => {});
 
-    document.dispatchEvent(new Event("turbo:frame-render", { bubbles: true }));
+    root.dispatchEvent(new Event("turbo:frame-render", { bubbles: true }));
     await wait(50);
 
     expect(target.scrollIntoView.mock.calls[0][0]).toEqual({
         behavior: "smooth",
         block: "start",
     });
+});
+
+test.serial("ignores frame renders from an unrelated frame", async () => {
+    const { root } = await mount(`
+        <turbo-frame data-controller="error-scroll">
+            <span aria-invalid="true">Error</span>
+        </turbo-frame>
+        <turbo-frame id="other"></turbo-frame>
+    `);
+
+    const target = root.querySelector("[aria-invalid]");
+    target.scrollIntoView = mock(() => {});
+
+    document.getElementById("other").dispatchEvent(new Event("turbo:frame-render", { bubbles: true }));
+    await wait(50);
+
+    expect(target.scrollIntoView).toHaveBeenCalledTimes(0);
 });
 
 test.serial("removes listeners on disconnect", async () => {

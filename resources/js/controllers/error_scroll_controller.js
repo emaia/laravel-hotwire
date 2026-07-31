@@ -1,5 +1,6 @@
 // @hotwire-package
 import { Controller } from "@hotwired/stimulus";
+import { frameEventAffects } from "./_frame_events.js";
 
 export default class extends Controller {
     static values = {
@@ -19,7 +20,9 @@ export default class extends Controller {
         document.removeEventListener("turbo:render", this.scrollToError);
     }
 
-    scrollToError() {
+    scrollToError(event) {
+        if (event?.type?.includes("frame") && !frameEventAffects(this.element, event)) return;
+
         requestAnimationFrame(() => {
             const target = this.element.querySelector(this.selectorValue);
             if (target) {

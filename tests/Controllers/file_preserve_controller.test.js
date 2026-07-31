@@ -29,6 +29,35 @@ afterEach(async () => {
     mounted = null;
 });
 
+test.serial("unrelated frame renders do not consume armed file preservation", async () => {
+    await mount(`
+        <turbo-frame id="owner">
+            <div data-controller="file-preserve"><input type="file" name="avatar" /></div>
+        </turbo-frame>
+        <turbo-frame id="other"></turbo-frame>
+    `);
+
+    mounted.controller.armed = true;
+    document.getElementById("other").dispatchEvent(new Event("turbo:frame-render", { bubbles: true }));
+    expect(mounted.controller.armed).toBe(true);
+
+    document.getElementById("owner").dispatchEvent(new Event("turbo:frame-render", { bubbles: true }));
+    expect(mounted.controller.armed).toBe(false);
+});
+
+test.serial("a sibling frame targeted by the submitted form consumes armed preservation", async () => {
+    await mount(`
+        <form data-controller="file-preserve" data-turbo-frame="preview"><input type="file" name="avatar" /></form>
+        <turbo-frame id="preview"></turbo-frame>
+    `);
+
+    const form = document.querySelector("form");
+    mounted.controller.trackSubmit({ target: form });
+    document.getElementById("preview").dispatchEvent(new Event("turbo:frame-render", { bubbles: true }));
+
+    expect(mounted.controller.armed).toBe(false);
+});
+
 // --- Validation error: restore ---
 
 test.serial("restores file when form has errors after submit", async () => {

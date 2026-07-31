@@ -298,6 +298,32 @@ test.serial("non-fieldset dependent — restores original disabled state on show
     expect(windowMs.disabled).toBe(true); // original state preserved
 });
 
+test.serial("visible non-fieldset dependents keep originally disabled controls across reevaluation", async () => {
+    await mount(`
+        <form data-controller="conditional-fields">
+            <select name="mode">
+                <option value="advanced" selected>Advanced</option>
+            </select>
+            <div data-conditional-fields-target="dependent" data-when-mode="advanced">
+                <input name="threshold" />
+                <input name="window_ms" disabled />
+            </div>
+        </form>
+    `);
+
+    const select = document.querySelector("select");
+    const threshold = document.querySelector('[name="threshold"]');
+    const windowMs = document.querySelector('[name="window_ms"]');
+
+    expect(threshold.disabled).toBe(false);
+    expect(windowMs.disabled).toBe(true);
+
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+
+    expect(threshold.disabled).toBe(false);
+    expect(windowMs.disabled).toBe(true);
+});
+
 // --- cleanup ---
 
 test.serial("disconnect removes the delegated change listener", async () => {

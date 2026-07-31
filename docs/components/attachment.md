@@ -63,7 +63,12 @@ text shimmer without introducing another component.
 | `attachment.media`   | `variant`     | `icon`       | `icon` or `image`.                                  |
 | `attachment.action`  | `variant`     | `ghost`      | Button variant.                                     |
 | `attachment.action`  | `size`        | `icon-xs`    | Button size.                                        |
-| `attachment.trigger` | `as`          | `button`     | Root element. Allowed: `button`, `a`, `div`, `span`. |
+| `attachment.action`  | `as`          | `button`     | Root element: `button` or `a`.                      |
+| `attachment.action`  | `type`        | `button`     | Native button type: `button`, `submit`, or `reset`. |
+| `attachment.action`  | `frame`       | `null`       | Turbo Frame target for the action or its owning form submission. |
+| `attachment.trigger` | `as`          | `button`     | Root element: `button`, `a`, `div`, or `span`.      |
+| `attachment.trigger` | `type`        | `button`     | Native button type: `button`, `submit`, or `reset`. |
+| `attachment.trigger` | `frame`       | `null`       | Turbo Frame target when the trigger renders as a link. |
 
 ## Components
 
@@ -76,7 +81,7 @@ text shimmer without introducing another component.
 | `attachment.title`       | `span`       | `attachment-title`       |
 | `attachment.description` | `p`          | `attachment-description` |
 | `attachment.actions`     | `div`        | `attachment-actions`     |
-| `attachment.action`      | `button`     | `attachment-action`      |
+| `attachment.action`      | `button` or `a` | `attachment-action`   |
 | `attachment.trigger`     | configurable | `attachment-trigger`     |
 
 ## Accessibility
@@ -88,3 +93,10 @@ Label icon-only `attachment.action` buttons with `aria-label`. The action defaul
 into a submit button or wire it to a destructive form action, include Laravel's normal CSRF field/method spoofing in the
 owning form. If `attachment.trigger` covers the card, give it an `aria-label` that explains what it opens. A trigger
 rendered as `span` is not focusable unless you add the appropriate `tabindex` and keyboard handling yourself.
+
+Attachment trigger `as` values are trimmed, lowercased, and validated; unsupported tags are rejected. Attachment actions
+delegate to Button and therefore render as `button` or `a`. Disabled attachment anchors omit `href` and frame metadata
+and receive `aria-disabled="true"` and `tabindex="-1"`.
+
+For triggers and actions, `frame` accepts strings or objects resolved with `dom_id()`; null, false, empty, and
+whitespace-only values are omitted. Explicit `data-turbo-frame` wins and can be bound to `false` to suppress the prop.

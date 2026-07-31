@@ -30,6 +30,15 @@ it('renders native turbo frame attributes', function () {
         ->assertSee('autoscroll', false);
 });
 
+it('omits blank optional native frame attributes', function () {
+    $view = $this->blade('<x-hw::frame id="results" src="   " target=" " loading="" action="">Content</x-hw::frame>');
+
+    $view->assertDontSee('src=', false)
+        ->assertDontSee('target=', false)
+        ->assertDontSee('loading=', false)
+        ->assertDontSee('data-turbo-action=', false);
+});
+
 it('resolves the id from a model via dom_id', function () {
     $model = new FrameMessage;
     $model->id = 42;
@@ -37,6 +46,14 @@ it('resolves the id from a model via dom_id', function () {
     $view = $this->blade('<x-hw::frame :id="$model">Content</x-hw::frame>', ['model' => $model]);
 
     $view->assertSee('id="frame_message_42"', false);
+});
+
+it('normalizes whitespace around the frame id', function () {
+    $view = $this->blade('<x-hw::frame id=" results ">Content</x-hw::frame>');
+
+    $view->assertSee('id="results"', false)
+        ->assertDontSee('id=" results "', false);
+    expect((new Frame(id: ' results '))->frameId)->toBe('results');
 });
 
 it('rejects an empty id', function () {

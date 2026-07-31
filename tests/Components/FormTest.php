@@ -248,6 +248,14 @@ it('lets explicit data-turbo-frame override the frame prop', function () {
         ->assertDontSee('data-turbo-frame="results"', false);
 });
 
+it('omits blank and false frame targets', function () {
+    $blank = $this->blade('<x-hw::form frame="   "><span>x</span></x-hw::form>');
+    $false = $this->blade('<x-hw::form frame="results" :data-turbo-frame="false"><span>x</span></x-hw::form>');
+
+    $blank->assertDontSee('data-turbo-frame', false);
+    $false->assertDontSee('data-turbo-frame', false);
+});
+
 it('outputs hidden _turbo_frame_src input when track-frame-src is true', function () {
     $view = $this->blade('<x-hw::form track-frame-src><span>x</span></x-hw::form>');
 

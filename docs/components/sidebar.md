@@ -147,14 +147,14 @@ The tooltip controller uses the package's Floating UI dependency and only appear
 
 ### Menu buttons
 
-`sidebar.menu-button` accepts `href`, `active`, `variant`, and `size`. When `href` is present it renders an anchor;
-otherwise it renders a `button type="button"`.
+`sidebar.menu-button` accepts `href`, `active`, `variant`, `size`, `type`, and `frame`. When `href` is present it renders
+an anchor; otherwise it renders a button. `type` defaults to `button` and accepts `button`, `submit`, or `reset`.
 
-`sidebar.menu-sub-button` accepts `href`, `active`, and `size`.
+`sidebar.menu-sub-button` accepts `href`, `active`, `size`, `type`, and `frame`, with the same native button type allowlist.
 
 ### Brand
 
-`sidebar.brand` accepts `href` and `label`. The default slot renders while the sidebar is expanded. The `icon` slot
+`sidebar.brand` accepts `href`, `label`, and `frame`. The default slot renders while the sidebar is expanded. The `icon` slot
 renders when `collapsible="icon"` is collapsed:
 
 ```blade
@@ -170,6 +170,10 @@ renders when `collapsible="icon"` is collapsed:
 ```
 
 If the `icon` slot is omitted, the brand keeps rendering the default slot in every state.
+
+On brand, menu button, and menu sub-button links, `frame` emits `data-turbo-frame`. It accepts strings or objects resolved
+with `dom_id()`; null, false, empty, and whitespace-only values are omitted. An explicit `data-turbo-frame` wins and can
+be bound to `false` to suppress the prop. Components without `href` render non-link controls and omit frame metadata.
 
 ## Collapse Modes
 

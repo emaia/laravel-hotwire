@@ -86,7 +86,9 @@ Use `frame` to render `data-turbo-frame` without writing the raw attribute manua
 </hw:button>
 ```
 
-This renders `data-turbo-frame="modal"`. If you pass an explicit `data-turbo-frame` attribute, it wins over `frame`.
+This renders `data-turbo-frame="modal"`. `frame` accepts a string or object; objects resolve through `dom_id()`. `null`,
+`false`, empty strings, and whitespace-only strings omit the attribute. If you pass an explicit `data-turbo-frame`, it
+wins over `frame`; bind it to `false` to suppress the prop explicitly.
 
 ## Keyboard shortcuts
 
@@ -157,9 +159,10 @@ By default the component renders `<button>`. Pass `as="a"` to render an anchor w
 <hw:button as="a" variant="outline" href="{{ route('profile') }}">Profile</hw:button>
 ```
 
-When `as="a"` is used, the `type` attribute is omitted (it has no meaning on `<a>`). Any HTML attribute the anchor needs — `href`, `target`, `rel`, `download` — passes through as usual.
+When `as="a"` is used, the `type` attribute is omitted (it has no meaning on `<a>`). Any HTML attribute the anchor needs — `href`, `target`, `rel`, `download` — passes through as usual. A disabled anchor omits `href` and frame metadata and receives `aria-disabled="true"` and `tabindex="-1"`.
 
-`as` accepts any tag name; in practice only `button` (default) and `a` are common.
+`as` is trimmed, lowercased, and restricted to `button` (default) or `a`. Unsupported values are rejected. Native
+button `type` is likewise restricted to `button`, `submit`, or `reset`.
 
 ## Props
 
@@ -167,10 +170,10 @@ When `as="a"` is used, the `type` attribute is omitted (it has no meaning on `<a
 |------------------------|------------------|-------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `variant`              | `string`         | `'default'` | One of `default`, `destructive`, `outline`, `secondary`, `ghost`, `link`                                                                                                      |
 | `size`                 | `string`         | `'default'` | One of `xs`, `sm`, `default`, `lg`, `icon-xs`, `icon-sm`, `icon`, `icon-lg`                                                                                                   |
-| `type`                 | `string`         | `'button'`  | Rendered as `<button type="...">`. Use `submit` inside forms. Ignored when `as` is not `button`.                                                                              |
-| `as`                   | `string`         | `'button'`  | HTML tag to render. Use `a` for links.                                                                                                                                        |
+| `type`                 | `string`         | `'button'`  | Native button type: `button`, `submit`, or `reset`. Ignored when `as="a"`.                                                                                                   |
+| `as`                   | `string`         | `'button'`  | Render `button` or `a`. Values are normalized and validated.                                                                                                                  |
 | `slotName`             | `string`         | `'button'`  | Internal escape hatch for shipped components that need a button element with a more specific `data-slot`. Most apps should not set this.                                      |
-| `frame`                | `string\|null`   | `null`      | Render `data-turbo-frame` for links/actions targeting a Turbo Frame. Explicit `data-turbo-frame` wins.                                                                        |
+| `frame`                | `string\|object\|false\|null` | `null` | Render `data-turbo-frame` for links/actions targeting a Turbo Frame. Objects use `dom_id()`; false/blank omit it; explicit `data-turbo-frame` wins.                        |
 | `hotkey`               | `string\|null`   | `null`      | Mount `hotkey` and click the button from one or more global keyboard shortcuts. `cmd` maps to `meta`.                                                                         |
 | `tooltip`              | `string\|null`   | `null`      | Mount `tooltip` and set `data-tooltip-content-value`.                                                                                                                         |
 | `tooltip-side`         | `string\|null`   | `null`      | Set `data-tooltip-side-value` when `tooltip` is active.                                                                                                                       |

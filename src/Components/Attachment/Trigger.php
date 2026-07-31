@@ -2,26 +2,22 @@
 
 namespace Emaia\LaravelHotwire\Components\Attachment;
 
+use Emaia\LaravelHotwire\Support\FrameTarget;
+use Emaia\LaravelHotwire\Support\PolymorphicTag;
 use Illuminate\View\Component;
-use InvalidArgumentException;
 
 class Trigger extends Component
 {
-    private const ALLOWED_TAGS = ['a', 'button', 'div', 'span'];
-
     public string $as;
 
     public function __construct(
         string $as = 'button',
         public string $type = 'button',
+        public string|object|bool|null $frame = null,
     ) {
-        $as = strtolower($as);
-
-        if (! in_array($as, self::ALLOWED_TAGS, true)) {
-            throw new InvalidArgumentException('Unsupported attachment trigger tag.');
-        }
-
-        $this->as = $as;
+        $this->frame = FrameTarget::normalize($this->frame);
+        $this->as = PolymorphicTag::normalize($as, ['a', 'button', 'div', 'span'], 'attachment trigger');
+        $this->type = PolymorphicTag::buttonType($this->type);
     }
 
     public function render()

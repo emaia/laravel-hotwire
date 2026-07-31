@@ -38,6 +38,81 @@ const LOADING_TEMPLATE_HTML = `
     </div>
 `;
 
+test.serial("local anchor triggers prevent navigation while frame anchors keep Turbo navigation", async () => {
+    mounted = await mountController(
+        "modal",
+        ModalController,
+        `
+            <div data-controller="modal" data-modal-lock-scroll-class="overflow-hidden">
+                <a id="local" href="/local" data-action="click->modal#open">Local</a>
+                <a id="remote" href="/remote" data-turbo-frame="modal-frame" data-action="click->modal#open">Remote</a>
+                <div data-modal-target="modal" data-state="closed" data-motion="none" hidden inert>
+                    <div data-modal-target="backdrop"></div>
+                    <div data-modal-target="dialog"><turbo-frame id="modal-frame" data-modal-target="dynamicContent"></turbo-frame></div>
+                </div>
+            </div>
+        `,
+    );
+
+    const localEvent = new MouseEvent("click", { bubbles: true, cancelable: true, button: 0 });
+    document.getElementById("local").dispatchEvent(localEvent);
+    expect(localEvent.defaultPrevented).toBe(true);
+
+    await mounted.controller.close();
+
+    const remoteEvent = new MouseEvent("click", { bubbles: true, cancelable: true, button: 0 });
+    document.getElementById("remote").dispatchEvent(remoteEvent);
+    expect(remoteEvent.defaultPrevented).toBe(false);
+    expect(mounted.controller.isOpen).toBe(false);
+});
+
+test.serial("modified anchor clicks preserve navigation without opening the modal", async () => {
+    mounted = await mountController(
+        "modal",
+        ModalController,
+        `
+            <div data-controller="modal" data-modal-lock-scroll-class="overflow-hidden">
+                <a id="local" href="/local" data-action="click->modal#open">Local</a>
+                <div data-modal-target="modal" data-state="closed" data-motion="none" hidden inert>
+                    <div data-modal-target="backdrop"></div><div data-modal-target="dialog"></div>
+                </div>
+            </div>
+        `,
+    );
+
+    const event = new MouseEvent("click", { bubbles: true, cancelable: true, button: 0, altKey: true });
+    document.getElementById("local").dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(mounted.controller.isOpen).toBe(false);
+});
+
+test.serial("disabled triggers stay inert and close anchors preserve navigation", async () => {
+    mounted = await mountController(
+        "modal",
+        ModalController,
+        `
+            <div data-controller="modal" data-modal-lock-scroll-class="overflow-hidden">
+                <a id="disabled" href="/open" aria-disabled="true" data-action="click->modal#open">Open</a>
+                <a id="close" href="/back" data-action="click->modal#close">Close</a>
+                <div data-modal-target="modal" data-state="closed" data-motion="none" hidden inert>
+                    <div data-modal-target="backdrop"></div><div data-modal-target="dialog"></div>
+                </div>
+            </div>
+        `,
+    );
+
+    const disabledEvent = new MouseEvent("click", { bubbles: true, cancelable: true, button: 0 });
+    document.getElementById("disabled").dispatchEvent(disabledEvent);
+    expect(disabledEvent.defaultPrevented).toBe(true);
+    expect(mounted.controller.isOpen).toBe(false);
+
+    await mounted.controller.open();
+    const closeEvent = new MouseEvent("click", { bubbles: true, cancelable: true, button: 0 });
+    document.getElementById("close").dispatchEvent(closeEvent);
+    expect(closeEvent.defaultPrevented).toBe(false);
+});
+
 test.serial("connect applies visible state when the overlay is pre-rendered open", async () => {
     mounted = await mountController(
         "modal",
@@ -75,9 +150,62 @@ test.serial("injects the default loading template when turbo:before-fetch-reques
     const frame = document.querySelector('#modal-frame');
 
     dispatchEvent(editLink, "click");
+    expect(mounted.controller.isOpen).toBe(false);
+
     frame.dispatchEvent(new CustomEvent("turbo:before-fetch-request", { bubbles: true }));
+    await wait(20);
 
     expect(frame.innerHTML).toContain("Loading...");
+    expect(mounted.controller.isOpen).toBe(true);
+    expect(mounted.controller.triggerElement).toBe(editLink);
+});
+
+test.serial("frame links inside an open modal preserve its original opener", async () => {
+    mounted = await mountController("modal", ModalController, `
+        <div data-controller="modal" data-modal-lock-scroll-class="overflow-hidden">
+            <button id="opener">Open</button>
+            <a id="inside-link" href="/next" data-turbo-frame="modal-frame">Next</a>
+            <div data-modal-target="modal" data-state="closed" data-motion="none" hidden inert>
+                <div data-modal-target="backdrop"></div>
+                <div data-modal-target="dialog"><turbo-frame id="modal-frame" data-modal-target="dynamicContent"></turbo-frame></div>
+            </div>
+        </div>
+    `);
+
+    const opener = document.getElementById("opener");
+    await mounted.controller.open({ currentTarget: opener });
+    dispatchEvent(document.getElementById("inside-link"), "click");
+
+    expect(mounted.controller.triggerElement).toBe(opener);
+});
+
+test.serial("frame navigation during exit cancels the close without clearing the response", async () => {
+    mounted = await mountController("modal", ModalController, `
+        <div data-controller="modal" data-modal-lock-scroll-class="overflow-hidden">
+            <button id="opener">Open</button>
+            <a id="next" href="/next" data-turbo-frame="modal-frame" data-action="click->modal#open">Next</a>
+            <div data-modal-target="modal" data-state="closed" data-motion="default" hidden inert>
+                <div data-modal-target="backdrop"></div>
+                <div data-modal-target="dialog"><turbo-frame id="modal-frame" data-modal-target="dynamicContent"><p>Old</p></turbo-frame></div>
+            </div>
+        </div>
+    `);
+
+    await mounted.controller.open({ currentTarget: document.getElementById("opener") });
+    const motion = fakeAnimation();
+    mounted.controller.dialogTarget.getAnimations = () => mounted.controller.modalTarget.dataset.state === "closed" ? [motion.animation] : [];
+    const closing = mounted.controller.close();
+    await wait(0);
+
+    dispatchEvent(document.getElementById("next"), "click");
+    const frame = document.getElementById("modal-frame");
+    frame.dispatchEvent(new CustomEvent("turbo:before-fetch-request", { bubbles: true }));
+    frame.innerHTML = "<p>New</p>";
+    motion.finish();
+
+    expect(await closing).toBe(false);
+    expect(mounted.controller.isOpen).toBe(true);
+    expect(frame.innerHTML).toContain("New");
 });
 
 test.serial("injects the per-link template when the trigger declares data-loading-template", async () => {

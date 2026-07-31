@@ -1,6 +1,6 @@
 # Autofocus
 
-Focuses the first matching field on `connect()` and again on `turbo:frame-load`. The native HTML
+Focuses the first matching field on `connect()` and again on relevant `turbo:frame-load` events. The native HTML
 `autofocus` attribute does not fire on Turbo Drive visits or frame swaps — this controller fills that
 gap so modals, frame-loaded forms and wizard steps land with the right field focused.
 
@@ -38,8 +38,9 @@ All strategies skip elements that are `[disabled]`, `[type="hidden"]`, `[tabinde
 ## Behavior
 
 - Runs on `connect()` — covers the initial page load and any later mount of the controller.
-- Runs again on `turbo:frame-load` — covers frame swaps. **Does not** run on `turbo:render`, so Drive's
-  native focus restoration is left alone.
+- Runs again on `turbo:frame-load` when the loaded frame is the controller element, an ancestor that owns it, or a
+  descendant it contains. Unrelated sibling frames are ignored; a page-level controller still observes descendant
+  frames. **Does not** run on `turbo:render`, so Drive's native focus restoration is left alone.
 - Never steals focus: if anything inside the controller scope is already the active element when the
   controller would run, the focus call is skipped.
 
@@ -59,17 +60,20 @@ attribute keeps working across Turbo navigations.
 
 ## Inside a modal
 
-`<hw:modal>` already wraps frame-loaded content. Add the controller on the form *inside* the
-frame so the right field is focused after the modal opens.
+`<hw:modal>` can host frame-loaded content. Add the controller to the form returned into that frame so the right field is
+focused after the modal opens.
 
 ```blade
-<hw:modal frame="user-edit">
-    {{-- server response into the frame --}}
+{{-- Layout host --}}
+<hw:modal frame="user-edit" />
+
+{{-- Response to the frame request --}}
+<hw:frame-or-page frame="user-edit">
     <form data-controller="autofocus" action="..." method="POST">
         <input type="text" name="name" autofocus />
         ...
     </form>
-</hw:modal>
+</hw:frame-or-page>
 ```
 
 ## Picking the first focusable field

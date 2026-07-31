@@ -36,7 +36,7 @@ Use `Sheet` for side-panel dialogs. Use [`<hw:drawer>`](./drawer.md) for the Bas
 | `id`                  | auto                                              | Root element id.                                               |
 | `side`                | `right`                                           | `left`, `right`, `top`, or `bottom`.                           |
 | `size`                | `75%` for side sheets, `auto` for vertical sheets | CSS length assigned to `--sheet-width` or `--sheet-height`.    |
-| `frame`               | `null`                                            | Turbo Frame id for layout-shared, server-loaded sheet content. |
+| `frame`               | `null`                                            | String/object Turbo Frame id for layout-shared, server-loaded content. |
 | `backdrop`            | `true`                                            | Render the backdrop and click-outside target.                  |
 | `motion`              | `default`                                         | `default` follows CSS motion; `none` disables it.              |
 | `lockScroll`          | `true`                                            | Lock body scroll while open.                                   |
@@ -91,6 +91,14 @@ and frame navigation renders only the panel payload:
     </form>
 </hw:frame-or-page>
 ```
+
+The sheet guarantees exactly one frame content host. If the slot has no `<hw:sheet.content>`, it appends an empty host
+even alongside a trigger or plain slot content. One content host wraps the frame and uses its slot as fallback content;
+more than one content host with `frame` is invalid. Frame objects resolve with `dom_id()`, while null, false, empty, and
+whitespace-only values disable the host.
+
+The root owns the matching frame id. Use one `<hw:sheet.content>` for fallback content instead of adding a raw
+`<turbo-frame>` with the same id.
 
 When the frame receives content, the sheet opens automatically. A trigger can override the loading state with
 `data-loading-template="#template-id"`; otherwise the `loading_template` slot is used.

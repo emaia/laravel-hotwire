@@ -2,6 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Emaia\LaravelHotwire\Support\PolymorphicTag;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\Component;
 
@@ -12,6 +13,8 @@ class ConditionalField extends Component
     /** @var array<string, string|array<int, string>> */
     public array $conditions;
 
+    public string $as;
+
     /**
      * @param  array<string, string|array<int, string>>|string  $when
      */
@@ -20,7 +23,10 @@ class ConditionalField extends Component
         public mixed $state = null,
         public string $tag = 'fieldset',
         public ?Htmlable $stimulus = null,
+        ?string $as = null,
     ) {
+        $this->as = PolymorphicTag::normalize($as ?? $this->tag, ['fieldset', 'div'], 'conditional field');
+        $this->tag = $this->as;
         $this->conditions = $this->normaliseWhen($when);
         $this->matches = $this->evaluate($this->state);
     }

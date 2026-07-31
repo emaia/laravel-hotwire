@@ -128,6 +128,11 @@ The controller listens globally for clicks on `a[data-turbo-frame="<dynamicConte
 injects the resolved loading template — works whether the link is inside the modal element or far
 away in a shared layout.
 
+For Blade modal triggers, an anchor inside `<hw:modal frame="modal-content">` inherits that frame target. Its normal
+Turbo navigation continues; the overlay opens when the loading template or response reaches the frame. A local anchor
+trigger without `data-turbo-frame` cancels its `href` navigation and opens the existing modal content immediately.
+Disabled anchor triggers have no `href` or frame metadata.
+
 ## Loading template
 
 The `loadingTemplate` target defines what fills the dynamic content while the Turbo Frame request

@@ -1,11 +1,13 @@
 // @hotwire-package
 import { Controller } from "@hotwired/stimulus";
 import { formHasErrors } from "./_form_errors";
+import { frameEventAffects, submissionFrameId } from "./_frame_events.js";
 
 export default class extends Controller {
     connect() {
         this.armed = false;
         this.lastSubmitSucceeded = false;
+        this.submissionFrameId = null;
         this.onRender = this.onRender.bind(this);
         this.trackSubmit = this.trackSubmit.bind(this);
 
@@ -28,14 +30,18 @@ export default class extends Controller {
             // validation errors.
             this.lastSubmitSucceeded = event.detail?.success === true;
             this.armed = true;
+            this.submissionFrameId = submissionFrameId(form, event);
         }
     }
 
-    onRender() {
+    onRender(event) {
+        if (event?.type?.includes("frame") && !frameEventAffects(this.element, event, this.submissionFrameId)) return;
+
         if (this.element.dataset.resetOnSuccess !== "true") return;
         if (!this.armed) return;
 
         this.armed = false;
+        this.submissionFrameId = null;
         if (this.lastSubmitSucceeded && !formHasErrors(this.element)) {
             this.resetInputs();
         }

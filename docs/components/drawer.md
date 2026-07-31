@@ -36,7 +36,7 @@ dismissal.
 | `direction`           | `down`                                                       | `up`, `right`, `down`, or `left`.                                          |
 | `side`                | `null`                                                       | Legacy alias for `direction`; `top` maps to `up`, `bottom` maps to `down`. |
 | `size`                | `75vw`/`24rem` for side drawers, `auto` for vertical drawers | CSS length assigned to the drawer width or height variable.                |
-| `frame`               | `null`                                                       | Turbo Frame id for layout-shared, server-loaded drawer content.            |
+| `frame`               | `null`                                                       | String/object Turbo Frame id for layout-shared, server-loaded content.      |
 | `backdrop`            | `true`                                                       | Render the backdrop and click-outside target.                              |
 | `motion`              | `default`                                                    | `default` follows CSS motion; `none` disables it.                          |
 | `lockScroll`          | `true`                                                       | Lock body scroll while open.                                               |
@@ -89,6 +89,14 @@ In the destination view, use [`<hw:frame-or-page>`](./frame-or-page.md):
     {{-- drawer content or standalone page content --}}
 </hw:frame-or-page>
 ```
+
+The drawer guarantees exactly one frame content host. If the slot has no `<hw:drawer.content>`, it appends an empty host
+even alongside a trigger or plain slot content. One content host wraps the frame and uses its slot as fallback content;
+more than one content host with `frame` is invalid. Frame objects resolve with `dom_id()`, while null, false, empty, and
+whitespace-only values disable the host.
+
+The root owns the matching frame id. Use one `<hw:drawer.content>` for fallback content instead of adding a raw
+`<turbo-frame>` with the same id.
 
 The drawer opens when the frame receives content. Per-link `data-loading-template="#template-id"` overrides the drawer's
 `loading_template` slot. Return an empty `update` or `replace` stream for the drawer root or frame id, or a `refresh`

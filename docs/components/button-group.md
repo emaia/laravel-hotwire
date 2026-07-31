@@ -22,7 +22,7 @@ Groups related buttons and button-like controls so they read as one action clust
 | Component | Prop | Default | Description |
 | --- | --- | --- | --- |
 | `button-group` | `orientation` | `horizontal` | `horizontal` or `vertical`. |
-| `button-group.text` | `as` | `div` | Render a different text wrapper element. |
+| `button-group.text` | `as` | `div` | Render `div`, `span`, or `p`. Values are normalized and validated. |
 | `button-group.separator` | `orientation` | `vertical` | `horizontal` or `vertical`. |
 
 ## Components
@@ -32,6 +32,8 @@ Groups related buttons and button-like controls so they read as one action clust
 | `button-group` | `div` with `role="group"` | `button-group` |
 | `button-group.text` | configurable, defaults to `div` | `button-group-text` |
 | `button-group.separator` | `div` with `role="separator"` | `button-group-separator` |
+
+`button-group.text` trims and lowercases `as`; tags outside `div`, `span`, and `p` are rejected.
 
 ## Styling Hooks
 

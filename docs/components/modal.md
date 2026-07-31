@@ -48,12 +48,16 @@ surface and optional close icon exactly where it is placed.
 </hw:modal.trigger>
 ```
 
-| Prop      | Type     | Default     | Description                    |
-|-----------|----------|-------------|--------------------------------|
-| `variant` | `string` | `'default'` | Button variant                 |
-| `size`    | `string` | `'default'` | Button size                    |
-| `as`      | `string` | `'button'`  | Rendered tag                   |
-| `type`    | `string` | `'button'`  | Button type when `as="button"` |
+| Prop      | Type                     | Default     | Description                         |
+|-----------|--------------------------|-------------|-------------------------------------|
+| `variant` | `string`                 | `'default'` | Button variant                      |
+| `size`    | `string`                 | `'default'` | Button size                         |
+| `as`      | `button\|a`             | `'button'`  | Rendered element                    |
+| `type`    | `button\|submit\|reset` | `'button'`  | Native type when `as="button"`     |
+| `frame`   | `string\|object\|false\|null` | inherited | Turbo Frame target for an anchor trigger; overrides the modal target when set |
+
+`as` is trimmed, lowercased, and restricted to `button` or `a`; unsupported values are rejected. Disabled anchors omit
+`href` and receive `aria-disabled="true"` and `tabindex="-1"`.
 
 ## Close Actions
 
@@ -76,7 +80,7 @@ Use `<hw:modal.close>` for semantic footer or inline close actions.
 ```
 
 `modal.close` supports `variant`, `size`, `as` and `type` with the same defaults as `modal.trigger`, except `variant`
-defaults to `outline`.
+defaults to `outline`. It uses the same `button|a` allowlist, native button type validation, and disabled-anchor behavior.
 
 ## Props
 
@@ -87,7 +91,7 @@ defaults to `outline`.
 | `class`        | `string`         | `''`               | Additional CSS classes on the panel                                             |
 | `close-button` | `bool`           | `true`             | Shows the X close icon                                                          |
 | `fixed-top`    | `bool`           | `false`            | Pins the modal to the top with a margin (ignored when `size="full"`)            |
-| `frame`        | `?string`        | `null`             | Renders a Turbo Frame dynamic content target                                    |
+| `frame`        | `string\|object\|false\|null` | `null` | Renders one Turbo Frame dynamic content target; objects use `dom_id()`          |
 | `motion`       | `string`         | `'default'`        | `default` follows CSS motion; `none` disables it                                |
 | `stimulus`     | `Htmlable\|null` | `null`             | Optional extra Stimulus binding merged into the root element                    |
 
@@ -126,8 +130,13 @@ Pass an arbitrary size to set an inline max width on the dialog positioner:
 
 ## Dynamic content with Turbo Frames
 
-For a global modal shell in a layout, provide `frame` and leave the default slot empty. The root renders the content
-fallback automatically.
+For a global modal shell in a layout, provide `frame`. The modal guarantees exactly one frame content host. If the slot
+does not contain `<hw:modal.content>`, it appends an empty content host even when the slot contains a trigger or plain
+markup. If the slot contains one content host, that host wraps the frame and its slot becomes fallback content. More than
+one content host with `frame` is invalid.
+
+The root component owns the matching frame id. Do not place a raw `<turbo-frame>` with that id in the slot; use one
+`<hw:modal.content>` when fallback content is needed.
 
 ```blade
 <a href="/posts/1/edit" data-turbo-frame="modal">
@@ -152,6 +161,15 @@ This renders a frame inside the modal content:
 
 When the Turbo Frame receives content, the modal opens automatically. Return an empty `update` or `replace` stream for
 the frame id, or a `refresh` stream, to close it after a successful action.
+
+`frame` accepts strings or objects resolved with `dom_id()`; null, false, empty, and whitespace-only values disable the
+frame host.
+
+An anchor `<hw:modal.trigger>` inside a frame-backed modal inherits the host frame as `data-turbo-frame`. Turbo navigates
+into the host; the modal opens when a loading template or the response content reaches the frame. A local anchor trigger
+without a frame opens the existing modal content immediately and cancels its `href` navigation. A local `frame` value
+overrides the inherited target. An explicit native `data-turbo-frame` wins; binding it to `false` suppresses the inherited
+target and makes the trigger local.
 
 ## Loading template
 

@@ -1,5 +1,6 @@
 // @hotwire-package
 import { Controller } from "@hotwired/stimulus";
+import { frameEventAffects } from "./_frame_events.js";
 
 const FOCUSABLE_SELECTOR = "input, select, textarea, button";
 
@@ -23,7 +24,9 @@ export default class extends Controller {
         document.removeEventListener("turbo:frame-load", this.handleFrameLoad);
     }
 
-    handleFrameLoad() {
+    handleFrameLoad(event) {
+        if (!frameEventAffects(this.element, event)) return;
+
         this.focusFirst();
     }
 

@@ -1,5 +1,6 @@
 @aware([
     'size' => 'md',
+    'id' => '',
     'class' => '',
     'closeButton' => true,
     'fixedTop' => false,
@@ -38,7 +39,7 @@
         <div data-slot="modal-panel" data-size="{{ $size }}" @if ($class !== '') class="{{ $class }}" @endif>
             <div data-slot="modal-content" data-size="{{ $size }}" {{ $attributes }}>
                 @if ($frame !== null)
-                    <turbo-frame id="{{ $frame }}" data-modal-target="dynamicContent">
+                    <turbo-frame id="{{ $frame }}" data-modal-target="dynamicContent" data-modal-frame-owner="{{ $id }}">
                         {{ $slot }}
                     </turbo-frame>
                 @else
@@ -51,7 +52,7 @@
                     type="button"
                     data-slot="modal-close-icon"
                     data-modal-size="{{ $size }}"
-                    data-action="modal#close"
+                    data-action="click->modal#close"
                     aria-label="Close modal"
                 >
                     <x-hw::icon name="x" />

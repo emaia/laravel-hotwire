@@ -15,9 +15,10 @@ Compact status label for counts, states and inline metadata.
 | Prop | Default | Description |
 | --- | --- | --- |
 | `variant` | `default` | `default`, `secondary`, `destructive`, `outline`, `ghost` or `link`. |
-| `as` | `span` | Render a different element, usually `a` for link badges. |
+| `as` | `span` | Render `span` or `a`. Values are normalized and validated. |
 
-Use `as="a"` and pass link attributes directly to the badge when it should behave as a link.
+Use `as="a"` and pass link attributes directly to the badge when it should behave as a link. `as` is trimmed,
+lowercased, and restricted to `span` or `a`; unsupported values are rejected.
 
 ## Styling Hooks
 

@@ -2,6 +2,20 @@
 
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
+use Illuminate\View\ViewException;
+
+it('targets only enabled dropdown links with frame', function () {
+    $enabled = $this->blade('<x-hw::dropdown.item href="/tasks" frame="content">Tasks</x-hw::dropdown.item>');
+    $disabled = $this->blade('<x-hw::dropdown.item href="/tasks" frame="content" disabled>Tasks</x-hw::dropdown.item>');
+
+    $enabled->assertSee('data-turbo-frame="content"', false)
+        ->assertDontSee(' frame="content"', false);
+    $disabled->assertDontSee('data-turbo-frame', false);
+});
+
+it('rejects unsupported dropdown item button types', function () {
+    $this->blade('<x-hw::dropdown.item type="invalid">Action</x-hw::dropdown.item>');
+})->throws(ViewException::class, 'Unsupported button type');
 
 it('renders the controller, trigger button and menu wiring', function () {
     $view = $this->blade('
@@ -72,6 +86,35 @@ it('uses an existing child component as the trigger when requested', function ()
         ->assertDontSee('<buttontype', false)
         ->assertDontSee('data-slot="dropdown-trigger"', false);
 });
+
+it('rejects invalid as-child trigger composition', function (string $slot) {
+    $this->blade('<x-hw::dropdown><x-hw::dropdown.trigger as-child>'.$slot.'</x-hw::dropdown.trigger></x-hw::dropdown>');
+})->with([
+    'empty' => '',
+    'text' => 'Open',
+    'multiple roots' => '<button>One</button><button>Two</button>',
+    'non interactive' => '<div>Open</div>',
+])->throws(ViewException::class, 'as-child requires exactly one button or anchor root element.');
+
+it('keeps disabled as-child anchor triggers inert', function (string $anchor) {
+    $view = $this->blade('<x-hw::dropdown><x-hw::dropdown.trigger as-child>'.$anchor.'</x-hw::dropdown.trigger></x-hw::dropdown>');
+
+    $view->assertSee('aria-disabled="true"', false)
+        ->assertSee('tabindex="-1"', false)
+        ->assertDontSee('href="/settings"', false)
+        ->assertDontSee('data-action=', false);
+})->with([
+    'lowercase attributes' => '<a href="/settings" aria-disabled="true">Settings</a>',
+    'uppercase attributes' => '<A HREF="/settings" ARIA-DISABLED="true">Settings</A>',
+]);
+
+it('treats falsey but present dropdown item destinations as links', function (string $href) {
+    $view = $this->blade('<x-hw::dropdown.item :href="$href">Action</x-hw::dropdown.item>', ['href' => $href]);
+
+    $view->assertSee('<a', false)
+        ->assertSee('href="'.$href.'"', false)
+        ->assertDontSee('<button', false);
+})->with(['', '0']);
 
 it('does not render a trigger when no trigger subcomponent is provided', function () {
     $view = $this->blade('
@@ -359,7 +402,7 @@ it('renders dropdown items as links or buttons with state hooks', function () {
     ');
 
     $view->assertSee('<a', false);
-    $view->assertSee('href="/billing"', false);
+    $view->assertDontSee('href="/billing"', false);
     $view->assertSee('data-disabled="true"', false);
     $view->assertSee('aria-disabled="true"', false);
     $view->assertSee('tabindex="-1"', false);

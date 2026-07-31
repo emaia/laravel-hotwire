@@ -2,18 +2,22 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Emaia\LaravelHotwire\Support\FrameTarget;
 use Illuminate\View\Component;
 
 class Breadcrumb extends Component
 {
     /**
-     * @param  array<int, array{label?: mixed, href?: string|null, current?: bool, type?: string}>|null  $items
+     * @param  array<int, array{label?: mixed, href?: string|null, current?: bool, type?: string, frame?: string|object|bool|null}>|null  $items
      */
     public function __construct(
         public string $label = 'Breadcrumb',
         public ?array $items = null,
         public string $ellipsisLabel = 'More pages',
-    ) {}
+        public string|object|bool|null $frame = null,
+    ) {
+        $this->frame = FrameTarget::normalize($this->frame);
+    }
 
     public function render()
     {
@@ -26,7 +30,7 @@ class Breadcrumb extends Component
     }
 
     /**
-     * @return array<int, array{label: mixed, href: string|null, current: bool, type: string}>
+     * @return array<int, array{label: mixed, href: string|null, current: bool, type: string, frame: string|null}>
      */
     public function normalizedItems(): array
     {
@@ -42,6 +46,9 @@ class Breadcrumb extends Component
                 'href' => is_string($href) ? $href : null,
                 'current' => (bool) ($item['current'] ?? ($index === $lastIndex && $href === null && $type !== 'ellipsis')),
                 'type' => $type,
+                'frame' => array_key_exists('frame', $item)
+                    ? FrameTarget::normalize($item['frame'])
+                    : $this->frame,
             ];
         }, $items, array_keys($items));
     }

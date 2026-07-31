@@ -2,6 +2,16 @@
 
 use Emaia\LaravelHotwire\Components\Attachment\Trigger;
 
+it('targets attachment links and delegated actions with frame', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::attachment.trigger as="a" href="/files/1" frame="preview">Open</x-hw::attachment.trigger>
+        <x-hw::attachment.action as="a" href="/files/1" frame="preview">Open</x-hw::attachment.action>
+    BLADE);
+
+    expect(substr_count((string) $view, 'data-turbo-frame="preview"'))->toBe(2)
+        ->and((string) $view)->not->toContain(' frame="preview"');
+});
+
 it('renders an attachment with semantic state size and orientation', function () {
     $view = $this->blade('<x-hw::attachment state="uploading" size="sm" orientation="vertical">Upload</x-hw::attachment>');
 
@@ -59,6 +69,21 @@ it('renders attachment trigger as a link when requested', function () {
         ->assertSee('href="/files/report.pdf"', false)
         ->assertSee('data-slot="attachment-trigger"', false)
         ->assertDontSee('type="button"', false);
+});
+
+it('treats a null disabled binding on attachment links as enabled', function () {
+    $view = $this->blade('<x-hw::attachment.trigger as="a" href="/files/report.pdf" frame="preview" :disabled="$disabled">Open</x-hw::attachment.trigger>', ['disabled' => null]);
+
+    $view->assertSee('href="/files/report.pdf"', false)
+        ->assertSee('data-turbo-frame="preview"', false)
+        ->assertDontSee('aria-disabled="true"', false);
+});
+
+it('preserves accessibility attributes on enabled non-interactive triggers', function () {
+    $view = $this->blade('<x-hw::attachment.trigger as="span" tabindex="0" aria-disabled="false">Open</x-hw::attachment.trigger>');
+
+    $view->assertSee('tabindex="0"', false)
+        ->assertSee('aria-disabled="false"', false);
 });
 
 it('passes attributes through attachment parts', function () {

@@ -1,4 +1,4 @@
-@aware(['side' => 'right', 'backdrop' => true, 'frame' => null, 'motion' => 'default'])
+@aware(['id' => '', 'side' => 'right', 'backdrop' => true, 'frame' => null, 'motion' => 'default'])
 
 <div
     data-slot="sheet-overlay"
@@ -25,7 +25,7 @@
         {{ $attributes }}
     >
         @if ($frame !== null)
-            <turbo-frame id="{{ $frame }}" data-sheet-target="dynamicContent">
+            <turbo-frame id="{{ $frame }}" data-sheet-target="dynamicContent" data-sheet-frame-owner="{{ $id }}">
                 {{ $slot }}
             </turbo-frame>
         @else

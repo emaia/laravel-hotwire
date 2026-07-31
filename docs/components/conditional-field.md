@@ -155,11 +155,15 @@ $state = [
 
 ## Props
 
-| Prop    | Type            | Default      | Description                                                                                                |
-|---------|-----------------|--------------|------------------------------------------------------------------------------------------------------------|
-| `when`  | `string\|array` | (required)   | Show/hide rule. Use `field=value` strings for common cases or an array for complex rules.                  |
-| `state` | `mixed`         | inherited    | Optional local state override. Usually set `state` on `<hw:form>` instead. Anything `data_get()` can read. |
-| `tag`   | `string`        | `'fieldset'` | Wrapper element. `<fieldset>` is recommended because the `disabled` cascade reaches descendant controls.   |
+| Prop    | Type             | Default      | Description                                                                                                |
+|---------|------------------|--------------|------------------------------------------------------------------------------------------------------------|
+| `when`  | `string\|array`  | (required)   | Show/hide rule. Use `field=value` strings for common cases or an array for complex rules.                  |
+| `state` | `mixed`          | inherited    | Optional local state override. Usually set `state` on `<hw:form>` instead. Anything `data_get()` can read. |
+| `as`    | `fieldset\|div`  | `'fieldset'` | Validated wrapper element. `fieldset` is recommended.                                                    |
+| `tag`   | `fieldset\|div`  | `'fieldset'` | Validated compatibility input used only when `as` is omitted.                                           |
+
+Prefer `as` for new code. Both `as` and the compatibility `tag` input are trimmed, lowercased, and restricted to
+`fieldset` or `div`; when both are present, `as` wins. Unsupported values are rejected.
 
 ## Token Shortcuts
 
@@ -176,13 +180,16 @@ $state = [
 For a single-field dependent that does not need a `<legend>`, `<div>` is acceptable:
 
 ```blade
-<hw:conditional-field tag="div" when="mode=advanced" class="mt-4">
+<hw:conditional-field as="div" when="mode=advanced" class="mt-4">
     <hw:input name="threshold" />
 </hw:conditional-field>
 ```
 
-The controller walks descendant inputs and toggles their `disabled` state instead of using the
-`<fieldset>` cascade. Slightly more work at runtime, but the markup stays flatter.
+At runtime, the controller walks descendant controls, remembers each control's original `disabled` state, disables them
+while hidden, and restores the original state when shown. This preserves controls that were already disabled. Without
+JavaScript, however, `disabled` on the wrapper cascades to descendants only for `<fieldset>`; a hidden server-rendered
+`<div>` does not prevent its descendants from submitting. Keep the recommended `fieldset` when no-JavaScript disabled
+cascading matters.
 
 ## Multiple Dependents Reuse The Same Controller
 

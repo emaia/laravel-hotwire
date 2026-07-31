@@ -1,11 +1,14 @@
 @php
-    $tag = $href ? 'a' : 'button';
+    $tag = $href !== null ? 'a' : 'button';
+    $resolvedFrame = $tag === 'a' ? \Emaia\LaravelHotwire\Support\FrameTarget::resolve($frame, $attributes) : null;
+    $buttonAttributes = $attributes->except(['frame', 'data-turbo-frame']);
 @endphp
 
 <{{ $tag }}
-    {{ $attributes->merge([
-        'href' => $href,
-        'type' => $href ? null : $type,
+    {{ $buttonAttributes->merge([
+        'href' => $tag === 'a' ? $href : null,
+        'data-turbo-frame' => $resolvedFrame,
+        'type' => $tag === 'button' ? $type : null,
         'data-slot' => 'sidebar-menu-sub-button',
         'data-sidebar' => 'menu-sub-button',
         'data-size' => $size,

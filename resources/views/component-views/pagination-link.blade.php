@@ -1,13 +1,14 @@
 @php
     $isDisabled = $disabled || ($href === null && ! $active);
     $tag = ($active || $isDisabled) ? 'span' : 'a';
-    $linkAttributes = $tag === 'a' ? $attributes : $attributes->except(['data-turbo-frame', 'data-turbo-stream']);
+    $resolvedFrame = $tag === 'a' ? \Emaia\LaravelHotwire\Support\FrameTarget::resolve($frame, $attributes) : null;
+    $linkAttributes = $attributes->except(['frame', 'turbo-frame', 'data-turbo-frame', 'data-turbo-stream']);
 @endphp
 
 <{{ $tag }}
     {{ $linkAttributes->merge([
         'href' => $tag === 'a' ? $href : null,
-        'data-turbo-frame' => $tag === 'a' ? $turboFrame : null,
+        'data-turbo-frame' => $resolvedFrame,
         'data-turbo-stream' => $tag === 'a' && $turboStream ? true : null,
         'aria-current' => $active ? 'page' : null,
         'aria-disabled' => $isDisabled ? 'true' : null,

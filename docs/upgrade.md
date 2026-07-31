@@ -4,6 +4,42 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 
 ---
 
+## Unreleased
+
+### Rename Pagination frame targets
+
+Pagination and its `link`, `previous`, and `next` subcomponents now expose only `frame`. Replace `turbo-frame` or
+`turboFrame` props with `frame`; there is no compatibility alias. Raw `data-turbo-frame` remains available as a native
+attribute on actionable subcomponents.
+
+```diff
+- <hw:pagination :paginator="$users" turbo-frame="results" />
++ <hw:pagination :paginator="$users" frame="results" />
+```
+
+### Use supported `as` values
+
+Polymorphic `as` values are now normalized and validated. Update custom tags to the component allowlist: Button
+`button|a`; Badge `span|a`; Item `div|a|button`; Sticky `div|header|footer|aside|nav|section`; Button Group Text
+`div|span|p`; Hover Card Trigger `button|a`; Navbar Item `a|button|span`; Modal Trigger/Close `button|a`; Attachment
+Trigger `button|a|div|span`; Conditional Field `fieldset|div`. Native button types are limited to
+`button|submit|reset`. Attachment Action delegates its `as` value to Button and therefore uses the same `button|a`
+allowlist. Conditional Field prefers `as`; its documented `tag` input remains as a validated compatibility input.
+
+### Update strict `as-child` triggers
+
+`dropdown.trigger as-child` now requires exactly one root `<button>` or `<a>`. Empty slots, text-only content,
+non-interactive roots, and multiple root elements now throw during rendering. Wrap custom trigger content in one native
+button or anchor before upgrading.
+
+### Keep one managed overlay frame host
+
+Modal, Drawer, and Sheet reject multiple content subcomponents when `frame` is set. Use exactly one matching
+`modal.content`, `drawer.content`, or `sheet.content`; do not add a raw `<turbo-frame>` with the same id because the root
+component owns that host.
+
+---
+
 ## Upgrading to `0.58.0`
 
 `0.58.0` replaces the Dropzone-backed File Upload component and controller with a native file input, drag-and-drop

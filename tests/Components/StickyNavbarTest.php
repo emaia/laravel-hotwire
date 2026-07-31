@@ -3,6 +3,14 @@
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
 
+it('targets only enabled navbar links with frame', function () {
+    $enabled = $this->blade('<x-hw::navbar.item href="/tasks" frame="content">Tasks</x-hw::navbar.item>');
+    $disabled = $this->blade('<x-hw::navbar.item href="/tasks" frame="content" disabled>Tasks</x-hw::navbar.item>');
+
+    $enabled->assertSee('data-turbo-frame="content"', false);
+    $disabled->assertDontSee('data-turbo-frame', false);
+});
+
 // --- Sticky ---
 
 it('renders a top sticky surface with offset css variable', function () {
