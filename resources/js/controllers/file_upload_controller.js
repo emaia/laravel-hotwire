@@ -163,7 +163,7 @@ export default class extends Controller {
         this.restoreUploadFeedback();
 
         if (remoteValues.length > 0 && this.deleteUrlValue !== "") {
-            this.deleteRemoteValues(remoteValues).catch((error) => console.error("file-upload delete failed:", error));
+            void this.deleteRemoteValues(remoteValues);
         }
 
         const files = items.map((item) => item.file);
@@ -1091,10 +1091,11 @@ export default class extends Controller {
     setState(item, state) {
         if (!item.element) return;
 
-        item.element.setAttribute("data-state", state);
+        const visualState = state === "queued" ? "idle" : state;
+        item.element.setAttribute("data-state", visualState);
 
         const description = item.element.querySelector("[data-file-upload-description]");
-        if (state === "error") {
+        if (visualState === "error") {
             item.element.setAttribute("aria-invalid", "true");
             description?.setAttribute("role", "alert");
             return;

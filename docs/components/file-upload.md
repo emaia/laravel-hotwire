@@ -301,6 +301,14 @@ loading state.
 Single mode keeps the previous completed upload while a replacement is validating or uploading, then replaces it only
 after the new upload succeeds. Multiple mode keeps preserved inputs and appends new ones.
 
+`delete-url` gives Clear all destructive remote semantics: completed uploads and preserved `value`/`old()` tokens are
+deleted immediately, before the surrounding form is submitted. Use it on edit forms only when those tokens represent
+draft/uncommitted files or when the DELETE endpoint also keeps persisted model state consistent; abandoning a form after
+Clear all otherwise leaves the model pointing at a removed file.
+
+A successful single-file replacement only removes the preserved hidden input locally. It does not call `delete-url` for
+the previous `value`/`old()` token; clean up that superseded file after the final form update commits.
+
 ## Hybrid JSON
 
 Any JSON response can include an optional `stream` string alongside its normal token and image URL. This works in every

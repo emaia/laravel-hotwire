@@ -959,6 +959,27 @@ test("retry requeues retryable server errors in the same attachment", async () =
     expect(mounted.root.querySelector('input[type="hidden"][name="avatar"]')?.value).toBe("retry-token");
 });
 
+test("a retry waiting behind an active upload keeps the idle visual state", async () => {
+    await mount(defaultHtml(
+        'data-file-upload-multiple-value="true" data-file-upload-parallel-uploads-value="1"'
+    ));
+    mounted.controller.select({
+        target: { files: [file("failed.png"), file("active.png")], value: "x" },
+    });
+    requests[0].respond(500, "Server error", { "content-type": "text/plain" });
+    await wait(0);
+
+    const failed = mounted.controller.items.find((item) => item.file.name === "failed.png");
+    mounted.controller.retry({ preventDefault() {}, params: { id: failed.id } });
+
+    expect(requests).toHaveLength(2);
+    expect(failed.state).toBe("queued");
+    expect(failed.element.dataset.state).toBe("idle");
+
+    mounted.root.dispatchEvent(new CustomEvent("turbo:morph-element", { bubbles: true }));
+    expect(failed.element.dataset.state).toBe("idle");
+});
+
 test("failed list image previews restore their icon and retry with a fresh object URL", async () => {
     await mount();
     mounted.controller.select({

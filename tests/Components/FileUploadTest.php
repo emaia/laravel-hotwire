@@ -134,7 +134,8 @@ it('renders the native file input, dropzone, attachment list, template and annou
         ->assertSee('role="listitem"', false)
         ->assertSee('role="status"', false)
         ->assertSee('aria-live="polite"', false)
-        ->assertSee('data-file-upload-target="announcer"', false);
+        ->assertSee('data-file-upload-target="announcer"', false)
+        ->assertDontSee('data-file-upload-progressbar', false);
 });
 
 it('normalizes accept rules before rendering attributes and controller values', function () {

@@ -300,6 +300,7 @@ it('keeps attachment image previews covered and uses the shared shimmer motion',
         ->toContain('[data-shimmer="true"]')
         ->toContain('hotwire-shimmer')
         ->toContain('prefers-reduced-motion: reduce');
+    expect(substr_count($css, 'animation: hotwire-shimmer 1.35s linear infinite;'))->toBe(1);
 });
 
 it('styles default and custom file upload errors with destructive feedback', function () use ($novaPresetPath) {

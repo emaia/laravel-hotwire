@@ -204,7 +204,7 @@
                     <x-hw::attachment.title data-file-upload-name></x-hw::attachment.title>
                     <x-hw::attachment.description data-file-upload-description></x-hw::attachment.description>
                     <div data-file-upload-progress hidden>
-                        <x-hw::progress value="0" data-file-upload-progressbar />
+                        <x-hw::progress value="0" />
                     </div>
                 </x-hw::attachment.content>
                 <x-hw::attachment.actions>
