@@ -27,6 +27,7 @@ Flat (non-associative) options arrays are automatically normalized: `['main', 'd
 | `options`           | `array`             | `[]`           | `[value => label]` pairs                                             |
 | `selected`          | `array`             | `[]`           | Values that should be checked                                        |
 | `select-all`        | `bool`              | `false`        | Renders a master checkbox that toggles all items                     |
+| `disable-indeterminate` | `bool`          | `false`        | Keep the select-all checkbox binary when some items are checked      |
 | `select-all-label`  | `string\|null`      | `"Select all"` | Custom label for the master checkbox                                 |
 | `orientation`       | `string`            | `"vertical"`   | `vertical` or `horizontal`, matching `<hw:radio-group>`              |
 | `disabled`          | `bool`              | `false`        | Disables every generated checkbox and rich item by default           |
@@ -149,7 +150,7 @@ behavior and only toggle between fully checked and unchecked:
     name="tags[]"
     :options="[1 => 'Laravel', 2 => 'Hotwire']"
     select-all
-    data-checkbox-select-all-disable-indeterminate-value="true"
+    disable-indeterminate
 />
 ```
 

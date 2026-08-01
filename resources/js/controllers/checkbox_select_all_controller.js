@@ -48,6 +48,10 @@ export default class extends Controller {
         this.refresh();
     }
 
+    disableIndeterminateValueChanged() {
+        this.refresh();
+    }
+
     toggle(e) {
         e.preventDefault();
 
@@ -58,16 +62,15 @@ export default class extends Controller {
     }
 
     refresh() {
+        if (!this.hasCheckboxAllTarget) return;
+
         const checkboxesCount = this.checkboxTargets.length;
         const checkboxesCheckedCount = this.checked.length;
+        const allChecked = checkboxesCount > 0 && checkboxesCheckedCount === checkboxesCount;
+        const someChecked = checkboxesCheckedCount > 0 && checkboxesCheckedCount < checkboxesCount;
 
-        if (this.disableIndeterminateValue) {
-            this.checkboxAllTarget.checked = checkboxesCheckedCount === checkboxesCount;
-        } else {
-            this.checkboxAllTarget.checked = checkboxesCount > 0 && checkboxesCheckedCount === checkboxesCount;
-            this.checkboxAllTarget.indeterminate =
-                checkboxesCheckedCount > 0 && checkboxesCheckedCount < checkboxesCount;
-        }
+        this.checkboxAllTarget.checked = allChecked;
+        this.checkboxAllTarget.indeterminate = !this.disableIndeterminateValue && someChecked;
     }
 
     triggerInputEvent(checkbox) {
