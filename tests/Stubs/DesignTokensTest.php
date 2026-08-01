@@ -746,6 +746,12 @@ it('defines breadcrumb slots in the nova preset', function () use ($novaPresetPa
         ->toContain('[data-slot="breadcrumb-ellipsis"]');
 });
 
+it('keeps breadcrumb link icons beside their labels', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)->toContain('[data-slot="breadcrumb-link"] { @apply inline-flex items-center gap-1.5 transition-colors hover:text-foreground; }');
+});
+
 it('defines pagination slots in the nova preset', function () use ($novaPresetPath) {
     $css = file_get_contents($novaPresetPath);
 
