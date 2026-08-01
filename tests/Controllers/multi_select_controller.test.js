@@ -59,7 +59,7 @@ const value = () => document.querySelector('[data-multi-select-target="value"]')
 const select = () => document.querySelector('[data-multi-select-target="select"]');
 const option = (value) => document.querySelector(`[data-multi-select-target="option"][data-value="${value}"]`);
 const empty = () => document.querySelector('[data-multi-select-target="empty"]');
-const selectedValues = () => [...select().selectedOptions].map((option) => option.value);
+const selectedValues = () => [...select().options].filter((option) => option.selected).map((option) => option.value);
 const isOpen = () => content().dataset.state === "open" && !content().hidden;
 
 function clickTrigger() {
@@ -270,6 +270,50 @@ test.serial("selects and deselects options while syncing the native select", asy
     expect(option("active").dataset.selected).toBe("false");
     expect(selectedValues()).toEqual([]);
     expect(value().textContent).toBe("Select options");
+});
+
+test.serial("keeps selected attributes as the form state baseline", async () => {
+    await mount({
+        options: '<option value="active" selected>Active</option>',
+        optionMarkup:
+            '<div data-multi-select-target="option" data-value="active" data-selected="true" aria-selected="true">Active</div>',
+    });
+
+    option("active").dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+    expect(select().options[0].selected).toBe(false);
+    expect(select().options[0].hasAttribute("selected")).toBe(true);
+});
+
+test.serial("commits selection defaults only after the owning form submits successfully", async () => {
+    await mount({
+        form: true,
+        options: `
+            <option value="active" selected>Active</option>
+            <option value="paused">Paused</option>
+        `,
+        optionMarkup: `
+            <div data-slot="multi-select-option" data-multi-select-target="option" data-value="active" data-selected="true" role="option" aria-selected="true" tabindex="-1">Active</div>
+            <div data-slot="multi-select-option" data-multi-select-target="option" data-value="paused" data-selected="false" role="option" aria-selected="false" tabindex="-1">Paused</div>
+        `,
+    });
+
+    const form = document.getElementById("multi-select-form");
+    const unrelated = document.body.appendChild(document.createElement("form"));
+    const [active, paused] = select().options;
+    active.defaultSelected = true;
+    paused.defaultSelected = false;
+    active.selected = false;
+    paused.selected = true;
+
+    unrelated.dispatchEvent(new CustomEvent("turbo:submit-end", { bubbles: true, detail: { success: true } }));
+    expect([active.defaultSelected, paused.defaultSelected]).toEqual([true, false]);
+
+    form.dispatchEvent(new CustomEvent("turbo:submit-end", { bubbles: true, detail: { success: false } }));
+    expect([active.defaultSelected, paused.defaultSelected]).toEqual([true, false]);
+
+    form.dispatchEvent(new CustomEvent("turbo:submit-end", { bubbles: true, detail: { success: true } }));
+    expect([active.defaultSelected, paused.defaultSelected]).toEqual([false, true]);
 });
 
 test.serial("list-all summary is capped and keeps the full summary in the title", async () => {
@@ -719,7 +763,7 @@ test.serial("disconnect tolerates content removed by a morph", async () => {
     expect(trigger().getAttribute("aria-expanded")).toBe("false");
 });
 
-async function mount({ values = "", options = null, optionMarkup = null, validation = false, search = true, selectAll = true, clearableSearch = false } = {}) {
+async function mount({ values = "", options = null, optionMarkup = null, validation = false, search = true, selectAll = true, clearableSearch = false, form = false } = {}) {
     const searchMarkup = clearableSearch
         ? `<span data-controller="clear-input">
             <input data-multi-select-target="search" data-clear-input-target="input" type="text">
@@ -731,6 +775,7 @@ async function mount({ values = "", options = null, optionMarkup = null, validat
         "multi-select",
         MultiSelectController,
         `
+        ${form ? '<form id="multi-select-form">' : ""}
         <div data-controller="multi-select"
              data-multi-select-placeholder-value="Select options"
              data-multi-select-select-all-value="${selectAll ? "true" : "false"}"
@@ -758,7 +803,8 @@ async function mount({ values = "", options = null, optionMarkup = null, validat
                 <div data-slot="multi-select-empty" data-multi-select-target="empty" hidden>No options found.</div>
             </div>
             ${validation ? '<input data-multi-select-target="validation" type="text" required tabindex="-1">' : ""}
-        </div>`,
+        </div>
+        ${form ? "</form>" : ""}`,
     );
 }
 

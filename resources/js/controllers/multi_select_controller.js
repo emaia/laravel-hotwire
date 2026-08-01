@@ -40,8 +40,10 @@ export default class extends Controller {
         this.onSearchInput = this.onSearchInput.bind(this);
         this.onSearchKeydown = this.onSearchKeydown.bind(this);
         this.closeForCache = this.closeForCache.bind(this);
+        this.handleFormReset = this.handleFormReset.bind(this);
         this.handleSubmitEnd = this.handleSubmitEnd.bind(this);
         this.focusOutFrame = null;
+        this.form = null;
         this.floating = null;
         this.floatingAnchor = null;
         this.floatingElement = null;
@@ -57,10 +59,12 @@ export default class extends Controller {
     }
 
     connect() {
+        this.form = this.element.closest("form");
         document.addEventListener("click", this.onOutsideClick);
         document.addEventListener("keydown", this.onDocumentKeydown);
         document.addEventListener("turbo:before-cache", this.closeForCache);
-        document.addEventListener("turbo:submit-end", this.handleSubmitEnd);
+        this.form?.addEventListener("reset", this.handleFormReset);
+        this.form?.addEventListener("turbo:submit-end", this.handleSubmitEnd);
         this.element.addEventListener("focusout", this.onFocusOut);
         this.element.addEventListener("focusin", this.onFocusIn);
         if (this.hasContentTarget && this.presenceElement !== this.contentTarget) this.setupContent(this.contentTarget);
@@ -79,7 +83,9 @@ export default class extends Controller {
         document.removeEventListener("click", this.onOutsideClick);
         document.removeEventListener("keydown", this.onDocumentKeydown);
         document.removeEventListener("turbo:before-cache", this.closeForCache);
-        document.removeEventListener("turbo:submit-end", this.handleSubmitEnd);
+        this.form?.removeEventListener("reset", this.handleFormReset);
+        this.form?.removeEventListener("turbo:submit-end", this.handleSubmitEnd);
+        this.form = null;
         this.element.removeEventListener("focusout", this.onFocusOut);
         this.element.removeEventListener("focusin", this.onFocusIn);
         if (this.hasContentTarget) {
@@ -316,7 +322,6 @@ export default class extends Controller {
         const native = this.nativeOptionsByValue.get(option.dataset.value);
         if (native) {
             native.selected = selected;
-            native.toggleAttribute("selected", selected);
         }
     }
 
@@ -343,7 +348,7 @@ export default class extends Controller {
     }
 
     syncOptionsFromSelect() {
-        const selected = new Set([...this.selectTarget.selectedOptions].map((option) => option.value));
+        const selected = new Set([...this.selectTarget.options].filter((option) => option.selected).map((option) => option.value));
 
         this.optionTargets.forEach((option) => {
             this.setSelected(option, selected.has(option.dataset.value));
@@ -425,8 +430,27 @@ export default class extends Controller {
         this.topLayer?.hide();
     }
 
+    handleFormReset(event) {
+        const form = this.form;
+
+        queueMicrotask(() => {
+            if (event.defaultPrevented || !form || this.form !== form || !this.element.isConnected) return;
+
+            this.syncOptionsFromSelect();
+            if (this.hasSearchTarget) {
+                this.onSearchInput();
+            } else {
+                this.updateEmptyState();
+                this.updateSelectAllState();
+                this.updateMaxState();
+            }
+            this.updateSummary();
+            this.updateValidation();
+        });
+    }
+
     handleSubmitEnd(event) {
-        if (!event.detail?.success) return;
+        if (!event.detail?.success || event.target !== this.form) return;
 
         [...this.selectTarget.options].forEach((option) => {
             option.defaultSelected = option.selected;
@@ -468,7 +492,7 @@ export default class extends Controller {
     }
 
     selectedValues() {
-        return [...this.selectTarget.selectedOptions].map((option) => option.value);
+        return [...this.selectTarget.options].filter((option) => option.selected).map((option) => option.value);
     }
 
     selectedOptions() {
