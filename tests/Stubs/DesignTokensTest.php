@@ -271,6 +271,14 @@ it('defines component styles in the nova preset via data-slot selectors', functi
         ->toContain('[data-slot="alert-dialog-panel"]');
 });
 
+it('keeps card spacing aligned with shadcn nova', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain('[data-slot="card"] { --card-spacing: --spacing(4); @apply flex flex-col gap-(--card-spacing) overflow-hidden rounded-xl bg-card py-(--card-spacing)')
+        ->toContain('[data-slot="card-header"] { @apply grid auto-rows-min items-start gap-1 rounded-t-xl px-(--card-spacing) has-[[data-slot=card-action]]:grid-cols-[1fr_auto] has-[[data-slot=card-description]]:grid-rows-[auto_auto] [.border-b]:pb-(--card-spacing); }');
+});
+
 it('smooths accordion details content without measuring height in JavaScript', function () use ($novaPresetPath) {
     $css = file_get_contents($novaPresetPath);
 
