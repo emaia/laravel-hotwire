@@ -6,6 +6,26 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 
 ## Unreleased
 
+### Refresh published Frame Src controllers
+
+`turbo--frame-src` now listens on its own element instead of `document` so one instance cannot affect unrelated frame
+requests. Mount it on the submitting form, its Turbo Frame, or another ancestor of the form. Instances on a sibling or
+descendant no longer receive the bubbling `turbo:before-fetch-request` event and must be moved.
+
+Applications using the vendor-loaded controller update automatically. Refresh package-owned published copies with:
+
+```bash
+php artisan hotwire:check --fix
+```
+
+The command will not overwrite a marker-free customized `frame_src_controller.js`; manually port its scoped listener,
+nearest-frame source resolution, case-insensitive header handling, and explicit-header preservation.
+
+Laravel Hotwire now requires `emaia/laravel-hotwire-turbo ^0.12.0`. Custom `_turbo_frame_src` inputs and
+`X-Turbo-Frame-Src` headers must contain either a root-relative path beginning with exactly one `/`, or an absolute
+HTTP(S) URL with a trusted host. Path-relative, query-relative, fragment-relative, malformed, and unsafe values are
+rejected. When no explicit or session fallback is safe, validation throws instead of redirecting to `/`.
+
 ### Rename Pagination frame targets
 
 Pagination and its `link`, `previous`, and `next` subcomponents now expose only `frame`. Replace `turbo-frame` or

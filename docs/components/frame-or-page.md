@@ -183,6 +183,26 @@ public function update(Request $request, Message $message)
 See the [frame-or-page recipe](../recipes/frame-or-page.md) for the full pattern including dashboard
 layout setup and frame host wiring.
 
+## Returning validation errors to the frame source
+
+The visible page URL is not necessarily the URL that rendered a frame. A task board at `/tasks` may load an edit form
+from `/tasks/42/edit` into `modal`, then submit the mutation to `PUT /tasks/42`. On validation failure, redirecting to
+the board would make the form disappear because the response does not repopulate the modal frame.
+
+Use `track-frame-src` on the form so the frame-rendering request URL is sent as `_turbo_frame_src`:
+
+```blade
+<hw:frame-or-page frame="modal" layout="dashboard">
+    <hw:form :action="route('tasks.update', $task)" method="put" track-frame-src>
+        {{-- fields --}}
+    </hw:form>
+</hw:frame-or-page>
+```
+
+`TurboFormRequest` redirects validation failures back to that explicit, sanitized source. The
+[`turbo--frame-src`](../controllers/turbo/frame-src.md) controller can provide the same context through a header when
+the hidden input is unavailable, but the server-rendered input remains the deterministic primary source.
+
 ## Influencing the overlay host from a frame payload
 
 A common confusion: trying to configure shared chrome (a modal, sheet, drawer, or sidebar host) from within a view

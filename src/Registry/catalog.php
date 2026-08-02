@@ -982,7 +982,7 @@ return [
             'source' => 'resources/js/controllers/turbo/frame_src_controller.js',
             'docs' => 'docs/controllers/turbo/frame-src.md',
             'category' => 'turbo',
-            'description' => 'Injects the X-Turbo-Frame-Src header on Turbo Frame requests for correct redirect resolution',
+            'description' => 'Injects the X-Turbo-Frame-Src header on same-frame form submissions for correct redirect resolution',
         ],
         'turbo--polling' => [
             'source' => 'resources/js/controllers/turbo/polling_controller.js',
