@@ -67,13 +67,13 @@ test.serial("refreshes and clears stale state when disable-indeterminate changes
     expect(master.indeterminate).toBe(true);
 
     mounted.root.setAttribute("data-checkbox-select-all-disable-indeterminate-value", "true");
-    await wait(0);
+    mounted.controller.disableIndeterminateValueChanged();
 
     expect(master.checked).toBe(false);
     expect(master.indeterminate).toBe(false);
 
     mounted.root.removeAttribute("data-checkbox-select-all-disable-indeterminate-value");
-    await wait(0);
+    mounted.controller.disableIndeterminateValueChanged();
 
     expect(master.indeterminate).toBe(true);
 });
@@ -102,10 +102,117 @@ test.serial("re-syncs master state after turbo:render (morph scenario)", async (
     expect(master.indeterminate).toBe(true);
 });
 
-async function mount(html, values = "") {
+test.serial("re-syncs master state after a native form reset", async () => {
+    await mount(`
+        <input type="checkbox" data-checkbox-select-all-target="checkboxAll" />
+        <input type="checkbox" data-checkbox-select-all-target="checkbox" checked />
+        <input type="checkbox" data-checkbox-select-all-target="checkbox" />
+    `, "", { form: true });
+
+    const form = document.querySelector("form");
+    const master = document.querySelector('[data-checkbox-select-all-target="checkboxAll"]');
+    const items = document.querySelectorAll('[data-checkbox-select-all-target="checkbox"]');
+    items[1].checked = true;
+    items[1].dispatchEvent(new Event("change", { bubbles: true }));
+    expect(master.checked).toBe(true);
+
+    form.reset();
+    await wait(0);
+
+    expect(master.checked).toBe(false);
+    expect(master.indeterminate).toBe(true);
+});
+
+test.serial("re-syncs when the controller contains the reset form", async () => {
     mounted = await mountController(
         "checkbox-select-all",
         CheckboxSelectAllController,
-        `<div data-controller="checkbox-select-all" ${values}>${html}</div>`,
+        `<div data-controller="checkbox-select-all">
+            <form id="checkbox-form">
+                <input type="checkbox" data-checkbox-select-all-target="checkboxAll" />
+                <input type="checkbox" data-checkbox-select-all-target="checkbox" checked />
+                <input type="checkbox" data-checkbox-select-all-target="checkbox" />
+            </form>
+        </div>`,
+    );
+
+    const form = document.querySelector("form");
+    const master = document.querySelector('[data-checkbox-select-all-target="checkboxAll"]');
+    const items = document.querySelectorAll('[data-checkbox-select-all-target="checkbox"]');
+    items[1].checked = true;
+    items[1].dispatchEvent(new Event("change", { bubbles: true }));
+    expect(master.checked).toBe(true);
+
+    form.reset();
+    await wait(0);
+
+    expect(master.checked).toBe(false);
+    expect(master.indeterminate).toBe(true);
+});
+
+test.serial("rebinds reset handling when a wrapped form is replaced", async () => {
+    mounted = await mountController(
+        "checkbox-select-all",
+        CheckboxSelectAllController,
+        `<div data-controller="checkbox-select-all">
+            <form>
+                <input type="checkbox" data-checkbox-select-all-target="checkboxAll" />
+                <input type="checkbox" data-checkbox-select-all-target="checkbox" />
+            </form>
+        </div>`,
+    );
+
+    mounted.root.innerHTML = `
+        <form id="replacement-form">
+            <input type="checkbox" data-checkbox-select-all-target="checkboxAll" />
+            <input type="checkbox" data-checkbox-select-all-target="checkbox" checked />
+            <input type="checkbox" data-checkbox-select-all-target="checkbox" />
+        </form>
+    `;
+    await wait(0);
+
+    const form = document.querySelector("#replacement-form");
+    const master = document.querySelector('[data-checkbox-select-all-target="checkboxAll"]');
+    const items = document.querySelectorAll('[data-checkbox-select-all-target="checkbox"]');
+    items[1].checked = true;
+    items[1].dispatchEvent(new Event("change", { bubbles: true }));
+    expect(master.checked).toBe(true);
+
+    form.reset();
+    await wait(0);
+
+    expect(master.checked).toBe(false);
+    expect(master.indeterminate).toBe(true);
+});
+
+test.serial("re-syncs only for the Turbo Frame that contains the group", async () => {
+    await mount(`
+        <input type="checkbox" data-checkbox-select-all-target="checkboxAll" />
+        <input type="checkbox" data-checkbox-select-all-target="checkbox" />
+        <input type="checkbox" data-checkbox-select-all-target="checkbox" />
+    `, "", { frame: true });
+
+    const frame = document.querySelector("#checkbox-frame");
+    const master = document.querySelector('[data-checkbox-select-all-target="checkboxAll"]');
+    const item = document.querySelector('[data-checkbox-select-all-target="checkbox"]');
+    const unrelated = document.body.appendChild(document.createElement("turbo-frame"));
+    item.checked = true;
+
+    unrelated.dispatchEvent(new CustomEvent("turbo:frame-render", { bubbles: true }));
+    expect(master.indeterminate).toBe(false);
+
+    frame.dispatchEvent(new CustomEvent("turbo:frame-render", { bubbles: true }));
+    expect(master.indeterminate).toBe(true);
+});
+
+async function mount(html, values = "", { form = false, frame = false } = {}) {
+    mounted = await mountController(
+        "checkbox-select-all",
+        CheckboxSelectAllController,
+        `${frame ? '<turbo-frame id="checkbox-frame">' : ""}
+        ${form ? '<form id="checkbox-form">' : ""}
+        <div data-controller="checkbox-select-all" ${values}>${html}</div>
+        ${form ? "</form>" : ""}
+        ${frame ? "</turbo-frame>" : ""}`,
     );
 }
