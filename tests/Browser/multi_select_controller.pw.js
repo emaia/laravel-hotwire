@@ -151,6 +151,22 @@ test("preserves form baselines across edits, resets and submissions", async ({ p
     await toggleOption(page, "paused");
     await form.evaluate((element) => {
         element.dispatchEvent(new CustomEvent("turbo:submit-end", { bubbles: true, detail: { success: true } }));
+        const [active, paused] = element.querySelector("select").options;
+        active.defaultSelected = false;
+        paused.defaultSelected = true;
+        active.selected = false;
+        paused.selected = true;
+        element.insertAdjacentHTML("beforeend", '<p aria-invalid="true">Validation failed</p>');
+        document.dispatchEvent(new CustomEvent("turbo:render"));
+    });
+
+    expect(await defaultSelections(page)).toEqual([true, false]);
+    expect(await changedFields(page)).toEqual(["status[]"]);
+
+    await form.evaluate((element) => {
+        element.querySelector('[aria-invalid="true"]').remove();
+        element.dispatchEvent(new CustomEvent("turbo:submit-end", { bubbles: true, detail: { success: true } }));
+        document.dispatchEvent(new CustomEvent("turbo:render"));
     });
 
     expect(await defaultSelections(page)).toEqual([false, true]);
@@ -378,12 +394,18 @@ async function bundle() {
         .replace("export function createFloating", "function createFloating");
     const presence = (await readFile("resources/js/controllers/_presence.js", "utf8"))
         .replace("export function createPresence", "function createPresence");
+    const formErrors = (await readFile("resources/js/controllers/_form_errors.js", "utf8"))
+        .replace("export function formHasErrors", "function formHasErrors");
+    const frameEvents = (await readFile("resources/js/controllers/_frame_events.js", "utf8"))
+        .replaceAll("export function ", "function ");
     const clearInput = (await readFile("resources/js/controllers/clear_input_controller.js", "utf8"))
         .replace('import { Controller } from "@hotwired/stimulus";', "")
         .replace("export default class extends Controller", "class ClearInputController extends Controller");
     const multiSelect = (await readFile("resources/js/controllers/multi_select_controller.js", "utf8"))
         .replace('import { Controller } from "@hotwired/stimulus";', "")
         .replace(/import \{[^}]*\} from "\.\/_floating\.js";\s*/, "")
+        .replace(/import \{[^}]*\} from "\.\/_form_errors\.js";\s*/, "")
+        .replace(/import \{[^}]*\} from "\.\/_frame_events\.js";\s*/, "")
         .replace(/import \{[^}]*\} from "\.\/_presence\.js";\s*/, "")
         .replace(/import \{[^}]*\} from "\.\/_top_layer\.js";\s*/, "")
         .replace("export default class extends Controller", "class MultiSelectController extends Controller");
@@ -399,6 +421,8 @@ async function bundle() {
         const { arrow, autoUpdate, computePosition, flip, hide, offset, shift, size } = window.FloatingUIDOM;
         ${floating}
         ${presence}
+        ${formErrors}
+        ${frameEvents}
         ${topLayer}
         ${clearInput}
         ${multiSelect}

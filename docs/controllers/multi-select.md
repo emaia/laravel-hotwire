@@ -13,7 +13,8 @@ listbox option semantics.
 ## Requirements
 
 - `@floating-ui/dom` for anchored positioning.
-- Ships with `_floating.js`, `_presence.js`, and `_top_layer.js`; publishing the controller publishes these helpers too.
+- Ships with `_floating.js`, `_form_errors.js`, `_frame_events.js`, `_presence.js`, and `_top_layer.js`; publishing the
+  controller publishes these helpers too.
 - Without the Nova preset, reset native Popover positioning with
   `[data-hotwire-top-layer][popover] { inset: auto; margin: 0; }` and define the floating element's border and padding.
 
@@ -131,6 +132,18 @@ Reduced-motion preference skips motion, and reopening during exit cancels stale 
 Replacing the content target tears down Presence, Floating UI, top-layer state, and content listeners for the old node;
 replacing the trigger re-anchors open content. `disconnect()` and `turbo:before-cache` synchronously apply `hidden inert`,
 cancel pending positioning, and leave the top layer so Turbo does not cache an open listbox.
+
+## Form Baselines
+
+Selection changes update the native options' live `selected` state without rewriting their `selected` attributes, so a
+native form reset restores the server-rendered defaults. When the same controller instance survives a submission, it
+commits the current selection as the new reset and unsaved-changes baseline after the corresponding page, frame, or
+Turbo Stream response finishes. A response that reports HTTP success but renders `aria-invalid="true"` in the submitted
+form restores the previous defaults without changing the attempted selection. If the component is replaced, its new
+server-rendered `selected` attributes define the baseline just as they do for native controls. An immediate follow-up
+submission carries the pending response's baseline, so a failed follow-up restores the last accepted selection rather
+than intermediate live DOM state. Turbo Stream validation is scoped to targets that affect the form, and baseline
+settlement waits for relevant custom or deferred stream renderers.
 
 ## Events
 
