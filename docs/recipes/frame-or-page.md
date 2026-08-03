@@ -6,8 +6,8 @@ how the user reached it. One controller, one view, no duplication.
 > The pattern below is also packaged as [`<hw:frame-or-page>`](../components/frame-or-page.md).
 > Use this recipe when you want to understand the moving parts or when you need to customize the
 > dashboard layout itself; reach for the component when you just want the behavior.
-> The component also supports `frameContent` when the modal payload should be smaller than the
-> standalone page.
+> The component also provides lazy `.frame` and `.page` subcomponents when the two presentations need
+> different content, and a `frames` prop when one route can target multiple hosts.
 
 ## The problem
 

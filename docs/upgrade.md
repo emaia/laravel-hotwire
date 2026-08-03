@@ -6,6 +6,41 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 
 ## Unreleased
 
+### Replace Frame Or Page contextual slots
+
+`<hw:frame-or-page>` no longer accepts the eager `frameContent` and `pageContent` named slots. Replace
+them with class-based contextual subcomponents. Content outside the subcomponents remains shared:
+
+```diff
+ <hw:frame-or-page frame="modal" layout="dashboard">
+-    <x-slot:frameContent>Modal controls</x-slot:frameContent>
+-    <x-slot:pageContent>Page controls</x-slot:pageContent>
++    <hw:frame-or-page.frame>Modal controls</hw:frame-or-page.frame>
++    <hw:frame-or-page.page>Page controls</hw:frame-or-page.page>
+     Shared form
+ </hw:frame-or-page>
+```
+
+The removed slots throw with migration guidance rather than silently dropping content. The new branches
+are lazy: Blade does not evaluate the body of a discarded branch.
+
+To let one route target several hosts, replace `frame` with `frames`, add `layout`, and optionally filter
+frame-only content by target:
+
+```blade
+<hw:frame-or-page :frames="['modal', 'settings-panel']" layout="dashboard">
+    <hw:frame-or-page.frame target="modal">Modal controls</hw:frame-or-page.frame>
+    <hw:frame-or-page.frame target="settings-panel">Sheet controls</hw:frame-or-page.frame>
+    <hw:frame-or-page.page>Page controls</hw:frame-or-page.page>
+    Shared form
+</hw:frame-or-page>
+```
+
+Exactly one of `frame` or `frames` is required, and more than one configured frame requires `layout`.
+Do not put the layout outside `<hw:frame-or-page>`: an external wrapper cannot be skipped for frame
+requests. Create a route-specific layout component when you need fixed layout props and pass its name to
+the `layout` prop.
+
 ### Close overlays explicitly before refresh morphs
 
 Modal, Alert Dialog, Drawer, Sheet, and the mobile Sidebar now preserve their controller-owned presence and active

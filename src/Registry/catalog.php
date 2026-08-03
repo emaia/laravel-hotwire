@@ -33,6 +33,8 @@ use Emaia\LaravelHotwire\Components\FlashMessage;
 use Emaia\LaravelHotwire\Components\Form;
 use Emaia\LaravelHotwire\Components\Frame;
 use Emaia\LaravelHotwire\Components\FrameOrPage;
+use Emaia\LaravelHotwire\Components\FrameOrPage\Frame as FrameOrPageFrame;
+use Emaia\LaravelHotwire\Components\FrameOrPage\Page as FrameOrPagePage;
 use Emaia\LaravelHotwire\Components\HoverCard;
 use Emaia\LaravelHotwire\Components\Icon;
 use Emaia\LaravelHotwire\Components\Input;
@@ -332,7 +334,23 @@ return [
             'view' => 'hotwire::component-views.frame-or-page',
             'docs' => 'docs/components/frame-or-page.md',
             'category' => 'turbo',
-            'description' => 'Renders a view as a Turbo Frame payload or wrapped in a layout, based on the Turbo-Frame request header',
+            'description' => 'Renders shared and lazy contextual content as one of several Turbo Frames or as a page layout',
+            'controllers' => [],
+        ],
+        'frame-or-page.frame' => [
+            'class' => FrameOrPageFrame::class,
+            'view' => 'hotwire::component-views.frame-or-page-branch',
+            'docs' => 'docs/components/frame-or-page.md',
+            'category' => 'turbo',
+            'description' => 'Lazily renders contextual content only for a matching Frame Or Page frame request',
+            'controllers' => [],
+        ],
+        'frame-or-page.page' => [
+            'class' => FrameOrPagePage::class,
+            'view' => 'hotwire::component-views.frame-or-page-branch',
+            'docs' => 'docs/components/frame-or-page.md',
+            'category' => 'turbo',
+            'description' => 'Lazily renders contextual content only for the Frame Or Page full-page branch',
             'controllers' => [],
         ],
         'hover-card' => [

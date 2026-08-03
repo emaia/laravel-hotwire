@@ -484,6 +484,16 @@
                     "className": "\\Emaia\\LaravelHotwire\\Components\\FrameOrPage"
                 },
                 {
+                    "name": "frame-or-page.frame",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\FrameOrPage\\Frame"
+                },
+                {
+                    "name": "frame-or-page.page",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\FrameOrPage\\Page"
+                },
+                {
                     "name": "hover-card",
                     "namespace": "hw",
                     "className": "\\Emaia\\LaravelHotwire\\Components\\HoverCard"
