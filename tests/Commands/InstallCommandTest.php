@@ -2,6 +2,10 @@
 
 use Illuminate\Support\Facades\File;
 
+dataset('css presets', fn () => collect(glob(__DIR__.'/../../resources/css/presets/*.css') ?: [])
+    ->mapWithKeys(fn (string $path): array => [pathinfo($path, PATHINFO_FILENAME) => [pathinfo($path, PATHINFO_FILENAME)]])
+    ->all());
+
 beforeEach(function () {
     $this->appBase = isolateAppPaths();
     $this->stubBase = realpath(__DIR__.'/../../stubs/resources');
@@ -276,18 +280,18 @@ it('copies only css files with --only=css', function () {
         ->and(File::exists(resource_path('js/app.js')))->toBeFalse();
 });
 
-it('selects the nova css preset', function () {
+it('selects every available css preset', function (string $preset) {
     File::put($this->packageJsonPath, json_encode(['name' => 'test'], JSON_PRETTY_PRINT));
 
-    $this->artisan('hotwire:install --only=css --preset=nova --no-interaction')
+    $this->artisan("hotwire:install --only=css --preset={$preset} --no-interaction")
         ->assertSuccessful();
 
     $css = File::get(resource_path('css/app.css'));
 
     expect($css)
-        ->toContain("@import '../../vendor/emaia/laravel-hotwire/resources/css/presets/nova.css';")
+        ->toContain("@import '../../vendor/emaia/laravel-hotwire/resources/css/presets/{$preset}.css';")
         ->toContain('/* Preset: import one default design system. */');
-});
+})->with('css presets');
 
 it('rejects invalid css presets', function () {
     File::put($this->packageJsonPath, json_encode(['name' => 'test'], JSON_PRETTY_PRINT));
