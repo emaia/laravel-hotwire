@@ -51,6 +51,145 @@ test("opens when dynamic content is inserted and closes cleanly through the publ
     await expect(frame).toBeEmpty();
 });
 
+test("Turbo morph updates modal content without overwriting its presence state", async ({ page }) => {
+    await page.setContent(`
+        <div id="modal-shell" data-controller="modal" data-modal-lock-scroll-class="overflow-hidden">
+            <button id="open" data-action="modal#open">Open</button>
+            <div id="modal-overlay" data-modal-target="modal" data-state="closed" data-motion="none" hidden inert>
+                <div data-modal-target="backdrop"></div>
+                <div data-modal-target="dialog">
+                    <p id="modal-content">Initial content</p>
+                    <p id="server-status" data-state="stale">Initial status</p>
+                    <button data-action="modal#close">Close</button>
+                </div>
+            </div>
+        </div>
+    `);
+
+    await page.addScriptTag({ path: "node_modules/@hotwired/turbo/dist/turbo.es2017-umd.js" });
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ content: await browserControllerScript("resources/js/controllers/modal_controller.js") });
+    await page.evaluate(() => {
+        window.StimulusApplication = window.Stimulus.Application.start();
+        window.StimulusApplication.register("modal", window.ModalController);
+    });
+
+    await page.locator("#open").click();
+
+    const modal = page.locator("#modal-overlay");
+    await expect(modal).toHaveAttribute("data-state", "open");
+    await expect.poll(async () => modal.evaluate((element) => element.matches(":popover-open"))).toBe(true);
+
+    await page.evaluate(() => {
+        const replacement = document.createElement("div");
+        replacement.id = "modal-overlay";
+        replacement.setAttribute("data-modal-target", "modal");
+        replacement.setAttribute("data-state", "closed");
+        replacement.setAttribute("data-motion", "none");
+        replacement.setAttribute("hidden", "");
+        replacement.setAttribute("inert", "");
+        replacement.innerHTML = `
+            <div data-modal-target="backdrop"></div>
+            <div data-modal-target="dialog">
+                <p id="modal-content">Morphed open content</p>
+                <p id="server-status" data-state="updated" hidden>Updated status</p>
+                <button data-action="modal#close">Close</button>
+            </div>
+        `;
+
+        window.Turbo.morphElements(document.querySelector("#modal-overlay"), replacement);
+    });
+
+    await expect(modal).toHaveAttribute("data-state", "open");
+    await expect(modal).not.toHaveAttribute("hidden", "");
+    await expect(modal).not.toHaveAttribute("inert", "");
+    await expect(modal).toContainText("Morphed open content");
+    await expect(page.locator("#server-status")).toHaveAttribute("data-state", "updated");
+    await expect(page.locator("#server-status")).toHaveAttribute("hidden", "");
+    await expect.poll(async () => modal.evaluate((element) => element.matches(":popover-open"))).toBe(true);
+    await expect(page.locator("body")).toHaveClass(/overflow-hidden/);
+
+    await page.evaluate(async () => {
+        const root = document.querySelector("#modal-shell");
+        const controller = window.StimulusApplication.getControllerForElementAndIdentifier(root, "modal");
+        await controller.close();
+
+        const replacement = document.createElement("div");
+        replacement.id = "modal-overlay";
+        replacement.setAttribute("data-modal-target", "modal");
+        replacement.setAttribute("data-state", "open");
+        replacement.setAttribute("data-motion", "none");
+        replacement.innerHTML = `
+            <div data-modal-target="backdrop"></div>
+            <div data-modal-target="dialog">
+                <p id="modal-content">Morphed closed content</p>
+                <p id="server-status" data-state="final">Final status</p>
+                <button data-action="modal#close">Close</button>
+            </div>
+        `;
+
+        window.Turbo.morphElements(document.querySelector("#modal-overlay"), replacement);
+    });
+
+    await expect(modal).toHaveAttribute("data-state", "closed");
+    await expect(modal).toHaveAttribute("hidden", "");
+    await expect(modal).toHaveAttribute("inert", "");
+    await expect(modal).toContainText("Morphed closed content");
+    await expect(page.locator("#server-status")).toHaveAttribute("data-state", "final");
+    await expect(page.locator("#server-status")).not.toHaveAttribute("hidden", "");
+    await expect(page.locator("body")).not.toHaveClass(/overflow-hidden/);
+});
+
+test("Turbo Frame morph preserves an open drawer while updating its content", async ({ page }) => {
+    await page.setContent(`
+        <turbo-frame id="drawer-frame">
+            <div id="drawer-shell" data-controller="drawer" data-drawer-lock-scroll-class="overflow-hidden">
+                <button id="open-drawer" data-action="drawer#open">Open</button>
+                <div id="drawer-overlay" data-drawer-target="modal" data-state="closed" data-motion="none" hidden inert>
+                    <div data-drawer-target="backdrop"></div>
+                    <div data-drawer-target="dialog"><p id="drawer-content">Initial drawer</p></div>
+                </div>
+            </div>
+        </turbo-frame>
+    `);
+
+    await page.addScriptTag({ path: "node_modules/@hotwired/turbo/dist/turbo.es2017-umd.js" });
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ content: await browserOverlayControllerScript() });
+    await page.evaluate(() => {
+        window.StimulusApplication = window.Stimulus.Application.start();
+        window.StimulusApplication.register("drawer", window.DrawerController);
+    });
+
+    await page.locator("#open-drawer").click();
+
+    const drawer = page.locator("#drawer-overlay");
+    await expect(drawer).toHaveAttribute("data-state", "open");
+
+    await page.evaluate(() => {
+        const replacement = document.createElement("turbo-frame");
+        replacement.id = "drawer-frame";
+        replacement.innerHTML = `
+            <div id="drawer-shell" data-controller="drawer" data-drawer-lock-scroll-class="overflow-hidden">
+                <button id="open-drawer" data-action="drawer#open">Open</button>
+                <div id="drawer-overlay" data-drawer-target="modal" data-state="closed" data-motion="none" hidden inert>
+                    <div data-drawer-target="backdrop"></div>
+                    <div data-drawer-target="dialog"><p id="drawer-content">Morphed drawer</p></div>
+                </div>
+            </div>
+        `;
+
+        window.Turbo.morphChildren(document.querySelector("#drawer-frame"), replacement);
+    });
+
+    await expect(drawer).toHaveAttribute("data-state", "open");
+    await expect(drawer).not.toHaveAttribute("hidden", "");
+    await expect(drawer).not.toHaveAttribute("inert", "");
+    await expect(drawer).toContainText("Morphed drawer");
+    await expect.poll(async () => drawer.evaluate((element) => element.matches(":popover-open"))).toBe(true);
+    await expect(page.locator("body")).toHaveClass(/overflow-hidden/);
+});
+
 test("tabs from the modal close button into native accordion summaries", async ({ page }) => {
     await page.setContent(`
         <style>.hidden { display: none; }</style>
@@ -195,6 +334,7 @@ test("nested modal and alert dialog close one layer at a time with Escape", asyn
         </div>
     `);
 
+    await page.addScriptTag({ path: "node_modules/@hotwired/turbo/dist/turbo.es2017-umd.js" });
     await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
     await page.addScriptTag({ content: await browserOverlayControllerScript() });
     await page.evaluate(() => {
@@ -216,10 +356,41 @@ test("nested modal and alert dialog close one layer at a time with Escape", asyn
     await expect(outerOverlay).not.toHaveAttribute("hidden", "");
     await expect.poll(async () => alertOverlay.evaluate((element) => element.matches(":popover-open"))).toBe(true);
 
+    await page.evaluate(() => {
+        const overlay = document.querySelector("#outer > [data-modal-target='modal']");
+        const replacement = overlay.cloneNode(true);
+        const overlays = [
+            replacement,
+            ...replacement.querySelectorAll('[data-modal-target="modal"], [data-alert-dialog-target="modal"]'),
+        ];
+
+        for (const element of overlays) {
+            element.dataset.state = "closed";
+            element.hidden = true;
+            element.setAttribute("inert", "");
+            element.removeAttribute("popover");
+            element.removeAttribute("data-hotwire-top-layer");
+            element.removeAttribute("data-hotwire-top-layer-popover");
+        }
+
+        replacement.querySelector("#outer-close").textContent = "Morphed outer close";
+        window.Turbo.morphElements(overlay, replacement);
+    });
+
+    await expect(page.locator("#outer-close")).toHaveText("Morphed outer close");
+    await expect(alertOverlay).toHaveAttribute("data-state", "open");
+    await expect(innerOverlay).toHaveAttribute("data-state", "open");
+    await expect(outerOverlay).toHaveAttribute("data-state", "open");
+    await expect(alertOverlay).not.toHaveAttribute("hidden", "");
+    await expect(innerOverlay).not.toHaveAttribute("hidden", "");
+    await expect(outerOverlay).not.toHaveAttribute("hidden", "");
+    await expect.poll(async () => alertOverlay.evaluate((element) => element.matches(":popover-open"))).toBe(true);
+
     await outerOverlay.locator(':scope > [data-modal-target="backdrop"]').evaluate((element) => {
         element.replaceWith(element.cloneNode(true));
     });
     await page.waitForTimeout(0);
+
     await expect.poll(async () => page.evaluate(() => {
         const target = document.elementFromPoint(window.innerWidth / 2, window.innerHeight / 2);
 
@@ -372,6 +543,7 @@ test("rapid reopen cancels stale modal exit teardown", async ({ page }) => {
         </div>
     `);
 
+    await page.addScriptTag({ path: "node_modules/@hotwired/turbo/dist/turbo.es2017-umd.js" });
     await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
     await page.addScriptTag({ content: await browserControllerScript("resources/js/controllers/modal_controller.js") });
     await page.evaluate(() => {
@@ -388,10 +560,18 @@ test("rapid reopen cancels stale modal exit teardown", async ({ page }) => {
         const root = document.querySelector('[data-controller~="modal"]');
         const controller = window.StimulusApplication.getControllerForElementAndIdentifier(root, "modal");
         controller.close();
+        const modal = document.querySelector('[data-modal-target="modal"]');
+        const replacement = modal.cloneNode(true);
+        replacement.removeAttribute("data-presence");
+        replacement.querySelector("button").textContent = "Morphed close";
+        window.Turbo.morphElements(modal, replacement);
+        window.presenceDuringMorph = modal.dataset.presence;
         controller.open({ currentTarget: document.querySelector("#open") });
     });
     await page.waitForTimeout(350);
 
+    expect(await page.evaluate(() => window.presenceDuringMorph)).toBe("leaving");
+    await expect(modal).toContainText("Morphed close");
     await expect(modal).toHaveAttribute("data-state", "open");
     await expect(modal).not.toHaveAttribute("hidden", "");
     await expect(modal).not.toHaveAttribute("inert", "");
