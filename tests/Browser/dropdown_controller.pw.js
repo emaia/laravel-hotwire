@@ -284,6 +284,7 @@ test("native Tab navigation and nested Escape close before the parent drawer", a
 
     await trigger.click();
     await expect(menu).toBeVisible();
+    await expect(menu).toHaveAttribute("data-state", "open");
 
     await page.keyboard.press("Tab");
     await expect(first).toBeFocused();
