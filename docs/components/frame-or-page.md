@@ -50,68 +50,98 @@ common hosts are [`<hw:modal frame="modal">`](./modal.md), [`<hw:sheet frame="se
 
 ## Props
 
-| Prop     | Type             | Default | Description                                                                                    |
-|----------|------------------|---------|------------------------------------------------------------------------------------------------|
-| `frame`  | `string\|object` | —       | DOM id of the frame. Accepts a string or any object resolvable via `dom_id()`.                 |
-| `layout` | `?string`        | `null`  | Blade component name (e.g. `dashboard` or `layouts.dashboard`) or class-string of the wrapper. |
+| Prop     | Type                    | Default | Description                                                                                    |
+|----------|-------------------------|---------|------------------------------------------------------------------------------------------------|
+| `frame`  | `string\|object\|null` | `null`  | One frame id. Accepts a string or any object resolvable via `dom_id()`.                         |
+| `frames` | `?iterable`             | `null`  | A non-empty list of frame id strings or objects resolvable via `dom_id()`.                     |
+| `layout` | `?string`               | `null`  | Blade component name (e.g. `dashboard` or `layouts.dashboard`) or class-string of the wrapper. |
 
-`frame` is required. Passing an empty string or whitespace throws `InvalidArgumentException`.
+Provide exactly one of `frame` or `frames`. Empty ids and non-list `frames` values throw
+`InvalidArgumentException`. Configuring more than one frame requires `layout` because direct navigation
+and unknown frame headers need a page presentation. Arrays, Collections, and other iterables are accepted;
+their keys must form a zero-based list.
 
-When `layout` is `null` the component always renders just the raw `<turbo-frame>`, regardless of the
-request header. Useful for nested frames that never need a standalone presentation.
+When one frame is configured and `layout` is `null`, the component preserves frame-only mode: it always
+renders the configured `<turbo-frame>`, regardless of the request header. This is useful for nested frames
+that never need a standalone presentation.
 
 Simple layout names resolve ergonomically: `layout="dashboard"` uses an existing `dashboard` component
 when one is registered, otherwise it tries `layouts.dashboard` before falling back to the original value.
-Names that already contain `.`, `::`, or `\` are used as-is.
+Names that already contain `.`, `::`, or `\` are used as-is. A blank layout is normalized to `null` and
+therefore enables frame-only mode.
 
-## Context-specific content
+## Lazy context content
 
-Use `frameContent` when the frame payload should be smaller than the standalone page. Keep the full
-page content in the default slot so direct navigation stays natural:
+Content directly inside the parent is shared. Put context-only content in the renderless
+`<hw:frame-or-page.frame>` and `<hw:frame-or-page.page>` subcomponents:
 
 ```blade
 {{-- resources/views/parks/topics/edit.blade.php --}}
 <hw:frame-or-page frame="modal" layout="dashboard">
-    <x-slot:frameContent>
-        @include('parks.topics._form')
-    </x-slot:frameContent>
+    <hw:frame-or-page.page>
+        @include('parks._edit_header')
+        @include('parks._edit_navigation', ['active' => 'topics'])
+    </hw:frame-or-page.page>
 
-    @include('parks._edit_header')
-    @include('parks._edit_navigation', ['active' => 'topics'])
     @include('parks.topics._form')
-    @include('parks.topics._list')
+
+    <hw:frame-or-page.frame>
+        <hw:modal.close as="button">Cancel</hw:modal.close>
+    </hw:frame-or-page.frame>
+
+    <hw:frame-or-page.page>
+        @include('parks.topics._list')
+    </hw:frame-or-page.page>
 </hw:frame-or-page>
 ```
 
-In this example, opening the route in `<hw:modal frame="modal">` renders only the form. Opening the
-same URL directly renders the dashboard page with header, navigation, form, and list.
+These are class components whose `shouldRender()` decision runs before Blade evaluates their body.
+Includes, queries, pushed assets, and other side effects in the discarded branch do not run. They emit no
+wrapper element around a branch that does render, so HTML attributes such as `class`, `id`, and `data-*`
+are rejected when that branch is active. Put those attributes on an element inside the branch. A discarded
+branch is not evaluated, so its attributes are ignored together with its body.
 
 The selection rules are:
 
-- Frame requests render `frameContent` when present, otherwise the default slot.
-- Direct navigation with a layout renders `pageContent` when present, otherwise the default slot.
-- When `layout` is omitted, the component still renders as a frame and uses `frameContent` when present.
+- Shared parent content renders in both modes.
+- `.frame` without `target` renders for any configured frame when a frame is active.
+- `.frame target="..."` renders only for that active frame. The target must be declared by the parent's
+  `frame` or `frames` prop.
+- `.page` renders for direct navigation or a `Turbo-Frame` header that does not match a configured frame.
+- With one frame and no layout, frame-only mode is always active and `.page` is not evaluated.
+- Contextual subcomponents use their nearest `<hw:frame-or-page>` ancestor and throw when used without one.
 
-Use `pageContent` only when naming both contexts makes the view clearer, or when the default slot is
-better treated as shared fallback content:
+The removed `frameContent` and `pageContent` named slots are not compatibility aliases. Replace them with
+the lazy subcomponents; stale slots throw with migration guidance.
+
+## Multiple frame hosts
+
+One route can serve different frame hosts while sharing its main content:
 
 ```blade
-<hw:frame-or-page frame="modal" layout="dashboard">
-    Shared fallback content
+<hw:frame-or-page :frames="['modal', 'settings-panel']" layout="dashboard">
+    <hw:frame-or-page.frame target="modal">
+        <hw:modal.close as="button">Close modal</hw:modal.close>
+    </hw:frame-or-page.frame>
 
-    <x-slot:frameContent>
-        Modal-only content
-    </x-slot:frameContent>
+    <hw:frame-or-page.frame target="settings-panel">
+        <hw:sheet.close as="button">Close sheet</hw:sheet.close>
+    </hw:frame-or-page.frame>
 
-    <x-slot:pageContent>
-        Full-page content
-    </x-slot:pageContent>
+    <hw:frame-or-page.page>
+        <x-page-heading>Edit message</x-page-heading>
+    </hw:frame-or-page.page>
+
+    @include('messages._edit-form')
+
+    <hw:frame-or-page.frame>
+        <hw:flash-message />
+    </hw:frame-or-page.frame>
 </hw:frame-or-page>
 ```
 
-Partials included inside either slot use the same Blade scope as the surrounding view, so variables like
-models, option lists, selected values, and validation state remain available. Pass data explicitly to
-`@include` when you want to make the dependency clear or override a value for one context.
+`Turbo-Frame: modal` emits `<turbo-frame id="modal">`; `Turbo-Frame: settings-panel` emits
+`<turbo-frame id="settings-panel">`. Direct navigation and unknown headers render `dashboard` instead.
 
 ## Forwarded attributes
 
@@ -135,17 +165,21 @@ layout's host frame is enough), add an explicit `<x-turbo::frame>` inside the sl
 The component does **not** forward attributes to the layout. The layout is your own component —
 configure it the way you'd configure any other Blade layout:
 
-- **Per-route props in the view itself** if the value is fixed per route — wrap the frame-or-page
-  in your layout directly when you need props, and skip the `layout` prop:
+- **A route-specific layout component** if the value is fixed per route. Keep that wrapper in the
+  `layout` prop so frame requests can omit it:
   ```blade
+  {{-- resources/views/components/layouts/message-edit.blade.php --}}
   <x-layouts.dashboard title="Edit message" :fixed-top="true">
-      <hw:frame-or-page frame="modal">
-          @include('messages._edit-form')
-      </hw:frame-or-page>
+      {{ $slot }}
   </x-layouts.dashboard>
+
+  {{-- resources/views/messages/edit.blade.php --}}
+  <hw:frame-or-page frame="modal" layout="layouts.message-edit">
+      @include('messages._edit-form')
+  </hw:frame-or-page>
   ```
-  Frame requests still skip the layout (the `<hw:frame-or-page>` branch handles that); only the
-  direct-navigation case renders the dashboard.
+  Do not wrap `<hw:frame-or-page>` externally: an outer layout is evaluated before the component and
+  therefore cannot be omitted from a frame response.
 - **`@push` / `@stack`** for cross-branch values (page title, breadcrumbs) — these survive both
   branches because Blade resolves the stack at render time.
 
