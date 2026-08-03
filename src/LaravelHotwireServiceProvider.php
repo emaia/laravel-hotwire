@@ -9,7 +9,6 @@ use Emaia\LaravelHotwire\Commands\InstallCommand;
 use Emaia\LaravelHotwire\Commands\ListComponentsCommand;
 use Emaia\LaravelHotwire\Commands\MakeControllerCommand;
 use Emaia\LaravelHotwire\Commands\PublishControllersCommand;
-use Emaia\LaravelHotwire\Commands\UiCommand;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
 use Emaia\LaravelHotwire\Support\HotwireTagCompiler;
@@ -32,7 +31,6 @@ class LaravelHotwireServiceProvider extends PackageServiceProvider
                 ListComponentsCommand::class,
                 CheckCommand::class,
                 DocsCommand::class,
-                UiCommand::class,
                 IdeJsonCommand::class,
             ]);
     }
