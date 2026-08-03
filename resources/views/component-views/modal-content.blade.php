@@ -6,6 +6,7 @@
     'fixedTop' => false,
     'frame' => null,
     'motion' => 'default',
+    'viewTransition' => false,
 ])
 
 @php
@@ -39,9 +40,15 @@
         <div data-slot="modal-panel" data-size="{{ $size }}" @if ($class !== '') class="{{ $class }}" @endif>
             <div data-slot="modal-content" data-size="{{ $size }}" {{ $attributes }}>
                 @if ($frame !== null)
-                    <turbo-frame id="{{ $frame }}" data-modal-target="dynamicContent" data-modal-frame-owner="{{ $id }}">
+                    <x-hw::frame
+                        :id="$frame"
+                        :view-transition="$viewTransition"
+                        :data-turbo--view-transition-skip-initial-value="$viewTransition ? 'true' : null"
+                        data-modal-target="dynamicContent"
+                        data-modal-frame-owner="{{ $id }}"
+                    >
                         {{ $slot }}
-                    </turbo-frame>
+                    </x-hw::frame>
                 @else
                     {{ $slot }}
                 @endif

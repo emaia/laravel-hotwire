@@ -1,4 +1,4 @@
-@aware(['id' => '', 'side' => 'right', 'backdrop' => true, 'frame' => null, 'motion' => 'default'])
+@aware(['id' => '', 'side' => 'right', 'backdrop' => true, 'frame' => null, 'motion' => 'default', 'viewTransition' => false])
 
 <div
     data-slot="sheet-overlay"
@@ -25,9 +25,15 @@
         {{ $attributes }}
     >
         @if ($frame !== null)
-            <turbo-frame id="{{ $frame }}" data-sheet-target="dynamicContent" data-sheet-frame-owner="{{ $id }}">
+            <x-hw::frame
+                :id="$frame"
+                :view-transition="$viewTransition"
+                :data-turbo--view-transition-skip-initial-value="$viewTransition ? 'true' : null"
+                data-sheet-target="dynamicContent"
+                data-sheet-frame-owner="{{ $id }}"
+            >
                 {{ $slot }}
-            </turbo-frame>
+            </x-hw::frame>
         @else
             {{ $slot }}
         @endif

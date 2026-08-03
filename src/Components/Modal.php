@@ -19,6 +19,7 @@ class Modal extends Component
         public string|object|bool|null $frame = null,
         public ?Htmlable $stimulus = null,
         public string $motion = 'default',
+        public bool $viewTransition = false,
     ) {
         if ($this->id === '') {
             $this->id = uniqid('modal-');

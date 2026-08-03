@@ -2,6 +2,7 @@
 
 use Emaia\LaravelHotwire\Components\Modal;
 use Emaia\LaravelHotwire\LaravelHotwireServiceProvider;
+use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\HtmlString;
 use Illuminate\View\ViewException;
@@ -183,6 +184,38 @@ it('renders a dynamic turbo frame fallback when frame is provided without conten
     $view->assertSee('<turbo-frame id="modal" data-modal-target="dynamicContent"', false);
 });
 
+it('mounts view transitions on automatic and explicit modal frame hosts', function (string $template) {
+    $view = $this->blade($template);
+    $html = (string) $view;
+    $xpath = new DOMXPath(dom($html));
+    $root = $xpath->query('//*[@data-slot="modal"]')->item(0);
+    $frame = $xpath->query('//turbo-frame[@id="modal"]')->item(0);
+
+    expect($root->getAttribute('data-controller'))->toBe('modal custom')
+        ->and($root->hasAttribute('view-transition'))->toBeFalse()
+        ->and($frame->getAttribute('data-controller'))->toBe('turbo--view-transition')
+        ->and($frame->getAttribute('data-turbo--view-transition-skip-initial-value'))->toBe('true')
+        ->and($frame->getAttribute('data-modal-target'))->toBe('dynamicContent')
+        ->and($frame->getAttribute('data-modal-frame-owner'))->toBe('modal-shell')
+        ->and(substr_count($html, 'data-controller="turbo--view-transition"'))->toBe(1);
+})->with([
+    'automatic host' => '<x-hw::modal id="modal-shell" frame="modal" view-transition data-controller="custom" />',
+    'explicit host' => '<x-hw::modal id="modal-shell" frame="modal" view-transition data-controller="custom"><x-hw::modal.content>Fallback</x-hw::modal.content></x-hw::modal>',
+]);
+
+it('does not mount modal view transitions by default or without a frame', function (string $template) {
+    $view = $this->blade($template);
+    $xpath = new DOMXPath(dom((string) $view));
+    $root = $xpath->query('//*[@data-slot="modal"]')->item(0);
+
+    expect((string) $view)->not->toContain('turbo--view-transition')
+        ->not->toContain('data-turbo--view-transition-skip-initial-value')
+        ->and($root->hasAttribute('view-transition'))->toBeFalse();
+})->with([
+    'disabled' => '<x-hw::modal frame="modal" />',
+    'no frame' => '<x-hw::modal view-transition><x-hw::modal.content>Content</x-hw::modal.content></x-hw::modal>',
+]);
+
 it('does not render a dynamic turbo frame when frame is empty', function () {
     $view = $this->blade('<x-hw::modal frame="">Content</x-hw::modal>');
 
@@ -237,6 +270,18 @@ it('keeps stimulus as the seventh positional constructor argument', function () 
 
     expect($component->stimulus)->toBe($stimulus)
         ->and($component->motion)->toBe('default');
+});
+
+it('keeps view transition as the final positional constructor argument', function () {
+    $component = new Modal('', 'md', '', true, false, null, null, 'none', true);
+
+    expect($component->motion)->toBe('none')
+        ->and($component->viewTransition)->toBeTrue();
+});
+
+it('registers modal view transition dependency in the component catalog', function () {
+    expect(HotwireRegistry::make()->component('modal')->controllers)
+        ->toBe(['modal', 'turbo--view-transition']);
 });
 
 it('emits fixed-top semantic state', function () {

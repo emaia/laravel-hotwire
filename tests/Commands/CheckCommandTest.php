@@ -124,12 +124,25 @@ it('detects components across multiple files', function () {
 });
 
 it('deduplicates components used in multiple files', function () {
+    // Uses a single-controller component on purpose: the status line is printed
+    // once per controller, so the count only isolates the scan-level dedup here.
+    writeView('a.blade.php', '<x-hw::dropdown />');
+    writeView('b.blade.php', '<x-hw::dropdown />');
+
+    Artisan::call('hotwire:check --no-interaction');
+    $output = Artisan::output();
+    expect(substr_count($output, 'x-hw::dropdown'))->toBe(1);
+});
+
+it('deduplicates a multi-controller component into one line per controller', function () {
     writeView('a.blade.php', '<x-hw::modal />');
     writeView('b.blade.php', '<x-hw::modal />');
 
     Artisan::call('hotwire:check --no-interaction');
     $output = Artisan::output();
-    expect(substr_count($output, 'x-hw::modal'))->toBe(1);
+
+    expect(substr_count($output, 'x-hw::modal'))
+        ->toBe(count(HotwireRegistry::make()->component('modal')->controllers));
 });
 
 it('respects custom prefix', function () {

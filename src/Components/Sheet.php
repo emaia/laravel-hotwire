@@ -23,6 +23,7 @@ class Sheet extends Component
         public bool $closeOnEscape = true,
         public bool $closeOnClickOutside = true,
         public ?Htmlable $stimulus = null,
+        public bool $viewTransition = false,
     ) {
         if ($this->id === '') {
             $this->id = uniqid('sheet-');

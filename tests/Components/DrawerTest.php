@@ -103,6 +103,39 @@ it('renders a complete frame host when drawer content is omitted', function () {
         ->assertSee('<template data-drawer-target="loadingTemplate">', false);
 });
 
+it('mounts view transitions on automatic and explicit drawer frame hosts', function (string $template) {
+    $view = $this->blade($template);
+    $html = (string) $view;
+    $xpath = new DOMXPath(dom($html));
+    $root = $xpath->query('//*[@data-slot="drawer"]')->item(0);
+    $frame = $xpath->query('//turbo-frame[@id="drawer-panel"]')->item(0);
+
+    expect($root->getAttribute('data-controller'))->toBe('drawer custom')
+        ->and($root->getAttribute('data-test-id'))->toBe('drawer-root')
+        ->and($root->hasAttribute('view-transition'))->toBeFalse()
+        ->and($frame->getAttribute('data-controller'))->toBe('turbo--view-transition')
+        ->and($frame->getAttribute('data-turbo--view-transition-skip-initial-value'))->toBe('true')
+        ->and($frame->getAttribute('data-drawer-target'))->toBe('dynamicContent')
+        ->and($frame->getAttribute('data-drawer-frame-owner'))->toBe('drawer-shell')
+        ->and(substr_count($html, 'data-controller="turbo--view-transition"'))->toBe(1);
+})->with([
+    'automatic host' => '<x-hw::drawer id="drawer-shell" frame="drawer-panel" view-transition data-controller="custom" data-test-id="drawer-root" />',
+    'explicit host' => '<x-hw::drawer id="drawer-shell" frame="drawer-panel" view-transition data-controller="custom" data-test-id="drawer-root"><x-hw::drawer.content>Fallback</x-hw::drawer.content></x-hw::drawer>',
+]);
+
+it('does not mount drawer view transitions by default or without a frame', function (string $template) {
+    $view = $this->blade($template);
+    $xpath = new DOMXPath(dom((string) $view));
+    $root = $xpath->query('//*[@data-slot="drawer"]')->item(0);
+
+    expect((string) $view)->not->toContain('turbo--view-transition')
+        ->not->toContain('data-turbo--view-transition-skip-initial-value')
+        ->and($root->hasAttribute('view-transition'))->toBeFalse();
+})->with([
+    'disabled' => '<x-hw::drawer frame="drawer-panel" />',
+    'no frame' => '<x-hw::drawer view-transition><x-hw::drawer.content>Content</x-hw::drawer.content></x-hw::drawer>',
+]);
+
 it('adds one frame host alongside trigger-only drawer content', function () {
     $view = $this->blade('<x-hw::drawer frame="drawer-panel"><x-hw::drawer.trigger>Open</x-hw::drawer.trigger></x-hw::drawer>');
 
@@ -137,11 +170,18 @@ it('throws on an invalid side', function () {
     expect(fn () => new Drawer(side: 'diagonal'))->toThrow(InvalidArgumentException::class);
 });
 
+it('keeps view transition as the final positional constructor argument', function () {
+    $component = new Drawer('', 'down', null, '', null, true, 'none', true, true, true, null, true);
+
+    expect($component->motion)->toBe('none')
+        ->and($component->viewTransition)->toBeTrue();
+});
+
 it('registers drawer in the component catalog and subcomponent aliases', function () {
     $drawer = HotwireRegistry::make()->component('drawer');
 
     expect($drawer->key)->toBe('drawer')
-        ->and($drawer->controllers)->toBe(['drawer'])
+        ->and($drawer->controllers)->toBe(['drawer', 'turbo--view-transition'])
         ->and($drawer->docs)->toBe('docs/components/drawer.md');
 
     expect(ComponentAliases::subComponents())

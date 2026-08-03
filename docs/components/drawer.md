@@ -42,6 +42,7 @@ dismissal.
 | `lockScroll`          | `true`                                                       | Lock body scroll while open.                                               |
 | `closeOnEscape`       | `true`                                                       | Close when Escape is pressed.                                              |
 | `closeOnClickOutside` | `true`                                                       | Close when the backdrop is clicked.                                        |
+| `viewTransition`      | `false`                                                      | Animate successive renders inside the frame host.                          |
 
 ## Components
 
@@ -69,7 +70,7 @@ Use `frame` when a shared drawer host should load server-rendered content throug
 
 ```blade
 {{-- layout --}}
-<hw:drawer frame="drawer-panel" direction="down">
+<hw:drawer frame="drawer-panel" direction="down" view-transition>
     <x-slot:loading_template>
         <div class="p-6">Loading...</div>
     </x-slot:loading_template>
@@ -97,6 +98,11 @@ whitespace-only values disable the host.
 
 The root owns the matching frame id. Use one `<hw:drawer.content>` for fallback content instead of adding a raw
 `<turbo-frame>` with the same id.
+
+`view-transition` mounts `turbo--view-transition` on the internal frame host for both automatic and explicit
+`drawer.content` markup. It does nothing without `frame`; unsupported browsers keep the normal Turbo render. Enable it
+on the drawer host rather than only on the response's `<hw:frame-or-page>` because Turbo preserves the existing host and
+does not copy attributes from the response frame.
 
 The drawer opens when the frame receives content. Per-link `data-loading-template="#template-id"` overrides the drawer's
 `loading_template` slot. Return an empty `update` or `replace` stream for the drawer root or frame id, or a `refresh`

@@ -149,13 +149,19 @@ When the component renders **as a frame** — that is, when the request came fro
 when `layout` is omitted — extra HTML attributes on `<hw:frame-or-page>` are forwarded to the
 inner [`<hw:frame>`](./frame.md). This includes native Turbo Frame attributes (`src`, `loading`,
 `target`, `refresh`, `autoscroll`, …), frame aliases like `lazy`, `advance`, `replace`, `poll`,
-and arbitrary `data-*` hooks:
+`view-transition`, and arbitrary `data-*` hooks:
 
 ```blade
-<hw:frame-or-page frame="messages" src="{{ route('messages.index') }}" loading="lazy">
+<hw:frame-or-page frame="messages" src="{{ route('messages.index') }}" loading="lazy" view-transition>
     <div class="loading">Loading…</div>
 </hw:frame-or-page>
 ```
+
+Forwarding configures the frame emitted by this response. It does not configure a pre-existing frame host: Turbo's
+`FrameRenderer` preserves that host and replaces only its children instead of copying response-frame attributes. For a
+layout-owned host, enable the integration there, for example
+`<hw:modal frame="modal" view-transition>`, `<hw:sheet frame="settings-panel" view-transition>`, or
+`<hw:drawer frame="drawer-panel" view-transition>`.
 
 On **direct navigation with a `layout`**, the slot is rendered directly inside the layout component
 with no surrounding `<turbo-frame>`, so frame-specific attributes like `src` / `loading` have no
