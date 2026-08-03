@@ -6,6 +6,19 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 
 ## Unreleased
 
+### Close overlays explicitly before refresh morphs
+
+Modal, Alert Dialog, Drawer, Sheet, and the mobile Sidebar now preserve their controller-owned presence and active
+top-layer attributes while Turbo morphs their contents. An open overlay stays open even when the server response contains
+the usual closed `data-state` or `data-mobile-state`, `hidden`, and `inert` attributes.
+
+If an application previously closed an overlay by returning closed markup in a page or Turbo Stream refresh morph, make
+the close explicit before rendering that response. Frame-backed Modal, Drawer, and Sheet instances already close through
+their empty `update`/`replace` or `refresh` stream lifecycle. For a reusable static Modal, append a
+[`modal-auto-close`](./controllers/modal-auto-close.md) marker; custom static overlay flows can call their controller's
+public `close()` action (`cancel()` for Alert Dialog) before applying the refresh. Morphing still updates ordinary
+descendants and `data-motion`.
+
 ### Refresh published Frame Src controllers
 
 `turbo--frame-src` now listens on its own element instead of `document` so one instance cannot affect unrelated frame

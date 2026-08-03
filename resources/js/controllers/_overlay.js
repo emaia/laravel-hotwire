@@ -45,6 +45,28 @@ export function createOverlay(_controller, {
     let scrollLocked = false;
     let opening = null;
     let closing = null;
+    const managedPresenceAttributes = new Set([
+        "data-presence",
+        "hidden",
+        "inert",
+        `data-${stateAttribute.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)}`,
+    ]);
+    const managedTopLayerAttributes = new Set([
+        "popover",
+        "data-hotwire-top-layer",
+        "data-hotwire-top-layer-popover",
+    ]);
+
+    function preserveManagedAttributesDuringMorph(event) {
+        if (event.target !== modalTarget) return;
+
+        const attributeName = event.detail?.attributeName;
+        const managedPresence = managedPresenceAttributes.has(attributeName);
+        const activeTopLayer = topLayerHandle.isShown && managedTopLayerAttributes.has(attributeName);
+        if (!managedPresence && !activeTopLayer) return;
+
+        event.preventDefault();
+    }
 
     function handleEscapeKey(event) {
         if (!closeOnEscape || event.key !== "Escape" || !desiredOpen) return;
@@ -67,6 +89,7 @@ export function createOverlay(_controller, {
     }
 
     document.addEventListener("keydown", handleEscapeKey, escapeCapture);
+    modalTarget.addEventListener("turbo:before-morph-attribute", preserveManagedAttributesDuringMorph);
 
     async function open() {
         if (destroyed) return false;
@@ -134,6 +157,7 @@ export function createOverlay(_controller, {
 
         destroyed = true;
         document.removeEventListener("keydown", handleEscapeKey, escapeCapture);
+        modalTarget.removeEventListener("turbo:before-morph-attribute", preserveManagedAttributesDuringMorph);
         desiredOpen = false;
         presence.cleanup();
         unregisterStack();

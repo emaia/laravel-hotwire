@@ -176,6 +176,75 @@ test("mobile sidebar preserves desktop state and closes synchronously for Turbo 
     });
 });
 
+test("desktop sidebar stays visible with closed mobile presence through a Turbo morph", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.setContent(`
+        <div
+            id="sidebar-root"
+            data-controller="sidebar"
+            data-sidebar-open-value="true"
+            data-sidebar-persist-value="false"
+            data-state="expanded"
+        >
+            <button data-slot="sidebar-trigger" data-action="sidebar#toggle">Toggle</button>
+            <div
+                id="sidebar-surface"
+                data-slot="sidebar"
+                data-sidebar-target="modal"
+                data-sidebar-collapsible="offcanvas"
+                data-state="expanded"
+                data-mobile-state="closed"
+                data-motion="none"
+                hidden inert
+            >
+                <div data-slot="sidebar-backdrop" data-sidebar-target="backdrop"></div>
+                <div data-slot="sidebar-container" data-sidebar-target="dialog">
+                    <p id="sidebar-content">Initial sidebar</p>
+                </div>
+            </div>
+        </div>
+    `);
+
+    await page.addScriptTag({ path: "node_modules/@hotwired/turbo/dist/turbo.es2017-umd.js" });
+    await installControllers(page);
+
+    const sidebar = page.locator("#sidebar-surface");
+    await expect(sidebar).toHaveAttribute("data-state", "expanded");
+    await expect(sidebar).toHaveAttribute("data-mobile-state", "closed");
+    await expect(sidebar).not.toHaveAttribute("hidden", "");
+    await expect(sidebar).not.toHaveAttribute("inert", "");
+
+    await page.evaluate(() => {
+        const replacement = document.createElement("div");
+        replacement.id = "sidebar-surface";
+        replacement.setAttribute("data-slot", "sidebar");
+        replacement.setAttribute("data-sidebar-target", "modal");
+        replacement.setAttribute("data-sidebar-collapsible", "offcanvas");
+        replacement.setAttribute("data-state", "expanded");
+        replacement.setAttribute("data-mobile-state", "open");
+        replacement.setAttribute("data-presence", "leaving");
+        replacement.setAttribute("data-motion", "default");
+        replacement.setAttribute("hidden", "");
+        replacement.setAttribute("inert", "");
+        replacement.innerHTML = `
+            <div data-slot="sidebar-backdrop" data-sidebar-target="backdrop"></div>
+            <div data-slot="sidebar-container" data-sidebar-target="dialog">
+                <p id="sidebar-content">Morphed sidebar</p>
+            </div>
+        `;
+
+        window.Turbo.morphElements(document.querySelector("#sidebar-surface"), replacement);
+    });
+
+    await expect(sidebar).toHaveAttribute("data-state", "expanded");
+    await expect(sidebar).toHaveAttribute("data-mobile-state", "closed");
+    await expect(sidebar).toHaveAttribute("data-motion", "default");
+    expect(await sidebar.getAttribute("data-presence")).toBeNull();
+    await expect(sidebar).not.toHaveAttribute("hidden", "");
+    await expect(sidebar).not.toHaveAttribute("inert", "");
+    await expect(sidebar).toContainText("Morphed sidebar");
+});
+
 async function installControllers(page) {
     await page.addStyleTag({ content: '[data-hotwire-top-layer][popover] { border: 0; inset: auto; margin: 0; }' });
     await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });

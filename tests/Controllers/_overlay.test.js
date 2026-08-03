@@ -60,6 +60,10 @@ test("reopening during exit prevents stale teardown", async () => {
 
     await overlay.open();
     const closing = overlay.close();
+
+    expect(modal.dispatchEvent(morphAttributeEvent("data-state"))).toBe(false);
+    expect(modal.dispatchEvent(morphAttributeEvent("hidden"))).toBe(false);
+
     const reopening = overlay.open();
 
     expect(await reopening).toBe(true);
@@ -131,6 +135,71 @@ test("a custom state attribute preserves the sidebar desktop state", async () =>
     expect(await overlay.close()).toBe(true);
     expect(modal.dataset.state).toBe("expanded");
     expect(modal.dataset.mobileState).toBe("closed");
+});
+
+test("Turbo morphs cannot overwrite managed presence attributes", async () => {
+    const { modal, backdrop, dialog } = elements();
+    overlay = createOverlay(null, options({ modal, backdrop, dialog }));
+
+    await overlay.open();
+
+    for (const attributeName of ["data-state", "data-presence", "hidden", "inert"]) {
+        const event = morphAttributeEvent(attributeName);
+
+        expect(modal.dispatchEvent(event)).toBe(false);
+        expect(event.defaultPrevented).toBe(true);
+    }
+
+    const motionEvent = morphAttributeEvent("data-motion");
+    expect(modal.dispatchEvent(motionEvent)).toBe(true);
+    expect(motionEvent.defaultPrevented).toBe(false);
+
+    const descendant = dialog.querySelector("button");
+    expect(descendant.dispatchEvent(morphAttributeEvent("hidden"))).toBe(true);
+});
+
+test("Turbo morph protection follows a custom state attribute", () => {
+    const { modal, backdrop, dialog } = elements();
+    overlay = createOverlay(null, options({
+        modal,
+        backdrop,
+        dialog,
+        stateAttribute: "mobileState",
+    }));
+
+    expect(modal.dispatchEvent(morphAttributeEvent("data-mobile-state"))).toBe(false);
+    expect(modal.dispatchEvent(morphAttributeEvent("data-state"))).toBe(true);
+});
+
+test("cleanup releases managed presence attributes to future morphs", () => {
+    const { modal, backdrop, dialog } = elements();
+    overlay = createOverlay(null, options({ modal, backdrop, dialog }));
+
+    expect(modal.dispatchEvent(morphAttributeEvent("hidden"))).toBe(false);
+
+    overlay.cleanup();
+    overlay = null;
+
+    expect(modal.dispatchEvent(morphAttributeEvent("hidden"))).toBe(true);
+});
+
+test("Turbo morphs preserve top-layer attributes only while the overlay is shown", async () => {
+    const { modal, backdrop, dialog } = elements();
+    modal.showPopover = () => {};
+    modal.hidePopover = () => {};
+    overlay = createOverlay(null, options({ modal, backdrop, dialog }));
+
+    expect(modal.dispatchEvent(morphAttributeEvent("popover"))).toBe(true);
+
+    await overlay.open();
+
+    for (const attributeName of ["popover", "data-hotwire-top-layer", "data-hotwire-top-layer-popover"]) {
+        expect(modal.dispatchEvent(morphAttributeEvent(attributeName))).toBe(false);
+    }
+
+    await overlay.close();
+
+    expect(modal.dispatchEvent(morphAttributeEvent("popover"))).toBe(true);
 });
 
 test("scroll locking preserves body classes that predate the overlay", async () => {
@@ -211,6 +280,14 @@ function fakeAnimation() {
         },
         finish: () => finished.resolve(),
     };
+}
+
+function morphAttributeEvent(attributeName) {
+    return new CustomEvent("turbo:before-morph-attribute", {
+        bubbles: true,
+        cancelable: true,
+        detail: { attributeName, mutationType: "update" },
+    });
 }
 
 function deferred() {

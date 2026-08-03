@@ -548,6 +548,8 @@ test.serial("Turbo morph rebuilds an open overlay around replacement targets", a
     expect(replacement.hasAttribute("inert")).toBe(false);
     expect(document.body.classList.contains("overflow-hidden")).toBe(true);
     expect(openedEvents).toBe(1);
+    expect(previous.dispatchEvent(morphAttributeEvent("hidden"))).toBe(true);
+    expect(replacement.dispatchEvent(morphAttributeEvent("hidden"))).toBe(false);
 
     await mounted.controller.close();
     expect(document.activeElement).toBe(trigger);
@@ -667,6 +669,14 @@ function fakeAnimation() {
         },
         finish: () => finished.resolve(),
     };
+}
+
+function morphAttributeEvent(attributeName) {
+    return new CustomEvent("turbo:before-morph-attribute", {
+        bubbles: true,
+        cancelable: true,
+        detail: { attributeName, mutationType: "update" },
+    });
 }
 
 async function waitUntil(predicate, timeout = 2_000) {

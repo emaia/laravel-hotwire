@@ -39,6 +39,12 @@ overlay target. Sidebar keeps desktop `data-state="expanded|collapsed"` and uses
 mobile Presence. Their backdrop and panel transitions are observed together, so the longest finite motion determines
 settlement.
 
+While one of these modal overlays stays connected, Turbo morphs can update its contents but do not overwrite
+`data-state` (or Sidebar's `data-mobile-state`), `data-presence`, `hidden`, `inert`, or active top-layer attributes.
+`data-motion` and attributes on ordinary descendants remain morphable; nested overlays independently protect their own
+targets. An open overlay therefore stays open through refresh morphs; close it through its public action or frame/stream
+lifecycle rather than relying on closed server-rendered attributes.
+
 The Nova preset transitions only `opacity`, `scale`, and `translate`. Presence suppresses transition and animation while
 the first placement is prepared, so a resolved flip cannot animate the closed transform before enter begins. During
 exit, Presence sets `data-state="closed"`
