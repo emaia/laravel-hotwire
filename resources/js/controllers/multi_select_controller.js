@@ -491,12 +491,17 @@ export default class extends Controller {
         const fetchResponse = event.detail?.fetchResponse ?? null;
         if (!succeeded && !fetchResponse) return;
 
-        const responseHTML = fetchResponse ? readResponseHTML(fetchResponse) : null;
+        const documentResponse = isDocumentResponse(fetchResponse);
+        const response = fetchResponse ? readSubmissionResponse(fetchResponse) : null;
+        const subject = started.subject;
+        const streams = response && !documentResponse
+            ? response.then(({ document }) => responseStreams(document, subject))
+            : null;
         let resolveBaseline;
         const baseline = new Promise((resolve) => (resolveBaseline = resolve));
         const pending = {
             baseline,
-            documentBody: isDocumentResponse(fetchResponse) ? responseBodySignature(responseHTML) : null,
+            documentBody: documentResponse ? response.then(responseBodySignature) : null,
             fetchResponse,
             frameId: submissionFrameId(this.form, event),
             hasRefresh: false,
@@ -504,12 +509,13 @@ export default class extends Controller {
             previousBaseline: started.previousBaseline,
             refreshStarted: false,
             resolveBaseline,
-            responseHTML,
+            response,
             streamCompleted: new Map(),
             streamExpected: null,
+            streams,
             submitted: started.selected,
             succeeded,
-            subject: started.subject,
+            subject,
             superseded: false,
             waitingForRefresh: false,
         };
@@ -518,7 +524,7 @@ export default class extends Controller {
 
         if (fetchResponse) void this.resolveSubmissionBaseline(pending);
 
-        if (fetchResponse && isDocumentResponse(fetchResponse)) {
+        if (fetchResponse && documentResponse) {
             void this.settleDocumentSubmission(pending);
         } else if (fetchResponse) {
             void this.settleNonDocumentSubmission(pending);
@@ -578,7 +584,7 @@ export default class extends Controller {
 
         const generation = pending.generation;
         const key = streamKey(stream);
-        if (stream.getAttribute("action") === "refresh") pending.hasRefresh = true;
+        if (isRefreshStream(stream)) pending.hasRefresh = true;
         let completed = false;
         const wrap = (render) => async (...args) => {
             try {
@@ -638,23 +644,19 @@ export default class extends Controller {
             return;
         }
 
-        if (!isDocumentResponse(pending.fetchResponse) && await responseHasRefresh(pending.responseHTML, pending.subject)) {
+        if (!isDocumentResponse(pending.fetchResponse) && (await pending.streams).some(isRefreshStream)) {
             if (pending.superseded) pending.resolveBaseline(await pending.previousBaseline);
 
             return;
         }
 
-        const hasErrors = await responseContainsErrors(pending.responseHTML, pending);
+        const hasErrors = await responseContainsErrors(pending);
         pending.resolveBaseline(hasErrors === false ? pending.submitted : await pending.previousBaseline);
     }
 
     async settleDocumentSubmission(pending) {
-        try {
-            const html = await pending.responseHTML;
-            if (html) return;
-        } catch (_error) {
-            // Baseline resolution falls back to the previous defaults when the response cannot be read.
-        }
+        const response = await pending.response;
+        if (response.html) return;
 
         if (this.pendingSubmission?.generation === pending.generation) {
             void this.settleSubmission(pending.generation);
@@ -662,17 +664,11 @@ export default class extends Controller {
     }
 
     async settleNonDocumentSubmission(pending) {
-        let html;
-        try {
-            html = await pending.responseHTML;
-        } catch (_error) {
-            html = null;
-        }
+        const streams = await pending.streams;
 
         if (this.pendingSubmission?.generation !== pending.generation) return;
 
-        const streams = responseStreams(html, pending.subject);
-        pending.hasRefresh = streams.some((stream) => stream.getAttribute("action") === "refresh");
+        pending.hasRefresh = streams.some(isRefreshStream);
         pending.streamExpected = countStreams(streams);
         this.settleStreamSubmission(pending);
     }
@@ -996,45 +992,43 @@ function isDocumentResponse(fetchResponse) {
     return contentType.startsWith("text/html") || contentType.startsWith("application/xhtml+xml");
 }
 
-function readResponseHTML(fetchResponse) {
-    return Promise.resolve().then(() => fetchResponse.responseHTML);
-}
-
-async function responseBodySignature(responseHTML) {
+async function readSubmissionResponse(fetchResponse) {
     try {
-        const html = await responseHTML;
-        if (typeof html !== "string") return null;
+        const html = await Promise.resolve().then(() => fetchResponse.responseHTML);
+        const document = typeof html === "string"
+            ? new window.DOMParser().parseFromString(html, "text/html")
+            : null;
 
-        return new window.DOMParser().parseFromString(html, "text/html").body.innerHTML;
+        return { document, failed: false, html };
     } catch (_error) {
-        return null;
+        return { document: null, failed: true, html: null };
     }
 }
 
-async function responseContainsErrors(responseHTML, pending) {
-    try {
-        const html = await responseHTML;
-        if (typeof html !== "string") return false;
+function responseBodySignature(response) {
+    return response.document?.body.innerHTML ?? null;
+}
 
-        const response = new window.DOMParser().parseFromString(html, "text/html");
-        if (!isDocumentResponse(pending.fetchResponse)) {
-            return responseStreams(html, pending.subject)
-                .some((stream) => stream.querySelector("template")?.content.querySelector('[aria-invalid="true"]'));
-        }
+async function responseContainsErrors(pending) {
+    const response = await pending.response;
+    if (response.failed) return null;
+    if (!response.document) return false;
 
-        let scope = response.body;
-        if (pending.frameId) {
-            scope = [...response.querySelectorAll("turbo-frame")]
-                .find((frame) => frame.id === pending.frameId);
-            if (!scope) return false;
-        }
-
-        const form = responseForm(scope, pending.subject);
-
-        return form ? form.querySelector('[aria-invalid="true"]') !== null : false;
-    } catch (_error) {
-        return null;
+    if (!isDocumentResponse(pending.fetchResponse)) {
+        return (await pending.streams)
+            .some((stream) => stream.querySelector("template")?.content.querySelector('[aria-invalid="true"]'));
     }
+
+    let scope = response.document.body;
+    if (pending.frameId) {
+        scope = [...response.document.querySelectorAll("turbo-frame")]
+            .find((frame) => frame.id === pending.frameId);
+        if (!scope) return false;
+    }
+
+    const form = responseForm(scope, pending.subject);
+
+    return form ? form.querySelector('[aria-invalid="true"]') !== null : false;
 }
 
 function responseForm(scope, subject) {
@@ -1069,10 +1063,9 @@ function responseForm(scope, subject) {
     return null;
 }
 
-function responseStreams(html, subject) {
-    if (typeof html !== "string" || html === "") return [];
+function responseStreams(response, subject) {
+    if (!response) return [];
 
-    const response = new window.DOMParser().parseFromString(html, "text/html");
     const relatedIds = new Set();
     const introduced = [];
     [subject.form, subject.element].filter(Boolean).forEach((element) => {
@@ -1106,15 +1099,8 @@ function responseStreams(html, subject) {
     });
 }
 
-async function responseHasRefresh(responseHTML, subject) {
-    try {
-        const html = await responseHTML;
-
-        return responseStreams(html, subject)
-            .some((stream) => stream.getAttribute("action") === "refresh");
-    } catch (_error) {
-        return false;
-    }
+function isRefreshStream(stream) {
+    return stream.getAttribute("action") === "refresh";
 }
 
 function streamAffectsSubmission(stream, subject) {

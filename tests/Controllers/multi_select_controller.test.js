@@ -473,7 +473,55 @@ test.serial("ignores validation errors outside the submitted form in a page resp
     expect([active.defaultSelected, paused.defaultSelected]).toEqual([false, true]);
 });
 
-test.serial("commits selection defaults after a successful Turbo Stream response", async () => {
+test.serial("parses once and commits defaults after a successful Turbo Stream response", async () => {
+    await mount({
+        form: true,
+        options: `
+            <option value="active" selected>Active</option>
+            <option value="paused">Paused</option>
+        `,
+        optionMarkup: `
+            <div data-multi-select-target="option" data-value="active" data-selected="true" role="option" aria-selected="true" tabindex="-1">Active</div>
+            <div data-multi-select-target="option" data-value="paused" data-selected="false" role="option" aria-selected="false" tabindex="-1">Paused</div>
+        `,
+    });
+
+    const form = document.getElementById("multi-select-form");
+    const [active, paused] = select().options;
+    active.defaultSelected = true;
+    paused.defaultSelected = false;
+    active.selected = false;
+    paused.selected = true;
+    const parse = window.DOMParser.prototype.parseFromString;
+    let parseCount = 0;
+    window.DOMParser.prototype.parseFromString = function (...args) {
+        parseCount++;
+
+        return parse.apply(this, args);
+    };
+
+    try {
+        form.dispatchEvent(new CustomEvent("turbo:submit-end", {
+            bubbles: true,
+            detail: {
+                success: true,
+                fetchResponse: {
+                    contentType: "text/vnd.turbo-stream.html",
+                    responseHTML: Promise.resolve("<turbo-stream></turbo-stream>"),
+                },
+            },
+        }));
+
+        await wait(40);
+
+        expect([active.defaultSelected, paused.defaultSelected]).toEqual([false, true]);
+        expect(parseCount).toBe(1);
+    } finally {
+        window.DOMParser.prototype.parseFromString = parse;
+    }
+});
+
+test.serial("retains defaults when a Turbo response body cannot be read", async () => {
     await mount({
         form: true,
         options: `
@@ -498,14 +546,14 @@ test.serial("commits selection defaults after a successful Turbo Stream response
             success: true,
             fetchResponse: {
                 contentType: "text/vnd.turbo-stream.html",
-                responseHTML: Promise.resolve("<turbo-stream></turbo-stream>"),
+                responseHTML: Promise.reject(new Error("Response body unavailable")),
             },
         },
     }));
 
-    await wait(40);
+    await wait(0);
 
-    expect([active.defaultSelected, paused.defaultSelected]).toEqual([false, true]);
+    expect([active.defaultSelected, paused.defaultSelected]).toEqual([true, false]);
 });
 
 test.serial("commits a successful Turbo Stream despite stale form errors", async () => {
