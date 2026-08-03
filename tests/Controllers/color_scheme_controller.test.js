@@ -72,6 +72,39 @@ test("cycle walks through configured modes and dispatches change", async () => {
     expect(changes.at(-1)).toEqual({ mode: "dark", scheme: "dark" });
 });
 
+test("cycles restricted modes from a light system scheme without rewriting it on connect", async () => {
+    await mount(
+        `<button data-controller="color-scheme" data-color-scheme-modes-value="light dark"></button>`,
+        ({ window }) => window.localStorage.setItem("hotwire.colorScheme", "system"),
+    );
+
+    expect(window.localStorage.getItem("hotwire.colorScheme")).toBe("system");
+    expect(mounted.root.dataset.mode).toBe("system");
+    expect(mounted.root.dataset.scheme).toBe("light");
+
+    mounted.controller.cycle();
+
+    expect(window.localStorage.getItem("hotwire.colorScheme")).toBe("dark");
+    expect(mounted.root.dataset.mode).toBe("dark");
+});
+
+test("cycles restricted modes from a dark system scheme", async () => {
+    media.matches = true;
+
+    await mount(
+        `<button data-controller="color-scheme" data-color-scheme-modes-value="light dark"></button>`,
+        ({ window }) => window.localStorage.setItem("hotwire.colorScheme", "system"),
+    );
+
+    expect(mounted.root.dataset.mode).toBe("system");
+    expect(mounted.root.dataset.scheme).toBe("dark");
+
+    mounted.controller.cycle();
+
+    expect(window.localStorage.getItem("hotwire.colorScheme")).toBe("light");
+    expect(mounted.root.dataset.mode).toBe("light");
+});
+
 test("toggle switches between resolved light and dark", async () => {
     await mount(`<button data-controller="color-scheme"></button>`);
 

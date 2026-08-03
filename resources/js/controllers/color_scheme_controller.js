@@ -33,7 +33,9 @@ export default class extends Controller {
 
     cycle() {
         const modes = this.normalizedModes;
-        const currentIndex = modes.indexOf(this.currentMode);
+        const currentMode = this.currentMode;
+        const cycleMode = modes.includes(currentMode) ? currentMode : this.resolveScheme(currentMode);
+        const currentIndex = modes.indexOf(cycleMode);
         const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % modes.length;
 
         this.setMode(modes[nextIndex]);

@@ -2,6 +2,8 @@
 import { Controller } from "@hotwired/stimulus";
 
 import { createFloating } from "./_floating.js";
+import { formHasErrors } from "./_form_errors.js";
+import { frameEventAffects, submissionFrameId } from "./_frame_events.js";
 import { createPresence } from "./_presence.js";
 import { createTopLayer } from "./_top_layer.js";
 
@@ -40,8 +42,15 @@ export default class extends Controller {
         this.onSearchInput = this.onSearchInput.bind(this);
         this.onSearchKeydown = this.onSearchKeydown.bind(this);
         this.closeForCache = this.closeForCache.bind(this);
+        this.handleBeforeRender = this.handleBeforeRender.bind(this);
+        this.handleBeforeStreamRender = this.handleBeforeStreamRender.bind(this);
+        this.handleFormReset = this.handleFormReset.bind(this);
+        this.handleRender = this.handleRender.bind(this);
         this.handleSubmitEnd = this.handleSubmitEnd.bind(this);
+        this.handleSubmitStart = this.handleSubmitStart.bind(this);
+        this.handleVisit = this.handleVisit.bind(this);
         this.focusOutFrame = null;
+        this.form = null;
         this.floating = null;
         this.floatingAnchor = null;
         this.floatingElement = null;
@@ -54,13 +63,25 @@ export default class extends Controller {
         this.topLayer = null;
         this.nativeOptionsByValue = new Map();
         this.sortingOptions = false;
+        this.baselinePromise = null;
+        this.pendingSubmission = null;
+        this.startedSubmission = null;
+        this.submitGeneration = 0;
     }
 
     connect() {
+        this.form = this.element.closest("form");
         document.addEventListener("click", this.onOutsideClick);
         document.addEventListener("keydown", this.onDocumentKeydown);
         document.addEventListener("turbo:before-cache", this.closeForCache);
-        document.addEventListener("turbo:submit-end", this.handleSubmitEnd);
+        document.addEventListener("turbo:before-render", this.handleBeforeRender);
+        document.addEventListener("turbo:before-stream-render", this.handleBeforeStreamRender, true);
+        document.addEventListener("turbo:render", this.handleRender);
+        document.addEventListener("turbo:frame-render", this.handleRender);
+        document.addEventListener("turbo:visit", this.handleVisit);
+        this.form?.addEventListener("reset", this.handleFormReset);
+        this.form?.addEventListener("turbo:submit-end", this.handleSubmitEnd);
+        this.form?.addEventListener("turbo:submit-start", this.handleSubmitStart);
         this.element.addEventListener("focusout", this.onFocusOut);
         this.element.addEventListener("focusin", this.onFocusIn);
         if (this.hasContentTarget && this.presenceElement !== this.contentTarget) this.setupContent(this.contentTarget);
@@ -79,7 +100,19 @@ export default class extends Controller {
         document.removeEventListener("click", this.onOutsideClick);
         document.removeEventListener("keydown", this.onDocumentKeydown);
         document.removeEventListener("turbo:before-cache", this.closeForCache);
-        document.removeEventListener("turbo:submit-end", this.handleSubmitEnd);
+        document.removeEventListener("turbo:before-render", this.handleBeforeRender);
+        document.removeEventListener("turbo:before-stream-render", this.handleBeforeStreamRender, true);
+        document.removeEventListener("turbo:render", this.handleRender);
+        document.removeEventListener("turbo:frame-render", this.handleRender);
+        document.removeEventListener("turbo:visit", this.handleVisit);
+        this.form?.removeEventListener("reset", this.handleFormReset);
+        this.form?.removeEventListener("turbo:submit-end", this.handleSubmitEnd);
+        this.form?.removeEventListener("turbo:submit-start", this.handleSubmitStart);
+        this.form = null;
+        this.baselinePromise = null;
+        this.pendingSubmission = null;
+        this.startedSubmission = null;
+        this.submitGeneration++;
         this.element.removeEventListener("focusout", this.onFocusOut);
         this.element.removeEventListener("focusin", this.onFocusIn);
         if (this.hasContentTarget) {
@@ -316,7 +349,6 @@ export default class extends Controller {
         const native = this.nativeOptionsByValue.get(option.dataset.value);
         if (native) {
             native.selected = selected;
-            native.toggleAttribute("selected", selected);
         }
     }
 
@@ -343,7 +375,7 @@ export default class extends Controller {
     }
 
     syncOptionsFromSelect() {
-        const selected = new Set([...this.selectTarget.selectedOptions].map((option) => option.value));
+        const selected = new Set([...this.selectTarget.options].filter((option) => option.selected).map((option) => option.value));
 
         this.optionTargets.forEach((option) => {
             this.setSelected(option, selected.has(option.dataset.value));
@@ -425,11 +457,268 @@ export default class extends Controller {
         this.topLayer?.hide();
     }
 
-    handleSubmitEnd(event) {
-        if (!event.detail?.success) return;
+    handleFormReset(event) {
+        const form = this.form;
 
-        [...this.selectTarget.options].forEach((option) => {
-            option.defaultSelected = option.selected;
+        queueMicrotask(() => {
+            if (event.defaultPrevented || !form || this.form !== form || !this.element.isConnected) return;
+
+            this.syncOptionsFromSelect();
+            if (this.hasSearchTarget) {
+                this.onSearchInput();
+            } else {
+                this.updateEmptyState();
+                this.updateSelectAllState();
+                this.updateMaxState();
+            }
+            this.updateSummary();
+            this.updateValidation();
+        });
+    }
+
+    handleSubmitEnd(event) {
+        if (event.target !== this.form) return;
+
+        const formSubmission = event.detail?.formSubmission ?? null;
+        if (this.startedSubmission?.formSubmission && formSubmission && this.startedSubmission.formSubmission !== formSubmission) return;
+
+        const generation = ++this.submitGeneration;
+        const started = this.startedSubmission ?? this.captureSubmission(formSubmission);
+        this.startedSubmission = null;
+        this.pendingSubmission = null;
+
+        const succeeded = event.detail?.success === true;
+        const fetchResponse = event.detail?.fetchResponse ?? null;
+        if (!succeeded && !fetchResponse) return;
+
+        const documentResponse = isDocumentResponse(fetchResponse);
+        const response = fetchResponse ? readSubmissionResponse(fetchResponse) : null;
+        const subject = started.subject;
+        const streams = response && !documentResponse
+            ? response.then(({ document }) => responseStreams(document, subject))
+            : null;
+        let resolveBaseline;
+        const baseline = new Promise((resolve) => (resolveBaseline = resolve));
+        const pending = {
+            baseline,
+            documentBody: documentResponse ? response.then(responseBodySignature) : null,
+            fetchResponse,
+            frameId: submissionFrameId(this.form, event),
+            hasRefresh: false,
+            generation,
+            previousBaseline: started.previousBaseline,
+            refreshStarted: false,
+            resolveBaseline,
+            response,
+            streamCompleted: new Map(),
+            streamExpected: null,
+            streams,
+            submitted: started.selected,
+            succeeded,
+            subject,
+            superseded: false,
+            waitingForRefresh: false,
+        };
+        this.baselinePromise = baseline;
+        this.pendingSubmission = pending;
+
+        if (fetchResponse) void this.resolveSubmissionBaseline(pending);
+
+        if (fetchResponse && documentResponse) {
+            void this.settleDocumentSubmission(pending);
+        } else if (fetchResponse) {
+            void this.settleNonDocumentSubmission(pending);
+        }
+    }
+
+    handleSubmitStart(event) {
+        if (event.target !== this.form) return;
+
+        const pending = this.pendingSubmission;
+        if (pending) {
+            pending.superseded = true;
+            if (pending.hasRefresh) void pending.previousBaseline.then(pending.resolveBaseline);
+        }
+
+        this.startedSubmission = this.captureSubmission(event.detail?.formSubmission ?? null);
+    }
+
+    captureSubmission(formSubmission) {
+        const options = [...this.selectTarget.options];
+
+        const defaults = new Map(options.map((option) => [option.value, option.defaultSelected]));
+
+        return {
+            defaults,
+            formSubmission,
+            previousBaseline: this.baselinePromise ?? Promise.resolve(defaults),
+            selected: new Map(options.map((option) => [option.value, option.selected])),
+            subject: {
+                element: this.element,
+                form: this.form,
+                selectName: this.selectTarget.name,
+                triggerId: this.hasTriggerTarget ? this.triggerTarget.id : null,
+            },
+        };
+    }
+
+    handleRender(event) {
+        const pending = this.pendingSubmission;
+        if (!pending) return;
+
+        if (event.type === "turbo:frame-render") {
+            if (!pending.frameId || !frameEventAffects(this.element, event, pending.frameId)) return;
+        } else if (!pending.waitingForRefresh && (pending.fetchResponse || pending.frameId || pending.documentBody)) {
+            return;
+        }
+
+        if (event.type === "turbo:frame-render" && pending.fetchResponse !== event.detail?.fetchResponse) return;
+
+        void this.settleSubmission(pending.generation);
+    }
+
+    handleBeforeStreamRender(event) {
+        const pending = this.pendingSubmission;
+        const stream = event.detail?.newStream ?? event.target;
+        if (!pending?.fetchResponse || isDocumentResponse(pending.fetchResponse) || !stream?.matches?.("turbo-stream")) return;
+
+        const generation = pending.generation;
+        const key = streamKey(stream);
+        if (isRefreshStream(stream)) pending.hasRefresh = true;
+        let completed = false;
+        const wrap = (render) => async (...args) => {
+            try {
+                return await render(...args);
+            } finally {
+                const current = this.pendingSubmission;
+                if (completed || !current || current.generation !== generation) return;
+
+                completed = true;
+                incrementCount(current.streamCompleted, key);
+                this.settleStreamSubmission(current);
+            }
+        };
+
+        if (typeof event.detail?.render !== "function") return;
+
+        let wrapped = wrap(event.detail.render);
+        event.detail.render = wrapped;
+        queueMicrotask(() => {
+            const render = event.detail?.render;
+            if (typeof render !== "function" || render === wrapped) return;
+
+            wrapped = wrap(render);
+            event.detail.render = wrapped;
+        });
+    }
+
+    handleVisit() {
+        const pending = this.pendingSubmission;
+        if (pending?.hasRefresh) pending.refreshStarted = true;
+    }
+
+    handleBeforeRender(event) {
+        const pending = this.pendingSubmission;
+        const newBody = event.detail?.newBody;
+        const render = event.detail?.render;
+        if (!pending?.documentBody || pending.frameId || !newBody || typeof render !== "function") return;
+
+        const generation = pending.generation;
+        const candidateBody = newBody.innerHTML;
+        event.detail.render = async (...args) => {
+            const result = await render(...args);
+            const current = this.pendingSubmission;
+            if (!current || current.generation !== generation) return result;
+
+            const expectedBody = await current.documentBody;
+            if (expectedBody !== null && expectedBody === candidateBody) await this.settleSubmission(generation);
+
+            return result;
+        };
+    }
+
+    async resolveSubmissionBaseline(pending) {
+        if (!pending.succeeded) {
+            pending.resolveBaseline(await pending.previousBaseline);
+
+            return;
+        }
+
+        if (!isDocumentResponse(pending.fetchResponse) && (await pending.streams).some(isRefreshStream)) {
+            if (pending.superseded) pending.resolveBaseline(await pending.previousBaseline);
+
+            return;
+        }
+
+        const hasErrors = await responseContainsErrors(pending);
+        pending.resolveBaseline(hasErrors === false ? pending.submitted : await pending.previousBaseline);
+    }
+
+    async settleDocumentSubmission(pending) {
+        const response = await pending.response;
+        if (response.html) return;
+
+        if (this.pendingSubmission?.generation === pending.generation) {
+            void this.settleSubmission(pending.generation);
+        }
+    }
+
+    async settleNonDocumentSubmission(pending) {
+        const streams = await pending.streams;
+
+        if (this.pendingSubmission?.generation !== pending.generation) return;
+
+        pending.hasRefresh = streams.some(isRefreshStream);
+        pending.streamExpected = countStreams(streams);
+        this.settleStreamSubmission(pending);
+    }
+
+    settleStreamSubmission(pending) {
+        if (!pending.streamExpected || !countsSatisfied(pending.streamExpected, pending.streamCompleted)) return;
+
+        if (pending.hasRefresh && pending.refreshStarted) {
+            pending.waitingForRefresh = true;
+
+            return;
+        }
+
+        void this.settleSubmission(pending.generation);
+    }
+
+    async settleSubmission(generation) {
+        const pending = this.pendingSubmission;
+        if (!pending || pending.generation !== generation) return;
+
+        let baseline;
+        if (pending.hasRefresh) {
+            baseline = formHasErrors(this.element) ? await pending.previousBaseline : pending.submitted;
+            pending.resolveBaseline(baseline);
+        } else if (pending.fetchResponse) {
+            baseline = await pending.baseline;
+        } else {
+            baseline = !pending.succeeded || formHasErrors(this.element)
+                ? await pending.previousBaseline
+                : pending.submitted;
+            pending.resolveBaseline(baseline);
+        }
+
+        if (this.pendingSubmission?.generation !== generation) return;
+
+        this.pendingSubmission = null;
+        this.baselinePromise = null;
+        if (!this.element.isConnected) return;
+
+        const options = [...this.selectTarget.options];
+        const selected = options.map((option) => option.selected);
+
+        options.forEach((option) => {
+            if (!baseline.has(option.value)) return;
+
+            option.defaultSelected = baseline.get(option.value);
+        });
+
+        options.forEach((option, index) => {
+            option.selected = selected[index];
         });
     }
 
@@ -468,7 +757,7 @@ export default class extends Controller {
     }
 
     selectedValues() {
-        return [...this.selectTarget.selectedOptions].map((option) => option.value);
+        return [...this.selectTarget.options].filter((option) => option.selected).map((option) => option.value);
     }
 
     selectedOptions() {
@@ -695,6 +984,177 @@ function normalize(value) {
         .toLowerCase()
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "");
+}
+
+function isDocumentResponse(fetchResponse) {
+    const contentType = fetchResponse?.contentType ?? "";
+
+    return contentType.startsWith("text/html") || contentType.startsWith("application/xhtml+xml");
+}
+
+async function readSubmissionResponse(fetchResponse) {
+    try {
+        const html = await Promise.resolve().then(() => fetchResponse.responseHTML);
+        const document = typeof html === "string"
+            ? new window.DOMParser().parseFromString(html, "text/html")
+            : null;
+
+        return { document, failed: false, html };
+    } catch (_error) {
+        return { document: null, failed: true, html: null };
+    }
+}
+
+function responseBodySignature(response) {
+    return response.document?.body.innerHTML ?? null;
+}
+
+async function responseContainsErrors(pending) {
+    const response = await pending.response;
+    if (response.failed) return null;
+    if (!response.document) return false;
+
+    if (!isDocumentResponse(pending.fetchResponse)) {
+        return (await pending.streams)
+            .some((stream) => stream.querySelector("template")?.content.querySelector('[aria-invalid="true"]'));
+    }
+
+    let scope = response.document.body;
+    if (pending.frameId) {
+        scope = [...response.document.querySelectorAll("turbo-frame")]
+            .find((frame) => frame.id === pending.frameId);
+        if (!scope) return false;
+    }
+
+    const form = responseForm(scope, pending.subject);
+
+    return form ? form.querySelector('[aria-invalid="true"]') !== null : false;
+}
+
+function responseForm(scope, subject) {
+    const forms = [scope, ...scope.querySelectorAll("form")].filter((element) => element.matches?.("form"));
+    const formId = subject.form?.id;
+    if (formId) {
+        const matching = forms.find((form) => form.id === formId);
+        if (matching) return matching;
+    }
+
+    const elementId = subject.element?.id;
+    if (elementId) {
+        const matchingElement = [scope, ...scope.querySelectorAll("[id]")]
+            .find((element) => element.id === elementId);
+        const matchingForm = matchingElement?.closest("form");
+        if (matchingForm) return matchingForm;
+    }
+
+    if (subject.triggerId) {
+        const matchingTrigger = [scope, ...scope.querySelectorAll("[id]")]
+            .find((element) => element.id === subject.triggerId);
+        const matchingForm = matchingTrigger?.closest("form");
+        if (matchingForm) return matchingForm;
+    }
+
+    if (subject.selectName) {
+        const matchingSelects = [...scope.querySelectorAll("select")]
+            .filter((select) => select.name === subject.selectName);
+        if (matchingSelects.length === 1) return matchingSelects[0].closest("form");
+    }
+
+    return null;
+}
+
+function responseStreams(response, subject) {
+    if (!response) return [];
+
+    const relatedIds = new Set();
+    const introduced = [];
+    [subject.form, subject.element].filter(Boolean).forEach((element) => {
+        if (element.id) relatedIds.add(element.id);
+        element.querySelectorAll("[id]").forEach((descendant) => relatedIds.add(descendant.id));
+    });
+
+    return [...response.querySelectorAll("turbo-stream")].filter((stream) => {
+        const targetId = stream.getAttribute("target");
+        const selector = stream.getAttribute("targets");
+        let affects = streamAffectsSubmission(stream, subject) || (targetId && relatedIds.has(targetId));
+
+        if (!affects && selector) {
+            try {
+                affects = introduced.some((element) => element.matches(selector) || element.querySelector(selector));
+            } catch (_error) {
+                affects = false;
+            }
+        }
+
+        if (!affects) return false;
+
+        const template = stream.querySelector("template")?.content;
+        if (template) {
+            const elements = [...template.children];
+            introduced.push(...elements);
+            template.querySelectorAll("[id]").forEach((element) => relatedIds.add(element.id));
+        }
+
+        return true;
+    });
+}
+
+function isRefreshStream(stream) {
+    return stream.getAttribute("action") === "refresh";
+}
+
+function streamAffectsSubmission(stream, subject) {
+    if (!stream?.matches?.("turbo-stream")) return false;
+    if (stream.getAttribute("action") === "refresh") return true;
+
+    const document = subject.form?.ownerDocument ?? subject.element?.ownerDocument;
+    if (!document) return false;
+
+    const targets = [];
+    const targetId = stream.getAttribute("target");
+    if (targetId) {
+        const target = document.getElementById(targetId);
+        if (target) targets.push(target);
+    }
+
+    const selector = stream.getAttribute("targets");
+    if (selector) {
+        try {
+            targets.push(...document.querySelectorAll(selector));
+        } catch (_error) {
+            return false;
+        }
+    }
+
+    const subjects = [subject.form, subject.element].filter(Boolean);
+
+    return targets.some((target) => subjects.some((element) => (
+        target === element || target.contains(element) || element.contains(target)
+    )));
+}
+
+function streamKey(stream) {
+    const attributes = ["action", "target", "targets", "method", "request-id"]
+        .map((attribute) => stream.getAttribute(attribute) ?? "")
+        .join("\0");
+    const template = stream.querySelector("template")?.innerHTML ?? "";
+
+    return `${attributes}\0${template}`;
+}
+
+function countStreams(streams) {
+    const counts = new Map();
+    streams.forEach((stream) => incrementCount(counts, streamKey(stream)));
+
+    return counts;
+}
+
+function incrementCount(counts, key) {
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+}
+
+function countsSatisfied(expected, completed) {
+    return [...expected].every(([key, count]) => (completed.get(key) ?? 0) >= count);
 }
 
 function labelFor(option) {

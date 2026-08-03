@@ -28,7 +28,8 @@ Composable content container with header, action, content and footer slots.
 
 ## Spacing
 
-Override `--card-spacing` on the root card to tune header, content and footer padding for one instance.
+Override `--card-spacing` on the root card to tune its vertical inset, the gaps between direct sections, and header,
+content and footer padding for one instance.
 
 ```blade
 <hw:card class="[--card-spacing:--spacing(8)]">

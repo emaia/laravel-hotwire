@@ -7,8 +7,9 @@
         'data-slot' => 'checkbox-group',
         'data-orientation' => $orientation,
         'data-controller' => $wrapperController ?: null,
+        'data-checkbox-select-all-disable-indeterminate-value' => $selectAll && $disableIndeterminate ? 'true' : null,
         'class' => filled($wrapperClass) ? $wrapperClass : null,
-    ], $attributes, $stimulus, except: ['select-all', 'auto-submit', 'auto-submit-delay', 'orientation', 'disabled'], protectedPrefixes: $internalPrefixes);
+    ], $attributes, $stimulus, except: ['select-all', 'disable-indeterminate', 'auto-submit', 'auto-submit-delay', 'orientation', 'disabled'], protectedPrefixes: $internalPrefixes);
 @endphp
 
 <div

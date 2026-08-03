@@ -187,9 +187,9 @@ GET forms (search, filters) don't get a CSRF token or method spoofing since they
 
 ### Frame redirect resolution
 
-When a form lives inside a Turbo Frame (`<turbo-frame>`), validation failures would historically break out of the frame
-context because Laravel's default redirect-back points to the wrong URL. The `track-frame-src` prop solves this by
-including a hidden `_turbo_frame_src` input with the current page URL:
+When a form lives inside a Turbo Frame (`<turbo-frame>`), validation failures can redirect to the wrong URL. The visible
+host page, the URL that rendered the frame, and the mutation endpoint are often different. The `track-frame-src` prop
+solves this by including a hidden `_turbo_frame_src` input with the URL of the request that rendered the form:
 
 ```blade
 <turbo-frame id="content" src="/posts/create">
@@ -200,9 +200,14 @@ including a hidden `_turbo_frame_src` input with the current page URL:
 </turbo-frame>
 ```
 
-On validation failure, the server reads this input and redirects back to the frame's source URL, keeping the frame
-context intact. For client-side header injection (alternative approach), publish the standalone `turbo--frame-src`
-controller. See [frame-src controller](../controllers/turbo/frame-src.md).
+For example, a board visible at `/tasks` can open a modal from `/tasks/create` and submit to `POST /tasks`. Validation
+must redirect to `/tasks/create`, not the board. `TurboFormRequest` validates the hidden source and redirects there so
+the response contains the matching frame and its errors.
+
+For client-side fallback when the hidden input is unavailable, use the standalone `turbo--frame-src` controller. It
+prefers the nearest frame source, falls back to the document URL only when no frame ancestor has a source, scopes itself
+to descendant form requests, and never overwrites an explicit header. See
+[frame-src controller](../controllers/turbo/frame-src.md).
 
 ## Required controllers
 

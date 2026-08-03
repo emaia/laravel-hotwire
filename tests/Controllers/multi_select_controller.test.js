@@ -59,7 +59,7 @@ const value = () => document.querySelector('[data-multi-select-target="value"]')
 const select = () => document.querySelector('[data-multi-select-target="select"]');
 const option = (value) => document.querySelector(`[data-multi-select-target="option"][data-value="${value}"]`);
 const empty = () => document.querySelector('[data-multi-select-target="empty"]');
-const selectedValues = () => [...select().selectedOptions].map((option) => option.value);
+const selectedValues = () => [...select().options].filter((option) => option.selected).map((option) => option.value);
 const isOpen = () => content().dataset.state === "open" && !content().hidden;
 
 function clickTrigger() {
@@ -270,6 +270,985 @@ test.serial("selects and deselects options while syncing the native select", asy
     expect(option("active").dataset.selected).toBe("false");
     expect(selectedValues()).toEqual([]);
     expect(value().textContent).toBe("Select options");
+});
+
+test.serial("keeps selected attributes as the form state baseline", async () => {
+    await mount({
+        options: '<option value="active" selected>Active</option>',
+        optionMarkup:
+            '<div data-multi-select-target="option" data-value="active" data-selected="true" aria-selected="true">Active</div>',
+    });
+
+    option("active").dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+    expect(select().options[0].selected).toBe(false);
+    expect(select().options[0].hasAttribute("selected")).toBe(true);
+});
+
+test.serial("commits selection defaults only after the owning form submits successfully", async () => {
+    await mount({
+        form: true,
+        options: `
+            <option value="active" selected>Active</option>
+            <option value="paused">Paused</option>
+        `,
+        optionMarkup: `
+            <div data-slot="multi-select-option" data-multi-select-target="option" data-value="active" data-selected="true" role="option" aria-selected="true" tabindex="-1">Active</div>
+            <div data-slot="multi-select-option" data-multi-select-target="option" data-value="paused" data-selected="false" role="option" aria-selected="false" tabindex="-1">Paused</div>
+        `,
+    });
+
+    const form = document.getElementById("multi-select-form");
+    const unrelated = document.body.appendChild(document.createElement("form"));
+    const [active, paused] = select().options;
+    active.defaultSelected = true;
+    paused.defaultSelected = false;
+    active.selected = false;
+    paused.selected = true;
+
+    unrelated.dispatchEvent(new CustomEvent("turbo:submit-end", { bubbles: true, detail: { success: true } }));
+    expect([active.defaultSelected, paused.defaultSelected]).toEqual([true, false]);
+
+    form.dispatchEvent(new CustomEvent("turbo:submit-end", { bubbles: true, detail: { success: false } }));
+    expect([active.defaultSelected, paused.defaultSelected]).toEqual([true, false]);
+
+    form.dispatchEvent(new CustomEvent("turbo:submit-end", { bubbles: true, detail: { success: true } }));
+    expect([active.defaultSelected, paused.defaultSelected]).toEqual([true, false]);
+
+    document.dispatchEvent(new CustomEvent("turbo:render"));
+    expect([active.defaultSelected, paused.defaultSelected]).toEqual([false, true]);
+});
+
+test.serial("does not commit selection defaults when a successful response renders validation errors", async () => {
+    await mount({
+        form: true,
+        options: `
+            <option value="active" selected>Active</option>
+            <option value="paused">Paused</option>
+        `,
+        optionMarkup: `
+            <div data-multi-select-target="option" data-value="active" data-selected="true" role="option" aria-selected="true" tabindex="-1">Active</div>
+            <div data-multi-select-target="option" data-value="paused" data-selected="false" role="option" aria-selected="false" tabindex="-1">Paused</div>
+        `,
+    });
+
+    const form = document.getElementById("multi-select-form");
+    const [active, paused] = select().options;
+    active.defaultSelected = true;
+    paused.defaultSelected = false;
+    active.selected = false;
+    paused.selected = true;
+
+    form.dispatchEvent(new CustomEvent("turbo:submit-end", { bubbles: true, detail: { success: true } }));
+    active.defaultSelected = false;
+    paused.defaultSelected = true;
+    active.selected = false;
+    paused.selected = true;
+    form.insertAdjacentHTML("beforeend", '<p aria-invalid="true">Validation failed</p>');
+    document.dispatchEvent(new CustomEvent("turbo:render"));
+    await wait(0);
+
+    expect([active.defaultSelected, paused.defaultSelected]).toEqual([true, false]);
+    expect([active.selected, paused.selected]).toEqual([false, true]);
+});
+
+test.serial("waits for the submitted frame to render before committing selection defaults", async () => {
+    await mount({
+        form: true,
+        frame: true,
+        options: `
+            <option value="active" selected>Active</option>
+            <option value="paused">Paused</option>
+        `,
+        optionMarkup: `
+            <div data-multi-select-target="option" data-value="active" data-selected="true" role="option" aria-selected="true" tabindex="-1">Active</div>
+            <div data-multi-select-target="option" data-value="paused" data-selected="false" role="option" aria-selected="false" tabindex="-1">Paused</div>
+        `,
+    });
+
+    const form = document.getElementById("multi-select-form");
+    const [active, paused] = select().options;
+    active.defaultSelected = true;
+    paused.defaultSelected = false;
+    active.selected = false;
+    paused.selected = true;
+    const fetchResponse = { contentType: "text/html" };
+    form.dispatchEvent(new CustomEvent("turbo:submit-end", {
+        bubbles: true,
+        detail: { success: true, fetchResponse },
+    }));
+
+    document.body.appendChild(document.createElement("turbo-frame")).dispatchEvent(
+        new CustomEvent("turbo:frame-render", { bubbles: true }),
+    );
+    expect([active.defaultSelected, paused.defaultSelected]).toEqual([true, false]);
+
+    document.getElementById("editor").dispatchEvent(new CustomEvent("turbo:frame-render", {
+        bubbles: true,
+        detail: { fetchResponse: { contentType: "text/html" } },
+    }));
+    expect([active.defaultSelected, paused.defaultSelected]).toEqual([true, false]);
+
+    document.getElementById("editor").dispatchEvent(new CustomEvent("turbo:frame-render", {
+        bubbles: true,
+        detail: { fetchResponse },
+    }));
+    await wait(0);
+    expect([active.defaultSelected, paused.defaultSelected]).toEqual([false, true]);
+});
+
+test.serial("correlates page renders with the submitted response before committing defaults", async () => {
+    await mount({
+        form: true,
+        options: `
+            <option value="active" selected>Active</option>
+            <option value="paused">Paused</option>
+        `,
+        optionMarkup: `
+            <div data-multi-select-target="option" data-value="active" data-selected="true" role="option" aria-selected="true" tabindex="-1">Active</div>
+            <div data-multi-select-target="option" data-value="paused" data-selected="false" role="option" aria-selected="false" tabindex="-1">Paused</div>
+        `,
+    });
+
+    const form = document.getElementById("multi-select-form");
+    const [active, paused] = select().options;
+    active.defaultSelected = true;
+    paused.defaultSelected = false;
+    active.selected = false;
+    paused.selected = true;
+    form.dispatchEvent(new CustomEvent("turbo:submit-end", {
+        bubbles: true,
+        detail: {
+            success: true,
+            fetchResponse: {
+                contentType: "text/html",
+                responseHTML: Promise.resolve('<!doctype html><html><body><main id="submitted"></main></body></html>'),
+            },
+        },
+    }));
+    expect([active.selected, paused.selected]).toEqual([false, true]);
+
+    await dispatchPageRender('<main id="unrelated"></main>');
+    document.dispatchEvent(new CustomEvent("turbo:render"));
+    expect([active.defaultSelected, paused.defaultSelected]).toEqual([true, false]);
+    expect([active.selected, paused.selected]).toEqual([false, true]);
+
+    await dispatchPageRender('<main id="submitted"></main>');
+    expect([active.defaultSelected, paused.defaultSelected]).toEqual([false, true]);
+});
+
+test.serial("ignores validation errors outside the submitted form in a page response", async () => {
+    await mount({
+        form: true,
+        options: `
+            <option value="active" selected>Active</option>
+            <option value="paused">Paused</option>
+        `,
+        optionMarkup: `
+            <div data-multi-select-target="option" data-value="active" data-selected="true" role="option" aria-selected="true" tabindex="-1">Active</div>
+            <div data-multi-select-target="option" data-value="paused" data-selected="false" role="option" aria-selected="false" tabindex="-1">Paused</div>
+        `,
+    });
+
+    const response = '<form id="multi-select-form"></form><form id="other-form"><input aria-invalid="true"></form>';
+    const form = document.getElementById("multi-select-form");
+    const [active, paused] = select().options;
+    active.defaultSelected = true;
+    paused.defaultSelected = false;
+    active.selected = false;
+    paused.selected = true;
+    form.dispatchEvent(new CustomEvent("turbo:submit-end", {
+        bubbles: true,
+        detail: {
+            success: true,
+            fetchResponse: {
+                contentType: "text/html",
+                responseHTML: Promise.resolve(`<!doctype html><html><body>${response}</body></html>`),
+            },
+        },
+    }));
+
+    await dispatchPageRender(response);
+
+    expect([active.defaultSelected, paused.defaultSelected]).toEqual([false, true]);
+});
+
+test.serial("parses once and commits defaults after a successful Turbo Stream response", async () => {
+    await mount({
+        form: true,
+        options: `
+            <option value="active" selected>Active</option>
+            <option value="paused">Paused</option>
+        `,
+        optionMarkup: `
+            <div data-multi-select-target="option" data-value="active" data-selected="true" role="option" aria-selected="true" tabindex="-1">Active</div>
+            <div data-multi-select-target="option" data-value="paused" data-selected="false" role="option" aria-selected="false" tabindex="-1">Paused</div>
+        `,
+    });
+
+    const form = document.getElementById("multi-select-form");
+    const [active, paused] = select().options;
+    active.defaultSelected = true;
+    paused.defaultSelected = false;
+    active.selected = false;
+    paused.selected = true;
+    const parse = window.DOMParser.prototype.parseFromString;
+    let parseCount = 0;
+    window.DOMParser.prototype.parseFromString = function (...args) {
+        parseCount++;
+
+        return parse.apply(this, args);
+    };
+
+    try {
+        form.dispatchEvent(new CustomEvent("turbo:submit-end", {
+            bubbles: true,
+            detail: {
+                success: true,
+                fetchResponse: {
+                    contentType: "text/vnd.turbo-stream.html",
+                    responseHTML: Promise.resolve("<turbo-stream></turbo-stream>"),
+                },
+            },
+        }));
+
+        await wait(40);
+
+        expect([active.defaultSelected, paused.defaultSelected]).toEqual([false, true]);
+        expect(parseCount).toBe(1);
+    } finally {
+        window.DOMParser.prototype.parseFromString = parse;
+    }
+});
+
+test.serial("retains defaults when a Turbo response body cannot be read", async () => {
+    await mount({
+        form: true,
+        options: `
+            <option value="active" selected>Active</option>
+            <option value="paused">Paused</option>
+        `,
+        optionMarkup: `
+            <div data-multi-select-target="option" data-value="active" data-selected="true" role="option" aria-selected="true" tabindex="-1">Active</div>
+            <div data-multi-select-target="option" data-value="paused" data-selected="false" role="option" aria-selected="false" tabindex="-1">Paused</div>
+        `,
+    });
+
+    const form = document.getElementById("multi-select-form");
+    const [active, paused] = select().options;
+    active.defaultSelected = true;
+    paused.defaultSelected = false;
+    active.selected = false;
+    paused.selected = true;
+    form.dispatchEvent(new CustomEvent("turbo:submit-end", {
+        bubbles: true,
+        detail: {
+            success: true,
+            fetchResponse: {
+                contentType: "text/vnd.turbo-stream.html",
+                responseHTML: Promise.reject(new Error("Response body unavailable")),
+            },
+        },
+    }));
+
+    await wait(0);
+
+    expect([active.defaultSelected, paused.defaultSelected]).toEqual([true, false]);
+});
+
+test.serial("commits a successful Turbo Stream despite stale form errors", async () => {
+    await mount({
+        form: true,
+        options: `
+            <option value="active" selected>Active</option>
+            <option value="paused">Paused</option>
+        `,
+        optionMarkup: `
+            <div data-multi-select-target="option" data-value="active" data-selected="true" role="option" aria-selected="true" tabindex="-1">Active</div>
+            <div data-multi-select-target="option" data-value="paused" data-selected="false" role="option" aria-selected="false" tabindex="-1">Paused</div>
+        `,
+    });
+
+    const form = document.getElementById("multi-select-form");
+    const [active, paused] = select().options;
+    active.defaultSelected = true;
+    paused.defaultSelected = false;
+    active.selected = false;
+    paused.selected = true;
+    form.insertAdjacentHTML("beforeend", '<p aria-invalid="true">Previous validation error</p>');
+    form.dispatchEvent(new CustomEvent("turbo:submit-end", {
+        bubbles: true,
+        detail: {
+            success: true,
+            fetchResponse: {
+                contentType: "text/vnd.turbo-stream.html",
+                responseHTML: Promise.resolve("<turbo-stream><template><p>Saved</p></template></turbo-stream>"),
+            },
+        },
+    }));
+
+    await wait(40);
+
+    expect([active.defaultSelected, paused.defaultSelected]).toEqual([false, true]);
+});
+
+test.serial("restores selection defaults when a successful Turbo Stream contains validation errors", async () => {
+    await mount({
+        form: true,
+        options: `
+            <option value="active" selected>Active</option>
+            <option value="paused">Paused</option>
+        `,
+        optionMarkup: `
+            <div data-multi-select-target="option" data-value="active" data-selected="true" role="option" aria-selected="true" tabindex="-1">Active</div>
+            <div data-multi-select-target="option" data-value="paused" data-selected="false" role="option" aria-selected="false" tabindex="-1">Paused</div>
+        `,
+    });
+
+    const form = document.getElementById("multi-select-form");
+    const [active, paused] = select().options;
+    active.defaultSelected = true;
+    paused.defaultSelected = false;
+    active.selected = false;
+    paused.selected = true;
+    form.dispatchEvent(new CustomEvent("turbo:submit-end", {
+        bubbles: true,
+        detail: {
+            success: true,
+            fetchResponse: {
+                contentType: "text/vnd.turbo-stream.html",
+                responseHTML: Promise.resolve('<turbo-stream action="update" target="multi-select-form"><template><input aria-invalid="true"></template></turbo-stream>'),
+            },
+        },
+    }));
+    active.defaultSelected = false;
+    paused.defaultSelected = true;
+    active.selected = false;
+    paused.selected = true;
+    const stream = document.createElement("turbo-stream");
+    stream.setAttribute("action", "update");
+    stream.setAttribute("target", "multi-select-form");
+    stream.innerHTML = '<template><input aria-invalid="true"></template>';
+    document.body.appendChild(stream);
+    const beforeRender = new CustomEvent("turbo:before-stream-render", {
+        bubbles: true,
+        detail: { newStream: stream, render: async () => {} },
+    });
+    stream.dispatchEvent(beforeRender);
+    await wait(0);
+    await beforeRender.detail.render(stream);
+
+    await wait(40);
+
+    expect([active.defaultSelected, paused.defaultSelected]).toEqual([true, false]);
+    expect([active.selected, paused.selected]).toEqual([false, true]);
+});
+
+test.serial("ignores validation errors in unrelated Turbo Stream targets", async () => {
+    await mount({
+        form: true,
+        options: `
+            <option value="active" selected>Active</option>
+            <option value="paused">Paused</option>
+        `,
+        optionMarkup: `
+            <div data-multi-select-target="option" data-value="active" data-selected="true" role="option" aria-selected="true" tabindex="-1">Active</div>
+            <div data-multi-select-target="option" data-value="paused" data-selected="false" role="option" aria-selected="false" tabindex="-1">Paused</div>
+        `,
+    });
+
+    document.body.insertAdjacentHTML("beforeend", '<div id="other-form"></div>');
+    const form = document.getElementById("multi-select-form");
+    const [active, paused] = select().options;
+    active.defaultSelected = true;
+    paused.defaultSelected = false;
+    active.selected = false;
+    paused.selected = true;
+    form.dispatchEvent(new CustomEvent("turbo:submit-end", {
+        bubbles: true,
+        detail: {
+            success: true,
+            fetchResponse: {
+                contentType: "text/vnd.turbo-stream.html",
+                responseHTML: Promise.resolve('<turbo-stream action="update" target="other-form"><template><input aria-invalid="true"></template></turbo-stream>'),
+            },
+        },
+    }));
+
+    await wait(40);
+
+    expect([active.defaultSelected, paused.defaultSelected]).toEqual([false, true]);
+});
+
+test.serial("tracks validation targets created by an earlier stream in the response", async () => {
+    await mount({
+        form: true,
+        options: `
+            <option value="active" selected>Active</option>
+            <option value="paused">Paused</option>
+        `,
+        optionMarkup: `
+            <div data-multi-select-target="option" data-value="active" data-selected="true" role="option" aria-selected="true" tabindex="-1">Active</div>
+            <div data-multi-select-target="option" data-value="paused" data-selected="false" role="option" aria-selected="false" tabindex="-1">Paused</div>
+        `,
+    });
+
+    const response = `
+        <turbo-stream action="append" target="multi-select-form"><template><div id="new-errors"></div></template></turbo-stream>
+        <turbo-stream action="update" target="new-errors"><template><input aria-invalid="true"></template></turbo-stream>
+    `;
+    const form = document.getElementById("multi-select-form");
+    const [active, paused] = select().options;
+    active.defaultSelected = true;
+    paused.defaultSelected = false;
+    active.selected = false;
+    paused.selected = true;
+    form.dispatchEvent(new CustomEvent("turbo:submit-end", {
+        bubbles: true,
+        detail: {
+            success: true,
+            fetchResponse: {
+                contentType: "text/vnd.turbo-stream.html",
+                responseHTML: Promise.resolve(response),
+            },
+        },
+    }));
+    active.defaultSelected = false;
+    paused.defaultSelected = true;
+
+    for (const markup of [
+        '<turbo-stream action="append" target="multi-select-form"><template><div id="new-errors"></div></template></turbo-stream>',
+        '<turbo-stream action="update" target="new-errors"><template><input aria-invalid="true"></template></turbo-stream>',
+    ]) {
+        const container = document.createElement("div");
+        container.innerHTML = markup;
+        const stream = container.firstElementChild;
+        document.body.appendChild(stream);
+        const beforeRender = new CustomEvent("turbo:before-stream-render", {
+            bubbles: true,
+            detail: { newStream: stream, render: async () => {} },
+        });
+        stream.dispatchEvent(beforeRender);
+        await beforeRender.detail.render(stream);
+    }
+
+    await wait(0);
+
+    expect([active.defaultSelected, paused.defaultSelected]).toEqual([true, false]);
+    expect([active.selected, paused.selected]).toEqual([false, true]);
+});
+
+test.serial("waits for a deferred Turbo Stream renderer before committing defaults", async () => {
+    await mount({
+        form: true,
+        options: `
+            <option value="active" selected>Active</option>
+            <option value="paused">Paused</option>
+        `,
+        optionMarkup: `
+            <div data-multi-select-target="option" data-value="active" data-selected="true" role="option" aria-selected="true" tabindex="-1">Active</div>
+            <div data-multi-select-target="option" data-value="paused" data-selected="false" role="option" aria-selected="false" tabindex="-1">Paused</div>
+        `,
+    });
+
+    mounted.root.id = "status";
+    const form = document.getElementById("multi-select-form");
+    const [active, paused] = select().options;
+    const renderer = deferred();
+    active.defaultSelected = true;
+    paused.defaultSelected = false;
+    active.selected = false;
+    paused.selected = true;
+    form.dispatchEvent(new CustomEvent("turbo:submit-end", {
+        bubbles: true,
+        detail: {
+            success: true,
+            fetchResponse: {
+                contentType: "text/vnd.turbo-stream.html",
+                responseHTML: Promise.resolve('<turbo-stream action="update" target="status"><template><p>Saved</p></template></turbo-stream>'),
+            },
+        },
+    }));
+
+    const stream = document.createElement("turbo-stream");
+    stream.setAttribute("action", "update");
+    stream.setAttribute("target", "status");
+    stream.innerHTML = "<template><p>Saved</p></template>";
+    document.body.appendChild(stream);
+    const beforeRender = new CustomEvent("turbo:before-stream-render", {
+        bubbles: true,
+        detail: { newStream: stream, render: () => renderer.promise },
+    });
+    stream.dispatchEvent(beforeRender);
+    const rendering = beforeRender.detail.render(stream);
+
+    await wait(40);
+    expect([active.defaultSelected, paused.defaultSelected]).toEqual([true, false]);
+
+    renderer.resolve();
+    await rendering;
+    await wait(0);
+
+    expect([active.defaultSelected, paused.defaultSelected]).toEqual([false, true]);
+});
+
+test.serial("restores the prior baseline after a refresh stream renders errors", async () => {
+    await mount({
+        form: true,
+        options: `
+            <option value="active" selected>Active</option>
+            <option value="paused">Paused</option>
+        `,
+        optionMarkup: `
+            <div data-multi-select-target="option" data-value="active" data-selected="true" role="option" aria-selected="true" tabindex="-1">Active</div>
+            <div data-multi-select-target="option" data-value="paused" data-selected="false" role="option" aria-selected="false" tabindex="-1">Paused</div>
+        `,
+    });
+
+    const form = document.getElementById("multi-select-form");
+    const [active, paused] = select().options;
+    active.defaultSelected = true;
+    paused.defaultSelected = false;
+    active.selected = false;
+    paused.selected = true;
+    form.dispatchEvent(new CustomEvent("turbo:submit-end", {
+        bubbles: true,
+        detail: {
+            success: true,
+            fetchResponse: {
+                contentType: "text/vnd.turbo-stream.html",
+                responseHTML: Promise.resolve('<turbo-stream action="refresh"></turbo-stream>'),
+            },
+        },
+    }));
+
+    const stream = document.createElement("turbo-stream");
+    stream.setAttribute("action", "refresh");
+    document.body.appendChild(stream);
+    const beforeRender = new CustomEvent("turbo:before-stream-render", {
+        bubbles: true,
+        detail: {
+            newStream: stream,
+            render: async () => document.dispatchEvent(new CustomEvent("turbo:visit")),
+        },
+    });
+    stream.dispatchEvent(beforeRender);
+    await wait(0);
+    await beforeRender.detail.render(stream);
+    await wait(0);
+
+    expect([active.defaultSelected, paused.defaultSelected]).toEqual([true, false]);
+
+    const followUpSubmission = {};
+    active.selected = true;
+    paused.selected = false;
+    form.dispatchEvent(new CustomEvent("turbo:submit-start", {
+        bubbles: true,
+        detail: { formSubmission: followUpSubmission },
+    }));
+    active.defaultSelected = false;
+    paused.defaultSelected = true;
+    form.insertAdjacentHTML("beforeend", '<p aria-invalid="true">Validation failed</p>');
+    document.dispatchEvent(new CustomEvent("turbo:render"));
+    await wait(0);
+
+    expect([active.defaultSelected, paused.defaultSelected]).toEqual([true, false]);
+    expect([active.selected, paused.selected]).toEqual([true, false]);
+
+    form.dispatchEvent(new CustomEvent("turbo:submit-end", {
+        bubbles: true,
+        detail: {
+            formSubmission: followUpSubmission,
+            success: false,
+            fetchResponse: {
+                contentType: "text/html",
+                responseHTML: Promise.resolve('<!doctype html><html><body><main id="follow-up-failed"></main></body></html>'),
+            },
+        },
+    }));
+    active.defaultSelected = false;
+    paused.defaultSelected = true;
+
+    await dispatchPageRender('<main id="follow-up-failed"></main>');
+
+    expect([active.defaultSelected, paused.defaultSelected]).toEqual([true, false]);
+    expect([active.selected, paused.selected]).toEqual([true, false]);
+});
+
+test.serial("resolves a canceled refresh baseline before a failed follow-up submission", async () => {
+    await mount({
+        form: true,
+        options: `
+            <option value="active" selected>Active</option>
+            <option value="paused">Paused</option>
+        `,
+        optionMarkup: `
+            <div data-multi-select-target="option" data-value="active" data-selected="true" role="option" aria-selected="true" tabindex="-1">Active</div>
+            <div data-multi-select-target="option" data-value="paused" data-selected="false" role="option" aria-selected="false" tabindex="-1">Paused</div>
+        `,
+    });
+
+    const form = document.getElementById("multi-select-form");
+    const [active, paused] = select().options;
+    active.defaultSelected = true;
+    paused.defaultSelected = false;
+    active.selected = false;
+    paused.selected = true;
+    form.dispatchEvent(new CustomEvent("turbo:submit-end", {
+        bubbles: true,
+        detail: {
+            success: true,
+            fetchResponse: {
+                contentType: "text/vnd.turbo-stream.html",
+                responseHTML: Promise.resolve('<turbo-stream action="refresh"></turbo-stream>'),
+            },
+        },
+    }));
+
+    const followUpSubmission = {};
+    active.selected = true;
+    paused.selected = false;
+    form.dispatchEvent(new CustomEvent("turbo:submit-start", {
+        bubbles: true,
+        detail: { formSubmission: followUpSubmission },
+    }));
+    form.dispatchEvent(new CustomEvent("turbo:submit-end", {
+        bubbles: true,
+        detail: {
+            formSubmission: followUpSubmission,
+            success: false,
+            fetchResponse: {
+                contentType: "text/html",
+                responseHTML: Promise.resolve('<!doctype html><html><body><main id="canceled-refresh-follow-up"></main></body></html>'),
+            },
+        },
+    }));
+    active.defaultSelected = false;
+    paused.defaultSelected = true;
+
+    await dispatchPageRender('<main id="canceled-refresh-follow-up"></main>');
+
+    expect([active.defaultSelected, paused.defaultSelected]).toEqual([true, false]);
+    expect([active.selected, paused.selected]).toEqual([true, false]);
+});
+
+test.serial("commits an empty successful HTML response without waiting for a render", async () => {
+    await mount({
+        form: true,
+        options: `
+            <option value="active" selected>Active</option>
+            <option value="paused">Paused</option>
+        `,
+        optionMarkup: `
+            <div data-multi-select-target="option" data-value="active" data-selected="true" role="option" aria-selected="true" tabindex="-1">Active</div>
+            <div data-multi-select-target="option" data-value="paused" data-selected="false" role="option" aria-selected="false" tabindex="-1">Paused</div>
+        `,
+    });
+
+    const form = document.getElementById("multi-select-form");
+    const [active, paused] = select().options;
+    active.defaultSelected = true;
+    paused.defaultSelected = false;
+    active.selected = false;
+    paused.selected = true;
+    form.dispatchEvent(new CustomEvent("turbo:submit-end", {
+        bubbles: true,
+        detail: {
+            success: true,
+            fetchResponse: {
+                contentType: "text/html",
+                responseHTML: Promise.resolve(""),
+            },
+        },
+    }));
+
+    await wait(0);
+
+    expect([active.defaultSelected, paused.defaultSelected]).toEqual([false, true]);
+});
+
+test.serial("commits selection defaults after a 204 despite stale validation markers", async () => {
+    await mount({
+        form: true,
+        options: `
+            <option value="active" selected>Active</option>
+            <option value="paused">Paused</option>
+        `,
+        optionMarkup: `
+            <div data-multi-select-target="option" data-value="active" data-selected="true" role="option" aria-selected="true" tabindex="-1">Active</div>
+            <div data-multi-select-target="option" data-value="paused" data-selected="false" role="option" aria-selected="false" tabindex="-1">Paused</div>
+        `,
+    });
+
+    const form = document.getElementById("multi-select-form");
+    const [active, paused] = select().options;
+    active.defaultSelected = true;
+    paused.defaultSelected = false;
+    active.selected = false;
+    paused.selected = true;
+    form.insertAdjacentHTML("beforeend", '<p aria-invalid="true">Previous validation error</p>');
+    form.dispatchEvent(new CustomEvent("turbo:submit-end", {
+        bubbles: true,
+        detail: {
+            success: true,
+            fetchResponse: {
+                contentType: null,
+                responseHTML: Promise.resolve(undefined),
+                statusCode: 204,
+            },
+        },
+    }));
+
+    await wait(40);
+
+    expect([active.defaultSelected, paused.defaultSelected]).toEqual([false, true]);
+});
+
+test.serial("commits the submitted selection while preserving edits made during the request", async () => {
+    await mount({
+        form: true,
+        options: `
+            <option value="active" selected>Active</option>
+            <option value="paused">Paused</option>
+        `,
+        optionMarkup: `
+            <div data-multi-select-target="option" data-value="active" data-selected="true" role="option" aria-selected="true" tabindex="-1">Active</div>
+            <div data-multi-select-target="option" data-value="paused" data-selected="false" role="option" aria-selected="false" tabindex="-1">Paused</div>
+        `,
+    });
+
+    const form = document.getElementById("multi-select-form");
+    const [active, paused] = select().options;
+    const formSubmission = {};
+    active.defaultSelected = true;
+    paused.defaultSelected = false;
+    active.selected = false;
+    paused.selected = true;
+    form.dispatchEvent(new CustomEvent("turbo:submit-start", {
+        bubbles: true,
+        detail: { formSubmission },
+    }));
+
+    active.selected = true;
+    paused.selected = false;
+    form.dispatchEvent(new CustomEvent("turbo:submit-end", {
+        bubbles: true,
+        detail: {
+            formSubmission,
+            success: true,
+            fetchResponse: {
+                contentType: null,
+                responseHTML: Promise.resolve(undefined),
+                statusCode: 204,
+            },
+        },
+    }));
+
+    await wait(40);
+
+    expect([active.defaultSelected, paused.defaultSelected]).toEqual([false, true]);
+    expect([active.selected, paused.selected]).toEqual([true, false]);
+});
+
+test.serial("restores selection defaults after an unsuccessful document render", async () => {
+    await mount({
+        form: true,
+        options: `
+            <option value="active" selected>Active</option>
+            <option value="paused">Paused</option>
+        `,
+        optionMarkup: `
+            <div data-multi-select-target="option" data-value="active" data-selected="true" role="option" aria-selected="true" tabindex="-1">Active</div>
+            <div data-multi-select-target="option" data-value="paused" data-selected="false" role="option" aria-selected="false" tabindex="-1">Paused</div>
+        `,
+    });
+
+    const form = document.getElementById("multi-select-form");
+    const [active, paused] = select().options;
+    active.defaultSelected = true;
+    paused.defaultSelected = false;
+    active.selected = false;
+    paused.selected = true;
+    form.dispatchEvent(new CustomEvent("turbo:submit-end", {
+        bubbles: true,
+        detail: {
+            success: false,
+            fetchResponse: {
+                contentType: "text/html",
+                responseHTML: Promise.resolve('<!doctype html><html><body><main id="failed"></main></body></html>'),
+                statusCode: 422,
+            },
+        },
+    }));
+    active.defaultSelected = false;
+    paused.defaultSelected = true;
+    active.selected = false;
+    paused.selected = true;
+
+    await dispatchPageRender('<main id="failed"></main>');
+
+    expect([active.defaultSelected, paused.defaultSelected]).toEqual([true, false]);
+    expect([active.selected, paused.selected]).toEqual([false, true]);
+});
+
+test.serial("carries a pending 204 baseline into an immediate follow-up submission", async () => {
+    await mount({
+        form: true,
+        options: `
+            <option value="active" selected>Active</option>
+            <option value="paused">Paused</option>
+        `,
+        optionMarkup: `
+            <div data-multi-select-target="option" data-value="active" data-selected="true" role="option" aria-selected="true" tabindex="-1">Active</div>
+            <div data-multi-select-target="option" data-value="paused" data-selected="false" role="option" aria-selected="false" tabindex="-1">Paused</div>
+        `,
+    });
+
+    const form = document.getElementById("multi-select-form");
+    const [active, paused] = select().options;
+    const firstSubmission = {};
+    active.defaultSelected = true;
+    paused.defaultSelected = false;
+    active.selected = false;
+    paused.selected = true;
+    form.dispatchEvent(new CustomEvent("turbo:submit-start", {
+        bubbles: true,
+        detail: { formSubmission: firstSubmission },
+    }));
+    form.dispatchEvent(new CustomEvent("turbo:submit-end", {
+        bubbles: true,
+        detail: {
+            formSubmission: firstSubmission,
+            success: true,
+            fetchResponse: {
+                contentType: null,
+                responseHTML: Promise.resolve(undefined),
+                statusCode: 204,
+            },
+        },
+    }));
+
+    const secondSubmission = {};
+    active.selected = true;
+    paused.selected = false;
+    form.dispatchEvent(new CustomEvent("turbo:submit-start", {
+        bubbles: true,
+        detail: { formSubmission: secondSubmission },
+    }));
+    form.dispatchEvent(new CustomEvent("turbo:submit-end", {
+        bubbles: true,
+        detail: {
+            formSubmission: secondSubmission,
+            success: false,
+            fetchResponse: {
+                contentType: "text/html",
+                responseHTML: Promise.resolve('<!doctype html><html><body><main id="second-failed"></main></body></html>'),
+                statusCode: 422,
+            },
+        },
+    }));
+    active.defaultSelected = true;
+    paused.defaultSelected = false;
+    active.selected = true;
+    paused.selected = false;
+
+    await dispatchPageRender('<main id="second-failed"></main>');
+
+    expect([active.defaultSelected, paused.defaultSelected]).toEqual([false, true]);
+    expect([active.selected, paused.selected]).toEqual([true, false]);
+});
+
+test.serial("carries a pending HTML baseline into a failed follow-up submission", async () => {
+    await mount({
+        form: true,
+        options: `
+            <option value="active" selected>Active</option>
+            <option value="paused">Paused</option>
+        `,
+        optionMarkup: `
+            <div data-multi-select-target="option" data-value="active" data-selected="true" role="option" aria-selected="true" tabindex="-1">Active</div>
+            <div data-multi-select-target="option" data-value="paused" data-selected="false" role="option" aria-selected="false" tabindex="-1">Paused</div>
+        `,
+    });
+
+    const form = document.getElementById("multi-select-form");
+    const [active, paused] = select().options;
+    const firstSubmission = {};
+    active.defaultSelected = true;
+    paused.defaultSelected = false;
+    active.selected = false;
+    paused.selected = true;
+    form.dispatchEvent(new CustomEvent("turbo:submit-start", {
+        bubbles: true,
+        detail: { formSubmission: firstSubmission },
+    }));
+    form.dispatchEvent(new CustomEvent("turbo:submit-end", {
+        bubbles: true,
+        detail: {
+            formSubmission: firstSubmission,
+            success: true,
+            fetchResponse: {
+                contentType: "text/html",
+                responseHTML: Promise.resolve('<!doctype html><html><body><main id="first-success"></main></body></html>'),
+                statusCode: 200,
+            },
+        },
+    }));
+
+    const secondSubmission = {};
+    active.selected = true;
+    paused.selected = false;
+    form.dispatchEvent(new CustomEvent("turbo:submit-start", {
+        bubbles: true,
+        detail: { formSubmission: secondSubmission },
+    }));
+    form.dispatchEvent(new CustomEvent("turbo:submit-end", {
+        bubbles: true,
+        detail: {
+            formSubmission: secondSubmission,
+            success: false,
+            fetchResponse: {
+                contentType: "text/html",
+                responseHTML: Promise.resolve('<!doctype html><html><body><main id="second-html-failed"></main></body></html>'),
+                statusCode: 422,
+            },
+        },
+    }));
+    active.defaultSelected = true;
+    paused.defaultSelected = false;
+    active.selected = true;
+    paused.selected = false;
+
+    await dispatchPageRender('<main id="second-html-failed"></main>');
+
+    expect([active.defaultSelected, paused.defaultSelected]).toEqual([false, true]);
+    expect([active.selected, paused.selected]).toEqual([true, false]);
+});
+
+test.serial("removes pending baseline listeners on disconnect", async () => {
+    await mount({
+        form: true,
+        options: `
+            <option value="active" selected>Active</option>
+            <option value="paused">Paused</option>
+        `,
+        optionMarkup: `
+            <div data-multi-select-target="option" data-value="active" data-selected="true" role="option" aria-selected="true" tabindex="-1">Active</div>
+            <div data-multi-select-target="option" data-value="paused" data-selected="false" role="option" aria-selected="false" tabindex="-1">Paused</div>
+        `,
+    });
+
+    const form = document.getElementById("multi-select-form");
+    const [active, paused] = select().options;
+    active.defaultSelected = true;
+    paused.defaultSelected = false;
+    active.selected = false;
+    paused.selected = true;
+    form.dispatchEvent(new CustomEvent("turbo:submit-end", { bubbles: true, detail: { success: true } }));
+    mounted.controller.disconnect();
+    document.dispatchEvent(new CustomEvent("turbo:render"));
+
+    expect([active.defaultSelected, paused.defaultSelected]).toEqual([true, false]);
 });
 
 test.serial("list-all summary is capped and keeps the full summary in the title", async () => {
@@ -719,7 +1698,7 @@ test.serial("disconnect tolerates content removed by a morph", async () => {
     expect(trigger().getAttribute("aria-expanded")).toBe("false");
 });
 
-async function mount({ values = "", options = null, optionMarkup = null, validation = false, search = true, selectAll = true, clearableSearch = false } = {}) {
+async function mount({ values = "", options = null, optionMarkup = null, validation = false, search = true, selectAll = true, clearableSearch = false, form = false, frame = false } = {}) {
     const searchMarkup = clearableSearch
         ? `<span data-controller="clear-input">
             <input data-multi-select-target="search" data-clear-input-target="input" type="text">
@@ -731,6 +1710,8 @@ async function mount({ values = "", options = null, optionMarkup = null, validat
         "multi-select",
         MultiSelectController,
         `
+        ${frame ? '<turbo-frame id="editor">' : ""}
+        ${form ? '<form id="multi-select-form">' : ""}
         <div data-controller="multi-select"
              data-multi-select-placeholder-value="Select options"
              data-multi-select-select-all-value="${selectAll ? "true" : "false"}"
@@ -758,8 +1739,24 @@ async function mount({ values = "", options = null, optionMarkup = null, validat
                 <div data-slot="multi-select-empty" data-multi-select-target="empty" hidden>No options found.</div>
             </div>
             ${validation ? '<input data-multi-select-target="validation" type="text" required tabindex="-1">' : ""}
-        </div>`,
+        </div>
+        ${form ? "</form>" : ""}
+        ${frame ? "</turbo-frame>" : ""}`,
     );
+}
+
+async function dispatchPageRender(html) {
+    const newBody = document.createElement("body");
+    newBody.innerHTML = html;
+    const event = new CustomEvent("turbo:before-render", {
+        detail: {
+            newBody,
+            render: async () => {},
+        },
+    });
+
+    document.dispatchEvent(event);
+    await event.detail.render(document.body, newBody);
 }
 
 function deferred() {

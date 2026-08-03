@@ -9,6 +9,7 @@ selection.
 ## Requirements
 
 - No external dependencies.
+- Ships with the `_frame_events.js` shared helper.
 
 ## Targets
 
@@ -47,7 +48,8 @@ selection.
 </div>
 ```
 
-The master checkbox becomes indeterminate when some (but not all) items are checked.
+The master checkbox becomes indeterminate when some (but not all) items are checked. Native form resets and renders of
+the Turbo Frame that owns the group automatically re-sync both its `checked` and `indeterminate` state.
 
 ## Without an indeterminate state
 
@@ -69,9 +71,9 @@ In this mode the master checkbox is only checked when every item is checked; it 
 ## In a table
 
 ```html
-<table>
+<table data-controller="checkbox-select-all">
     <thead>
-        <tr data-controller="checkbox-select-all">
+        <tr>
             <th>
                 <input type="checkbox" data-checkbox-select-all-target="checkboxAll" />
             </th>
@@ -105,12 +107,12 @@ In this mode the master checkbox is only checked when every item is checked; it 
 </table>
 ```
 
-> The controller element must be an ancestor of both `checkboxAll` and `checkbox` targets. In the table example the
-> controller lives on `<tr>` inside `<thead>`, but the `checkbox` targets are in `<tbody>` — this works because
-`data-controller` looks up descendants at any depth.
+> The controller element must be an ancestor of both `checkboxAll` and `checkbox` targets. In the table example it
+> therefore lives on `<table>`, the common ancestor of the targets in `<thead>` and `<tbody>`.
 
 ## Turbo morph support
 
-The controller re-syncs the master's `checked` and `indeterminate` state on every `turbo:render`. Under morph (
-`@turboRefreshMethod('morph')` or `data-turbo-action="morph"`), idiomorph updates the children's checked attributes but
-does not fire `targetConnected` — so the master would otherwise stay stale.
+The controller re-syncs the master's `checked` and `indeterminate` state on every `turbo:render` and when its owning
+Turbo Frame dispatches `turbo:frame-render`. Under morph (`@turboRefreshMethod('morph')` or
+`data-turbo-action="morph"`), idiomorph updates the children's checked attributes but does not fire `targetConnected` —
+so the master would otherwise stay stale. Events from unrelated frames are ignored.

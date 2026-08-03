@@ -55,7 +55,8 @@ the controller with props instead.
 <hw:color-scheme.toggle modes="light dark" aria-label="Toggle dark mode" />
 ```
 
-This keeps the stored mode to explicit `light` or `dark` and skips `system` while cycling.
+This limits the cycle to explicit `light` and `dark` modes. If the stored preference is `system`, the toggle preserves
+that preference and displays its resolved sun or moon icon; the first activation advances from that effective scheme.
 
 ## Styling Hooks
 

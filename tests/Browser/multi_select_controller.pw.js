@@ -89,6 +89,90 @@ test("search clear button is tabbable and Space toggles focused options", async 
     await expect(select).toHaveJSProperty("value", "");
 });
 
+test("preserves form baselines across edits, resets and submissions", async ({ page }) => {
+    await page.setContent(`
+        <form id="filters" data-controller="unsaved-changes">
+            <div id="status" data-controller="multi-select" data-multi-select-placeholder-value="Select options">
+                <select data-multi-select-target="select" name="status[]" multiple hidden>
+                    <option value="active" selected>Active</option>
+                    <option value="paused">Paused</option>
+                </select>
+                <button type="button" data-multi-select-target="trigger" aria-expanded="false">
+                    <span data-multi-select-target="value">1 selected</span>
+                </button>
+                <div data-multi-select-target="content" data-state="closed" data-motion="none" hidden inert>
+                    <div data-multi-select-target="list" role="listbox" aria-multiselectable="true">
+                        <div data-multi-select-target="option" data-value="active" data-selected="true" role="option" aria-selected="true" tabindex="-1">
+                            <span data-slot="multi-select-option-text">Active</span>
+                        </div>
+                        <div data-multi-select-target="option" data-value="paused" data-selected="false" role="option" aria-selected="false" tabindex="-1">
+                            <span data-slot="multi-select-option-text">Paused</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+        <form id="unrelated"></form>
+    `);
+
+    await installControllers(page);
+
+    const form = page.locator("#filters");
+    const select = form.locator("select");
+    const active = form.locator('[data-value="active"]');
+    const paused = form.locator('[data-value="paused"]');
+    const value = form.locator('[data-multi-select-target="value"]');
+
+    expect(await changedFields(page)).toEqual([]);
+
+    await toggleOption(page, "active");
+    await toggleOption(page, "paused");
+
+    await expect(select.locator('option[value="active"]')).toHaveJSProperty("selected", false);
+    await expect(select.locator('option[value="paused"]')).toHaveJSProperty("selected", true);
+    expect(await defaultSelections(page)).toEqual([true, false]);
+    expect(await changedFields(page)).toEqual(["status[]"]);
+
+    await page.locator("#unrelated").evaluate((unrelated) => {
+        unrelated.dispatchEvent(new CustomEvent("turbo:submit-end", { bubbles: true, detail: { success: true } }));
+    });
+    expect(await changedFields(page)).toEqual(["status[]"]);
+
+    await form.evaluate((element) => element.reset());
+
+    await expect(select.locator('option[value="active"]')).toHaveJSProperty("selected", true);
+    await expect(select.locator('option[value="paused"]')).toHaveJSProperty("selected", false);
+    await expect(active).toHaveAttribute("data-selected", "true");
+    await expect(paused).toHaveAttribute("data-selected", "false");
+    await expect(value).toHaveText("1 selected");
+    expect(await changedFields(page)).toEqual([]);
+
+    await toggleOption(page, "active");
+    await toggleOption(page, "paused");
+    await form.evaluate((element) => {
+        element.dispatchEvent(new CustomEvent("turbo:submit-end", { bubbles: true, detail: { success: true } }));
+        const [active, paused] = element.querySelector("select").options;
+        active.defaultSelected = false;
+        paused.defaultSelected = true;
+        active.selected = false;
+        paused.selected = true;
+        element.insertAdjacentHTML("beforeend", '<p aria-invalid="true">Validation failed</p>');
+        document.dispatchEvent(new CustomEvent("turbo:render"));
+    });
+
+    expect(await defaultSelections(page)).toEqual([true, false]);
+    expect(await changedFields(page)).toEqual(["status[]"]);
+
+    await form.evaluate((element) => {
+        element.querySelector('[aria-invalid="true"]').remove();
+        element.dispatchEvent(new CustomEvent("turbo:submit-end", { bubbles: true, detail: { success: true } }));
+        document.dispatchEvent(new CustomEvent("turbo:render"));
+    });
+
+    expect(await defaultSelections(page)).toEqual([false, true]);
+    expect(await changedFields(page)).toEqual([]);
+});
+
 test("fixed strategy lets the panel cross drawer clipping boundaries", async ({ page }) => {
     await page.setContent(`
         <style>
@@ -300,6 +384,7 @@ async function installControllers(page) {
         window.app = window.Stimulus.Application.start();
         window.app.register("clear-input", window.ClearInputController);
         window.app.register("multi-select", window.MultiSelectController);
+        window.app.register("unsaved-changes", window.UnsavedChangesController);
     });
 }
 
@@ -309,15 +394,24 @@ async function bundle() {
         .replace("export function createFloating", "function createFloating");
     const presence = (await readFile("resources/js/controllers/_presence.js", "utf8"))
         .replace("export function createPresence", "function createPresence");
+    const formErrors = (await readFile("resources/js/controllers/_form_errors.js", "utf8"))
+        .replace("export function formHasErrors", "function formHasErrors");
+    const frameEvents = (await readFile("resources/js/controllers/_frame_events.js", "utf8"))
+        .replaceAll("export function ", "function ");
     const clearInput = (await readFile("resources/js/controllers/clear_input_controller.js", "utf8"))
         .replace('import { Controller } from "@hotwired/stimulus";', "")
         .replace("export default class extends Controller", "class ClearInputController extends Controller");
     const multiSelect = (await readFile("resources/js/controllers/multi_select_controller.js", "utf8"))
         .replace('import { Controller } from "@hotwired/stimulus";', "")
         .replace(/import \{[^}]*\} from "\.\/_floating\.js";\s*/, "")
+        .replace(/import \{[^}]*\} from "\.\/_form_errors\.js";\s*/, "")
+        .replace(/import \{[^}]*\} from "\.\/_frame_events\.js";\s*/, "")
         .replace(/import \{[^}]*\} from "\.\/_presence\.js";\s*/, "")
         .replace(/import \{[^}]*\} from "\.\/_top_layer\.js";\s*/, "")
         .replace("export default class extends Controller", "class MultiSelectController extends Controller");
+    const unsavedChanges = (await readFile("resources/js/controllers/unsaved_changes_controller.js", "utf8"))
+        .replace('import { Controller } from "@hotwired/stimulus";', "")
+        .replace("export default class extends Controller", "class UnsavedChangesController extends Controller");
 
     const topLayer = (await readFile("resources/js/controllers/_top_layer.js", "utf8"))
         .replace("export function createTopLayer", "function createTopLayer");
@@ -327,12 +421,39 @@ async function bundle() {
         const { arrow, autoUpdate, computePosition, flip, hide, offset, shift, size } = window.FloatingUIDOM;
         ${floating}
         ${presence}
+        ${formErrors}
+        ${frameEvents}
         ${topLayer}
         ${clearInput}
         ${multiSelect}
+        ${unsavedChanges}
         window.ClearInputController = ClearInputController;
         window.MultiSelectController = MultiSelectController;
+        window.UnsavedChangesController = UnsavedChangesController;
     `;
+}
+
+async function toggleOption(page, value) {
+    await page.locator(`#status [data-value="${value}"]`).evaluate((option) => {
+        window.app
+            .getControllerForElementAndIdentifier(document.getElementById("status"), "multi-select")
+            .toggleOption(option);
+    });
+}
+
+async function changedFields(page) {
+    return page.locator("#filters").evaluate((form) => {
+        return window.app
+            .getControllerForElementAndIdentifier(form, "unsaved-changes")
+            .formChanges(form)
+            .map((element) => element.name);
+    });
+}
+
+async function defaultSelections(page) {
+    return page.locator("#filters select").evaluate((select) => {
+        return [...select.options].map((option) => option.defaultSelected);
+    });
 }
 
 function countryName(value) {

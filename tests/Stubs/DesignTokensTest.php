@@ -180,10 +180,20 @@ it('uses the pre-connect color scheme mode to avoid toggle icon flicker', functi
     $css = file_get_contents($novaPresetPath);
 
     expect($css)
-        ->toContain('html[data-color-scheme-mode="system"] [data-slot="color-scheme-toggle"] [data-mode-icon="system"]')
+        ->toContain('html[data-color-scheme-mode="system"] [data-slot="color-scheme-toggle"][data-color-scheme-modes-value~="system"] [data-mode-icon="system"]')
         ->toContain('html[data-color-scheme-mode="light"] [data-slot="color-scheme-toggle"] [data-scheme-icon="light"]')
         ->toContain('html[data-color-scheme-mode="dark"] [data-slot="color-scheme-toggle"] [data-scheme-icon="dark"]')
-        ->toContain('html:not([data-color-scheme-mode]) [data-slot="color-scheme-toggle"][data-mode="system"] [data-mode-icon="system"]');
+        ->toContain('html:not([data-color-scheme-mode]) [data-slot="color-scheme-toggle"][data-mode="system"][data-color-scheme-modes-value~="system"] [data-mode-icon="system"]');
+});
+
+it('uses resolved icons when system is outside a color scheme toggle cycle', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain('html[data-color-scheme-mode="system"] [data-slot="color-scheme-toggle"][data-color-scheme-modes-value~="system"] [data-mode-icon="system"]')
+        ->toContain('html[data-color-scheme-mode="system"][data-theme="light"] [data-slot="color-scheme-toggle"]:not([data-color-scheme-modes-value~="system"]) [data-scheme-icon="light"]')
+        ->toContain('html[data-color-scheme-mode="system"][data-theme="dark"] [data-slot="color-scheme-toggle"]:not([data-color-scheme-modes-value~="system"]) [data-scheme-icon="dark"]')
+        ->toContain('html:not([data-color-scheme-mode]) [data-slot="color-scheme-toggle"][data-mode="system"]:not([data-color-scheme-modes-value~="system"])[data-scheme="light"] [data-scheme-icon="light"]');
 });
 
 it('preserves existing @custom-variant rules', function () use ($variantsPath) {
@@ -269,6 +279,14 @@ it('defines component styles in the nova preset via data-slot selectors', functi
         ->toContain('[data-slot="input"]')
         ->toContain('[data-slot="modal-panel"]')
         ->toContain('[data-slot="alert-dialog-panel"]');
+});
+
+it('keeps card spacing aligned with shadcn nova', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain('[data-slot="card"] { --card-spacing: --spacing(4); @apply flex flex-col gap-(--card-spacing) overflow-hidden rounded-xl bg-card py-(--card-spacing)')
+        ->toContain('[data-slot="card-header"] { @apply grid auto-rows-min items-start gap-1 rounded-t-xl px-(--card-spacing) has-[[data-slot=card-action]]:grid-cols-[1fr_auto] has-[[data-slot=card-description]]:grid-rows-[auto_auto] [.border-b]:pb-(--card-spacing); }');
 });
 
 it('smooths accordion details content without measuring height in JavaScript', function () use ($novaPresetPath) {
@@ -676,6 +694,17 @@ it('defines multi-select slots in the nova preset', function () use ($novaPreset
         ->toContain('[data-slot="multi-select-validation"]');
 });
 
+it('aligns multi-select indicators with checkbox visuals', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain('[data-slot="multi-select-indicator"] { @apply grid size-4 shrink-0 place-content-center rounded-[4px] border border-input bg-background text-primary-foreground transition-colors dark:bg-input/30; }')
+        ->toContain('[data-slot="multi-select-indicator"]::before { content: ""; width: 0.75rem; height: 0.75rem; opacity: 0; transform: scale(0); background-color: currentColor; transition: opacity 75ms ease-out, transform 75ms ease-out; mask:')
+        ->toContain('[data-slot="multi-select-select-all"][data-indeterminate="true"] [data-slot="multi-select-indicator"] { @apply border-primary bg-primary dark:bg-primary; }')
+        ->toContain('[data-slot="multi-select-select-all"][data-selected="true"] [data-slot="multi-select-indicator"]::before { opacity: 1; transform: scale(1); }')
+        ->toContain('[data-slot="multi-select-select-all"][data-indeterminate="true"] [data-slot="multi-select-indicator"]::before { width: 0.5rem; height: 0.125rem; opacity: 1; transform: scale(1); border-radius: 9999px; mask: none; }');
+});
+
 it('keeps input group inline addons in layout flow', function () use ($novaPresetPath) {
     $css = file_get_contents($novaPresetPath);
 
@@ -733,6 +762,12 @@ it('defines breadcrumb slots in the nova preset', function () use ($novaPresetPa
         ->toContain('[data-slot="breadcrumb-page"]')
         ->toContain('[data-slot="breadcrumb-separator"]')
         ->toContain('[data-slot="breadcrumb-ellipsis"]');
+});
+
+it('keeps breadcrumb link icons beside their labels', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)->toContain('[data-slot="breadcrumb-link"] { @apply inline-flex items-center gap-1.5 transition-colors hover:text-foreground; }');
 });
 
 it('defines pagination slots in the nova preset', function () use ($novaPresetPath) {

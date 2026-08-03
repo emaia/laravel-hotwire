@@ -32,6 +32,7 @@ class CheckboxGroup extends Component
         public ?Htmlable $stimulus = null,
         public bool|string $autoSubmit = false,
         public int|string|null $autoSubmitDelay = null,
+        public bool $disableIndeterminate = false,
     ) {
         if ($options !== [] && array_keys($options) === range(0, count($options) - 1)) {
             $this->options = array_combine($options, $options);

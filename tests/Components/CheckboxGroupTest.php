@@ -198,6 +198,12 @@ it('adds controller wrapper with select-all', function () {
     $view->assertSee('data-checkbox-select-all-target="checkbox"', false);
 });
 
+it('exposes an explicit prop for disabling the select-all indeterminate state', function () {
+    $view = $this->blade('<x-hw::checkbox-group name="ids[]" :options="[1 => \'One\']" select-all disable-indeterminate />');
+
+    $view->assertSee('data-checkbox-select-all-disable-indeterminate-value="true"', false);
+});
+
 it('marks rich items as select-all targets when select-all is active', function () {
     $view = $this->blade('
         <x-hw::checkbox-group name="roles[]" select-all>
