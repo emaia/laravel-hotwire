@@ -101,6 +101,39 @@ it('renders a complete frame host when sheet content is omitted', function () {
         ->assertSee('<template data-sheet-target="loadingTemplate">', false);
 });
 
+it('mounts view transitions on automatic and explicit sheet frame hosts', function (string $template) {
+    $view = $this->blade($template);
+    $html = (string) $view;
+    $xpath = new DOMXPath(dom($html));
+    $root = $xpath->query('//*[@data-slot="sheet"]')->item(0);
+    $frame = $xpath->query('//turbo-frame[@id="sheet-panel"]')->item(0);
+
+    expect($root->getAttribute('data-controller'))->toBe('sheet custom')
+        ->and($root->getAttribute('data-test-id'))->toBe('sheet-root')
+        ->and($root->hasAttribute('view-transition'))->toBeFalse()
+        ->and($frame->getAttribute('data-controller'))->toBe('turbo--view-transition')
+        ->and($frame->getAttribute('data-turbo--view-transition-skip-initial-value'))->toBe('true')
+        ->and($frame->getAttribute('data-sheet-target'))->toBe('dynamicContent')
+        ->and($frame->getAttribute('data-sheet-frame-owner'))->toBe('sheet-shell')
+        ->and(substr_count($html, 'data-controller="turbo--view-transition"'))->toBe(1);
+})->with([
+    'automatic host' => '<x-hw::sheet id="sheet-shell" frame="sheet-panel" view-transition data-controller="custom" data-test-id="sheet-root" />',
+    'explicit host' => '<x-hw::sheet id="sheet-shell" frame="sheet-panel" view-transition data-controller="custom" data-test-id="sheet-root"><x-hw::sheet.content>Fallback</x-hw::sheet.content></x-hw::sheet>',
+]);
+
+it('does not mount sheet view transitions by default or without a frame', function (string $template) {
+    $view = $this->blade($template);
+    $xpath = new DOMXPath(dom((string) $view));
+    $root = $xpath->query('//*[@data-slot="sheet"]')->item(0);
+
+    expect((string) $view)->not->toContain('turbo--view-transition')
+        ->not->toContain('data-turbo--view-transition-skip-initial-value')
+        ->and($root->hasAttribute('view-transition'))->toBeFalse();
+})->with([
+    'disabled' => '<x-hw::sheet frame="sheet-panel" />',
+    'no frame' => '<x-hw::sheet view-transition><x-hw::sheet.content>Content</x-hw::sheet.content></x-hw::sheet>',
+]);
+
 it('adds one frame host alongside trigger-only sheet content', function () {
     $view = $this->blade('<x-hw::sheet frame="sheet-panel"><x-hw::sheet.trigger>Open</x-hw::sheet.trigger></x-hw::sheet>');
 
@@ -135,11 +168,18 @@ it('throws on an invalid side', function () {
     expect(fn () => new Sheet(side: 'diagonal'))->toThrow(InvalidArgumentException::class);
 });
 
+it('keeps view transition as the final positional constructor argument', function () {
+    $component = new Sheet('', 'right', '', null, true, 'none', true, true, true, null, true);
+
+    expect($component->motion)->toBe('none')
+        ->and($component->viewTransition)->toBeTrue();
+});
+
 it('registers sheet in the component catalog and subcomponent aliases', function () {
     $sheet = HotwireRegistry::make()->component('sheet');
 
     expect($sheet->key)->toBe('sheet')
-        ->and($sheet->controllers)->toBe(['sheet'])
+        ->and($sheet->controllers)->toBe(['sheet', 'turbo--view-transition'])
         ->and($sheet->docs)->toBe('docs/components/sheet.md');
 
     expect(ComponentAliases::subComponents())

@@ -46,6 +46,48 @@ test.serial("leaves event.detail.render untouched when startViewTransition is un
     expect(originalRender).toHaveBeenCalledWith("current", "new");
 });
 
+test.serial("skips only the initial render of an opted-in frame", async () => {
+    await mount('<turbo-frame data-controller="turbo--view-transition" data-turbo--view-transition-skip-initial-value="true"></turbo-frame>');
+    document.startViewTransition = mock((cb) => cb());
+
+    const initialRender = mock(() => {});
+    const initialEvent = dispatchBeforeFrameRender(mounted.root, initialRender);
+    initialEvent.detail.render("empty", "show");
+
+    expect(document.startViewTransition).not.toHaveBeenCalled();
+    expect(initialRender).toHaveBeenCalledWith("empty", "show");
+
+    const nextRender = mock(() => {});
+    const nextEvent = dispatchBeforeFrameRender(mounted.root, nextRender);
+    nextEvent.detail.render("show", "edit");
+
+    expect(document.startViewTransition).toHaveBeenCalledTimes(1);
+    expect(nextRender).toHaveBeenCalledWith("show", "edit");
+
+    mounted.root.innerHTML = "";
+    mounted.root.dispatchEvent(new CustomEvent("turbo:before-fetch-request", { bubbles: true }));
+    mounted.root.innerHTML = "Loading";
+
+    const reopenedRender = mock(() => {});
+    const reopenedEvent = dispatchBeforeFrameRender(mounted.root, reopenedRender);
+    reopenedEvent.detail.render("empty", "show again");
+
+    expect(document.startViewTransition).toHaveBeenCalledTimes(1);
+    expect(reopenedRender).toHaveBeenCalledWith("empty", "show again");
+});
+
+test.serial("transitions the first render of a frame that already holds content", async () => {
+    await mount('<turbo-frame data-controller="turbo--view-transition" data-turbo--view-transition-skip-initial-value="true">Fallback</turbo-frame>');
+    document.startViewTransition = mock((cb) => cb());
+
+    const firstRender = mock(() => {});
+    const firstEvent = dispatchBeforeFrameRender(mounted.root, firstRender);
+    firstEvent.detail.render("fallback", "edit");
+
+    expect(document.startViewTransition).toHaveBeenCalledTimes(1);
+    expect(firstRender).toHaveBeenCalledWith("fallback", "edit");
+});
+
 test.serial("only wraps events fired on this.element", async () => {
     await mount(`<div data-controller="turbo--view-transition"><span id="child"></span></div>`);
     document.startViewTransition = mock((cb) => cb());

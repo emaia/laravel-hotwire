@@ -231,7 +231,7 @@ return [
             'docs' => 'docs/components/drawer.md',
             'category' => 'overlay',
             'description' => 'Off-canvas drawer with state-driven motion, focus trap and Escape/click-outside dismissal',
-            'controllers' => ['drawer'],
+            'controllers' => ['drawer', 'turbo--view-transition'],
         ],
         'dropdown' => [
             'class' => Dropdown::class,
@@ -335,7 +335,7 @@ return [
             'docs' => 'docs/components/frame-or-page.md',
             'category' => 'turbo',
             'description' => 'Renders shared and lazy contextual content as one of several Turbo Frames or as a page layout',
-            'controllers' => [],
+            'controllers' => ['turbo--polling', 'turbo--view-transition'],
         ],
         'frame-or-page.frame' => [
             'class' => FrameOrPageFrame::class,
@@ -423,7 +423,7 @@ return [
             'docs' => 'docs/components/modal.md',
             'category' => 'overlay',
             'description' => 'Accessible modal with state-driven motion, focus trap and Turbo integration',
-            'controllers' => ['modal'],
+            'controllers' => ['modal', 'turbo--view-transition'],
         ],
         'multi-select' => [
             'class' => MultiSelect::class,
@@ -535,7 +535,7 @@ return [
             'docs' => 'docs/components/sheet.md',
             'category' => 'overlay',
             'description' => 'Off-canvas sheet with state-driven motion, focus trap and side-aware slide transitions',
-            'controllers' => ['sheet'],
+            'controllers' => ['sheet', 'turbo--view-transition'],
         ],
         'sidebar' => [
             'class' => Sidebar::class,

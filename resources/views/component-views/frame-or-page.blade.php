@@ -3,7 +3,11 @@
 @endif
 
 @if ($activeFrameId !== null)
-    <x-hw::frame :id="$activeFrameId" {{ $attributes }}>{{ $slot }}</x-hw::frame>
+    <x-hw::frame
+        :id="$activeFrameId"
+        :view-transition="$attributes->has('view-transition') && $attributes->get('view-transition') !== false"
+        {{ $attributes->except('view-transition') }}
+    >{{ $slot }}</x-hw::frame>
 @else
     <x-dynamic-component :component="$layoutComponent">
         {{ $slot }}

@@ -241,6 +241,12 @@ it('supports frame component aliases when rendering as a frame', function () {
         ->assertDontSee(' advance', false);
 });
 
+it('forwards polling and view transition integrations to the inner frame', function () {
+    $view = $this->blade('<x-hw::frame-or-page frame="modal" poll view-transition data-controller="analytics">Content</x-hw::frame-or-page>');
+
+    $view->assertSee('data-controller="turbo--polling turbo--view-transition analytics"', false);
+});
+
 it('does NOT emit a duplicate frame id when the layout already hosts a frame with the same id', function () {
     // The dashboard-with-modal fixture renders its own <turbo-frame id="modal"> (the modal host).
     // The component must not wrap the slot in another <turbo-frame id="modal"> on direct nav,
@@ -418,7 +424,9 @@ it('registers contextual subcomponents for default and custom prefixes', functio
 it('registers contextual subcomponents in the component catalog', function () {
     $registry = HotwireRegistry::make();
 
-    expect($registry->component('frame-or-page.frame'))
+    expect($registry->component('frame-or-page')->controllers)
+        ->toBe(['turbo--polling', 'turbo--view-transition'])
+        ->and($registry->component('frame-or-page.frame'))
         ->class->toBe(FrameBranch::class)
         ->view->toBe('hotwire::component-views.frame-or-page-branch')
         ->and($registry->component('frame-or-page.page'))

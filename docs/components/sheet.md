@@ -42,6 +42,7 @@ Use `Sheet` for side-panel dialogs. Use [`<hw:drawer>`](./drawer.md) for the Bas
 | `lockScroll`          | `true`                                            | Lock body scroll while open.                                   |
 | `closeOnEscape`       | `true`                                            | Close when Escape is pressed.                                  |
 | `closeOnClickOutside` | `true`                                            | Close when the backdrop is clicked.                            |
+| `viewTransition`      | `false`                                           | Animate successive renders inside the frame host.              |
 
 ## Components
 
@@ -67,7 +68,7 @@ Use `frame` when one sheet host in your layout should receive many server-render
 
 ```blade
 {{-- layout --}}
-<hw:sheet frame="settings-panel" side="right">
+<hw:sheet frame="settings-panel" side="right" view-transition>
     <x-slot:loading_template>
         <div class="p-6">Loading...</div>
     </x-slot:loading_template>
@@ -99,6 +100,11 @@ whitespace-only values disable the host.
 
 The root owns the matching frame id. Use one `<hw:sheet.content>` for fallback content instead of adding a raw
 `<turbo-frame>` with the same id.
+
+`view-transition` mounts `turbo--view-transition` on the internal frame host for both automatic and explicit
+`sheet.content` markup. It does nothing without `frame`; unsupported browsers keep the normal Turbo render. Enable it on
+the sheet host rather than only on the response's `<hw:frame-or-page>` because Turbo preserves the existing host and does
+not copy attributes from the response frame.
 
 When the frame receives content, the sheet opens automatically. A trigger can override the loading state with
 `data-loading-template="#template-id"`; otherwise the `loading_template` slot is used.

@@ -94,6 +94,7 @@ defaults to `outline`. It uses the same `button|a` allowlist, native button type
 | `frame`        | `string\|object\|false\|null` | `null` | Renders one Turbo Frame dynamic content target; objects use `dom_id()`          |
 | `motion`       | `string`         | `'default'`        | `default` follows CSS motion; `none` disables it                                |
 | `stimulus`     | `Htmlable\|null` | `null`             | Optional extra Stimulus binding merged into the root element                    |
+| `view-transition` | `bool`       | `false`            | Animate successive renders inside the frame host with the View Transitions API  |
 
 ## Subcomponents
 
@@ -143,7 +144,7 @@ The root component owns the matching frame id. Do not place a raw `<turbo-frame>
     Edit post
 </a>
 
-<hw:modal id="modal-shell" frame="modal">
+<hw:modal id="modal-shell" frame="modal" view-transition>
     <x-slot:loading_template>
         <div class="flex items-center justify-center p-8">
             Loading...
@@ -156,11 +157,24 @@ This renders a frame inside the modal content:
 
 ```html
 
-<turbo-frame id="modal" data-modal-target="dynamicContent"></turbo-frame>
+<turbo-frame
+    id="modal"
+    data-controller="turbo--view-transition"
+    data-turbo--view-transition-skip-initial-value="true"
+    data-modal-target="dynamicContent"
+></turbo-frame>
 ```
 
 When the Turbo Frame receives content, the modal opens automatically. Return an empty `update` or `replace` stream for
 the frame id, or a `refresh` stream, to close it after a successful action.
+
+`view-transition` mounts `turbo--view-transition` directly on the persistent frame host. It animates navigations after
+the modal is open; the initial overlay opening and closing continue to use the modal's own motion. The prop has no effect
+without `frame`, and browsers without the View Transitions API keep the standard Turbo render.
+
+Enable the option on the modal host, not only on a `<hw:frame-or-page view-transition>` response. Turbo preserves the
+existing host during a frame render and replaces its children, so attributes from the response frame are not copied to
+the host.
 
 `frame` accepts strings or objects resolved with `dom_id()`; null, false, empty, and whitespace-only values disable the
 frame host.
