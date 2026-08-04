@@ -1002,6 +1002,12 @@ return [
             'category' => 'turbo',
             'description' => 'Injects the X-Turbo-Frame-Src header on same-frame form submissions for correct redirect resolution',
         ],
+        'turbo--morph-guard' => [
+            'source' => 'resources/js/controllers/turbo/morph_guard_controller.js',
+            'docs' => 'docs/controllers/turbo/morph-guard.md',
+            'category' => 'turbo',
+            'description' => 'Keeps the nearest Turbo Frame permanent during active editing so external morph refreshes preserve local state',
+        ],
         'turbo--polling' => [
             'source' => 'resources/js/controllers/turbo/polling_controller.js',
             'docs' => 'docs/controllers/turbo/polling.md',

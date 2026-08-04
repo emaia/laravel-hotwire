@@ -212,6 +212,7 @@ Controllers tied to Turbo Drive / Turbo Frames.
 | Controller                                                   | Identifier               | Dependencies      | Docs                                                |
 |--------------------------------------------------------------|--------------------------|-------------------|-----------------------------------------------------|
 | [Frame Src](docs/controllers/turbo/frame-src.md)             | `turbo--frame-src`       | `@hotwired/turbo` | [readme](docs/controllers/turbo/frame-src.md)       |
+| [Morph Guard](docs/controllers/turbo/morph-guard.md)         | `turbo--morph-guard`     | —                 | [readme](docs/controllers/turbo/morph-guard.md)     |
 | [Polling](docs/controllers/turbo/polling.md)                 | `turbo--polling`         | `@hotwired/turbo` | [readme](docs/controllers/turbo/polling.md)         |
 | [Progress](docs/controllers/turbo/progress.md)               | `turbo--progress`        | `@hotwired/turbo` | [readme](docs/controllers/turbo/progress.md)        |
 | [View Transition](docs/controllers/turbo/view-transition.md) | `turbo--view-transition` | —                 | [readme](docs/controllers/turbo/view-transition.md) |

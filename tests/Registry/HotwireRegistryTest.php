@@ -15,6 +15,7 @@ it('loads the controller catalog', function () {
 
     expect($registry->controller('modal'))->not->toBeNull()
         ->and($registry->controller('tooltip'))->not->toBeNull()
+        ->and($registry->controller('turbo--morph-guard'))->not->toBeNull()
         ->and($registry->controller('turbo--progress'))->not->toBeNull();
 });
 
