@@ -8,11 +8,14 @@ Adds accessible hover/focus tooltips to any element using Floating UI positionin
 ## Requirements
 
 - `@floating-ui/dom` for viewport-aware anchored positioning.
-- Ships with `_floating.js`, `_presence.js`, and `_top_layer.js`; publishing the controller publishes these helpers too.
+- Ships with `_composition.js`, `_floating.js`, `_presence.js`, and `_top_layer.js`; publishing the controller publishes
+  these helpers too.
 - Without the Nova preset, reset native Popover positioning with
   `[data-hotwire-top-layer][popover] { inset: auto; margin: 0; }`, set
   `[data-hotwire-top-layer][popover][data-slot="tooltip"] { overflow: visible; }` for arrow clipping, and define the
   generated tooltip's border and padding.
+
+Escape dismissal is suspended during IME composition.
 
 ## Stimulus Values
 

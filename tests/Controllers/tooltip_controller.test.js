@@ -218,6 +218,19 @@ test.serial("closes on Escape without moving focus", async () => {
     expect(tooltip()).toBeNull();
 });
 
+test.serial("legacy composing Escape leaves the tooltip open", async () => {
+    await openWithPointer(`<input data-controller="tooltip" data-tooltip-content-value="Help">`);
+    mounted.root.focus();
+
+    const event = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true });
+    Object.defineProperty(event, "keyCode", { value: 229 });
+    mounted.root.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(document.activeElement).toBe(mounted.root);
+    expect(tooltip()).not.toBeNull();
+});
+
 test.serial("closes when the trigger is activated", async () => {
     await openWithPointer(`<button data-controller="tooltip">Hover me</button>`);
 

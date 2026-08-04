@@ -408,6 +408,22 @@ test.serial("Escape closes, prevents default and returns focus to the trigger", 
     expect(document.activeElement).toBe(trigger());
 });
 
+test.serial("legacy composing Escape leaves the popover open", async () => {
+    await mount();
+    clickTrigger();
+    await wait(0);
+
+    const input = content().querySelector("input");
+    input.focus();
+    const event = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true });
+    Object.defineProperty(event, "keyCode", { value: 229 });
+    input.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(isOpen()).toBe(true);
+    expect(document.activeElement).toBe(input);
+});
+
 test.serial("the close action dismisses the popover", async () => {
     await mount();
     clickTrigger();

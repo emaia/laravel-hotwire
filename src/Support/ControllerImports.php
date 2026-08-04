@@ -17,7 +17,8 @@ readonly class ControllerImports
     /**
      * Resolve every shared dependency reachable from a controller, following
      * relative imports recursively. Returns absolute paths located under
-     * $baseDir. Other *_controller files are excluded — they are published
+     * $baseDir. Other *_controller files are traversed for their shared
+     * dependencies but excluded from the result because they are published
      * independently.
      *
      * @return string[]
@@ -47,6 +48,8 @@ readonly class ControllerImports
                 }
 
                 if (preg_match('/_controller\.(js|ts)$/', $resolved)) {
+                    $queue[] = $resolved;
+
                     continue;
                 }
 

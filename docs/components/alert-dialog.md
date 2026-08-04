@@ -3,6 +3,12 @@
 Accessible alert dialog that intercepts clicks and requires user confirmation before proceeding. Works with links,
 buttons, form submissions, and Turbo actions.
 
+## Requirements
+
+- No external dependencies.
+- Ships with `_composition.js`, `_focus_trap.js`, `_overlay.js`, `_overlay_stack.js`, `_presence.js`, and
+  `_top_layer.js`; publishing the `alert-dialog` controller publishes these helpers too.
+
 ## Basic usage
 
 The default slot **is** the trigger — anything inside the component is wrapped in a click-intercept zone. The action

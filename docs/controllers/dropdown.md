@@ -10,10 +10,12 @@ state-driven Presence lifecycle supports CSS motion without keeping closed conte
 ## Requirements
 
 - `@floating-ui/dom` for viewport-aware anchored positioning.
-- Ships with `_floating.js`, `_presence.js`, and `_top_layer.js`, which `hotwire:controllers` publishes alongside the
-  controller automatically.
+- Ships with `_composition.js`, `_floating.js`, `_presence.js`, and `_top_layer.js`, which `hotwire:controllers`
+  publishes alongside the controller automatically.
 - Without the Nova preset, reset native Popover positioning with
   `[data-hotwire-top-layer][popover] { inset: auto; margin: 0; }` and define the floating element's border and padding.
+
+Escape dismissal is suspended while a field inside the menu is composing IME text.
 
 ## Targets
 

@@ -212,6 +212,8 @@ async function installControllers(page) {
 }
 
 async function bundle() {
+    const composition = (await readFile("resources/js/controllers/_composition.js", "utf8"))
+        .replace("export function isComposing", "function isComposing");
     const floating = (await readFile("resources/js/controllers/_floating.js", "utf8"))
         .replace(/import \{[^}]*\} from "@floating-ui\/dom";\s*/, "")
         .replace("export function createFloating", "function createFloating");
@@ -221,6 +223,7 @@ async function bundle() {
 
     const hoverCard = (await readFile("resources/js/controllers/hover_card_controller.js", "utf8"))
         .replace('import { Controller } from "@hotwired/stimulus";', "")
+        .replace(/import \{[^}]*\} from "\.\/_composition\.js";\s*/, "")
         .replace(/import \{[^}]*\} from "\.\/_floating\.js";\s*/, "")
         .replace(/import \{[^}]*\} from "\.\/_presence\.js";\s*/, "")
         .replace(/import \{[^}]*\} from "\.\/_top_layer\.js";\s*/, "")
@@ -232,6 +235,7 @@ async function bundle() {
     return `
         const { Controller } = window.Stimulus;
         const { arrow, autoUpdate, computePosition, flip, hide, offset, shift, size } = window.FloatingUIDOM;
+        ${composition}
         ${floating}
         ${presence}
         ${topLayer}

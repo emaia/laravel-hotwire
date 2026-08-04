@@ -9,6 +9,9 @@ progress, hidden input lifecycle, optional DELETE-on-remove and Turbo Stream res
 
 **npm deps:** none
 
+Publishing the controller also publishes `_composition.js` and `_upload_feedback.js`. Enter/Space activation is ignored
+while an editable custom dropzone descendant is composing IME text.
+
 ## Values
 
 | Value             | Type    | Default       | Description                                                                                 |

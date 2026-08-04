@@ -1415,6 +1415,31 @@ test.serial("ArrowDown from search focuses select-all before options", async () 
     expect(document.activeElement).toBe(option("active"));
 });
 
+test.serial("search ignores composing navigation and Escape key events", async () => {
+    await mount();
+    clickTrigger();
+    await wait(0);
+
+    const search = document.querySelector('[data-multi-select-target="search"]');
+    search.focus();
+
+    const arrow = new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true, cancelable: true });
+    Object.defineProperty(arrow, "isComposing", { value: true });
+    search.dispatchEvent(arrow);
+
+    expect(arrow.defaultPrevented).toBe(false);
+    expect(document.activeElement).toBe(search);
+    expect(isOpen()).toBe(true);
+
+    const escape = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true });
+    Object.defineProperty(escape, "keyCode", { value: 229 });
+    search.dispatchEvent(escape);
+
+    expect(escape.defaultPrevented).toBe(false);
+    expect(document.activeElement).toBe(search);
+    expect(isOpen()).toBe(true);
+});
+
 test.serial("ArrowUp from the first option returns focus to search when select-all is absent", async () => {
     await mount({ selectAll: false });
     clickTrigger();

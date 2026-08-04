@@ -9,12 +9,15 @@ and Floating UI positioning.
 ## Requirements
 
 - `@floating-ui/dom` (`npm install @floating-ui/dom` or `bun add @floating-ui/dom`)
-- Ships with `_floating.js`, `_presence.js`, and `_top_layer.js`; publishing the controller publishes these helpers too.
+- Ships with `_composition.js`, `_floating.js`, `_presence.js`, and `_top_layer.js`; publishing the controller publishes
+  these helpers too.
 - Without the Nova preset, reset native Popover positioning with
   `[data-hotwire-top-layer][popover] { inset: auto; margin: 0; }` and define the floating element's border and padding.
 
 > If any component in your views pulls this controller in, `php artisan hotwire:check --fix` will add
 > `@floating-ui/dom` to your `package.json` `devDependencies` automatically.
+
+Escape dismissal is suspended during IME composition.
 
 ## Targets
 

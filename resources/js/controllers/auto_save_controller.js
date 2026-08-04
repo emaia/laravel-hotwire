@@ -1,6 +1,8 @@
 // @hotwire-package
 import { Controller } from "@hotwired/stimulus";
 
+import { isComposing } from "./_composition.js";
+
 const STATE_TEXT = {
     idle: "",
     dirty: "Unsaved changes",
@@ -21,6 +23,9 @@ export default class extends Controller {
     initialize() {
         this.handleInput = this.handleInput.bind(this);
         this.handleChange = this.handleChange.bind(this);
+        this.handleCompositionStart = this.handleCompositionStart.bind(this);
+        this.handleCompositionEnd = this.handleCompositionEnd.bind(this);
+        this.handleCompositionMutations = this.handleCompositionMutations.bind(this);
         this.handleSubmitStart = this.handleSubmitStart.bind(this);
         this.handleSubmitEnd = this.handleSubmitEnd.bind(this);
     }
@@ -30,14 +35,20 @@ export default class extends Controller {
         this.statusTimeout = null;
         this.saving = false;
         this.saveQueued = false;
+        this.composingFields = new Set();
+        this.pendingSaveDelay = null;
         this.state = null;
         this.submittedSignature = null;
         this.lastSavedSignature = this.signature;
 
         this.element.addEventListener("input", this.handleInput);
         this.element.addEventListener("change", this.handleChange);
+        this.element.addEventListener("compositionstart", this.handleCompositionStart);
+        this.element.addEventListener("compositionend", this.handleCompositionEnd);
         this.element.addEventListener("turbo:submit-start", this.handleSubmitStart);
         this.element.addEventListener("turbo:submit-end", this.handleSubmitEnd);
+        this.compositionObserver = new MutationObserver(this.handleCompositionMutations);
+        this.compositionObserver.observe(this.element, { childList: true, subtree: true });
 
         this.setState("idle");
     }
@@ -48,12 +59,24 @@ export default class extends Controller {
 
         this.element.removeEventListener("input", this.handleInput);
         this.element.removeEventListener("change", this.handleChange);
+        this.element.removeEventListener("compositionstart", this.handleCompositionStart);
+        this.element.removeEventListener("compositionend", this.handleCompositionEnd);
         this.element.removeEventListener("turbo:submit-start", this.handleSubmitStart);
         this.element.removeEventListener("turbo:submit-end", this.handleSubmitEnd);
+        this.compositionObserver.disconnect();
+        this.composingFields.clear();
+        this.pendingSaveDelay = null;
     }
 
     save() {
+        if (this.hasActiveCompositions()) {
+            this.pendingSaveDelay ??= this.delayValue;
+
+            return;
+        }
+
         this.clearSaveTimer(this.timeout);
+        this.pendingSaveDelay = null;
 
         if (!this.isDirty) {
             return;
@@ -70,6 +93,7 @@ export default class extends Controller {
 
     cancel() {
         this.clearSaveTimer(this.timeout);
+        this.pendingSaveDelay = null;
         this.saveQueued = false;
 
         if (!this.saving) {
@@ -83,6 +107,37 @@ export default class extends Controller {
 
     handleChange(event) {
         this.schedule(event, this.changeDelayValue);
+    }
+
+    handleCompositionStart(event) {
+        if (this.shouldIgnore(event.target)) return;
+
+        this.composingFields.add(event.target);
+        this.clearSaveTimer(this.timeout);
+        this.pendingSaveDelay ??= this.delayValue;
+    }
+
+    handleCompositionEnd(event) {
+        if (this.shouldIgnore(event.target)) return;
+
+        this.composingFields.delete(event.target);
+        this.resumeAfterComposition();
+    }
+
+    handleCompositionMutations() {
+        if (this.composingFields.size > 0) this.resumeAfterComposition();
+    }
+
+    resumeAfterComposition() {
+        if (this.hasActiveCompositions()) return;
+
+        if (this.isDirty) {
+            this.markDirty();
+            if (!this.saving) this.queue(this.pendingSaveDelay ?? this.delayValue);
+        } else if (!this.saving && this.state === "dirty") {
+            this.pendingSaveDelay = null;
+            this.setState("idle");
+        }
     }
 
     handleSubmitStart() {
@@ -105,7 +160,7 @@ export default class extends Controller {
             if (this.saveQueued || this.isDirty) {
                 this.saveQueued = false;
                 this.markDirty();
-                this.queue(this.delayValue);
+                this.queue(this.pendingSaveDelay ?? this.delayValue);
                 return;
             }
 
@@ -123,12 +178,21 @@ export default class extends Controller {
     }
 
     schedule(event, delay) {
-        if (this.shouldIgnore(event.target)) {
+        if (this.shouldIgnore(event.target)) return;
+
+        if (isComposing(event)) {
+            this.composingFields.add(event.target);
+            this.clearSaveTimer(this.timeout);
+            this.pendingSaveDelay = delay;
+
             return;
         }
+        this.composingFields.delete(event.target);
+        if (event.defaultPrevented) return;
 
         if (!this.isDirty) {
             this.clearSaveTimer(this.timeout);
+            this.pendingSaveDelay = null;
 
             if (!this.saving) {
                 this.setState("idle");
@@ -142,8 +206,22 @@ export default class extends Controller {
     }
 
     queue(delay) {
+        this.pendingSaveDelay = delay;
+        if (this.hasActiveCompositions()) return;
+
         this.clearSaveTimer(this.timeout);
-        this.timeout = this.setSaveTimer(() => this.save(), delay);
+        this.timeout = this.setSaveTimer(() => {
+            this.timeout = null;
+            this.save();
+        }, delay);
+    }
+
+    hasActiveCompositions() {
+        for (const field of this.composingFields) {
+            if (!this.element.contains(field)) this.composingFields.delete(field);
+        }
+
+        return this.composingFields.size > 0;
     }
 
     markDirty() {

@@ -525,6 +525,23 @@ test.serial("Escape closes and returns focus to the trigger", async () => {
     expect(document.activeElement).toBe(trigger());
 });
 
+test.serial("composing Escape leaves the dropdown open", async () => {
+    await mount();
+    clickTrigger();
+    await wait(0);
+    const input = document.createElement("input");
+    menu().appendChild(input);
+    input.focus();
+
+    const event = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true });
+    Object.defineProperty(event, "isComposing", { value: true });
+    input.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(isOpen()).toBe(true);
+    expect(document.activeElement).toBe(input);
+});
+
 test.serial("Escape inside an open drawer closes only the dropdown first", async () => {
     mounted = await mountMultipleControllers(
         {

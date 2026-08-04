@@ -154,6 +154,22 @@ test("Cmd/Ctrl+B toggles the sidebar and prevents default", async () => {
     expect(root().dataset.state).toBe("collapsed");
 });
 
+test("composing Cmd/Ctrl+B leaves the sidebar unchanged", async () => {
+    await mount(template(true));
+
+    const event = new KeyboardEvent("keydown", {
+        key: "b",
+        ctrlKey: true,
+        bubbles: true,
+        cancelable: true,
+    });
+    Object.defineProperty(event, "isComposing", { value: true });
+    window.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(root().dataset.state).toBe("expanded");
+});
+
 test("open changes are persisted to the sidebar cookie by default", async () => {
     await mount(template(true));
 

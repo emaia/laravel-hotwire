@@ -5,6 +5,7 @@ import {
     dispatchTurboSubmitEnd,
     dispatchTurboSubmitStart,
     mountController,
+    wait,
 } from "../../resources/js/helpers/test_stimulus.js";
 import AutoSaveController from "../../resources/js/controllers/auto_save_controller.js";
 
@@ -40,6 +41,283 @@ test.serial("saves a changed form after the input debounce", async () => {
     expect(submits).toBe(1);
     expect(form.dataset.autoSaveState).toBe("saved");
     expect(status.textContent).toBe("Saved");
+});
+
+test.serial("cancels pending work during composition and saves the committed value", async () => {
+    await setup(`
+        <form data-controller="auto-save" data-auto-save-delay-value="5">
+            <input name="title" value="Original">
+        </form>
+    `);
+
+    const { form, input } = elements();
+    const scheduler = installFakeSaveScheduler();
+    let submits = 0;
+    form.requestSubmit = () => {
+        submits++;
+        succeed(form);
+    };
+
+    input.value = "Started";
+    dispatchEvent(input, "input");
+
+    input.value = "Composing";
+    input.dispatchEvent(new Event("compositionstart", { bubbles: true }));
+    const composing = new Event("input", { bubbles: true, cancelable: true });
+    Object.defineProperty(composing, "isComposing", { value: true });
+    composing.preventDefault();
+    input.dispatchEvent(composing);
+
+    expect(scheduler.pending()).toHaveLength(0);
+    expect(submits).toBe(0);
+
+    input.dispatchEvent(new Event("compositionend", { bubbles: true }));
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    scheduler.runNext();
+
+    expect(submits).toBe(1);
+    expect(form.dataset.autoSaveState).toBe("saved");
+});
+
+test.serial("does not requeue after an in-flight save finishes during composition", async () => {
+    await setup(`
+        <form data-controller="auto-save" data-auto-save-delay-value="5">
+            <input name="title" value="Original">
+        </form>
+    `);
+
+    const { form, input } = elements();
+    const scheduler = installFakeSaveScheduler();
+    let submits = 0;
+    form.requestSubmit = () => {
+        submits++;
+        dispatchTurboSubmitStart(form);
+    };
+
+    input.value = "First update";
+    dispatchEvent(input, "input");
+    scheduler.runNext();
+
+    input.value = "Composing update";
+    input.dispatchEvent(new Event("compositionstart", { bubbles: true }));
+    const composing = new Event("input", { bubbles: true });
+    Object.defineProperty(composing, "isComposing", { value: true });
+    input.dispatchEvent(composing);
+    dispatchTurboSubmitEnd(form);
+
+    expect(scheduler.pending()).toHaveLength(0);
+    expect(form.dataset.autoSaveState).toBe("dirty");
+
+    input.dispatchEvent(new Event("compositionend", { bubbles: true }));
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    scheduler.runNext();
+
+    expect(submits).toBe(2);
+});
+
+test.serial("composition in an ignored field keeps an unrelated save scheduled", async () => {
+    await setup(`
+        <form data-controller="auto-save" data-auto-save-delay-value="5">
+            <input name="title" value="Original">
+            <input name="active_tab" value="content" data-auto-save-ignore>
+        </form>
+    `);
+
+    const input = document.querySelector('[name="title"]');
+    const ignored = document.querySelector("[data-auto-save-ignore]");
+    const scheduler = installFakeSaveScheduler();
+
+    input.value = "Updated";
+    dispatchEvent(input, "input");
+    const pending = scheduler.pending()[0];
+
+    ignored.dispatchEvent(new Event("compositionstart", { bubbles: true }));
+    const composing = new Event("input", { bubbles: true });
+    Object.defineProperty(composing, "isComposing", { value: true });
+    ignored.dispatchEvent(composing);
+
+    expect(scheduler.pending()).toEqual([pending]);
+});
+
+test.serial("prunes composing fields removed by a morph before scheduling another edit", async () => {
+    await setup(`
+        <form data-controller="auto-save" data-auto-save-delay-value="5">
+            <input name="editor" value="Original editor">
+            <input name="title" value="Original title">
+        </form>
+    `);
+
+    const { form } = elements();
+    const editor = document.querySelector('[name="editor"]');
+    const title = document.querySelector('[name="title"]');
+    const scheduler = installFakeSaveScheduler();
+    let submits = 0;
+    form.requestSubmit = () => {
+        submits++;
+    };
+
+    editor.dispatchEvent(new Event("compositionstart", { bubbles: true }));
+    editor.remove();
+    title.value = "Updated title";
+    dispatchEvent(title, "input");
+
+    expect(scheduler.pending()).toHaveLength(1);
+    scheduler.runNext();
+    expect(submits).toBe(1);
+});
+
+test.serial("resumes a pending save when its composing field leaves the DOM", async () => {
+    await setup(`
+        <form data-controller="auto-save" data-auto-save-delay-value="5">
+            <input name="editor" value="Original editor">
+            <input name="title" value="Original title">
+        </form>
+    `);
+
+    const { form } = elements();
+    const editor = document.querySelector('[name="editor"]');
+    const title = document.querySelector('[name="title"]');
+    const scheduler = installFakeSaveScheduler();
+    let submits = 0;
+    form.requestSubmit = () => {
+        submits++;
+    };
+
+    title.value = "Updated title";
+    dispatchEvent(title, "input");
+    expect(scheduler.pending()).toHaveLength(1);
+
+    editor.dispatchEvent(new Event("compositionstart", { bubbles: true }));
+    expect(scheduler.pending()).toHaveLength(0);
+
+    editor.remove();
+    await wait(0);
+
+    expect(scheduler.pending()).toHaveLength(1);
+    scheduler.runNext();
+    expect(submits).toBe(1);
+});
+
+test.serial("preserves the change delay while another field is composing", async () => {
+    await setup(`
+        <form
+            data-controller="auto-save"
+            data-auto-save-delay-value="50"
+            data-auto-save-change-delay-value="5"
+        >
+            <input name="editor" value="Original editor">
+            <select name="status">
+                <option value="draft" selected>Draft</option>
+                <option value="published">Published</option>
+            </select>
+        </form>
+    `);
+
+    const editor = document.querySelector('[name="editor"]');
+    const select = document.querySelector("select");
+    const scheduler = installFakeSaveScheduler();
+
+    editor.dispatchEvent(new Event("compositionstart", { bubbles: true }));
+    select.value = "published";
+    dispatchEvent(select, "change");
+
+    expect(scheduler.pending()).toHaveLength(0);
+
+    editor.dispatchEvent(new Event("compositionend", { bubbles: true }));
+
+    expect(scheduler.pending()).toHaveLength(1);
+    expect(scheduler.pending()[0].delay).toBe(5);
+});
+
+test.serial("waits for every composing field before scheduling a save", async () => {
+    await setup(`
+        <form data-controller="auto-save" data-auto-save-delay-value="5">
+            <input name="title" value="Original title">
+            <input name="summary" value="Original summary">
+        </form>
+    `);
+
+    const title = document.querySelector('[name="title"]');
+    const summary = document.querySelector('[name="summary"]');
+    const scheduler = installFakeSaveScheduler();
+
+    title.dispatchEvent(new Event("compositionstart", { bubbles: true }));
+    summary.dispatchEvent(new Event("compositionstart", { bubbles: true }));
+
+    title.value = "Committed title";
+    title.dispatchEvent(new Event("compositionend", { bubbles: true }));
+    title.dispatchEvent(new Event("input", { bubbles: true }));
+
+    expect(scheduler.pending()).toHaveLength(0);
+
+    summary.value = "Committed summary";
+    summary.dispatchEvent(new Event("compositionend", { bubbles: true }));
+    summary.dispatchEvent(new Event("input", { bubbles: true }));
+
+    expect(scheduler.pending()).toHaveLength(1);
+});
+
+test.serial("resumes an unrelated pending save when composition ends without input", async () => {
+    await setup(`
+        <form data-controller="auto-save" data-auto-save-delay-value="5">
+            <input name="title" value="Original title">
+            <input name="summary" value="Original summary">
+        </form>
+    `);
+
+    const { form } = elements();
+    const title = document.querySelector('[name="title"]');
+    const summary = document.querySelector('[name="summary"]');
+    const scheduler = installFakeSaveScheduler();
+    let submits = 0;
+    form.requestSubmit = () => {
+        submits++;
+    };
+
+    title.value = "Updated title";
+    dispatchEvent(title, "input");
+    summary.dispatchEvent(new Event("compositionstart", { bubbles: true }));
+
+    expect(scheduler.pending()).toHaveLength(0);
+
+    summary.dispatchEvent(new Event("compositionend", { bubbles: true }));
+
+    expect(scheduler.pending()).toHaveLength(1);
+    scheduler.runNext();
+    expect(submits).toBe(1);
+});
+
+test.serial("returns to idle when canceled composition restores the saved value", async () => {
+    await setup(`
+        <form data-controller="auto-save" data-auto-save-delay-value="5">
+            <input name="title" value="Original">
+        </form>
+    `);
+
+    const { form, input } = elements();
+    const scheduler = installFakeSaveScheduler();
+    form.requestSubmit = () => {
+        dispatchTurboSubmitStart(form);
+    };
+
+    input.value = "Saved update";
+    dispatchEvent(input, "input");
+    scheduler.runNext();
+
+    input.dispatchEvent(new Event("compositionstart", { bubbles: true }));
+    input.value = "Candidate";
+    const composing = new Event("input", { bubbles: true });
+    Object.defineProperty(composing, "isComposing", { value: true });
+    input.dispatchEvent(composing);
+    dispatchTurboSubmitEnd(form);
+
+    expect(form.dataset.autoSaveState).toBe("dirty");
+
+    input.value = "Saved update";
+    input.dispatchEvent(new Event("compositionend", { bubbles: true }));
+
+    expect(form.dataset.autoSaveState).toBe("idle");
+    expect(scheduler.pending()).toHaveLength(0);
 });
 
 test.serial("does not save when the value returns to its last saved state", async () => {

@@ -8,7 +8,10 @@ Useful for prices, amounts and currency fields where typing `1`, `2`, `3` should
 
 ## Requirements
 
-- No external dependencies
+- No external dependencies.
+- Ships with `_composition.js`; publishing the controller publishes this helper too.
+
+Money Input leaves intermediate IME input untouched and formats only the final committed value.
 
 ## Stimulus Values
 
@@ -176,6 +179,17 @@ updateTotal(event)
 }
 ```
 
+### Normalized `input` events
+
+Initial rendering, `turbo:render` reconciliation, and rebuilds caused by runtime Stimulus Value changes are silent.
+For user edits, Money Input consumes the original native `InputEvent` during capture, updates the visible and hidden
+values, then emits one bubbling `CustomEvent("input")` with the formatted value in `event.detail`. This guarantees
+downstream controllers such as Auto Submit observe the normalized value exactly once.
+
+Because the replacement event is synthetic, it does not preserve native `InputEvent` metadata such as `inputType`,
+`data`, or `isTrusted`. Downstream integrations that need monetary state should read `event.target.value`, the hidden
+minor-unit input, or the richer `money-input:change` event instead.
+
 ## Submitting raw values to the server
 
 The visible input contains a formatted string like `R$ 1.234,56`, which Laravel's `numeric` validator rejects.
@@ -212,6 +226,6 @@ $product->price = Money::BRL($request->input('price'));
 
 ## Turbo morph support
 
-On every `turbo:render`, the controller re-seeds its internal digit buffer from the current element value and
+On every `turbo:render`, the controller silently re-seeds its internal digit buffer from the current element value and
 re-renders. Under morph, idiomorph rewrites the input value to the newly flashed minor-unit amount without firing an
 `input` event — so subsequent typing would otherwise operate on a stale buffer.

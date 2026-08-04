@@ -98,6 +98,19 @@ test("motion none closes immediately without inspecting descendant animations", 
     expect(inspected).toBe(false);
 });
 
+test("composing Escape does not close the overlay", async () => {
+    const { modal, backdrop, dialog } = elements();
+    overlay = createOverlay(null, options({ modal, backdrop, dialog }));
+    await overlay.open();
+
+    const event = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true });
+    Object.defineProperty(event, "isComposing", { value: true });
+    dialog.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(overlay.isOpen).toBe(true);
+});
+
 test("reduced motion closes immediately without inspecting descendant animations", async () => {
     const { modal, backdrop, dialog } = elements();
     let inspected = false;

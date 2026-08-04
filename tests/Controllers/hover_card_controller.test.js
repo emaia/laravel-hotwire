@@ -366,6 +366,20 @@ test.serial("Escape closes and returns focus to the trigger", async () => {
     expect(document.activeElement).toBe(trigger());
 });
 
+test.serial("composing Escape leaves the hover card open", async () => {
+    await mount({ openDelay: 0, closeDelay: 0 });
+    focus("focusin");
+    trigger().focus();
+
+    const event = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true });
+    Object.defineProperty(event, "isComposing", { value: true });
+    content().dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(isOpen()).toBe(true);
+    expect(document.activeElement).toBe(trigger());
+});
+
 test.serial("closes on turbo:before-cache", async () => {
     await mount({ openDelay: 0, closeDelay: 0 });
     mouse("mouseenter");

@@ -5,6 +5,12 @@ you, but the controller also works with hand-written HTML.
 
 **Identifier:** `sidebar`
 
+## Requirements
+
+- No external dependencies.
+- Ships with `_composition.js`, `_focus_trap.js`, `_overlay.js`, `_overlay_stack.js`, `_presence.js`, and
+  `_top_layer.js`; publishing the controller publishes these helpers too.
+
 ## Values
 
 | Value | Type | Default | Description |
@@ -25,6 +31,8 @@ The Blade provider reads the same cookie on each request when `defaultOpen` is o
 | `shortcut` | Toggle on Cmd/Ctrl+B when bound to `keydown@window`. |
 | `closeForCache` | Close the mobile drawer before Turbo caches the page. |
 | `preserveStateForRender` | Copy the current desktop state into Turbo's next body before render. |
+
+The shortcut and mobile Escape dismissal are suspended during IME composition.
 
 ## Events
 

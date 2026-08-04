@@ -96,6 +96,33 @@ it('resolves the file upload feedback presenter', function () {
     expect($dependencies)->toContain('_upload_feedback.js');
 });
 
+it('resolves the composition helper for IME-safe controllers', function () {
+    $base = realpath(__DIR__.'/../../resources/js/controllers');
+
+    foreach ([
+        'alert_dialog',
+        'auto_save',
+        'auto_submit',
+        'drawer',
+        'dropdown',
+        'file_upload',
+        'hotkey',
+        'hover_card',
+        'modal',
+        'money_input',
+        'multi_select',
+        'popover',
+        'sidebar',
+        'sheet',
+        'tooltip',
+    ] as $name) {
+        $source = realpath($base.'/'.$name.'_controller.js');
+        $dependencies = array_map('basename', $this->imports->sharedDependencies($source, $base));
+
+        expect($dependencies)->toContain('_composition.js');
+    }
+});
+
 // --- targetPath ---
 
 it('maps a resolved dependency to its published path', function () {
