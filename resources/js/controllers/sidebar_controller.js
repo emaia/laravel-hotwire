@@ -1,6 +1,7 @@
 // @hotwire-package
 import { Controller } from "@hotwired/stimulus";
 
+import { isComposing } from "./_composition.js";
 import { createOverlay } from "./_overlay.js";
 
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
@@ -131,6 +132,7 @@ export default class extends Controller {
     }
 
     shortcut(event) {
+        if (isComposing(event)) return;
         if (event.key?.toLowerCase() !== "b" || (!event.metaKey && !event.ctrlKey)) return;
 
         event.preventDefault();

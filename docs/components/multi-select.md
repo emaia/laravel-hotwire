@@ -147,5 +147,6 @@ applied directly to `data-slot="multi-select-content"`; `trigger-class` is appli
 
 ## Required Controllers
 
-Uses the `multi-select` controller, which depends on `@floating-ui/dom` and ships with `_floating.js`, `_presence.js`,
-and `_top_layer.js`. The component search also uses `clear-input` for its accessible clear button.
+Uses the `multi-select` controller, which depends on `@floating-ui/dom` and ships with `_composition.js`, `_floating.js`,
+`_form_errors.js`, `_frame_events.js`, `_presence.js`, and `_top_layer.js`. The component search also uses `clear-input`
+for its accessible clear button.

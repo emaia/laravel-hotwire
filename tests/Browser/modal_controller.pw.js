@@ -674,7 +674,11 @@ test("reduced motion closes a modal without waiting for CSS motion", async ({ pa
 async function browserControllerScript(path) {
     // Inline helper modules alongside the controller — ES `import` is not valid
     // inside a regular <script>, so the harness concatenates the source instead.
+    const composition = (await readFile("resources/js/controllers/_composition.js", "utf8"))
+        .replace("export function isComposing", "function isComposing");
+
     const focusTrap = (await readFile("resources/js/controllers/_focus_trap.js", "utf8"))
+        .replace(/import \{[^}]*\} from "\.\/_composition\.js";\s*/, "")
         .replace("export class FocusTrap", "class FocusTrap");
 
     const overlayStack = (await readFile("resources/js/controllers/_overlay_stack.js", "utf8"))
@@ -690,6 +694,7 @@ async function browserControllerScript(path) {
         .replace("export function createPresence", "function createPresence");
 
     const overlay = (await readFile("resources/js/controllers/_overlay.js", "utf8"))
+        .replace(/import \{[^}]*\} from "\.\/_composition\.js";\s*/, "")
         .replace(/import \{[^}]*\} from "\.\/_focus_trap\.js";\s*/, "")
         .replace(/import \{[^}]*\} from "\.\/_overlay_stack\.js";\s*/, "")
         .replace(/import \{[^}]*\} from "\.\/_presence\.js";\s*/, "")
@@ -708,6 +713,7 @@ async function browserControllerScript(path) {
 
     return `
         const { Controller } = window.Stimulus;
+        ${composition}
         ${focusTrap}
         ${overlayStack}
         ${topLayer}

@@ -1,7 +1,7 @@
 # Hotkey
 
-Binds keyboard shortcuts to click or focus an element. Automatically ignores keystrokes typed inside inputs, textareas,
-and rich-text editors.
+Binds keyboard shortcuts to click or focus an element. Automatically ignores keystrokes typed inside form controls,
+editable content, and rich-text editors.
 
 **Identifier:** `hotkey`  
 **Install:** `php artisan hotwire:controllers hotkey`
@@ -9,6 +9,7 @@ and rich-text editors.
 ## Requirements
 
 - No external dependencies.
+- Ships with `_composition.js`; publishing the controller publishes this helper too.
 
 ## Actions
 
@@ -20,7 +21,9 @@ and rich-text editors.
 Both actions are no-ops when:
 
 - The element has `pointer-events: none` (e.g. a disabled button styled via CSS)
-- The key event originated inside an `<input>`, `<textarea>`, or `<lexxy-editor>`
+- The key event originated inside an `<input>`, `<textarea>`, `<select>`, editable `[contenteditable]`, `<lexxy-editor>`,
+  or `.ProseMirror` editor. Explicit `[contenteditable="false"]` regions remain eligible for shortcuts.
+- The user is composing text with an IME
 - The event was already prevented by another handler
 
 ## Basic usage — keyboard shortcut for a button

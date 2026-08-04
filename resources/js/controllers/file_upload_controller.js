@@ -1,5 +1,7 @@
 // @hotwire-package
 import { Controller } from "@hotwired/stimulus";
+
+import { isComposing } from "./_composition.js";
 import { createUploadFeedback } from "./_upload_feedback.js";
 
 export default class extends Controller {
@@ -79,6 +81,8 @@ export default class extends Controller {
     }
 
     openPicker(event) {
+        if (isComposing(event)) return;
+
         event?.preventDefault?.();
         this.inputTarget?.click?.();
     }

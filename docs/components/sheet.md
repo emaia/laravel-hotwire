@@ -4,6 +4,12 @@ Off-canvas sheet panel with backdrop, close button, focus trap, Escape dismissal
 
 Use `Sheet` for side-panel dialogs. Use [`<hw:drawer>`](./drawer.md) for the Base UI-style drawer primitive.
 
+## Requirements
+
+- No external dependencies.
+- Ships with `_composition.js`, `_focus_trap.js`, `_frame_overlay.js`, `_overlay.js`, `_overlay_stack.js`,
+  `_presence.js`, and `_top_layer.js` through `drawer`; publishing the `sheet` controller publishes these helpers too.
+
 ## Usage
 
 ```blade

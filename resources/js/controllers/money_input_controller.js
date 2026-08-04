@@ -1,6 +1,8 @@
 // @hotwire-package
 import { Controller } from "@hotwired/stimulus";
 
+import { isComposing } from "./_composition.js";
+
 export default class extends Controller {
     static values = {
         locale: { type: String, default: "en-US" },
@@ -14,15 +16,17 @@ export default class extends Controller {
     };
 
     connect() {
+        this.connected = true;
         this.resyncAfterMorph = this.resyncAfterMorph.bind(this);
         this.affixes = this.#resolveAffixes();
         this.digitBuffer = this.#digitBufferFromMinor(this.element.value);
         this.#bindEvents();
-        this.#renderCurrentValue();
+        this.#renderCurrentValue(false);
         document.addEventListener("turbo:render", this.resyncAfterMorph);
     }
 
     disconnect() {
+        this.connected = false;
         this.#unbindEvents();
         document.removeEventListener("turbo:render", this.resyncAfterMorph);
         this.affixes = null;
@@ -32,7 +36,7 @@ export default class extends Controller {
 
     resyncAfterMorph() {
         this.digitBuffer = this.#digitBufferFromMinor(this.element.value);
-        this.#renderCurrentValue();
+        this.#renderCurrentValue(false);
     }
 
     localeValueChanged() {
@@ -66,25 +70,30 @@ export default class extends Controller {
     #bindEvents() {
         this.onKeydown = (event) => this.#handleKeydown(event);
         this.onInput = (event) => this.#handleInput(event);
+        this.onCompositionEnd = () => this.#handleCompositionEnd();
         this.onPaste = (event) => this.#handlePaste(event);
 
         this.element.addEventListener("keydown", this.onKeydown);
-        this.element.addEventListener("input", this.onInput);
+        this.element.addEventListener("input", this.onInput, true);
+        this.element.addEventListener("compositionend", this.onCompositionEnd);
         this.element.addEventListener("paste", this.onPaste);
     }
 
     #unbindEvents() {
         this.element.removeEventListener("keydown", this.onKeydown);
-        this.element.removeEventListener("input", this.onInput);
+        this.element.removeEventListener("input", this.onInput, true);
+        this.element.removeEventListener("compositionend", this.onCompositionEnd);
         this.element.removeEventListener("paste", this.onPaste);
+        this.#clearCompositionTimer();
 
         this.onKeydown = null;
         this.onInput = null;
+        this.onCompositionEnd = null;
         this.onPaste = null;
     }
 
     #scheduleRebuild() {
-        if (this.rebuildQueued) {
+        if (!this.connected || this.rebuildQueued) {
             return;
         }
 
@@ -92,12 +101,16 @@ export default class extends Controller {
 
         queueMicrotask(() => {
             this.rebuildQueued = false;
+            if (!this.connected) return;
+
             this.affixes = this.#resolveAffixes();
-            this.#renderCurrentValue();
+            this.#renderCurrentValue(false);
         });
     }
 
     #handleKeydown(event) {
+        if (isComposing(event)) return;
+
         if (event.metaKey || event.ctrlKey || event.altKey) {
             return;
         }
@@ -150,10 +163,29 @@ export default class extends Controller {
     }
 
     #handleInput(event) {
-        if (this.internalInputEvent) {
+        if (this.internalInputEvent || isComposing(event)) {
             return;
         }
 
+        this.#clearCompositionTimer();
+        event.stopImmediatePropagation();
+        this.#commitInput();
+    }
+
+    #handleCompositionEnd() {
+        this.#clearCompositionTimer();
+        this.compositionTimeout = setTimeout(() => {
+            this.compositionTimeout = null;
+            if (this.element.isConnected) this.#commitInput();
+        }, 0);
+    }
+
+    #clearCompositionTimer() {
+        clearTimeout(this.compositionTimeout);
+        this.compositionTimeout = null;
+    }
+
+    #commitInput() {
         const raw = this.#rawValueFromDisplay(this.element.value);
 
         this.digitBuffer = this.#digitBufferFromRaw(raw);
@@ -172,15 +204,15 @@ export default class extends Controller {
         this.#renderCurrentValue();
     }
 
-    #renderCurrentValue() {
-        this.#renderFromDigitBuffer();
+    #renderCurrentValue(dispatch = true) {
+        this.#renderFromDigitBuffer(dispatch);
     }
 
-    #renderFromDigitBuffer() {
+    #renderFromDigitBuffer(dispatch = true) {
         const digits = this.digitBuffer ?? "";
 
         if (digits === "") {
-            this.#setElementValue("");
+            this.#setElementValue("", dispatch);
 
             return;
         }
@@ -199,15 +231,15 @@ export default class extends Controller {
         const innerNumber = `${groupedInteger}${decimalSep}${fractionDigits}`;
         const visible = this.#wrap(`${negative ? "-" : ""}${innerNumber}`);
 
-        this.#setElementValue(visible);
+        this.#setElementValue(visible, dispatch);
     }
 
-    #setElementValue(masked) {
+    #setElementValue(masked, dispatch = true) {
         this.internalInputEvent = true;
         this.element.value = masked;
         this.#syncHidden();
         this.#moveCaretToEnd();
-        this.#dispatchEvents(masked);
+        if (dispatch) this.#dispatchEvents(masked);
         this.internalInputEvent = false;
     }
 

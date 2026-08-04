@@ -81,6 +81,69 @@ test.serial("click action: ignores when pressed inside lexxy-editor", async () =
     expect(clickSpy).not.toHaveBeenCalled();
 });
 
+test.serial("click action: ignores select, contenteditable, and ProseMirror targets", async () => {
+    await mount(`<div data-controller="hotkey" data-action="keydown->hotkey#click">Action</div>`);
+
+    mounted.root.click = clickSpy;
+    mounted.root.insertAdjacentHTML("beforeend", `
+        <select><option>Choice</option></select>
+        <div contenteditable="true"><span id="editable-child">Editable</span></div>
+        <div class="ProseMirror"><span id="prosemirror-child">Editor</span></div>
+    `);
+
+    const targets = [
+        mounted.root.querySelector("select"),
+        mounted.root.querySelector("#editable-child"),
+        mounted.root.querySelector("#prosemirror-child"),
+    ];
+
+    for (const target of targets) {
+        const event = new KeyboardEvent("keydown", { key: "a", cancelable: true, bubbles: true });
+        target.dispatchEvent(event);
+        expect(event.defaultPrevented).toBe(false);
+    }
+
+    expect(clickSpy).not.toHaveBeenCalled();
+});
+
+test.serial("click action remains active inside contenteditable=false", async () => {
+    await mount(`<div data-controller="hotkey" data-action="keydown->hotkey#click">Action</div>`);
+
+    mounted.root.click = clickSpy;
+    mounted.root.insertAdjacentHTML("beforeend", '<div contenteditable="false"><span id="static-child">Static</span></div>');
+    const event = new KeyboardEvent("keydown", { key: "a", cancelable: true, bubbles: true });
+    mounted.root.querySelector("#static-child").dispatchEvent(event);
+
+    expect(clickSpy).toHaveBeenCalledTimes(1);
+    expect(event.defaultPrevented).toBe(true);
+});
+
+test.serial("click action ignores IME key events and accepts the committed key", async () => {
+    await mount(`<button type="button" data-controller="hotkey" data-action="keydown->hotkey#click">Action</button>`);
+
+    mounted.root.click = clickSpy;
+    const composing = new KeyboardEvent("keydown", { key: "a", cancelable: true, bubbles: true });
+    Object.defineProperty(composing, "isComposing", { value: true });
+    Object.defineProperty(composing, "target", { value: document.body });
+    mounted.root.dispatchEvent(composing);
+
+    const legacy = new KeyboardEvent("keydown", { key: "a", cancelable: true, bubbles: true });
+    Object.defineProperty(legacy, "keyCode", { value: 229 });
+    Object.defineProperty(legacy, "target", { value: document.body });
+    mounted.root.dispatchEvent(legacy);
+
+    expect(clickSpy).not.toHaveBeenCalled();
+    expect(composing.defaultPrevented).toBe(false);
+    expect(legacy.defaultPrevented).toBe(false);
+
+    const committed = new KeyboardEvent("keydown", { key: "a", cancelable: true, bubbles: true });
+    Object.defineProperty(committed, "target", { value: document.body });
+    mounted.root.dispatchEvent(committed);
+
+    expect(clickSpy).toHaveBeenCalledTimes(1);
+    expect(committed.defaultPrevented).toBe(true);
+});
+
 test.serial("click action: ignores when pointerEvents is none", async () => {
     await mount(`<button type="button" data-controller="hotkey" data-action="keydown->hotkey#click">Action</button>`);
 

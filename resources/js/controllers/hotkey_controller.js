@@ -1,6 +1,8 @@
 // @hotwire-package
 import { Controller } from "@hotwired/stimulus";
 
+import { isComposing } from "./_composition.js";
+
 export default class extends Controller {
     click(event) {
         if (this.isClickable && !this.shouldIgnore(event)) {
@@ -18,7 +20,9 @@ export default class extends Controller {
 
     shouldIgnore(event) {
         const target = event.target;
-        return event.defaultPrevented || !!target?.closest("input, textarea, lexxy-editor");
+        return event.defaultPrevented
+            || isComposing(event)
+            || !!target?.closest?.('input, textarea, select, [contenteditable]:not([contenteditable="false"]), lexxy-editor, .ProseMirror');
     }
 
     get isClickable() {

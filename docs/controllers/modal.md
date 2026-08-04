@@ -43,6 +43,9 @@ Accessible modal with backdrop, animations, focus trap and dynamic content suppo
 | `modal#clickOutside` | Closes when clicking outside (use with `click` event on overlay) |
 | `modal#closeForCache` | Closes immediately for `turbo:before-cache`                    |
 
+Escape dismissal and focus trapping are suspended during IME composition, so canceling a candidate does not close the
+modal or move focus.
+
 ## Events
 
 | Event          | Description                                                     |

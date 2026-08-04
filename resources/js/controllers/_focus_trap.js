@@ -1,4 +1,6 @@
 // @hotwire-package
+import { isComposing } from "./_composition.js";
+
 const FOCUSABLE_SELECTOR =
     'a[href], area[href], input:not([disabled]):not([type="hidden"]), ' +
     "select:not([disabled]), textarea:not([disabled]), " +
@@ -41,6 +43,7 @@ export class FocusTrap {
     }
 
     handleKey(event) {
+        if (isComposing(event)) return;
         if (event.key !== "Tab") return;
         if (!this.active) return;
         if (this.container.hidden) return;

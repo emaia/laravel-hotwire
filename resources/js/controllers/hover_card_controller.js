@@ -1,6 +1,7 @@
 // @hotwire-package
 import { Controller } from "@hotwired/stimulus";
 
+import { isComposing } from "./_composition.js";
 import { createFloating } from "./_floating.js";
 import { createPresence } from "./_presence.js";
 import { createTopLayer } from "./_top_layer.js";
@@ -206,6 +207,7 @@ export default class extends Controller {
     }
 
     onKeydown(event) {
+        if (isComposing(event)) return;
         if (!this.openValue || event.key !== "Escape") return;
 
         event.preventDefault();

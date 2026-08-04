@@ -41,6 +41,8 @@ low-level Stimulus controller used by [`<hw:alert-dialog>`](../components/alert-
 | `alert-dialog#clickOutside` | Cancels when clicking outside the dialog panel                              |
 | `alert-dialog#closeForCache` | Clears the pending action and closes synchronously for Turbo cache          |
 
+Escape cancellation and focus trapping are suspended during IME composition.
+
 ## Basic usage
 
 ```html

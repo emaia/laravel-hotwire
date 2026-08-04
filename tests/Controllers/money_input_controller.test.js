@@ -336,6 +336,49 @@ test.serial("clears the hidden input when the visible value is cleared", async (
     expect(hidden.value).toBe("");
 });
 
+test.serial("does not intercept modern or legacy composing key events", async () => {
+    await setup(`<input data-controller="money-input" />`);
+
+    const input = document.querySelector("input");
+    const changes = [];
+    input.addEventListener("money-input:change", (event) => changes.push(event.detail));
+
+    const composing = new KeyboardEvent("keydown", { key: "1", bubbles: true, cancelable: true });
+    Object.defineProperty(composing, "isComposing", { value: true });
+    input.dispatchEvent(composing);
+
+    const legacy = new KeyboardEvent("keydown", { key: "1", bubbles: true, cancelable: true });
+    Object.defineProperty(legacy, "keyCode", { value: 229 });
+    input.dispatchEvent(legacy);
+
+    expect(composing.defaultPrevented).toBe(false);
+    expect(legacy.defaultPrevented).toBe(false);
+    expect(input.value).toBe("");
+    expect(changes).toHaveLength(0);
+});
+
+test.serial("formats on compositionend when no non-composing input follows", async () => {
+    await setup(`<input data-controller="money-input" />`);
+
+    const input = document.querySelector("input");
+    const changes = [];
+    input.addEventListener("money-input:change", (event) => changes.push(event.detail));
+    input.value = "12";
+
+    const composing = new Event("input", { bubbles: true });
+    Object.defineProperty(composing, "isComposing", { value: true });
+    input.dispatchEvent(composing);
+
+    expect(input.value).toBe("12");
+    expect(changes).toHaveLength(0);
+
+    input.dispatchEvent(new Event("compositionend", { bubbles: true }));
+    await wait(0);
+
+    expect(input.value).toBe("12.00");
+    expect(changes).toHaveLength(1);
+});
+
 test.serial("dispatches money-input:change with masked, unmasked (minor units) and completed", async () => {
     await setup(`
         <input
@@ -415,7 +458,7 @@ test.serial("places the negative sign before the number for suffix locales", asy
     expect(normalizeSpaces(input.value)).toBe("-156,79 €");
 });
 
-test.serial("preserves the underlying value when locale and currency change at runtime", async () => {
+test.serial("silently preserves the underlying value when locale and currency change at runtime", async () => {
     await setup(`
         <input
             data-controller="money-input"
@@ -426,6 +469,10 @@ test.serial("preserves the underlying value when locale and currency change at r
     `);
 
     const input = document.querySelector("input");
+    const inputEvents = [];
+    const changes = [];
+    input.addEventListener("input", (event) => inputEvents.push(event));
+    input.addEventListener("money-input:change", (event) => changes.push(event.detail));
     await wait(0);
 
     expect(input.value).toBe("$1,234.56");
@@ -437,6 +484,8 @@ test.serial("preserves the underlying value when locale and currency change at r
     await wait(0);
 
     expect(normalizeSpaces(input.value)).toBe("1.234,56 €");
+    expect(inputEvents).toEqual([]);
+    expect(changes).toEqual([]);
 });
 
 test.serial("rebuilds the mask when currency value changes at runtime", async () => {
@@ -459,6 +508,20 @@ test.serial("rebuilds the mask when currency value changes at runtime", async ()
 
     expect(input.value).toContain("R$");
     expect(input.value).toContain("100,00");
+});
+
+test.serial("does not run a queued rebuild after disconnect", async () => {
+    await setup(`<input data-controller="money-input" value="100">`);
+
+    const input = document.querySelector("input");
+    const changes = [];
+    input.addEventListener("money-input:change", (event) => changes.push(event.detail));
+    mounted.controller.currencyValueChanged();
+    mounted.controller.disconnect();
+    await wait(0);
+
+    expect(input.value).toBe("1.00");
+    expect(changes).toEqual([]);
 });
 
 test.serial("re-seeds digit buffer after turbo:render (morph scenario)", async () => {

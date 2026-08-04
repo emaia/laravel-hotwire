@@ -8,6 +8,7 @@ Submits the form automatically in response to events, with optional debounce.
 ## Requirements
 
 - No external dependencies.
+- Ships with `_composition.js`; publishing the controller publishes this helper too.
 
 ## Actions
 
@@ -23,6 +24,10 @@ Submits the form automatically in response to events, with optional debounce.
 | `delay` | `Number` | `300`   | Debounce window in milliseconds for `debouncedSubmit`. Set to `0` to submit instantly |
 
 `delay` only affects `debouncedSubmit` — `submit` is always immediate.
+
+Both actions ignore events already prevented by another handler. During IME composition, they cancel pending work and
+wait for the committed value before submitting, including when the configured debounce is `0`. If a browser emits the
+commit input before `compositionend`, the controller resumes from `compositionend` without submitting twice.
 
 ## Action params
 

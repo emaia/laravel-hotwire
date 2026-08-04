@@ -31,6 +31,25 @@ function dispatchTab({ shift = false } = {}) {
     return event;
 }
 
+test.serial("does not trap Tab during composition", () => {
+    const { trap } = mountTrap(`
+        <div data-trap>
+            <input id="first" type="text">
+            <button id="last">Last</button>
+        </div>
+    `);
+    const last = document.getElementById("last");
+    last.focus();
+    trap.activate();
+
+    const event = new KeyboardEvent("keydown", { key: "Tab", bubbles: true, cancelable: true });
+    Object.defineProperty(event, "isComposing", { value: true });
+    document.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(document.activeElement).toBe(last);
+});
+
 // --- activate (initial focus) ---
 
 test.serial("does nothing before activate", () => {

@@ -629,6 +629,19 @@ test("openPicker clicks the native file input and prevents default", async () =>
     expect(input.click).toHaveBeenCalledTimes(1);
 });
 
+test("openPicker ignores keyboard activation during composition", async () => {
+    await mount();
+    const input = mounted.root.querySelector('[data-file-upload-target="input"]');
+    input.click = mock(() => {});
+    const preventDefault = mock(() => {});
+
+    mounted.controller.openPicker({ isComposing: true, preventDefault });
+    mounted.controller.openPicker({ keyCode: 229, preventDefault });
+
+    expect(preventDefault).not.toHaveBeenCalled();
+    expect(input.click).not.toHaveBeenCalled();
+});
+
 test("select clears the file input by default so the same file can be selected again", async () => {
     await mount();
     const target = { files: [file("photo.png")], value: "C:\\fakepath\\photo.png" };

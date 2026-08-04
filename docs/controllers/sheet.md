@@ -16,6 +16,8 @@ motion before rendering. The overlay contract is `data-state="closed" data-motio
 | `sheet#clickOutside` | Close when the backdrop is clicked. |
 | `sheet#closeForCache` | Close immediately before Turbo caches the page. |
 
+Escape dismissal and focus trapping are suspended during IME composition.
+
 ## Events
 
 | Event | Description |

@@ -9,6 +9,7 @@ forms where saving should feel native and unobtrusive.
 ## Requirements
 
 - No external dependencies.
+- Ships with `_composition.js`; publishing the controller publishes this helper too.
 - A `<form>` element as the controller root.
 - Turbo is recommended so the submission can be complete without a full page reload.
 
@@ -26,6 +27,10 @@ forms where saving should feel native and unobtrusive.
 | `delay`           | `Number` | `750`   | Debounce delay for `input` events                    |
 | `change-delay`    | `Number` | `0`     | Debounce delay for `change` events                   |
 | `status-duration` | `Number` | `2000`  | How long the `Saved` status is shown before clearing |
+
+IME composition pauses pending saves. `compositionend` resumes the last requested debounce, preserving whether it came
+from `input` or `change`, and a final committed input restarts that debounce normally. Fields removed by a morph are
+pruned from the active composition set so they cannot block later saves.
 
 ## CSS Classes
 

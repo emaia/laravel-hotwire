@@ -7,14 +7,16 @@ When the search input is rendered with the package `clear-input` controller, `in
 The optional select-all target is treated as a button action, and the empty target is a status message outside the
 listbox option semantics.
 
+Search navigation and Escape dismissal are suspended while the search field is composing IME text.
+
 **Identifier:** `multi-select`
 **Install:** `php artisan hotwire:controllers multi-select`
 
 ## Requirements
 
 - `@floating-ui/dom` for anchored positioning.
-- Ships with `_floating.js`, `_form_errors.js`, `_frame_events.js`, `_presence.js`, and `_top_layer.js`; publishing the
-  controller publishes these helpers too.
+- Ships with `_composition.js`, `_floating.js`, `_form_errors.js`, `_frame_events.js`, `_presence.js`, and
+  `_top_layer.js`; publishing the controller publishes these helpers too.
 - Without the Nova preset, reset native Popover positioning with
   `[data-hotwire-top-layer][popover] { inset: auto; margin: 0; }` and define the floating element's border and padding.
 

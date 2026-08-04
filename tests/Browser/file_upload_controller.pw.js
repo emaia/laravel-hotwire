@@ -864,10 +864,12 @@ async function mountPage(page, bodyHtml, controllers = []) {
 }
 
 async function bundleControllers() {
-    const focusTrap = (await readFile("resources/js/controllers/_focus_trap.js", "utf8")).replace(
-        "export class FocusTrap",
-        "class FocusTrap",
-    );
+    const composition = (await readFile("resources/js/controllers/_composition.js", "utf8"))
+        .replace("export function isComposing", "function isComposing");
+
+    const focusTrap = (await readFile("resources/js/controllers/_focus_trap.js", "utf8"))
+        .replace(/import \{[^}]*\} from "\.\/_composition\.js";\s*/, "")
+        .replace("export class FocusTrap", "class FocusTrap");
 
     const overlayStack = (await readFile("resources/js/controllers/_overlay_stack.js", "utf8"))
         .replace("export function registerOverlay", "function registerOverlay")
@@ -886,6 +888,7 @@ async function bundleControllers() {
     );
 
     const overlay = (await readFile("resources/js/controllers/_overlay.js", "utf8"))
+        .replace(/import \{[^}]*\} from "\.\/_composition\.js";\s*/, "")
         .replace(/import \{[^}]*\} from "\.\/_focus_trap\.js";\s*/, "")
         .replace(/import \{[^}]*\} from "\.\/_overlay_stack\.js";\s*/, "")
         .replace(/import \{[^}]*\} from "\.\/_presence\.js";\s*/, "")
@@ -911,6 +914,7 @@ async function bundleControllers() {
     const dropdown = (await readFile("resources/js/controllers/dropdown_controller.js", "utf8"))
         .replace(/^\/\/ @hotwire-package\s*/m, "")
         .replace(/^import \{ Controller \} from "@hotwired\/stimulus";\s*/m, "")
+        .replace(/import \{[^}]*\} from "\.\/_composition\.js";\s*/, "")
         .replace(/import \{[^}]*\} from "\.\/_floating\.js";\s*/, "")
         .replace(/import \{[^}]*\} from "\.\/_presence\.js";\s*/, "")
         .replace(/import \{[^}]*\} from "\.\/_top_layer\.js";\s*/, "")
@@ -924,12 +928,14 @@ async function bundleControllers() {
     const fileUpload = (await readFile("resources/js/controllers/file_upload_controller.js", "utf8"))
         .replace(/^\/\/ @hotwire-package\s*/m, "")
         .replace(/^import \{ Controller \} from "@hotwired\/stimulus";\s*/m, "")
+        .replace(/import \{[^}]*\} from "\.\/_composition\.js";\s*/, "")
         .replace(/import \{[^}]*\} from "\.\/_upload_feedback\.js";\s*/, "")
         .replace("export default class extends Controller", "class FileUploadController extends Controller");
 
     return `
         const { Controller } = window.Stimulus;
         const { arrow, autoUpdate, computePosition, flip, hide, offset, shift, size } = window.FloatingUIDOM;
+        ${composition}
         ${focusTrap}
         ${overlayStack}
         ${topLayer}

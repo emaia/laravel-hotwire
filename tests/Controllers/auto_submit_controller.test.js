@@ -1,7 +1,13 @@
 import { afterEach, expect, test } from "bun:test";
 
-import { dispatchEvent, mountController } from "../../resources/js/helpers/test_stimulus.js";
+import {
+    dispatchEvent,
+    mountController,
+    mountMultipleControllers,
+    wait,
+} from "../../resources/js/helpers/test_stimulus.js";
 import AutoSubmitController from "../../resources/js/controllers/auto_submit_controller.js";
+import MoneyInputController from "../../resources/js/controllers/money_input_controller.js";
 
 let mounted;
 
@@ -22,6 +28,67 @@ test.serial("submit fires immediately", async () => {
     dispatchEvent(select, "change");
 
     expect(submits()).toBe(1);
+});
+
+test.serial("submit ignores composing and prevented events before accepting the committed event", async () => {
+    await setup(`
+        <form data-controller="auto-submit">
+            <input data-action="input->auto-submit#submit">
+        </form>
+    `);
+
+    const { input, submits } = elements();
+    const composing = new Event("input", { bubbles: true, cancelable: true });
+    Object.defineProperty(composing, "isComposing", { value: true });
+    input.dispatchEvent(composing);
+
+    const prevented = new Event("input", { bubbles: true, cancelable: true });
+    prevented.preventDefault();
+    input.dispatchEvent(prevented);
+
+    expect(submits()).toBe(0);
+
+    dispatchEvent(input, "input");
+
+    expect(submits()).toBe(1);
+});
+
+test.serial("submit falls back to compositionend when no committed input follows", async () => {
+    await setup(`
+        <form data-controller="auto-submit">
+            <input data-action="input->auto-submit#submit">
+        </form>
+    `);
+
+    const { input, submits } = elements();
+    const composing = new Event("input", { bubbles: true });
+    Object.defineProperty(composing, "isComposing", { value: true });
+    input.dispatchEvent(composing);
+    input.dispatchEvent(new Event("compositionend", { bubbles: true }));
+    await wait(0);
+
+    expect(submits()).toBe(1);
+});
+
+test.serial("a prevented committed input cancels the compositionend fallback", async () => {
+    await setup(`
+        <form data-controller="auto-submit">
+            <input data-action="input->auto-submit#submit">
+        </form>
+    `);
+
+    const { input, submits } = elements();
+    const composing = new Event("input", { bubbles: true });
+    Object.defineProperty(composing, "isComposing", { value: true });
+    input.dispatchEvent(composing);
+    input.dispatchEvent(new Event("compositionend", { bubbles: true }));
+
+    const committed = new Event("input", { bubbles: true, cancelable: true });
+    committed.preventDefault();
+    input.dispatchEvent(committed);
+    await wait(0);
+
+    expect(submits()).toBe(0);
 });
 
 test.serial("debouncedSubmit coalesces rapid events into a single request", async () => {
@@ -45,6 +112,68 @@ test.serial("debouncedSubmit coalesces rapid events into a single request", asyn
     expect(submits()).toBe(1);
 });
 
+test.serial("debouncedSubmit cancels pending work during composition and schedules the committed value", async () => {
+    await setup(`
+        <form data-controller="auto-submit" data-auto-submit-delay-value="20">
+            <input data-action="input->auto-submit#debouncedSubmit">
+        </form>
+    `);
+
+    const { input, submits } = elements();
+    const scheduler = installFakeSubmitScheduler();
+
+    dispatchEvent(input, "input");
+    const composing = new Event("input", { bubbles: true, cancelable: true });
+    Object.defineProperty(composing, "isComposing", { value: true });
+    composing.preventDefault();
+    input.dispatchEvent(composing);
+
+    expect(scheduler.pending()).toHaveLength(0);
+    expect(submits()).toBe(0);
+
+    dispatchEvent(input, "input");
+    scheduler.runNext();
+
+    expect(submits()).toBe(1);
+});
+
+test.serial("submits a committed Money Input value once after formatting", async () => {
+    mounted = await mountMultipleControllers(
+        {
+            "auto-submit": AutoSubmitController,
+            "money-input": MoneyInputController,
+        },
+        `
+            <form data-controller="auto-submit" data-auto-submit-delay-value="0">
+                <input type="hidden" id="amount-raw">
+                <input
+                    name="amount"
+                    data-controller="money-input"
+                    data-money-input-hidden-id-value="amount-raw"
+                    data-action="input->auto-submit#debouncedSubmit"
+                >
+            </form>
+        `,
+    );
+
+    const form = document.querySelector("form");
+    const input = document.querySelector('[data-controller="money-input"]');
+    const raw = document.querySelector("#amount-raw");
+    const submissions = [];
+    form.requestSubmit = () => submissions.push({ visible: input.value, raw: raw.value });
+
+    input.value = "12";
+    const composing = new Event("input", { bubbles: true });
+    Object.defineProperty(composing, "isComposing", { value: true });
+    input.dispatchEvent(composing);
+
+    expect(submissions).toEqual([]);
+
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+
+    expect(submissions).toEqual([{ visible: "12.00", raw: "1200" }]);
+});
+
 test.serial("debouncedSubmit can use a per-field delay action param", async () => {
     await setup(`
         <form data-controller="auto-submit" data-auto-submit-delay-value="20">
@@ -58,6 +187,27 @@ test.serial("debouncedSubmit can use a per-field delay action param", async () =
     dispatchEvent(input, "input");
 
     expect(scheduler.pending()[0].delay).toBe(75);
+});
+
+test.serial("debouncedSubmit resolves its delay once per event", async () => {
+    await setup(`
+        <form data-controller="auto-submit" data-auto-submit-delay-value="20">
+            <input data-action="input->auto-submit#debouncedSubmit">
+        </form>
+    `);
+
+    const { input } = elements();
+    const submitDelay = mounted.controller.submitDelay.bind(mounted.controller);
+    let calls = 0;
+    mounted.controller.submitDelay = (event) => {
+        calls += 1;
+
+        return submitDelay(event);
+    };
+
+    dispatchEvent(input, "input");
+
+    expect(calls).toBe(1);
 });
 
 test.serial("debouncedSubmit is debounced by default", async () => {
@@ -84,6 +234,85 @@ test.serial("a delay of 0 makes debouncedSubmit immediate", async () => {
     const { input, submits } = elements();
 
     dispatchEvent(input, "input");
+
+    expect(submits()).toBe(1);
+});
+
+test.serial("a delay of 0 still waits for the committed composition event", async () => {
+    await setup(`
+        <form data-controller="auto-submit" data-auto-submit-delay-value="0">
+            <input data-action="input->auto-submit#debouncedSubmit">
+        </form>
+    `);
+
+    const { input, submits } = elements();
+    const composing = new Event("input", { bubbles: true });
+    Object.defineProperty(composing, "isComposing", { value: true });
+    input.dispatchEvent(composing);
+
+    expect(submits()).toBe(0);
+
+    dispatchEvent(input, "input");
+
+    expect(submits()).toBe(1);
+});
+
+test.serial("debouncedSubmit falls back to compositionend when the commit input is still composing", async () => {
+    await setup(`
+        <form data-controller="auto-submit" data-auto-submit-delay-value="0">
+            <input data-action="input->auto-submit#debouncedSubmit">
+        </form>
+    `);
+
+    const { input, submits } = elements();
+    const composing = new Event("input", { bubbles: true });
+    Object.defineProperty(composing, "isComposing", { value: true });
+    input.dispatchEvent(composing);
+    input.dispatchEvent(new Event("compositionend", { bubbles: true }));
+    await wait(0);
+
+    expect(submits()).toBe(1);
+});
+
+test.serial("compositionend fallback survives a trailing input still marked composing", async () => {
+    await setup(`
+        <form data-controller="auto-submit" data-auto-submit-delay-value="0">
+            <input data-action="input->auto-submit#debouncedSubmit">
+        </form>
+    `);
+
+    const { input, submits } = elements();
+    const candidate = new Event("input", { bubbles: true });
+    Object.defineProperty(candidate, "isComposing", { value: true });
+    input.dispatchEvent(candidate);
+    input.dispatchEvent(new Event("compositionend", { bubbles: true }));
+
+    const trailing = new Event("input", { bubbles: true });
+    Object.defineProperty(trailing, "isComposing", { value: true });
+    input.dispatchEvent(trailing);
+    await wait(0);
+
+    expect(submits()).toBe(1);
+});
+
+test.serial("a committed event in another field cancels pending form fallbacks", async () => {
+    await setup(`
+        <form data-controller="auto-submit" data-auto-submit-delay-value="0">
+            <input id="first" data-action="input->auto-submit#debouncedSubmit">
+            <input id="second" data-action="input->auto-submit#debouncedSubmit">
+        </form>
+    `);
+
+    const { submits } = elements();
+    const first = document.querySelector("#first");
+    const second = document.querySelector("#second");
+    const composing = new Event("input", { bubbles: true });
+    Object.defineProperty(composing, "isComposing", { value: true });
+    first.dispatchEvent(composing);
+    first.dispatchEvent(new Event("compositionend", { bubbles: true }));
+
+    second.dispatchEvent(new Event("input", { bubbles: true }));
+    await wait(0);
 
     expect(submits()).toBe(1);
 });

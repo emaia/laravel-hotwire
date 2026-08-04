@@ -2,6 +2,7 @@
 // Shared overlay lifecycle for modal, sheet, drawer and sidebar controllers.
 
 import { FocusTrap } from "./_focus_trap.js";
+import { isComposing } from "./_composition.js";
 import { registerOverlay, unregisterOverlay, isTopOverlay, overlayPosition } from "./_overlay_stack.js";
 import { createPresence } from "./_presence.js";
 import { createTopLayer } from "./_top_layer.js";
@@ -69,6 +70,7 @@ export function createOverlay(_controller, {
     }
 
     function handleEscapeKey(event) {
+        if (isComposing(event)) return;
         if (!closeOnEscape || event.key !== "Escape" || !desiredOpen) return;
         if (handledEscapeEvents.has(event)) return;
         if (!isTop()) return;

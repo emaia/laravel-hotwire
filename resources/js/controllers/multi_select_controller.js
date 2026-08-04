@@ -1,6 +1,7 @@
 // @hotwire-package
 import { Controller } from "@hotwired/stimulus";
 
+import { isComposing } from "./_composition.js";
 import { createFloating } from "./_floating.js";
 import { formHasErrors } from "./_form_errors.js";
 import { frameEventAffects, submissionFrameId } from "./_frame_events.js";
@@ -217,6 +218,8 @@ export default class extends Controller {
     }
 
     onDocumentKeydown(event) {
+        if (isComposing(event)) return;
+
         if (this.openValue && event.key === "Escape") {
             event.preventDefault();
             event.stopImmediatePropagation();
@@ -292,6 +295,8 @@ export default class extends Controller {
     }
 
     onSearchKeydown(event) {
+        if (isComposing(event)) return;
+
         if (event.key === "ArrowDown") {
             event.preventDefault();
             this.firstEnabledOption()?.focus();

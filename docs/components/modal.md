@@ -2,6 +2,12 @@
 
 Accessible modal with backdrop, animations, focus trap and Turbo integration.
 
+## Requirements
+
+- No external dependencies.
+- Ships with `_composition.js`, `_focus_trap.js`, `_frame_overlay.js`, `_overlay.js`, `_overlay_stack.js`,
+  `_presence.js`, and `_top_layer.js`; publishing the `modal` controller publishes these helpers too.
+
 ## Basic usage
 
 ```blade

@@ -33,6 +33,8 @@ Controls an off-canvas drawer overlay.
 | `clickOutside` | Close from the backdrop when enabled. |
 | `closeForCache` | Close immediately before Turbo caches the page. |
 
+Escape dismissal and focus trapping are suspended during IME composition.
+
 ## Dynamic Frame Behavior
 
 When `dynamicContent` is present, the controller opens the drawer after the frame receives content and clears the frame after close. It injects `loadingTemplate` during `turbo:before-fetch-request`, supports per-link `data-loading-template`, and delays empty `update`/`replace` streams for the drawer root or frame, plus `refresh` streams, until the close animation finishes.
