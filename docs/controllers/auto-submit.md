@@ -95,6 +95,7 @@ Field-level component props render the same wiring:
 ```blade
 <hw:form method="get" action="/items" auto-submit auto-submit-delay="300">
     <hw:input name="q" type="search" auto-submit auto-submit-delay="600" />
+    <hw:slider name="max_price" :max="1000" aria-label="Maximum price" auto-submit />
     <hw:select name="category" :options="$categories" auto-submit />
 </hw:form>
 ```

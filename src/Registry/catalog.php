@@ -60,6 +60,7 @@ use Emaia\LaravelHotwire\Components\Separator;
 use Emaia\LaravelHotwire\Components\Sheet;
 use Emaia\LaravelHotwire\Components\Sidebar;
 use Emaia\LaravelHotwire\Components\Skeleton;
+use Emaia\LaravelHotwire\Components\Slider;
 use Emaia\LaravelHotwire\Components\Spinner;
 use Emaia\LaravelHotwire\Components\Sticky;
 use Emaia\LaravelHotwire\Components\SwitchInput;
@@ -553,6 +554,14 @@ return [
             'description' => 'Animated placeholder block for loading states',
             'controllers' => [],
         ],
+        'slider' => [
+            'class' => Slider::class,
+            'view' => 'hotwire::component-views.slider',
+            'docs' => 'docs/components/slider.md',
+            'category' => 'forms',
+            'description' => 'Native scalar range input with Laravel field integration and progressive visual fill',
+            'controllers' => ['slider', 'auto-submit'],
+        ],
         'spinner' => [
             'class' => Spinner::class,
             'view' => 'hotwire::component-views.spinner',
@@ -943,6 +952,12 @@ return [
             'docs' => 'docs/controllers/sidebar.md',
             'category' => 'utility',
             'description' => 'Controls desktop sidebar state and a Presence-driven mobile overlay',
+        ],
+        'slider' => [
+            'source' => 'resources/js/controllers/slider_controller.js',
+            'docs' => 'docs/controllers/slider.md',
+            'category' => 'forms',
+            'description' => 'Keeps a native range input visual fill synchronized with its current value',
         ],
         'slug' => [
             'source' => 'resources/js/controllers/slug_controller.js',

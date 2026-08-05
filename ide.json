@@ -954,6 +954,11 @@
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Skeleton"
                 },
                 {
+                    "name": "slider",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Slider"
+                },
+                {
                     "name": "spinner",
                     "namespace": "hw",
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Spinner"

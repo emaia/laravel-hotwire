@@ -52,12 +52,13 @@ right event for their control type:
 ```blade
 <hw:form action="/search" method="get" auto-submit auto-submit-delay="300">
     <hw:input type="search" name="q" auto-submit auto-submit-delay="600" />
+    <hw:slider name="max_price" :max="1000" aria-label="Maximum price" auto-submit />
     <hw:select name="category" :options="$categories" auto-submit />
 </hw:form>
 ```
 
-Text fields default to debounced submit. Discrete controls like select, checkbox, switch and toggle default to immediate
-submit. Use `auto-submit="debounced"` to force debounce on a discrete control:
+Text fields and sliders default to debounced submit. Discrete controls like select, checkbox, switch and toggle default
+to immediate submit. Use `auto-submit="debounced"` to force debounce on a discrete control:
 
 ```blade
 <hw:select name="category" :options="$categories" auto-submit="debounced" auto-submit-delay="500" />
