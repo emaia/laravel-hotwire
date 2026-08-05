@@ -1,6 +1,8 @@
 <?php
 
+use Emaia\LaravelHotwire\Components\ColorScheme\Toggle;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
+use Illuminate\Support\HtmlString;
 
 // --- Script ---
 
@@ -41,7 +43,15 @@ it('renders a color scheme toggle button with controller values', function () {
         ->assertSee('data-color-scheme-default-value="system"', false)
         ->assertSee('data-mode="system"', false)
         ->assertSee('data-scheme="light"', false)
+        ->assertDontSee('data-color-scheme-view-transition-value', false)
         ->assertSee('aria-label="Toggle color scheme"', false);
+});
+
+it('opts the color scheme toggle into View Transitions', function () {
+    $view = $this->blade('<x-hw::color-scheme.toggle view-transition />');
+
+    $view->assertSee('data-color-scheme-view-transition-value="true"', false)
+        ->assertDontSee(' view-transition', false);
 });
 
 it('renders color scheme toggle icons for light dark and system', function () {
@@ -76,6 +86,14 @@ it('lets color scheme toggle props own internal data attributes', function () {
         ->assertSee('data-color-scheme-default-value="system"', false)
         ->assertDontSee('override', false)
         ->assertDontSee('data-color-scheme-default-value="light"', false);
+});
+
+it('keeps view transition after stimulus as the final positional constructor argument', function () {
+    $stimulus = new HtmlString('data-controller="custom"');
+    $component = new Toggle('ghost', 'sm', 'dark light', 'app.theme', 'dark', 'Theme', 'bottom', 'start', 'none', '[data-tip]', $stimulus, true);
+
+    expect($component->stimulus)->toBe($stimulus)
+        ->and($component->viewTransition)->toBeTrue();
 });
 
 // --- Catalog ---

@@ -6,9 +6,11 @@ export default class extends Controller {
         storageKey: { type: String, default: "hotwire.colorScheme" },
         default: { type: String, default: "system" },
         modes: { type: String, default: "light dark system" },
+        viewTransition: { type: Boolean, default: false },
     };
 
     connect() {
+        this.pendingTransition = null;
         this.boundStorageChanged = this.storageChanged.bind(this);
         this.boundMediaChanged = this.mediaChanged.bind(this);
         this.boundGlobalChanged = this.globalChanged.bind(this);
@@ -64,24 +66,61 @@ export default class extends Controller {
             window.localStorage.setItem(this.storageKeyValue, nextMode);
         } catch (error) {}
 
-        this.apply(nextMode, { dispatch: true });
+        this.apply(nextMode, { dispatch: true, animate: true });
     }
 
-    apply(mode, { dispatch = false } = {}) {
+    apply(mode, { dispatch = false, animate = false } = {}) {
         const nextMode = this.normalizeMode(mode);
         const scheme = this.resolveScheme(nextMode);
+        const update = () => {
+            document.documentElement.setAttribute("data-theme", scheme);
+            document.documentElement.setAttribute("data-color-scheme-mode", nextMode);
+            document.documentElement.style.colorScheme = scheme;
+            this.element.dataset.mode = nextMode;
+            this.element.dataset.scheme = scheme;
 
-        document.documentElement.setAttribute("data-theme", scheme);
-        document.documentElement.setAttribute("data-color-scheme-mode", nextMode);
-        document.documentElement.style.colorScheme = scheme;
-        this.element.dataset.mode = nextMode;
-        this.element.dataset.scheme = scheme;
+            if (dispatch) {
+                window.dispatchEvent(new CustomEvent("color-scheme:change", {
+                    detail: { mode: nextMode, scheme },
+                }));
+            }
+        };
 
-        if (dispatch) {
-            window.dispatchEvent(new CustomEvent("color-scheme:change", {
-                detail: { mode: nextMode, scheme },
-            }));
+        if (this.pendingTransition) {
+            if (animate && this.viewTransitionValue) {
+                this.pendingTransition.update = update;
+
+                return;
+            }
+
+            this.pendingTransition = null;
         }
+
+        const currentScheme = document.documentElement.getAttribute("data-theme");
+
+        if (
+            animate
+            && this.viewTransitionValue
+            && scheme !== currentScheme
+            && typeof document.startViewTransition === "function"
+        ) {
+            const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false;
+
+            if (!reduce) {
+                const pendingTransition = { update };
+                this.pendingTransition = pendingTransition;
+                document.startViewTransition(() => {
+                    if (this.pendingTransition !== pendingTransition) return;
+
+                    this.pendingTransition = null;
+                    pendingTransition.update();
+                });
+
+                return;
+            }
+        }
+
+        update();
     }
 
     storageChanged(event) {

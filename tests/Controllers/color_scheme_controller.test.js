@@ -9,9 +9,13 @@ const { default: ColorSchemeController } = await import(
 
 let mounted;
 let media;
+let reducedMotion;
+let transitionCalls;
 
 beforeEach(() => {
     media = createMedia(false);
+    reducedMotion = createMedia(false, "(prefers-reduced-motion: reduce)");
+    transitionCalls = 0;
 });
 
 afterEach(async () => {
@@ -132,6 +136,184 @@ test("set accepts a Stimulus action param and aliases set explicit modes", async
     expect(window.localStorage.getItem("hotwire.colorScheme")).toBe("system");
 });
 
+// --- view transitions ---
+
+test("animates an opted-in user action and applies the theme", async () => {
+    await mount(
+        `<button data-controller="color-scheme" data-color-scheme-view-transition-value="true"></button>`,
+        ({ document }) => installViewTransition(document),
+    );
+
+    mounted.controller.dark();
+
+    expect(transitionCalls).toBe(1);
+    expect(document.documentElement.getAttribute("data-theme")).toBe("dark");
+    expect(mounted.root.dataset.mode).toBe("dark");
+});
+
+test("does not animate user actions without the opt-in", async () => {
+    await mount(
+        `<button data-controller="color-scheme"></button>`,
+        ({ document }) => installViewTransition(document),
+    );
+
+    mounted.controller.dark();
+
+    expect(transitionCalls).toBe(0);
+    expect(document.documentElement.getAttribute("data-theme")).toBe("dark");
+});
+
+test("does not animate when reduced motion is preferred", async () => {
+    reducedMotion.matches = true;
+
+    await mount(
+        `<button data-controller="color-scheme" data-color-scheme-view-transition-value="true"></button>`,
+        ({ document }) => installViewTransition(document),
+    );
+
+    mounted.controller.dark();
+
+    expect(transitionCalls).toBe(0);
+    expect(document.documentElement.getAttribute("data-theme")).toBe("dark");
+});
+
+test("does not animate a mode change that keeps the resolved scheme", async () => {
+    await mount(
+        `<button data-controller="color-scheme" data-color-scheme-view-transition-value="true"></button>`,
+        ({ document }) => installViewTransition(document),
+    );
+
+    mounted.controller.light();
+
+    expect(transitionCalls).toBe(0);
+    expect(document.documentElement.getAttribute("data-theme")).toBe("light");
+    expect(document.documentElement.getAttribute("data-color-scheme-mode")).toBe("light");
+});
+
+test("never animates connect or synchronization updates", async () => {
+    await mount(
+        `<button data-controller="color-scheme" data-color-scheme-view-transition-value="true"></button>`,
+        ({ document }) => installViewTransition(document),
+    );
+
+    window.dispatchEvent(new CustomEvent("color-scheme:change", {
+        detail: { mode: "dark", scheme: "dark" },
+    }));
+    window.dispatchEvent(new StorageEvent("storage", {
+        key: "hotwire.colorScheme",
+        newValue: "light",
+    }));
+    window.localStorage.setItem("hotwire.colorScheme", "system");
+    media.matches = true;
+    media.dispatch();
+
+    expect(transitionCalls).toBe(0);
+    expect(document.documentElement.getAttribute("data-theme")).toBe("dark");
+});
+
+test("applies the theme when the View Transitions API is unavailable", async () => {
+    await mount(`<button data-controller="color-scheme" data-color-scheme-view-transition-value="true"></button>`);
+
+    expect(document.startViewTransition).toBeUndefined();
+
+    mounted.controller.dark();
+
+    expect(document.documentElement.getAttribute("data-theme")).toBe("dark");
+});
+
+test("synchronizes sibling instances inside the transition callback", async () => {
+    let update;
+
+    await mount(`
+        <button data-controller="color-scheme" data-color-scheme-view-transition-value="true"></button>
+        <button data-controller="color-scheme"></button>
+    `, ({ document }) => {
+        document.startViewTransition = (callback) => {
+            transitionCalls++;
+            update = callback;
+
+            return transitionResult();
+        };
+    });
+
+    mounted.controllers[0].dark();
+
+    expect(transitionCalls).toBe(1);
+    expect(mounted.roots[0].dataset.scheme).toBe("light");
+    expect(mounted.roots[1].dataset.scheme).toBe("light");
+
+    update();
+    await wait(0);
+
+    expect(mounted.roots[0].dataset.scheme).toBe("dark");
+    expect(mounted.roots[1].dataset.scheme).toBe("dark");
+});
+
+test("applies the latest action when a transition update is pending", async () => {
+    const changes = [];
+    let update;
+
+    await mount(`
+        <button data-controller="color-scheme" data-color-scheme-view-transition-value="true"></button>
+        <button data-controller="color-scheme"></button>
+    `, ({ document }) => {
+        document.startViewTransition = (callback) => {
+            transitionCalls++;
+            update = callback;
+
+            return transitionResult();
+        };
+    });
+    window.addEventListener("color-scheme:change", (event) => changes.push(event.detail));
+
+    mounted.controllers[0].dark();
+    mounted.controllers[0].light();
+
+    expect(transitionCalls).toBe(1);
+    expect(window.localStorage.getItem("hotwire.colorScheme")).toBe("light");
+    expect(document.documentElement.getAttribute("data-color-scheme-mode")).toBe("system");
+
+    update();
+    await wait(0);
+
+    expect(document.documentElement.getAttribute("data-theme")).toBe("light");
+    expect(document.documentElement.getAttribute("data-color-scheme-mode")).toBe("light");
+    expect(mounted.roots[0].dataset.scheme).toBe("light");
+    expect(mounted.roots[1].dataset.scheme).toBe("light");
+    expect(changes).toEqual([{ mode: "light", scheme: "light" }]);
+});
+
+test("ignores a pending callback invalidated by a sibling instance", async () => {
+    let update;
+
+    await mount(`
+        <button data-controller="color-scheme" data-color-scheme-view-transition-value="true"></button>
+        <button data-controller="color-scheme"></button>
+    `, ({ document }) => {
+        document.startViewTransition = (callback) => {
+            transitionCalls++;
+            update = callback;
+
+            return transitionResult();
+        };
+    });
+
+    mounted.controllers[0].dark();
+    mounted.controllers[1].light();
+
+    expect(transitionCalls).toBe(1);
+    expect(window.localStorage.getItem("hotwire.colorScheme")).toBe("light");
+    expect(document.documentElement.getAttribute("data-theme")).toBe("light");
+
+    update();
+    await wait(0);
+
+    expect(document.documentElement.getAttribute("data-theme")).toBe("light");
+    expect(document.documentElement.getAttribute("data-color-scheme-mode")).toBe("light");
+    expect(mounted.roots[0].dataset.scheme).toBe("light");
+    expect(mounted.roots[1].dataset.scheme).toBe("light");
+});
+
 // --- synchronization ---
 
 test("synchronizes multiple connected instances", async () => {
@@ -227,16 +409,16 @@ async function mount(html, beforeStart = null) {
 }
 
 function installMatchMedia(targetWindow) {
-    targetWindow.matchMedia = () => media;
+    targetWindow.matchMedia = (query) => query === "(prefers-reduced-motion: reduce)" ? reducedMotion : media;
     globalThis.matchMedia = targetWindow.matchMedia;
 }
 
-function createMedia(matches) {
+function createMedia(matches, query = "(prefers-color-scheme: dark)") {
     const listeners = new Set();
 
     return {
         matches,
-        media: "(prefers-color-scheme: dark)",
+        media: query,
         addEventListener(_event, listener) {
             listeners.add(listener);
         },
@@ -248,6 +430,23 @@ function createMedia(matches) {
                 listener({ matches: this.matches, media: this.media });
             }
         },
+    };
+}
+
+function installViewTransition(targetDocument) {
+    targetDocument.startViewTransition = (callback) => {
+        transitionCalls++;
+        callback();
+
+        return transitionResult();
+    };
+}
+
+function transitionResult() {
+    return {
+        finished: Promise.resolve(),
+        ready: Promise.resolve(),
+        updateCallbackDone: Promise.resolve(),
     };
 }
 

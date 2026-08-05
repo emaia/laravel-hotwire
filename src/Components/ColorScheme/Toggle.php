@@ -19,6 +19,7 @@ class Toggle extends Component
         public ?string $tooltipMotion = null,
         public ?string $tooltipEnabledWhen = null,
         public ?Htmlable $stimulus = null,
+        public bool $viewTransition = false,
     ) {}
 
     public function render()
