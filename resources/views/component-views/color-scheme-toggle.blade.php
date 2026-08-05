@@ -9,6 +9,7 @@
         'data-color-scheme-modes-value' => $modes,
         'data-color-scheme-storage-key-value' => $storageKey,
         'data-color-scheme-default-value' => $default,
+        'data-color-scheme-view-transition-value' => $viewTransition ? 'true' : null,
         'data-mode' => $default,
         'data-scheme' => $default === 'dark' ? 'dark' : 'light',
         'data-tooltip-content-value' => $hasTooltip ? $tooltip : null,
@@ -16,7 +17,7 @@
         'data-tooltip-align-value' => $hasTooltip ? $tooltipAlign : null,
         'data-tooltip-motion-value' => $hasTooltip ? $tooltipMotion : null,
         'data-tooltip-enabled-when-value' => $hasTooltip ? $tooltipEnabledWhen : null,
-    ], $attributes, $stimulus, except: ['modes', 'storage-key', 'default', 'tooltip', 'tooltip-side', 'tooltip-align', 'tooltip-motion', 'tooltip-enabled-when'], protectedPrefixes: $protectedPrefixes);
+    ], $attributes, $stimulus, except: ['modes', 'storage-key', 'default', 'tooltip', 'tooltip-side', 'tooltip-align', 'tooltip-motion', 'tooltip-enabled-when', 'view-transition'], protectedPrefixes: $protectedPrefixes);
 @endphp
 
 <button {{ $toggleAttributes }}>

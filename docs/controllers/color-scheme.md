@@ -17,6 +17,7 @@ Persists a `light`, `dark` or `system` mode and synchronizes `html[data-theme]` 
 | `storageKey` | `String` | `hotwire.colorScheme` | Local storage key used to persist the mode. |
 | `default` | `String` | `system` | Fallback mode when storage is empty or invalid. |
 | `modes` | `String` | `light dark system` | Space-separated order used by `cycle`. |
+| `viewTransition` | `Boolean` | `false` | Animates visible scheme changes triggered by a user action. |
 
 ## Actions
 
@@ -28,6 +29,11 @@ Persists a `light`, `dark` or `system` mode and synchronizes `html[data-theme]` 
 | `color-scheme#light` | Stores `light`. |
 | `color-scheme#dark` | Stores `dark`. |
 | `color-scheme#system` | Stores `system`. |
+
+When `viewTransition` is enabled, action methods use `document.startViewTransition` only when the resolved scheme
+actually changes and the user does not prefer reduced motion. Initialisation, system preference updates, storage events
+and synchronization between controller instances remain instant so they do not compete for the document's single View
+Transition.
 
 ## Events
 
@@ -44,6 +50,9 @@ The payload contains the persisted `mode` and resolved `scheme`:
 ```js
 { mode: 'system', scheme: 'dark' }
 ```
+
+With `viewTransition` enabled, the event is dispatched from the transition update callback rather than synchronously
+from the action.
 
 ## Synchronization
 

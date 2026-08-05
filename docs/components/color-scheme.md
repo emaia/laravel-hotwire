@@ -45,6 +45,7 @@ toggle show the correct icon before Stimulus connects.
 | `tooltip-align` | `string\|null` | `null` | Tooltip alignment when `tooltip` is set. |
 | `tooltip-motion` | `string\|null` | `null` | Tooltip motion: `default` or `none`. |
 | `tooltip-enabled-when` | `string\|null` | `null` | Selector that controls tooltip visibility. |
+| `view-transition` | `bool` | `false` | Cross-fades visible scheme changes triggered by the toggle. |
 
 Any other HTML attribute passes through to the button. Internal `data-color-scheme-*` attributes are protected; configure
 the controller with props instead.
@@ -57,6 +58,25 @@ the controller with props instead.
 
 This limits the cycle to explicit `light` and `dark` modes. If the stored preference is `system`, the toggle preserves
 that preference and displays its resolved sun or moon icon; the first activation advances from that effective scheme.
+
+## View Transitions
+
+Enable the browser's root cross-fade for user-triggered scheme changes:
+
+```blade
+<hw:color-scheme.toggle view-transition aria-label="Toggle color scheme" />
+```
+
+The toggle applies changes instantly when the View Transitions API is unavailable, the resolved scheme stays the same,
+or the user prefers reduced motion. The package does not ship transition CSS, so customise the root transition without
+affecting the controller:
+
+```css
+::view-transition-old(root),
+::view-transition-new(root) {
+    animation-duration: 200ms;
+}
+```
 
 ## Styling Hooks
 
