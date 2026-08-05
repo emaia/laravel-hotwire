@@ -976,7 +976,6 @@ return [
             'docs' => 'docs/controllers/timeago.md',
             'category' => 'utility',
             'description' => 'Displays a self-refreshing relative timestamp (e.g. "3 minutes ago")',
-            'npm' => ['date-fns' => '^4.1.0'],
         ],
         'toast' => [
             'source' => 'resources/js/controllers/toast_controller.js',

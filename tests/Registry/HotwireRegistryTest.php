@@ -19,6 +19,10 @@ it('loads the controller catalog', function () {
         ->and($registry->controller('turbo--progress'))->not->toBeNull();
 });
 
+it('registers Timeago without npm dependencies', function () {
+    expect(HotwireRegistry::make()->controller('timeago')->npm)->toBe([]);
+});
+
 it('keeps component controller dependencies in the registry', function () {
     $registry = HotwireRegistry::make();
 

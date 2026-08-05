@@ -5,21 +5,18 @@ self-refreshing label once Stimulus connects. Wraps the [`timeago` controller](.
 
 ## Requirements
 
-- `date-fns` installed in the project
-- Controller published: `php artisan hotwire:controllers timeago`
-
-> `php artisan hotwire:check` detects both automatically — `--fix` publishes the controller and adds `date-fns`
-> to your `package.json` `devDependencies`.
+No external dependencies.
 
 ## Props
 
-| Prop               | Type                        | Default       | Description                                                |
-|--------------------|-----------------------------|---------------|------------------------------------------------------------|
-| `datetime`         | `DateTimeInterface\|string` | —             | The date/time to display (Carbon, DateTime, or ISO string) |
-| `add-suffix`       | `bool`                      | `true`        | Appends "ago" / "in" to the output                         |
-| `include-seconds`  | `bool`                      | `false`       | More granular output for differences under a minute        |
-| `refresh-interval` | `int\|null`                 | `null`        | Milliseconds between auto-refreshes. Omit to disable       |
-| `title-format`     | `string`                    | `'d M Y H:i'` | PHP date format used for the `title` tooltip               |
+| Prop               | Type                        | Default       | Description                                                   |
+|--------------------|-----------------------------|---------------|---------------------------------------------------------------|
+| `datetime`         | `DateTimeInterface\|string` | —             | The date/time to display (Carbon, DateTime, or ISO string)    |
+| `add-suffix`       | `bool`                      | `true`        | Appends "ago" / "in" to the output                            |
+| `include-seconds`  | `bool`                      | `false`       | More granular output for differences under a minute           |
+| `refresh-interval` | `int\|null`                 | `null`        | Milliseconds between auto-refreshes. Omit to disable          |
+| `title-format`     | `string`                    | `'d M Y H:i'` | PHP date format used for the `title` tooltip                  |
+| `locale`           | `string\|null`              | `null`        | BCP 47 locale; falls back to the document language if omitted |
 
 The default slot is rendered as a server-side fallback before Stimulus connects. Pass
 `$model->created_at->diffForHumans()` for a seamless progressive-enhancement experience.
@@ -89,11 +86,16 @@ Renders as e.g. `3 hours` instead of `3 hours ago`.
 
 ## Localization
 
-Localization happens at the controller level — see
-[the `timeago` controller doc](../controllers/timeago.md#localization) for how to subclass it and inject a
-`date-fns` locale.
+Pass a BCP 47 locale to override the document language:
+
+```blade
+<hw:timeago :datetime="$post->created_at" locale="pt-BR" />
+```
+
+When `locale` is omitted, formatting uses the `<html lang>` value and then the browser default. See
+[the `timeago` controller doc](../controllers/timeago.md#localization) for the equivalent Stimulus value.
 
 ## See also
 
 - [`timeago` controller](../controllers/timeago.md) — the underlying Stimulus controller, including all values
-  and the localization hook
+  and localization behavior
