@@ -473,6 +473,37 @@ it('uses dark color scheme for native date and time picker inputs', function () 
         ->toContain('[data-theme="dark"] :is([data-slot="input"][type="date"], [data-slot="input"][type="datetime-local"], [data-slot="input"][type="month"], [data-slot="input"][type="time"], [data-slot="input"][type="week"]) { color-scheme: dark; }');
 });
 
+it('drives the native slider fill from the value the controller writes', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain('[data-slot="slider"] { --slider-value: 0%;')
+        ->toContain('[data-slot="slider"][data-orientation="horizontal"]::-webkit-slider-runnable-track')
+        ->toContain('[data-slot="slider"][data-orientation="horizontal"]:dir(rtl)::-webkit-slider-runnable-track')
+        ->toContain('[data-slot="slider"][data-orientation="vertical"]::-webkit-slider-runnable-track')
+        ->toContain('var(--primary) 0 var(--slider-value)')
+        ->toContain('@media (forced-colors: active)');
+});
+
+it('centres the slider thumb on the block axis so both orientations align', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain('margin-block-start: calc((var(--slider-track-height) - var(--slider-thumb-size)) / 2)')
+        ->not->toContain('::-webkit-slider-thumb { margin-top:')
+        ->not->toContain('[data-slot="slider"][data-orientation="vertical"]::-webkit-slider-thumb { margin-top: 0; }');
+});
+
+it('rings the slider thumb on its own hover instead of anywhere on the track', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain('[data-slot="slider"]::-webkit-slider-thumb:hover')
+        ->toContain('[data-slot="slider"]::-moz-range-thumb:hover')
+        ->not->toContain('[data-slot="slider"]:hover::-webkit-slider-thumb')
+        ->not->toContain('[data-slot="slider"]:hover::-moz-range-thumb');
+});
+
 it('keeps the flash container eligible for top layer stacking above overlays', function () use ($novaPresetPath) {
     $css = file_get_contents($novaPresetPath);
 

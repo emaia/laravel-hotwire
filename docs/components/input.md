@@ -38,6 +38,9 @@ Renders an `<input>` with:
 
 Any other HTML attribute (`placeholder`, `pattern`, `disabled`, `data-*`, `aria-*`) passes through.
 
+For range selection, prefer the dedicated [`<hw:slider>`](./slider.md). It keeps the native input behavior while adding
+Slider-specific orientation, visual fill and documentation without exposing text-input-only props.
+
 ## Addons And Icons
 
 Use [`<hw:input-group>`](./input-group.md) when an input needs inline icons, text, shortcuts or buttons. The input stays
