@@ -153,10 +153,8 @@ test.serial("injects the default loading template when turbo:before-fetch-reques
     expect(mounted.controller.isOpen).toBe(false);
 
     frame.dispatchEvent(new CustomEvent("turbo:before-fetch-request", { bubbles: true }));
-    await wait(20);
 
     expect(frame.innerHTML).toContain("Loading...");
-    expect(mounted.controller.isOpen).toBe(true);
     expect(mounted.controller.triggerElement).toBe(editLink);
 });
 

@@ -191,7 +191,8 @@ test.serial("resumes a pending save when its composing field leaves the DOM", as
     expect(scheduler.pending()).toHaveLength(0);
 
     editor.remove();
-    await wait(0);
+    mounted.controller.compositionObserver.takeRecords();
+    mounted.controller.handleCompositionMutations();
 
     expect(scheduler.pending()).toHaveLength(1);
     scheduler.runNext();
