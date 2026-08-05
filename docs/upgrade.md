@@ -6,6 +6,23 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 
 ## Unreleased
 
+### Localize Timeago with Intl
+
+Timeago no longer depends on `date-fns`. It now formats relative times with the browser's
+`Intl.RelativeTimeFormat` and `Intl.NumberFormat` APIs. Remove `date-fns` from your application if nothing else uses
+it; the package no longer installs or checks for that dependency.
+
+Localized wording may change after upgrading, including automatic terms such as `yesterday` instead of `1 day ago`.
+If you previously subclassed the controller to assign a `date-fns` locale, remove the subclass and pass a BCP 47
+locale directly:
+
+```blade
+<hw:timeago :datetime="$post->created_at" locale="pt-BR" />
+```
+
+For raw Stimulus markup, set `data-timeago-locale-value="pt-BR"`. When no locale is provided, Timeago uses the
+document's `<html lang>` value and then the browser default.
+
 ### Replace Frame Or Page contextual slots
 
 `<hw:frame-or-page>` no longer accepts the eager `frameContent` and `pageContent` named slots. Replace
@@ -461,7 +478,7 @@ The `hotwire:install` command exposes three modes for adding npm dependencies to
 
 | Command | What it adds | Loader stub shape |
 |---|---|---|
-| `php artisan hotwire:install` | Core deps (`@hotwired/stimulus`, `@hotwired/turbo`, `@emaia/stimulus-lazy-loader`) **plus every catalog dep** declared by package controllers (Floating UI, echarts, leaflet, embla-carousel, tiptap stack, maska, date-fns, sonner). Everything works without further setup. | Globs every package controller — no exclusions |
+| `php artisan hotwire:install` | Core deps (`@hotwired/stimulus`, `@hotwired/turbo`, `@emaia/stimulus-lazy-loader`) **plus every catalog dep** declared by package controllers (Floating UI, echarts, leaflet, embla-carousel, tiptap stack, maska, sonner). Everything works without further setup. | Globs every package controller — no exclusions |
 | `php artisan hotwire:install --with-deps=carousel,chart,map` | Core deps **plus only the npm deps required by the listed controllers**. Accepts comma-separated values or repeated `--with-deps=X` flags. | Globs zero-dep controllers + only the opted-in com-dep controllers; everything else is excluded so `vite build` never resolves their missing imports |
 | `php artisan hotwire:install --core-only` | Core deps **only**. No catalog deps. | Globs zero-dep controllers only; every com-dep controller excluded |
 

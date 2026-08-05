@@ -9,16 +9,17 @@ Converts a datetime into a human-readable relative string (e.g. "3 minutes ago")
 
 ## Requirements
 
-- `date-fns` (`bun add date-fns`)
+No external dependencies.
 
 ## Stimulus Values
 
-| Value              | Type      | Default | Description                                                            |
-|--------------------|-----------|---------|------------------------------------------------------------------------|
-| `datetime`         | `String`  | —       | ISO 8601 datetime string to format (required)                          |
-| `add-suffix`       | `Boolean` | `false` | Appends "ago" or "in" to the output (e.g. "3 minutes ago")             |
-| `include-seconds`  | `Boolean` | `false` | Provides more granular output for differences under a minute           |
-| `refresh-interval` | `Number`  | —       | Milliseconds between automatic refreshes. Omit to disable auto-refresh |
+| Value              | Type      | Default           | Description                                                            |
+|--------------------|-----------|-------------------|------------------------------------------------------------------------|
+| `datetime`         | `String`  | —                 | ISO 8601 datetime string to format (required)                          |
+| `add-suffix`       | `Boolean` | `false`           | Appends "ago" or "in" to the output (e.g. "3 minutes ago")             |
+| `include-seconds`  | `Boolean` | `false`           | Provides more granular output for differences under a minute           |
+| `refresh-interval` | `Number`  | —                 | Milliseconds between automatic refreshes. Omit to disable auto-refresh |
+| `locale`           | `String`  | Document language | BCP 47 locale used to format the relative time                         |
 
 ## Basic usage
 
@@ -64,21 +65,20 @@ The text is recalculated every 60 seconds without a page reload.
 
 ## Localization
 
-Override the `locale` property in a subclass to display relative times in a different language:
+Set a BCP 47 locale explicitly with the `locale` value:
 
-```ts
-import Timeago from "@hotwire/timeago_controller.js"
-import { ptBR } from "date-fns/locale"
-
-export default class extends Timeago {
-    connect() {
-        this.locale = ptBR
-        super.connect()
-    }
-}
+```html
+<time
+    data-controller="timeago"
+    data-timeago-datetime-value="2026-08-04T12:00:00Z"
+    data-timeago-add-suffix-value="true"
+    data-timeago-locale-value="pt-BR"
+></time>
 ```
 
-Register the subclass under a custom identifier and use it instead of `timeago`.
+When omitted, the controller uses the document's `<html lang>` value and then the browser default. Formatting is
+provided by the browser's `Intl.RelativeTimeFormat` and `Intl.NumberFormat` implementations. With suffixes enabled,
+locale-specific terms such as `yesterday`, `ontem`, or `昨日` can replace a numeric phrase.
 
 ## With Blade (raw)
 

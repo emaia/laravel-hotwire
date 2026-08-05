@@ -1,27 +1,14 @@
 import { afterEach, beforeEach, expect, mock, test } from "bun:test";
 
-import { mountController } from "../../resources/js/helpers/test_stimulus.js";
+import { mountController, wait } from "../../resources/js/helpers/test_stimulus.js";
 import TimeagoController from "../../resources/js/controllers/timeago_controller.js";
 
-// --- date-fns mock ---
-// The controller imports { formatDistanceToNow } from "date-fns".
-// We mock it to control the output and avoid "Invalid time value" errors from non-deterministic dates.
+const NOW = Date.parse("2026-08-05T12:00:00Z");
 
-let formatDistanceToNowCalls = [];
-const formatDistanceToNowMock = mock((date, options) => {
-    formatDistanceToNowCalls.push({ date, options });
-    return "5 minutes ago";
-});
-
-mock.module("date-fns", () => ({
-    formatDistanceToNow: formatDistanceToNowMock,
-}));
-
-// --- Fake timers ---
-// We use real timers but control setInterval / clearInterval to test refresh logic.
-
+let currentTime;
 let intervalCallbacks = [];
 let intervalIdCounter = 0;
+const originalDateNow = Date.now;
 const originalSetInterval = globalThis.setInterval;
 const originalClearInterval = globalThis.clearInterval;
 const originalConsoleError = console.error;
@@ -30,8 +17,8 @@ let mounted;
 let consoleErrorMock;
 
 beforeEach(() => {
-    formatDistanceToNowCalls = [];
-    formatDistanceToNowMock.mockClear();
+    currentTime = NOW;
+    Date.now = mock(() => currentTime);
     intervalCallbacks = [];
     intervalIdCounter = 0;
     globalThis.setInterval = mock((fn, ms) => {
@@ -40,13 +27,14 @@ beforeEach(() => {
         return id;
     });
     globalThis.clearInterval = mock((id) => {
-        intervalCallbacks = intervalCallbacks.filter((cb) => cb.id !== id);
+        intervalCallbacks = intervalCallbacks.filter((callback) => callback.id !== id);
     });
     consoleErrorMock = mock(() => {});
     console.error = consoleErrorMock;
 });
 
 afterEach(async () => {
+    Date.now = originalDateNow;
     globalThis.setInterval = originalSetInterval;
     globalThis.clearInterval = originalClearInterval;
     console.error = originalConsoleError;
@@ -54,112 +42,196 @@ afterEach(async () => {
     mounted = null;
 });
 
-// --- basic formatting ---
+// --- Relative distance ---
 
-test.serial("formats datetime using date-fns on connect", async () => {
-    await mount(`<time data-controller="timeago" data-timeago-datetime-value="2020-01-01T00:00:00Z"></time>`);
+test.serial.each([
+    [30, true, "30 seconds ago"],
+    [5 * 60, false, "5 minutes ago"],
+    [3 * 60 * 60, false, "3 hours ago"],
+    [24 * 60 * 60, false, "yesterday"],
+    [2 * 7 * 24 * 60 * 60, false, "2 weeks ago"],
+    [2 * 30.43668 * 24 * 60 * 60, false, "2 months ago"],
+    [2 * 365.24016 * 24 * 60 * 60, false, "2 years ago"],
+])("formats the unit ladder at %p elapsed seconds", async (elapsed, includeSeconds, expected) => {
+    await mount(datetime(-elapsed), attributes({ includeSeconds }));
 
-    expect(formatDistanceToNowMock).toHaveBeenCalled();
-    expect(formatDistanceToNowCalls[0].date).toBe(new Date("2020-01-01T00:00:00Z").getTime());
+    expect(mounted.root.textContent).toBe(expected);
 });
 
-test.serial("sets innerHTML to the formatted distance", async () => {
-    await mount(`<time data-controller="timeago" data-timeago-datetime-value="2020-01-01T00:00:00Z"></time>`);
+test.serial("formats future dates with a suffix", async () => {
+    await mount(datetime(5 * 60 * 60));
 
-    expect(mounted.root.innerHTML).toBe("5 minutes ago");
+    expect(mounted.root.textContent).toBe("in 5 hours");
 });
 
-test.serial("sets the dateTime attribute on the element", async () => {
-    await mount(`<time data-controller="timeago" data-timeago-datetime-value="2020-01-01T00:00:00Z"></time>`);
+test.serial("formats an absolute localized unit without a suffix", async () => {
+    await mount(datetime(-3 * 60 * 60), attributes({ addSuffix: false }));
 
-    expect(mounted.root.dateTime).toBe("2020-01-01T00:00:00Z");
+    expect(mounted.root.textContent).toBe("3 hours");
 });
 
-// --- options: addSuffix, includeSeconds ---
+test.serial("defaults to an absolute localized unit when add-suffix is omitted", async () => {
+    await mount(datetime(-3 * 60 * 60), "");
 
-test.serial("passes addSuffix option when value is true", async () => {
-    await mount(`<time data-controller="timeago" data-timeago-datetime-value="2020-01-01T00:00:00Z" data-timeago-add-suffix-value="true"></time>`);
-
-    expect(formatDistanceToNowCalls[0].options.addSuffix).toBe(true);
+    expect(mounted.root.textContent).toBe("3 hours");
 });
 
-test.serial("passes includeSeconds option when value is true", async () => {
-    await mount(`<time data-controller="timeago" data-timeago-datetime-value="2020-01-01T00:00:00Z" data-timeago-include-seconds-value="true"></time>`);
+test.serial("uses minutes for sub-minute differences by default", async () => {
+    await mount(datetime(-5));
 
-    expect(formatDistanceToNowCalls[0].options.includeSeconds).toBe(true);
+    expect(mounted.root.textContent).toBe("1 minute ago");
 });
 
-test.serial("addSuffix defaults to false", async () => {
-    await mount(`<time data-controller="timeago" data-timeago-datetime-value="2020-01-01T00:00:00Z"></time>`);
+test.serial("allows seconds for sub-minute differences", async () => {
+    await mount(datetime(-5), attributes({ includeSeconds: true }));
 
-    expect(formatDistanceToNowCalls[0].options.addSuffix).toBe(false);
+    expect(mounted.root.textContent).toBe("5 seconds ago");
 });
 
-// --- invalid date ---
+test.serial("keeps zero seconds so RelativeTimeFormat can render now", async () => {
+    await mount(datetime(0), attributes({ includeSeconds: true }));
+
+    expect(mounted.root.textContent).toBe("now");
+});
+
+test.serial("clamps zero minutes to one minute", async () => {
+    await mount(datetime(0));
+
+    expect(mounted.root.textContent).toBe("1 minute ago");
+});
+
+test.serial("calculates one distance pair for both format modes", async () => {
+    await mount(datetime(-90));
+    const relativeDistance = mounted.controller.distance(Date.parse(datetime(-90)));
+
+    mounted.root.dataset.timeagoAddSuffixValue = "false";
+    await wait(0);
+    mounted.controller.load();
+
+    expect(relativeDistance).toEqual({ value: -1, unit: "minute" });
+    expect(mounted.root.textContent).toBe("1 minute");
+});
+
+// --- Localization and formatter cache ---
+
+test.serial("uses an explicit BCP 47 locale", async () => {
+    await mount(datetime(-24 * 60 * 60), attributes({ locale: "pt-BR" }));
+
+    expect(mounted.root.textContent).toBe("ontem");
+});
+
+test.serial("inherits locale from the document language", async () => {
+    class DocumentLocaleTimeagoController extends TimeagoController {
+        connect() {
+            document.documentElement.lang = "ja";
+            super.connect();
+        }
+    }
+
+    await mount(datetime(5 * 60 * 60), attributes(), DocumentLocaleTimeagoController);
+
+    expect(mounted.root.textContent).toBe("5 時間後");
+});
+
+test.serial("reuses cached formatters until locale changes", async () => {
+    await mount(datetime(-24 * 60 * 60), attributes({ locale: "en" }));
+    const relativeFormatter = mounted.controller.relativeTimeFormatter;
+    const unitFormatters = mounted.controller.unitFormatters;
+
+    mounted.controller.load();
+    expect(mounted.controller.relativeTimeFormatter).toBe(relativeFormatter);
+    expect(mounted.controller.unitFormatters).toBe(unitFormatters);
+
+    mounted.root.dataset.timeagoLocaleValue = "pt-BR";
+    await wait(0);
+
+    expect(mounted.controller.relativeTimeFormatter).not.toBe(relativeFormatter);
+    expect(mounted.controller.unitFormatters).not.toBe(unitFormatters);
+    expect(mounted.root.textContent).toBe("ontem");
+});
+
+// --- Element and invalid date behavior ---
+
+test.serial("sets the dateTime property on the element", async () => {
+    const value = datetime(-5 * 60);
+    await mount(value);
+
+    expect(mounted.root.dateTime).toBe(value);
+});
 
 test.serial("handles invalid datetime by displaying the raw value", async () => {
-    await mount(`<time data-controller="timeago" data-timeago-datetime-value="not-a-date"></time>`);
+    await mount("not-a-date");
 
-    expect(mounted.root.innerHTML).toBe("not-a-date");
+    expect(mounted.root.textContent).toBe("not-a-date");
     expect(mounted.root.dateTime).toBe("not-a-date");
-    expect(formatDistanceToNowMock).not.toHaveBeenCalled();
-});
-
-test.serial("logs error for invalid datetime", async () => {
-    await mount(`<time data-controller="timeago" data-timeago-datetime-value="not-a-date"></time>`);
-
     expect(consoleErrorMock).toHaveBeenCalled();
     expect(consoleErrorMock.mock.calls[0][0]).toContain("is not a valid date");
 });
 
-// --- refresh ---
+// --- Refresh lifecycle ---
 
-test.serial("starts refreshing when refreshIntervalValue is set", async () => {
-    await mount(`<time data-controller="timeago" data-timeago-datetime-value="2020-01-01T00:00:00Z" data-timeago-refresh-interval-value="1000"></time>`);
+test.serial("starts refreshing at the configured interval", async () => {
+    await mount(datetime(-5 * 60), attributes({ refreshInterval: 1000 }));
 
     expect(globalThis.setInterval).toHaveBeenCalled();
     expect(intervalCallbacks).toHaveLength(1);
     expect(intervalCallbacks[0].ms).toBe(1000);
 });
 
-test.serial("does not start refreshing when refreshInterval is not set", async () => {
-    await mount(`<time data-controller="timeago" data-timeago-datetime-value="2020-01-01T00:00:00Z"></time>`);
-
+test.serial("does not start refreshing without an interval or with an invalid date", async () => {
+    await mount(datetime(-5 * 60));
     expect(globalThis.setInterval).not.toHaveBeenCalled();
-    expect(intervalCallbacks).toHaveLength(0);
-});
+    await mounted.cleanup();
+    mounted = null;
 
-test.serial("does not start refreshing when datetime is invalid", async () => {
-    await mount(`<time data-controller="timeago" data-timeago-datetime-value="not-a-date" data-timeago-refresh-interval-value="1000"></time>`);
-
+    await mount("not-a-date", attributes({ refreshInterval: 1000 }));
     expect(globalThis.setInterval).not.toHaveBeenCalled();
 });
 
-test.serial("refresh calls load again to update the formatted text", async () => {
-    await mount(`<time data-controller="timeago" data-timeago-datetime-value="2020-01-01T00:00:00Z" data-timeago-refresh-interval-value="1000"></time>`);
+test.serial("refreshes using the cached formatters", async () => {
+    await mount(datetime(-5 * 60), attributes({ refreshInterval: 1000 }));
+    const formatter = mounted.controller.relativeTimeFormatter;
 
-    expect(formatDistanceToNowCalls).toHaveLength(1);
-
-    // Manually call the interval callback to simulate a refresh tick
+    currentTime += 60 * 60 * 1000;
     intervalCallbacks[0].fn();
 
-    expect(formatDistanceToNowCalls).toHaveLength(2);
+    expect(mounted.root.textContent).toBe("1 hour ago");
+    expect(mounted.controller.relativeTimeFormatter).toBe(formatter);
 });
 
-test.serial("stopRefreshing cancels the interval on disconnect", async () => {
-    await mount(`<time data-controller="timeago" data-timeago-datetime-value="2020-01-01T00:00:00Z" data-timeago-refresh-interval-value="1000"></time>`);
+test.serial("cancels the interval on disconnect", async () => {
+    await mount(datetime(-5 * 60), attributes({ refreshInterval: 1000 }));
 
     mounted.controller.disconnect();
 
     expect(globalThis.clearInterval).toHaveBeenCalled();
 });
 
-test.serial("stopRefreshing is a no-op if no timer is running", async () => {
-    await mount(`<time data-controller="timeago" data-timeago-datetime-value="2020-01-01T00:00:00Z"></time>`);
+test.serial("disconnect is a no-op when no timer is running", async () => {
+    await mount(datetime(-5 * 60));
 
     expect(() => mounted.controller.disconnect()).not.toThrow();
 });
 
-async function mount(html) {
-    mounted = await mountController("timeago", TimeagoController, html);
+async function mount(datetimeValue, extraAttributes = attributes(), Controller = TimeagoController) {
+    mounted = await mountController("timeago", Controller, `
+        <time
+            data-controller="timeago"
+            data-timeago-datetime-value="${datetimeValue}"
+            ${extraAttributes}
+        ></time>
+    `);
+}
+
+function datetime(offsetSeconds) {
+    return new Date(NOW + offsetSeconds * 1000).toISOString();
+}
+
+function attributes({ addSuffix, includeSeconds, locale, refreshInterval } = {}) {
+    return [
+        `data-timeago-add-suffix-value="${addSuffix !== false}"`,
+        includeSeconds ? 'data-timeago-include-seconds-value="true"' : "",
+        locale ? `data-timeago-locale-value="${locale}"` : "",
+        refreshInterval ? `data-timeago-refresh-interval-value="${refreshInterval}"` : "",
+    ].filter(Boolean).join(" ");
 }

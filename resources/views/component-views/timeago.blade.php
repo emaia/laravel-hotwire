@@ -6,6 +6,7 @@
         'data-timeago-add-suffix-value' => $addSuffix ? 'true' : 'false',
         'data-timeago-include-seconds-value' => $includeSeconds ? 'true' : 'false',
         'data-timeago-refresh-interval-value' => $refreshInterval,
+        'data-timeago-locale-value' => $locale,
         'title' => $formattedTitle,
     ], $attributes, $stimulus, protectedPrefixes: ['data-timeago-']);
 @endphp

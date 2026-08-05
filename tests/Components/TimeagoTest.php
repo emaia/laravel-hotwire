@@ -1,5 +1,8 @@
 <?php
 
+use Emaia\LaravelHotwire\Components\Timeago;
+use Illuminate\Support\HtmlString;
+
 it('renders with default props', function () {
     $view = $this->blade('<x-hw::timeago datetime="2026-04-29 12:00:00">Apr 29</x-hw::timeago>');
 
@@ -39,4 +42,20 @@ it('renders refresh interval when configured', function () {
     $view = $this->blade('<x-hw::timeago datetime="2026-04-29 12:00:00" :refresh-interval="60" />');
 
     $view->assertSee('data-timeago-refresh-interval-value="60"', false);
+});
+
+it('renders locale when configured and omits it by default', function () {
+    $localized = $this->blade('<x-hw::timeago datetime="2026-04-29 12:00:00" locale="pt-BR" />');
+    $default = $this->blade('<x-hw::timeago datetime="2026-04-29 12:00:00" />');
+
+    $localized->assertSee('data-timeago-locale-value="pt-BR"', false);
+    $default->assertDontSee('data-timeago-locale-value', false);
+});
+
+it('keeps locale after stimulus as the final positional constructor argument', function () {
+    $stimulus = new HtmlString('data-controller="custom"');
+    $component = new Timeago('2026-04-29 12:00:00', true, false, null, 'd M Y H:i', $stimulus, 'pt-BR');
+
+    expect($component->stimulus)->toBe($stimulus)
+        ->and($component->locale)->toBe('pt-BR');
 });

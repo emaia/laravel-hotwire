@@ -328,7 +328,7 @@ it('ignores data-controller inside script tags', function () {
 it('deduplicates standalone controller used across multiple files', function () {
     // Self-contained: pin the package.json so the test isn't sensitive to
     // whichever state the previous test (under random execution order) left.
-    writePackageJson(['name' => 'app', 'devDependencies' => ['date-fns' => '^4.1.0']]);
+    writePackageJson(['name' => 'app', 'devDependencies' => []]);
     writeView('a.blade.php', '<div data-controller="timeago"></div>');
     writeView('b.blade.php', '<div data-controller="timeago"></div>');
 
@@ -372,7 +372,7 @@ it('reports auto-loaded from vendor for standalone controller when file is missi
 });
 
 it('reports up to date for standalone controller when file matches', function () {
-    writePackageJson(['name' => 'app', 'devDependencies' => ['date-fns' => '^4.1.0']]);
+    writePackageJson(['name' => 'app', 'devDependencies' => []]);
     publishController('timeago', $this->targetDir);
     writeView('page.blade.php', '<div data-controller="timeago"></div>');
 

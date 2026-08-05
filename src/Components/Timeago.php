@@ -19,6 +19,7 @@ class Timeago extends Component
         public ?int $refreshInterval = null,
         public string $titleFormat = 'd M Y H:i',
         public ?Htmlable $stimulus = null,
+        public ?string $locale = null,
     ) {
         $date = $datetime instanceof DateTimeInterface
             ? $datetime
