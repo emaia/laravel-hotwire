@@ -170,6 +170,9 @@ test.serial("rebinds reset handling when a wrapped form is replaced", async () =
         </form>
     `;
     await wait(0);
+    // Rebinding rides on Stimulus target callbacks, which happy-dom's MutationObserver does not
+    // deliver reliably. Drive it directly here; the observer wiring is covered in Playwright.
+    mounted.controller.syncForm();
 
     const form = document.querySelector("#replacement-form");
     const master = document.querySelector('[data-checkbox-select-all-target="checkboxAll"]');

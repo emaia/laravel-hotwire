@@ -58,6 +58,41 @@ test("refreshes after native reset and an owning Turbo Frame render", async ({ p
     await expect(master).toHaveJSProperty("indeterminate", false);
 });
 
+test("rebinds reset handling when a wrapped form is replaced", async ({ page }) => {
+    await mount(page, `
+        <div id="group" data-controller="checkbox-select-all">
+            <form>
+                <input type="checkbox" data-checkbox-select-all-target="checkboxAll">
+                <input type="checkbox" data-checkbox-select-all-target="checkbox">
+            </form>
+        </div>
+    `);
+
+    // Rebinding depends on Stimulus target callbacks firing for the replaced subtree, which only a
+    // real MutationObserver delivers dependably. The Bun test drives syncForm() directly instead.
+    await page.locator("#group").evaluate((element) => {
+        element.innerHTML = `
+            <form id="replacement-form">
+                <input type="checkbox" data-checkbox-select-all-target="checkboxAll">
+                <input type="checkbox" data-checkbox-select-all-target="checkbox" checked>
+                <input type="checkbox" data-checkbox-select-all-target="checkbox">
+            </form>
+        `;
+    });
+
+    const form = page.locator("#replacement-form");
+    const master = page.locator('[data-checkbox-select-all-target="checkboxAll"]');
+    const items = page.locator('[data-checkbox-select-all-target="checkbox"]');
+    await expect(master).toHaveJSProperty("indeterminate", true);
+
+    await items.nth(1).check();
+    await expect(master).toBeChecked();
+
+    await form.evaluate((element) => element.reset());
+    await expect(master).not.toBeChecked();
+    await expect(master).toHaveJSProperty("indeterminate", true);
+});
+
 async function mount(page, html) {
     await page.setContent(html);
     await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
