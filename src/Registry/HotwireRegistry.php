@@ -49,6 +49,16 @@ final class HotwireRegistry
         self::$instance = null;
     }
 
+    /** @param  array<string, mixed>  $styling */
+    private static function styling(array $styling): Styling
+    {
+        return new Styling(
+            slots: $styling['slots'] ?? [],
+            variants: $styling['variants'] ?? [],
+            sizes: $styling['sizes'] ?? [],
+        );
+    }
+
     /** @param  array{components: array<string, array<string, mixed>>, controllers: array<string, array<string, mixed>>}  $catalog */
     public static function fromCatalog(array $catalog, string $basePath): self
     {
@@ -63,6 +73,7 @@ final class HotwireRegistry
                 category: $component['category'],
                 description: $component['description'] ?? '',
                 controllers: $component['controllers'] ?? [],
+                styling: self::styling($component['styling'] ?? []),
             );
         }
 
@@ -76,6 +87,7 @@ final class HotwireRegistry
                 category: $controller['category'],
                 description: $controller['description'] ?? '',
                 npm: $controller['npm'] ?? [],
+                styling: self::styling($controller['styling'] ?? []),
             );
         }
 

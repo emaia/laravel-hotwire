@@ -12,7 +12,9 @@ final readonly class ControllerDefinition
 
     private string $publishKey;
 
-    /** @param  array<string, string>  $npm */
+    /**
+     * @param  array<string, string>  $npm
+     */
     public function __construct(
         public string $identifier,
         public string $source,
@@ -20,6 +22,7 @@ final readonly class ControllerDefinition
         public string $category,
         public string $description = '',
         public array $npm = [],
+        public Styling $styling = new Styling,
     ) {
         $relative = (string) preg_replace('#^resources/js/controllers/#', '', $this->source);
         $this->relativeDir = trim(str_replace('\\', '/', dirname($relative)), './');

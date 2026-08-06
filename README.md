@@ -13,6 +13,7 @@ the box.
 - [Requirements](#requirements)
 - [Installation](#installation)
     - [Quick Start](#quick-start)
+    - [Artisan Commands](#artisan-commands)
     - [Explore the Docs](#explore-the-docs)
 - [Turbo](#turbo)
 - [Stimulus Controllers](#stimulus-controllers-standalone)
@@ -70,6 +71,22 @@ Components work out of the box — no controller publish step required.
 For leaner installs (subset of catalog deps, `--core-only`), CI automation (`--fix --no-interaction`), the
 auto-generated loader stub, drift detection, extending controllers and the full flag reference, see [**Advanced
 installation**](docs/installation.md).
+
+### Artisan Commands
+
+| Command | Description |
+|---|---|
+| `hotwire:install` | Scaffold JS/CSS setup and install npm dependencies |
+| `hotwire:make-controller` | Create an application Stimulus controller |
+| `hotwire:make-preset` | Generate a complete custom CSS preset scaffold or clone a shipped preset |
+| `hotwire:controllers` | Publish package controllers for customization |
+| `hotwire:components` | List available Blade components and controller dependencies |
+| `hotwire:check` | Verify npm dependencies and published-controller drift |
+| `hotwire:docs` | Browse package documentation in the terminal |
+| `hotwire:ide-json` | Generate Laravel Idea Stimulus metadata |
+
+See [Presets](docs/presets.md) to generate a custom design with
+`php artisan hotwire:make-preset brand` or start from Nova with `--from=nova`.
 
 ### Explore the Docs
 
@@ -508,6 +525,8 @@ Laravel Hotwire uses a single registry as the source of truth for:
 - Blade components
 - Stimulus controllers
 - external npm dependencies
+- visual and structural `data-slot` hooks
+- preset-supported variants and sizes
 - docs paths
 - public categories
 
@@ -523,6 +542,12 @@ Example component entry:
     'docs' => 'docs/components/modal.md',
     'category' => 'overlay',
     'controllers' => ['modal'],
+    'slots' => [
+        'modal' => 'structural',
+        'modal-overlay' => 'visual',
+        'modal-panel' => 'visual',
+    ],
+    'sizes' => ['sm', 'md', 'lg', 'xl', 'full', 'auto'],
 ],
 ```
 
@@ -534,6 +559,10 @@ Example controller entry:
     'docs' => 'docs/controllers/tooltip.md',
     'category' => 'utility',
     'npm' => ['@floating-ui/dom' => '^1.8.0'],
+    'slots' => [
+        'tooltip' => 'visual',
+        'tooltip-arrow' => 'visual',
+    ],
 ],
 ```
 
@@ -599,6 +628,12 @@ Add these settings to your CSS entrypoint `resources/css/app.css`:
 @import '../../vendor/emaia/laravel-hotwire/resources/css/presets/nova.css';
 
 @source '../../vendor/emaia/laravel-hotwire/resources/css/**/*.css';
+```
+
+For an application-owned design, run `php artisan hotwire:make-preset brand` and replace the Nova import with:
+
+```css
+@import './presets/brand.css';
 ```
 
 ## Changelog

@@ -23,11 +23,10 @@ export default class extends Controller {
             if (provider) {
                 const id = url.match(provider.test)[1];
                 const wrapper = document.createElement("div");
-                wrapper.style.aspectRatio = "16 / 9";
-                wrapper.style.width = "100%";
-                wrapper.classList.add("my-5");
+                wrapper.dataset.slot = "oembed";
 
                 const iframe = document.createElement("iframe");
+                iframe.dataset.slot = "oembed-frame";
                 iframe.src = provider.embed(id);
                 iframe.setAttribute("frameborder", "0");
                 iframe.setAttribute("allowfullscreen", "");
@@ -35,13 +34,12 @@ export default class extends Controller {
                     "allow",
                     "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture",
                 );
-                iframe.style.width = "100%";
-                iframe.style.height = "100%";
 
                 wrapper.appendChild(iframe);
                 figure.replaceWith(wrapper);
             } else {
                 const link = document.createElement("a");
+                link.dataset.slot = "oembed-link";
                 link.href = url;
                 link.textContent = url;
                 link.target = "_blank";

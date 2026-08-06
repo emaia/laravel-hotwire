@@ -8,6 +8,7 @@ use Emaia\LaravelHotwire\Commands\IdeJsonCommand;
 use Emaia\LaravelHotwire\Commands\InstallCommand;
 use Emaia\LaravelHotwire\Commands\ListComponentsCommand;
 use Emaia\LaravelHotwire\Commands\MakeControllerCommand;
+use Emaia\LaravelHotwire\Commands\MakePresetCommand;
 use Emaia\LaravelHotwire\Commands\PublishControllersCommand;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
@@ -27,6 +28,7 @@ class LaravelHotwireServiceProvider extends PackageServiceProvider
             ->hasCommands([
                 InstallCommand::class,
                 MakeControllerCommand::class,
+                MakePresetCommand::class,
                 PublishControllersCommand::class,
                 ListComponentsCommand::class,
                 CheckCommand::class,

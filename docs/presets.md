@@ -13,10 +13,57 @@ The installer writes a thin `resources/css/app.css` that imports Tailwind, scans
 ```css
 @import "tailwindcss";
 
-@source '../../vendor/emaia/laravel-hotwire/resources/css/**/*.css';
-
 @import '../../vendor/emaia/laravel-hotwire/resources/css/presets/nova.css';
+
+@source '../../vendor/emaia/laravel-hotwire/resources/css/**/*.css';
 ```
+
+## Generate a custom preset
+
+Generate an empty preset scaffold when token overrides are not enough:
+
+```bash
+php artisan hotwire:make-preset brand
+```
+
+The command creates `resources/css/presets/brand.css`. It imports the package token and custom-variant layers, includes
+the runtime utility safelist, and generates one empty selector for every visual `data-slot` declared in the package
+catalog. Selectors are grouped by component and annotated with supported `data-variant` and `data-size` values.
+
+Replace the vendor preset import in `resources/css/app.css` with the line printed by the command:
+
+```css
+@import './presets/brand.css';
+```
+
+To customize Nova instead of starting from empty selectors, clone it into the application:
+
+```bash
+php artisan hotwire:make-preset brand --from=nova
+```
+
+Use `--force` to replace an existing generated file. The command never edits `resources/css/app.css`, so application
+styles and import ordering remain under your control.
+
+## Structural and visual CSS
+
+CSS that makes a controller function belongs beside that controller and uses its mechanics-specific hooks. For example,
+`resources/js/controllers/carousel.css` owns the viewport overflow, flex track, axis and slide sizing through
+`data-carousel-*` hooks. Every preset gets that behavior automatically when the controller loads.
+
+CSS that defines appearance belongs in a preset and targets `data-slot`. Carousel buttons, dots, progress and counter
+are visual, so presets own them. Controller CSS must not choose their colors, radius or spacing; preset CSS must not
+duplicate the controller's geometry. Slots that are presentation-free containers, assistive nodes or controller-owned
+structure are marked `structural` in the catalog and are intentionally omitted from an empty scaffold.
+
+The generated file is an inventory, not a complete design. State relationships, motion, top-layer resets and compound
+selectors cannot be inferred from slot names alone. Use Nova and the component docs as references when implementing
+those behaviors in a new design.
+
+Each slot is scaffolded once, under the first catalog entry that declares it, with one selector per slot and its
+supported `data-variant` / `data-size` values commented directly above it. Slots that share an appearance are better
+written as a single grouped rule — Nova styles every button-like slot through one
+`:is([data-slot="button"], [data-slot="modal-trigger"], …)` selector rather than repeating the same declarations.
 
 ## Override a component
 
