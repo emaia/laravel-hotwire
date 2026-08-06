@@ -1,6 +1,7 @@
 <?php
 
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
+use Emaia\LaravelHotwire\Support\PresetAxes;
 use Illuminate\Support\Facades\File;
 
 beforeEach(function () {
@@ -57,24 +58,33 @@ it('carries the shipped runtime safelist instead of a copy', function () {
     expect(File::get($this->targetDir.'/brand.css'))->toContain($shipped[0]);
 });
 
-it('documents supported variants and sizes beside the slot that accepts them', function () {
+it('documents every axis the source preset differentiates, beside the slot that carries it', function () {
     $this->artisan('hotwire:make-preset brand --no-interaction')->assertSuccessful();
 
     $css = File::get($this->targetDir.'/brand.css');
+    $axes = (new PresetAxes)->extract(File::get(__DIR__.'/../../resources/css/presets/nova.css'));
+    $missing = [];
 
-    expect($css)
-        ->toContain(implode("\n", [
-            '    /* data-variant: default, destructive, outline, secondary, ghost, link */',
-            '    /* data-size: xs, sm, default, lg, icon-xs, icon-sm, icon, icon-lg */',
-            '    [data-slot="button"] {}',
-        ]))
-        // Alert Dialog carries button variants, but only on its cancel and action slots.
-        ->toContain(implode("\n", [
-            '    /* data-variant: default, destructive, outline, secondary, ghost, link */',
-            '    /* data-size: xs, sm, default, lg, icon-xs, icon-sm, icon, icon-lg */',
-            '    [data-slot="alert-dialog-cancel"] {}',
-        ]))
-        ->toContain("    /* Alert Dialog */\n    [data-slot=\"alert-dialog-overlay\"] {}");
+    foreach ($axes as $slot => $bySlot) {
+        if (! str_contains($css, "[data-slot=\"{$slot}\"] {}")) {
+            continue;
+        }
+
+        $expected = collect($bySlot)
+            ->map(fn (array $values, string $axis): string => "    /* data-{$axis}: ".implode(', ', $values).' */')
+            ->push("    [data-slot=\"{$slot}\"] {}")
+            ->implode("\n");
+
+        if (! str_contains($css, $expected)) {
+            $missing[] = $slot;
+        }
+    }
+
+    expect($missing)->toBe([], 'Scaffold does not document the axes Nova differentiates for these slots.')
+        // Beyond variant and size: the catalog never knew these, the stylesheet always did.
+        ->and($css)->toContain('    /* data-orientation: horizontal, vertical */')
+        ->and($css)->toContain('    /* data-align: inline-start, inline-end, block-start, block-end */')
+        ->and($css)->toContain("    /* Alert Dialog */\n    /* data-state: open */\n    [data-slot=\"alert-dialog-overlay\"] {}");
 });
 
 it('templates every token declared by the package, in both colour schemes', function () {

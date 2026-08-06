@@ -30,10 +30,6 @@ provider — so editing the catalog is the only change needed to register a new 
             'modal-overlay' => 'visual',
             'modal-panel'   => 'visual',
         ],
-        'sizes' => [
-            'modal-positioner' => ['sm', 'md', 'lg', 'xl', 'full', 'auto'],
-            'modal-panel'      => ['full'],
-        ],
     ],
 ],
 ```
@@ -53,22 +49,21 @@ provider — so editing the catalog is the only change needed to register a new 
 [`Registry\Styling`](../src/Registry/Styling.php), which exposes `visualSlots()`, `structuralSlots()` and
 `axesFor($slot)`.
 
-| Key        | Description                                                                   |
-|------------|-------------------------------------------------------------------------------|
-| `slots`    | Package-emitted slot names mapped to `visual` or `structural`                 |
-| `variants` | Optional map of slot → `data-variant` values that slot's appearance varies by |
-| `sizes`    | Optional map of slot → `data-size` values that slot's appearance varies by    |
+| Key     | Description                                                   |
+|---------|---------------------------------------------------------------|
+| `slots` | Package-emitted slot names mapped to `visual` or `structural` |
 
 Structural slots are containers, assistive nodes or geometry a controller stylesheet already owns; presets are not
 expected to style them, and `hotwire:make-preset` leaves them out of the scaffold.
 
-`variants` and `sizes` are keyed by slot, not by entry — a value belongs to the slot that carries the attribute. They
-list what a preset differentiates, so values that need no rule of their own are omitted: `default` is the slot's base
-rule by definition, and some semantic values are already covered by it.
+The values a slot varies by — `data-variant`, `data-size`, `data-orientation`, `data-state` and every other axis — are
+deliberately **not** declared here. Only a stylesheet knows them, and it knows all of them: a slot varies by
+`data-orientation` because a rule says so. `Support\PresetAxes` reads them straight from a shipped preset, so
+`hotwire:make-preset` documents every axis without anything being kept in sync by hand.
 
-Everything under `styling` is verified against every shipped preset in
-[`tests/Registry/SlotCatalogTest.php`](../tests/Registry/SlotCatalogTest.php). A preset may not style a value the
-catalog never declares, and a declared value must be styled somewhere or recorded as rule-free in that test.
+Slot declarations are verified against every shipped preset in
+[`tests/Registry/SlotCatalogTest.php`](../tests/Registry/SlotCatalogTest.php): every visual slot must be styled, and
+every preset must differentiate a given slot by the same axes as the others.
 
 ### Controller
 

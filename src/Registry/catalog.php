@@ -104,7 +104,6 @@ return [
             'controllers' => [],
             'styling' => [
                 'slots' => $slots(['alert', 'alert-title', 'alert-description', 'alert-action']),
-                'variants' => ['alert' => ['default', 'destructive']],
             ],
         ],
         'alert-dialog' => [
@@ -119,14 +118,6 @@ return [
                     ['alert-dialog-overlay', 'alert-dialog-backdrop', 'alert-dialog-panel', 'alert-dialog-header', 'alert-dialog-title', 'alert-dialog-description', 'alert-dialog-body', 'alert-dialog-footer', 'alert-dialog-cancel', 'alert-dialog-action'],
                     ['alert-dialog', 'alert-dialog-trigger'],
                 ),
-                'variants' => [
-                    'alert-dialog-cancel' => ['default', 'destructive', 'outline', 'secondary', 'ghost', 'link'],
-                    'alert-dialog-action' => ['default', 'destructive', 'outline', 'secondary', 'ghost', 'link'],
-                ],
-                'sizes' => [
-                    'alert-dialog-cancel' => ['xs', 'sm', 'default', 'lg', 'icon-xs', 'icon-sm', 'icon', 'icon-lg'],
-                    'alert-dialog-action' => ['xs', 'sm', 'default', 'lg', 'icon-xs', 'icon-sm', 'icon', 'icon-lg'],
-                ],
             ],
         ],
         'aspect-ratio' => [
@@ -149,14 +140,6 @@ return [
             'controllers' => [],
             'styling' => [
                 'slots' => $slots(['attachment', 'attachment-group', 'attachment-media', 'attachment-content', 'attachment-title', 'attachment-description', 'attachment-actions', 'attachment-trigger', 'attachment-action']),
-                'variants' => [
-                    'attachment-media' => ['icon', 'image'],
-                    'attachment-action' => ['default', 'destructive', 'outline', 'secondary', 'ghost', 'link'],
-                ],
-                'sizes' => [
-                    'attachment' => ['xs', 'sm', 'default'],
-                    'attachment-action' => ['xs', 'sm', 'default', 'lg', 'icon-xs', 'icon-sm', 'icon', 'icon-lg'],
-                ],
             ],
         ],
         'avatar' => [
@@ -168,7 +151,6 @@ return [
             'controllers' => [],
             'styling' => [
                 'slots' => $slots(['avatar', 'avatar-image', 'avatar-fallback', 'avatar-badge', 'avatar-group', 'avatar-group-count']),
-                'sizes' => ['avatar' => ['xs', 'sm', 'default', 'lg', 'xl']],
             ],
         ],
         'badge' => [
@@ -180,7 +162,6 @@ return [
             'controllers' => [],
             'styling' => [
                 'slots' => $slots(['badge']),
-                'variants' => ['badge' => ['default', 'destructive', 'outline', 'secondary', 'ghost', 'link']],
             ],
         ],
         'breadcrumb' => [
@@ -203,8 +184,6 @@ return [
             'controllers' => ['hotkey', 'tooltip'],
             'styling' => [
                 'slots' => $slots(['button']),
-                'variants' => ['button' => ['default', 'destructive', 'outline', 'secondary', 'ghost', 'link']],
-                'sizes' => ['button' => ['xs', 'sm', 'default', 'lg', 'icon-xs', 'icon-sm', 'icon', 'icon-lg']],
             ],
         ],
         'button-group' => [
@@ -227,7 +206,6 @@ return [
             'controllers' => [],
             'styling' => [
                 'slots' => $slots(['card', 'card-header', 'card-title', 'card-description', 'card-action', 'card-content', 'card-footer']),
-                'sizes' => ['card' => ['default', 'sm']],
             ],
         ],
         'carousel' => [
@@ -308,8 +286,6 @@ return [
             'controllers' => ['color-scheme', 'tooltip'],
             'styling' => [
                 'slots' => $slots(['color-scheme-toggle', 'color-scheme-icon']),
-                'variants' => ['color-scheme-toggle' => ['default', 'destructive', 'outline', 'secondary', 'ghost', 'link']],
-                'sizes' => ['color-scheme-toggle' => ['xs', 'sm', 'default', 'lg', 'icon-xs', 'icon-sm', 'icon', 'icon-lg']],
             ],
         ],
         'conditional-field' => [
@@ -346,7 +322,6 @@ return [
             'controllers' => ['dropdown'],
             'styling' => [
                 'slots' => $slots(['dropdown', 'dropdown-trigger', 'dropdown-menu', 'dropdown-group', 'dropdown-label', 'dropdown-item', 'dropdown-separator', 'dropdown-shortcut']),
-                'variants' => ['dropdown-item' => ['default', 'destructive']],
             ],
         ],
         'empty-state' => [
@@ -358,7 +333,6 @@ return [
             'controllers' => [],
             'styling' => [
                 'slots' => $slots(['empty-state', 'empty-state-header', 'empty-state-media', 'empty-state-title', 'empty-state-description', 'empty-state-content']),
-                'variants' => ['empty-state-media' => ['default', 'icon']],
             ],
         ],
         'field' => [
@@ -373,7 +347,6 @@ return [
                     ['field-set', 'field-legend', 'field-group', 'field', 'field-label', 'field-content', 'field-title', 'field-description', 'field-error', 'field-separator', 'field-separator-line', 'field-separator-content'],
                     ['field-label-required'],
                 ),
-                'variants' => ['field-legend' => ['legend', 'label']],
             ],
         ],
         'field.error' => [
@@ -520,8 +493,6 @@ return [
             'controllers' => ['hover-card'],
             'styling' => [
                 'slots' => $slots(['hover-card', 'hover-card-trigger', 'hover-card-content']),
-                'variants' => ['hover-card-trigger' => ['default', 'destructive', 'outline', 'secondary', 'ghost', 'link']],
-                'sizes' => ['hover-card-trigger' => ['xs', 'sm', 'default', 'lg', 'icon-xs', 'icon-sm', 'icon', 'icon-lg']],
             ],
         ],
         'icon' => [
@@ -566,11 +537,6 @@ return [
             'controllers' => [],
             'styling' => [
                 'slots' => $slots(['item-group', 'item', 'item-media', 'item-content', 'item-title', 'item-description', 'item-actions', 'item-header', 'item-footer', 'item-separator']),
-                'variants' => [
-                    'item' => ['default', 'outline', 'muted'],
-                    'item-media' => ['default', 'icon', 'image'],
-                ],
-                'sizes' => ['item' => ['xs', 'sm', 'default']],
             ],
         ],
         'kbd' => [
@@ -604,7 +570,6 @@ return [
             'controllers' => [],
             'styling' => [
                 'slots' => $slots(['marker', 'marker-icon', 'marker-content']),
-                'variants' => ['marker' => ['default', 'separator', 'border']],
             ],
         ],
         'modal' => [
@@ -619,17 +584,6 @@ return [
                     ['modal-overlay', 'modal-trigger', 'modal-backdrop', 'modal-positioner', 'modal-panel', 'modal-content', 'modal-header', 'modal-title', 'modal-description', 'modal-footer', 'modal-close', 'modal-close-icon'],
                     ['modal'],
                 ),
-                'variants' => [
-                    'modal-trigger' => ['default', 'destructive', 'outline', 'secondary', 'ghost', 'link'],
-                    'modal-close' => ['default', 'destructive', 'outline', 'secondary', 'ghost', 'link'],
-                ],
-                'sizes' => [
-                    'modal-trigger' => ['xs', 'sm', 'default', 'lg', 'icon-xs', 'icon-sm', 'icon', 'icon-lg'],
-                    'modal-positioner' => ['sm', 'md', 'lg', 'xl', 'full', 'auto'],
-                    'modal-panel' => ['full'],
-                    'modal-content' => ['full'],
-                    'modal-close' => ['xs', 'sm', 'default', 'lg', 'icon-xs', 'icon-sm', 'icon', 'icon-lg'],
-                ],
             ],
         ],
         'multi-select' => [
@@ -652,7 +606,6 @@ return [
             'controllers' => [],
             'styling' => [
                 'slots' => $slots(['navbar', 'navbar-item', 'sticky']),
-                'variants' => ['navbar' => ['line', 'pills']],
             ],
         ],
         'navbar.item' => [
@@ -686,11 +639,6 @@ return [
             'controllers' => [],
             'styling' => [
                 'slots' => $slots(['pagination', 'pagination-content', 'pagination-item', 'pagination-link', 'pagination-previous', 'pagination-previous-label', 'pagination-next', 'pagination-next-label', 'pagination-ellipsis']),
-                'sizes' => [
-                    'pagination-link' => ['default', 'icon'],
-                    'pagination-previous' => ['default', 'icon'],
-                    'pagination-next' => ['default', 'icon'],
-                ],
             ],
         ],
         'popover' => [
@@ -807,14 +755,6 @@ return [
             'controllers' => ['sidebar'],
             'styling' => [
                 'slots' => $slots(['sidebar-wrapper', 'sidebar', 'sidebar-backdrop', 'sidebar-trigger', 'sidebar-rail', 'sidebar-inset', 'sidebar-header', 'sidebar-brand', 'sidebar-brand-logo', 'sidebar-brand-icon', 'sidebar-footer', 'sidebar-content', 'sidebar-input', 'sidebar-separator', 'sidebar-group', 'sidebar-group-label', 'sidebar-group-action', 'sidebar-group-content', 'sidebar-menu', 'sidebar-menu-item', 'sidebar-menu-button', 'sidebar-menu-action', 'sidebar-menu-badge', 'sidebar-menu-skeleton', 'sidebar-menu-skeleton-icon', 'sidebar-menu-skeleton-text', 'sidebar-menu-sub', 'sidebar-menu-sub-item', 'sidebar-menu-sub-button', 'sidebar-gap', 'sidebar-container', 'sidebar-inner']),
-                'variants' => [
-                    'sidebar' => ['sidebar', 'floating', 'inset'],
-                    'sidebar-menu-button' => ['default', 'outline'],
-                ],
-                'sizes' => [
-                    'sidebar-menu-button' => ['sm', 'default', 'lg'],
-                    'sidebar-menu-sub-button' => ['sm', 'md'],
-                ],
             ],
         ],
         'skeleton' => [
@@ -870,7 +810,6 @@ return [
             'controllers' => ['auto-submit'],
             'styling' => [
                 'slots' => $slots(['switch']),
-                'sizes' => ['switch' => ['sm', 'default']],
             ],
         ],
         'table' => [
@@ -893,7 +832,6 @@ return [
             'controllers' => ['tabs'],
             'styling' => [
                 'slots' => $slots(['tabs', 'tabs-list', 'tabs-trigger', 'tabs-panel']),
-                'variants' => ['tabs-list' => ['default', 'line']],
             ],
         ],
         'textarea' => [
@@ -927,8 +865,6 @@ return [
             'controllers' => ['toggle', 'auto-submit'],
             'styling' => [
                 'slots' => $slots(['toggle']),
-                'variants' => ['toggle' => ['default', 'outline']],
-                'sizes' => ['toggle' => ['sm', 'default', 'lg']],
             ],
         ],
         'toggle-group' => [
@@ -940,8 +876,6 @@ return [
             'controllers' => ['toggle-group', 'toggle', 'auto-submit'],
             'styling' => [
                 'slots' => $slots(['toggle-group', 'toggle-group-item']),
-                'variants' => ['toggle-group-item' => ['default', 'outline']],
-                'sizes' => ['toggle-group-item' => ['sm', 'default', 'lg']],
             ],
         ],
         'toggle-group.item' => [
@@ -953,8 +887,6 @@ return [
             'controllers' => ['toggle-group', 'toggle', 'auto-submit'],
             'styling' => [
                 'slots' => $slots(['toggle-group-item']),
-                'variants' => ['toggle-group-item' => ['default', 'outline']],
-                'sizes' => ['toggle-group-item' => ['sm', 'default', 'lg']],
             ],
         ],
     ],

@@ -28,7 +28,8 @@ php artisan hotwire:make-preset brand
 
 The command creates `resources/css/presets/brand.css`. It imports the package token and custom-variant layers, includes
 the runtime utility safelist, and generates one empty selector for every visual `data-slot` declared in the package
-catalog. Selectors are grouped by component and annotated with supported `data-variant` and `data-size` values.
+catalog. Selectors are grouped by component and annotated with every attribute value the source preset differentiates
+that slot by — `data-variant`, `data-size`, `data-orientation`, `data-state` and so on.
 
 Replace the vendor preset import in `resources/css/app.css` with the line printed by the command:
 
@@ -60,8 +61,8 @@ The generated file is an inventory, not a complete design. State relationships, 
 selectors cannot be inferred from slot names alone. Use Nova and the component docs as references when implementing
 those behaviors in a new design.
 
-Each slot is scaffolded once, under the first catalog entry that declares it, with one selector per slot and its
-supported `data-variant` / `data-size` values commented directly above it. Slots that share an appearance are better
+Each slot is scaffolded once, under the first catalog entry that declares it, with one selector per slot and the
+attribute values Nova differentiates it by commented directly above it. Slots that share an appearance are better
 written as a single grouped rule — Nova styles every button-like slot through one
 `:is([data-slot="button"], [data-slot="modal-trigger"], …)` selector rather than repeating the same declarations.
 

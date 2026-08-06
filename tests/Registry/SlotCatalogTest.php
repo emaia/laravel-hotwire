@@ -2,6 +2,7 @@
 
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
+use Emaia\LaravelHotwire\Support\PresetAxes;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\ViewErrorBag;
@@ -28,15 +29,6 @@ it('hydrates valid slot and preset attribute metadata', function () {
     foreach ($definitions as $definition) {
         expect($definition->styling->slots)->each->toBeIn(['visual', 'structural'])
             ->and(array_keys($definition->styling->slots))->each->toMatch('/^[a-z][a-z0-9-]*$/');
-
-        foreach (['variants' => $definition->styling->variants, 'sizes' => $definition->styling->sizes] as $axis => $bySlot) {
-            foreach ($bySlot as $slot => $values) {
-                expect(array_key_exists($slot, $definition->styling->slots))
-                    ->toBeTrue("[{$axis}] declares slot [{$slot}], which the entry does not emit.")
-                    ->and($values)->each->toBeString()
-                    ->and($values)->not->toBeEmpty();
-            }
-        }
     }
 });
 
@@ -116,43 +108,52 @@ it('declares slots rendered by components with trivial constructors', function (
 });
 
 /**
- * Partial guard against phantom declarations. A component's own default is the one value it is
- * guaranteed to emit, so the catalog must know it. Values that are neither a prop default nor
- * styled by a preset stay invisible — no component validates `variant` against an allowlist, so
- * there is no source to check them against.
+ * A component's default is the one value it is guaranteed to emit, so a preset that never styles it
+ * is either missing a rule or reacting to a typo. Values that are neither a prop default nor styled
+ * stay invisible: no component validates `variant` against an allowlist, so there is no source to
+ * check them against.
  */
-it('declares the default value of every variant and size prop', function () {
+it('styles the default value of every variant and size prop', function (string $preset) {
+    // Defaults that carry no appearance of their own — the slot's base rule already is that look.
+    $baseIsEnough = ['icon', 'legend', 'auto', 'default'];
+    $styled = (new PresetAxes)->extract(File::get(__DIR__."/../../resources/css/presets/{$preset}.css"));
     $components = HotwireRegistry::make()->components();
     $classes = collect($components)->map(fn ($definition): string => $definition->class)
         ->merge(ComponentAliases::subComponents())
         ->all();
-    $undeclared = [];
+    $unstyled = [];
 
     foreach ($classes as $key => $class) {
         $definition = $components[$key] ?? $components[explode('.', $key)[0]] ?? null;
         $constructor = $definition === null ? null : (new ReflectionClass($class))->getConstructor();
 
         foreach ($constructor?->getParameters() ?? [] as $parameter) {
-            $bySlot = match ($parameter->getName()) {
-                'variant' => $definition->styling->variants,
-                'size' => $definition->styling->sizes,
-                default => [],
-            };
+            $axis = $parameter->getName();
 
-            if ($bySlot === [] || ! $parameter->isDefaultValueAvailable() || ! is_string($default = $parameter->getDefaultValue())) {
+            if (! in_array($axis, ['variant', 'size'], true) || ! $parameter->isDefaultValueAvailable()) {
                 continue;
             }
 
-            if (! in_array($default, array_merge(...array_values($bySlot)), true)) {
-                $undeclared[] = "{$key}: \${$parameter->getName()} defaults to '{$default}'";
+            $default = $parameter->getDefaultValue();
+
+            if (! is_string($default) || in_array($default, $baseIsEnough, true)) {
+                continue;
+            }
+
+            $values = collect(array_keys($definition->styling->slots))
+                ->flatMap(fn (string $slot): array => $styled[$slot][$axis] ?? [])
+                ->all();
+
+            if ($values !== [] && ! in_array($default, $values, true)) {
+                $unstyled[] = "{$key}: \${$axis} defaults to '{$default}'";
             }
         }
     }
 
-    sort($undeclared);
+    sort($unstyled);
 
-    expect($undeclared)->toBe([], 'A component defaults to a value no slot of its catalog entry declares.');
-});
+    expect($unstyled)->toBe([], "Preset [{$preset}] never styles a value a component defaults to.");
+})->with('slot catalog presets');
 
 it('declares every slot referenced or created by package JavaScript', function () {
     $declared = declaredSlots();
@@ -182,49 +183,36 @@ it('styles every visual catalog slot in each preset', function (string $preset) 
     expect(array_values(array_diff($required, array_unique($matches[1]))))->toBe([]);
 })->with('slot catalog presets');
 
-it('declares every variant and size a preset styles', function (string $preset) {
-    $declared = declaredAxes();
-    $styled = presetAxes(File::get(__DIR__."/../../resources/css/presets/{$preset}.css"));
-    $undeclared = [];
+/**
+ * Nothing declares the axes any more, so drift can only be between presets. With one preset this
+ * holds vacuously; it earns its keep the moment a second one ships, which is when a slot silently
+ * losing its `data-orientation` rules in one theme becomes possible.
+ */
+it('differentiates each slot by the same axes in every preset', function () {
+    $axes = new PresetAxes;
+    $byPreset = collect(glob(__DIR__.'/../../resources/css/presets/*.css') ?: [])
+        ->mapWithKeys(fn (string $path): array => [
+            pathinfo($path, PATHINFO_FILENAME) => $axes->extract(File::get($path)),
+        ]);
+    $reference = $byPreset->first();
+    $referenceName = $byPreset->keys()->first();
+    $divergent = [];
 
-    foreach ($styled as $slot => $axes) {
-        foreach ($axes as $axis => $values) {
-            foreach (array_diff($values, $declared[$slot][$axis] ?? []) as $value) {
-                $undeclared[] = "{$slot}[data-{$axis}=\"{$value}\"]";
+    foreach ($byPreset->skip(1) as $name => $slots) {
+        foreach (array_unique([...array_keys($reference), ...array_keys($slots)]) as $slot) {
+            $missing = array_diff(array_keys($reference[$slot] ?? []), array_keys($slots[$slot] ?? []));
+            $extra = array_diff(array_keys($slots[$slot] ?? []), array_keys($reference[$slot] ?? []));
+
+            foreach ([...$missing, ...$extra] as $axis) {
+                $divergent[] = "{$slot}[data-{$axis}] differs between [{$referenceName}] and [{$name}]";
             }
         }
     }
 
-    sort($undeclared);
+    sort($divergent);
 
-    expect($undeclared)->toBe([], "Preset [{$preset}] styles values the catalog never declares, so generated scaffolds omit them.");
-})->with('slot catalog presets');
-
-it('styles every declared variant and size, or declares why it needs no rule', function (string $preset) {
-    // Values that carry no appearance of their own. `default` is the slot's base rule by
-    // definition; the rest are semantic or already covered by the base rule.
-    $ruleFree = [
-        'attachment-media' => ['variant' => ['icon']],   // the base attachment-media rule is the icon treatment
-        'field-legend' => ['variant' => ['legend', 'label']], // chooses the element, not the appearance
-        'modal-positioner' => ['size' => ['auto']],      // intrinsic width, no max-width to apply
-    ];
-    $styled = presetAxes(File::get(__DIR__."/../../resources/css/presets/{$preset}.css"));
-    $unstyled = [];
-
-    foreach (declaredAxes() as $slot => $axes) {
-        foreach ($axes as $axis => $values) {
-            $covered = [...$styled[$slot][$axis] ?? [], 'default', ...$ruleFree[$slot][$axis] ?? []];
-
-            foreach (array_diff($values, $covered) as $value) {
-                $unstyled[] = "{$slot}[data-{$axis}=\"{$value}\"]";
-            }
-        }
-    }
-
-    sort($unstyled);
-
-    expect($unstyled)->toBe([], "Preset [{$preset}] declares values it never styles. Either add the rule or record the value as rule-free.");
-})->with('slot catalog presets');
+    expect($divergent)->toBe([]);
+});
 
 /**
  * Every slot the catalog declares, from component and controller entries alike.
@@ -240,70 +228,6 @@ function declaredSlots(): array
         ->unique()
         ->values()
         ->all();
-}
-
-/** @return array<string, array<string, string[]>> */
-function declaredAxes(): array
-{
-    $registry = HotwireRegistry::make();
-    $declared = [];
-
-    foreach ([...array_values($registry->components()), ...array_values($registry->controllers())] as $definition) {
-        foreach (['variant' => $definition->styling->variants, 'size' => $definition->styling->sizes] as $axis => $bySlot) {
-            foreach ($bySlot as $slot => $values) {
-                $declared[$slot][$axis] = array_values(array_unique([...$declared[$slot][$axis] ?? [], ...$values]));
-            }
-        }
-    }
-
-    return $declared;
-}
-
-/**
- * Map each slot to the `data-variant` / `data-size` values a preset styles for it. Only values in
- * the same compound selector count — `[data-slot="sidebar"][data-variant="floating"]
- * [data-slot="sidebar-container"]` belongs to `sidebar`, not to the descendant.
- *
- * @return array<string, array<string, string[]>>
- */
-function presetAxes(string $css): array
-{
-    $axes = [];
-    $collect = function (array $slots, string $attributes) use (&$axes): void {
-        foreach (['variant', 'size'] as $axis) {
-            if (preg_match_all('/\[data-'.$axis.'="([a-z0-9-]+)"\]/', $attributes, $values) === 0) {
-                continue;
-            }
-
-            foreach ($slots as $slot) {
-                $axes[$slot][$axis] = array_values(array_unique([...$axes[$slot][$axis] ?? [], ...$values[1]]));
-            }
-        }
-    };
-
-    foreach (explode("\n", $css) as $line) {
-        $selector = trim(explode('{', $line)[0]);
-
-        if (! str_contains($selector, '[data-slot=')) {
-            continue;
-        }
-
-        preg_match_all('/:is\(([^)]*)\)((?:\[[^\]]*\])*)/', $selector, $groups, PREG_SET_ORDER);
-
-        foreach ($groups as $group) {
-            preg_match_all('/\[data-slot="([a-z0-9-]+)"\]/', $group[1], $slots);
-            $collect($slots[1], $group[2]);
-        }
-
-        $singles = (string) preg_replace('/:is\([^)]*\)(?:\[[^\]]*\])*/', ' ', $selector);
-        preg_match_all('/\[data-slot="([a-z0-9-]+)"\]((?:\[[^\]]*\])*)/', $singles, $matches, PREG_SET_ORDER);
-
-        foreach ($matches as $match) {
-            $collect([$match[1]], $match[2]);
-        }
-    }
-
-    return $axes;
 }
 
 /** @return string[] */

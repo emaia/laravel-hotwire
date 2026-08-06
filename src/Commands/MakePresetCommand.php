@@ -6,6 +6,7 @@ use Emaia\LaravelHotwire\Registry\ComponentDefinition;
 use Emaia\LaravelHotwire\Registry\ControllerDefinition;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\CssPresetFiles;
+use Emaia\LaravelHotwire\Support\PresetAxes;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Filesystem\Filesystem;
@@ -29,6 +30,7 @@ class MakePresetCommand extends Command
     public function __construct(
         private readonly Filesystem $files,
         private readonly CssPresetFiles $presets,
+        private readonly PresetAxes $axes,
     ) {
         parent::__construct();
     }
@@ -93,11 +95,7 @@ class MakePresetCommand extends Command
         return null;
     }
 
-    /**
-     * Carry the shipped safelist verbatim. Controllers apply a few utilities from strings Tailwind
-     * never scans, and a generated preset that keeps its own copy silently drops them once the
-     * package adds one.
-     */
+    /** Carry the shipped safelist rather than a copy, which would drop the next utility a controller applies. */
     private function runtimeSafelist(): string
     {
         foreach ($this->presets->all() as $path) {
@@ -110,9 +108,7 @@ class MakePresetCommand extends Command
     }
 
     /**
-     * Mirror the package token blocks so the scaffold offers every custom property it can override,
-     * in both color schemes. A hand-kept copy omits whatever the package adds later — that is how
-     * the sidebar tokens and the whole dark block went missing.
+     * Mirror both color schemes from `tokens.css`; a hand-kept copy omits whatever the package adds later.
      *
      * @return string[]
      *
@@ -145,6 +141,28 @@ class MakePresetCommand extends Command
         ];
     }
 
+    /**
+     * Union every preset, so the scaffold describes the vocabulary instead of whichever file sorts first.
+     *
+     * @return array<string, array<string, string[]>>
+     *
+     * @throws FileNotFoundException
+     */
+    private function presetAxes(): array
+    {
+        $union = [];
+
+        foreach ($this->presets->all() as $path) {
+            foreach ($this->axes->extract($this->files->get($path)) as $slot => $axes) {
+                foreach ($axes as $axis => $values) {
+                    $union[$slot][$axis] = array_values(array_unique([...$union[$slot][$axis] ?? [], ...$values]));
+                }
+            }
+        }
+
+        return $union;
+    }
+
     private function buildScaffold(): string
     {
         $lines = [
@@ -158,14 +176,15 @@ class MakePresetCommand extends Command
             '@layer components {',
         ];
         $emitted = [];
+        $axes = $this->presetAxes();
         $registry = HotwireRegistry::make();
 
         foreach ($registry->components() as $component) {
-            $this->appendGroup($lines, $component, $emitted);
+            $this->appendGroup($lines, $component, $emitted, $axes);
         }
 
         foreach ($registry->controllers() as $controller) {
-            $this->appendGroup($lines, $controller, $emitted);
+            $this->appendGroup($lines, $controller, $emitted, $axes);
         }
 
         $lines[] = '}';
@@ -177,8 +196,9 @@ class MakePresetCommand extends Command
     /**
      * @param  string[]  $lines
      * @param  array<string, true>  $emitted
+     * @param  array<string, array<string, string[]>>  $axes
      */
-    private function appendGroup(array &$lines, ComponentDefinition|ControllerDefinition $definition, array &$emitted): void
+    private function appendGroup(array &$lines, ComponentDefinition|ControllerDefinition $definition, array &$emitted, array $axes): void
     {
         $visual = array_values(array_filter(
             $definition->styling->visualSlots(),
@@ -195,8 +215,8 @@ class MakePresetCommand extends Command
                 : str($definition->identifier)->replace('--', ' ')->replace('-', ' ')->title().' controller').' */';
 
         foreach ($visual as $slot) {
-            foreach ($definition->styling->axesFor($slot) as $axis => $values) {
-                $lines[] = "    /* $axis: ".implode(', ', $values).' */';
+            foreach ($axes[$slot] ?? [] as $axis => $values) {
+                $lines[] = "    /* data-$axis: ".implode(', ', $values).' */';
             }
 
             $lines[] = "    [data-slot=\"$slot\"] {}";
