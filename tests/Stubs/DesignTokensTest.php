@@ -127,11 +127,9 @@ it('safelists exactly the utilities applied at runtime', function (string $prese
 
 /**
  * Utility classes the package applies at runtime, from strings Tailwind's scanner never reads:
- * JavaScript literals and Stimulus Classes API values declared in package Blade.
- *
- * State hooks are excluded. They are class names the package toggles for CSS to target — styled by
- * controller CSS or by the application — so Tailwind must never generate them. Extending that list
- * is a deliberate statement that a new runtime class needs no utility behind it.
+ * JavaScript literals and Stimulus Classes API values declared in package Blade. State hooks are
+ * excluded — the package toggles them for CSS to target, so Tailwind must never generate them, and
+ * adding to that list asserts a new runtime class needs no utility behind it.
  *
  * @return string[]
  */

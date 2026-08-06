@@ -109,9 +109,8 @@ it('declares slots rendered by components with trivial constructors', function (
 
 /**
  * A component's default is the one value it is guaranteed to emit, so a preset that never styles it
- * is either missing a rule or reacting to a typo. Values that are neither a prop default nor styled
- * stay invisible: no component validates `variant` against an allowlist, so there is no source to
- * check them against.
+ * is either missing a rule or reacting to a typo. Non-default values have no such source to check
+ * against — no component validates `variant` against an allowlist.
  */
 it('styles the default value of every variant and size prop', function (string $preset) {
     // Defaults that carry no appearance of their own — the slot's base rule already is that look.
@@ -184,9 +183,8 @@ it('styles every visual catalog slot in each preset', function (string $preset) 
 })->with('slot catalog presets');
 
 /**
- * Nothing declares the axes any more, so drift can only be between presets. With one preset this
- * holds vacuously; it earns its keep the moment a second one ships, which is when a slot silently
- * losing its `data-orientation` rules in one theme becomes possible.
+ * Holds vacuously while a single preset ships; it earns its keep the moment a second one can lose a
+ * slot's `data-orientation` rules without anything else noticing.
  */
 it('differentiates each slot by the same axes in every preset', function () {
     $axes = new PresetAxes;
@@ -214,11 +212,7 @@ it('differentiates each slot by the same axes in every preset', function () {
     expect($divergent)->toBe([]);
 });
 
-/**
- * Every slot the catalog declares, from component and controller entries alike.
- *
- * @return string[]
- */
+/** @return string[] */
 function declaredSlots(): array
 {
     $registry = HotwireRegistry::make();

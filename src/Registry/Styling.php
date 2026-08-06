@@ -2,10 +2,6 @@
 
 namespace Emaia\LaravelHotwire\Registry;
 
-/**
- * The `data-slot` hooks a catalog entry emits. The values each varies by are deliberately absent —
- * only a stylesheet knows them; see `Support\PresetAxes`.
- */
 final readonly class Styling
 {
     /**

@@ -81,7 +81,7 @@ it('documents every axis the source preset differentiates, beside the slot that 
     }
 
     expect($missing)->toBe([], 'Scaffold does not document the axes Nova differentiates for these slots.')
-        // Beyond variant and size: the catalog never knew these, the stylesheet always did.
+        // Axes past variant and size, which only the stylesheet ever declares.
         ->and($css)->toContain('    /* data-orientation: horizontal, vertical */')
         ->and($css)->toContain('    /* data-align: inline-start, inline-end, block-start, block-end */')
         ->and($css)->toContain("    /* Alert Dialog */\n    /* data-state: open */\n    [data-slot=\"alert-dialog-overlay\"] {}");

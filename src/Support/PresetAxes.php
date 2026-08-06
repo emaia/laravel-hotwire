@@ -26,11 +26,9 @@ final class PresetAxes
     /**
      * How many `[data-slot` mentions the scanner accounted for, against how many the stylesheet
      * holds. Unread input is otherwise indistinguishable from a slot that varies by nothing, which
-     * is how a reformatted preset can empty the inventory without failing a test.
-     *
-     * Mentions inside declarations count on both sides on purpose: restricting the total to
-     * selector position would need the parse this metric exists to audit. Parity therefore breaks
-     * only when text lands in no rule at all, which is exactly the signal wanted.
+     * is how a reformatted preset can empty the inventory without failing a test. Mentions inside
+     * declarations count on both sides, since restricting the total to selector position would
+     * need the very parse this audits.
      *
      * @return array{visited: int, total: int}
      */
@@ -49,7 +47,7 @@ final class PresetAxes
     /**
      * Walk the stylesheet into `[selector, declarations, subject slots]`, so extraction depends on
      * the structure rather than on each rule sitting on its own line. At-rule preludes carry the
-     * parent's subject down, which is what makes `@layer`, `@media` and `@supports` work by design.
+     * parent's subject down, which is what makes `@layer`, `@media` and `@supports` work.
      *
      * @return list<array{0: string, 1: string, 2: string[]}>
      */
@@ -101,7 +99,6 @@ final class PresetAxes
                     $declarations[array_key_last($declarations)] .= $buffer.';';
                 }
 
-                // A statement outside any rule — `@import`, `@source` — carries no declarations.
                 $buffer = '';
 
                 continue;
@@ -206,8 +203,6 @@ final class PresetAxes
 
     /**
      * The slots a rule actually styles: those in the last compound of each comma-separated selector.
-     * In `[data-slot="navbar"][data-variant="line"] [data-slot="navbar-item"]` the subject is
-     * `navbar-item`.
      *
      * @return string[]
      */
