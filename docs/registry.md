@@ -46,8 +46,7 @@ provider — so editing the catalog is the only change needed to register a new 
 ### Styling
 
 `styling` groups everything a preset needs to know about an entry. It hydrates into
-[`Registry\Styling`](../src/Registry/Styling.php), which exposes `visualSlots()`, `structuralSlots()` and
-`axesFor($slot)`.
+[`Registry\Styling`](../src/Registry/Styling.php), which exposes `visualSlots()` and `structuralSlots()`.
 
 | Key     | Description                                                   |
 |---------|---------------------------------------------------------------|

@@ -1,6 +1,7 @@
 <?php
 
 use Emaia\LaravelHotwire\Support\PresetAxes;
+use Illuminate\Support\Facades\File;
 
 it('reads the values a slot varies by', function () {
     $axes = (new PresetAxes)->extract(<<<'CSS'
@@ -85,4 +86,125 @@ it('reads the shipped Nova preset', function () {
         ->and($axes['attachment']['orientation'])->toContain('vertical')
         ->and($axes['modal-positioner']['size'])->toContain('full')
         ->and($axes)->not->toHaveKey('slot');
+});
+
+// --- Format independence ---
+
+it('reads rules regardless of how the CSS is formatted', function () {
+    $extractor = new PresetAxes;
+    $flat = $extractor->extract(
+        '[data-slot="badge"][data-variant="outline"] { @apply border data-[size=sm]:text-xs; }'
+    );
+
+    $expanded = $extractor->extract(<<<'CSS'
+        [data-slot="badge"][data-variant="outline"] {
+            @apply border data-[size=sm]:text-xs;
+        }
+        CSS);
+
+    $nested = $extractor->extract(<<<'CSS'
+        .style-brand {
+            /* a comment mentioning data-[variant=fake] */
+            [data-slot='badge'][data-variant='outline'] {
+                @apply border data-[size=sm]:text-xs;
+            }
+        }
+        CSS);
+
+    expect($flat)->toBe(['badge' => ['variant' => ['outline'], 'size' => ['sm']]])
+        ->and($expanded)->toBe($flat)
+        ->and($nested)->toBe($flat);
+});
+
+it('reads a selector split across lines', function () {
+    $axes = (new PresetAxes)->extract(<<<'CSS'
+        [data-slot="badge"],
+        [data-slot="chip"] {
+            @apply data-[variant=ghost]:opacity-50;
+        }
+        CSS);
+
+    expect($axes)->toBe([
+        'badge' => ['variant' => ['ghost']],
+        'chip' => ['variant' => ['ghost']],
+    ]);
+});
+
+it('never reads an axis out of a comment', function () {
+    $axes = (new PresetAxes)->extract(<<<'CSS'
+        [data-slot="badge"] { @apply border; } /* data-[variant=fake] */
+        /* [data-slot="ghost"][data-variant="fake"] */
+        CSS);
+
+    expect($axes)->toBe([]);
+});
+
+it('keeps arbitrary variants that describe another element out', function () {
+    // Unquoted attributes only ever appear inside arbitrary variants, which target descendants.
+    $axes = (new PresetAxes)->extract(<<<'CSS'
+        [data-slot="card"] { @apply [&>[data-slot=card-footer]]:pt-0 has-[[data-active=true]]:ring-2; }
+        CSS);
+
+    expect($axes)->toBe([]);
+});
+
+it('survives strings that contain the other quote character', function () {
+    $axes = (new PresetAxes)->extract(<<<'CSS'
+        [data-slot="checkbox"] { mask: url("data:image/svg+xml,%3csvg fill='none' %3e%3c/svg%3e"); }
+        [data-slot="checkbox"][data-checkable="true"] { @apply border; }
+        CSS);
+
+    expect($axes)->toBe(['checkbox' => ['checkable' => ['true']]]);
+});
+
+it('inherits the subject when a nested rule has no slot of its own', function () {
+    $axes = (new PresetAxes)->extract(<<<'CSS'
+        [data-slot="badge"] {
+            &[data-variant="ghost"] { @apply opacity-50; }
+        }
+        CSS);
+
+    expect($axes)->toBe(['badge' => ['variant' => ['ghost']]]);
+});
+
+it('reports how much of the stylesheet it managed to read', function () {
+    $extractor = new PresetAxes;
+
+    expect($extractor->coverage('[data-slot="badge"] { @apply border; }'))
+        ->toBe(['visited' => 1, 'total' => 1])
+        // An unterminated block is never emitted as a rule, so its slot goes unaccounted for.
+        ->and($extractor->coverage('[data-slot="a"] { @apply border; } [data-slot="b"] { @apply border;'))
+        ->toBe(['visited' => 1, 'total' => 2]);
+});
+
+it('reads every slot occurrence of every shipped preset', function () {
+    $extractor = new PresetAxes;
+
+    foreach (glob(__DIR__.'/../../resources/css/presets/*.css') ?: [] as $path) {
+        $coverage = $extractor->coverage(File::get($path));
+
+        expect($coverage['total'])->toBeGreaterThan(0)
+            ->and($coverage['visited'])->toBe($coverage['total'], basename($path).' has rules the scanner cannot read.');
+    }
+});
+
+it('ignores statements that sit outside any rule', function () {
+    $extractor = new PresetAxes;
+    $css = <<<'CSS'
+        @import "tokens.css";
+        @source inline("hidden");
+        [data-slot="badge"][data-variant="outline"] { @apply border; }
+        CSS;
+
+    expect($extractor->extract($css))->toBe(['badge' => ['variant' => ['outline']]])
+        ->and($extractor->coverage($css))->toBe(['visited' => 1, 'total' => 1]);
+});
+
+it('reads a quoted value without the quotes', function () {
+    $extractor = new PresetAxes;
+
+    expect($extractor->extract('[data-slot="badge"] { @apply data-[variant=\'ghost\']:opacity-50; }'))
+        ->toBe(['badge' => ['variant' => ['ghost']]])
+        ->and($extractor->extract('[data-slot="badge"] { @apply data-[variant=ghost]:opacity-50; }'))
+        ->toBe(['badge' => ['variant' => ['ghost']]]);
 });
