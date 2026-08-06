@@ -43,6 +43,32 @@ it('collects every axis, not only variant and size', function () {
     ]);
 });
 
+it('reads axes written as Tailwind data variants inside the rule', function () {
+    $axes = (new PresetAxes)->extract(
+        '[data-slot="field-legend"] { @apply mb-1.5 data-[variant=label]:text-sm data-[variant=legend]:text-base; }'
+    );
+
+    expect($axes)->toBe(['field-legend' => ['variant' => ['label', 'legend']]]);
+});
+
+it('ignores data variants that describe another element', function () {
+    $axes = (new PresetAxes)->extract(<<<'CSS'
+        [data-slot="button"] { @apply has-data-[icon=inline-end]:pr-2 group-data-[state=open]:rotate-180; }
+        [data-slot="item"] { @apply peer-data-[selected=true]:font-medium **:data-[slot=icon]:size-4; }
+        CSS);
+
+    expect($axes)->toBe([]);
+});
+
+it('merges axes from the selector and from the rule body', function () {
+    $axes = (new PresetAxes)->extract(<<<'CSS'
+        [data-slot="field"][data-orientation="horizontal"] { @apply flex; }
+        [data-slot="field"] { @apply data-[orientation=responsive]:grid; }
+        CSS);
+
+    expect($axes['field']['orientation'])->toBe(['horizontal', 'responsive']);
+});
+
 it('ignores selectors without a slot and never treats slot as an axis', function () {
     $axes = (new PresetAxes)->extract(<<<'CSS'
         [data-variant="ghost"] { color: gray; }
