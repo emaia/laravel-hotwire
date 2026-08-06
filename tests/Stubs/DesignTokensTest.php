@@ -111,8 +111,8 @@ it('keeps the app css stub thin and scans package css', function () use ($stubPa
 
 // --- Shared preset contracts ---
 
-it('safelists exactly the utilities applied at runtime', function (string $preset) {
-    $css = file_get_contents($preset);
+it('safelists exactly the utilities applied at runtime', function () {
+    $css = file_get_contents(dirname(__DIR__, 2).'/resources/css/structural.css');
 
     expect($css)->toContain('@source inline(');
 
@@ -123,6 +123,13 @@ it('safelists exactly the utilities applied at runtime', function (string $prese
         ->toBe([], 'Safelisted utilities that nothing applies at runtime. Utilities reached through @apply resolve at build time and must not be listed.')
         ->and(array_diff(runtimeAppliedClasses(), $safelisted))
         ->toBe([], 'Utilities applied at runtime but missing from @source inline(). Tailwind cannot see class names living in package JavaScript or Blade.');
+});
+
+it('leaves the runtime safelist to the structural stylesheet', function (string $preset) {
+    // A preset restating it snapshots the list, and goes stale the next time a controller applies one.
+    expect(file_get_contents($preset))
+        ->not->toContain('@source inline(')
+        ->toContain('@import "../structural.css";');
 })->with('design presets');
 
 /**
@@ -266,8 +273,7 @@ it('drives floating presence from semantic state and motion hooks', function (st
         ->toContain('[data-state="open"]')
         ->toContain('[data-motion="none"]')
         ->toContain('[data-presence="instant"]')
-        ->toContain('@media (prefers-reduced-motion: reduce)')
-        ->toContain(':where([data-hotwire-top-layer][popover]) { margin: 0; }');
+        ->toContain('@media (prefers-reduced-motion: reduce)');
 })->with('design presets');
 
 it('drives overlay motion from semantic presence state', function (string $preset) {

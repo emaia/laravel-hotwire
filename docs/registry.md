@@ -55,10 +55,18 @@ provider — so editing the catalog is the only change needed to register a new 
 Structural slots are containers, assistive nodes or geometry a controller stylesheet already owns; presets are not
 expected to style them, and `hotwire:make-preset` leaves them out of the scaffold.
 
-The values a slot varies by — `data-variant`, `data-size`, `data-orientation`, `data-state` and every other axis — are
-deliberately **not** declared here. Only a stylesheet knows them, and it knows all of them: a slot varies by
-`data-orientation` because a rule says so. `Support\PresetAxes` reads them straight from a shipped preset, so
-`hotwire:make-preset` documents every axis without anything being kept in sync by hand.
+The values a slot varies by are deliberately **not** declared here. Only a stylesheet knows them, and it knows all of
+them: a slot varies by `data-orientation` because a rule says so. `Support\PresetAxes` reads them straight from a
+shipped preset, so `hotwire:make-preset` documents every axis without anything being kept in sync by hand.
+
+It reads every attribute a rule matches on, not only the `data-` ones — `aria-expanded`, `aria-invalid`, `type` and the
+`open` an Accordion `<details>` carries are axes too, whether they are written in the selector or as a Tailwind variant
+inside the rule. Pseudo-class states (`hover:`, `disabled:`, `focus-visible:`) are not attributes and stay out.
+
+A value belongs to the slot in whose compound it is written, so `[data-slot="sidebar"][data-collapsible="icon"]
+[data-slot="sidebar-content"]` puts the attribute on `sidebar`, which is what the cross-preset check compares. The
+scaffold does not go through the axes at all: `Support\PresetSkeleton` mirrors the shipped selectors themselves, so a
+rule driven from an ancestor arrives written out rather than described.
 
 Slot declarations are verified against every shipped preset in
 [`tests/Registry/SlotCatalogTest.php`](../tests/Registry/SlotCatalogTest.php): every visual slot must be styled, and

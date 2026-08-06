@@ -87,7 +87,7 @@ registered here**, or the commands won't see it.
 - `components` entries: `class`, `view`, `docs`, `category`, `description`, and `controllers` (the list of Stimulus
   identifiers the component depends on — keep it in sync with what the Blade view actually mounts, since
   `hotwire:check` verifies these are published). Every component entry also declares `slots` as a `slot => visual|structural`
-  map; optional `variants` and `sizes` list the preset-supported values emitted in `hotwire:make-preset` comments.
+  map. The values a slot varies by are not declared here — `hotwire:make-preset` reads them from the presets.
 - `controllers` entries: `source` (path to the `.js`/`.ts` file), `docs`, `category`, `description`, and optional
   `npm` (a `package => version` map for third-party deps like `@floating-ui/dom`, `maska`, `echarts`, `@emaia/sonner`).
   Controllers that create `data-slot` values in JavaScript declare them in `slots` too.
@@ -289,7 +289,8 @@ Operational roadmap and execution notes are maintained outside this repository. 
   `[data-theme="dark"]` activates the dark palette.
 - **Tailwind v4 scanner constraint.** Shipped component styling lives in CSS presets under `resources/css/**`,
   and the installed stub scans those CSS files with `@source`. Do not add Tailwind utility defaults back to
-  package Blade/PHP unless they are also represented by preset CSS or an explicit `@source inline(...)` safelist.
+  package Blade/PHP unless they are also represented by preset CSS or the `@source inline(...)` safelist in
+  `resources/css/structural.css`, which every preset imports.
 - **Structural vs visual CSS.** Controller mechanics live beside the controller and use technical hooks (for example,
   `resources/js/controllers/carousel.css` uses `data-carousel-*`). Visual styling lives in presets and uses `data-slot`.
   Mark presentation-free or controller-owned slots `structural` in the catalog; `hotwire:make-preset` scaffolds only
@@ -297,9 +298,9 @@ Operational roadmap and execution notes are maintained outside this repository. 
 - **`Variants` helper is for application code, not for package components.** `Support\Variants` (CVA-equivalent in
   PHP) stays exported so apps can build their own variant matrices; the Tailwind scanner reaches it there because it
   scans the app's own PHP. Package components must not use it — they emit no classes at all, only `data-slot`,
-  `data-variant` and `data-size`, and the preset does the styling. A component's supported values are declared per
-  slot in the catalog (`variants` / `sizes`) and verified against every preset by
-  `tests/Registry/SlotCatalogTest.php`.
+  `data-variant` and `data-size`, and the preset does the styling. `Support\PresetAxes` reads the values each slot
+  varies by out of the stylesheets — `data-*`, `aria-*` and native attributes alike — and
+  `tests/Registry/SlotCatalogTest.php` holds every preset to the same axes.
 - Theming docs for app developers: `docs/theming.md` — token reference, override instructions, colour
   space notes. Upgrade notes for existing apps: `docs/upgrade.md` (deliverable of `0.32.0`).
 

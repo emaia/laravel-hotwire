@@ -1,7 +1,7 @@
 <?php
 
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
-use Emaia\LaravelHotwire\Support\PresetAxes;
+use Emaia\LaravelHotwire\Support\CssRules;
 use Illuminate\Support\Facades\File;
 
 beforeEach(function () {
@@ -13,16 +13,11 @@ afterEach(function () {
     releaseIsolatedAppPaths($this->appBase);
 });
 
-it('creates a complete visual slot scaffold grouped by catalog entry', function () {
-    $this->artisan('hotwire:make-preset brand --no-interaction')
-        ->assertSuccessful();
+it('mirrors every rule the shipped presets define, grouped by catalog entry', function () {
+    $this->artisan('hotwire:make-preset brand --no-interaction')->assertSuccessful();
 
     $path = $this->targetDir.'/brand.css';
     $css = File::get($path);
-    $visualSlots = collect([
-        ...array_values(HotwireRegistry::make()->components()),
-        ...array_values(HotwireRegistry::make()->controllers()),
-    ])->flatMap(fn ($definition): array => $definition->styling->visualSlots())->unique();
     $structuralSlots = collect(HotwireRegistry::make()->components())
         ->flatMap(fn ($definition): array => $definition->styling->structuralSlots())
         ->unique();
@@ -30,61 +25,98 @@ it('creates a complete visual slot scaffold grouped by catalog entry', function 
     expect(File::exists($path))->toBeTrue()
         ->and($css)->toContain('@import "../../../vendor/emaia/laravel-hotwire/resources/css/tokens.css";')
         ->and($css)->toContain('@import "../../../vendor/emaia/laravel-hotwire/resources/css/custom-variants.css";')
+        ->and($css)->toContain('@import "../../../vendor/emaia/laravel-hotwire/resources/css/structural.css";')
         ->and($css)->toContain('/* Accordion */')
         ->and($css)->toContain('/* Tooltip controller */')
-        ->and($css)->not->toContain('[data-slot="form"]')
-        ->and($css)->not->toContain('[data-slot="carousel-viewport"]')
         ->and($css)->toEndWith("\n");
-
-    foreach ($visualSlots as $slot) {
-        expect(substr_count($css, "[data-slot=\"{$slot}\"] {}"))
-            ->toBe(1, "Visual slot [{$slot}] must be scaffolded exactly once.");
-    }
 
     foreach ($structuralSlots as $slot) {
         expect($css)->not->toContain("[data-slot=\"{$slot}\"]");
     }
+
+    $omitted = array_values(array_filter(
+        sourceSelectors(),
+        fn (string $selector): bool => ! str_contains($css, "{$selector} {}"),
+    ));
+
+    expect($omitted)->toBe([], 'Scaffold omits rules Nova defines.');
 });
 
-it('carries the shipped runtime safelist instead of a copy', function () {
+it('scaffolds no rule the shipped presets do not define', function () {
     $this->artisan('hotwire:make-preset brand --no-interaction')->assertSuccessful();
 
-    preg_match(
-        '/@source inline\("[^"]*"\);/',
-        File::get(__DIR__.'/../../resources/css/presets/nova.css'),
-        $shipped,
-    );
+    $shipped = array_flip(sourceSelectors());
+    $extra = [];
 
-    expect(File::get($this->targetDir.'/brand.css'))->toContain($shipped[0]);
-});
+    preg_match_all('/^\s*(\S.*?) \{\}$/m', File::get($this->targetDir.'/brand.css'), $matches);
 
-it('documents every axis the source preset differentiates, beside the slot that carries it', function () {
-    $this->artisan('hotwire:make-preset brand --no-interaction')->assertSuccessful();
-
-    $css = File::get($this->targetDir.'/brand.css');
-    $axes = (new PresetAxes)->extract(File::get(__DIR__.'/../../resources/css/presets/nova.css'));
-    $missing = [];
-
-    foreach ($axes as $slot => $bySlot) {
-        if (! str_contains($css, "[data-slot=\"{$slot}\"] {}")) {
-            continue;
-        }
-
-        $expected = collect($bySlot)
-            ->map(fn (array $values, string $axis): string => "    /* data-{$axis}: ".implode(', ', $values).' */')
-            ->push("    [data-slot=\"{$slot}\"] {}")
-            ->implode("\n");
-
-        if (! str_contains($css, $expected)) {
-            $missing[] = $slot;
+    foreach ($matches[1] as $selector) {
+        if (! isset($shipped[$selector])) {
+            $extra[] = $selector;
         }
     }
 
-    expect($missing)->toBe([], 'Scaffold does not document the axes Nova differentiates for these slots.')
-        // Axes past variant and size, which only the stylesheet ever declares.
-        ->and($css)->toContain('    /* data-orientation: horizontal, vertical */')
-        ->and($css)->toContain('    /* data-align: inline-start, inline-end, block-start, block-end */')
-        ->and($css)->toContain("    /* Alert Dialog */\n    /* data-state: open */\n    [data-slot=\"alert-dialog-overlay\"] {}");
+    expect($extra)->toBe([]);
+});
+
+/**
+ * Every selector Nova defines, normalised the way the scaffold writes them.
+ *
+ * @return string[]
+ */
+function sourceSelectors(): array
+{
+    $rules = new CssRules;
+    $css = File::get(__DIR__.'/../../resources/css/presets/nova.css');
+    $selectors = [];
+
+    foreach ($rules->parse($rules->stripComments($css)) as ['chain' => $chain]) {
+        if (array_filter($chain, fn (string $block): bool => str_starts_with($block, '@keyframes')) !== []) {
+            continue;
+        }
+
+        $selectors[] = (string) end($chain);
+    }
+
+    return array_values(array_unique($selectors));
+}
+
+it('inherits the runtime safelist rather than snapshotting it', function () {
+    $this->artisan('hotwire:make-preset brand --no-interaction')->assertSuccessful();
+
+    // Written into the scaffold, the list would freeze at whatever the package safelisted that day.
+    expect(File::get($this->targetDir.'/brand.css'))
+        ->not->toContain('@source inline(')
+        ->toContain('@import "../../../vendor/emaia/laravel-hotwire/resources/css/structural.css";');
+});
+
+it('scaffolds the compound selector a state needs, not a summary of it', function () {
+    $this->artisan('hotwire:make-preset brand --no-interaction')->assertSuccessful();
+
+    $css = File::get($this->targetDir.'/brand.css');
+
+    expect($css)
+        ->toContain('[data-slot="accordion-item"][aria-disabled="true"] > [data-slot="accordion-trigger"] {}')
+        ->toContain('[data-slot="accordion-item"][open] > [data-slot="accordion-trigger"] [data-slot="accordion-trigger-icon"] {}')
+        ->toContain('[data-slot="carousel"][data-carousel-axis="y"] > [data-slot="carousel-prev-button"] {}')
+        // The state lives in the selector now; no comment restates it.
+        ->not->toContain('/* data-variant')
+        ->not->toContain('/* under [data-slot=');
+});
+
+it('keeps a rule inside the at-rules that qualify it', function () {
+    $this->artisan('hotwire:make-preset brand --no-interaction')->assertSuccessful();
+
+    expect(File::get($this->targetDir.'/brand.css'))->toContain(<<<'CSS'
+        @supports selector(::details-content) {
+                [data-slot="accordion-item"]::details-content {}
+                [data-slot="accordion-item"][open]::details-content {}
+
+                @media (prefers-reduced-motion: reduce) {
+                    [data-slot="accordion-item"]::details-content {}
+                }
+            }
+        CSS);
 });
 
 it('templates every token declared by the package, in both colour schemes', function () {
@@ -125,10 +157,11 @@ it('clones a shipped preset and rewrites package imports', function () {
         ->assertSuccessful();
 
     $expected = str_replace(
-        ['@import "../tokens.css";', '@import "../custom-variants.css";'],
+        ['@import "../tokens.css";', '@import "../custom-variants.css";', '@import "../structural.css";'],
         [
             '@import "../../../vendor/emaia/laravel-hotwire/resources/css/tokens.css";',
             '@import "../../../vendor/emaia/laravel-hotwire/resources/css/custom-variants.css";',
+            '@import "../../../vendor/emaia/laravel-hotwire/resources/css/structural.css";',
         ],
         File::get(__DIR__.'/../../resources/css/presets/nova.css'),
     );

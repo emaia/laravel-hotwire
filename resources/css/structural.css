@@ -1,0 +1,19 @@
+/* @hotwire-package */
+/*
+ * Structural rules every preset needs regardless of how it chooses to look. They key on the
+ * technical hooks the package sets, never on a `data-slot` — which is exactly why they live here
+ * and not in a preset, where a rule belonging to no component has no group to be scaffolded under.
+ */
+
+/* Utilities applied at runtime from strings Tailwind cannot see: `hidden` is toggled by
+   clear_input_controller.js, `overflow-hidden` arrives through the Stimulus Classes API
+   (data-*-lock-scroll-class). Everything a preset writes is resolved by @apply at build time, so
+   this list only ever grows with package mechanics — which is why presets inherit it instead of
+   restating it. */
+@source inline("hidden overflow-hidden");
+
+/* The UA stylesheet centres a `[popover]` with `margin: auto`, offsetting every overlay that opts
+   into the top layer. */
+:where([data-hotwire-top-layer][popover]) {
+    margin: 0;
+}

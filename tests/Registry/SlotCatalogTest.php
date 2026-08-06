@@ -2,6 +2,7 @@
 
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
+use Emaia\LaravelHotwire\Support\CssRules;
 use Emaia\LaravelHotwire\Support\PresetAxes;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\File;
@@ -72,6 +73,25 @@ it('keeps Carousel geometry in its controller stylesheet', function () {
         ->toContain('var(--carousel-slide-spacing, 0px)');
 });
 
+it('keeps rules that name no slot out of the presets', function (string $preset) {
+    // A preset groups by component; a rule keyed on a technical hook alone belongs to none of them.
+    $css = File::get(__DIR__."/../../resources/css/presets/{$preset}.css");
+    $slotless = [];
+
+    foreach ((new CssRules)->parse((new CssRules)->stripComments($css)) as ['chain' => $chain]) {
+        $selector = (string) end($chain);
+
+        if (! str_contains($selector, 'data-slot') && ! str_ends_with($selector, '%')) {
+            $slotless[] = $selector;
+        }
+    }
+
+    expect($slotless)->toBe([], "Preset [{$preset}] styles something no component owns. Structural rules belong in resources/css/structural.css.")
+        ->and(File::get(__DIR__.'/../../resources/css/structural.css'))
+        ->toContain(':where([data-hotwire-top-layer][popover])')
+        ->and($css)->toContain('@import "../structural.css";');
+})->with('slot catalog presets');
+
 it('declares every literal slot emitted by any component view', function () {
     // Every view, not only the ones a catalog entry points at. Most package views belong to
     // subcomponents registered in Support\ComponentAliases, which have no catalog entry of their
@@ -140,7 +160,7 @@ it('styles the default value of every variant and size prop', function (string $
             }
 
             $values = collect(array_keys($definition->styling->slots))
-                ->flatMap(fn (string $slot): array => $styled[$slot][$axis] ?? [])
+                ->flatMap(fn (string $slot): array => $styled[$slot]["data-$axis"] ?? [])
                 ->all();
 
             if ($values !== [] && ! in_array($default, $values, true)) {

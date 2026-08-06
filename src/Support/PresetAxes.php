@@ -4,10 +4,13 @@ namespace Emaia\LaravelHotwire\Support;
 
 final class PresetAxes
 {
+    public function __construct(private readonly CssRules $rules = new CssRules) {}
+
     /**
-     * Map slot => attribute => values. A value counts only for the slot in its own compound, so in
+     * Map slot => attribute => values, keyed by the attribute as written (`data-variant`,
+     * `aria-expanded`, `open`). A value counts only for the slot in its own compound, so in
      * `[data-slot="sidebar"][data-variant="floating"] [data-slot="sidebar-container"]` the variant
-     * belongs to `sidebar`.
+     * belongs to `sidebar`. An attribute written without a value maps to an empty list.
      *
      * @return array<string, array<string, string[]>>
      */
@@ -15,7 +18,10 @@ final class PresetAxes
     {
         $axes = [];
 
-        foreach ($this->rules($this->stripComments($css)) as [$selector, $declarations, $subject]) {
+        foreach ($this->rules->parse($this->rules->stripComments($css)) as ['chain' => $chain, 'declarations' => $declarations]) {
+            $selector = (string) end($chain);
+            $subject = $this->subject($chain);
+
             $this->collectSelector($axes, $selector, $subject);
             $this->collectVariants($axes, $subject, $declarations);
         }
@@ -34,116 +40,37 @@ final class PresetAxes
      */
     public function coverage(string $css): array
     {
-        $stripped = $this->stripComments($css);
+        $stripped = $this->rules->stripComments($css);
         $visited = 0;
 
-        foreach ($this->rules($stripped) as [$selector, $declarations]) {
-            $visited += preg_match_all('/\[data-slot\s*=/', $selector.' '.$declarations);
+        foreach ($this->rules->parse($stripped) as ['chain' => $chain, 'declarations' => $declarations]) {
+            $visited += preg_match_all('/\[data-slot\s*=/', end($chain).' '.$declarations);
         }
 
         return ['visited' => $visited, 'total' => (int) preg_match_all('/\[data-slot\s*=/', $stripped)];
     }
 
     /**
-     * Walk the stylesheet into `[selector, declarations, subject slots]`, so extraction depends on
-     * the structure rather than on each rule sitting on its own line. At-rule preludes carry the
-     * parent's subject down, which is what makes `@layer`, `@media` and `@supports` work.
+     * The slots a rule styles: those of its own selector, or of the nearest enclosing rule that names
+     * any. Inheriting up the chain is what makes `&`-nested rules and `@layer`, `@media` and
+     * `@supports` wrappers work — none of them names a subject of its own.
      *
-     * @return list<array{0: string, 1: string, 2: string[]}>
+     * @param  string[]  $chain
+     * @return string[]
      */
-    private function rules(string $css): array
+    private function subject(array $chain): array
     {
-        $rules = [];
-        $selectors = [];
-        $declarations = [];
-        $subjects = [];
-        $buffer = '';
-        $depth = 0;
-        $quote = null;
-        $length = strlen($css);
-
-        for ($index = 0; $index < $length; $index++) {
-            $character = $css[$index];
-
-            if ($quote !== null) {
-                $buffer .= $character;
-
-                if ($character === $quote && ($index === 0 || $css[$index - 1] !== '\\')) {
-                    $quote = null;
-                }
-
+        for ($index = count($chain) - 1; $index >= 0; $index--) {
+            if (str_starts_with($chain[$index], '@')) {
                 continue;
             }
 
-            if ($character === '"' || $character === "'") {
-                $quote = $character;
-                $buffer .= $character;
-
-                continue;
+            if (($slots = $this->subjectSlots($chain[$index])) !== []) {
+                return $slots;
             }
-
-            if ($character === '(' || $character === '[') {
-                $depth++;
-            } elseif ($character === ')' || $character === ']') {
-                $depth--;
-            }
-
-            if ($depth !== 0) {
-                $buffer .= $character;
-
-                continue;
-            }
-
-            if ($character === ';') {
-                if ($declarations !== []) {
-                    $declarations[array_key_last($declarations)] .= $buffer.';';
-                }
-
-                $buffer = '';
-
-                continue;
-            }
-
-            if ($character === '{') {
-                $selector = trim($buffer);
-                $parent = end($subjects) ?: [];
-                $selectors[] = $selector;
-                $declarations[] = '';
-                $subjects[] = str_starts_with($selector, '@') ? $parent : ($this->subjectSlots($selector) ?: $parent);
-                $buffer = '';
-
-                continue;
-            }
-
-            if ($character === '}') {
-                if ($selectors === []) {
-                    $buffer = '';
-
-                    continue;
-                }
-
-                $selector = array_pop($selectors);
-                $body = array_pop($declarations).$buffer;
-                $subject = array_pop($subjects);
-                $buffer = '';
-
-                if (! str_starts_with($selector, '@')) {
-                    $rules[] = [$selector, $body, $subject];
-                }
-
-                continue;
-            }
-
-            $buffer .= $character;
         }
 
-        return $rules;
-    }
-
-    /** Drop comments before scanning, leaving anything that merely looks like one inside a string. */
-    private function stripComments(string $css): string
-    {
-        return (string) preg_replace('#("(?:[^"\\\\]|\\\\.)*"|\'(?:[^\'\\\\]|\\\\.)*\')|/\*.*?\*/#s', '$1', $css);
+        return [];
     }
 
     /**
@@ -170,10 +97,21 @@ final class PresetAxes
         foreach ($groups as $group) {
             preg_match_all('/\[data-slot\s*=\s*["\']?([^"\'\]\s]+)["\']?\]/', $group[1], $slots);
             $this->collect($axes, $slots[1], $group[2]);
+            $this->collectCompounds($axes, $group[1]);
         }
 
-        $singles = (string) preg_replace('/:is\([^)]*\)(?:\[[^\]]*\])*/', ' ', $selector);
-        preg_match_all('/\[data-slot\s*=\s*["\']?([^"\'\]\s]+)["\']?\]((?:\[[^\]]*\])*)/', $singles, $matches, PREG_SET_ORDER);
+        $this->collectCompounds($axes, (string) preg_replace('/:is\([^)]*\)(?:\[[^\]]*\])*/', ' ', $selector));
+    }
+
+    /**
+     * Attributes trailing a slot in the same compound. Written after an `:is(…)` group they belong to
+     * every member, written inside one they belong to that member alone.
+     *
+     * @param  array<string, array<string, string[]>>  $axes
+     */
+    private function collectCompounds(array &$axes, string $selector): void
+    {
+        preg_match_all('/\[data-slot\s*=\s*["\']?([^"\'\]\s]+)["\']?\]((?:\[[^\]]*\])*)/', $selector, $matches, PREG_SET_ORDER);
 
         foreach ($matches as $match) {
             $this->collect($axes, [$match[1]], $match[2]);
@@ -181,23 +119,33 @@ final class PresetAxes
     }
 
     /**
-     * Axes written as Tailwind data variants — `data-[orientation=vertical]:flex`. Prefixed forms
-     * (`has-`, `group-`, `peer-`, `**:`) describe another element, and so do the unquoted attributes
-     * that appear inside arbitrary `[&…]` variants, which never match this shape.
+     * Axes written as Tailwind variants — arbitrary `data-[orientation=vertical]:flex` and named
+     * `aria-expanded:bg-muted`. Prefixed forms (`has-`, `group-`, `peer-`, `not-`, `**:`) describe
+     * another element or negate the state, and so do the unquoted attributes that appear inside
+     * arbitrary `[&…]` variants, which never match either shape. Pseudo-class variants such as
+     * `disabled:` stay out: they are DOM state, not part of the attribute vocabulary a preset styles.
      *
      * @param  array<string, array<string, string[]>>  $axes
      * @param  string[]  $slots
      */
     private function collectVariants(array &$axes, array $slots, string $body): void
     {
-        preg_match_all('/([a-z*:]*-?)data-\[([a-z-]+)=([^\]\s]+)\]/i', $body, $matches, PREG_SET_ORDER);
+        preg_match_all('/([a-z*:]*-?)(data|aria)-\[([a-z-]+)=([^\]\s]+)\]/i', $body, $arbitrary, PREG_SET_ORDER);
 
-        foreach ($matches as [, $prefix, $attribute, $value]) {
+        foreach ($arbitrary as [, $prefix, $namespace, $attribute, $value]) {
             if ($prefix !== '' || $attribute === 'slot') {
                 continue;
             }
 
-            $this->push($axes, $slots, $attribute, trim($value, '"\''));
+            $this->push($axes, $slots, "$namespace-$attribute", trim($value, '"\''));
+        }
+
+        preg_match_all('/([a-z*:]*-?)aria-([a-z]+):/', $body, $named, PREG_SET_ORDER);
+
+        foreach ($named as [, $prefix, $attribute]) {
+            if ($prefix === '') {
+                $this->push($axes, $slots, "aria-$attribute", 'true');
+            }
         }
     }
 
@@ -210,13 +158,53 @@ final class PresetAxes
     {
         $slots = [];
 
-        foreach ($this->splitTopLevel($selector, ',') as $single) {
+        foreach ($this->singles($selector) as $single) {
             $compounds = $this->splitTopLevel($single, ' >+~');
-            preg_match_all('/\[data-slot\s*=\s*["\']?([^"\'\]\s]+)["\']?\]/', (string) end($compounds), $matches);
-            $slots = [...$slots, ...$matches[1]];
+            $slots = [...$slots, ...$this->subjectCompound((string) end($compounds))];
         }
 
         return array_values(array_unique($slots));
+    }
+
+    /**
+     * Comma-separated selectors, with a `:is(…)`/`:where(…)` that wraps a whole one unwrapped. Left
+     * wrapped, a descendant chain like `:where(a b c)` would read as a single compound naming three
+     * subjects, which hands `a` and `b` the styling written for `c`.
+     *
+     * @return string[]
+     */
+    private function singles(string $selector): array
+    {
+        $singles = [];
+
+        foreach ($this->splitTopLevel($selector, ',') as $single) {
+            $singles = preg_match('/^:(?:is|where)\((.*)\)$/s', trim($single), $inner) === 1
+                ? [...$singles, ...$this->singles($inner[1])]
+                : [...$singles, trim($single)];
+        }
+
+        return $singles;
+    }
+
+    /**
+     * The slots a trailing compound names — those of the alternatives when it is a bare `:is(…)`
+     * group, as in `:is([data-slot="carousel-prev-button"], [data-slot="carousel-next-button"])`.
+     *
+     * @return string[]
+     */
+    private function subjectCompound(string $compound): array
+    {
+        return preg_match('/^:(?:is|where)\((.*)\)$/s', trim($compound), $inner) === 1
+            ? $this->subjectSlots($inner[1])
+            : $this->slotNames($compound);
+    }
+
+    /** @return string[] */
+    private function slotNames(string $compound): array
+    {
+        preg_match_all('/\[data-slot\s*=\s*["\']?([^"\'\]\s]+)["\']?\]/', $compound, $matches);
+
+        return array_values(array_unique($matches[1]));
     }
 
     /** @return string[] */
@@ -241,19 +229,23 @@ final class PresetAxes
     }
 
     /**
+     * Every attribute of a compound, not only the `data-` ones: `[open]`, `[type="date"]` and
+     * `[aria-disabled="true"]` differentiate a slot just as much. Operator forms (`[class*="size-"]`)
+     * enumerate nothing and fall outside the name charset.
+     *
      * @param  array<string, array<string, string[]>>  $axes
      * @param  string[]  $slots
      */
     private function collect(array &$axes, array $slots, string $attributes): void
     {
-        preg_match_all('/\[data-([a-z-]+)\s*=\s*["\']?([^"\'\]\s]+)["\']?\]/', $attributes, $matches, PREG_SET_ORDER);
+        preg_match_all('/\[([a-z-]+)\s*(?:=\s*["\']?([^"\'\]\s]+)["\']?)?\]/', $attributes, $matches, PREG_SET_ORDER);
 
-        foreach ($matches as [, $attribute, $value]) {
-            if ($attribute === 'slot') {
+        foreach ($matches as $match) {
+            if ($match[1] === 'data-slot') {
                 continue;
             }
 
-            $this->push($axes, $slots, $attribute, $value);
+            $this->push($axes, $slots, $match[1], $match[2] ?? null);
         }
     }
 
@@ -261,10 +253,13 @@ final class PresetAxes
      * @param  array<string, array<string, string[]>>  $axes
      * @param  string[]  $slots
      */
-    private function push(array &$axes, array $slots, string $attribute, string $value): void
+    private function push(array &$axes, array $slots, string $attribute, ?string $value): void
     {
         foreach ($slots as $slot) {
-            $axes[$slot][$attribute] = array_values(array_unique([...$axes[$slot][$attribute] ?? [], $value]));
+            $collected = $axes[$slot][$attribute] ?? [];
+            $axes[$slot][$attribute] = $value === null
+                ? $collected
+                : array_values(array_unique([...$collected, $value]));
         }
     }
 }

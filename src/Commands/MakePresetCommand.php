@@ -2,11 +2,9 @@
 
 namespace Emaia\LaravelHotwire\Commands;
 
-use Emaia\LaravelHotwire\Registry\ComponentDefinition;
-use Emaia\LaravelHotwire\Registry\ControllerDefinition;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\CssPresetFiles;
-use Emaia\LaravelHotwire\Support\PresetAxes;
+use Emaia\LaravelHotwire\Support\PresetSkeleton;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Filesystem\Filesystem;
@@ -27,10 +25,12 @@ class MakePresetCommand extends Command
 
     private const string VARIANTS_IMPORT = '@import "../../../vendor/emaia/laravel-hotwire/resources/css/custom-variants.css";';
 
+    private const string STRUCTURAL_IMPORT = '@import "../../../vendor/emaia/laravel-hotwire/resources/css/structural.css";';
+
     public function __construct(
         private readonly Filesystem $files,
         private readonly CssPresetFiles $presets,
-        private readonly PresetAxes $axes,
+        private readonly PresetSkeleton $skeleton,
     ) {
         parent::__construct();
     }
@@ -95,18 +95,6 @@ class MakePresetCommand extends Command
         return null;
     }
 
-    /** Carry the shipped safelist rather than a copy, which would drop the next utility a controller applies. */
-    private function runtimeSafelist(): string
-    {
-        foreach ($this->presets->all() as $path) {
-            if (preg_match('/@source inline\("[^"]*"\);/', $this->files->get($path), $match) === 1) {
-                return $match[0];
-            }
-        }
-
-        return '';
-    }
-
     /**
      * Mirror both color schemes from `tokens.css`; a hand-kept copy omits whatever the package adds later.
      *
@@ -142,25 +130,36 @@ class MakePresetCommand extends Command
     }
 
     /**
-     * Union every preset, so the scaffold describes the vocabulary instead of whichever file sorts first.
-     *
-     * @return array<string, array<string, string[]>>
+     * @return string[]
      *
      * @throws FileNotFoundException
      */
-    private function presetAxes(): array
+    private function stylesheets(): array
     {
-        $union = [];
+        return array_values(array_map(fn (string $path): string => $this->files->get($path), $this->presets->all()));
+    }
 
-        foreach ($this->presets->all() as $path) {
-            foreach ($this->axes->extract($this->files->get($path)) as $slot => $axes) {
-                foreach ($axes as $axis => $values) {
-                    $union[$slot][$axis] = array_values(array_unique([...$union[$slot][$axis] ?? [], ...$values]));
-                }
-            }
+    /**
+     * Ordered label => visual slots, the grouping the scaffold is laid out by.
+     *
+     * @return array<string, string[]>
+     */
+    private function groups(): array
+    {
+        $registry = HotwireRegistry::make();
+        $groups = [];
+
+        foreach ($registry->components() as $component) {
+            $label = $component->displayName();
+            $groups[$label] = [...$groups[$label] ?? [], ...$component->styling->visualSlots()];
         }
 
-        return $union;
+        foreach ($registry->controllers() as $controller) {
+            $label = str($controller->identifier)->replace('--', ' ')->replace('-', ' ')->title().' controller';
+            $groups[$label] = [...$groups[$label] ?? [], ...$controller->styling->visualSlots()];
+        }
+
+        return $groups;
     }
 
     private function buildScaffold(): string
@@ -168,67 +167,24 @@ class MakePresetCommand extends Command
         $lines = [
             self::TOKENS_IMPORT,
             self::VARIANTS_IMPORT,
-            '',
-            $this->runtimeSafelist(),
+            self::STRUCTURAL_IMPORT,
             '',
             ...$this->tokenTemplate(),
             '',
             '@layer components {',
+            ...$this->skeleton->render($this->stylesheets(), $this->groups()),
+            '}',
+            '',
         ];
-        $emitted = [];
-        $axes = $this->presetAxes();
-        $registry = HotwireRegistry::make();
-
-        foreach ($registry->components() as $component) {
-            $this->appendGroup($lines, $component, $emitted, $axes);
-        }
-
-        foreach ($registry->controllers() as $controller) {
-            $this->appendGroup($lines, $controller, $emitted, $axes);
-        }
-
-        $lines[] = '}';
-        $lines[] = '';
 
         return implode("\n", $lines);
-    }
-
-    /**
-     * @param  string[]  $lines
-     * @param  array<string, true>  $emitted
-     * @param  array<string, array<string, string[]>>  $axes
-     */
-    private function appendGroup(array &$lines, ComponentDefinition|ControllerDefinition $definition, array &$emitted, array $axes): void
-    {
-        $visual = array_values(array_filter(
-            $definition->styling->visualSlots(),
-            fn (string $slot): bool => ! isset($emitted[$slot]),
-        ));
-
-        if ($visual === []) {
-            return;
-        }
-
-        $lines[] = '';
-        $lines[] = '    /* '.($definition instanceof ComponentDefinition
-                ? $definition->displayName()
-                : str($definition->identifier)->replace('--', ' ')->replace('-', ' ')->title().' controller').' */';
-
-        foreach ($visual as $slot) {
-            foreach ($axes[$slot] ?? [] as $axis => $values) {
-                $lines[] = "    /* data-$axis: ".implode(', ', $values).' */';
-            }
-
-            $lines[] = "    [data-slot=\"$slot\"] {}";
-            $emitted[$slot] = true;
-        }
     }
 
     private function rewritePackageImports(string $content): string
     {
         return str_replace(
-            ['@import "../tokens.css";', '@import "../custom-variants.css";'],
-            [self::TOKENS_IMPORT, self::VARIANTS_IMPORT],
+            ['@import "../tokens.css";', '@import "../custom-variants.css";', '@import "../structural.css";'],
+            [self::TOKENS_IMPORT, self::VARIANTS_IMPORT, self::STRUCTURAL_IMPORT],
             $content,
         );
     }

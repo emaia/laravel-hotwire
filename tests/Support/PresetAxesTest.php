@@ -10,7 +10,7 @@ it('reads the values a slot varies by', function () {
         [data-slot="badge"] { color: black; }
         CSS);
 
-    expect($axes)->toBe(['badge' => ['variant' => ['destructive', 'outline']]]);
+    expect($axes)->toBe(['badge' => ['data-variant' => ['destructive', 'outline']]]);
 });
 
 it('attributes a value to every slot of an :is group', function () {
@@ -19,8 +19,32 @@ it('attributes a value to every slot of an :is group', function () {
     );
 
     expect($axes)->toBe([
-        'button' => ['size' => ['sm']],
-        'modal-trigger' => ['size' => ['sm']],
+        'button' => ['data-size' => ['sm']],
+        'modal-trigger' => ['data-size' => ['sm']],
+    ]);
+});
+
+it('reads attributes written inside an :is group member', function () {
+    $axes = (new PresetAxes)->extract(<<<'CSS'
+        [data-theme="dark"] :is([data-slot="input"][type="date"], [data-slot="input"][type="week"]) { color-scheme: dark; }
+        :is([data-slot="button"], [data-slot="chip"])[data-size="sm"] { @apply h-6; }
+        CSS);
+
+    expect($axes)->toBe([
+        'input' => ['type' => ['date', 'week']],
+        'button' => ['data-size' => ['sm']],
+        'chip' => ['data-size' => ['sm']],
+    ]);
+});
+
+it('reads a descendant chain wrapped in :where', function () {
+    $axes = (new PresetAxes)->extract(
+        ':where([data-slot="file-upload"][data-density="compact"] [data-slot="file-upload-dropzone"]) { @apply data-[view=image]:p-0; }'
+    );
+
+    expect($axes)->toBe([
+        'file-upload' => ['data-density' => ['compact']],
+        'file-upload-dropzone' => ['data-view' => ['image']],
     ]);
 });
 
@@ -29,7 +53,7 @@ it('keeps a value on its own compound, not on a descendant', function () {
         '[data-slot="sidebar"][data-variant="floating"] [data-slot="sidebar-container"] { padding: 0; }'
     );
 
-    expect($axes)->toBe(['sidebar' => ['variant' => ['floating']]]);
+    expect($axes)->toBe(['sidebar' => ['data-variant' => ['floating']]]);
 });
 
 it('collects every axis, not only variant and size', function () {
@@ -39,8 +63,8 @@ it('collects every axis, not only variant and size', function () {
         CSS);
 
     expect($axes['attachment'])->toBe([
-        'orientation' => ['vertical'],
-        'state' => ['error'],
+        'data-orientation' => ['vertical'],
+        'data-state' => ['error'],
     ]);
 });
 
@@ -49,7 +73,7 @@ it('reads axes written as Tailwind data variants inside the rule', function () {
         '[data-slot="field-legend"] { @apply mb-1.5 data-[variant=label]:text-sm data-[variant=legend]:text-base; }'
     );
 
-    expect($axes)->toBe(['field-legend' => ['variant' => ['label', 'legend']]]);
+    expect($axes)->toBe(['field-legend' => ['data-variant' => ['label', 'legend']]]);
 });
 
 it('ignores data variants that describe another element', function () {
@@ -67,7 +91,7 @@ it('merges axes from the selector and from the rule body', function () {
         [data-slot="field"] { @apply data-[orientation=responsive]:grid; }
         CSS);
 
-    expect($axes['field']['orientation'])->toBe(['horizontal', 'responsive']);
+    expect($axes['field']['data-orientation'])->toBe(['horizontal', 'responsive']);
 });
 
 it('ignores selectors without a slot and never treats slot as an axis', function () {
@@ -82,10 +106,75 @@ it('ignores selectors without a slot and never treats slot as an axis', function
 it('reads the shipped Nova preset', function () {
     $axes = (new PresetAxes)->extract(File::get(__DIR__.'/../../resources/css/presets/nova.css'));
 
-    expect($axes['badge']['variant'])->toContain('destructive')
-        ->and($axes['attachment']['orientation'])->toContain('vertical')
-        ->and($axes['modal-positioner']['size'])->toContain('full')
+    expect($axes['badge']['data-variant'])->toContain('destructive')
+        ->and($axes['attachment']['data-orientation'])->toContain('vertical')
+        ->and($axes['modal-positioner']['data-size'])->toContain('full')
         ->and($axes)->not->toHaveKey('slot');
+});
+
+// --- Attributes outside the data namespace ---
+
+it('reads native and aria attributes from the selector', function () {
+    $axes = (new PresetAxes)->extract(<<<'CSS'
+        [data-slot="accordion-item"][aria-disabled="true"] > [data-slot="accordion-trigger"] { @apply opacity-50; }
+        [data-slot="input"][type="date"] { @apply pr-2; }
+        [data-slot="checkbox-indicator"][role="switch"] { @apply rounded-full; }
+        CSS);
+
+    expect($axes)->toBe([
+        'accordion-item' => ['aria-disabled' => ['true']],
+        'input' => ['type' => ['date']],
+        'checkbox-indicator' => ['role' => ['switch']],
+    ]);
+});
+
+it('records an attribute written without a value', function () {
+    $axes = (new PresetAxes)->extract(<<<'CSS'
+        [data-slot="accordion-item"][open]::details-content { @apply opacity-100; }
+        [data-slot="popover-content"][popover] { @apply m-0; }
+        CSS);
+
+    expect($axes)->toBe([
+        'accordion-item' => ['open' => []],
+        'popover-content' => ['popover' => []],
+    ]);
+});
+
+it('reads axes written as Tailwind aria variants inside the rule', function () {
+    $axes = (new PresetAxes)->extract(<<<'CSS'
+        [data-slot="button"] { @apply aria-disabled:opacity-50 aria-expanded:bg-muted; }
+        [data-slot="slider"] { @apply aria-[invalid=true]:border-destructive; }
+        CSS);
+
+    expect($axes)->toBe([
+        'button' => ['aria-disabled' => ['true'], 'aria-expanded' => ['true']],
+        'slider' => ['aria-invalid' => ['true']],
+    ]);
+});
+
+it('ignores aria variants that describe another element or negate a state', function () {
+    $axes = (new PresetAxes)->extract(<<<'CSS'
+        [data-slot="dropdown-trigger"] { @apply active:not-aria-[haspopup]:translate-y-px; }
+        [data-slot="item"] { @apply group-aria-expanded:rotate-180 peer-aria-disabled:opacity-50; }
+        CSS);
+
+    expect($axes)->toBe([]);
+});
+
+it('leaves pseudo-class states out of the attribute vocabulary', function () {
+    $axes = (new PresetAxes)->extract(
+        '[data-slot="button"] { @apply hover:bg-muted disabled:opacity-50 focus-visible:ring-3 checked:bg-primary; }'
+    );
+
+    expect($axes)->toBe([]);
+});
+
+it('ignores attribute selectors that match on an operator rather than a value', function () {
+    $axes = (new PresetAxes)->extract(
+        '[data-slot="button"] { @apply [&_svg:not([class*=\'size-\'])]:size-4; }'
+    );
+
+    expect($axes)->toBe([]);
 });
 
 // --- Format independence ---
@@ -111,9 +200,27 @@ it('reads rules regardless of how the CSS is formatted', function () {
         }
         CSS);
 
-    expect($flat)->toBe(['badge' => ['variant' => ['outline'], 'size' => ['sm']]])
+    expect($flat)->toBe(['badge' => ['data-variant' => ['outline'], 'data-size' => ['sm']]])
         ->and($expanded)->toBe($flat)
         ->and($nested)->toBe($flat);
+});
+
+it('reads a rule wrapped in @supports and @media', function () {
+    $axes = (new PresetAxes)->extract(<<<'CSS'
+        @supports selector(::details-content) {
+            [data-slot="accordion-item"][open]::details-content {
+                block-size: calc-size(auto, size);
+            }
+
+            @media (prefers-reduced-motion: reduce) {
+                [data-slot="accordion-item"][aria-disabled="true"]::details-content { transition: none; }
+            }
+        }
+        CSS);
+
+    expect($axes)->toBe([
+        'accordion-item' => ['open' => [], 'aria-disabled' => ['true']],
+    ]);
 });
 
 it('reads a selector split across lines', function () {
@@ -125,8 +232,8 @@ it('reads a selector split across lines', function () {
         CSS);
 
     expect($axes)->toBe([
-        'badge' => ['variant' => ['ghost']],
-        'chip' => ['variant' => ['ghost']],
+        'badge' => ['data-variant' => ['ghost']],
+        'chip' => ['data-variant' => ['ghost']],
     ]);
 });
 
@@ -154,7 +261,7 @@ it('survives strings that contain the other quote character', function () {
         [data-slot="checkbox"][data-checkable="true"] { @apply border; }
         CSS);
 
-    expect($axes)->toBe(['checkbox' => ['checkable' => ['true']]]);
+    expect($axes)->toBe(['checkbox' => ['data-checkable' => ['true']]]);
 });
 
 it('inherits the subject when a nested rule has no slot of its own', function () {
@@ -164,7 +271,7 @@ it('inherits the subject when a nested rule has no slot of its own', function ()
         }
         CSS);
 
-    expect($axes)->toBe(['badge' => ['variant' => ['ghost']]]);
+    expect($axes)->toBe(['badge' => ['data-variant' => ['ghost']]]);
 });
 
 it('reports how much of the stylesheet it managed to read', function () {
@@ -196,7 +303,7 @@ it('ignores statements that sit outside any rule', function () {
         [data-slot="badge"][data-variant="outline"] { @apply border; }
         CSS;
 
-    expect($extractor->extract($css))->toBe(['badge' => ['variant' => ['outline']]])
+    expect($extractor->extract($css))->toBe(['badge' => ['data-variant' => ['outline']]])
         ->and($extractor->coverage($css))->toBe(['visited' => 1, 'total' => 1]);
 });
 
@@ -204,7 +311,7 @@ it('reads a quoted value without the quotes', function () {
     $extractor = new PresetAxes;
 
     expect($extractor->extract('[data-slot="badge"] { @apply data-[variant=\'ghost\']:opacity-50; }'))
-        ->toBe(['badge' => ['variant' => ['ghost']]])
+        ->toBe(['badge' => ['data-variant' => ['ghost']]])
         ->and($extractor->extract('[data-slot="badge"] { @apply data-[variant=ghost]:opacity-50; }'))
-        ->toBe(['badge' => ['variant' => ['ghost']]]);
+        ->toBe(['badge' => ['data-variant' => ['ghost']]]);
 });

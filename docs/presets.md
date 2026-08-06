@@ -26,10 +26,34 @@ Generate an empty preset scaffold when token overrides are not enough:
 php artisan hotwire:make-preset brand
 ```
 
-The command creates `resources/css/presets/brand.css`. It imports the package token and custom-variant layers, includes
-the runtime utility safelist, and generates one empty selector for every visual `data-slot` declared in the package
-catalog. Selectors are grouped by component and annotated with every attribute value the source preset differentiates
-that slot by — `data-variant`, `data-size`, `data-orientation`, `data-state` and so on.
+The command creates `resources/css/presets/brand.css`. It imports the package token, custom-variant and structural
+layers — the last carrying the runtime utility safelist, so your preset picks up new package mechanics on upgrade
+instead of freezing them — and mirrors every rule the shipped presets define with an empty body, grouped by the
+component that owns it. You get the full set of selectors to fill in — including the ones whose state lives on an
+ancestor, which no summary of a slot's own attributes can express:
+
+```css
+@layer components {
+
+    /* Accordion */
+    [data-slot="accordion"] {}
+    [data-slot="accordion-item"] {}
+
+    @supports selector(::details-content) {
+        [data-slot="accordion-item"]::details-content {}
+        [data-slot="accordion-item"][open]::details-content {}
+    }
+
+    [data-slot="accordion-trigger"] {}
+    [data-slot="accordion-item"][aria-disabled="true"] > [data-slot="accordion-trigger"] {}
+    [data-slot="accordion-trigger-icon"] {}
+    [data-slot="accordion-item"][open] > [data-slot="accordion-trigger"] [data-slot="accordion-trigger-icon"] {}
+}
+```
+
+At-rules that qualify a rule (`@supports`, `@media`) come along, since the rule inside them means nothing on its own.
+Rules for structural slots do not — presets are not expected to style those. Deleting a selector you have no use for is
+part of writing the preset; what the scaffold guarantees is that nothing the shipped presets style is missing from it.
 
 Replace the vendor preset import in `resources/css/app.css` with the line printed by the command:
 

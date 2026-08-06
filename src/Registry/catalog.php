@@ -321,7 +321,7 @@ return [
             'description' => 'Accessible disclosure dropdown with state-driven presence, responsive positioning and outside-click/Escape dismissal',
             'controllers' => ['dropdown'],
             'styling' => [
-                'slots' => $slots(['dropdown', 'dropdown-trigger', 'dropdown-menu', 'dropdown-group', 'dropdown-label', 'dropdown-item', 'dropdown-separator', 'dropdown-shortcut']),
+                'slots' => $slots(['dropdown', 'dropdown-trigger', 'dropdown-trigger-icon', 'dropdown-menu', 'dropdown-group', 'dropdown-label', 'dropdown-item', 'dropdown-separator', 'dropdown-shortcut']),
             ],
         ],
         'empty-state' => [

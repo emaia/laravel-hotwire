@@ -93,7 +93,7 @@ Set `current` explicitly from your route or page state:
 </hw:navbar.item>
 ```
 
-Current links receive `data-current="true"` and `aria-current="page"`. Buttons receive `data-current="true"` without
+Current links receive `data-active="true"` and `aria-current="page"`. Buttons receive `data-active="true"` without
 `aria-current`.
 
 `as` is trimmed, lowercased, and restricted to `a`, `button`, or `span`; unsupported values are rejected. By default an
@@ -136,7 +136,7 @@ the native `disabled` attribute.
 - `data-variant="line|pills"`
 - `data-orientation="horizontal|vertical"`
 - `data-overflow="scroll|visible"`
-- `data-current="true|false"`
+- `data-active="true|false"`
 - `data-disabled="true"`
 
 ## Required controllers
