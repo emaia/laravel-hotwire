@@ -5,8 +5,7 @@
 
 # Laravel Hotwire
 
-The complete Hotwire stack for Laravel — Turbo Drive, Turbo Streams, Stimulus controllers, and Blade components out of
-the box.
+A server-driven UI toolkit for modern web applications.
 
 ## Table of Contents
 

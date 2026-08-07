@@ -107,11 +107,15 @@ it('scaffolds the compound selector a state needs, not a summary of it', functio
 it('keeps a rule inside the at-rules that qualify it', function () {
     $this->artisan('hotwire:make-preset brand --no-interaction')->assertSuccessful();
 
-    expect(File::get($this->targetDir.'/brand.css'))->toContain(<<<'CSS'
-        @media (prefers-reduced-motion: reduce) {
-                :is([data-slot="dropdown-menu"], [data-slot="tooltip"], [data-slot="hover-card-content"], [data-slot="popover-content"], [data-slot="multi-select-content"]) {}
-            }
-        CSS);
+    // Joined explicitly rather than written as a heredoc: the command always writes \n, while a
+    // CRLF checkout of this file would put \r\n in the literal and fail on Windows alone.
+    $expected = implode("\n", [
+        '    @media (prefers-reduced-motion: reduce) {',
+        '        :is([data-slot="dropdown-menu"], [data-slot="tooltip"], [data-slot="hover-card-content"], [data-slot="popover-content"], [data-slot="multi-select-content"]) {}',
+        '    }',
+    ]);
+
+    expect(File::get($this->targetDir.'/brand.css'))->toContain($expected);
 });
 
 it('scaffolds no rule the structural stylesheet owns', function () {
