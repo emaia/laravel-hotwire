@@ -38,12 +38,6 @@ ancestor, which no summary of a slot's own attributes can express:
     /* Accordion */
     [data-slot="accordion"] {}
     [data-slot="accordion-item"] {}
-
-    @supports selector(::details-content) {
-        [data-slot="accordion-item"]::details-content {}
-        [data-slot="accordion-item"][open]::details-content {}
-    }
-
     [data-slot="accordion-trigger"] {}
     [data-slot="accordion-item"][aria-disabled="true"] > [data-slot="accordion-trigger"] {}
     [data-slot="accordion-trigger-icon"] {}
@@ -52,8 +46,9 @@ ancestor, which no summary of a slot's own attributes can express:
 ```
 
 At-rules that qualify a rule (`@supports`, `@media`) come along, since the rule inside them means nothing on its own.
-Rules for structural slots do not — presets are not expected to style those. Deleting a selector you have no use for is
-part of writing the preset; what the scaffold guarantees is that nothing the shipped presets style is missing from it.
+Rules for structural slots do not, nor does anything `structural.css` owns — presets are not expected to restate the
+mechanics, which is why the Accordion's `::details-content` block is absent above. Deleting a selector you have no use
+for is part of writing the preset; what the scaffold guarantees is that nothing the shipped presets style is missing.
 
 Replace the vendor preset import in `resources/css/app.css` with the line printed by the command:
 
@@ -72,9 +67,14 @@ styles and import ordering remain under your control.
 
 ## Structural and visual CSS
 
-CSS that makes a controller function belongs beside that controller and uses its mechanics-specific hooks. For example,
-`resources/js/controllers/carousel.css` owns the viewport overflow, flex track, axis and slide sizing through
-`data-carousel-*` hooks. Every preset gets that behavior automatically when the controller loads.
+CSS that makes a component work — as opposed to CSS that gives it a look — lives in `resources/css/structural.css`. The
+test is whether breaking the rule leaves the component broken rather than restyled. It owns the carousel's viewport
+overflow, flex track, axis and slide sizing through `data-carousel-*` hooks, and the Accordion's `::details-content`
+collapse, which needs `allow-discrete` and `calc-size(auto, size)` or the panel snaps shut instead of animating.
+
+Every preset imports that file, so the behavior compiles into your stylesheet and holds on the first paint — no waiting
+for the bundle to run — and no preset has to rediscover it. Override the timing if you want (`transition-duration` on
+`::details-content`); you never restate the mechanism.
 
 CSS that defines appearance belongs in a preset and targets `data-slot`. Carousel buttons, dots, progress and counter
 are visual, so presets own them. Controller CSS must not choose their colors, radius or spacing; preset CSS must not

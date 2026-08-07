@@ -108,15 +108,20 @@ it('keeps a rule inside the at-rules that qualify it', function () {
     $this->artisan('hotwire:make-preset brand --no-interaction')->assertSuccessful();
 
     expect(File::get($this->targetDir.'/brand.css'))->toContain(<<<'CSS'
-        @supports selector(::details-content) {
-                [data-slot="accordion-item"]::details-content {}
-                [data-slot="accordion-item"][open]::details-content {}
-
-                @media (prefers-reduced-motion: reduce) {
-                    [data-slot="accordion-item"]::details-content {}
-                }
+        @media (prefers-reduced-motion: reduce) {
+                :is([data-slot="dropdown-menu"], [data-slot="tooltip"], [data-slot="hover-card-content"], [data-slot="popover-content"], [data-slot="multi-select-content"]) {}
             }
         CSS);
+});
+
+it('scaffolds no rule the structural stylesheet owns', function () {
+    $this->artisan('hotwire:make-preset brand --no-interaction')->assertSuccessful();
+
+    // Accordion collapse and carousel geometry are mechanics; a scaffolded empty body would read as
+    // an invitation to reimplement them, and a preset that skipped it would ship a broken component.
+    expect(File::get($this->targetDir.'/brand.css'))
+        ->not->toContain('::details-content')
+        ->not->toContain('data-carousel-container');
 });
 
 it('templates every token declared by the package, in both colour schemes', function () {

@@ -291,8 +291,10 @@ Operational roadmap and execution notes are maintained outside this repository. 
   and the installed stub scans those CSS files with `@source`. Do not add Tailwind utility defaults back to
   package Blade/PHP unless they are also represented by preset CSS or the `@source inline(...)` safelist in
   `resources/css/structural.css`, which every preset imports.
-- **Structural vs visual CSS.** Controller mechanics live beside the controller and use technical hooks (for example,
-  `resources/js/controllers/carousel.css` uses `data-carousel-*`). Visual styling lives in presets and uses `data-slot`.
+- **Structural vs visual CSS.** Mechanics live in `resources/css/structural.css` — the rules whose absence leaves a
+  component broken rather than restyled (the carousel track, the Accordion's `::details-content` collapse). Every preset
+  imports that file, so they compile into the application stylesheet and hold on the first paint instead of landing once
+  the bundle runs, and no new preset has to rediscover them. Visual styling lives in presets and uses `data-slot`.
   Mark presentation-free or controller-owned slots `structural` in the catalog; `hotwire:make-preset` scaffolds only
   visual slots.
 - **`Variants` helper is for application code, not for package components.** `Support\Variants` (CVA-equivalent in

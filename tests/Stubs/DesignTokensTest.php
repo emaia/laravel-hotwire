@@ -125,6 +125,26 @@ it('safelists exactly the utilities applied at runtime', function () {
         ->toBe([], 'Utilities applied at runtime but missing from @source inline(). Tailwind cannot see class names living in package JavaScript or Blade.');
 });
 
+it('rides transition-behavior inside the shorthand, never as its own declaration', function () {
+    // Lightning CSS reorders declarations. A `transition` shorthand emitted after a standalone
+    // `transition-behavior` resets it to normal, and the Accordion then snaps shut instead of
+    // collapsing — the source order looks correct and the built stylesheet is wrong.
+    $root = dirname(__DIR__, 2).'/resources/css';
+
+    foreach ([...(glob("{$root}/presets/*.css") ?: []), "{$root}/structural.css"] as $path) {
+        expect(file_get_contents($path))
+            ->not->toContain('transition-behavior:', basename($path).' declares transition-behavior on its own line.');
+    }
+});
+
+it('keeps the Accordion collapse in the structural stylesheet', function () {
+    // Mechanics, not looks: a preset left to restate these would ship an accordion that snaps shut.
+    expect(file_get_contents(dirname(__DIR__, 2).'/resources/css/structural.css'))
+        ->toContain('@supports selector(::details-content)')
+        ->toContain('content-visibility 180ms ease-out allow-discrete')
+        ->toContain('block-size: calc-size(auto, size)');
+});
+
 it('leaves the runtime safelist to the structural stylesheet', function (string $preset) {
     // A preset restating it snapshots the list, and goes stale the next time a controller applies one.
     expect(file_get_contents($preset))

@@ -7,7 +7,8 @@ Stimulus events for integration with other controllers, and cleans itself up on 
 **Identifier:** `carousel`
 **Install:** `php artisan hotwire:controllers carousel`
 
-> The published files are `carousel_controller.js` and `carousel.css` (imported by the controller). Slide size and
+> The published file is `carousel_controller.js`. The track geometry ships in
+> `resources/css/structural.css`, which every preset imports, so it applies without publishing anything. Slide size and
 > spacing are set with CSS custom properties — see the [Markup contract](#markup-contract).
 
 ## Requirements

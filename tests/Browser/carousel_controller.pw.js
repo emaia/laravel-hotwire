@@ -4,12 +4,12 @@ import { readFile } from "node:fs/promises";
 // Regression: a `will-change: transform` (or any composited layer) on the
 // container at init corrupts Embla's measurements when the carousel is offset on
 // the page (centered in a max-width wrapper on a wide screen), breaking the loop
-// so the wrapped slide overlaps the first. The carousel.css must not do that —
+// so the wrapped slide overlaps the first. The structural stylesheet must not do that —
 // the rendered layout must be identical whether the carousel is flush-left or
 // centered, with no slide overlapping the first.
 
 async function render(page, wrapperStyle) {
-    const css = await readFile("resources/js/controllers/carousel.css", "utf8");
+    const css = await readFile("resources/css/structural.css", "utf8");
 
     await page.setViewportSize({ width: 1920, height: 900 });
     await page.setContent(`
@@ -58,7 +58,7 @@ test("loop layout is offset-independent and does not overlap when centered", asy
 });
 
 test("--carousel-slide-size is overridable by an app class (no default rule to fight)", async ({ page }) => {
-    const css = await readFile("resources/js/controllers/carousel.css", "utf8");
+    const css = await readFile("resources/css/structural.css", "utf8");
     await page.setViewportSize({ width: 1200, height: 800 });
 
     async function slideWidth(rootClass) {

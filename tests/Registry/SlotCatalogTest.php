@@ -60,8 +60,8 @@ it('classifies presentation-free and controller-owned slots as structural', func
     ]);
 });
 
-it('keeps Carousel geometry in its controller stylesheet', function () {
-    $css = File::get(__DIR__.'/../../resources/js/controllers/carousel.css');
+it('keeps Carousel geometry in the structural stylesheet', function () {
+    $css = File::get(__DIR__.'/../../resources/css/structural.css');
 
     expect($css)
         ->toContain('[data-carousel-viewport]')

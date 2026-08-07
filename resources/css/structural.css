@@ -1,8 +1,14 @@
 /* @hotwire-package */
 /*
- * Structural rules every preset needs regardless of how it chooses to look. They key on the
- * technical hooks the package sets, never on a `data-slot` — which is exactly why they live here
- * and not in a preset, where a rule belonging to no component has no group to be scaffolded under.
+ * Mechanics, not appearance: the rules that make a component work at all, which every preset needs
+ * identically. Break one and the component is broken, not restyled — which is the test for whether
+ * something belongs here. Most key on a technical hook the package sets; a native element keys on
+ * whatever it exposes instead, so the Accordion below reaches `::details-content` through its slot.
+ *
+ * Every preset imports this file, so the rules compile into the application stylesheet and hold on
+ * the first paint. Shipping them from a controller import instead would leave the geometry to land
+ * only once the bundle had run, and leaving them in a preset would mean every new preset had to
+ * rediscover them — `hotwire:make-preset` scaffolds preset rules as empty bodies.
  */
 
 /* Utilities applied at runtime from strings Tailwind cannot see: `hidden` is toggled by
@@ -16,4 +22,97 @@
    into the top layer. */
 :where([data-hotwire-top-layer][popover]) {
     margin: 0;
+}
+
+/*
+ * --- Accordion collapse ---
+ *
+ * A native `<details>` only animates if `::details-content` is transitioned, and only collapses
+ * smoothly if `content-visibility` transitions discretely — otherwise the content vanishes on the
+ * first frame while the height is still travelling. A preset that wants different timing overrides
+ * `transition-duration`; it should never have to restate the machine.
+ */
+
+@supports selector(::details-content) {
+    [data-slot="accordion-item"]::details-content {
+        block-size: 0;
+        display: block;
+        opacity: 0;
+        overflow: hidden;
+        /* `allow-discrete` rides inside the shorthand on purpose. Declared separately as
+           `transition-behavior`, it is reset by whichever `transition` the minifier emits after
+           it — Lightning CSS reorders these, and the collapse then snaps shut. */
+        transition: block-size 180ms ease-out, opacity 150ms ease-out, content-visibility 180ms ease-out allow-discrete;
+    }
+
+    [data-slot="accordion-item"][open]::details-content {
+        block-size: auto;
+        block-size: calc-size(auto, size);
+        opacity: 1;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        [data-slot="accordion-item"]::details-content { transition: none; }
+    }
+}
+
+/*
+ * --- Carousel geometry ---
+ *
+ * Sizing/gaps are configured via custom properties (the "Embla way") — set --carousel-slide-size
+ * and --carousel-slide-spacing (the Blade component does this from props). Avoid styling slides
+ * with conflicting flex-basis utilities: the rules below are scoped (descendant + child) and would
+ * win on specificity.
+ *
+ * Identifier-independent: the rules key on the structural hooks the markup carries
+ * (data-carousel-viewport / data-carousel-container) and the axis mirrored onto
+ * [data-carousel-axis] — never on the Stimulus identifier — so a subclassed controller (its own
+ * identifier) reuses these styles unchanged.
+ */
+
+[data-carousel-viewport] {
+    overflow: hidden;
+}
+
+[data-carousel-container] {
+    display: flex;
+    /*
+     * No `will-change`/`transform` here: a composited layer / containing block on
+     * the container at init corrupts Embla's slide measurements when the carousel
+     * is offset on the page (e.g. centered in a max-width wrapper), breaking the
+     * loop (slides overlap / wrong gap). Embla applies its own transform after
+     * measuring, which is fine.
+     */
+}
+
+[data-carousel-container] > * {
+    box-sizing: border-box;
+    flex: 0 0 var(--carousel-slide-size, 100%);
+    min-width: 0;
+    min-height: 0;
+}
+
+/* --- Horizontal (default) --- */
+
+[data-carousel-axis="x"] [data-carousel-container] {
+    flex-direction: row;
+    touch-action: pan-y pinch-zoom;
+    margin-left: calc(var(--carousel-slide-spacing, 0px) * -1);
+}
+
+[data-carousel-axis="x"] [data-carousel-container] > * {
+    padding-left: var(--carousel-slide-spacing, 0px);
+}
+
+/* --- Vertical (axis: 'y') --- */
+
+[data-carousel-axis="y"] [data-carousel-container] {
+    flex-direction: column;
+    height: 100%;
+    touch-action: pan-x pinch-zoom;
+    margin-top: calc(var(--carousel-slide-spacing, 0px) * -1);
+}
+
+[data-carousel-axis="y"] [data-carousel-container] > * {
+    padding-top: var(--carousel-slide-spacing, 0px);
 }
