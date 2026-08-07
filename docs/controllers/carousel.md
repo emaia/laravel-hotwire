@@ -434,7 +434,7 @@ one-per-page on mobile:
 
 ## Turbo morph resilience
 
-When Turbo morph preserves the host element but replaces its inner slides (`<meta name="turbo-refresh-method" content="morph">`, `data-turbo-permanent` ancestors), Stimulus doesn't emit `disconnect`/`connect`, and Embla ends up holding references to slide nodes that are no longer in the DOM. The controller listens to `turbo:morph-element` on its own element and, if the registered slides have gone stale, re-initialises Embla against the current children. No manual wiring is needed.
+When Turbo morph preserves the host element but replaces its inner slides (`<hw:meta refresh />`, `data-turbo-permanent` ancestors), Stimulus doesn't emit `disconnect`/`connect`, and Embla ends up holding references to slide nodes that are no longer in the DOM. The controller listens to `turbo:morph-element` on its own element and, if the registered slides have gone stale, re-initialises Embla against the current children. No manual wiring is needed.
 
 ## Reactive options
 

@@ -113,6 +113,6 @@ In this mode the master checkbox is only checked when every item is checked; it 
 ## Turbo morph support
 
 The controller re-syncs the master's `checked` and `indeterminate` state on every `turbo:render` and when its owning
-Turbo Frame dispatches `turbo:frame-render`. Under morph (`@turboRefreshMethod('morph')` or
+Turbo Frame dispatches `turbo:frame-render`. Under morph (`<hw:meta refresh />` or
 `data-turbo-action="morph"`), idiomorph updates the children's checked attributes but does not fire `targetConnected` —
 so the master would otherwise stay stale. Events from unrelated frames are ignored.

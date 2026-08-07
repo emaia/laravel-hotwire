@@ -43,6 +43,15 @@ use Emaia\LaravelHotwire\Components\Item;
 use Emaia\LaravelHotwire\Components\Kbd;
 use Emaia\LaravelHotwire\Components\Map;
 use Emaia\LaravelHotwire\Components\Marker;
+use Emaia\LaravelHotwire\Components\Meta;
+use Emaia\LaravelHotwire\Components\Meta\Cache as MetaCache;
+use Emaia\LaravelHotwire\Components\Meta\ColorScheme as MetaColorScheme;
+use Emaia\LaravelHotwire\Components\Meta\Csrf as MetaCsrf;
+use Emaia\LaravelHotwire\Components\Meta\Prefetch as MetaPrefetch;
+use Emaia\LaravelHotwire\Components\Meta\Refresh as MetaRefresh;
+use Emaia\LaravelHotwire\Components\Meta\Root as MetaRoot;
+use Emaia\LaravelHotwire\Components\Meta\ViewTransition as MetaViewTransition;
+use Emaia\LaravelHotwire\Components\Meta\VisitControl as MetaVisitControl;
 use Emaia\LaravelHotwire\Components\Modal;
 use Emaia\LaravelHotwire\Components\MultiSelect;
 use Emaia\LaravelHotwire\Components\Navbar;
@@ -570,6 +579,105 @@ return [
             'controllers' => [],
             'styling' => [
                 'slots' => $slots(['marker', 'marker-icon', 'marker-content']),
+            ],
+        ],
+        'meta' => [
+            'class' => Meta::class,
+            'view' => 'hotwire::component-views.meta',
+            'docs' => 'docs/components/meta.md',
+            'category' => 'turbo',
+            'description' => 'Composes the Hotwire head metas, rendering only the ones the application opts into',
+            'controllers' => [],
+            'styling' => [
+                'slots' => $slots(),
+            ],
+        ],
+        'meta.cache' => [
+            'class' => MetaCache::class,
+            'view' => 'hotwire::component-views.meta-tag',
+            'docs' => 'docs/components/meta.md',
+            'category' => 'turbo',
+            'description' => 'Declares turbo-cache-control to opt a page out of the cache or its preview',
+            'controllers' => [],
+            'styling' => [
+                'slots' => $slots(),
+            ],
+        ],
+        'meta.color-scheme' => [
+            'class' => MetaColorScheme::class,
+            'view' => 'hotwire::component-views.meta-tag',
+            'docs' => 'docs/components/meta.md',
+            'category' => 'utility',
+            'description' => 'Declares color-scheme so form controls and scrollbars follow the active theme',
+            'controllers' => [],
+            'styling' => [
+                'slots' => $slots(),
+            ],
+        ],
+        'meta.csrf' => [
+            'class' => MetaCsrf::class,
+            'view' => 'hotwire::component-views.meta-tag',
+            'docs' => 'docs/components/meta.md',
+            'category' => 'utility',
+            'description' => 'Declares csrf-token, which the File Upload controller reads for its requests',
+            'controllers' => [],
+            'styling' => [
+                'slots' => $slots(),
+            ],
+        ],
+        'meta.prefetch' => [
+            'class' => MetaPrefetch::class,
+            'view' => 'hotwire::component-views.meta-tag',
+            'docs' => 'docs/components/meta.md',
+            'category' => 'turbo',
+            'description' => 'Declares turbo-prefetch, the link hover prefetching switch',
+            'controllers' => [],
+            'styling' => [
+                'slots' => $slots(),
+            ],
+        ],
+        'meta.refresh' => [
+            'class' => MetaRefresh::class,
+            'view' => 'hotwire::component-views.meta-refresh',
+            'docs' => 'docs/components/meta.md',
+            'category' => 'turbo',
+            'description' => 'Declares turbo-refresh-method and turbo-refresh-scroll for page refreshes',
+            'controllers' => [],
+            'styling' => [
+                'slots' => $slots(),
+            ],
+        ],
+        'meta.root' => [
+            'class' => MetaRoot::class,
+            'view' => 'hotwire::component-views.meta-tag',
+            'docs' => 'docs/components/meta.md',
+            'category' => 'turbo',
+            'description' => 'Declares turbo-root, the path prefix Turbo Drive is allowed to navigate within',
+            'controllers' => [],
+            'styling' => [
+                'slots' => $slots(),
+            ],
+        ],
+        'meta.view-transition' => [
+            'class' => MetaViewTransition::class,
+            'view' => 'hotwire::component-views.meta-tag',
+            'docs' => 'docs/components/meta.md',
+            'category' => 'turbo',
+            'description' => 'Declares view-transition so same-origin navigations animate',
+            'controllers' => [],
+            'styling' => [
+                'slots' => $slots(),
+            ],
+        ],
+        'meta.visit-control' => [
+            'class' => MetaVisitControl::class,
+            'view' => 'hotwire::component-views.meta-tag',
+            'docs' => 'docs/components/meta.md',
+            'category' => 'turbo',
+            'description' => 'Declares turbo-visit-control to force a full reload when visiting the page',
+            'controllers' => [],
+            'styling' => [
+                'slots' => $slots(),
             ],
         ],
         'modal' => [

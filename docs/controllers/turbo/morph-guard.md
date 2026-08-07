@@ -19,7 +19,7 @@ optional npm dependency is required.
 Configure the page to merge refresh responses into the existing DOM instead of replacing the whole body:
 
 ```blade
-@turboRefreshMethod('morph')
+<hw:meta refresh />
 ```
 
 Return a refresh Stream from the external update or broadcast path:

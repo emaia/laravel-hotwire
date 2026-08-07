@@ -86,7 +86,7 @@ If you'd rather replace the existing layer instead of stacking new ones, subclas
 
 ## Turbo morph resilience
 
-When Turbo morph preserves the host element but replaces its inner content (`<meta name="turbo-refresh-method" content="morph">`, `data-turbo-permanent` ancestors, some cache restore scenarios), Stimulus doesn't emit `disconnect`/`connect` and Leaflet ends up pointing at an orphaned container. The controller listens to `turbo:morph-element` on its own element and, if the Leaflet pane is gone, recreates the map with the current values. No manual wiring is needed.
+When Turbo morph preserves the host element but replaces its inner content (`<hw:meta refresh />`, `data-turbo-permanent` ancestors, some cache restore scenarios), Stimulus doesn't emit `disconnect`/`connect` and Leaflet ends up pointing at an orphaned container. The controller listens to `turbo:morph-element` on its own element and, if the Leaflet pane is gone, recreates the map with the current values. No manual wiring is needed.
 
 ## Custom tiles — `tileLayerUrl` / `tileLayerOptions` hooks
 

@@ -96,7 +96,7 @@ document.addEventListener("rich-text:image-upload", async (event) => {
 });
 ```
 
-Add `<meta name="csrf-token" content="{{ csrf_token() }}">` to your layout if it isn't already
+Add `<hw:meta csrf />` to your layout if it isn't already
 there — Laravel's `VerifyCsrfToken` middleware expects either a `_token` field or `X-CSRF-TOKEN`
 header on POSTs.
 
