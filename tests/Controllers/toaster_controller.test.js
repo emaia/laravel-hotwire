@@ -47,6 +47,28 @@ afterEach(async () => {
     }
 });
 
+// --- Contract ---
+//
+// What survives the native port: a single toaster instance published on window, kept alive across
+// reconnects, exposing destroy(), and the container living in the top layer above other overlays.
+// The options object handed to the renderer is not contract — most of it goes away with Sonner.
+
+test.serial("publishes a single instance on window.toaster exposing destroy()", async () => {
+    await mount(`<div data-controller="toaster"></div>`);
+
+    expect(window.toaster).toBeDefined();
+    expect(typeof window.toaster.destroy).toBe("function");
+});
+
+test.serial("keeps the same instance across reconnects", async () => {
+    await mount(`<div data-controller="toaster"></div>`);
+
+    const first = window.toaster;
+    mounted.controller.connect();
+
+    expect(window.toaster).toBe(first);
+});
+
 // --- connect ---
 
 test.serial("creates toaster on connect with default options", async () => {
