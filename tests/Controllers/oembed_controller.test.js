@@ -71,12 +71,28 @@ test.serial("iframe has allowfullscreen and allow attributes", async () => {
     expect(iframe.getAttribute("frameborder")).toBe("0");
 });
 
-test.serial("iframe wrapper has 16:9 aspect ratio", async () => {
+// --- preset-owned presentation ---
+
+test.serial("exposes the wrapper and frame as semantic slots", async () => {
     await mount(`<oembed url="https://www.youtube.com/watch?v=dQw4w9WgXcQ"></oembed>`);
 
-    const wrapper = document.querySelector("iframe").parentElement;
-    expect(wrapper.style.aspectRatio).toBe("16 / 9");
-    expect(wrapper.style.width).toBe("100%");
+    const iframe = document.querySelector("iframe");
+    const wrapper = iframe.parentElement;
+
+    expect(wrapper.dataset.slot).toBe("oembed");
+    expect(iframe.dataset.slot).toBe("oembed-frame");
+});
+
+test.serial("leaves presentation to the preset", async () => {
+    await mount(`<oembed url="https://www.youtube.com/watch?v=dQw4w9WgXcQ"></oembed>`);
+
+    const iframe = document.querySelector("iframe");
+    const wrapper = iframe.parentElement;
+
+    expect(wrapper.getAttribute("style")).toBeNull();
+    expect(wrapper.getAttribute("class")).toBeNull();
+    expect(iframe.getAttribute("style")).toBeNull();
+    expect(iframe.getAttribute("class")).toBeNull();
 });
 
 // --- fallback for unknown URLs ---
@@ -86,6 +102,7 @@ test.serial("creates a link for unknown URL providers", async () => {
 
     const link = document.querySelector("a");
     expect(link).not.toBeNull();
+    expect(link.dataset.slot).toBe("oembed-link");
     expect(link.href).toBe("https://example.com/video");
     expect(link.target).toBe("_blank");
     expect(link.rel).toBe("noopener noreferrer");

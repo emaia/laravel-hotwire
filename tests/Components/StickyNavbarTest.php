@@ -64,7 +64,7 @@ it('renders an accessible navbar with item links', function () {
         ->and($html)->toContain('data-overflow="scroll"')
         ->and($html)->toContain('href="/basic"')
         ->and($html)->toContain('href="/content"')
-        ->and($html)->toContain('data-current="true"')
+        ->and($html)->toContain('data-active="true"')
         ->and($html)->toContain('aria-current="page"');
 });
 
@@ -102,7 +102,7 @@ it('renders navbar items as buttons when no href is provided', function () {
 
     expect($html)->toContain('<button')
         ->and($html)->toContain('type="button"')
-        ->and($html)->toContain('data-current="true"')
+        ->and($html)->toContain('data-active="true"')
         ->and($html)->not->toContain('aria-current="page"');
 });
 

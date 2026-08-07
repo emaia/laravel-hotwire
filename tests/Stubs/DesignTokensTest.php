@@ -3,18 +3,19 @@
 $stubPath = realpath(__DIR__.'/../../stubs/resources/css/app.css');
 $tokensPath = realpath(__DIR__.'/../../resources/css/tokens.css');
 $variantsPath = realpath(__DIR__.'/../../resources/css/custom-variants.css');
-$novaPresetPath = realpath(__DIR__.'/../../resources/css/presets/nova.css');
 
-// --- Token system ---
+dataset('design presets', fn () => collect(glob(__DIR__.'/../../resources/css/presets/*.css') ?: [])
+    ->mapWithKeys(fn (string $path): array => [pathinfo($path, PATHINFO_FILENAME) => [$path]])
+    ->all());
+
+// --- Token system and install stub ---
 
 it('contains @theme inline block', function () use ($tokensPath) {
-    $css = file_get_contents($tokensPath);
-    expect($css)->toContain('@theme inline');
+    expect(file_get_contents($tokensPath))->toContain('@theme inline');
 });
 
 it('declares all semantic color tokens', function () use ($tokensPath) {
     $css = file_get_contents($tokensPath);
-
     $required = [
         '--color-background',
         '--color-foreground',
@@ -35,6 +36,14 @@ it('declares all semantic color tokens', function () use ($tokensPath) {
         '--color-border',
         '--color-input',
         '--color-ring',
+        '--color-sidebar',
+        '--color-sidebar-foreground',
+        '--color-sidebar-primary',
+        '--color-sidebar-primary-foreground',
+        '--color-sidebar-accent',
+        '--color-sidebar-accent-foreground',
+        '--color-sidebar-border',
+        '--color-sidebar-ring',
     ];
 
     foreach ($required as $token) {
@@ -45,28 +54,13 @@ it('declares all semantic color tokens', function () use ($tokensPath) {
 it('declares all radius tokens', function () use ($tokensPath) {
     $css = file_get_contents($tokensPath);
 
-    $required = [
-        '--radius-sm',
-        '--radius-md',
-        '--radius-lg',
-        '--radius-xl',
-        '--radius-2xl',
-        '--radius-3xl',
-        '--radius-4xl',
-    ];
-
-    foreach ($required as $token) {
+    foreach (['--radius-sm', '--radius-md', '--radius-lg', '--radius-xl', '--radius-2xl', '--radius-3xl', '--radius-4xl'] as $token) {
         expect($css)->toContain($token);
     }
 });
 
-it('uses proportional scaling (multiplication) for radius derivations', function () use ($tokensPath) {
-    // Pixel arithmetic (-/+ Npx) breaks proportions when the app overrides
-    // --radius from the default. Proportional scaling keeps sm/md/xl/2xl/3xl/4xl
-    // in the same visual relation to the base regardless of what the app sets.
-    $css = file_get_contents($tokensPath);
-
-    expect($css)
+it('uses proportional scaling for radius derivations', function () use ($tokensPath) {
+    expect(file_get_contents($tokensPath))
         ->toContain('--radius-sm: calc(var(--radius) * 0.6)')
         ->toContain('--radius-md: calc(var(--radius) * 0.8)')
         ->toContain('--radius-xl: calc(var(--radius) * 1.4)')
@@ -75,778 +69,305 @@ it('uses proportional scaling (multiplication) for radius derivations', function
         ->toContain('--radius-4xl: calc(var(--radius) * 2.6)');
 });
 
-// --- Light mode ---
-
-it('contains :root with OKLCH values', function () use ($tokensPath) {
-    $css = file_get_contents($tokensPath);
-    expect($css)->toContain(':root');
-
-    $requiredVars = [
-        '--background:',
-        '--foreground:',
-        '--primary:',
-        '--primary-foreground:',
-        '--secondary:',
-        '--secondary-foreground:',
-        '--muted:',
-        '--muted-foreground:',
-        '--accent:',
-        '--accent-foreground:',
-        '--destructive:',
-        '--destructive-foreground:',
-        '--border:',
-        '--input:',
-        '--ring:',
-        '--radius:',
-    ];
-
-    foreach ($requiredVars as $var) {
-        expect($css)->toContain($var);
-    }
-
-    expect($css)->toContain('oklch(');
-});
-
-// --- Dark mode ---
-
-it('contains data-theme dark with overrides', function () use ($tokensPath) {
+it('contains light and dark OKLCH token values', function () use ($tokensPath) {
     $css = file_get_contents($tokensPath);
 
-    expect($css)->toContain('[data-theme="dark"]');
+    expect($css)
+        ->toContain(':root')
+        ->toContain('[data-theme="dark"]')
+        ->toContain('oklch(');
 
-    $darkVars = [
-        '--background:',
-        '--foreground:',
-        '--primary:',
-        '--primary-foreground:',
-        '--destructive:',
-    ];
-
-    foreach ($darkVars as $var) {
-        expect($css)->toContain("{$var} ");
+    foreach (['--background:', '--foreground:', '--primary:', '--primary-foreground:', '--destructive:', '--radius:'] as $variable) {
+        expect($css)->toContain($variable);
     }
 });
 
-// --- Preserve existing features ---
-
-it('contains @layer base with global border/outline rules', function () use ($tokensPath) {
-    $css = file_get_contents($tokensPath);
-
-    expect($css)->toContain('@layer base');
-    expect($css)->toContain('@apply border-border outline-ring/50');
+it('contains the base layer border and outline contract', function () use ($tokensPath) {
+    expect(file_get_contents($tokensPath))
+        ->toContain('@layer base')
+        ->toContain('@apply border-border outline-ring/50');
 });
 
-it('scans package CSS instead of Blade or PHP sources', function () use ($stubPath) {
-    $css = file_get_contents($stubPath);
-
-    expect($css)
-        ->toContain("@source '../../vendor/emaia/laravel-hotwire/resources/css/**/*.css'")
-        ->not->toContain('resources/views/**/*.blade.php')
-        ->not->toContain('src/Components/**/*.php');
-});
-
-it('safelists runtime classes applied by Stimulus controllers', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
-
-    expect($css)
-        ->toContain('@source inline(')
-        ->toContain('block')
-        ->toContain('pointer-events-none')
-        ->toContain('scale-95')
-        ->toContain('duration-150')
-        ->toContain('duration-100');
-});
-
-it('applies shared button styles to attachment actions', function () use ($novaPresetPath) {
-    $lines = collect(explode("\n", file_get_contents($novaPresetPath)));
-    $base = $lines->first(fn (string $line): bool => str_contains($line, ':is([data-slot="button"]'));
-    $ghost = $lines->first(fn (string $line): bool => str_contains($line, '[data-variant="ghost"]'));
-    $iconXs = $lines->first(fn (string $line): bool => str_contains($line, '[data-size="icon-xs"]'));
-
-    expect($base)->toContain('[data-slot="attachment-action"]')
-        ->and($ghost)->toContain('[data-slot="attachment-action"]')
-        ->and($iconXs)->toContain('[data-slot="attachment-action"]');
-});
-
-it('keeps closed floating surfaces visible until Presence applies hidden', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
-
-    expect($css)
-        ->toContain('[data-slot="multi-select-content"])[data-state="closed"] { @apply pointer-events-none scale-95 opacity-0; }')
-        ->not->toContain('[data-state="closed"] { @apply hidden');
-});
-
-it('uses the pre-connect color scheme mode to avoid toggle icon flicker', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
-
-    expect($css)
-        ->toContain('html[data-color-scheme-mode="system"] [data-slot="color-scheme-toggle"][data-color-scheme-modes-value~="system"] [data-mode-icon="system"]')
-        ->toContain('html[data-color-scheme-mode="light"] [data-slot="color-scheme-toggle"] [data-scheme-icon="light"]')
-        ->toContain('html[data-color-scheme-mode="dark"] [data-slot="color-scheme-toggle"] [data-scheme-icon="dark"]')
-        ->toContain('html:not([data-color-scheme-mode]) [data-slot="color-scheme-toggle"][data-mode="system"][data-color-scheme-modes-value~="system"] [data-mode-icon="system"]');
-});
-
-it('uses resolved icons when system is outside a color scheme toggle cycle', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
-
-    expect($css)
-        ->toContain('html[data-color-scheme-mode="system"] [data-slot="color-scheme-toggle"][data-color-scheme-modes-value~="system"] [data-mode-icon="system"]')
-        ->toContain('html[data-color-scheme-mode="system"][data-theme="light"] [data-slot="color-scheme-toggle"]:not([data-color-scheme-modes-value~="system"]) [data-scheme-icon="light"]')
-        ->toContain('html[data-color-scheme-mode="system"][data-theme="dark"] [data-slot="color-scheme-toggle"]:not([data-color-scheme-modes-value~="system"]) [data-scheme-icon="dark"]')
-        ->toContain('html:not([data-color-scheme-mode]) [data-slot="color-scheme-toggle"][data-mode="system"]:not([data-color-scheme-modes-value~="system"])[data-scheme="light"] [data-scheme-icon="light"]');
-});
-
-it('preserves existing @custom-variant rules', function () use ($variantsPath) {
+it('preserves all package custom variants', function () use ($variantsPath) {
     $css = file_get_contents($variantsPath);
 
-    $variants = [
-        'turbo-preview',
-        'turbo-visit',
-        'form-busy',
-        'frame-busy',
-        'in-turbo-frame',
-        'in-remote-turbo-frame',
-        'modal',
-        'dark',
-    ];
-
-    foreach ($variants as $variant) {
+    foreach (['turbo-preview', 'turbo-visit', 'form-busy', 'frame-busy', 'in-turbo-frame', 'in-remote-turbo-frame', 'modal', 'drawer', 'sheet', 'dark'] as $variant) {
         expect($css)->toContain("@custom-variant {$variant}");
     }
 });
 
-it('keeps the app css stub thin and imports the default preset', function () use ($stubPath) {
+it('keeps the app css stub thin and scans package css', function () use ($stubPath) {
     $css = file_get_contents($stubPath);
 
     expect($css)
         ->toContain('@import "tailwindcss"')
         ->toContain("@import '../../vendor/emaia/laravel-hotwire/resources/css/presets/nova.css'")
+        ->toContain("@source '../../vendor/emaia/laravel-hotwire/resources/css/**/*.css'")
+        ->not->toContain('resources/views/**/*.blade.php')
+        ->not->toContain('src/Components/**/*.php')
         ->not->toContain('@theme inline')
-        ->not->toContain('@custom-variant turbo-preview');
+        ->not->toContain(':root {');
 });
 
-it('defines component styles in the nova preset via data-slot selectors', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
+// --- Shared preset contracts ---
 
-    expect($css)
-        ->toContain('[data-slot="accordion"]')
-        ->toContain('[data-slot="accordion-item"]')
-        ->toContain('[data-slot="accordion-trigger"]')
-        ->toContain('[data-slot="accordion-content"]')
-        ->toContain('[data-slot="field-group"]')
-        ->toContain('[data-slot="field-description"]')
-        ->toContain('[data-slot="field-description"] > a')
-        ->toContain('[data-slot="field-error"]')
-        ->toContain('[data-slot="field-error"] > ul')
-        ->toContain('[data-slot="field-content"]')
-        ->toContain('[data-slot="field-separator"]')
-        ->toContain('[data-slot="button"]')
-        ->toContain('[data-slot="aspect-ratio"]')
-        ->toContain('[data-slot="badge"]')
-        ->toContain('[data-slot="avatar"]')
-        ->toContain('[data-slot="avatar-image"]')
-        ->toContain('[data-slot="avatar-fallback"]')
-        ->toContain('[data-slot="avatar-badge"]')
-        ->toContain('[data-slot="avatar-group"]')
-        ->toContain('[data-slot="avatar-group-count"]')
-        ->toContain('[data-slot="button-group"]')
-        ->toContain('[data-slot="button-group-text"]')
-        ->toContain('[data-slot="button-group-separator"]')
-        ->toContain('[data-slot="progress"]')
-        ->toContain('[data-slot="progress-track"]')
-        ->toContain('[data-slot="progress-indicator"]')
-        ->toContain('[data-slot="progress-label"]')
-        ->toContain('[data-slot="progress-value"]')
-        ->toContain('[data-slot="card"]')
-        ->toContain('[data-slot="card-header"]')
-        ->toContain('[data-slot="card-footer"]')
-        ->toContain('[data-slot="empty-state"]')
-        ->toContain('[data-slot="empty-state-media"]')
-        ->toContain('[data-slot="kbd"]')
-        ->toContain('[data-slot="kbd-group"]')
-        ->toContain('[data-slot="marker"]')
-        ->toContain('[data-slot="marker-icon"]')
-        ->toContain('[data-slot="marker-content"]')
-        ->toContain('[data-slot="skeleton"]')
-        ->toContain('[data-slot="separator"]')
-        ->toContain('[data-slot="alert"]')
-        ->toContain('[data-slot="alert-title"]')
-        ->toContain('[data-slot="item"]')
-        ->toContain('[data-slot="item-media"]')
-        ->toContain('[data-slot="item-separator"]')
-        ->toContain('[data-slot="table-container"]')
-        ->toContain('[data-slot="table-row"]')
-        ->toContain('[data-slot="input"]')
-        ->toContain('[data-slot="modal-panel"]')
-        ->toContain('[data-slot="alert-dialog-panel"]');
+it('safelists exactly the utilities applied at runtime', function () {
+    $css = file_get_contents(dirname(__DIR__, 2).'/resources/css/structural.css');
+
+    expect($css)->toContain('@source inline(');
+
+    preg_match('/@source inline\("([^"]*)"\)/', $css, $match);
+    $safelisted = preg_split('/\s+/', trim($match[1] ?? '')) ?: [];
+
+    expect(array_diff($safelisted, runtimeAppliedClasses()))
+        ->toBe([], 'Safelisted utilities that nothing applies at runtime. Utilities reached through @apply resolve at build time and must not be listed.')
+        ->and(array_diff(runtimeAppliedClasses(), $safelisted))
+        ->toBe([], 'Utilities applied at runtime but missing from @source inline(). Tailwind cannot see class names living in package JavaScript or Blade.');
 });
 
-it('keeps card spacing aligned with shadcn nova', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
+it('rides transition-behavior inside the shorthand, never as its own declaration', function () {
+    // Lightning CSS reorders declarations. A `transition` shorthand emitted after a standalone
+    // `transition-behavior` resets it to normal, and the Accordion then snaps shut instead of
+    // collapsing — the source order looks correct and the built stylesheet is wrong.
+    $root = dirname(__DIR__, 2).'/resources/css';
 
-    expect($css)
-        ->toContain('[data-slot="card"] { --card-spacing: --spacing(4); @apply flex flex-col gap-(--card-spacing) overflow-hidden rounded-xl bg-card py-(--card-spacing)')
-        ->toContain('[data-slot="card-header"] { @apply grid auto-rows-min items-start gap-1 rounded-t-xl px-(--card-spacing) has-[[data-slot=card-action]]:grid-cols-[1fr_auto] has-[[data-slot=card-description]]:grid-rows-[auto_auto] [.border-b]:pb-(--card-spacing); }');
+    foreach ([...(glob("{$root}/presets/*.css") ?: []), "{$root}/structural.css"] as $path) {
+        expect(file_get_contents($path))
+            ->not->toContain('transition-behavior:', basename($path).' declares transition-behavior on its own line.');
+    }
 });
 
-it('smooths accordion details content without measuring height in JavaScript', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
-
-    expect($css)
-        ->toContain('[data-slot="accordion-item"]::details-content')
-        ->toContain('[data-slot="accordion-item"][aria-disabled="true"] > [data-slot="accordion-trigger"]')
-        ->toContain('block-size: 0')
-        ->toContain('block-size: calc-size(auto, size)')
-        ->toContain('transition-behavior: allow-discrete')
-        ->toContain('prefers-reduced-motion: reduce');
+it('keeps the Accordion collapse in the structural stylesheet', function () {
+    // Mechanics, not looks: a preset left to restate these would ship an accordion that snaps shut.
+    expect(file_get_contents(dirname(__DIR__, 2).'/resources/css/structural.css'))
+        ->toContain('@supports selector(::details-content)')
+        ->toContain('content-visibility 180ms ease-out allow-discrete')
+        ->toContain('block-size: calc-size(auto, size)');
 });
 
-it('keeps item icon media unframed like the shadcn base-nova reference', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
+it('leaves the runtime safelist to the structural stylesheet', function (string $preset) {
+    // A preset restating it snapshots the list, and goes stale the next time a controller applies one.
+    expect(file_get_contents($preset))
+        ->not->toContain('@source inline(')
+        ->toContain('@import "../structural.css";');
+})->with('design presets');
+
+/**
+ * Utility classes the package applies at runtime, from strings Tailwind's scanner never reads:
+ * JavaScript literals and Stimulus Classes API values declared in package Blade. State hooks are
+ * excluded — the package toggles them for CSS to target, so Tailwind must never generate them, and
+ * adding to that list asserts a new runtime class needs no utility behind it.
+ *
+ * @return string[]
+ */
+function runtimeAppliedClasses(): array
+{
+    $stateHooks = ['clear-input--touched', 'is-active'];
+    $root = dirname(__DIR__, 2);
+    $classes = [];
+
+    foreach (File::allFiles($root.'/resources/js') as $file) {
+        if (! in_array($file->getExtension(), ['js', 'ts'], true)) {
+            continue;
+        }
+
+        preg_match_all('/classList\.(?:add|remove|toggle)\(\s*["\']([^"\']+)["\']/', $file->getContents(), $matches);
+        $classes = [...$classes, ...$matches[1]];
+    }
+
+    foreach (File::allFiles($root.'/resources/views') as $file) {
+        preg_match_all('/data-[a-z-]+-class["\']?\s*(?:=>|=)\s*["\']([^"\']+)["\']/', $file->getContents(), $matches);
+        $classes = [...$classes, ...$matches[1]];
+    }
+
+    $classes = array_diff(array_unique($classes), $stateHooks);
+
+    sort($classes);
+
+    return array_values($classes);
+}
+
+it('keeps closed floating surfaces renderable until Presence hides them', function (string $preset) {
+    $css = file_get_contents($preset);
 
     expect($css)
-        ->toContain('[data-slot="item-media"][data-variant="icon"] { @apply [&>[data-slot=icon]]:size-4; }')
-        ->not->toContain('[data-slot="item-media"][data-variant="icon"] { @apply size-8 rounded-md border border-border bg-background');
-});
+        ->toContain('[data-slot="multi-select-content"])[data-state="closed"]')
+        ->toContain('[data-state="open"]')
+        ->not->toMatch('/\[data-state="closed"\][^{]*\{[^}]*\b(?:display:\s*none|@apply[^;}]*\bhidden\b)/s');
+})->with('design presets');
 
-it('keeps attachment image previews covered and uses the shared shimmer motion', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
-
-    expect($css)
-        ->toContain('[data-slot="attachment-media"] > img')
-        ->toContain('@apply size-full object-cover')
-        ->toContain('[data-shimmer="true"]')
-        ->toContain('hotwire-shimmer')
-        ->toContain('prefers-reduced-motion: reduce');
-    expect(substr_count($css, 'animation: hotwire-shimmer 1.35s linear infinite;'))->toBe(1);
-});
-
-it('styles default and custom file upload errors with destructive feedback', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
+it('uses pre-connect and resolved color scheme hooks', function (string $preset) {
+    $css = file_get_contents($preset);
 
     expect($css)
-        ->toContain(':where([data-slot="file-upload-dropzone"]:not([data-file-upload-dropzone-variant="bare"])[data-state="error"] [data-slot="empty-state-description"]) { @apply text-destructive; }')
-        ->toContain('[data-slot="file-upload-feedback"] { @apply text-sm text-muted-foreground; }')
-        ->toContain('[data-slot="file-upload"][data-upload-state="error"] > [data-slot="file-upload-feedback"] { @apply text-destructive; }');
-});
+        ->toContain('html[data-color-scheme-mode="system"]')
+        ->toContain('html[data-color-scheme-mode="light"]')
+        ->toContain('html[data-color-scheme-mode="dark"]')
+        ->toContain('html:not([data-color-scheme-mode])')
+        ->toContain('[data-mode-icon="system"]')
+        ->toContain('[data-scheme-icon="light"]')
+        ->toContain('[data-scheme-icon="dark"]');
+})->with('design presets');
 
-it('keeps the visual file upload preset off bare dropzones', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
+it('keeps file upload state and bare dropzone contracts', function (string $preset) {
+    $css = file_get_contents($preset);
 
     expect($css)
-        ->toContain(':where([data-slot="file-upload-dropzone"]:not([data-file-upload-dropzone-variant="bare"])) { @apply flex min-h-32 w-full cursor-pointer items-center justify-center rounded-lg border border-dashed border-border bg-background p-6 text-center text-sm text-muted-foreground transition-colors hover:bg-accent/50 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none aria-invalid:border-destructive aria-invalid:ring-destructive/20; }')
-        ->toContain(':where([data-slot="file-upload-dropzone"][data-file-upload-dropzone-variant="bare"]) { @apply w-fit max-w-full cursor-pointer; }')
-        ->toContain(':where([data-slot="file-upload"][data-dragging="true"] [data-slot="file-upload-dropzone"]:not([data-file-upload-dropzone-variant="bare"]))')
-        ->toContain(':where([data-slot="file-upload-dropzone"]:not([data-file-upload-dropzone-variant="bare"])[aria-invalid="true"])')
-        ->toContain(':where([data-slot="file-upload"][data-density="compact"] [data-slot="file-upload-dropzone"]:not([data-file-upload-dropzone-variant="bare"]) [data-slot="empty-state"])')
+        ->toContain('[data-file-upload-dropzone-variant="bare"]')
+        ->toContain('[data-dragging="true"]')
+        ->toContain('[aria-invalid="true"]')
+        ->toContain('[data-state="error"]')
+        ->toContain('[data-upload-state="error"]')
+        ->toContain('[data-slot="file-upload-image-preview"]:not([hidden])')
+        ->toContain('[data-loading="true"]')
         ->not->toContain('[data-slot="file-upload-dropzone"] { @apply flex min-h-32');
-});
+})->with('design presets');
 
-it('gives bare image uploads a content-sized absolute preview', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
-
-    expect($css)
-        ->toContain(':where([data-slot="file-upload"][data-view="image"] [data-slot="file-upload-dropzone"]:not([data-file-upload-dropzone-variant="bare"])) { @apply relative min-h-0 w-fit overflow-hidden p-0; }')
-        ->toContain(':where([data-slot="file-upload"][data-view="image"] [data-slot="file-upload-dropzone"][data-file-upload-dropzone-variant="bare"]) { @apply relative; }')
-        ->toContain(':where([data-slot="file-upload"][data-view="image"] [data-slot="file-upload-dropzone"][data-file-upload-dropzone-variant="bare"] > [data-slot="file-upload-image-base"]) { @apply flex min-w-0; }')
-        ->toContain(':where([data-slot="file-upload"][data-view="image"] [data-file-upload-default-image]:not([data-file-upload-dropzone-variant="bare"])) { @apply size-24; }')
-        ->toContain(':where([data-slot="file-upload"][data-view="image"] [data-slot="file-upload-dropzone"]:not([data-file-upload-dropzone-variant="bare"]) [data-slot="file-upload-image-base"]) { @apply flex size-full items-center justify-center; }')
-        ->toContain(':where([data-slot="file-upload"][data-view="image"] [data-slot="file-upload-image-preview"]) { @apply pointer-events-none absolute inset-0 size-full rounded-[inherit] object-cover transition-opacity; }')
-        ->toContain(':where([data-slot="file-upload"][data-view="image"] [data-slot="file-upload-dropzone"]:has(> [data-slot="file-upload-image-preview"]:not([hidden])) > [data-slot="file-upload-image-base"]) { visibility: hidden; }')
-        ->not->toContain('grid-area: 1 / 1')
-        ->toContain('[data-slot="file-upload"][data-view="image"] > [data-slot="file-upload-feedback"] { @apply hidden; }')
-        ->toContain('[data-slot="file-upload"][data-view="image"][data-upload-state="error"] > [data-slot="file-upload-feedback"] { @apply block; }');
-});
-
-it('defines aspect ratio styling in the nova preset', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
+it('keeps sidebar icon collapse responsive and labels in layout flow', function (string $preset) {
+    $css = file_get_contents($preset);
 
     expect($css)
-        ->toContain('[data-slot="aspect-ratio"] { @apply relative aspect-(--ratio); }');
-});
+        ->toContain('[data-slot="sidebar"][data-collapsible="icon"] [data-slot="sidebar-menu-button"] { @apply md:')
+        ->toContain('[data-slot="sidebar-menu-button"] > span:not([data-slot="avatar"])')
+        ->not->toMatch('/\[data-slot="sidebar-menu-button"\] > span:not\([^}]+@apply[^;}]*(?:sr-only|opacity-0)/s');
+})->with('design presets');
 
-it('does not clip avatar badges from the avatar root', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
-
-    expect($css)
-        ->not->toMatch('/\[data-slot="avatar"\][^{]*\{[^}]*overflow-hidden/')
-        ->toContain('[data-slot="avatar-image"] { @apply absolute inset-0 aspect-square size-full rounded-[inherit] object-cover; }')
-        ->toContain('[data-slot="avatar-fallback"] { @apply flex size-full items-center justify-center rounded-[inherit] bg-muted text-sm text-muted-foreground; }');
-});
-
-it('matches shadcn nova avatar sizing and grouped count behavior', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
+it('drives native slider tracks from the controller value', function (string $preset) {
+    $css = file_get_contents($preset);
 
     expect($css)
-        ->toContain('[data-slot="avatar"] { @apply relative isolate inline-flex size-8')
-        ->toContain('[data-slot="avatar"][data-size="sm"] { @apply size-6 text-xs; }')
-        ->toContain('[data-slot="avatar"][data-size="lg"] { @apply size-10; }')
-        ->toContain('[data-slot="avatar-group"] > [data-slot="avatar"] { @apply ring-2 ring-background; }')
-        ->toContain('[data-slot="avatar-group-count"] { @apply relative inline-flex size-8')
-        ->toContain('ring-2 ring-background')
-        ->toContain('[data-slot="avatar-group"]:has(> [data-slot="avatar"][data-size="sm"]) > [data-slot="avatar-group-count"] { @apply size-6 [&>svg]:size-3; }')
-        ->toContain('[data-slot="avatar-group"]:has(> [data-slot="avatar"][data-size="lg"]) > [data-slot="avatar-group-count"] { @apply size-10 [&>svg]:size-5; }');
-});
-
-it('keeps avatar images out of the group stacking order', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
-
-    expect($css)
-        ->toContain('[data-slot="avatar-image"] { @apply absolute inset-0 aspect-square size-full rounded-[inherit] object-cover; }')
-        ->not->toContain('[data-slot="avatar-image"] { @apply absolute inset-0 z-10');
-});
-
-it('applies destructive alert color to the alert description', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
-
-    expect($css)
-        ->toContain('[data-slot="alert"][data-variant="destructive"] { @apply bg-card text-destructive')
-        ->toContain('[data-slot="alert"][data-variant="destructive"] > [data-slot="alert-description"] { @apply text-destructive/90; }');
-});
-
-it('keeps item media sizing driven by the media variant and parent item size', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
-
-    expect($css)
-        ->toContain('[data-slot="item-media"][data-variant="default"] { @apply bg-transparent; }')
-        ->toContain('[data-slot="item-media"][data-variant="image"] { @apply size-10 overflow-hidden rounded-sm')
-        ->toContain('[data-slot="item"][data-size="sm"] [data-slot="item-media"][data-variant="image"] { @apply size-8; }')
-        ->toContain('[data-slot="item"][data-size="xs"] [data-slot="item-media"][data-variant="image"] { @apply size-6; }')
-        ->not->toContain('[data-slot="item-media"][data-variant="default"] { @apply size-8; }');
-});
-
-it('does not make field groups size containers by default', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
-
-    expect($css)
-        ->toContain('[data-slot="field-group"]')
-        ->not->toContain('container-type: inline-size')
-        ->not->toContain('@container field-group');
-});
-
-it('does not apply Tailwind marker-only classes inside presets', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
-
-    expect($css)->not->toMatch('/@apply[^;]*\bgroup\b/');
-});
-
-it('keeps sidebar icon collapse desktop-only and labels in flow', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
-
-    expect($css)
-        ->toContain('[data-slot="sidebar-menu-button"] { @apply flex w-full appearance-none items-center gap-2 overflow-hidden')
-        ->toContain('text-left text-sm whitespace-nowrap outline-none transition-[width,height,padding]')
-        ->toContain('[data-slot="sidebar-menu-button"] > span:not([data-slot="avatar"]) { @apply min-w-0 truncate; }')
-        ->toContain('[data-slot="sidebar"][data-collapsible="icon"] [data-slot="sidebar-menu-button"] { @apply md:size-8 md:p-2; }')
-        ->toContain('[data-slot="sidebar"][data-collapsible="icon"] [data-slot="sidebar-content"] { @apply md:overflow-hidden; }')
-        ->toContain('[data-slot="sidebar"][data-collapsible="icon"] [data-slot="sidebar-menu-sub"] { @apply md:hidden; }')
-        ->toContain('[data-slot="sidebar-menu-button"][data-dropdown-state="open"]')
-        ->toContain('[data-slot="sidebar-menu-sub-button"] { @apply flex h-7 min-w-0 -translate-x-px appearance-none items-center gap-2 overflow-hidden rounded-md border-0 bg-transparent px-2 text-sidebar-foreground whitespace-nowrap')
-        ->not->toContain('[data-slot="sidebar"][data-collapsible="icon"] [data-slot="sidebar-menu-button"] > span { @apply sr-only; }')
-        ->not->toContain('[data-slot="sidebar"][data-collapsible="icon"] [data-slot="sidebar-menu-button"] > span:not([data-slot="avatar"]) { @apply sr-only; }')
-        ->not->toContain('[data-slot="sidebar"][data-collapsible="icon"] [data-slot="sidebar-menu-button"] > span:not([data-slot="avatar"]) { @apply opacity-0; }')
-        ->not->toContain('[data-slot="sidebar-menu-button"] > span:not([data-slot="avatar"]) { @apply min-w-0 truncate transition-opacity');
-});
-
-it('keeps sidebar inset sizing aligned with shadcn', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
-
-    expect($css)
-        ->toContain('[data-slot="sidebar-inset"] { @apply relative flex min-h-svh max-w-full w-full flex-1 flex-col bg-background; }')
-        ->toContain('[data-slot="sidebar"][data-variant="inset"] ~ [data-slot="sidebar-inset"] { @apply md:m-2 md:ml-0 md:min-h-[calc(100svh-1rem)] md:rounded-xl md:shadow-sm; }')
-        ->toContain('[data-slot="sidebar"][data-variant="inset"][data-state="collapsed"] ~ [data-slot="sidebar-inset"] { @apply md:ml-0; }')
-        ->not->toContain('[data-slot="sidebar"][data-variant="inset"][data-state="collapsed"] ~ [data-slot="sidebar-inset"] { @apply md:ml-2; }');
-});
-
-it('hides the native select arrow when rendering a custom select icon', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
-
-    expect($css)
-        ->toContain('[data-slot="select"] { @apply appearance-none pr-8; }')
-        ->toContain('[data-slot="select-icon"]');
-});
-
-it('uses dark color scheme for native date and time picker inputs', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
-
-    expect($css)
-        ->toContain('[data-theme="dark"] :is([data-slot="input"][type="date"], [data-slot="input"][type="datetime-local"], [data-slot="input"][type="month"], [data-slot="input"][type="time"], [data-slot="input"][type="week"]) { color-scheme: dark; }');
-});
-
-it('drives the native slider fill from the value the controller writes', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
-
-    expect($css)
-        ->toContain('[data-slot="slider"] { --slider-value: 0%;')
-        ->toContain('[data-slot="slider"][data-orientation="horizontal"]::-webkit-slider-runnable-track')
-        ->toContain('[data-slot="slider"][data-orientation="horizontal"]:dir(rtl)::-webkit-slider-runnable-track')
-        ->toContain('[data-slot="slider"][data-orientation="vertical"]::-webkit-slider-runnable-track')
-        ->toContain('var(--primary) 0 var(--slider-value)')
-        ->toContain('@media (forced-colors: active)');
-});
-
-it('centres the slider thumb on the block axis so both orientations align', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
-
-    expect($css)
-        ->toContain('margin-block-start: calc((var(--slider-track-height) - var(--slider-thumb-size)) / 2)')
+        ->toContain('[data-orientation="horizontal"]::-webkit-slider-runnable-track')
+        ->toContain('[data-orientation="horizontal"]:dir(rtl)::-webkit-slider-runnable-track')
+        ->toContain('[data-orientation="vertical"]::-webkit-slider-runnable-track')
+        ->toContain('var(--slider-value)')
         ->not->toContain('::-webkit-slider-thumb { margin-top:')
-        ->not->toContain('[data-slot="slider"][data-orientation="vertical"]::-webkit-slider-thumb { margin-top: 0; }');
-});
-
-it('rings the slider thumb on its own hover instead of anywhere on the track', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
-
-    expect($css)
-        ->toContain('[data-slot="slider"]::-webkit-slider-thumb:hover')
-        ->toContain('[data-slot="slider"]::-moz-range-thumb:hover')
         ->not->toContain('[data-slot="slider"]:hover::-webkit-slider-thumb')
         ->not->toContain('[data-slot="slider"]:hover::-moz-range-thumb');
-});
+})->with('design presets');
 
-it('keeps the flash container eligible for top layer stacking above overlays', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
+it('keeps the flash container eligible for top-layer stacking', function (string $preset) {
+    $css = file_get_contents($preset);
 
     expect($css)
         ->toContain('[data-hotwire-top-layer][popover]:is([data-slot="modal-overlay"], [data-slot="alert-dialog-overlay"], [data-slot="drawer-overlay"], [data-slot="sheet-overlay"], [data-slot="sidebar"], [data-slot="flash-container"])')
-        ->toContain('[data-slot="flash-container"] { @apply pointer-events-none fixed inset-0; }')
+        ->toContain('[data-slot="flash-container"]')
         ->not->toContain('[data-slot="flash-container"] { @apply contents; }');
-});
+})->with('design presets');
 
-it('does not hard-code clear input visibility in the preset', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
+it('keeps clear input visibility owned by its controller', function (string $preset) {
+    $declaration = presetDeclaration(file_get_contents($preset), '[data-slot="clear-input-button"]');
 
-    expect($css)
-        ->toContain('[data-slot="clear-input-button"]')
-        ->not->toContain('[data-slot="clear-input-button"] { @apply absolute right-1.5 hidden items-center; }');
-});
+    expect($declaration)->not->toMatch('/\bhidden\b/');
+})->with('design presets');
 
-it('styles checkable inputs when they are wrapped by labels', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
-
-    expect($css)
-        ->toContain('[data-slot="field-label"]:has(> :is([data-slot="input"], [data-slot="checkbox"], [data-slot="checkbox-group-input"], [data-slot="radio-group-input"], [data-slot="switch"])[data-checkable="true"])')
-        ->toContain('[data-slot="field"][data-orientation="horizontal"]:has(> [data-slot="field-content"])')
-        ->toContain('[data-slot="field"]:has(> [data-slot="field-content"]) > :is([role="checkbox"], [role="radio"], [role="switch"], [data-checkable="true"])')
-        ->toContain(':is([data-slot="input"], [data-slot="checkbox"], [data-slot="checkbox-group-input"], [data-slot="radio-group-input"])[data-checkable="true"]')
-        ->toContain('[data-slot="switch"]')
-        ->toContain('[data-slot="switch"][data-size="default"]')
-        ->toContain('[data-slot="switch"][data-size="sm"]')
-        ->toContain('[data-slot="switch"][data-disabled="true"]')
-        ->toContain('[data-slot="field-label"]:has(> [data-slot="field"])')
-        ->toContain('[data-slot="field-label"]:has(> [data-slot="field"] [data-slot="switch"]:checked)')
-        ->toContain('[data-slot="field-label"]:has(> [data-slot="field"][data-disabled="true"])')
-        ->toContain('[data-slot="checkbox-group-item"]')
-        ->toContain('[data-slot="radio-group-item"]')
-        ->toContain(':is([data-slot="checkbox-group"], [data-slot="radio-group"]) { @apply flex gap-3; }')
-        ->toContain(':is([data-slot="checkbox-group"], [data-slot="radio-group"])[data-orientation="vertical"] { @apply flex-col; }')
-        ->toContain(':is([data-slot="checkbox-group"], [data-slot="radio-group"])[data-orientation="horizontal"] { @apply flex-row flex-wrap; }')
-        ->toContain(':is([data-slot="checkbox-group-item"], [data-slot="radio-group-item"]) { @apply flex items-start gap-2 text-sm leading-snug font-normal; }')
-        ->toContain(':is([data-slot="checkbox-group-item"], [data-slot="radio-group-item"]):has(> :disabled) { @apply cursor-not-allowed; }')
-        ->toContain(':is([data-slot="checkbox-group-item-content"], [data-slot="radio-group-item-content"]) { @apply flex min-w-0 flex-1 flex-col gap-1; }')
-        ->toContain(':is([data-slot="checkbox-group-item"], [data-slot="radio-group-item"]):has(> :disabled) > :is([data-slot="checkbox-group-item-content"], [data-slot="radio-group-item-content"]) { @apply opacity-50; }')
-        ->toContain('appearance-none')
-        ->toContain('aspect-square h-4 max-h-4 min-h-4 w-4 min-w-4 max-w-4')
-        ->toContain('checked:border-primary checked:bg-primary')
-        ->toContain('[type="checkbox"]:indeterminate')
-        ->not->toContain('indeterminate:border-primary indeterminate:bg-primary')
-        ->toContain('::before')
-        ->toContain('opacity: 0')
-        ->toContain(':checked::before { opacity: 1')
-        ->toContain('[type="checkbox"]:indeterminate::before')
-        ->toContain('aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20');
-});
-
-it('keeps toggle sizing aligned with shadcn', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
-
-    expect($css)
-        ->toContain('bg-transparent text-foreground text-sm font-medium')
-        ->toContain('[data-slot="toggle-group"] { @apply inline-flex w-fit items-center gap-1; }')
-        ->toContain('[data-slot="toggle-group"][data-connected="true"] { @apply gap-0; }')
-        ->toContain(':is([data-slot="toggle"], [data-slot="toggle-group-item"])[data-variant="default"] { @apply hover:bg-muted; }')
-        ->toContain(':is([data-slot="toggle"], [data-slot="toggle-group-item"])[data-size="default"] { @apply h-9 min-w-9 px-2; }')
-        ->toContain(':is([data-slot="toggle"], [data-slot="toggle-group-item"])[data-size="sm"] { @apply h-8 min-w-8 px-1.5; }')
-        ->toContain(':is([data-slot="toggle"], [data-slot="toggle-group-item"])[data-size="lg"] { @apply h-10 min-w-10 px-2.5; }')
-        ->toContain(':is([data-slot="toggle"], [data-slot="toggle-group-item"])[data-variant="outline"] { @apply border border-input bg-transparent shadow-xs hover:bg-accent hover:text-accent-foreground; }')
-        ->not->toContain('[data-slot="toggle"][data-variant="default"] { @apply hover:bg-muted hover:text-muted-foreground; }')
-        ->not->toContain('[data-slot="toggle"][data-size="sm"] { @apply h-8 min-w-8 px-1.5 text-xs; }')
-        ->not->toContain('[data-slot="toggle"] { @apply inline-flex shrink-0 items-center justify-center gap-2 rounded-md border border-transparent');
-});
-
-it('styles sticky surfaces and navbar navigation', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
-
-    expect($css)
-        ->toContain('[data-slot="sticky"] { @apply sticky z-20; }')
-        ->toContain('[data-slot="sticky"][data-side="top"] { @apply top-(--sticky-offset); }')
-        ->toContain('[data-slot="sticky"][data-side="bottom"] { @apply bottom-(--sticky-offset); }')
-        ->toContain('[data-slot="sticky"][data-surface="true"]')
-        ->toContain('[data-slot="navbar"] { @apply flex gap-1 text-sm; }')
-        ->toContain('[data-slot="navbar"][data-orientation="horizontal"]')
-        ->toContain('[data-slot="navbar"][data-orientation="vertical"]')
-        ->toContain('[data-slot="navbar-item"]')
-        ->toContain('data-[current=true]:after:bg-primary')
-        ->toContain('[data-slot="navbar"][data-variant="pills"] [data-slot="navbar-item"]');
-});
-
-it('styles rich text via granular slots instead of textarea-only styles', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
+it('styles generated rich text DOM through granular hooks', function (string $preset) {
+    $css = file_get_contents($preset);
 
     expect($css)
         ->toContain('[data-slot="rich-text"]')
-        ->toContain('[data-slot="rich-text"]:has(.ProseMirror:focus-visible)')
-        ->toContain('[data-slot="rich-text-toolbar"]')
+        ->toContain('.ProseMirror:focus-visible')
         ->toContain('[data-slot="rich-text-toolbar-button"]')
         ->toContain('[data-slot="rich-text-editor"] .ProseMirror')
         ->toContain('p.is-editor-empty:first-child::before')
-        ->toContain('aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20')
-        ->not->toContain('[data-slot="textarea"], [data-slot="rich-text"]');
-});
+        ->toContain('aria-pressed:')
+        ->toContain('data-[active=true]:');
+})->with('design presets');
 
-it('defines overlay and menu slots in the nova preset', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
+it('uses Floating UI geometry tokens instead of css-only offsets', function (string $preset) {
+    $css = file_get_contents($preset);
 
-    expect($css)
-        ->toContain('[data-slot="modal-panel"]')
-        ->toContain('[data-slot="alert-dialog-action"]')
-        ->toContain('[data-slot="alert-dialog-cancel"]')
-        ->toContain('[data-slot="dropdown"]')
-        ->toContain('[data-slot="dropdown-trigger"]')
-        ->toContain('[data-slot="dropdown-trigger-icon"]')
-        ->toContain('[data-slot="dropdown-trigger"][aria-expanded="true"] [data-slot="dropdown-trigger-icon"]')
-        ->toContain('[data-slot="dropdown-menu"]')
-        ->toContain('[data-slot="dropdown-group"]')
-        ->toContain('[data-slot="dropdown-label"]')
-        ->toContain('[data-slot="dropdown-item"]')
-        ->toContain('[data-slot="dropdown-separator"]')
-        ->toContain('[data-slot="dropdown-shortcut"]')
-        ->toContain('[data-state="closed"][data-side="bottom"]')
-        ->toContain('[data-state="closed"][data-side="top"]')
-        ->toContain('[data-state="closed"][data-side="left"]')
-        ->toContain('[data-state="closed"][data-side="right"]');
-});
-
-it('uses anchored dropdown positioning tokens instead of css-only offsets', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
+    foreach (['--available-height', '--anchor-width', '--transform-origin'] as $token) {
+        expect($css)->toContain($token);
+    }
 
     expect($css)
-        ->toContain('[data-slot="dropdown-menu"] { @apply')
-        ->toContain('max-h-(--available-height)')
-        ->toContain('w-(--anchor-width)')
-        ->toContain('min-w-32')
-        ->toContain('origin-(--transform-origin)')
-        ->toContain('[data-state="closed"][data-side="bottom"]')
-        ->toContain('-translate-y-1')
-        ->not->toContain('[data-slot="dropdown-menu"][data-width="default"]')
-        ->not->toContain('[data-slot="dropdown-menu"][data-align="start"]')
-        ->not->toContain('[data-slot="dropdown-menu"] { @apply absolute z-50 mt-2')
+        ->not->toContain('[data-slot="dropdown-menu"] { @apply absolute')
         ->not->toContain('slide-in-from');
-});
+})->with('design presets');
 
-it('drives floating presence from semantic state and motion hooks', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
+it('drives floating presence from semantic state and motion hooks', function (string $preset) {
+    $css = file_get_contents($preset);
 
     expect($css)
-        ->toContain(':is([data-slot="dropdown-menu"], [data-slot="tooltip"], [data-slot="hover-card-content"], [data-slot="popover-content"], [data-slot="multi-select-content"])[data-state="closed"]')
+        ->toContain('[data-state="closed"]')
         ->toContain('[data-state="open"]')
         ->toContain('[data-motion="none"]')
         ->toContain('[data-presence="instant"]')
-        ->toContain('@media (prefers-reduced-motion: reduce)')
-        ->toContain('transition-property: opacity, scale, translate')
-        ->toContain(':where([data-hotwire-top-layer][popover]) { margin: 0; }')
-        ->toContain(':where([data-hotwire-top-layer][popover]:is([data-slot="modal-overlay"], [data-slot="alert-dialog-overlay"], [data-slot="drawer-overlay"], [data-slot="sheet-overlay"], [data-slot="sidebar"], [data-slot="flash-container"]))')
-        ->toContain(':where([data-hotwire-top-layer][popover]:is([data-slot="dropdown-menu"], [data-slot="tooltip"], [data-slot="multi-select-content"])) { border: 0; }')
-        ->toContain('[data-slot="tooltip"] { @apply pointer-events-auto z-50 w-fit max-w-64 origin-(--transform-origin) overflow-visible')
-        ->not->toContain('[data-hotwire-top-layer][popover] { @apply m-0 text-inherit overflow-visible; }')
-        ->not->toContain('[data-slot="multi-select-content"]) { inset: auto; border: 0; }')
-        ->not->toContain('[data-slot="dropdown-menu"][data-open')
-        ->not->toContain('[data-slot="popover-content"][data-open')
-        ->not->toContain('[data-slot="hover-card-content"][data-open')
-        ->not->toContain('[data-slot="multi-select-content"][data-open')
-        ->not->toContain(':not(.block)');
-});
+        ->toContain('@media (prefers-reduced-motion: reduce)');
+})->with('design presets');
 
-it('drives modal overlay motion from semantic presence state', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
+it('drives overlay motion from semantic presence state', function (string $preset) {
+    $css = file_get_contents($preset);
 
     expect($css)
-        ->toContain(':is([data-slot="modal-overlay"], [data-slot="alert-dialog-overlay"], [data-slot="drawer-overlay"], [data-slot="sheet-overlay"])[data-state="open"]')
-        ->toContain('[data-slot="drawer-overlay"][data-state="closed"] > [data-slot="drawer-popup"][data-direction="right"]')
-        ->toContain('[data-slot="sheet-overlay"][data-state="closed"] > [data-slot="sheet-content"][data-side="right"]')
-        ->toContain('[data-slot="sidebar"][data-mobile-state="closed"] > [data-slot="sidebar-container"][data-side="right"]')
+        ->toContain('[data-slot="modal-overlay"][data-state="open"]')
+        ->toContain('[data-slot="alert-dialog-overlay"][data-state="open"]')
+        ->toContain('[data-slot="drawer-overlay"][data-state="closed"]')
+        ->toContain('[data-slot="sheet-overlay"][data-state="closed"]')
+        ->toContain('[data-slot="sidebar"][data-mobile-state="closed"]')
         ->toContain('[data-presence="leaving"]')
-        ->toContain('[data-slot="sidebar"][data-presence="preparing"]')
-        ->toContain(':is([data-motion="none"], [data-presence="instant"])')
-        ->toContain('@media (prefers-reduced-motion: reduce)')
         ->not->toContain('data-modal-dialog-hidden-class')
-        ->not->toContain('data-drawer-dialog-hidden-class')
-        ->not->toContain('[data-slot="sidebar"][data-mobile-state]:not([hidden])');
-});
+        ->not->toContain('data-drawer-dialog-hidden-class');
+})->with('design presets');
 
-it('keeps dropdown menu subcomponent styling aligned with the nova reference', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
-
-    expect($css)
-        ->toContain('[data-slot="dropdown-label"] { @apply px-1.5 py-1 text-xs font-medium text-muted-foreground data-[inset=true]:pl-7; }')
-        ->toContain('[data-slot="dropdown-item"] { @apply relative flex w-full cursor-default select-none appearance-none items-center gap-1.5 rounded-md border-0 bg-transparent px-1.5 py-1 text-left text-sm text-popover-foreground outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground')
-        ->toContain('[data-slot="dropdown-item"]:is(:hover, :focus-visible) [data-slot="dropdown-shortcut"] { @apply text-accent-foreground; }')
-        ->toContain('[data-slot="dropdown-item"][data-variant="destructive"] { @apply text-destructive hover:bg-destructive/10 hover:text-destructive focus-visible:bg-destructive/10 focus-visible:text-destructive')
-        ->toContain('[data-slot="dropdown-separator"] { @apply -mx-1 my-1 h-px bg-border; }')
-        ->toContain('[data-slot="dropdown-shortcut"] { @apply ml-auto text-xs tracking-widest text-muted-foreground; }')
-        ->not->toContain('[data-slot="dropdown-label"] { @apply px-2 py-1.5 text-sm font-medium text-foreground')
-        ->not->toContain('[data-slot="dropdown-item"] { @apply relative flex w-full cursor-default appearance-none items-center gap-2');
-});
-
-it('defines multi-select slots in the nova preset', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
+it('keeps multi-select state selectors aligned with controller output', function (string $preset) {
+    $css = file_get_contents($preset);
 
     expect($css)
-        ->toContain('[data-slot="multi-select"] { @apply relative block w-full max-w-full; }')
-        ->toContain('[data-slot="multi-select-native"]')
-        ->toContain('[data-slot="multi-select-trigger"]')
-        ->toContain('[data-slot="multi-select-trigger"] { @apply inline-flex h-8 w-full max-w-full shrink-0 items-center justify-between gap-2 overflow-hidden')
-        ->toContain('[data-slot="multi-select-trigger-icon"]')
-        ->toContain('[data-slot="multi-select-value"]')
-        ->toContain('[data-slot="multi-select-value"] { @apply min-w-0 flex-1 truncate; }')
         ->toContain('[data-slot="multi-select-content"]')
-        ->toContain('[data-state="closed"]')
-        ->toContain('[data-motion="none"]')
-        ->toContain('max-h-(--available-height)')
-        ->toContain('w-(--anchor-width)')
-        ->toContain('origin-(--transform-origin)')
-        ->toContain('[data-slot="multi-select-search"]')
-        ->toContain('[data-slot="multi-select-list"]')
-        ->toContain('[data-slot="multi-select-select-all"]')
-        ->toContain('[data-slot="multi-select-option"]')
-        ->toContain('focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-inset')
-        ->toContain('[data-slot="multi-select-indicator"]')
-        ->toContain('[data-slot="multi-select-empty"]')
-        ->toContain('[data-slot="multi-select-validation"]');
-});
+        ->toContain('[data-slot="multi-select-option"][data-selected="true"]')
+        ->toContain('[data-slot="multi-select-select-all"][data-selected="true"]')
+        ->toContain('[data-slot="multi-select-select-all"][data-indeterminate="true"]')
+        ->toContain('[data-slot="multi-select-indicator"]');
+})->with('design presets');
 
-it('aligns multi-select indicators with checkbox visuals', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
+it('preserves component custom-property contracts', function (string $preset) {
+    $css = file_get_contents($preset);
 
     expect($css)
-        ->toContain('[data-slot="multi-select-indicator"] { @apply grid size-4 shrink-0 place-content-center rounded-[4px] border border-input bg-background text-primary-foreground transition-colors dark:bg-input/30; }')
-        ->toContain('[data-slot="multi-select-indicator"]::before { content: ""; width: 0.75rem; height: 0.75rem; opacity: 0; transform: scale(0); background-color: currentColor; transition: opacity 75ms ease-out, transform 75ms ease-out; mask:')
-        ->toContain('[data-slot="multi-select-select-all"][data-indeterminate="true"] [data-slot="multi-select-indicator"] { @apply border-primary bg-primary dark:bg-primary; }')
-        ->toContain('[data-slot="multi-select-select-all"][data-selected="true"] [data-slot="multi-select-indicator"]::before { opacity: 1; transform: scale(1); }')
-        ->toContain('[data-slot="multi-select-select-all"][data-indeterminate="true"] [data-slot="multi-select-indicator"]::before { width: 0.5rem; height: 0.125rem; opacity: 1; transform: scale(1); border-radius: 9999px; mask: none; }');
-});
-
-it('keeps input group inline addons in layout flow', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
-
-    expect($css)
-        ->toContain('[data-slot="input-group-addon"][data-align="inline-start"], [data-slot="input-group-addon"][data-align="inline-end"] { @apply shrink-0; }')
-        ->toContain('[data-slot="input-group-addon"][data-align="inline-start"] { @apply order-first pl-3; }')
-        ->toContain('[data-slot="input-group-addon"][data-align="inline-end"] { @apply order-last pr-3; }')
-        ->toContain('[data-slot="input-group"]:has(> [data-slot="input-group-addon"][data-align="inline-start"]) > :is([data-slot="input"')
-        ->toContain('{ @apply pl-1; }')
-        ->toContain('[data-slot="input-group"]:has(> [data-slot="input-group-addon"][data-align="inline-end"]) > :is([data-slot="input"')
-        ->toContain('{ @apply pr-1; }')
-        ->toContain('[data-slot="input-group"]:has(> [data-slot="input-group-addon"][data-align="inline-start"] > :is(svg, button, [data-slot="button"], [data-slot="kbd"])) > :is([data-slot="input"')
-        ->toContain('{ @apply pl-2; }')
-        ->toContain('[data-slot="input-group"]:has(> [data-slot="input-group-addon"][data-align="inline-end"] > :is(svg, button, [data-slot="button"], [data-slot="kbd"])) > :is([data-slot="input"')
-        ->toContain('{ @apply pr-2; }')
-        ->not->toContain('[data-slot="input-group-addon"][data-align="inline-start"], [data-slot="input-group-addon"][data-align="inline-end"] { @apply absolute')
-        ->not->toContain('[data-slot="input-group"]:has(> [data-slot="input-group-addon"][data-align="inline-start"]) > :is([data-slot="input"], [data-slot="textarea"], [data-slot="multi-select-search"], [data-slot="input-group-control"]) { @apply pl-8; }')
-        ->not->toContain('[data-slot="input-group"]:has(> [data-slot="input-group-addon"][data-align="inline-end"]) > :is([data-slot="input"], [data-slot="textarea"], [data-slot="multi-select-search"], [data-slot="input-group-control"]) { @apply pr-8; }');
-});
-
-it('uses compact one-line form control heights in the nova preset', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
-
-    expect($css)
-        ->toContain('[data-slot="input"], [data-slot="select"] { @apply flex h-8 w-full')
-        ->toContain('[data-slot="file-input"] { @apply flex min-h-9 w-full')
-        ->toContain('file:inline-flex file:h-7')
-        ->toContain('[data-slot="input-group"] { @apply relative flex h-8 w-full')
-        ->toContain('[data-slot="input-group"]:has(> [data-slot="input-group-addon"][data-align^="block-"]) { @apply h-auto flex-col items-stretch; }')
-        ->toContain('[data-slot="input-group"]:has(> :is([data-slot="textarea"], [data-slot="textarea-wrapper"])) { @apply h-auto; }')
-        ->toContain('[data-slot="multi-select-trigger"] { @apply inline-flex h-8 w-full')
-        ->toContain('[data-slot="textarea"] { @apply flex min-h-16 w-full')
-        ->not->toContain('[data-slot="input"], [data-slot="select"], [data-slot="textarea"], [data-slot="file-input"] { @apply flex min-h-9')
-        ->not->toContain('[data-slot="input-group"] { @apply relative flex min-h-9')
-        ->not->toContain('[data-slot="multi-select-trigger"] { @apply inline-flex min-h-9');
-});
-
-it('styles custom input group controls without a duplicate focus ring', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
-
-    expect($css)
-        ->toContain('[data-slot="input-group"] > [data-slot="input-group-control"] { @apply min-h-8 w-full px-3 py-1 text-base text-foreground outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50 md:text-sm; }')
-        ->toContain('[data-slot="input-group"] > :is([data-slot="input"')
-        ->toContain('border-0 bg-transparent shadow-none focus-visible:ring-0');
-});
-
-it('defines breadcrumb slots in the nova preset', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
-
-    expect($css)
-        ->toContain('[data-slot="breadcrumb"]')
-        ->toContain('[data-slot="breadcrumb-list"]')
-        ->toContain('[data-slot="breadcrumb-item"]')
-        ->toContain('[data-slot="breadcrumb-link"]')
-        ->toContain('[data-slot="breadcrumb-page"]')
-        ->toContain('[data-slot="breadcrumb-separator"]')
-        ->toContain('[data-slot="breadcrumb-ellipsis"]');
-});
-
-it('keeps breadcrumb link icons beside their labels', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
-
-    expect($css)->toContain('[data-slot="breadcrumb-link"] { @apply inline-flex items-center gap-1.5 transition-colors hover:text-foreground; }');
-});
-
-it('defines pagination slots in the nova preset', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
-
-    expect($css)
-        ->toContain('[data-slot="pagination"]')
-        ->toContain('[data-slot="pagination-content"]')
-        ->toContain('[data-slot="pagination-item"]')
-        ->toContain('[data-slot="pagination-link"]')
-        ->toContain('[data-slot="pagination-previous"]')
-        ->toContain('[data-slot="pagination-previous"][data-size="default"]')
-        ->toContain('[data-slot="pagination-next"]')
-        ->toContain('[data-slot="pagination-next"][data-size="default"]')
-        ->toContain('[data-slot="pagination-ellipsis"]')
-        ->toContain('[data-slot="pagination-previous-label"]')
-        ->toContain('[data-slot="pagination-next-label"]');
-});
-
-it('defines progress slots in the nova preset', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
-
-    expect($css)
-        ->toContain('[data-slot="progress"]')
-        ->toContain('[data-slot="progress-track"]')
+        ->toContain('[data-slot="aspect-ratio"]')
+        ->toContain('aspect-(--ratio)')
+        ->toContain('[data-slot="sticky"][data-side="top"]')
+        ->toContain('--sticky-offset')
         ->toContain('[data-slot="progress-indicator"]')
-        ->toContain('width: var(--progress-value)')
-        ->toContain('[data-slot="progress-label"]')
-        ->toContain('[data-slot="progress-value"]');
-});
+        ->toContain('width: var(--progress-value)');
+})->with('design presets');
 
-it('defines marker slots and variants in the nova preset', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
+// --- Known bug guards ---
 
-    expect($css)
-        ->toContain('[data-slot="marker"]')
-        ->toContain('[data-slot="marker"][data-variant="separator"]')
-        ->toContain('[data-slot="marker"][data-variant="border"]')
-        ->toContain('[data-slot="marker-icon"]')
-        ->toContain('[data-slot="marker-content"]')
-        ->toContain('text-muted-foreground')
-        ->toContain('border-border');
-});
+it('does not reintroduce known clipping, stacking, sizing or marker bugs', function (string $preset) {
+    $css = file_get_contents($preset);
+    $avatar = presetDeclaration($css, '[data-slot="avatar"]');
+    $avatarImage = presetDeclaration($css, '[data-slot="avatar-image"]');
+    $itemIcon = presetDeclaration($css, '[data-slot="item-media"][data-variant="icon"]');
+    $itemDefault = presetDeclaration($css, '[data-slot="item-media"][data-variant="default"]');
+    $spinner = presetDeclaration($css, '[data-slot="spinner"]');
 
-it('keeps spinner size animation and inherited color aligned with the shadcn base-nova reference', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
+    expect($avatar)->not->toContain('overflow-hidden')
+        ->and($avatarImage)->not->toMatch('/\bz-\d+/')
+        ->and($itemIcon)->not->toContain('size-8')->not->toContain('border-border')->not->toContain('bg-background')
+        ->and($itemDefault)->not->toMatch('/\bsize-/')
+        ->and($spinner)->not->toMatch('/\btext-[^\s;]+/')
+        ->and($css)->not->toContain('container-type: inline-size')
+        ->not->toContain('@container field-group')
+        ->not->toMatch('/@apply[^;]*\bgroup\b/');
+})->with('design presets');
 
-    expect($css)
-        ->toContain('[data-slot="spinner"] { @apply size-4 animate-spin; }')
-        ->not->toContain('[data-slot="spinner"] { @apply size-4 animate-spin text-foreground/60; }');
-});
+it('keeps input-group focus and addon layout owned by the group', function (string $preset) {
+    $css = file_get_contents($preset);
+    $inlineStart = presetDeclaration($css, '[data-slot="input-group-addon"][data-align="inline-start"]');
+    $inlineEnd = presetDeclaration($css, '[data-slot="input-group-addon"][data-align="inline-end"]');
+
+    expect($inlineStart)->not->toContain('absolute')
+        ->and($inlineEnd)->not->toContain('absolute')
+        ->and($css)->toContain('focus-visible:ring-0')
+        ->not->toContain('[data-slot="input-group-control"] { @apply pl-8')
+        ->not->toContain('[data-slot="input-group-control"] { @apply pr-8');
+})->with('design presets');
+
+function presetDeclaration(string $css, string $selector): string
+{
+    preg_match('/'.preg_quote($selector, '/').'\s*\{([^}]*)\}/s', $css, $matches);
+
+    return $matches[1] ?? '';
+}

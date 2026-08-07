@@ -54,7 +54,6 @@ const emblaFactory = mock((node, options, plugins) => {
 });
 
 mock.module("embla-carousel", () => ({ default: emblaFactory }));
-mock.module("./carousel.css", () => ({}));
 
 const CarouselController = (await import("../../resources/js/controllers/carousel_controller.js")).default;
 

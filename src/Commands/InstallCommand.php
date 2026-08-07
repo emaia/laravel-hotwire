@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Commands;
 
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
+use Emaia\LaravelHotwire\Support\CssPresetFiles;
 use Emaia\LaravelHotwire\Support\LoaderStub;
 use Emaia\LaravelHotwire\Support\PackageInstaller;
 use Illuminate\Console\Command;
@@ -32,8 +33,6 @@ class InstallCommand extends Command
 
     private const string CSS_STUB_RELATIVE = 'css/app.css';
 
-    private const array CSS_PRESETS = ['nova'];
-
     private const array CORE_DEPENDENCIES = [
         '@emaia/stimulus-lazy-loader',
         '@hotwired/stimulus',
@@ -43,6 +42,7 @@ class InstallCommand extends Command
     public function __construct(
         private readonly Filesystem $files,
         private readonly PackageInstaller $packageInstaller,
+        private readonly CssPresetFiles $cssPresets,
     ) {
         parent::__construct();
     }
@@ -163,12 +163,13 @@ class InstallCommand extends Command
     private function validatePreset(): bool
     {
         $preset = (string) $this->option('preset');
+        $available = $this->cssPresets->names();
 
-        if (in_array($preset, self::CSS_PRESETS, true)) {
+        if (in_array($preset, $available, true)) {
             return true;
         }
 
-        warning('Invalid --preset value: "'.$preset.'". Use one of: '.implode(', ', self::CSS_PRESETS).'.');
+        warning('Invalid --preset value: "'.$preset.'". Use one of: '.implode(', ', $available).'.');
 
         return false;
     }
@@ -287,22 +288,15 @@ class InstallCommand extends Command
     private function cssStubContent(): string
     {
         $preset = (string) $this->option('preset');
-        $lines = file(__DIR__.'/../../stubs/resources/css/app.css', FILE_IGNORE_NEW_LINES);
+        $stub = $this->files->get(__DIR__.'/../../stubs/resources/css/app.css');
+        $import = "@import '../../vendor/emaia/laravel-hotwire/resources/css/presets/{$preset}.css';";
 
-        return collect($lines)
-            ->map(function (string $line) use ($preset): string {
-                foreach (self::CSS_PRESETS as $candidate) {
-                    $import = "@import '../../vendor/emaia/laravel-hotwire/resources/css/presets/{$candidate}.css';";
-                    $commented = "/* {$import} */";
-
-                    if ($line === $import || $line === $commented) {
-                        return $candidate === $preset ? $import : $commented;
-                    }
-                }
-
-                return $line;
-            })
-            ->implode("\n")."\n";
+        return (string) preg_replace(
+            "#@import '../../vendor/emaia/laravel-hotwire/resources/css/presets/[^']+\\.css';#",
+            $import,
+            $stub,
+            1,
+        );
     }
 
     /**

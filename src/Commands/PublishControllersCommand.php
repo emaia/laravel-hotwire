@@ -224,8 +224,8 @@ class PublishControllersCommand extends Command
     /**
      * A published controller counts as outdated when its own file drifted from
      * the package OR any of its already-published shared dependencies did — so
-     * a stale dependency (e.g., carousel.css) is updated even while the
-     * controller file itself is unchanged.
+     * a stale helper (e.g., _overlay.js) is updated even while the controller
+     * file itself is unchanged.
      *
      * @return string[]
      *

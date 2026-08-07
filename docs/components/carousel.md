@@ -4,8 +4,9 @@ Slider/carousel powered by [Embla Carousel](https://www.embla-carousel.com). Wra
 [`carousel`](../controllers/carousel.md) controller with navigation buttons, pagination dots, responsive options and
 CSS-variable sizing — all wired for you.
 
-Requires `embla-carousel`: `bun add embla-carousel` (install it manually). The controller and its `carousel.css` are
-published with `php artisan hotwire:controllers carousel`.
+Requires `embla-carousel`: `bun add embla-carousel` (install it manually). The track geometry ships in
+`resources/css/structural.css`, which every preset imports; publish the controller itself with
+`php artisan hotwire:controllers carousel` only if you want to customize it.
 
 ## Basic usage
 

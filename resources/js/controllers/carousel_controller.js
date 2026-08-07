@@ -2,7 +2,6 @@
 import { Controller } from "@hotwired/stimulus";
 import EmblaCarousel from "embla-carousel";
 
-import "./carousel.css";
 import { attachMorphRecovery } from "./_turbo_morph_recovery.js";
 
 export default class extends Controller {

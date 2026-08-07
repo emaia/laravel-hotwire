@@ -13,10 +13,95 @@ The installer writes a thin `resources/css/app.css` that imports Tailwind, scans
 ```css
 @import "tailwindcss";
 
-@source '../../vendor/emaia/laravel-hotwire/resources/css/**/*.css';
-
 @import '../../vendor/emaia/laravel-hotwire/resources/css/presets/nova.css';
+
+@source '../../vendor/emaia/laravel-hotwire/resources/css/**/*.css';
 ```
+
+## Generate a custom preset
+
+Generate an empty preset scaffold when token overrides are not enough:
+
+```bash
+php artisan hotwire:make-preset brand
+```
+
+The command creates `resources/css/presets/brand.css`. It imports the package token, custom-variant and structural
+layers — the last carrying the runtime utility safelist, so your preset picks up new package mechanics on upgrade
+instead of freezing them — and mirrors every rule the shipped presets define with an empty body, grouped by the
+component that owns it. You get the full set of selectors to fill in — including the ones whose state lives on an
+ancestor, which no summary of a slot's own attributes can express:
+
+```css
+@layer components {
+
+    /* Accordion */
+    [data-slot="accordion"] {}
+    [data-slot="accordion-item"] {}
+    [data-slot="accordion-trigger"] {}
+    [data-slot="accordion-item"][aria-disabled="true"] > [data-slot="accordion-trigger"] {}
+    [data-slot="accordion-trigger-icon"] {}
+    [data-slot="accordion-item"][open] > [data-slot="accordion-trigger"] [data-slot="accordion-trigger-icon"] {}
+}
+```
+
+At-rules that qualify a rule (`@supports`, `@media`) come along, since the rule inside them means nothing on its own.
+Rules for structural slots do not, nor does anything `structural.css` owns — presets are not expected to restate the
+mechanics, which is why the Accordion's `::details-content` block is absent above. Deleting a selector you have no use
+for is part of writing the preset; what the scaffold guarantees is that nothing the shipped presets style is missing.
+
+Replace the vendor preset import in `resources/css/app.css` with the line printed by the command:
+
+```css
+@import './presets/brand.css';
+```
+
+To customize Nova instead of starting from empty selectors, clone it into the application:
+
+```bash
+php artisan hotwire:make-preset brand --from=nova
+```
+
+Use `--force` to replace an existing generated file. The command never edits `resources/css/app.css`, so application
+styles and import ordering remain under your control.
+
+The rules arrive in the order the source preset declares them, and that order is worth keeping. Every rule sits in the
+same `@layer components`, so between two selectors of equal specificity the later one wins. Reordering the scaffold as
+you fill it in can therefore change which rule applies without changing a single declaration.
+
+### A note on IDE warnings
+
+PhpStorm reports hundreds of `'x' applies the same CSS properties as 'y'` warnings on a preset — for example
+`has-[[data-variant=inset]]:bg-sidebar` against `bg-background`, or `[&>a:hover]:text-primary` against
+`text-muted-foreground`. These are false positives: its Tailwind support does not model variants inside `@apply`, so it
+reads a conditional utility as an unconditional declaration and sees a duplicate where there is none. Nova alone carries
+552 variant-prefixed utilities. Rewriting each state as its own rule to silence the inspection would multiply the file
+for no gain.
+
+## Structural and visual CSS
+
+CSS that makes a component work — as opposed to CSS that gives it a look — lives in `resources/css/structural.css`. The
+test is whether breaking the rule leaves the component broken rather than restyled. It owns the carousel's viewport
+overflow, flex track, axis and slide sizing through `data-carousel-*` hooks, and the Accordion's `::details-content`
+collapse, which needs `allow-discrete` and `calc-size(auto, size)` or the panel snaps shut instead of animating.
+
+Every preset imports that file, so the behavior compiles into your stylesheet and holds on the first paint — no waiting
+for the bundle to run — and no preset has to rediscover it. Override the timing if you want (`transition-duration` on
+`::details-content`); you never restate the mechanism.
+
+CSS that defines appearance belongs in a preset and targets `data-slot`. Carousel buttons, dots, progress and counter
+are visual, so presets own them. Controller CSS must not choose their colors, radius or spacing; preset CSS must not
+duplicate the controller's geometry. Slots that are presentation-free containers, assistive nodes or controller-owned
+structure are marked `structural` in the catalog and are intentionally omitted from an empty scaffold.
+
+The generated file is an inventory, not a complete design. State relationships, motion, top-layer resets and compound
+selectors cannot be inferred from slot names alone. Use Nova and the component docs as references when implementing
+those behaviors in a new design.
+
+Each slot is scaffolded once, under the first catalog entry that declares it, with one selector per slot and the
+attribute values Nova differentiates it by commented directly above it. Slots that share an appearance are better
+written as a single grouped rule — Nova styles every button-like slot through one
+`:is([data-slot="button"], [data-slot="modal-trigger"], …)` selector rather than repeating the same declarations.
 
 ## Override a component
 

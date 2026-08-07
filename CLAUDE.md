@@ -25,10 +25,12 @@ The complete Hotwire stack for Laravel — Turbo Drive, Turbo Streams, Stimulus 
 |---------------------------|------------------------------------------------------------------------------------------------------|
 | `hotwire:install`         | Scaffold JS/CSS setup, add npm deps to package.json                                                  |
 | `hotwire:make-controller` | Create a new Stimulus controller (interactive scaffolding)                                           |
+| `hotwire:make-preset`     | Generate a complete custom CSS preset scaffold or clone a shipped preset                             |
 | `hotwire:controllers`     | Publish package Stimulus controllers to the app for customization (`--outdated` to update only published+changed ones) |
 | `hotwire:components`      | List available Blade components and their controller dependencies                                    |
 | `hotwire:check`           | Verify required npm dependencies are installed and report outdated/diverged published controllers (CI-friendly)                      |
 | `hotwire:docs`            | Browse and read controller/component docs in the terminal                                            |
+| `hotwire:ide-json`        | Generate Laravel Idea metadata for package and application Stimulus controllers                      |
 
 ## Conventions
 
@@ -84,9 +86,13 @@ registered here**, or the commands won't see it.
 
 - `components` entries: `class`, `view`, `docs`, `category`, `description`, and `controllers` (the list of Stimulus
   identifiers the component depends on — keep it in sync with what the Blade view actually mounts, since
-  `hotwire:check` verifies these are published).
+  `hotwire:check` verifies these are published). Every component entry also declares `slots` as a `slot => visual|structural`
+  map. The values a slot varies by are not declared here — `hotwire:make-preset` reads them from the presets.
 - `controllers` entries: `source` (path to the `.js`/`.ts` file), `docs`, `category`, `description`, and optional
   `npm` (a `package => version` map for third-party deps like `@floating-ui/dom`, `maska`, `echarts`, `@emaia/sonner`).
+  Controllers that create `data-slot` values in JavaScript declare them in `slots` too.
+- Add every new package-emitted `data-slot` to the owning catalog entry. Do not recover this metadata by parsing Blade,
+  PHP or CSS at runtime; the catalog is the contract used by preset generation and coverage tests.
 - Identifiers follow the Stimulus naming rules above — substrate-folder controllers use the `--` separator
   (`turbo--progress`, `optimistic--form`, `dev--log`).
 - Every registered component/controller should ship a matching doc file under `docs/` at the path given in the entry.
@@ -278,16 +284,25 @@ Operational roadmap and execution notes are maintained outside this repository. 
 
 - **Semantic tokens only.** Component views use `bg-background`, `text-foreground`, `border-border`, etc.
   Never hardcode raw colors (`bg-white`, `text-gray-700`, `bg-zinc-900`). Tokens are defined in
-  `stubs/resources/css/app.css` via `@theme inline` with OKLCH values for light and dark mode.
+  `resources/css/tokens.css` via `@theme inline` with OKLCH values for light and dark mode.
 - **Dark mode via `data-theme`** on `<html>`, not `class="dark"`. Default is `:root` (light);
   `[data-theme="dark"]` activates the dark palette.
 - **Tailwind v4 scanner constraint.** Shipped component styling lives in CSS presets under `resources/css/**`,
   and the installed stub scans those CSS files with `@source`. Do not add Tailwind utility defaults back to
-  package Blade/PHP unless they are also represented by preset CSS or an explicit `@source inline(...)` safelist.
-- **`Variants` helper.** Use `Support\Variants` when a component has **two or more variant groups** (e.g.
-  `variant × size`) or **compound rules**. For zero or one variant group, stick with `@class([...])`.
-  Variants configuration lives in the Component class (`classNames()` method), not in the Blade view.
-  See `src/Support/Variants.php` for the API.
+  package Blade/PHP unless they are also represented by preset CSS or the `@source inline(...)` safelist in
+  `resources/css/structural.css`, which every preset imports.
+- **Structural vs visual CSS.** Mechanics live in `resources/css/structural.css` — the rules whose absence leaves a
+  component broken rather than restyled (the carousel track, the Accordion's `::details-content` collapse). Every preset
+  imports that file, so they compile into the application stylesheet and hold on the first paint instead of landing once
+  the bundle runs, and no new preset has to rediscover them. Visual styling lives in presets and uses `data-slot`.
+  Mark presentation-free or controller-owned slots `structural` in the catalog; `hotwire:make-preset` scaffolds only
+  visual slots.
+- **`Variants` helper is for application code, not for package components.** `Support\Variants` (CVA-equivalent in
+  PHP) stays exported so apps can build their own variant matrices; the Tailwind scanner reaches it there because it
+  scans the app's own PHP. Package components must not use it — they emit no classes at all, only `data-slot`,
+  `data-variant` and `data-size`, and the preset does the styling. `Support\PresetAxes` reads the values each slot
+  varies by out of the stylesheets — `data-*`, `aria-*` and native attributes alike — and
+  `tests/Registry/SlotCatalogTest.php` holds every preset to the same axes.
 - Theming docs for app developers: `docs/theming.md` — token reference, override instructions, colour
   space notes. Upgrade notes for existing apps: `docs/upgrade.md` (deliverable of `0.32.0`).
 

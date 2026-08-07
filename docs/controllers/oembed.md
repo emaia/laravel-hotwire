@@ -56,12 +56,12 @@ The controller automatically converts it to an iframe on connect.
 For a YouTube video, the generated output is:
 
 ```html
-<div style="aspect-ratio: 16 / 9; width: 100%;" class="my-5">
+<div data-slot="oembed">
     <iframe
+        data-slot="oembed-frame"
         src="https://www.youtube.com/embed/dQw4w9WgXcQ"
         allowfullscreen
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        style="width: 100%; height: 100%;"
     ></iframe>
 </div>
 ```
@@ -69,7 +69,16 @@ For a YouTube video, the generated output is:
 For unrecognized URLs:
 
 ```html
-<a href="https://example.com/video" target="_blank" rel="noopener noreferrer">
+<a data-slot="oembed-link" href="https://example.com/video" target="_blank" rel="noopener noreferrer">
     https://example.com/video
 </a>
 ```
+
+## Styling Hooks
+
+The controller emits slots only — aspect ratio, spacing and link appearance come from the preset, so they can be
+overridden like any other component.
+
+- `data-slot="oembed"` — the wrapper that replaces the original `<figure>`
+- `data-slot="oembed-frame"` — the generated `<iframe>`
+- `data-slot="oembed-link"` — the fallback `<a>` for unsupported providers
