@@ -6,6 +6,37 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 
 ## Unreleased
 
+### Navbar items expose `data-active` instead of `data-current`
+
+Navbar items now carry `data-active="true|false"` for the current-state axis, matching Pagination, Sidebar and the
+shadcn vocabulary. `aria-current="page"` is unchanged.
+
+Only application CSS that targets the attribute needs updating; the component API and the `current` prop are the same:
+
+```css
+/* before */
+[data-slot="navbar-item"][data-current="true"] { … }
+
+/* after */
+[data-slot="navbar-item"][data-active="true"] { … }
+```
+
+### Component mechanics moved out of the presets
+
+The rules that make a component work rather than look a certain way now live in
+`resources/css/structural.css`, which every shipped preset imports: the Accordion `::details-content` collapse, the
+carousel track geometry, the top-layer `[popover]` reset and the `@source inline(...)` runtime safelist.
+
+Nothing to do if you import a shipped preset. If you maintain a preset of your own, add the import alongside the
+token and custom-variant ones, and delete any copy of those rules you were carrying:
+
+```css
+@import "../../vendor/emaia/laravel-hotwire/resources/css/structural.css";
+```
+
+The carousel geometry previously arrived from `resources/js/controllers/carousel.css`, imported by the controller. That
+file is gone; publishing the carousel controller no longer publishes a stylesheet with it.
+
 ### Localize Timeago with Intl
 
 Timeago no longer depends on `date-fns`. It now formats relative times with the browser's
