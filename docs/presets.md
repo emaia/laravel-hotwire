@@ -65,6 +65,19 @@ php artisan hotwire:make-preset brand --from=nova
 Use `--force` to replace an existing generated file. The command never edits `resources/css/app.css`, so application
 styles and import ordering remain under your control.
 
+The rules arrive in the order the source preset declares them, and that order is worth keeping. Every rule sits in the
+same `@layer components`, so between two selectors of equal specificity the later one wins. Reordering the scaffold as
+you fill it in can therefore change which rule applies without changing a single declaration.
+
+### A note on IDE warnings
+
+PhpStorm reports hundreds of `'x' applies the same CSS properties as 'y'` warnings on a preset — for example
+`has-[[data-variant=inset]]:bg-sidebar` against `bg-background`, or `[&>a:hover]:text-primary` against
+`text-muted-foreground`. These are false positives: its Tailwind support does not model variants inside `@apply`, so it
+reads a conditional utility as an unconditional declaration and sees a duplicate where there is none. Nova alone carries
+552 variant-prefixed utilities. Rewriting each state as its own rule to silence the inspection would multiply the file
+for no gain.
+
 ## Structural and visual CSS
 
 CSS that makes a component work — as opposed to CSS that gives it a look — lives in `resources/css/structural.css`. The

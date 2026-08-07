@@ -42,6 +42,22 @@ it('mirrors every rule the shipped presets define, grouped by catalog entry', fu
     expect($omitted)->toBe([], 'Scaffold omits rules Nova defines.');
 });
 
+it('scaffolds the rules in the order the source preset declares them', function () {
+    $this->artisan('hotwire:make-preset brand --no-interaction')->assertSuccessful();
+
+    // Order carries cascade: every rule lives in the same @layer, so between equal specificities the
+    // last one wins. A scaffold in its own order would hand whoever fills it in a precedence that
+    // differs from the preset it was generated from — the file looks right and the styling is wrong.
+    $rules = new CssRules;
+    $scaffolded = [];
+
+    foreach ($rules->parse($rules->stripComments(File::get($this->targetDir.'/brand.css'))) as ['chain' => $chain]) {
+        $scaffolded[] = (string) end($chain);
+    }
+
+    expect(array_values(array_unique($scaffolded)))->toBe(sourceSelectors());
+});
+
 it('scaffolds no rule the shipped presets do not define', function () {
     $this->artisan('hotwire:make-preset brand --no-interaction')->assertSuccessful();
 
