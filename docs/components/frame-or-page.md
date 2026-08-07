@@ -135,7 +135,7 @@ One route can serve different frame hosts while sharing its main content:
     @include('messages._edit-form')
 
     <hw:frame-or-page.frame>
-        <hw:flash-message />
+        <hw:toast />
     </hw:frame-or-page.frame>
 </hw:frame-or-page>
 ```

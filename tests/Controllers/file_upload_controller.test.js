@@ -1170,7 +1170,7 @@ test("JSON success renders an embedded stream after committing client state", as
     };
     await mount();
 
-    const stream = '<turbo-stream action="append" target="flash-container"><template>Saved</template></turbo-stream>';
+    const stream = '<turbo-stream action="append" target="toaster"><template>Saved</template></turbo-stream>';
     mounted.controller.select({ target: { files: [file("photo.png")], value: "x" } });
     requests[0].respond(201, { token: "photo-token", stream });
     await wait(0);
@@ -1190,7 +1190,7 @@ test("JSON errors render an embedded stream after normalizing error state", asyn
     };
     await mount();
 
-    const stream = '<turbo-stream action="append" target="flash-container"><template>Failed</template></turbo-stream>';
+    const stream = '<turbo-stream action="append" target="toaster"><template>Failed</template></turbo-stream>';
     mounted.controller.select({ target: { files: [file("photo.png")], value: "x" } });
     requests[0].respond(422, {
         errors: { file: ["The file is invalid."] },
@@ -1206,7 +1206,7 @@ test("JSON stream works with image view without Turbo negotiation", async () => 
     globalThis.Turbo = { renderStreamMessage: (html) => rendered.push(html) };
     await mount(imageHtml());
 
-    const stream = '<turbo-stream action="append" target="flash-container"><template>Image saved</template></turbo-stream>';
+    const stream = '<turbo-stream action="append" target="toaster"><template>Image saved</template></turbo-stream>';
     mounted.controller.select({
         target: { files: [file("avatar.png", { type: "image/png" })], value: "x" },
     });
@@ -1255,7 +1255,7 @@ test("JSON streams strip surrounding non-stream markup before rendering", async 
     globalThis.Turbo = { renderStreamMessage: (html) => rendered.push(html) };
     await mount();
 
-    const stream = '<turbo-stream action="append" target="flash-container"><template>Saved</template></turbo-stream>';
+    const stream = '<turbo-stream action="append" target="toaster"><template>Saved</template></turbo-stream>';
     mounted.controller.select({ target: { files: [file("photo.png")], value: "x" } });
     requests[0].respond(201, {
         token: "photo-token",

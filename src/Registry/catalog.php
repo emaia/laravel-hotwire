@@ -28,8 +28,6 @@ use Emaia\LaravelHotwire\Components\Field\Group as FieldGroup;
 use Emaia\LaravelHotwire\Components\Field\Label as FieldLabel;
 use Emaia\LaravelHotwire\Components\File;
 use Emaia\LaravelHotwire\Components\FileUpload;
-use Emaia\LaravelHotwire\Components\FlashContainer;
-use Emaia\LaravelHotwire\Components\FlashMessage;
 use Emaia\LaravelHotwire\Components\Form;
 use Emaia\LaravelHotwire\Components\Frame;
 use Emaia\LaravelHotwire\Components\FrameOrPage;
@@ -77,6 +75,8 @@ use Emaia\LaravelHotwire\Components\Table;
 use Emaia\LaravelHotwire\Components\Tabs;
 use Emaia\LaravelHotwire\Components\Textarea;
 use Emaia\LaravelHotwire\Components\Timeago;
+use Emaia\LaravelHotwire\Components\Toast;
+use Emaia\LaravelHotwire\Components\Toaster;
 use Emaia\LaravelHotwire\Components\Toggle;
 use Emaia\LaravelHotwire\Components\ToggleGroup;
 use Emaia\LaravelHotwire\Components\ToggleGroup\Item as ToggleGroupItem;
@@ -414,28 +414,6 @@ return [
                     ['file-upload', 'file-upload-dropzone', 'file-upload-image-base', 'file-upload-image-preview', 'file-upload-feedback', 'file-upload-actions', 'attachment-group', 'empty-state-description'],
                     ['file-upload-announcer'],
                 ),
-            ],
-        ],
-        'flash-container' => [
-            'class' => FlashContainer::class,
-            'view' => 'hotwire::component-views.flash-container',
-            'docs' => 'docs/components/flash-container.md',
-            'category' => 'feedback',
-            'description' => 'Hosts the Sonner toaster instance and persists it across Turbo Drive navigations',
-            'controllers' => ['toaster'],
-            'styling' => [
-                'slots' => $slots(['flash-container']),
-            ],
-        ],
-        'flash-message' => [
-            'class' => FlashMessage::class,
-            'view' => 'hotwire::component-views.flash-message',
-            'docs' => 'docs/components/flash-message.md',
-            'category' => 'feedback',
-            'description' => 'Fires a toast notification from the Laravel session or from explicit props',
-            'controllers' => ['toast'],
-            'styling' => [
-                'slots' => $slots(['flash-message']),
             ],
         ],
         'form' => [
@@ -962,6 +940,28 @@ return [
             'controllers' => ['timeago'],
             'styling' => [
                 'slots' => $slots(['timeago']),
+            ],
+        ],
+        'toast' => [
+            'class' => Toast::class,
+            'view' => 'hotwire::component-views.toast',
+            'docs' => 'docs/components/toast.md',
+            'category' => 'feedback',
+            'description' => 'Fires a toast notification from the Laravel session or from explicit props',
+            'controllers' => ['toast'],
+            'styling' => [
+                'slots' => $slots(['toast']),
+            ],
+        ],
+        'toaster' => [
+            'class' => Toaster::class,
+            'view' => 'hotwire::component-views.toaster',
+            'docs' => 'docs/components/toaster.md',
+            'category' => 'feedback',
+            'description' => 'Hosts the toaster instance and persists it across Turbo Drive navigations',
+            'controllers' => ['toaster'],
+            'styling' => [
+                'slots' => $slots(['toaster']),
             ],
         ],
         'toggle' => [

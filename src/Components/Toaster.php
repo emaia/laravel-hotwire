@@ -5,10 +5,10 @@ namespace Emaia\LaravelHotwire\Components;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\Component;
 
-class FlashContainer extends Component
+class Toaster extends Component
 {
     public function __construct(
-        public string $id = 'flash-container',
+        public string $id = 'toaster',
         public string $position = 'bottom-center',
         public string $theme = 'system',
         public int $duration = 4000,
@@ -34,6 +34,6 @@ class FlashContainer extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.flash-container');
+        return view('hotwire::component-views.toaster');
     }
 }

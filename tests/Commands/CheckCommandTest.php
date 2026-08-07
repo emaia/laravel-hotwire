@@ -429,7 +429,7 @@ it('shows dash for component without controller dependency', function () {
 
 it('groups problem lines under a "Needs attention" heading at the end of the output', function () {
     writePackageJson(['name' => 'app', 'devDependencies' => []]);
-    writeView('page.blade.php', '<x-hw::flash-message />');
+    writeView('page.blade.php', '<x-hw::toast />');
 
     Artisan::call('hotwire:check --no-interaction');
     $output = Artisan::output();
@@ -595,7 +595,7 @@ it('reports no components found when custom path has no blade files', function (
 
 it('lists required npm dependencies for used controllers', function () {
     writePackageJson(['name' => 'app', 'devDependencies' => []]);
-    writeView('page.blade.php', '<x-hw::flash-message />');
+    writeView('page.blade.php', '<x-hw::toast />');
 
     $this->artisan('hotwire:check --no-interaction')
         ->expectsOutputToContain('Required npm dependencies')
@@ -607,7 +607,7 @@ it('marks dependency as present when listed in dependencies', function () {
     writePackageJson(['name' => 'app', 'dependencies' => ['@emaia/sonner' => '^2.1.0']]);
     publishController('toast', $this->targetDir);
     publishController('toaster', $this->targetDir);
-    writeView('page.blade.php', '<x-hw::flash-message />');
+    writeView('page.blade.php', '<x-hw::toast />');
 
     $this->artisan('hotwire:check --no-interaction')
         ->doesntExpectOutputToContain('missing from package.json')
@@ -618,7 +618,7 @@ it('marks dependency as present when listed in devDependencies', function () {
     writePackageJson(['name' => 'app', 'devDependencies' => ['@emaia/sonner' => '^2.1.0']]);
     publishController('toast', $this->targetDir);
     publishController('toaster', $this->targetDir);
-    writeView('page.blade.php', '<x-hw::flash-message />');
+    writeView('page.blade.php', '<x-hw::toast />');
 
     $this->artisan('hotwire:check --no-interaction')
         ->doesntExpectOutputToContain('missing from package.json')
@@ -629,7 +629,7 @@ it('marks dependency as missing when absent from package.json', function () {
     writePackageJson(['name' => 'app', 'devDependencies' => []]);
     publishController('toast', $this->targetDir);
     publishController('toaster', $this->targetDir);
-    writeView('page.blade.php', '<x-hw::flash-message />');
+    writeView('page.blade.php', '<x-hw::toast />');
 
     $this->artisan('hotwire:check --no-interaction')
         ->expectsOutputToContain('@emaia/sonner')
@@ -692,7 +692,7 @@ it('normalizes scoped subpath imports', function () {
     writePackageJson(['name' => 'app', 'devDependencies' => ['@emaia/sonner' => '^2.1.0']]);
     publishController('toast', $this->targetDir);
     publishController('toaster', $this->targetDir);
-    writeView('page.blade.php', '<x-hw::flash-message />');
+    writeView('page.blade.php', '<x-hw::toast />');
 
     $this->artisan('hotwire:check --no-interaction')
         ->doesntExpectOutputToContain('@emaia/sonner/vanilla')
@@ -701,7 +701,7 @@ it('normalizes scoped subpath imports', function () {
 
 it('ignores core dependencies', function () {
     writePackageJson(['name' => 'app', 'devDependencies' => []]);
-    writeView('page.blade.php', '<x-hw::flash-message />');
+    writeView('page.blade.php', '<x-hw::toast />');
 
     $this->artisan('hotwire:check --no-interaction')
         ->doesntExpectOutputToContain('@hotwired/stimulus')
@@ -711,7 +711,7 @@ it('ignores core dependencies', function () {
 
 it('deduplicates dependencies used by multiple controllers', function () {
     writePackageJson(['name' => 'app', 'devDependencies' => []]);
-    writeView('page.blade.php', '<x-hw::flash-message />');
+    writeView('page.blade.php', '<x-hw::toast />');
 
     Artisan::call('hotwire:check --no-interaction');
     $output = Artisan::output();
@@ -723,7 +723,7 @@ it('exits with 1 when a dependency is missing', function () {
     writePackageJson(['name' => 'app', 'devDependencies' => []]);
     publishController('toast', $this->targetDir);
     publishController('toaster', $this->targetDir);
-    writeView('page.blade.php', '<x-hw::flash-message />');
+    writeView('page.blade.php', '<x-hw::toast />');
 
     $this->artisan('hotwire:check --no-interaction')
         ->assertExitCode(1);
@@ -731,7 +731,7 @@ it('exits with 1 when a dependency is missing', function () {
 
 it('adds missing npm dependencies to devDependencies with --fix', function () {
     writePackageJson(['name' => 'app', 'devDependencies' => []]);
-    writeView('page.blade.php', '<x-hw::flash-message />');
+    writeView('page.blade.php', '<x-hw::toast />');
 
     $this->artisan('hotwire:check --fix --no-interaction')
         ->assertSuccessful();
@@ -743,7 +743,7 @@ it('adds missing npm dependencies to devDependencies with --fix', function () {
 it('skips package manager install with --skip-install in non-interactive fix mode', function () {
     $installer = fakePackageInstaller('bun');
     writePackageJson(['name' => 'app', 'devDependencies' => []]);
-    writeView('page.blade.php', '<x-hw::flash-message />');
+    writeView('page.blade.php', '<x-hw::toast />');
 
     $this->artisan('hotwire:check --fix --skip-install --no-interaction')
         ->expectsOutputToContain('Run your package manager install command')
@@ -755,7 +755,7 @@ it('skips package manager install with --skip-install in non-interactive fix mod
 it('runs package manager install automatically in non-interactive fix mode by default', function () {
     $installer = fakePackageInstaller('bun');
     writePackageJson(['name' => 'app', 'devDependencies' => []]);
-    writeView('page.blade.php', '<x-hw::flash-message />');
+    writeView('page.blade.php', '<x-hw::toast />');
 
     $this->artisan('hotwire:check --fix --no-interaction')
         ->expectsOutputToContain('Running bun install')
@@ -768,7 +768,7 @@ it('runs package manager install automatically in non-interactive fix mode by de
 it('prompts to run package manager install after interactive fix adds dependencies', function () {
     $installer = fakePackageInstaller('pnpm');
     writePackageJson(['name' => 'app', 'devDependencies' => []]);
-    writeView('page.blade.php', '<x-hw::flash-message />');
+    writeView('page.blade.php', '<x-hw::toast />');
 
     $this->artisan('hotwire:check')
         ->expectsConfirmation('Apply --fix now? (publishes missing/outdated controllers, regenerates the loader stub, adds missing npm deps)', 'yes')
@@ -794,7 +794,7 @@ it('does not run package manager install when no dependencies were added', funct
 it('fails when package manager install fails', function () {
     $installer = fakePackageInstaller('npm', 1);
     writePackageJson(['name' => 'app', 'devDependencies' => []]);
-    writeView('page.blade.php', '<x-hw::flash-message />');
+    writeView('page.blade.php', '<x-hw::toast />');
 
     $this->artisan('hotwire:check --fix --no-interaction')
         ->expectsOutputToContain('npm install failed')
@@ -807,7 +807,7 @@ it('does not duplicate a dependency already present when --fix runs', function (
     writePackageJson(['name' => 'app', 'dependencies' => ['@emaia/sonner' => '^2.1.0'], 'devDependencies' => []]);
     publishController('toast', $this->targetDir);
     publishController('toaster', $this->targetDir);
-    writeView('page.blade.php', '<x-hw::flash-message />');
+    writeView('page.blade.php', '<x-hw::toast />');
 
     $this->artisan('hotwire:check --fix --no-interaction')
         ->assertSuccessful();
@@ -823,7 +823,7 @@ it('warns and skips npm check when package.json does not exist', function () {
     }
     publishController('toast', $this->targetDir);
     publishController('toaster', $this->targetDir);
-    writeView('page.blade.php', '<x-hw::flash-message />');
+    writeView('page.blade.php', '<x-hw::toast />');
 
     $this->artisan('hotwire:check --no-interaction')
         ->expectsOutputToContain('package.json not found')
@@ -832,7 +832,7 @@ it('warns and skips npm check when package.json does not exist', function () {
 
 it('reports npm deps even when controllers are not yet published', function () {
     writePackageJson(['name' => 'app', 'devDependencies' => []]);
-    writeView('page.blade.php', '<x-hw::flash-message />');
+    writeView('page.blade.php', '<x-hw::toast />');
 
     $this->artisan('hotwire:check --no-interaction')
         ->expectsOutputToContain('@emaia/sonner')

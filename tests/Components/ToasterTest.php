@@ -6,22 +6,22 @@ use Illuminate\Support\Facades\Blade;
 // --- Defaults ---
 
 it('renders with default props', function () {
-    $view = $this->blade('<x-hw::flash-container />');
+    $view = $this->blade('<x-hw::toaster />');
 
     $view->assertSee('data-controller="toaster"', false);
-    $view->assertSee('id="flash-container"', false);
+    $view->assertSee('id="toaster"', false);
     $view->assertSee('data-turbo-permanent', false);
 });
 
 it('merges inline stimulus attributes with the toaster controller', function () {
-    $view = $this->blade('<x-hw::flash-container :stimulus="stimulus()->controller(\'analytics\')->action(\'analytics\', \'track\', \'sonner:toast\')" />');
+    $view = $this->blade('<x-hw::toaster :stimulus="stimulus()->controller(\'analytics\')->action(\'analytics\', \'track\', \'sonner:toast\')" />');
 
     $view->assertSee('data-controller="toaster analytics"', false);
     $view->assertSee('data-action="sonner:toast->analytics#track"', false);
 });
 
 it('emits default stimulus values', function () {
-    $view = $this->blade('<x-hw::flash-container />');
+    $view = $this->blade('<x-hw::toaster />');
 
     $view->assertSee('data-toaster-position-value="bottom-center"', false);
     $view->assertSee('data-toaster-theme-value="system"', false);
@@ -37,19 +37,19 @@ it('emits default stimulus values', function () {
 // --- Identity and Turbo integration ---
 
 it('uses a custom id when provided', function () {
-    $view = $this->blade('<x-hw::flash-container id="toaster-root" />');
+    $view = $this->blade('<x-hw::toaster id="toaster-root" />');
 
     $view->assertSee('id="toaster-root"', false);
 });
 
 it('omits data-turbo-permanent when disabled', function () {
-    $view = $this->blade('<x-hw::flash-container :turbo-permanent="false" />');
+    $view = $this->blade('<x-hw::toaster :turbo-permanent="false" />');
 
     $view->assertDontSee('data-turbo-permanent', false);
 });
 
 it('applies a custom class on the container div', function () {
-    $view = $this->blade('<x-hw::flash-container class="z-50 isolate" />');
+    $view = $this->blade('<x-hw::toaster class="z-50 isolate" />');
 
     $view->assertSee('class="z-50 isolate"', false);
 });
@@ -57,7 +57,7 @@ it('applies a custom class on the container div', function () {
 // --- Nullable props: omitted when unset ---
 
 it('omits nullable stimulus values when not provided', function () {
-    $view = $this->blade('<x-hw::flash-container />');
+    $view = $this->blade('<x-hw::toaster />');
 
     $view->assertDontSee('gap-value', false);
     $view->assertDontSee('hotkey-value', false);
@@ -74,7 +74,7 @@ it('omits nullable stimulus values when not provided', function () {
 
 it('emits custom position, theme, duration, and visible toasts', function () {
     $view = $this->blade('
-        <x-hw::flash-container
+        <x-hw::toaster
             position="top-right"
             theme="dark"
             :duration="5000"
@@ -90,7 +90,7 @@ it('emits custom position, theme, duration, and visible toasts', function () {
 
 it('emits boolean props as true/false strings', function () {
     $view = $this->blade('
-        <x-hw::flash-container
+        <x-hw::toaster
             :close-button="false"
             :rich-colors="false"
             :expand="true"
@@ -108,7 +108,7 @@ it('emits boolean props as true/false strings', function () {
 
 it('emits optional advanced props when provided', function () {
     $view = $this->blade('
-        <x-hw::flash-container
+        <x-hw::toaster
             :gap="10"
             hotkey="alt+T"
             dir="rtl"
@@ -133,7 +133,7 @@ it('emits optional advanced props when provided', function () {
 });
 
 it('escapes JSON offset values as HTML entities for toaster parsing', function () {
-    $view = $this->blade('<x-hw::flash-container offset=\'{"top":"20px","right":"20px"}\' mobile-offset=\'{"bottom":"12px"}\' />');
+    $view = $this->blade('<x-hw::toaster offset=\'{"top":"20px","right":"20px"}\' mobile-offset=\'{"bottom":"12px"}\' />');
 
     $view->assertSee('data-toaster-offset-value="{&quot;top&quot;:&quot;20px&quot;,&quot;right&quot;:&quot;20px&quot;}"', false);
     $view->assertSee('data-toaster-mobile-offset-value="{&quot;bottom&quot;:&quot;12px&quot;}"', false);
@@ -143,10 +143,10 @@ it('escapes JSON offset values as HTML entities for toaster parsing', function (
 // --- Namespace registration ---
 
 it('renders with hw:: prefix alias', function () {
-    $view = $this->blade('<x-hw::flash-container />');
+    $view = $this->blade('<x-hw::toaster />');
 
     $view->assertSee('data-controller="toaster"', false);
-    $view->assertSee('id="flash-container"', false);
+    $view->assertSee('id="toaster"', false);
 });
 
 it('registers with custom prefix', function () {
@@ -155,5 +155,5 @@ it('registers with custom prefix', function () {
     $provider = new LaravelHotwireServiceProvider($this->app);
     $provider->packageBooted();
 
-    expect(Blade::getClassComponentAliases())->toHaveKey('custom::flash-container');
+    expect(Blade::getClassComponentAliases())->toHaveKey('custom::toaster');
 });

@@ -1,7 +1,7 @@
-# Flash Message
+# Toast
 
 Fires a single toast notification — either reading from the Laravel session or from explicit props. Designed to be
-rendered inside a layout alongside [`<hw:flash-container />`](../flash-container/readme.md), which hosts the
+rendered inside a layout alongside [`<hw:toaster />`](./toaster.md), which hosts the
 Sonner instance the toasts are emitted into.
 
 Internally the component maps to the `toast` Stimulus controller (`toast_controller.js`), which calls `toast()`
@@ -10,7 +10,7 @@ from `@emaia/sonner/vanilla` on connect and removes the element from the DOM. It
 ## Requirements
 
 - `@emaia/sonner` installed in the project
-- `<hw:flash-container />` rendered once in the layout
+- `<hw:toaster />` rendered once in the layout
 - Controller published: `php artisan hotwire:controllers toast`
 
 > `php artisan hotwire:check` detects all requirements automatically — and `--fix` publishes the missing controllers
@@ -18,7 +18,7 @@ from `@emaia/sonner/vanilla` on connect and removes the element from the DOM. It
 
 ## Setup
 
-Place `<hw:flash-message />` once in your main layout, after `<hw:flash-container />`:
+Place `<hw:toast />` once in your main layout, after `<hw:toaster />`:
 
 ```html
 <!DOCTYPE html>
@@ -27,8 +27,8 @@ Place `<hw:flash-message />` once in your main layout, after `<hw:flash-containe
 <body>
 {{ $slot }}
 
-<hw:flash-container />
-<hw:flash-message />
+<hw:toaster />
+<hw:toast />
 </body>
 </html>
 ```
@@ -61,13 +61,13 @@ $request->validate([
 ## Explicit message
 
 ```html
-<hw:flash-message message="Operation completed" type="success"/>
+<hw:toast message="Operation completed" type="success"/>
 ```
 
 ## With description
 
 ```html
-<hw:flash-message
+<hw:toast
     message="Failed to save"
     description="Please check the required fields"
     type="error"
@@ -80,7 +80,7 @@ Override the toaster's default position for a single toast. The container stays 
 appears in the chosen corner:
 
 ```html
-<hw:flash-message message="Session expires in 5 min" type="warning" position="top-center"/>
+<hw:toast message="Session expires in 5 min" type="warning" position="top-center"/>
 ```
 
 Accepted values: `top-left`, `top-center`, `top-right`, `bottom-left`, `bottom-center`, `bottom-right`.
@@ -92,7 +92,7 @@ Accepted values: `top-left`, `top-center`, `top-right`, `bottom-left`, `bottom-c
 | `message`     | `?string` | `null`  | Toast message. If `null`, reads from session                                                   |
 | `description` | `?string` | `null`  | Additional description shown below the message                                                 |
 | `type`        | `?string` | `null`  | Toast type: `success`, `error`, `warning`, `info`, `default`. If `null`, detected from session |
-| `position`    | `?string` | `null`  | Override the toaster position for this toast only: `top-left`, `top-center`, `top-right`, `bottom-left`, `bottom-center`, `bottom-right`. If `null`, uses the [`<hw:flash-container />`](../flash-container/readme.md) default |
+| `position`    | `?string` | `null`  | Override the toaster position for this toast only: `top-left`, `top-center`, `top-right`, `bottom-left`, `bottom-center`, `bottom-right`. If `null`, uses the [`<hw:toaster />`](./toaster.md) default |
 
 ### Supported session keys
 
@@ -108,15 +108,15 @@ Explicit props take priority over the session.
 
 ## Turbo integration
 
-`<hw:flash-message />` uses `data-turbo-temporary`, so cached pages don't replay toasts on back/forward.
+`<hw:toast />` uses `data-turbo-temporary`, so cached pages don't replay toasts on back/forward.
 
-Turbo Streams can append rendered `<hw:flash-message />` markup to the container:
+Turbo Streams can append rendered `<hw:toast />` markup to the container:
 
 ```php
 use Illuminate\Support\Facades\Blade;
 
-return turbo_stream()->append('flash-container', Blade::render(
-    '<hw:flash-message :message="$message" type="success" />',
+return turbo_stream()->append('toaster', Blade::render(
+    '<hw:toast :message="$message" type="success" />',
     ['message' => 'Saved!'],
 ));
 ```
@@ -134,8 +134,8 @@ use Illuminate\Support\Facades\Blade;
 public function boot(): void
 {
     TurboStreamBuilder::macro('flash', function (string $type, string $message, ?string $description = null, ?string $position = null) {
-        return $this->append('flash-container', Blade::render(
-            '<hw:flash-message :type="$type" :message="$message" :description="$description" :position="$position" />',
+        return $this->append('toaster', Blade::render(
+            '<hw:toast :type="$type" :message="$message" :description="$description" :position="$position" />',
             compact('type', 'message', 'description', 'position'),
         ));
     });
@@ -162,4 +162,4 @@ return turbo_stream()
 
 ## See also
 
-- [`<hw:flash-container />`](../flash-container/readme.md) — hosts the Sonner instance and exposes its config
+- [`<hw:toaster />`](./toaster.md) — hosts the Sonner instance and exposes its config

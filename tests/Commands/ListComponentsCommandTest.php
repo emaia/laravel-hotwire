@@ -22,8 +22,8 @@ it('lists all registered components', function () {
     expect($output)->toContain('Modal')
         ->and($output)->toContain('Alert Dialog')
         ->and($output)->toContain('Field Group')
-        ->and($output)->toContain('Flash Container')
-        ->and($output)->toContain('Flash Message')
+        ->and($output)->toContain('Toaster')
+        ->and($output)->toContain('Toast')
         ->and($output)->toContain('Spinner')
         ->and($output)->toContain('Scroll Progress');
 });
@@ -33,7 +33,7 @@ it('shows blade tags with current prefix', function () {
         ->expectsOutputToContain('<x-hw::modal>')
         ->expectsOutputToContain('<x-hw::alert-dialog>')
         ->expectsOutputToContain('<x-hw::field.group>')
-        ->expectsOutputToContain('<x-hw::flash-message>')
+        ->expectsOutputToContain('<x-hw::toast>')
         ->expectsOutputToContain('<x-hw::spinner>')
         ->expectsOutputToContain('<x-hw::scroll-progress>')
         ->assertSuccessful();
@@ -90,7 +90,7 @@ it('shows outdated when installed controller differs from package version', func
         ->assertSuccessful();
 });
 
-it('lists the flash container and flash message controllers', function () {
+it('lists the toaster and toast controllers', function () {
     $this->artisan('hotwire:components')
         ->expectsOutputToContain('toaster')
         ->expectsOutputToContain('toast')
@@ -101,6 +101,6 @@ it('shows component name only on first row for each component', function () {
     // Artisan::call() captures output in Artisan::output(); $this->artisan() uses its own buffer
     Artisan::call('hotwire:components');
     $text = Artisan::output();
-    $occurrences = substr_count($text, 'Flash Message');
+    $occurrences = substr_count($text, 'Toaster');
     expect($occurrences)->toBe(1);
 });

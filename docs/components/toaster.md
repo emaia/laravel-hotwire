@@ -1,7 +1,7 @@
-# Flash Container
+# Toaster
 
 Initializes the [Sonner](https://www.npmjs.com/package/@emaia/sonner) toaster once per page and persists it across
-Turbo Drive navigations. It's the host element for every toast fired by [`<hw:flash-message />`](./flash-message.md)
+Turbo Drive navigations. It's the host element for every toast fired by [`<hw:toast />`](./toast.md)
 or by appended Turbo Streams.
 
 Internally the component maps to the `toaster` Stimulus controller (`toaster_controller.js`), which calls Sonner's
@@ -26,20 +26,20 @@ Place the container once in your main layout (typically before `</body>`):
 <body>
 {{ $slot }}
 
-<hw:flash-container />
-<hw:flash-message />
+<hw:toaster />
+<hw:toast />
 </body>
 </html>
 ```
 
-The container defaults to `id="flash-container"` and ships with `data-turbo-permanent`, so it survives Turbo Drive
+The container defaults to `id="toaster"` and ships with `data-turbo-permanent`, so it survives Turbo Drive
 navigations and keeps the Sonner instance alive. The default id also lets you target it from Turbo Streams:
 
 ```php
 use Illuminate\Support\Facades\Blade;
 
-return turbo_stream()->append('flash-container', Blade::render(
-    '<hw:flash-message :message="$message" type="success" />',
+return turbo_stream()->append('toaster', Blade::render(
+    '<hw:toast :message="$message" type="success" />',
     ['message' => 'Saved!'],
 ));
 ```
@@ -51,7 +51,7 @@ emitted when you set them, so Sonner's own defaults still apply.
 
 | Prop                   | Type      | Default           | Description                                                                           |
 |------------------------|-----------|-------------------|---------------------------------------------------------------------------------------|
-| `id`                   | `string`  | `flash-container` | Element id — also used as the default target for Turbo Stream appends                 |
+| `id`                   | `string`  | `toaster`         | Element id — also used as the default target for Turbo Stream appends                 |
 | `position`             | `string`  | `bottom-center`   | `top-left`, `top-center`, `top-right`, `bottom-left`, `bottom-center`, `bottom-right` |
 | `theme`                | `string`  | `light`           | `light`, `dark`, `system`                                                             |
 | `duration`             | `int`     | `4000`            | Duration in ms before the toast disappears                                            |
@@ -78,7 +78,7 @@ emitted when you set them, so Sonner's own defaults still apply.
 Top-right, dark theme, 5s duration:
 
 ```html
-<hw:flash-container
+<hw:toaster
     position="top-right"
     theme="dark"
     :duration="5000"
@@ -88,7 +88,7 @@ Top-right, dark theme, 5s duration:
 Expanded toasts, no close button:
 
 ```html
-<hw:flash-container
+<hw:toaster
     :close-button="false"
     :expand="true"
 />
@@ -97,7 +97,7 @@ Expanded toasts, no close button:
 Offset tuning with a hotkey and swipe directions:
 
 ```html
-<hw:flash-container
+<hw:toaster
     offset='{"top":"20px","right":"20px"}'
     mobile-offset="12px"
     hotkey="alt+T"
@@ -108,7 +108,7 @@ Offset tuning with a hotkey and swipe directions:
 Custom id (useful if you need more than one target or want a different Turbo Stream anchor):
 
 ```html
-<hw:flash-container id="my-toaster" />
+<hw:toaster id="my-toaster" />
 ```
 
 ## Escape hatch
@@ -118,7 +118,7 @@ is just a thin wrapper:
 
 ```html
 <div
-    id="flash-container"
+    id="toaster"
     data-controller="toaster"
     data-toaster-position-value="top-right"
     data-turbo-permanent
@@ -128,9 +128,9 @@ is just a thin wrapper:
 ## Turbo integration
 
 - The container uses `data-turbo-permanent` by default — Sonner stays initialized across Turbo Drive navigations.
-- Turbo Streams can append rendered `<hw:flash-message />` markup to the container — see the
+- Turbo Streams can append rendered `<hw:toast />` markup to the container — see the
   `Blade::render()` example in the [Setup](#setup) section.
 
 ## See also
 
-- [`<hw:flash-message />`](./flash-message.md) — fires individual toasts from session or props
+- [`<hw:toast />`](./toast.md) — fires individual toasts from session or props

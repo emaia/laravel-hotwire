@@ -378,8 +378,8 @@ controllers, attribute-bag merging and the escaping rules.
 | [Toggle Group](docs/components/toggle-group.md)           | `<hw:toggle-group>`        | `forms`      | `toggle-group`, `toggle`, `auto-submit`                                | [readme](docs/components/toggle-group.md)       |
 | [Toggle Group Item](docs/components/toggle-group.md)      | `<hw:toggle-group.item>`   | `forms`      | `toggle-group`, `toggle`, `auto-submit`                                | [readme](docs/components/toggle-group.md)       |
 | [Alert](docs/components/alert.md)                         | `<hw:alert>`               | `feedback`   | —                                                                      | [readme](docs/components/alert.md)              |
-| [Flash Container](docs/components/flash-container.md)     | `<hw:flash-container>`     | `feedback`   | `toaster`                                                              | [readme](docs/components/flash-container.md)    |
-| [Flash Message](docs/components/flash-message.md)         | `<hw:flash-message>`       | `feedback`   | `toast`                                                                | [readme](docs/components/flash-message.md)      |
+| [Toaster](docs/components/toaster.md)                     | `<hw:toaster>`             | `feedback`   | `toaster`                                                              | [readme](docs/components/toaster.md)            |
+| [Toast](docs/components/toast.md)                         | `<hw:toast>`               | `feedback`   | `toast`                                                                | [readme](docs/components/toast.md)              |
 | [Skeleton](docs/components/skeleton.md)                   | `<hw:skeleton>`            | `feedback`   | —                                                                      | [readme](docs/components/skeleton.md)           |
 | [Spinner](docs/components/spinner.md)                     | `<hw:spinner>`             | `feedback`   | —                                                                      | [readme](docs/components/spinner.md)            |
 | [Sticky](docs/components/sticky.md)                       | `<hw:sticky>`              | `layout`     | —                                                                      | [readme](docs/components/sticky.md)             |
@@ -461,7 +461,7 @@ attributes and the `stimulus_controller()` / `stimulus()->controller()` / `->con
 Exits with code `1` if either has pending items (useful for CI).
 
 Both the configured prefix (`hw` by default) and the short `<hw:*>` form are recognized, so views like
-`<hw:flash-message />` and `<x-hw::flash-message />` are detected equally. Only controllers shipped by the package are
+`<hw:toast />` and `<x-hw::toast />` are detected equally. Only controllers shipped by the package are
 checked — your own controllers are ignored — and Blade comments and `<script>`/`<style>` blocks are stripped first, so
 commented-out code is skipped.
 
@@ -479,8 +479,8 @@ php artisan hotwire:check --path=resources/views/app
 Example output:
 
 ```
-  ✓  toaster  up to date  (used by <hw:flash-container>)
-  ✓  toast    up to date  (used by <hw:flash-message>)
+  ✓  toaster  up to date  (used by <hw:toaster>)
+  ✓  toast    up to date  (used by <hw:toast>)
 
 Required npm dependencies:
   ✓  @emaia/sonner ^2.1.0  (used by toaster, toast)

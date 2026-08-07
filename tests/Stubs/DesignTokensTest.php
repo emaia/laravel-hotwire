@@ -249,9 +249,9 @@ it('keeps the flash container eligible for top-layer stacking', function (string
     $css = file_get_contents($preset);
 
     expect($css)
-        ->toContain('[data-hotwire-top-layer][popover]:is([data-slot="modal-overlay"], [data-slot="alert-dialog-overlay"], [data-slot="drawer-overlay"], [data-slot="sheet-overlay"], [data-slot="sidebar"], [data-slot="flash-container"])')
-        ->toContain('[data-slot="flash-container"]')
-        ->not->toContain('[data-slot="flash-container"] { @apply contents; }');
+        ->toContain('[data-hotwire-top-layer][popover]:is([data-slot="modal-overlay"], [data-slot="alert-dialog-overlay"], [data-slot="drawer-overlay"], [data-slot="sheet-overlay"], [data-slot="sidebar"], [data-slot="toaster"])')
+        ->toContain('[data-slot="toaster"]')
+        ->not->toContain('[data-slot="toaster"] { @apply contents; }');
 })->with('design presets');
 
 it('keeps clear input visibility owned by its controller', function (string $preset) {

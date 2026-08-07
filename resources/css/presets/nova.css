@@ -324,12 +324,6 @@
     [data-slot="file-upload"][data-view="grid"] [data-slot="attachment-group"] { @apply grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4; }
     [data-slot="file-upload"][data-view="grid"] [data-slot="attachment"][data-orientation="vertical"] { @apply w-full; }
 
-    /* Flash Container */
-    [data-slot="flash-container"] { @apply pointer-events-none fixed inset-0; }
-
-    /* Flash Message */
-    [data-slot="flash-message"] { @apply hidden; }
-
     /* Hover Card */
     [data-slot="hover-card"] { @apply inline-block; }
     [data-slot="hover-card-content"] { @apply z-50 max-h-(--available-height) w-64 max-w-[calc(100vw-2rem)] origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-md border border-border bg-popover p-4 text-popover-foreground shadow-md outline-none duration-150 ease-out; }
@@ -419,7 +413,7 @@
     /* Modal */
     [data-slot="modal-overlay"], [data-slot="alert-dialog-overlay"] { @apply pointer-events-none fixed inset-0 z-50 flex items-center justify-center; }
     :is([data-slot="modal-overlay"], [data-slot="alert-dialog-overlay"], [data-slot="drawer-overlay"], [data-slot="sheet-overlay"])[data-state="open"] { @apply pointer-events-auto; }
-    :where([data-hotwire-top-layer][popover]:is([data-slot="modal-overlay"], [data-slot="alert-dialog-overlay"], [data-slot="drawer-overlay"], [data-slot="sheet-overlay"], [data-slot="sidebar"], [data-slot="flash-container"])) { @apply h-dvh w-screen max-w-none max-h-none overflow-visible border-0 bg-transparent p-0 text-inherit; }
+    :where([data-hotwire-top-layer][popover]:is([data-slot="modal-overlay"], [data-slot="alert-dialog-overlay"], [data-slot="drawer-overlay"], [data-slot="sheet-overlay"], [data-slot="sidebar"], [data-slot="toaster"])) { @apply h-dvh w-screen max-w-none max-h-none overflow-visible border-0 bg-transparent p-0 text-inherit; }
     [data-slot="modal-overlay"] { @apply flex-wrap p-2 md:p-10; }
     [data-slot="modal-backdrop"], [data-slot="alert-dialog-backdrop"] { @apply absolute inset-0 isolate bg-black/10 opacity-0 backdrop-blur-xs transition-opacity duration-100 ease-out; }
     [data-slot="modal-overlay"][data-state="open"] > [data-slot="modal-backdrop"], [data-slot="alert-dialog-overlay"][data-state="open"] > [data-slot="alert-dialog-backdrop"] { @apply opacity-100; }
@@ -744,6 +738,12 @@
 
     /* Timeago */
     [data-slot="timeago"] { @apply text-muted-foreground; }
+
+    /* Toast */
+    [data-slot="toast"] { @apply hidden; }
+
+    /* Toaster */
+    [data-slot="toaster"] { @apply pointer-events-none fixed inset-0; }
 
     /* Toggle */
     :is([data-slot="toggle"], [data-slot="toggle-group-item"]) { @apply inline-flex shrink-0 items-center justify-center gap-2 rounded-md bg-transparent text-foreground text-sm font-medium whitespace-nowrap transition-all outline-none hover:bg-muted focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4; }

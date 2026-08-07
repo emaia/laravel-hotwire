@@ -1,8 +1,8 @@
 @php
     $bool = fn (bool $v) => $v ? 'true' : 'false';
 
-    $flashContainerAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
-        'data-slot' => 'flash-container',
+    $toasterAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
+        'data-slot' => 'toaster',
         'id' => $id,
         'data-turbo-permanent' => $turboPermanent ? true : null,
         'class' => $class !== '' ? $class : null,
@@ -28,5 +28,5 @@
     ], $attributes, $stimulus, protectedPrefixes: ['data-toaster-']);
 @endphp
 <div
-    {{ $flashContainerAttributes }}
+    {{ $toasterAttributes }}
 ></div>
