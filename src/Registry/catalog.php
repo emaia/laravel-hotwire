@@ -6,6 +6,7 @@ use Emaia\LaravelHotwire\Components\AlertDialog;
 use Emaia\LaravelHotwire\Components\AspectRatio;
 use Emaia\LaravelHotwire\Components\Attachment;
 use Emaia\LaravelHotwire\Components\Avatar;
+use Emaia\LaravelHotwire\Components\BackToTop;
 use Emaia\LaravelHotwire\Components\Badge;
 use Emaia\LaravelHotwire\Components\Breadcrumb;
 use Emaia\LaravelHotwire\Components\Button;
@@ -160,6 +161,17 @@ return [
             'controllers' => [],
             'styling' => [
                 'slots' => $slots(['avatar', 'avatar-image', 'avatar-fallback', 'avatar-badge', 'avatar-group', 'avatar-group-count']),
+            ],
+        ],
+        'back-to-top' => [
+            'class' => BackToTop::class,
+            'view' => 'hotwire::component-views.back-to-top',
+            'docs' => 'docs/components/back-to-top.md',
+            'category' => 'utility',
+            'description' => 'Fixed accessible button that appears after scrolling and returns the page to the top',
+            'controllers' => ['back-to-top'],
+            'styling' => [
+                'slots' => $slots(['back-to-top']),
             ],
         ],
         'badge' => [
