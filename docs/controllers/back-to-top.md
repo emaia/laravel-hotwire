@@ -1,14 +1,15 @@
 # Back to Top
 
-Toggles a `data-visible` attribute on the controller element as the window scrolls past a threshold,
-and exposes a `scrollToTop` action that scrolls smoothly back to the top — respecting
+Toggles `data-visible` and `inert` on the controller element as the window scrolls past a threshold,
+and exposes a `scrollToTop` action that scrolls smoothly back to the top while respecting
 `prefers-reduced-motion`.
 
-The controller writes only `data-visible="true|false"` — it ships no styling. You drive the show/hide
-transition with CSS (a Tailwind data variant or plain CSS) so the button matches your design.
+Use the [`<hw:back-to-top>`](../components/back-to-top.md) component for accessible markup and Nova preset styling.
+The standalone controller ships no styling, so custom markup must provide its own visible states.
 
 **Identifier:** `back-to-top`  
-**Install:** `php artisan hotwire:controllers back-to-top`
+**Load:** Automatically after `php artisan hotwire:install`; publish with `php artisan hotwire:controllers back-to-top`
+only to customize it.
 
 ## Requirements
 
@@ -31,6 +32,7 @@ transition with CSS (a Tailwind data variant or plain CSS) so the button matches
 - Listens on `window` `scroll` with a `requestAnimationFrame` throttle (one frame per update).
 - Writes `data-visible="true"` when `window.scrollY > threshold`, `"false"` otherwise. Strictly
   greater than — at the exact threshold the button stays hidden.
+- Removes `inert` while visible and restores it while hidden so the button follows its visual state in the focus order.
 - `data-visible` is set on `connect()` so the initial state matches the current scroll position.
 - Cleans up the listener and any pending frame in `disconnect()`.
 
@@ -42,18 +44,20 @@ transition with CSS (a Tailwind data variant or plain CSS) so the button matches
     type="button"
     data-controller="back-to-top"
     data-action="back-to-top#scrollToTop"
-    class="fixed bottom-6 right-6 rounded-full bg-gray-900 p-3 text-white shadow-lg
+    data-visible="false"
+    class="fixed bottom-6 end-6 rounded-full bg-primary p-3 text-primary-foreground shadow-lg
            transition-opacity duration-200
            data-[visible=false]:opacity-0 data-[visible=false]:pointer-events-none
            data-[visible=true]:opacity-100"
     aria-label="Back to top"
+    inert
 >
     ↑
 </button>
 ```
 
-The `data-[visible=...]` Tailwind variants drive both the fade and the
-`pointer-events-none` so the button does not intercept clicks while hidden.
+The `data-[visible=...]` Tailwind variants drive the fade and pointer handling. The controller synchronizes `inert` so
+the hidden button also stays out of the keyboard focus order.
 
 ## Customizing the threshold
 
@@ -64,7 +68,9 @@ The `data-[visible=...]` Tailwind variants drive both the fade and the
     data-controller="back-to-top"
     data-back-to-top-threshold-value="800"
     data-action="back-to-top#scrollToTop"
+    data-visible="false"
     aria-label="Back to top"
+    inert
 >
     ↑
 </button>
