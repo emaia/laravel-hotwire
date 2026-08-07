@@ -141,7 +141,7 @@ Malformed JSON-like responses are treated as upload errors rather than tokens, s
 
 ## CSRF
 
-The controller reads `<meta name="csrf-token">` and sends `X-CSRF-TOKEN` on upload and DELETE requests when present.
+The controller reads the `csrf-token` meta — `<hw:meta csrf />` — and sends `X-CSRF-TOKEN` on upload and DELETE requests when present.
 
 ## Cleanup
 

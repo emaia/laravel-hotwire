@@ -169,8 +169,7 @@ scroll.
 {{-- resources/views/layouts/app.blade.php --}}
 <head>
     {{-- ... --}}
-    <meta name="turbo-refresh-method" content="morph">
-    <meta name="turbo-refresh-scroll" content="preserve">
+    <hw:meta refresh />
 </head>
 ```
 
@@ -292,7 +291,7 @@ Optimistic UI has well-known pitfalls. Here's how each maps to this stack:
   optimistic state is sensitive:
 
   ```blade
-  <meta name="turbo-cache-control" content="no-preview">
+  <hw:meta cache />
   ```
 
 - **Server/client formatting mismatch.** If the server renders the content

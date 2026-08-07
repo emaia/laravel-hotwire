@@ -609,6 +609,51 @@
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Marker\\Icon"
                 },
                 {
+                    "name": "meta",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Meta"
+                },
+                {
+                    "name": "meta.cache",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Meta\\Cache"
+                },
+                {
+                    "name": "meta.color-scheme",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Meta\\ColorScheme"
+                },
+                {
+                    "name": "meta.csrf",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Meta\\Csrf"
+                },
+                {
+                    "name": "meta.prefetch",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Meta\\Prefetch"
+                },
+                {
+                    "name": "meta.refresh",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Meta\\Refresh"
+                },
+                {
+                    "name": "meta.root",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Meta\\Root"
+                },
+                {
+                    "name": "meta.view-transition",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Meta\\ViewTransition"
+                },
+                {
+                    "name": "meta.visit-control",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Meta\\VisitControl"
+                },
+                {
                     "name": "modal",
                     "namespace": "hw",
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Modal"
