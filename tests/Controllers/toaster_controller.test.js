@@ -60,6 +60,16 @@ test.serial("publishes a single instance on window.toaster exposing destroy()", 
     expect(typeof window.toaster.destroy).toBe("function");
 });
 
+test.serial("creates the instance even when the element id already shadows window.toaster", async () => {
+    // An element with id="toaster" is exposed as window.toaster by named access on the Window
+    // object, before any controller runs. A truthiness guard would read the div and skip creation.
+    await mount(`<div id="toaster" data-controller="toaster"></div>`);
+
+    expect(createCalls).toHaveLength(1);
+    expect(typeof window.toaster.destroy).toBe("function");
+    expect(window.toaster).not.toBe(mounted.root);
+});
+
 test.serial("keeps the same instance across reconnects", async () => {
     await mount(`<div data-controller="toaster"></div>`);
 

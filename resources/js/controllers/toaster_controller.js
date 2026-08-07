@@ -34,7 +34,7 @@ export default class extends Controller {
         this.#topLayer.show();
         document.addEventListener("hotwire:top-layer:show", this.#handleTopLayerShow);
 
-        if (!window.toaster) {
+        if (!isToaster(window.toaster)) {
             window.toaster = this.createToaster(this.#buildOptions());
         }
 
@@ -52,7 +52,7 @@ export default class extends Controller {
         this.#themeObserver?.disconnect();
         this.#themeObserver = null;
 
-        if (this.autoDisconnectValue && window.toaster) {
+        if (this.autoDisconnectValue && isToaster(window.toaster)) {
             window.toaster.destroy();
             window.toaster = null;
         }
@@ -163,4 +163,13 @@ export default class extends Controller {
 
         return trimmed;
     }
+}
+
+/**
+ * The container carries id="toaster", and named access on the Window object publishes that element
+ * as window.toaster before any script runs. A truthiness check would read the div and skip creating
+ * the real instance, leaving every toast to vanish without an error.
+ */
+function isToaster(value) {
+    return Boolean(value) && typeof value.destroy === "function";
 }
