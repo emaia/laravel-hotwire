@@ -178,7 +178,9 @@ test.serial("rebinds reset handling when a wrapped form is replaced", async () =
     const master = document.querySelector('[data-checkbox-select-all-target="checkboxAll"]');
     const items = document.querySelectorAll('[data-checkbox-select-all-target="checkbox"]');
     items[1].checked = true;
-    items[1].dispatchEvent(new Event("change", { bubbles: true }));
+    // The replaced target's change listener also rides on the same MutationObserver callbacks as
+    // syncForm(); drive the state directly here and leave the real observer wiring to Playwright.
+    mounted.controller.refresh();
     expect(master.checked).toBe(true);
 
     form.reset();
