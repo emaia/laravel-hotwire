@@ -30,6 +30,33 @@ it('renders native turbo frame attributes', function () {
         ->assertSee('autoscroll', false);
 });
 
+it('omits false-like autoscroll values', function (string $value) {
+    $view = $this->blade('<x-hw::frame id="results" autoscroll="'.$value.'">Content</x-hw::frame>');
+
+    $view->assertDontSee('autoscroll', false);
+})->with(['false', '0', 'off', 'no']);
+
+it('omits bound false autoscroll values', function () {
+    $view = $this->blade('<x-hw::frame id="results" :autoscroll="false">Content</x-hw::frame>');
+
+    $view->assertDontSee('autoscroll', false);
+});
+
+it('omits false-like boolean alias props', function (string $prop, string $value, string $unexpected) {
+    $view = $this->blade('<x-hw::frame id="results" '.$prop.'="'.$value.'" src="/tasks">Content</x-hw::frame>');
+
+    $view->assertDontSee($unexpected, false)
+        ->assertDontSee($prop.'=', false);
+})->with([
+    'lazy false' => ['lazy', 'false', 'loading="lazy"'],
+    'lazy zero' => ['lazy', '0', 'loading="lazy"'],
+    'advance false' => ['advance', 'false', 'data-turbo-action="advance"'],
+    'replace false' => ['replace', 'false', 'data-turbo-action="replace"'],
+    'poll false' => ['poll', 'false', 'turbo--polling'],
+    'view transition false' => ['view-transition', 'false', 'turbo--view-transition'],
+    'preserve scroll false' => ['preserve-scroll', 'false', 'turbo--preserve-scroll'],
+]);
+
 it('omits blank optional native frame attributes', function () {
     $view = $this->blade('<x-hw::frame id="results" src="   " target=" " loading="" action="">Content</x-hw::frame>');
 
@@ -37,6 +64,20 @@ it('omits blank optional native frame attributes', function () {
         ->assertDontSee('target=', false)
         ->assertDontSee('loading=', false)
         ->assertDontSee('data-turbo-action=', false);
+});
+
+it('omits false-like action prop values', function (string $value) {
+    $view = $this->blade('<x-hw::frame id="results" action="'.$value.'">Content</x-hw::frame>');
+
+    $view->assertDontSee('data-turbo-action=', false)
+        ->assertDontSee(' action=', false);
+})->with(['false', '0', 'off', 'no']);
+
+it('omits bound false action values', function () {
+    $view = $this->blade('<x-hw::frame id="results" :action="false">Content</x-hw::frame>');
+
+    $view->assertDontSee('data-turbo-action=', false)
+        ->assertDontSee(' action=', false);
 });
 
 it('resolves the id from a model via dom_id', function () {
@@ -120,6 +161,13 @@ it('can enable frame view transitions', function () {
         ->assertDontSee(' view-transition', false);
 });
 
+it('can preserve scroll around frame renders', function () {
+    $view = $this->blade('<x-hw::frame id="results" preserve-scroll>Content</x-hw::frame>');
+
+    $view->assertSee('data-controller="turbo--preserve-scroll"', false)
+        ->assertDontSee(' preserve-scroll', false);
+});
+
 it('can enable polling with the default interval', function () {
     $view = $this->blade('<x-hw::frame id="stats" poll src="/stats">Loading</x-hw::frame>');
 
@@ -137,9 +185,9 @@ it('can configure polling interval', function () {
 });
 
 it('merges user controllers with frame integrations', function () {
-    $view = $this->blade('<x-hw::frame id="stats" poll view-transition data-controller="analytics">Loading</x-hw::frame>');
+    $view = $this->blade('<x-hw::frame id="stats" poll view-transition preserve-scroll data-controller="analytics">Loading</x-hw::frame>');
 
-    $view->assertSee('data-controller="turbo--polling turbo--view-transition analytics"', false);
+    $view->assertSee('data-controller="turbo--polling turbo--view-transition turbo--preserve-scroll analytics"', false);
 });
 
 // --- Pass-through ---
@@ -163,5 +211,5 @@ it('registers frame in the component catalog', function () {
     expect($frame->class)->toBe(Frame::class)
         ->and($frame->view)->toBe('hotwire::component-views.frame')
         ->and($frame->docs)->toBe('docs/components/frame.md')
-        ->and($frame->controllers)->toBe(['turbo--polling', 'turbo--view-transition']);
+        ->and($frame->controllers)->toBe(['turbo--polling', 'turbo--view-transition', 'turbo--preserve-scroll']);
 });

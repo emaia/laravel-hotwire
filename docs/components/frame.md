@@ -93,6 +93,16 @@ Enable polling with `poll`; the controller reloads the frame on an interval:
 </hw:frame>
 ```
 
+Use `preserve-scroll` when a frame update replaces focused content near the bottom of the document, such as paginated
+results. The controller blurs focused frame children before render and restores the previous window scroll position,
+clamped to the new document height:
+
+```blade
+<hw:frame id="results" preserve-scroll>
+    ...
+</hw:frame>
+```
+
 ## Props
 
 | Prop              | Type                 | Default | Description                                                              |
@@ -102,16 +112,25 @@ Enable polling with `poll`; the controller reloads the frame on an interval:
 | `loading`         | `string\|null`       | `null`  | Native `loading`, usually `lazy` or `eager`                              |
 | `target`          | `string\|null`       | `null`  | Native Turbo Frame `target`, including `_top`                            |
 | `autoscroll`      | `bool\|string\|null` | `null`  | Native Turbo Frame `autoscroll` attribute                                |
-| `action`          | `string\|null`       | `null`  | Sets `data-turbo-action`, usually `advance` or `replace`                 |
-| `advance`         | `bool`               | `false` | Shorthand for `action="advance"` when `action` is not set                |
-| `replace`         | `bool`               | `false` | Shorthand for `action="replace"` when `action` and `advance` are not set |
-| `lazy`            | `bool`               | `false` | Shorthand for `loading="lazy"` when `loading` is not set                 |
-| `poll`            | `bool`               | `false` | Mounts the `turbo--polling` controller on the frame                      |
+| `action`          | `bool\|string\|null` | `null`  | Sets `data-turbo-action`, usually `advance` or `replace`                 |
+| `advance`         | `bool\|string`       | `false` | Shorthand for `action="advance"` when `action` is not set                |
+| `replace`         | `bool\|string`       | `false` | Shorthand for `action="replace"` when `action` and `advance` are not set |
+| `lazy`            | `bool\|string`       | `false` | Shorthand for `loading="lazy"` when `loading` is not set                 |
+| `poll`            | `bool\|string`       | `false` | Mounts the `turbo--polling` controller on the frame                      |
 | `poll-interval`   | `int\|null`          | `null`  | Polling interval in milliseconds; controller default is `5000`           |
-| `view-transition` | `bool`               | `false` | Mounts the `turbo--view-transition` controller on the frame              |
+| `view-transition` | `bool\|string`       | `false` | Mounts the `turbo--view-transition` controller on the frame              |
+| `preserve-scroll` | `bool\|string`       | `false` | Mounts the `turbo--preserve-scroll` controller on the frame              |
 
 Any other HTML attribute (`class`, `data-*`, `aria-*`, `disabled`, `busy`, `complete`, `refresh`) passes through to the
 `<turbo-frame>` element. Boolean alias props do not render as HTML attributes.
+
+`autoscroll` is a native Turbo boolean attribute: any rendered `autoscroll` attribute enables it, including
+`autoscroll="false"`. The component omits false-like string values (`"false"`, `"0"`, `"off"`, `"no"`) so bound config
+values can safely disable it.
+
+`action` and boolean alias props (`lazy`, `advance`, `replace`, `poll`, `view-transition`, `preserve-scroll`) also treat
+those false-like strings as disabled, which keeps environment/config-driven values from accidentally enabling the
+behavior.
 
 ## Model-aware ids
 
