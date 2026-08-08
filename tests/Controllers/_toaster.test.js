@@ -72,14 +72,14 @@ test("drains toasts emitted before the viewport connects", () => {
     expect(toasts()[0].querySelector('[data-slot="toast-title"]').textContent).toBe("Queued before mount");
 });
 
-test("drains buffered toasts in emission order", () => {
+test("drains buffered toasts with the newest toast first in the DOM", () => {
     emitToast({ message: "first" });
     emitToast({ message: "second" });
 
     mount();
 
     expect(toasts().map((t) => t.querySelector('[data-slot="toast-title"]').textContent))
-        .toEqual(["first", "second"]);
+        .toEqual(["second", "first"]);
 });
 
 test("empties the buffer once drained so a second viewport does not replay it", () => {
@@ -191,11 +191,11 @@ test("marks the toast with its type", () => {
     toaster.toast("Plain");
 
     expect(toasts().map((t) => t.dataset.type)).toEqual([
-        "success",
-        "error",
-        "warning",
-        "info",
         "default",
+        "info",
+        "warning",
+        "error",
+        "success",
     ]);
 });
 
@@ -257,16 +257,16 @@ test("enters from the closed state so the CSS transition has somewhere to travel
     expect(toasts()[0].dataset.state).toBe("open");
 });
 
-test("is already closed on the element it appends, before any layout happens", () => {
+test("is already closed on the element it inserts, before any layout happens", () => {
     // The first style the browser resolves has to be the off-screen one. Appended stateless, the
     // card paints at its resting position and the entry transition then runs backwards from there,
     // which reads as a bare fade.
     const appended = [];
-    const original = viewport.appendChild.bind(viewport);
-    viewport.appendChild = (node) => {
+    const original = viewport.insertBefore.bind(viewport);
+    viewport.insertBefore = (node, child) => {
         appended.push(node.dataset.state);
 
-        return original(node);
+        return original(node, child);
     };
 
     mount();
@@ -372,7 +372,7 @@ test("offsets each toast by the stack in front of it", async () => {
     toaster.toast("newest");
     await frame();
 
-    const [oldest, newest] = toasts();
+    const [newest, oldest] = toasts();
 
     expect(newest.style.getPropertyValue("--toast-offset-y")).toBe("0px");
     expect(oldest.style.getPropertyValue("--toast-offset-y")).toBe("80px");
@@ -388,7 +388,7 @@ test("re-offsets the stack after a dismissal", async () => {
     await wait(80);
 
     expect(toasts()).toHaveLength(2);
-    expect(toasts().at(-1).style.getPropertyValue("--toast-offset-y")).toBe("0px");
+    expect(toasts()[0].style.getPropertyValue("--toast-offset-y")).toBe("0px");
 });
 
 // --- Expansion ---
@@ -505,10 +505,21 @@ test("indexes the stack newest first so CSS can place it", async () => {
     toaster.toast("newest");
     await frame();
 
-    const [oldest, newest] = toasts();
+    const [newest, oldest] = toasts();
 
     expect(newest.style.getPropertyValue("--toast-index")).toBe("0");
     expect(oldest.style.getPropertyValue("--toast-index")).toBe("1");
+});
+
+test("keeps the DOM order newest first so Tab reaches the frontmost toast first", async () => {
+    mount();
+    toaster.toast("oldest");
+    toaster.toast("middle");
+    toaster.toast("newest");
+    await frame();
+
+    expect(toasts().map((t) => t.querySelector('[data-slot="toast-title"]').textContent))
+        .toEqual(["newest", "middle", "oldest"]);
 });
 
 test("indexes each position independently", async () => {
@@ -527,7 +538,18 @@ test("marks toasts past visible-toasts as limited", async () => {
     toaster.toast("c");
     await frame();
 
-    expect(toasts().map((t) => t.hasAttribute("data-limited"))).toEqual([true, false, false]);
+    expect(toasts().map((t) => t.hasAttribute("data-limited"))).toEqual([false, false, true]);
+});
+
+test("removes limited toast close buttons from the tab order", async () => {
+    mount({ visibleToasts: 2 });
+    toaster.toast("a");
+    toaster.toast("b");
+    toaster.toast("c");
+    await frame();
+
+    expect(toasts().map((t) => t.querySelector('[data-slot="toast-close"]').tabIndex))
+        .toEqual([0, 0, -1]);
 });
 
 // --- Accessibility ---
@@ -550,7 +572,7 @@ test("announces errors assertively and everything else politely", () => {
     toaster.error("broke");
     toaster.success("fine");
 
-    const [error, success] = toasts();
+    const [success, error] = toasts();
 
     expect(error.getAttribute("role")).toBe("alert");
     expect(error.getAttribute("aria-live")).toBe("assertive");

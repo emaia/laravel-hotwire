@@ -54,7 +54,7 @@ test("pushes the card behind back with a transition", async ({ page }) => {
     const path = await trackTransform(
         page,
         () => window.toaster.info("Second", { duration: 0 }),
-        '[data-slot="toast"]',
+        '[data-slot="toast"][data-behind]',
     );
 
     // Snapping into the new slot reports one value; gliding reports many. The stack grows upwards
@@ -72,12 +72,12 @@ test("leaves from where the card sits instead of jumping to the front", async ({
     await page.waitForTimeout(700);
 
     const restingY = await page.evaluate(
-        () => new DOMMatrix(getComputedStyle(document.querySelector('[data-slot="toast"]')).transform).m42,
+        () => new DOMMatrix(getComputedStyle(document.querySelector('[data-slot="toast"][data-behind]')).transform).m42,
     );
     const path = await trackTransform(
         page,
-        () => window.toaster.dismiss(document.querySelector('[data-slot="toast"]').dataset.toastId),
-        '[data-slot="toast"]',
+        () => window.toaster.dismiss(document.querySelector('[data-slot="toast"][data-behind]').dataset.toastId),
+        '[data-slot="toast"][data-behind]',
     );
 
     // The first sample has to start at the card's resting offset. Replacing the transform on exit —

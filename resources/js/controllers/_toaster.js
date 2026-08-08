@@ -62,7 +62,7 @@ export function createToaster(element, options = {}) {
         const id = payload.id ?? nextId();
         const entry = build(id, payload);
         entries.set(id, entry);
-        element.appendChild(entry.element);
+        element.insertBefore(entry.element, element.firstChild);
         // Anything that forces layout has to run before presence stages the closed frame: a
         // suppressed read afterwards becomes the transition's base style and the toast snaps in.
         measure(entry);
@@ -79,6 +79,7 @@ export function createToaster(element, options = {}) {
         const type = TYPES.includes(payload.type) ? payload.type : "default";
         const node = document.createElement("div");
         node.dataset.slot = "toast";
+        node.dataset.toastId = id;
         node.dataset.type = type;
         node.dataset.position = payload.position || config.position;
         node.setAttribute("role", type === "error" ? "alert" : "status");
@@ -297,8 +298,12 @@ export function createToaster(element, options = {}) {
 
             entry.element.style.setProperty("--toast-index", String(index));
             entry.element.style.setProperty("--toast-offset-y", `${offset}px`);
-            entry.element.toggleAttribute("data-limited", index >= config.visibleToasts);
+            const limited = index >= config.visibleToasts;
+            entry.element.toggleAttribute("data-limited", limited);
             entry.element.toggleAttribute("data-behind", index > 0);
+            entry.element.querySelectorAll("button").forEach((button) => {
+                button.tabIndex = limited ? -1 : 0;
+            });
 
             stacks.set(position, { index: index + 1, offset: offset + entry.height });
         });
