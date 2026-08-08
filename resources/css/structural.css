@@ -116,3 +116,184 @@
 [data-carousel-axis="y"] [data-carousel-container] > * {
     padding-top: var(--carousel-slide-spacing, 0px);
 }
+
+/*
+ * --- Toast stack ---
+ *
+ * The geometry of the stack, not its looks. The viewport covers the screen so toasts can anchor to
+ * any corner from one host, and stays click-through except where a toast actually is.
+ *
+ * The manager writes numbers and nothing else: --toast-index, each toast's own --toast-height, and
+ * --toast-offset-y, the summed height of the toasts in front of it. Turning those into a position
+ * happens here, so a preset restyles the surface without rediscovering the placement, and no
+ * presentational style is ever set from JavaScript.
+ */
+
+[data-slot="toaster"] {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+}
+
+/* The viewport joins the top layer so toasts outrank every overlay. The UA stylesheet sizes a
+   [popover] to fit-content and paints a border on it, which would shrink-wrap the stack; unlike the
+   overlays a preset styles, nothing here is a design decision. */
+:where([data-hotwire-top-layer][popover][data-slot="toaster"]) {
+    block-size: 100dvh;
+    inline-size: 100vw;
+    max-block-size: none;
+    max-inline-size: none;
+    overflow: visible;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    color: inherit;
+}
+
+[data-slot="toast-trigger"] {
+    display: none;
+}
+
+[data-slot="toast"] {
+    position: absolute;
+    pointer-events: auto;
+    /* The measured height is a border-box reading, so the clamp has to be one too, or the card
+       grows by its own border every time it is re-measured. */
+    box-sizing: border-box;
+    z-index: calc(1000 - var(--toast-index, 0));
+    block-size: var(--toast-frontmost-height, var(--toast-height, auto));
+    will-change: transform;
+    /*
+     * One composed transform, as in the shadcn Toast. Stack placement, entry/exit travel and swipe
+     * all have to live in the same declaration — split across rules, the last one simply wins and
+     * the others silently do nothing.
+     *
+     * Collapsed, a toast is pushed back by a fixed peek plus the height it loses to scaling, so the
+     * cards stay bottom-aligned as they shrink. --toast-stack-direction flips the whole thing for
+     * the top positions; everything else is identical.
+     */
+    /* Every var in the transform carries a fallback. An unresolved one makes the whole calc
+       invalid, the transform collapses to identity, and the moment the value arrives the browser
+       transitions from that identity — the entry animation is replaced by a bare fade. */
+    --toast-scale: max(0, 1 - var(--toast-index, 0) * var(--toast-depth-scale, 0.1));
+    --toast-shrink: calc(1 - var(--toast-scale, 1));
+    transform:
+        translateX(var(--toast-swipe-movement-x, 0px))
+        translateY(
+            calc(
+                var(--toast-swipe-movement-y, 0px) +
+                var(--toast-exit-y, 0px) +
+                var(--toast-stack-direction, -1) * (
+                    var(--toast-index, 0) * var(--toast-peek, 0.75rem) +
+                    var(--toast-shrink, 0) * var(--toast-frontmost-height, var(--toast-height, 0px))
+                )
+            )
+        )
+        scale(var(--toast-scale, 1));
+}
+
+/* Expanded, every card returns to full size at its measured offset, with the gap added per step. */
+[data-slot="toast"][data-expanded="true"] {
+    block-size: var(--toast-height, auto);
+    --toast-scale: 1;
+    transform:
+        translateX(var(--toast-swipe-movement-x, 0px))
+        translateY(
+            calc(
+                var(--toast-swipe-movement-y, 0px) +
+                var(--toast-exit-y, 0px) +
+                var(--toast-stack-direction, -1) * (
+                    var(--toast-offset-y, 0px) + var(--toast-index, 0) * var(--toast-gap, 0.75rem)
+                )
+            )
+        );
+}
+
+/*
+ * Closed is both the frame a toast enters from and the one it leaves to, so one rule drives entry
+ * and exit: it travels a card and a half past the edge it stacks away from.
+ *
+ * Composed into the stack offset rather than replacing the transform. The shadcn Toast overwrites
+ * it, which is fine on the way in — a new toast is always frontmost, at offset zero — but on the
+ * way out a card sitting second in the stack first jumps to the front and only then slides away.
+ * Adding the travel to wherever the card already is removes the jump.
+ */
+[data-slot="toast"][data-state="closed"] {
+    --toast-exit-y: calc(var(--toast-stack-direction, -1) * -150%);
+    opacity: 0;
+}
+
+/* Nothing but the card edge should show behind the front toast: the sliver on display would
+   otherwise be whichever text happens to sit at that height. */
+[data-slot="toast"][data-behind] > [data-slot="toast-content"] {
+    opacity: 0;
+}
+
+[data-slot="toast"][data-expanded="true"] > [data-slot="toast-content"] {
+    opacity: 1;
+}
+
+/* The gap between cards is not part of any toast, so a pointer crossing it would leave the stack
+   and collapse it mid-hover. This fills the gap without painting anything. */
+[data-slot="toast"]::after {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    block-size: calc(var(--toast-gap, 0.75rem) + 1px);
+}
+
+[data-slot="toast"][data-position^="bottom-"]::after {
+    inset-block-start: 100%;
+}
+
+[data-slot="toast"][data-position^="top-"]::after {
+    inset-block-end: 100%;
+}
+
+[data-slot="toast"][data-swiping] {
+    transition: none;
+    user-select: none;
+}
+
+/* Anchoring per position: a physical side, then a logical alignment, as with `align` elsewhere in
+   the package. --toast-offset is the supported way to nudge the stack away from the edges. */
+
+[data-slot="toast"][data-position^="top-"] {
+    top: var(--toast-offset, 1rem);
+    --toast-stack-direction: 1;
+}
+
+[data-slot="toast"][data-position^="bottom-"] {
+    bottom: var(--toast-offset, 1rem);
+    --toast-stack-direction: -1;
+}
+
+[data-slot="toast"][data-position$="-start"] {
+    inset-inline-start: var(--toast-offset, 1rem);
+}
+
+[data-slot="toast"][data-position$="-end"] {
+    inset-inline-end: var(--toast-offset, 1rem);
+}
+
+[data-slot="toast"][data-position$="-center"] {
+    inset-inline-start: 50%;
+    margin-inline-start: calc(var(--toast-width, 22rem) / -2);
+}
+
+[data-slot="toast"][data-limited] {
+    opacity: 0;
+}
+
+@media (max-width: 600px) {
+    [data-slot="toast"] {
+        --toast-offset: var(--toast-mobile-offset, 1rem);
+    }
+}
+
+/* Height is read with the clamp lifted; the manager sets this for the single frame it measures in.
+   Transitions are off so the reading cannot catch a card mid-animation. */
+[data-slot="toast"][data-measuring] {
+    block-size: auto;
+    transition: none;
+}

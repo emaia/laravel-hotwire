@@ -6,6 +6,78 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 
 ## Unreleased
 
+### Toast is native: Sonner removed, components renamed
+
+The toast stack is now implemented by the package. `@emaia/sonner` is gone from the runtime, the catalog and the
+lockfile, and React and React DOM stop being installed as its peers.
+
+**Rename.** `<hw:flash-container>` becomes `<hw:toaster>` and `<hw:flash-message>` becomes `<hw:toast>`. There are no
+compatibility aliases — the old tags no longer resolve. The `FlashContainer` and `FlashMessage` classes are now
+`Toaster` and `Toast`.
+
+```blade
+{{-- before --}}
+<hw:flash-container position="bottom-right" />
+<hw:flash-message />
+
+{{-- after --}}
+<hw:toaster position="bottom-end" />
+<hw:toast />
+```
+
+The viewport's default `id` changes from `flash-container` to `toaster`, which is also the default Turbo Stream
+append target. Update any `->append('flash-container', …)` in your controllers and macros.
+
+**`position` values changed.** `-left` and `-right` become `-start` and `-end`, matching `align` on Popover,
+Dropdown and Hover Card, and following the document's writing direction:
+
+| before          | after           |
+|-----------------|-----------------|
+| `top-left`      | `top-start`     |
+| `top-right`     | `top-end`       |
+| `bottom-left`   | `bottom-start`  |
+| `bottom-right`  | `bottom-end`    |
+
+`top-center` and `bottom-center` are unchanged.
+
+**Props removed.** One line each:
+
+- `rich-colors` — types are shown by glyph now; `error` is the only tinted one, since `destructive` is the only
+  status colour in the token set.
+- `theme` — the toast inherits `html[data-theme]` through the tokens; there is no theme logic in JavaScript.
+- `invert` — a Sonner-ism that competed with the package's own `data-theme`.
+- `gap`, `offset`, `mobile-offset` — now the CSS custom properties `--toast-gap`, `--toast-offset` and
+  `--toast-mobile-offset`, settable on `[data-slot="toaster"]`.
+- `dir` — inherited from the document; the stylesheet uses logical properties.
+- `hotkey` — replaced by a landmark plus a fixed <kbd>F6</kbd>, as in Radix and Base UI. The name also collided with
+  Button's `hotkey` prop, which means something else entirely.
+- `custom-aria-label` — a single label repeated on every toast overrode each card's own text for screen readers.
+  Cards are announced from their title and description.
+
+**Emitting from JavaScript changed.** Applications that imported Sonner directly will break:
+
+```js
+// before
+import { toast } from "@emaia/sonner/vanilla";
+toast.success("Saved");
+
+// after — no import
+window.toaster.success("Saved");
+```
+
+`window.toaster` now exposes `toast()`, `success()`, `error()`, `warning()`, `info()`, `dismiss(id)` and
+`destroy()`. Nothing else on it is contract.
+
+**CSS.** Selectors built on Sonner's internals (`[data-sonner-toast]`, `[data-sonner-toaster]`) no longer match.
+Style the package slots instead: `toast`, `toast-icon`, `toast-content`, `toast-body`, `toast-title`,
+`toast-description`, `toast-close`, and `toaster` for the viewport. The visual appearance is defined by the preset
+and the stack geometry by `structural.css`; see
+[the component docs](./components/toaster.md#styling) for the custom properties to tune.
+
+**Visual change.** The card follows the shadcn Toast: popover tokens, `rounded-2xl`, lucide glyphs, close button
+always visible, and a collapsed stack that scales and clamps to the frontmost card. It does not match Sonner
+pixel for pixel, deliberately.
+
 ### Navbar items expose `data-active` instead of `data-current`
 
 Navbar items now carry `data-active="true|false"` for the current-state axis, matching Pagination, Sidebar and the

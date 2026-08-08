@@ -1,23 +1,15 @@
 # Toaster
 
-Initializes the [Sonner](https://www.npmjs.com/package/@emaia/sonner) toaster once per page and persists it across
-Turbo Drive navigations. It's the host element for every toast fired by [`<hw:toast />`](./toast.md)
-or by appended Turbo Streams.
+Hosts the toast stack once per page and persists it across Turbo Drive navigations. It is the host element for every
+toast fired by [`<hw:toast />`](./toast.md), by appended Turbo Streams, or from your own JavaScript.
 
-Internally the component maps to the `toaster` Stimulus controller (`toaster_controller.js`), which calls Sonner's
-`Toaster()` factory on connection.
-
-## Requirements
-
-- `@emaia/sonner` installed in the project
-- Controller published: `php artisan hotwire:controllers toaster`
-
-> `php artisan hotwire:check` detects both requirements automatically — and `--fix` publishes the missing controllers
-> and adds `@emaia/sonner` to your `package.json` `devDependencies` in one go.
+The component maps to the `toaster` Stimulus controller, which creates the toast manager on connect and publishes it
+as `window.toaster`. Rendering, stacking, timers and swipe are owned by the package — there is no third-party
+dependency.
 
 ## Setup
 
-Place the container once in your main layout (typically before `</body>`):
+Place the viewport once in your main layout, typically before `</body>`:
 
 ```html
 <!DOCTYPE html>
@@ -32,8 +24,8 @@ Place the container once in your main layout (typically before `</body>`):
 </html>
 ```
 
-The container defaults to `id="toaster"` and ships with `data-turbo-permanent`, so it survives Turbo Drive
-navigations and keeps the Sonner instance alive. The default id also lets you target it from Turbo Streams:
+The viewport defaults to `id="toaster"` and ships with `data-turbo-permanent`, so it survives Turbo Drive
+navigations and keeps the stack alive. The default id also lets you target it from Turbo Streams:
 
 ```php
 use Illuminate\Support\Facades\Blade;
@@ -44,92 +36,127 @@ return turbo_stream()->append('toaster', Blade::render(
 ));
 ```
 
+Order does not matter: a toast emitted before the viewport connects is buffered and drained as soon as it does.
+
 ## Props
 
-Props below a map to Sonner's [`ToasterConfig`](https://github.com/emilkowalski/sonner). Nullable props are only
-emitted when you set them, so Sonner's own defaults still apply.
+| Prop                   | Type      | Default           | Description                                                                     |
+|------------------------|-----------|-------------------|---------------------------------------------------------------------------------|
+| `id`                   | `string`  | `toaster`         | Element id — also the default target for Turbo Stream appends                   |
+| `position`             | `string`  | `bottom-center`   | `top-start`, `top-center`, `top-end`, `bottom-start`, `bottom-center`, `bottom-end` |
+| `duration`             | `int`     | `4000`            | Milliseconds before a toast dismisses itself; `0` keeps it until dismissed      |
+| `visible-toasts`       | `int`     | `3`               | Maximum number of toasts visible at once                                        |
+| `close-button`         | `bool`    | `true`            | Renders a close button on each toast                                            |
+| `expand`               | `bool`    | `false`           | Keeps the stack expanded instead of collapsing it when the pointer leaves       |
+| `auto-disconnect`      | `bool`    | `false`           | Destroys the manager when the controller disconnects                            |
+| `turbo-permanent`      | `bool`    | `true`            | Renders `data-turbo-permanent` on the viewport                                  |
+| `class`                | `string`  | `''`              | CSS class applied to the viewport `<div>` itself                                |
+| `swipe-directions`     | `?string` | `null`            | Allowed swipe-to-dismiss directions — comma separated (`left,right,top,bottom`) |
+| `class-name`           | `?string` | `null`            | Extra classes applied to every rendered toast                                   |
+| `container-aria-label` | `?string` | `Notifications`   | `aria-label` on the viewport landmark                                           |
 
-| Prop                   | Type      | Default           | Description                                                                           |
-|------------------------|-----------|-------------------|---------------------------------------------------------------------------------------|
-| `id`                   | `string`  | `toaster`         | Element id — also used as the default target for Turbo Stream appends                 |
-| `position`             | `string`  | `bottom-center`   | `top-left`, `top-center`, `top-right`, `bottom-left`, `bottom-center`, `bottom-right` |
-| `theme`                | `string`  | `light`           | `light`, `dark`, `system`                                                             |
-| `duration`             | `int`     | `4000`            | Duration in ms before the toast disappears                                            |
-| `visible-toasts`       | `int`     | `3`               | Maximum number of toasts visible at once                                              |
-| `close-button`         | `bool`    | `true`            | Shows close button on each toast                                                      |
-| `rich-colors`          | `bool`    | `true`            | Uses rich colors for types (success, error, etc.)                                     |
-| `expand`               | `bool`    | `false`           | Toasts expanded by default                                                            |
-| `invert`               | `bool`    | `false`           | Inverts the color scheme                                                              |
-| `auto-disconnect`      | `bool`    | `false`           | Destroys the toaster when the controller disconnects                                  |
-| `turbo-permanent`      | `bool`    | `true`            | Renders `data-turbo-permanent` on the container                                       |
-| `class`                | `string`  | `''`              | CSS class applied to the container `<div>` itself                                     |
-| `gap`                  | `?int`    | `null`            | Vertical gap between toasts (px)                                                      |
-| `hotkey`               | `?string` | `null`            | Keyboard shortcut to focus toasts (e.g. `alt+T`, `alt+KeyT`) — comma/space separated  |
-| `dir`                  | `?string` | `null`            | `ltr`, `rtl`, `auto`                                                                  |
-| `offset`               | `?string` | `null`            | Edge offset — `"16px"` or JSON like `{"top":"20px"}`                                  |
-| `mobile-offset`        | `?string` | `null`            | Same shape as `offset`, applied on mobile                                             |
-| `swipe-directions`     | `?string` | `null`            | Allowed swipe-to-dismiss directions — comma separated (`left,right,top,bottom`)       |
-| `class-name`           | `?string` | `null`            | Forwarded to Sonner's `className` (applied to the toast list)                         |
-| `container-aria-label` | `?string` | `null`            | `aria-label` on the Sonner container                                                  |
-| `custom-aria-label`    | `?string` | `null`            | `aria-label` used for each toast                                                      |
+### On `position`
+
+The first segment is a physical side, the second a *logical* alignment — the same split as `side` and `align` on
+Popover, Dropdown and Hover Card. `start` and `end` follow the document's writing direction, so `bottom-end` sits on
+the right in a left-to-right document and on the left in a right-to-left one.
 
 ## Customization examples
 
-Top-right, dark theme, 5s duration:
+Top-right, 5s duration:
 
 ```html
-<hw:toaster
-    position="top-right"
-    theme="dark"
-    :duration="5000"
-/>
+<hw:toaster position="top-end" :duration="5000" />
 ```
 
-Expanded toasts, no close button:
+Expanded stack, no close button:
 
 ```html
-<hw:toaster
-    :close-button="false"
-    :expand="true"
-/>
+<hw:toaster :close-button="false" :expand="true" />
 ```
 
-Offset tuning with a hotkey and swipe directions:
+Swipe to dismiss sideways, with a custom landmark label:
 
 ```html
-<hw:toaster
-    offset='{"top":"20px","right":"20px"}'
-    mobile-offset="12px"
-    hotkey="alt+T"
-    swipe-directions="left,right"
-/>
+<hw:toaster swipe-directions="left,right" container-aria-label="Alerts" />
 ```
 
-Custom id (useful if you need more than one target or want a different Turbo Stream anchor):
+Custom id, useful for a second Turbo Stream anchor:
 
 ```html
 <hw:toaster id="my-toaster" />
 ```
 
-## Escape hatch
+## Emitting from JavaScript
 
-If you need a Sonner option that isn't exposed as a prop, drop down to the controller directly — the component
-is just a thin wrapper:
+The manager is published as `window.toaster`. Nothing needs to be imported:
 
-```html
-<div
-    id="toaster"
-    data-controller="toaster"
-    data-toaster-position-value="top-right"
-    data-turbo-permanent
-></div>
+```js
+window.toaster.success("Saved");
+window.toaster.error("Upload failed", { description: "The file was rejected." });
+window.toaster.warning("Storage almost full");
+window.toaster.info("Heads up", { position: "top-end" });
+
+const id = window.toaster.toast("Working…", { duration: 0 });
+window.toaster.dismiss(id);
 ```
+
+| Method                       | Description                                                        |
+|------------------------------|--------------------------------------------------------------------|
+| `toast(message, options?)`   | Emits an untyped toast and returns its id                          |
+| `success(message, options?)` | Same, typed `success`                                              |
+| `error(message, options?)`   | Same, typed `error` — announced assertively                        |
+| `warning(message, options?)` | Same, typed `warning`                                              |
+| `info(message, options?)`    | Same, typed `info`                                                 |
+| `dismiss(id)`                | Plays the exit animation for one toast and removes it              |
+| `destroy()`                  | Clears the stack and removes every listener, timer and observer    |
+
+`options` accepts `description`, `duration`, `position` and `className`. Anything else on the instance is internal
+and may change without notice.
+
+## Styling
+
+Appearance lives in the preset, keyed on `data-slot`; the geometry of the stack lives in `structural.css`. Both are
+driven by custom properties you can override anywhere in your own CSS:
+
+| Property                 | Default   | Controls                                              |
+|--------------------------|-----------|-------------------------------------------------------|
+| `--toast-width`          | `22rem`   | Card width, used to centre the `-center` positions    |
+| `--toast-offset`         | `1rem`    | Distance from the viewport edges                      |
+| `--toast-mobile-offset`  | `1rem`    | Same, below 600px                                     |
+| `--toast-gap`            | `0.75rem` | Space between cards when the stack is expanded        |
+| `--toast-peek`           | `0.75rem` | How much of each card behind shows when collapsed     |
+| `--toast-depth-scale`    | `0.1`     | How much each card behind shrinks per step            |
+
+```css
+/* Nudge the stack away from the edge and tighten the collapsed fan */
+[data-slot="toaster"] {
+    --toast-offset: 2rem;
+    --toast-peek: 0.5rem;
+}
+```
+
+Slots: `toaster`, `toast`, `toast-icon`, `toast-content`, `toast-body`, `toast-title`, `toast-description`,
+`toast-close`.
+
+## Accessibility
+
+- The viewport is a labelled landmark (`role="region"`), so screen readers can jump to it with their landmark
+  commands. `container-aria-label` sets the name.
+- <kbd>F6</kbd> moves focus to the viewport when at least one toast is on screen, matching Radix and Base UI. This
+  intercepts a key Chrome otherwise uses to cycle its own panes.
+- Each toast announces its own content — `role="status"` and `aria-live="polite"`, or `role="alert"` and
+  `aria-live="assertive"` for `error`. There is deliberately no `aria-label` on the card, which would override the
+  message.
+- Timers pause while the pointer is over the stack, while focus is inside it, and while the document is hidden.
+- Entry and exit motion is skipped under `prefers-reduced-motion`.
 
 ## Turbo integration
 
-- The container uses `data-turbo-permanent` by default — Sonner stays initialized across Turbo Drive navigations.
-- Turbo Streams can append rendered `<hw:toast />` markup to the container — see the
-  `Blade::render()` example in the [Setup](#setup) section.
+- The viewport uses `data-turbo-permanent` by default, so the stack stays alive across Turbo Drive navigations and
+  a toast fired before a visit keeps counting down after it.
+- Turbo Streams can append rendered `<hw:toast />` markup to the viewport — see the `Blade::render()` example in
+  [Setup](#setup), and the macro in [`<hw:toast />`](./toast.md#convenience-macro).
 
 ## See also
 

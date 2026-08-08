@@ -413,7 +413,7 @@
     /* Modal */
     [data-slot="modal-overlay"], [data-slot="alert-dialog-overlay"] { @apply pointer-events-none fixed inset-0 z-50 flex items-center justify-center; }
     :is([data-slot="modal-overlay"], [data-slot="alert-dialog-overlay"], [data-slot="drawer-overlay"], [data-slot="sheet-overlay"])[data-state="open"] { @apply pointer-events-auto; }
-    :where([data-hotwire-top-layer][popover]:is([data-slot="modal-overlay"], [data-slot="alert-dialog-overlay"], [data-slot="drawer-overlay"], [data-slot="sheet-overlay"], [data-slot="sidebar"], [data-slot="toaster"])) { @apply h-dvh w-screen max-w-none max-h-none overflow-visible border-0 bg-transparent p-0 text-inherit; }
+    :where([data-hotwire-top-layer][popover]:is([data-slot="modal-overlay"], [data-slot="alert-dialog-overlay"], [data-slot="drawer-overlay"], [data-slot="sheet-overlay"], [data-slot="sidebar"])) { @apply h-dvh w-screen max-w-none max-h-none overflow-visible border-0 bg-transparent p-0 text-inherit; }
     [data-slot="modal-overlay"] { @apply flex-wrap p-2 md:p-10; }
     [data-slot="modal-backdrop"], [data-slot="alert-dialog-backdrop"] { @apply absolute inset-0 isolate bg-black/10 opacity-0 backdrop-blur-xs transition-opacity duration-100 ease-out; }
     [data-slot="modal-overlay"][data-state="open"] > [data-slot="modal-backdrop"], [data-slot="alert-dialog-overlay"][data-state="open"] > [data-slot="alert-dialog-backdrop"] { @apply opacity-100; }
@@ -739,12 +739,6 @@
     /* Timeago */
     [data-slot="timeago"] { @apply text-muted-foreground; }
 
-    /* Toast */
-    [data-slot="toast"] { @apply hidden; }
-
-    /* Toaster */
-    [data-slot="toaster"] { @apply pointer-events-none fixed inset-0; }
-
     /* Toggle */
     :is([data-slot="toggle"], [data-slot="toggle-group-item"]) { @apply inline-flex shrink-0 items-center justify-center gap-2 rounded-md bg-transparent text-foreground text-sm font-medium whitespace-nowrap transition-all outline-none hover:bg-muted focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4; }
     :is([data-slot="toggle"], [data-slot="toggle-group-item"])[data-variant="default"] { @apply hover:bg-muted; }
@@ -770,6 +764,33 @@
     [data-slot="oembed"] { @apply my-5 block aspect-video w-full overflow-hidden rounded-lg bg-muted; }
     [data-slot="oembed-frame"] { @apply size-full border-0; }
     [data-slot="oembed-link"] { @apply break-all text-primary underline underline-offset-4 hover:no-underline; }
+
+    /* Toaster controller */
+    [data-slot="toast"] { @apply w-(--toast-width,24rem) max-w-[calc(100vw-2rem)] origin-bottom rounded-2xl border border-border bg-popover text-popover-foreground shadow-lg outline-none select-none; transition: transform 500ms cubic-bezier(0.22, 1, 0.36, 1), opacity 500ms, height 150ms; }
+    [data-slot="toast"]:focus-visible { @apply border-ring ring-3 ring-ring/50; }
+    /* Leaving is quicker than arriving, and eases in rather than out: a card on its way off screen
+       should not linger, and the 500ms settle that suits an entrance reads as sluggish here. */
+    [data-slot="toast"][data-state="closed"] { transition: transform 260ms cubic-bezier(0.32, 0, 0.67, 0), opacity 200ms ease-in; }
+
+    [data-slot="toast-content"] { @apply flex h-full items-center gap-3 overflow-hidden p-4; transition: opacity 250ms cubic-bezier(0.22, 1, 0.36, 1); }
+    [data-slot="toast-body"] { @apply flex min-w-0 flex-1 flex-col gap-1; }
+    [data-slot="toast-title"] { @apply text-sm font-medium; }
+    [data-slot="toast-description"] { @apply text-sm text-muted-foreground; }
+
+    [data-slot="toast-icon"] { @apply size-4 shrink-0 bg-current text-foreground; mask-repeat: no-repeat; mask-position: center; mask-size: contain; }
+    [data-slot="toast"][data-type="default"] [data-slot="toast-icon"] { @apply hidden; }
+    [data-slot="toast"][data-type="success"] [data-slot="toast-icon"] { @apply text-foreground; mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='m9 12 2 2 4-4'/%3E%3C/svg%3E"); }
+    [data-slot="toast"][data-type="error"] [data-slot="toast-icon"] { @apply text-destructive; mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.586 16.726A2 2 0 0 1 2 15.312V8.688a2 2 0 0 1 .586-1.414l4.688-4.688A2 2 0 0 1 8.688 2h6.624a2 2 0 0 1 1.414.586l4.688 4.688A2 2 0 0 1 22 8.688v6.624a2 2 0 0 1-.586 1.414l-4.688 4.688a2 2 0 0 1-1.414.586H8.688a2 2 0 0 1-1.414-.586z'/%3E%3Cpath d='m15 9-6 6'/%3E%3Cpath d='m9 9 6 6'/%3E%3C/svg%3E"); }
+    [data-slot="toast"][data-type="warning"] [data-slot="toast-icon"] { @apply text-foreground; mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3'/%3E%3Cpath d='M12 9v4'/%3E%3Cpath d='M12 17h.01'/%3E%3C/svg%3E"); }
+    [data-slot="toast"][data-type="info"] [data-slot="toast-icon"] { @apply text-foreground; mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M12 16v-4'/%3E%3Cpath d='M12 8h.01'/%3E%3C/svg%3E"); }
+
+    /* Close renders as a ghost icon button, matching the reference. */
+    [data-slot="toast-close"] { @apply relative inline-flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-all outline-none hover:bg-accent hover:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50; }
+    [data-slot="toast-close"]::before { @apply size-4 bg-current content-['']; mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 6 6 18'/%3E%3Cpath d='m6 6 12 12'/%3E%3C/svg%3E"); mask-repeat: no-repeat; mask-position: center; mask-size: contain; }
+
+    @media (prefers-reduced-motion: reduce) {
+        [data-slot="toast"] { transition: opacity 150ms ease; }
+    }
 
     /* Tooltip controller */
     [data-slot="tooltip"] { @apply pointer-events-auto z-50 w-fit max-w-64 origin-(--transform-origin) overflow-visible rounded-md bg-foreground px-3 py-1.5 text-xs text-balance text-background shadow-md duration-150 ease-out; }

@@ -89,7 +89,7 @@ registered here**, or the commands won't see it.
   `hotwire:check` verifies these are published). Every component entry also declares `slots` as a `slot => visual|structural`
   map. The values a slot varies by are not declared here — `hotwire:make-preset` reads them from the presets.
 - `controllers` entries: `source` (path to the `.js`/`.ts` file), `docs`, `category`, `description`, and optional
-  `npm` (a `package => version` map for third-party deps like `@floating-ui/dom`, `maska`, `echarts`, `@emaia/sonner`).
+  `npm` (a `package => version` map for third-party deps like `@floating-ui/dom`, `maska`, `echarts`).
   Controllers that create `data-slot` values in JavaScript declare them in `slots` too.
 - Add every new package-emitted `data-slot` to the owning catalog entry. Do not recover this metadata by parsing Blade,
   PHP or CSS at runtime; the catalog is the contract used by preset generation and coverage tests.

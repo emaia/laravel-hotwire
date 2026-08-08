@@ -1,20 +1,18 @@
 # Toast
 
-Fires a single toast notification — either reading from the Laravel session or from explicit props. Designed to be
-rendered inside a layout alongside [`<hw:toaster />`](./toaster.md), which hosts the
-Sonner instance the toasts are emitted into.
+Fires a single toast notification — either reading from the Laravel session or from explicit props. Rendered in a
+layout alongside [`<hw:toaster />`](./toaster.md), which hosts the stack the toasts are drawn into.
 
-Internally the component maps to the `toast` Stimulus controller (`toast_controller.js`), which calls `toast()`
-from `@emaia/sonner/vanilla` on connect and removes the element from the DOM. It maintains no state or listeners.
+The component maps to the `toast` Stimulus controller, which hands the payload to the toast manager on connect and
+removes itself from the DOM. It keeps no state and no listeners, and needs no third-party package.
+
+An emission that arrives before the viewport has connected is buffered and drained as soon as it does, so it does
+not matter whether this component sits above or below `<hw:toaster />` in the document, nor whether it arrives over
+a Turbo Stream before the layout has hydrated.
 
 ## Requirements
 
-- `@emaia/sonner` installed in the project
 - `<hw:toaster />` rendered once in the layout
-- Controller published: `php artisan hotwire:controllers toast`
-
-> `php artisan hotwire:check` detects all requirements automatically — and `--fix` publishes the missing controllers
-> and adds `@emaia/sonner` to your `package.json` `devDependencies` in one go.
 
 ## Setup
 
@@ -83,7 +81,10 @@ appears in the chosen corner:
 <hw:toast message="Session expires in 5 min" type="warning" position="top-center"/>
 ```
 
-Accepted values: `top-left`, `top-center`, `top-right`, `bottom-left`, `bottom-center`, `bottom-right`.
+Accepted values: `top-start`, `top-center`, `top-end`, `bottom-start`, `bottom-center`, `bottom-end`.
+
+The second segment is a *logical* alignment, matching `align` on Popover, Dropdown and Hover Card: `start` and `end`
+follow the document's writing direction, so a stack anchored to `-end` sits on the left in a right-to-left document.
 
 ## Props
 
@@ -92,7 +93,8 @@ Accepted values: `top-left`, `top-center`, `top-right`, `bottom-left`, `bottom-c
 | `message`     | `?string` | `null`  | Toast message. If `null`, reads from session                                                   |
 | `description` | `?string` | `null`  | Additional description shown below the message                                                 |
 | `type`        | `?string` | `null`  | Toast type: `success`, `error`, `warning`, `info`, `default`. If `null`, detected from session |
-| `position`    | `?string` | `null`  | Override the toaster position for this toast only: `top-left`, `top-center`, `top-right`, `bottom-left`, `bottom-center`, `bottom-right`. If `null`, uses the [`<hw:toaster />`](./toaster.md) default |
+| `position`    | `?string` | `null`  | Override the toaster position for this toast only: `top-start`, `top-center`, `top-end`, `bottom-start`, `bottom-center`, `bottom-end`. If `null`, uses the [`<hw:toaster />`](./toaster.md) default |
+| `class-name`  | `?string` | `null`  | Extra classes applied to the rendered toast element |
 
 ### Supported session keys
 
@@ -123,7 +125,7 @@ return turbo_stream()->append('toaster', Blade::render(
 
 ### Convenience macro
 
-`TurboStreamBuilder` is `Macroable` — register a `flash()` shortcut once in a service provider and reuse
+`TurboStreamBuilder` is `Macroable` — register a `toast()` shortcut once in a service provider and reuse
 it everywhere:
 
 ```php
@@ -133,7 +135,7 @@ use Illuminate\Support\Facades\Blade;
 
 public function boot(): void
 {
-    TurboStreamBuilder::macro('flash', function (string $type, string $message, ?string $description = null, ?string $position = null) {
+    TurboStreamBuilder::macro('toast', function (string $type, string $message, ?string $description = null, ?string $position = null) {
         return $this->append('toaster', Blade::render(
             '<hw:toast :type="$type" :message="$message" :description="$description" :position="$position" />',
             compact('type', 'message', 'description', 'position'),
@@ -142,24 +144,27 @@ public function boot(): void
 }
 ```
 
-Then any controller or stream chain becomes a one-liner:
+Then any controller or stream chain becomes a one-liner. Note the empty-string defaults below: request input
+forwarded straight into the macro often arrives empty, and the manager omits a title or description it was handed
+as an empty string rather than rendering a blank row.
 
 ```php
-return turbo_stream()->flash('success', 'Saved!');
+return turbo_stream()->toast('success', 'Saved!');
 
 // with an optional description
-return turbo_stream()->flash('error', 'Failed to save', 'Check the required fields');
+return turbo_stream()->toast('error', 'Failed to save', 'Check the required fields');
 
 // override the position for this toast only
-return turbo_stream()->flash('warning', 'Session expires in 5 min', position: 'top-center');
+return turbo_stream()->toast('warning', 'Session expires in 5 min', position: 'top-center');
 
 // or chained with other streams
 return turbo_stream()
     ->refresh(method: 'morph')
-    ->flash('error', 'Could not favorite this post.')
+    ->toast('error', 'Could not favorite this post.')
     ->withResponse(403);
 ```
 
 ## See also
 
-- [`<hw:toaster />`](./toaster.md) — hosts the Sonner instance and exposes its config
+- [`<hw:toaster />`](./toaster.md) — hosts the toast stack and exposes its config
+- [`window.toaster`](./toaster.md#emitting-from-javascript) — emit from your own JavaScript, no import required

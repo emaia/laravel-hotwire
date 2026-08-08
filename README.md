@@ -215,8 +215,8 @@ php artisan hotwire:controllers auto-select auto-submit turbo/progress
 | [Slug](docs/controllers/slug.md)                               | `slug`                | `forms`    | —                                                                                                                               | [readme](docs/controllers/slug.md)                |
 | [Tabs](docs/controllers/tabs.md)                               | `tabs`                | `utility`  | —                                                                                                                               | [readme](docs/controllers/tabs.md)                |
 | [Timeago](docs/controllers/timeago.md)                         | `timeago`             | `utility`  | —                                                                                                                               | [readme](docs/controllers/timeago.md)             |
-| [Toast](docs/controllers/toast.md)                             | `toast`               | `feedback` | `@emaia/sonner`                                                                                                                 | [readme](docs/controllers/toast.md)               |
-| [Toaster](docs/controllers/toaster.md)                         | `toaster`             | `feedback` | `@emaia/sonner`                                                                                                                 | [readme](docs/controllers/toaster.md)             |
+| [Toast](docs/controllers/toast.md)                             | `toast`               | `feedback` | —                                                                                                                               | [readme](docs/controllers/toast.md)               |
+| [Toaster](docs/controllers/toaster.md)                         | `toaster`             | `feedback` | —                                                                                                                               | [readme](docs/controllers/toaster.md)             |
 | [Toggle](docs/controllers/toggle.md)                           | `toggle`              | `forms`    | —                                                                                                                               | [readme](docs/controllers/toggle.md)              |
 | [Toggle Group](docs/controllers/toggle-group.md)               | `toggle-group`        | `forms`    | —                                                                                                                               | [readme](docs/controllers/toggle-group.md)        |
 | [Tooltip](docs/controllers/tooltip.md)                         | `tooltip`             | `utility`  | `@floating-ui/dom`                                                                                                              | [readme](docs/controllers/tooltip.md)             |
@@ -454,8 +454,8 @@ attributes and the `stimulus_controller()` / `stimulus()->controller()` / `->con
 
 1. **Stimulus controllers** — every controller required by a used component, or referenced directly, is published and up
    to date.
-2. **npm dependencies** — every external package imported by those controllers (e.g. `@emaia/sonner`,
-   `@floating-ui/dom`)
+2. **npm dependencies** — every external package imported by those controllers (e.g. `@floating-ui/dom`,
+   `echarts`)
    is declared in your `package.json` (`dependencies` or `devDependencies`).
 
 Exits with code `1` if either has pending items (useful for CI).
@@ -483,7 +483,7 @@ Example output:
   ✓  toast    up to date  (used by <hw:toast>)
 
 Required npm dependencies:
-  ✓  @emaia/sonner ^2.1.0  (used by toaster, toast)
+  ✓  echarts ^6.1.0  (used by chart)
   ✗  @floating-ui/dom ^1.8.0  missing from package.json (used by dropdown, tooltip)
 ```
 

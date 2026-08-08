@@ -1,6 +1,7 @@
 // @hotwire-package
 import { Controller } from "@hotwired/stimulus";
-import { toast } from "@emaia/sonner/vanilla";
+
+import { emitToast } from "./_toaster.js";
 
 export default class extends Controller {
     static values = {
@@ -27,26 +28,28 @@ export default class extends Controller {
     };
 
     connect() {
-        const options = { description: this.descriptionValue };
+        const payload = {
+            message: this.messageValue,
+            type: this.typeValue,
+        };
+
+        if (this.descriptionValue) {
+            payload.description = this.descriptionValue;
+        }
 
         if (this.positionValue) {
-            options.position = this.positionValue;
+            payload.position = this.positionValue;
         }
 
         if (this.hasClassNameValue && this.classNameValue) {
-            options.className = this.classNameValue;
+            payload.className = this.classNameValue;
         }
 
-        if (this.typeValue === "default") {
-            this.toast(this.messageValue, options);
-        } else {
-            this.toast[this.typeValue](this.messageValue, options);
-        }
-
+        this.emit(payload);
         this.element.remove();
     }
 
-    get toast() {
-        return toast;
+    emit(payload) {
+        return emitToast(payload);
     }
 }

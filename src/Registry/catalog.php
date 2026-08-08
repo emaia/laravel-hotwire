@@ -950,7 +950,9 @@ return [
             'description' => 'Fires a toast notification from the Laravel session or from explicit props',
             'controllers' => ['toast'],
             'styling' => [
-                'slots' => $slots(['toast']),
+                // The trigger only carries the payload and removes itself on connect; the visible
+                // toast is built by the manager under its own slots.
+                'slots' => $slots(structural: ['toast-trigger']),
             ],
         ],
         'toaster' => [
@@ -958,10 +960,10 @@ return [
             'view' => 'hotwire::component-views.toaster',
             'docs' => 'docs/components/toaster.md',
             'category' => 'feedback',
-            'description' => 'Hosts the toaster instance and persists it across Turbo Drive navigations',
+            'description' => 'Hosts the toast stack and persists it across Turbo Drive navigations',
             'controllers' => ['toaster'],
             'styling' => [
-                'slots' => $slots(['toaster']),
+                'slots' => $slots(structural: ['toaster']),
             ],
         ],
         'toggle' => [
@@ -1339,15 +1341,24 @@ return [
             'source' => 'resources/js/controllers/toast_controller.js',
             'docs' => 'docs/controllers/toast.md',
             'category' => 'feedback',
-            'description' => 'Fires a single Sonner toast from session flash or explicit props',
-            'npm' => ['@emaia/sonner' => '^2.1.0'],
+            'description' => 'Fires a single toast from session flash or explicit props',
         ],
         'toaster' => [
             'source' => 'resources/js/controllers/toaster_controller.js',
             'docs' => 'docs/controllers/toaster.md',
             'category' => 'feedback',
-            'description' => 'Initializes the Sonner toaster and persists it across Turbo Drive navigations',
-            'npm' => ['@emaia/sonner' => '^2.1.0'],
+            'description' => 'Renders and manages the toast stack, persisting it across Turbo Drive navigations',
+            'styling' => [
+                'slots' => $slots([
+                    'toast',
+                    'toast-icon',
+                    'toast-content',
+                    'toast-body',
+                    'toast-title',
+                    'toast-description',
+                    'toast-close',
+                ]),
+            ],
         ],
         'toggle' => [
             'source' => 'resources/js/controllers/toggle_controller.js',

@@ -1,6 +1,6 @@
 @php
     $toastAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
-        'data-slot' => 'toast',
+        'data-slot' => 'toast-trigger',
         'data-turbo-temporary' => true,
         'data-controller' => 'toast',
         'data-toast-message-value' => $finalMessage,
