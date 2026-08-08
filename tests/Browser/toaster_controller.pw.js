@@ -161,7 +161,7 @@ async function setup(page) {
                 border: 1px solid #e5e5e5;
                 border-radius: 16px;
                 background: #fff;
-                transition: transform 500ms cubic-bezier(0.22, 1, 0.36, 1), opacity 500ms, height 150ms;
+                transition: transform 500ms cubic-bezier(0.22, 1, 0.36, 1), opacity 500ms, block-size 150ms;
             }
             [data-slot="toast"][data-state="closed"] {
                 transition: transform 260ms cubic-bezier(0.32, 0, 0.67, 0), opacity 200ms ease-in;

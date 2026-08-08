@@ -68,6 +68,5 @@ export default class extends Controller {
  * the real instance, leaving every toast to vanish without an error.
  */
 function isToaster(value) {
-    return Boolean(value) && typeof value.destroy === "function";
+    return Boolean(value) && typeof value.destroy === "function" && value.destroyed !== true;
 }
-

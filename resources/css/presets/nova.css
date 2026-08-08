@@ -775,7 +775,7 @@
     [data-slot="oembed-link"] { @apply break-all text-primary underline underline-offset-4 hover:no-underline; }
 
     /* Toaster controller */
-    [data-slot="toast"] { @apply w-(--toast-width,24rem) max-w-[calc(100vw-2rem)] origin-bottom rounded-2xl border border-border bg-popover text-popover-foreground shadow-lg outline-none select-none; transition: transform 500ms cubic-bezier(0.22, 1, 0.36, 1), opacity 500ms, height 150ms; }
+    [data-slot="toast"] { @apply w-(--toast-width,24rem) max-w-[calc(100vw-2rem)] origin-bottom rounded-2xl border border-border bg-popover text-popover-foreground shadow-lg outline-none select-none; transition: transform 500ms cubic-bezier(0.22, 1, 0.36, 1), opacity 500ms, block-size 150ms; }
     [data-slot="toast"]:focus-visible { @apply border-ring ring-3 ring-ring/50; }
     /* Leaving is quicker than arriving, and eases in rather than out: a card on its way off screen
        should not linger, and the 500ms settle that suits an entrance reads as sluggish here. */

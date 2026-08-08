@@ -85,6 +85,15 @@ test.serial("idempotent: re-connect skips create when an instance already exists
     expect(createCalls).toHaveLength(1);
 });
 
+test.serial("recreates the instance when the global toaster was destroyed", async () => {
+    await mount(`<div data-controller="toaster"></div>`);
+    window.toaster.destroyed = true;
+    mounted.controller.connect();
+
+    expect(createCalls).toHaveLength(2);
+    expect(window.toaster.destroyed).toBeUndefined();
+});
+
 // --- Top layer ---
 
 test.serial("shows the toaster container in the top layer when supported", async () => {

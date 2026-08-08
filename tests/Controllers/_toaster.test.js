@@ -231,6 +231,16 @@ test("destroy empties the viewport", () => {
     expect(viewport.querySelectorAll('[data-slot="toast"]')).toHaveLength(0);
 });
 
+test("destroy clears the global reference when it points at this toaster", () => {
+    mount();
+    window.toaster = toaster;
+
+    toaster.destroy();
+    toaster = null;
+
+    expect(window.toaster).toBeNull();
+});
+
 // --- Motion ---
 
 test("enters from the closed state so the CSS transition has somewhere to travel from", async () => {
@@ -468,6 +478,23 @@ test("pauses the timer while focus is inside the viewport", async () => {
     await wait(80);
 
     expect(toasts()).toHaveLength(1);
+});
+
+test("keeps the timer paused until every pause cause clears", async () => {
+    mount({ duration: 40 });
+    toaster.toast("focused hover");
+
+    viewport.dispatchEvent(new Event("pointerenter"));
+    viewport.dispatchEvent(new Event("focusin"));
+    viewport.dispatchEvent(new Event("pointerleave"));
+    await wait(80);
+
+    expect(toasts()).toHaveLength(1);
+
+    viewport.dispatchEvent(new Event("focusout"));
+    await wait(80);
+
+    expect(toasts()).toHaveLength(0);
 });
 
 // --- Stacking ---

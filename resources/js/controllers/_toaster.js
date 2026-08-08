@@ -42,17 +42,17 @@ export function createToaster(element, options = {}) {
     };
     const entries = new Map();
     let destroyed = false;
-    let paused = false;
+    const pauseCauses = new Set();
     let reflowHandle = null;
 
     element.setAttribute("role", "region");
     element.setAttribute("aria-label", config.ariaLabel);
     element.setAttribute("tabindex", "-1");
     element.dataset.expanded = String(config.expand);
-    element.addEventListener("pointerenter", pause);
-    element.addEventListener("pointerleave", resume);
-    element.addEventListener("focusin", pause);
-    element.addEventListener("focusout", resume);
+    element.addEventListener("pointerenter", pausePointer);
+    element.addEventListener("pointerleave", resumePointer);
+    element.addEventListener("focusin", pauseFocus);
+    element.addEventListener("focusout", resumeFocus);
     document.addEventListener("keydown", handleFocusKey);
     document.addEventListener("visibilitychange", handleVisibility);
 
@@ -175,7 +175,7 @@ export function createToaster(element, options = {}) {
         if (entry.duration <= 0) return;
 
         entry.remaining ??= entry.duration;
-        if (paused) return;
+        if (isPaused()) return;
 
         entry.startedAt = Date.now();
         entry.timer = setTimeout(() => dismiss(entry.id), entry.remaining);
@@ -192,25 +192,47 @@ export function createToaster(element, options = {}) {
         }
     }
 
-    function pause() {
+    function pause(cause) {
         setExpanded(true);
-        if (paused) return;
+        const wasPaused = isPaused();
 
-        paused = true;
+        pauseCauses.add(cause);
+        if (wasPaused) return;
+
         entries.forEach(stopTimer);
     }
 
-    function resume() {
-        setExpanded(false);
-        if (!paused) return;
+    function resume(cause) {
+        pauseCauses.delete(cause);
+        setExpanded(isPaused());
+        if (isPaused()) return;
 
-        paused = false;
         entries.forEach(startTimer);
     }
 
+    function isPaused() {
+        return pauseCauses.size > 0;
+    }
+
+    function pausePointer() {
+        pause("pointer");
+    }
+
+    function resumePointer() {
+        resume("pointer");
+    }
+
+    function pauseFocus() {
+        pause("focus");
+    }
+
+    function resumeFocus() {
+        resume("focus");
+    }
+
     function handleVisibility() {
-        if (document.hidden) pause();
-        else resume();
+        if (document.hidden) pause("visibility");
+        else resume("visibility");
     }
 
     /** F6 jumps to the notification region, as in Radix and Base UI. The landmark alone does not
@@ -314,21 +336,24 @@ export function createToaster(element, options = {}) {
         destroyed = true;
         if (reflowHandle !== null) cancelAnimationFrame(reflowHandle);
         reflowHandle = null;
+        pauseCauses.clear();
         entries.forEach(drop);
         entries.clear();
-        element.removeEventListener("pointerenter", pause);
-        element.removeEventListener("pointerleave", resume);
-        element.removeEventListener("focusin", pause);
-        element.removeEventListener("focusout", resume);
+        element.removeEventListener("pointerenter", pausePointer);
+        element.removeEventListener("pointerleave", resumePointer);
+        element.removeEventListener("focusin", pauseFocus);
+        element.removeEventListener("focusout", resumeFocus);
         document.removeEventListener("keydown", handleFocusKey);
         document.removeEventListener("visibilitychange", handleVisibility);
         element.removeAttribute("role");
         element.removeAttribute("aria-label");
         element.removeAttribute("tabindex");
         if (active === instance) active = null;
+        if (window.toaster === instance) window.toaster = null;
     }
 
     const instance = {
+        get destroyed() { return destroyed; },
         show,
         dismiss,
         destroy,
