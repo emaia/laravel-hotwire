@@ -17,14 +17,14 @@ class Frame extends Component
         public ?string $loading = null,
         public ?string $target = null,
         public bool|string|null $autoscroll = null,
-        public bool $lazy = false,
-        public ?string $action = null,
-        public bool $advance = false,
-        public bool $replace = false,
-        public bool $poll = false,
+        public bool|string $lazy = false,
+        public bool|string|null $action = null,
+        public bool|string $advance = false,
+        public bool|string $replace = false,
+        public bool|string $poll = false,
         public ?int $pollInterval = null,
-        public bool $viewTransition = false,
-        public bool $preserveScroll = false,
+        public bool|string $viewTransition = false,
+        public bool|string $preserveScroll = false,
     ) {
         $this->frameId = trim(is_object($id) ? dom_id($id) : $id);
 
@@ -35,7 +35,14 @@ class Frame extends Component
         $this->src = $this->normalizeOptional($this->src);
         $this->loading = $this->normalizeOptional($this->loading);
         $this->target = $this->normalizeOptional($this->target);
-        $this->action = $this->normalizeOptional($this->action);
+        $this->autoscroll = $this->normalizeBooleanAttribute($this->autoscroll);
+        $this->action = $this->normalizeOptionalAction($this->action);
+        $this->lazy = $this->normalizeBooleanAlias($this->lazy);
+        $this->advance = $this->normalizeBooleanAlias($this->advance);
+        $this->replace = $this->normalizeBooleanAlias($this->replace);
+        $this->poll = $this->normalizeBooleanAlias($this->poll);
+        $this->viewTransition = $this->normalizeBooleanAlias($this->viewTransition);
+        $this->preserveScroll = $this->normalizeBooleanAlias($this->preserveScroll);
     }
 
     public function render()
@@ -118,5 +125,36 @@ class Frame extends Component
         $value = $value === null ? null : trim($value);
 
         return $value === '' ? null : $value;
+    }
+
+    private function normalizeBooleanAttribute(bool|string|null $value): bool|string|null
+    {
+        if (! is_string($value)) {
+            return $value;
+        }
+
+        $normalized = strtolower(trim($value));
+
+        return in_array($normalized, ['false', '0', 'off', 'no'], true) ? null : $value;
+    }
+
+    private function normalizeBooleanAlias(bool|string $value): bool
+    {
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        return ! in_array(strtolower(trim($value)), ['false', '0', 'off', 'no'], true);
+    }
+
+    private function normalizeOptionalAction(bool|string|null $value): ?string
+    {
+        if ($value === false || $value === null) {
+            return null;
+        }
+
+        $value = trim((string) $value);
+
+        return $value === '' || in_array(strtolower($value), ['false', '0', 'off', 'no'], true) ? null : $value;
     }
 }

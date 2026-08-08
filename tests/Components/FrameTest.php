@@ -30,6 +30,33 @@ it('renders native turbo frame attributes', function () {
         ->assertSee('autoscroll', false);
 });
 
+it('omits false-like autoscroll values', function (string $value) {
+    $view = $this->blade('<x-hw::frame id="results" autoscroll="'.$value.'">Content</x-hw::frame>');
+
+    $view->assertDontSee('autoscroll', false);
+})->with(['false', '0', 'off', 'no']);
+
+it('omits bound false autoscroll values', function () {
+    $view = $this->blade('<x-hw::frame id="results" :autoscroll="false">Content</x-hw::frame>');
+
+    $view->assertDontSee('autoscroll', false);
+});
+
+it('omits false-like boolean alias props', function (string $prop, string $value, string $unexpected) {
+    $view = $this->blade('<x-hw::frame id="results" '.$prop.'="'.$value.'" src="/tasks">Content</x-hw::frame>');
+
+    $view->assertDontSee($unexpected, false)
+        ->assertDontSee($prop.'=', false);
+})->with([
+    'lazy false' => ['lazy', 'false', 'loading="lazy"'],
+    'lazy zero' => ['lazy', '0', 'loading="lazy"'],
+    'advance false' => ['advance', 'false', 'data-turbo-action="advance"'],
+    'replace false' => ['replace', 'false', 'data-turbo-action="replace"'],
+    'poll false' => ['poll', 'false', 'turbo--polling'],
+    'view transition false' => ['view-transition', 'false', 'turbo--view-transition'],
+    'preserve scroll false' => ['preserve-scroll', 'false', 'turbo--preserve-scroll'],
+]);
+
 it('omits blank optional native frame attributes', function () {
     $view = $this->blade('<x-hw::frame id="results" src="   " target=" " loading="" action="">Content</x-hw::frame>');
 
@@ -37,6 +64,20 @@ it('omits blank optional native frame attributes', function () {
         ->assertDontSee('target=', false)
         ->assertDontSee('loading=', false)
         ->assertDontSee('data-turbo-action=', false);
+});
+
+it('omits false-like action prop values', function (string $value) {
+    $view = $this->blade('<x-hw::frame id="results" action="'.$value.'">Content</x-hw::frame>');
+
+    $view->assertDontSee('data-turbo-action=', false)
+        ->assertDontSee(' action=', false);
+})->with(['false', '0', 'off', 'no']);
+
+it('omits bound false action values', function () {
+    $view = $this->blade('<x-hw::frame id="results" :action="false">Content</x-hw::frame>');
+
+    $view->assertDontSee('data-turbo-action=', false)
+        ->assertDontSee(' action=', false);
 });
 
 it('resolves the id from a model via dom_id', function () {
