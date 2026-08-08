@@ -130,7 +130,6 @@ test.serial("derives default options from its values", async () => {
         duration: 4000,
         expand: false,
         position: "bottom-center",
-        swipeDirections: [],
         visibleToasts: 3,
     });
 });
@@ -155,11 +154,6 @@ test.serial("passes overridden values through", async () => {
     expect(createCalls[0].containerAriaLabel).toBe("Alerts");
 });
 
-test.serial("splits swipe directions on commas and whitespace", async () => {
-    await mount(`<div data-controller="toaster" data-toaster-swipe-directions-value="left, right"></div>`);
-
-    expect(createCalls[0].swipeDirections).toEqual(["left", "right"]);
-});
 
 // --- disconnect ---
 

@@ -39,7 +39,6 @@ export function createToaster(element, options = {}) {
         visibleToasts: options.visibleToasts ?? 3,
         className: options.className ?? "",
         ariaLabel: options.containerAriaLabel || "Notifications",
-        swipeDirections: options.swipeDirections ?? [],
     };
     const entries = new Map();
     let destroyed = false;

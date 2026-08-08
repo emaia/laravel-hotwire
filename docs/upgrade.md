@@ -53,6 +53,9 @@ Dropdown and Hover Card, and following the document's writing direction:
   Button's `hotkey` prop, which means something else entirely.
 - `custom-aria-label` — a single label repeated on every toast overrode each card's own text for screen readers.
   Cards are announced from their title and description.
+- `swipe-directions` — swipe-to-dismiss is not part of the native implementation. Sonner inherited the gesture from
+  its own runtime; here it would have to be written, and it is tracked separately. Toasts are dismissed by the close
+  button, which is now always visible, or by their timer.
 
 **Emitting from JavaScript changed.** Applications that imported Sonner directly will break:
 

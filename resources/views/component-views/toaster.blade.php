@@ -13,7 +13,6 @@
         'data-toaster-close-button-value' => $bool($closeButton),
         'data-toaster-expand-value' => $bool($expand),
         'data-toaster-auto-disconnect-value' => $bool($autoDisconnect),
-        'data-toaster-swipe-directions-value' => $swipeDirections,
         'data-toaster-class-name-value' => $className,
         'data-toaster-container-aria-label-value' => $containerAriaLabel,
     ], $attributes, $stimulus, protectedPrefixes: ['data-toaster-']);

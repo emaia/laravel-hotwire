@@ -1,7 +1,7 @@
 # Toaster
 
 Renders and manages the toast stack. Add it once to the global layout so the `toast` controller has somewhere to
-emit into. It owns the DOM, the queue, timers, presence and swipe; there is no third-party dependency.
+emit into. It owns the DOM, the queue, timers, presence and cleanup; there is no third-party dependency.
 
 **Identifier:** `toaster`
 
@@ -15,7 +15,6 @@ emit into. It owns the DOM, the queue, timers, presence and swipe; there is no t
 | `close-button`         | `Boolean` | `true`            | Renders a close button on each toast                    |
 | `expand`               | `Boolean` | `false`           | Keeps the stack expanded instead of collapsing it       |
 | `auto-disconnect`      | `Boolean` | `false`           | Destroys the manager when the controller disconnects    |
-| `swipe-directions`     | `String`  | `""`              | Comma or space separated: `left`, `right`, `top`, `bottom` |
 | `class-name`           | `String`  | `""`              | Extra classes applied to every rendered toast           |
 | `container-aria-label` | `String`  | `"Notifications"` | `aria-label` on the viewport landmark                   |
 

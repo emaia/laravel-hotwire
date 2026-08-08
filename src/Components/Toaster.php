@@ -17,7 +17,6 @@ class Toaster extends Component
         public bool $autoDisconnect = false,
         public bool $turboPermanent = true,
         public string $class = '',
-        public ?string $swipeDirections = null,
         public ?string $className = null,
         public ?string $containerAriaLabel = null,
         public ?Htmlable $stimulus = null,

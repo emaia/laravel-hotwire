@@ -13,7 +13,6 @@ export default class extends Controller {
         duration: { type: Number, default: 4000 },
         expand: { type: Boolean, default: false },
         position: { type: String, default: "bottom-center" },
-        swipeDirections: { type: String, default: "" },
         visibleToasts: { type: Number, default: 3 },
     };
 
@@ -58,7 +57,6 @@ export default class extends Controller {
             duration: this.durationValue,
             expand: this.expandValue,
             position: this.positionValue,
-            swipeDirections: splitList(this.swipeDirectionsValue),
             visibleToasts: this.visibleToastsValue,
         };
     }
@@ -73,9 +71,3 @@ function isToaster(value) {
     return Boolean(value) && typeof value.destroy === "function";
 }
 
-function splitList(value) {
-    return String(value ?? "")
-        .split(/[,\s]+/)
-        .map((item) => item.trim())
-        .filter(Boolean);
-}

@@ -58,7 +58,6 @@ it('omits nullable stimulus values when not provided', function () {
 
     $view->assertDontSee('class-name-value', false);
     $view->assertDontSee('container-aria-label-value', false);
-    $view->assertDontSee('swipe-directions-value', false);
 });
 
 // --- Custom values emission ---
@@ -96,13 +95,11 @@ it('emits optional advanced props when provided', function () {
         <x-hw::toaster
             class-name="my-toast-list"
             container-aria-label="Notifications"
-            swipe-directions="left,right"
         />
     ');
 
     $view->assertSee('data-toaster-class-name-value="my-toast-list"', false);
     $view->assertSee('data-toaster-container-aria-label-value="Notifications"', false);
-    $view->assertSee('data-toaster-swipe-directions-value="left,right"', false);
 });
 
 // --- Namespace registration ---

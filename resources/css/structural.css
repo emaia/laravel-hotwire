@@ -164,9 +164,9 @@
     block-size: var(--toast-frontmost-height, var(--toast-height, auto));
     will-change: transform;
     /*
-     * One composed transform, as in the shadcn Toast. Stack placement, entry/exit travel and swipe
-     * all have to live in the same declaration — split across rules, the last one simply wins and
-     * the others silently do nothing.
+     * One composed transform, as in the shadcn Toast. Stack placement and entry/exit travel have to
+     * live in the same declaration — split across rules, the last one simply wins and the others
+     * silently do nothing.
      *
      * Collapsed, a toast is pushed back by a fixed peek plus the height it loses to scaling, so the
      * cards stay bottom-aligned as they shrink. --toast-stack-direction flips the whole thing for
@@ -178,10 +178,8 @@
     --toast-scale: max(0, 1 - var(--toast-index, 0) * var(--toast-depth-scale, 0.1));
     --toast-shrink: calc(1 - var(--toast-scale, 1));
     transform:
-        translateX(var(--toast-swipe-movement-x, 0px))
         translateY(
             calc(
-                var(--toast-swipe-movement-y, 0px) +
                 var(--toast-exit-y, 0px) +
                 var(--toast-stack-direction, -1) * (
                     var(--toast-index, 0) * var(--toast-peek, 0.75rem) +
@@ -197,10 +195,8 @@
     block-size: var(--toast-height, auto);
     --toast-scale: 1;
     transform:
-        translateX(var(--toast-swipe-movement-x, 0px))
         translateY(
             calc(
-                var(--toast-swipe-movement-y, 0px) +
                 var(--toast-exit-y, 0px) +
                 var(--toast-stack-direction, -1) * (
                     var(--toast-offset-y, 0px) + var(--toast-index, 0) * var(--toast-gap, 0.75rem)
@@ -250,10 +246,6 @@
     inset-block-end: 100%;
 }
 
-[data-slot="toast"][data-swiping] {
-    transition: none;
-    user-select: none;
-}
 
 /* Anchoring per position: a physical side, then a logical alignment, as with `align` elsewhere in
    the package. --toast-offset is the supported way to nudge the stack away from the edges. */

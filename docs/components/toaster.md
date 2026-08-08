@@ -4,7 +4,7 @@ Hosts the toast stack once per page and persists it across Turbo Drive navigatio
 toast fired by [`<hw:toast />`](./toast.md), by appended Turbo Streams, or from your own JavaScript.
 
 The component maps to the `toaster` Stimulus controller, which creates the toast manager on connect and publishes it
-as `window.toaster`. Rendering, stacking, timers and swipe are owned by the package — there is no third-party
+as `window.toaster`. Rendering, stacking and timers are owned by the package — there is no third-party
 dependency.
 
 ## Setup
@@ -51,7 +51,6 @@ Order does not matter: a toast emitted before the viewport connects is buffered 
 | `auto-disconnect`      | `bool`    | `false`           | Destroys the manager when the controller disconnects                            |
 | `turbo-permanent`      | `bool`    | `true`            | Renders `data-turbo-permanent` on the viewport                                  |
 | `class`                | `string`  | `''`              | CSS class applied to the viewport `<div>` itself                                |
-| `swipe-directions`     | `?string` | `null`            | Allowed swipe-to-dismiss directions — comma separated (`left,right,top,bottom`) |
 | `class-name`           | `?string` | `null`            | Extra classes applied to every rendered toast                                   |
 | `container-aria-label` | `?string` | `Notifications`   | `aria-label` on the viewport landmark                                           |
 
@@ -75,10 +74,10 @@ Expanded stack, no close button:
 <hw:toaster :close-button="false" :expand="true" />
 ```
 
-Swipe to dismiss sideways, with a custom landmark label:
+Custom landmark label:
 
 ```html
-<hw:toaster swipe-directions="left,right" container-aria-label="Alerts" />
+<hw:toaster container-aria-label="Alerts" />
 ```
 
 Custom id, useful for a second Turbo Stream anchor:
@@ -149,6 +148,7 @@ Slots: `toaster`, `toast`, `toast-icon`, `toast-content`, `toast-body`, `toast-t
   `aria-live="assertive"` for `error`. There is deliberately no `aria-label` on the card, which would override the
   message.
 - Timers pause while the pointer is over the stack, while focus is inside it, and while the document is hidden.
+- Swipe-to-dismiss is not implemented. Toasts are dismissed by the close button or by their timer.
 - Entry and exit motion is skipped under `prefers-reduced-motion`.
 
 ## Turbo integration
