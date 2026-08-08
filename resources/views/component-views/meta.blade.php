@@ -20,5 +20,6 @@
 <x-hw::meta.csrf />
 @endif
 @if ($asked($colorScheme))
+<x-hw::color-scheme.script />
 <x-hw::meta.color-scheme :schemes="$given($colorScheme) ?? 'light dark'" />
 @endif

@@ -34,6 +34,10 @@ class Meta extends Component
     /** The value the caller supplied, or null when they only wrote the bare attribute. */
     public function given(bool|string|null $prop): ?string
     {
+        if ($prop === false || $prop === 'false') {
+            return null;
+        }
+
         return is_string($prop) ? $prop : null;
     }
 
