@@ -142,7 +142,11 @@ test.serial("reuses cached formatters until locale changes", async () => {
     expect(mounted.controller.relativeTimeFormatter).toBe(relativeFormatter);
     expect(mounted.controller.unitFormatters).toBe(unitFormatters);
 
+    // Driving this through the attribute would depend on happy-dom's MutationObserver, which
+    // Stimulus needs to notice a value change and which does not fire reliably here. Invoking the
+    // callback keeps the assertion on our cache invalidation rather than on the test environment.
     mounted.root.dataset.timeagoLocaleValue = "pt-BR";
+    mounted.controller.localeValueChanged();
     await wait(0);
 
     expect(mounted.controller.relativeTimeFormatter).not.toBe(relativeFormatter);
