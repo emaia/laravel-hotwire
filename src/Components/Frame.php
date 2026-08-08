@@ -24,6 +24,7 @@ class Frame extends Component
         public bool $poll = false,
         public ?int $pollInterval = null,
         public bool $viewTransition = false,
+        public bool $preserveScroll = false,
     ) {
         $this->frameId = trim(is_object($id) ? dom_id($id) : $id);
 
@@ -84,6 +85,7 @@ class Frame extends Component
                 'poll',
                 'poll-interval',
                 'view-transition',
+                'preserve-scroll',
             ], protectedPrefixes: $protectedPrefixes),
         ];
     }
@@ -107,6 +109,7 @@ class Frame extends Component
         return trim(implode(' ', array_filter([
             $this->poll ? 'turbo--polling' : null,
             $this->viewTransition ? 'turbo--view-transition' : null,
+            $this->preserveScroll ? 'turbo--preserve-scroll' : null,
         ])));
     }
 

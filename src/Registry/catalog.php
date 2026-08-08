@@ -445,7 +445,7 @@ return [
             'docs' => 'docs/components/frame.md',
             'category' => 'turbo',
             'description' => 'DX-friendly Turbo Frame wrapper with lazy, advance and replace aliases',
-            'controllers' => ['turbo--polling', 'turbo--view-transition'],
+            'controllers' => ['turbo--polling', 'turbo--view-transition', 'turbo--preserve-scroll'],
             'styling' => [
                 'slots' => $slots(),
             ],
@@ -1411,6 +1411,12 @@ return [
             'docs' => 'docs/controllers/turbo/polling.md',
             'category' => 'turbo',
             'description' => 'Reloads a Turbo Frame at regular intervals without user interaction',
+        ],
+        'turbo--preserve-scroll' => [
+            'source' => 'resources/js/controllers/turbo/preserve_scroll_controller.js',
+            'docs' => 'docs/controllers/turbo/preserve-scroll.md',
+            'category' => 'turbo',
+            'description' => 'Preserves page scroll around Turbo Frame renders that replace focused content',
         ],
         'turbo--progress' => [
             'source' => 'resources/js/controllers/turbo/progress_controller.js',

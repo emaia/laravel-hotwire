@@ -93,6 +93,16 @@ Enable polling with `poll`; the controller reloads the frame on an interval:
 </hw:frame>
 ```
 
+Use `preserve-scroll` when a frame update replaces focused content near the bottom of the document, such as paginated
+results. The controller blurs focused frame children before render and restores the previous window scroll position,
+clamped to the new document height:
+
+```blade
+<hw:frame id="results" preserve-scroll>
+    ...
+</hw:frame>
+```
+
 ## Props
 
 | Prop              | Type                 | Default | Description                                                              |
@@ -109,6 +119,7 @@ Enable polling with `poll`; the controller reloads the frame on an interval:
 | `poll`            | `bool`               | `false` | Mounts the `turbo--polling` controller on the frame                      |
 | `poll-interval`   | `int\|null`          | `null`  | Polling interval in milliseconds; controller default is `5000`           |
 | `view-transition` | `bool`               | `false` | Mounts the `turbo--view-transition` controller on the frame              |
+| `preserve-scroll` | `bool`               | `false` | Mounts the `turbo--preserve-scroll` controller on the frame              |
 
 Any other HTML attribute (`class`, `data-*`, `aria-*`, `disabled`, `busy`, `complete`, `refresh`) passes through to the
 `<turbo-frame>` element. Boolean alias props do not render as HTML attributes.

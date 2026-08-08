@@ -231,6 +231,7 @@ Controllers tied to Turbo Drive / Turbo Frames.
 | [Frame Src](docs/controllers/turbo/frame-src.md)             | `turbo--frame-src`       | `@hotwired/turbo` | [readme](docs/controllers/turbo/frame-src.md)       |
 | [Morph Guard](docs/controllers/turbo/morph-guard.md)         | `turbo--morph-guard`     | —                 | [readme](docs/controllers/turbo/morph-guard.md)     |
 | [Polling](docs/controllers/turbo/polling.md)                 | `turbo--polling`         | `@hotwired/turbo` | [readme](docs/controllers/turbo/polling.md)         |
+| [Preserve Scroll](docs/controllers/turbo/preserve-scroll.md) | `turbo--preserve-scroll` | —                 | [readme](docs/controllers/turbo/preserve-scroll.md) |
 | [Progress](docs/controllers/turbo/progress.md)               | `turbo--progress`        | `@hotwired/turbo` | [readme](docs/controllers/turbo/progress.md)        |
 | [View Transition](docs/controllers/turbo/view-transition.md) | `turbo--view-transition` | —                 | [readme](docs/controllers/turbo/view-transition.md) |
 
@@ -409,7 +410,7 @@ controllers, attribute-bag merging and the escaping rules.
 | [Modal](docs/components/modal.md)                         | `<hw:modal>`               | `overlay`    | `modal`, `turbo--view-transition`                                      | [readme](docs/components/modal.md)              |
 | [Popover](docs/components/popover.md)                     | `<hw:popover>`             | `overlay`    | `popover`                                                              | [readme](docs/components/popover.md)            |
 | [Sheet](docs/components/sheet.md)                         | `<hw:sheet>`               | `overlay`    | `sheet`, `turbo--view-transition`                                      | [readme](docs/components/sheet.md)              |
-| [Frame](docs/components/frame.md)                         | `<hw:frame>`               | `turbo`      | `turbo--polling`, `turbo--view-transition`                             | [readme](docs/components/frame.md)              |
+| [Frame](docs/components/frame.md)                         | `<hw:frame>`               | `turbo`      | `turbo--polling`, `turbo--view-transition`, `turbo--preserve-scroll`    | [readme](docs/components/frame.md)              |
 | [Frame Or Page](docs/components/frame-or-page.md)         | `<hw:frame-or-page>`       | `turbo`      | `turbo--polling`, `turbo--view-transition`                             | [readme](docs/components/frame-or-page.md)      |
 | [Frame Or Page Frame](docs/components/frame-or-page.md)   | `<hw:frame-or-page.frame>` | `turbo`      | —                                                                      | [readme](docs/components/frame-or-page.md)      |
 | [Frame Or Page Page](docs/components/frame-or-page.md)    | `<hw:frame-or-page.page>`  | `turbo`      | —                                                                      | [readme](docs/components/frame-or-page.md)      |
