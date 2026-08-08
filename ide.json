@@ -464,16 +464,6 @@
                     "className": "\\Emaia\\LaravelHotwire\\Components\\FileUpload"
                 },
                 {
-                    "name": "flash-container",
-                    "namespace": "hw",
-                    "className": "\\Emaia\\LaravelHotwire\\Components\\FlashContainer"
-                },
-                {
-                    "name": "flash-message",
-                    "namespace": "hw",
-                    "className": "\\Emaia\\LaravelHotwire\\Components\\FlashMessage"
-                },
-                {
                     "name": "form",
                     "namespace": "hw",
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Form"
@@ -1092,6 +1082,16 @@
                     "name": "timeago",
                     "namespace": "hw",
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Timeago"
+                },
+                {
+                    "name": "toast",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Toast"
+                },
+                {
+                    "name": "toaster",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Toaster"
                 },
                 {
                     "name": "toggle",

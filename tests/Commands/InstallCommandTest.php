@@ -167,7 +167,7 @@ it('adds core npm dependencies to package.json in non-interactive mode', functio
         ->not->toHaveKey('maska')
         ->not->toHaveKey('tippy.js')
         ->not->toHaveKey('@floating-ui/dom')
-        ->not->toHaveKey('@emaia/sonner');
+        ->not->toHaveKey('maska');
 });
 
 it('reads dependency versions from the package own package.json', function () {
@@ -205,8 +205,7 @@ it('installs core + all catalog dependencies by default', function () {
         ->toHaveKey('echarts')
         ->toHaveKey('leaflet')
         ->toHaveKey('embla-carousel')
-        ->toHaveKey('@floating-ui/dom')
-        ->toHaveKey('@emaia/sonner');
+        ->toHaveKey('@floating-ui/dom');
 });
 
 it('preserves existing dependencies in package.json', function () {
@@ -373,7 +372,7 @@ it('adds only specified controller dependencies with --with-deps=chart', functio
         ->not->toHaveKey('embla-carousel')
         ->not->toHaveKey('@floating-ui/dom')
         ->not->toHaveKey('leaflet')
-        ->not->toHaveKey('@emaia/sonner');
+        ->not->toHaveKey('maska');
 });
 
 it('accepts comma-separated controllers in --with-deps', function () {
@@ -392,7 +391,7 @@ it('accepts comma-separated controllers in --with-deps', function () {
         ->toHaveKey('embla-carousel')
         ->toHaveKey('@floating-ui/dom')
         ->toHaveKey('leaflet')
-        ->not->toHaveKey('@emaia/sonner');
+        ->not->toHaveKey('maska');
 });
 
 it('accepts repeated --with-deps flags', function () {
@@ -431,7 +430,7 @@ it('installs only core deps with --core-only', function () {
         ->not->toHaveKey('echarts')
         ->not->toHaveKey('@floating-ui/dom')
         ->not->toHaveKey('leaflet')
-        ->not->toHaveKey('@emaia/sonner');
+        ->not->toHaveKey('maska');
 });
 
 it('rejects --core-only combined with --with-deps', function () {

@@ -31,7 +31,7 @@ In order, every `hotwire:install` invocation:
    regenerate it without prompting.
 3. **Adds npm dependencies** to `package.json` (`devDependencies`). Always adds the three core packages
    (`@hotwired/stimulus`, `@hotwired/turbo`, `@emaia/stimulus-lazy-loader`); the catalog deps (Floating UI, echarts,
-   leaflet, embla-carousel, tiptap, maska, sonner) follow the `--with-deps` / `--core-only` flags below.
+   leaflet, embla-carousel, tiptap, maska) follow the `--with-deps` / `--core-only` flags below.
 4. **Injects the `@hotwire` Vite alias** into your `vite.config.{ts,mjs,js}` so user code can extend a vendor controller
    via `import CarouselController from '@hotwire/carousel_controller.js'`. Idempotent — re-running install never
    duplicates the key. If your config doesn't match the Laravel-stock `defineConfig({ ... })` shape, the snippet is

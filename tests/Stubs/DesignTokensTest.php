@@ -322,14 +322,42 @@ it('drives native slider tracks from the controller value', function (string $pr
         ->not->toContain('[data-slot="slider"]:hover::-moz-range-thumb');
 })->with('design presets');
 
-it('keeps the flash container eligible for top-layer stacking', function (string $preset) {
-    $css = file_get_contents($preset);
+it('gives every custom property in the toast transform a fallback', function () {
+    // An unresolved var() invalidates the whole calc, the transform collapses to identity, and the
+    // moment the value lands the browser transitions away from that identity — the entry animation
+    // silently degrades to a fade. The manager sets these properties after the element is attached,
+    // so there is always a frame where they are missing.
+    $css = File::get(__DIR__.'/../../resources/css/structural.css');
+
+    preg_match_all('/transform:\s*(.+?);/s', $css, $matches);
+    $toastTransforms = array_filter(
+        $matches[1],
+        fn (string $declaration): bool => str_contains($declaration, '--toast-'),
+    );
+
+    expect($toastTransforms)->not->toBeEmpty();
+
+    foreach ($toastTransforms as $declaration) {
+        preg_match_all('/var\(\s*(--[a-z-]+)\s*([,)])/', $declaration, $vars, PREG_SET_ORDER);
+
+        foreach ($vars as [, $name, $terminator]) {
+            expect($terminator)->toBe(
+                ',',
+                "var($name) in the toast transform has no fallback",
+            );
+        }
+    }
+});
+
+it('keeps the toaster viewport eligible for top-layer stacking from the structural stylesheet', function () {
+    // The viewport is mechanics, not appearance: a preset restyles the toast surface, never where
+    // the stack lives or whether it clears the UA popover box.
+    $css = file_get_contents(__DIR__.'/../../resources/css/structural.css');
 
     expect($css)
-        ->toContain('[data-hotwire-top-layer][popover]:is([data-slot="modal-overlay"], [data-slot="alert-dialog-overlay"], [data-slot="drawer-overlay"], [data-slot="sheet-overlay"], [data-slot="sidebar"], [data-slot="flash-container"])')
-        ->toContain('[data-slot="flash-container"]')
-        ->not->toContain('[data-slot="flash-container"] { @apply contents; }');
-})->with('design presets');
+        ->toContain('[data-hotwire-top-layer][popover][data-slot="toaster"]')
+        ->toContain('pointer-events: none');
+});
 
 it('keeps clear input visibility owned by its controller', function (string $preset) {
     $declaration = presetDeclaration(file_get_contents($preset), '[data-slot="clear-input-button"]');

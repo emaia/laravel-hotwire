@@ -82,8 +82,8 @@ The view itself doesn't know — and doesn't care — whether it's rendered as a
         </x-slot:loading_template>
     </hw:modal>
 
-    <hw:flash-container />
-    <hw:flash-message />
+    <hw:toaster />
+    <hw:toast />
 </body>
 </html>
 ```
@@ -138,8 +138,8 @@ public function update(Request $request, User $user)
 }
 ```
 
-Requires the [`flash` macro](../components/flash-message.md#convenience-macro) registered in your
-service provider.
+Uses the [`toast()` stream macro](../components/toast.md#the-toast-stream-macro), which the package
+registers for you.
 
 ## Why this works well
 

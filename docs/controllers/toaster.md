@@ -1,31 +1,24 @@
 # Toaster
 
-Initializes the [Sonner](https://sonner.emilkowal.ski/) container once on the page. Should be added to the global layout
-so the `toast` controller can fire toasts.
+Renders and manages the toast stack. Add it once to the global layout so the `toast` controller has somewhere to
+emit into. It owns the DOM, the queue, timers, presence and cleanup; there is no third-party dependency.
 
-**Identifier:** `toaster`  
-**Install:** `php artisan hotwire:controllers toaster`
-
-## Requirements
-
-- `@emaia/sonner`
+**Identifier:** `toaster`
 
 ## Stimulus Values
 
-| Value            | Type      | Default           | Description                              |
-|------------------|-----------|-------------------|------------------------------------------|
-| `close-button`   | `Boolean` | `true`            | Shows X button on each toast             |
-| `duration`       | `Number`  | `4000`            | Duration of each toast (ms)              |
-| `expand`         | `Boolean` | `false`           | Expands all toasts instead of stacking   |
-| `invert`         | `Boolean` | `false`           | Inverts the theme colors                 |
-| `position`       | `String`  | `"bottom-center"` | Position on screen                       |
-| `rich-colors`    | `Boolean` | `true`            | Uses rich colors for toast types         |
-| `theme`          | `String`  | `"light"`         | Theme: `light`, `dark`, `system`         |
-| `visible-toasts` | `Number`  | `3`               | Maximum number of toasts visible at once |
+| Value                  | Type      | Default           | Description                                             |
+|------------------------|-----------|-------------------|---------------------------------------------------------|
+| `position`             | `String`  | `"bottom-center"` | Where the stack anchors                                 |
+| `duration`             | `Number`  | `4000`            | Milliseconds before a toast dismisses itself; `0` pins it |
+| `visible-toasts`       | `Number`  | `3`               | Maximum number of toasts visible at once                |
+| `close-button`         | `Boolean` | `true`            | Renders a close button on each toast                    |
+| `expand`               | `Boolean` | `false`           | Keeps the stack expanded instead of collapsing it       |
+| `auto-disconnect`      | `Boolean` | `false`           | Destroys the manager when the controller disconnects    |
+| `class-name`           | `String`  | `""`              | Extra classes applied to every rendered toast           |
+| `container-aria-label` | `String`  | `"Notifications"` | `aria-label` on the viewport landmark                   |
 
 ## Basic usage
-
-Add once in the application layout, before the closing `</body>`:
 
 ```html
 <body>
@@ -40,18 +33,30 @@ Add once in the application layout, before the closing `</body>`:
 ```html
 <div
     data-controller="toaster"
-    data-toaster-position-value="top-right"
+    data-toaster-position-value="top-end"
     data-toaster-duration-value="6000"
-    data-toaster-theme-value="dark"
-    data-toaster-rich-colors-value="true"
+    data-toaster-visible-toasts-value="5"
 ></div>
 ```
 
 ## Available positions
 
-`top-left`, `top-center`, `top-right`, `bottom-left`, `bottom-center`, `bottom-right`
+`top-start`, `top-center`, `top-end`, `bottom-start`, `bottom-center`, `bottom-end`
+
+The second segment is a logical alignment, as with `align` on Popover and Dropdown: `start` and `end` follow the
+document's writing direction.
 
 ## How it works
 
-The controller creates the Sonner instance at `window.toaster` the first time it connects. If `window.toaster` already
-exists (e.g. hot reload), initialization is skipped to avoid duplication.
+The controller creates the manager on connect and publishes it as `window.toaster` — see
+[the component docs](../components/toaster.md#emitting-from-javascript) for that surface. If an instance already
+exists it is reused, so a second viewport on the page does not replace the first.
+
+The guard checks for a real instance rather than merely a truthy `window.toaster`, because an element carrying
+`id="toaster"` is published under that name by the browser before any script runs.
+
+Emissions that arrive before the controller connects are buffered by the manager module and drained on connect, so
+a trigger placed above the viewport in the document — or arriving over a Turbo Stream mid-navigation — is never
+dropped.
+
+The viewport joins the top layer, so toasts stay above Modal, Drawer, Sheet and Sidebar.

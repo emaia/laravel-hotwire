@@ -1,10 +1,10 @@
 <?php
 
-use Emaia\LaravelHotwire\Components\FlashMessage;
+use Emaia\LaravelHotwire\Components\Toast;
 use Illuminate\Support\MessageBag;
 
 it('renders with explicit message', function () {
-    $view = $this->blade('<x-hw::flash-message message="Done!" type="success" />');
+    $view = $this->blade('<x-hw::toast message="Done!" type="success" />');
 
     $view->assertSee('data-controller="toast"', false);
     $view->assertSee('data-toast-message-value="Done!"', false);
@@ -12,38 +12,38 @@ it('renders with explicit message', function () {
 });
 
 it('merges inline stimulus attributes with the toast controller', function () {
-    $view = $this->blade('<x-hw::flash-message message="Done!" type="success" :stimulus="stimulus()->controller(\'analytics\')->action(\'analytics\', \'track\', \'toast:shown\')" />');
+    $view = $this->blade('<x-hw::toast message="Done!" type="success" :stimulus="stimulus()->controller(\'analytics\')->action(\'analytics\', \'track\', \'toast:shown\')" />');
 
     $view->assertSee('data-controller="toast analytics"', false);
     $view->assertSee('data-action="toast:shown->analytics#track"', false);
 });
 
 it('renders with description', function () {
-    $view = $this->blade('<x-hw::flash-message message="Saved" description="Record updated" type="success" />');
+    $view = $this->blade('<x-hw::toast message="Saved" description="Record updated" type="success" />');
 
     $view->assertSee('data-toast-description-value="Record updated"', false);
 });
 
 it('does not render description attribute when not provided', function () {
-    $view = $this->blade('<x-hw::flash-message message="Saved" type="success" />');
+    $view = $this->blade('<x-hw::toast message="Saved" type="success" />');
 
     $view->assertDontSee('description-value', false);
 });
 
 it('renders position when provided', function () {
-    $view = $this->blade('<x-hw::flash-message message="Heads up" type="warning" position="top-center" />');
+    $view = $this->blade('<x-hw::toast message="Heads up" type="warning" position="top-center" />');
 
     $view->assertSee('data-toast-position-value="top-center"', false);
 });
 
 it('does not render position attribute when not provided', function () {
-    $view = $this->blade('<x-hw::flash-message message="Saved" type="success" />');
+    $view = $this->blade('<x-hw::toast message="Saved" type="success" />');
 
     $view->assertDontSee('position-value', false);
 });
 
 it('does not render when no message or session', function () {
-    $component = new FlashMessage;
+    $component = new Toast;
 
     expect($component->shouldRender())->toBeFalse();
 });
@@ -51,7 +51,7 @@ it('does not render when no message or session', function () {
 it('reads success from session', function () {
     session()->flash('success', 'Item created');
 
-    $view = $this->blade('<x-hw::flash-message />');
+    $view = $this->blade('<x-hw::toast />');
 
     $view->assertSee('data-toast-message-value="Item created"', false);
     $view->assertSee('data-toast-type-value="success"', false);
@@ -60,7 +60,7 @@ it('reads success from session', function () {
 it('reads error from session', function () {
     session()->flash('error', 'Something failed');
 
-    $view = $this->blade('<x-hw::flash-message />');
+    $view = $this->blade('<x-hw::toast />');
 
     $view->assertSee('data-toast-message-value="Something failed"', false);
     $view->assertSee('data-toast-type-value="error"', false);
@@ -70,7 +70,7 @@ it('reads first validation error from session', function () {
     $errors = new MessageBag(['field' => ['Field is required']]);
     session()->flash('errors', $errors);
 
-    $view = $this->blade('<x-hw::flash-message />');
+    $view = $this->blade('<x-hw::toast />');
 
     $view->assertSee('data-toast-message-value="Field is required"', false);
     $view->assertSee('data-toast-type-value="error"', false);
@@ -79,7 +79,7 @@ it('reads first validation error from session', function () {
 it('reads warning from session', function () {
     session()->flash('warning', 'Watch out');
 
-    $view = $this->blade('<x-hw::flash-message />');
+    $view = $this->blade('<x-hw::toast />');
 
     $view->assertSee('data-toast-message-value="Watch out"', false);
     $view->assertSee('data-toast-type-value="warning"', false);
@@ -88,7 +88,7 @@ it('reads warning from session', function () {
 it('reads info from session', function () {
     session()->flash('info', 'FYI');
 
-    $view = $this->blade('<x-hw::flash-message />');
+    $view = $this->blade('<x-hw::toast />');
 
     $view->assertSee('data-toast-message-value="FYI"', false);
     $view->assertSee('data-toast-type-value="info"', false);
@@ -97,7 +97,7 @@ it('reads info from session', function () {
 it('explicit message overrides session', function () {
     session()->flash('success', 'From session');
 
-    $view = $this->blade('<x-hw::flash-message message="From prop" />');
+    $view = $this->blade('<x-hw::toast message="From prop" />');
 
     $view->assertSee('data-toast-message-value="From prop"', false);
 });
@@ -105,32 +105,32 @@ it('explicit message overrides session', function () {
 it('explicit type overrides session type', function () {
     session()->flash('success', 'Done');
 
-    $view = $this->blade('<x-hw::flash-message type="warning" />');
+    $view = $this->blade('<x-hw::toast type="warning" />');
 
     $view->assertSee('data-toast-type-value="warning"', false);
 });
 
 it('defaults type to default when no session and no prop', function () {
-    $component = new FlashMessage(message: 'Test');
+    $component = new Toast(message: 'Test');
 
     expect($component->finalType)->toBe('default');
 });
 
 it('has data-turbo-temporary attribute', function () {
-    $view = $this->blade('<x-hw::flash-message message="Test" />');
+    $view = $this->blade('<x-hw::toast message="Test" />');
 
     $view->assertSee('data-turbo-temporary', false);
 });
 
 it('renders using :: namespace syntax', function () {
-    $view = $this->blade('<x-hw::flash-message message="Done!" type="success" />');
+    $view = $this->blade('<x-hw::toast message="Done!" type="success" />');
 
     $view->assertSee('data-toast-message-value="Done!"', false);
     $view->assertSee('data-toast-type-value="success"', false);
 });
 
 it('renders with hw:: prefix alias', function () {
-    $view = $this->blade('<x-hw::flash-message message="Done!" type="success" />');
+    $view = $this->blade('<x-hw::toast message="Done!" type="success" />');
 
     $view->assertSee('data-controller="toast"', false);
     $view->assertSee('data-toast-message-value="Done!"', false);
@@ -138,13 +138,13 @@ it('renders with hw:: prefix alias', function () {
 });
 
 it('renders class-name when provided', function () {
-    $view = $this->blade('<x-hw::flash-message message="Done!" type="success" class-name="custom-toast" />');
+    $view = $this->blade('<x-hw::toast message="Done!" type="success" class-name="custom-toast" />');
 
     $view->assertSee('data-toast-class-name-value="custom-toast"', false);
 });
 
 it('does not render class-name attribute when not provided', function () {
-    $view = $this->blade('<x-hw::flash-message message="Saved" type="success" />');
+    $view = $this->blade('<x-hw::toast message="Saved" type="success" />');
 
     $view->assertDontSee('class-name-value', false);
 });

@@ -6,7 +6,7 @@ it('loads the component catalog', function () {
     $registry = HotwireRegistry::make();
 
     expect($registry->component('modal'))->not->toBeNull()
-        ->and($registry->component('flash-message'))->not->toBeNull()
+        ->and($registry->component('toast'))->not->toBeNull()
         ->and($registry->component('spinner'))->not->toBeNull();
 });
 
@@ -28,7 +28,7 @@ it('keeps component controller dependencies in the registry', function () {
 
     expect(array_map(
         fn ($controller) => $controller->identifier,
-        $registry->controllersForComponent('flash-message'),
+        $registry->controllersForComponent('toast'),
     ))->toBe(['toast']);
 });
 

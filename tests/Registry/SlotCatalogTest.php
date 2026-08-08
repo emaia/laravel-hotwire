@@ -57,6 +57,8 @@ it('classifies presentation-free and controller-owned slots as structural', func
         'optimistic',
         'rich-text-input',
         'sheet',
+        'toast-trigger',
+        'toaster',
     ]);
 });
 

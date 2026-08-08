@@ -21,11 +21,11 @@ it('displays docs for a substrate controller using slash notation', function () 
 });
 
 it('displays docs for a component', function () {
-    $this->artisan('hotwire:docs flash-message --component')
+    $this->artisan('hotwire:docs toast --component')
         ->expectsOutputToContain('Type: component')
-        ->expectsOutputToContain('Blade: <x-hw::flash-message>')
+        ->expectsOutputToContain('Blade: <x-hw::toast>')
         ->expectsOutputToContain('Controllers: toast')
-        ->expectsOutputToContain('Flash Message')
+        ->expectsOutputToContain('Toast')
         ->assertSuccessful();
 });
 
@@ -38,7 +38,7 @@ it('fails with an error for an unknown name', function () {
 // --- Flag filtering in name lookup ---
 
 it('does not find component-only names when --controller is given', function () {
-    $this->artisan('hotwire:docs flash-container --controller')
+    $this->artisan('hotwire:docs badge --controller')
         ->expectsOutputToContain('not found')
         ->assertFailed();
 });

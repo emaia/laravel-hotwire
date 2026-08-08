@@ -1,25 +1,14 @@
 # Composing streams
 
 Describe a complete UI transition in a single response by chaining Turbo Stream operations.
-Combined with the [`flash`](../components/flash-message.md#convenience-macro) macro, controller
+Combined with the [`toast()`](../components/toast.md#the-toast-stream-macro) macro, controller
 actions stay small and declarative.
 
-## The macros
+## The macro
 
-Register them once in `AppServiceProvider::boot()`:
-
-```php
-use Emaia\LaravelHotwireTurbo\TurboStreamBuilder;
-use Illuminate\Support\Facades\Blade;
-
-TurboStreamBuilder::macro('flash', function (string $type, string $message, ?string $description = null) {
-    return $this->append('flash-container', Blade::render(
-        '<hw:flash-message :type="$type" :message="$message" :description="$description" />',
-        compact('type', 'message', 'description'),
-    ));
-});
-
-```
+`toast()` ships with the package — nothing to register. See
+[its parameters](../components/toast.md#the-toast-stream-macro), including `target` for a viewport with a
+custom id.
 
 ## Common compositions
 
@@ -36,12 +25,12 @@ public function update(Request $request, Post $post)
     return turbo_stream()
         ->refresh(method: 'morph')
         ->update('modal')
-        ->flash('success', 'Post updated');
+        ->toast('success', 'Post updated');
 }
 ```
 
 Order matters less than you might think — Turbo applies streams in order, but `refresh` morphs the
-DOM in place, the modal frame is cleared, and the flash appends to the persistent flash container.
+DOM in place, the modal frame is cleared, and the flash appends to the persistent toaster.
 
 ### Optimistic action rejected → revert + explain
 
@@ -55,7 +44,7 @@ public function favorite(Request $request, Post $post)
     } catch (\Throwable $e) {
         return turbo_stream()
             ->refresh(method: 'morph')
-            ->flash('error', 'Could not favorite this post.')
+            ->toast('error', 'Could not favorite this post.')
             ->withResponse(403);
     }
 
@@ -68,7 +57,7 @@ public function favorite(Request $request, Post $post)
 
 Don't compose anything special — return a normal redirect/error response. The Turbo Frame holding
 the form re-renders with the validation errors inside, the modal stays open, and the
-[`<hw:flash-message>`](../components/flash-message.md) component picks up the first
+[`<hw:toast>`](../components/toast.md) component picks up the first
 validation error from the session and shows a toast.
 
 ### Append a row → highlight it → toast
@@ -83,7 +72,7 @@ public function store(Request $request)
     return turbo_stream()
         ->append('comments', view('comments.row', compact('comment')))
         ->replace('comment-form', view('comments.form'))
-        ->flash('success', 'Comment posted');
+        ->toast('success', 'Comment posted');
 }
 ```
 
@@ -99,6 +88,6 @@ public function store(Request $request)
 
 ## See also
 
-- [`flash` macro](../components/flash-message.md#convenience-macro)
+- [`toast()` stream macro](../components/toast.md#the-toast-stream-macro)
 - [Server-driven modals](./server-driven-modals.md)
 - [Frame-or-page views](./frame-or-page.md)

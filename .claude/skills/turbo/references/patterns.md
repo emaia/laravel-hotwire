@@ -253,7 +253,7 @@ public function destroy(Item $item)
 
 ## Flash Messages with Streams
 
-Uses the package's `<hw:flash-message>` component.
+Uses the package's `<hw:toast>` component.
 
 ```php
 // Controller: redirect with session flash (Turbo Drive)
@@ -261,7 +261,7 @@ return redirect()->route('items.index')->with('success', 'Item saved!');
 
 // Or via stream for frame/stream responses
 return turbo_stream()
-    ->append('flash-container', view('components.flash', ['message' => 'Saved!', 'type' => 'success']));
+    ->append('toaster', view('components.flash', ['message' => 'Saved!', 'type' => 'success']));
 ```
 
 ---

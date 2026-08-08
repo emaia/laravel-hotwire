@@ -97,8 +97,8 @@ in the closed-state rule; Presence owns `hidden`. Rapid re-entry cancels stale t
 ## Top Layer And Placement
 
 The generated tooltip is appended to `document.body` and promoted to the browser's native top layer when supported. It
-can therefore appear correctly above an open Modal or Drawer. The Toaster remains a separate Sonner surface and does not
-participate in this floating Presence/top-layer lifecycle.
+can therefore appear correctly above an open Modal or Drawer. The Toaster manages its own top-layer viewport and does
+not participate in this floating Presence lifecycle.
 
 While native top layer is active, the default `fixed` strategy uses viewport-relative coordinates and `absolute` uses
 page/document coordinates. Without native Popover support, `absolute` falls back to normal offset-parent behavior.

@@ -189,8 +189,8 @@ public function store(Request $request, Post $post)
     } catch (\Throwable $e) {
         return turbo_stream()
             ->refresh(method: 'morph')
-            ->append('flash-container', Blade::render(
-                '<hw:flash-message :message="$message" type="error" />',
+            ->append('toaster', Blade::render(
+                '<hw:toast :message="$message" type="error" />',
                 ['message' => 'Could not favorite this post.'],
             ))
             ->withResponse(403);

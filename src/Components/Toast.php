@@ -6,7 +6,7 @@ use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Facades\Session;
 use Illuminate\View\Component;
 
-class FlashMessage extends Component
+class Toast extends Component
 {
     public string $finalType;
 
@@ -48,6 +48,6 @@ class FlashMessage extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.flash-message');
+        return view('hotwire::component-views.toast');
     }
 }
