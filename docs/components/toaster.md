@@ -156,7 +156,7 @@ Slots: `toaster`, `toast`, `toast-icon`, `toast-content`, `toast-body`, `toast-t
 - The viewport uses `data-turbo-permanent` by default, so the stack stays alive across Turbo Drive navigations and
   a toast fired before a visit keeps counting down after it.
 - Turbo Streams can append rendered `<hw:toast />` markup to the viewport — see the `Blade::render()` example in
-  [Setup](#setup), and the macro in [`<hw:toast />`](./toast.md#convenience-macro).
+  [Setup](#setup), and the [`toast()` macro](./toast.md#the-toast-stream-macro).
 
 ## See also
 

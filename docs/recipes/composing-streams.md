@@ -1,25 +1,14 @@
 # Composing streams
 
 Describe a complete UI transition in a single response by chaining Turbo Stream operations.
-Combined with the [`flash`](../components/toast.md#convenience-macro) macro, controller
+Combined with the [`toast()`](../components/toast.md#the-toast-stream-macro) macro, controller
 actions stay small and declarative.
 
-## The macros
+## The macro
 
-Register them once in `AppServiceProvider::boot()`:
-
-```php
-use Emaia\LaravelHotwireTurbo\TurboStreamBuilder;
-use Illuminate\Support\Facades\Blade;
-
-TurboStreamBuilder::macro('flash', function (string $type, string $message, ?string $description = null) {
-    return $this->append('toaster', Blade::render(
-        '<hw:toast :type="$type" :message="$message" :description="$description" />',
-        compact('type', 'message', 'description'),
-    ));
-});
-
-```
+`toast()` ships with the package — nothing to register. See
+[its parameters](../components/toast.md#the-toast-stream-macro), including `target` for a viewport with a
+custom id.
 
 ## Common compositions
 
@@ -36,7 +25,7 @@ public function update(Request $request, Post $post)
     return turbo_stream()
         ->refresh(method: 'morph')
         ->update('modal')
-        ->flash('success', 'Post updated');
+        ->toast('success', 'Post updated');
 }
 ```
 
@@ -55,7 +44,7 @@ public function favorite(Request $request, Post $post)
     } catch (\Throwable $e) {
         return turbo_stream()
             ->refresh(method: 'morph')
-            ->flash('error', 'Could not favorite this post.')
+            ->toast('error', 'Could not favorite this post.')
             ->withResponse(403);
     }
 
@@ -83,7 +72,7 @@ public function store(Request $request)
     return turbo_stream()
         ->append('comments', view('comments.row', compact('comment')))
         ->replace('comment-form', view('comments.form'))
-        ->flash('success', 'Comment posted');
+        ->toast('success', 'Comment posted');
 }
 ```
 
@@ -99,6 +88,6 @@ public function store(Request $request)
 
 ## See also
 
-- [`flash` macro](../components/toast.md#convenience-macro)
+- [`toast()` stream macro](../components/toast.md#the-toast-stream-macro)
 - [Server-driven modals](./server-driven-modals.md)
 - [Frame-or-page views](./frame-or-page.md)

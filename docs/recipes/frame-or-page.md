@@ -138,8 +138,8 @@ public function update(Request $request, User $user)
 }
 ```
 
-Requires the [`flash` macro](../components/toast.md#convenience-macro) registered in your
-service provider.
+Uses the [`toast()` stream macro](../components/toast.md#the-toast-stream-macro), which the package
+registers for you.
 
 ## Why this works well
 

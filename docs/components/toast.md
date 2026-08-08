@@ -123,30 +123,9 @@ return turbo_stream()->append('toaster', Blade::render(
 ));
 ```
 
-### Convenience macro
+### The `toast()` stream macro
 
-`TurboStreamBuilder` is `Macroable` — register a `toast()` shortcut once in a service provider and reuse
-it everywhere:
-
-```php
-// app/Providers/AppServiceProvider.php
-use Emaia\LaravelHotwireTurbo\TurboStreamBuilder;
-use Illuminate\Support\Facades\Blade;
-
-public function boot(): void
-{
-    TurboStreamBuilder::macro('toast', function (string $type, string $message, ?string $description = null, ?string $position = null) {
-        return $this->append('toaster', Blade::render(
-            '<hw:toast :type="$type" :message="$message" :description="$description" :position="$position" />',
-            compact('type', 'message', 'description', 'position'),
-        ));
-    });
-}
-```
-
-Then any controller or stream chain becomes a one-liner. Note the empty-string defaults below: request input
-forwarded straight into the macro often arrives empty, and the manager omits a title or description it was handed
-as an empty string rather than rendering a blank row.
+The package registers a `toast()` macro on `TurboStreamBuilder`, so no setup is required:
 
 ```php
 return turbo_stream()->toast('success', 'Saved!');
@@ -157,12 +136,36 @@ return turbo_stream()->toast('error', 'Failed to save', 'Check the required fiel
 // override the position for this toast only
 return turbo_stream()->toast('warning', 'Session expires in 5 min', position: 'top-center');
 
+// append into a viewport with a custom id
+return turbo_stream()->toast('success', 'Saved!', target: 'my-toaster');
+
 // or chained with other streams
 return turbo_stream()
     ->refresh(method: 'morph')
     ->toast('error', 'Could not favorite this post.')
     ->withResponse(403);
 ```
+
+| Parameter     | Default   | Description                                                     |
+|---------------|-----------|-----------------------------------------------------------------|
+| `$type`       | —         | `success`, `error`, `warning`, `info` or `default`              |
+| `$message`    | —         | Toast message                                                   |
+| `$description`| `null`    | Secondary text                                                  |
+| `$position`   | `null`    | Overrides the viewport position for this toast                  |
+| `$target`     | `toaster` | Id of the viewport to append into — match your `<hw:toaster id>` |
+
+Empty strings are treated as absent, which matters when the values come straight from request input:
+
+```php
+return turbo_stream()->toast(
+    $request->input('type', 'success'),
+    $request->input('message', ''),
+    description: $request->input('description', ''),
+);
+```
+
+If your application already defines a `toast` macro, yours wins — the package only registers its own when the name
+is free.
 
 ## See also
 

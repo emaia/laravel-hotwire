@@ -13,6 +13,7 @@ use Emaia\LaravelHotwire\Commands\PublishControllersCommand;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
 use Emaia\LaravelHotwire\Support\HotwireTagCompiler;
+use Emaia\LaravelHotwireTurbo\TurboStreamBuilder;
 use Illuminate\Support\Facades\Blade;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -53,6 +54,28 @@ class LaravelHotwireServiceProvider extends PackageServiceProvider
         }
 
         $this->registerTagCompiler($prefix);
+        $this->registerToastMacro();
+    }
+
+    private function registerToastMacro(): void
+    {
+        if (TurboStreamBuilder::hasMacro('toast')) {
+            return;
+        }
+
+        TurboStreamBuilder::macro('toast', function (
+            string $type,
+            string $message,
+            ?string $description = null,
+            ?string $position = null,
+            string $target = 'toaster',
+        ) {
+            /** @var TurboStreamBuilder $this */
+            return $this->append($target, Blade::render(
+                '<x-hw::toast :type="$type" :message="$message" :description="$description" :position="$position" />',
+                compact('type', 'message', 'description', 'position'),
+            ));
+        });
     }
 
     /** @return string[] */
