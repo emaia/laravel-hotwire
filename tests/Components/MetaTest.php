@@ -88,6 +88,15 @@ it('states both refresh metas from either half', function () {
         ->toContain('turbo-refresh-scroll" content="reset"');
 });
 
+it('ignores the false half when the other refresh meta prop asks for the pair', function () {
+    expect((string) $this->blade('<x-hw::meta refresh="replace" scroll="false" />'))
+        ->toContain('turbo-refresh-method" content="replace"')
+        ->toContain('turbo-refresh-scroll" content="preserve"')
+        ->and((string) $this->blade('<x-hw::meta refresh="false" scroll="reset" />'))
+        ->toContain('turbo-refresh-method" content="morph"')
+        ->toContain('turbo-refresh-scroll" content="reset"');
+});
+
 it('leaves an enum meta out when its prop is false', function () {
     expect((string) $this->blade('<x-hw::meta :cache="false" csrf />'))
         ->not->toContain('turbo-cache-control')
@@ -109,5 +118,13 @@ it('resolves a typical head in one tag', function () {
         ->toContain('turbo-refresh-method')
         ->toContain('turbo-refresh-scroll')
         ->toContain('csrf-token')
-        ->toContain('color-scheme');
+        ->toContain('<meta name="color-scheme" content="light dark">')
+        ->toContain('const storageKey = "hotwire.colorScheme"')
+        ->toContain('document.documentElement.setAttribute(attribute, scheme)');
+});
+
+it('leaves the color scheme script out when the color-scheme prop is absent', function () {
+    expect((string) $this->blade('<x-hw::meta csrf />'))
+        ->not->toContain('hotwire.colorScheme')
+        ->not->toContain('document.documentElement.setAttribute(attribute, scheme)');
 });
