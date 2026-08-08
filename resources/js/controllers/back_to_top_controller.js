@@ -39,5 +39,6 @@ export default class extends Controller {
     update() {
         const visible = window.scrollY > this.thresholdValue;
         this.element.setAttribute("data-visible", visible ? "true" : "false");
+        this.element.toggleAttribute("inert", !visible);
     }
 }

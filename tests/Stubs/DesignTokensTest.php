@@ -3,6 +3,7 @@
 $stubPath = realpath(__DIR__.'/../../stubs/resources/css/app.css');
 $tokensPath = realpath(__DIR__.'/../../resources/css/tokens.css');
 $variantsPath = realpath(__DIR__.'/../../resources/css/custom-variants.css');
+$novaPresetPath = realpath(__DIR__.'/../../resources/css/presets/nova.css');
 
 dataset('design presets', fn () => collect(glob(__DIR__.'/../../resources/css/presets/*.css') ?: [])
     ->mapWithKeys(fn (string $path): array => [pathinfo($path, PATHINFO_FILENAME) => [$path]])
@@ -88,7 +89,83 @@ it('contains the base layer border and outline contract', function () use ($toke
         ->toContain('@apply border-border outline-ring/50');
 });
 
-it('preserves all package custom variants', function () use ($variantsPath) {
+it('scans package CSS instead of Blade or PHP sources', function () use ($stubPath) {
+    $css = file_get_contents($stubPath);
+
+    expect($css)
+        ->toContain("@source '../../vendor/emaia/laravel-hotwire/resources/css/**/*.css'")
+        ->not->toContain('resources/views/**/*.blade.php')
+        ->not->toContain('src/Components/**/*.php');
+});
+
+it('safelists runtime classes applied by Stimulus controllers', function () {
+    $css = file_get_contents(dirname(__DIR__, 2).'/resources/css/structural.css');
+
+    expect($css)
+        ->toContain('@source inline(')
+        ->toContain('hidden')
+        ->toContain('overflow-hidden');
+});
+
+it('applies shared button styles to attachment actions', function () use ($novaPresetPath) {
+    $lines = collect(explode("\n", file_get_contents($novaPresetPath)));
+    $base = $lines->first(fn (string $line): bool => str_contains($line, ':is([data-slot="button"]'));
+    $ghost = $lines->first(fn (string $line): bool => str_contains($line, ':is([data-slot="button"]') && str_contains($line, '[data-variant="ghost"]'));
+    $iconXs = $lines->first(fn (string $line): bool => str_contains($line, ':is([data-slot="button"]') && str_contains($line, '[data-size="icon-xs"]'));
+
+    expect($base)->toContain('[data-slot="attachment-action"]')
+        ->and($ghost)->toContain('[data-slot="attachment-action"]')
+        ->and($iconXs)->toContain('[data-slot="attachment-action"]');
+});
+
+it('applies shared button styles and visibility states to back to top', function () use ($novaPresetPath) {
+    $lines = collect(explode("\n", file_get_contents($novaPresetPath)));
+    $buttonRules = $lines->filter(fn (string $line): bool => str_contains($line, ':is([data-slot="button"]'));
+    $css = $lines->implode("\n");
+
+    expect($buttonRules)->toHaveCount(15);
+
+    $buttonRules->each(fn (string $line) => expect($line)->toContain('[data-slot="back-to-top"]'));
+
+    expect($css)
+        ->toContain('[data-slot="back-to-top"][data-visible] { @apply fixed end-4 bottom-4 z-40 rounded-full shadow-lg transition-opacity sm:end-6 sm:bottom-6; }')
+        ->toContain('@media (prefers-reduced-motion: reduce) {')
+        ->toContain('[data-slot="back-to-top"][data-visible] { transition: none; }')
+        ->toContain('[data-slot="back-to-top"][data-visible="false"] { @apply pointer-events-none opacity-0; }')
+        ->toContain('[data-slot="back-to-top"][data-visible="true"] { @apply pointer-events-auto opacity-100; }')
+        ->not->toContain('[data-slot="back-to-top"] { @apply transition-none; }')
+        ->not->toContain('motion-reduce:transition-none');
+});
+
+it('keeps closed floating surfaces visible until Presence applies hidden', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain('[data-slot="multi-select-content"])[data-state="closed"] { @apply pointer-events-none scale-95 opacity-0; }')
+        ->not->toContain('[data-state="closed"] { @apply hidden');
+});
+
+it('uses the pre-connect color scheme mode to avoid toggle icon flicker', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain('html[data-color-scheme-mode="system"] [data-slot="color-scheme-toggle"][data-color-scheme-modes-value~="system"] [data-mode-icon="system"]')
+        ->toContain('html[data-color-scheme-mode="light"] [data-slot="color-scheme-toggle"] [data-scheme-icon="light"]')
+        ->toContain('html[data-color-scheme-mode="dark"] [data-slot="color-scheme-toggle"] [data-scheme-icon="dark"]')
+        ->toContain('html:not([data-color-scheme-mode]) [data-slot="color-scheme-toggle"][data-mode="system"][data-color-scheme-modes-value~="system"] [data-mode-icon="system"]');
+});
+
+it('uses resolved icons when system is outside a color scheme toggle cycle', function () use ($novaPresetPath) {
+    $css = file_get_contents($novaPresetPath);
+
+    expect($css)
+        ->toContain('html[data-color-scheme-mode="system"] [data-slot="color-scheme-toggle"][data-color-scheme-modes-value~="system"] [data-mode-icon="system"]')
+        ->toContain('html[data-color-scheme-mode="system"][data-theme="light"] [data-slot="color-scheme-toggle"]:not([data-color-scheme-modes-value~="system"]) [data-scheme-icon="light"]')
+        ->toContain('html[data-color-scheme-mode="system"][data-theme="dark"] [data-slot="color-scheme-toggle"]:not([data-color-scheme-modes-value~="system"]) [data-scheme-icon="dark"]')
+        ->toContain('html:not([data-color-scheme-mode]) [data-slot="color-scheme-toggle"][data-mode="system"]:not([data-color-scheme-modes-value~="system"])[data-scheme="light"] [data-scheme-icon="light"]');
+});
+
+it('preserves existing @custom-variant rules', function () use ($variantsPath) {
     $css = file_get_contents($variantsPath);
 
     foreach (['turbo-preview', 'turbo-visit', 'form-busy', 'frame-busy', 'in-turbo-frame', 'in-remote-turbo-frame', 'modal', 'drawer', 'sheet', 'dark'] as $variant) {

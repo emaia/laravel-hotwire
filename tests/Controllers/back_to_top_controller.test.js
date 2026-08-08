@@ -36,6 +36,7 @@ test.serial("data-visible is false on connect at the top of the page", async () 
     await mount(`<button data-controller="back-to-top"></button>`);
 
     expect(mounted.root.getAttribute("data-visible")).toBe("false");
+    expect(mounted.root.hasAttribute("inert")).toBe(true);
 });
 
 test.serial("data-visible flips to true after scrolling past threshold", async () => {
@@ -46,6 +47,7 @@ test.serial("data-visible flips to true after scrolling past threshold", async (
     await waitFrame();
 
     expect(mounted.root.getAttribute("data-visible")).toBe("true");
+    expect(mounted.root.hasAttribute("inert")).toBe(false);
 });
 
 test.serial("data-visible flips back to false after scrolling below threshold", async () => {
@@ -61,6 +63,7 @@ test.serial("data-visible flips back to false after scrolling below threshold", 
     await waitFrame();
 
     expect(mounted.root.getAttribute("data-visible")).toBe("false");
+    expect(mounted.root.hasAttribute("inert")).toBe(true);
 });
 
 test.serial("threshold value overrides the 400px default", async () => {
