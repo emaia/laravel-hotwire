@@ -38,6 +38,7 @@ A server-driven UI toolkit for modern web applications.
 ## Requirements
 
 - PHP 8.3+
+- PHP extensions: DOM, libxml, and mbstring
 - Laravel 12+
 - [Stimulus](https://stimulus.hotwired.dev/) with a loader compatible with `import.meta.glob`
   (e.g. [@emaia/stimulus-lazy-loader](https://www.npmjs.com/package/@emaia/stimulus-lazy-loader))
@@ -55,6 +56,14 @@ Publish the configuration file (optional):
 ```bash
 php artisan vendor:publish --tag=hotwire-config
 ```
+
+Package translations load automatically. Publish them when you need to customize a message or add another locale:
+
+```bash
+php artisan vendor:publish --tag=hotwire-translations
+```
+
+Published translations live in `lang/vendor/hotwire/`.
 
 ### Quick Start
 

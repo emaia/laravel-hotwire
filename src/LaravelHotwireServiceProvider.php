@@ -25,6 +25,7 @@ class LaravelHotwireServiceProvider extends PackageServiceProvider
         $package
             ->name('hotwire')
             ->hasConfigFile()
+            ->hasTranslations()
             ->hasViews()
             ->hasCommands([
                 InstallCommand::class,
