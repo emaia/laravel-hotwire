@@ -118,6 +118,215 @@ it('adds turbo stream to generated paginator links', function () {
     expect($currentPage[0] ?? '')->not->toContain('data-turbo-stream');
 });
 
+it('wires generated pagination for incremental loading', function () {
+    $paginator = new LengthAwarePaginator(range(1, 10), 200, 10, 10, ['path' => '/users']);
+
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::pagination
+            :paginator="$paginator"
+            incremental
+            load-more-label="Load more users"
+            loading-label="Loading users"
+            loaded-label="Users loaded"
+            error-label="Users failed to load"
+            append-to="#users-list"
+            scroll-to="#users"
+        />
+    BLADE, ['paginator' => $paginator]);
+
+    $html = (string) $view;
+
+    expect($html)
+        ->toContain('data-controller="pagination"')
+        ->toContain('data-pagination-loading-label-value="Loading users"')
+        ->toContain('data-pagination-loaded-label-value="Users loaded"')
+        ->toContain('data-pagination-error-label-value="Users failed to load"')
+        ->toContain('data-pagination-append-to-value="#users-list"')
+        ->toContain('data-pagination-scroll-to-value="#users"')
+        ->toContain('data-slot="pagination-status"')
+        ->toContain('data-pagination-target="status"')
+        ->toContain('role="status"')
+        ->toContain('aria-live="polite"')
+        ->toContain('data-pagination-target="next"')
+        ->toContain('data-action="click-&gt;pagination#load"')
+        ->toContain('aria-label="Load more users"')
+        ->toContain('Load more users')
+        ->toContain('data-slot="pagination-next-content"')
+        ->toContain('data-slot="pagination-next-loading-content"')
+        ->toContain('data-slot="pagination-next-loading-label"')
+        ->toContain('Loading users')
+        ->toContain('data-slot="pagination-next-spinner"')
+        ->toContain('aria-hidden="true"')
+        ->toContain('data-slot="pagination-next-icon"')
+        ->toContain('d="m6 9 6 6 6-6"')
+        ->not->toContain('d="m9 18 6-6-6-6"')
+        ->not->toContain('data-pagination-infinite-value="true"')
+        ->not->toContain('<nav aria-live')
+        ->not->toContain('Previous');
+});
+
+it('allows incremental pagination to customize the load more icon slot', function () {
+    $paginator = new LengthAwarePaginator(range(1, 10), 200, 10, 10, ['path' => '/users']);
+
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::pagination :paginator="$paginator" incremental append-to="#users-list">
+            <x-slot:loadMoreIcon>
+                <span data-testid="load-more-icon">v</span>
+            </x-slot:loadMoreIcon>
+        </x-hw::pagination>
+    BLADE, ['paginator' => $paginator]);
+
+    expect((string) $view)
+        ->toContain('data-testid="load-more-icon"')
+        ->not->toContain('data-slot="pagination-next-icon"')
+        ->not->toContain('d="m6 9 6 6 6-6"');
+});
+
+it('emits controller defaults for incremental pagination', function () {
+    $paginator = new LengthAwarePaginator(range(1, 10), 200, 10, 10, ['path' => '/users']);
+
+    $view = $this->blade('<x-hw::pagination :paginator="$paginator" incremental append-to="#users-list" />', [
+        'paginator' => $paginator,
+    ]);
+
+    expect((string) $view)
+        ->toContain('data-pagination-loading-label-value="Loading more"')
+        ->toContain('data-pagination-loaded-label-value="More results loaded"')
+        ->toContain('data-pagination-error-label-value="Loading failed"')
+        ->toContain('data-pagination-root-margin-value="300px"')
+        ->toContain('data-pagination-threshold-value="1"');
+});
+
+it('renders only the spinner when incremental loading label is disabled', function () {
+    $paginator = new LengthAwarePaginator(range(1, 10), 200, 10, 10, ['path' => '/users']);
+
+    $view = $this->blade('<x-hw::pagination :paginator="$paginator" incremental append-to="#users-list" loading-label="" />', [
+        'paginator' => $paginator,
+    ]);
+
+    expect((string) $view)
+        ->toContain('data-pagination-loading-label-value=""')
+        ->toContain('data-slot="pagination-next-loading-content"')
+        ->toContain('data-slot="pagination-next-spinner"')
+        ->not->toContain('data-slot="pagination-next-loading-label"');
+});
+
+it('renders only the spinner when incremental loading label is false', function () {
+    $paginator = new LengthAwarePaginator(range(1, 10), 200, 10, 10, ['path' => '/users']);
+
+    $view = $this->blade('<x-hw::pagination :paginator="$paginator" incremental append-to="#users-list" :loading-label="false" />', [
+        'paginator' => $paginator,
+    ]);
+
+    expect((string) $view)
+        ->toContain('data-pagination-loading-label-value=""')
+        ->toContain('data-slot="pagination-next-loading-content"')
+        ->toContain('data-slot="pagination-next-spinner"')
+        ->not->toContain('data-slot="pagination-next-loading-label"');
+});
+
+it('uses the default loading label when the loading label attribute is boolean true', function () {
+    $paginator = new LengthAwarePaginator(range(1, 10), 200, 10, 10, ['path' => '/users']);
+
+    $view = $this->blade('<x-hw::pagination :paginator="$paginator" incremental append-to="#users-list" loading-label />', [
+        'paginator' => $paginator,
+    ]);
+
+    expect((string) $view)
+        ->toContain('data-slot="pagination-next-loading-label"')
+        ->toContain('Loading more')
+        ->toContain('data-pagination-loading-label-value="Loading more"')
+        ->not->toContain('data-pagination-loading-label-value="1"')
+        ->not->toContain('>1<');
+});
+
+it('keeps icon incremental pagination icon sized while loading', function () {
+    $paginator = new LengthAwarePaginator(range(1, 10), 200, 10, 10, ['path' => '/users']);
+
+    $view = $this->blade('<x-hw::pagination :paginator="$paginator" incremental append-to="#users-list" display="icons" />', [
+        'paginator' => $paginator,
+    ]);
+
+    expect((string) $view)
+        ->toContain('data-size="icon"')
+        ->toContain('data-slot="pagination-next-loading-content"')
+        ->toContain('data-slot="pagination-next-spinner"')
+        ->not->toContain('data-slot="pagination-next-label"')
+        ->not->toContain('data-slot="pagination-next-loading-label"');
+});
+
+it('falls back to the next aria label when the incremental load more label is empty', function () {
+    $paginator = new LengthAwarePaginator(range(1, 10), 200, 10, 10, ['path' => '/users']);
+
+    $view = $this->blade('<x-hw::pagination :paginator="$paginator" incremental append-to="#users-list" load-more-label="" next-aria-label="Load next users page" />', [
+        'paginator' => $paginator,
+    ]);
+
+    $html = (string) $view;
+
+    preg_match('/<a[^>]*data-slot="pagination-next"[^>]*>/', $html, $nextControl);
+
+    expect($html)
+        ->toContain('aria-label="Load next users page"')
+        ->and($nextControl[0] ?? '')->not->toContain('aria-label=""');
+});
+
+it('wires generated pagination for infinite incremental loading', function () {
+    $paginator = new CursorPaginator([
+        ['id' => 1],
+        ['id' => 2],
+        ['id' => 3],
+    ], 2, null, ['path' => '/users', 'parameters' => ['id']]);
+
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::pagination
+            :paginator="$paginator"
+            infinite
+            root-margin="200px"
+            :threshold="0.5"
+        />
+    BLADE, ['paginator' => $paginator]);
+
+    $html = (string) $view;
+
+    expect($html)
+        ->toContain('data-controller="pagination"')
+        ->toContain('data-pagination-infinite-value="true"')
+        ->toContain('data-pagination-root-margin-value="200px"')
+        ->toContain('data-pagination-threshold-value="0.5"')
+        ->toContain('data-slot="pagination-next-content"')
+        ->toContain('data-slot="pagination-next-loading-content"')
+        ->toContain('data-slot="pagination-next-loading-label"')
+        ->toContain('data-slot="pagination-next-spinner"')
+        ->toContain('data-pagination-target="next"')
+        ->toContain('data-action="click-&gt;pagination#load"')
+        ->not->toContain('data-slot="pagination-previous"');
+});
+
+it('merges stimulus attributes when incremental loading is enabled', function () {
+    $paginator = new LengthAwarePaginator(range(1, 10), 200, 10, 10, ['path' => '/users']);
+
+    $view = $this->blade('<x-hw::pagination :paginator="$paginator" incremental append-to="#users-list" :stimulus="stimulus()->controller(\'analytics\')->action(\'analytics\', \'track\', \'pagination:error\')" />', [
+        'paginator' => $paginator,
+    ]);
+
+    expect((string) $view)
+        ->toContain('data-controller="pagination analytics"')
+        ->toContain('data-action="pagination:error->analytics#track"')
+        ->toContain('data-pagination-append-to-value="#users-list"');
+});
+
+it('does not render incremental pagination when there is no next page', function () {
+    $paginator = new LengthAwarePaginator(range(1, 10), 20, 10, 2, ['path' => '/users']);
+
+    $view = $this->blade('<x-hw::pagination :paginator="$paginator" incremental />', [
+        'paginator' => $paginator,
+    ]);
+
+    $view->assertDontSee('<nav', false)
+        ->assertDontSee('data-controller="pagination"', false);
+});
+
 it('adds turbo stream to manual pagination links and controls', function () {
     $view = $this->blade(<<<'BLADE'
         <x-hw::pagination>
@@ -312,7 +521,7 @@ it('registers pagination in the component catalog and subcomponent aliases', fun
     $pagination = HotwireRegistry::make()->component('pagination');
 
     expect($pagination->key)->toBe('pagination')
-        ->and($pagination->controllers)->toBe([])
+        ->and($pagination->controllers)->toBe(['pagination'])
         ->and($pagination->docs)->toBe('docs/components/pagination.md');
 
     expect(ComponentAliases::subComponents())

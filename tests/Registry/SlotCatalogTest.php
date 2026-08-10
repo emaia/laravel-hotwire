@@ -55,6 +55,7 @@ it('classifies presentation-free and controller-owned slots as structural', func
         'map',
         'modal',
         'optimistic',
+        'pagination-status',
         'rich-text-input',
         'sheet',
         'toast-trigger',

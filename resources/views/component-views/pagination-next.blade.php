@@ -19,8 +19,24 @@
         'data-disabled' => $isDisabled ? 'true' : null,
     ]) }}
 >
-    @if ($hasLabel)
-        <span data-slot="pagination-next-label">{{ $label }}</span>
+    @if ($hasLabel || $icon !== null || $iconName !== '')
+        <span data-slot="pagination-next-content">
+            @if ($hasLabel)
+                <span data-slot="pagination-next-label">{{ $label }}</span>
+            @endif
+            @if ($icon !== null)
+                {{ $icon }}
+            @else
+                <x-hw::icon :name="$iconName" data-slot="pagination-next-icon" data-icon="inline-end" aria-hidden="true" />
+            @endif
+        </span>
     @endif
-    <x-hw::icon name="chevron-right" data-icon="inline-end" aria-hidden="true" />
+    @if ($loadingLabel !== null)
+        <span data-slot="pagination-next-loading-content">
+            @if ($hasLabel && $loadingLabel !== '')
+                <span data-slot="pagination-next-loading-label">{{ $loadingLabel }}</span>
+            @endif
+            <x-hw::spinner data-slot="pagination-next-spinner" role="presentation" aria-label="" aria-hidden="true" />
+        </span>
+    @endif
 </{{ $tag }}>
