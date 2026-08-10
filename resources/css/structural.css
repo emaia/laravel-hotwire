@@ -18,6 +18,26 @@
    restating it. */
 @source inline("hidden overflow-hidden");
 
+[data-slot="pagination-status"] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+[data-slot="pagination"]:not([data-state="loading"]) [data-slot="pagination-next-loading-content"] {
+    display: none;
+}
+
+[data-slot="pagination"][data-state="loading"] [data-slot="pagination-next-content"] {
+    display: none;
+}
+
 /* The UA stylesheet centres a `[popover]` with `margin: auto`, offsetting every overlay that opts
    into the top layer. */
 :where([data-hotwire-top-layer][popover]) {

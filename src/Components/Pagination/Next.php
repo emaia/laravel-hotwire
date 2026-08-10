@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Components\Pagination;
 
 use Emaia\LaravelHotwire\Support\FrameTarget;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\Component;
 
 class Next extends Component
@@ -15,6 +16,9 @@ class Next extends Component
         public string $size = 'default',
         public bool $turboStream = false,
         public string $ariaLabel = 'Go to next page',
+        public ?string $loadingLabel = null,
+        public string $iconName = 'chevron-right',
+        public ?Htmlable $icon = null,
     ) {
         $this->frame = FrameTarget::normalize($this->frame);
     }

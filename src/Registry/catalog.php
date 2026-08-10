@@ -734,9 +734,9 @@ return [
             'docs' => 'docs/components/pagination.md',
             'category' => 'display',
             'description' => 'Pagination navigation primitives with Laravel paginator display modes and Turbo Frame support',
-            'controllers' => [],
+            'controllers' => ['pagination'],
             'styling' => [
-                'slots' => $slots(['pagination', 'pagination-content', 'pagination-item', 'pagination-link', 'pagination-previous', 'pagination-previous-label', 'pagination-next', 'pagination-next-label', 'pagination-ellipsis']),
+                'slots' => $slots(['pagination', 'pagination-content', 'pagination-item', 'pagination-link', 'pagination-previous', 'pagination-previous-label', 'pagination-next', 'pagination-next-content', 'pagination-next-label', 'pagination-next-loading-content', 'pagination-next-loading-label', 'pagination-next-spinner', 'pagination-next-icon', 'pagination-ellipsis'], structural: ['pagination-status']),
             ],
         ],
         'popover' => [
@@ -1262,6 +1262,12 @@ return [
             'docs' => 'docs/controllers/optimistic/link.md',
             'category' => 'turbo',
             'description' => 'Dispatches optimistic UI updates immediately when a Turbo-driven link is clicked',
+        ],
+        'pagination' => [
+            'source' => 'resources/js/controllers/pagination_controller.js',
+            'docs' => 'docs/controllers/pagination.md',
+            'category' => 'utility',
+            'description' => 'Loads additional paginator pages from server-rendered HTML, with manual and IntersectionObserver activation',
         ],
         'password-visibility' => [
             'source' => 'resources/js/controllers/password_visibility_controller.js',
