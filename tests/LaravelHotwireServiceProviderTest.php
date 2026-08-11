@@ -3,10 +3,14 @@
 use Emaia\LaravelHotwire\LaravelHotwireServiceProvider;
 use Illuminate\Support\ServiceProvider;
 
-it('loads the default rich text validation translation', function () {
-    expect(trans('hotwire::validation.invalid_rich_text', ['attribute' => 'content']))
-        ->toBe('The content field must contain valid rich text.');
-});
+it('loads default rich text validation translations without publishing', function (string $key, array $replace, string $expected) {
+    expect(trans("hotwire::validation.rich_text.{$key}", $replace))->toBe($expected);
+})->with([
+    'required' => ['required', ['attribute' => 'content'], 'The content field is required.'],
+    'minimum' => ['min', ['attribute' => 'content', 'min' => 3], 'The content field must be at least 3 characters.'],
+    'maximum' => ['max', ['attribute' => 'content', 'max' => 10], 'The content field must not be greater than 10 characters.'],
+    'invalid' => ['invalid', ['attribute' => 'content'], 'The content field must contain valid rich text.'],
+]);
 
 it('publishes package translations under the documented tag', function () {
     $paths = ServiceProvider::pathsToPublish(

@@ -57,7 +57,8 @@ Publish the configuration file (optional):
 php artisan vendor:publish --tag=hotwire-config
 ```
 
-Package translations load automatically. Publish them when you need to customize a message or add another locale:
+The built-in English package translations load automatically. Publish them only when you need to customize a message or
+add another locale:
 
 ```bash
 php artisan vendor:publish --tag=hotwire-translations

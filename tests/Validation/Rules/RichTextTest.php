@@ -283,6 +283,34 @@ it('turns invalid utf-8 into a validation failure', function () {
         ->toBe('The content field must contain valid rich text.');
 });
 
+it('uses locale-specific package messages for every rich text constraint', function () {
+    $translator = app('translator');
+    $previousLocale = app()->getLocale();
+
+    $translator->addLines([
+        'validation.rich_text.required' => 'O campo :attribute deve conter conteúdo.',
+        'validation.rich_text.min' => 'O campo :attribute deve conter no mínimo :min caracteres.',
+        'validation.rich_text.max' => 'O campo :attribute não pode conter mais de :max caracteres.',
+        'validation.rich_text.invalid' => 'O campo :attribute deve conter rich text válido.',
+    ], 'pt_BR', 'hotwire');
+
+    app()->setLocale('pt_BR');
+
+    try {
+        $required = Validator::make([], ['content' => [RichText::required()]]);
+        $minimum = Validator::make(['content' => '<p>Oi</p>'], ['content' => [RichText::min(3)]]);
+        $maximum = Validator::make(['content' => '<p>Longo</p>'], ['content' => [RichText::max(3)]]);
+        $invalid = Validator::make(['content' => "invalid\xFF"], ['content' => [RichText::min(3)]]);
+
+        expect($required->errors()->first('content'))->toBe('O campo content deve conter conteúdo.')
+            ->and($minimum->errors()->first('content'))->toBe('O campo content deve conter no mínimo 3 caracteres.')
+            ->and($maximum->errors()->first('content'))->toBe('O campo content não pode conter mais de 3 caracteres.')
+            ->and($invalid->errors()->first('content'))->toBe('O campo content deve conter rich text válido.');
+    } finally {
+        app()->setLocale($previousLocale);
+    }
+});
+
 it('works through form request validation', function () {
     $request = RichTextValidationRequest::create('/', 'POST', [
         'content' => '<p>Valid content</p>',

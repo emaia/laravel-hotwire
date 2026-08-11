@@ -229,11 +229,34 @@ structural markup. The HTML policy recognizes `audio`, `canvas`, `embed`, `hr`, 
 
 `RichText::min()` and `RichText::max()` skip absent or truly blank optional values; they do not make a field required.
 Use `required()` plus `min(1)` when a field must contain actual text instead of media alone. Compose the rules with
-Laravel's `nullable`, `sometimes`, `string`, and `bail` rules as needed. Default failures use Laravel's translated
-`required`, string `min`, string `max`, and invalid rich-text messages.
+Laravel's `nullable`, `sometimes`, `string`, and `bail` rules as needed. Default failures use the package's translated
+`hotwire::validation.rich_text.required|min|max|invalid` messages.
 
-Translations work without publishing. To customize `invalid_rich_text` or add another locale, run
-`php artisan vendor:publish --tag=hotwire-translations` and edit the files under `lang/vendor/hotwire/`.
+The built-in English messages work without publishing. To customize them or add another locale, run:
+
+```bash
+php artisan vendor:publish --tag=hotwire-translations
+```
+
+Publishing creates `lang/vendor/hotwire/en/validation.php`. For an application using `APP_LOCALE=pt_BR`, add
+`lang/vendor/hotwire/pt_BR/validation.php` with the same structure:
+
+```php
+<?php
+
+return [
+    'rich_text' => [
+        'required' => 'O campo :attribute deve conter conteúdo.',
+        'min' => 'O campo :attribute deve conter no mínimo :min caracteres.',
+        'max' => 'O campo :attribute não pode conter mais de :max caracteres.',
+        'invalid' => 'O campo :attribute deve conter conteúdo rich text válido.',
+    ],
+];
+```
+
+No call to `trans()` is needed in application code. `RichText::min(10)`, for example, resolves `rich_text.min` in the
+current locale and replaces both `:attribute` and `:min` automatically. When a locale file is absent, Laravel uses the
+application's fallback locale.
 
 The raw `max:200000` guard runs before HTML parsing because of `bail`. Choose a limit appropriate for your application;
 it protects memory independently from the visible-text limit enforced by `RichText::max(500)`.

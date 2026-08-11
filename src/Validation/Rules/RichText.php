@@ -70,7 +70,7 @@ final readonly class RichText implements ValidationRule
 
         if (! is_string($value)) {
             if ($this->constraint === self::REQUIRED && self::isEmptyRequiredValue($value)) {
-                $fail('validation.required')->translate();
+                $fail('hotwire::validation.rich_text.required')->translate();
             }
 
             return;
@@ -79,14 +79,14 @@ final readonly class RichText implements ValidationRule
         try {
             $content = RichTextContent::fromHtml($value);
         } catch (InvalidArgumentException) {
-            $fail('hotwire::validation.invalid_rich_text')->translate();
+            $fail('hotwire::validation.rich_text.invalid')->translate();
 
             return;
         }
 
         if ($this->constraint === self::REQUIRED) {
             if ($content->isBlank()) {
-                $fail('validation.required')->translate();
+                $fail('hotwire::validation.rich_text.required')->translate();
             }
 
             return;
@@ -99,11 +99,11 @@ final readonly class RichText implements ValidationRule
         $length = $content->plainTextLength();
 
         if ($this->constraint === self::MIN && $length < $this->limit) {
-            $fail('validation.min.string')->translate(['min' => $this->limit]);
+            $fail('hotwire::validation.rich_text.min')->translate(['min' => $this->limit]);
         }
 
         if ($this->constraint === self::MAX && $length > $this->limit) {
-            $fail('validation.max.string')->translate(['max' => $this->limit]);
+            $fail('hotwire::validation.rich_text.max')->translate(['max' => $this->limit]);
         }
     }
 
