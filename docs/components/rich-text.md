@@ -142,11 +142,15 @@ can't focus — submit gets silently blocked with the warning
 `An invalid form control with name='X' is not focusable` and **no visible tooltip**. Every established rich-text editor
 (TinyMCE, CKEditor, Quill) ran into the same wall and dropped the attribute for the same reason. Server-side `required`
 validation + the wrapper's
-`data-invalid` visual is the supported path:
+`data-invalid` visual is the supported path. Use the package's rich-text rule so placeholder markup cannot satisfy the
+requirement:
 
 ```php
-// Laravel controller
-$request->validate(['content' => 'required']);
+use Emaia\LaravelHotwire\Validation\Rules\RichText;
+
+$request->validate([
+    'content' => ['bail', RichText::required(), 'string'],
+]);
 ```
 
 ```css
@@ -185,6 +189,111 @@ export default class extends Controller {
 
 This keeps the package opinion-free: apps that prefer server-only validation pay zero JS; apps that want early stop opt
 in with a few lines.
+
+### Server-side content validation
+
+Laravel's built-in `required`, `min`, and `max` rules inspect the serialized HTML string. The rich-text rules inspect
+normalized text instead, so tags, semicolon-terminated named/numeric entities, empty paragraphs, and Tiptap placeholders
+do not inflate the length:
+
+```php
+use Emaia\LaravelHotwire\Validation\Rules\RichText;
+
+$validated = $request->validate([
+    'content' => [
+        'bail',
+        'nullable',
+        'string',
+        'max:200000',
+        RichText::requiredIf(fn (): bool => $request->boolean('published')),
+        RichText::min(3),
+        RichText::max(500),
+    ],
+]);
+```
+
+`RichText::required()` and a truthy `RichText::requiredIf()` reject missing, null, empty, whitespace-only, and empty
+structural markup. The HTML policy recognizes `audio`, `canvas`, `embed`, `hr`, `iframe`, `img`, `object`, `svg`, and
+`video` as meaningful non-text content. Their attributes, including image `alt`, do not contribute to text length.
+
+| Content                          | `required()` | `min(1)` | `max(0)` |
+|----------------------------------|--------------|----------|----------|
+| `<p><br></p>`                    | fails        | skipped  | skipped  |
+| `<img src="…">`                 | passes       | fails    | passes   |
+| `<div data-youtube-video>…`      | passes       | fails    | passes   |
+| `<video src="…"></video>`       | passes       | fails    | passes   |
+| `<video>fallback</video>`        | passes       | fails    | passes   |
+| empty table                      | fails        | skipped  | skipped  |
+| unknown empty custom atom        | fails        | skipped  | skipped  |
+| `<p>Text</p>`                    | passes       | passes   | fails    |
+
+`RichText::min()` and `RichText::max()` skip absent or truly blank optional values; they do not make a field required.
+Use `required()` plus `min(1)` when a field must contain actual text instead of media alone. Compose the rules with
+Laravel's `nullable`, `sometimes`, `string`, and `bail` rules as needed. Default failures use the package's translated
+`hotwire::validation.rich_text.required|min|max|invalid` messages.
+
+The built-in English messages work without publishing. To customize them or add another locale, run:
+
+```bash
+php artisan vendor:publish --tag=hotwire-translations
+```
+
+Publishing creates `lang/vendor/hotwire/en/validation.php`. For an application using `APP_LOCALE=pt_BR`, add
+`lang/vendor/hotwire/pt_BR/validation.php` with the same structure:
+
+```php
+<?php
+
+return [
+    'rich_text' => [
+        'required' => 'O campo :attribute deve conter conteúdo.',
+        'min' => 'O campo :attribute deve conter no mínimo :min caracteres.',
+        'max' => 'O campo :attribute não pode conter mais de :max caracteres.',
+        'invalid' => 'O campo :attribute deve conter conteúdo rich text válido.',
+    ],
+];
+```
+
+No call to `trans()` is needed in application code. `RichText::min(10)`, for example, resolves `rich_text.min` in the
+current locale and replaces both `:attribute` and `:min` automatically. When a locale file is absent, Laravel uses the
+application's fallback locale.
+
+The raw `max:200000` guard runs before HTML parsing because of `bail`. Choose a limit appropriate for your application;
+it protects memory independently from the visible-text limit enforced by `RichText::max(500)`.
+
+These rules validate the default `output="html"` format only. They do not auto-detect or validate Tiptap JSON from
+`output="json"`.
+
+Use `RichTextContent` directly when application code needs the same normalization outside validation:
+
+```php
+use Emaia\LaravelHotwire\Support\RichTextContent;
+
+$content = RichTextContent::fromHtml($post->content);
+
+$content->isBlank();
+$content->plainText();
+$content->plainTextLength();
+```
+
+`plainText()` keeps inline text together and separates blocks and `<br>` elements with normalized line breaks.
+`plainTextLength()` is `mb_strlen()` of that normalized value, including those line breaks and any joiners preserved in
+visible Unicode text. Media attributes are not text. Fallback children of `audio`, `canvas`, `embed`, `iframe`, `object`,
+and `video` are excluded by the package's deterministic text policy, so opaque media-only content has a text length of
+zero regardless of fallback rendering context. Captions outside the media element, such as `<figcaption>`, continue to
+count.
+
+SVG remains traversable: visible `<text>` contributes to plain text, while SVG `<title>` and `<desc>` metadata do not.
+Content made exclusively of whitespace or invisible controls is canonicalized to an empty string. The helper ignores
+common non-content elements and editor artifacts, but it does not evaluate CSS visibility and does not sanitize HTML.
+Tiptap emits named entities with their terminating semicolon; legacy references that omit it are treated as literal
+text.
+
+This policy approximates common Tiptap media nodes from serialized HTML; it cannot reproduce schema-aware
+`editor.isEmpty` for every extension. An empty custom atom such as `<div data-type="widget"></div>` is indistinguishable
+from empty structural markup, so applications using such nodes need matching application validation. Presence validation
+also does not authorize active content: sanitize elements, URLs, iframe origins, SVG, and attributes against the actual
+editor schema before persistence or rendering.
 
 ### Empty-state normalization
 
