@@ -21,43 +21,44 @@ The complete Hotwire stack for Laravel — Turbo Drive, Turbo Streams, Stimulus 
 
 ## Artisan Commands
 
-| Command                   | Description                                                                                          |
-|---------------------------|------------------------------------------------------------------------------------------------------|
-| `hotwire:install`         | Scaffold JS/CSS setup, add npm deps to package.json                                                  |
-| `hotwire:make-controller` | Create a new Stimulus controller (interactive scaffolding)                                           |
-| `hotwire:make-preset`     | Generate a complete custom CSS preset scaffold or clone a shipped preset                             |
+| Command                   | Description                                                                                                            |
+|---------------------------|------------------------------------------------------------------------------------------------------------------------|
+| `hotwire:install`         | Scaffold JS/CSS setup, add npm deps to package.json                                                                    |
+| `hotwire:make-controller` | Create a new Stimulus controller (interactive scaffolding)                                                             |
+| `hotwire:make-preset`     | Generate a complete custom CSS preset scaffold or clone a shipped preset                                               |
 | `hotwire:controllers`     | Publish package Stimulus controllers to the app for customization (`--outdated` to update only published+changed ones) |
-| `hotwire:components`      | List available Blade components and their controller dependencies                                    |
-| `hotwire:check`           | Verify required npm dependencies are installed and report outdated/diverged published controllers (CI-friendly)                      |
-| `hotwire:docs`            | Browse and read controller/component docs in the terminal                                            |
-| `hotwire:ide-json`        | Generate Laravel Idea metadata for package and application Stimulus controllers                      |
+| `hotwire:components`      | List available Blade components and their controller dependencies                                                      |
+| `hotwire:check`           | Verify required npm dependencies are installed and report outdated/diverged published controllers (CI-friendly)        |
+| `hotwire:docs`            | Browse and read controller/component docs in the terminal                                                              |
+| `hotwire:ide-json`        | Generate Laravel Idea metadata for package and application Stimulus controllers                                        |
 
 ## Conventions
 
 ### Stimulus Controllers
 
-- **Flat layout** at the top level. File naming: `{name}_controller.js` (snake_case). The user can generate `.ts` controllers via `hotwire:make-controller --ts`; the package ships `.js` only.
+- **Flat layout** at the top level. File naming: `{name}_controller.js` (snake_case). The user can generate `.ts`
+  controllers via `hotwire:make-controller --ts`; the package ships `.js` only.
 - **Identifier** matches the file name converted to kebab-case: `auto_submit_controller.js` →
   `data-controller="auto-submit"`.
-- **Substrate folders** (`turbo/`, `optimistic/`, `dev/`) group controllers tied to a specific technical layer.
-  Files inside keep Stimulus' `--` separator in the identifier: `turbo/progress_controller.js` →
+- **Substrate folders** (`turbo/`, `optimistic/`, `dev/`) group controllers tied to a specific technical layer. Files
+  inside keep Stimulus' `--` separator in the identifier: `turbo/progress_controller.js` →
   `data-controller="turbo--progress"`.
-- **No UI-role folders** (no `form/`, `modal/`, `utils/`, `lib/`, `media/`, `notification/`). Names themselves
-  describe intent — prefer compound names (`copy-to-clipboard`, `lazy-image`, `input-mask`) over namespace buckets.
-- **Internal helpers** prefixed with `_` (e.g. `_focus_trap.js`, `_presence.js`, `_form_errors.js`) are shared
-  utility modules imported by controllers. They are **not** Stimulus controllers and are never registered via
+- **No UI-role folders** (no `form/`, `modal/`, `utils/`, `lib/`, `media/`, `notification/`). Names themselves describe
+  intent — prefer compound names (`copy-to-clipboard`, `lazy-image`, `input-mask`) over namespace buckets.
+- **Internal helpers** prefixed with `_` (e.g. `_focus_trap.js`, `_presence.js`, `_form_errors.js`) are shared utility
+  modules imported by controllers. They are **not** Stimulus controllers and are never registered via
   `data-controller`.
 - **Package marker.** Every controller, helper, and shared dependency shipped by the package begins with
   `// @hotwire-package` on its first non-empty line (or `/* @hotwire-package */` for `.css`). The marker lets
-  `hotwire:controllers` (with `--force` or `--outdated --force`) and `hotwire:check --fix` distinguish files that
-  came from the package from files written by the user — without the marker, those commands refuse to overwrite.
+  `hotwire:controllers` (with `--force` or `--outdated --force`) and `hotwire:check --fix` distinguish files that came
+  from the package from files written by the user — without the marker, those commands refuse to overwrite.
   `hotwire:make-controller` deliberately does **not** emit the marker, so generated user controllers stay protected.
   Drop the marker when reading `Support\PackageMarker`.
 - Loaded via `@emaia/stimulus-lazy-loader` with Vite's `import.meta.glob`.
 - **Controllers must be mutually compatible.** Blade components stack several controllers on the same element
   (`<hw:form>` → `auto-submit unsaved-changes clean-query-params`; `<hw:file>` →
-  `file-preserve reset-files` plus the user's own `data-controller`). A controller must therefore never assume it
-  owns the element exclusively:
+  `file-preserve reset-files` plus the user's own `data-controller`). A controller must therefore never assume it owns
+  the element exclusively:
     - Scope DOM reads/writes to `this.element` (and prefer `this.targets`); don't clobber attributes other controllers
       set, especially shared `data-controller`.
     - Multiple controllers commonly listen to the same Turbo events (`turbo:submit-end`, `turbo:morph`,
@@ -71,8 +72,8 @@ The complete Hotwire stack for Laravel — Turbo Drive, Turbo Streams, Stimulus 
 
 - Registered with configurable prefix (default: `hw`)
 - See all available components with `php artisan hotwire:components`
-- Components that encapsulate a Stimulus controller merge user-provided `data-controller` with internal controllers
-  on the element. User-provided `data-{identifier}-*` for internal controllers active via props is filtered to prevent
+- Components that encapsulate a Stimulus controller merge user-provided `data-controller` with internal controllers on
+  the element. User-provided `data-{identifier}-*` for internal controllers active via props is filtered to prevent
   conflicts; for other controllers these pass through freely. Expose supported controller configuration as explicit
   Blade props instead of relying on user-provided `data-*` attributes.
 - Components that derive field ids/error keys (Input, File, Select, etc.) use `Support\FieldKey`; components that omit
@@ -86,11 +87,12 @@ registered here**, or the commands won't see it.
 
 - `components` entries: `class`, `view`, `docs`, `category`, `description`, and `controllers` (the list of Stimulus
   identifiers the component depends on — keep it in sync with what the Blade view actually mounts, since
-  `hotwire:check` verifies these are published). Every component entry also declares `slots` as a `slot => visual|structural`
+  `hotwire:check` verifies these are published). Every component entry also declares `slots` as a
+  `slot => visual|structural`
   map. The values a slot varies by are not declared here — `hotwire:make-preset` reads them from the presets.
 - `controllers` entries: `source` (path to the `.js`/`.ts` file), `docs`, `category`, `description`, and optional
-  `npm` (a `package => version` map for third-party deps like `@floating-ui/dom`, `maska`, `echarts`).
-  Controllers that create `data-slot` values in JavaScript declare them in `slots` too.
+  `npm` (a `package => version` map for third-party deps like `@floating-ui/dom`, `maska`, `echarts`). Controllers that
+  create `data-slot` values in JavaScript declare them in `slots` too.
 - Add every new package-emitted `data-slot` to the owning catalog entry. Do not recover this metadata by parsing Blade,
   PHP or CSS at runtime; the catalog is the contract used by preset generation and coverage tests.
 - Identifiers follow the Stimulus naming rules above — substrate-folder controllers use the `--` separator
@@ -102,7 +104,8 @@ registered here**, or the commands won't see it.
 - Provided by `emaia/laravel-hotwire-turbo` dependency
 - Fluent stream builder: `turbo_stream()->append(...)` (the builder is `Responsable` — return it directly from the
   controller; use `->withResponse(...)` when you need a custom status or headers)
-- Request detection: `request()->wantsTurboStream()`, `request()->wasFromTurboFrame()`
+- Request detection: `request()->wantsTurboStream()`, `request()->wasFromTurboFrame()`, `request()->turboFrameId()`,
+  `request()->turboFrameSource()`
 - DOM helpers: `dom_id($model)`, `dom_class($model)`
 
 ## Collaboration Rules
@@ -127,28 +130,33 @@ registered here**, or the commands won't see it.
 - PR title matches commit subject convention; body summarizes changes
 - Review required; merge from the GitHub UI (not the CLI)
 - Remote merge (GitHub UI):
-    - **Default: squash-merge** — for PRs where iterative review/fixup commits should collapse into a single clean commit reflecting the deliverable
-    - **Merge commit (no squash)** — for PRs that bundle multiple isolated changes that each deserve their own commit in history
+    - **Default: squash-merge** — for PRs where iterative review/fixup commits should collapse into a single clean
+      commit reflecting the deliverable
+    - **Merge commit (no squash)** — for PRs that bundle multiple isolated changes that each deserve their own commit in
+      history
 - Ask to confirm the message is correct before pushing
-- **PR body template** — `## Summary` (bullet points) + `## Test plan`. The Test plan combines automated checks
-  with a manual smoke section covering what tests can't verify (visual, browser-specific behavior, real
-  interaction). Each item is a checkbox so the reviewer can tick it as they go.
+- **PR body template** — `## Summary` (bullet points) + `## Test plan`. The Test plan combines automated checks with a
+  manual smoke section covering what tests can't verify (visual, browser-specific behavior, real interaction). Each item
+  is a checkbox so the reviewer can tick it as they go.
+- PR Summary should contain only principal changes, fixes, or features. Omit supporting implementation details such as
+  catalog registration, IDE metadata, docs, examples, and test coverage unless they are themselves the purpose of the
+  PR.
 
   Example:
 
   ```markdown
   ## Test plan
 
-  - [ ] `composer test` — N/N passing
-  - [ ] `bun run test` — N/N passing
+  - [x] `composer test` — N/N passing
+  - [x] `bun run test` — N/N passing
   - [ ] Manual smoke: <render this component in a fresh app, click X, expect Y; tweak prop Z, expect Y'>
   - [ ] Manual smoke: <one scenario per non-trivial code path — error path, edge case, prop variant>
   - [ ] Manual smoke: <accessibility / keyboard / screen reader if relevant>
   ```
 
-  Skip the manual lines that don't apply (a pure internal refactor with full test coverage may legitimately
-  have only the automated lines). For Stimulus controllers and Blade components, default to including manual
-  smokes — DOM observability, visual rendering, and event flow are exactly what unit tests can't fully cover.
+  Skip the manual lines that don't apply (a pure internal refactor with full test coverage may legitimately have only
+  the automated lines). For Stimulus controllers and Blade components, default to including manual smokes — DOM
+  observability, visual rendering, and event flow are exactly what unit tests can't fully cover.
 
 ### Tag and Release
 
@@ -165,7 +173,6 @@ registered here**, or the commands won't see it.
     - `**Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/<prev>...<version>` at the end
 - CHANGELOG.md is updated automatically by the release workflow; do not edit manually
 - Ask to confirm the message is correct before pushing
-
 
 ## Development
 
@@ -227,12 +234,13 @@ JS conventions:
 
 - PHP: `emaia/laravel-hotwire-turbo`, `spatie/laravel-package-tools`
 - JS: `@hotwired/stimulus`, `@hotwired/turbo`, `@emaia/stimulus-lazy-loader`
-- Optional JS: third-party libs required by specific controllers — the `npm` maps in `src/Registry/catalog.php` are
-  the source of truth (don't list them here)
+- Optional JS: third-party libs required by specific controllers — the `npm` maps in `src/Registry/catalog.php` are the
+  source of truth (don't list them here)
 
 ## Docblock convention
 
-**Selective documentation** — docblocks must add information; if they don't, they're noise. Default to skipping; document deliberately.
+**Selective documentation** — docblocks must add information; if they don't, they're noise. Default to skipping;
+document deliberately.
 
 ### Decision tree
 
@@ -252,20 +260,30 @@ JS conventions:
 ### What to write
 
 - **Imperative mood**, single sentence ending in a period: `Persist the upload and return the new Media.`
-- **Multi-line only** when 2-3 sentences are required to capture a non-obvious constraint or rationale. If you need more, the docblock is masking a design smell — refactor or move the explanation to `docs/*.md`.
-- **WHY over what** when explaining: "Extracted so the per-iteration try/catch covers every step" — not "Encodes and persists a conversion" (that's the name).
+- **Multi-line only** when 2-3 sentences are required to capture a non-obvious constraint or rationale. If you need
+  more, the docblock is masking a design smell — refactor or move the explanation to `docs/*.md`.
+- **WHY over what** when explaining: "Extracted so the per-iteration try/catch covers every step" — not "Encodes and
+  persists a conversion" (that's the name).
 
 ### Native types first
 
-Always declare native PHP types on properties, parameters, and return values when possible. Drop redundant `@var` / `@param` / `@return` once the native type carries the contract. Untyped signatures combined with a docblock that names the type are an anti-pattern (the type system can't enforce what the docblock says).
+Always declare native PHP types on properties, parameters, and return values when possible. Drop redundant `@var` /
+`@param` / `@return` once the native type carries the contract. Untyped signatures combined with a docblock that names
+the type are an anti-pattern (the type system can't enforce what the docblock says).
 
-Constructors don't need a return type. PHP's `resource` pseudo-type has no native equivalent — use `@param resource $stream` / `@return resource` there.
+Constructors don't need a return type. PHP's `resource` pseudo-type has no native equivalent — use
+`@param resource $stream` / `@return resource` there.
 
 ### When to add `@param` / `@return` / `@throws`
 
-- **`@param` / `@return`**: only when they carry information **beyond** the native type (`array<string, callable>`, `string[]`, `Collection<int, Media>`, `array{conversion: string, exception: \Throwable}`, semantic constraint like "empty array returns all"). Never add when they merely repeat the type.
-- **`@throws`**: list exceptions that are part of the method's contract (caller is expected to handle them). Skip generic `RuntimeException` of the "if it breaks it broke" variety.
-- **Property `@var`**: only when the native type loses information (`array<int, array{conversion: string, exception: \Throwable}>`, `MediaChannel[]`, `array<string, Collection<int, Media>>`). Plain typed properties don't need it.
+- **`@param` / `@return`**: only when they carry information **beyond** the native type (`array<string, callable>`,
+  `string[]`, `Collection<int, Media>`, `array{conversion: string, exception: \Throwable}`, semantic constraint like
+  "empty array returns all"). Never add when they merely repeat the type.
+- **`@throws`**: list exceptions that are part of the method's contract (caller is expected to handle them). Skip
+  generic `RuntimeException` of the "if it breaks it broke" variety.
+- **Property `@var`**: only when the native type loses information
+  (`array<int, array{conversion: string, exception: \Throwable}>`, `MediaChannel[]`,
+  `array<string, Collection<int, Media>>`). Plain typed properties don't need it.
 
 ### What to always remove
 
@@ -273,68 +291,74 @@ Constructors don't need a return type. PHP's `resource` pseudo-type has no nativ
 - `@author`, `@version`, `@since`, `@package` — git/Composer resolve these
 - Multi-paragraph essays — move to `docs/*.md` and link
 - `@param` / `@return` that just repeat the type-hint
-- Comments inside method bodies explaining WHAT the next line does (rename a variable instead); keep only WHY when non-obvious
+- Comments inside method bodies explaining WHAT the next line does (rename a variable instead); keep only WHY when
+  non-obvious
 - Stale TODO/FIXME — convert to an issue or delete
 
 ## Roadmap
 
-Operational roadmap and execution notes are maintained outside this repository. Treat local planning exports as temporary context that may be stale.
+Operational roadmap and execution notes are maintained outside this repository. Treat local planning exports as
+temporary context that may be stale.
 
-## CSS / Theming (since `0.32.0`)
+## CSS / Theming
 
-- **Semantic tokens only.** Component views use `bg-background`, `text-foreground`, `border-border`, etc.
-  Never hardcode raw colors (`bg-white`, `text-gray-700`, `bg-zinc-900`). Tokens are defined in
+- **Semantic tokens only.** Component views use `bg-background`, `text-foreground`, `border-border`, etc. Never hardcode
+  raw colors (`bg-white`, `text-gray-700`, `bg-zinc-900`). Tokens are defined in
   `resources/css/tokens.css` via `@theme inline` with OKLCH values for light and dark mode.
 - **Dark mode via `data-theme`** on `<html>`, not `class="dark"`. Default is `:root` (light);
   `[data-theme="dark"]` activates the dark palette.
-- **Tailwind v4 scanner constraint.** Shipped component styling lives in CSS presets under `resources/css/**`,
-  and the installed stub scans those CSS files with `@source`. Do not add Tailwind utility defaults back to
-  package Blade/PHP unless they are also represented by preset CSS or the `@source inline(...)` safelist in
+- **Tailwind v4 scanner constraint.** Shipped component styling lives in CSS presets under `resources/css/**`, and the
+  installed stub scans those CSS files with `@source`. Do not add Tailwind utility defaults back to package Blade/PHP
+  unless they are also represented by preset CSS or the `@source inline(...)` safelist in
   `resources/css/structural.css`, which every preset imports.
 - **Structural vs visual CSS.** Mechanics live in `resources/css/structural.css` — the rules whose absence leaves a
   component broken rather than restyled (the carousel track, the Accordion's `::details-content` collapse). Every preset
   imports that file, so they compile into the application stylesheet and hold on the first paint instead of landing once
-  the bundle runs, and no new preset has to rediscover them. Visual styling lives in presets and uses `data-slot`.
-  Mark presentation-free or controller-owned slots `structural` in the catalog; `hotwire:make-preset` scaffolds only
-  visual slots.
-- **`Variants` helper is for application code, not for package components.** `Support\Variants` (CVA-equivalent in
-  PHP) stays exported so apps can build their own variant matrices; the Tailwind scanner reaches it there because it
-  scans the app's own PHP. Package components must not use it — they emit no classes at all, only `data-slot`,
+  the bundle runs, and no new preset has to rediscover them. Visual styling lives in presets and uses `data-slot`. Mark
+  presentation-free or controller-owned slots `structural` in the catalog; `hotwire:make-preset` scaffolds only visual
+  slots.
+- **`Variants` helper is for application code, not for package components.** `Support\Variants` (CVA-equivalent in PHP)
+  stays exported so apps can build their own variant matrices; the Tailwind scanner reaches it there because it scans
+  the app's own PHP. Package components must not use it — they emit no classes at all, only `data-slot`,
   `data-variant` and `data-size`, and the preset does the styling. `Support\PresetAxes` reads the values each slot
   varies by out of the stylesheets — `data-*`, `aria-*` and native attributes alike — and
   `tests/Registry/SlotCatalogTest.php` holds every preset to the same axes.
-- Theming docs for app developers: `docs/theming.md` — token reference, override instructions, colour
-  space notes. Upgrade notes for existing apps: `docs/upgrade.md` (deliverable of `0.32.0`).
+- Theming docs for app developers: `docs/theming.md` — token reference, override instructions, colour space notes.
+  Upgrade notes for existing apps: `docs/upgrade.md` (deliverable of `0.32.0`).
 
-## PR Checklist (since `0.32.0`)
+## PR Checklist
 
 Every PR that introduces a new component or controller must include:
 
-- [ ] **Smoke matrix.** Component tested: (a) in isolation, (b) inside a Modal, (c) inside a Dropdown,
-  (d) inside a Turbo Frame. Overlay components additionally tested nested inside each other.
-- [ ] **Listeners and timers** verified cleaned up in `disconnect()` — Turbo morph re-connects
-  controllers; duplicate listeners are a recurring bug source.
-- [ ] **Integration opt-in evaluation.** For each new component, assess whether exposing a prop that
-  activates an existing controller turns a common user setup into a one-liner. Model: Button + `hotkey`
+- [ ] **Smoke matrix.** Component tested: (a) in isolation, (b) inside a Modal, (c) inside a Dropdown, (d) inside a
+  Turbo Frame. Overlay components additionally tested nested inside each other.
+- [ ] **Listeners and timers** verified cleaned up in `disconnect()` — Turbo morph re-connects controllers; duplicate
+  listeners are a recurring bug source.
+- [ ] **Integration opt-in evaluation.** For each new component, assess whether exposing a prop that activates an
+  existing controller turns a common user setup into a one-liner. Model: Button + `hotkey`
   (`hotkey="cmd+s"`). Document the decision (adopted or discarded, with rationale) in the PR body.
 
-## New internal helpers (since `0.32.0`)
+## New internal helpers
 
-- `_overlay.js` — shared Presence-driven overlay lifecycle (`data-state`, `hidden`, `inert`, FocusTrap, body scroll lock,
-  Escape key, focus return and cancelable CSS motion). Consumed by Modal, Alert Dialog, Drawer, Sheet and Sidebar.
+- `_overlay.js` — shared Presence-driven overlay lifecycle (`data-state`, `hidden`, `inert`, FocusTrap, body scroll
+  lock, Escape key, focus return and cancelable CSS motion). Consumed by Modal, Alert Dialog, Drawer, Sheet and Sidebar.
   Exports `createOverlay(controller, options)` with animated and immediate open/close lifecycle methods.
 
-## Controller auto-loading (since `0.32.0`)
+## Controller auto-loading
 
 All package controllers are loaded directly from the vendor directory via `import.meta.glob` in
-`resources/js/controllers/index.js`. No `hotwire:controllers` step is required — controllers
-work out of the box.
+`resources/js/controllers/index.js`. No `hotwire:controllers` step is required — controllers work out of the box.
 
 The loader index is a static file copied from `stubs/resources/js/controllers/index.js` by
-`hotwire:install`. There is no dynamic generation or version tracking — the stub is the single
-source of truth.
+`hotwire:install`. There is no dynamic generation or version tracking — the stub is the single source of truth.
 
-`hotwire:check` verifies npm dependencies (declared in the catalog `npm` key) and reports
-outdated/diverged published controllers. It no longer flags "not published" as a problem since
-controllers auto-load from vendor. `hotwire:controllers` remains available for users who want to
-publish a controller to customize it.
+`hotwire:check` verifies npm dependencies (declared in the catalog `npm` key) and reports outdated/diverged published
+controllers. It no longer flags "not published" as a problem since controllers auto-load from vendor.
+`hotwire:controllers` remains available for users who want to publish a controller to customize it.
+
+## Workflow
+
+### Teamwork
+
+- Project: 761179
+- Notebook: 429404 (Always load these additional instructions)
