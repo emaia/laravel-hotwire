@@ -6,6 +6,26 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 
 ## Unreleased
 
+### Stimulus lazy loader v2 and critical controller policy
+
+The generated controller loader now requires `@emaia/stimulus-lazy-loader ^2.0.0`. Re-run the installer to update an
+existing dependency and regenerate `resources/js/controllers/index.js`:
+
+```bash
+php artisan hotwire:install --skip-install
+bun install
+```
+
+Or use `php artisan hotwire:check --fix`; it detects v1 in either `dependencies` or `devDependencies` and updates the
+same section.
+
+The v2 loader removes the old fixed debounce and Turbo event listeners. The generated stub can now mix lazy and eager
+controllers, driven by the new `controllers.preload` and `controllers.eager` config arrays. Both default to empty, so
+upgrading does not move any controller into the initial bundle automatically.
+
+If your app has a hand-written `resources/js/controllers/index.js`, it remains protected. Update its loader dependency
+and registry manually, or run `hotwire:install --force` to return to the generated plan.
+
 ### Toast is native: Sonner removed, components renamed
 
 The toast stack is now implemented by the package. `@emaia/sonner` is gone from the runtime, the catalog and the

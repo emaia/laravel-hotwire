@@ -20,6 +20,7 @@ use Emaia\LaravelHotwire\Components\CheckboxGroup\Item as CheckboxGroupItem;
 use Emaia\LaravelHotwire\Components\ColorScheme\Script as ColorSchemeScript;
 use Emaia\LaravelHotwire\Components\ColorScheme\Toggle as ColorSchemeToggle;
 use Emaia\LaravelHotwire\Components\ConditionalField;
+use Emaia\LaravelHotwire\Components\ControllerPreloads;
 use Emaia\LaravelHotwire\Components\Drawer;
 use Emaia\LaravelHotwire\Components\Dropdown;
 use Emaia\LaravelHotwire\Components\EmptyState;
@@ -320,6 +321,17 @@ return [
             'controllers' => ['conditional-fields'],
             'styling' => [
                 'slots' => $slots(structural: ['conditional-field']),
+            ],
+        ],
+        'controller-preloads' => [
+            'class' => ControllerPreloads::class,
+            'view' => 'hotwire::component-views.controller-preloads',
+            'docs' => 'docs/components/controller-preloads.md',
+            'category' => 'utility',
+            'description' => 'Emits Vite modulepreload links for selected application or package Stimulus controllers',
+            'controllers' => [],
+            'styling' => [
+                'slots' => $slots(),
             ],
         ],
         'drawer' => [

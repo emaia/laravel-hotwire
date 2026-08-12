@@ -245,6 +245,70 @@ it('does not modify package.json when core deps already present (--core-only)', 
     expect(File::get($this->packageJsonPath))->toBe($content);
 });
 
+it('upgrades an existing v1 lazy loader in devDependencies', function () {
+    File::put($this->packageJsonPath, json_encode([
+        'name' => 'test',
+        'devDependencies' => [
+            '@emaia/stimulus-lazy-loader' => '^1.1.0',
+        ],
+    ], JSON_PRETTY_PRINT));
+
+    $this->artisan('hotwire:install --core-only --skip-install --no-interaction')
+        ->assertSuccessful();
+
+    $json = json_decode(File::get($this->packageJsonPath), true);
+
+    expect($json['devDependencies']['@emaia/stimulus-lazy-loader'])->toBe('^2.0.0');
+});
+
+it('upgrades an existing v1 lazy loader in dependencies', function () {
+    File::put($this->packageJsonPath, json_encode([
+        'name' => 'test',
+        'dependencies' => [
+            '@emaia/stimulus-lazy-loader' => '^1.1.0',
+        ],
+    ], JSON_PRETTY_PRINT));
+
+    $this->artisan('hotwire:install --core-only --skip-install --no-interaction')
+        ->assertSuccessful();
+
+    $json = json_decode(File::get($this->packageJsonPath), true);
+
+    expect($json['dependencies']['@emaia/stimulus-lazy-loader'])->toBe('^2.0.0');
+});
+
+it('preserves a newer compatible lazy loader constraint', function () {
+    File::put($this->packageJsonPath, json_encode([
+        'name' => 'test',
+        'devDependencies' => [
+            '@emaia/stimulus-lazy-loader' => '^2.5.0',
+        ],
+    ], JSON_PRETTY_PRINT));
+
+    $this->artisan('hotwire:install --core-only --skip-install --no-interaction')
+        ->assertSuccessful();
+
+    $json = json_decode(File::get($this->packageJsonPath), true);
+
+    expect($json['devDependencies']['@emaia/stimulus-lazy-loader'])->toBe('^2.5.0');
+});
+
+it('preserves non-semver lazy loader protocols during install', function (string $constraint) {
+    File::put($this->packageJsonPath, json_encode([
+        'name' => 'test',
+        'devDependencies' => [
+            '@emaia/stimulus-lazy-loader' => $constraint,
+        ],
+    ], JSON_PRETTY_PRINT));
+
+    $this->artisan('hotwire:install --core-only --skip-install --no-interaction')
+        ->assertSuccessful();
+
+    $json = json_decode(File::get($this->packageJsonPath), true);
+
+    expect($json['devDependencies']['@emaia/stimulus-lazy-loader'])->toBe($constraint);
+})->with(['workspace:*', 'link:../loader', 'file:../loader', 'latest']);
+
 it('warns when package.json does not exist', function () {
     if (File::exists($this->packageJsonPath)) {
         File::delete($this->packageJsonPath);
@@ -255,6 +319,23 @@ it('warns when package.json does not exist', function () {
 
     // Should not crash — files should still be copied
     expect(File::exists(resource_path('js/app.js')))->toBeTrue();
+});
+
+it('does not resolve controller policy during a CSS-only install', function () {
+    config()->set('hotwire.controllers.eager', ['missing']);
+
+    $this->artisan('hotwire:install --only=css --no-interaction')
+        ->assertSuccessful();
+});
+
+it('ignores ambiguous local controllers unrelated to the install policy', function () {
+    File::put($this->packageJsonPath, json_encode(['name' => 'test'], JSON_PRETTY_PRINT));
+    File::ensureDirectoryExists(resource_path('js/controllers/components'));
+    File::put(resource_path('js/controllers/foo_controller.js'), 'export default class {}');
+    File::put(resource_path('js/controllers/components/foo_controller.js'), 'export default class {}');
+
+    $this->artisan('hotwire:install --only=js --no-interaction')
+        ->assertSuccessful();
 });
 
 // --- Phase 4: --only filter ---
@@ -496,6 +577,60 @@ it('writes a loader stub with only non-opted-in com-deps excluded with --with-de
         ->toContain('"!**/map_controller.js"')
         ->toContain('"!**/multi_select_controller.js"')
         ->toContain('"!**/rich_text_controller.js"');
+});
+
+it('generates configured local and package eager controllers', function () {
+    config()->set('hotwire.controllers.preload', ['modal']);
+    config()->set('hotwire.controllers.eager', ['reveal', 'turbo--progress']);
+    File::put($this->packageJsonPath, json_encode(['name' => 'test'], JSON_PRETTY_PRINT));
+    File::ensureDirectoryExists(resource_path('js/controllers'));
+    File::put(resource_path('js/controllers/reveal_controller.ts'), 'export default class {}');
+
+    $this->artisan('hotwire:install --no-interaction')
+        ->assertSuccessful();
+
+    $stub = File::get(resource_path('js/controllers/index.js'));
+
+    expect($stub)
+        ->toContain('eagerPackageControllers')
+        ->toContain('eagerUserControllers')
+        ->toContain('"!./reveal_controller.ts"')
+        ->toContain('"!../../../vendor/emaia/laravel-hotwire/resources/js/controllers/turbo/progress_controller.js"')
+        ->toContain('"preloadControllers":["modal"]');
+});
+
+it('includes a configured eager package controller and its dependencies with core-only', function () {
+    config()->set('hotwire.controllers.eager', ['chart']);
+    File::put($this->packageJsonPath, json_encode(['name' => 'test'], JSON_PRETTY_PRINT));
+
+    $this->artisan('hotwire:install --core-only --skip-install --no-interaction')
+        ->assertSuccessful();
+
+    $stub = File::get(resource_path('js/controllers/index.js'));
+    $packageJson = json_decode(File::get($this->packageJsonPath), true, flags: JSON_THROW_ON_ERROR);
+
+    expect($stub)
+        ->not->toContain('"!**/chart_controller.js"')
+        ->toContain('eagerPackageControllers')
+        ->and($packageJson['devDependencies'])->toHaveKey('echarts');
+});
+
+it('adds catalog dependencies for a canonical configured controller without including its vendor fallback', function () {
+    config()->set('hotwire.controllers.eager', ['chart']);
+    File::put($this->packageJsonPath, json_encode(['name' => 'test'], JSON_PRETTY_PRINT));
+    File::ensureDirectoryExists(resource_path('js/controllers'));
+    File::put(resource_path('js/controllers/chart_controller.js'), 'export default class {}');
+
+    $this->artisan('hotwire:install --core-only --skip-install --no-interaction')
+        ->assertSuccessful();
+
+    $stub = File::get(resource_path('js/controllers/index.js'));
+    $packageJson = json_decode(File::get($this->packageJsonPath), true, flags: JSON_THROW_ON_ERROR);
+
+    expect($stub)
+        ->toContain('"!**/chart_controller.js"')
+        ->toContain('eagerUserControllers')
+        ->and($packageJson['devDependencies'])->toHaveKey('echarts');
 });
 
 it('silently regenerates an existing auto-generated stub even without --force', function () {

@@ -294,6 +294,11 @@
                     "className": "\\Emaia\\LaravelHotwire\\Components\\ConditionalField"
                 },
                 {
+                    "name": "controller-preloads",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\ControllerPreloads"
+                },
+                {
                     "name": "drawer",
                     "namespace": "hw",
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Drawer"

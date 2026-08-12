@@ -18,6 +18,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Controller Loading
+    |--------------------------------------------------------------------------
+    |
+    | Preloaded controllers stay in separate chunks but begin downloading from
+    | the document head. Eager controllers join the application's entry graph.
+    | Both lists accept package and conventional application controllers.
+    |
+    */
+
+    'controllers' => [
+        'preload' => [],
+        'eager' => [],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | File Upload Messages
     |--------------------------------------------------------------------------
     |

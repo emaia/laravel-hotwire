@@ -10,6 +10,7 @@ The [README quick start](../README.md#installation) covers the greenfield case i
 - [Package manager step](#package-manager-step)
 - [The `@hotwire` Vite alias](#the-hotwire-vite-alias)
 - [The auto-generated loader stub](#the-auto-generated-loader-stub)
+- [Critical controller loading](#critical-controller-loading)
 - [Laravel Idea metadata](#laravel-idea-metadata)
 - [Detecting drift between install config and view usage](#detecting-drift-between-install-config-and-view-usage)
 - [CI / automation recipe](#ci--automation-recipe)
@@ -61,9 +62,8 @@ both forms work.
 
 `--core-only` and `--with-deps` are mutually exclusive. Unknown controller names in `--with-deps` fail fast.
 
-**Runtime cost is identical across the three modes.** Vite's dynamic-import code-splitting ships only the chunks for
-controllers that actually mount in the DOM. The trade-off is purely on the dev side — `node_modules` size, install time
-and `vite build` time scale with what's installed.
+Runtime cost is identical across the three dependency modes while controllers remain lazy or preloaded. Selecting a
+controller as `eager` is a separate, explicit decision that moves it into the application entry graph.
 
 ---
 
@@ -141,6 +141,65 @@ The generated body is a single `registerControllers` call combining a glob of yo
 vendor's. Excluded com-dep controllers (per the install mode above) appear as `"!**/<name>_controller.js"` entries —
 Vite's `import.meta.glob` honours those exclusions, so excluded controllers never enter the build graph.
 
+The second line records the generated loading plan. `hotwire:check --fix` uses that metadata instead of reverse-engineering
+the JavaScript when regenerating lazy, preload and eager selections. Local controllers keep precedence over package
+controllers with the same Stimulus identifier.
+
+---
+
+## Critical controller loading
+
+Lazy loading remains the default. Configure only controllers whose first interaction or initial layout is measurably
+latency-sensitive:
+
+```php
+// config/hotwire.php
+'controllers' => [
+    'preload' => ['reveal', 'turbo--progress'],
+    'eager' => [],
+],
+```
+
+`preload` keeps the controller in a separate chunk and lets the browser download that chunk and its static imports in
+parallel with the application entrypoint. Render the links from the document head:
+
+```blade
+@vite(['resources/css/app.css', 'resources/js/app.js'])
+<hw:controller-preloads />
+```
+
+Render `@vite` first so assets already preloaded by the entrypoint are deduplicated before controller-specific links are
+emitted. Pass `build-directory` when that `@vite` invocation uses a non-default directory:
+
+```blade
+@vite(['resources/js/app.js'], 'frontend')
+<hw:controller-preloads build-directory="frontend" />
+```
+
+Use a page-specific selection when a controller is critical only on some routes:
+
+```blade
+<hw:controller-preloads :controllers="['catalog-search']" />
+```
+
+`eager` includes and evaluates a controller in the application entry graph. Use it only when modulepreload cannot meet
+the required execution order. Eager controllers are removed from the matching lazy glob, and an identifier listed in
+both arrays is treated as eager only.
+
+Both options support package controllers and conventional application controllers under `resources/js/controllers`.
+Nested directories map to Stimulus `--` namespaces; `.js` and `.ts` are supported. A local controller overrides a
+package controller with the same identifier. Controllers registered manually from another directory remain application
+code and should be imported explicitly.
+
+The preload component uses Laravel Vite's production manifest and native preload renderer, including recursive static
+imports, CSP nonce, integrity, crossorigin, configured asset URLs, custom preload attributes and duplicate suppression.
+It renders nothing while Vite is running hot. Missing, stale or ambiguous manifest entries emit a warning and no preload
+tags rather than making the page unavailable or preloading the wrong asset.
+
+Controllers with npm dependencies still respect `--core-only` and `--with-deps`. A configured package preload/eager is
+explicit usage: `hotwire:check --fix` adds its dependencies and includes it in the loader plan. A local override does not
+inherit the package controller's npm dependencies.
+
 ---
 
 ## Laravel Idea metadata
@@ -196,6 +255,9 @@ manager. End-to-end resolution in one command.
 `hotwire:install` runs `hotwire:check` automatically when `--core-only` or `--with-deps` is set (the default mode has no
 exclusions, so there's no drift to detect). In interactive mode the user is prompted to apply `--fix`; in
 `--no-interaction` mode the check reports but does not act unless `--fix` is also passed.
+
+The check also reports a lazy-loader v1 dependency and drift between the generated loader metadata and
+`controllers.preload` / `controllers.eager`. `--fix` upgrades the loader to v2 and regenerates the policy.
 
 ---
 
