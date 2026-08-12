@@ -18,6 +18,68 @@
    restating it. */
 @source inline("hidden overflow-hidden");
 
+/*
+ * --- Read More clamp ---
+ *
+ * The server knows the requested state and collapsed height, but only the browser can determine
+ * whether content actually overflows. Clamp before the lazily loaded controller connects when
+ * scripting is enabled; without scripting the query does not match and all content remains visible.
+ * Once measured, data-ready keeps the geometry active independently of media-query support.
+ */
+
+[data-slot="read-more-viewport"] {
+    position: relative;
+    transition: max-block-size 500ms ease-in-out;
+}
+
+[data-slot="read-more-content"] {
+    display: flow-root;
+}
+
+[data-slot="read-more-trigger"][hidden],
+[data-slot="read-more-fade"][hidden] {
+    display: none !important;
+}
+
+[data-slot="read-more"][data-ready][data-state="collapsed"] > [data-slot="read-more-viewport"] {
+    max-block-size: var(--read-more-collapsed-height, 20rem);
+    overflow: hidden;
+}
+
+[data-slot="read-more"][data-state="expanded"][data-transitioning] > [data-slot="read-more-viewport"] {
+    max-block-size: var(--read-more-expanded-height, none);
+    overflow: hidden;
+}
+
+[data-slot="read-more"][data-state="expanded"]:not([data-transitioning]) > [data-slot="read-more-viewport"] {
+    max-block-size: none;
+    overflow: visible;
+}
+
+[data-slot="read-more"][data-transitioning][data-pinning] > [data-slot="read-more-viewport"] {
+    max-block-size: var(--read-more-pinned-height);
+    overflow: hidden;
+    transition: none !important;
+}
+
+[data-slot="read-more"][data-state="static"] > [data-slot="read-more-viewport"] {
+    max-block-size: none;
+    overflow: visible;
+}
+
+@media (scripting: enabled) {
+    [data-slot="read-more"]:not([data-ready])[data-state="collapsed"] > [data-slot="read-more-viewport"] {
+        max-block-size: var(--read-more-collapsed-height, 20rem);
+        overflow: hidden;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    [data-slot="read-more-viewport"] {
+        transition: none;
+    }
+}
+
 [data-slot="pagination-status"] {
     position: absolute;
     width: 1px;

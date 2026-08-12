@@ -3,8 +3,8 @@
 Show/hide collapsible inline content with proper ARIA. Toggles the `hidden` attribute on the
 content target and keeps `aria-expanded` in sync on an optional trigger target.
 
-The base primitive behind FAQ items, "read more" sections, collapsible panels, and the accordion
-recipe.
+The base primitive behind FAQ items, collapsible panels, and the accordion recipe. For a measured
+content preview that only shows a trigger when text overflows, use [`read-more`](read-more.md).
 
 **Identifier:** `disclosure`  
 **Install:** `php artisan hotwire:controllers disclosure`
@@ -71,7 +71,7 @@ different behavior. Use the right tool for the affordance.
         data-disclosure-target="trigger"
         data-action="disclosure#toggle"
         aria-expanded="false"
-    >Read more</button>
+    >Show details</button>
     <div data-disclosure-target="content" hidden>
         <p>The hidden details show up here.</p>
     </div>
