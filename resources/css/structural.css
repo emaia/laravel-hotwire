@@ -19,6 +19,134 @@
 @source inline("hidden overflow-hidden");
 
 /*
+ * --- Side Panel layout ---
+ *
+ * The outer column changes width while its content keeps the configured measure. Clipping the
+ * stable inner box avoids text reflow during the transition, and the inset consumes the released
+ * space as a normal flex item rather than shifting over it.
+ */
+
+[data-slot="side-panel"] {
+    --side-panel-rail-position: var(--side-panel-width, 16rem);
+    --side-panel-trigger-left: var(--side-panel-rail-position);
+    --side-panel-trigger-right: auto;
+    --side-panel-trigger-shift: -50%;
+    --side-panel-trigger-rotation: 0deg;
+    position: relative;
+    display: flex;
+    min-inline-size: 0;
+}
+
+[data-slot="side-panel"][data-state="collapsed"] {
+    --side-panel-rail-position: var(--side-panel-collapsed-width, 1.75rem);
+}
+
+[data-slot="side-panel"]::before {
+    content: "";
+    position: absolute;
+    inset-block: 0;
+    z-index: 1;
+    inline-size: 1px;
+    pointer-events: none;
+    transition-property: left, right;
+    transition-duration: 200ms;
+}
+
+[data-slot="side-panel"][data-side="right"] {
+    --side-panel-trigger-left: auto;
+    --side-panel-trigger-right: var(--side-panel-rail-position);
+    --side-panel-trigger-shift: 50%;
+    --side-panel-trigger-rotation: 180deg;
+    flex-direction: row-reverse;
+}
+
+[data-slot="side-panel"][data-side="left"]:dir(rtl) {
+    flex-direction: row-reverse;
+}
+
+[data-slot="side-panel"][data-side="right"]:dir(rtl) {
+    flex-direction: row;
+}
+
+[data-slot="side-panel"][data-side="left"][data-state="collapsed"] {
+    --side-panel-trigger-rotation: 180deg;
+}
+
+[data-slot="side-panel"][data-side="right"][data-state="collapsed"] {
+    --side-panel-trigger-rotation: 0deg;
+}
+
+[data-slot="side-panel-panel"] {
+    box-sizing: border-box;
+    flex: 0 0 auto;
+    inline-size: var(--side-panel-width, 16rem);
+    max-inline-size: 100%;
+    min-inline-size: 0;
+    overflow: hidden;
+    transition: inline-size 200ms ease-in-out;
+}
+
+[data-slot="side-panel-panel-content"] {
+    box-sizing: border-box;
+    inline-size: var(--side-panel-width, 16rem);
+    max-inline-size: 100vw;
+    min-block-size: 100%;
+    overflow: auto;
+    transition: opacity 150ms ease-in-out;
+}
+
+[data-slot="side-panel"][data-state="collapsed"] > [data-slot="side-panel-panel"] {
+    inline-size: var(--side-panel-collapsed-width, 1.75rem);
+}
+
+[data-slot="side-panel"][data-state="collapsed"] > [data-slot="side-panel-panel"] > [data-slot="side-panel-panel-content"] {
+    opacity: 0;
+}
+
+[data-slot="side-panel-inset"] {
+    flex: 1 1 0%;
+    min-inline-size: 0;
+}
+
+[data-slot="side-panel-trigger"] {
+    position: absolute;
+    left: var(--side-panel-trigger-left);
+    right: var(--side-panel-trigger-right);
+    inline-size: var(--side-panel-trigger-size, 1.75rem);
+    block-size: var(--side-panel-trigger-size, 1.75rem);
+    transform: translateX(var(--side-panel-trigger-shift));
+    transition-property: left, right;
+    transition-duration: 200ms;
+}
+
+[data-slot="side-panel-trigger-icon"] {
+    transform: rotate(var(--side-panel-trigger-rotation, 0deg));
+}
+
+[data-slot="side-panel"][data-side="left"]::before {
+    left: var(--side-panel-rail-position);
+    transform: translateX(-50%);
+}
+
+[data-slot="side-panel"][data-side="right"]::before {
+    right: var(--side-panel-rail-position);
+    transform: translateX(50%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    [data-slot="side-panel-panel"] {
+        transition: none;
+    }
+
+    [data-slot="side-panel"]::before,
+    [data-slot="side-panel-panel-content"],
+    [data-slot="side-panel-trigger"],
+    [data-slot="side-panel-trigger-icon"] {
+        transition: none !important;
+    }
+}
+
+/*
  * --- Read More clamp ---
  *
  * The server knows the requested state and collapsed height, but only the browser can determine

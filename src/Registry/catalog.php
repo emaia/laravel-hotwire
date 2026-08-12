@@ -68,6 +68,7 @@ use Emaia\LaravelHotwire\Components\Select;
 use Emaia\LaravelHotwire\Components\Separator;
 use Emaia\LaravelHotwire\Components\Sheet;
 use Emaia\LaravelHotwire\Components\Sidebar;
+use Emaia\LaravelHotwire\Components\SidePanel;
 use Emaia\LaravelHotwire\Components\Skeleton;
 use Emaia\LaravelHotwire\Components\Slider;
 use Emaia\LaravelHotwire\Components\Spinner;
@@ -859,6 +860,17 @@ return [
                 ),
             ],
         ],
+        'side-panel' => [
+            'class' => SidePanel::class,
+            'view' => 'hotwire::component-views.side-panel',
+            'docs' => 'docs/components/side-panel.md',
+            'category' => 'utility',
+            'description' => 'Composable collapsible panel for secondary navigation and workspace tools',
+            'controllers' => ['side-panel'],
+            'styling' => [
+                'slots' => $slots(['side-panel', 'side-panel-panel-content', 'side-panel-trigger', 'side-panel-trigger-icon', 'side-panel-inset'], ['side-panel-panel']),
+            ],
+        ],
         'sidebar' => [
             'class' => Sidebar::class,
             'view' => 'hotwire::component-views.sidebar',
@@ -1345,6 +1357,12 @@ return [
             'docs' => 'docs/controllers/sheet.md',
             'category' => 'overlay',
             'description' => 'Off-canvas sheet with state-driven motion, focus trap and side-aware slide transitions',
+        ],
+        'side-panel' => [
+            'source' => 'resources/js/controllers/side_panel_controller.js',
+            'docs' => 'docs/controllers/side-panel.md',
+            'category' => 'utility',
+            'description' => 'Controls an inline collapsible panel with cookie persistence and nested scope isolation',
         ],
         'sidebar' => [
             'source' => 'resources/js/controllers/sidebar_controller.js',

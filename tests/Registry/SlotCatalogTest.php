@@ -59,6 +59,7 @@ it('classifies presentation-free and controller-owned slots as structural', func
         'read-more-viewport',
         'rich-text-input',
         'sheet',
+        'side-panel-panel',
         'toast-trigger',
         'toaster',
     ]);
@@ -89,6 +90,28 @@ it('keeps Read More first-paint geometry in the structural stylesheet', function
         ->toContain('transition: max-block-size 500ms ease-in-out')
         ->toContain('[data-state="expanded"]:not([data-transitioning])')
         ->toContain('var(--read-more-collapsed-height, 20rem)');
+});
+
+it('keeps Side Panel collapse mechanics in the structural stylesheet', function () {
+    $css = File::get(__DIR__.'/../../resources/css/structural.css');
+
+    expect($css)
+        ->toContain('[data-slot="side-panel"]')
+        ->toContain('[data-slot="side-panel-panel"]')
+        ->toContain('inline-size: var(--side-panel-width, 16rem)')
+        ->toContain('[data-state="collapsed"] > [data-slot="side-panel-panel"]')
+        ->toContain('inline-size: var(--side-panel-collapsed-width, 1.75rem)')
+        ->toContain('[data-slot="side-panel-panel-content"]')
+        ->toContain('transition: opacity 150ms ease-in-out')
+        ->toContain('opacity: 0')
+        ->toContain('inline-size: var(--side-panel-trigger-size, 1.75rem)')
+        ->toContain('--side-panel-rail-position: var(--side-panel-width, 16rem)')
+        ->toContain('--side-panel-rail-position: var(--side-panel-collapsed-width, 1.75rem)')
+        ->toContain('--side-panel-trigger-left: var(--side-panel-rail-position)')
+        ->toContain('--side-panel-trigger-right: auto')
+        ->toContain('--side-panel-trigger-rotation: 180deg')
+        ->toContain('transform: rotate(var(--side-panel-trigger-rotation, 0deg))')
+        ->toContain('overflow: hidden');
 });
 
 it('keeps rules that name no slot out of the presets', function (string $preset) {
