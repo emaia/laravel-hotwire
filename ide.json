@@ -874,6 +874,26 @@
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Sheet\\Trigger"
                 },
                 {
+                    "name": "side-panel",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\SidePanel"
+                },
+                {
+                    "name": "side-panel.inset",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\SidePanel\\Inset"
+                },
+                {
+                    "name": "side-panel.panel",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\SidePanel\\Panel"
+                },
+                {
+                    "name": "side-panel.trigger",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\SidePanel\\Trigger"
+                },
+                {
                     "name": "sidebar",
                     "namespace": "hw",
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Sidebar"

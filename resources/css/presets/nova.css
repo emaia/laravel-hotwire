@@ -588,6 +588,14 @@
     [data-slot="sheet-close-icon"] { @apply absolute top-3 right-3 inline-flex size-7 shrink-0 appearance-none items-center justify-center rounded-md border-0 bg-transparent text-popover-foreground opacity-70 outline-none transition-all hover:bg-muted hover:text-foreground hover:opacity-100 focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0; }
     [data-slot="sheet-trigger"], [data-slot="sheet-close"] { @apply inline-flex h-8 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-border bg-background px-2.5 text-sm font-medium transition-all outline-none active:not-aria-[haspopup]:translate-y-px hover:bg-muted hover:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 dark:border-input dark:bg-input/30 dark:hover:bg-input/50; }
 
+    /* Side Panel */
+    [data-slot="side-panel"] { @apply w-full bg-background text-foreground; }
+    [data-slot="side-panel"]::before { @apply bg-border; }
+    [data-slot="side-panel-panel-content"] { @apply h-full bg-muted/30 text-foreground; }
+    [data-slot="side-panel-inset"] { @apply flex flex-col bg-background; }
+    [data-slot="side-panel-trigger"] { @apply top-3 z-10 inline-flex items-center justify-center rounded-full border border-border bg-background text-muted-foreground shadow-sm transition-[left,right,color,background-color,box-shadow] duration-200 outline-none hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50; }
+    [data-slot="side-panel-trigger-icon"] { @apply size-4 transition-transform duration-200; }
+
     /* Sidebar */
     [data-slot="sidebar-wrapper"] { @apply flex min-h-svh w-full bg-background text-sidebar-foreground has-[[data-variant=inset]]:bg-sidebar; }
     [data-slot="sidebar"] { @apply hidden text-sidebar-foreground md:block; }
