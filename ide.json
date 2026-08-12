@@ -809,6 +809,11 @@
                     "className": "\\Emaia\\LaravelHotwire\\Components\\RadioGroup\\Item"
                 },
                 {
+                    "name": "read-more",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\ReadMore"
+                },
+                {
                     "name": "rich-text",
                     "namespace": "hw",
                     "className": "\\Emaia\\LaravelHotwire\\Components\\RichText"

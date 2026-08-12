@@ -61,6 +61,7 @@ use Emaia\LaravelHotwire\Components\Popover;
 use Emaia\LaravelHotwire\Components\Progress;
 use Emaia\LaravelHotwire\Components\RadioGroup;
 use Emaia\LaravelHotwire\Components\RadioGroup\Item as RadioGroupItem;
+use Emaia\LaravelHotwire\Components\ReadMore;
 use Emaia\LaravelHotwire\Components\RichText;
 use Emaia\LaravelHotwire\Components\ScrollProgress;
 use Emaia\LaravelHotwire\Components\Select;
@@ -783,6 +784,20 @@ return [
                 'slots' => $slots(['radio-group-item', 'radio-group-input', 'radio-group-item-content']),
             ],
         ],
+        'read-more' => [
+            'class' => ReadMore::class,
+            'view' => 'hotwire::component-views.read-more',
+            'docs' => 'docs/components/read-more.md',
+            'category' => 'display',
+            'description' => 'Overflow-aware content preview with accessible expansion and first-paint clamping',
+            'controllers' => ['read-more'],
+            'styling' => [
+                'slots' => $slots(
+                    ['read-more', 'read-more-content', 'read-more-fade', 'read-more-trigger', 'read-more-trigger-icon'],
+                    ['read-more-viewport'],
+                ),
+            ],
+        ],
         'rich-text' => [
             'class' => RichText::class,
             'view' => 'hotwire::component-views.rich-text',
@@ -1139,7 +1154,7 @@ return [
             'source' => 'resources/js/controllers/disclosure_controller.js',
             'docs' => 'docs/controllers/disclosure.md',
             'category' => 'utility',
-            'description' => 'Show/hide collapsible content with aria-expanded sync — base primitive for FAQ items, read-more sections and accordions',
+            'description' => 'Show/hide collapsible content with aria-expanded sync for FAQ items, panels and accordions',
         ],
         'drawer' => [
             'source' => 'resources/js/controllers/drawer_controller.js',
@@ -1281,6 +1296,12 @@ return [
             'category' => 'overlay',
             'description' => 'Anchored click-triggered popover with state-driven presence, focus return and Floating UI positioning',
             'npm' => ['@floating-ui/dom' => '^1.8.0'],
+        ],
+        'read-more' => [
+            'source' => 'resources/js/controllers/read_more_controller.js',
+            'docs' => 'docs/controllers/read-more.md',
+            'category' => 'utility',
+            'description' => 'Measures overflowing content and coordinates accessible collapsed and expanded states',
         ],
         'remote-form' => [
             'source' => 'resources/js/controllers/remote_form_controller.js',

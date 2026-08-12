@@ -56,6 +56,7 @@ it('classifies presentation-free and controller-owned slots as structural', func
         'modal',
         'optimistic',
         'pagination-status',
+        'read-more-viewport',
         'rich-text-input',
         'sheet',
         'toast-trigger',
@@ -74,6 +75,20 @@ it('keeps Carousel geometry in the structural stylesheet', function () {
         ->toContain('[data-carousel-axis="y"] [data-carousel-container]')
         ->toContain('flex: 0 0 var(--carousel-slide-size, 100%)')
         ->toContain('var(--carousel-slide-spacing, 0px)');
+});
+
+it('keeps Read More first-paint geometry in the structural stylesheet', function () {
+    $css = File::get(__DIR__.'/../../resources/css/structural.css');
+
+    expect($css)
+        ->toContain('[data-slot="read-more-content"]')
+        ->toContain('display: flow-root')
+        ->toContain('[data-slot="read-more-trigger"][hidden]')
+        ->toContain('[data-slot="read-more-fade"][hidden]')
+        ->toContain('@media (scripting: enabled)')
+        ->toContain('transition: max-block-size 500ms ease-in-out')
+        ->toContain('[data-state="expanded"]:not([data-transitioning])')
+        ->toContain('var(--read-more-collapsed-height, 20rem)');
 });
 
 it('keeps rules that name no slot out of the presets', function (string $preset) {
