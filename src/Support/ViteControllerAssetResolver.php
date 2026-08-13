@@ -15,6 +15,9 @@ final class ViteControllerAssetResolver
     /** @var Closure(string, string): string */
     private Closure $assetUrlResolver;
 
+    /** @var array<string, array{local: list<string>, package: list<string>}>|null */
+    private ?array $controllers = null;
+
     /**
      * Build a resolver from a decoded manifest or a manifest JSON path.
      *
@@ -96,6 +99,10 @@ final class ViteControllerAssetResolver
     /** @return array<string, array{local: list<string>, package: list<string>}> */
     private function controllerCandidates(): array
     {
+        if ($this->controllers !== null) {
+            return $this->controllers;
+        }
+
         $controllers = [];
 
         foreach ($this->manifest as $manifestKey => $entry) {
@@ -117,7 +124,7 @@ final class ViteControllerAssetResolver
             $controllers[$identifier][$scope][] = $manifestKey;
         }
 
-        return $controllers;
+        return $this->controllers = $controllers;
     }
 
     /** @return array{string, 'local'|'package'}|null */

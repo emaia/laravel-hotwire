@@ -86,6 +86,35 @@ it('logs and renders nothing when a controller is absent from the manifest', fun
         ->withArgs(fn (string $message): bool => str_contains($message, 'Unable to locate Stimulus controller [missing]'));
 });
 
+it('skips a missing controller without dropping valid preloads', function () {
+    Log::spy();
+    File::put(public_path('build/manifest.json'), json_encode([
+        'resources/js/controllers/modal_controller.js' => [
+            'file' => 'assets/modal.js',
+            'imports' => ['_stimulus.js'],
+        ],
+        'resources/js/controllers/rich_text_controller.js' => [
+            'file' => 'assets/rich-text.js',
+            'imports' => ['_stimulus.js'],
+        ],
+        '_stimulus.js' => [
+            'file' => 'assets/stimulus.js',
+        ],
+    ], JSON_THROW_ON_ERROR));
+
+    $html = (string) $this->blade(
+        '<x-hw::controller-preloads :controllers="[\'modal\', \'missing\', \'rich-text\']" />',
+    );
+
+    expect($html)
+        ->toContain('assets/modal.js')
+        ->toContain('assets/rich-text.js')
+        ->and(substr_count($html, 'assets/stimulus.js'))->toBe(1);
+    Log::shouldHaveReceived('warning')
+        ->once()
+        ->withArgs(fn (string $message): bool => str_contains($message, 'Unable to locate Stimulus controller [missing]'));
+});
+
 it('logs and renders nothing when the Vite manifest is unavailable', function () {
     Log::spy();
     File::delete(public_path('build/manifest.json'));

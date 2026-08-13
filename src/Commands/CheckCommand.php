@@ -142,7 +142,7 @@ class CheckCommand extends Command
         }
 
         $this->printProblemLines();
-        $this->printIssueSummary($issues, $missingDeps, $excludedFromStub);
+        $this->printIssueSummary($issues, $missingDeps, $excludedFromStub, $policyDrift);
 
         // Only user-owned divergences are present — nothing for --fix to do.
         // Report visibility but keep the exit code green (e.g. CI stays happy).
@@ -150,7 +150,12 @@ class CheckCommand extends Command
             return self::SUCCESS;
         }
 
-        if ($this->shouldFix()) {
+        if ($this->shouldFix(
+            $hasControllerIssues,
+            $hasMissingDeps,
+            $hasLoaderUpgrade,
+            $hasPolicyDrift || $hasStubDrift,
+        )) {
             $this->publishIssues($issues);
             $depsAdded = $this->writeMissingDependencies($missingDeps);
             $depsAdded += $this->upgradeLazyLoader($loaderUpgrade);
@@ -305,9 +310,43 @@ class CheckCommand extends Command
             return false;
         }
 
-        $this->line('  controller loading policy differs from config; run `hotwire:check --fix` to regenerate');
+        $changes = [];
+
+        if ($policy->preloadControllers !== $expected->preloadControllers) {
+            $changes[] = 'preload: '.$this->identifierList($policy->preloadControllers).' -> '.$this->identifierList($expected->preloadControllers);
+        }
+
+        if ($policy->eagerControllers !== $expected->eagerControllers) {
+            $changes[] = 'eager: '.$this->identifierList($policy->eagerControllers).' -> '.$this->identifierList($expected->eagerControllers);
+        }
+
+        if ($policy->eagerControllerPaths !== $expected->eagerControllerPaths) {
+            $changes[] = 'eager paths: '.$this->identifierMap($policy->eagerControllerPaths).' -> '.$this->identifierMap($expected->eagerControllerPaths);
+        }
+
+        $detail = implode('; ', $changes);
+        $this->problemLines[] = [
+            'key' => 'resources/js/controllers/index.js',
+            'line' => "  <comment>!</comment>  resources/js/controllers/index.js  outdated  <fg=gray>(controller loading policy differs from config; {$detail})</>",
+        ];
 
         return true;
+    }
+
+    /** @param string[] $identifiers */
+    private function identifierList(array $identifiers): string
+    {
+        return '['.implode(', ', $identifiers).']';
+    }
+
+    /** @param array<string, string> $values */
+    private function identifierMap(array $values): string
+    {
+        return '['.implode(', ', array_map(
+            fn (string $identifier, string $path): string => "{$identifier}={$path}",
+            array_keys($values),
+            $values,
+        )).']';
     }
 
     /** @return array<string, ControllerDefinition> */
@@ -913,8 +952,12 @@ class CheckCommand extends Command
      * @param  array<string, string>  $missingDeps
      * @param  string[]  $excludedFromStub
      */
-    private function printIssueSummary(array $issues, array $missingDeps, array $excludedFromStub = []): void
-    {
+    private function printIssueSummary(
+        array $issues,
+        array $missingDeps,
+        array $excludedFromStub = [],
+        bool $policyDrift = false,
+    ): void {
         if (! empty($issues)) {
             $count = count($issues);
             $this->line("<comment>$count controller(s) need attention.</comment>");
@@ -928,14 +971,22 @@ class CheckCommand extends Command
         if (! empty($excludedFromStub)) {
             $count = count($excludedFromStub);
             $this->line("<comment>$count controller(s) used in views but excluded from controllers/index.js</comment>");
-            $this->line('<comment>artisan hotwire:check --fix will regenerate.</comment>');
+        }
+
+        if ($policyDrift || ! empty($excludedFromStub)) {
+            $this->line('<comment>1 loader stub needs regeneration.</comment>');
+            $this->line('<comment>hotwire:check --fix will regenerate resources/js/controllers/index.js.</comment>');
         }
 
         $this->line('');
     }
 
-    private function shouldFix(): bool
-    {
+    private function shouldFix(
+        bool $controllerIssues,
+        bool $missingDependencies,
+        bool $loaderUpgrade,
+        bool $regenerateLoader,
+    ): bool {
         if ($this->option('fix')) {
             return true;
         }
@@ -944,7 +995,41 @@ class CheckCommand extends Command
             return false;
         }
 
-        return confirm('Apply --fix now? (publishes missing/outdated controllers, regenerates the loader stub, adds missing npm deps)', default: true);
+        $hasInteractiveTerminal = defined('STDIN')
+            && function_exists('stream_isatty')
+            && stream_isatty(STDIN);
+
+        if (! $hasInteractiveTerminal && ! app()->runningUnitTests()) {
+            return false;
+        }
+
+        $actions = [];
+
+        if ($controllerIssues) {
+            $actions[] = 'publish missing/outdated controller files';
+        }
+
+        if ($regenerateLoader || $loaderUpgrade) {
+            $actions[] = 'regenerate resources/js/controllers/index.js';
+        }
+
+        if ($missingDependencies || $loaderUpgrade) {
+            $actions[] = $loaderUpgrade ? 'add or update npm dependencies' : 'add missing npm dependencies';
+        }
+
+        return confirm('Apply --fix now? This will '.$this->sentenceList($actions).'.', default: false);
+    }
+
+    /** @param string[] $items */
+    private function sentenceList(array $items): string
+    {
+        if (count($items) < 2) {
+            return $items[0] ?? 'apply the available fixes';
+        }
+
+        $last = array_pop($items);
+
+        return implode(', ', $items).' and '.$last;
     }
 
     /** @param array<int, array{identifier: string, source_file: string, target_file: string}> $issues */

@@ -814,11 +814,20 @@ it('reports and fixes controller policy drift from config', function () {
     config()->set('hotwire.controllers.preload', ['turbo--progress']);
     config()->set('hotwire.controllers.eager', ['modal']);
 
-    $this->artisan('hotwire:check --no-interaction')
-        ->expectsOutputToContain('controller loading policy differs from config')
-        ->assertFailed();
+    $exit = Artisan::call('hotwire:check --no-interaction');
+    $output = Artisan::output();
+
+    expect($exit)->toBe(1)
+        ->and($output)
+        ->toContain('resources/js/controllers/index.js  outdated')
+        ->toContain('controller loading policy differs from config')
+        ->toContain('preload: [] -> [turbo--progress]')
+        ->toContain('eager: [] -> [modal]')
+        ->toContain('1 loader stub needs regeneration')
+        ->toContain('hotwire:check --fix will regenerate resources/js/controllers/index.js');
 
     $this->artisan('hotwire:check --fix --skip-install --no-interaction')
+        ->expectsOutputToContain('Regenerated resources/js/controllers/index.js from controller loading config')
         ->assertSuccessful();
 
     $policy = LoaderStub::policyFromContent(
@@ -846,9 +855,12 @@ it('reports policy drift when an eager package controller gains a local override
     File::put($this->targetDir.'/modal_controller.js', 'export default class {}');
     config()->set('hotwire.controllers.eager', ['modal']);
 
-    $this->artisan('hotwire:check --no-interaction')
-        ->expectsOutputToContain('controller loading policy differs from config')
-        ->assertFailed();
+    $exit = Artisan::call('hotwire:check --no-interaction');
+
+    expect($exit)->toBe(1)
+        ->and(Artisan::output())
+        ->toContain('controller loading policy differs from config')
+        ->toContain('eager paths: [modal=../../../vendor/emaia/laravel-hotwire/resources/js/controllers/modal_controller.js] -> [modal=./modal_controller.js]');
 });
 
 it('reports policy drift when an eager local controller falls back to the package', function () {
@@ -868,9 +880,50 @@ it('reports policy drift when an eager local controller falls back to the packag
     File::delete($this->targetDir.'/modal_controller.js');
     config()->set('hotwire.controllers.eager', ['modal']);
 
-    $this->artisan('hotwire:check --no-interaction')
-        ->expectsOutputToContain('controller loading policy differs from config')
+    $exit = Artisan::call('hotwire:check --no-interaction');
+
+    expect($exit)->toBe(1)
+        ->and(Artisan::output())
+        ->toContain('controller loading policy differs from config')
+        ->toContain('eager paths: [modal=./modal_controller.js] -> [modal=../../../vendor/emaia/laravel-hotwire/resources/js/controllers/modal_controller.js]');
+});
+
+it('names the loader stub in the interactive policy drift fix prompt', function () {
+    writePackageJson(['devDependencies' => [
+        '@emaia/stimulus-lazy-loader' => '^2.0.0',
+    ]]);
+    File::ensureDirectoryExists($this->targetDir);
+    File::put(
+        $this->targetDir.'/index.js',
+        LoaderStub::generate(HotwireRegistry::make(), appControllersPath: $this->targetDir),
+    );
+    config()->set('hotwire.controllers.eager', ['modal']);
+
+    $this->artisan('hotwire:check')
+        ->expectsConfirmation('Apply --fix now? This will regenerate resources/js/controllers/index.js.', 'no')
         ->assertFailed();
+});
+
+it('does not apply fixes without a tty unless --fix is explicit', function () {
+    writePackageJson(['devDependencies' => [
+        '@emaia/stimulus-lazy-loader' => '^2.0.0',
+    ]]);
+    File::ensureDirectoryExists($this->targetDir);
+    $stubPath = $this->targetDir.'/index.js';
+    $original = LoaderStub::generate(HotwireRegistry::make(), appControllersPath: $this->targetDir);
+    File::put($stubPath, $original);
+    config()->set('hotwire.controllers.eager', ['modal']);
+    $environment = app()->environment();
+
+    try {
+        app()->instance('env', 'production');
+        $exit = Artisan::call('hotwire:check');
+    } finally {
+        app()->instance('env', $environment);
+    }
+
+    expect($exit)->toBe(1)
+        ->and(File::get($stubPath))->toBe($original);
 });
 
 it('adds dependencies and loader inclusion for configured package preloads', function () {
@@ -1091,7 +1144,7 @@ it('prompts to run package manager install after interactive fix adds dependenci
     writeView('page.blade.php', '<x-hw::chart />');
 
     $this->artisan('hotwire:check')
-        ->expectsConfirmation('Apply --fix now? (publishes missing/outdated controllers, regenerates the loader stub, adds missing npm deps)', 'yes')
+        ->expectsConfirmation('Apply --fix now? This will add missing npm dependencies.', 'yes')
         ->expectsConfirmation('Run pnpm install now?', 'yes')
         ->expectsOutputToContain('Running pnpm install')
         ->assertSuccessful();
@@ -1221,6 +1274,29 @@ it('reports a com-dep controller used in views but excluded from the loader stub
     $this->artisan('hotwire:check --no-interaction')
         ->expectsOutputToContain('excluded from loader stub')
         ->assertExitCode(1);
+});
+
+it('prints one regeneration instruction when stub exclusion and policy drift coexist', function () {
+    writePackageJson(['name' => 'app', 'devDependencies' => [
+        '@emaia/stimulus-lazy-loader' => '^2.0.0',
+        'echarts' => '^6.1.0',
+    ]]);
+    File::ensureDirectoryExists($this->targetDir);
+    File::put(
+        $this->targetDir.'/index.js',
+        LoaderStub::generate(HotwireRegistry::make(), [], appControllersPath: $this->targetDir),
+    );
+    writeView('page.blade.php', '<x-hw::chart />');
+    config()->set('hotwire.controllers.eager', ['modal']);
+
+    $exit = Artisan::call('hotwire:check --no-interaction');
+    $output = Artisan::output();
+
+    expect($exit)->toBe(1)
+        ->and($output)->toContain('excluded from loader stub')
+        ->toContain('resources/js/controllers/index.js  outdated')
+        ->and(substr_count($output, 'will regenerate'))->toBe(1)
+        ->and($output)->not->toContain('artisan hotwire:check --fix will regenerate.');
 });
 
 it('does not report drift when stub is hand-written (no auto-generated marker)', function () {

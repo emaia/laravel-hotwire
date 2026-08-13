@@ -114,8 +114,17 @@ class LaravelHotwireServiceProvider extends PackageServiceProvider
                         $manifest,
                         fn (string $_manifestKey, string $file): string => $this->assetPath($buildDirectory.'/'.$file),
                     );
-                    $assets = $resolver->resolve($identifiers);
-                } catch (RuntimeException|ViteException $exception) {
+
+                    $assets = [];
+
+                    foreach ($identifiers as $identifier) {
+                        try {
+                            array_push($assets, ...$resolver->resolve([$identifier]));
+                        } catch (RuntimeException $exception) {
+                            Log::warning($exception->getMessage());
+                        }
+                    }
+                } catch (ViteException $exception) {
                     Log::warning($exception->getMessage());
 
                     return new HtmlString('');

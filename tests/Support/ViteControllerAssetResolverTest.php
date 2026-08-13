@@ -113,6 +113,28 @@ it('returns controller chunks and recursive static imports once without followin
     ])->and($assets[1]->integrity)->toBe('sha384-shared-a');
 });
 
+it('caches controller candidates across separate resolve calls', function () {
+    $resolver = controllerAssetResolver([
+        'resources/js/controllers/search_controller.js' => [
+            'file' => 'assets/search.js',
+        ],
+    ]);
+
+    $resolver->resolve(['search']);
+
+    $manifest = new ReflectionProperty($resolver, 'manifest');
+    $manifest->setValue($resolver, [
+        'resources/js/controllers/search_controller.js' => [
+            'file' => 'assets/search.js',
+        ],
+        'resources/js/controllers/search_controller.ts' => [
+            'file' => 'assets/search-ts.js',
+        ],
+    ]);
+
+    expect($resolver->resolve(['search']))->toHaveCount(1);
+});
+
 it('loads a manifest from a JSON file', function () {
     $directory = sys_get_temp_dir().'/hotwire-vite-manifest-'.uniqid('', true);
     mkdir($directory);

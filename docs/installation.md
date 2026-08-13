@@ -186,6 +186,10 @@ Use a page-specific selection when a controller is critical only on some routes:
 the required execution order. Eager controllers are removed from the matching lazy glob, and an identifier listed in
 both arrays is treated as eager only.
 
+After changing either list, run `php artisan hotwire:check --fix` to regenerate
+`resources/js/controllers/index.js`. A plain `hotwire:check` reports the file as outdated and shows the current and
+expected `preload` / `eager` selections before offering the fix interactively.
+
 Both options support package controllers and conventional application controllers under `resources/js/controllers`.
 Nested directories map to Stimulus `--` namespaces; `.js` and `.ts` are supported. A local controller overrides a
 package controller with the same identifier. Controllers registered manually from another directory remain application
