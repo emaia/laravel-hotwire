@@ -225,11 +225,15 @@ export default class extends Controller {
                 (entry.intersectionRatio === undefined ||
                     entry.intersectionRatio + Number.EPSILON >= effectiveThreshold);
 
-            if (!meetsThreshold) {
-                if (!this.onceValue) entry.target.dataset.revealArmed = "";
+            if (!entry.isIntersecting) {
+                if (!this.onceValue && !entry.target.hasAttribute("data-reveal-armed")) {
+                    entry.target.dataset.revealArmed = "";
+                }
 
                 return;
             }
+
+            if (!meetsThreshold) return;
 
             const wasArmed = entry.target.hasAttribute("data-reveal-armed");
             if (!wasArmed) return;

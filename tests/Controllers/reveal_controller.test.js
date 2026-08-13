@@ -454,6 +454,9 @@ test("once false observes visible items and rearms only after they leave", async
     expect(item.hasAttribute("data-reveal-armed")).toBeFalse();
     expect(shown).toHaveLength(1);
 
+    observers[0].trigger([{ target: item, isIntersecting: true, intersectionRatio: 0.05 }]);
+    expect(item.hasAttribute("data-reveal-armed")).toBeFalse();
+
     observers[0].trigger([{ target: item, isIntersecting: false }]);
     expect(item.hasAttribute("data-reveal-armed")).toBeTrue();
     observers[0].trigger([{ target: item, isIntersecting: true }]);
