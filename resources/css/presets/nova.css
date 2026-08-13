@@ -617,6 +617,13 @@
     [data-slot="side-panel-trigger-icon"] { @apply size-4 transition-transform duration-200; }
 
     /* Sidebar */
+    @media (min-width: 768px) {
+        [data-slot="sidebar"][data-collapsible="icon"] [data-slot="sidebar-group-label"][data-reveal-item],
+        [data-slot="sidebar"][data-collapsible="icon"] [data-reveal-children] > [data-slot="sidebar-group-label"] {
+            --reveal-animation: none;
+        }
+    }
+
     [data-slot="sidebar-wrapper"] { @apply flex min-h-svh w-full bg-background text-sidebar-foreground has-[[data-variant=inset]]:bg-sidebar; }
     [data-slot="sidebar"] { @apply hidden text-sidebar-foreground md:block; }
     [data-slot="sidebar"][data-collapsible="none"] { @apply flex h-full w-(--sidebar-width) flex-col bg-sidebar text-sidebar-foreground; }

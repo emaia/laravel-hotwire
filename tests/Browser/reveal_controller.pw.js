@@ -71,6 +71,30 @@ test("Sidebar Reveal integration receives its selected Nova motion", async ({ pa
     await expect(page.locator("#sidebar-item")).toHaveCSS("animation-name", "hotwire-reveal-flat");
 });
 
+test("collapsed desktop Sidebar labels suppress Reveal without changing expanded or mobile labels", async ({
+    page,
+}) => {
+    const structural = await readFile("resources/css/structural.css", "utf8");
+    const nova = await readFile("resources/css/presets/nova.css", "utf8");
+
+    await page.setViewportSize({ width: 1024, height: 768 });
+    await page.setContent(`
+        <style>${structural}\n${nova}</style>
+        <div data-slot="sidebar" data-collapsible="icon">
+            <div id="collapsed-label" data-slot="sidebar-group-label" data-reveal-item>Collapsed</div>
+        </div>
+        <div data-slot="sidebar" data-collapsible="">
+            <div id="expanded-label" data-slot="sidebar-group-label" data-reveal-item>Expanded</div>
+        </div>
+    `);
+
+    await expect(page.locator("#collapsed-label")).toHaveCSS("animation-name", "none");
+    await expect(page.locator("#expanded-label")).toHaveCSS("animation-name", "hotwire-reveal-rise");
+
+    await page.setViewportSize({ width: 600, height: 768 });
+    await expect(page.locator("#collapsed-label")).toHaveCSS("animation-name", "hotwire-reveal-rise");
+});
+
 test("backwards fill releases transform and filter after the cascade", async ({ page }) => {
     await page.setContent(
         await fixture(

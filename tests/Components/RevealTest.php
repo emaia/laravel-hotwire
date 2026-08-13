@@ -148,6 +148,10 @@ it('ships first-paint mechanics separately from preset motion', function () {
         ->and($nova)
         ->toContain('[data-slot="reveal"][data-motion="flat"]')
         ->toContain('[data-slot="sidebar-container"][data-controller~="reveal"][data-motion="flat"]')
+        ->toContain('@media (min-width: 768px)')
+        ->toContain('[data-slot="sidebar"][data-collapsible="icon"] [data-slot="sidebar-group-label"][data-reveal-item]')
+        ->toContain('[data-slot="sidebar"][data-collapsible="icon"] [data-reveal-children] > [data-slot="sidebar-group-label"]')
+        ->toContain('--reveal-animation: none')
         ->toContain('@keyframes hotwire-reveal-rise')
         ->toContain('@keyframes hotwire-reveal-flat')
         ->toContain('@keyframes hotwire-reveal-fade');

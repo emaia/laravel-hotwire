@@ -170,6 +170,11 @@ visible; `trigger="scroll"` simply degrades to the load cascade.
 With `prefers-reduced-motion: reduce`, animations are disabled, armed opacity is released, and the controller does not
 observe or restart animated numbers.
 
+Avoid making a Reveal item the same element whose visibility another state controls with `opacity`. CSS animations win
+over normal opacity declarations while running, so a hidden item can flash through the Reveal keyframe and disappear
+when `backwards` fill releases it. Animate a stable wrapper instead, or suppress Reveal in the conflicting state. Nova
+does this for desktop group labels in an icon-collapsed Sidebar while preserving their mobile and expanded entrances.
+
 ## Styling hooks
 
 - `data-slot="reveal"`
