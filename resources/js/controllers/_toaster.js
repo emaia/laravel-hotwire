@@ -3,12 +3,30 @@
 import { createPresence } from "./_presence.js";
 
 const TYPES = ["default", "success", "error", "warning", "info"];
+const MAX_RENDER_WAIT = 2000;
 
 // Emissions routinely arrive before a viewport exists: the trigger sits earlier in the document
 // than the layout's, and lazy-loaded controllers connect in whatever order their chunks land.
 let pending = [];
 let active = null;
 let sequence = 0;
+
+// A page-load toast is born inside Turbo's swap, and a swap under a view transition paints a
+// snapshot rather than the live DOM. An entry that plays there is spent before the page is on
+// screen and the card reads as popping in fully formed. Two signals cover the two arrival orders,
+// because neither covers both: the pseudo-element animations only become observable once the
+// transition is ready, which a preloaded chunk beats and a lazily imported one does not. Document
+// scope is deliberate — the listener has to predate the viewport it protects.
+let renderInFlight = false;
+
+if (typeof document !== "undefined") {
+    document.addEventListener("turbo:before-render", () => {
+        renderInFlight = true;
+    });
+    document.addEventListener("turbo:load", () => {
+        renderInFlight = false;
+    });
+}
 
 /** Show a toast, buffering it until a viewport exists. Returns its id. */
 export function emitToast(payload) {
@@ -28,6 +46,7 @@ export function resetToaster() {
     pending = [];
     active = null;
     sequence = 0;
+    renderInFlight = false;
 }
 
 export function createToaster(element, options = {}) {
@@ -67,12 +86,43 @@ export function createToaster(element, options = {}) {
         // suppressed read afterwards becomes the transition's base style and the toast snaps in.
         measure(entry);
         observe(entry);
-        reflow();
         entry.presence.sync(false);
-        entry.presence.open();
-        startTimer(entry);
+        enter(entry);
 
         return id;
+    }
+
+    /**
+     * Hold the card's motion until the page it belongs to is actually on screen. Measurement stays
+     * immediate because it is a read, but restacking is not: pushing the cards already on screen
+     * back before the newcomer exists splits one movement into two, and the stack is seen opening a
+     * gap for nothing. The timer waits too, so a toast cannot spend its dwell behind a snapshot.
+     */
+    function enter(entry) {
+        const settled = whenPageVisible();
+
+        if (settled === null) {
+            release(entry);
+
+            return;
+        }
+
+        settled.then(() => {
+            if (destroyed || !entry.element.isConnected) return;
+
+            // Start on a frame boundary. Resuming straight out of the continuation lands mid-frame,
+            // where the staged closed style has not been through a recalculation yet and the flip to
+            // open produces no transition at all — the card teleports instead of entering.
+            requestAnimationFrame(() => release(entry));
+        });
+    }
+
+    function release(entry) {
+        if (destroyed || !entry.element.isConnected) return;
+
+        reflow();
+        entry.presence.open();
+        startTimer(entry);
     }
 
     function build(id, payload) {
@@ -382,6 +432,44 @@ function nextId() {
     sequence += 1;
 
     return `toast-${sequence}`;
+}
+
+/**
+ * Resolve once the page is painted from the live DOM again, or null when it already is. A render in
+ * flight settles on `turbo:load`; a transition already past its ready phase exposes pseudo-element
+ * animations that finish exactly when the snapshot is dropped.
+ */
+function whenPageVisible() {
+    if (renderInFlight) {
+        return new Promise((resolve) => {
+            const settle = () => {
+                clearTimeout(guard);
+                document.removeEventListener("turbo:load", settle);
+                resolve();
+            };
+            // A visit that never lands must not strand the card off screen for good.
+            const guard = setTimeout(settle, MAX_RENDER_WAIT);
+
+            document.addEventListener("turbo:load", settle);
+        });
+    }
+
+    const animations = viewTransitionAnimations();
+
+    return animations.length === 0
+        ? null
+        : Promise.allSettled(animations.map((animation) => animation.finished));
+}
+
+/** @returns {Animation[]} the animations a running view transition drives on its pseudo-elements. */
+function viewTransitionAnimations() {
+    if (typeof document.getAnimations !== "function") return [];
+
+    return document.getAnimations().filter((animation) => {
+        const pseudo = animation.effect?.pseudoElement;
+
+        return typeof pseudo === "string" && pseudo.startsWith("::view-transition");
+    });
 }
 
 function slot(tag, name, attributes = {}) {

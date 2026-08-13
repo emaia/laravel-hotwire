@@ -123,6 +123,137 @@ test("F6 moves focus to the viewport when a toast is on screen", async ({ page }
     await expect(page.locator('[data-slot="toaster"]')).toBeFocused();
 });
 
+// Nothing is on screen while a view transition runs: the browser paints its snapshot, not the live
+// DOM. An entry already spent by the time the snapshot is dropped reads as a card popping in fully
+// formed. The two cases below are the two orders the viewport can be born in, and they need
+// different signals — a chunk that was preloaded sees Turbo's events, one imported on demand does
+// not, and only the latter arrives late enough to observe the transition's own animations.
+
+test("holds the entry back until a render under a view transition has finished", async ({ page }) => {
+    // A page-load toast is emitted before the viewport exists and waits in the buffer. Turbo then
+    // swaps the DOM inside a view transition, and that swap is where the viewport is born. A chunk
+    // that was preloaded is already listening when the render starts.
+    const seen = await sampleAcrossTransition(page, async (swap, capture) => {
+        document.dispatchEvent(new CustomEvent("turbo:before-render"));
+        const transition = document.startViewTransition(swap);
+        await transition.finished;
+        capture();
+    }, () => document.dispatchEvent(new CustomEvent("turbo:load")));
+
+    expect(seen.held.hidden).toBe(true);
+    expect(seen.held.state).toBe("closed");
+    expect(seen.released.state).toBe("open");
+    expect(seen.released.opacity).toBeGreaterThan(0.9);
+    expect(seen.path.length).toBeGreaterThan(3);
+    expect(seen.released.y).toBe(0);
+});
+
+test("holds the entry back when the view transition is already running", async ({ page }) => {
+    // A chunk imported on demand misses Turbo's events entirely, but it also lands after the
+    // snapshot is taken — the first point at which the transition's own animations can be observed.
+    const seen = await sampleAcrossTransition(page, async (swap, capture) => {
+        const transition = document.startViewTransition(() => {
+            document.body.appendChild(document.createElement("hr"));
+        });
+        await transition.ready;
+        swap();
+        // Here the release is the transition's own animations, so the card has to be read while
+        // they are still running — reading after they settle races the entry it just unblocked.
+        await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        capture();
+        await transition.finished;
+    });
+
+    expect(seen.held.hidden).toBe(true);
+    expect(seen.held.state).toBe("closed");
+    expect(seen.released.state).toBe("open");
+    expect(seen.released.opacity).toBeGreaterThan(0.9);
+    expect(seen.path.length).toBeGreaterThan(3);
+    expect(seen.released.y).toBe(0);
+});
+
+test("leaves the cards already on screen alone while a newcomer is held", async ({ page }) => {
+    await setup(page);
+    await page.evaluate(() => window.toaster.success("First", { duration: 0 }));
+    await page.waitForTimeout(700);
+
+    const seen = await page.evaluate(async () => {
+        const resting = document.querySelector('[data-slot="toast"]');
+        const restingY = () => Math.round(new DOMMatrix(getComputedStyle(resting).transform).m42);
+        const before = restingY();
+
+        document.dispatchEvent(new CustomEvent("turbo:before-render"));
+        window.toaster.info("Second", { duration: 0 });
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        const held = restingY();
+
+        document.dispatchEvent(new CustomEvent("turbo:load"));
+        await new Promise((resolve) => setTimeout(resolve, 800));
+
+        return { before, held, after: restingY() };
+    });
+
+    // Restacking on arrival rather than on entry opens a gap for a card that is not there yet, and
+    // one arrival is seen as two separate movements.
+    expect(seen.held).toBe(seen.before);
+    expect(Math.abs(seen.after - seen.before)).toBeGreaterThan(10);
+});
+
+/**
+ * Buffer a toast, run `transition` around the birth of the viewport, and report the card twice:
+ * the moment the snapshot is dropped, and once the entry has had time to play out.
+ */
+async function sampleAcrossTransition(page, transition, release = () => {}) {
+    await setup(page, { createToaster: false });
+
+    return page.evaluate(async ([transitionSource, releaseSource]) => {
+        const read = (toast) => ({
+            hidden: toast.hidden,
+            state: toast.dataset.state,
+            opacity: Number(getComputedStyle(toast).opacity),
+            y: new DOMMatrix(getComputedStyle(toast).transform).m42,
+        });
+
+        window.emitToast({ message: "Saved", duration: 0 });
+
+        const swap = () => {
+            window.toaster = window.createToaster(
+                document.querySelector('[data-slot="toaster"]'),
+                { position: "bottom-end" },
+            );
+        };
+
+        let held = null;
+        const capture = () => {
+            held = read(document.querySelector('[data-slot="toast"]'));
+        };
+
+        // eslint-disable-next-line no-new-func
+        await new Function(`return (${transitionSource})`)()(swap, capture);
+
+        const toast = document.querySelector('[data-slot="toast"]');
+
+        // eslint-disable-next-line no-new-func
+        new Function(`return (${releaseSource})`)()();
+
+        // Sample the way out as well. Ending up open proves nothing on its own: a card whose
+        // transition was cancelled lands there too, in a single frame, which is the pop-in this
+        // whole hold exists to prevent.
+        const path = [];
+        const started = performance.now();
+        await new Promise((resolve) => {
+            const tick = () => {
+                path.push(Math.round(new DOMMatrix(getComputedStyle(toast).transform).m42));
+                if (performance.now() - started < 800) requestAnimationFrame(tick);
+                else resolve();
+            };
+            requestAnimationFrame(tick);
+        });
+
+        return { held, released: read(toast), path: [...new Set(path)] };
+    }, [transition.toString(), release.toString()]);
+}
+
 /** Sample the vertical translate of a toast every frame while `action` plays out. */
 async function trackTransform(page, action, selector = '[data-slot="toast"]:not([data-behind])') {
     const samples = await page.evaluate(async ([fn, sel]) => {
@@ -149,7 +280,7 @@ async function trackTransform(page, action, selector = '[data-slot="toast"]:not(
     return [...new Set(samples)];
 }
 
-async function setup(page) {
+async function setup(page, { createToaster = true } = {}) {
     await page.setContent(`
         <style>${await readFile("resources/css/structural.css", "utf8")}</style>
         <style>
@@ -175,6 +306,9 @@ async function setup(page) {
     `);
 
     await page.addScriptTag({ content: await bundle() });
+
+    if (!createToaster) return;
+
     await page.evaluate(() => {
         window.toaster = window.createToaster(document.querySelector('[data-slot="toaster"]'), {
             position: "bottom-end",
