@@ -67,7 +67,7 @@ export default class extends Controller {
 
     observer = null;
     mutationObserver = null;
-    visibilityMutationObserver = null;
+    visibilityMutationObservers = [];
     visibilityIntersectionObserver = null;
     pendingFire = null;
     pendingCounterRetry = null;
@@ -185,7 +185,7 @@ export default class extends Controller {
 
             try {
                 this.observer = new IntersectionObserver((entries) => this.releaseItems(entries), {
-                    threshold: this.thresholdValue,
+                    threshold: this.thresholds,
                     rootMargin: this.rootMarginValue,
                 });
             } catch {
@@ -218,11 +218,12 @@ export default class extends Controller {
         entries.forEach((entry) => {
             const itemHeight = entry.boundingClientRect?.height || entry.target.getBoundingClientRect().height;
             const rootHeight = entry.rootBounds?.height || window.innerHeight;
-            const effectiveThreshold =
-                itemHeight > 0 ? Math.min(this.thresholdValue, rootHeight / itemHeight) : this.thresholdValue;
+            const maximumRatio = itemHeight > 0 ? Math.min(1, rootHeight / itemHeight) : 1;
+            const effectiveThreshold = this.thresholds.findLast((threshold) => threshold <= maximumRatio) ?? 0;
             const meetsThreshold =
                 entry.isIntersecting &&
-                (entry.intersectionRatio === undefined || entry.intersectionRatio >= effectiveThreshold);
+                (entry.intersectionRatio === undefined ||
+                    entry.intersectionRatio + Number.EPSILON >= effectiveThreshold);
 
             if (!meetsThreshold) {
                 if (!this.onceValue) entry.target.dataset.revealArmed = "";
@@ -347,13 +348,16 @@ export default class extends Controller {
 
     deferUntilRendered(items) {
         items.forEach((item) => this.pendingVisibilityItems.add(item));
-        if (this.visibilityMutationObserver) return;
+        if (this.visibilityMutationObservers.length > 0) return;
 
-        this.visibilityMutationObserver = new MutationObserver(this.checkDeferredVisibility);
-        this.visibilityMutationObserver.observe(document.documentElement, {
-            attributes: true,
-            subtree: true,
-            attributeFilter: ["class", "hidden", "open", "style"],
+        this.visibilityMutationObservers = this.ancestors.map((element) => {
+            const observer = new MutationObserver(this.checkDeferredVisibility);
+            observer.observe(element, {
+                attributes: true,
+                attributeFilter: ["class", "hidden", "open", "style"],
+            });
+
+            return observer;
         });
         window.addEventListener("resize", this.checkDeferredVisibility);
         document.addEventListener("toggle", this.checkDeferredVisibility, true);
@@ -374,8 +378,8 @@ export default class extends Controller {
     }
 
     stopWatchingVisibility() {
-        this.visibilityMutationObserver?.disconnect();
-        this.visibilityMutationObserver = null;
+        this.visibilityMutationObservers.forEach((observer) => observer.disconnect());
+        this.visibilityMutationObservers = [];
         this.visibilityIntersectionObserver?.disconnect();
         this.visibilityIntersectionObserver = null;
         window.removeEventListener("resize", this.checkDeferredVisibility);
@@ -415,5 +419,21 @@ export default class extends Controller {
 
     get prefersReducedMotion() {
         return window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false;
+    }
+
+    get thresholds() {
+        return Array.from({ length: 21 }, (_, index) => (index * this.thresholdValue) / 20);
+    }
+
+    get ancestors() {
+        const elements = [];
+        let element = this.element;
+
+        while (element) {
+            elements.push(element);
+            element = element.parentElement;
+        }
+
+        return elements;
     }
 }

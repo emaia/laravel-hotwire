@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
 
+import AnimatedNumberController from "../../resources/js/controllers/animated_number_controller.js";
 import RevealController from "../../resources/js/controllers/reveal_controller.js";
-import { mountController, wait } from "../../resources/js/helpers/test_stimulus.js";
+import { mountController, mountMultipleControllers, wait } from "../../resources/js/helpers/test_stimulus.js";
 
 let mounted;
 let observers;
@@ -102,7 +103,10 @@ test("scroll trigger arms only offscreen items and observes them", async () => {
 
     expect(mounted.root.querySelector("#visible").hasAttribute("data-reveal-armed")).toBeFalse();
     expect(mounted.root.querySelector("#pending").hasAttribute("data-reveal-armed")).toBeTrue();
-    expect(observers[0].options).toEqual({ threshold: 0.25, rootMargin: "0px 0px -20% 0px" });
+    expect(observers[0].options.rootMargin).toBe("0px 0px -20% 0px");
+    expect(observers[0].options.threshold).toHaveLength(21);
+    expect(observers[0].options.threshold[0]).toBe(0);
+    expect(observers[0].options.threshold.at(-1)).toBe(0.25);
     expect(observers[0].observed).toEqual([mounted.root.querySelector("#pending")]);
 });
 
@@ -189,12 +193,13 @@ test("a tall item uses the maximum achievable intersection ratio", async () => {
         },
     );
     const item = mounted.root.firstElementChild;
+    const lastReachableThreshold = observers[0].options.threshold.at(-2);
 
     observers[0].trigger([
         {
             target: item,
             isIntersecting: true,
-            intersectionRatio: 1 / 7,
+            intersectionRatio: lastReachableThreshold,
             boundingClientRect: { height: 700 },
             rootBounds: { height: 100 },
         },
@@ -335,24 +340,30 @@ test("shown restarts descendant animated-number controllers", async () => {
     expect(calls).toBe(1);
 });
 
-test("shown leaves pending lazy animated-number controllers alone", async () => {
-    mounted = await mount(`
-        <section data-controller="reveal">
-            <article data-reveal-item><span data-controller="animated-number"></span></article>
-        </section>
-    `);
-    let calls = 0;
-    mounted.controller.application.getControllerForElementAndIdentifier = () => ({
-        lazyValue: true,
-        observer: {},
-        animate() {
-            calls++;
-        },
-    });
+test("shown preserves a real lazy animated-number observer", async () => {
+    mounted = await mountMultipleControllers(
+        { reveal: RevealController, "animated-number": AnimatedNumberController },
+        `
+            <section data-controller="reveal">
+                <article data-reveal-item>
+                    <span data-controller="animated-number"
+                        data-animated-number-lazy-value="true"
+                        data-animated-number-start-value="0"
+                        data-animated-number-end-value="100"
+                        data-animated-number-duration-value="1000">0</span>
+                </article>
+            </section>
+        `,
+    );
+    const number = mounted.root.querySelector('[data-controller="animated-number"]');
+    const controller = mounted.getController("animated-number", number);
 
-    mounted.controller.fire([mounted.root.firstElementChild]);
+    await waitFor(() => mounted.root.dataset.revealState === "done");
 
-    expect(calls).toBe(0);
+    expect(controller.lazyValue).toBeTrue();
+    expect(controller.observer).not.toBeNull();
+    expect(controller.observer.observed).toContain(number);
+    expect(number.textContent).toBe("0");
 });
 
 test("replacement streams stamp incoming reveal items before insertion", async () => {
@@ -555,4 +566,13 @@ async function mount(html, prepare = null) {
     result.controller = result.application.getControllerForElementAndIdentifier(result.root, "reveal");
 
     return result;
+}
+
+async function waitFor(predicate) {
+    for (let attempt = 0; attempt < 200; attempt += 1) {
+        if (predicate()) return;
+        await wait(10);
+    }
+
+    throw new Error("Timed out waiting for Reveal controller state.");
 }

@@ -65,18 +65,22 @@ For `trigger="scroll"`, the controller checks each item rather than the root. It
 `data-reveal-armed`, observes them individually, and removes the attribute when they intersect. Items released in the
 same observer delivery are reindexed from zero. Calls to `reveal:shown` are coalesced into one animation frame.
 
+The observer receives a 20-step threshold ladder from zero through the configured threshold. This ensures the browser
+keeps delivering intersection changes for an item taller than the viewport until it reaches the maximum achievable
+ratio, where Reveal's per-item threshold cap can release it.
+
 A passive scroll listener releases any remaining armed items within two pixels of the document end. This prevents a
 negative `rootMargin` from creating an unreachable dead zone below the final scroll position. With `once=false`, visible
 items remain observed and are armed only after leaving the viewport.
 
 ## Settlement
 
-After the final armed item is released, Reveal waits for the root to become renderable. Attribute mutations, native
-toggle events, intersection changes, and window resizes recheck deferred roots without running a continuous animation
-frame loop. This covers content inserted inside a modal or sheet before that overlay opens without completing its
-cascade while hidden. Reveal then forces style resolution, collects subtree animations, and waits only for animations
-whose computed iteration count is finite. Spinners, skeletons, and other infinite effects therefore cannot hold the
-root open indefinitely.
+After the final armed item is released, Reveal waits for the root to become renderable. Attribute mutations on the root
+and its ancestors, native toggle events, intersection changes, and window resizes recheck deferred roots without
+running a continuous animation frame loop or observing unrelated page mutations. This covers content inserted inside a
+modal or sheet before that overlay opens without completing its cascade while hidden. Reveal then forces style
+resolution, collects subtree animations, and waits only for animations whose computed iteration count is finite.
+Spinners, skeletons, and other infinite effects therefore cannot hold the root open indefinitely.
 
 Once the finite animations finish, the root receives `data-reveal-state="done"`. Structural CSS then removes stagger
 from content inserted later. A generation token prevents asynchronous settlement from writing to a disconnected root.

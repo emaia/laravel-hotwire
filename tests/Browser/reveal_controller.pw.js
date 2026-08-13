@@ -16,12 +16,12 @@ test("reveals content through CSS when JavaScript never connects", async ({ brow
             </section>
         `,
                 "300ms",
-                "120ms",
+                "1000ms",
             ),
         );
 
         await expect(page.locator("#css-only")).toHaveCSS("opacity", "0");
-        await expect(page.locator("#css-only")).toHaveCSS("opacity", "1", { timeout: 1000 });
+        await expect(page.locator("#css-only")).toHaveCSS("opacity", "1", { timeout: 2000 });
         await expect(page.locator("#css-only")).toBeVisible();
     } finally {
         await context.close();
@@ -96,6 +96,29 @@ test("scroll trigger observes each offscreen item and settles after release", as
     await expect(page.locator("#pending")).not.toHaveAttribute("data-reveal-armed", "");
     await expect(page.locator("#pending")).toHaveCSS("opacity", "1", { timeout: 1000 });
     await expect(page.locator("#reveal")).toHaveAttribute("data-reveal-state", "done");
+});
+
+test("scroll trigger releases an item taller than the viewport", async ({ page }) => {
+    await page.setContent(
+        await fixture(
+            `
+        <div style="height: 120vh"></div>
+        <section id="reveal" data-slot="reveal" data-controller="reveal"
+            data-reveal-trigger-value="scroll" data-reveal-root-margin-value="0px">
+            <article id="tall" data-reveal-item style="height: 700vh">Tall content</article>
+        </section>
+        <div style="height: 120vh"></div>
+    `,
+            "120ms",
+        ),
+    );
+    await installController(page);
+
+    await expect(page.locator("#tall")).toHaveAttribute("data-reveal-armed", "");
+    await page.locator("#tall").evaluate((element) => element.scrollIntoView());
+
+    await expect(page.locator("#tall")).not.toHaveAttribute("data-reveal-armed", "", { timeout: 2000 });
+    await expect(page.locator("#tall")).toHaveCSS("opacity", "1", { timeout: 1000 });
 });
 
 test("settle ignores infinite descendant animations", async ({ page }) => {
