@@ -450,7 +450,7 @@ controllers, attribute-bag merging and the escaping rules.
 | [Map](docs/components/map.md)                                 | `<hw:map>`                  | `utility`    | `map`                                                                  | [readme](docs/components/map.md)                 |
 | [Scroll Progress](docs/components/scroll-progress.md)         | `<hw:scroll-progress>`      | `utility`    | `scroll-progress`                                                      | [readme](docs/components/scroll-progress.md)     |
 | [Side Panel](docs/components/side-panel.md)                   | `<hw:side-panel>`           | `utility`    | `side-panel`                                                           | [readme](docs/components/side-panel.md)          |
-| [Sidebar](docs/components/sidebar.md)                         | `<hw:sidebar>`              | `utility`    | `sidebar`                                                              | [readme](docs/components/sidebar.md)             |
+| [Sidebar](docs/components/sidebar.md)                         | `<hw:sidebar>`              | `utility`    | `sidebar`, optional `reveal`                                           | [readme](docs/components/sidebar.md)             |
 | [Timeago](docs/components/timeago.md)                         | `<hw:timeago>`              | `utility`    | `timeago`                                                              | [readme](docs/components/timeago.md)             |
 
 ## Verify Your Setup

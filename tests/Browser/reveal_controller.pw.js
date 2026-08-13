@@ -28,6 +28,49 @@ test("reveals content through CSS when JavaScript never connects", async ({ brow
     }
 });
 
+test("raw controller markup receives Nova rise motion", async ({ page }) => {
+    const structural = await readFile("resources/css/structural.css", "utf8");
+    const nova = await readFile("resources/css/presets/nova.css", "utf8");
+
+    await page.setContent(`
+        <style>${structural}\n${nova}</style>
+        <section data-controller="reveal">
+            <article id="raw" data-reveal-item>Raw markup</article>
+        </section>
+    `);
+
+    await expect(page.locator("#raw")).toHaveCSS("animation-name", "hotwire-reveal-rise");
+    await expect(page.locator("#raw")).toHaveCSS("animation-fill-mode", "backwards");
+});
+
+test("structural fallback keeps animation name and fill mode unambiguous", async ({ page }) => {
+    const structural = await readFile("resources/css/structural.css", "utf8");
+
+    await page.setContent(`
+        <style>${structural}</style>
+        <section data-controller="reveal">
+            <article id="fallback" data-reveal-item>Fallback</article>
+        </section>
+    `);
+
+    await expect(page.locator("#fallback")).toHaveCSS("animation-name", "hotwire-reveal-rise");
+    await expect(page.locator("#fallback")).toHaveCSS("animation-fill-mode", "backwards");
+});
+
+test("Sidebar Reveal integration receives its selected Nova motion", async ({ page }) => {
+    const structural = await readFile("resources/css/structural.css", "utf8");
+    const nova = await readFile("resources/css/presets/nova.css", "utf8");
+
+    await page.setContent(`
+        <style>${structural}\n${nova}</style>
+        <div data-slot="sidebar-container" data-controller="reveal" data-motion="flat">
+            <div id="sidebar-item" data-reveal-item>Navigation</div>
+        </div>
+    `);
+
+    await expect(page.locator("#sidebar-item")).toHaveCSS("animation-name", "hotwire-reveal-flat");
+});
+
 test("backwards fill releases transform and filter after the cascade", async ({ page }) => {
     await page.setContent(
         await fixture(

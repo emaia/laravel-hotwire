@@ -155,24 +155,26 @@
 
 [data-reveal-item],
 [data-reveal-children] > * {
-    animation: var(--reveal-animation, none) var(--reveal-duration, 520ms)
-        var(--reveal-easing, cubic-bezier(0.16, 1, 0.3, 1))
-        calc(
-            var(--reveal-delay, 0ms) +
-            min(var(--reveal-index, 0), var(--reveal-max-steps, 11)) * var(--reveal-stagger, 70ms)
-        )
-        backwards;
+    animation-name: var(--reveal-animation, hotwire-reveal-rise);
+    animation-duration: var(--reveal-duration, 520ms);
+    animation-timing-function: var(--reveal-easing, cubic-bezier(0.16, 1, 0.3, 1));
+    animation-delay: calc(
+        var(--reveal-delay, 0ms) +
+        min(var(--reveal-index, 0), var(--reveal-max-steps, 11)) * var(--reveal-stagger, 70ms)
+    );
+    animation-fill-mode: backwards;
 }
 
 [data-reveal-item] [data-slot="progress-indicator"],
 [data-reveal-children] > * [data-slot="progress-indicator"] {
-    animation: hotwire-reveal-progress var(--reveal-progress-duration, 900ms)
-        var(--reveal-easing, cubic-bezier(0.16, 1, 0.3, 1))
-        calc(
-            var(--reveal-delay, 0ms) + var(--reveal-progress-delay, 120ms) +
-            min(var(--reveal-index, 0), var(--reveal-max-steps, 11)) * var(--reveal-stagger, 70ms)
-        )
-        backwards;
+    animation-name: hotwire-reveal-progress;
+    animation-duration: var(--reveal-progress-duration, 900ms);
+    animation-timing-function: var(--reveal-easing, cubic-bezier(0.16, 1, 0.3, 1));
+    animation-delay: calc(
+        var(--reveal-delay, 0ms) + var(--reveal-progress-delay, 120ms) +
+        min(var(--reveal-index, 0), var(--reveal-max-steps, 11)) * var(--reveal-stagger, 70ms)
+    );
+    animation-fill-mode: backwards;
 }
 
 [data-reveal-children] > *:nth-child(1),

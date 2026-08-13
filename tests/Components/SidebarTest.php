@@ -142,6 +142,57 @@ it('normalizes mobile sidebar motion', function () {
     $invalid->assertSee('data-motion="default"', false);
 });
 
+it('mounts Reveal directly on the collapsible sidebar container', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::sidebar.provider>
+            <x-hw::sidebar
+                reveal
+                reveal-motion="flat"
+                reveal-stagger="35ms"
+                reveal-duration="380ms"
+                reveal-delay="90ms"
+                :reveal-max-steps="8"
+                data-controller="analytics"
+            >
+                <x-hw::sidebar.menu-item data-reveal-item style="--reveal-index: 0">Dashboard</x-hw::sidebar.menu-item>
+            </x-hw::sidebar>
+        </x-hw::sidebar.provider>
+        BLADE);
+
+    $view->assertSee('data-slot="sidebar-container"', false)
+        ->assertSee('data-controller="reveal analytics"', false)
+        ->assertSee('data-reveal-trigger-value="load"', false)
+        ->assertSee('data-reveal-scope="document"', false)
+        ->assertSee('data-motion="flat"', false)
+        ->assertSee('--reveal-stagger: 35ms', false)
+        ->assertSee('--reveal-duration: 380ms', false)
+        ->assertSee('--reveal-delay: 90ms', false)
+        ->assertSee('--reveal-max-steps: 8', false)
+        ->assertSee('data-reveal-item', false)
+        ->assertDontSee('<div data-slot="reveal"', false);
+});
+
+it('omits Reveal wiring from the sidebar by default', function () {
+    $view = $this->blade('<x-hw::sidebar.provider><x-hw::sidebar>Nav</x-hw::sidebar></x-hw::sidebar.provider>');
+
+    $view->assertDontSee('data-reveal-scope', false)
+        ->assertDontSee('data-controller="reveal', false);
+});
+
+it('mounts Reveal on the native non-collapsible sidebar surface', function () {
+    $view = $this->blade('<x-hw::sidebar.provider><x-hw::sidebar collapsible="none" reveal>Nav</x-hw::sidebar></x-hw::sidebar.provider>');
+
+    $view->assertSee('<aside', false)
+        ->assertSee('data-slot="sidebar"', false)
+        ->assertSee('data-controller="reveal"', false)
+        ->assertSee('data-reveal-scope="document"', false)
+        ->assertDontSee('data-slot="sidebar-container"', false);
+});
+
+it('rejects unsupported sidebar Reveal motion', function () {
+    $this->blade('<x-hw::sidebar reveal reveal-motion="zoom">Nav</x-hw::sidebar>');
+})->throws(ViewException::class, 'Supported values: rise, flat, fade.');
+
 it('marks only the collapsible sidebar surface with the sidebar role marker', function () {
     $html = (string) $this->blade('<x-hw::sidebar.provider><x-hw::sidebar>Nav</x-hw::sidebar></x-hw::sidebar.provider>');
 
@@ -288,7 +339,7 @@ it('registers sidebar in the component catalog and subcomponent aliases', functi
     $sidebar = HotwireRegistry::make()->component('sidebar');
 
     expect($sidebar->key)->toBe('sidebar')
-        ->and($sidebar->controllers)->toBe(['sidebar'])
+        ->and($sidebar->controllers)->toBe(['sidebar', 'reveal'])
         ->and($sidebar->docs)->toBe('docs/components/sidebar.md');
 
     expect(ComponentAliases::subComponents())

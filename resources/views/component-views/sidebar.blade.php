@@ -1,12 +1,36 @@
 @aware(['sidebarState' => 'expanded'])
 
 @php
+    use Emaia\LaravelHotwire\Support\StimulusAttributes;
+
     $collapsed = $sidebarState === 'collapsed';
+    $userStyle = trim((string) $attributes->get('style'));
+    $revealStyle = $reveal ? collect([
+        $revealStagger !== null ? "--reveal-stagger: {$revealStagger}" : null,
+        $revealDuration !== null ? "--reveal-duration: {$revealDuration}" : null,
+        $revealDelay !== null ? "--reveal-delay: {$revealDelay}" : null,
+        $revealMaxSteps !== null ? "--reveal-max-steps: {$revealMaxSteps}" : null,
+    ])->filter()->implode('; ') : '';
+    $style = collect([$revealStyle, $userStyle !== '' ? $userStyle : null])->filter()->implode('; ');
+    $style = $style !== '' ? $style.';' : null;
+    $surfaceAttributes = fn (array $internal) => StimulusAttributes::merge(array_merge($internal, [
+        'data-controller' => $reveal ? 'reveal' : null,
+        'data-reveal-trigger-value' => $reveal ? 'load' : null,
+        'data-reveal-scope' => $reveal ? 'document' : null,
+        'data-motion' => $reveal ? $revealMotion : ($internal['data-motion'] ?? null),
+        'style' => $style,
+    ]), $attributes, except: ['style'], protectedPrefixes: [
+        'data-slot',
+        'data-side',
+        'data-sidebar-target',
+        'data-reveal-',
+        'data-motion',
+    ]);
 @endphp
 
 @if ($collapsible === 'none')
     <aside
-        {{ $attributes->merge([
+        {{ $surfaceAttributes([
             'data-slot' => 'sidebar',
             'data-sidebar' => 'sidebar',
             'data-side' => $side,
@@ -33,7 +57,7 @@
         ></div>
         <div data-slot="sidebar-gap"></div>
         <div
-            {{ $attributes->merge([
+            {{ $surfaceAttributes([
                 'data-slot' => 'sidebar-container',
                 'data-side' => $side,
                 'data-sidebar-target' => 'dialog',

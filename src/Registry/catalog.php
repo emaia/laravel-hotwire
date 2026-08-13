@@ -913,7 +913,7 @@ return [
             'docs' => 'docs/components/sidebar.md',
             'category' => 'utility',
             'description' => 'Composable app sidebar with provider state, mobile Presence and navigation primitives',
-            'controllers' => ['sidebar'],
+            'controllers' => ['sidebar', 'reveal'],
             'styling' => [
                 'slots' => $slots(['sidebar-wrapper', 'sidebar', 'sidebar-backdrop', 'sidebar-trigger', 'sidebar-rail', 'sidebar-inset', 'sidebar-header', 'sidebar-brand', 'sidebar-brand-logo', 'sidebar-brand-icon', 'sidebar-footer', 'sidebar-content', 'sidebar-input', 'sidebar-separator', 'sidebar-group', 'sidebar-group-label', 'sidebar-group-action', 'sidebar-group-content', 'sidebar-menu', 'sidebar-menu-item', 'sidebar-menu-button', 'sidebar-menu-action', 'sidebar-menu-badge', 'sidebar-menu-skeleton', 'sidebar-menu-skeleton-icon', 'sidebar-menu-skeleton-text', 'sidebar-menu-sub', 'sidebar-menu-sub-item', 'sidebar-menu-sub-button', 'sidebar-gap', 'sidebar-container', 'sidebar-inner']),
             ],

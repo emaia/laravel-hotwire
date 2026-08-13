@@ -48,6 +48,10 @@ the nested markup:
 The first explicit item switches the root out of direct-child mode. Raw `data-reveal-item` markup is also supported as
 an escape hatch; set `--reveal-index` when its visual order differs from document order.
 
+When a component must own the Reveal root without an extra wrapper, prefer that component's explicit integration when
+available. [`<hw:sidebar reveal>`](sidebar.md#reveal-integration), for example, mounts Reveal directly on its existing
+surface and accepts explicit `data-reveal-item` descendants.
+
 ## Scroll trigger
 
 Use `trigger="scroll"` for long pages and lists below the fold:

@@ -144,6 +144,29 @@ The tooltip controller uses the package's Floating UI dependency and only appear
 | `variant`     | `sidebar`   | `sidebar`, `floating`, or `inset`.                       |
 | `collapsible` | `offcanvas` | `offcanvas`, `icon`, or `none`.                          |
 | `motion`      | `default`   | `default` follows mobile CSS motion; `none` disables it. |
+| `reveal`      | `false`     | Mounts Reveal directly on the existing sidebar surface with document scope. |
+| `revealMotion` | `rise`     | Reveal motion: `rise`, `flat`, or `fade`.                |
+| `revealStagger` / `revealDuration` / `revealDelay` / `revealMaxSteps` | preset | Optional Reveal timing overrides. |
+
+### Reveal integration
+
+Use `reveal` when the sidebar chrome should cascade once per document without adding a wrapper around its layout
+surface:
+
+```blade
+<hw:sidebar reveal reveal-stagger="35ms" reveal-duration="380ms">
+    <hw:sidebar.brand data-reveal-item style="--reveal-index: 0" ... />
+    <hw:sidebar.separator data-reveal-item style="--reveal-index: 1" />
+    <hw:sidebar.group-label data-reveal-item style="--reveal-index: 2">Projects</hw:sidebar.group-label>
+    ...
+</hw:sidebar>
+```
+
+The component mounts `data-controller="reveal"` and `data-reveal-scope="document"` directly on `sidebar-container`.
+For `collapsible="none"`, it mounts them on the native `<aside>`. There is no extra wrapper, so the provider flex row,
+sidebar column, fixed positioning, and view-transition selectors keep their existing structure. Mark the exact sidebar
+units with `data-reveal-item` and `--reveal-index`; automatic direct-child mode is deliberately not enabled because the
+sidebar's internal wrappers are layout mechanics rather than animation units.
 
 ### Menu buttons
 

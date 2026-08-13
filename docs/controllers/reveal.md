@@ -55,6 +55,11 @@ or explicit item mode for nested units:
 </section>
 ```
 
+Raw `data-controller="reveal"` markup defaults to the `hotwire-reveal-rise` animation name from structural CSS; Nova
+supplies that keyframe, so raw markup animates without component-only `data-slot` hooks. Nova's `flat` and `fade` variants key on
+`data-slot="reveal" data-motion="flat|fade"`; for raw markup, either include those hooks or set
+`--reveal-animation: hotwire-reveal-flat|hotwire-reveal-fade` explicitly.
+
 Explicit items belonging to a nested `data-controller~="reveal"` root are excluded from the outer controller. CSS
 supplies indexes for the first direct children before JavaScript loads; the controller fills missing indexes and keeps
 new items synchronized after DOM mutations.

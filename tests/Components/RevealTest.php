@@ -139,13 +139,15 @@ it('ships first-paint mechanics separately from preset motion', function () {
 
     expect($structural)
         ->toContain('[data-reveal-armed]')
-        ->toContain('animation: var(--reveal-animation, none)')
-        ->toContain('backwards')
+        ->toContain('animation-name: var(--reveal-animation, hotwire-reveal-rise)')
+        ->toContain('animation-fill-mode: backwards')
+        ->not->toContain('animation: var(--reveal-animation, none)')
         ->toContain('min(var(--reveal-index, 0), var(--reveal-max-steps, 11))')
         ->toContain('html[data-turbo-preview]')
         ->toContain('@media (prefers-reduced-motion: reduce)')
         ->and($nova)
-        ->toContain('[data-slot="reveal"][data-motion="rise"]')
+        ->toContain('[data-slot="reveal"][data-motion="flat"]')
+        ->toContain('[data-slot="sidebar-container"][data-controller~="reveal"][data-motion="flat"]')
         ->toContain('@keyframes hotwire-reveal-rise')
         ->toContain('@keyframes hotwire-reveal-flat')
         ->toContain('@keyframes hotwire-reveal-fade');
