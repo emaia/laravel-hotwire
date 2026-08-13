@@ -3,11 +3,15 @@
 namespace Emaia\LaravelHotwire\Commands;
 
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
+use Emaia\LaravelHotwire\Support\ControllerLoadConfiguration;
+use Emaia\LaravelHotwire\Support\ControllerOrigin;
+use Emaia\LaravelHotwire\Support\ControllerResolver;
 use Emaia\LaravelHotwire\Support\CssPresetFiles;
 use Emaia\LaravelHotwire\Support\LoaderStub;
 use Emaia\LaravelHotwire\Support\PackageInstaller;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
+use RuntimeException;
 use Symfony\Component\Finder\Finder;
 
 use function Laravel\Prompts\confirm;
@@ -62,6 +66,10 @@ class InstallCommand extends Command
         }
 
         if (! $this->validatePreset()) {
+            return self::FAILURE;
+        }
+
+        if ($filter !== 'css' && ! $this->validateControllerLoadPlan()) {
             return self::FAILURE;
         }
 
@@ -174,6 +182,19 @@ class InstallCommand extends Command
         return false;
     }
 
+    private function validateControllerLoadPlan(): bool
+    {
+        try {
+            $this->loaderStubContent();
+
+            return true;
+        } catch (RuntimeException $exception) {
+            warning($exception->getMessage());
+
+            return false;
+        }
+    }
+
     /**
      * Parse --with-deps into a flat list of controller identifiers. Accepts both
      * --with-deps=foo,bar and --with-deps=foo --with-deps=bar shapes. Returns null
@@ -231,7 +252,9 @@ class InstallCommand extends Command
     private function copyStubs(array $files, string $stubBase, string $targetBase): int
     {
         $copied = 0;
-        $loaderStubContent = $this->loaderStubContent();
+        $loaderStubContent = in_array(self::LOADER_STUB_RELATIVE, $files, true)
+            ? $this->loaderStubContent()
+            : null;
         $cssStubContent = $this->cssStubContent();
 
         foreach ($files as $relativePath) {
@@ -308,21 +331,37 @@ class InstallCommand extends Command
     private function loaderStubContent(): string
     {
         $registry = HotwireRegistry::make();
+        $configuration = ControllerLoadConfiguration::fromConfig();
+        $configuredPackageControllers = $this->configuredPackageControllerIdentifiers($registry, $configuration);
 
         if ($this->option('core-only')) {
-            return LoaderStub::generate($registry, []);
+            return LoaderStub::generate(
+                $registry,
+                $configuredPackageControllers,
+                $configuration->preload,
+                $configuration->eager,
+            );
         }
 
         $filter = $this->controllerFilter();
 
         if ($filter === null) {
-            return LoaderStub::generate($registry);
+            return LoaderStub::generate(
+                $registry,
+                preloadControllers: $configuration->preload,
+                eagerControllers: $configuration->eager,
+            );
         }
 
         // The opt-in list at the registration level should also include the
         // zero-dep controllers' identifiers — but LoaderStub already preserves
         // every zero-dep controller (only com-dep ones are exclusion-eligible).
-        return LoaderStub::generate($registry, $filter);
+        return LoaderStub::generate(
+            $registry,
+            array_values(array_unique(array_merge($filter, $configuredPackageControllers))),
+            $configuration->preload,
+            $configuration->eager,
+        );
     }
 
     /** @return array<string, string> */
@@ -343,10 +382,9 @@ class InstallCommand extends Command
     }
 
     /** @return array<string, string> */
-    private function catalogDependencies(): array
+    private function catalogDependencies(?array $filter): array
     {
         $registry = HotwireRegistry::make();
-        $filter = $this->controllerFilter();
 
         $deps = [];
 
@@ -369,6 +407,55 @@ class InstallCommand extends Command
         return $deps;
     }
 
+    /** @return string[] */
+    private function configuredPackageControllerIdentifiers(
+        HotwireRegistry $registry,
+        ControllerLoadConfiguration $configuration,
+    ): array {
+        $resolver = new ControllerResolver($this->files, $registry, resource_path('js/controllers'));
+        $identifiers = [];
+
+        foreach (array_unique(array_merge($configuration->preload, $configuration->eager)) as $identifier) {
+            if ($resolver->resolve($identifier)->origin === ControllerOrigin::Package) {
+                $identifiers[] = $identifier;
+            }
+        }
+
+        sort($identifiers);
+
+        return $identifiers;
+    }
+
+    /** @return string[] */
+    private function configuredCatalogDependencyControllerIdentifiers(
+        HotwireRegistry $registry,
+        ControllerLoadConfiguration $configuration,
+    ): array {
+        $resolver = new ControllerResolver($this->files, $registry, resource_path('js/controllers'));
+        $identifiers = [];
+
+        foreach (array_unique(array_merge($configuration->preload, $configuration->eager)) as $identifier) {
+            $controller = $registry->controller($identifier);
+
+            if ($controller === null) {
+                continue;
+            }
+
+            $resolved = $resolver->resolve($identifier);
+            $canonicalPath = $controller->relativeDir() === ''
+                ? './'.$controller->filename()
+                : './'.$controller->relativeDir().'/'.$controller->filename();
+
+            if ($resolved->origin === ControllerOrigin::Package || $resolved->loaderPath === $canonicalPath) {
+                $identifiers[] = $identifier;
+            }
+        }
+
+        sort($identifiers);
+
+        return $identifiers;
+    }
+
     private function addNpmDependencies(): int
     {
         $packageJsonPath = base_path('package.json');
@@ -380,12 +467,38 @@ class InstallCommand extends Command
         }
 
         $deps = $this->coreDependencies();
+        $registry = HotwireRegistry::make();
+        $configuration = ControllerLoadConfiguration::fromConfig();
+        $configuredCatalogDependencies = $this->configuredCatalogDependencyControllerIdentifiers($registry, $configuration);
+        $filter = $this->option('core-only')
+            ? $configuredCatalogDependencies
+            : $this->controllerFilter();
 
-        if (! $this->option('core-only')) {
-            $deps = array_merge($deps, $this->catalogDependencies());
+        if ($filter !== null) {
+            $filter = array_values(array_unique(array_merge(
+                $filter,
+                $configuredCatalogDependencies,
+            )));
         }
 
-        return count($this->packageInstaller->addDevDependencies($this->files, $deps, updateExisting: false));
+        $deps = array_merge($deps, $this->catalogDependencies($filter));
+
+        $changed = [];
+        $loaderVersion = $deps['@emaia/stimulus-lazy-loader'] ?? null;
+
+        if ($loaderVersion !== null) {
+            $changed = $this->packageInstaller->ensureDependency(
+                $this->files,
+                '@emaia/stimulus-lazy-loader',
+                $loaderVersion,
+            );
+            unset($deps['@emaia/stimulus-lazy-loader']);
+        }
+
+        return count(array_merge(
+            $changed,
+            $this->packageInstaller->addDevDependencies($this->files, $deps, updateExisting: false),
+        ));
     }
 
     private function shouldInstallDependencies(): bool

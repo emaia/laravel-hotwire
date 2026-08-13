@@ -9,6 +9,139 @@ use Symfony\Component\Process\Process;
 
 class PackageInstaller
 {
+    /**
+     * Update a package in its existing dependency section, or add it to devDependencies.
+     *
+     * @return array<string, string> entries added or updated
+     *
+     * @throws FileNotFoundException
+     */
+    public function ensureDependency(Filesystem $files, string $package, string $version): array
+    {
+        $path = base_path('package.json');
+
+        if (! $files->exists($path)) {
+            return [];
+        }
+
+        $json = json_decode($files->get($path), true);
+
+        if (! is_array($json)) {
+            return [];
+        }
+
+        $section = array_key_exists($package, $json['dependencies'] ?? [])
+            ? 'dependencies'
+            : 'devDependencies';
+        $current = $json[$section][$package] ?? null;
+
+        if (is_string($current) && ! $this->dependencyNeedsUpdate($current, $version)) {
+            return [];
+        }
+
+        $json[$section] ??= [];
+        $json[$section][$package] = $version;
+        $files->put($path, json_encode($json, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)."\n");
+
+        return [$package => $version];
+    }
+
+    /** Determine whether a conventional semver constraint is definitely older than the required major. */
+    public function dependencyNeedsUpdate(string $current, string $required): bool
+    {
+        if ($current === $required) {
+            return false;
+        }
+
+        if (preg_match('/\d+/', $required, $requiredMajor) !== 1) {
+            return false;
+        }
+
+        if (! preg_match('/^[\s0-9.*xXvV<>=~^|+-]+$/', $current)) {
+            return false;
+        }
+
+        $requiredVersion = $this->minimumVersion($required);
+
+        if ($requiredVersion === null) {
+            return false;
+        }
+
+        foreach (preg_split('/\s*\|\|\s*/', trim($current)) ?: [] as $alternative) {
+            if ($this->constraintAllowsVersion($alternative, $requiredVersion)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private function constraintAllowsVersion(string $constraint, string $requiredVersion): bool
+    {
+        $constraint = trim($constraint);
+        $requiredMajor = (int) explode('.', $requiredVersion)[0];
+
+        if (preg_match('/^[xX*](?:\.[xX*]){0,2}$/', $constraint) === 1) {
+            return true;
+        }
+
+        if (preg_match('/^v?(\d+)(?:\.\d+){0,2}\s+-\s+v?(\d+)(?:\.\d+){0,2}$/', $constraint, $range) === 1) {
+            preg_match_all('/v?\d+(?:\.\d+){0,2}/', $constraint, $versions);
+
+            return version_compare($requiredVersion, $this->normalizeVersion($versions[0][0]), '>=')
+                && version_compare($requiredVersion, $this->normalizeVersion($versions[0][1]), '<=');
+        }
+
+        if (preg_match('/^[~^vV=]*\s*(\d+)/', $constraint, $single) === 1
+            && ! str_contains($constraint, ' ')
+        ) {
+            return (int) $single[1] >= $requiredMajor;
+        }
+
+        if (preg_match_all('/(>=|>|<=|<|=)?\s*v?(\d+)(?:\.(\d+|x|X|\*))?(?:\.(\d+|x|X|\*))?/', $constraint, $matches, PREG_SET_ORDER)) {
+            foreach ($matches as $match) {
+                $operator = $match[1] ?: '=';
+                $version = $this->normalizeVersion(implode('.', array_filter([
+                    $match[2],
+                    $match[3] ?? null,
+                    $match[4] ?? null,
+                ], fn (?string $part): bool => $part !== null && ! in_array($part, ['x', 'X', '*'], true))));
+
+                if ($operator === '<' && ! version_compare($version, $requiredVersion, '>')) {
+                    return false;
+                }
+
+                if ($operator === '<=' && ! version_compare($version, $requiredVersion, '>=')) {
+                    return false;
+                }
+
+                if ($operator === '=' && count($matches) === 1) {
+                    return version_compare($version, $requiredVersion, '>=');
+                }
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
+    private function minimumVersion(string $constraint): ?string
+    {
+        if (preg_match('/\d+(?:\.\d+){0,2}/', $constraint, $version) !== 1) {
+            return null;
+        }
+
+        return $this->normalizeVersion($version[0]);
+    }
+
+    private function normalizeVersion(string $version): string
+    {
+        $parts = explode('.', ltrim($version, 'vV'));
+
+        return implode('.', array_pad($parts, 3, '0'));
+    }
+
     public function detect(Filesystem $files): string
     {
         $lockFiles = [

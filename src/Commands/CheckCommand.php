@@ -5,12 +5,18 @@ namespace Emaia\LaravelHotwire\Commands;
 use Emaia\LaravelHotwire\Registry\ControllerDefinition;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ControllerImports;
+use Emaia\LaravelHotwire\Support\ControllerLoadConfiguration;
+use Emaia\LaravelHotwire\Support\ControllerLoadPlan;
+use Emaia\LaravelHotwire\Support\ControllerOrigin;
+use Emaia\LaravelHotwire\Support\ControllerResolver;
 use Emaia\LaravelHotwire\Support\LoaderStub;
 use Emaia\LaravelHotwire\Support\PackageInstaller;
 use Emaia\LaravelHotwire\Support\PackageMarker;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Filesystem\Filesystem;
+use LogicException;
+use RuntimeException;
 use Symfony\Component\Finder\Finder;
 
 use function Laravel\Prompts\confirm;
@@ -19,6 +25,10 @@ use function Laravel\Prompts\warning;
 
 class CheckCommand extends Command
 {
+    private const string LAZY_LOADER_PACKAGE = '@emaia/stimulus-lazy-loader';
+
+    private const string LAZY_LOADER_VERSION = '^2.0.0';
+
     public $signature = 'hotwire:check
                         {--path=* : Paths to scan for blade files (default: resources/views)}
                         {--fix   : Apply all fixes (publish controllers, regenerate loader stub, add missing npm deps) without prompting}
@@ -40,6 +50,8 @@ class CheckCommand extends Command
 
     /** @var array<int, array{key: string, line: string}> OK status lines for shared dependencies (`_*.js`, `*.css`), sorted by basename before emission. */
     private array $okHelperLines = [];
+
+    private ?ControllerResolver $controllerResolver = null;
 
     public function __construct(
         private readonly Filesystem $files,
@@ -67,54 +79,102 @@ class CheckCommand extends Command
         $this->line('Scanning '.implode(', ', array_map('basename', $paths))." ($totalFiles files)...");
         $this->line('');
 
-        if (empty($usedComponentKeys) && empty($standaloneControllers)) {
-            info('No Hotwire components or controllers found in views.');
+        try {
+            $configuration = ControllerLoadConfiguration::fromConfig();
+            $this->controllerResolver = new ControllerResolver($this->files, $registry, $targetBase);
+            $loaderUpgrade = $this->reportLazyLoaderVersion();
+            $policyDrift = $this->detectControllerPolicyDrift($registry, $configuration);
+            $configuredControllers = $this->configuredPackageControllers($registry, $configuration);
+        } catch (RuntimeException $exception) {
+            warning($exception->getMessage());
 
-            return self::SUCCESS;
+            return self::FAILURE;
         }
 
-        ['issues' => $issues, 'controllers' => $controllers] = $this->reportStatus($usedComponentKeys, $prefix, $targetBase, $registry);
+        if (empty($usedComponentKeys) && empty($standaloneControllers) && $configuredControllers === []) {
+            info('No Hotwire components or controllers found in views.');
 
-        // A controller already reported via its component must not be reported
-        // (or published, or counted) again as a standalone usage.
-        $standaloneControllers = array_diff_key($standaloneControllers, $controllers);
+            if (! $loaderUpgrade && ! $policyDrift) {
+                return self::SUCCESS;
+            }
+        }
 
-        $standaloneResult = $this->reportStandaloneControllers($standaloneControllers, $targetBase, $registry);
-        $issues = array_merge($issues, $standaloneResult['issues']);
-        $controllers = array_merge($controllers, $standaloneResult['controllers']);
+        try {
+            ['issues' => $issues, 'controllers' => $controllers, 'reported' => $reportedControllers] = $this->reportStatus($usedComponentKeys, $prefix, $targetBase, $registry);
+
+            // A controller already reported via its component must not be reported
+            // (or published, or counted) again as a standalone usage.
+            $standaloneControllers = array_diff_key($standaloneControllers, $reportedControllers);
+
+            $standaloneResult = $this->reportStandaloneControllers($standaloneControllers, $targetBase, $registry);
+            $issues = array_merge($issues, $standaloneResult['issues']);
+            $controllers = array_merge($controllers, $standaloneResult['controllers'], $configuredControllers);
+        } catch (RuntimeException $exception) {
+            warning($exception->getMessage());
+
+            return self::FAILURE;
+        }
 
         $this->emitScanOutput();
 
         $required = $this->collectRequiredDependencies($controllers);
         $missingDeps = $this->reportDependencies($required);
-        $excludedFromStub = $this->detectStubExclusions($controllers, $registry);
+        $packageControllers = array_filter(
+            $controllers,
+            fn (ControllerDefinition $_controller, string $identifier): bool => $this->resolver()->resolve($identifier)->origin === ControllerOrigin::Package,
+            ARRAY_FILTER_USE_BOTH,
+        );
+        $excludedFromStub = $this->detectStubExclusions($packageControllers, $registry);
 
         $this->line('');
 
         $hasControllerIssues = ! empty($issues);
         $hasMissingDeps = ! empty($missingDeps);
+        $hasLoaderUpgrade = $loaderUpgrade;
+        $hasPolicyDrift = $policyDrift;
         $hasStubDrift = ! empty($excludedFromStub);
         $hasProblemLines = ! empty($this->problemLines);
 
-        if (! $hasControllerIssues && ! $hasMissingDeps && ! $hasStubDrift && ! $hasProblemLines) {
+        if (! $hasControllerIssues && ! $hasMissingDeps && ! $hasLoaderUpgrade && ! $hasPolicyDrift && ! $hasStubDrift && ! $hasProblemLines) {
             info('All controllers up to date.');
 
             return self::SUCCESS;
         }
 
         $this->printProblemLines();
-        $this->printIssueSummary($issues, $missingDeps, $excludedFromStub);
+        $this->printIssueSummary($issues, $missingDeps, $excludedFromStub, $policyDrift);
 
         // Only user-owned divergences are present — nothing for --fix to do.
         // Report visibility but keep the exit code green (e.g. CI stays happy).
-        if (! $hasControllerIssues && ! $hasMissingDeps && ! $hasStubDrift) {
+        if (! $hasControllerIssues && ! $hasMissingDeps && ! $hasLoaderUpgrade && ! $hasPolicyDrift && ! $hasStubDrift) {
             return self::SUCCESS;
         }
 
-        if ($this->shouldFix()) {
+        if ($this->shouldFix(
+            $hasControllerIssues,
+            $hasMissingDeps,
+            $hasLoaderUpgrade,
+            $hasPolicyDrift || $hasStubDrift,
+        )) {
             $this->publishIssues($issues);
             $depsAdded = $this->writeMissingDependencies($missingDeps);
-            $this->regenerateLoaderStub($excludedFromStub, $registry);
+            $depsAdded += $this->upgradeLazyLoader($loaderUpgrade);
+            try {
+                $regeneratedLoader = $this->regenerateLoaderStub(
+                    $excludedFromStub,
+                    $registry,
+                    $configuration,
+                    $policyDrift || $loaderUpgrade,
+                );
+            } catch (RuntimeException $exception) {
+                warning($exception->getMessage());
+
+                return self::FAILURE;
+            }
+
+            if ($regeneratedLoader) {
+                $this->warnAboutViteRebuild();
+            }
 
             if ($depsAdded > 0) {
                 if ($this->shouldInstallDependencies()) {
@@ -184,25 +244,187 @@ class CheckCommand extends Command
      *
      * @param  string[]  $excludedFromStub
      */
-    private function regenerateLoaderStub(array $excludedFromStub, HotwireRegistry $registry): void
-    {
-        if ($excludedFromStub === []) {
-            return;
+    private function regenerateLoaderStub(
+        array $excludedFromStub,
+        HotwireRegistry $registry,
+        ControllerLoadConfiguration $configuration,
+        bool $policyDrift = false,
+    ): bool {
+        if ($excludedFromStub === [] && ! $policyDrift) {
+            return false;
         }
 
         $stubPath = resource_path('js/controllers/index.js');
 
         if (! $this->files->exists($stubPath)) {
-            return;
+            return false;
         }
 
-        $existing = LoaderStub::includedComDepControllers($this->files->get($stubPath), $registry) ?? [];
+        $policy = LoaderStub::policyFromContent($this->files->get($stubPath), $registry);
+
+        if ($policy === null) {
+            return false;
+        }
+
+        $existing = $policy->includedComDepControllers;
         $merged = array_values(array_unique(array_merge($existing, $excludedFromStub)));
         sort($merged);
+        $this->files->put($stubPath, LoaderStub::generate(
+            $registry,
+            $policy->includeAllComDepControllers ? null : $merged,
+            $configuration->preload,
+            $configuration->eager,
+        ));
 
-        $this->files->put($stubPath, LoaderStub::generate($registry, $merged));
+        $message = $excludedFromStub === []
+            ? 'Regenerated resources/js/controllers/index.js from controller loading config.'
+            : 'Regenerated resources/js/controllers/index.js to include: '.implode(', ', $excludedFromStub);
+        info($message);
 
-        info('Regenerated resources/js/controllers/index.js to include: '.implode(', ', $excludedFromStub));
+        return true;
+    }
+
+    private function warnAboutViteRebuild(): void
+    {
+        $this->line('');
+        $this->line('<comment>Rebuild your Vite assets so the production manifest includes the regenerated controller loading policy.</comment>');
+
+        $command = $this->buildScriptCommand();
+
+        if ($command !== null) {
+            $this->line("<comment>Run `$command` after this command completes.</comment>");
+        }
+    }
+
+    private function buildScriptCommand(): ?string
+    {
+        $path = base_path('package.json');
+
+        if (! $this->files->exists($path)) {
+            return null;
+        }
+
+        $package = json_decode($this->files->get($path), true);
+
+        if (! is_array($package) || ! array_key_exists('build', $package['scripts'] ?? [])) {
+            return null;
+        }
+
+        return match ($this->packageInstaller->detect($this->files)) {
+            'bun' => 'bun run build',
+            'pnpm' => 'pnpm run build',
+            'yarn' => 'yarn build',
+            default => 'npm run build',
+        };
+    }
+
+    private function detectControllerPolicyDrift(
+        HotwireRegistry $registry,
+        ControllerLoadConfiguration $configuration,
+    ): bool {
+        $path = resource_path('js/controllers/index.js');
+
+        if (! $this->files->exists($path)) {
+            return false;
+        }
+
+        $policy = LoaderStub::policyFromContent($this->files->get($path), $registry);
+
+        if ($policy === null) {
+            return false;
+        }
+
+        $expected = ControllerLoadPlan::make(
+            $this->files,
+            $registry,
+            resource_path('js/controllers'),
+            $policy->includeAllComDepControllers ? null : $policy->includedComDepControllers,
+            $configuration->preload,
+            $configuration->eager,
+        )->policy;
+
+        if ($policy->preloadControllers === $expected->preloadControllers
+            && $policy->eagerControllers === $expected->eagerControllers
+            && $policy->eagerControllerPaths === $expected->eagerControllerPaths
+        ) {
+            return false;
+        }
+
+        $changes = [];
+
+        if ($policy->preloadControllers !== $expected->preloadControllers) {
+            $changes[] = 'preload: '.$this->identifierList($policy->preloadControllers).' -> '.$this->identifierList($expected->preloadControllers);
+        }
+
+        if ($policy->eagerControllers !== $expected->eagerControllers) {
+            $changes[] = 'eager: '.$this->identifierList($policy->eagerControllers).' -> '.$this->identifierList($expected->eagerControllers);
+        }
+
+        if ($policy->eagerControllerPaths !== $expected->eagerControllerPaths) {
+            $changes[] = 'eager paths: '.$this->identifierMap($policy->eagerControllerPaths).' -> '.$this->identifierMap($expected->eagerControllerPaths);
+        }
+
+        $detail = implode('; ', $changes);
+        $this->problemLines[] = [
+            'key' => 'resources/js/controllers/index.js',
+            'line' => "  <comment>!</comment>  resources/js/controllers/index.js  outdated  <fg=gray>(controller loading policy differs from config; {$detail})</>",
+        ];
+
+        return true;
+    }
+
+    /** @param string[] $identifiers */
+    private function identifierList(array $identifiers): string
+    {
+        return '['.implode(', ', $identifiers).']';
+    }
+
+    /** @param array<string, string> $values */
+    private function identifierMap(array $values): string
+    {
+        return '['.implode(', ', array_map(
+            fn (string $identifier, string $path): string => "{$identifier}={$path}",
+            array_keys($values),
+            $values,
+        )).']';
+    }
+
+    /** @return array<string, ControllerDefinition> */
+    private function configuredPackageControllers(
+        HotwireRegistry $registry,
+        ControllerLoadConfiguration $configuration,
+    ): array {
+        $identifiers = array_values(array_unique(array_merge($configuration->preload, $configuration->eager)));
+        $controllers = [];
+
+        foreach ($identifiers as $identifier) {
+            $controller = $registry->controller($identifier);
+
+            if ($controller === null) {
+                $this->resolver()->resolve($identifier);
+
+                continue;
+            }
+
+            $targetFile = $controller->relativeDir() === ''
+                ? resource_path('js/controllers/'.$controller->filename())
+                : resource_path('js/controllers/'.$controller->relativeDir().'/'.$controller->filename());
+
+            if (! $this->isApplicationOverride($controller, resource_path('js/controllers'), $targetFile)) {
+                $controllers[$identifier] = $controller;
+            }
+        }
+
+        return $controllers;
+    }
+
+    private function resolver(): ControllerResolver
+    {
+        if ($this->controllerResolver === null) {
+            throw new LogicException('Controller resolver has not been initialized.');
+        }
+
+        return $this->controllerResolver;
     }
 
     /** @return string[] */
@@ -387,7 +609,7 @@ class CheckCommand extends Command
      * of identifier → controller definition (used later for npm dependency checks).
      *
      * @param  array<string, string>  $usedKeys
-     * @return array{issues: array<int, array{identifier: string, source_file: string, target_file: string}>, controllers: array<string, ControllerDefinition>}
+     * @return array{issues: array<int, array{identifier: string, source_file: string, target_file: string}>, controllers: array<string, ControllerDefinition>, reported: array<string, true>}
      *
      * @throws FileNotFoundException
      */
@@ -395,6 +617,7 @@ class CheckCommand extends Command
     {
         $issues = [];
         $controllers = [];
+        $reported = [];
         $seenDeps = [];
         $controllersBase = $registry->basePath().'/resources/js/controllers';
 
@@ -414,11 +637,12 @@ class CheckCommand extends Command
             }
 
             foreach ($registry->controllersForComponent($component) as $controller) {
+                $reported[$controller->identifier] = true;
                 $this->checkController($controller, $targetBase, $controllersBase, $registry->basePath(), $tag, $issues, $controllers, $seenDeps);
             }
         }
 
-        return ['issues' => $issues, 'controllers' => $controllers];
+        return ['issues' => $issues, 'controllers' => $controllers, 'reported' => $reported];
     }
 
     /**
@@ -446,7 +670,15 @@ class CheckCommand extends Command
             ? "$targetBase/{$controller->filename()}"
             : "$targetBase/{$controller->relativeDir()}/{$controller->filename()}";
 
-        $controllers[$controller->identifier] = $controller;
+        $localOverride = $this->isApplicationOverride(
+            $controller,
+            $targetBase,
+            $targetFile,
+        );
+
+        if (! $localOverride) {
+            $controllers[$controller->identifier] = $controller;
+        }
         [$status, $symbol, $color] = $this->resolveStatus($targetFile, $sourceFile);
 
         $line = "  <$color>$symbol</$color>  $controller->identifier  $status  <fg=gray>(used by $origin)</>";
@@ -470,7 +702,25 @@ class CheckCommand extends Command
             }
         }
 
-        $this->reportSharedDeps($controller, $sourceFile, $controllersBase, $targetBase, $issues, $seenDeps);
+        if (! $localOverride) {
+            $this->reportSharedDeps($controller, $sourceFile, $controllersBase, $targetBase, $issues, $seenDeps);
+        }
+    }
+
+    private function isApplicationOverride(
+        ControllerDefinition $controller,
+        string $targetBase,
+        string $packageTargetFile,
+    ): bool {
+        $resolved = $this->resolver()->resolve($controller->identifier);
+
+        if ($resolved->origin !== ControllerOrigin::Application) {
+            return false;
+        }
+
+        $applicationFile = $targetBase.'/'.substr($resolved->loaderPath, 2);
+
+        return $applicationFile !== $packageTargetFile;
     }
 
     /**
@@ -635,6 +885,63 @@ class CheckCommand extends Command
         return $missing;
     }
 
+    /** Report the v1-to-v2 core loader migration without treating other core packages as view dependencies. */
+    private function reportLazyLoaderVersion(): bool
+    {
+        $stubPath = resource_path('js/controllers/index.js');
+
+        if (! $this->files->exists($stubPath)
+            || ! LoaderStub::isAutoGenerated($this->files->get($stubPath))
+        ) {
+            return false;
+        }
+
+        $path = base_path('package.json');
+
+        if (! $this->files->exists($path)) {
+            return false;
+        }
+
+        $json = json_decode($this->files->get($path), true);
+
+        if (! is_array($json)) {
+            return false;
+        }
+
+        $installed = ($json['dependencies'][self::LAZY_LOADER_PACKAGE] ?? null)
+            ?? ($json['devDependencies'][self::LAZY_LOADER_PACKAGE] ?? null);
+
+        if (is_string($installed)
+            && ! $this->packageInstaller->dependencyNeedsUpdate($installed, self::LAZY_LOADER_VERSION)
+        ) {
+            return false;
+        }
+
+        $installed ??= 'missing';
+        $this->line('  '.self::LAZY_LOADER_PACKAGE." {$installed} requires ".self::LAZY_LOADER_VERSION.' for controller preload/eager support');
+
+        return true;
+    }
+
+    private function upgradeLazyLoader(bool $required): int
+    {
+        if (! $required) {
+            return 0;
+        }
+
+        $changed = $this->packageInstaller->ensureDependency(
+            $this->files,
+            self::LAZY_LOADER_PACKAGE,
+            self::LAZY_LOADER_VERSION,
+        );
+
+        foreach ($changed as $package => $version) {
+            info("Updated dependency: $package $version");
+        }
+
+        return count($changed);
+    }
+
     private function emitScanOutput(): void
     {
         foreach ($this->okComponentControllerLines as $line) {
@@ -685,8 +992,12 @@ class CheckCommand extends Command
      * @param  array<string, string>  $missingDeps
      * @param  string[]  $excludedFromStub
      */
-    private function printIssueSummary(array $issues, array $missingDeps, array $excludedFromStub = []): void
-    {
+    private function printIssueSummary(
+        array $issues,
+        array $missingDeps,
+        array $excludedFromStub = [],
+        bool $policyDrift = false,
+    ): void {
         if (! empty($issues)) {
             $count = count($issues);
             $this->line("<comment>$count controller(s) need attention.</comment>");
@@ -700,14 +1011,22 @@ class CheckCommand extends Command
         if (! empty($excludedFromStub)) {
             $count = count($excludedFromStub);
             $this->line("<comment>$count controller(s) used in views but excluded from controllers/index.js</comment>");
-            $this->line('<comment>artisan hotwire:check --fix will regenerate.</comment>');
+        }
+
+        if ($policyDrift || ! empty($excludedFromStub)) {
+            $this->line('<comment>1 loader stub needs regeneration.</comment>');
+            $this->line('<comment>hotwire:check --fix will regenerate resources/js/controllers/index.js.</comment>');
         }
 
         $this->line('');
     }
 
-    private function shouldFix(): bool
-    {
+    private function shouldFix(
+        bool $controllerIssues,
+        bool $missingDependencies,
+        bool $loaderUpgrade,
+        bool $regenerateLoader,
+    ): bool {
         if ($this->option('fix')) {
             return true;
         }
@@ -716,7 +1035,41 @@ class CheckCommand extends Command
             return false;
         }
 
-        return confirm('Apply --fix now? (publishes missing/outdated controllers, regenerates the loader stub, adds missing npm deps)', default: true);
+        $hasInteractiveTerminal = defined('STDIN')
+            && function_exists('stream_isatty')
+            && stream_isatty(STDIN);
+
+        if (! $hasInteractiveTerminal && ! app()->runningUnitTests()) {
+            return false;
+        }
+
+        $actions = [];
+
+        if ($controllerIssues) {
+            $actions[] = 'publish missing/outdated controller files';
+        }
+
+        if ($regenerateLoader || $loaderUpgrade) {
+            $actions[] = 'regenerate resources/js/controllers/index.js';
+        }
+
+        if ($missingDependencies || $loaderUpgrade) {
+            $actions[] = $loaderUpgrade ? 'add or update npm dependencies' : 'add missing npm dependencies';
+        }
+
+        return confirm('Apply --fix now? This will '.$this->sentenceList($actions).'.', default: false);
+    }
+
+    /** @param string[] $items */
+    private function sentenceList(array $items): string
+    {
+        if (count($items) < 2) {
+            return $items[0] ?? 'apply the available fixes';
+        }
+
+        $last = array_pop($items);
+
+        return implode(', ', $items).' and '.$last;
     }
 
     /** @param array<int, array{identifier: string, source_file: string, target_file: string}> $issues */

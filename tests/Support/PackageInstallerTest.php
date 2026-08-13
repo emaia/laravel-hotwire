@@ -25,6 +25,44 @@ function writeInstallerPackageJson(array $json): void
 
 // --- addDevDependencies ---
 
+it('updates an older semver dependency while preserving compatible and non-semver constraints', function () {
+    writeInstallerPackageJson([
+        'name' => 'app',
+        'devDependencies' => ['loader' => '^1.1.0'],
+    ]);
+
+    expect($this->installer->ensureDependency($this->files, 'loader', '^2.0.0'))
+        ->toBe(['loader' => '^2.0.0']);
+
+    foreach (['^2.5.0', '*', 'x', 'X', '*.*.*', 'x.x', 'workspace:*', 'link:../loader', 'file:../loader', 'latest'] as $constraint) {
+        writeInstallerPackageJson([
+            'name' => 'app',
+            'devDependencies' => ['loader' => $constraint],
+        ]);
+
+        expect($this->installer->ensureDependency($this->files, 'loader', '^2.0.0'))->toBe([])
+            ->and(json_decode(File::get($this->packageJsonPath), true)['devDependencies']['loader'])->toBe($constraint);
+    }
+});
+
+it('updates wildcard constraints pinned to an older major', function () {
+    expect($this->installer->dependencyNeedsUpdate('1.x', '^2.0.0'))->toBeTrue()
+        ->and($this->installer->dependencyNeedsUpdate('1.x || *', '^2.0.0'))->toBeFalse();
+});
+
+it('updates hyphen ranges that end before the required major', function () {
+    expect($this->installer->dependencyNeedsUpdate('1.0.0 - 1.9.9', '^2.0.0'))->toBeTrue()
+        ->and($this->installer->dependencyNeedsUpdate('1.0.0 - 2.9.9', '^2.0.0'))->toBeFalse()
+        ->and($this->installer->dependencyNeedsUpdate('2.0.0 - 2.9.9', '^2.0.0'))->toBeFalse();
+});
+
+it('preserves comparator ranges that admit the required version', function () {
+    expect($this->installer->dependencyNeedsUpdate('<2.1.0', '^2.0.0'))->toBeFalse()
+        ->and($this->installer->dependencyNeedsUpdate('>=1 <2.1', '^2.0.0'))->toBeFalse()
+        ->and($this->installer->dependencyNeedsUpdate('>=1 <2', '^2.0.0'))->toBeTrue()
+        ->and($this->installer->dependencyNeedsUpdate('>=2.1', '^2.0.0'))->toBeFalse();
+});
+
 it('adds a new package to devDependencies', function () {
     writeInstallerPackageJson(['name' => 'app', 'devDependencies' => new stdClass]);
 

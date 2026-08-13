@@ -363,91 +363,92 @@ controllers, attribute-bag merging and the escaping rules.
 
 ## Blade Components
 
-| Component                                                 | Blade                      | Category     | Stimulus Identifier(s)                                                 | Docs                                            |
-|-----------------------------------------------------------|----------------------------|--------------|------------------------------------------------------------------------|-------------------------------------------------|
-| [Form](docs/components/form.md)                           | `<hw:form>`                | `forms`      | `auto-submit`, `unsaved-changes`, `error-scroll`, `clean-query-params` | [readme](docs/components/form.md)               |
-| [Field](docs/components/field.md)                         | `<hw:field>`               | `forms`      | —                                                                      | [readme](docs/components/field.md)              |
-| [Field Group](docs/components/field.md#hwfieldgroup)      | `<hw:field.group>`         | `forms`      | —                                                                      | [readme](docs/components/field.md#hwfieldgroup) |
-| [Field Label](docs/components/field.md#hwfieldlabel)      | `<hw:field.label>`         | `forms`      | —                                                                      | [readme](docs/components/field.md#hwfieldlabel) |
-| [Field Error](docs/components/field.md#hwfielderror)      | `<hw:field.error>`         | `forms`      | —                                                                      | [readme](docs/components/field.md#hwfielderror) |
-| [Checkbox](docs/components/checkbox.md)                   | `<hw:checkbox>`            | `forms`      | `checkbox`, `auto-submit`                                              | [readme](docs/components/checkbox.md)           |
-| [Checkbox Group](docs/components/checkbox-group.md)       | `<hw:checkbox-group>`      | `forms`      | `checkbox-select-all`, `auto-submit`                                   | [readme](docs/components/checkbox-group.md)     |
-| [Checkbox Group Item](docs/components/checkbox-group.md)  | `<hw:checkbox-group.item>` | `forms`      | `checkbox-select-all`, `auto-submit`                                   | [readme](docs/components/checkbox-group.md)     |
-| [Color Scheme Script](docs/components/color-scheme.md)    | `<hw:color-scheme.script>` | `utility`    | —                                                                      | [readme](docs/components/color-scheme.md)       |
-| [Color Scheme Toggle](docs/components/color-scheme.md)    | `<hw:color-scheme.toggle>` | `utility`    | `color-scheme`, optional `tooltip`                                     | [readme](docs/components/color-scheme.md)       |
-| [Conditional Field](docs/components/conditional-field.md) | `<hw:conditional-field>`   | `forms`      | `conditional-fields`                                                   | [readme](docs/components/conditional-field.md)  |
-| [File](docs/components/file.md)                           | `<hw:file>`                | `forms`      | `file-preserve`, `reset-files`                                         | [readme](docs/components/file.md)               |
-| [File Upload](docs/components/file-upload.md)             | `<hw:file-upload>`         | `forms`      | `file-upload`                                                          | [readme](docs/components/file-upload.md)        |
-| [Input](docs/components/input.md)                         | `<hw:input>`               | `forms`      | `auto-select`, `clear-input`, `input-mask`, `auto-submit`              | [readme](docs/components/input.md)              |
-| [Input Group](docs/components/input-group.md)             | `<hw:input-group>`         | `forms`      | —                                                                      | [readme](docs/components/input-group.md)        |
-| [Multi Select](docs/components/multi-select.md)           | `<hw:multi-select>`        | `forms`      | `multi-select`, `clear-input`                                          | [readme](docs/components/multi-select.md)       |
-| [Radio Group](docs/components/radio-group.md)             | `<hw:radio-group>`         | `forms`      | `auto-submit`                                                          | [readme](docs/components/radio-group.md)        |
-| [Radio Group Item](docs/components/radio-group.md)        | `<hw:radio-group.item>`    | `forms`      | `auto-submit`                                                          | [readme](docs/components/radio-group.md)        |
-| [Rich Text](docs/components/rich-text.md)                 | `<hw:rich-text>`           | `forms`      | `rich-text`, `rich-text-toolbar`                                       | [readme](docs/components/rich-text.md)          |
-| [Select](docs/components/select.md)                       | `<hw:select>`              | `forms`      | `auto-submit`                                                          | [readme](docs/components/select.md)             |
-| [Slider](docs/components/slider.md)                       | `<hw:slider>`              | `forms`      | `slider`, `auto-submit`                                                | [readme](docs/components/slider.md)             |
-| [Switch](docs/components/switch.md)                       | `<hw:switch>`              | `forms`      | `auto-submit`                                                          | [readme](docs/components/switch.md)             |
-| [Textarea](docs/components/textarea.md)                   | `<hw:textarea>`            | `forms`      | `auto-resize`, `char-counter`, `auto-submit`                           | [readme](docs/components/textarea.md)           |
-| [Toggle](docs/components/toggle.md)                       | `<hw:toggle>`              | `forms`      | `toggle`, `auto-submit`                                                | [readme](docs/components/toggle.md)             |
-| [Toggle Group](docs/components/toggle-group.md)           | `<hw:toggle-group>`        | `forms`      | `toggle-group`, `toggle`, `auto-submit`                                | [readme](docs/components/toggle-group.md)       |
-| [Toggle Group Item](docs/components/toggle-group.md)      | `<hw:toggle-group.item>`   | `forms`      | `toggle-group`, `toggle`, `auto-submit`                                | [readme](docs/components/toggle-group.md)       |
-| [Alert](docs/components/alert.md)                         | `<hw:alert>`               | `feedback`   | —                                                                      | [readme](docs/components/alert.md)              |
-| [Toaster](docs/components/toaster.md)                     | `<hw:toaster>`             | `feedback`   | `toaster`                                                              | [readme](docs/components/toaster.md)            |
-| [Toast](docs/components/toast.md)                         | `<hw:toast>`               | `feedback`   | `toast`                                                                | [readme](docs/components/toast.md)              |
-| [Skeleton](docs/components/skeleton.md)                   | `<hw:skeleton>`            | `feedback`   | —                                                                      | [readme](docs/components/skeleton.md)           |
-| [Spinner](docs/components/spinner.md)                     | `<hw:spinner>`             | `feedback`   | —                                                                      | [readme](docs/components/spinner.md)            |
-| [Sticky](docs/components/sticky.md)                       | `<hw:sticky>`              | `layout`     | —                                                                      | [readme](docs/components/sticky.md)             |
-| [Accordion](docs/components/accordion.md)                 | `<hw:accordion>`           | `display`    | `accordion`                                                            | [readme](docs/components/accordion.md)          |
-| [Aspect Ratio](docs/components/aspect-ratio.md)           | `<hw:aspect-ratio>`        | `display`    | —                                                                      | [readme](docs/components/aspect-ratio.md)       |
-| [Attachment](docs/components/attachment.md)               | `<hw:attachment>`          | `display`    | —                                                                      | [readme](docs/components/attachment.md)         |
-| [Avatar](docs/components/avatar.md)                       | `<hw:avatar>`              | `display`    | —                                                                      | [readme](docs/components/avatar.md)             |
-| [Badge](docs/components/badge.md)                         | `<hw:badge>`               | `display`    | —                                                                      | [readme](docs/components/badge.md)              |
-| [Breadcrumb](docs/components/breadcrumb.md)               | `<hw:breadcrumb>`          | `display`    | —                                                                      | [readme](docs/components/breadcrumb.md)         |
-| [Button Group](docs/components/button-group.md)           | `<hw:button-group>`        | `display`    | —                                                                      | [readme](docs/components/button-group.md)       |
-| [Card](docs/components/card.md)                           | `<hw:card>`                | `display`    | —                                                                      | [readme](docs/components/card.md)               |
-| [Empty State](docs/components/empty-state.md)             | `<hw:empty-state>`         | `display`    | —                                                                      | [readme](docs/components/empty-state.md)        |
-| [Item](docs/components/item.md)                           | `<hw:item>`                | `display`    | —                                                                      | [readme](docs/components/item.md)               |
-| [Kbd](docs/components/kbd.md)                             | `<hw:kbd>`                 | `display`    | —                                                                      | [readme](docs/components/kbd.md)                |
-| [Marker](docs/components/marker.md)                       | `<hw:marker>`              | `display`    | —                                                                      | [readme](docs/components/marker.md)             |
-| [Pagination](docs/components/pagination.md)               | `<hw:pagination>`          | `display`    | `pagination`                                                           | [readme](docs/components/pagination.md)         |
-| [Progress](docs/components/progress.md)                   | `<hw:progress>`            | `display`    | —                                                                      | [readme](docs/components/progress.md)           |
-| [Read More](docs/components/read-more.md)                 | `<hw:read-more>`           | `display`    | `read-more`                                                            | [readme](docs/components/read-more.md)          |
-| [Separator](docs/components/separator.md)                 | `<hw:separator>`           | `display`    | —                                                                      | [readme](docs/components/separator.md)          |
-| [Table](docs/components/table.md)                         | `<hw:table>`               | `display`    | —                                                                      | [readme](docs/components/table.md)              |
-| [Tabs](docs/components/tabs.md)                           | `<hw:tabs>`                | `display`    | `tabs`                                                                 | [readme](docs/components/tabs.md)               |
-| [Navbar](docs/components/navbar.md)                       | `<hw:navbar>`              | `navigation` | —                                                                      | [readme](docs/components/navbar.md)             |
-| [Navbar Item](docs/components/navbar.md)                  | `<hw:navbar.item>`         | `navigation` | —                                                                      | [readme](docs/components/navbar.md)             |
-| [Alert Dialog](docs/components/alert-dialog.md)           | `<hw:alert-dialog>`        | `overlay`    | `alert-dialog`                                                         | [readme](docs/components/alert-dialog.md)       |
-| [Drawer](docs/components/drawer.md)                       | `<hw:drawer>`              | `overlay`    | `drawer`, `turbo--view-transition`                                     | [readme](docs/components/drawer.md)             |
-| [Dropdown](docs/components/dropdown.md)                   | `<hw:dropdown>`            | `overlay`    | `dropdown`                                                             | [readme](docs/components/dropdown.md)           |
-| [Hover Card](docs/components/hover-card.md)               | `<hw:hover-card>`          | `overlay`    | `hover-card`                                                           | [readme](docs/components/hover-card.md)         |
-| [Modal](docs/components/modal.md)                         | `<hw:modal>`               | `overlay`    | `modal`, `turbo--view-transition`                                      | [readme](docs/components/modal.md)              |
-| [Popover](docs/components/popover.md)                     | `<hw:popover>`             | `overlay`    | `popover`                                                              | [readme](docs/components/popover.md)            |
-| [Sheet](docs/components/sheet.md)                         | `<hw:sheet>`               | `overlay`    | `sheet`, `turbo--view-transition`                                      | [readme](docs/components/sheet.md)              |
-| [Frame](docs/components/frame.md)                         | `<hw:frame>`               | `turbo`      | `turbo--polling`, `turbo--view-transition`, `turbo--preserve-scroll`    | [readme](docs/components/frame.md)              |
-| [Frame Or Page](docs/components/frame-or-page.md)         | `<hw:frame-or-page>`       | `turbo`      | `turbo--polling`, `turbo--view-transition`                             | [readme](docs/components/frame-or-page.md)      |
-| [Frame Or Page Frame](docs/components/frame-or-page.md)   | `<hw:frame-or-page.frame>` | `turbo`      | —                                                                      | [readme](docs/components/frame-or-page.md)      |
-| [Frame Or Page Page](docs/components/frame-or-page.md)    | `<hw:frame-or-page.page>`  | `turbo`      | —                                                                      | [readme](docs/components/frame-or-page.md)      |
-| [Meta](docs/components/meta.md)                           | `<hw:meta>`                | `turbo`      | —                                                                      | [readme](docs/components/meta.md)               |
-| [Meta Cache](docs/components/meta.md)                     | `<hw:meta.cache>`          | `turbo`      | —                                                                      | [readme](docs/components/meta.md)               |
-| [Meta Prefetch](docs/components/meta.md)                  | `<hw:meta.prefetch>`       | `turbo`      | —                                                                      | [readme](docs/components/meta.md)               |
-| [Meta Refresh](docs/components/meta.md)                   | `<hw:meta.refresh>`        | `turbo`      | —                                                                      | [readme](docs/components/meta.md)               |
-| [Meta Root](docs/components/meta.md)                      | `<hw:meta.root>`           | `turbo`      | —                                                                      | [readme](docs/components/meta.md)               |
-| [Meta View Transition](docs/components/meta.md)           | `<hw:meta.view-transition>` | `turbo`      | —                                                                      | [readme](docs/components/meta.md)               |
-| [Meta Visit Control](docs/components/meta.md)             | `<hw:meta.visit-control>`  | `turbo`      | —                                                                      | [readme](docs/components/meta.md)               |
-| [Optimistic](docs/components/optimistic.md)               | `<hw:optimistic>`          | `turbo`      | —                                                                      | [readme](docs/components/optimistic.md)         |
-| [Back to Top](docs/components/back-to-top.md)             | `<hw:back-to-top>`          | `utility`    | `back-to-top`                                                          | [readme](docs/components/back-to-top.md)        |
-| [Button](docs/components/button.md)                       | `<hw:button>`              | `utility`    | `hotkey`, `tooltip`                                                    | [readme](docs/components/button.md)             |
-| [Carousel](docs/components/carousel.md)                   | `<hw:carousel>`            | `utility`    | `carousel`                                                             | [readme](docs/components/carousel.md)           |
-| [Chart](docs/components/chart.md)                         | `<hw:chart>`               | `utility`    | `chart`                                                                | [readme](docs/components/chart.md)              |
-| [Icon](docs/components/icon.md)                           | `<hw:icon>`                | `utility`    | —                                                                      | [readme](docs/components/icon.md)               |
-| [Meta Color Scheme](docs/components/meta.md)              | `<hw:meta.color-scheme>`   | `utility`    | —                                                                      | [readme](docs/components/meta.md)               |
-| [Meta CSRF](docs/components/meta.md)                      | `<hw:meta.csrf>`           | `utility`    | —                                                                      | [readme](docs/components/meta.md)               |
-| [Map](docs/components/map.md)                             | `<hw:map>`                 | `utility`    | `map`                                                                  | [readme](docs/components/map.md)                |
-| [Scroll Progress](docs/components/scroll-progress.md)     | `<hw:scroll-progress>`     | `utility`    | `scroll-progress`                                                      | [readme](docs/components/scroll-progress.md)    |
-| [Side Panel](docs/components/side-panel.md)               | `<hw:side-panel>`          | `utility`    | `side-panel`                                                           | [readme](docs/components/side-panel.md)         |
-| [Sidebar](docs/components/sidebar.md)                     | `<hw:sidebar>`             | `utility`    | `sidebar`                                                              | [readme](docs/components/sidebar.md)            |
-| [Timeago](docs/components/timeago.md)                     | `<hw:timeago>`             | `utility`    | `timeago`                                                              | [readme](docs/components/timeago.md)            |
+| Component                                                     | Blade                       | Category     | Stimulus Identifier(s)                                                 | Docs                                             |
+|---------------------------------------------------------------|-----------------------------|--------------|------------------------------------------------------------------------|--------------------------------------------------|
+| [Form](docs/components/form.md)                               | `<hw:form>`                 | `forms`      | `auto-submit`, `unsaved-changes`, `error-scroll`, `clean-query-params` | [readme](docs/components/form.md)                |
+| [Field](docs/components/field.md)                             | `<hw:field>`                | `forms`      | —                                                                      | [readme](docs/components/field.md)               |
+| [Field Group](docs/components/field.md#hwfieldgroup)          | `<hw:field.group>`          | `forms`      | —                                                                      | [readme](docs/components/field.md#hwfieldgroup)  |
+| [Field Label](docs/components/field.md#hwfieldlabel)          | `<hw:field.label>`          | `forms`      | —                                                                      | [readme](docs/components/field.md#hwfieldlabel)  |
+| [Field Error](docs/components/field.md#hwfielderror)          | `<hw:field.error>`          | `forms`      | —                                                                      | [readme](docs/components/field.md#hwfielderror)  |
+| [Checkbox](docs/components/checkbox.md)                       | `<hw:checkbox>`             | `forms`      | `checkbox`, `auto-submit`                                              | [readme](docs/components/checkbox.md)            |
+| [Checkbox Group](docs/components/checkbox-group.md)           | `<hw:checkbox-group>`       | `forms`      | `checkbox-select-all`, `auto-submit`                                   | [readme](docs/components/checkbox-group.md)      |
+| [Checkbox Group Item](docs/components/checkbox-group.md)      | `<hw:checkbox-group.item>`  | `forms`      | `checkbox-select-all`, `auto-submit`                                   | [readme](docs/components/checkbox-group.md)      |
+| [Color Scheme Script](docs/components/color-scheme.md)        | `<hw:color-scheme.script>`  | `utility`    | —                                                                      | [readme](docs/components/color-scheme.md)        |
+| [Color Scheme Toggle](docs/components/color-scheme.md)        | `<hw:color-scheme.toggle>`  | `utility`    | `color-scheme`, optional `tooltip`                                     | [readme](docs/components/color-scheme.md)        |
+| [Conditional Field](docs/components/conditional-field.md)     | `<hw:conditional-field>`    | `forms`      | `conditional-fields`                                                   | [readme](docs/components/conditional-field.md)   |
+| [File](docs/components/file.md)                               | `<hw:file>`                 | `forms`      | `file-preserve`, `reset-files`                                         | [readme](docs/components/file.md)                |
+| [File Upload](docs/components/file-upload.md)                 | `<hw:file-upload>`          | `forms`      | `file-upload`                                                          | [readme](docs/components/file-upload.md)         |
+| [Input](docs/components/input.md)                             | `<hw:input>`                | `forms`      | `auto-select`, `clear-input`, `input-mask`, `auto-submit`              | [readme](docs/components/input.md)               |
+| [Input Group](docs/components/input-group.md)                 | `<hw:input-group>`          | `forms`      | —                                                                      | [readme](docs/components/input-group.md)         |
+| [Multi Select](docs/components/multi-select.md)               | `<hw:multi-select>`         | `forms`      | `multi-select`, `clear-input`                                          | [readme](docs/components/multi-select.md)        |
+| [Radio Group](docs/components/radio-group.md)                 | `<hw:radio-group>`          | `forms`      | `auto-submit`                                                          | [readme](docs/components/radio-group.md)         |
+| [Radio Group Item](docs/components/radio-group.md)            | `<hw:radio-group.item>`     | `forms`      | `auto-submit`                                                          | [readme](docs/components/radio-group.md)         |
+| [Rich Text](docs/components/rich-text.md)                     | `<hw:rich-text>`            | `forms`      | `rich-text`, `rich-text-toolbar`                                       | [readme](docs/components/rich-text.md)           |
+| [Select](docs/components/select.md)                           | `<hw:select>`               | `forms`      | `auto-submit`                                                          | [readme](docs/components/select.md)              |
+| [Slider](docs/components/slider.md)                           | `<hw:slider>`               | `forms`      | `slider`, `auto-submit`                                                | [readme](docs/components/slider.md)              |
+| [Switch](docs/components/switch.md)                           | `<hw:switch>`               | `forms`      | `auto-submit`                                                          | [readme](docs/components/switch.md)              |
+| [Textarea](docs/components/textarea.md)                       | `<hw:textarea>`             | `forms`      | `auto-resize`, `char-counter`, `auto-submit`                           | [readme](docs/components/textarea.md)            |
+| [Toggle](docs/components/toggle.md)                           | `<hw:toggle>`               | `forms`      | `toggle`, `auto-submit`                                                | [readme](docs/components/toggle.md)              |
+| [Toggle Group](docs/components/toggle-group.md)               | `<hw:toggle-group>`         | `forms`      | `toggle-group`, `toggle`, `auto-submit`                                | [readme](docs/components/toggle-group.md)        |
+| [Toggle Group Item](docs/components/toggle-group.md)          | `<hw:toggle-group.item>`    | `forms`      | `toggle-group`, `toggle`, `auto-submit`                                | [readme](docs/components/toggle-group.md)        |
+| [Alert](docs/components/alert.md)                             | `<hw:alert>`                | `feedback`   | —                                                                      | [readme](docs/components/alert.md)               |
+| [Toaster](docs/components/toaster.md)                         | `<hw:toaster>`              | `feedback`   | `toaster`                                                              | [readme](docs/components/toaster.md)             |
+| [Toast](docs/components/toast.md)                             | `<hw:toast>`                | `feedback`   | `toast`                                                                | [readme](docs/components/toast.md)               |
+| [Skeleton](docs/components/skeleton.md)                       | `<hw:skeleton>`             | `feedback`   | —                                                                      | [readme](docs/components/skeleton.md)            |
+| [Spinner](docs/components/spinner.md)                         | `<hw:spinner>`              | `feedback`   | —                                                                      | [readme](docs/components/spinner.md)             |
+| [Sticky](docs/components/sticky.md)                           | `<hw:sticky>`               | `layout`     | —                                                                      | [readme](docs/components/sticky.md)              |
+| [Accordion](docs/components/accordion.md)                     | `<hw:accordion>`            | `display`    | `accordion`                                                            | [readme](docs/components/accordion.md)           |
+| [Aspect Ratio](docs/components/aspect-ratio.md)               | `<hw:aspect-ratio>`         | `display`    | —                                                                      | [readme](docs/components/aspect-ratio.md)        |
+| [Attachment](docs/components/attachment.md)                   | `<hw:attachment>`           | `display`    | —                                                                      | [readme](docs/components/attachment.md)          |
+| [Avatar](docs/components/avatar.md)                           | `<hw:avatar>`               | `display`    | —                                                                      | [readme](docs/components/avatar.md)              |
+| [Badge](docs/components/badge.md)                             | `<hw:badge>`                | `display`    | —                                                                      | [readme](docs/components/badge.md)               |
+| [Breadcrumb](docs/components/breadcrumb.md)                   | `<hw:breadcrumb>`           | `display`    | —                                                                      | [readme](docs/components/breadcrumb.md)          |
+| [Button Group](docs/components/button-group.md)               | `<hw:button-group>`         | `display`    | —                                                                      | [readme](docs/components/button-group.md)        |
+| [Card](docs/components/card.md)                               | `<hw:card>`                 | `display`    | —                                                                      | [readme](docs/components/card.md)                |
+| [Empty State](docs/components/empty-state.md)                 | `<hw:empty-state>`          | `display`    | —                                                                      | [readme](docs/components/empty-state.md)         |
+| [Item](docs/components/item.md)                               | `<hw:item>`                 | `display`    | —                                                                      | [readme](docs/components/item.md)                |
+| [Kbd](docs/components/kbd.md)                                 | `<hw:kbd>`                  | `display`    | —                                                                      | [readme](docs/components/kbd.md)                 |
+| [Marker](docs/components/marker.md)                           | `<hw:marker>`               | `display`    | —                                                                      | [readme](docs/components/marker.md)              |
+| [Pagination](docs/components/pagination.md)                   | `<hw:pagination>`           | `display`    | `pagination`                                                           | [readme](docs/components/pagination.md)          |
+| [Progress](docs/components/progress.md)                       | `<hw:progress>`             | `display`    | —                                                                      | [readme](docs/components/progress.md)            |
+| [Read More](docs/components/read-more.md)                     | `<hw:read-more>`            | `display`    | `read-more`                                                            | [readme](docs/components/read-more.md)           |
+| [Separator](docs/components/separator.md)                     | `<hw:separator>`            | `display`    | —                                                                      | [readme](docs/components/separator.md)           |
+| [Table](docs/components/table.md)                             | `<hw:table>`                | `display`    | —                                                                      | [readme](docs/components/table.md)               |
+| [Tabs](docs/components/tabs.md)                               | `<hw:tabs>`                 | `display`    | `tabs`                                                                 | [readme](docs/components/tabs.md)                |
+| [Navbar](docs/components/navbar.md)                           | `<hw:navbar>`               | `navigation` | —                                                                      | [readme](docs/components/navbar.md)              |
+| [Navbar Item](docs/components/navbar.md)                      | `<hw:navbar.item>`          | `navigation` | —                                                                      | [readme](docs/components/navbar.md)              |
+| [Alert Dialog](docs/components/alert-dialog.md)               | `<hw:alert-dialog>`         | `overlay`    | `alert-dialog`                                                         | [readme](docs/components/alert-dialog.md)        |
+| [Drawer](docs/components/drawer.md)                           | `<hw:drawer>`               | `overlay`    | `drawer`, `turbo--view-transition`                                     | [readme](docs/components/drawer.md)              |
+| [Dropdown](docs/components/dropdown.md)                       | `<hw:dropdown>`             | `overlay`    | `dropdown`                                                             | [readme](docs/components/dropdown.md)            |
+| [Hover Card](docs/components/hover-card.md)                   | `<hw:hover-card>`           | `overlay`    | `hover-card`                                                           | [readme](docs/components/hover-card.md)          |
+| [Modal](docs/components/modal.md)                             | `<hw:modal>`                | `overlay`    | `modal`, `turbo--view-transition`                                      | [readme](docs/components/modal.md)               |
+| [Popover](docs/components/popover.md)                         | `<hw:popover>`              | `overlay`    | `popover`                                                              | [readme](docs/components/popover.md)             |
+| [Sheet](docs/components/sheet.md)                             | `<hw:sheet>`                | `overlay`    | `sheet`, `turbo--view-transition`                                      | [readme](docs/components/sheet.md)               |
+| [Frame](docs/components/frame.md)                             | `<hw:frame>`                | `turbo`      | `turbo--polling`, `turbo--view-transition`, `turbo--preserve-scroll`   | [readme](docs/components/frame.md)               |
+| [Frame Or Page](docs/components/frame-or-page.md)             | `<hw:frame-or-page>`        | `turbo`      | `turbo--polling`, `turbo--view-transition`                             | [readme](docs/components/frame-or-page.md)       |
+| [Frame Or Page Frame](docs/components/frame-or-page.md)       | `<hw:frame-or-page.frame>`  | `turbo`      | —                                                                      | [readme](docs/components/frame-or-page.md)       |
+| [Frame Or Page Page](docs/components/frame-or-page.md)        | `<hw:frame-or-page.page>`   | `turbo`      | —                                                                      | [readme](docs/components/frame-or-page.md)       |
+| [Meta](docs/components/meta.md)                               | `<hw:meta>`                 | `turbo`      | —                                                                      | [readme](docs/components/meta.md)                |
+| [Meta Cache](docs/components/meta.md)                         | `<hw:meta.cache>`           | `turbo`      | —                                                                      | [readme](docs/components/meta.md)                |
+| [Meta Prefetch](docs/components/meta.md)                      | `<hw:meta.prefetch>`        | `turbo`      | —                                                                      | [readme](docs/components/meta.md)                |
+| [Meta Refresh](docs/components/meta.md)                       | `<hw:meta.refresh>`         | `turbo`      | —                                                                      | [readme](docs/components/meta.md)                |
+| [Meta Root](docs/components/meta.md)                          | `<hw:meta.root>`            | `turbo`      | —                                                                      | [readme](docs/components/meta.md)                |
+| [Meta View Transition](docs/components/meta.md)               | `<hw:meta.view-transition>` | `turbo`      | —                                                                      | [readme](docs/components/meta.md)                |
+| [Meta Visit Control](docs/components/meta.md)                 | `<hw:meta.visit-control>`   | `turbo`      | —                                                                      | [readme](docs/components/meta.md)                |
+| [Optimistic](docs/components/optimistic.md)                   | `<hw:optimistic>`           | `turbo`      | —                                                                      | [readme](docs/components/optimistic.md)          |
+| [Back to Top](docs/components/back-to-top.md)                 | `<hw:back-to-top>`          | `utility`    | `back-to-top`                                                          | [readme](docs/components/back-to-top.md)         |
+| [Button](docs/components/button.md)                           | `<hw:button>`               | `utility`    | `hotkey`, `tooltip`                                                    | [readme](docs/components/button.md)              |
+| [Carousel](docs/components/carousel.md)                       | `<hw:carousel>`             | `utility`    | `carousel`                                                             | [readme](docs/components/carousel.md)            |
+| [Chart](docs/components/chart.md)                             | `<hw:chart>`                | `utility`    | `chart`                                                                | [readme](docs/components/chart.md)               |
+| [Icon](docs/components/icon.md)                               | `<hw:icon>`                 | `utility`    | —                                                                      | [readme](docs/components/icon.md)                |
+| [Controller Preloads](docs/components/controller-preloads.md) | `<hw:controller-preloads>`  | `utility`    | —                                                                      | [readme](docs/components/controller-preloads.md) |
+| [Meta Color Scheme](docs/components/meta.md)                  | `<hw:meta.color-scheme>`    | `utility`    | —                                                                      | [readme](docs/components/meta.md)                |
+| [Meta CSRF](docs/components/meta.md)                          | `<hw:meta.csrf>`            | `utility`    | —                                                                      | [readme](docs/components/meta.md)                |
+| [Map](docs/components/map.md)                                 | `<hw:map>`                  | `utility`    | `map`                                                                  | [readme](docs/components/map.md)                 |
+| [Scroll Progress](docs/components/scroll-progress.md)         | `<hw:scroll-progress>`      | `utility`    | `scroll-progress`                                                      | [readme](docs/components/scroll-progress.md)     |
+| [Side Panel](docs/components/side-panel.md)                   | `<hw:side-panel>`           | `utility`    | `side-panel`                                                           | [readme](docs/components/side-panel.md)          |
+| [Sidebar](docs/components/sidebar.md)                         | `<hw:sidebar>`              | `utility`    | `sidebar`                                                              | [readme](docs/components/sidebar.md)             |
+| [Timeago](docs/components/timeago.md)                         | `<hw:timeago>`              | `utility`    | `timeago`                                                              | [readme](docs/components/timeago.md)             |
 
 ## Verify Your Setup
 
@@ -478,9 +479,9 @@ attributes and the `stimulus_controller()` / `stimulus()->controller()` / `->con
 Exits with code `1` if either has pending items (useful for CI).
 
 Both the configured prefix (`hw` by default) and the short `<hw:*>` form are recognized, so views like
-`<hw:toast />` and `<x-hw::toast />` are detected equally. Only controllers shipped by the package are
-checked — your own controllers are ignored — and Blade comments and `<script>`/`<style>` blocks are stripped first, so
-commented-out code is skipped.
+`<hw:toast />` and `<x-hw::toast />` are detected equally. Only controllers shipped by the package are checked — your
+own controllers are ignored — and Blade comments and `<script>`/`<style>` blocks are stripped first, so commented-out
+code is skipped.
 
 ```bash
 # Auto-publish missing/outdated controllers AND add missing npm deps to devDependencies
@@ -514,11 +515,19 @@ Required npm dependencies:
 
 return [
     'prefix' => 'hw', // <hw:modal>
+    'controllers' => [
+        'preload' => [], // separate chunks requested from the head
+        'eager' => [],   // modules included in the application entry graph
+    ],
 ];
 ```
 
 Change `prefix` to use a different prefix for Blade components. E.g. `'prefix' => 'ui'` → `<ui:modal>` or
 `<x-ui::modal>`.
+
+Critical controller loading supports package controllers and conventional local controllers. Add
+`<hw:controller-preloads />` to the document head when using `controllers.preload`; see
+[Advanced installation](docs/installation.md#critical-controller-loading) for preload versus eager semantics.
 
 ## PhpStorm / Laravel Idea
 
