@@ -172,6 +172,46 @@ test("holds the entry back when the view transition is already running", async (
     expect(seen.released.y).toBe(0);
 });
 
+test("survives a webfont landing mid-entry", async ({ page }) => {
+    await setup(page);
+
+    const path = await page.evaluate(async () => {
+        const samples = [];
+        window.toaster.success("Saved", {
+            description: "A description long enough to wrap onto a second line inside the card.",
+            duration: 0,
+        });
+
+        const started = performance.now();
+        let swapped = false;
+
+        await new Promise((resolve) => {
+            const tick = () => {
+                const toast = document.querySelector('[data-slot="toast"]');
+                if (toast) samples.push(Math.round(new DOMMatrix(getComputedStyle(toast).transform).m42));
+
+                // Stand-in for the font swap on a cold load: the text metrics change under the card
+                // while it is still on its way in.
+                if (!swapped && performance.now() - started > 120) {
+                    swapped = true;
+                    document.body.style.fontSize = "19px";
+                }
+
+                if (performance.now() - started < 800) requestAnimationFrame(tick);
+                else resolve();
+            };
+            requestAnimationFrame(tick);
+        });
+
+        return [...new Set(samples)];
+    });
+
+    // Re-measuring lifts the clamp with transitions off. Doing that mid-entry cancels the animation
+    // outright and the card drops into place — which is what a first, uncached load looks like.
+    expect(path.length).toBeGreaterThan(3);
+    expect(path.at(-1)).toBe(0);
+});
+
 test("leaves the cards already on screen alone while a newcomer is held", async ({ page }) => {
     await setup(page);
     await page.evaluate(() => window.toaster.success("First", { duration: 0 }));

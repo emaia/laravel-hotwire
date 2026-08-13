@@ -121,8 +121,15 @@ export function createToaster(element, options = {}) {
         if (destroyed || !entry.element.isConnected) return;
 
         reflow();
-        entry.presence.open();
+        entry.presence.open().then(() => flushPendingMeasure(entry));
         startTimer(entry);
+    }
+
+    function flushPendingMeasure(entry) {
+        if (!entry.pendingMeasure || destroyed || !entry.element.isConnected) return;
+
+        entry.pendingMeasure = false;
+        if (measure(entry)) reflow();
     }
 
     function build(id, payload) {
@@ -166,6 +173,7 @@ export function createToaster(element, options = {}) {
             duration: Number.isFinite(payload.duration) ? payload.duration : config.duration,
             height: 0,
             bodyHeight: 0,
+            pendingMeasure: false,
             observer: null,
             remaining: null,
             startedAt: null,
@@ -207,6 +215,16 @@ export function createToaster(element, options = {}) {
             if (height === entry.bodyHeight) return;
 
             entry.bodyHeight = height;
+
+            // A late webfont changes the text metrics while the card is still entering. Measuring
+            // lifts the height clamp with transitions off, which cancels the entry in flight and
+            // drops the card into place without motion, so correct the height once it has landed.
+            if (entry.element.dataset.presence) {
+                entry.pendingMeasure = true;
+
+                return;
+            }
+
             if (measure(entry)) reflow();
         });
         entry.observer.observe(body);
@@ -408,7 +426,9 @@ export function createToaster(element, options = {}) {
     }
 
     const instance = {
-        get destroyed() { return destroyed; },
+        get destroyed() {
+            return destroyed;
+        },
         show,
         dismiss,
         destroy,
@@ -456,9 +476,7 @@ function whenPageVisible() {
 
     const animations = viewTransitionAnimations();
 
-    return animations.length === 0
-        ? null
-        : Promise.allSettled(animations.map((animation) => animation.finished));
+    return animations.length === 0 ? null : Promise.allSettled(animations.map((animation) => animation.finished));
 }
 
 /** @returns {Animation[]} the animations a running view transition drives on its pseudo-elements. */
