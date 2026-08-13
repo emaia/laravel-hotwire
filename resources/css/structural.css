@@ -288,6 +288,22 @@ html[data-reveal-rendering]:has(:is(
     }
 }
 
+/* An application-wide way out, for when the cascade is not wanted without editing every component
+   that emits it. It has to neutralise the gating as well as the motion: an armed item is hidden
+   until released, so silencing only the animation would leave content waiting on a scroll that no
+   longer reveals anything. Same three rules the reduced motion block applies, under an author's
+   switch rather than the visitor's preference. */
+html[data-reveal="off"] [data-reveal-item],
+html[data-reveal="off"] [data-reveal-children] > *,
+html[data-reveal="off"] [data-reveal-item] [data-slot="progress-indicator"],
+html[data-reveal="off"] [data-reveal-children] > * [data-slot="progress-indicator"] {
+    animation: none;
+}
+
+html[data-reveal="off"] [data-reveal-armed] {
+    opacity: 1;
+}
+
 /*
  * --- Read More clamp ---
  *

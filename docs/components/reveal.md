@@ -175,6 +175,22 @@ over normal opacity declarations while running, so a hidden item can flash throu
 when `backwards` fill releases it. Animate a stable wrapper instead, or suppress Reveal in the conflicting state. Nova
 does this for desktop group labels in an icon-collapsed Sidebar while preserving their mobile and expanded entrances.
 
+## Turning the cascade off
+
+Set `data-reveal="off"` on `<html>` to neutralise every Reveal in the document without editing the markup that emits
+them:
+
+```blade
+<html data-reveal="{{ config('app.reveal', 'on') }}">
+```
+
+This silences the item and progress animations and releases armed opacity, so content that would be waiting on a scroll
+is simply visible. It is the same treatment `prefers-reduced-motion: reduce` applies, under an author's switch rather
+than the visitor's preference — which stays honoured either way.
+
+Individual instances do not need the switch: drop the `<hw:reveal>` wrapper, or the `reveal` prop on components that
+expose one.
+
 ## Styling hooks
 
 - `data-slot="reveal"`

@@ -71,6 +71,35 @@ test("Sidebar Reveal integration receives its selected Nova motion", async ({ pa
     await expect(page.locator("#sidebar-item")).toHaveCSS("animation-name", "hotwire-reveal-flat");
 });
 
+test("data-reveal=off neutralises the cascade without touching the markup", async ({ page }) => {
+    await page.setContent(
+        await fixture(
+            `
+        <section data-slot="reveal" data-controller="reveal">
+            <article id="item" data-reveal-item>
+                Content
+                <span data-slot="progress-indicator"></span>
+            </article>
+            <article id="armed" data-reveal-item data-reveal-armed>Waiting for a scroll</article>
+        </section>
+    `,
+            "300ms",
+        ),
+    );
+
+    // The fixture overrides --reveal-animation, so this is the cascade running at all.
+    await expect(page.locator("#item")).toHaveCSS("animation-name", "test-reveal");
+    await expect(page.locator("#item span")).toHaveCSS("animation-name", "hotwire-reveal-progress");
+
+    await page.evaluate(() => document.documentElement.setAttribute("data-reveal", "off"));
+
+    await expect(page.locator("#item")).toHaveCSS("animation-name", "none");
+    await expect(page.locator("#item span")).toHaveCSS("animation-name", "none");
+    // Silencing the motion alone would leave an armed item hidden, waiting on a scroll that no
+    // longer reveals anything.
+    await expect(page.locator("#armed")).toHaveCSS("opacity", "1");
+});
+
 test("names the Sidebar for the transition only while Turbo is rendering", async ({ page }) => {
     const structural = await readFile("resources/css/structural.css", "utf8");
 
