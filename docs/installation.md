@@ -168,8 +168,9 @@ parallel with the application entrypoint. Render the links from the document hea
 <hw:controller-preloads />
 ```
 
-Render `@vite` first so assets already preloaded by the entrypoint are deduplicated before controller-specific links are
-emitted. Pass `build-directory` when that `@vite` invocation uses a non-default directory:
+Render `@vite` first so the browser sees the entrypoint preload order before controller-specific links. The preload
+component still skips Vite entrypoint assets when rendered earlier, so it will not emit duplicate preloads for
+`app.js` or its CSS. Pass `build-directory` when that `@vite` invocation uses a non-default directory:
 
 ```blade
 @vite(['resources/js/app.js'], 'frontend')
@@ -187,8 +188,9 @@ the required execution order. Eager controllers are removed from the matching la
 both arrays is treated as eager only.
 
 After changing either list, run `php artisan hotwire:check --fix` to regenerate
-`resources/js/controllers/index.js`. A plain `hotwire:check` reports the file as outdated and shows the current and
-expected `preload` / `eager` selections before offering the fix interactively.
+`resources/js/controllers/index.js`, then rebuild your Vite assets so the production manifest includes the new loading
+policy. A plain `hotwire:check` reports the file as outdated and shows the current and expected `preload` / `eager`
+selections before offering the fix interactively.
 
 Both options support package controllers and conventional application controllers under `resources/js/controllers`.
 Nested directories map to Stimulus `--` namespaces; `.js` and `.ts` are supported. A local controller overrides a
@@ -198,7 +200,8 @@ code and should be imported explicitly.
 The preload component uses Laravel Vite's production manifest and native preload renderer, including recursive static
 imports, CSP nonce, integrity, crossorigin, configured asset URLs, custom preload attributes and duplicate suppression.
 It renders nothing while Vite is running hot. Missing, stale or ambiguous manifest entries emit a warning and no preload
-tags rather than making the page unavailable or preloading the wrong asset.
+tags rather than making the page unavailable or preloading the wrong asset. In debug mode, the rendered HTML also
+includes a diagnostic comment so stale manifests are visible during development.
 
 Controllers with npm dependencies still respect `--core-only` and `--with-deps`. A configured package preload/eager is
 explicit usage: `hotwire:check --fix` adds its dependencies and includes it in the loader plan. A local override does not

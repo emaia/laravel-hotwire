@@ -10,8 +10,10 @@ nothing while the Vite development server is running.
 </head>
 ```
 
-Keep `@vite` first so its existing preloads are deduplicated. When it uses an invocation-specific build directory, pass
-the same directory to the component with `build-directory="frontend"`.
+Keep `@vite` first so its existing preloads are known before controller-specific links are rendered. The component still
+skips Vite entrypoint assets when rendered earlier, but placing it after `@vite` mirrors the browser's final loading
+order. When `@vite` uses an invocation-specific build directory, pass the same directory to the component with
+`build-directory="frontend"`.
 
 The default selection comes from `config/hotwire.php`:
 

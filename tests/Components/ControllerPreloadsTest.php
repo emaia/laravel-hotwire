@@ -86,6 +86,22 @@ it('logs and renders nothing when a controller is absent from the manifest', fun
         ->withArgs(fn (string $message): bool => str_contains($message, 'Unable to locate Stimulus controller [missing]'));
 });
 
+it('renders a diagnostic comment for missing controllers when debug is enabled', function () {
+    Log::spy();
+    config()->set('app.debug', true);
+    File::put(public_path('build/manifest.json'), json_encode([], JSON_THROW_ON_ERROR));
+
+    $html = (string) $this->blade('<x-hw::controller-preloads controllers="missing" />');
+
+    expect($html)
+        ->toContain('Laravel Hotwire controller preload warning')
+        ->toContain('Unable to locate Stimulus controller [missing]')
+        ->not->toContain('modulepreload');
+    Log::shouldHaveReceived('warning')
+        ->once()
+        ->withArgs(fn (string $message): bool => str_contains($message, 'Unable to locate Stimulus controller [missing]'));
+});
+
 it('skips a missing controller without dropping valid preloads', function () {
     Log::spy();
     File::put(public_path('build/manifest.json'), json_encode([
@@ -113,6 +129,25 @@ it('skips a missing controller without dropping valid preloads', function () {
     Log::shouldHaveReceived('warning')
         ->once()
         ->withArgs(fn (string $message): bool => str_contains($message, 'Unable to locate Stimulus controller [missing]'));
+});
+
+it('keeps valid preloads with diagnostic comments when debug is enabled', function () {
+    Log::spy();
+    config()->set('app.debug', true);
+    File::put(public_path('build/manifest.json'), json_encode([
+        'resources/js/controllers/modal_controller.js' => [
+            'file' => 'assets/modal.js',
+        ],
+    ], JSON_THROW_ON_ERROR));
+
+    $html = (string) $this->blade(
+        '<x-hw::controller-preloads :controllers="[\'modal\', \'missing\']" />',
+    );
+
+    expect($html)
+        ->toContain('assets/modal.js')
+        ->toContain('Laravel Hotwire controller preload warning')
+        ->toContain('Unable to locate Stimulus controller [missing]');
 });
 
 it('logs and renders nothing when the Vite manifest is unavailable', function () {
@@ -161,6 +196,34 @@ it('does not duplicate an asset already preloaded by the Vite entrypoint', funct
     $html .= (string) $this->blade('<x-hw::controller-preloads controllers="search" />');
 
     expect(substr_count($html, 'href="http://localhost/build/assets/search.js"'))->toBe(1);
+});
+
+it('does not emit Vite entrypoint preloads before the entrypoint is rendered', function () {
+    File::put(public_path('build/manifest.json'), json_encode([
+        'resources/js/app.js' => [
+            'file' => 'assets/app.js',
+            'src' => 'resources/js/app.js',
+            'isEntry' => true,
+            'css' => ['assets/app.css'],
+        ],
+        'resources/css/app.css' => [
+            'file' => 'assets/app.css',
+            'src' => 'resources/css/app.css',
+            'isEntry' => true,
+        ],
+        'resources/js/controllers/search_controller.js' => [
+            'file' => 'assets/search.js',
+            'src' => 'resources/js/controllers/search_controller.js',
+            'imports' => ['resources/js/app.js'],
+        ],
+    ], JSON_THROW_ON_ERROR));
+
+    $html = (string) $this->blade('<x-hw::controller-preloads controllers="search" />');
+
+    expect($html)
+        ->toContain('href="http://localhost/build/assets/search.js"')
+        ->not->toContain('href="http://localhost/build/assets/app.js"')
+        ->not->toContain('href="http://localhost/build/assets/app.css"');
 });
 
 it('uses custom Vite build directories and manifest filenames', function () {

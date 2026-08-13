@@ -170,6 +170,12 @@ final class ViteControllerAssetResolver
             throw new RuntimeException("Vite manifest entry [{$manifestKey}] has no valid file.");
         }
 
+        if (($entry['isEntry'] ?? false) === true) {
+            $seen[$manifestKey] = true;
+
+            return;
+        }
+
         $seen[$manifestKey] = true;
         $source = isset($entry['src']) && is_string($entry['src']) ? $entry['src'] : $manifestKey;
         $integrity = isset($entry['integrity']) && is_string($entry['integrity']) ? $entry['integrity'] : null;
@@ -200,6 +206,13 @@ final class ViteControllerAssetResolver
             }
 
             $cssEntry = $cssManifestKey === null ? [] : $this->manifest[$cssManifestKey];
+
+            if (is_array($cssEntry) && ($cssEntry['isEntry'] ?? false) === true) {
+                $seen[$cssKey] = true;
+
+                continue;
+            }
+
             $seen[$cssKey] = true;
             $assets[] = new ViteControllerAsset(
                 manifestKey: $cssManifestKey ?? $manifestKey,

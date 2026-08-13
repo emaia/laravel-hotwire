@@ -113,6 +113,38 @@ it('returns controller chunks and recursive static imports once without followin
     ])->and($assets[1]->integrity)->toBe('sha384-shared-a');
 });
 
+it('does not resolve Vite entrypoints referenced by controller chunks', function () {
+    $manifest = [
+        'resources/js/controllers/search_controller.js' => [
+            'file' => 'assets/search.js',
+            'imports' => ['resources/js/app.js'],
+            'css' => ['assets/app.css', 'assets/search.css'],
+        ],
+        'resources/js/app.js' => [
+            'file' => 'assets/app.js',
+            'src' => 'resources/js/app.js',
+            'isEntry' => true,
+            'css' => ['assets/app.css'],
+        ],
+        'resources/css/app.css' => [
+            'file' => 'assets/app.css',
+            'src' => 'resources/css/app.css',
+            'isEntry' => true,
+        ],
+        'resources/css/search.css' => [
+            'file' => 'assets/search.css',
+            'src' => 'resources/css/search.css',
+        ],
+    ];
+
+    $assets = controllerAssetResolver($manifest)->resolve(['search']);
+
+    expect(array_map(fn (ViteControllerAsset $asset): string => $asset->file, $assets))->toBe([
+        'assets/search.js',
+        'assets/search.css',
+    ]);
+});
+
 it('caches controller candidates across separate resolve calls', function () {
     $resolver = controllerAssetResolver([
         'resources/js/controllers/search_controller.js' => [

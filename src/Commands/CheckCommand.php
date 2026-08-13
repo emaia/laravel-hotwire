@@ -160,7 +160,7 @@ class CheckCommand extends Command
             $depsAdded = $this->writeMissingDependencies($missingDeps);
             $depsAdded += $this->upgradeLazyLoader($loaderUpgrade);
             try {
-                $this->regenerateLoaderStub(
+                $regeneratedLoader = $this->regenerateLoaderStub(
                     $excludedFromStub,
                     $registry,
                     $configuration,
@@ -170,6 +170,10 @@ class CheckCommand extends Command
                 warning($exception->getMessage());
 
                 return self::FAILURE;
+            }
+
+            if ($regeneratedLoader) {
+                $this->warnAboutViteRebuild();
             }
 
             if ($depsAdded > 0) {
@@ -245,21 +249,21 @@ class CheckCommand extends Command
         HotwireRegistry $registry,
         ControllerLoadConfiguration $configuration,
         bool $policyDrift = false,
-    ): void {
+    ): bool {
         if ($excludedFromStub === [] && ! $policyDrift) {
-            return;
+            return false;
         }
 
         $stubPath = resource_path('js/controllers/index.js');
 
         if (! $this->files->exists($stubPath)) {
-            return;
+            return false;
         }
 
         $policy = LoaderStub::policyFromContent($this->files->get($stubPath), $registry);
 
         if ($policy === null) {
-            return;
+            return false;
         }
 
         $existing = $policy->includedComDepControllers;
@@ -276,6 +280,42 @@ class CheckCommand extends Command
             ? 'Regenerated resources/js/controllers/index.js from controller loading config.'
             : 'Regenerated resources/js/controllers/index.js to include: '.implode(', ', $excludedFromStub);
         info($message);
+
+        return true;
+    }
+
+    private function warnAboutViteRebuild(): void
+    {
+        $this->line('');
+        $this->line('<comment>Rebuild your Vite assets so the production manifest includes the regenerated controller loading policy.</comment>');
+
+        $command = $this->buildScriptCommand();
+
+        if ($command !== null) {
+            $this->line("<comment>Run `$command` after this command completes.</comment>");
+        }
+    }
+
+    private function buildScriptCommand(): ?string
+    {
+        $path = base_path('package.json');
+
+        if (! $this->files->exists($path)) {
+            return null;
+        }
+
+        $package = json_decode($this->files->get($path), true);
+
+        if (! is_array($package) || ! array_key_exists('build', $package['scripts'] ?? [])) {
+            return null;
+        }
+
+        return match ($this->packageInstaller->detect($this->files)) {
+            'bun' => 'bun run build',
+            'pnpm' => 'pnpm run build',
+            'yarn' => 'yarn build',
+            default => 'npm run build',
+        };
     }
 
     private function detectControllerPolicyDrift(

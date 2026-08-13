@@ -95,9 +95,18 @@ class LaravelHotwireServiceProvider extends PackageServiceProvider
     {
         self::$viteControllerPreloadUsage ??= new WeakMap;
         $usage = self::$viteControllerPreloadUsage;
+        $warningsHtml = static function (array $warnings): string {
+            if ($warnings === [] || ! config('app.debug', false)) {
+                return '';
+            }
+
+            return collect($warnings)
+                ->map(fn (string $warning): string => '<!-- Laravel Hotwire controller preload warning: '.str_replace('-->', '--&gt;', $warning).' -->')
+                ->implode("\n");
+        };
 
         if (! Vite::hasMacro('controllerPreloads')) {
-            Vite::macro('controllerPreloads', function (iterable $identifiers, ?string $buildDirectory = null) use ($usage): HtmlString {
+            Vite::macro('controllerPreloads', function (iterable $identifiers, ?string $buildDirectory = null) use ($usage, $warningsHtml): HtmlString {
                 /** @var Vite $this */
                 $identifiers = array_values(is_array($identifiers) ? $identifiers : iterator_to_array($identifiers));
 
@@ -116,21 +125,24 @@ class LaravelHotwireServiceProvider extends PackageServiceProvider
                     );
 
                     $assets = [];
+                    $warnings = [];
 
                     foreach ($identifiers as $identifier) {
                         try {
                             array_push($assets, ...$resolver->resolve([$identifier]));
                         } catch (RuntimeException $exception) {
+                            $warnings[] = $exception->getMessage();
                             Log::warning($exception->getMessage());
                         }
                     }
                 } catch (ViteException $exception) {
+                    $warnings = [$exception->getMessage()];
                     Log::warning($exception->getMessage());
 
-                    return new HtmlString('');
+                    return new HtmlString($warningsHtml($warnings));
                 }
 
-                $tags = '';
+                $tags = $warningsHtml($warnings);
 
                 foreach ($assets as $asset) {
                     if (array_key_exists($asset->url, $this->preloadedAssets)) {

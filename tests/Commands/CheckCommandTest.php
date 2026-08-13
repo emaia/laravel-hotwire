@@ -828,6 +828,7 @@ it('reports and fixes controller policy drift from config', function () {
 
     $this->artisan('hotwire:check --fix --skip-install --no-interaction')
         ->expectsOutputToContain('Regenerated resources/js/controllers/index.js from controller loading config')
+        ->expectsOutputToContain('Rebuild your Vite assets so the production manifest includes the regenerated controller loading policy')
         ->assertSuccessful();
 
     $policy = LoaderStub::policyFromContent(
@@ -837,6 +838,25 @@ it('reports and fixes controller policy drift from config', function () {
 
     expect($policy->preloadControllers)->toBe(['turbo--progress'])
         ->and($policy->eagerControllers)->toBe(['modal']);
+});
+
+it('suggests the detected build command after regenerating the loader stub', function () {
+    writeView('page.blade.php', '<div data-controller="modal"></div>');
+    writePackageJson([
+        'scripts' => ['build' => 'vite build'],
+        'devDependencies' => ['@emaia/stimulus-lazy-loader' => '^2.0.0'],
+    ]);
+    File::put(base_path('bun.lock'), '');
+    File::ensureDirectoryExists($this->targetDir);
+    File::put(
+        $this->targetDir.'/index.js',
+        LoaderStub::generate(HotwireRegistry::make(), appControllersPath: $this->targetDir),
+    );
+    config()->set('hotwire.controllers.eager', ['modal']);
+
+    $this->artisan('hotwire:check --fix --skip-install --no-interaction')
+        ->expectsOutputToContain('Run `bun run build` after this command completes')
+        ->assertSuccessful();
 });
 
 it('reports policy drift when an eager package controller gains a local override', function () {
