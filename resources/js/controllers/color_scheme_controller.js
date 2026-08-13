@@ -24,9 +24,14 @@ export default class extends Controller {
     }
 
     disconnect() {
+        this.restoreTransitions();
         window.removeEventListener("storage", this.boundStorageChanged);
         window.removeEventListener("color-scheme:change", this.boundGlobalChanged);
         this.mediaQuery?.removeEventListener?.("change", this.boundMediaChanged);
+    }
+
+    restoreTransitions() {
+        delete document.documentElement.dataset.colorSchemeTransitioning;
     }
 
     toggle() {
@@ -109,12 +114,17 @@ export default class extends Controller {
             if (!reduce) {
                 const pendingTransition = { update };
                 this.pendingTransition = pendingTransition;
-                document.startViewTransition(() => {
+                // Every surface repaints at once here. A field carrying its own colour transition
+                // would animate under the snapshot crossfade on a second, unrelated timeline, and
+                // reads as lagging the page. The transition owns the motion for the whole swap.
+                document.documentElement.dataset.colorSchemeTransitioning = "";
+                const transition = document.startViewTransition(() => {
                     if (this.pendingTransition !== pendingTransition) return;
 
                     this.pendingTransition = null;
                     pendingTransition.update();
                 });
+                transition.finished.finally(() => this.restoreTransitions());
 
                 return;
             }

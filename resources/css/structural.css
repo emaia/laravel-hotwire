@@ -641,3 +641,27 @@ html[data-reveal-rendering]:has(:is(
     block-size: auto;
     transition: none;
 }
+
+/*
+ * --- Colour scheme swap ---
+ *
+ * A theme change repaints every surface at once, and the view transition already animates that as a
+ * crossfade between two snapshots. A field carrying its own colour transition would animate a second
+ * time underneath, on an unrelated timeline, and read as the surface lagging the page. Silence those
+ * for the length of the swap and let the transition own the motion.
+ */
+html[data-color-scheme-transitioning] *,
+html[data-color-scheme-transitioning] *::before,
+html[data-color-scheme-transitioning] *::after {
+    transition-duration: 0s !important;
+}
+
+/* With the per-element transitions silenced the crossfade is the whole swap, and the user agent
+   default is abrupt for a repaint of the entire page: the old snapshot is gone in 90ms, the new one
+   arrives over 150ms, both linear. Give the two halves one shared, eased span, tunable the same way
+   the Reveal cascade is. */
+html[data-color-scheme-transitioning]::view-transition-old(root),
+html[data-color-scheme-transitioning]::view-transition-new(root) {
+    animation-duration: var(--color-scheme-duration, 320ms);
+    animation-timing-function: var(--color-scheme-easing, ease);
+}
