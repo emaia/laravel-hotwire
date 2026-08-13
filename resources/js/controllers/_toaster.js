@@ -11,12 +11,11 @@ let pending = [];
 let active = null;
 let sequence = 0;
 
-// A page-load toast is born inside Turbo's swap, and a swap under a view transition paints a
-// snapshot rather than the live DOM. An entry that plays there is spent before the page is on
-// screen and the card reads as popping in fully formed. Two signals cover the two arrival orders,
-// because neither covers both: the pseudo-element animations only become observable once the
-// transition is ready, which a preloaded chunk beats and a lazily imported one does not. Document
-// scope is deliberate — the listener has to predate the viewport it protects.
+// A toast born inside Turbo's swap would play its entry behind the transition snapshot and land
+// fully formed. Two signals cover the two arrival orders because neither covers both: the
+// pseudo-element animations only become observable once the transition is ready, which a preloaded
+// chunk beats and a lazily imported one does not. Document scope is deliberate — the listener has
+// to predate the viewport it protects.
 let renderInFlight = false;
 
 if (typeof document !== "undefined") {
@@ -93,10 +92,8 @@ export function createToaster(element, options = {}) {
     }
 
     /**
-     * Hold the card's motion until the page it belongs to is actually on screen. Measurement stays
-     * immediate because it is a read, but restacking is not: pushing the cards already on screen
-     * back before the newcomer exists splits one movement into two, and the stack is seen opening a
-     * gap for nothing. The timer waits too, so a toast cannot spend its dwell behind a snapshot.
+     * Measurement stays immediate because it is a read. Restacking does not: pushing the cards
+     * already on screen back before the newcomer exists splits one arrival into two movements.
      */
     function enter(entry) {
         const settled = whenPageVisible();
@@ -110,9 +107,8 @@ export function createToaster(element, options = {}) {
         settled.then(() => {
             if (destroyed || !entry.element.isConnected) return;
 
-            // Start on a frame boundary. Resuming straight out of the continuation lands mid-frame,
-            // where the staged closed style has not been through a recalculation yet and the flip to
-            // open produces no transition at all — the card teleports instead of entering.
+            // On a frame boundary: resuming mid-frame skips the recalculation the staged closed
+            // style needs, and the flip to open produces no transition at all.
             requestAnimationFrame(() => release(entry));
         });
     }
@@ -454,11 +450,7 @@ function nextId() {
     return `toast-${sequence}`;
 }
 
-/**
- * Resolve once the page is painted from the live DOM again, or null when it already is. A render in
- * flight settles on `turbo:load`; a transition already past its ready phase exposes pseudo-element
- * animations that finish exactly when the snapshot is dropped.
- */
+/** Resolve once the page is painted from the live DOM again, or null when it already is. */
 function whenPageVisible() {
     if (renderInFlight) {
         return new Promise((resolve) => {
@@ -479,7 +471,6 @@ function whenPageVisible() {
     return animations.length === 0 ? null : Promise.allSettled(animations.map((animation) => animation.finished));
 }
 
-/** @returns {Animation[]} the animations a running view transition drives on its pseudo-elements. */
 function viewTransitionAnimations() {
     if (typeof document.getAnimations !== "function") return [];
 

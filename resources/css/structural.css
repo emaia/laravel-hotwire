@@ -656,10 +656,8 @@ html[data-color-scheme-transitioning] *::after {
     transition-duration: 0s !important;
 }
 
-/* With the per-element transitions silenced the crossfade is the whole swap, and the user agent
-   default is abrupt for a repaint of the entire page: the old snapshot is gone in 90ms, the new one
-   arrives over 150ms, both linear. Give the two halves one shared, eased span, tunable the same way
-   the Reveal cascade is. */
+/* The crossfade is now the whole swap, and the user agent default is abrupt for a repaint of the
+   whole page: the old snapshot is gone in 90ms, the new arrives over 150ms, both linear. */
 html[data-color-scheme-transitioning]::view-transition-old(root),
 html[data-color-scheme-transitioning]::view-transition-new(root) {
     animation-duration: var(--color-scheme-duration, 320ms);

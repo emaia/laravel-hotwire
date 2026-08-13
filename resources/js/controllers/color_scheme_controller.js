@@ -114,9 +114,8 @@ export default class extends Controller {
             if (!reduce) {
                 const pendingTransition = { update };
                 this.pendingTransition = pendingTransition;
-                // Every surface repaints at once here. A field carrying its own colour transition
-                // would animate under the snapshot crossfade on a second, unrelated timeline, and
-                // reads as lagging the page. The transition owns the motion for the whole swap.
+                // The crossfade owns the motion for the whole swap; structural.css keys off this
+                // to silence the per-element colour transitions that would run underneath it.
                 document.documentElement.dataset.colorSchemeTransitioning = "";
                 const transition = document.startViewTransition(() => {
                     if (this.pendingTransition !== pendingTransition) return;

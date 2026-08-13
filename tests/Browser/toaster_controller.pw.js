@@ -124,15 +124,10 @@ test("F6 moves focus to the viewport when a toast is on screen", async ({ page }
 });
 
 // Nothing is on screen while a view transition runs: the browser paints its snapshot, not the live
-// DOM. An entry already spent by the time the snapshot is dropped reads as a card popping in fully
-// formed. The two cases below are the two orders the viewport can be born in, and they need
-// different signals — a chunk that was preloaded sees Turbo's events, one imported on demand does
-// not, and only the latter arrives late enough to observe the transition's own animations.
+// DOM. The two cases below are the orders the viewport can be born in, and each needs its own signal.
 
 test("holds the entry back until a render under a view transition has finished", async ({ page }) => {
-    // A page-load toast is emitted before the viewport exists and waits in the buffer. Turbo then
-    // swaps the DOM inside a view transition, and that swap is where the viewport is born. A chunk
-    // that was preloaded is already listening when the render starts.
+    // A preloaded chunk is already listening when the render starts.
     const seen = await sampleAcrossTransition(page, async (swap, capture) => {
         document.dispatchEvent(new CustomEvent("turbo:before-render"));
         const transition = document.startViewTransition(swap);
@@ -149,8 +144,8 @@ test("holds the entry back until a render under a view transition has finished",
 });
 
 test("holds the entry back when the view transition is already running", async ({ page }) => {
-    // A chunk imported on demand misses Turbo's events entirely, but it also lands after the
-    // snapshot is taken — the first point at which the transition's own animations can be observed.
+    // A chunk imported on demand misses Turbo's events, but lands after the snapshot is taken —
+    // the first point at which the transition's own animations can be observed.
     const seen = await sampleAcrossTransition(page, async (swap, capture) => {
         const transition = document.startViewTransition(() => {
             document.body.appendChild(document.createElement("hr"));

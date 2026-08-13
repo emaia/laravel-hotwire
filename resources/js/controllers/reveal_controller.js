@@ -9,10 +9,8 @@ const connectedControllers = new Set();
 const handleVisit = () => {
     document.documentElement.dataset.revealBooted = "";
 };
-// The sidebar is given a view transition name so a Turbo render cannot drag it along with the page.
-// A name is global though: without this marker the chrome also becomes its own layer in transitions
-// that have nothing to do with navigation — a theme toggle, say — where it animates on a timeline of
-// its own and reads as a mis-synced block of colour.
+// Marks the window in which the Sidebar may carry a view transition name. A name is global, so
+// structural.css keys it on this to stay out of transitions that are not navigation.
 const handleRenderStart = () => {
     document.documentElement.dataset.revealRendering = "";
 };
