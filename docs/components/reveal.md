@@ -46,7 +46,9 @@ the nested markup:
 ```
 
 The first explicit item switches the root out of direct-child mode. Raw `data-reveal-item` markup is also supported as
-an escape hatch; set `--reveal-index` when its visual order differs from document order.
+an escape hatch. The controller assigns missing indexes in document order, but that happens only after it connects. Set
+`--reveal-index` server-side when the visual order differs or when the stagger must be correct on the first paint rather
+than progressively corrected after controller loading.
 
 When a component must own the Reveal root without an extra wrapper, prefer that component's explicit integration when
 available. [`<hw:sidebar reveal>`](sidebar.md#reveal-integration), for example, mounts Reveal directly on its existing

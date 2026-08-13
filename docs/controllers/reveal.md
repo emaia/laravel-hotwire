@@ -64,6 +64,12 @@ Explicit items belonging to a nested `data-controller~="reveal"` root are exclud
 supplies indexes for the first direct children before JavaScript loads; the controller fills missing indexes and keeps
 new items synchronized after DOM mutations.
 
+For nested explicit items, a missing `--reveal-index` resolves to `0` until the controller connects. Rendering indexes
+server-side is therefore the only deterministic first-paint stagger. Eager controller loading usually assigns them
+before paint and is a reasonable concise option for application chrome, but it cannot provide the same no-JavaScript or
+delayed-bundle guarantee. `<hw:reveal.item>` supplies server indexes automatically; raw component markup must write them
+when that guarantee matters.
+
 ## Scroll lifecycle
 
 For `trigger="scroll"`, the controller checks each item rather than the root. It arms only offscreen items by setting

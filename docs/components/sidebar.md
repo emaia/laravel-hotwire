@@ -165,8 +165,14 @@ surface:
 The component mounts `data-controller="reveal"` and `data-reveal-scope="document"` directly on `sidebar-container`.
 For `collapsible="none"`, it mounts them on the native `<aside>`. There is no extra wrapper, so the provider flex row,
 sidebar column, fixed positioning, and view-transition selectors keep their existing structure. Mark the exact sidebar
-units with `data-reveal-item` and `--reveal-index`; automatic direct-child mode is deliberately not enabled because the
-sidebar's internal wrappers are layout mechanics rather than animation units.
+units with `data-reveal-item`; automatic direct-child mode is deliberately not enabled because the sidebar's internal
+wrappers are layout mechanics rather than animation units.
+
+`--reveal-index` is optional after the controller connects: missing indexes are assigned in document order. That lets an
+eagerly loaded Reveal produce the expected cascade with only `data-reveal-item` in most browsers. For a deterministic
+first-paint cascade, keep the indexes server-rendered as shown above. Without them, every nested explicit item initially
+uses index `0`; a lazy controller may connect only after CSS has already started those items together. Configuring
+`reveal` under `hotwire.controllers.eager` narrows that window but is not the same guarantee as rendering the index.
 
 ### Menu buttons
 
