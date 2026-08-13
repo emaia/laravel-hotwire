@@ -14,11 +14,19 @@ export default class extends Controller {
         lazy: Boolean,
     };
 
+    animationFrame = null;
+    observer = null;
+
     connect() {
         this.lazyValue ? this.lazyAnimate() : this.animate();
     }
 
     animate() {
+        this.observer?.disconnect();
+        this.observer = null;
+
+        if (this.animationFrame !== null) window.cancelAnimationFrame(this.animationFrame);
+
         let startTimestamp = null;
 
         const step = (timestamp) => {
@@ -32,15 +40,26 @@ export default class extends Controller {
             ).toString();
 
             if (progress < 1) {
-                window.requestAnimationFrame(step);
+                this.animationFrame = window.requestAnimationFrame(step);
+            } else {
+                this.animationFrame = null;
             }
         };
 
-        window.requestAnimationFrame(step);
+        this.animationFrame = window.requestAnimationFrame(step);
+    }
+
+    disconnect() {
+        this.observer?.disconnect();
+        this.observer = null;
+
+        if (this.animationFrame !== null) window.cancelAnimationFrame(this.animationFrame);
+
+        this.animationFrame = null;
     }
 
     lazyAnimate() {
-        const observer = new IntersectionObserver((entries, observer) => {
+        this.observer = new IntersectionObserver((entries, observer) => {
             entries.forEach((entry) => {
                 if (entry.isIntersecting) {
                     this.animate();
@@ -50,7 +69,7 @@ export default class extends Controller {
             });
         }, this.lazyAnimateOptions);
 
-        observer.observe(this.element);
+        this.observer.observe(this.element);
     }
 
     get lazyAnimateOptions() {

@@ -63,6 +63,8 @@ use Emaia\LaravelHotwire\Components\Progress;
 use Emaia\LaravelHotwire\Components\RadioGroup;
 use Emaia\LaravelHotwire\Components\RadioGroup\Item as RadioGroupItem;
 use Emaia\LaravelHotwire\Components\ReadMore;
+use Emaia\LaravelHotwire\Components\Reveal;
+use Emaia\LaravelHotwire\Components\Reveal\Item as RevealItem;
 use Emaia\LaravelHotwire\Components\RichText;
 use Emaia\LaravelHotwire\Components\ScrollProgress;
 use Emaia\LaravelHotwire\Components\Select;
@@ -811,6 +813,28 @@ return [
                 ),
             ],
         ],
+        'reveal' => [
+            'class' => Reveal::class,
+            'view' => 'hotwire::component-views.reveal',
+            'docs' => 'docs/components/reveal.md',
+            'category' => 'display',
+            'description' => 'Progressively enhanced staggered entrance cascade for direct children or explicit items',
+            'controllers' => ['reveal'],
+            'styling' => [
+                'slots' => $slots(['reveal', 'reveal-item']),
+            ],
+        ],
+        'reveal.item' => [
+            'class' => RevealItem::class,
+            'view' => 'hotwire::component-views.reveal-item',
+            'docs' => 'docs/components/reveal.md',
+            'category' => 'display',
+            'description' => 'Explicit nested item with an automatically shared cascade index',
+            'controllers' => ['reveal'],
+            'styling' => [
+                'slots' => $slots(['reveal-item']),
+            ],
+        ],
         'rich-text' => [
             'class' => RichText::class,
             'view' => 'hotwire::component-views.rich-text',
@@ -1338,6 +1362,12 @@ return [
             'docs' => 'docs/controllers/reset-files.md',
             'category' => 'forms',
             'description' => 'Clears file inputs automatically after a successful Turbo morph',
+        ],
+        'reveal' => [
+            'source' => 'resources/js/controllers/reveal_controller.js',
+            'docs' => 'docs/controllers/reveal.md',
+            'category' => 'utility',
+            'description' => 'Coordinates load and per-item scroll reveal cascades with Turbo-safe cleanup',
         ],
         'rich-text' => [
             'source' => 'resources/js/controllers/rich_text_controller.js',

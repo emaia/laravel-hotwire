@@ -819,6 +819,16 @@
                     "className": "\\Emaia\\LaravelHotwire\\Components\\ReadMore"
                 },
                 {
+                    "name": "reveal",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Reveal"
+                },
+                {
+                    "name": "reveal.item",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Reveal\\Item"
+                },
+                {
                     "name": "rich-text",
                     "namespace": "hw",
                     "className": "\\Emaia\\LaravelHotwire\\Components\\RichText"
