@@ -59,7 +59,8 @@ Use `trigger="scroll"` for long pages and lists below the fold:
 ```
 
 The controller observes items individually, leaves anything already visible untouched, and restarts the stagger index
-for each batch entering the viewport. At the end of the document it releases items left inside a negative root-margin
+for each batch entering the viewport. For an item taller than the observer root, the threshold is capped at the maximum
+ratio that can fit in the viewport. At the end of the document it releases items left inside a negative root-margin
 dead zone. `once` defaults to `true`; set `:once="false"` to reveal an item again after it leaves and re-enters.
 
 This is presentation, not lazy loading: all content remains in the document and accessibility tree.
@@ -118,7 +119,8 @@ Turbo caches the page.
 
 ## Integration
 
-- A descendant [`animated-number`](../controllers/animated-number.md) restarts when its Reveal batch is shown.
+- A descendant [`animated-number`](../controllers/animated-number.md) restarts when its Reveal batch is shown, unless
+  its own lazy observer is still waiting for the counter to enter the viewport.
 - [`<hw:progress>`](progress.md) indicators animate from zero in sync with their owning item.
 - Listen for `reveal:shown` to coordinate application behavior or a [`chart`](../controllers/chart.md):
 

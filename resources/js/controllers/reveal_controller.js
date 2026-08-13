@@ -67,9 +67,10 @@ export default class extends Controller {
 
     observer = null;
     mutationObserver = null;
+    visibilityMutationObserver = null;
+    visibilityIntersectionObserver = null;
     pendingFire = null;
     pendingCounterRetry = null;
-    pendingVisibilityFrame = null;
     observedItems = new Set();
     pendingItems = new Set();
     pendingVisibilityItems = new Set();
@@ -78,6 +79,7 @@ export default class extends Controller {
     knownItems = new WeakSet();
 
     connect() {
+        this.items.forEach((item) => delete item.dataset.revealArmed);
         this.completedItems = new WeakSet();
         this.knownItems = new WeakSet();
         this.observedItems = new Set();
@@ -85,6 +87,7 @@ export default class extends Controller {
         this.pendingVisibilityItems = new Set();
         this.teardownForCache = this.teardownForCache.bind(this);
         this.releaseAtDocumentEnd = this.releaseAtDocumentEnd.bind(this);
+        this.checkDeferredVisibility = this.checkDeferredVisibility.bind(this);
 
         connectDocumentListeners(this);
         document.addEventListener("turbo:before-cache", this.teardownForCache);
@@ -113,10 +116,7 @@ export default class extends Controller {
         this.settleGeneration++;
         this.observer?.disconnect();
         this.observer = null;
-        if (this.pendingVisibilityFrame !== null) {
-            cancelAnimationFrame(this.pendingVisibilityFrame);
-            this.pendingVisibilityFrame = null;
-        }
+        this.stopWatchingVisibility();
         this.observedItems.clear();
         this.pendingItems.clear();
         this.pendingVisibilityItems.clear();
@@ -216,9 +216,13 @@ export default class extends Controller {
         const released = [];
 
         entries.forEach((entry) => {
+            const itemHeight = entry.boundingClientRect?.height || entry.target.getBoundingClientRect().height;
+            const rootHeight = entry.rootBounds?.height || window.innerHeight;
+            const effectiveThreshold =
+                itemHeight > 0 ? Math.min(this.thresholdValue, rootHeight / itemHeight) : this.thresholdValue;
             const meetsThreshold =
                 entry.isIntersecting &&
-                (entry.intersectionRatio === undefined || entry.intersectionRatio >= this.thresholdValue);
+                (entry.intersectionRatio === undefined || entry.intersectionRatio >= effectiveThreshold);
 
             if (!meetsThreshold) {
                 if (!this.onceValue) entry.target.dataset.revealArmed = "";
@@ -323,6 +327,8 @@ export default class extends Controller {
             const controller = this.application.getControllerForElementAndIdentifier(element, "animated-number");
 
             if (controller) {
+                if (controller.lazyValue && controller.observer) return;
+
                 controller.animate();
             } else {
                 pending = true;
@@ -330,6 +336,8 @@ export default class extends Controller {
         });
 
         if (pending && retry) {
+            if (this.pendingCounterRetry !== null) cancelAnimationFrame(this.pendingCounterRetry);
+
             this.pendingCounterRetry = requestAnimationFrame(() => {
                 this.pendingCounterRetry = null;
                 this.restartCounters(items, false);
@@ -339,25 +347,39 @@ export default class extends Controller {
 
     deferUntilRendered(items) {
         items.forEach((item) => this.pendingVisibilityItems.add(item));
-        if (this.pendingVisibilityFrame !== null) return;
+        if (this.visibilityMutationObserver) return;
 
-        const check = () => {
-            this.pendingVisibilityFrame = null;
+        this.visibilityMutationObserver = new MutationObserver(this.checkDeferredVisibility);
+        this.visibilityMutationObserver.observe(document.documentElement, {
+            attributes: true,
+            subtree: true,
+            attributeFilter: ["class", "hidden", "open", "style"],
+        });
+        window.addEventListener("resize", this.checkDeferredVisibility);
+        document.addEventListener("toggle", this.checkDeferredVisibility, true);
 
-            if (!this.element.isConnected) return;
+        if (typeof IntersectionObserver === "function") {
+            this.visibilityIntersectionObserver = new IntersectionObserver(this.checkDeferredVisibility);
+            this.visibilityIntersectionObserver.observe(this.element);
+        }
+    }
 
-            if (!this.isRendered) {
-                this.pendingVisibilityFrame = requestAnimationFrame(check);
+    checkDeferredVisibility() {
+        if (!this.element.isConnected || !this.isRendered) return;
 
-                return;
-            }
+        const batch = [...this.pendingVisibilityItems];
+        this.pendingVisibilityItems.clear();
+        this.stopWatchingVisibility();
+        this.fire(batch);
+    }
 
-            const batch = [...this.pendingVisibilityItems];
-            this.pendingVisibilityItems.clear();
-            this.fire(batch);
-        };
-
-        this.pendingVisibilityFrame = requestAnimationFrame(check);
+    stopWatchingVisibility() {
+        this.visibilityMutationObserver?.disconnect();
+        this.visibilityMutationObserver = null;
+        this.visibilityIntersectionObserver?.disconnect();
+        this.visibilityIntersectionObserver = null;
+        window.removeEventListener("resize", this.checkDeferredVisibility);
+        document.removeEventListener("toggle", this.checkDeferredVisibility, true);
     }
 
     teardownForCache() {

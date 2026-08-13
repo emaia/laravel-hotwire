@@ -23,7 +23,7 @@ Nova motion presets.
 | Value        | Type    | Default                 | Description |
 | ------------ | ------- | ----------------------- | ----------- |
 | `trigger`    | String  | `load`                  | `scroll` arms only items outside the current viewport. |
-| `threshold`  | Number  | `0.15`                  | Intersection ratio needed to release an armed item. |
+| `threshold`  | Number  | `0.15`                  | Intersection ratio needed to release an armed item, capped at the ratio the viewport can show for tall items. |
 | `rootMargin` | String  | `0px 0px -10% 0px`     | Margin applied to the item observer. |
 | `once`       | Boolean | `true`                  | Stop observing an item after its first reveal. |
 
@@ -71,14 +71,15 @@ items remain observed and are armed only after leaving the viewport.
 
 ## Settlement
 
-After the final armed item is released, Reveal waits for the root to become renderable. This covers content inserted
-inside a modal or sheet before that overlay opens without completing its cascade while hidden. It then forces style
-resolution, collects subtree animations, and waits only for animations whose computed iteration count is finite.
-Spinners, skeletons, and other infinite effects therefore cannot hold the root open indefinitely.
+After the final armed item is released, Reveal waits for the root to become renderable. Attribute mutations, native
+toggle events, intersection changes, and window resizes recheck deferred roots without running a continuous animation
+frame loop. This covers content inserted inside a modal or sheet before that overlay opens without completing its
+cascade while hidden. Reveal then forces style resolution, collects subtree animations, and waits only for animations
+whose computed iteration count is finite. Spinners, skeletons, and other infinite effects therefore cannot hold the
+root open indefinitely.
 
 Once the finite animations finish, the root receives `data-reveal-state="done"`. Structural CSS then removes stagger
-from content inserted later. A generation token and tracked animation frames prevent asynchronous settlement from
-writing to a disconnected root.
+from content inserted later. A generation token prevents asynchronous settlement from writing to a disconnected root.
 
 ## Turbo lifecycle
 
@@ -92,7 +93,9 @@ writing to a disconnected root.
 ## Controller composition
 
 `fire()` restarts descendant `animated-number` controllers after dispatching `reveal:shown`. A one-frame retry handles
-the race where that lazy controller chunk connects immediately after Reveal. Reduced motion skips the restart.
+the race where that lazy controller chunk connects immediately after Reveal. Counters whose own lazy observer is still
+pending keep that independent viewport policy instead of being forced to start by Reveal. Reduced motion skips the
+restart.
 
 Other controllers should listen to the event rather than be coupled into Reveal:
 

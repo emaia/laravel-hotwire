@@ -122,6 +122,28 @@ test("scroll trigger stays visible when IntersectionObserver is unavailable", as
     expect(mounted.root.firstElementChild.hasAttribute("data-reveal-armed")).toBeFalse();
 });
 
+test("reconnect observes an item that was armed before disconnect", async () => {
+    mounted = await mount(
+        `
+        <section data-controller="reveal" data-reveal-trigger-value="scroll">
+            <article data-reveal-item></article>
+        </section>
+    `,
+        (root) => {
+            root.firstElementChild.getBoundingClientRect = () => ({ top: 2000, bottom: 2050, left: 0, right: 50 });
+        },
+    );
+    const item = mounted.root.firstElementChild;
+    const firstObserver = observers[0];
+
+    mounted.controller.disconnect();
+    mounted.controller.connect();
+
+    expect(firstObserver.disconnected).toBeTrue();
+    expect(item.hasAttribute("data-reveal-armed")).toBeTrue();
+    expect(observers.at(-1).observed).toContain(item);
+});
+
 test("intersecting items are released as a fresh batch and shown is coalesced", async () => {
     mounted = await mount(
         `
@@ -147,6 +169,38 @@ test("intersecting items are released as a fresh batch and shown is coalesced", 
     expect([...mounted.root.children].map((item) => item.style.getPropertyValue("--reveal-index"))).toEqual(["0", "1"]);
     expect([...mounted.root.children].every((item) => !item.hasAttribute("data-reveal-armed"))).toBeTrue();
     expect(shown).toHaveLength(1);
+});
+
+test("a tall item uses the maximum achievable intersection ratio", async () => {
+    mounted = await mount(
+        `
+        <section data-controller="reveal" data-reveal-trigger-value="scroll">
+            <article data-reveal-item></article>
+        </section>
+    `,
+        (root) => {
+            root.firstElementChild.getBoundingClientRect = () => ({
+                top: 2000,
+                bottom: 2700,
+                left: 0,
+                right: 50,
+                height: 700,
+            });
+        },
+    );
+    const item = mounted.root.firstElementChild;
+
+    observers[0].trigger([
+        {
+            target: item,
+            isIntersecting: true,
+            intersectionRatio: 1 / 7,
+            boundingClientRect: { height: 700 },
+            rootBounds: { height: 100 },
+        },
+    ]);
+
+    expect(item.hasAttribute("data-reveal-armed")).toBeFalse();
 });
 
 test("document end releases items left in the root-margin dead zone", async () => {
@@ -281,6 +335,26 @@ test("shown restarts descendant animated-number controllers", async () => {
     expect(calls).toBe(1);
 });
 
+test("shown leaves pending lazy animated-number controllers alone", async () => {
+    mounted = await mount(`
+        <section data-controller="reveal">
+            <article data-reveal-item><span data-controller="animated-number"></span></article>
+        </section>
+    `);
+    let calls = 0;
+    mounted.controller.application.getControllerForElementAndIdentifier = () => ({
+        lazyValue: true,
+        observer: {},
+        animate() {
+            calls++;
+        },
+    });
+
+    mounted.controller.fire([mounted.root.firstElementChild]);
+
+    expect(calls).toBe(0);
+});
+
 test("replacement streams stamp incoming reveal items before insertion", async () => {
     mounted = await mount(
         `<section data-controller="reveal"><article id="current" data-reveal-item></article></section>`,
@@ -404,7 +478,10 @@ test("disconnect removes listeners, observers, and pending frames", async () => 
     mounted.controller.scheduleFire();
     mounted.root.insertAdjacentHTML("beforeend", '<span data-controller="animated-number"></span>');
     mounted.controller.restartCounters([mounted.root]);
+    mounted.controller.restartCounters([mounted.root]);
     const observer = observers[0];
+
+    expect(rafCallbacks.size).toBe(2);
 
     await mounted.cleanup();
     mounted = null;
@@ -414,6 +491,18 @@ test("disconnect removes listeners, observers, and pending frames", async () => 
     expect(observer.disconnected).toBeTrue();
     expect(rafCallbacks.size).toBe(0);
     expect(document.documentElement.hasAttribute("data-reveal-booted")).toBeFalse();
+});
+
+test("an unrendered root waits without polling every animation frame", async () => {
+    mounted = await mount(`
+        <section data-controller="reveal" hidden>
+            <article data-reveal-item></article>
+        </section>
+    `);
+
+    flushRaf();
+
+    expect(rafCallbacks.size).toBe(0);
 });
 
 test("reduced motion never arms scroll items", async () => {
