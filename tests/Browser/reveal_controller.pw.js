@@ -71,6 +71,30 @@ test("Sidebar Reveal integration receives its selected Nova motion", async ({ pa
     await expect(page.locator("#sidebar-item")).toHaveCSS("animation-name", "hotwire-reveal-flat");
 });
 
+test("names the Sidebar for the transition only while Turbo is rendering", async ({ page }) => {
+    const structural = await readFile("resources/css/structural.css", "utf8");
+
+    await page.setContent(`
+        <style>${structural}</style>
+        <div data-slot="sidebar-container" data-side="left" data-controller="reveal" data-reveal-scope="document">
+            <div id="nav" data-reveal-item>Navigation</div>
+        </div>
+    `);
+    await installController(page);
+
+    const sidebar = page.locator('[data-slot="sidebar-container"]');
+
+    // A view transition name is global. Left on, the chrome becomes its own layer in transitions
+    // that are not navigation — a theme toggle, say — and animates apart from the root.
+    await expect(sidebar).toHaveCSS("view-transition-name", "none");
+
+    await page.evaluate(() => document.dispatchEvent(new CustomEvent("turbo:before-render")));
+    await expect(sidebar).toHaveCSS("view-transition-name", "hotwire-sidebar-left");
+
+    await page.evaluate(() => document.dispatchEvent(new CustomEvent("turbo:load")));
+    await expect(sidebar).toHaveCSS("view-transition-name", "none");
+});
+
 test("collapsed desktop Sidebar labels suppress Reveal without changing expanded or mobile labels", async ({
     page,
 }) => {

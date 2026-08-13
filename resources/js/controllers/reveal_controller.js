@@ -9,6 +9,16 @@ const connectedControllers = new Set();
 const handleVisit = () => {
     document.documentElement.dataset.revealBooted = "";
 };
+// The sidebar is given a view transition name so a Turbo render cannot drag it along with the page.
+// A name is global though: without this marker the chrome also becomes its own layer in transitions
+// that have nothing to do with navigation — a theme toggle, say — where it animates on a timeline of
+// its own and reads as a mis-synced block of colour.
+const handleRenderStart = () => {
+    document.documentElement.dataset.revealRendering = "";
+};
+const handleRenderEnd = () => {
+    delete document.documentElement.dataset.revealRendering;
+};
 const handleStream = (event) => {
     const stream = event.detail?.newStream;
 
@@ -43,6 +53,8 @@ function connectDocumentListeners(controller) {
     if (connectedControllers.size === 0) {
         document.addEventListener("turbo:visit", handleVisit);
         document.addEventListener("turbo:before-stream-render", handleStream);
+        document.addEventListener("turbo:before-render", handleRenderStart);
+        document.addEventListener("turbo:load", handleRenderEnd);
     }
 
     connectedControllers.add(controller);
@@ -54,6 +66,9 @@ function disconnectDocumentListeners(controller) {
     if (connectedControllers.size === 0) {
         document.removeEventListener("turbo:visit", handleVisit);
         document.removeEventListener("turbo:before-stream-render", handleStream);
+        document.removeEventListener("turbo:before-render", handleRenderStart);
+        document.removeEventListener("turbo:load", handleRenderEnd);
+        handleRenderEnd();
     }
 }
 

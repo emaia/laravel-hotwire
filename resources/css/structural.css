@@ -237,23 +237,26 @@ html[data-turbo-preview] [data-slot="progress-indicator"] {
     animation: none;
 }
 
-[data-reveal-scope="document"] [data-slot="sidebar-container"][data-side="left"],
-[data-reveal-scope="document"][data-slot="sidebar-container"][data-side="left"] {
+/* Only while Turbo is rendering. A view transition name is global, so an unconditional one also
+   makes the chrome its own layer in transitions that are not navigation — a theme toggle, say —
+   where it animates apart from the root and reads as a mis-synced block of colour. */
+html[data-reveal-rendering] [data-reveal-scope="document"] [data-slot="sidebar-container"][data-side="left"],
+html[data-reveal-rendering] [data-reveal-scope="document"][data-slot="sidebar-container"][data-side="left"] {
     view-transition-name: hotwire-sidebar-left;
 }
 
-[data-reveal-scope="document"] [data-slot="sidebar-container"][data-side="right"],
-[data-reveal-scope="document"][data-slot="sidebar-container"][data-side="right"] {
+html[data-reveal-rendering] [data-reveal-scope="document"] [data-slot="sidebar-container"][data-side="right"],
+html[data-reveal-rendering] [data-reveal-scope="document"][data-slot="sidebar-container"][data-side="right"] {
     view-transition-name: hotwire-sidebar-right;
 }
 
-html:has(:is(
+html[data-reveal-rendering]:has(:is(
     [data-slot="modal-overlay"],
     [data-slot="alert-dialog-overlay"],
     [data-slot="drawer-overlay"],
     [data-slot="sheet-overlay"]
 )[data-state="open"]) [data-reveal-scope="document"] [data-slot="sidebar-container"],
-html:has(:is(
+html[data-reveal-rendering]:has(:is(
     [data-slot="modal-overlay"],
     [data-slot="alert-dialog-overlay"],
     [data-slot="drawer-overlay"],
