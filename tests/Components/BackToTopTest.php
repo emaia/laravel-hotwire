@@ -1,6 +1,7 @@
 <?php
 
 use Emaia\LaravelHotwire\Components\BackToTop;
+use Emaia\LaravelHotwire\Registry\Category;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 
 it('renders a back to top button with accessible defaults', function () {
@@ -95,6 +96,6 @@ it('registers the back to top component and controller dependency', function () 
         ->and($component->class)->toBe(BackToTop::class)
         ->and($component->view)->toBe('hotwire::component-views.back-to-top')
         ->and($component->docs)->toBe('docs/components/back-to-top.md')
-        ->and($component->category)->toBe('utility')
+        ->and($component->category)->toBe(Category::Utility)
         ->and($component->controllers)->toBe(['back-to-top']);
 });

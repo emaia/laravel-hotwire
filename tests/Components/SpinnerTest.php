@@ -1,5 +1,6 @@
 <?php
 
+use Emaia\LaravelHotwire\Registry\Category;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 
 it('renders with default props', function () {
@@ -29,7 +30,7 @@ it('registers spinner in the component catalog', function () {
     $spinner = HotwireRegistry::make()->component('spinner');
 
     expect($spinner->key)->toBe('spinner')
-        ->and($spinner->category)->toBe('feedback')
+        ->and($spinner->category)->toBe(Category::Feedback)
         ->and($spinner->controllers)->toBe([])
         ->and($spinner->docs)->toBe('docs/components/spinner.md');
 });

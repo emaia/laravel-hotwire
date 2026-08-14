@@ -194,7 +194,7 @@ return [
             'class' => Breadcrumb::class,
             'view' => 'hotwire::component-views.breadcrumb',
             'docs' => 'docs/components/breadcrumb.md',
-            'category' => 'display',
+            'category' => 'navigation',
             'description' => 'Semantic navigation trail with composed subcomponents and an items shortcut',
             'controllers' => [],
             'styling' => [
@@ -205,7 +205,7 @@ return [
             'class' => Button::class,
             'view' => 'hotwire::component-views.button',
             'docs' => 'docs/components/button.md',
-            'category' => 'utility',
+            'category' => 'display',
             'description' => 'Displays a button or a component that looks like a button.',
             'controllers' => ['hotkey', 'tooltip'],
             'styling' => [
@@ -238,7 +238,7 @@ return [
             'class' => Carousel::class,
             'view' => 'hotwire::component-views.carousel',
             'docs' => 'docs/components/carousel.md',
-            'category' => 'utility',
+            'category' => 'display',
             'description' => 'Carousel/slider (Embla) with navigation, dots, responsive options and CSS-variable sizing',
             'controllers' => ['carousel'],
             'styling' => [
@@ -252,7 +252,7 @@ return [
             'class' => Chart::class,
             'view' => 'hotwire::component-views.chart',
             'docs' => 'docs/components/chart.md',
-            'category' => 'utility',
+            'category' => 'display',
             'description' => 'Apache ECharts wrapper — inline option or URL-fetched, theme + sizing props, controller swap for subclass extensibility',
             'controllers' => ['chart'],
             'styling' => [
@@ -514,7 +514,7 @@ return [
             'class' => Icon::class,
             'view' => 'hotwire::component-views.icon',
             'docs' => 'docs/components/icon.md',
-            'category' => 'utility',
+            'category' => 'display',
             'description' => 'Inline SVG icon from the embedded Lucide subset (~21 icons)',
             'controllers' => [],
             'styling' => [
@@ -569,7 +569,7 @@ return [
             'class' => Map::class,
             'view' => 'hotwire::component-views.map',
             'docs' => 'docs/components/map.md',
-            'category' => 'utility',
+            'category' => 'display',
             'description' => 'Leaflet wrapper — inline center/markers or GeoJSON URL, OSM tiles by default, subclass-friendly tile/handler hooks',
             'controllers' => ['map'],
             'styling' => [
@@ -613,7 +613,7 @@ return [
             'class' => MetaColorScheme::class,
             'view' => 'hotwire::component-views.meta-tag',
             'docs' => 'docs/components/meta.md',
-            'category' => 'utility',
+            'category' => 'turbo',
             'description' => 'Declares color-scheme so form controls and scrollbars follow the active theme',
             'controllers' => [],
             'styling' => [
@@ -624,7 +624,7 @@ return [
             'class' => MetaCsrf::class,
             'view' => 'hotwire::component-views.meta-tag',
             'docs' => 'docs/components/meta.md',
-            'category' => 'utility',
+            'category' => 'turbo',
             'description' => 'Declares csrf-token, which the File Upload controller reads for its requests',
             'controllers' => [],
             'styling' => [
@@ -748,7 +748,7 @@ return [
             'class' => Pagination::class,
             'view' => 'hotwire::component-views.pagination',
             'docs' => 'docs/components/pagination.md',
-            'category' => 'display',
+            'category' => 'navigation',
             'description' => 'Pagination navigation primitives with Laravel paginator display modes and Turbo Frame support',
             'controllers' => ['pagination'],
             'styling' => [
@@ -770,7 +770,7 @@ return [
             'class' => Progress::class,
             'view' => 'hotwire::component-views.progress',
             'docs' => 'docs/components/progress.md',
-            'category' => 'display',
+            'category' => 'feedback',
             'description' => 'Server-rendered progress primitive with label, value, track and indicator slots',
             'controllers' => [],
             'styling' => [
@@ -900,7 +900,7 @@ return [
             'class' => SidePanel::class,
             'view' => 'hotwire::component-views.side-panel',
             'docs' => 'docs/components/side-panel.md',
-            'category' => 'utility',
+            'category' => 'navigation',
             'description' => 'Composable collapsible panel for secondary navigation and workspace tools',
             'controllers' => ['side-panel'],
             'styling' => [
@@ -911,7 +911,7 @@ return [
             'class' => Sidebar::class,
             'view' => 'hotwire::component-views.sidebar',
             'docs' => 'docs/components/sidebar.md',
-            'category' => 'utility',
+            'category' => 'navigation',
             'description' => 'Composable app sidebar with provider state, mobile Presence and navigation primitives',
             'controllers' => ['sidebar', 'reveal'],
             'styling' => [
@@ -955,7 +955,7 @@ return [
             'class' => Sticky::class,
             'view' => 'hotwire::component-views.sticky',
             'docs' => 'docs/components/sticky.md',
-            'category' => 'layout',
+            'category' => 'navigation',
             'description' => 'Generic top or bottom sticky surface primitive with configurable offset and tag',
             'controllers' => [],
             'styling' => [
@@ -1079,7 +1079,7 @@ return [
         'accordion' => [
             'source' => 'resources/js/controllers/accordion_controller.js',
             'docs' => 'docs/controllers/accordion.md',
-            'category' => 'utility',
+            'category' => 'display',
             'description' => 'Coordinates native details/summary accordion items for single, multiple and disabled behavior',
         ],
         'alert-dialog' => [
@@ -1091,7 +1091,7 @@ return [
         'animated-number' => [
             'source' => 'resources/js/controllers/animated_number_controller.js',
             'docs' => 'docs/controllers/animated-number.md',
-            'category' => 'utility',
+            'category' => 'display',
             'description' => 'Animates a number from start to end value, with scroll-triggered lazy mode',
         ],
         'auto-resize' => [
@@ -1133,7 +1133,7 @@ return [
         'carousel' => [
             'source' => 'resources/js/controllers/carousel_controller.js',
             'docs' => 'docs/controllers/carousel.md',
-            'category' => 'utility',
+            'category' => 'display',
             'description' => 'Carousel/slider — wraps Embla Carousel with navigation, dots and Turbo-friendly lifecycle',
             'npm' => ['embla-carousel' => '^8.6.0'],
         ],
@@ -1146,7 +1146,7 @@ return [
         'chart' => [
             'source' => 'resources/js/controllers/chart_controller.js',
             'docs' => 'docs/controllers/chart.md',
-            'category' => 'utility',
+            'category' => 'display',
             'description' => 'Apache ECharts wrapper — server-rendered option, optional URL fetch, ResizeObserver, subclass-friendly defaults',
             'npm' => ['echarts' => '^6.1.0'],
         ],
@@ -1201,7 +1201,7 @@ return [
         'disclosure' => [
             'source' => 'resources/js/controllers/disclosure_controller.js',
             'docs' => 'docs/controllers/disclosure.md',
-            'category' => 'utility',
+            'category' => 'display',
             'description' => 'Show/hide collapsible content with aria-expanded sync for FAQ items, panels and accordions',
         ],
         'drawer' => [
@@ -1264,13 +1264,13 @@ return [
         'lazy-image' => [
             'source' => 'resources/js/controllers/lazy_image_controller.js',
             'docs' => 'docs/controllers/lazy-image.md',
-            'category' => 'utility',
+            'category' => 'display',
             'description' => 'Polls until an image URL becomes available, then displays it',
         ],
         'map' => [
             'source' => 'resources/js/controllers/map_controller.js',
             'docs' => 'docs/controllers/map.md',
-            'category' => 'utility',
+            'category' => 'display',
             'description' => 'Leaflet wrapper — center/zoom/markers values, GeoJSON URL fetch, ResizeObserver, subclass hooks for tile layer and event listeners',
             'npm' => ['leaflet' => '^1.9.4'],
         ],
@@ -1302,7 +1302,7 @@ return [
         'oembed' => [
             'source' => 'resources/js/controllers/oembed_controller.js',
             'docs' => 'docs/controllers/oembed.md',
-            'category' => 'utility',
+            'category' => 'display',
             'description' => 'Transforms oembed tags into responsive iframes for YouTube, Vimeo and others',
             'styling' => [
                 'slots' => $slots(['oembed', 'oembed-frame', 'oembed-link']),
@@ -1329,7 +1329,7 @@ return [
         'pagination' => [
             'source' => 'resources/js/controllers/pagination_controller.js',
             'docs' => 'docs/controllers/pagination.md',
-            'category' => 'utility',
+            'category' => 'navigation',
             'description' => 'Loads additional paginator pages from server-rendered HTML, with manual and IntersectionObserver activation',
         ],
         'password-visibility' => [
@@ -1348,7 +1348,7 @@ return [
         'read-more' => [
             'source' => 'resources/js/controllers/read_more_controller.js',
             'docs' => 'docs/controllers/read-more.md',
-            'category' => 'utility',
+            'category' => 'display',
             'description' => 'Measures overflowing content and coordinates accessible collapsed and expanded states',
         ],
         'remote-form' => [
@@ -1366,7 +1366,7 @@ return [
         'reveal' => [
             'source' => 'resources/js/controllers/reveal_controller.js',
             'docs' => 'docs/controllers/reveal.md',
-            'category' => 'utility',
+            'category' => 'display',
             'description' => 'Coordinates load and per-item scroll reveal cascades with Turbo-safe cleanup',
         ],
         'rich-text' => [
@@ -1403,13 +1403,13 @@ return [
         'side-panel' => [
             'source' => 'resources/js/controllers/side_panel_controller.js',
             'docs' => 'docs/controllers/side-panel.md',
-            'category' => 'utility',
+            'category' => 'navigation',
             'description' => 'Controls an inline collapsible panel with cookie persistence and nested scope isolation',
         ],
         'sidebar' => [
             'source' => 'resources/js/controllers/sidebar_controller.js',
             'docs' => 'docs/controllers/sidebar.md',
-            'category' => 'utility',
+            'category' => 'navigation',
             'description' => 'Controls desktop sidebar state and a Presence-driven mobile overlay',
         ],
         'slider' => [
@@ -1427,7 +1427,7 @@ return [
         'tabs' => [
             'source' => 'resources/js/controllers/tabs_controller.js',
             'docs' => 'docs/controllers/tabs.md',
-            'category' => 'utility',
+            'category' => 'display',
             'description' => 'Accessible tabs with roving tabindex, arrow/Home/End keyboard navigation and automatic activation',
         ],
         'timeago' => [
@@ -1474,7 +1474,7 @@ return [
         'tooltip' => [
             'source' => 'resources/js/controllers/tooltip_controller.js',
             'docs' => 'docs/controllers/tooltip.md',
-            'category' => 'utility',
+            'category' => 'overlay',
             'description' => 'Adds accessible hover/focus tooltips with state-driven presence, Floating UI positioning and top-layer promotion',
             'npm' => ['@floating-ui/dom' => '^1.8.0'],
             'styling' => [

@@ -73,7 +73,7 @@ function registerFixture(string $publishKey): void
     $catalog['controllers'][str_replace('/', '--', $publishKey)] = [
         'source' => "resources/js/controllers/{$publishKey}_controller.{$extension}",
         'docs' => 'README.md',
-        'category' => 'fixture',
+        'category' => 'utility',
     ];
 
     HotwireRegistry::swap(HotwireRegistry::fromCatalog($catalog, $packageBasePath));

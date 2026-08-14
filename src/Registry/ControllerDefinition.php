@@ -19,7 +19,7 @@ final readonly class ControllerDefinition
         public string $identifier,
         public string $source,
         public string $docs,
-        public string $category,
+        public Category $category,
         public string $description = '',
         public array $npm = [],
         public Styling $styling = new Styling,
