@@ -259,6 +259,40 @@ test("refreshes when the viewport target is removed and restored", async ({ page
     await expect(trigger).toBeVisible();
 });
 
+test("falls back to static when the content target is removed", async ({ page }) => {
+    await page.setContent(await fixture());
+    await installController(page);
+    const root = page.locator("#preview");
+
+    await expect(root).toHaveAttribute("data-state", "collapsed");
+
+    await page.locator("#preview-content").evaluate((element) => element.remove());
+
+    await expect(root).toHaveAttribute("data-state", "static");
+    await expect(root).not.toHaveAttribute("data-transitioning", "");
+    await expect(page.locator("#preview-trigger")).toBeHidden();
+});
+
+test("refreshes a replacement content target without ResizeObserver", async ({ page }) => {
+    await page.addInitScript(() => {
+        Object.defineProperty(window, "ResizeObserver", { value: undefined, configurable: true });
+    });
+    await page.setContent(await fixture());
+    await installController(page);
+    const root = page.locator("#preview");
+
+    await page.locator("#preview-content").evaluate((element) => {
+        const replacement = document.createElement("div");
+        replacement.dataset.readMoreTarget = "content";
+        replacement.style.height = "480px";
+        replacement.textContent = "Replacement";
+        element.replaceWith(replacement);
+    });
+
+    await expect(root).toHaveAttribute("data-state", "collapsed");
+    await expect(root).toHaveCSS("--read-more-expanded-height", "480px");
+});
+
 test("keeps instances scoped inside overlays and Turbo Frames", async ({ page }) => {
     const markup = (id) => `
         <section

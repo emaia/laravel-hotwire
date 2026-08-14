@@ -1,5 +1,19 @@
+import { afterAll } from "bun:test";
 import { Application } from "@hotwired/stimulus";
 import { Window } from "happy-dom";
+
+let releaseGlobals = null;
+
+// installGlobals leaves the last mounted Window reachable from globalThis for the
+// rest of the file. One Window is cheap, but a serial run keeps every file's
+// JSGlobalObject alive in the same process, so they accumulate and starve the
+// scheduler — Stimulus' MutationObserver callbacks then arrive late or not at all.
+// Releasing here runs after every afterEach, so tests can still touch `document`
+// during teardown.
+afterAll(() => {
+    releaseGlobals?.();
+    releaseGlobals = null;
+});
 
 export async function mountController(identifier, Controller, html) {
     const testWindow = new Window({ url: "http://localhost" });
@@ -81,23 +95,33 @@ export function wait(ms) {
 }
 
 function installGlobals(testWindow) {
-    globalThis.window = testWindow;
-    globalThis.document = testWindow.document;
-    globalThis.CustomEvent = testWindow.CustomEvent;
-    globalThis.Event = testWindow.Event;
-    globalThis.Element = testWindow.Element;
-    globalThis.FormData = testWindow.FormData;
-    globalThis.HTMLElement = testWindow.HTMLElement;
-    globalThis.KeyboardEvent = testWindow.KeyboardEvent;
-    globalThis.MouseEvent = testWindow.MouseEvent;
-    globalThis.MutationObserver = testWindow.MutationObserver;
-    globalThis.Node = testWindow.Node;
-    globalThis.DataTransfer = testWindow.DataTransfer;
-    globalThis.File = testWindow.File;
-    globalThis.Blob = testWindow.Blob;
-    globalThis.requestAnimationFrame = testWindow.requestAnimationFrame.bind(testWindow);
-    globalThis.cancelAnimationFrame = testWindow.cancelAnimationFrame.bind(testWindow);
-    globalThis.getComputedStyle = testWindow.getComputedStyle.bind(testWindow);
+    const globals = {
+        window: testWindow,
+        document: testWindow.document,
+        CustomEvent: testWindow.CustomEvent,
+        Event: testWindow.Event,
+        Element: testWindow.Element,
+        FormData: testWindow.FormData,
+        HTMLElement: testWindow.HTMLElement,
+        KeyboardEvent: testWindow.KeyboardEvent,
+        MouseEvent: testWindow.MouseEvent,
+        MutationObserver: testWindow.MutationObserver,
+        Node: testWindow.Node,
+        DataTransfer: testWindow.DataTransfer,
+        File: testWindow.File,
+        Blob: testWindow.Blob,
+        requestAnimationFrame: testWindow.requestAnimationFrame.bind(testWindow),
+        cancelAnimationFrame: testWindow.cancelAnimationFrame.bind(testWindow),
+        getComputedStyle: testWindow.getComputedStyle.bind(testWindow),
+    };
+
+    Object.assign(globalThis, globals);
+
+    releaseGlobals = () => {
+        for (const key of Object.keys(globals)) {
+            delete globalThis[key];
+        }
+    };
 }
 
 export async function mountMultipleControllers(controllers, html) {

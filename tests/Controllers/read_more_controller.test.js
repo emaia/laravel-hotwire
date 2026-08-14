@@ -202,47 +202,9 @@ test.serial("is a safe static fallback when required targets are missing", async
     expect(trigger().hidden).toBe(true);
 });
 
-test.serial("refreshes a replacement target without ResizeObserver", async () => {
-    delete globalThis.ResizeObserver;
-    await mount();
-    setViewportHeight(480);
-    const replacement = document.createElement("div");
-    replacement.dataset.readMoreTarget = "content";
-    replacement.textContent = "Replacement";
-
-    content().replaceWith(replacement);
-    await waitForState("collapsed");
-
-    expect(root().dataset.state).toBe("collapsed");
-    expect(root().style.getPropertyValue("--read-more-expanded-height")).toBe("480px");
-});
-
-test.serial("falls back to static when the content target is removed", async () => {
-    await mount();
-    setContentHeight(480);
-    mounted.controller.refresh();
-    expect(root().dataset.state).toBe("collapsed");
-
-    content().remove();
-    await waitForState("static");
-
-    expect(root().dataset.state).toBe("static");
-    expect(trigger().hidden).toBe(true);
-});
-
-test.serial("falls back to static when the viewport target is removed", async () => {
-    await mount();
-    setContentHeight(480);
-    mounted.controller.refresh();
-    const viewportElement = viewport();
-
-    viewportElement.removeAttribute("data-read-more-target");
-    await waitForState("static");
-
-    expect(root().dataset.state).toBe("static");
-    expect(root().hasAttribute("data-transitioning")).toBe(false);
-    expect(trigger().hidden).toBe(true);
-});
+// Target removal and replacement are covered in tests/Browser/read_more_controller.pw.js:
+// they hinge on MutationObserver delivery, which happy-dom drains unreliably once many
+// files share a process.
 
 test.serial("moves focus to content before hiding the active trigger", async () => {
     await mount();
@@ -297,15 +259,6 @@ function setElementHeight(element, height) {
         configurable: true,
         value: height,
     });
-}
-
-async function waitForState(state) {
-    for (let attempt = 0; attempt < 200; attempt += 1) {
-        if (root().dataset.state === state) return;
-        await wait(10);
-    }
-
-    throw new Error(`Timed out waiting for read-more state ${state}; received ${root().dataset.state}.`);
 }
 
 function root() {
