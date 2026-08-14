@@ -19,13 +19,15 @@
         'data-reveal-scope' => $reveal ? 'document' : null,
         'data-motion' => $reveal ? $revealMotion : ($internal['data-motion'] ?? null),
         'style' => $style,
-    ]), $attributes, except: ['style'], protectedPrefixes: [
+    ]), $attributes, except: ['style'], protectedPrefixes: array_values(array_filter([
         'data-slot',
         'data-side',
         'data-sidebar-target',
-        'data-reveal-',
-        'data-motion',
-    ]);
+        // Only while the internal Reveal is the one driving them; with the prop off the visitor is
+        // free to mount their own reveal and configure it.
+        $reveal ? 'data-reveal-' : null,
+        $reveal ? 'data-motion' : null,
+    ])));
 @endphp
 
 @if ($collapsible === 'none')

@@ -348,3 +348,27 @@ it('registers sidebar in the component catalog and subcomponent aliases', functi
         ->toHaveKey('sidebar.brand')
         ->toHaveKey('sidebar.menu-button');
 });
+
+it('lets the application configure its own reveal when the prop is off', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::sidebar data-controller="reveal" data-reveal-trigger-value="scroll" data-motion="flat">
+            <div>Nav</div>
+        </x-hw::sidebar>
+        BLADE);
+
+    // Filtering data-reveal-* belongs to the prop that mounts the internal controller. With it off
+    // the visitor gets the controller they asked for and none of its configuration.
+    $view->assertSee('data-reveal-trigger-value="scroll"', false)
+        ->assertSee('data-motion="flat"', false);
+});
+
+it('keeps the internal reveal configuration when the prop is on', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::sidebar reveal data-reveal-trigger-value="scroll">
+            <div>Nav</div>
+        </x-hw::sidebar>
+        BLADE);
+
+    $view->assertSee('data-reveal-trigger-value="load"', false)
+        ->assertDontSee('data-reveal-trigger-value="scroll"', false);
+});
