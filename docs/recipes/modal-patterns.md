@@ -45,7 +45,7 @@ makes sense (list rows, navigation, deep in a partial) — Stimulus picks it up 
             <div class="flex items-center justify-center p-12">
                 <span>Loading...</span>
             </div>
-        </x-slot:loading_template>
+        </x-slot>
     </hw:modal>
 </body>
 ```
@@ -56,9 +56,7 @@ makes sense (list rows, navigation, deep in a partial) — Stimulus picks it up 
     <tr>
         <td>{{ $post->title }}</td>
         <td>
-            <a href="{{ route('posts.edit', $post) }}" data-turbo-frame="modal">
-                Edit
-            </a>
+            <a href="{{ route('posts.edit', $post) }}" data-turbo-frame="modal">Edit</a>
         </td>
     </tr>
 @endforeach
@@ -80,15 +78,9 @@ default). Pairs naturally with the
 Different actions can show different skeletons:
 
 ```blade
-<a href="{{ route('posts.edit', $post) }}"
-   data-turbo-frame="modal"
-   data-loading-template="#form-skeleton">
-    Edit
-</a>
+<a href="{{ route('posts.edit', $post) }}" data-turbo-frame="modal" data-loading-template="#form-skeleton">Edit</a>
 
-<a href="{{ route('posts.comments', $post) }}"
-   data-turbo-frame="modal"
-   data-loading-template="#list-skeleton">
+<a href="{{ route('posts.comments', $post) }}" data-turbo-frame="modal" data-loading-template="#list-skeleton">
     Comments
 </a>
 
@@ -108,7 +100,7 @@ No Turbo Frame, no dynamic content. The modal body is rendered server-side once 
     <hw:modal.trigger>What's new?</hw:modal.trigger>
 
     <hw:modal.content>
-        <div class="p-6 space-y-4">
+        <div class="space-y-4 p-6">
             <h2 class="text-xl font-semibold">Welcome to v2</h2>
             <p>Here's what changed since you were last here.</p>
             <ul class="list-disc pl-6">
@@ -123,17 +115,28 @@ No Turbo Frame, no dynamic content. The modal body is rendered server-side once 
 **When to use:** content that doesn't need a server fetch (welcome dialogs, info modals, terms
 acceptance, embedded media).
 
-**Closing from the server:** if the static modal is opened by user action and closed by a form
-submission elsewhere, use an empty update against the modal root:
+**Closing from the server:** if reusable static modal markup should remain available for another
+open, append the self-removing `modal-auto-close` marker to its root:
 
 ```php
-return turbo_stream()->update('welcome-modal');
+return turbo_stream()->append(
+    'welcome-modal',
+    '<span data-controller="modal-auto-close"></span>',
+);
+```
+
+An empty update of the modal root removes its inner markup. Reserve that approach for disposable
+static modals that should not reopen:
+
+```php
+return turbo_stream()->update('one-time-modal');
 ```
 
 ## Component vs raw controller
 
-Reach for the Blade component (`<hw:modal>`) by default — it ships sensible markup, default
-classes, Turbo `before-cache` integration, and slot ergonomics.
+Reach for the Blade component (`<hw:modal>`) by default. It emits accessible markup, stable
+`data-slot` hooks styled by the active CSS preset, Turbo `before-cache` integration, and ergonomic
+subcomponents.
 
 Drop down to the raw [`modal` controller](../controllers/modal.md) only when:
 

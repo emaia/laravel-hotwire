@@ -17,64 +17,114 @@ custom id.
 The canonical "modal form succeeded" response:
 
 ```php
-public function update(Request $request, Post $post)
+public function update(UpdatePostRequest $request, Post $post)
 {
-    $request->validate([...]);
     $post->update($request->validated());
 
-    return turbo_stream()
-        ->refresh(method: 'morph')
-        ->update('modal')
-        ->toast('success', 'Post updated');
+    if ($request->wasFromTurboFrame('modal') && $request->wantsTurboStream()) {
+        return turbo_stream()
+            ->refresh(method: 'morph')
+            ->update('modal')
+            ->toast('success', 'Post updated');
+    }
+
+    return redirect()
+        ->route('posts.show', $post)
+        ->with('status', 'Post updated');
 }
 ```
 
 Order matters less than you might think — Turbo applies streams in order, but `refresh` morphs the
 DOM in place, the modal frame is cleared, and the toast appends to the persistent toaster.
+The redirect keeps direct and non-JavaScript submissions usable.
 
 ### Optimistic action rejected → revert + explain
 
 Pair `refresh` (which morphs back to the real state) with a toast to explain the rollback:
 
 ```php
+use Illuminate\Auth\Access\AuthorizationException;
+
 public function favorite(Request $request, Post $post)
 {
     try {
         $this->authorize('favorite', $post);
-    } catch (\Throwable $e) {
-        return turbo_stream()
-            ->refresh(method: 'morph')
-            ->toast('error', 'Could not favorite this post.')
-            ->withResponse(403);
+    } catch (AuthorizationException $exception) {
+        if ($request->wantsTurboStream()) {
+            return turbo_stream()
+                ->refresh(method: 'morph')
+                ->toast('error', 'Could not favorite this post.')
+                ->withResponse(403);
+        }
+
+        throw $exception;
     }
 
     $post->favoriteFor($request->user());
-    return turbo_stream()->refresh(method: 'morph');
+
+    if ($request->wantsTurboStream()) {
+        return turbo_stream()->refresh(method: 'morph');
+    }
+
+    return redirect()->route('posts.show', $post);
 }
 ```
 
 ### Validation failure → keep modal open, surface errors
 
-Don't compose anything special — return a normal redirect/error response. The Turbo Frame holding
-the form re-renders with the validation errors inside, the modal stays open, and the
-[`<hw:toast>`](../components/toast.md) component picks up the first
-validation error from the session and shows a toast.
+Don't compose anything special. Let validation return its normal redirect/error response so the
+frame re-renders with errors and the modal stays open. When the frame GET URL differs from the form's
+mutation URL, use `track-frame-src` and have the form request extend `TurboFormRequest`:
 
-### Append a row → highlight it → toast
+```blade
+<hw:form :action="route('posts.update', $post)" method="patch" track-frame-src>
+    {{-- fields --}}
+</hw:form>
+```
+
+```php
+use Emaia\LaravelHotwireTurbo\Http\Requests\TurboFormRequest;
+
+final class UpdatePostRequest extends TurboFormRequest
+{
+    public function rules(): array
+    {
+        return [
+            'title' => ['required', 'string', 'max:255'],
+        ];
+    }
+}
+```
+
+`track-frame-src` sends the URL that rendered the form; `TurboFormRequest` validates that source and
+uses it for the validation redirect. The [`<hw:toast>`](../components/toast.md) component can then
+pick up the first validation error from the session and show a toast.
+
+### Append a row → reset the form → toast
 
 Multiple stream actions in one response:
 
 ```php
-public function store(Request $request)
+public function store(StoreCommentRequest $request, Post $post)
 {
-    $comment = Comment::create($request->validated());
+    $comment = $post->comments()->create($request->validated());
 
-    return turbo_stream()
-        ->append('comments', view('comments.row', compact('comment')))
-        ->replace('comment-form', view('comments.form'))
-        ->toast('success', 'Comment posted');
+    if ($request->wantsTurboStream()) {
+        return turbo_stream()
+            ->append('comments', view('comments.row', compact('comment')))
+            ->replace('comment-form', view('comments.form', compact('post')))
+            ->toast('success', 'Comment posted');
+    }
+
+    return redirect()
+        ->route('posts.show', $post)
+        ->with('status', 'Comment posted');
 }
 ```
+
+`StoreCommentRequest` is a Laravel form request, so `validated()` is available. If the comment form
+is loaded from a different frame GET URL, extend `TurboFormRequest` and add `track-frame-src` to that
+form just as in the modal example above.
 
 ## Patterns to avoid
 

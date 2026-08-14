@@ -1,225 +1,219 @@
 # Conditional fields
 
-Five real-world form patterns built on the `conditional-fields` controller plus the
-`<hw:conditional-field>` component. Each example puts `data-controller="conditional-fields"` on
-the form and lets the component handle the rest — single source of truth for every show/hide
-rule, no client/server drift.
+Add `conditional-fields` to `<hw:form>`, then put each rule on `<hw:conditional-field>`. The component uses the same rule
+for server-rendered visibility and client-side updates, and hidden fieldsets are disabled so their values are not
+submitted.
 
-## Pattern 1 — "Other" reason (single select, OR + equality)
+## Ask for details by reason
 
-A feedback form with a `reason` select. Some reasons need a free-text follow-up; others reveal a
-"details" textarea.
+Use `|` to match any value for one field:
 
 ```blade
-<form data-controller="conditional-fields" action="/feedback" method="POST">
-    @csrf
-
+<hw:form conditional-fields :action="route('feedback.store')" method="post">
     <hw:field name="reason" label="What's this about?">
         <hw:select
-            name="reason"
-            placeholder="Pick one…"
             :options="[
-                'bug'      => 'Bug',
-                'feature'  => 'Feature request',
+                'bug' => 'Bug',
+                'feature' => 'Feature request',
                 'question' => 'Question',
-                'other'    => 'Other',
+                'other' => 'Other',
             ]"
+            placeholder="Pick one..."
         />
     </hw:field>
 
-    <hw:conditional-field :when="['reason' => ['bug', 'feature']]">
-        <hw:field name="details" label="What happened (or what's missing)?">
-            <hw:textarea name="details" rows="4" />
+    <hw:conditional-field when="reason=bug|feature">
+        <hw:field name="details" label="What happened, or what's missing?">
+            <hw:textarea rows="4" />
         </hw:field>
     </hw:conditional-field>
 
-    <hw:conditional-field :when="['reason' => 'other']">
-        <hw:field name="other_reason" label="Tell us">
-            <hw:input name="other_reason" />
+    <hw:conditional-field when="reason=other">
+        <hw:field name="other_reason" label="Tell us more">
+            <hw:input />
         </hw:field>
     </hw:conditional-field>
 
-    <button type="submit">Send</button>
-</form>
+    <hw:button type="submit">Send</hw:button>
+</hw:form>
 ```
 
-## Pattern 2 — Ship to a different address (boolean checkbox, fieldset cascade)
+## Reveal a shipping address
 
-A checkout form where a single checkbox reveals an entire shipping address block. The `<fieldset>`
-cascade handles the disable for free.
+Use `:checked` for a boolean checkbox. The conditional field's default `<fieldset>` disables all nested controls while
+the block is hidden.
 
 ```blade
-<form data-controller="conditional-fields" action="/checkout" method="POST">
-    @csrf
-
+<hw:form conditional-fields :action="route('checkout.store')" method="post">
     <fieldset>
         <legend>Billing address</legend>
-        <hw:input name="billing_address"/>
-        <hw:input name="billing_city"/>
-        <hw:input name="billing_zip"/>
+        <hw:input name="billing_address" />
+        <hw:input name="billing_city" />
+        <hw:input name="billing_zip" />
     </fieldset>
 
-    <label class="my-4 flex items-center gap-2">
-        <input type="checkbox" name="ship_different" value="1" @checked(old('ship_different'))/>
+    <label>
+        <input type="checkbox" name="ship_different" value="1" @checked(old('ship_different')) />
         Ship to a different address
     </label>
 
-    <hw:conditional-field :when="['ship_different' => ':checked']">
+    <hw:conditional-field when="ship_different=:checked">
         <legend>Shipping address</legend>
-        <hw:input name="shipping_address"/>
-        <hw:input name="shipping_city"/>
-        <hw:input name="shipping_zip"/>
+        <hw:input name="shipping_address" />
+        <hw:input name="shipping_city" />
+        <hw:input name="shipping_zip" />
     </hw:conditional-field>
 
-    <button type="submit">Continue to payment</button>
-</form>
+    <hw:button type="submit">Continue to payment</hw:button>
+</hw:form>
 ```
 
-## Pattern 3 — Subscription tiers (radio with multi-value OR)
+## Show fields for selected plans
 
-Plan picker that reveals "team size" for Pro and Enterprise, and a second block of fields only
-for Enterprise.
+Radio groups and selects use their selected value. List alternatives with `|`:
 
 ```blade
-<form data-controller="conditional-fields" action="/subscribe" method="POST">
-    @csrf
-
+<hw:form conditional-fields :action="route('subscriptions.store')" method="post">
     <fieldset>
         <legend>Plan</legend>
-        @foreach (['starter' => 'Starter (1 user)',
-                   'pro' => 'Pro (up to 10 users)',
-                   'enterprise' => 'Enterprise (unlimited)'] as $value => $label)
+
+        @foreach (['starter' => 'Starter', 'pro' => 'Pro', 'enterprise' => 'Enterprise'] as $value => $label)
             <label>
-                <input type="radio" name="plan" value="{{ $value }}"
-                       @checked(old('plan', 'starter') === $value)/>
+                <input type="radio" name="plan" value="{{ $value }}" @checked(old('plan', 'starter') === $value) />
                 {{ $label }}
             </label>
         @endforeach
     </fieldset>
 
-    <hw:conditional-field :when="['plan' => ['pro', 'enterprise']]">
+    <hw:conditional-field when="plan=pro|enterprise">
         <hw:field name="team_size" label="How many seats?">
-            <hw:input type="number" name="team_size" min="1" max="500" />
+            <hw:input type="number" min="1" max="500" />
         </hw:field>
     </hw:conditional-field>
 
-    <hw:conditional-field :when="['plan' => 'enterprise']">
-        <legend>Enterprise</legend>
-        <hw:field name="sla_contact" label="Primary contact for SLA negotiation">
-            <hw:input name="sla_contact" type="email"/>
-        </hw:field>
-        <hw:field name="annual_volume" label="Estimated annual API volume">
-            <hw:input type="number" name="annual_volume"/>
-        </hw:field>
+    <hw:conditional-field when="plan=enterprise">
+        <legend>Enterprise requirements</legend>
+        <hw:input name="sla_contact" type="email" />
+        <hw:input name="annual_volume" type="number" />
     </hw:conditional-field>
-</form>
+</hw:form>
 ```
 
-## Pattern 4 — NPS survey (numeric radio with score-bucket follow-ups)
+## Branch on score ranges
 
-Reveal different follow-up questions for detractors vs. promoters by listing the relevant scores
-in a single OR rule.
+HTML form values are strings. Use string values in rules, including numeric-looking values:
 
 ```blade
-<form data-controller="conditional-fields" action="/survey" method="POST">
-    @csrf
-
+<hw:form conditional-fields :action="route('surveys.store')" method="post">
     <fieldset>
         <legend>How likely are you to recommend us?</legend>
-        @foreach (range(0, 10) as $n)
+
+        @foreach (range(0, 10) as $score)
             <label>
-                <input type="radio" name="score" value="{{ $n }}" @checked((int) old('score') === $n)/>
-                {{ $n }}
+                <input
+                    type="radio"
+                    name="score"
+                    value="{{ $score }}"
+                    @checked((string) old('score') === (string) $score)
+                />
+                {{ $score }}
             </label>
         @endforeach
     </fieldset>
 
-    <hw:conditional-field :when="['score' => ['0', '1', '2', '3', '4', '5', '6']]">
-        <hw:field name="reason_low" label="What's the main reason for that score?">
-            <hw:textarea name="reason_low" rows="3" />
+    <hw:conditional-field when="score=0|1|2|3|4|5|6">
+        <hw:field name="reason_low" label="What is the main reason for that score?">
+            <hw:textarea rows="3" />
         </hw:field>
     </hw:conditional-field>
 
-    <hw:conditional-field :when="['score' => ['9', '10']]">
-        <hw:field name="reason_high" label="What's the main reason for that score?">
-            <hw:textarea name="reason_high" rows="3" />
+    <hw:conditional-field when="score=9|10">
+        <hw:field name="reason_high" label="What did we do well?">
+            <hw:textarea rows="3" />
         </hw:field>
     </hw:conditional-field>
-</form>
+</hw:form>
 ```
 
-> Note: HTML form values are strings, so the rule reads `'0'` through `'10'`, not the integers.
+## Match a checkbox group
 
-## Pattern 5 — Newsletter preferences (checkbox group `name[]` + AND between triggers)
-
-The user picks any combination of interests. The cadence selector appears when at least one
-"live" interest is picked; the webinar reminders sub-checkbox appears only when "events" is in
-the group.
+For `name="interests[]"`, a rule matches when any checked value equals one of its alternatives:
 
 ```blade
-<form data-controller="conditional-fields" action="/preferences" method="POST">
-    @csrf
-
+<hw:form conditional-fields :action="route('preferences.store')" method="post">
     <fieldset>
-        <legend>I'm interested in:</legend>
-        @foreach (['news' => 'Product news',
-                   'tips' => 'Tips & tutorials',
-                   'events' => 'Events & webinars',
-                   'research' => 'Research & reports'] as $value => $label)
+        <legend>I'm interested in</legend>
+
+        @foreach (['news' => 'Product news', 'tips' => 'Tips', 'events' => 'Events'] as $value => $label)
             <label>
-                <input type="checkbox" name="interests[]" value="{{ $value }}"
-                       @checked(in_array($value, old('interests', [])))/>
+                <input
+                    type="checkbox"
+                    name="interests[]"
+                    value="{{ $value }}"
+                    @checked(in_array($value, old('interests', []), true))
+                />
                 {{ $label }}
             </label>
         @endforeach
     </fieldset>
 
-    <hw:conditional-field :when="['interests' => ['news', 'tips', 'events']]">
+    <hw:conditional-field when="interests=news|tips|events">
         <hw:field name="cadence" label="How often?">
-            <hw:select
-                name="cadence"
-                :options="['weekly' => 'Weekly', 'monthly' => 'Monthly']"
-            />
+            <hw:select :options="['weekly' => 'Weekly', 'monthly' => 'Monthly']" />
         </hw:field>
     </hw:conditional-field>
 
-    <hw:conditional-field :when="['interests' => 'events']">
-        <label class="flex items-center gap-2">
-            <input type="checkbox" name="webinar_reminders" value="1"
-                   @checked(old('webinar_reminders'))/>
-            Send me reminders 24h before each event
+    <hw:conditional-field when="interests=events">
+        <label>
+            <input type="checkbox" name="webinar_reminders" value="1" />
+            Send a reminder before each event
         </label>
     </hw:conditional-field>
-</form>
+</hw:form>
 ```
 
-## Edit-form pattern — the `model` prop
+## Preserve visibility in edit forms
 
-`<hw:input>`, `<hw:select>`, and `<hw:textarea>` already merge `old()` with the
-`value` / `selected` prop. Pass the same model to `<hw:conditional-field>` and it evaluates
-`old(field, $model->field)` — the same lookup those fields use internally. Validation retries
-always win over the model fallback.
+Pass an Eloquent model, array, or object to the form's `state` prop. Every nested conditional field inherits that state
+and resolves each trigger with `old($field, data_get($state, $field))`.
 
 ```blade
-<form data-controller="conditional-fields" action="/messages/{{ $message->id }}" method="POST">
-    @csrf @method('PATCH')
+<hw:form conditional-fields :state="$message" :action="route('messages.update', $message)" method="patch">
+    <hw:field name="reason" label="Reason">
+        <hw:select :options="$reasons" :selected="$message->reason" />
+    </hw:field>
 
-    <hw:select
-        name="reason"
-        :options="$reasons"
-        :selected="$message->reason"
-    />
-
-    <hw:conditional-field :model="$message" :when="['reason' => 'other']">
-        <hw:input name="other_reason" :value="$message->other_reason" />
+    <hw:conditional-field when="reason=other">
+        <hw:field name="other_reason" label="Tell us more">
+            <hw:input :value="$message->other_reason" />
+        </hw:field>
     </hw:conditional-field>
-</form>
+
+    <hw:button type="submit">Update message</hw:button>
+</hw:form>
 ```
 
-No `@php` state map, no parallel structures — `<hw:conditional-field>` reads the same
-`old()` lookup the inputs use internally.
+Validation input from `old()` takes precedence over `state`, so a failed submission restores both the trigger value and
+the dependent block's first-render visibility. When trigger names do not match model keys, pass an associative state
+array keyed by the field names used in `when`.
+
+## Combine conditions
+
+Separate conditions with spaces to require all of them:
+
+```blade
+<hw:conditional-field when="authorized=no needs_visa=yes">
+    <hw:select name="sponsorship_country" :options="$countries" />
+</hw:conditional-field>
+```
+
+Use the array form when it reads more clearly:
+
+```blade
+<hw:conditional-field :when="['plan' => ['pro', 'enterprise'], 'annual' => ':checked']">...</hw:conditional-field>
+```
 
 ## See also
 
-- [Conditional fields controller](../controllers/conditional-fields.md) — full rule grammar reference.
-- [`<hw:conditional-field>` component](../components/conditional-field.md) — props and edge cases.
+- [`<hw:conditional-field>` component](../components/conditional-field.md) - rule grammar, state, and wrapper options.
+- [Conditional fields controller](../controllers/conditional-fields.md) - lower-level behavior and limitations.

@@ -24,7 +24,7 @@ Render one shared modal for the user editor and a second shared modal for role m
 separate frame ids makes each layer addressable and avoids replacing the wrong panel.
 
 ```blade
-{{-- resources/views/layouts/dashboard.blade.php --}}
+{{-- resources/views/components/layouts/dashboard.blade.php --}}
 <body>
     <header>...</header>
 
@@ -34,18 +34,14 @@ separate frame ids makes each layer addressable and avoids replacing the wrong p
 
     <hw:modal id="user-modal-shell" frame="user-modal" size="lg">
         <x-slot:loading_template>
-            <div class="flex items-center justify-center p-12 text-sm text-muted-foreground">
-                Loading user...
-            </div>
-        </x-slot:loading_template>
+            <div class="text-muted-foreground flex items-center justify-center p-12 text-sm">Loading user...</div>
+        </x-slot>
     </hw:modal>
 
     <hw:modal id="roles-modal-shell" frame="roles-modal" size="md">
         <x-slot:loading_template>
-            <div class="flex items-center justify-center p-12 text-sm text-muted-foreground">
-                Loading roles...
-            </div>
-        </x-slot:loading_template>
+            <div class="text-muted-foreground flex items-center justify-center p-12 text-sm">Loading roles...</div>
+        </x-slot>
     </hw:modal>
 </body>
 ```
@@ -92,13 +88,31 @@ Use GET routes for frame payloads and normal form routes for writes.
 
 ```php
 // routes/web.php
-Route::get('users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
-Route::patch('users/{user}', [UserController::class, 'update'])->name('users.update');
+Route::middleware('auth')->group(function () {
+    Route::get('users/{user}/edit', [UserController::class, 'edit'])
+        ->middleware('can:update,user')
+        ->name('users.edit');
 
-Route::get('users/{user}/roles', [UserRoleController::class, 'edit'])->name('users.roles.edit');
-Route::patch('users/{user}/roles', [UserRoleController::class, 'update'])->name('users.roles.update');
-Route::delete('users/{user}/roles/{role}', [UserRoleController::class, 'destroy'])->name('users.roles.destroy');
+    Route::patch('users/{user}', [UserController::class, 'update'])
+        ->middleware('can:update,user')
+        ->name('users.update');
+
+    Route::get('users/{user}/roles', [UserRoleController::class, 'edit'])
+        ->middleware('can:manageRoles,user')
+        ->name('users.roles.edit');
+
+    Route::patch('users/{user}/roles', [UserRoleController::class, 'update'])
+        ->middleware('can:manageRoles,user')
+        ->name('users.roles.update');
+
+    Route::delete('users/{user}/roles/{role}', [UserRoleController::class, 'destroy'])
+        ->middleware('can:manageRoles,user')
+        ->name('users.roles.destroy');
+});
 ```
+
+These routes assume `UserPolicy::update()` protects profile editing and
+`UserPolicy::manageRoles()` protects role assignment changes.
 
 ## First layer: edit user
 
@@ -107,33 +121,40 @@ the second layer above it.
 
 ```blade
 {{-- resources/views/users/edit.blade.php --}}
-<turbo-frame id="user-modal">
+<hw:frame-or-page frame="user-modal" layout="dashboard">
     <hw:modal.header>
         <hw:modal.title>Edit {{ $user->name }}</hw:modal.title>
         <hw:modal.description>Update account details and role assignments.</hw:modal.description>
     </hw:modal.header>
 
-    <hw:modal.content>
-        <hw:form :action="route('users.update', $user)" method="patch" class="space-y-4">
-            <hw:input name="name" label="Name" :value="$user->name" />
-            <hw:input name="email" label="Email" type="email" :value="$user->email" />
+    <hw:form :action="route('users.update', $user)" method="patch" class="space-y-4" track-frame-src>
+        <hw:field name="name" label="Name">
+            <hw:input name="name" :value="$user->name" />
+        </hw:field>
 
-            <div class="flex flex-wrap gap-2">
-                <hw:button type="submit">Save user</hw:button>
+        <hw:field name="email" label="Email">
+            <hw:input name="email" type="email" :value="$user->email" />
+        </hw:field>
 
-                <hw:button
-                    as="a"
-                    href="{{ route('users.roles.edit', $user) }}"
-                    data-turbo-frame="roles-modal"
-                    variant="secondary"
-                >
-                    Manage roles
-                </hw:button>
-            </div>
-        </hw:form>
-    </hw:modal.content>
-</turbo-frame>
+        <div class="flex flex-wrap gap-2">
+            <hw:button type="submit">Save user</hw:button>
+
+            <hw:button
+                as="a"
+                href="{{ route('users.roles.edit', $user) }}"
+                data-turbo-frame="roles-modal"
+                variant="secondary"
+            >
+                Manage roles
+            </hw:button>
+        </div>
+    </hw:form>
+</hw:frame-or-page>
 ```
+
+The layout-owned modal already renders its content surface and `user-modal` frame. The response only
+supplies the matching frame payload; nesting another `<hw:modal.content>` would create a second
+overlay inside the first.
 
 ## Second layer: manage roles
 
@@ -142,14 +163,14 @@ multi-selects stay positioned correctly because they also use the top layer.
 
 ```blade
 {{-- resources/views/users/roles.blade.php --}}
-<turbo-frame id="roles-modal">
+<hw:frame-or-page frame="roles-modal" layout="dashboard">
     <hw:modal.header>
         <hw:modal.title>Manage roles</hw:modal.title>
         <hw:modal.description>Change permissions for {{ $user->name }}.</hw:modal.description>
     </hw:modal.header>
 
-    <hw:modal.content>
-        <hw:form :action="route('users.roles.update', $user)" method="patch" class="space-y-5">
+    <hw:form :action="route('users.roles.update', $user)" method="patch" class="space-y-5" track-frame-src>
+        <hw:field name="roles" label="Assigned roles">
             <hw:multi-select
                 name="roles"
                 placeholder="Select roles"
@@ -158,123 +179,203 @@ multi-selects stay positioned correctly because they also use the top layer.
                 search
                 select-all
             />
+        </hw:field>
 
-            <div class="rounded-lg border border-border p-3 text-sm">
-                <div class="flex items-center justify-between gap-3">
-                    <div>
-                        <p class="font-medium">Current roles</p>
-                        <p class="text-muted-foreground">Remove high-risk roles with confirmation.</p>
-                    </div>
+        <div class="flex justify-end gap-2">
+            <hw:frame-or-page.frame>
+                <hw:modal.close>Cancel</hw:modal.close>
+            </hw:frame-or-page.frame>
 
-                    <hw:popover>
-                        <hw:popover.trigger>Policy notes</hw:popover.trigger>
-                        <hw:popover.content>
-                            <p class="text-sm text-muted-foreground">
-                                Admin and Billing roles grant access to sensitive account settings.
-                            </p>
-                        </hw:popover.content>
-                    </hw:popover>
-                </div>
+            <hw:frame-or-page.page>
+                <hw:button as="a" :href="route('users.index')" variant="outline">Cancel</hw:button>
+            </hw:frame-or-page.page>
 
-                <div class="mt-3 space-y-2">
-                    @foreach ($user->roles as $role)
-                        <div id="{{ dom_id($role, 'assignment') }}" class="flex items-center justify-between gap-3 rounded-md border border-border p-2">
-                            <span>{{ $role->name }}</span>
+            <hw:button type="submit">Save roles</hw:button>
+        </div>
+    </hw:form>
 
-                            <hw:alert-dialog
-                                title="Remove {{ $role->name }}?"
-                                description="The user loses this access immediately."
-                                confirm-label="Remove role"
-                                confirm-variant="destructive"
-                                cancel-label="Cancel"
-                            >
-                                <hw:button type="button" variant="destructive" size="sm">
-                                    Remove
-                                </hw:button>
-
-                                <x-slot:content>
-                                    <p class="text-sm text-muted-foreground">
-                                        This does not delete the role itself. It only removes the assignment from
-                                        {{ $user->name }}.
-                                    </p>
-                                </x-slot:content>
-                            </hw:alert-dialog>
-                        </div>
-                    @endforeach
-                </div>
+    <div class="border-border rounded-lg border p-3 text-sm">
+        <div class="flex items-center justify-between gap-3">
+            <div>
+                <p class="font-medium">Current roles</p>
+                <p class="text-muted-foreground">Remove high-risk roles with confirmation.</p>
             </div>
 
-            <div class="flex justify-end gap-2">
-                <hw:button type="button" variant="outline" data-action="modal#close">Cancel</hw:button>
-                <hw:button type="submit">Save roles</hw:button>
-            </div>
-        </hw:form>
-    </hw:modal.content>
-</turbo-frame>
+            <hw:popover>
+                <hw:popover.trigger>Policy notes</hw:popover.trigger>
+                <hw:popover.content>
+                    <p class="text-muted-foreground text-sm">
+                        Admin and Billing roles grant access to sensitive account settings.
+                    </p>
+                </hw:popover.content>
+            </hw:popover>
+        </div>
+
+        <div class="mt-3 space-y-2">
+            @foreach ($user->roles as $role)
+                <div
+                    id="{{ dom_id($role, 'assignment') }}"
+                    class="border-border flex items-center justify-between gap-3 rounded-md border p-2"
+                >
+                    <span>{{ $role->name }}</span>
+
+                    <hw:form :action="route('users.roles.destroy', [$user, $role])" method="delete">
+                        <hw:alert-dialog
+                            title="Remove {{ $role->name }}?"
+                            description="The user loses this access immediately."
+                            confirm-label="Remove role"
+                            confirm-variant="destructive"
+                            cancel-label="Cancel"
+                        >
+                            <hw:button type="submit" variant="destructive" size="sm">Remove</hw:button>
+
+                            <x-slot:content>
+                                <p class="text-muted-foreground text-sm">
+                                    This does not delete the role itself. It only removes the assignment from
+                                    {{ $user->name }}.
+                                </p>
+                            </x-slot>
+                        </hw:alert-dialog>
+                    </hw:form>
+                </div>
+            @endforeach
+        </div>
+    </div>
+</hw:frame-or-page>
 ```
+
+The alert dialog intercepts the submit button's first click. Confirming replays that click, so the
+surrounding form sends the declared `DELETE` request. Keep these forms outside the role-sync form;
+nested HTML forms are invalid.
 
 ## Controllers
 
-The GET actions render frame payloads. The write actions return streams that update only the stale
-parts of the page.
+The GET actions render frame-or-page views. The write actions return streams only for the matching
+frame submission and use redirects for direct or non-JavaScript submissions.
+
+Because the validation-bearing update forms submit to mutation URLs different from the GET URLs
+that rendered each frame, their form requests extend `TurboFormRequest`. Together with
+`track-frame-src`, validation failures return to the correct frame source:
 
 ```php
-final class UserController
+use Emaia\LaravelHotwireTurbo\Http\Requests\TurboFormRequest;
+
+final class UpdateUserRequest extends TurboFormRequest
 {
-    public function edit(User $user)
+    public function authorize(): bool
     {
-        return view('users.edit', ['user' => $user]);
+        return $this->user()?->can('update', $this->route('user')) ?? false;
     }
 
-    public function update(Request $request, User $user)
+    public function rules(): array
     {
-        $user->update($request->validate([
+        return [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255'],
-        ]));
+        ];
+    }
+}
 
-        return turbo_stream()
-            ->replace(dom_id($user), view('users._row', ['user' => $user]))
-            ->update('user-modal')
-            ->toast('success', 'User updated');
+final class UpdateUserRolesRequest extends TurboFormRequest
+{
+    public function authorize(): bool
+    {
+        return $this->user()?->can('manageRoles', $this->route('user')) ?? false;
+    }
+
+    public function rules(): array
+    {
+        return [
+            'roles' => ['array'],
+            'roles.*' => ['exists:roles,id'],
+        ];
     }
 }
 ```
 
 ```php
+use Illuminate\Support\Facades\Gate;
+
+final class UserController
+{
+    public function edit(User $user)
+    {
+        Gate::authorize('update', $user);
+
+        return view('users.edit', ['user' => $user]);
+    }
+
+    public function update(UpdateUserRequest $request, User $user)
+    {
+        Gate::authorize('update', $user);
+
+        $user->update($request->validated());
+
+        if ($request->wasFromTurboFrame('user-modal') && $request->wantsTurboStream()) {
+            return turbo_stream()
+                ->replace(dom_id($user), view('users._row', ['user' => $user]))
+                ->update('user-modal')
+                ->toast('success', 'User updated');
+        }
+
+        return redirect()
+            ->route('users.edit', $user)
+            ->with('status', 'User updated');
+    }
+}
+```
+
+```php
+use Illuminate\Support\Facades\Gate;
+
 final class UserRoleController
 {
     public function edit(User $user)
     {
+        Gate::authorize('manageRoles', $user);
+
         return view('users.roles', [
             'user' => $user->load('roles'),
             'availableRoles' => Role::orderBy('name')->get(),
         ]);
     }
 
-    public function update(Request $request, User $user)
+    public function update(UpdateUserRolesRequest $request, User $user)
     {
-        $validated = $request->validate([
-            'roles' => ['array'],
-            'roles.*' => ['exists:roles,id'],
-        ]);
+        Gate::authorize('manageRoles', $user);
+
+        $validated = $request->validated();
 
         $user->roles()->sync($validated['roles'] ?? []);
 
-        return turbo_stream()
-            ->replace(dom_id($user), view('users._row', ['user' => $user->fresh('roles')]))
-            ->update('roles-modal')
-            ->toast('success', 'Roles updated');
+        if ($request->wasFromTurboFrame('roles-modal') && $request->wantsTurboStream()) {
+            return turbo_stream()
+                ->replace(dom_id($user), view('users._row', ['user' => $user->fresh('roles')]))
+                ->update('roles-modal')
+                ->toast('success', 'Roles updated');
+        }
+
+        return redirect()
+            ->route('users.roles.edit', $user)
+            ->with('status', 'Roles updated');
     }
 
-    public function destroy(User $user, Role $role)
+    public function destroy(Request $request, User $user, Role $role)
     {
+        Gate::authorize('manageRoles', $user);
+
         $user->roles()->detach($role);
 
-        return turbo_stream()
-            ->remove(dom_id($role, 'assignment'))
-            ->replace(dom_id($user), view('users._row', ['user' => $user->fresh('roles')]))
-            ->toast('success', "{$role->name} removed from {$user->name}");
+        if ($request->wasFromTurboFrame('roles-modal') && $request->wantsTurboStream()) {
+            return turbo_stream()
+                ->remove(dom_id($role, 'assignment'))
+                ->replace(dom_id($user), view('users._row', ['user' => $user->fresh('roles')]))
+                ->toast('success', "{$role->name} removed from {$user->name}");
+        }
+
+        return redirect()
+            ->route('users.roles.edit', $user)
+            ->with('status', "{$role->name} removed from {$user->name}");
     }
 }
 ```

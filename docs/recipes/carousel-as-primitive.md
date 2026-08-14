@@ -1,71 +1,51 @@
 # Carousel as a primitive
 
-The [`carousel`](../controllers/carousel.md) controller is a snap engine, not just a way to display photos.
-The recipes below use it for things that are **not** galleries — multi-step forms, server-driven signage,
-swipe decks and real-time presence. Each one composes with the rest of the package (Turbo Streams,
-`<hw:optimistic>`, Mercure/SSE) instead of inventing a parallel framework.
+[`<hw:carousel>`](../components/carousel.md) can provide a snap engine for interfaces that are not galleries. These
+recipes keep the component's current wiring and compose it with Turbo, optimistic streams and Laravel Broadcasting.
 
-For the day-to-day "I want a gallery" patterns (thumbnails, lightbox, infinite, deep-link, analytics) see
-[carousel-patterns.md](./carousel-patterns.md).
+For thumbnail, lightbox, infinite-feed, deep-link and analytics examples, see
+[Carousel patterns](./carousel-patterns.md).
 
 ## Recipes
 
 - [Multi-step wizard](#multi-step-wizard)
-- [Server-driven autoplay (broadcast tick)](#server-driven-autoplay-broadcast-tick)
+- [Server-driven autoplay](#server-driven-autoplay)
 - [Swipe deck with optimistic streams](#swipe-deck-with-optimistic-streams)
-- [Real-time presence on slides](#real-time-presence-on-slides)
-- [Live ad slot — budget cap, kill switch, mid-session drops](#live-ad-slot--budget-cap-kill-switch-mid-session-drops)
-- [Time-travel state — a "git log" history carousel](#time-travel-state--a-git-log-history-carousel)
+- [Real-time presence](#real-time-presence)
+- [Live ad slot](#live-ad-slot)
+- [Time-travel history](#time-travel-history)
 
 ## Multi-step wizard
 
-A long form gets split into N steps; each slide is a Turbo Frame with one step's fields. The carousel's
-snap engine handles transitions, dots show per-step status (`done` / `current` / `error` / `pending`),
-the URL fragment deep-links to a step so the browser back button works, and validation failures keep the
-user on the same step until the server is happy.
+Each slide is a lazy Turbo Frame. The component renders the track and dots, while a `wizard` controller records step
+state and advances only after a successful Turbo submission.
 
 ```blade
-<div
-    {{
+<hw:carousel
+    slide-size="100%"
+    :navigation="false"
+    counter
+    :options="['duration' => 18]"
+    dot-list-class="mt-4 flex gap-2"
+    dot-class="size-3 rounded-full transition-colors data-[state=done]:bg-emerald-500 data-[state=current]:bg-blue-500 data-[state=error]:bg-rose-500 data-[state=pending]:bg-gray-300"
+    :stimulus="
         stimulus()
-            ->controller('carousel', [
-                'options' => ['loop' => false, 'duration' => 18, 'containScroll' => 'trimSnaps'],
-            ])
             ->controller('wizard', ['totalSteps' => count($steps)])
-            ->action('wizard', 'capture', 'carousel:init')
             ->action('wizard', 'sync', 'carousel:settle')
             ->action('wizard', 'restore', 'turbo:load@window')
             ->action('wizard', 'advance', 'turbo:submit-end')
-    }}
+    "
 >
-    <p class="text-sm">{{ __('Step') }}
-        <span data-wizard-target="current">1</span> / {{ count($steps) }}
-    </p>
+    @foreach ($steps as $i => $step)
+        <section>
+            <turbo-frame id="wizard-step-{{ $i }}" src="{{ route('signup.step', $step->slug) }}" loading="lazy">
+                @include('partials.step-skeleton')
+            </turbo-frame>
+        </section>
+    @endforeach
 
-    <div data-carousel-viewport>
-        <div data-carousel-container>
-            @foreach ($steps as $i => $step)
-                <section class="min-w-0 flex-[0_0_100%]">
-                    <turbo-frame id="wizard-step-{{ $i }}" src="{{ route('signup.step', $step->slug) }}">
-                        @include('partials.step-skeleton')
-                    </turbo-frame>
-                </section>
-            @endforeach
-        </div>
-    </div>
-
-    {{-- Custom dot template encodes step state via data-state --}}
-    <div {{ stimulus_target('carousel', 'dotList') }} class="mt-4 flex gap-2"></div>
-    <template {{ stimulus_target('carousel', 'dotTemplate') }}>
-        <button
-            type="button"
-            class="size-3 rounded-full transition-colors data-[state=done]:bg-emerald-500 data-[state=current]:bg-blue-500 data-[state=error]:bg-rose-500 data-[state=pending]:bg-gray-300"
-            data-state="pending"
-            data-wizard-target="dot"
-            {{ stimulus_action('carousel', 'scrollTo') }}
-        ></button>
-    </template>
-</div>
+    <x-slot:dot_template data-wizard-target="dot" data-state="pending"></x-slot>
+</hw:carousel>
 ```
 
 ```js
@@ -74,102 +54,110 @@ import { Controller } from "@hotwired/stimulus";
 
 export default class extends Controller {
     static values = { totalSteps: Number };
-    static targets = ["current", "dot"];
+    static targets = ["dot"];
 
-    initialize() { this.states = []; }
+    connect() {
+        this.initialized = false;
+        this.initializeFrame = requestAnimationFrame(() => this.#initializeWhenReady());
+    }
 
-    capture(event) {
-        this.embla = event.detail.embla;
-        this.states = Array(this.totalStepsValue).fill("pending");
-        this.#paint();
-        this.restore();
+    disconnect() {
+        cancelAnimationFrame(this.initializeFrame);
     }
 
     sync() {
-        const i = this.embla.selectedScrollSnap();
-        this.currentTarget.textContent = i + 1;
-        history.replaceState(null, "", `#step-${i + 1}`);
-        if (this.states[i] === "pending") this.states[i] = "current";
-        this.#paint();
+        const embla = this.#embla();
+        if (!embla) return;
+        this.#initialize(embla);
+
+        const index = embla.selectedScrollSnap();
+        history.replaceState(null, "", `#step-${index + 1}`);
+        this.#paint(embla);
     }
 
-    restore() {
+    restore(embla = this.#embla()) {
+        if (!embla) return;
+
         const match = location.hash.match(/^#step-(\d+)$/);
-        if (match) this.embla?.scrollTo(parseInt(match[1], 10) - 1, true);
+        if (match) embla.scrollTo(Number(match[1]) - 1, true);
     }
 
     advance(event) {
-        if (!this.embla) return;
-        const i = this.embla.selectedScrollSnap();
-        if (event.detail.success) {
-            this.states[i] = "done";
-            this.embla.scrollNext();
-        } else {
-            this.states[i] = "error";
-        }
-        this.#paint();
+        const embla = this.#embla();
+        if (!embla || event.target.closest("turbo-frame") === null) return;
+        this.#initialize(embla);
+
+        const index = embla.selectedScrollSnap();
+        this.states[index] = event.detail.success ? "done" : "error";
+        if (event.detail.success) embla.scrollNext();
+        this.#paint(embla);
     }
 
-    #paint() {
-        const selected = this.embla?.selectedScrollSnap() ?? 0;
-        this.dotTargets.forEach((dot, i) => {
+    #initializeWhenReady() {
+        const embla = this.#embla();
+        if (!embla) {
+            this.initializeFrame = requestAnimationFrame(() => this.#initializeWhenReady());
+            return;
+        }
+
+        this.initializeFrame = null;
+        this.#initialize(embla);
+    }
+
+    #initialize(embla) {
+        if (this.initialized) return;
+
+        this.initialized = true;
+        cancelAnimationFrame(this.initializeFrame);
+        this.initializeFrame = null;
+        this.states = Array(this.totalStepsValue).fill("pending");
+        this.restore(embla);
+        this.#paint(embla);
+    }
+
+    #paint(embla) {
+        const selected = embla.selectedScrollSnap();
+        this.dotTargets.forEach((dot, index) => {
             dot.dataset.state =
-                this.states[i] === "done" ? "done" :
-                this.states[i] === "error" ? "error" :
-                i === selected ? "current" : "pending";
+                this.states[index] === "done"
+                    ? "done"
+                    : this.states[index] === "error"
+                      ? "error"
+                      : index === selected
+                        ? "current"
+                        : "pending";
         });
+    }
+
+    #embla() {
+        return this.application.getControllerForElementAndIdentifier(this.element, "carousel")?.embla;
     }
 }
 ```
 
-Why this works:
+`carousel:settle` has no index detail, so `sync()` resolves the live Embla instance when the event arrives. A cancellable
+animation-frame retry handles initial state and hash restoration when lazy controller modules register out of order.
+The dot slot's attributes merge onto each generated dot button; no raw dot list or template is needed.
 
-- **Step content is a `<turbo-frame>`** — each step lazily fetches its own form (`src` triggers loading on
-  connect), so the initial page payload stays small.
-- **`turbo:submit-end` is the truth signal** — Turbo already tells you whether the submit succeeded
-  (`event.detail.success`). If true, mark the step done and advance; if false, mark error and stay put. The
-  user sees the validation message rendered inside the frame.
-- **Dots double as a roadmap** — `data-state` on each dot drives styling via `data-[state=...]` Tailwind
-  variants, no class-juggling JS.
-- **Deep-link survives reload** — `#step-3` is restored on `turbo:load`, so refresh and browser-back land on
-  the right step.
+## Server-driven autoplay
 
-## Server-driven autoplay (broadcast tick)
-
-No `embla-carousel-autoplay` plugin. Instead, a backend job publishes a tick every N seconds via Laravel
-Broadcasting (Reverb / Pusher / Soketi / Ably — whichever you have wired up), and all connected viewers
-advance in lockstep. Useful for digital signage, kiosk dashboards and keynote screens that need to stay in
-sync across devices.
-
-> The carousel side is the only thing this package contributes here. The broadcasting transport and the
-> client subscription (Laravel Echo, native EventSource, etc.) are vanilla Laravel concerns — see
-> [Laravel Broadcasting](https://laravel.com/docs/broadcasting). What follows shows the carousel hookup
-> and the smallest server/client glue that delivers the tick.
-
-The carousel listens for a custom DOM event and reacts:
+A Laravel broadcast can advance every connected display in the same cycle without an autoplay plugin.
 
 ```blade
-<div
+<hw:carousel
     id="hero-banner"
-    {{
-        stimulus()
-            ->controller('carousel', [
-                'options' => ['loop' => true, 'duration' => 35],
-            ])
-            ->action('carousel', 'next', 'hero:tick')
-    }}
+    slide-size="100%"
+    loop
+    :navigation="false"
+    :dots="false"
+    :options="['duration' => 35]"
+    data-action="hero:tick->carousel#next"
 >
-    <div data-carousel-viewport>
-        <div data-carousel-container>
-            @foreach ($slides as $slide)
-                <div class="min-w-0 flex-[0_0_100%]">…</div>
-            @endforeach
-        </div>
-    </div>
-</div>
+    @foreach ($slides as $slide)
+        <div>…</div>
+    @endforeach
+</hw:carousel>
 ```
-
-Server side, the broadcastable event:
 
 ```php
 // app/Events/HeroTick.php
@@ -182,155 +170,135 @@ final class HeroTick implements ShouldBroadcast
 }
 ```
 
+Schedule the broadcast in Laravel's current console routes file:
+
 ```php
-// app/Console/Kernel.php
-$schedule->call(fn () => broadcast(new HeroTick()))->everyTenSeconds();
+// routes/console.php
+use App\Events\HeroTick;
+use Illuminate\Support\Facades\Schedule;
+
+Schedule::call(fn () => broadcast(new HeroTick()))->everyTenSeconds();
 ```
 
-Client side, a single Echo subscription forwards the broadcast as the DOM event the carousel already
-listens to:
-
 ```js
-// resources/js/echo_bridges.js — imported once from app.js
-window.Echo.channel('hero-banner').listen('HeroTick', () => {
-    document.getElementById('hero-banner')
-        ?.dispatchEvent(new CustomEvent('hero:tick', { bubbles: true }));
+// resources/js/echo_bridges.js, imported once from app.js
+window.Echo.channel("hero-banner").listen("HeroTick", () => {
+    document.getElementById("hero-banner")?.dispatchEvent(new CustomEvent("hero:tick", { bubbles: true }));
 });
 ```
 
-Side effects worth knowing:
-
-- **Lockstep across devices** — every connected viewer advances within the same broadcast cycle. For a row
-  of TVs running the same dashboard, the visual sync is effectively perfect.
-- **Pause is centralized** — turning the schedule off (or gating it behind a feature flag) pauses every
-  viewer at once. No client-side `Autoplay.stop()` to chase.
-- **Survives drag** — when a user manually swipes, Embla just resets the snap; the next tick still fires.
-  If you want server-side resume-after-interaction, broadcast the tick only after a quiet period (the
-  job tracks pointer activity posted from clients).
+This centralizes pause and kill-switch behavior on the server. A manual swipe does not break the schedule; the next
+tick advances from the user's current snap.
 
 ## Swipe deck with optimistic streams
 
-Tinder/Bumble-style decision UI. Each card is a `like`/`dislike` Turbo form; submitting either action
-optimistically removes the card via `<hw:optimistic>`, the carousel re-measures (Embla's `watchSlides`)
-and the next card is naturally in view. The server confirms the decision asynchronously and rejects with a
-flash if the action wasn't allowed.
+Each decision form removes its card before the request leaves. Both forms must mount `optimistic--form`; the
+`<hw:optimistic>` template alone does not dispatch anything.
 
 ```blade
-<div
-    {{
-        stimulus()
-            ->controller('carousel', [
-                'options' => ['loop' => false, 'containScroll' => 'trimSnaps'],
-            ])
-    }}
->
-    <div data-carousel-viewport>
-        <div data-carousel-container id="swipe-deck">
-            @foreach ($candidates as $candidate)
-                @include('partials.swipe-card', ['candidate' => $candidate])
-            @endforeach
-        </div>
-    </div>
-</div>
+<hw:carousel id="swipe-deck" slide-size="100%" align="start" :navigation="false" :dots="false">
+    @foreach ($candidates as $candidate)
+        @include('partials.swipe-card', ['candidate' => $candidate])
+    @endforeach
+</hw:carousel>
 ```
 
 ```blade
 {{-- resources/views/partials/swipe-card.blade.php --}}
-<article id="{{ dom_id($candidate) }}" class="min-w-0 flex-[0_0_100%] relative">
-    <img src="{{ $candidate->photo_url }}" alt="" class="w-full">
+<article id="{{ dom_id($candidate) }}" class="relative">
+    <img src="{{ $candidate->photo_url }}" alt="" class="w-full" />
     <h2>{{ $candidate->name }}</h2>
 
     <div class="absolute inset-x-0 bottom-4 flex justify-between px-6">
-        <form method="POST" action="{{ route('deck.dispatch', $candidate) }}" data-turbo-frame="_top">
+        <form
+            method="POST"
+            action="{{ route('deck.dispatch', $candidate) }}"
+            data-controller="optimistic--form"
+            data-turbo-frame="_top"
+        >
             @csrf
-            <input type="hidden" name="decision" value="pass">
+            <input type="hidden" name="decision" value="pass" />
             <hw:optimistic action="remove" target="{{ dom_id($candidate) }}" />
-            <button type="submit" aria-label="Pass">👎</button>
+            <button type="submit" aria-label="Pass">Pass</button>
         </form>
 
-        <form method="POST" action="{{ route('deck.dispatch', $candidate) }}" data-turbo-frame="_top">
+        <form
+            method="POST"
+            action="{{ route('deck.dispatch', $candidate) }}"
+            data-controller="optimistic--form"
+            data-turbo-frame="_top"
+        >
             @csrf
-            <input type="hidden" name="decision" value="like">
+            <input type="hidden" name="decision" value="like" />
             <hw:optimistic action="remove" target="{{ dom_id($candidate) }}" />
-            <button type="submit" aria-label="Like">❤️</button>
+            <button type="submit" aria-label="Like">Like</button>
         </form>
     </div>
 </article>
 ```
 
 ```php
+use Illuminate\Auth\Access\AuthorizationException;
+
 public function dispatchDecision(Request $request, Candidate $candidate)
 {
+    $decision = $request->validate([
+        'decision' => ['required', 'string', 'in:like,pass'],
+    ])['decision'];
+
     try {
         $this->authorize('decide', $candidate);
-    } catch (\Throwable $e) {
-        // Optimistic remove already happened — bring the card back and explain.
+    } catch (AuthorizationException) {
         return turbo_stream()
             ->refresh(method: 'morph')
             ->toast('error', __('You hit the daily decision limit.'))
             ->withResponse(429);
     }
 
-    $candidate->recordDecision($request->user(), $request->string('decision'));
+    $candidate->recordDecision($request->user(), $decision);
 
-    return turbo_stream()
-        ->toast('success', $request->string('decision') === 'like' ? __('Liked') : __('Passed'));
+    return turbo_stream()->toast(
+        'success',
+        $decision === 'like' ? __('Liked') : __('Passed'),
+    );
 }
 ```
 
-Why this combination works:
+The endpoint accepts only the plain string decisions `like` and `pass`, and only the expected authorization denial is
+converted into a recovery response; unexpected failures still propagate. Embla's default `watchSlides` observes the
+optimistic removal and remeasures the track. On rejection, the morph refresh restores the server-authoritative deck and
+its rejected card.
 
-- **Optimistic removes the card instantly** — `<hw:optimistic action="remove" target="...">` dispatches
-  before the request leaves, so the swipe feels native even on slow networks.
-- **Carousel re-measures automatically** — Embla's `watchSlides` MutationObserver picks up the removed node;
-  the next card slides into the snap position with the configured duration. No imperative `scrollNext` call.
-- **Rejection path uses `refresh(method: 'morph')`** — when the server says "no" (rate limit, blocked,
-  policy), the morph response re-paints the deck with the rejected card back in place, and the toast
-  explains why.
+## Real-time presence
 
-## Real-time presence on slides
-
-Show small avatars on each dot indicating other viewers currently on that slide. Every `carousel:select`
-POSTs the new index; the server broadcasts the updated counts back via Laravel Broadcasting; the receivers
-update a presence overlay over each dot. Useful in collaborative galleries, lobby pages for live auctions,
-group photo reviews.
-
-> Same caveat as the autoplay recipe — the broadcasting transport (Reverb, Pusher, etc.) and the Echo
-> subscription are vanilla Laravel concerns. The recipe shows the carousel-side wiring and the smallest
-> glue around it.
+Show a count inside each generated dot. Announce the initial snap once Embla becomes ready, then announce later settled
+snaps with Laravel authentication and CSRF protection.
 
 ```blade
-<div
-    {{
+<hw:carousel
+    slide-size="100%"
+    dot-class="relative size-3 rounded-full bg-muted aria-current:bg-primary"
+    :stimulus="
         stimulus()
-            ->controller('carousel')
             ->controller('presence', [
                 'endpoint' => route('presence.update', $gallery),
-                'channel' => "gallery.{$gallery->id}",
+                'channel' => sprintf('gallery.%s', $gallery->id),
             ])
             ->action('presence', 'announce', 'carousel:settle')
-            ->action('presence', 'apply', 'presence:apply')
-    }}
+    "
 >
-    <div data-carousel-viewport>
-        <div data-carousel-container>…</div>
-    </div>
+    @foreach ($gallery->slides as $slide)
+        <div>…</div>
+    @endforeach
 
-    <div {{ stimulus_target('carousel', 'dotList') }} class="relative"></div>
-    <template {{ stimulus_target('carousel', 'dotTemplate') }}>
-        <span class="relative inline-block">
-            <button
-                type="button"
-                class="size-3 rounded-full bg-gray-300"
-                {{ stimulus_action('carousel', 'scrollTo') }}
-            ></button>
-            <span
-                class="absolute -top-5 left-1/2 -translate-x-1/2 text-[10px] hidden"
-                data-presence-target="dotOverlay"
-            ></span>
-        </span>
-    </template>
-</div>
+    <x-slot:dot_template>
+        <span
+            data-presence-target="dotOverlay"
+            class="absolute -top-5 left-1/2 -translate-x-1/2 text-[10px]"
+            hidden
+        ></span>
+    </x-slot>
+</hw:carousel>
 ```
 
 ```js
@@ -342,115 +310,139 @@ export default class extends Controller {
     static targets = ["dotOverlay"];
 
     connect() {
-        this.subscription = window.Echo.channel(this.channelValue)
-            .listen('PresenceChanged', (payload) => {
-                this.element.dispatchEvent(
-                    new CustomEvent('presence:apply', { detail: payload.counts, bubbles: true })
-                );
-            });
+        this.initialAnnounceRan = false;
+        this.readyFrame = requestAnimationFrame(() => this.#announceWhenReady());
+        this.subscription = window.Echo.channel(this.channelValue).listen("PresenceChanged", ({ counts }) =>
+            this.#apply(counts),
+        );
     }
 
     disconnect() {
+        cancelAnimationFrame(this.readyFrame);
         window.Echo.leave(this.channelValue);
     }
 
-    announce(event) {
-        navigator.sendBeacon(this.endpointValue, JSON.stringify({ index: event.detail.index }));
+    announce() {
+        const embla = this.#embla();
+        if (!embla) return;
+
+        const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+        if (!csrf) return;
+
+        const headers = {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": csrf,
+        };
+
+        void fetch(this.endpointValue, {
+            method: "POST",
+            keepalive: true,
+            credentials: "same-origin",
+            headers,
+            body: JSON.stringify({ index: embla.selectedScrollSnap() }),
+        }).catch(() => {});
     }
 
-    apply(event) {
-        const counts = event.detail; // [{ index: 0, count: 3 }, { index: 2, count: 1 }]
+    #apply(counts) {
         this.dotOverlayTargets.forEach((node) => {
             node.textContent = "";
-            node.classList.add("hidden");
+            node.hidden = true;
         });
+
         for (const { index, count } of counts) {
             const node = this.dotOverlayTargets[index];
-            if (node) {
-                node.textContent = `👤×${count}`;
-                node.classList.remove("hidden");
-            }
+            if (!node) continue;
+            node.textContent = String(count);
+            node.hidden = false;
         }
+    }
+
+    #announceWhenReady() {
+        if (this.initialAnnounceRan) return;
+
+        if (!this.#embla()) {
+            this.readyFrame = requestAnimationFrame(() => this.#announceWhenReady());
+            return;
+        }
+
+        this.initialAnnounceRan = true;
+        this.readyFrame = null;
+        this.announce();
+    }
+
+    #embla() {
+        return this.application.getControllerForElementAndIdentifier(this.element, "carousel")?.embla;
     }
 }
 ```
 
-Server side, the POST handler updates a Redis-backed presence map and fires a broadcastable event with the
-new snapshot:
+```php
+use App\Http\Controllers\GalleryPresenceController;
+use Illuminate\Support\Facades\Route;
+
+Route::post('/galleries/{gallery}/presence', [GalleryPresenceController::class, 'update'])
+    ->middleware('auth')
+    ->name('presence.update');
+```
 
 ```php
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rule;
+
 public function update(Request $request, Gallery $gallery)
 {
-    Presence::move($gallery, $request->user()->id, $request->integer('index'));
+    Gate::authorize('view', $gallery);
+
+    $slideCount = $gallery->slides()->count();
+    $validIndexes = $slideCount === 0 ? [] : range(0, $slideCount - 1);
+    $validated = $request->validate([
+        'index' => ['required', 'integer', Rule::in($validIndexes)],
+    ]);
+
+    Presence::move($gallery, $request->user()->id, $validated['index']);
 
     broadcast(new PresenceChanged(
         gallery: $gallery,
         counts: Presence::countsFor($gallery),
-    ))->toOthers();
+    ));
 
     return response()->noContent();
 }
 ```
 
-```php
-final class PresenceChanged implements ShouldBroadcast
-{
-    public function __construct(
-        public Gallery $gallery,
-        public array $counts,
-    ) {}
+The route requires authentication, the policy protects the gallery, and the accepted index cannot exceed its current
+slide count. The event broadcasts to every subscriber, including the posting browser, so the originator receives the
+same server-authoritative counts as everyone else. No Echo socket header or `toOthers()` call is used. Use a
+`PrivateChannel` and `routes/channels.php` authorization for tenant-scoped galleries, and expire stale presence entries
+with a server-side TTL.
 
-    public function broadcastOn(): Channel
-    {
-        return new Channel("gallery.{$this->gallery->id}");
-    }
-}
-```
+## Live ad slot
 
-Trade-offs to know:
-
-- **Drag noise** — wire to `carousel:settle` (as above), not `carousel:select`, so a single drag-through
-  doesn't beacon every intermediate snap.
-- **Privacy** — the channel name `gallery.{id}` is public; switch to `PrivateChannel` plus an auth
-  callback in `routes/channels.php` for tenant-scoped galleries.
-- **Cleanup** — when a user navigates away, beacon a "disconnect" on `turbo:before-visit@window` and
-  `beforeunload@window`, otherwise stale counts linger until a TTL expires.
-- **`toOthers()`** — the broadcasting helper skips the originator, so the user that just moved doesn't
-  receive their own update bouncing back.
-
-## Live ad slot — budget cap, kill switch, mid-session drops
-
-An ad slot rotates N creatives. Real-world ad ops needs three things that a static carousel can't do:
-
-- **Launch a creative live** — sales closes a deal at 21:00 sharp; the new banner enters the rotation on
-  every open page without anyone reloading.
-- **Pull a creative when its budget caps** — the moment the campaign hits its impression budget on the
-  server, every live viewer loses that slide.
-- **Compliance kill switch** — a flagged ad gets yanked from every page in under a second.
-
-Three Laravel-broadcast events, one sister controller, and the carousel's `watchSlides` (which Embla turns
-on by default) take care of the re-measure.
+A broadcast can append a newly launched creative or remove one that reached its budget. Embla observes both mutations
+and rebuilds its snaps without an imperative `reInit()`. The controller records the initial creative once Embla is
+ready, then records later settled creatives through the existing action.
 
 ```blade
-<div
-    {{
+<hw:carousel
+    slide-size="100%"
+    loop
+    :navigation="false"
+    :dots="false"
+    :options="['duration' => 30]"
+    :stimulus="
         stimulus()
-            ->controller('carousel', ['options' => ['loop' => true, 'duration' => 30]])
             ->controller('ad-slot', [
-                'channel' => "ads.{$slot->key}",
+                'channel' => sprintf('ads.%s', $slot->key),
                 'impressionEndpoint' => route('ads.impression', $slot),
             ])
-            ->action('ad-slot', 'beacon', 'carousel:settle')
-    }}
+            ->action('ad-slot', 'recordImpression', 'carousel:settle')
+    "
 >
-    <div data-carousel-viewport>
-        <div data-carousel-container>
-            @foreach ($slot->liveCreatives() as $creative)
-                @include('partials.ad-creative', ['creative' => $creative])
-            @endforeach
-        </div>
-    </div>
-</div>
+    @foreach ($slot->liveCreatives() as $creative)
+        @include('partials.ad-creative', ['creative' => $creative])
+    @endforeach
+</hw:carousel>
 ```
 
 ```blade
@@ -461,9 +453,9 @@ on by default) take care of the re-measure.
     data-creative-id="{{ $creative->id }}"
     target="_blank"
     rel="sponsored"
-    class="min-w-0 flex-[0_0_100%] block"
+    class="block"
 >
-    <img src="{{ $creative->image_url }}" alt="{{ $creative->headline }}">
+    <img src="{{ $creative->image_url }}" alt="{{ $creative->headline }}" />
 </a>
 ```
 
@@ -475,80 +467,78 @@ export default class extends Controller {
     static values = { channel: String, impressionEndpoint: String };
 
     connect() {
-        this.sub = window.Echo.channel(this.channelValue)
-            .listen('CreativeLaunched', ({ html }) => {
-                this.#container().insertAdjacentHTML('beforeend', html);
+        this.initialImpressionRan = false;
+        this.readyFrame = requestAnimationFrame(() => this.#recordInitialImpressionWhenReady());
+        this.subscription = window.Echo.channel(this.channelValue)
+            .listen("CreativeLaunched", ({ html }) => {
+                this.#container()?.insertAdjacentHTML("beforeend", html);
             })
-            .listen('CreativePulled', ({ creativeId }) => {
-                this.#container()
-                    .querySelector(`[data-creative-id="${creativeId}"]`)
-                    ?.remove();
+            .listen("CreativePulled", ({ creativeId }) => {
+                this.#container()?.querySelector(`[data-creative-id="${creativeId}"]`)?.remove();
             });
     }
 
     disconnect() {
+        cancelAnimationFrame(this.readyFrame);
         window.Echo.leave(this.channelValue);
     }
 
-    beacon(event) {
-        const creativeId = this.#container().children[event.detail.index]?.dataset.creativeId;
-        if (creativeId) {
-            navigator.sendBeacon(
-                this.impressionEndpointValue,
-                JSON.stringify({ creative_id: creativeId }),
-            );
-        }
+    recordImpression() {
+        const embla = this.#embla();
+        if (!embla) return;
+
+        const creative = this.#container()?.children[embla.selectedScrollSnap()];
+        const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+        if (!creative?.dataset.creativeId || !csrf) return;
+
+        void fetch(this.impressionEndpointValue, {
+            method: "POST",
+            keepalive: true,
+            credentials: "same-origin",
+            headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+                "X-CSRF-TOKEN": csrf,
+            },
+            body: JSON.stringify({ creative_id: creative.dataset.creativeId }),
+        }).catch(() => {});
     }
 
     #container() {
-        return this.element.querySelector('[data-carousel-target="container"]');
+        return this.element.querySelector("[data-carousel-container]");
+    }
+
+    #recordInitialImpressionWhenReady() {
+        if (this.initialImpressionRan) return;
+
+        if (!this.#embla()) {
+            this.readyFrame = requestAnimationFrame(() => this.#recordInitialImpressionWhenReady());
+            return;
+        }
+
+        this.initialImpressionRan = true;
+        this.readyFrame = null;
+        this.recordImpression();
+    }
+
+    #embla() {
+        return this.application.getControllerForElementAndIdentifier(this.element, "carousel")?.embla;
     }
 }
 ```
 
-Server side — two broadcastable events that ad ops fires from a dashboard, a cron, or as a side-effect of
-the impression counter hitting the budget:
-
-```php
-final class CreativeLaunched implements ShouldBroadcast
-{
-    public function __construct(public AdSlot $slot, public AdCreative $creative) {}
-
-    public function broadcastOn(): Channel
-    {
-        return new Channel("ads.{$this->slot->key}");
-    }
-
-    public function broadcastWith(): array
-    {
-        return [
-            'html' => view('partials.ad-creative', ['creative' => $this->creative])->render(),
-        ];
-    }
-}
-
-final class CreativePulled implements ShouldBroadcast
-{
-    public function __construct(public AdSlot $slot, public int $creativeId) {}
-
-    public function broadcastOn(): Channel
-    {
-        return new Channel("ads.{$this->slot->key}");
-    }
-
-    public function broadcastWith(): array
-    {
-        return ['creativeId' => $this->creativeId];
-    }
-}
-```
-
-And the impression endpoint that also enforces the budget:
+The impression endpoint remains the budget authority:
 
 ```php
 public function impression(Request $request, AdSlot $slot)
 {
-    $creative = AdCreative::findOrFail($request->integer('creative_id'));
+    $validated = $request->validate([
+        'creative_id' => ['required', 'integer'],
+    ]);
+
+    $this->authorize('view', $slot);
+
+    $creative = $slot->creatives()->findOrFail($validated['creative_id']);
     $creative->logImpression($request);
 
     if ($creative->campaign->budgetExhausted()) {
@@ -559,73 +549,42 @@ public function impression(Request $request, AdSlot $slot)
 }
 ```
 
-Why this composition wins:
+The endpoint validates the ID, authorizes access to the slot, and scopes the creative lookup through that slot before
+recording anything. `CreativeLaunched` should broadcast rendered `partials.ad-creative` HTML; `CreativePulled` only
+needs the creative ID. For tenant-scoped inventory, use a private channel. Keep the impression payload small because
+browser keepalive requests have a limited body budget.
 
-- **Live drops without reload** — `broadcast(new CreativeLaunched($slot, $creative))` is one line of
-  server code; every open page picks the new creative up within the broadcast latency (tens of ms on
-  Reverb / a Pusher channel).
-- **Budget is server-truth** — clients don't poll, don't compute, don't decide. The campaign caps when
-  the impression count says so on the server, and the broadcast yanks it from every viewer at once.
-- **Compliance is one event** — a "remove now" button in a moderation dashboard runs
-  `broadcast(new CreativePulled($slot, $creativeId))` and that's it.
-- **Impressions on `carousel:settle`** — only count slides the user actually saw at rest, not a frame
-  during a drag-through. Same anti-noise pattern as the
-  [analytics recipe](./carousel-patterns.md#tracking-with-gtm-analytics).
-- **Embla handles the rest** — `watchSlides` re-measures when nodes are inserted/removed; the rotation
-  keeps going without an imperative `reInit`.
+## Time-travel history
 
-Trade-offs to know:
-
-- **HTML on the wire** — sending rendered creative HTML over the channel is convenient (the controller
-  just appends), but means the broadcast worker has to render Blade. For heavier creatives
-  (rich-media, video poster + analytics tags), broadcast just an `{ url }` and have the controller
-  `fetch(url)` to hydrate it.
-- **Tenant scoping** — public `Channel(...)` is fine for global house ads. For tenant-scoped slots
-  swap to `PrivateChannel("ads.{$tenant}.{$slot->key}")` and wire `routes/channels.php`.
-- **Removing the current snap** — if the user is dwelling on a slide that gets pulled mid-view, Embla
-  snaps to the nearest neighbor automatically. If you'd rather defer the removal until they scroll
-  past, queue the pulled IDs and apply them inside the `carousel:select` action instead of right away.
-- **Sponsored attribute** — `rel="sponsored"` on the link is what tells search engines the click is
-  paid; couple with `target="_blank"` so the host page navigation isn't lost to a click-out.
-
-## Time-travel state — a "git log" history carousel
-
-Every state-mutating action in the app (saving a draft, marking a task done, applying a filter, dragging a
-kanban card) writes a snapshot of the affected DOM region to the server and broadcasts it. A small floating
-carousel in the corner of the screen shows those snapshots as visual thumbnails — newest pinned to the right,
-older ones scrolling off to the left. Click any past snapshot to **restore the page to that exact state**,
-optimistically morphed in, server-confirmed via Turbo Stream.
-
-Because the snapshots live on the server and ride a broadcast channel, **anyone watching the same channel
-sees the same history in real time** — a teammate's save appears in your history feed, and you can revert
-their change. It's git log + git reset, in the corner of every page, with zero new infrastructure beyond
-what this stack already provides.
+A compact carousel can act as a visual history scrubber. New snapshots arrive over Broadcasting, and restoring one
+performs an immediate optimistic replacement followed by a server-authoritative Turbo morph.
 
 ```blade
-<div
-    {{
-        stimulus()
-            ->controller('carousel', [
-                'options' => ['loop' => false, 'align' => 'end', 'containScroll' => 'trimSnaps', 'dragFree' => true],
-            ])
-            ->controller('time-travel', ['channel' => "history.{$document->channel_key}"])
-            ->action('time-travel', 'tail', 'carousel:slides-changed')
-    }}
-    class="fixed bottom-4 right-4 w-96 bg-white shadow-xl rounded-lg p-2 z-50"
->
-    <p class="text-xs text-gray-500 mb-1 flex items-center gap-2">
-        <span>{{ __('Recent changes') }}</span>
-        <span data-time-travel-target="counter" class="text-gray-400">({{ $snapshots->count() }})</span>
-    </p>
+<aside class="bg-background fixed right-4 bottom-4 w-96 rounded-lg p-2 shadow-xl">
+    <p class="text-muted-foreground mb-1 text-xs">{{ __('Recent changes') }}</p>
 
-    <div data-carousel-viewport>
-        <div data-carousel-container>
-            @foreach ($snapshots as $snapshot)
-                @include('partials.history-snapshot', ['snapshot' => $snapshot])
-            @endforeach
-        </div>
-    </div>
-</div>
+    <hw:carousel
+        slide-size="6.5rem"
+        slide-spacing="0.5rem"
+        :slides-to-scroll="1"
+        align="end"
+        drag-free
+        counter
+        :navigation="false"
+        :dots="false"
+        :stimulus="
+            stimulus()
+                ->controller('time-travel', [
+                    'channel' => sprintf('history.%s', $document->channel_key),
+                ])
+                ->action('time-travel', 'tail', 'carousel:slides-changed')
+        "
+    >
+        @foreach ($snapshots as $snapshot)
+            @include('partials.history-snapshot', ['snapshot' => $snapshot])
+        @endforeach
+    </hw:carousel>
+</aside>
 ```
 
 ```blade
@@ -636,28 +595,26 @@ what this stack already provides.
     action="{{ route('snapshots.restore', $snapshot) }}"
     data-controller="optimistic--form"
     data-turbo-frame="_top"
-    class="min-w-0 flex-[0_0_auto] mr-2"
 >
     @csrf
 
-    {{-- Optimistic morph: replace the live editor with this snapshot's HTML
-         before the round-trip even leaves. --}}
+    {{-- Replace immediately; the server response below performs the confirming morph. --}}
     <hw:optimistic target="editor" action="replace">
         {!! $snapshot->html !!}
     </hw:optimistic>
 
-    <button type="submit"
-            class="block w-24 h-32 border rounded overflow-hidden hover:ring-2 hover:ring-blue-500 bg-white">
-        <div class="origin-top-left scale-[0.15] w-[660%] h-[660%] pointer-events-none p-2 text-[8px]">
+    <button type="submit" class="bg-background block h-32 w-24 overflow-hidden rounded border">
+        <span class="sr-only">{{ __('Restore snapshot from :when', ['when' => $snapshot->created_at]) }}</span>
+        <span class="pointer-events-none block origin-top-left scale-[0.15] text-[8px]">
             {!! $snapshot->html !!}
-        </div>
+        </span>
     </button>
-
-    <p class="text-[10px] text-center mt-1 text-gray-500">
-        {{ $snapshot->author?->name ?? __('You') }} · {{ $snapshot->created_at->diffForHumans() }}
-    </p>
 </form>
 ```
+
+Both `{!! $snapshot->html !!}` expressions and the broadcast `insertAdjacentHTML()` assume trusted server-rendered
+markup. Escape user fields in the Blade partial and sanitize any intentionally supported rich HTML before storing the
+snapshot; never persist or broadcast arbitrary raw user input.
 
 ```js
 // resources/js/controllers/time_travel_controller.js
@@ -665,14 +622,11 @@ import { Controller } from "@hotwired/stimulus";
 
 export default class extends Controller {
     static values = { channel: String };
-    static targets = ["counter"];
 
     connect() {
-        this.echo = window.Echo.channel(this.channelValue)
-            .listen('SnapshotCaptured', ({ html }) => {
-                this.#container().insertAdjacentHTML('beforeend', html);
-                this.#bumpCounter(+1);
-            });
+        this.subscription = window.Echo.private(this.channelValue).listen("SnapshotCaptured", ({ html }) => {
+            this.#container()?.insertAdjacentHTML("beforeend", html);
+        });
     }
 
     disconnect() {
@@ -680,63 +634,57 @@ export default class extends Controller {
     }
 
     tail() {
-        const embla = this.#carousel()?.embla;
-        if (embla) embla.scrollTo(embla.scrollSnapList().length - 1);
-    }
+        const embla = this.#embla();
+        if (!embla) return;
 
-    #bumpCounter(delta) {
-        if (!this.hasCounterTarget) return;
-        const n = parseInt(this.counterTarget.textContent.replace(/\D/g, ''), 10) + delta;
-        this.counterTarget.textContent = `(${n})`;
+        const last = embla.scrollSnapList().length - 1;
+        if (last < 0) return;
+
+        const previousLast = Math.max(0, last - 1);
+        const nearPreviousEnd = Math.max(0, previousLast - 1);
+        if (embla.selectedScrollSnap() < nearPreviousEnd) return;
+
+        embla.scrollTo(last);
     }
 
     #container() {
-        return this.element.querySelector('[data-carousel-target="container"]');
+        return this.element.querySelector("[data-carousel-container]");
     }
 
-    #carousel() {
-        return this.application.getControllerForElementAndIdentifier(this.element, "carousel");
+    #embla() {
+        return this.application.getControllerForElementAndIdentifier(this.element, "carousel")?.embla;
     }
 }
 ```
 
-Server side — a model observer captures the snapshot, a broadcastable event ships it, the restore endpoint
-turns it back into reality:
+The broadcast event uses a `PrivateChannel`:
 
 ```php
-// app/Observers/DocumentObserver.php
-public function saved(Document $document): void
-{
-    $snapshot = Snapshot::create([
-        'channel_key' => $document->channel_key,
-        'target_id' => 'editor',
-        'author_id' => Auth::id(),
-        'payload' => $document->only(['title', 'body', 'tags']),
-        'html' => view('partials.editor', ['document' => $document])->render(),
-    ]);
+use Illuminate\Broadcasting\PrivateChannel;
 
-    broadcast(new SnapshotCaptured($snapshot))->toOthers();
+public function broadcastOn(): PrivateChannel
+{
+    return new PrivateChannel("history.{$this->snapshot->channel_key}");
 }
 ```
+
+Authorize that channel in `routes/channels.php` with the same document access policy:
 
 ```php
-final class SnapshotCaptured implements ShouldBroadcast
-{
-    public function __construct(public Snapshot $snapshot) {}
+use App\Models\Document;
+use App\Models\User;
+use Illuminate\Support\Facades\Broadcast;
 
-    public function broadcastOn(): Channel
-    {
-        return new Channel("history.{$this->snapshot->channel_key}");
-    }
+Broadcast::channel('history.{channelKey}', function (User $user, string $channelKey): bool {
+    $document = Document::where('channel_key', $channelKey)->first();
 
-    public function broadcastWith(): array
-    {
-        return [
-            'html' => view('partials.history-snapshot', ['snapshot' => $this->snapshot])->render(),
-        ];
-    }
-}
+    return $document !== null && $user->can('view', $document);
+});
 ```
+
+The observer stores the document payload and trusted rendered editor HTML, then broadcasts a rendered
+`partials.history-snapshot` row. The restore endpoint applies that payload and explicitly asks Turbo to morph the
+replacement:
 
 ```php
 public function restore(Snapshot $snapshot)
@@ -747,48 +695,16 @@ public function restore(Snapshot $snapshot)
     $document->update($snapshot->payload);
 
     return turbo_stream()
-        ->replace('editor', view('partials.editor', compact('document')))
-        ->toast('success', __('Restored to :when', [
-            'when' => $snapshot->created_at->diffForHumans(),
-        ]));
-    // The save itself fires DocumentObserver::saved → a new SnapshotCaptured
-    // broadcasts to the channel → history grows with this restore action,
-    // so "undo the undo" is just restoring an older snapshot.
+        ->replace(
+            'editor',
+            view('partials.editor', compact('document')),
+            method: 'morph',
+        )
+        ->toast('success', __('Snapshot restored.'));
 }
 ```
 
-Why this composition is more than the sum of its parts:
-
-- **Carousel as undo navigator** — no one expects a carousel to be the UI for time-travel, but the snap
-  engine + visual thumbnails + horizontal scroll are exactly what a "scrubbable history" wants. `align: 'end'`
-  + `dragFree: true` lets the user flick back through the timeline with a thumb gesture, then snap forward
-  again.
-- **Optimistic restore feels instant** — `<hw:optimistic target="editor" action="replace">` swaps the
-  live editor's HTML in the same tick the user clicks. The server's confirming Turbo Stream `replace` is
-  a no-op visually if the optimistic morph already matched — Turbo's morph reconciles on identical DOM.
-- **Multiplayer audit for free** — the channel name `history.{document}` is per-document, not per-user.
-  A teammate's save appears in your timeline; you can revert their change with one click. Pair with the
-  [presence recipe](#real-time-presence-on-slides) for "who is editing right now" indicators on the same
-  surface.
-- **Restoring an old snapshot creates a new snapshot** — the restore endpoint calls `$document->update(...)`,
-  which fires the observer, which broadcasts a fresh `SnapshotCaptured`. The timeline never loses data, it
-  grows. "Undo the undo" is just restoring an earlier snapshot — no special redo state to track.
-- **Per-document broadcast scope** — each document's history rides its own channel, so the timeline
-  controller only receives the snapshots that matter to the open document. No cross-document noise.
-
-Trade-offs to know:
-
-- **Snapshot storage** — each save writes a row with rendered HTML. For high-frequency mutations (drag-heavy
-  kanban boards, live spreadsheet cells), throttle on the server (one snapshot per N seconds per
-  channel+author) or store payload only and re-render HTML at restore time.
-- **Auto-scroll bumps the user** — `tail()` on every `slides-changed` snaps the carousel to the latest. If
-  a user is scrolled back inspecting old states, the bump is rude. Detect "near the right edge" before
-  calling `scrollTo` (e.g. only auto-scroll if the user was on the last snap before the change).
-- **Authorization on restore** — anyone receiving the channel can see the snapshots, but the restore endpoint
-  is the security boundary. `Gate::authorize('restore', $snapshot)` decides who actually mutates state;
-  read-only viewers see the timeline but their POSTs fail.
-- **Memory + DOM size** — every snapshot is full HTML in the DOM (twice: optimistic template + thumbnail).
-  For long sessions, cap the visible window (oldest snapshots removed from the DOM after N) and let users
-  page deeper via a "Load older" Turbo Frame.
-- **`->toOthers()`** — the broadcast skips the originator since their own snapshot is already in the DOM
-  via the Turbo Stream of the save. Without it, the originator would see a duplicate.
+The optimistic action is a normal Turbo Stream `replace`; the confirming response is the actual morph. Updating the
+document can create and broadcast another snapshot through the same observer, making an undo itself part of history.
+`tail()` follows an appended snapshot only when the selection is on the previous last snap or one snap before it. Cap
+the visible window for long sessions and authorize every restore.

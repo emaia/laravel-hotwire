@@ -16,7 +16,7 @@ Compare it with the [client-side rich media list](file-upload-patterns.md#5-rich
 (recipe #5 in file-upload-patterns):
 
 | Concern                            | Recipe #5 (client state)    | Draft-as-state (this recipe)                   |
-|------------------------------------|-----------------------------|------------------------------------------------|
+| ---------------------------------- | --------------------------- | ---------------------------------------------- |
 | Source of truth                    | DOM until submit            | DB (`pending_*` table) at every interaction    |
 | Lost work on F5 / accidental close | Yes — DOM state goes away   | No — draft persists                            |
 | Resumable across sessions          | No                          | Yes (cross-device too)                         |
@@ -390,7 +390,7 @@ Keeping these as separate forms avoids the "form inside a form" footgun.
     <h1 class="text-2xl font-semibold">New gallery</h1>
 
     <section class="mt-6">
-        <h2 class="text-sm uppercase text-gray-500">Images</h2>
+        <h2 class="text-muted-foreground text-sm uppercase">Images</h2>
 
         <hw:file-upload
             name="files"
@@ -408,7 +408,7 @@ Keeping these as separate forms avoids the "form inside a form" footgun.
             id="gallery-list"
             data-controller="reorder-list"
             data-reorder-list-url-value="{{ route('pending-media.reorder') }}"
-            class="mt-4 bg-white rounded shadow"
+            class="bg-card text-card-foreground mt-4 rounded shadow"
         >
             @foreach ($pending as $item)
                 @include('gallery._card', ['item' => $item])
@@ -421,9 +421,7 @@ Keeping these as separate forms avoids the "form inside a form" footgun.
             <hw:input name="title" required />
         </hw:field>
 
-        <button type="submit" class="mt-4 bg-red-600 text-white px-4 py-2 rounded">
-            Publish gallery
-        </button>
+        <hw:button type="submit" class="mt-4">Publish gallery</hw:button>
     </hw:form>
 </x-app-layout>
 ```
@@ -443,26 +441,30 @@ responses (`view('gallery._card', ...)` in the controller). One file, two caller
 <div
     id="{{ dom_id($item) }}"
     data-item-id="{{ $item->id }}"
-    class="flex items-center gap-4 p-3 border-b last:border-b-0"
+    class="border-border flex items-center gap-4 border-b p-3 last:border-b-0"
 >
-    <button type="button" data-app-drag class="cursor-move text-gray-400" tabindex="-1" aria-label="Reorder">
+    <hw:button
+        type="button"
+        variant="ghost"
+        size="icon-sm"
+        data-app-drag
+        class="text-muted-foreground cursor-move"
+        tabindex="-1"
+        aria-label="Reorder"
+    >
         ≡
-    </button>
+    </hw:button>
 
     <img
         src="{{ $item->thumbnailUrl() ?: $item->fileUrl() }}"
         alt=""
-        class="w-16 h-16 object-cover rounded bg-gray-100 shrink-0"
-    >
+        class="bg-muted size-16 shrink-0 rounded object-cover"
+    />
 
     <div class="w-32 shrink-0">
-        <div class="text-xs text-gray-500 uppercase">{{ $item->typeLabel() }}</div>
-        <div class="text-xs text-gray-500">{{ $item->formattedSize() }}</div>
-        <a
-            href="{{ $item->fileUrl() }}"
-            target="_blank"
-            class="text-xs text-blue-600 underline"
-        >Download</a>
+        <div class="text-muted-foreground text-xs uppercase">{{ $item->typeLabel() }}</div>
+        <div class="text-muted-foreground text-xs">{{ $item->formattedSize() }}</div>
+        <a href="{{ $item->fileUrl() }}" target="_blank" class="text-primary text-xs underline">Download</a>
     </div>
 
     <form
@@ -474,24 +476,28 @@ responses (`view('gallery._card', ...)` in the controller). One file, two caller
     >
         @csrf
         @method('PATCH')
-        <label class="block text-xs text-gray-500" for="name-{{ $item->id }}">Name</label>
+        <label class="text-muted-foreground block text-xs" for="name-{{ $item->id }}">Name</label>
         <input
             type="text"
             id="name-{{ $item->id }}"
             name="name"
             value="{{ $item->name }}"
-            class="block w-full rounded border-gray-300 text-sm"
-        >
+            class="border-input bg-background text-foreground block w-full rounded text-sm"
+        />
     </form>
 
-    <form
-        action="{{ route('pending-media.destroy', $item) }}"
-        method="post"
-        data-turbo-confirm="Remove this image?"
-    >
+    <form action="{{ route('pending-media.destroy', $item) }}" method="post" data-turbo-confirm="Remove this image?">
         @csrf
         @method('DELETE')
-        <button type="submit" class="text-gray-400 hover:text-red-500" aria-label="Remove">×</button>
+        <hw:button
+            type="submit"
+            variant="ghost"
+            size="icon-sm"
+            class="text-muted-foreground hover:text-destructive"
+            aria-label="Remove"
+        >
+            <hw:icon name="x" />
+        </hw:button>
     </form>
 </div>
 ```
@@ -534,7 +540,7 @@ export default class extends Controller {
             headers: {
                 "Content-Type": "application/json",
                 "X-CSRF-TOKEN": token,
-                "Accept": "application/json",
+                Accept: "application/json",
             },
             body: JSON.stringify({ ids }),
         }).catch((e) => console.error("reorder persist failed:", e));
@@ -597,7 +603,7 @@ The skeleton has six moving parts and barely any of them are specific to media u
 Map each one to your resource:
 
 | Piece                  | Gallery                               | Multi-step form                   | Wizard builder                      |
-|------------------------|---------------------------------------|-----------------------------------|-------------------------------------|
+| ---------------------- | ------------------------------------- | --------------------------------- | ----------------------------------- |
 | **Draft table**        | `pending_media_items`                 | `pending_form_responses`          | `pending_wizard_steps`              |
 | **Per-attribute REST** | Upload, rename, remove, reorder       | Save each field on change         | Save each step on next              |
 | **Card partial**       | `_card.blade.php`                     | `_field.blade.php`                | `_step_summary.blade.php`           |
@@ -626,7 +632,7 @@ the final "save" is a state machine transition, not a data dump.
 
 - Users genuinely abandon and return (mobile uploads, long sessions)
 - Multi-user editing is on the roadmap (broadcast streams plug in trivially)
-- Per-action validation is valuable ("name too long" *now*, not at publish)
+- Per-action validation is valuable ("name too long" _now_, not at publish)
 - The "draft" concept is part of the product (saved drafts list, restore on login)
 
 **Don't reach for this when:**

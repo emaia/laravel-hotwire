@@ -6,16 +6,12 @@
 # Laravel Hotwire
 
 Laravel Hotwire is a server-driven UI toolkit for Laravel applications. It combines Turbo Drive, Turbo Frames, Turbo
-Streams, Stimulus controllers and Blade components so you can build interactive interfaces without turning every screen
-into a client-side app.
+Streams, Stimulus controllers and Blade components so you can build fast, reactive interfaces with server-rendered HTML
+and focused client-side behavior.
 
 ## Requirements
 
-- PHP 8.3+
-- Laravel 12+
-- Vite
-- Tailwind CSS v4
-- PHP extensions: DOM, libxml and mbstring
+Laravel Hotwire requires PHP 8.3+, Laravel 12+, Vite, Tailwind CSS v4 and the DOM, libxml and mbstring PHP extensions.
 
 ## Installation
 
@@ -43,208 +39,59 @@ php artisan vendor:publish --tag=hotwire-config
 
 For lean installs, CI flags and loader details, see [Advanced installation](docs/installation.md).
 
-## Basic Usage
+## Documentation
 
-Render components with the configured prefix, `hw` by default:
+|                                                                     |                                                                                   |
+| ------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| [**Basic usage**](#components)                                      | Blade components and auto-loaded Stimulus controllers                             |
+| [**Components**](#components)                                       | Composable Blade primitives for forms, overlays, navigation, feedback and display |
+| [**Controllers**](#controllers)                                     | Standalone Stimulus behavior with direct links to each controller contract        |
+| [**Turbo Streams**](https://github.com/emaia/laravel-hotwire-turbo) | Request detection, DOM helpers and fluent stream responses                        |
+| [**Frame-backed modals**](docs/recipes/server-driven-modals.md)     | Shared modal hosts driven by Turbo Frames and regular Blade responses             |
+| [**Stimulus helpers**](docs/stimulus-helpers.md)                    | Fluent helpers for controllers, actions, targets, values, classes and outlets     |
+| [**Styling and theming**](docs/theming.md)                          | Semantic tokens, preset hooks, dark mode and application overrides                |
+| [**Extending controllers**](docs/extending-controllers.md)          | Subclass package controllers or publish their source for customization            |
+| [**Recipes**](docs/recipes/readme.md)                               | Practical patterns for Turbo, overlays, forms, streams and component composition  |
+| [**Registry**](docs/registry.md)                                    | Catalog metadata, categories, dependencies, docs paths and styling hooks          |
+| [**Advanced installation**](docs/installation.md)                   | Lean installs, critical controller loading, CI flags and loader details           |
+| [**Upgrade guide**](docs/upgrade.md)                                | Version-specific migration notes and compatibility changes                        |
 
-```blade
-<hw:form action="{{ route('posts.store') }}" method="post" auto-submit>
-    <hw:field name="title" label="Title">
-        <hw:input name="title" placeholder="Write a title" />
-    </hw:field>
+Browse the same catalog from the terminal:
 
-    <hw:field name="status" label="Status">
-        <hw:select
-            name="status"
-            :options="['draft' => 'Draft', 'published' => 'Published']"
-        />
-    </hw:field>
-
-    <hw:button type="submit">Save post</hw:button>
-</hw:form>
+```bash
+php artisan hotwire:docs
+php artisan hotwire:docs modal --component
+php artisan hotwire:docs auto-submit
 ```
-
-Components merge their own Stimulus controllers with any `data-controller` attributes you provide, and they expose stable
-`data-slot`, `data-variant`, `data-size` and `data-state` hooks for preset and application CSS.
-
-## Turbo Streams
-
-The package includes [`emaia/laravel-hotwire-turbo`](https://github.com/emaia/laravel-hotwire-turbo), including request
-detection, DOM helpers and a fluent stream builder:
-
-```php
-public function store(Request $request)
-{
-    $message = Message::create($request->validate([
-        'body' => ['required', 'string'],
-    ]));
-
-    return turbo_stream()
-        ->append('messages', view('messages.item', compact('message')))
-        ->update('message-form', view('messages.form'))
-        ->toast('success', 'Message posted');
-}
-```
-
-Useful helpers from the Turbo package include `dom_id()`, `dom_class()`, `request()->wantsTurboStream()`,
-`request()->wasFromTurboFrame()` and `request()->turboFrameId()`.
-
-## Frame-Backed Modals
-
-Use a shared modal host in your layout, then point links at its frame. The server returns normal Blade views and the modal
-opens when the frame receives content.
-
-```blade
-{{-- resources/views/layouts/app.blade.php --}}
-<main>{{ $slot }}</main>
-
-<hw:modal frame="modal">
-    <x-slot:loading_template>
-        <div class="p-6 text-sm text-muted-foreground">Loading...</div>
-    </x-slot:loading_template>
-</hw:modal>
-```
-
-```blade
-<hw:button as="a" href="{{ route('posts.edit', $post) }}" data-turbo-frame="modal">
-    Edit post
-</hw:button>
-```
-
-```php
-public function update(Request $request, Post $post)
-{
-    $post->update($request->validate([
-        'title' => ['required', 'string', 'max:255'],
-    ]));
-
-    return turbo_stream()
-        ->refresh(method: 'morph')
-        ->update('modal')
-        ->toast('success', 'Post updated');
-}
-```
-
-See [Modal](docs/components/modal.md), [Frame-or-page views](docs/recipes/frame-or-page.md) and
-[Server-driven modals](docs/recipes/server-driven-modals.md) for the full pattern.
-
-## Stimulus Helpers
-
-Use the helper API when raw `data-*` attributes get too noisy:
-
-```blade
-<div {{ stimulus()
-    ->controller('chart', ['name' => 'Revenue', 'data' => [12, 18, 31]])
-    ->target('chart', 'canvas')
-    ->action('chart', 'refresh', 'turbo:frame-load')
-}}>
-    <canvas data-chart-target="canvas"></canvas>
-</div>
-```
-
-Available helpers:
-
-```php
-stimulus();
-stimulus_controller($name, $values = [], $classes = [], $outlets = []);
-stimulus_action($controller, $method, $event = null, $params = []);
-stimulus_target($controller, $target);
-```
-
-See [Stimulus attribute helpers](docs/stimulus-helpers.md) for values, classes, outlets, action params and escaping.
 
 ## Components
 
 Laravel Hotwire ships composable Blade components for common server-rendered UI patterns:
 
-| Category | Component | Docs |
-|----------|-----------|------|
-| display | `<hw:accordion>` | [Docs](docs/components/accordion.md) |
-| feedback | `<hw:alert>` | [Docs](docs/components/alert.md) |
-| overlay | `<hw:alert-dialog>` | [Docs](docs/components/alert-dialog.md) |
-| display | `<hw:aspect-ratio>` | [Docs](docs/components/aspect-ratio.md) |
-| display | `<hw:attachment>` | [Docs](docs/components/attachment.md) |
-| display | `<hw:avatar>` | [Docs](docs/components/avatar.md) |
-| utility | `<hw:back-to-top>` | [Docs](docs/components/back-to-top.md) |
-| display | `<hw:badge>` | [Docs](docs/components/badge.md) |
-| navigation | `<hw:breadcrumb>` | [Docs](docs/components/breadcrumb.md) |
-| display | `<hw:button>` | [Docs](docs/components/button.md) |
-| display | `<hw:button-group>` | [Docs](docs/components/button-group.md) |
-| display | `<hw:card>` | [Docs](docs/components/card.md) |
-| display | `<hw:carousel>` | [Docs](docs/components/carousel.md) |
-| display | `<hw:chart>` | [Docs](docs/components/chart.md) |
-| forms | `<hw:checkbox>` | [Docs](docs/components/checkbox.md) |
-| forms | `<hw:checkbox-group>` | [Docs](docs/components/checkbox-group.md) |
-| forms | `<hw:checkbox-group.item>` | [Docs](docs/components/checkbox-group.md) |
-| utility | `<hw:color-scheme.script>` | [Docs](docs/components/color-scheme.md) |
-| utility | `<hw:color-scheme.toggle>` | [Docs](docs/components/color-scheme.md) |
-| forms | `<hw:conditional-field>` | [Docs](docs/components/conditional-field.md) |
-| utility | `<hw:controller-preloads>` | [Docs](docs/components/controller-preloads.md) |
-| overlay | `<hw:drawer>` | [Docs](docs/components/drawer.md) |
-| overlay | `<hw:dropdown>` | [Docs](docs/components/dropdown.md) |
-| display | `<hw:empty-state>` | [Docs](docs/components/empty-state.md) |
-| forms | `<hw:field>` | [Docs](docs/components/field.md) |
-| forms | `<hw:field.error>` | [Docs](docs/components/field.md) |
-| forms | `<hw:field.group>` | [Docs](docs/components/field.md) |
-| forms | `<hw:field.label>` | [Docs](docs/components/field.md) |
-| forms | `<hw:file>` | [Docs](docs/components/file.md) |
-| forms | `<hw:file-upload>` | [Docs](docs/components/file-upload.md) |
-| forms | `<hw:form>` | [Docs](docs/components/form.md) |
-| turbo | `<hw:frame>` | [Docs](docs/components/frame.md) |
-| turbo | `<hw:frame-or-page>` | [Docs](docs/components/frame-or-page.md) |
-| turbo | `<hw:frame-or-page.frame>` | [Docs](docs/components/frame-or-page.md) |
-| turbo | `<hw:frame-or-page.page>` | [Docs](docs/components/frame-or-page.md) |
-| overlay | `<hw:hover-card>` | [Docs](docs/components/hover-card.md) |
-| display | `<hw:icon>` | [Docs](docs/components/icon.md) |
-| forms | `<hw:input>` | [Docs](docs/components/input.md) |
-| forms | `<hw:input-group>` | [Docs](docs/components/input-group.md) |
-| display | `<hw:item>` | [Docs](docs/components/item.md) |
-| display | `<hw:kbd>` | [Docs](docs/components/kbd.md) |
-| display | `<hw:map>` | [Docs](docs/components/map.md) |
-| display | `<hw:marker>` | [Docs](docs/components/marker.md) |
-| turbo | `<hw:meta>` | [Docs](docs/components/meta.md) |
-| turbo | `<hw:meta.cache>` | [Docs](docs/components/meta.md) |
-| turbo | `<hw:meta.color-scheme>` | [Docs](docs/components/meta.md) |
-| turbo | `<hw:meta.csrf>` | [Docs](docs/components/meta.md) |
-| turbo | `<hw:meta.prefetch>` | [Docs](docs/components/meta.md) |
-| turbo | `<hw:meta.refresh>` | [Docs](docs/components/meta.md) |
-| turbo | `<hw:meta.root>` | [Docs](docs/components/meta.md) |
-| turbo | `<hw:meta.view-transition>` | [Docs](docs/components/meta.md) |
-| turbo | `<hw:meta.visit-control>` | [Docs](docs/components/meta.md) |
-| overlay | `<hw:modal>` | [Docs](docs/components/modal.md) |
-| forms | `<hw:multi-select>` | [Docs](docs/components/multi-select.md) |
-| navigation | `<hw:navbar>` | [Docs](docs/components/navbar.md) |
-| navigation | `<hw:navbar.item>` | [Docs](docs/components/navbar.md) |
-| turbo | `<hw:optimistic>` | [Docs](docs/components/optimistic.md) |
-| navigation | `<hw:pagination>` | [Docs](docs/components/pagination.md) |
-| overlay | `<hw:popover>` | [Docs](docs/components/popover.md) |
-| feedback | `<hw:progress>` | [Docs](docs/components/progress.md) |
-| forms | `<hw:radio-group>` | [Docs](docs/components/radio-group.md) |
-| forms | `<hw:radio-group.item>` | [Docs](docs/components/radio-group.md) |
-| display | `<hw:read-more>` | [Docs](docs/components/read-more.md) |
-| display | `<hw:reveal>` | [Docs](docs/components/reveal.md) |
-| display | `<hw:reveal.item>` | [Docs](docs/components/reveal.md) |
-| forms | `<hw:rich-text>` | [Docs](docs/components/rich-text.md) |
-| utility | `<hw:scroll-progress>` | [Docs](docs/components/scroll-progress.md) |
-| forms | `<hw:select>` | [Docs](docs/components/select.md) |
-| display | `<hw:separator>` | [Docs](docs/components/separator.md) |
-| overlay | `<hw:sheet>` | [Docs](docs/components/sheet.md) |
-| navigation | `<hw:side-panel>` | [Docs](docs/components/side-panel.md) |
-| navigation | `<hw:sidebar>` | [Docs](docs/components/sidebar.md) |
-| feedback | `<hw:skeleton>` | [Docs](docs/components/skeleton.md) |
-| forms | `<hw:slider>` | [Docs](docs/components/slider.md) |
-| feedback | `<hw:spinner>` | [Docs](docs/components/spinner.md) |
-| navigation | `<hw:sticky>` | [Docs](docs/components/sticky.md) |
-| forms | `<hw:switch>` | [Docs](docs/components/switch.md) |
-| display | `<hw:table>` | [Docs](docs/components/table.md) |
-| display | `<hw:tabs>` | [Docs](docs/components/tabs.md) |
-| forms | `<hw:textarea>` | [Docs](docs/components/textarea.md) |
-| utility | `<hw:timeago>` | [Docs](docs/components/timeago.md) |
-| feedback | `<hw:toast>` | [Docs](docs/components/toast.md) |
-| feedback | `<hw:toaster>` | [Docs](docs/components/toaster.md) |
-| forms | `<hw:toggle>` | [Docs](docs/components/toggle.md) |
-| forms | `<hw:toggle-group>` | [Docs](docs/components/toggle-group.md) |
-| forms | `<hw:toggle-group.item>` | [Docs](docs/components/toggle-group.md) |
+|                                                               |                                                         |                                                        |                                                           |
+| ------------------------------------------------------------- | ------------------------------------------------------- | ------------------------------------------------------ | --------------------------------------------------------- |
+| [Accordion](docs/components/accordion.md)                     | [Alert](docs/components/alert.md)                       | [Alert Dialog](docs/components/alert-dialog.md)        | [Aspect Ratio](docs/components/aspect-ratio.md)           |
+| [Attachment](docs/components/attachment.md)                   | [Avatar](docs/components/avatar.md)                     | [Back to Top](docs/components/back-to-top.md)          | [Badge](docs/components/badge.md)                         |
+| [Breadcrumb](docs/components/breadcrumb.md)                   | [Button](docs/components/button.md)                     | [Button Group](docs/components/button-group.md)        | [Card](docs/components/card.md)                           |
+| [Carousel](docs/components/carousel.md)                       | [Chart](docs/components/chart.md)                       | [Checkbox](docs/components/checkbox.md)                | [Checkbox Group](docs/components/checkbox-group.md)       |
+| [Checkbox Group Item](docs/components/checkbox-group.md)      | [Color Scheme Script](docs/components/color-scheme.md)  | [Color Scheme Toggle](docs/components/color-scheme.md) | [Conditional Field](docs/components/conditional-field.md) |
+| [Controller Preloads](docs/components/controller-preloads.md) | [Drawer](docs/components/drawer.md)                     | [Dropdown](docs/components/dropdown.md)                | [Empty State](docs/components/empty-state.md)             |
+| [Field](docs/components/field.md)                             | [Field Error](docs/components/field.md)                 | [Field Group](docs/components/field.md)                | [Field Label](docs/components/field.md)                   |
+| [File](docs/components/file.md)                               | [File Upload](docs/components/file-upload.md)           | [Form](docs/components/form.md)                        | [Frame](docs/components/frame.md)                         |
+| [Frame or Page](docs/components/frame-or-page.md)             | [Frame or Page Frame](docs/components/frame-or-page.md) | [Frame or Page Page](docs/components/frame-or-page.md) | [Hover Card](docs/components/hover-card.md)               |
+| [Icon](docs/components/icon.md)                               | [Input](docs/components/input.md)                       | [Input Group](docs/components/input-group.md)          | [Item](docs/components/item.md)                           |
+| [Kbd](docs/components/kbd.md)                                 | [Map](docs/components/map.md)                           | [Marker](docs/components/marker.md)                    | [Meta](docs/components/meta.md)                           |
+| [Meta Cache](docs/components/meta.md)                         | [Meta Color Scheme](docs/components/meta.md)            | [Meta CSRF](docs/components/meta.md)                   | [Meta Prefetch](docs/components/meta.md)                  |
+| [Meta Refresh](docs/components/meta.md)                       | [Meta Root](docs/components/meta.md)                    | [Meta View Transition](docs/components/meta.md)        | [Meta Visit Control](docs/components/meta.md)             |
+| [Modal](docs/components/modal.md)                             | [Multi Select](docs/components/multi-select.md)         | [Navbar](docs/components/navbar.md)                    | [Navbar Item](docs/components/navbar.md)                  |
+| [Optimistic](docs/components/optimistic.md)                   | [Pagination](docs/components/pagination.md)             | [Popover](docs/components/popover.md)                  | [Progress](docs/components/progress.md)                   |
+| [Radio Group](docs/components/radio-group.md)                 | [Radio Group Item](docs/components/radio-group.md)      | [Read More](docs/components/read-more.md)              | [Reveal](docs/components/reveal.md)                       |
+| [Reveal Item](docs/components/reveal.md)                      | [Rich Text](docs/components/rich-text.md)               | [Scroll Progress](docs/components/scroll-progress.md)  | [Select](docs/components/select.md)                       |
+| [Separator](docs/components/separator.md)                     | [Sheet](docs/components/sheet.md)                       | [Side Panel](docs/components/side-panel.md)            | [Sidebar](docs/components/sidebar.md)                     |
+| [Skeleton](docs/components/skeleton.md)                       | [Slider](docs/components/slider.md)                     | [Spinner](docs/components/spinner.md)                  | [Sticky](docs/components/sticky.md)                       |
+| [Switch](docs/components/switch.md)                           | [Table](docs/components/table.md)                       | [Tabs](docs/components/tabs.md)                        | [Textarea](docs/components/textarea.md)                   |
+| [Timeago](docs/components/timeago.md)                         | [Toast](docs/components/toast.md)                       | [Toaster](docs/components/toaster.md)                  | [Toggle](docs/components/toggle.md)                       |
+| [Toggle Group](docs/components/toggle-group.md)               | [Toggle Group Item](docs/components/toggle-group.md)    |                                                        |                                                           |
 
 List everything available in your installed version:
 
@@ -260,79 +107,28 @@ Package controllers auto-load from the vendor directory after `hotwire:install`.
 
 Standalone controllers include:
 
-| Category | Controller | Docs |
-|----------|------------|------|
-| display | `accordion` | [Docs](docs/controllers/accordion.md) |
-| overlay | `alert-dialog` | [Docs](docs/controllers/alert-dialog.md) |
-| display | `animated-number` | [Docs](docs/controllers/animated-number.md) |
-| forms | `auto-resize` | [Docs](docs/controllers/auto-resize.md) |
-| forms | `auto-save` | [Docs](docs/controllers/auto-save.md) |
-| forms | `auto-select` | [Docs](docs/controllers/auto-select.md) |
-| forms | `auto-submit` | [Docs](docs/controllers/auto-submit.md) |
-| forms | `autofocus` | [Docs](docs/controllers/autofocus.md) |
-| utility | `back-to-top` | [Docs](docs/controllers/back-to-top.md) |
-| display | `carousel` | [Docs](docs/controllers/carousel.md) |
-| forms | `char-counter` | [Docs](docs/controllers/char-counter.md) |
-| display | `chart` | [Docs](docs/controllers/chart.md) |
-| forms | `checkbox` | [Docs](docs/controllers/checkbox.md) |
-| forms | `checkbox-select-all` | [Docs](docs/controllers/checkbox-select-all.md) |
-| forms | `clean-query-params` | [Docs](docs/controllers/clean-query-params.md) |
-| forms | `clear-input` | [Docs](docs/controllers/clear-input.md) |
-| utility | `color-scheme` | [Docs](docs/controllers/color-scheme.md) |
-| forms | `conditional-fields` | [Docs](docs/controllers/conditional-fields.md) |
-| utility | `copy-to-clipboard` | [Docs](docs/controllers/copy-to-clipboard.md) |
-| dev | `dev--log` | [Docs](docs/controllers/dev/log.md) |
-| display | `disclosure` | [Docs](docs/controllers/disclosure.md) |
-| overlay | `drawer` | [Docs](docs/controllers/drawer.md) |
-| overlay | `dropdown` | [Docs](docs/controllers/dropdown.md) |
-| forms | `error-scroll` | [Docs](docs/controllers/error-scroll.md) |
-| forms | `file-preserve` | [Docs](docs/controllers/file-preserve.md) |
-| forms | `file-upload` | [Docs](docs/controllers/file-upload.md) |
-| utility | `gtm` | [Docs](docs/controllers/gtm.md) |
-| utility | `hotkey` | [Docs](docs/controllers/hotkey.md) |
-| overlay | `hover-card` | [Docs](docs/controllers/hover-card.md) |
-| forms | `input-mask` | [Docs](docs/controllers/input-mask.md) |
-| display | `lazy-image` | [Docs](docs/controllers/lazy-image.md) |
-| display | `map` | [Docs](docs/controllers/map.md) |
-| overlay | `modal` | [Docs](docs/controllers/modal.md) |
-| overlay | `modal-auto-close` | [Docs](docs/controllers/modal-auto-close.md) |
-| forms | `money-input` | [Docs](docs/controllers/money-input.md) |
-| forms | `multi-select` | [Docs](docs/controllers/multi-select.md) |
-| display | `oembed` | [Docs](docs/controllers/oembed.md) |
-| turbo | `optimistic--dispatch` | [Docs](docs/controllers/optimistic/dispatch.md) |
-| turbo | `optimistic--form` | [Docs](docs/controllers/optimistic/form.md) |
-| turbo | `optimistic--link` | [Docs](docs/controllers/optimistic/link.md) |
-| navigation | `pagination` | [Docs](docs/controllers/pagination.md) |
-| forms | `password-visibility` | [Docs](docs/controllers/password-visibility.md) |
-| overlay | `popover` | [Docs](docs/controllers/popover.md) |
-| display | `read-more` | [Docs](docs/controllers/read-more.md) |
-| forms | `remote-form` | [Docs](docs/controllers/remote-form.md) |
-| forms | `reset-files` | [Docs](docs/controllers/reset-files.md) |
-| display | `reveal` | [Docs](docs/controllers/reveal.md) |
-| forms | `rich-text` | [Docs](docs/controllers/rich-text.md) |
-| forms | `rich-text-toolbar` | [Docs](docs/controllers/rich-text-toolbar.md) |
-| utility | `scroll-progress` | [Docs](docs/controllers/scroll-progress.md) |
-| overlay | `sheet` | [Docs](docs/controllers/sheet.md) |
-| navigation | `side-panel` | [Docs](docs/controllers/side-panel.md) |
-| navigation | `sidebar` | [Docs](docs/controllers/sidebar.md) |
-| forms | `slider` | [Docs](docs/controllers/slider.md) |
-| forms | `slug` | [Docs](docs/controllers/slug.md) |
-| display | `tabs` | [Docs](docs/controllers/tabs.md) |
-| utility | `timeago` | [Docs](docs/controllers/timeago.md) |
-| feedback | `toast` | [Docs](docs/controllers/toast.md) |
-| feedback | `toaster` | [Docs](docs/controllers/toaster.md) |
-| forms | `toggle` | [Docs](docs/controllers/toggle.md) |
-| forms | `toggle-group` | [Docs](docs/controllers/toggle-group.md) |
-| overlay | `tooltip` | [Docs](docs/controllers/tooltip.md) |
-| turbo | `turbo--frame-src` | [Docs](docs/controllers/turbo/frame-src.md) |
-| turbo | `turbo--morph-guard` | [Docs](docs/controllers/turbo/morph-guard.md) |
-| turbo | `turbo--polling` | [Docs](docs/controllers/turbo/polling.md) |
-| turbo | `turbo--preserve-scroll` | [Docs](docs/controllers/turbo/preserve-scroll.md) |
-| turbo | `turbo--progress` | [Docs](docs/controllers/turbo/progress.md) |
-| turbo | `turbo--view-transition` | [Docs](docs/controllers/turbo/view-transition.md) |
-| forms | `unsaved-changes` | [Docs](docs/controllers/unsaved-changes.md) |
+|                                                            |                                                                    |                                                              |                                                                    |
+| ---------------------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------------ |
+| [Accordion](docs/controllers/accordion.md)                 | [Alert Dialog](docs/controllers/alert-dialog.md)                   | [Animated Number](docs/controllers/animated-number.md)       | [Auto Resize](docs/controllers/auto-resize.md)                     |
+| [Auto Save](docs/controllers/auto-save.md)                 | [Auto Select](docs/controllers/auto-select.md)                     | [Auto Submit](docs/controllers/auto-submit.md)               | [Autofocus](docs/controllers/autofocus.md)                         |
+| [Back to Top](docs/controllers/back-to-top.md)             | [Carousel](docs/controllers/carousel.md)                           | [Char Counter](docs/controllers/char-counter.md)             | [Chart](docs/controllers/chart.md)                                 |
+| [Checkbox](docs/controllers/checkbox.md)                   | [Checkbox Select All](docs/controllers/checkbox-select-all.md)     | [Clean Query Params](docs/controllers/clean-query-params.md) | [Clear Input](docs/controllers/clear-input.md)                     |
+| [Color Scheme](docs/controllers/color-scheme.md)           | [Conditional Fields](docs/controllers/conditional-fields.md)       | [Copy to Clipboard](docs/controllers/copy-to-clipboard.md)   | [Dev Log](docs/controllers/dev/log.md)                             |
+| [Disclosure](docs/controllers/disclosure.md)               | [Drawer](docs/controllers/drawer.md)                               | [Dropdown](docs/controllers/dropdown.md)                     | [Error Scroll](docs/controllers/error-scroll.md)                   |
+| [File Preserve](docs/controllers/file-preserve.md)         | [File Upload](docs/controllers/file-upload.md)                     | [GTM](docs/controllers/gtm.md)                               | [Hotkey](docs/controllers/hotkey.md)                               |
+| [Hover Card](docs/controllers/hover-card.md)               | [Input Mask](docs/controllers/input-mask.md)                       | [Lazy Image](docs/controllers/lazy-image.md)                 | [Map](docs/controllers/map.md)                                     |
+| [Modal](docs/controllers/modal.md)                         | [Modal Auto Close](docs/controllers/modal-auto-close.md)           | [Money Input](docs/controllers/money-input.md)               | [Multi Select](docs/controllers/multi-select.md)                   |
+| [OEmbed](docs/controllers/oembed.md)                       | [Optimistic Dispatch](docs/controllers/optimistic/dispatch.md)     | [Optimistic Form](docs/controllers/optimistic/form.md)       | [Optimistic Link](docs/controllers/optimistic/link.md)             |
+| [Pagination](docs/controllers/pagination.md)               | [Password Visibility](docs/controllers/password-visibility.md)     | [Popover](docs/controllers/popover.md)                       | [Read More](docs/controllers/read-more.md)                         |
+| [Remote Form](docs/controllers/remote-form.md)             | [Reset Files](docs/controllers/reset-files.md)                     | [Reveal](docs/controllers/reveal.md)                         | [Rich Text](docs/controllers/rich-text.md)                         |
+| [Rich Text Toolbar](docs/controllers/rich-text-toolbar.md) | [Scroll Progress](docs/controllers/scroll-progress.md)             | [Sheet](docs/controllers/sheet.md)                           | [Side Panel](docs/controllers/side-panel.md)                       |
+| [Sidebar](docs/controllers/sidebar.md)                     | [Slider](docs/controllers/slider.md)                               | [Slug](docs/controllers/slug.md)                             | [Tabs](docs/controllers/tabs.md)                                   |
+| [Timeago](docs/controllers/timeago.md)                     | [Toast](docs/controllers/toast.md)                                 | [Toaster](docs/controllers/toaster.md)                       | [Toggle](docs/controllers/toggle.md)                               |
+| [Toggle Group](docs/controllers/toggle-group.md)           | [Tooltip](docs/controllers/tooltip.md)                             | [Turbo Frame Src](docs/controllers/turbo/frame-src.md)       | [Turbo Morph Guard](docs/controllers/turbo/morph-guard.md)         |
+| [Turbo Polling](docs/controllers/turbo/polling.md)         | [Turbo Preserve Scroll](docs/controllers/turbo/preserve-scroll.md) | [Turbo Progress](docs/controllers/turbo/progress.md)         | [Turbo View Transition](docs/controllers/turbo/view-transition.md) |
+| [Unsaved Changes](docs/controllers/unsaved-changes.md)     |                                                                    |                                                              |                                                                    |
 
-Publish a package controller only when you want to fork and customize it:
+Publish a package controller only when you want to customize its source:
 
 ```bash
 php artisan hotwire:controllers carousel
@@ -340,35 +136,11 @@ php artisan hotwire:controllers --list
 php artisan hotwire:controllers --outdated --force
 ```
 
-Prefer extension through the `@hotwire` alias when you want a new controller based on a package controller:
-
-```js
-// resources/js/controllers/gallery_controller.js
-import CarouselController from "@hotwire/carousel_controller.js";
-
-export default class extends CarouselController {
-    static targets = [...CarouselController.targets, "caption"];
-
-    onSelect(index) {
-        super.onSelect(index);
-        this.captionTarget.textContent = `Slide ${index + 1}`;
-    }
-}
-```
-
-See [Extending controllers](docs/extending-controllers.md) for the extension and fork paths.
-
 ## Styling
 
-Components emit semantic attributes. Presets turn those attributes into Tailwind styles:
+`hotwire:install` configures the default preset and Tailwind source scan.
 
-```css
-@import "tailwindcss";
-@import '../../vendor/emaia/laravel-hotwire/resources/css/presets/nova.css';
-@source '../../vendor/emaia/laravel-hotwire/resources/css/**/*.css';
-```
-
-Override styles after the preset import:
+Override semantic hooks after the preset:
 
 ```css
 [data-slot="button"][data-variant="default"] {
@@ -376,7 +148,7 @@ Override styles after the preset import:
 }
 ```
 
-Generate an application-owned preset when you want to own the whole visual language:
+Or generate an application-owned preset:
 
 ```bash
 php artisan hotwire:make-preset brand
@@ -385,9 +157,9 @@ php artisan hotwire:make-preset brand --from=nova
 
 See [Presets](docs/presets.md) and [Theming](docs/theming.md).
 
-## Verification
+## Check Your Setup
 
-Check the loader stub, npm dependencies and published controller customizations:
+Check the controller loader, npm dependencies and published customizations:
 
 ```bash
 php artisan hotwire:check
@@ -397,24 +169,6 @@ php artisan hotwire:check --fix --skip-install
 
 `hotwire:check --fix` regenerates the controller loader and adds missing npm dependencies. By default it also runs the
 detected package manager install command; use `--skip-install` when CI handles that separately.
-
-## Documentation
-
-Browse docs from the terminal:
-
-```bash
-php artisan hotwire:docs
-php artisan hotwire:docs modal --component
-php artisan hotwire:docs auto-submit
-```
-
-Useful starting points:
-
-- [Advanced installation](docs/installation.md)
-- [Cookbook](docs/recipes/readme.md)
-- [Registry](docs/registry.md)
-- [Upgrade guide](docs/upgrade.md)
-- [Stimulus helpers](docs/stimulus-helpers.md)
 
 ## Development
 
