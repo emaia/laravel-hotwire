@@ -3,12 +3,38 @@
 import { createPresence } from "./_presence.js";
 
 const TYPES = ["default", "success", "error", "warning", "info"];
+const MAX_RENDER_WAIT = 2000;
 
 // Emissions routinely arrive before a viewport exists: the trigger sits earlier in the document
 // than the layout's, and lazy-loaded controllers connect in whatever order their chunks land.
 let pending = [];
 let active = null;
 let sequence = 0;
+
+// A toast born inside Turbo's swap would play its entry behind the transition snapshot and land
+// fully formed. Two signals cover the two arrival orders because neither covers both: the
+// pseudo-element animations only become observable once the transition is ready, which a preloaded
+// chunk beats and a lazily imported one does not. Document scope is deliberate — the listener has
+// to predate the viewport it protects.
+let renderInFlight = false;
+let renderGuard = null;
+
+function endRender() {
+    clearTimeout(renderGuard);
+    renderGuard = null;
+    renderInFlight = false;
+}
+
+if (typeof document !== "undefined") {
+    document.addEventListener("turbo:before-render", () => {
+        clearTimeout(renderGuard);
+        renderInFlight = true;
+        // A visit can be aborted or superseded after this event and never reach turbo:load. Bound
+        // the wait, or every later toast pays it for a render that is no longer coming.
+        renderGuard = setTimeout(endRender, MAX_RENDER_WAIT);
+    });
+    document.addEventListener("turbo:load", endRender);
+}
 
 /** Show a toast, buffering it until a viewport exists. Returns its id. */
 export function emitToast(payload) {
@@ -28,6 +54,7 @@ export function resetToaster() {
     pending = [];
     active = null;
     sequence = 0;
+    renderInFlight = false;
 }
 
 export function createToaster(element, options = {}) {
@@ -67,12 +94,47 @@ export function createToaster(element, options = {}) {
         // suppressed read afterwards becomes the transition's base style and the toast snaps in.
         measure(entry);
         observe(entry);
-        reflow();
         entry.presence.sync(false);
-        entry.presence.open();
-        startTimer(entry);
+        enter(entry);
 
         return id;
+    }
+
+    /**
+     * Measurement stays immediate because it is a read. Restacking does not: pushing the cards
+     * already on screen back before the newcomer exists splits one arrival into two movements.
+     */
+    function enter(entry) {
+        const settled = whenPageVisible();
+
+        if (settled === null) {
+            release(entry);
+
+            return;
+        }
+
+        settled.then(() => {
+            if (destroyed || !entry.element.isConnected) return;
+
+            // On a frame boundary: resuming mid-frame skips the recalculation the staged closed
+            // style needs, and the flip to open produces no transition at all.
+            requestAnimationFrame(() => release(entry));
+        });
+    }
+
+    function release(entry) {
+        if (destroyed || !entry.element.isConnected) return;
+
+        reflow();
+        entry.presence.open().then(() => flushPendingMeasure(entry));
+        startTimer(entry);
+    }
+
+    function flushPendingMeasure(entry) {
+        if (!entry.pendingMeasure || destroyed || !entry.element.isConnected) return;
+
+        entry.pendingMeasure = false;
+        if (measure(entry)) reflow();
     }
 
     function build(id, payload) {
@@ -116,6 +178,7 @@ export function createToaster(element, options = {}) {
             duration: Number.isFinite(payload.duration) ? payload.duration : config.duration,
             height: 0,
             bodyHeight: 0,
+            pendingMeasure: false,
             observer: null,
             remaining: null,
             startedAt: null,
@@ -157,6 +220,16 @@ export function createToaster(element, options = {}) {
             if (height === entry.bodyHeight) return;
 
             entry.bodyHeight = height;
+
+            // A late webfont changes the text metrics while the card is still entering. Measuring
+            // lifts the height clamp with transitions off, which cancels the entry in flight and
+            // drops the card into place without motion, so correct the height once it has landed.
+            if (entry.element.dataset.presence) {
+                entry.pendingMeasure = true;
+
+                return;
+            }
+
             if (measure(entry)) reflow();
         });
         entry.observer.observe(body);
@@ -358,7 +431,9 @@ export function createToaster(element, options = {}) {
     }
 
     const instance = {
-        get destroyed() { return destroyed; },
+        get destroyed() {
+            return destroyed;
+        },
         show,
         dismiss,
         destroy,
@@ -382,6 +457,37 @@ function nextId() {
     sequence += 1;
 
     return `toast-${sequence}`;
+}
+
+/** Resolve once the page is painted from the live DOM again, or null when it already is. */
+function whenPageVisible() {
+    if (renderInFlight) {
+        return new Promise((resolve) => {
+            const settle = () => {
+                clearTimeout(guard);
+                document.removeEventListener("turbo:load", settle);
+                resolve();
+            };
+            // A visit that never lands must not strand the card off screen for good.
+            const guard = setTimeout(settle, MAX_RENDER_WAIT);
+
+            document.addEventListener("turbo:load", settle);
+        });
+    }
+
+    const animations = viewTransitionAnimations();
+
+    return animations.length === 0 ? null : Promise.allSettled(animations.map((animation) => animation.finished));
+}
+
+function viewTransitionAnimations() {
+    if (typeof document.getAnimations !== "function") return [];
+
+    return document.getAnimations().filter((animation) => {
+        const pseudo = animation.effect?.pseudoElement;
+
+        return typeof pseudo === "string" && pseudo.startsWith("::view-transition");
+    });
 }
 
 function slot(tag, name, attributes = {}) {

@@ -4,7 +4,7 @@
 @if ($asked($refresh) || $asked($scroll))
 <x-hw::meta.refresh :method="$given($refresh) ?? 'morph'" :scroll="$given($scroll) ?? 'preserve'" />
 @endif
-@if ($asked($cache))
+@if ($asked($cache) || ($cache === null && $asked($viewTransition)))
 <x-hw::meta.cache :control="$given($cache) ?? 'no-preview'" />
 @endif
 @if ($asked($visitControl))

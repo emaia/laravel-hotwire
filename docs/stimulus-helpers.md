@@ -171,7 +171,7 @@ configuration stays protected. Use the component's explicit props for those valu
 
 The `stimulus` prop is available on controller-backed components and primitives: `alert-dialog`,
 `button`, `carousel`, `chart`, `checkbox-group`, `conditional-field`, `dropdown`, `file`,
-`file-upload`, `form`, `input`, `map`, `modal`, `read-more`, `rich-text`, `side-panel`,
+`file-upload`, `form`, `input`, `map`, `modal`, `read-more`, `reveal`, `rich-text`, `side-panel`,
 `scroll-progress`, `tabs`, `textarea`, `timeago`, `toast`, and `toaster`.
 
 ## Escaping

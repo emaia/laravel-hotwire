@@ -533,6 +533,26 @@
     [data-slot="read-more-trigger-icon"] { @apply transition-transform duration-200; }
     [data-slot="read-more-trigger-icon"][data-state="expanded"] { @apply rotate-180; }
 
+    [data-slot="reveal"], [data-slot="sidebar-container"][data-controller~="reveal"], [data-slot="sidebar"][data-controller~="reveal"] { --reveal-blur: 6px; --reveal-shift: 0.75rem; }
+    [data-slot="reveal"][data-motion="flat"], [data-slot="sidebar-container"][data-controller~="reveal"][data-motion="flat"], [data-slot="sidebar"][data-controller~="reveal"][data-motion="flat"] { --reveal-animation: hotwire-reveal-flat; }
+    [data-slot="reveal"][data-motion="fade"], [data-slot="sidebar-container"][data-controller~="reveal"][data-motion="fade"], [data-slot="sidebar"][data-controller~="reveal"][data-motion="fade"] { --reveal-animation: hotwire-reveal-fade; }
+    [data-slot="reveal-item"] { min-width: 0; }
+
+    @keyframes hotwire-reveal-rise {
+        0% { opacity: 0; filter: blur(var(--reveal-blur, 6px)); transform: translateY(var(--reveal-shift, 0.75rem)); }
+        100% { opacity: 1; filter: blur(0); transform: translateY(0); }
+    }
+
+    @keyframes hotwire-reveal-flat {
+        0% { opacity: 0; transform: translateY(var(--reveal-shift, 0.75rem)); }
+        100% { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes hotwire-reveal-fade {
+        0% { opacity: 0; }
+        100% { opacity: 1; }
+    }
+
     @media (prefers-reduced-motion: reduce) {
         [data-slot="read-more-trigger-icon"] { transition: none; }
     }
@@ -597,6 +617,13 @@
     [data-slot="side-panel-trigger-icon"] { @apply size-4 transition-transform duration-200; }
 
     /* Sidebar */
+    @media (min-width: 768px) {
+        [data-slot="sidebar"][data-collapsible="icon"] [data-slot="sidebar-group-label"][data-reveal-item],
+        [data-slot="sidebar"][data-collapsible="icon"] [data-reveal-children] > [data-slot="sidebar-group-label"] {
+            --reveal-animation: none;
+        }
+    }
+
     [data-slot="sidebar-wrapper"] { @apply flex min-h-svh w-full bg-background text-sidebar-foreground has-[[data-variant=inset]]:bg-sidebar; }
     [data-slot="sidebar"] { @apply hidden text-sidebar-foreground md:block; }
     [data-slot="sidebar"][data-collapsible="none"] { @apply flex h-full w-(--sidebar-width) flex-col bg-sidebar text-sidebar-foreground; }

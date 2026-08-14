@@ -144,6 +144,40 @@ The tooltip controller uses the package's Floating UI dependency and only appear
 | `variant`     | `sidebar`   | `sidebar`, `floating`, or `inset`.                       |
 | `collapsible` | `offcanvas` | `offcanvas`, `icon`, or `none`.                          |
 | `motion`      | `default`   | `default` follows mobile CSS motion; `none` disables it. |
+| `reveal`      | `false`     | Mounts Reveal directly on the existing sidebar surface with document scope. |
+| `revealMotion` | `rise`     | Reveal motion: `rise`, `flat`, or `fade`.                |
+| `revealStagger` / `revealDuration` / `revealDelay` / `revealMaxSteps` | preset | Optional Reveal timing overrides. |
+
+### Reveal integration
+
+Use `reveal` when the sidebar chrome should cascade once per document without adding a wrapper around its layout
+surface:
+
+```blade
+<hw:sidebar reveal reveal-stagger="35ms" reveal-duration="380ms">
+    <hw:sidebar.brand data-reveal-item style="--reveal-index: 0" ... />
+    <hw:sidebar.separator data-reveal-item style="--reveal-index: 1" />
+    <hw:sidebar.group-label data-reveal-item style="--reveal-index: 2">Projects</hw:sidebar.group-label>
+    ...
+</hw:sidebar>
+```
+
+The component mounts `data-controller="reveal"` and `data-reveal-scope="document"` directly on `sidebar-container`.
+For `collapsible="none"`, it mounts them on the native `<aside>`. There is no extra wrapper, so the provider flex row,
+sidebar column, fixed positioning, and view-transition selectors keep their existing structure. Mark the exact sidebar
+units with `data-reveal-item`; automatic direct-child mode is deliberately not enabled because the sidebar's internal
+wrappers are layout mechanics rather than animation units.
+
+`--reveal-index` is optional after the controller connects: missing indexes are assigned in document order. That lets an
+eagerly loaded Reveal produce the expected cascade with only `data-reveal-item` in most browsers. For a deterministic
+first-paint cascade, keep the indexes server-rendered as shown above. Without them, every nested explicit item initially
+uses index `0`; a lazy controller may connect only after CSS has already started those items together. Configuring
+`reveal` under `hotwire.controllers.eager` narrows that window but is not the same guarantee as rendering the index.
+
+On a desktop sidebar initially collapsed with `collapsible="icon"`, Nova suppresses Reveal on group labels because that
+state already hides the label with `opacity: 0`. The label still consumes its declared cascade index, leaving one timing
+step with no visible animation; reindexing by runtime visibility would add disproportionate complexity. Expanded and
+mobile labels keep their normal Reveal entrance.
 
 ### Menu buttons
 

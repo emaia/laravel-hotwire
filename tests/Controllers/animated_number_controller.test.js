@@ -14,9 +14,15 @@ class FakeIntersectionObserver {
         this.observed = [];
         ioInstances.push(this);
     }
-    observe(el) { this.observed.push(el); }
-    unobserve(el) { this.observed = this.observed.filter((e) => e !== el); }
-    disconnect() { this.observed = []; }
+    observe(el) {
+        this.observed.push(el);
+    }
+    unobserve(el) {
+        this.observed = this.observed.filter((e) => e !== el);
+    }
+    disconnect() {
+        this.observed = [];
+    }
     trigger(entries) {
         this.callback(entries, this);
     }
@@ -29,6 +35,7 @@ globalThis.IntersectionObserver = FakeIntersectionObserver;
 // is indistinguishable from null. We use non-zero timestamps to work around this.
 
 let rafCalls = [];
+let cancelledRaf = [];
 
 function rafMock(fn) {
     rafCalls.push(fn);
@@ -46,7 +53,10 @@ function flushRaf(forceTimestamp) {
 function installRafMock() {
     globalThis.requestAnimationFrame = rafMock;
     window.requestAnimationFrame = rafMock;
+    globalThis.cancelAnimationFrame = (id) => cancelledRaf.push(id);
+    window.cancelAnimationFrame = globalThis.cancelAnimationFrame;
     rafCalls = [];
+    cancelledRaf = [];
 }
 
 let mounted;
@@ -123,6 +133,48 @@ test.serial("animate: custom duration affects timing", async () => {
 
     flushRaf(600);
     expect(mounted.root.innerHTML).toBe("100");
+});
+
+test.serial("animate: restarting cancels the previous frame", async () => {
+    await mountLazy(`<span>50</span>`);
+    installRafMock();
+
+    mounted.controller.animate();
+    mounted.controller.animate();
+
+    expect(cancelledRaf).toEqual([1]);
+});
+
+test.serial("disconnect cancels an active animation frame", async () => {
+    await mountLazy(`<span>50</span>`);
+    installRafMock();
+
+    mounted.controller.animate();
+    mounted.controller.disconnect();
+
+    expect(cancelledRaf).toEqual([1]);
+    expect(mounted.controller.animationFrame).toBeNull();
+});
+
+test.serial("disconnect releases the lazy intersection observer", async () => {
+    await mountLazy(`<span>50</span>`);
+    const observer = ioInstances[0];
+
+    mounted.controller.disconnect();
+
+    expect(observer.observed).toHaveLength(0);
+    expect(mounted.controller.observer).toBeNull();
+});
+
+test.serial("manual animation releases the lazy observer before restarting", async () => {
+    await mountLazy(`<span>50</span>`);
+    const observer = ioInstances[0];
+    installRafMock();
+
+    mounted.controller.animate();
+
+    expect(observer.observed).toHaveLength(0);
+    expect(mounted.controller.observer).toBeNull();
 });
 
 // --- lazy mode ---
@@ -207,7 +259,11 @@ async function mountWrapper(innerHTML, values) {
     if (values.lazyRootMargin != null) {
         attrs.push(`data-animated-number-lazy-root-margin-value="${values.lazyRootMargin}"`);
     }
-    mounted = await mountController("animated-number", AnimatedNumberController, `<span ${attrs.join(" ")}>${innerHTML}</span>`);
+    mounted = await mountController(
+        "animated-number",
+        AnimatedNumberController,
+        `<span ${attrs.join(" ")}>${innerHTML}</span>`,
+    );
 }
 
 async function mount(html) {

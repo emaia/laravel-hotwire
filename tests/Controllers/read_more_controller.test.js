@@ -211,7 +211,7 @@ test.serial("refreshes a replacement target without ResizeObserver", async () =>
     replacement.textContent = "Replacement";
 
     content().replaceWith(replacement);
-    await wait(0);
+    await waitForState("collapsed");
 
     expect(root().dataset.state).toBe("collapsed");
     expect(root().style.getPropertyValue("--read-more-expanded-height")).toBe("480px");
@@ -224,7 +224,7 @@ test.serial("falls back to static when the content target is removed", async () 
     expect(root().dataset.state).toBe("collapsed");
 
     content().remove();
-    await wait(0);
+    await waitForState("static");
 
     expect(root().dataset.state).toBe("static");
     expect(trigger().hidden).toBe(true);
@@ -300,10 +300,12 @@ function setElementHeight(element, height) {
 }
 
 async function waitForState(state) {
-    for (let attempt = 0; attempt < 50; attempt += 1) {
+    for (let attempt = 0; attempt < 200; attempt += 1) {
         if (root().dataset.state === state) return;
         await wait(10);
     }
+
+    throw new Error(`Timed out waiting for read-more state ${state}; received ${root().dataset.state}.`);
 }
 
 function root() {

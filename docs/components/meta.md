@@ -53,6 +53,11 @@ changing the scroll. If one half is `false` while the other asks for the pair, t
 `false` is the value that meta exists to state, so `prefetch="false"` renders `content="false"` and disables link
 prefetching.
 
+`view-transition` on the umbrella also implies `cache="no-preview"`. A stale Turbo preview underneath a page
+cross-fade produces a visible flash, so the two policies are enabled together. An explicit `cache` value, including
+`false`, still wins.
+The granular `<hw:meta.view-transition />` remains independent and renders only its own tag.
+
 ## Granular components
 
 Each one renders on its own, with the same default the umbrella uses:

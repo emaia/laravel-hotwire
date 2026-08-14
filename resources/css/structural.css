@@ -147,6 +147,164 @@
 }
 
 /*
+ * --- Reveal cascade ---
+ *
+ * CSS owns first-paint visibility and timing. JavaScript only arms items that are outside the
+ * viewport and releases them later, so a missing lazy controller can never strand content hidden.
+ */
+
+[data-reveal-item],
+[data-reveal-children] > * {
+    animation-name: var(--reveal-animation, hotwire-reveal-rise);
+    animation-duration: var(--reveal-duration, 520ms);
+    animation-timing-function: var(--reveal-easing, cubic-bezier(0.16, 1, 0.3, 1));
+    animation-delay: calc(
+        var(--reveal-delay, 0ms) +
+        min(var(--reveal-index, 0), var(--reveal-max-steps, 11)) * var(--reveal-stagger, 70ms)
+    );
+    animation-fill-mode: backwards;
+}
+
+[data-reveal-item] [data-slot="progress-indicator"],
+[data-reveal-children] > * [data-slot="progress-indicator"] {
+    animation-name: hotwire-reveal-progress;
+    animation-duration: var(--reveal-progress-duration, 900ms);
+    animation-timing-function: var(--reveal-easing, cubic-bezier(0.16, 1, 0.3, 1));
+    animation-delay: calc(
+        var(--reveal-delay, 0ms) + var(--reveal-progress-delay, 120ms) +
+        min(var(--reveal-index, 0), var(--reveal-max-steps, 11)) * var(--reveal-stagger, 70ms)
+    );
+    animation-fill-mode: backwards;
+}
+
+[data-reveal-children] > *:nth-child(1),
+[data-controller~="reveal"] > [data-reveal-item]:nth-child(1) { --reveal-index: 0; }
+[data-reveal-children] > *:nth-child(2),
+[data-controller~="reveal"] > [data-reveal-item]:nth-child(2) { --reveal-index: 1; }
+[data-reveal-children] > *:nth-child(3),
+[data-controller~="reveal"] > [data-reveal-item]:nth-child(3) { --reveal-index: 2; }
+[data-reveal-children] > *:nth-child(4),
+[data-controller~="reveal"] > [data-reveal-item]:nth-child(4) { --reveal-index: 3; }
+[data-reveal-children] > *:nth-child(5),
+[data-controller~="reveal"] > [data-reveal-item]:nth-child(5) { --reveal-index: 4; }
+[data-reveal-children] > *:nth-child(6),
+[data-controller~="reveal"] > [data-reveal-item]:nth-child(6) { --reveal-index: 5; }
+[data-reveal-children] > *:nth-child(7),
+[data-controller~="reveal"] > [data-reveal-item]:nth-child(7) { --reveal-index: 6; }
+[data-reveal-children] > *:nth-child(8),
+[data-controller~="reveal"] > [data-reveal-item]:nth-child(8) { --reveal-index: 7; }
+[data-reveal-children] > *:nth-child(9),
+[data-controller~="reveal"] > [data-reveal-item]:nth-child(9) { --reveal-index: 8; }
+[data-reveal-children] > *:nth-child(10),
+[data-controller~="reveal"] > [data-reveal-item]:nth-child(10) { --reveal-index: 9; }
+[data-reveal-children] > *:nth-child(11),
+[data-controller~="reveal"] > [data-reveal-item]:nth-child(11) { --reveal-index: 10; }
+[data-reveal-children] > *:nth-child(n+12),
+[data-controller~="reveal"] > [data-reveal-item]:nth-child(n+12) { --reveal-index: 11; }
+
+[data-reveal-armed],
+[data-reveal-armed] [data-slot="progress-indicator"],
+[data-reveal-skip],
+[data-reveal-skip] [data-slot="progress-indicator"] {
+    animation-name: none;
+}
+
+[data-reveal-armed] {
+    opacity: 0;
+}
+
+[data-reveal-state="done"] [data-reveal-item]:not(
+    [data-reveal-state="done"] [data-controller~="reveal"] [data-reveal-item]
+),
+[data-reveal-state="done"][data-reveal-children] > :not([data-controller~="reveal"]) {
+    --reveal-delay: 0ms;
+    --reveal-stagger: 0ms;
+}
+
+html[data-reveal-booted] [data-reveal-scope="document"] [data-reveal-item]:not(
+    [data-reveal-scope="document"] [data-controller~="reveal"] [data-reveal-item]
+),
+html[data-reveal-booted] [data-reveal-scope="document"][data-reveal-children] > :not([data-controller~="reveal"]),
+html[data-reveal-booted] [data-reveal-scope="document"] [data-reveal-item]:not(
+    [data-reveal-scope="document"] [data-controller~="reveal"] [data-reveal-item]
+) [data-slot="progress-indicator"],
+html[data-reveal-booted] [data-reveal-scope="document"][data-reveal-children] > :not(
+    [data-controller~="reveal"]
+) [data-slot="progress-indicator"],
+html[data-turbo-preview] [data-reveal-item],
+html[data-turbo-preview] [data-reveal-children] > *,
+html[data-turbo-preview] [data-slot="progress-indicator"] {
+    animation: none;
+}
+
+/* Only while Turbo is rendering. A view transition name is global, so an unconditional one also
+   makes the chrome its own layer in transitions that are not navigation — a theme toggle, say —
+   where it animates apart from the root and reads as a mis-synced block of colour. */
+html[data-reveal-rendering] [data-reveal-scope="document"] [data-slot="sidebar-container"][data-side="left"],
+html[data-reveal-rendering] [data-reveal-scope="document"][data-slot="sidebar-container"][data-side="left"] {
+    view-transition-name: hotwire-sidebar-left;
+}
+
+html[data-reveal-rendering] [data-reveal-scope="document"] [data-slot="sidebar-container"][data-side="right"],
+html[data-reveal-rendering] [data-reveal-scope="document"][data-slot="sidebar-container"][data-side="right"] {
+    view-transition-name: hotwire-sidebar-right;
+}
+
+html[data-reveal-rendering]:has(:is(
+    [data-slot="modal-overlay"],
+    [data-slot="alert-dialog-overlay"],
+    [data-slot="drawer-overlay"],
+    [data-slot="sheet-overlay"]
+)[data-state="open"]) [data-reveal-scope="document"] [data-slot="sidebar-container"],
+html[data-reveal-rendering]:has(:is(
+    [data-slot="modal-overlay"],
+    [data-slot="alert-dialog-overlay"],
+    [data-slot="drawer-overlay"],
+    [data-slot="sheet-overlay"]
+)[data-state="open"]) [data-reveal-scope="document"][data-slot="sidebar-container"] {
+    view-transition-name: none;
+}
+
+@keyframes hotwire-reveal-progress {
+    0% { width: 0; }
+    100% { width: var(--progress-value); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    [data-reveal-item],
+    [data-reveal-children] > *,
+    [data-reveal-item] [data-slot="progress-indicator"],
+    [data-reveal-children] > * [data-slot="progress-indicator"] {
+        animation: none;
+    }
+
+    [data-reveal-armed] {
+        opacity: 1;
+    }
+
+    ::view-transition-group(hotwire-sidebar-left),
+    ::view-transition-group(hotwire-sidebar-right) {
+        animation: none;
+    }
+}
+
+/* An application-wide way out, for when the cascade is not wanted without editing every component
+   that emits it. It has to neutralise the gating as well as the motion: an armed item is hidden
+   until released, so silencing only the animation would leave content waiting on a scroll that no
+   longer reveals anything. Same three rules the reduced motion block applies, under an author's
+   switch rather than the visitor's preference. */
+html[data-reveal="off"] [data-reveal-item],
+html[data-reveal="off"] [data-reveal-children] > *,
+html[data-reveal="off"] [data-reveal-item] [data-slot="progress-indicator"],
+html[data-reveal="off"] [data-reveal-children] > * [data-slot="progress-indicator"] {
+    animation: none;
+}
+
+html[data-reveal="off"] [data-reveal-armed] {
+    opacity: 1;
+}
+
+/*
  * --- Read More clamp ---
  *
  * The server knows the requested state and collapsed height, but only the browser can determine
@@ -498,4 +656,26 @@
 [data-slot="toast"][data-measuring] {
     block-size: auto;
     transition: none;
+}
+
+/*
+ * --- Colour scheme swap ---
+ *
+ * A theme change repaints every surface at once, and the view transition already animates that as a
+ * crossfade between two snapshots. A field carrying its own colour transition would animate a second
+ * time underneath, on an unrelated timeline, and read as the surface lagging the page. Silence those
+ * for the length of the swap and let the transition own the motion.
+ */
+html[data-color-scheme-transitioning] *,
+html[data-color-scheme-transitioning] *::before,
+html[data-color-scheme-transitioning] *::after {
+    transition-duration: 0s !important;
+}
+
+/* The crossfade is now the whole swap, and the user agent default is abrupt for a repaint of the
+   whole page: the old snapshot is gone in 90ms, the new arrives over 150ms, both linear. */
+html[data-color-scheme-transitioning]::view-transition-old(root),
+html[data-color-scheme-transitioning]::view-transition-new(root) {
+    animation-duration: var(--color-scheme-duration, 320ms);
+    animation-timing-function: var(--color-scheme-easing, ease);
 }

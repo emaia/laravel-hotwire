@@ -79,6 +79,33 @@ it('takes the granular default from a bare attribute and the value from a writte
         ->and((string) $this->blade('<x-hw::meta view-transition />'))->toContain('content="same-origin"');
 });
 
+it('disables Turbo previews when umbrella view transitions are enabled', function () {
+    $default = (string) $this->blade('<x-hw::meta view-transition />');
+    $explicit = (string) $this->blade('<x-hw::meta view-transition cache="no-cache" />');
+
+    expect($default)
+        ->toContain('<meta name="turbo-cache-control" content="no-preview">')
+        ->toContain('<meta name="view-transition" content="same-origin">')
+        ->and(substr_count($default, 'turbo-cache-control'))->toBe(1)
+        ->and($explicit)->toContain('<meta name="turbo-cache-control" content="no-cache">')
+        ->and(substr_count($explicit, 'turbo-cache-control'))->toBe(1);
+});
+
+it('lets explicit false disable the cache implication from view transitions', function (string $cache) {
+    expect((string) $this->blade("<x-hw::meta view-transition {$cache} />"))
+        ->toContain('name="view-transition"')
+        ->not->toContain('turbo-cache-control');
+})->with([
+    'bound false' => ':cache="false"',
+    'string false' => 'cache="false"',
+]);
+
+it('keeps granular view transition metadata single purpose', function () {
+    expect((string) $this->blade('<x-hw::meta.view-transition />'))
+        ->toContain('name="view-transition"')
+        ->not->toContain('turbo-cache-control');
+});
+
 it('states both refresh metas from either half', function () {
     expect((string) $this->blade('<x-hw::meta refresh />'))
         ->toContain('turbo-refresh-method" content="morph"')

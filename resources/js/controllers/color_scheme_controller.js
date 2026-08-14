@@ -24,9 +24,14 @@ export default class extends Controller {
     }
 
     disconnect() {
+        this.restoreTransitions();
         window.removeEventListener("storage", this.boundStorageChanged);
         window.removeEventListener("color-scheme:change", this.boundGlobalChanged);
         this.mediaQuery?.removeEventListener?.("change", this.boundMediaChanged);
+    }
+
+    restoreTransitions() {
+        delete document.documentElement.dataset.colorSchemeTransitioning;
     }
 
     toggle() {
@@ -109,12 +114,19 @@ export default class extends Controller {
             if (!reduce) {
                 const pendingTransition = { update };
                 this.pendingTransition = pendingTransition;
-                document.startViewTransition(() => {
+                // The crossfade owns the motion for the whole swap; structural.css keys off this
+                // to silence the per-element colour transitions that would run underneath it.
+                document.documentElement.dataset.colorSchemeTransitioning = "";
+                const transition = document.startViewTransition(() => {
                     if (this.pendingTransition !== pendingTransition) return;
 
                     this.pendingTransition = null;
                     pendingTransition.update();
                 });
+                // Both promises reject when a transition is skipped — by another one starting, or
+                // by the page being hidden. Routine here, and it must not reach the console.
+                transition.ready.catch(() => {});
+                transition.finished.catch(() => {}).finally(() => this.restoreTransitions());
 
                 return;
             }
