@@ -156,3 +156,29 @@ it('ships first-paint mechanics separately from preset motion', function () {
         ->toContain('@keyframes hotwire-reveal-flat')
         ->toContain('@keyframes hotwire-reveal-fade');
 });
+
+it('keeps direct-children mode when the only raw items belong to a nested reveal', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::reveal>
+            <article>First</article>
+            <div data-controller="reveal">
+                <span data-reveal-item>Belongs to the nested cascade</span>
+            </div>
+        </x-hw::reveal>
+        BLADE);
+
+    // The stylesheet already scopes a nested cascade to its own controller, so counting its items
+    // against the outer one only cost the outer its direct children.
+    $view->assertSee('data-reveal-children', false);
+});
+
+it('leaves direct-children mode when the slot declares its own raw items', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::reveal>
+            <article>Not an item</article>
+            <article data-reveal-item>An item</article>
+        </x-hw::reveal>
+        BLADE);
+
+    $view->assertDontSee('data-reveal-children', false);
+});

@@ -1,11 +1,10 @@
 @php
+    use Emaia\LaravelHotwire\Support\RevealItems;
     use Emaia\LaravelHotwire\Support\StimulusAttributes;
 
     $slotHtml = $slot->toHtml();
     $revealOwner = spl_object_id($revealCounter);
-    preg_match_all('/<[^>]*\sdata-reveal-item(?:=(?:"[^"]*"|\'[^\']*\'|[^\s>]+))?[^>]*>/i', $slotHtml, $rawItems);
-    $hasExplicitItems = str_contains($slotHtml, "data-reveal-owner=\"{$revealOwner}\"")
-        || collect($rawItems[0])->contains(fn (string $item) => ! str_contains($item, 'data-reveal-owner='));
+    $hasExplicitItems = RevealItems::declaresItems($slotHtml, $revealOwner);
     $userStyle = trim((string) $attributes->get('style'));
     $style = collect([
         $stagger !== null ? "--reveal-stagger: {$stagger}" : null,
