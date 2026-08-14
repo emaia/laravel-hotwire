@@ -44,7 +44,7 @@ Inline feedback block for status messages, warnings and contextual notices.
 | `alert.description` | `div` | `alert-description` |
 | `alert.action` | `div` | `alert-action` |
 
-## Styling Hooks
+## Styling hooks
 
 - `data-slot="alert"`
 - `data-variant="default|destructive"`

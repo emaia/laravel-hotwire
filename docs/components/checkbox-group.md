@@ -168,7 +168,16 @@ ancestor form:
 Groups submit immediately by default. Use `auto-submit="debounced" auto-submit-delay="..."` to debounce every item in the
 group.
 
-## Required controllers
+## Controller integrations
 
 `hotwire:check` looks for `checkbox-select-all` when you use the `select-all` prop and `auto-submit` when you use the
 `auto-submit` prop.
+
+## Styling hooks
+
+The component exposes stable `data-slot` hooks for preset and application CSS:
+
+- `data-slot="checkbox-group"`
+- `data-slot="checkbox-group-item"`
+- `data-slot="checkbox-group-input"`
+- `data-slot="checkbox-group-item-content"`

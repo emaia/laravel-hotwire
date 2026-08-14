@@ -4,7 +4,8 @@ Copies text to the clipboard when a button is clicked. Temporarily replaces the 
 after copying.
 
 **Identifier:** `copy-to-clipboard`  
-**Install:** `php artisan hotwire:controllers copy-to-clipboard`
+**Loaded by:** auto-loaded after `php artisan hotwire:install`; publish only to customize with
+`php artisan hotwire:controllers copy-to-clipboard`.
 
 ## Requirements
 
@@ -17,7 +18,7 @@ after copying.
 | `source` | Element whose text content or value is copied               |
 | `button` | The trigger button (optional — needed for success feedback) |
 
-## Stimulus Values
+## Values
 
 | Value              | Type     | Default | Description                                                    |
 |--------------------|----------|---------|----------------------------------------------------------------|
@@ -30,7 +31,7 @@ after copying.
 |--------------------------|-----------------------------------------|
 | `copy-to-clipboard#copy` | Copies the source text to the clipboard |
 
-## Basic usage — copy a code block
+## Basic Usage — copy a code block
 
 ```html
 <div data-controller="copy-to-clipboard">

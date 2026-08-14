@@ -41,7 +41,7 @@ Use `separator` for section markers and `border` for row boundaries.
 | `marker.icon` | `span` | `marker-icon` |
 | `marker.content` | `span` | `marker-content` |
 
-## Styling Hooks
+## Styling hooks
 
 - `data-slot="marker"`
 - `data-variant="default|separator|border"`

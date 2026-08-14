@@ -8,7 +8,8 @@ outlet; you can also drive the editor from anywhere by accessing the public API 
 instance.
 
 **Identifier:** `rich-text`
-**Install:** `php artisan hotwire:controllers rich-text`
+**Loaded by:** auto-loaded after `php artisan hotwire:install`; publish only to customize with
+`php artisan hotwire:controllers rich-text`.
 **npm deps:** `@tiptap/core ^2.0`, `@tiptap/starter-kit ^2.0`, `@tiptap/extension-placeholder ^2.0`,
 `@tiptap/extension-link ^2.0`, `@tiptap/extension-underline ^2.0`
 
@@ -72,7 +73,7 @@ controller.clear();           // Empty the document (emits change → input sync
 controller.focus();           // Move the cursor into the editor
 ```
 
-## Basic usage (raw, without the Blade component)
+## Basic Usage (raw, without the Blade component)
 
 ```html
 <div data-controller="rich-text"

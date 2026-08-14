@@ -362,7 +362,7 @@ buttons for a Tiptap extension you turned on (Table, TaskList, etc.), subclass t
 see
 [Extending the toolbar](../controllers/rich-text-toolbar.md#extending-the-toolbar-table-recipe).
 
-## Styling
+## Styling hooks
 
 The component exposes stable `data-slot` hooks and prop-based knobs; the visual is controlled by presets or your app
 CSS.
@@ -373,10 +373,11 @@ CSS.
 |-----------------------------------------------|---------------------------------------------------|
 | `[data-slot="rich-text"]`                     | The outer wrapper                                 |
 | `[data-slot="rich-text-toolbar"]`             | The default toolbar row                           |
+| `[data-slot="rich-text-toolbar-button"]`      | A default toolbar button                          |
 | `[data-slot="rich-text-editor"]`              | The div Tiptap mounts the contenteditable into    |
 | `[data-slot="rich-text-editor"] .ProseMirror` | The contenteditable surface itself                |
 | `[data-slot="rich-text"][data-invalid]`       | The wrapper when the field has a validation error |
-| `[data-rich-text-target="input"]`             | The synced textarea                               |
+| `[data-slot="rich-text-input"]`               | The synced textarea                               |
 
 ### Knobs
 

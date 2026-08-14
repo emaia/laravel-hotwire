@@ -67,7 +67,7 @@ Use the root `motion` prop to disable motion:
 />
 ```
 
-The Nova preset transitions only `opacity`, `scale`, and `translate`. Custom CSS may use transitions or finite animations
+The selected preset transitions only `opacity`, `scale`, and `translate`. Custom CSS may use transitions or finite animations
 keyed by the content's `data-state`, but the closed-state selector must never apply `display: none` or `hidden`; Presence
 owns the `hidden` attribute. Rapid reopen cancels stale exit cleanup, and `prefers-reduced-motion: reduce` skips motion.
 
@@ -113,7 +113,7 @@ specific icon set:
 | `trigger-class` | `''` | Additional classes on the trigger button. |
 | `content-class` | `''` | Additional classes on the floating content panel. |
 
-## Styling Hooks
+## Styling hooks
 
 - `data-slot="multi-select"`
 - `data-slot="multi-select-native"`
@@ -145,7 +145,7 @@ specific icon set:
 `data-side` and `data-align` report the resolved Floating UI placement after any flip. `width` and `content-class` are
 applied directly to `data-slot="multi-select-content"`; `trigger-class` is applied to the trigger.
 
-## Required Controllers
+## Controller integrations
 
 Uses the `multi-select` controller, which depends on `@floating-ui/dom` and ships with `_composition.js`, `_floating.js`,
 `_form_errors.js`, `_frame_events.js`, `_presence.js`, and `_top_layer.js`. The component search also uses `clear-input`

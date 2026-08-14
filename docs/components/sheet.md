@@ -4,13 +4,7 @@ Off-canvas sheet panel with backdrop, close button, focus trap, Escape dismissal
 
 Use `Sheet` for side-panel dialogs. Use [`<hw:drawer>`](./drawer.md) for the Base UI-style drawer primitive.
 
-## Requirements
-
-- No external dependencies.
-- Ships with `_composition.js`, `_focus_trap.js`, `_frame_overlay.js`, `_overlay.js`, `_overlay_stack.js`,
-  `_presence.js`, and `_top_layer.js` through `drawer`; publishing the `sheet` controller publishes these helpers too.
-
-## Usage
+## Basic Usage
 
 ```blade
 <hw:sheet side="right">
@@ -35,34 +29,7 @@ Use `Sheet` for side-panel dialogs. Use [`<hw:drawer>`](./drawer.md) for the Bas
 </hw:sheet>
 ```
 
-## Props
-
-| Prop                  | Default                                           | Description                                                    |
-|-----------------------|---------------------------------------------------|----------------------------------------------------------------|
-| `id`                  | auto                                              | Root element id.                                               |
-| `side`                | `right`                                           | `left`, `right`, `top`, or `bottom`.                           |
-| `size`                | `75%` for side sheets, `auto` for vertical sheets | CSS length assigned to `--sheet-width` or `--sheet-height`.    |
-| `frame`               | `null`                                            | String/object Turbo Frame id for layout-shared, server-loaded content. |
-| `backdrop`            | `true`                                            | Render the backdrop and click-outside target.                  |
-| `motion`              | `default`                                         | `default` follows CSS motion; `none` disables it.              |
-| `lockScroll`          | `true`                                            | Lock body scroll while open.                                   |
-| `closeOnEscape`       | `true`                                            | Close when Escape is pressed.                                  |
-| `closeOnClickOutside` | `true`                                            | Close when the backdrop is clicked.                            |
-| `viewTransition`      | `false`                                           | Animate successive renders inside the frame host.              |
-
-## Components
-
-| Component           | Description                                  |
-|---------------------|----------------------------------------------|
-| `sheet.trigger`     | Button that toggles the sheet.               |
-| `sheet.content`     | Overlay, backdrop and sliding panel wrapper. |
-| `sheet.header`      | Header region.                               |
-| `sheet.title`       | Sheet title.                                 |
-| `sheet.description` | Sheet description text.                      |
-| `sheet.footer`      | Footer actions region.                       |
-| `sheet.close`       | Button that closes the sheet.                |
-
-## Behavior
+## Automatic Behavior
 
 The sheet traps focus while open, restores focus to the trigger on close, locks body scroll by default and closes
 synchronously before Turbo caches the page. Presence derives completion from actual finite CSS motion and supports rapid
@@ -124,3 +91,52 @@ return turbo_stream()
     ->update('settings-panel')
     ->flash('success', 'Saved');
 ```
+
+## Requirements
+
+- No external dependencies.
+- Ships with `_composition.js`, `_focus_trap.js`, `_frame_overlay.js`, `_overlay.js`, `_overlay_stack.js`,
+  `_presence.js`, and `_top_layer.js` through `drawer`; publishing the `sheet` controller publishes these helpers too.
+
+## Props
+
+| Prop                  | Default                                           | Description                                                    |
+|-----------------------|---------------------------------------------------|----------------------------------------------------------------|
+| `id`                  | auto                                              | Root element id.                                               |
+| `side`                | `right`                                           | `left`, `right`, `top`, or `bottom`.                           |
+| `size`                | `75%` for side sheets, `auto` for vertical sheets | CSS length assigned to `--sheet-width` or `--sheet-height`.    |
+| `frame`               | `null`                                            | String/object Turbo Frame id for layout-shared, server-loaded content. |
+| `backdrop`            | `true`                                            | Render the backdrop and click-outside target.                  |
+| `motion`              | `default`                                         | `default` follows CSS motion; `none` disables it.              |
+| `lockScroll`          | `true`                                            | Lock body scroll while open.                                   |
+| `closeOnEscape`       | `true`                                            | Close when Escape is pressed.                                  |
+| `closeOnClickOutside` | `true`                                            | Close when the backdrop is clicked.                            |
+| `viewTransition`      | `false`                                           | Animate successive renders inside the frame host.              |
+
+## Components
+
+| Component           | Description                                  |
+|---------------------|----------------------------------------------|
+| `sheet.trigger`     | Button that toggles the sheet.               |
+| `sheet.content`     | Overlay, backdrop and sliding panel wrapper. |
+| `sheet.header`      | Header region.                               |
+| `sheet.title`       | Sheet title.                                 |
+| `sheet.description` | Sheet description text.                      |
+| `sheet.footer`      | Footer actions region.                       |
+| `sheet.close`       | Button that closes the sheet.                |
+
+## Styling hooks
+
+The component exposes stable `data-slot` hooks for preset and application CSS:
+
+- `data-slot="sheet-overlay"`
+- `data-slot="sheet-trigger"`
+- `data-slot="sheet-backdrop"`
+- `data-slot="sheet-content"`
+- `data-slot="sheet-close-icon"`
+- `data-slot="sheet-header"`
+- `data-slot="sheet-title"`
+- `data-slot="sheet-description"`
+- `data-slot="sheet-footer"`
+- `data-slot="sheet-close"`
+- `data-slot="sheet"`

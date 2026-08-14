@@ -162,3 +162,12 @@ For URL syncing or analytics, listen to the `tabs:change` event documented in th
 
 Regular `data-controller` / `data-action` attributes and the `stimulus` prop are merged and deduplicated. Internal
 `data-tabs-*` attributes remain component-owned; use the component props instead of overriding them directly.
+
+## Styling hooks
+
+The component exposes stable `data-slot` hooks for preset and application CSS:
+
+- `data-slot="tabs"`
+- `data-slot="tabs-list"`
+- `data-slot="tabs-trigger"`
+- `data-slot="tabs-panel"`

@@ -221,7 +221,14 @@ enabled) — that's where an uploader controller wants to operate:
 {{-- <input ... data-controller="my-uploader file-preserve reset-files" /> --}}
 ```
 
-## Required controllers
+## Controller integrations
 
 `hotwire:check` looks for `file-preserve` (always used by this component) and `reset-files` (when `reset-on-success` is
 enabled). Both must be published for `hotwire:check` to pass.
+
+## Styling hooks
+
+The component exposes stable `data-slot` hooks for preset and application CSS:
+
+- `data-slot="file-wrapper"`
+- `data-slot="file-input"`

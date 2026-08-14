@@ -3,7 +3,7 @@
 Composable inline panel for secondary navigation, filters, and workspace tools. Unlike [`<hw:sidebar>`](./sidebar.md),
 Side Panel stays in normal document flow, never becomes a mobile overlay, and can be nested safely.
 
-## Usage
+## Basic Usage
 
 ```blade
 <hw:side-panel name="project-navigation" width="18rem">
@@ -24,35 +24,7 @@ The panel animates to a narrow control rail while the inset consumes the release
 keeping the trigger inside the root even when an ancestor clips overflow. Panel content becomes `inert` as soon as
 collapse starts, so links and controls inside it are skipped by keyboard navigation.
 
-## Components
-
-| Component            | Description                          |
-| -------------------- | ------------------------------------ |
-| `side-panel`         | State and layout root.               |
-| `side-panel.panel`   | Collapsible `aside` surface.         |
-| `side-panel.trigger` | Edge control that toggles the panel. |
-| `side-panel.inset`   | Main content beside the panel.       |
-
-## Props
-
-### `<hw:side-panel>`
-
-| Prop          | Default               | Description                                                                         |
-| ------------- | --------------------- | ----------------------------------------------------------------------------------- |
-| `name`        | required              | Stable key used to isolate the persisted cookie and generated panel id.             |
-| `panelId`     | generated from `name` | Shared id for the panel and trigger's `aria-controls`.                              |
-| `defaultOpen` | `null`                | Initial state. When omitted, reads the generated cookie and falls back to expanded. |
-| `width`       | `16rem`               | Expanded panel width.                                                               |
-| `side`        | `left`                | Physical `left` or `right`, preserved in RTL layouts.                               |
-| `persist`     | `true`                | Whether controller changes write the state cookie.                                  |
-| `controller`  | `side-panel`          | Stimulus identifier.                                                                |
-| `stimulus`    | `null`                | Inline Stimulus attributes merged with the root.                                    |
-
-### `<hw:side-panel.trigger>`
-
-| Prop    | Default             | Description                               |
-| ------- | ------------------- | ----------------------------------------- |
-| `label` | `Toggle Side Panel` | Accessible label rendered on the trigger. |
+## Automatic Behavior
 
 `name="project-navigation"` uses the cookie `side_panel_project-navigation_state`. The server reads that cookie before
 rendering, so the first frame already matches the persisted state. Passing `defaultOpen` explicitly or setting
@@ -91,7 +63,37 @@ Side Panel deliberately has no default hotkey. A page can contain several panels
 ambiguous. Compose the standalone [`hotkey` controller](../controllers/hotkey.md) onto a trigger when a specific panel
 needs one.
 
-## Styling
+## Props
+
+### `<hw:side-panel>`
+
+| Prop          | Default               | Description                                                                         |
+| ------------- | --------------------- | ----------------------------------------------------------------------------------- |
+| `name`        | required              | Stable key used to isolate the persisted cookie and generated panel id.             |
+| `panelId`     | generated from `name` | Shared id for the panel and trigger's `aria-controls`.                              |
+| `defaultOpen` | `null`                | Initial state. When omitted, reads the generated cookie and falls back to expanded. |
+| `width`       | `16rem`               | Expanded panel width.                                                               |
+| `side`        | `left`                | Physical `left` or `right`, preserved in RTL layouts.                               |
+| `persist`     | `true`                | Whether controller changes write the state cookie.                                  |
+| `controller`  | `side-panel`          | Stimulus identifier.                                                                |
+| `stimulus`    | `null`                | Inline Stimulus attributes merged with the root.                                    |
+
+### `<hw:side-panel.trigger>`
+
+| Prop    | Default             | Description                               |
+| ------- | ------------------- | ----------------------------------------- |
+| `label` | `Toggle Side Panel` | Accessible label rendered on the trigger. |
+
+## Components
+
+| Component            | Description                          |
+| -------------------- | ------------------------------------ |
+| `side-panel`         | State and layout root.               |
+| `side-panel.panel`   | Collapsible `aside` surface.         |
+| `side-panel.trigger` | Edge control that toggles the panel. |
+| `side-panel.inset`   | Main content beside the panel.       |
+
+## Styling hooks
 
 Collapse geometry lives in `resources/css/structural.css` and is included by every preset. Visual styling uses:
 

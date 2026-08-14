@@ -32,7 +32,7 @@ Use `<hw:kbd>` inside a button when the shortcut should be visible. Wire the beh
 | `kbd` | `kbd` | `kbd` |
 | `kbd.group` | `kbd` | `kbd-group` |
 
-## Styling Hooks
+## Styling hooks
 
 - `data-slot="kbd"`
 - `data-slot="kbd-group"`

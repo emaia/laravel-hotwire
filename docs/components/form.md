@@ -210,8 +210,14 @@ prefers the nearest frame source, falls back to the document URL only when no fr
 to descendant form requests, and never overwrites an explicit header. See
 [frame-src controller](../controllers/turbo/frame-src.md).
 
-## Required controllers
+## Controller integrations
 
 `hotwire:check` looks for `auto-submit`, `unsaved-changes`, `error-scroll`, `clean-query-params`, and
 `conditional-fields`. Only the ones you actually use need to be published — `hotwire:check` will warn for the others
 even if you do not enable them.
+
+## Styling hooks
+
+The component exposes stable `data-slot` hooks for preset and application CSS:
+
+- `data-slot="form"`

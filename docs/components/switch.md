@@ -123,6 +123,12 @@ has validation errors.
 
 Switches submit immediately by default. Use `auto-submit="debounced" auto-submit-delay="..."` for delayed filter flows.
 
-## Required controllers
+## Controller integrations
 
 `hotwire:check` looks for `auto-submit` when `auto-submit` is used.
+
+## Styling hooks
+
+The component exposes stable `data-slot` hooks for preset and application CSS:
+
+- `data-slot="switch"`

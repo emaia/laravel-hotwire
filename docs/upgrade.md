@@ -512,7 +512,7 @@ markup and move visual states into CSS keyed by `data-state`:
 }
 ```
 
-The Nova preset transitions only `opacity`, `scale`, and `translate`; it no longer transitions `display`. Custom finite
+The selected preset transitions only `opacity`, `scale`, and `translate`; it no longer transitions `display`. Custom finite
 CSS animations are also supported. Presence suppresses transition and animation while preparing the first placement,
 temporarily enforces that suppression for `motion="none"` and `prefers-reduced-motion: reduce`, detects the actual CSS
 duration otherwise, and invalidates stale teardown on rapid reopen. CSS transitions reverse naturally from their current
@@ -579,7 +579,7 @@ Top-layer promotion changes the containing block. `strategy="fixed"` uses viewpo
 ancestor. In browsers without native Popover support, `absolute` falls back to normal offset-parent behavior and may be
 clipped by ancestors.
 
-When the Nova preset is not loaded, reset the browser's native Popover positioning defaults with
+When the selected preset is not loaded, reset the browser's native Popover positioning defaults with
 `[data-hotwire-top-layer][popover] { inset: auto; margin: 0; }` and define border and padding for each floating surface.
 Standalone Tooltip CSS must also set `overflow: visible` so its arrow is not clipped.
 

@@ -265,15 +265,16 @@ Controllers tied to Turbo Drive / Turbo Frames.
 
 ### Publish Stimulus Controllers
 
-Publish the controllers you want to use in your app so they can be discovered by the bundler (Vite).
+Package controllers work out of the box after `hotwire:install`; the generated loader imports them from the vendor
+directory. Publish a controller only when you want to customize its source in your application.
 
-**Interactive** — select which controllers to publish:
+**Interactive** — select which controllers to customize:
 
 ```bash
 php artisan hotwire:controllers
 ```
 
-**By name** — publish a specific controller:
+**By name** — publish a specific controller into your app:
 
 ```bash
 php artisan hotwire:controllers auto-select
@@ -297,7 +298,7 @@ php artisan hotwire:controllers modal turbo/progress auto-submit
 php artisan hotwire:controllers --all
 ```
 
-**List available controllers (with publication status):**
+**List available controllers and publication status:**
 
 ```bash
 php artisan hotwire:controllers --list
@@ -320,12 +321,11 @@ php artisan hotwire:controllers --outdated --force
 php artisan hotwire:controllers auto-select --force
 ```
 
-Top-level controllers are copied flat to `resources/js/controllers/` (e.g. `modal` →
+Published top-level controllers are copied flat to `resources/js/controllers/` (e.g. `modal` →
 `resources/js/controllers/modal_controller.js`, identifier `modal`). Controllers under a substrate folder preserve that
 folder and use Stimulus' `--` separator (e.g. `turbo/progress` →
 `resources/js/controllers/turbo/progress_controller.js`, identifier `turbo--progress`).
-[@emaia/stimulus-lazy-loader](https://www.npmjs.com/package/@emaia/stimulus-lazy-loader) discovers and loads them
-automatically via `import.meta.glob`.
+The generated loader lets local controllers override package controllers with the same identifier.
 
 > If a controller already exists and is identical to the package version, the command reports it as up to date. If it
 > differs, it asks for confirmation before overwriting.
@@ -366,7 +366,7 @@ controllers, attribute-bag merging and the escaping rules.
 
 | Component                                                     | Blade                       | Category     | Stimulus Identifier(s)                                                 | Docs                                             |
 |---------------------------------------------------------------|-----------------------------|--------------|------------------------------------------------------------------------|--------------------------------------------------|
-| [Form](docs/components/form.md)                               | `<hw:form>`                 | `forms`      | `auto-submit`, `unsaved-changes`, `error-scroll`, `clean-query-params` | [readme](docs/components/form.md)                |
+| [Form](docs/components/form.md)                               | `<hw:form>`                 | `forms`      | `auto-submit`, `unsaved-changes`, `error-scroll`, `clean-query-params`, `conditional-fields` | [readme](docs/components/form.md)                |
 | [Field](docs/components/field.md)                             | `<hw:field>`                | `forms`      | —                                                                      | [readme](docs/components/field.md)               |
 | [Field Group](docs/components/field.md#hwfieldgroup)          | `<hw:field.group>`          | `forms`      | —                                                                      | [readme](docs/components/field.md#hwfieldgroup)  |
 | [Field Label](docs/components/field.md#hwfieldlabel)          | `<hw:field.label>`          | `forms`      | —                                                                      | [readme](docs/components/field.md#hwfieldlabel)  |
@@ -461,7 +461,7 @@ controllers, attribute-bag merging and the escaping rules.
 php artisan hotwire:components
 ```
 
-Shows each Blade component, its tag, and the Stimulus controllers it depends on — with publication status for each.
+Shows each Blade component, its tag, and the Stimulus controllers it depends on.
 
 **Check controllers used in your views (components and direct usage):**
 
@@ -471,13 +471,15 @@ php artisan hotwire:check
 
 Scans `resources/views` for Hotwire components **and direct Stimulus controller usage** — `data-controller`
 attributes and the `stimulus_controller()` / `stimulus()->controller()` / `->controllers()` / `stimulus_action()` /
-`stimulus_target()` helpers — then verifies two things:
+`stimulus_target()` helpers — then verifies three things:
 
-1. **Stimulus controllers** — every controller required by a used component, or referenced directly, is published and up
-   to date.
+1. **Loader stub** — `resources/js/controllers/index.js` matches the current install flags and configured preload/eager
+   policy.
 2. **npm dependencies** — every external package imported by those controllers (e.g. `@floating-ui/dom`,
    `echarts`)
    is declared in your `package.json` (`dependencies` or `devDependencies`).
+3. **Published customizations** — package controllers you have published for customization are reported when they drift
+   from the package source.
 
 Exits with code `1` if either has pending items (useful for CI).
 
@@ -487,7 +489,7 @@ own controllers are ignored — and Blade comments and `<script>`/`<style>` bloc
 code is skipped.
 
 ```bash
-# Auto-publish missing/outdated controllers AND add missing npm deps to devDependencies
+# Regenerate the loader stub and add missing npm deps to devDependencies
 php artisan hotwire:check --fix
 
 # Also run the detected package manager install command after adding deps
@@ -500,8 +502,8 @@ php artisan hotwire:check --path=resources/views/app
 Example output:
 
 ```
-  ✓  toaster  up to date  (used by <hw:toaster>)
-  ✓  toast    up to date  (used by <hw:toast>)
+Loader stub:
+  ✓  resources/js/controllers/index.js matches the current policy
 
 Required npm dependencies:
   ✓  echarts ^6.1.0  (used by chart)

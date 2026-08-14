@@ -3,7 +3,8 @@
 Injects the URL that rendered a form's Turbo Frame into `X-Turbo-Frame-Src`, allowing the server to redirect validation failures back to the same frame contents rather than the visible host page.
 
 **Identifier:** `turbo--frame-src`
-**Install:** `php artisan hotwire:controllers turbo/frame-src`
+**Loaded by:** auto-loaded after `php artisan hotwire:install`; publish only to customize with
+`php artisan hotwire:controllers turbo/frame-src`.
 
 ## Requirements
 

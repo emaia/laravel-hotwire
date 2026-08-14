@@ -1,8 +1,55 @@
-# Drawer Controller
+# Drawer
 
-Controls an off-canvas drawer overlay.
+Controls an off-canvas drawer overlay with Presence motion, focus trapping, scroll locking, Escape dismissal, and optional
+Turbo Frame-driven dynamic content.
 
 **Identifier:** `drawer`
+**Loaded by:** auto-loaded after `php artisan hotwire:install`; publish only to customize with
+`php artisan hotwire:controllers drawer`.
+
+## Requirements
+
+- No external dependencies.
+- Turbo is optional and only needed when using `dynamicContent` with a Turbo Frame.
+
+Escape dismissal and focus trapping are suspended during IME composition.
+
+## Basic Usage
+
+```html
+<div
+    data-controller="drawer"
+    data-drawer-lock-scroll-class="overflow-hidden"
+    data-action="turbo:before-cache@window->drawer#closeForCache"
+>
+    <button type="button" data-drawer-target="trigger" data-action="drawer#open">
+        Open drawer
+    </button>
+
+    <div data-drawer-target="modal" data-state="closed" data-motion="default" hidden inert>
+        <div
+            data-drawer-target="backdrop"
+            data-action="click->drawer#clickOutside"
+        ></div>
+
+        <aside data-drawer-target="dialog" role="dialog" aria-modal="true">
+            <h2>Navigation</h2>
+            <button type="button" data-action="drawer#close">Close</button>
+        </aside>
+    </div>
+</div>
+```
+
+The `modal` target must start as `data-state="closed" data-motion="default" hidden inert`. Presence derives lifecycle
+completion from CSS motion on `backdrop` and `dialog`; `data-motion="none"` and reduced motion skip it. Use direct-child
+state selectors when drawers can be nested.
+
+## Dynamic Frame Behavior
+
+When `dynamicContent` is present, the controller opens the drawer after the frame receives content and clears the frame
+after close. It injects `loadingTemplate` during `turbo:before-fetch-request`, supports per-link `data-loading-template`,
+and delays empty `update`/`replace` streams for the drawer root or frame, plus `refresh` streams, until the close animation
+finishes.
 
 ## Targets
 
@@ -32,16 +79,6 @@ Controls an off-canvas drawer overlay.
 | `toggle` | Toggle the drawer. |
 | `clickOutside` | Close from the backdrop when enabled. |
 | `closeForCache` | Close immediately before Turbo caches the page. |
-
-Escape dismissal and focus trapping are suspended during IME composition.
-
-## Dynamic Frame Behavior
-
-When `dynamicContent` is present, the controller opens the drawer after the frame receives content and clears the frame after close. It injects `loadingTemplate` during `turbo:before-fetch-request`, supports per-link `data-loading-template`, and delays empty `update`/`replace` streams for the drawer root or frame, plus `refresh` streams, until the close animation finishes.
-
-The `modal` target must start as `data-state="closed" data-motion="default" hidden inert`. Presence derives lifecycle
-completion from CSS motion on `backdrop` and `dialog`; `data-motion="none"` and reduced motion skip it. Use direct-child
-state selectors when drawers can be nested.
 
 ## Events
 

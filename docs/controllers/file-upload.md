@@ -4,7 +4,7 @@ Native upload controller for `<hw:file-upload>`. It owns file selection, drag/dr
 progress, hidden input lifecycle, optional DELETE-on-remove and Turbo Stream responses.
 
 **Identifier:** `file-upload`  
-**Install:** controllers auto-load after `php artisan hotwire:install`; publish only when customising with
+**Loaded by:** auto-loaded after `php artisan hotwire:install`; publish only to customize with
 `php artisan hotwire:controllers file-upload`.
 
 **npm deps:** none

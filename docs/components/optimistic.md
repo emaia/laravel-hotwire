@@ -32,7 +32,7 @@ Add **one** controller to the host element:
 The component itself declares **no** controller dependency — the trigger
 choice is yours.
 
-## Basic usage — form submission
+## Basic Usage — form submission
 
 ```html
 <form
@@ -52,7 +52,7 @@ choice is yours.
 </form>
 ```
 
-## Basic usage — frame link with skeleton
+## Basic Usage — frame link with skeleton
 
 ```html
 <a
@@ -241,7 +241,9 @@ HTML in the user input is rendered literally, not executed. Rich formatting
 (markdown, mentions, autolinks, etc.) should remain a server concern; it
 lands on the next morph.
 
-## Styling the optimistic state
+## Styling hooks
+
+The root wrapper carries `data-slot="optimistic"` for preset and application CSS.
 
 Every top-level element inside a dispatched payload is tagged automatically
 with `data-optimistic`. Use it as a pure-CSS hook to visually differentiate

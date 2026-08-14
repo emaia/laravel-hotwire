@@ -1,21 +1,15 @@
 # Checkbox
 
-Applies the native checkbox `indeterminate` DOM property from a Stimulus value.
+Applies the native checkbox `indeterminate` DOM property from a Stimulus value. Most apps should use `<hw:checkbox indeterminate>` instead of wiring this controller manually.
 
-**Identifier:** `checkbox`  
-**Install:** `php artisan hotwire:controllers checkbox`
+**Identifier:** `checkbox`
+**Loaded by:** auto-loaded after `php artisan hotwire:install`; publish only to customize with `php artisan hotwire:controllers checkbox`.
 
 ## Requirements
 
 - No external dependencies.
 
-## Stimulus Values
-
-| Value           | Type      | Default | Description                                      |
-|-----------------|-----------|---------|--------------------------------------------------|
-| `indeterminate` | `Boolean` | `false` | Sets `element.indeterminate` whenever it changes |
-
-## Basic usage
+## Basic Usage
 
 ```html
 <input
@@ -25,7 +19,14 @@ Applies the native checkbox `indeterminate` DOM property from a Stimulus value.
 >
 ```
 
-The controller re-syncs on `turbo:render`, which keeps the visual state correct after Turbo morphs update server-rendered
-checkbox markup.
+## Behavior
 
-Most apps should use `<hw:checkbox indeterminate>` instead of wiring this controller manually.
+The controller sets `element.indeterminate` whenever the `indeterminate` value changes.
+
+The controller re-syncs on `turbo:render`, which keeps the visual state correct after Turbo morphs update server-rendered checkbox markup.
+
+## Values
+
+| Value           | Type      | Default | Description                                      |
+|-----------------|-----------|---------|--------------------------------------------------|
+| `indeterminate` | `Boolean` | `false` | Sets `element.indeterminate` whenever it changes |

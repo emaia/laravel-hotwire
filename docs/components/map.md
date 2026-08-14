@@ -166,3 +166,9 @@ The package merges your `data-controller` with the `map` identifier transparentl
 - [Controller documentation](../controllers/map.md)
 - [Leaflet API reference](https://leafletjs.com/reference.html)
 - `docs/recipes/maps.md` — patterns for inline markers, GeoJSON endpoints, and custom tile providers
+
+## Styling hooks
+
+The component exposes stable `data-slot` hooks for preset and application CSS:
+
+- `data-slot="map"`

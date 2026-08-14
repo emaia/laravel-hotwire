@@ -3,7 +3,8 @@
 Clears file inputs (`<input type="file">`) automatically after a successful submit re-renders the form.
 
 **Identifier:** `reset-files`  
-**Install:** `php artisan hotwire:controllers reset-files`
+**Loaded by:** auto-loaded after `php artisan hotwire:install`; publish only to customize with
+`php artisan hotwire:controllers reset-files`.
 
 ## Requirements
 

@@ -10,7 +10,7 @@ behind `<hw:toast>`, and can be rendered directly when needed.
 - The `toaster` controller on the page. If it has not connected yet the emission is buffered, so ordering in the
   document does not matter.
 
-## Stimulus Values
+## Values
 
 | Value         | Type     | Default     | Description                                                  |
 |---------------|----------|-------------|--------------------------------------------------------------|
@@ -23,7 +23,7 @@ behind `<hw:toast>`, and can be rendered directly when needed.
 Empty strings are treated as absent: `message` and `description` are omitted from the card rather than rendering a
 blank row, which is what keeps the icon aligned when request input is forwarded straight into a stream macro.
 
-## Basic usage
+## Basic Usage
 
 ```html
 <div

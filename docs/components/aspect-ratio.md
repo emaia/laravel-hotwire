@@ -33,7 +33,7 @@ When both `width` and `height` are present, they take precedence over `ratio` an
 The default slot is rendered inside the ratio box. Media children usually need their own sizing classes or styles, such
 as `class="size-full object-cover"` on an image.
 
-## Styling Hooks
+## Styling hooks
 
 - `data-slot="aspect-ratio"`
 - `--ratio`

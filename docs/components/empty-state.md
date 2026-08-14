@@ -38,7 +38,7 @@ Composable empty state for zero-results, first-run and unavailable-content scree
 | `empty-state.description` | `div` | `empty-state-description` |
 | `empty-state.content` | `div` | `empty-state-content` |
 
-## Styling Hooks
+## Styling hooks
 
 - `data-slot="empty-state"`
 - `data-slot="empty-state-header"`

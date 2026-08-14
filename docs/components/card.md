@@ -54,7 +54,7 @@ content and footer padding for one instance.
 | `card.content` | `div` | `card-content` |
 | `card.footer` | `div` | `card-footer` |
 
-## Styling Hooks
+## Styling hooks
 
 - `data-slot="card"`
 - `data-size="default|sm"`

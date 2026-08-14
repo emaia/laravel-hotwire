@@ -201,3 +201,9 @@ registers as a dependent target automatically. No per-dependent wiring.
 - [`<hw:form>`](./form.md) — mounts the controller and shares `state` with conditional fields.
 - [Conditional fields controller](../controllers/conditional-fields.md) — the underlying Stimulus controller.
 - [Conditional fields recipe](../recipes/conditional-fields.md) — real-world form patterns.
+
+## Styling hooks
+
+The component exposes stable `data-slot` hooks for preset and application CSS:
+
+- `data-slot="conditional-field"`

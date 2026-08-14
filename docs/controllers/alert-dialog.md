@@ -4,11 +4,51 @@ Intercepts clicks, opens an alert dialog, and re-fires the original action only 
 low-level Stimulus controller used by [`<hw:alert-dialog>`](../components/alert-dialog.md).
 
 **Identifier:** `alert-dialog`  
-**Install:** `php artisan hotwire:controllers alert-dialog`
+**Loaded by:** auto-loaded after `php artisan hotwire:install`; publish only to customize with
+`php artisan hotwire:controllers alert-dialog`.
 
 ## Requirements
 
 - No external dependencies.
+
+Escape cancellation and focus trapping are suspended during IME composition.
+
+## Basic Usage
+
+```html
+<div
+    data-controller="alert-dialog"
+    data-alert-dialog-lock-scroll-class="overflow-hidden"
+    data-action="turbo:before-cache@window->alert-dialog#closeForCache"
+>
+    <div data-action="click->alert-dialog#intercept">
+        <button type="button">Continue</button>
+    </div>
+
+    <div
+        data-alert-dialog-target="modal"
+        data-state="closed"
+        data-motion="default"
+        data-action="click->alert-dialog#clickOutside"
+        hidden
+        inert
+        role="dialog"
+        aria-modal="true"
+    >
+        <div data-alert-dialog-target="backdrop"></div>
+
+        <div data-alert-dialog-target="dialog">
+            <p>Are you sure?</p>
+
+            <button type="button" data-action="alert-dialog#cancel">Cancel</button>
+            <button type="button" data-action="alert-dialog#confirm">Confirm</button>
+        </div>
+    </div>
+</div>
+```
+
+The controller stores the clicked element, opens the dialog, traps focus, and only calls `element.click()` again after
+`alert-dialog#confirm`. Canceling or closing for Turbo cache clears the pending action without re-firing it.
 
 ## Targets
 
@@ -18,7 +58,7 @@ low-level Stimulus controller used by [`<hw:alert-dialog>`](../components/alert-
 | `backdrop` | Background layer animated separately from the dialog             |
 | `dialog`   | Visible dialog panel used for click-outside and focus trap logic |
 
-## Stimulus Values
+## Values
 
 | Value                    | Type      | Default | Description                                               |
 |--------------------------|-----------|---------|-----------------------------------------------------------|
@@ -41,9 +81,7 @@ low-level Stimulus controller used by [`<hw:alert-dialog>`](../components/alert-
 | `alert-dialog#clickOutside` | Cancels when clicking outside the dialog panel                              |
 | `alert-dialog#closeForCache` | Clears the pending action and closes synchronously for Turbo cache          |
 
-Escape cancellation and focus trapping are suspended during IME composition.
-
-## Basic usage
+## Copyable Minimal Markup
 
 ```html
 <div
@@ -74,8 +112,7 @@ Escape cancellation and focus trapping are suspended during IME composition.
 </div>
 ```
 
-The controller stores the clicked element, opens the dialog, and only calls `element.click()` again after
-`alert-dialog#confirm`.
+The modal target starts closed, hidden and inert so the dialog never flashes before Stimulus connects.
 
 ## With a Turbo method link
 

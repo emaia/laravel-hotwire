@@ -4,7 +4,8 @@ Shows the native Turbo Drive progress bar during Turbo Frame and Stream requests
 full-page navigations.
 
 **Identifier:** `turbo--progress`
-**Install:** `php artisan hotwire:controllers turbo/progress`
+**Loaded by:** auto-loaded after `php artisan hotwire:install`; publish only to customize with
+`php artisan hotwire:controllers turbo/progress`.
 
 ## Requirements
 

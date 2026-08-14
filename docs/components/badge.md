@@ -20,7 +20,7 @@ Compact status label for counts, states and inline metadata.
 Use `as="a"` and pass link attributes directly to the badge when it should behave as a link. `as` is trimmed,
 lowercased, and restricted to `span` or `a`; unsupported values are rejected.
 
-## Styling Hooks
+## Styling hooks
 
 - `data-slot="badge"`
 - `data-variant="default|secondary|destructive|outline|ghost|link"`

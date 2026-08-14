@@ -35,7 +35,7 @@ Groups related buttons and button-like controls so they read as one action clust
 
 `button-group.text` trims and lowercases `as`; tags outside `div`, `span`, and `p` are rejected.
 
-## Styling Hooks
+## Styling hooks
 
 - `data-slot="button-group"`
 - `data-orientation="horizontal|vertical"`

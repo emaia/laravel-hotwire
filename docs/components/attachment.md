@@ -100,3 +100,17 @@ and receive `aria-disabled="true"` and `tabindex="-1"`.
 
 For triggers and actions, `frame` accepts strings or objects resolved with `dom_id()`; null, false, empty, and
 whitespace-only values are omitted. Explicit `data-turbo-frame` wins and can be bound to `false` to suppress the prop.
+
+## Styling hooks
+
+The component exposes stable `data-slot` hooks for preset and application CSS:
+
+- `data-slot="attachment"`
+- `data-slot="attachment-group"`
+- `data-slot="attachment-media"`
+- `data-slot="attachment-content"`
+- `data-slot="attachment-title"`
+- `data-slot="attachment-description"`
+- `data-slot="attachment-actions"`
+- `data-slot="attachment-trigger"`
+- `data-slot="attachment-action"`

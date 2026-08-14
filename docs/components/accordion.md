@@ -84,6 +84,16 @@ Listen for `accordion:change` when app code needs to react to state changes:
 
 The event detail contains `value`, `open` and `item`.
 
-## Required Controllers
+## Controller integrations
 
 `hotwire:check` looks for `accordion` when you use `<hw:accordion>`.
+
+## Styling hooks
+
+The component exposes stable `data-slot` hooks for preset and application CSS:
+
+- `data-slot="accordion"`
+- `data-slot="accordion-item"`
+- `data-slot="accordion-trigger"`
+- `data-slot="accordion-trigger-icon"`
+- `data-slot="accordion-content"`

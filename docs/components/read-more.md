@@ -3,7 +3,7 @@
 Render a preview of long content and reveal the remainder only when the browser confirms that the
 content exceeds the configured height.
 
-## Basic usage
+## Basic Usage
 
 ```blade
 <hw:read-more>

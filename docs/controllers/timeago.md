@@ -3,7 +3,8 @@
 Converts a datetime into a human-readable relative string (e.g. "3 minutes ago"). Supports automatic refresh and localization.
 
 **Identifier:** `timeago`  
-**Install:** `php artisan hotwire:controllers timeago`
+**Loaded by:** auto-loaded after `php artisan hotwire:install`; publish only to customize with
+`php artisan hotwire:controllers timeago`.
 
 > Looking for the Blade component? See [`<hw:timeago />`](../components/timeago.md).
 
@@ -11,7 +12,7 @@ Converts a datetime into a human-readable relative string (e.g. "3 minutes ago")
 
 No external dependencies.
 
-## Stimulus Values
+## Values
 
 | Value              | Type      | Default           | Description                                                            |
 |--------------------|-----------|-------------------|------------------------------------------------------------------------|
@@ -21,7 +22,7 @@ No external dependencies.
 | `refresh-interval` | `Number`  | —                 | Milliseconds between automatic refreshes. Omit to disable auto-refresh |
 | `locale`           | `String`  | Document language | BCP 47 locale used to format the relative time                         |
 
-## Basic usage
+## Basic Usage
 
 ```html
 <time

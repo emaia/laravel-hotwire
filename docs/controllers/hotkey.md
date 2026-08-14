@@ -4,7 +4,8 @@ Binds keyboard shortcuts to click or focus an element. Automatically ignores key
 editable content, and rich-text editors.
 
 **Identifier:** `hotkey`  
-**Install:** `php artisan hotwire:controllers hotkey`
+**Loaded by:** auto-loaded after `php artisan hotwire:install`; publish only to customize with
+`php artisan hotwire:controllers hotkey`.
 
 ## Requirements
 
@@ -26,7 +27,7 @@ Both actions are no-ops when:
 - The user is composing text with an IME
 - The event was already prevented by another handler
 
-## Basic usage — keyboard shortcut for a button
+## Basic Usage — keyboard shortcut for a button
 
 ```html
 <button

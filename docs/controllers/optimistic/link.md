@@ -4,7 +4,8 @@ Dispatches Optimistic UI updates when a Turbo-driven link is clicked. A single
 controller on the `<a>` — no extra dispatch controller needed.
 
 **Identifier:** `optimistic--link`
-**Install:** `php artisan hotwire:controllers optimistic/link`
+**Loaded by:** auto-loaded after `php artisan hotwire:install`; publish only to customize with
+`php artisan hotwire:controllers optimistic/link`.
 
 ## Usage — frame navigation with skeleton
 

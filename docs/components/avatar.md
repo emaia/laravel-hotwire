@@ -109,7 +109,7 @@ size of the avatars in the group.
 | `avatar.group` | `div` | `avatar-group` |
 | `avatar.group-count` | `span` | `avatar-group-count` |
 
-## Styling Hooks
+## Styling hooks
 
 - `data-slot="avatar"`
 - `data-size="sm|default|lg"`

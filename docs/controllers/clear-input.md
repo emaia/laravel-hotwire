@@ -1,33 +1,17 @@
 # Clear Input
 
-Adds an "X" button to clear an input value. The button appears automatically when the field has a value and hides when
-it is empty.
+Adds an "X" button to clear an input value. The button appears automatically when the field has a value and hides when it is empty.
 
-**Identifier:** `clear-input`  
-**Install:** `php artisan hotwire:controllers clear-input`
+**Identifier:** `clear-input`
+**Loaded by:** auto-loaded after `php artisan hotwire:install`; publish only to customize with `php artisan hotwire:controllers clear-input`.
 
 ## Requirements
 
 - No external dependencies.
 
-## Targets
-
-| Target        | Description                        |
-|---------------|------------------------------------|
-| `input`       | The input to be cleared            |
-| `clearButton` | The button that triggers the clear |
-
-## Events
-
-| Event          | Description                                         |
-|----------------|-----------------------------------------------------|
-| `input`        | Native input event fired after the value is cleared |
-| `inputCleared` | Fired on the input after clearing. Bubbles.         |
-
-## Basic usage
+## Basic Usage
 
 ```html
-
 <div data-controller="clear-input" class="relative">
     <input
         type="text"
@@ -47,25 +31,9 @@ it is empty.
 
 The button is hidden by default (`hidden`) and appears via CSS when the input has a value and is focused or hovered.
 
-## Required CSS
-
-The controller automatically injects the styles that control button visibility:
-
-```css
-/* Automatically injected by the controller */
-.clear-input--touched:focus + .clear-input-button,
-.clear-input--touched:hover + .clear-input-button,
-.clear-input--touched + .clear-input-button:hover {
-    display: block !important;
-}
-```
-
-The `clear-input--touched` class is added/removed automatically as the input receives or loses a value.
-
-## With auto-submit on clear
+## With Auto Submit On Clear
 
 ```html
-
 <form data-controller="auto-submit">
     <div data-controller="clear-input" class="relative">
         <input
@@ -86,17 +54,13 @@ The `clear-input--touched` class is added/removed automatically as the input rec
 </form>
 ```
 
-When the user clicks "X", the controller dispatches native `input` first and then `inputCleared`. The `inputCleared`
-event triggers the form submit automatically. It uses `submit` so the cleared results show instantly — and because
-`submit` cancels a debounce still pending from typing, the clear produces a single request — while typing stays
-debounced via `debouncedSubmit`.
+When the user clicks "X", the controller dispatches native `input` first and then `inputCleared`. The `inputCleared` event triggers the form submit automatically. It uses `submit` so the cleared results show instantly, and because `submit` cancels a debounce still pending from typing, the clear produces a single request while typing stays debounced via `debouncedSubmit`.
 
-## With a pre-filled value
+## With A Pre-Filled Value
 
 If the input already has a value when the page loads, the button appears immediately:
 
 ```html
-
 <div data-controller="clear-input" class="relative">
     <input
         type="text"
@@ -115,9 +79,35 @@ If the input already has a value when the page loads, the button appears immedia
 </div>
 ```
 
-## Turbo morph support
+## Required CSS
 
-The controller re-syncs the `clear-input--touched` class on every `turbo:render`. With `<hw:meta refresh />` (
-or `data-turbo-action="morph"`), idiomorph rewrites the input's `class` attribute from server HTML — which does not
-contain the runtime-added class — so the clear button would no longer appear over `old()`-restored values. The listener
-re-applies (or removes) the class based on the current input value after the morph completes.
+The controller automatically injects the styles that control button visibility:
+
+```css
+/* Automatically injected by the controller */
+.clear-input--touched:focus + .clear-input-button,
+.clear-input--touched:hover + .clear-input-button,
+.clear-input--touched + .clear-input-button:hover {
+    display: block !important;
+}
+```
+
+The `clear-input--touched` class is added and removed automatically as the input receives or loses a value.
+
+## Behavior
+
+The controller re-syncs the `clear-input--touched` class on every `turbo:render`. With `<hw:meta refresh />` (or `data-turbo-action="morph"`), idiomorph rewrites the input's `class` attribute from server HTML, which does not contain the runtime-added class, so the clear button would no longer appear over `old()`-restored values. The listener re-applies or removes the class based on the current input value after the morph completes.
+
+## Targets
+
+| Target        | Description                        |
+|---------------|------------------------------------|
+| `input`       | The input to be cleared            |
+| `clearButton` | The button that triggers the clear |
+
+## Events
+
+| Event          | Description                                         |
+|----------------|-----------------------------------------------------|
+| `input`        | Native input event fired after the value is cleared |
+| `inputCleared` | Fired on the input after clearing. Bubbles.         |

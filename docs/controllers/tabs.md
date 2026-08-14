@@ -5,7 +5,8 @@ Accessible tabs following the [WAI-ARIA APG tabs pattern](https://www.w3.org/WAI
 state is read from the DOM on connect, so server-rendered selection and Turbo morphs are preserved.
 
 **Identifier:** `tabs`  
-**Install:** `php artisan hotwire:controllers tabs`
+**Loaded by:** auto-loaded after `php artisan hotwire:install`; publish only to customize with
+`php artisan hotwire:controllers tabs`.
 
 ## Requirements
 
@@ -18,7 +19,7 @@ state is read from the DOM on connect, so server-rendered selection and Turbo mo
 | `tab`   | Each tab button (`role="tab"`, with `aria-controls` pointing to a panel) |
 | `panel` | Each tab panel (`role="tabpanel"`, matched by `id`/`aria-controls`)      |
 
-## Stimulus Values
+## Values
 
 | Value            | Type     | Default | Description                                                         |
 |------------------|----------|---------|---------------------------------------------------------------------|
@@ -34,7 +35,7 @@ state is read from the DOM on connect, so server-rendered selection and Turbo mo
   has no focusable content of its own (so it stays reachable by keyboard); omit it when the panel already contains
   focusable elements. The controller never touches panel `tabindex`.
 
-## Basic usage
+## Basic Usage
 
 ```html
 

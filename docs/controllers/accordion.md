@@ -3,7 +3,8 @@
 Coordinates native `<details>` / `<summary>` accordion items without replacing browser disclosure behavior.
 
 **Identifier:** `accordion`
-**Install:** `php artisan hotwire:controllers accordion`
+**Loaded by:** auto-loaded after `php artisan hotwire:install`; publish only to customize with
+`php artisan hotwire:controllers accordion`.
 
 ## Markup
 

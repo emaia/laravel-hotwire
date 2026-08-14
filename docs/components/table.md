@@ -34,3 +34,17 @@ Responsive table primitives that keep markup semantic while exposing stable `dat
 | `table.head` | `th` | `table-head` |
 | `table.cell` | `td` | `table-cell` |
 | `table.caption` | `caption` | `table-caption` |
+
+## Styling hooks
+
+The component exposes stable `data-slot` hooks for preset and application CSS:
+
+- `data-slot="table-container"`
+- `data-slot="table"`
+- `data-slot="table-header"`
+- `data-slot="table-body"`
+- `data-slot="table-footer"`
+- `data-slot="table-row"`
+- `data-slot="table-head"`
+- `data-slot="table-cell"`
+- `data-slot="table-caption"`

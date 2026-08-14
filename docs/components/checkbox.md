@@ -83,6 +83,12 @@ The controller also re-syncs after `turbo:render`, so a Turbo morph does not lea
 Checkboxes submit immediately by default. Use `auto-submit="debounced" auto-submit-delay="..."` when a checkbox should
 share a debounced filter flow.
 
-## Required controllers
+## Controller integrations
 
 `hotwire:check` looks for `checkbox` when `indeterminate` is used and `auto-submit` when `auto-submit` is used.
+
+## Styling hooks
+
+The component exposes stable `data-slot` hooks for preset and application CSS:
+
+- `data-slot="checkbox"`

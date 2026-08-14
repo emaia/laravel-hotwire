@@ -90,7 +90,7 @@ and can be bound to `false` to suppress it.
 | `breadcrumb.separator` | `li`    | `breadcrumb-separator` |
 | `breadcrumb.ellipsis`  | `span`  | `breadcrumb-ellipsis`  |
 
-## Styling Hooks
+## Styling hooks
 
 - `data-slot="breadcrumb"`
 - `data-slot="breadcrumb-list"`

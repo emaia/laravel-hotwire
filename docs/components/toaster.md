@@ -113,7 +113,7 @@ window.toaster.dismiss(id);
 `options` accepts `description`, `duration`, `position` and `className`. Anything else on the instance is internal
 and may change without notice.
 
-## Styling
+## Styling hooks
 
 Appearance lives in the preset, keyed on `data-slot`; the geometry of the stack lives in `structural.css`. Both are
 driven by custom properties you can override anywhere in your own CSS:

@@ -97,6 +97,14 @@ To debounce a select, make the mode explicit:
 <hw:select name="category" :options="$categories" auto-submit="debounced" auto-submit-delay="500" />
 ```
 
-## Required controllers
+## Controller integrations
 
 `auto-submit` is only required when the `auto-submit` prop is used.
+
+## Styling hooks
+
+The component exposes stable `data-slot` hooks for preset and application CSS:
+
+- `data-slot="select-wrapper"`
+- `data-slot="select"`
+- `data-slot="select-icon"`

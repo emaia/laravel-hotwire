@@ -6,7 +6,7 @@ dismissal, `Escape` dismissal with focus return, optional close-on-select and an
 The component wraps the [`dropdown`](../controllers/dropdown.md) Stimulus controller and wires up trigger/menu
 accessibility attributes for you.
 
-## Usage
+## Basic Usage
 
 ```blade
 <hw:dropdown>
@@ -32,7 +32,7 @@ accessibility attributes for you.
 an `<a>` or `<button>` inside the content closes the dropdown by default.
 
 Add `data-slot="dropdown-trigger-icon"` to a chevron inside the trigger when you want it to rotate with the open state.
-The Nova preset targets the trigger's `aria-expanded="true"` state, so no group class is required.
+The default preset CSS targets the trigger's `aria-expanded="true"` state, so no group class is required.
 
 ## Trigger As Child
 
@@ -110,42 +110,6 @@ mobile opens below the trigger:
 </hw:sidebar.menu>
 ```
 
-## Props
-
-| Component | Prop | Default | Description |
-| --- | --- | --- | --- |
-| `dropdown` | `id` | `uniqid('dropdown-')` | Content `id` and trigger `aria-controls`. |
-| `dropdown` | `open` | `false` | Start open without an enter animation. |
-| `dropdown` | `close-on-select` | `true` | Close when an `<a>` or `<button>` inside the content is clicked. |
-| `dropdown.trigger` | `as-child` | `false` | Merge trigger behavior into one button or anchor root instead of rendering a button. |
-| `dropdown.content` | `side` | `bottom` | Preferred side: `top`, `right`, `bottom` or `left`. |
-| `dropdown.content` | `align` | `start` | Content alignment: `start`, `center` or `end`. |
-| `dropdown.content` | `mobile-side` | `null` | Side override while the mobile media query matches. |
-| `dropdown.content` | `mobile-align` | `null` | Align override while the mobile media query matches. |
-| `dropdown.content` | `mobile-media` | `(max-width: 767px)` | Media query used by mobile side/align overrides. |
-| `dropdown.content` | `collapsed-side` | `null` | Side override while the dropdown is inside a collapsed container. |
-| `dropdown.content` | `collapsed-align` | `null` | Align override while the dropdown is inside a collapsed container. |
-| `dropdown.content` | `collapsed-when` | Sidebar icon/collapsed selector | Selector used to detect collapsed context. |
-| `dropdown.content` | `side-offset` | `4` | Main-axis gap between the trigger and content. |
-| `dropdown.content` | `align-offset` | `0` | Cross-axis offset along the trigger edge. |
-| `dropdown.content` | `strategy` | `absolute` | Floating UI strategy: `absolute` or `fixed`. |
-| `dropdown.content` | `flip` | `true` | Flip to the opposite side when the preferred side lacks room. |
-| `dropdown.content` | `shift` | `true` | Shift within the viewport when the content would overflow. |
-| `dropdown.content` | `motion` | `default` | Presence motion: `default` or `none`. |
-| `dropdown.content` | `width` | `''` | Content width classes; overrides the trigger-width default when set. |
-| `dropdown.label` | `inset` | `false` | Align the label with inset items. |
-| `dropdown.item` | `href` | `null` | Render an anchor instead of a button. |
-| `dropdown.item` | `frame` | `null` | Turbo Frame target for an enabled anchor item. |
-| `dropdown.item` | `variant` | `default` | `default` or `destructive`. |
-| `dropdown.item` | `disabled` | `false` | Disable the item. |
-| `dropdown.item` | `inset` | `false` | Add leading space for iconless items. |
-| `dropdown.item` | `type` | `button` | Native button type: `button`, `submit`, or `reset`. |
-
-`dropdown.item` frame values accept strings or objects resolved with `dom_id()`; null, false, empty, and whitespace-only
-values are omitted. An explicit `data-turbo-frame` wins and can be bound to `false` to suppress the prop. Button items
-and disabled links omit frame metadata. Disabled links also omit `href` and receive `aria-disabled="true"` and
-`tabindex="-1"`.
-
 ## Positioning
 
 The content anchors to the active trigger with Floating UI. It opens below the trigger by default, matches the trigger
@@ -163,9 +127,14 @@ width, flips when the preferred side lacks room, and shifts within the viewport.
 Use responsive overrides when the same dropdown should open differently on small screens:
 
 ```blade
-<hw:dropdown.content side="right" align="start" mobile-side="bottom" mobile-align="end">
-    ...
-</hw:dropdown.content>
+<hw:dropdown>
+    <hw:dropdown.trigger>Responsive menu</hw:dropdown.trigger>
+
+    <hw:dropdown.content side="right" align="start" mobile-side="bottom" mobile-align="end">
+        <hw:dropdown.item href="/profile">Profile</hw:dropdown.item>
+        <hw:dropdown.item href="/settings">Settings</hw:dropdown.item>
+    </hw:dropdown.content>
+</hw:dropdown>
 ```
 
 When the media query changes while the dropdown is open, the controller recalculates Floating UI positioning. The
@@ -180,9 +149,14 @@ while the Sidebar reports `data-sidebar-collapsible="icon"` with collapsed state
 attribute values so it can be rendered safely as an HTML attribute.
 
 ```blade
-<hw:dropdown.content side="top" align="start" collapsed-side="right" collapsed-align="end">
-    ...
-</hw:dropdown.content>
+<hw:dropdown>
+    <hw:dropdown.trigger>Sidebar actions</hw:dropdown.trigger>
+
+    <hw:dropdown.content side="top" align="start" collapsed-side="right" collapsed-align="end">
+        <hw:dropdown.item href="/projects">Projects</hw:dropdown.item>
+        <hw:dropdown.item href="/teams">Teams</hw:dropdown.item>
+    </hw:dropdown.content>
+</hw:dropdown>
 ```
 
 Menus are promoted to the browser top layer when supported, so both strategies avoid common clipping issues inside
@@ -202,13 +176,17 @@ open, Presence removes `hidden`, waits for the first resolved placement, removes
 On close, it changes the state to `closed` and applies `inert` immediately, but leaves `hidden` off until CSS motion
 finishes.
 
-The Nova preset transitions only `opacity`, `scale`, and `translate`. Use `motion="none"` when the menu should show and
+The default preset CSS transitions only `opacity`, `scale`, and `translate`. Use `motion="none"` when the menu should show and
 hide immediately:
 
 ```blade
-<hw:dropdown.content motion="none">
-    ...
-</hw:dropdown.content>
+<hw:dropdown>
+    <hw:dropdown.trigger>Instant menu</hw:dropdown.trigger>
+
+    <hw:dropdown.content motion="none">
+        <hw:dropdown.item href="/settings">Settings</hw:dropdown.item>
+    </hw:dropdown.content>
+</hw:dropdown>
 ```
 
 Custom CSS may use transitions or finite animations keyed by `data-state`. Never apply `display: none` or `hidden` from
@@ -237,7 +215,7 @@ when `prefers-reduced-motion: reduce` is active.
 
 ## Menu Width
 
-By default, the Nova preset makes content match the trigger width with `w-(--anchor-width)` and hides horizontal overflow.
+By default, the preset CSS makes content match the trigger width with `w-(--anchor-width)` and hides horizontal overflow.
 Set the width on `<hw:dropdown.content>` when custom content needs more room.
 
 ```blade
@@ -277,6 +255,10 @@ where needed with `data-action="dropdown#close"`.
 
 Use form components for interactive form content. `dropdown.item` is best for link/button actions, not checkbox rows.
 
+## Automatic Behavior
+
+Dropdown keeps trigger state, content visibility, close-on-select behavior and focus return in sync automatically.
+
 ## Keyboard Navigation
 
 Dropdown stays a disclosure component, not a strict ARIA menu. It does not add `role="menu"` automatically, does not use
@@ -286,6 +268,42 @@ roving tabindex and does not capture arrow keys, `Home` or `End`. Users navigate
 `Escape` closes the dropdown and restores focus to the trigger. When nested inside an overlay such as a Drawer, Modal or
 Sidebar, the dropdown consumes the first `Escape`; the parent overlay handles a later `Escape` after the dropdown has
 closed.
+
+## Props
+
+| Component | Prop | Default | Description |
+| --- | --- | --- | --- |
+| `dropdown` | `id` | `uniqid('dropdown-')` | Content `id` and trigger `aria-controls`. |
+| `dropdown` | `open` | `false` | Start open without an enter animation. |
+| `dropdown` | `close-on-select` | `true` | Close when an `<a>` or `<button>` inside the content is clicked. |
+| `dropdown.trigger` | `as-child` | `false` | Merge trigger behavior into one button or anchor root instead of rendering a button. |
+| `dropdown.content` | `side` | `bottom` | Preferred side: `top`, `right`, `bottom` or `left`. |
+| `dropdown.content` | `align` | `start` | Content alignment: `start`, `center` or `end`. |
+| `dropdown.content` | `mobile-side` | `null` | Side override while the mobile media query matches. |
+| `dropdown.content` | `mobile-align` | `null` | Align override while the mobile media query matches. |
+| `dropdown.content` | `mobile-media` | `(max-width: 767px)` | Media query used by mobile side/align overrides. |
+| `dropdown.content` | `collapsed-side` | `null` | Side override while the dropdown is inside a collapsed container. |
+| `dropdown.content` | `collapsed-align` | `null` | Align override while the dropdown is inside a collapsed container. |
+| `dropdown.content` | `collapsed-when` | Sidebar icon/collapsed selector | Selector used to detect collapsed context. |
+| `dropdown.content` | `side-offset` | `4` | Main-axis gap between the trigger and content. |
+| `dropdown.content` | `align-offset` | `0` | Cross-axis offset along the trigger edge. |
+| `dropdown.content` | `strategy` | `absolute` | Floating UI strategy: `absolute` or `fixed`. |
+| `dropdown.content` | `flip` | `true` | Flip to the opposite side when the preferred side lacks room. |
+| `dropdown.content` | `shift` | `true` | Shift within the viewport when the content would overflow. |
+| `dropdown.content` | `motion` | `default` | Presence motion: `default` or `none`. |
+| `dropdown.content` | `width` | `''` | Content width classes; overrides the trigger-width default when set. |
+| `dropdown.label` | `inset` | `false` | Align the label with inset items. |
+| `dropdown.item` | `href` | `null` | Render an anchor instead of a button. |
+| `dropdown.item` | `frame` | `null` | Turbo Frame target for an enabled anchor item. |
+| `dropdown.item` | `variant` | `default` | `default` or `destructive`. |
+| `dropdown.item` | `disabled` | `false` | Disable the item. |
+| `dropdown.item` | `inset` | `false` | Add leading space for iconless items. |
+| `dropdown.item` | `type` | `button` | Native button type: `button`, `submit`, or `reset`. |
+
+`dropdown.item` frame values accept strings or objects resolved with `dom_id()`; null, false, empty, and whitespace-only
+values are omitted. An explicit `data-turbo-frame` wins and can be bound to `false` to suppress the prop. Button items
+and disabled links omit frame metadata. Disabled links also omit `href` and receive `aria-disabled="true"` and
+`tabindex="-1"`.
 
 ## Components
 
@@ -300,7 +318,7 @@ closed.
 | `dropdown.separator` | `div` with `role="separator"` | `dropdown-separator` |
 | `dropdown.shortcut` | `span` | `dropdown-shortcut` |
 
-## Styling Hooks
+## Styling hooks
 
 - `data-slot="dropdown"`
 - `data-slot="dropdown-trigger"`
@@ -332,11 +350,11 @@ closed.
 - `data-slot="dropdown-separator"`
 - `data-slot="dropdown-shortcut"`
 
-`width` is an explicit escape hatch on the content element itself. By default, the Nova preset sizes the menu with
+`width` is an explicit escape hatch on the content element itself. By default, the preset CSS sizes the menu with
 `w-(--anchor-width)`, constrains it with `max-h-(--available-height)`, hides horizontal overflow, and animates from
 `--transform-origin`. `data-side` and `data-align` are the resolved Floating UI placement after any flip, not merely the
 preferred `side` and `align` props.
 
-## Required Controllers
+## Controller integrations
 
 - `dropdown`

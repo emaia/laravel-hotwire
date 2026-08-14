@@ -3,12 +3,46 @@
 Accessible modal with backdrop, animations, focus trap and dynamic content support via Turbo.
 
 **Identifier:** `modal`  
-**Install:** `php artisan hotwire:controllers modal`
+**Loaded by:** auto-loaded after `php artisan hotwire:install`; publish only to customize with
+`php artisan hotwire:controllers modal`.
 
 ## Requirements
 
 - No external dependencies.
 - Turbo (optional, for dynamic content via Turbo Frame).
+
+Escape dismissal and focus trapping are suspended during IME composition, so canceling a candidate does not close the
+modal or move focus.
+
+## Basic Usage
+
+```html
+<div
+    data-controller="modal"
+    data-modal-lock-scroll-class="overflow-hidden"
+    data-action="turbo:before-cache@window->modal#closeForCache"
+>
+    <button type="button" data-action="modal#open">Open modal</button>
+
+    <div data-modal-target="modal" data-state="closed" data-motion="default" hidden inert>
+        <div
+            data-modal-target="backdrop"
+            data-action="click->modal#clickOutside"
+        ></div>
+
+        <div data-modal-target="dialog" role="dialog" aria-modal="true">
+            <h2>Title</h2>
+            <p>Modal content.</p>
+
+            <button type="button" data-action="modal#close">Close</button>
+        </div>
+    </div>
+</div>
+```
+
+Stimulus actions are delegated by ancestry, so the trigger must live inside the `[data-controller="modal"]` element. The
+controller opens and closes the overlay, traps focus, returns focus to the opener, locks body scroll when configured, and
+closes synchronously before Turbo caches the page.
 
 ## Targets
 
@@ -20,7 +54,7 @@ Accessible modal with backdrop, animations, focus trap and dynamic content suppo
 | `dynamicContent`  | Container observed for content loaded via Turbo |
 | `loadingTemplate` | Template shown while dynamic content loads      |
 
-## Stimulus Values
+## Values
 
 | Value                    | Type      | Default | Description                                     |
 |--------------------------|-----------|---------|-------------------------------------------------|
@@ -36,15 +70,12 @@ Accessible modal with backdrop, animations, focus trap and dynamic content suppo
 
 ## Actions
 
-| Action               | Description                                                      |
-|----------------------|------------------------------------------------------------------|
-| `modal#open`         | Opens the modal                                                  |
-| `modal#close`        | Closes the modal                                                 |
-| `modal#clickOutside` | Closes when clicking outside (use with `click` event on overlay) |
-| `modal#closeForCache` | Closes immediately for `turbo:before-cache`                    |
-
-Escape dismissal and focus trapping are suspended during IME composition, so canceling a candidate does not close the
-modal or move focus.
+| Action                | Description                                                      |
+|-----------------------|------------------------------------------------------------------|
+| `modal#open`          | Opens the modal                                                  |
+| `modal#close`         | Closes the modal                                                 |
+| `modal#clickOutside`  | Closes when clicking outside (use with `click` event on overlay) |
+| `modal#closeForCache` | Closes immediately for `turbo:before-cache`                      |
 
 ## Events
 
@@ -53,7 +84,7 @@ modal or move focus.
 | `modal:opened` | Fired on the root element after the opening animation completes |
 | `modal:closed` | Fired on the root element after the closing animation completes |
 
-## Basic usage
+## Copyable Styled Example
 
 ```html
 <div
@@ -98,10 +129,8 @@ Style closed and open visuals from the overlay state, scoped to direct children 
 Presence waits for actual finite CSS motion on the backdrop and dialog. Never set `display: none` in the closed-state
 rule; Presence owns `hidden` and keeps exit content rendered but inert until motion settles.
 
-Stimulus actions are delegated by ancestry — the trigger must live inside the
-`[data-controller="modal"]` element so the click reaches the controller. The Blade component
-handles this for you via the `trigger` slot. Root attributes like `data-modal-close-on-escape-value`
-or `aria-labelledby` belong on that same controller element.
+The Blade component handles trigger ancestry for you via the `trigger` slot. Root attributes like
+`data-modal-close-on-escape-value` or `aria-labelledby` belong on that same controller element.
 
 ## With dynamic content via Turbo Frame
 

@@ -130,7 +130,7 @@ While one of these modal overlays stays connected, Turbo morphs can update its c
 targets. An open overlay therefore stays open through refresh morphs; close it through its public action or frame/stream
 lifecycle rather than relying on closed server-rendered attributes.
 
-The Nova preset transitions only `opacity`, `scale`, and `translate`. Presence suppresses transition and animation while
+The selected preset transitions only `opacity`, `scale`, and `translate`. Presence suppresses transition and animation while
 the first placement is prepared, so a resolved flip cannot animate the closed transform before enter begins. During
 exit, Presence sets `data-state="closed"`
 and `inert` immediately but waits for the element's CSS transition or finite animation before applying `hidden`. A

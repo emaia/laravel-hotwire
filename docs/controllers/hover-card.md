@@ -4,20 +4,56 @@ Controls a hover/focus preview card: delayed open/close state, `Escape` dismissa
 and Floating UI positioning.
 
 **Identifier:** `hover-card`  
-**Install:** `php artisan hotwire:controllers hover-card`
+**Loaded by:** auto-loaded after `php artisan hotwire:install`; publish only to customize with
+`php artisan hotwire:controllers hover-card`.
 
 ## Requirements
 
 - `@floating-ui/dom` (`npm install @floating-ui/dom` or `bun add @floating-ui/dom`)
 - Ships with `_composition.js`, `_floating.js`, `_presence.js`, and `_top_layer.js`; publishing the controller publishes
   these helpers too.
-- Without the Nova preset, reset native Popover positioning with
+- Without the selected preset, reset native Popover positioning with
   `[data-hotwire-top-layer][popover] { inset: auto; margin: 0; }` and define the floating element's border and padding.
 
 > If any component in your views pulls this controller in, `php artisan hotwire:check --fix` will add
 > `@floating-ui/dom` to your `package.json` `devDependencies` automatically.
 
 Escape dismissal is suspended during IME composition.
+
+## Basic Usage
+
+```html
+<div data-controller="hover-card">
+    <button
+        type="button"
+        data-hover-card-target="trigger"
+        data-action="mouseenter->hover-card#pointerEnter mouseleave->hover-card#pointerLeave focusin->hover-card#focusIn focusout->hover-card#focusOut"
+        aria-describedby="user-preview"
+        aria-expanded="false"
+        data-hover-card-state="closed"
+    >
+        Jane Doe
+    </button>
+
+    <div
+        id="user-preview"
+        data-hover-card-target="content"
+        data-action="mouseenter->hover-card#pointerEnter mouseleave->hover-card#pointerLeave focusin->hover-card#focusIn focusout->hover-card#focusOut"
+        data-state="closed"
+        data-motion="default"
+        hidden
+        inert
+        role="tooltip"
+    >
+        <strong>Jane Doe</strong>
+        <p>Product designer on the platform team.</p>
+    </div>
+</div>
+```
+
+Use the `<hw:hover-card>` component for the server-rendered markup unless you need fully custom HTML. The controller
+opens after hover or focus delay, stays open while pointer or focus remains inside the trigger or card, and closes before
+Turbo caches the page.
 
 ## Targets
 
@@ -53,7 +89,7 @@ Motion is configured on the content target with `data-motion="default|none"`, no
 | `hover-card#focusIn`      | Schedule opening from keyboard or program focus. |
 | `hover-card#focusOut`     | Schedule closing after focus leaves.             |
 
-## Markup
+## Copyable Minimal Markup
 
 ```html
 <div data-controller="hover-card">
@@ -83,7 +119,7 @@ Motion is configured on the content target with `data-motion="default|none"`, no
 </div>
 ```
 
-Use the `<hw:hover-card>` component for the server-rendered markup unless you need fully custom HTML.
+The content target starts closed, hidden and inert so the preview never flashes before Stimulus connects.
 
 ## Positioning And Top Layer
 
@@ -107,7 +143,7 @@ Opening removes `hidden` but leaves the content closed and inert until its first
 `data-state="closed"` and `inert` immediately, then waits for the element's CSS transition or finite animation before
 adding `hidden`. Trigger state is exposed separately as `data-hover-card-state="open|closed"`.
 
-The Nova preset transitions only `opacity`, `scale`, and `translate`. Custom CSS can style `data-state="open|closed"`,
+The selected preset transitions only `opacity`, `scale`, and `translate`. Custom CSS can style `data-state="open|closed"`,
 but the closed rule must not set `display: none` or otherwise hide the element. Set `data-motion="none"` for immediate
 presence changes. Reduced-motion preference skips motion, and reopening during exit cancels stale hiding and top-layer
 teardown.

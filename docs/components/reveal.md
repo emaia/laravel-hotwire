@@ -3,7 +3,7 @@
 Render a staggered entrance cascade for direct children or explicitly selected nested items. CSS owns the first-paint
 animation; the controller progressively adds per-item scroll triggering, Turbo integration, and synchronization events.
 
-## Basic usage
+## Basic Usage
 
 Direct children are reveal items by default, with no per-item markup:
 

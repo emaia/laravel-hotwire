@@ -3,30 +3,22 @@
 Accessible alert dialog that intercepts clicks and requires user confirmation before proceeding. Works with links,
 buttons, form submissions, and Turbo actions.
 
-## Requirements
-
-- No external dependencies.
-- Ships with `_composition.js`, `_focus_trap.js`, `_overlay.js`, `_overlay_stack.js`, `_presence.js`, and
-  `_top_layer.js`; publishing the `alert-dialog` controller publishes these helpers too.
-
-## Basic usage
+## Basic Usage
 
 The default slot **is** the trigger — anything inside the component is wrapped in a click-intercept zone. The action
 button uses the `default` variant by default:
 
-```html
-
+```blade
 <hw:alert-dialog title="Continue?" description="This will proceed.">
     <button type="button">Continue</button>
 </hw:alert-dialog>
 ```
 
-## Destructive action
+## Destructive Action
 
 Use `confirm-variant="destructive"` when the confirmed action is destructive:
 
-```html
-
+```blade
 <hw:alert-dialog
     title="Delete item?"
     description="This action cannot be undone."
@@ -37,10 +29,9 @@ Use `confirm-variant="destructive"` when the confirmed action is destructive:
 </hw:alert-dialog>
 ```
 
-## With Turbo method
+## With Turbo Method
 
-```html
-
+```blade
 <hw:alert-dialog
     title="Delete item?"
     description="This action cannot be undone."
@@ -51,12 +42,11 @@ Use `confirm-variant="destructive"` when the confirmed action is destructive:
 </hw:alert-dialog>
 ```
 
-## Rich body content
+## Rich Body Content
 
 When `description` isn't enough — lists of consequences, multiple paragraphs, embedded links — use the `content` slot:
 
-```html
-
+```blade
 <hw:alert-dialog title="Archive project?" description="This will hide the project from the dashboard.">
     <button type="button">Archive</button>
 
@@ -72,12 +62,20 @@ When `description` isn't enough — lists of consequences, multiple paragraphs, 
 
 The `content` slot renders below `description` and above the action buttons.
 
-## Tweaking behavior
+## Automatic Behavior
+
+The default slot is wrapped in a click-intercept zone. When the user clicks any element inside, the click is canceled
+and the alert dialog opens. If the user clicks **Confirm**, the original click is re-fired on the same element
+(bypassing the intercept) after the actual exit motion settles. If the user clicks **Cancel** or presses `Escape`, the
+dialog closes and nothing happens. Rapid reopen cancels stale close completion.
+
+The trigger element needs no special attributes — place it as the default slot.
+
+## Tweaking Behavior
 
 Motion, scroll lock, and click-outside behavior are exposed as Blade props — no need to write `data-*-value` attributes:
 
-```html
-
+```blade
 <hw:alert-dialog
     title="Are you sure?"
     motion="none"
@@ -87,6 +85,25 @@ Motion, scroll lock, and click-outside behavior are exposed as Blade props — n
     <button type="button">Proceed</button>
 </hw:alert-dialog>
 ```
+
+## Turbo Integration
+
+The dialog closes synchronously on `turbo:before-cache`, preventing ghost dialogs when navigating with Turbo Drive.
+
+## Accessibility
+
+- `role="dialog"` and `aria-modal="true"` on the overlay
+- Focus trap: Tab/Shift+Tab cycle through focusable elements inside the dialog
+- Focus returns to the trigger element on close
+- Closes on `Escape` key
+- Closes on backdrop click (configurable via `close-on-click-outside`)
+- Body scroll is locked while open (configurable via `lock-scroll`)
+
+## Requirements
+
+- No external dependencies.
+- Ships with `_composition.js`, `_focus_trap.js`, `_overlay.js`, `_overlay_stack.js`, `_presence.js`, and
+  `_top_layer.js`; publishing the `alert-dialog` controller publishes these helpers too.
 
 ## Props
 
@@ -117,29 +134,24 @@ dialog behavior with props instead of overriding those attributes directly.
 | `slot` (default) | Trigger element whose click is intercepted to open the dialog            |
 | `content`        | Optional rich content rendered below `description` and above the buttons |
 
-## How it works
-
-The default slot is wrapped in a click-intercept zone. When the user clicks any element inside, the click is canceled
-and the alert dialog opens. If the user clicks **Confirm**, the original click is re-fired on the same element
-(bypassing the intercept) after the actual exit motion settles. If the user clicks **Cancel** or presses `Escape`, the
-dialog closes and nothing happens. Rapid reopen cancels stale close completion.
-
-The trigger element needs no special attributes — place it as the default slot.
-
-## Accessibility
-
-- `role="dialog"` and `aria-modal="true"` on the overlay
-- Focus trap: Tab/Shift+Tab cycle through focusable elements inside the dialog
-- Focus returns to the trigger element on close
-- Closes on `Escape` key
-- Closes on backdrop click (configurable via `close-on-click-outside`)
-- Body scroll is locked while open (configurable via `lock-scroll`)
-
-## Turbo integration
-
-The dialog closes synchronously on `turbo:before-cache`, preventing ghost dialogs when navigating with Turbo Drive.
-
 ## Need more control?
 
 For fully custom markup — different DOM structure, no Tailwind, or wiring custom buttons inside the dialog — drop down
 to the [`alert-dialog` controller](../controllers/alert-dialog.md).
+
+## Styling hooks
+
+The component exposes stable `data-slot` hooks for preset and application CSS:
+
+- `data-slot="alert-dialog-overlay"`
+- `data-slot="alert-dialog-backdrop"`
+- `data-slot="alert-dialog-panel"`
+- `data-slot="alert-dialog-header"`
+- `data-slot="alert-dialog-title"`
+- `data-slot="alert-dialog-description"`
+- `data-slot="alert-dialog-body"`
+- `data-slot="alert-dialog-footer"`
+- `data-slot="alert-dialog-cancel"`
+- `data-slot="alert-dialog-action"`
+- `data-slot="alert-dialog"`
+- `data-slot="alert-dialog-trigger"`

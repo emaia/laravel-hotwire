@@ -4,7 +4,8 @@ Scrolls to the first validation error after a relevant `turbo:frame-render` or a
 morphs. The user always sees what went wrong — even when `autoscroll` on a frame rolls to a different position.
 
 **Identifier:** `error-scroll`
-**Install:** `php artisan hotwire:controllers error-scroll`
+**Loaded by:** auto-loaded after `php artisan hotwire:install`; publish only to customize with
+`php artisan hotwire:controllers error-scroll`.
 
 ## Requirements
 

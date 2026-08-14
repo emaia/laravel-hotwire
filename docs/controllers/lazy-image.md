@@ -4,13 +4,14 @@ Polls an image URL until it becomes available, then displays it automatically. U
 images (thumbnails, conversions, background processing).
 
 **Identifier:** `lazy-image`  
-**Install:** `php artisan hotwire:controllers lazy-image`
+**Loaded by:** auto-loaded after `php artisan hotwire:install`; publish only to customize with
+`php artisan hotwire:controllers lazy-image`.
 
 ## Requirements
 
 - No external dependencies.
 
-## Stimulus Values
+## Values
 
 | Value          | Type     | Default | Description                                              |
 |----------------|----------|---------|----------------------------------------------------------|
@@ -23,7 +24,7 @@ images (thumbnails, conversions, background processing).
 | `img-class`    | `String` | `""`    | CSS classes applied to the `<img>` tag                   |
 | `sources`      | `Array`  | `[]`    | Array of `{ media, srcset }` for `<source>` (responsive) |
 
-## Basic usage
+## Basic Usage
 
 ```html
 <picture

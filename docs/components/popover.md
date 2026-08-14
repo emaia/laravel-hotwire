@@ -6,7 +6,7 @@ short contextual detail. Use [Dropdown](dropdown.md) instead for menus made of a
 The component wraps the [`popover`](../controllers/popover.md) Stimulus controller, renders the trigger/content wiring
 and positions the content with Floating UI.
 
-## Usage
+## Basic Usage
 
 ```blade
 <hw:popover>
@@ -41,7 +41,18 @@ can cross Drawer, Modal, Turbo Frame and scroll-container boundaries more reliab
 ```blade
 <hw:popover side="right" align="end" :side-offset="8">
     <hw:popover.trigger>Filters</hw:popover.trigger>
-    <hw:popover.content><!-- content --></hw:popover.content>
+
+    <hw:popover.content>
+        <hw:field.group class="gap-3">
+            <hw:field name="status">
+                <hw:field.label>Status</hw:field.label>
+                <hw:select name="status">
+                    <option>Open</option>
+                    <option>Closed</option>
+                </hw:select>
+            </hw:field>
+        </hw:field.group>
+    </hw:popover.content>
 </hw:popover>
 ```
 
@@ -56,7 +67,7 @@ are ignored.
 
 ## Sizing
 
-The Nova preset gives the content a `w-72` default with a viewport max-width. Pass classes to `popover.content` for
+The default preset CSS gives the content a `w-72` default with a viewport max-width. Pass classes to `popover.content` for
 one-off sizing or layout changes:
 
 ```blade
@@ -69,13 +80,23 @@ one-off sizing or layout changes:
 </hw:popover>
 ```
 
-## Keeping It Open
+## Automatic Behavior
 
 Popover is intended for arbitrary content, so it does not close when buttons or links inside the panel are clicked.
 Close it explicitly where needed:
 
 ```blade
-<hw:button type="button" data-action="popover#close">Done</hw:button>
+<hw:popover>
+    <hw:popover.trigger>Preferences</hw:popover.trigger>
+
+    <hw:popover.content>
+        <hw:popover.header>
+            <hw:popover.title>Preferences</hw:popover.title>
+        </hw:popover.header>
+
+        <hw:button type="button" data-action="popover#close">Done</hw:button>
+    </hw:popover.content>
+</hw:popover>
 ```
 
 Outside click, `Escape`, and Turbo's `before-cache` event close the popover automatically. `Escape` returns focus to the
@@ -88,12 +109,16 @@ positions an initially open panel before showing it without enter motion. During
 apply immediately, while `hidden` is deferred until CSS motion finishes. This keeps the panel non-interactive without
 cutting off its exit.
 
-The Nova preset transitions only `opacity`, `scale`, and `translate`. Set motion on the content component:
+The default preset CSS transitions only `opacity`, `scale`, and `translate`. Set motion on the content component:
 
 ```blade
-<hw:popover.content motion="none">
-    <!-- content -->
-</hw:popover.content>
+<hw:popover>
+    <hw:popover.trigger>Instant popover</hw:popover.trigger>
+
+    <hw:popover.content motion="none">
+        <!-- content -->
+    </hw:popover.content>
+</hw:popover>
 ```
 
 Custom CSS may use transitions or finite animations keyed by `data-state`. A closed-state selector must never apply
@@ -127,7 +152,7 @@ Custom CSS may use transitions or finite animations keyed by `data-state`. A clo
 | `popover.title`       | `h2`                       | `popover-title`       |
 | `popover.description` | `p`                        | `popover-description` |
 
-## Styling Hooks
+## Styling hooks
 
 - `data-slot="popover"`
 - `data-popover-side-value="top|right|bottom|left"`
