@@ -23,7 +23,7 @@ The default slot is rendered as a server-side fallback before Stimulus connects.
 
 Additional HTML attributes (e.g. `class`, `id`) are merged onto the `<time>` element.
 
-## Basic usage
+## Basic Usage
 
 ```blade
 <hw:timeago :datetime="$post->created_at" />
@@ -99,3 +99,9 @@ When `locale` is omitted, formatting uses the `<html lang>` value and then the b
 
 - [`timeago` controller](../controllers/timeago.md) — the underlying Stimulus controller, including all values
   and localization behavior
+
+## Styling hooks
+
+The component exposes stable `data-slot` hooks for preset and application CSS:
+
+- `data-slot="timeago"`

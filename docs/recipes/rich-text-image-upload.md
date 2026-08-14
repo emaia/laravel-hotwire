@@ -1,119 +1,43 @@
 # Rich text image upload
 
-Wire the `<hw:rich-text>` component to a Laravel endpoint that stores pasted/dropped images
-and returns a public URL the editor can insert. The package doesn't ship a runtime endpoint —
-storage and access control are app concerns — so this recipe is the canonical reference for how
-the pieces fit together.
+Wire the `<hw:rich-text>` component to a Laravel endpoint that stores pasted or dropped images
+and returns a public URL the editor can insert. The package doesn't ship a runtime endpoint;
+storage and access control are app concerns.
 
 ## Overview
 
 ```
 user pastes/drops image
-    └─▶ rich-text controller intercepts (image-upload prop enabled)
-        └─▶ dispatches rich-text:image-upload { file, editor }
-            └─▶ app listener POSTs file to /uploads
-                └─▶ Laravel stores it and returns { url }
-                    └─▶ app listener calls editor.chain().focus().setImage({ src: url }).run()
+    └─▶ post-rich-text subclass intercepts it (image-upload prop enabled)
+        └─▶ subclass POSTs the file to Laravel
+            └─▶ Laravel stores it and returns { url }
+                └─▶ subclass inserts the image URL into Tiptap
 ```
 
-The package's responsibility ends at "dispatch an event with the file". Everything past that is
-your app's choice: where the file lives, how it's served, what authorization protects it.
+The package provides the interception hook. Your app chooses where the file lives, how it is
+served, and what authorization protects it.
 
-## Enable image upload on the component
+## Extend the package controller
 
-```blade
-<hw:rich-text
-    name="content"
-    placeholder="Write something…"
-    :content="$post->content"
-    :image-upload="true"
-/>
-```
-
-That's the only change at the markup level. With `image-upload` enabled, the controller registers
-Tiptap `editorProps.handlePaste` and `handleDrop` handlers that filter for files where
-`file.type` starts with `image/`, call `preventDefault`, and dispatch the event.
-
-## The image extension
-
-Tiptap ships an `Image` extension separately. Install it and add it to the editor's extension
-stack via a subclass — the controller's default stack is StarterKit + Link + Underline +
-(optional) Placeholder.
+Tiptap ships its `Image` extension separately. Install it, then create an app-owned controller
+under a different identifier. Importing the parent through `@hotwire` keeps the package controller
+available as `rich-text` and lets the subclass inherit package fixes.
 
 ```bash
-bun add @tiptap/extension-image
+bun add @tiptap/extension-image@^2.0
 ```
 
 ```js
-// resources/js/controllers/rich_text_controller.js (or a subclass)
+// resources/js/controllers/post_rich_text_controller.js
 import RichTextController from "@hotwire/rich_text_controller.js";
 import { defaultExtensions } from "@hotwire/_rich_text_editor.js";
 import Image from "@tiptap/extension-image";
 
 export default class extends RichTextController {
-    extensions(options) {
-        return [...defaultExtensions(options), Image];
-    }
-}
-```
-
-If you're publishing the controller without subclassing, edit
-`resources/js/controllers/rich_text_controller.js` directly — the version published via
-`hotwire:controllers rich-text` is yours to modify.
-
-## Listen for the upload event
-
-Two paths — pick the one that fits your codebase.
-
-### Path 1 — Global Stimulus event listener (default)
-
-The controller dispatches `rich-text:image-upload` which bubbles from the editor element. A small
-script anywhere on the page can catch it:
-
-```js
-// resources/js/app.js (after the Stimulus + Turbo bootstrap)
-document.addEventListener("rich-text:image-upload", async (event) => {
-    const { file, editor } = event.detail;
-
-    const body = new FormData();
-    body.append("image", file);
-    body.append("_token", document.querySelector('meta[name="csrf-token"]').content);
-
-    try {
-        const response = await fetch("/posts/upload-image", {
-            method: "POST",
-            body,
-            headers: { "Accept": "application/json" },
-        });
-
-        if (!response.ok) throw new Error(`Upload failed: ${response.status}`);
-
-        const { url } = await response.json();
-        editor.chain().focus().setImage({ src: url }).run();
-    } catch (error) {
-        console.error("Rich text image upload failed:", error);
-    }
-});
-```
-
-Add `<hw:meta csrf />` to your layout if it isn't already
-there — Laravel's `VerifyCsrfToken` middleware expects either a `_token` field or `X-CSRF-TOKEN`
-header on POSTs.
-
-### Path 2 — Subclass override (colocated)
-
-Keep the upload logic next to the editor by overriding the wrapper hook in a subclass. The base
-controller dispatches the event through `handleImageUpload(file)` — override it to do the work
-directly:
-
-```js
-// resources/js/controllers/rich_text_controller.js (forked via `hotwire:controllers rich-text`)
-import { Controller } from "@hotwired/stimulus";
-import { RichTextEditor, defaultExtensions } from "@hotwire/_rich_text_editor.js";
-import Image from "@tiptap/extension-image";
-
-export default class extends Controller {
-    // …existing static values/targets/connect/disconnect from the published controller…
+    static values = {
+        ...RichTextController.values,
+        endpoint: String,
+    };
 
     extensions(options) {
         return [...defaultExtensions(options), Image];
@@ -123,23 +47,68 @@ export default class extends Controller {
         const body = new FormData();
         body.append("image", file);
 
-        const response = await fetch("/posts/upload-image", {
-            method: "POST",
-            body,
-            headers: {
-                "Accept": "application/json",
-                "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
-            },
-        });
-        const { url } = await response.json();
+        try {
+            if (!this.hasEndpointValue) throw new Error("Missing image upload endpoint");
 
-        this.editor?.chain().focus().setImage({ src: url }).run();
+            const response = await fetch(this.endpointValue, {
+                method: "POST",
+                body,
+                headers: {
+                    Accept: "application/json",
+                    "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
+                },
+            });
+
+            if (!response.ok) throw new Error(`Upload failed: ${response.status}`);
+
+            const { url } = await response.json();
+            this.editor?.chain().focus().setImage({ src: url }).run();
+        } catch (error) {
+            console.error("Rich text image upload failed:", error);
+        }
     }
 }
 ```
 
-Path 1 keeps the controller stock but adds a global listener; Path 2 is one-stop but pins the
-upload URL into the controller. Either way, the response is `{ url: "https://…/path/to/file" }`.
+The file name registers this controller as `post-rich-text`. Mount that identifier through the
+component and pass existing content with `value`:
+
+```blade
+<hw:rich-text
+    name="content"
+    controller="post-rich-text"
+    placeholder="Write something…"
+    :value="$post->content"
+    :image-upload="true"
+    :stimulus="stimulus()->controller('post-rich-text', [
+        'endpoint' => route('posts.upload-image'),
+    ])"
+/>
+```
+
+Add `<hw:meta csrf />` to your layout if it isn't already
+there. Laravel's `VerifyCsrfToken` middleware expects either a `_token` field or `X-CSRF-TOKEN`
+header on POSTs.
+
+With `image-upload` enabled, the controller registers Tiptap paste and drop handlers, filters for
+`image/*` files, and calls `handleImageUpload(file)`. The `endpoint` value keeps the controller
+reusable across generic and model-specific upload routes. The endpoint response is
+`{ url: "https://…/path/to/file" }`.
+
+## Fork the `rich-text` identifier only when needed
+
+If the app must replace the package behavior under the same `rich-text` identifier, publish an
+explicit fork:
+
+```bash
+php artisan hotwire:controllers rich-text
+```
+
+Edit `resources/js/controllers/rich_text_controller.js` and remove its `// @hotwire-package`
+marker so package repair commands treat it as user-owned. This local controller shadows the
+vendor controller and must be maintained by the app. Prefer the `post-rich-text` subclass above
+unless same-identifier replacement is intentional. See
+[Extending controllers](../extending-controllers.md) for the tradeoffs.
 
 ## The Laravel route
 
@@ -185,11 +154,23 @@ or your filesystem layer signs URLs.
 
 When you already use `spatie/laravel-medialibrary` for your model's attachments, treat each
 inline image as a media item rather than a raw file in storage. This keeps file management
-consistent (conversions, deletes-cascade, etc.):
+consistent (conversions, deletes-cascade, etc.). Unlike the generic endpoint above, this route
+must identify and authorize the owning post:
 
 ```php
+// routes/web.php
+Route::post('/posts/{post}/upload-image', PostMediaImageController::class)
+    ->middleware('auth')
+    ->name('posts.inline-images.store');
+```
+
+```php
+use Illuminate\Support\Facades\Gate;
+
 public function __invoke(Request $request, Post $post)
 {
+    Gate::authorize('update', $post);
+
     $validated = $request->validate([
         'image' => ['required', 'image', 'mimes:jpeg,png,webp,gif', 'max:8192'],
     ]);
@@ -205,36 +186,50 @@ public function __invoke(Request $request, Post $post)
 }
 ```
 
+Point the same `post-rich-text` subclass at the post-specific named route:
+
+```blade
+<hw:rich-text
+    name="content"
+    controller="post-rich-text"
+    :value="$post->content"
+    :image-upload="true"
+    :stimulus="stimulus()->controller('post-rich-text', [
+        'endpoint' => route('posts.inline-images.store', $post),
+    ])"
+/>
+```
+
 For draft posts (`$post` doesn't exist yet), you can stash the upload against a temp owner and
 move it to the real `Post` after the form submits.
 
 ## Sanitize before saving
 
-The editor's payload is client HTML. Sanitize on the server before persisting:
+The editor's payload is client-controlled HTML. Neither Laravel nor this package ships an HTML
+sanitizer. Install and configure a maintained PHP sanitizer that fits your application's security
+policy, then sanitize after request validation and before persistence or rendering. Laravel's
+string and length validation rules validate the payload shape; they do not make HTML safe.
 
-```php
-public function update(Request $request, Post $post)
-{
-    $clean = clean($request->input('content'), [
-        'HTML.Allowed' => 'p,br,strong,em,u,ul,ol,li,blockquote,a[href|title],h1,h2,h3,pre,code,img[src|alt|width|height]',
-        'URI.AllowedSchemes' => ['http' => true, 'https' => true],
-    ]);
+**Pseudocode only — these names are not Laravel or package APIs:**
 
-    $post->update(['content' => $clean]);
-
-    return to_route('posts.show', $post);
-}
+```text
+validatedHtml = validate request content as a string with an application-appropriate size limit
+sanitizedHtml = configuredSanitizer.sanitize(validatedHtml, applicationAllowlist)
+persist sanitizedHtml on the authorized model
 ```
 
-The `img` tag rule is what lets the inserted images survive sanitization. Lock the allowed
-attributes (`src|alt|width|height`) to what your editor actually emits.
+Keep the allowlist aligned with the Tiptap extensions you enable. Image support normally requires
+`img` plus only the attributes your editor emits, such as `src`, `alt`, `width`, and `height`.
+Constrain URL schemes and origins according to where your upload endpoint stores media.
 
 ## Drag-and-drop UX
 
-Files dropped onto the editor get the same treatment as pastes — the controller dispatches one
-event per image. The dropped images replace the current selection in the document. If you want a
-custom drop UI (highlight, preview), listen for `dragenter`/`dragleave` on the editor target and
-toggle a class:
+Files dropped onto the editor get the same treatment as pastes; the controller calls the upload
+hook once per image. Because the upload is asynchronous, the example inserts each image at the
+editor's active selection when that upload completes, which may no longer be the original drop
+location. If exact placement matters, capture a Tiptap document position from the drop event before
+starting the upload and insert at that saved position after the response. For a custom drop UI
+(highlight, preview), listen for `dragenter`/`dragleave` on the editor target and toggle a class:
 
 ```js
 const editor = document.querySelector("[data-rich-text-target='editor']");

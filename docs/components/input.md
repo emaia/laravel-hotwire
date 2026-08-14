@@ -172,7 +172,15 @@ Passing an explicit `id` opts out of the auto-derivation: the component uses you
 > manually
 > if needed.
 
-## Required controllers
+## Controller integrations
 
 `hotwire:check` looks for `auto-select`, `clear-input`, `input-mask`, and `auto-submit`. Only the ones you actually use
 need to be published.
+
+## Styling hooks
+
+The component exposes stable `data-slot` hooks for preset and application CSS:
+
+- `data-slot="input-wrapper"`
+- `data-slot="input"`
+- `data-slot="clear-input-button"`

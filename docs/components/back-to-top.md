@@ -3,7 +3,7 @@
 Renders an accessible fixed button that appears after the page scrolls past a threshold and returns the window to the
 top.
 
-## Basic usage
+## Basic Usage
 
 Render it once in your layout:
 
@@ -53,7 +53,7 @@ and the `icon-lg` size.
 <hw:back-to-top variant="outline" size="icon" />
 ```
 
-The Nova preset owns the fixed bottom-end position, rounded shape, stacking order, opacity transition, and visible
+The selected preset owns the fixed bottom-end position, rounded shape, stacking order, opacity transition, and visible
 states. The button uses `z-40`, below overlay surfaces at `z-50`. There are intentionally no position, offset, scroll
 behavior, or tooltip props.
 

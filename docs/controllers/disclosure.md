@@ -7,7 +7,8 @@ The base primitive behind FAQ items, collapsible panels, and the accordion recip
 content preview that only shows a trigger when text overflows, use [`read-more`](read-more.md).
 
 **Identifier:** `disclosure`  
-**Install:** `php artisan hotwire:controllers disclosure`
+**Loaded by:** auto-loaded after `php artisan hotwire:install`; publish only to customize with
+`php artisan hotwire:controllers disclosure`.
 
 ## Requirements
 
@@ -61,7 +62,7 @@ different behavior. Use the right tool for the affordance.
 |---------------------|-------------------|-------------------------------------------------------------------|
 | `disclosure:change` | `{ open: bool }`  | Fires on every transition. Does not fire on the initial connect.  |
 
-## Basic usage
+## Basic Usage
 
 ```html
 

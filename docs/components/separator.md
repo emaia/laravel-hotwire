@@ -20,7 +20,7 @@ Horizontal or vertical rule for separating content sections.
 | --- | --- | --- |
 | `orientation` | `horizontal` | `horizontal` or `vertical`. Vertical separators also render `aria-orientation="vertical"`. |
 
-## Styling Hooks
+## Styling hooks
 
 - `data-slot="separator"`
 - `data-orientation="horizontal|vertical"`

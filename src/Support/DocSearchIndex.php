@@ -101,7 +101,7 @@ class DocSearchIndex
         $label = sprintf(
             '%-26s %-10s  %s',
             $controller->identifier,
-            "[{$controller->category}]",
+            "[{$controller->category->value}]",
             $controller->description,
         );
 
@@ -110,9 +110,9 @@ class DocSearchIndex
             'key' => $controller->identifier,
             'title' => $controller->identifier,
             'label' => $label,
-            'search' => strtolower("{$controller->identifier} {$controller->category} {$controller->description} controller"),
+            'search' => strtolower("{$controller->identifier} {$controller->category->value} {$controller->description} controller"),
             'docs' => $controller->docs,
-            'category' => $controller->category,
+            'category' => $controller->category->value,
             'description' => $controller->description,
             'npm' => $controller->npm,
         ];
@@ -138,7 +138,7 @@ class DocSearchIndex
         $label = sprintf(
             '%-26s %-10s  %s',
             $tag,
-            "[{$component->category}]",
+            "[{$component->category->value}]",
             $component->description,
         );
 
@@ -147,9 +147,9 @@ class DocSearchIndex
             'key' => $component->key,
             'title' => $component->displayName(),
             'label' => $label,
-            'search' => strtolower("{$component->key} {$component->category} {$component->description} component"),
+            'search' => strtolower("{$component->key} {$component->category->value} {$component->description} component"),
             'docs' => $component->docs,
-            'category' => $component->category,
+            'category' => $component->category->value,
             'description' => $component->description,
             'tag' => $tag,
             'controllers' => $component->controllers,

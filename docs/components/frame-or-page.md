@@ -5,7 +5,7 @@ in a layout when the user loaded the URL directly. One view, one controller, no 
 
 This component is the declarative form of the [frame-or-page recipe](../recipes/frame-or-page.md).
 
-## Basic usage
+## Basic Usage
 
 ```blade
 {{-- resources/views/messages/edit.blade.php --}}
@@ -216,7 +216,7 @@ public function update(Request $request, Message $message)
     return turbo_stream()
         ->refresh(method: 'morph')
         ->update('modal')
-        ->flash('success', 'Saved');
+        ->toast('success', 'Saved');
 }
 ```
 

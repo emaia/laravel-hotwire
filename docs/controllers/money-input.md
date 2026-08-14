@@ -1,60 +1,16 @@
 # Money Input
 
-Formats inputs as locale-aware monetary values with classic right-aligned digit entry.
-Useful for prices, amounts and currency fields where typing `1`, `2`, `3` should behave like `0,01`, `0,12`, `1,23`.
+Formats inputs as locale-aware monetary values with classic right-aligned digit entry. Use it for prices, amounts and currency fields where typing `1`, `2`, `3` should behave like `0,01`, `0,12`, `1,23`.
 
-**Identifier:** `money-input`  
-**Install:** `php artisan hotwire:controllers money-input`
+**Identifier:** `money-input`
+**Loaded by:** auto-loaded after `php artisan hotwire:install`; publish only to customize with `php artisan hotwire:controllers money-input`.
 
 ## Requirements
 
 - No external dependencies.
 - Ships with `_composition.js`; publishing the controller publishes this helper too.
 
-Money Input leaves intermediate IME input untouched and formats only the final committed value.
-
-## Stimulus Values
-
-| Value      | Type      | Default | Description                                                          |
-|------------|-----------|---------|----------------------------------------------------------------------|
-| `locale`   | `String`  | `en-US` | BCP 47 locale used for grouping and decimal separator                |
-| `currency` | `String`  | —       | ISO 4217 code (e.g. `BRL`, `USD`, `EUR`). Resolves prefix/suffix     |
-| `prefix`   | `String`  | —       | Manual prefix (overrides `currency`)                                 |
-| `suffix`   | `String`  | —       | Manual suffix (overrides `currency`)                                 |
-| `fraction` | `Number`  | `2`     | Number of fractional digits                                          |
-| `unsigned` | `Boolean` | `false` | Disallows negative values                                            |
-| `hiddenId` | `String`  | —       | `id` of a hidden `<input>` to keep in sync with the minor-unit value |
-
-When `currency` is set, prefix and suffix are derived automatically via `Intl.NumberFormat`, respecting where the
-locale places the symbol. Pass `prefix` or `suffix` explicitly to override.
-
-## Classic money entry
-
-When `fraction > 0`, the controller behaves like a classic money input. Digits are appended from the right and the
-caret stays at the end of the field:
-
-- `1` → `0,01`
-- `12` → `0,12`
-- `123` → `1,23`
-
-Example with 4 fractional digits:
-
-```html
-<input
-    type="text"
-    data-controller="money-input"
-    data-money-input-locale-value="pt-BR"
-    data-money-input-currency-value="BRL"
-    data-money-input-fraction-value="4"
-    placeholder="R$ 0,0000"
-/>
-```
-
-Typing `99999` yields `R$ 9,9999`, and `1999` yields `R$ 0,1999`.
-
-If the entire input value is selected, the next typed digit replaces it.
-
-## Brazilian Real
+## Basic Usage
 
 ```html
 <input
@@ -89,7 +45,7 @@ If the entire input value is selected, the next typed digit replaces it.
 />
 ```
 
-## Custom prefix/suffix
+## Custom Prefix Or Suffix
 
 ```html
 <input
@@ -101,7 +57,9 @@ If the entire input value is selected, the next typed digit replaces it.
 />
 ```
 
-## No decimals (integer)
+When `currency` is set, prefix and suffix are derived automatically via `Intl.NumberFormat`, respecting where the locale places the symbol. Pass `prefix` or `suffix` explicitly to override.
+
+## No Decimals
 
 With `fraction="0"`, the controller formats whole numbers only:
 
@@ -114,7 +72,7 @@ With `fraction="0"`, the controller formats whole numbers only:
 />
 ```
 
-## Unsigned (positive only)
+## Unsigned Values
 
 ```html
 <input
@@ -125,11 +83,26 @@ With `fraction="0"`, the controller formats whole numbers only:
 />
 ```
 
-## Initial value
+## Four Fractional Digits
 
-The `value` attribute is interpreted as **minor units** (an integer digit string with an optional leading `-`).
-This matches the format the controller writes back to the hidden field on submit, so the round-trip
-*server → form → server* uses a single canonical representation.
+When `fraction > 0`, the controller behaves like a classic money input. Digits are appended from the right and the caret stays at the end of the field.
+
+```html
+<input
+    type="text"
+    data-controller="money-input"
+    data-money-input-locale-value="pt-BR"
+    data-money-input-currency-value="BRL"
+    data-money-input-fraction-value="4"
+    placeholder="R$ 0,0000"
+/>
+```
+
+Typing `99999` yields `R$ 9,9999`, and `1999` yields `R$ 0,1999`.
+
+## Initial Value
+
+The `value` attribute is interpreted as minor units: an integer digit string with an optional leading `-`. This matches the format the controller writes back to the hidden field on submit, so the round-trip server to form to server uses a single canonical representation.
 
 ```html
 {{-- $product->price stored as cents (integer): 156795 --}}
@@ -149,51 +122,9 @@ If your model stores a decimal (`1567.95`), convert when rendering:
 value="{{ (int) round($product->price * 100) }}"
 ```
 
-## Reading the normalized value
+## Submitting Raw Values To The Server
 
-The controller dispatches a `money-input:change` event after each change with:
-
-```js
-event.detail = {
-  masked,    // visible value, e.g. "R$ 1.234,56"
-  unmasked,  // canonical minor-unit value, e.g. "123456"
-  completed, // true when the field is not empty
-}
-```
-
-Use it whenever you need the canonical minor-unit string instead of the formatted display value:
-
-```html
-<input
-    type="text"
-    data-controller="money-input"
-    data-money-input-currency-value="USD"
-    data-action="money-input:change->cart#updateTotal"
-/>
-```
-
-```js
-updateTotal(event)
-{
-    const raw = event.detail.unmasked; // e.g. "123456"
-}
-```
-
-### Normalized `input` events
-
-Initial rendering, `turbo:render` reconciliation, and rebuilds caused by runtime Stimulus Value changes are silent.
-For user edits, Money Input consumes the original native `InputEvent` during capture, updates the visible and hidden
-values, then emits one bubbling `CustomEvent("input")` with the formatted value in `event.detail`. This guarantees
-downstream controllers such as Auto Submit observe the normalized value exactly once.
-
-Because the replacement event is synthetic, it does not preserve native `InputEvent` metadata such as `inputType`,
-`data`, or `isTrusted`. Downstream integrations that need monetary state should read `event.target.value`, the hidden
-minor-unit input, or the richer `money-input:change` event instead.
-
-## Submitting raw values to the server
-
-The visible input contains a formatted string like `R$ 1.234,56`, which Laravel's `numeric` validator rejects.
-Point `hiddenId` at a sibling hidden input — the controller mirrors the minor-unit value into it on every change:
+The visible input contains a formatted string like `R$ 1.234,56`, which Laravel's `numeric` validator rejects. Point `hiddenId` at a sibling hidden input. The controller mirrors the minor-unit value into it on every change:
 
 ```html
 <form method="POST" action="/products">
@@ -210,8 +141,7 @@ Point `hiddenId` at a sibling hidden input — the controller mirrors the minor-
 </form>
 ```
 
-The hidden field always carries the canonical minor-unit string (e.g. `123456` for `R$ 1.234,56`), regardless of
-locale. On the server side, cast it to integer and convert to your storage format:
+The hidden field always carries the canonical minor-unit string, such as `123456` for `R$ 1.234,56`, regardless of locale. On the server side, cast it to integer and convert to your storage format:
 
 ```php
 // price column stored in cents (integer)
@@ -224,8 +154,68 @@ $product->price = $request->integer('price') / 100;
 $product->price = Money::BRL($request->input('price'));
 ```
 
-## Turbo morph support
+## Reading The Normalized Value
 
-On every `turbo:render`, the controller silently re-seeds its internal digit buffer from the current element value and
-re-renders. Under morph, idiomorph rewrites the input value to the newly flashed minor-unit amount without firing an
-`input` event — so subsequent typing would otherwise operate on a stale buffer.
+The controller dispatches a `money-input:change` event after each change with:
+
+```js
+event.detail = {
+    masked,    // visible value, e.g. "R$ 1.234,56"
+    unmasked,  // canonical minor-unit value, e.g. "123456"
+    completed, // true when the field is not empty
+}
+```
+
+Use it whenever you need the canonical minor-unit string instead of the formatted display value:
+
+```html
+<input
+    type="text"
+    data-controller="money-input"
+    data-money-input-currency-value="USD"
+    data-action="money-input:change->cart#updateTotal"
+/>
+```
+
+```js
+updateTotal(event) {
+    const raw = event.detail.unmasked; // e.g. "123456"
+}
+```
+
+## Behavior
+
+Money Input leaves intermediate IME input untouched and formats only the final committed value.
+
+When `fraction > 0`, digits are appended from the right and the caret stays at the end of the field:
+
+- `1` -> `0,01`
+- `12` -> `0,12`
+- `123` -> `1,23`
+
+If the entire input value is selected, the next typed digit replaces it.
+
+Initial rendering, `turbo:render` reconciliation, and rebuilds caused by runtime Stimulus Value changes are silent. For user edits, Money Input consumes the original native `InputEvent` during capture, updates the visible and hidden values, then emits one bubbling `CustomEvent("input")` with the formatted value in `event.detail`. This guarantees downstream controllers such as Auto Submit observe the normalized value exactly once.
+
+Because the replacement event is synthetic, it does not preserve native `InputEvent` metadata such as `inputType`, `data`, or `isTrusted`. Downstream integrations that need monetary state should read `event.target.value`, the hidden minor-unit input, or the richer `money-input:change` event instead.
+
+On every `turbo:render`, the controller silently re-seeds its internal digit buffer from the current element value and re-renders. Under morph, idiomorph rewrites the input value to the newly flashed minor-unit amount without firing an `input` event, so subsequent typing would otherwise operate on a stale buffer.
+
+## Values
+
+| Value      | Type      | Default | Description                                                          |
+|------------|-----------|---------|----------------------------------------------------------------------|
+| `locale`   | `String`  | `en-US` | BCP 47 locale used for grouping and decimal separator                |
+| `currency` | `String`  | —       | ISO 4217 code (e.g. `BRL`, `USD`, `EUR`). Resolves prefix/suffix     |
+| `prefix`   | `String`  | —       | Manual prefix (overrides `currency`)                                 |
+| `suffix`   | `String`  | —       | Manual suffix (overrides `currency`)                                 |
+| `fraction` | `Number`  | `2`     | Number of fractional digits                                          |
+| `unsigned` | `Boolean` | `false` | Disallows negative values                                            |
+| `hiddenId` | `String`  | —       | `id` of a hidden `<input>` to keep in sync with the minor-unit value |
+
+## Events
+
+| Event                | Description                                                                 |
+|----------------------|-----------------------------------------------------------------------------|
+| `money-input:change` | Fired after each change with `masked`, `unmasked` and `completed` details. |
+| `input`              | Synthetic bubbling event emitted once for each normalized user edit.        |

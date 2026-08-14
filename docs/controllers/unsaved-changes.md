@@ -4,14 +4,15 @@ Warns the user when attempting to leave a page with unsaved form changes. Integr
 in-app navigations.
 
 **Identifier:** `unsaved-changes`  
-**Install:** `php artisan hotwire:controllers unsaved-changes`
+**Loaded by:** auto-loaded after `php artisan hotwire:install`; publish only to customize with
+`php artisan hotwire:controllers unsaved-changes`.
 
 ## Requirements
 
 - No external dependencies.
 - Turbo (`turbo:before-visit` and `turbo:render` events).
 
-## Basic usage
+## Basic Usage
 
 ```html
 <form

@@ -1,7 +1,26 @@
 <?php
 
+use Emaia\LaravelHotwire\Registry\Category;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\DocSearchIndex;
+
+function docsListRows(bool $includeControllers, bool $includeComponents): array
+{
+    $entries = (new DocSearchIndex)->build(HotwireRegistry::make(), $includeControllers, $includeComponents, 'hw');
+    $categoryOrder = array_flip(array_map(fn (Category $category) => $category->value, Category::cases()));
+
+    usort($entries, function (array $a, array $b) use ($categoryOrder): int {
+        return [$categoryOrder[$a['category']], $a['type'], $a['type'] === 'component' ? $a['tag'] : $a['key']]
+            <=> [$categoryOrder[$b['category']], $b['type'], $b['type'] === 'component' ? $b['tag'] : $b['key']];
+    });
+
+    return array_map(fn (array $entry) => [
+        ucfirst($entry['type']),
+        $entry['type'] === 'component' ? $entry['tag'] : $entry['key'],
+        $entry['category'],
+        $entry['description'],
+    ], $entries);
+}
 
 // --- Lookup by name ---
 
@@ -98,44 +117,20 @@ it('fails with an error when no argument is given in non-interactive mode', func
 // --- List mode ---
 
 it('lists both controllers and components with --list', function () {
-    $entries = (new DocSearchIndex)->build(HotwireRegistry::make(), true, true, 'hw');
-    $rows = array_map(fn (array $entry) => [
-        ucfirst($entry['type']),
-        $entry['type'] === 'component' ? $entry['tag'] : $entry['key'],
-        $entry['category'],
-        $entry['description'],
-    ], $entries);
-
     $this->artisan('hotwire:docs --list')
-        ->expectsTable(['Type', 'Name', 'Category', 'Description'], $rows)
+        ->expectsTable(['Type', 'Name', 'Category', 'Description'], docsListRows(true, true))
         ->assertSuccessful();
 });
 
 it('lists only controllers with --list --controller', function () {
-    $entries = (new DocSearchIndex)->build(HotwireRegistry::make(), true, false, 'hw');
-    $rows = array_map(fn (array $entry) => [
-        ucfirst($entry['type']),
-        $entry['key'],
-        $entry['category'],
-        $entry['description'],
-    ], $entries);
-
     $this->artisan('hotwire:docs --list --controller')
-        ->expectsTable(['Type', 'Name', 'Category', 'Description'], $rows)
+        ->expectsTable(['Type', 'Name', 'Category', 'Description'], docsListRows(true, false))
         ->assertSuccessful();
 });
 
 it('lists only components with --list --component', function () {
-    $entries = (new DocSearchIndex)->build(HotwireRegistry::make(), false, true, 'hw');
-    $rows = array_map(fn (array $entry) => [
-        ucfirst($entry['type']),
-        $entry['tag'],
-        $entry['category'],
-        $entry['description'],
-    ], $entries);
-
     $this->artisan('hotwire:docs --list --component')
-        ->expectsTable(['Type', 'Name', 'Category', 'Description'], $rows)
+        ->expectsTable(['Type', 'Name', 'Category', 'Description'], docsListRows(false, true))
         ->assertSuccessful();
 });
 

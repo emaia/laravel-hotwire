@@ -4,20 +4,57 @@ Controls a click-triggered popover panel: open/close state, outside-click dismis
 return, Turbo cache cleanup and Floating UI positioning.
 
 **Identifier:** `popover`
-**Install:** `php artisan hotwire:controllers popover`
+**Loaded by:** auto-loaded after `php artisan hotwire:install`; publish only to customize with
+`php artisan hotwire:controllers popover`.
 
 ## Requirements
 
 - `@floating-ui/dom` (`npm install @floating-ui/dom` or `bun add @floating-ui/dom`)
 - Ships with `_composition.js`, `_floating.js`, `_presence.js`, and `_top_layer.js`; publishing the controller publishes
   these helpers too.
-- Without the Nova preset, reset native Popover positioning with
+- Without the selected preset, reset native Popover positioning with
   `[data-hotwire-top-layer][popover] { inset: auto; margin: 0; }` and define the floating element's border and padding.
 
 > If any component in your views pulls this controller in, `php artisan hotwire:check --fix` will add
 > `@floating-ui/dom` to your `package.json` `devDependencies` automatically.
 
 Escape dismissal is suspended while a field inside the popover is composing IME text.
+
+## Basic Usage
+
+```html
+<div data-controller="popover">
+    <button
+        type="button"
+        data-popover-target="trigger"
+        data-action="popover#toggle"
+        aria-haspopup="dialog"
+        aria-expanded="false"
+        aria-controls="filters-popover"
+        data-popover-state="closed"
+    >
+        Filters
+    </button>
+
+    <div
+        id="filters-popover"
+        data-popover-target="content"
+        data-state="closed"
+        data-motion="default"
+        hidden
+        inert
+        role="dialog"
+        tabindex="-1"
+    >
+        <h2>Filters</h2>
+        <button type="button" data-action="popover#close">Apply</button>
+    </div>
+</div>
+```
+
+Use the `<hw:popover>` component for the server-rendered markup unless you need fully custom HTML. The controller keeps
+trigger state synchronized, focuses the content when it opens, dismisses on outside click or `Escape`, and cleans up
+before Turbo caches the page.
 
 ## Targets
 
@@ -50,7 +87,7 @@ Motion is configured on the content target with `data-motion="default|none"`, no
 | `popover#open`   | Open the panel.   |
 | `popover#close`  | Close the panel.  |
 
-## Markup
+## Copyable Minimal Markup
 
 ```html
 <div data-controller="popover">
@@ -81,7 +118,7 @@ Motion is configured on the content target with `data-motion="default|none"`, no
 </div>
 ```
 
-Use the `<hw:popover>` component for the server-rendered markup unless you need fully custom HTML.
+The content target starts closed, hidden and inert so the panel never flashes before Stimulus connects.
 
 ## Positioning And Top Layer
 
@@ -105,7 +142,7 @@ Opening removes `hidden` but leaves the content closed and inert until its first
 `data-state="closed"` and `inert` immediately, then waits for the element's CSS transition or finite animation before
 adding `hidden`. Trigger state is exposed separately as `data-popover-state="open|closed"`.
 
-The Nova preset transitions only `opacity`, `scale`, and `translate`. Custom CSS can style `data-state="open|closed"`,
+The selected preset transitions only `opacity`, `scale`, and `translate`. Custom CSS can style `data-state="open|closed"`,
 but the closed rule must not set `display: none` or otherwise hide the element. Set `data-motion="none"` for immediate
 presence changes. Reduced-motion preference skips motion, and reopening during exit cancels stale hiding and top-layer
 teardown.

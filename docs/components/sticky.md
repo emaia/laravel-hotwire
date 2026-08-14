@@ -50,13 +50,13 @@ Disable the default border/background when the child component owns the visual t
 </hw:sticky>
 ```
 
-## Styling Hooks
+## Styling hooks
 
 - `data-slot="sticky"`
 - `data-side="top|bottom"`
 - `data-surface="true|false"`
 - `--sticky-offset`
 
-## Required controllers
+## Controller integrations
 
 None.

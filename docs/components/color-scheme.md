@@ -5,7 +5,7 @@ Applies and toggles the package colour scheme using `html[data-theme="light|dark
 Use `<hw:color-scheme.script>` in the document head to avoid a flash of the wrong theme, then render one or more
 `<hw:color-scheme.toggle>` buttons anywhere in the UI.
 
-## Basic usage
+## Basic Usage
 
 ```blade
 <html>
@@ -78,7 +78,7 @@ affecting the controller:
 }
 ```
 
-## Styling Hooks
+## Styling hooks
 
 - `data-slot="color-scheme-toggle"`
 - `data-slot="color-scheme-icon"`
@@ -88,11 +88,11 @@ affecting the controller:
 - `data-scheme-icon="light|dark"`
 - `data-mode-icon="system"`
 
-The Nova preset reads `html[data-color-scheme-mode]` when the script has run, so the initial icon matches the stored
+The selected preset reads `html[data-color-scheme-mode]` when the script has run, so the initial icon matches the stored
 mode before Stimulus connects. Without the script, it falls back to the toggle's local `data-mode` and `data-scheme`
 attributes.
 
-## Required Controllers
+## Controller integrations
 
 `<hw:color-scheme.toggle>` mounts the `color-scheme` controller. The `tooltip` controller is also mounted when the
 `tooltip` prop is set.

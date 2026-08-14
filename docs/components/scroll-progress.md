@@ -46,3 +46,9 @@ Set it to `0` to disable throttling:
 ## Controller
 
 This component depends on the [`scroll-progress`](../controllers/scroll-progress.md) controller.
+
+## Styling hooks
+
+The component exposes stable `data-slot` hooks for preset and application CSS:
+
+- `data-slot="scroll-progress"`

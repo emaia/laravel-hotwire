@@ -151,17 +151,9 @@ test("closing without a trigger focuses the root before making the panel inert",
     expect(mounted.root.getAttribute("tabindex")).toBe("-1");
 });
 
-test("external open value changes move focus before making the panel inert", async () => {
-    mounted = await mountController("side-panel", SidePanelController, template(true));
-    const trigger = mounted.root.querySelector("button");
-    mounted.root.querySelector("a").focus();
-
-    mounted.controller.openValue = false;
-    await wait(0);
-
-    expect(document.activeElement).toBe(trigger);
-    expect(mounted.root.querySelector("aside").hasAttribute("inert")).toBe(true);
-});
+// The external open-value path is covered in tests/Browser/side_panel_controller.pw.js:
+// it depends on MutationObserver delivery plus real focus, which happy-dom drains
+// unreliably once many files share a process.
 
 test("disconnect removes a root tabindex added for focus fallback", async () => {
     mounted = await mountController(

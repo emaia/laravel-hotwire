@@ -4,7 +4,8 @@ Keeps the visual fill of a native range input synchronized with its current valu
 
 **Identifier:** `slider`
 
-**Install:** controllers auto-load after `php artisan hotwire:install`; publish only when customising with `php artisan hotwire:controllers slider`.
+**Loaded by:** auto-loaded after `php artisan hotwire:install`; publish only to customize with
+`php artisan hotwire:controllers slider`.
 
 ## Requirements
 

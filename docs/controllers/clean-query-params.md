@@ -5,13 +5,14 @@ Removes empty parameters from the query string before submitting a GET form, avo
 The controller registers a `formdata` listener on `connect()`, so it intercepts every form submission automatically — regardless of what triggers it (native submit button, `auto-submit`, or `requestSubmit()` calls).
 
 **Identifier:** `clean-query-params`  
-**Install:** `php artisan hotwire:controllers clean-query-params`
+**Loaded by:** auto-loaded after `php artisan hotwire:install`; publish only to customize with
+`php artisan hotwire:controllers clean-query-params`.
 
 ## Requirements
 
 - No external dependencies.
 
-## Basic usage
+## Basic Usage
 
 ```html
 <form

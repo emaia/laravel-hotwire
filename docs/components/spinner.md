@@ -13,7 +13,7 @@ The component renders an accessible SVG status indicator with `data-slot="spinne
 
 ## Size
 
-The Nova preset matches the shadcn base-nova reference with a default `size-4` spinner. The spinner inherits the current
+The selected preset matches the shadcn base-nova reference with a default `size-4` spinner. The spinner inherits the current
 text color, so it keeps contrast inside buttons, badges and other colored containers. Override the size or color with any
 utility class:
 
@@ -54,7 +54,7 @@ to `aria-busy` on a parent element:
 Turbo automatically toggles `aria-busy="true"` on forms during submission, so the spinner appears while the request is
 in flight and disappears when the response arrives.
 
-## Styling Hooks
+## Styling hooks
 
 - `data-slot="spinner"`
 - `data-icon="inline-start|inline-end"`

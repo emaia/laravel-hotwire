@@ -126,11 +126,22 @@ The identifier is derived automatically: `/` → `--`, `_` → `-`.
 
 ## Categories
 
-| Category   | Used for                                              |
-|------------|-------------------------------------------------------|
-| `overlay`  | Components that layer over the page (modals, dialogs) |
-| `feedback` | User notifications and status (flash, loaders)        |
-| `forms`    | Form behavior (submit, save, masks, validation UX)    |
-| `turbo`    | Controllers tied to Turbo Drive / Turbo Frames        |
-| `utility`  | General-purpose DOM helpers                           |
-| `dev`      | Development-only tools                                |
+Categories are the browse facet of `hotwire:docs` — they order the `--list` table and are folded into the search
+string, so an entry filed under the wrong one becomes hard to find. Components and controllers share one vocabulary,
+defined by [`Registry\Category`](../src/Registry/Category.php); the catalog stores the string value and hydration
+rejects anything outside the enum.
+
+| Category     | Used for                                                                     |
+|--------------|------------------------------------------------------------------------------|
+| `forms`      | Form behavior — submit, save, masks, validation UX, field primitives          |
+| `display`    | Content and visual primitives — cards, tables, avatars, charts, disclosure UI |
+| `turbo`      | Turbo Drive, Frames, Streams and the head metas that configure them           |
+| `overlay`    | Anything layered above the page — modals, dialogs, floating panels, tooltips  |
+| `utility`    | General-purpose helpers with no visual identity of their own                  |
+| `navigation` | Getting around the app — navbar, sidebar, breadcrumb, pagination              |
+| `feedback`   | Notifications and status — toasts, alerts, loaders, progress                  |
+| `dev`        | Development-only tools, never meant to reach production                       |
+
+A component and the controller powering it belong to the same category. `tests/Registry/HotwireRegistryTest.php`
+enforces this for every pair sharing a key, so a family cannot drift apart the way `accordion` once had its component
+in `display` and its controller in `utility`.

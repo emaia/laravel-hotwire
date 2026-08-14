@@ -3,7 +3,8 @@
 Wraps [Leaflet](https://leafletjs.com/) as an interactive map controller. Loads OpenStreetMap tiles by default, supports inline markers and GeoJSON URL fetching, and exposes hooks for subclass customisation (custom tile providers, event handlers, plugins).
 
 **Identifier:** `map`
-**Install:** `php artisan hotwire:controllers map`
+**Loaded by:** auto-loaded after `php artisan hotwire:install`; publish only to customize with
+`php artisan hotwire:controllers map`.
 
 ## Requirements
 
@@ -35,7 +36,7 @@ Wraps [Leaflet](https://leafletjs.com/) as an interactive map controller. Loads 
 |-------------|--------|------------------------------|
 | `map:ready` | —      | Dispatched after `connect()` |
 
-## Basic usage (raw, without the Blade component)
+## Basic Usage (raw, without the Blade component)
 
 ```html
 <div

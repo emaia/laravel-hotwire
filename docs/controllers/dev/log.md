@@ -3,7 +3,8 @@
 Utility controller for debugging. Logs Stimulus events to the browser console.
 
 **Identifier:** `log`
-**Install:** `php artisan hotwire:controllers dev/log`
+**Loaded by:** auto-loaded after `php artisan hotwire:install`; publish only to customize with
+`php artisan hotwire:controllers dev/log`.
 
 ## Requirements
 

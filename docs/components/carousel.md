@@ -8,7 +8,7 @@ Requires `embla-carousel`: `bun add embla-carousel` (install it manually). The t
 `resources/css/structural.css`, which every preset imports; publish the controller itself with
 `php artisan hotwire:controllers carousel` only if you want to customize it.
 
-## Basic usage
+## Basic Usage
 
 ```html
 
@@ -215,3 +215,19 @@ The component wires `turbo:before-cache@window->carousel#teardownForCache`, so t
 a Turbo snapshot and rebuilt on restore. Any `data-action` you add is unioned with it.
 
 See the [controller docs](../controllers/carousel.md) for events, the markup contract, axis handling and more.
+
+## Styling hooks
+
+The component exposes stable `data-slot` hooks for preset and application CSS:
+
+- `data-slot="carousel"`
+- `data-slot="carousel-progress"`
+- `data-slot="carousel-counter"`
+- `data-slot="carousel-prev-button"`
+- `data-slot="carousel-next-button"`
+- `data-slot="carousel-dot-button"`
+- `data-slot="carousel-dot-list"`
+- `data-slot="carousel-progress-wrapper"`
+- `data-slot="carousel-viewport"`
+- `data-slot="carousel-container"`
+- `data-slot="carousel-nav-wrapper"`

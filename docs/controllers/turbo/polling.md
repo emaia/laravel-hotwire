@@ -4,13 +4,14 @@ Automatically reloads a Turbo Frame at regular intervals. Useful for dashboards,
 data without user interaction.
 
 **Identifier:** `turbo--polling`
-**Install:** `php artisan hotwire:controllers turbo/polling`
+**Loaded by:** auto-loaded after `php artisan hotwire:install`; publish only to customize with
+`php artisan hotwire:controllers turbo/polling`.
 
 ## Requirements
 
 - `@hotwired/turbo`
 
-## Stimulus Values
+## Values
 
 | Value     | Type      | Default | Description                                |
 |-----------|-----------|---------|--------------------------------------------|
@@ -24,7 +25,7 @@ data without user interaction.
 |-------------------|--------------------------------------------------------|
 | `polling#refresh` | Forces an immediate refresh and schedules the next one |
 
-## Basic usage
+## Basic Usage
 
 ```html
 <div

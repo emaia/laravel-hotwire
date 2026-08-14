@@ -1,29 +1,15 @@
 # Toggle
 
-Synchronizes a two-state button with `aria-pressed`, `data-state` and an optional hidden input.
+Synchronizes a two-state button with `aria-pressed`, `data-state` and an optional hidden input. Most apps should use `<hw:toggle>` instead of wiring this controller manually.
 
-**Identifier:** `toggle`  
-**Install:** `php artisan hotwire:controllers toggle`
+**Identifier:** `toggle`
+**Loaded by:** auto-loaded after `php artisan hotwire:install`; publish only to customize with `php artisan hotwire:controllers toggle`.
 
 ## Requirements
 
 - No external dependencies.
 
-## Actions
-
-| Action          | Description                                            |
-|-----------------|--------------------------------------------------------|
-| `toggle#toggle` | Toggles the pressed state unless the element is disabled |
-
-## Stimulus Values
-
-| Value     | Type      | Default | Description                                      |
-|-----------|-----------|---------|--------------------------------------------------|
-| `pressed` | `Boolean` | `false` | Current pressed state                            |
-| `value`   | `String`  | `"on"`  | Value written to the associated hidden input     |
-| `inputId` | `String`  | —       | Hidden input id to synchronize when form-backed  |
-
-## Basic usage
+## Basic Usage
 
 ```html
 <button
@@ -38,7 +24,11 @@ Synchronizes a two-state button with `aria-pressed`, `data-state` and an optiona
 </button>
 ```
 
-The controller keeps `aria-pressed` and `data-state` in sync and dispatches a bubbling `change` event after user toggles:
+The controller keeps `aria-pressed` and `data-state` in sync.
+
+## Listening For Changes
+
+The controller dispatches a bubbling `change` event after user toggles:
 
 ```js
 button.addEventListener("change", (event) => {
@@ -46,4 +36,20 @@ button.addEventListener("change", (event) => {
 })
 ```
 
-Most apps should use `<hw:toggle>` instead of wiring this controller manually.
+## Behavior
+
+Calling `toggle#toggle` toggles the pressed state unless the element is disabled. When configured with `inputId`, the controller also synchronizes the associated hidden input.
+
+## Values
+
+| Value     | Type      | Default | Description                                     |
+|-----------|-----------|---------|-------------------------------------------------|
+| `pressed` | `Boolean` | `false` | Current pressed state                           |
+| `value`   | `String`  | `"on"`  | Value written to the associated hidden input    |
+| `inputId` | `String`  | —       | Hidden input id to synchronize when form-backed |
+
+## Actions
+
+| Action          | Description                                             |
+|-----------------|---------------------------------------------------------|
+| `toggle#toggle` | Toggles the pressed state unless the element is disabled |

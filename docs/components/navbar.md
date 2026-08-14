@@ -23,7 +23,7 @@ tabs. Use `<hw:tabs>` only when the control switches tab panels in the same docu
 
 | Component     | Prop            | Type                   | Default      | Description                                                     |
 |---------------|-----------------|------------------------|--------------|-----------------------------------------------------------------|
-| `navbar`      | `variant`       | `line\|pills`          | `line`       | Visual style in the Nova preset.                                |
+| `navbar`      | `variant`       | `line\|pills`          | `line`       | Visual style in the selected preset.                                |
 | `navbar`      | `orientation`   | `horizontal\|vertical` | `horizontal` | Layout direction. Invalid values use horizontal.                |
 | `navbar`      | `overflow`      | `scroll\|visible`      | `scroll`     | Mobile overflow hook for horizontal navigation.                 |
 | `navbar`      | `sticky`        | `bool`                 | `false`      | Wraps the navbar in an internal sticky surface.                 |
@@ -129,16 +129,17 @@ span, current non-link, and disabled items do not emit frame metadata.
 Disabled anchors omit `href`, receive `aria-disabled="true"`, and are removed from tab order. Disabled buttons receive
 the native `disabled` attribute.
 
-## Styling Hooks
+## Styling hooks
 
 - `data-slot="navbar"`
 - `data-slot="navbar-item"`
+- `data-slot="sticky"`
 - `data-variant="line|pills"`
 - `data-orientation="horizontal|vertical"`
 - `data-overflow="scroll|visible"`
 - `data-active="true|false"`
 - `data-disabled="true"`
 
-## Required controllers
+## Controller integrations
 
 None.

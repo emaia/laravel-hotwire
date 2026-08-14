@@ -4,7 +4,8 @@ Dispatches Optimistic UI updates when a Turbo form is submitted. A single
 controller on the `<form>` — no extra dispatch controller needed.
 
 **Identifier:** `optimistic--form`
-**Install:** `php artisan hotwire:controllers optimistic/form`
+**Loaded by:** auto-loaded after `php artisan hotwire:install`; publish only to customize with
+`php artisan hotwire:controllers optimistic/form`.
 
 ## Usage
 

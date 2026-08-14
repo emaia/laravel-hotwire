@@ -7,7 +7,8 @@ blockquote, code block, horizontal rule, link, headings, undo, redo) and keeps e
 in sync with the editor's current selection.
 
 **Identifier:** `rich-text-toolbar`
-**Install:** `php artisan hotwire:controllers rich-text-toolbar`
+**Loaded by:** auto-loaded after `php artisan hotwire:install`; publish only to customize with
+`php artisan hotwire:controllers rich-text-toolbar`.
 
 ## Requirements
 
@@ -115,7 +116,7 @@ the transaction in a single ProseMirror update.
 bold + italic) doesn't pay for buttons it doesn't render. When the editor element can't be
 resolved (selector matches nothing) the toolbar stays inert — actions become no-ops, no throws.
 
-## Basic usage (raw)
+## Basic Usage (raw)
 
 ```html
 <div data-controller="rich-text" data-rich-text-id-value="content">

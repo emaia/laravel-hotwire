@@ -5,17 +5,55 @@ on `Escape` (returning focus to the trigger) and — by default — when an acti
 state-driven Presence lifecycle supports CSS motion without keeping closed content interactive.
 
 **Identifier:** `dropdown`  
-**Install:** `php artisan hotwire:controllers dropdown`
+**Loaded by:** auto-loaded after `php artisan hotwire:install`; publish only to customize with
+`php artisan hotwire:controllers dropdown`.
 
 ## Requirements
 
 - `@floating-ui/dom` for viewport-aware anchored positioning.
 - Ships with `_composition.js`, `_floating.js`, `_presence.js`, and `_top_layer.js`, which `hotwire:controllers`
   publishes alongside the controller automatically.
-- Without the Nova preset, reset native Popover positioning with
+- Without the selected preset, reset native Popover positioning with
   `[data-hotwire-top-layer][popover] { inset: auto; margin: 0; }` and define the floating element's border and padding.
 
 Escape dismissal is suspended while a field inside the menu is composing IME text.
+
+## Basic Usage
+
+The controller positions the menu, toggles trigger state, and handles dismissal for you:
+
+```html
+<div data-controller="dropdown">
+    <button
+        type="button"
+        data-dropdown-target="trigger"
+        data-action="dropdown#toggle"
+        aria-haspopup="true"
+        aria-expanded="false"
+        data-dropdown-state="closed"
+    >
+        Options
+    </button>
+
+    <div
+        data-dropdown-target="menu"
+        data-dropdown-side-value="bottom"
+        data-dropdown-align-value="end"
+        data-state="closed"
+        data-motion="default"
+        hidden
+        inert
+    >
+        <a href="/account">Account</a>
+        <a href="/support">Support</a>
+        <button type="button">Sign out</button>
+    </div>
+</div>
+```
+
+The trigger receives synchronized `aria-expanded` and `data-dropdown-state` attributes. The menu opens only after its
+first Floating UI placement resolves, closes on outside click or `Escape`, and closes on link or button selection by
+default.
 
 ## Targets
 
@@ -24,7 +62,7 @@ Escape dismissal is suspended while a field inside the menu is composing IME tex
 | `trigger` |    ✅    | The element that toggles the menu; `aria-expanded` and `data-dropdown-state` are synced and it receives focus back on `Escape` |
 | `menu`    |    ✅    | The floating element whose `data-state`, `hidden`, and `inert` presence state is managed             |
 
-## Stimulus Values
+## Values
 
 | Value             | Type      | Default | Description                                                              |
 | ----------------- | --------- | ------- | ------------------------------------------------------------------------ |
@@ -58,9 +96,9 @@ Motion is configured on the menu itself with `data-motion="default|none"`; it is
 | `open`   | Open the menu                            |
 | `close`  | Close the menu                           |
 
-## Basic usage
+## Copyable Styled Example
 
-The controller positions the menu for you:
+This example includes the package slot hooks used by the presets:
 
 ```html
 <div data-controller="dropdown">
@@ -120,7 +158,7 @@ The helper writes these hooks to the menu:
 - `--available-height`
 - `--transform-origin`
 
-The Nova preset uses those hooks for trigger-width matching, viewport-constrained height and side-aware motion.
+The selected preset uses those hooks for trigger-width matching, viewport-constrained height and side-aware motion.
 `data-side` and `data-align` describe the resolved placement returned by Floating UI after `flip`, not just the requested
 values. The controller promotes the menu to the browser top layer when supported; fallback rendering can still be clipped
 by ancestors with `overflow: hidden`.
@@ -144,7 +182,7 @@ unpositioned flash before Stimulus connects. Opening removes `hidden`, obtains t
 menu remains closed and inert, then sets `data-state="open"` and removes `inert`. Closing sets `data-state="closed"` and
 `inert` immediately, but keeps the menu present until its CSS motion finishes; only then does Presence add `hidden`.
 
-The Nova preset transitions only `opacity`, `scale`, and `translate`. Custom CSS can define transitions or finite
+The selected preset transitions only `opacity`, `scale`, and `translate`. Custom CSS can define transitions or finite
 animations using `data-state`:
 
 ```css

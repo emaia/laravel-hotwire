@@ -1,6 +1,7 @@
 <?php
 
 use Emaia\LaravelHotwire\Components\ReadMore;
+use Emaia\LaravelHotwire\Registry\Category;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 
 it('renders an accessible collapsed read more with first-paint geometry', function () {
@@ -132,6 +133,6 @@ it('registers the read more component and controller dependency', function () {
         ->and($component->class)->toBe(ReadMore::class)
         ->and($component->view)->toBe('hotwire::component-views.read-more')
         ->and($component->docs)->toBe('docs/components/read-more.md')
-        ->and($component->category)->toBe('display')
+        ->and($component->category)->toBe(Category::Display)
         ->and($component->controllers)->toBe(['read-more']);
 });

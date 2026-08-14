@@ -365,23 +365,23 @@ multiple messages as a list.
 <hw:field.error :messages="['Choose another username.']" />
 ```
 
-## Styling Hooks
+## Styling hooks
 
 | Slot                      | Purpose                                |
 |---------------------------|----------------------------------------|
-| `field-set`               | Semantic `<fieldset>` wrapper.         |
-| `field-legend`            | Semantic `<legend>` for a field set.   |
-| `field-group`             | Group wrapper for related fields.      |
-| `field`                   | Individual field wrapper.              |
-| `field-label`             | Label element.                         |
-| `field-label-required`    | Required marker inside `field.label`.  |
-| `field-content`           | Text/content column next to a control. |
-| `field-title`             | Non-label field heading.               |
-| `field-description`       | Helper text.                           |
-| `field-error`             | Error message container.               |
-| `field-separator`         | Separator wrapper.                     |
-| `field-separator-line`    | Decorative separator line.             |
-| `field-separator-content` | Optional centered separator text.      |
+| `data-slot="field-set"`               | Semantic `<fieldset>` wrapper.         |
+| `data-slot="field-legend"`            | Semantic `<legend>` for a field set.   |
+| `data-slot="field-group"`             | Group wrapper for related fields.      |
+| `data-slot="field"`                   | Individual field wrapper.              |
+| `data-slot="field-label"`             | Label element.                         |
+| `data-slot="field-label-required"`    | Required marker inside `field.label`.  |
+| `data-slot="field-content"`           | Text/content column next to a control. |
+| `data-slot="field-title"`             | Non-label field heading.               |
+| `data-slot="field-description"`       | Helper text.                           |
+| `data-slot="field-error"`             | Error message container.               |
+| `data-slot="field-separator"`         | Separator wrapper.                     |
+| `data-slot="field-separator-line"`    | Decorative separator line.             |
+| `data-slot="field-separator-content"` | Optional centered separator text.      |
 
 Override styles after importing the preset:
 

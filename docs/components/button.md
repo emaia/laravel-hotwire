@@ -2,7 +2,7 @@
 
 Displays a button or a component that looks like a button.
 
-## Basic usage
+## Basic Usage
 
 ```blade
 <hw:button>Save</hw:button>
@@ -184,7 +184,7 @@ button `type` is likewise restricted to `button`, `submit`, or `reset`.
 
 All other HTML attributes (`id`, `name`, `disabled`, `aria-*`, `data-*`, `href`, `target`, `class`) pass through to the rendered element. Package styling is not emitted as inline classes; presets target the data attributes below.
 
-## Data attributes for CSS and tests
+## Styling hooks
 
 Every rendered button carries:
 

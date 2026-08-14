@@ -98,7 +98,13 @@ and collision behavior require a custom state machine and are outside this compo
 For live text output, listen to the native `input` event with an application controller. The component does not impose a
 number formatter or output structure.
 
-## Required Controllers
+## Controller integrations
 
 The `slider` controller auto-loads with the component and keeps `--slider-value` synchronized. An ancestor
 `<hw:form auto-submit>` supplies `auto-submit` when that prop is enabled.
+
+## Styling hooks
+
+The component exposes stable `data-slot` hooks for preset and application CSS:
+
+- `data-slot="slider"`

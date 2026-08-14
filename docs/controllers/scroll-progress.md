@@ -8,13 +8,13 @@ Displays a progress bar that fills based on the user's scroll position.
 
 - No external dependencies.
 
-## Stimulus Values
+## Values
 
 | Value            | Type     | Default | Description                                                 |
 |------------------|----------|---------|-------------------------------------------------------------|
 | `throttle-delay` | `Number` | `15`    | Throttle delay (ms) on the scroll event. Use `0` to disable |
 
-## Basic usage
+## Basic Usage
 
 ```html
 <div

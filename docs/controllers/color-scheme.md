@@ -4,7 +4,8 @@ Persists a `light`, `dark` or `system` mode and synchronizes `html[data-theme]` 
 `html[data-color-scheme-mode]` with the resolved colour scheme.
 
 **Identifier:** `color-scheme`  
-**Install:** controllers auto-load after `php artisan hotwire:install`; publish only when customising with `php artisan hotwire:controllers color-scheme`.
+**Loaded by:** auto-loaded after `php artisan hotwire:install`; publish only to customize with
+`php artisan hotwire:controllers color-scheme`.
 
 ## Requirements
 

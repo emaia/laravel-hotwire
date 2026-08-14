@@ -4,13 +4,14 @@ Animates a number from a start value to an end value over a given duration. Supp
 starts when the element scrolls into view.
 
 **Identifier:** `animated-number`  
-**Install:** `php artisan hotwire:controllers animated-number`
+**Loaded by:** auto-loaded after `php artisan hotwire:install`; publish only to customize with
+`php artisan hotwire:controllers animated-number`.
 
 ## Requirements
 
 - No external dependencies. Uses `requestAnimationFrame` and (for lazy mode) `IntersectionObserver`.
 
-## Stimulus Values
+## Values
 
 | Value              | Type      | Default | Description                                                             |
 |--------------------|-----------|---------|-------------------------------------------------------------------------|
@@ -21,7 +22,7 @@ starts when the element scrolls into view.
 | `lazy-threshold`   | `Number`  | —       | IntersectionObserver `threshold` (0–1). Only used when `lazy` is `true` |
 | `lazy-root-margin` | `String`  | `"0px"` | IntersectionObserver `rootMargin`. Only used when `lazy` is `true`      |
 
-## Basic usage
+## Basic Usage
 
 ```html
 <span

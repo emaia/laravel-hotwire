@@ -7,7 +7,7 @@ long-lived form content.
 The component wraps the [`hover-card`](../controllers/hover-card.md) Stimulus controller, renders the trigger/content
 wiring and positions the content with Floating UI.
 
-## Usage
+## Basic Usage
 
 ```blade
 <hw:hover-card>
@@ -31,9 +31,15 @@ wiring and positions the content with Floating UI.
 another semantic element or button style:
 
 ```blade
-<hw:hover-card.trigger as="a" href="/users/1" variant="link">
-    Jane Doe
-</hw:hover-card.trigger>
+<hw:hover-card>
+    <hw:hover-card.trigger as="a" href="/users/1" variant="link">
+        Jane Doe
+    </hw:hover-card.trigger>
+
+    <hw:hover-card.content>
+        Product designer on the Growth team.
+    </hw:hover-card.content>
+</hw:hover-card>
 ```
 
 Trigger `as` values are trimmed, lowercased, and restricted to `button` or `a`. Native button `type` accepts `button`,
@@ -61,6 +67,7 @@ so it can cross Drawer, Modal, Turbo Frame and scroll-container boundaries more 
 ```blade
 <hw:hover-card side="right" align="center" :side-offset="8">
     <hw:hover-card.trigger>Plan</hw:hover-card.trigger>
+
     <hw:hover-card.content>Enterprise, renewed yearly.</hw:hover-card.content>
 </hw:hover-card>
 ```
@@ -74,7 +81,7 @@ The enter motion starts only after Floating UI resolves the first placement. If 
 `data-side` and `data-align` expose the resolved placement used on screen. Superseded asynchronous positioning results
 are ignored.
 
-## Content Guidance
+## Automatic Behavior
 
 Hover Card opens on hover and focus, and closes on mouse leave, blur, `Escape`, and Turbo's `before-cache` event. Keep the
 content short and mostly non-interactive. Links or buttons can work while the pointer or focus remains inside the card,
@@ -87,12 +94,16 @@ positions an initially open card before showing it without enter motion. During 
 apply immediately, while `hidden` is deferred until CSS motion finishes. This keeps the preview non-interactive without
 cutting off its exit.
 
-The Nova preset transitions only `opacity`, `scale`, and `translate`. Set motion on the content component:
+The default preset CSS transitions only `opacity`, `scale`, and `translate`. Set motion on the content component:
 
 ```blade
-<hw:hover-card.content motion="none">
-    <!-- preview -->
-</hw:hover-card.content>
+<hw:hover-card>
+    <hw:hover-card.trigger>Instant preview</hw:hover-card.trigger>
+
+    <hw:hover-card.content motion="none">
+        <!-- preview -->
+    </hw:hover-card.content>
+</hw:hover-card>
 ```
 
 Custom CSS may use transitions or finite animations keyed by `data-state`. A closed-state selector must never apply
@@ -134,7 +145,7 @@ Custom CSS may use transitions or finite animations keyed by `data-state`. A clo
 | `hover-card.trigger` | `button` by default         | `hover-card-trigger` |
 | `hover-card.content` | `div` with `role="tooltip"` | `hover-card-content` |
 
-## Styling Hooks
+## Styling hooks
 
 - `data-slot="hover-card"`
 - `data-hover-card-open-delay-value`

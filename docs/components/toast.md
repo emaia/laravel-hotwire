@@ -171,3 +171,9 @@ is free.
 
 - [`<hw:toaster />`](./toaster.md) — hosts the toast stack and exposes its config
 - [`window.toaster`](./toaster.md#emitting-from-javascript) — emit from your own JavaScript, no import required
+
+## Styling hooks
+
+The component exposes stable `data-slot` hooks for preset and application CSS:
+
+- `data-slot="toast-trigger"`

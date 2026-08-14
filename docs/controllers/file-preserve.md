@@ -3,7 +3,8 @@
 Captures and restores file input selection across Turbo morphs and frame navigations, so the user's file choice survives validation errors and page re-renders.
 
 **Identifier:** `file-preserve`
-**Install:** `php artisan hotwire:controllers file-preserve`
+**Loaded by:** auto-loaded after `php artisan hotwire:install`; publish only to customize with
+`php artisan hotwire:controllers file-preserve`.
 
 ## Requirements
 

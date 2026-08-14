@@ -288,15 +288,42 @@ state. `data-mobile-state="open|closed"`, `hidden`, and `inert` coordinate the m
 Clicking a normal link inside the open mobile drawer waits for the actual exit motion before navigation continues.
 Modified clicks, non-`_self` `target` links, downloads and `mailto:`/`tel:` links are not intercepted.
 
-## Styling
+## Styling hooks
 
 The preset styles all parts through semantic hooks:
 
 - `data-slot="sidebar-wrapper"`
 - `data-slot="sidebar"`
+- `data-slot="sidebar-backdrop"`
+- `data-slot="sidebar-trigger"`
+- `data-slot="sidebar-rail"`
 - `data-slot="sidebar-inset"`
+- `data-slot="sidebar-header"`
+- `data-slot="sidebar-brand"`
+- `data-slot="sidebar-brand-logo"`
+- `data-slot="sidebar-brand-icon"`
+- `data-slot="sidebar-footer"`
+- `data-slot="sidebar-content"`
+- `data-slot="sidebar-input"`
+- `data-slot="sidebar-separator"`
+- `data-slot="sidebar-group"`
+- `data-slot="sidebar-group-label"`
+- `data-slot="sidebar-group-action"`
+- `data-slot="sidebar-group-content"`
+- `data-slot="sidebar-menu"`
+- `data-slot="sidebar-menu-item"`
 - `data-slot="sidebar-menu-button"`
+- `data-slot="sidebar-menu-action"`
+- `data-slot="sidebar-menu-badge"`
+- `data-slot="sidebar-menu-skeleton"`
+- `data-slot="sidebar-menu-skeleton-icon"`
+- `data-slot="sidebar-menu-skeleton-text"`
+- `data-slot="sidebar-menu-sub"`
+- `data-slot="sidebar-menu-sub-item"`
 - `data-slot="sidebar-menu-sub-button"`
+- `data-slot="sidebar-gap"`
+- `data-slot="sidebar-container"`
+- `data-slot="sidebar-inner"`
 - `data-state="expanded|collapsed"`
 - `data-collapsible="offcanvas|icon|none"`
 - `data-side="left|right"`

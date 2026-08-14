@@ -179,7 +179,7 @@ registered here**, or the commands won't see it.
 ```bash
 composer test          # Run Pest tests
 composer analyse       # Run PHPStan
-bun run test           # Run JS unit tests (Bun + happy-dom). Use `bun run test`, not `bun test` — the npm script wires up --isolate --parallel so mocks don't leak across files and files run concurrently
+bun run test           # Run JS unit tests (Bun + happy-dom). Use `bun run test`, not `bun test` — the npm script wires up --isolate so mocks don't leak across files
 bun run test:browser   # Run browser tests (Playwright)
 composer format        # Run Pint code formatter
 ```
@@ -221,9 +221,23 @@ JS conventions:
 - One test file per controller: `tests/Controllers/<name>_controller.test.js`
 - Use `mountController` from `resources/js/helpers/test_stimulus.js` to set up the DOM and Stimulus
 - Always call `mounted?.cleanup()` in `afterEach`
-- Always run `bun run test` at the end to ensure nothing else broke (the script applies `--isolate --parallel`)
-- The suite runs with `bun test --isolate --parallel` (Bun ≥1.3.10): each file gets its own JSGlobalObject, so
+- Always run `bun run test` at the end to ensure nothing else broke (the script applies `--isolate`)
+- The suite runs with `bun test --isolate` (Bun ≥1.3.10): each file gets its own JSGlobalObject, so
   `mock.module` registrations don't leak between files. Drop the flag once Bun 1.4 makes isolation the default.
+- **Do not add `--parallel`.** Bare, it defaults to the CPU core count (32 on the maintainer's machine), which drove a
+  single worker to 11.8 GB and OOM-killed the entire WSL VM. Pinned low it is still a bad trade: measured on 32 cores,
+  `--parallel=4` failed 4 runs in 8 (~7s) and `--parallel=2` 2 in 4 (~14s), against ~3 in 5 serial (~31s) — and under
+  any worker count the flaky tests below stop responding entirely rather than merely running late.
+- **Behaviour that hinges on MutationObserver delivery belongs in Playwright, not here.** happy-dom drains those
+  callbacks unreliably once many files share a process: failure probability scaled with how many files ran first
+  (5 files → 0 of 6 runs, 15 → 2 of 6, 40 → 3 of 6), and in a failing run the expected transition never arrived at all,
+  so widening poll budgets did not help — Bun caps a single test at 5s regardless. Two mitigations are in place, and
+  the Bun suite has been green 10 runs running since:
+    - `resources/js/helpers/test_stimulus.js` drops its `globalThis` bindings in an `afterAll`, so each file releases
+      its happy-dom `Window` instead of pinning one for the life of the process. It must stay in `afterAll`, not in
+      `cleanup()` — many `afterEach` blocks still touch `document` after cleaning up.
+    - The cases that turned on target removal or an external value change moved to
+      `tests/Browser/read_more_controller.pw.js` and `tests/Browser/side_panel_controller.pw.js`.
 - Use Playwright (`tests/Browser/*.pw.js`) for controller behavior that depends on real browser semantics:
   `MutationObserver`, focus, `requestAnimationFrame`, layout, Turbo frame-like DOM changes or other complex event
   timing.

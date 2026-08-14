@@ -21,6 +21,68 @@ it('declares slots on every component catalog entry', function () {
     }
 });
 
+it('only leaves infrastructure components without styling slots', function () {
+    $catalog = require __DIR__.'/../../src/Registry/catalog.php';
+
+    $slotless = collect($catalog['components'])
+        ->filter(fn (array $component): bool => ($component['styling']['slots'] ?? []) === [])
+        ->keys()
+        ->values()
+        ->all();
+
+    expect($slotless)->toEqualCanonicalizing([
+        'color-scheme.script',
+        'controller-preloads',
+        'frame',
+        'frame-or-page',
+        'frame-or-page.frame',
+        'frame-or-page.page',
+        'meta',
+        'meta.cache',
+        'meta.color-scheme',
+        'meta.csrf',
+        'meta.prefetch',
+        'meta.refresh',
+        'meta.root',
+        'meta.view-transition',
+        'meta.visit-control',
+    ]);
+});
+
+it('documents component styling hooks from the catalog', function () {
+    $catalog = require __DIR__.'/../../src/Registry/catalog.php';
+    $slotsByDoc = [];
+
+    foreach ($catalog['components'] as $component) {
+        $doc = $component['docs'] ?? null;
+
+        if ($doc === null || ! File::exists(__DIR__.'/../../'.$doc)) {
+            continue;
+        }
+
+        $slots = array_keys($component['styling']['slots'] ?? []);
+
+        if ($slots === []) {
+            continue;
+        }
+
+        $slotsByDoc[$doc] = array_values(array_unique([
+            ...($slotsByDoc[$doc] ?? []),
+            ...$slots,
+        ]));
+    }
+
+    foreach ($slotsByDoc as $doc => $slots) {
+        $contents = File::get(__DIR__.'/../../'.$doc);
+
+        expect($contents)->toMatch('/^## Styling hooks\r?$/m');
+
+        foreach ($slots as $slot) {
+            expect($contents)->toContain("data-slot=\"{$slot}\"");
+        }
+    }
+});
+
 it('hydrates valid slot and preset attribute metadata', function () {
     $definitions = [
         ...array_values(HotwireRegistry::make()->components()),

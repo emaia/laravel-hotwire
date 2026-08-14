@@ -6,7 +6,7 @@ Use `<hw:frame>` when you want to render a regular `<turbo-frame>` with concise 
 attributes. Use `<hw:frame-or-page>` when the same route should render as a frame payload for Turbo Frame requests and as
 a full page for direct navigation.
 
-## Basic usage
+## Basic Usage
 
 ```blade
 <hw:frame id="results">

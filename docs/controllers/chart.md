@@ -5,7 +5,8 @@ or URL-fetched `option`, auto-resizes via `ResizeObserver`, and exposes a `setOp
 hooks for subclasses to provide defaults or attach event listeners.
 
 **Identifier:** `chart`  
-**Install:** `php artisan hotwire:controllers chart`  
+**Loaded by:** auto-loaded after `php artisan hotwire:install`; publish only to customize with
+`php artisan hotwire:controllers chart`.
 **npm dep:** `echarts ^6.1.0`
 
 ## Requirements
@@ -34,7 +35,7 @@ hooks for subclasses to provide defaults or attach event listeners.
 |---------------|--------|-----------------------------------|
 | `chart:ready` | `{}`   | Fires after the chart initializes |
 
-## Basic usage (raw, without the Blade component)
+## Basic Usage (raw, without the Blade component)
 
 ```html
 

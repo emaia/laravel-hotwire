@@ -10,14 +10,15 @@ listbox option semantics.
 Search navigation and Escape dismissal are suspended while the search field is composing IME text.
 
 **Identifier:** `multi-select`
-**Install:** `php artisan hotwire:controllers multi-select`
+**Loaded by:** auto-loaded after `php artisan hotwire:install`; publish only to customize with
+`php artisan hotwire:controllers multi-select`.
 
 ## Requirements
 
 - `@floating-ui/dom` for anchored positioning.
 - Ships with `_composition.js`, `_floating.js`, `_form_errors.js`, `_frame_events.js`, `_presence.js`, and
   `_top_layer.js`; publishing the controller publishes these helpers too.
-- Without the Nova preset, reset native Popover positioning with
+- Without the selected preset, reset native Popover positioning with
   `[data-hotwire-top-layer][popover] { inset: auto; margin: 0; }` and define the floating element's border and padding.
 
 ## Targets
@@ -127,7 +128,7 @@ sets content to `data-state="open"`, trigger state to `data-multi-select-state="
 Closing immediately restores both closed states and `inert`, waits for the content's CSS transition or finite animation,
 then adds `hidden`.
 
-The Nova preset transitions only `opacity`, `scale`, and `translate`. Custom closed-state CSS must not set
+The selected preset transitions only `opacity`, `scale`, and `translate`. Custom closed-state CSS must not set
 `display: none` or otherwise hide the panel; Presence owns `hidden`. Set `data-motion="none"` for immediate changes.
 Reduced-motion preference skips motion, and reopening during exit cancels stale hiding and top-layer teardown.
 

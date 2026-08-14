@@ -371,7 +371,7 @@ return response()->json([
     'token' => $token,
     'preview_url' => $previewUrl,
     'stream' => turbo_stream()
-        ->flash('success', 'Upload completed')
+        ->toast('success', 'Upload completed')
         ->render(),
 ], 201);
 ```
@@ -436,7 +436,7 @@ Override the dropzone label with `aria-label`:
 <hw:file-upload url="..." aria-label="Attach signed contract" />
 ```
 
-## Styling Hooks
+## Styling hooks
 
 - `data-slot="file-upload"`
 - `data-slot="file-upload-dropzone"`
@@ -450,6 +450,7 @@ Override the dropzone label with `aria-label`:
 - `data-loading="true|false"`
 - `data-upload-state="idle|uploading|error|done"`
 - `data-slot="attachment-group"`
+- `data-slot="empty-state-description"`
 - `data-slot="file-upload-image-base"`
 - `data-slot="file-upload-image-preview"`
 - `data-slot="attachment"`

@@ -84,6 +84,13 @@ Textareas submit with debounce by default when `auto-submit` is set:
 </hw:field>
 ```
 
-## Required controllers
+## Controller integrations
 
 `hotwire:check` looks for `auto-resize`, `char-counter`, and `auto-submit`. Only the ones you use need to be published.
+
+## Styling hooks
+
+The component exposes stable `data-slot` hooks for preset and application CSS:
+
+- `data-slot="textarea-wrapper"`
+- `data-slot="textarea"`

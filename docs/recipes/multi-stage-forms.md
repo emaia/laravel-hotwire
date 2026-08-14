@@ -8,12 +8,13 @@ in the database; the client owns nothing.
 
 1. User starts the wizard → server creates a `status=draft` row → redirect to step 1's URL.
 2. The page renders the wizard chrome (progress indicator + step content) inside a single
-   `<turbo-frame id="wizard">`.
+   `<turbo-frame id="wizard">` that promotes step navigation to browser history.
 3. Each step's form posts back, server validates **only that step's fields**, persists them on the
-   draft, and returns the next step's view inside the same frame.
-4. Validation failure returns the same step inside the frame — errors render in place, no full page
-   reload, no lost input.
-5. The final step flips `status=published` and redirects to the resource's real URL.
+   draft, and redirects the frame to the next step.
+4. Validation failure redirects to the exact GET URL that rendered the step, so errors return to the
+   frame with no lost input.
+5. The final step flips `status=published` and targets `_top`, leaving the wizard frame for the
+   resource's real URL.
 
 The whole wizard is a sequence of frame swaps over a single draft model. No session juggling, no
 client-side state, no JS step-toggling.
@@ -64,20 +65,26 @@ shouldn't share queries/scopes with published rows.
 ### 2. Routes
 
 ```php
-Route::post('jobs', [JobPostingController::class, 'start'])->name('jobs.start');
-Route::get('jobs/{job}/edit', [JobPostingController::class, 'edit'])->name('jobs.edit');
-Route::patch('jobs/{job}/{step}', [JobPostingController::class, 'updateStep'])
-    ->whereIn('step', ['basics', 'description', 'compensation'])
-    ->name('jobs.update-step');
-Route::post('jobs/{job}/publish', [JobPostingController::class, 'publish'])->name('jobs.publish');
+Route::middleware('auth')->group(function () {
+    Route::post('jobs', [JobPostingController::class, 'start'])->name('jobs.start');
+    Route::get('jobs/{job}/edit/{step?}', [JobPostingController::class, 'edit'])
+        ->whereIn('step', ['basics', 'description', 'compensation', 'review'])
+        ->name('jobs.edit');
+    Route::patch('jobs/{job}/{step}', [JobPostingController::class, 'updateStep'])
+        ->whereIn('step', ['basics', 'description', 'compensation'])
+        ->name('jobs.update-step');
+    Route::post('jobs/{job}/publish', [JobPostingController::class, 'publish'])->name('jobs.publish');
+});
 ```
 
-The `step` segment is part of the URL — refresh-safe, bookmarkable, browser back works between
-steps for free.
+All wizard routes require an authenticated user. The optional `step` segment gives each step a real
+URL. Omitting it resumes the first incomplete step; passing it opens that step directly.
 
 ### 3. Start, resume, advance
 
 ```php
+use Illuminate\Support\Facades\Gate;
+
 class JobPostingController
 {
     public function start(Request $request)
@@ -89,7 +96,7 @@ class JobPostingController
 
     public function edit(JobPosting $job, ?string $step = null)
     {
-        $this->authorize('update', $job);
+        Gate::authorize('update', $job);
 
         $step ??= $this->resumeStep($job);
 
@@ -111,7 +118,8 @@ class JobPostingController
         return match (true) {
             blank($job->title) => 'basics',
             blank($job->description) => 'description',
-            default => 'compensation',
+            $job->salary_min === null || $job->salary_max === null => 'compensation',
+            default => 'review',
         };
     }
 
@@ -126,16 +134,25 @@ class JobPostingController
 }
 ```
 
-`updateStep` returns a redirect; Turbo Drive follows it and the frame swaps to the next step's
-view. Validation errors short-circuit the redirect and re-render the same step inside the frame.
+`updateStep` redirects to the next step's GET URL. The frame host configured below follows that
+redirect and records the resulting URL in browser history. `edit` authorizes the bound job with the
+`update` policy; the mutation requests below enforce the same ability before their controller
+methods run.
 
 ### 4. Per-step validation
 
-One FormRequest, dispatching by `route('step')`:
+Extend `TurboFormRequest` and dispatch rules by the route segment:
 
 ```php
-class UpdateJobStepRequest extends FormRequest
+use Emaia\LaravelHotwireTurbo\Http\Requests\TurboFormRequest;
+
+class UpdateJobStepRequest extends TurboFormRequest
 {
+    public function authorize(): bool
+    {
+        return $this->user()->can('update', $this->route('job'));
+    }
+
     public function rules(): array
     {
         return match ($this->route('step')) {
@@ -156,41 +173,37 @@ class UpdateJobStepRequest extends FormRequest
 ```
 
 Each step validates only its own fields. The draft can stay incomplete between steps without
-tripping required rules from later steps.
+tripping required rules from later steps. Paired with `track-frame-src` on the form, this request
+redirects failures to the exact step URL that rendered the frame rather than relying on session
+history.
 
 ### 5. The wizard layout
 
 ```blade
-{{-- resources/views/components/layouts/wizard-base.blade.php --}}
-@props(['job', 'currentStep'])
-
-@if (request()->wasFromTurboFrame('wizard'))
-    <turbo-frame id="wizard">
-        <x-wizard-progress :current="$currentStep" :job="$job" />
+{{-- resources/views/components/layouts/wizard.blade.php --}}
+<x-layouts.dashboard>
+    <hw:frame id="wizard" advance>
         {{ $slot }}
-    </turbo-frame>
-@else
-    <x-layouts.dashboard>
-        <turbo-frame id="wizard">
-            <x-wizard-progress :current="$currentStep" :job="$job" />
-            {{ $slot }}
-        </turbo-frame>
-    </x-layouts.dashboard>
-@endif
+    </hw:frame>
+</x-layouts.dashboard>
 ```
 
-The progress indicator lives **inside** the frame so it updates with every step swap. Same
-[frame-or-page](./frame-or-page.md) trick: each step has a real URL and renders standalone on
-direct navigation.
+This layout owns the frame host for direct navigation. `advance` promotes successful frame
+navigations to browser history, so Back and Forward revisit step URLs. Do not add another wizard
+frame to the shared dashboard layout.
 
 ### 6. A step view
 
 ```blade
 {{-- resources/views/jobs/wizard/basics.blade.php --}}
-<x-layouts.wizard-base :job="$job" current-step="basics">
-    <form method="POST" action="{{ route('jobs.update-step', ['job' => $job, 'step' => 'basics']) }}">
-        @csrf
-        @method('PATCH')
+<hw:frame-or-page frame="wizard" layout="layouts.wizard">
+    <x-wizard-progress current="basics" :job="$job" />
+
+    <hw:form
+        :action="route('jobs.update-step', ['job' => $job, 'step' => 'basics'])"
+        method="patch"
+        track-frame-src
+    >
 
         <label>
             Title
@@ -205,37 +218,83 @@ direct navigation.
         </label>
 
         <button type="submit">Continue</button>
-    </form>
-</x-layouts.wizard-base>
+    </hw:form>
+</hw:frame-or-page>
 ```
 
-Nothing wizard-specific in the form itself — it's a plain Laravel form posting to a route. The
-"wizard-ness" is entirely in the layout (frame wrapper + progress) and the controller (next-step
-routing).
+On a `Turbo-Frame: wizard` request, `<hw:frame-or-page>` returns the matching frame payload and
+skips the page layout. On a direct visit or refresh, it renders `layouts.wizard`, whose single frame
+host wraps the same content. The progress indicator stays inside the swapped content in both cases.
+
+`<hw:form>` supplies CSRF and method spoofing. `track-frame-src` adds the current step URL as
+`_turbo_frame_src`, which `UpdateJobStepRequest` uses for deterministic validation redirects.
 
 ### 7. Review and publish
 
 ```blade
 {{-- resources/views/jobs/wizard/review.blade.php --}}
-<x-layouts.wizard-base :job="$job" current-step="review">
+<hw:frame-or-page frame="wizard" layout="layouts.wizard">
+    <x-wizard-progress current="review" :job="$job" />
+
     <h2>Review</h2>
 
     <dl>
-        <dt>Title</dt><dd>{{ $job->title }}</dd>
-        <dt>Department</dt><dd>{{ $job->department }}</dd>
+        <dt>Title</dt>
+        <dd>{{ $job->title }}</dd>
+        <dt>Department</dt>
+        <dd>{{ $job->department }}</dd>
         {{-- ... --}}
     </dl>
 
     <a href="{{ route('jobs.edit', ['job' => $job, 'step' => 'basics']) }}">Edit basics</a>
 
-    <form method="POST" action="{{ route('jobs.publish', $job) }}">
-        @csrf
+    <hw:form :action="route('jobs.publish', $job)" method="post" frame="_top">
         <button type="submit">Publish</button>
-    </form>
-</x-layouts.wizard-base>
+    </hw:form>
+</hw:frame-or-page>
 ```
 
 ```php
+use Emaia\LaravelHotwireTurbo\Http\Requests\TurboFormRequest;
+
+class PublishJobRequest extends TurboFormRequest
+{
+    public function authorize(): bool
+    {
+        return $this->user()->can('update', $this->route('job'));
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $this->redirect = route('jobs.edit', [
+            'job' => $this->route('job'),
+            'step' => 'review',
+        ]);
+    }
+
+    public function validationData(): array
+    {
+        return $this->route('job')->only([
+            'title',
+            'department',
+            'description',
+            'salary_min',
+            'salary_max',
+        ]);
+    }
+
+    public function rules(): array
+    {
+        return [
+            'title' => ['required', 'string', 'max:120'],
+            'department' => ['required', 'string'],
+            'description' => ['required', 'string', 'min:50'],
+            'salary_min' => ['required', 'integer', 'min:0'],
+            'salary_max' => ['required', 'integer', 'gte:salary_min'],
+        ];
+    }
+}
+
 public function publish(PublishJobRequest $request, JobPosting $job)
 {
     $job->update([
@@ -247,32 +306,25 @@ public function publish(PublishJobRequest $request, JobPosting $job)
 }
 ```
 
-`PublishJobRequest` runs the **full** ruleset (all required fields, cross-step constraints). If
-publish-time validation fails, redirect back to the failing step:
-
-```php
-public function publish(Request $request, JobPosting $job)
-{
-    try {
-        app(PublishJobRequest::class);
-    } catch (ValidationException $e) {
-        return redirect()->route('jobs.edit', [
-            'job' => $job,
-            'step' => $this->stepForFields(array_keys($e->errors())),
-        ])->withErrors($e->errors());
-    }
-
-    // ... publish
-}
-```
+`PublishJobRequest` validates the persisted draft rather than the review form's empty payload. Its
+explicit review URL makes validation redirects deterministic. Because the form targets `_top`, both
+validation and successful redirects are full-page navigations; the successful publish cannot be
+trapped inside `wizard`. Render a validation summary on the review view with links to the relevant
+step URLs.
 
 ## Variants
 
 ### Conditional branching
 
-Branch on what's already on the draft:
+The base controller above uses `$this->nextStep($step)`. When branching depends on draft state,
+change both the caller and method signature:
 
 ```php
+return redirect()->route('jobs.edit', [
+    'job' => $job,
+    'step' => $this->nextStep($job, $step),
+]);
+
 private function nextStep(JobPosting $job, string $current): string
 {
     return match ($current) {
@@ -285,7 +337,8 @@ private function nextStep(JobPosting $job, string $current): string
 ```
 
 The progress indicator should reflect the active branch — pass the resolved step list from the
-controller, not a hard-coded one.
+controller, not a hard-coded one. Add every branch step to the GET route constraint and the
+per-step request rules.
 
 ### Save & exit
 
@@ -293,17 +346,20 @@ Every step is already saved on `Continue`. For an explicit "Save & exit" button,
 and redirect to the dashboard:
 
 ```blade
-<button type="submit" name="action" value="exit">Save & exit</button>
+<button type="submit" name="action" value="exit" data-turbo-frame="_top">Save & exit</button>
 ```
 
 ```php
-if ($request->input('action') === 'exit') {
+if ($request->string('action')->is('exit')) {
     return redirect()->route('dashboard');
 }
 ```
 
-The user returns later via `GET /jobs/{job}/edit` — `resumeStep()` lands them on the first
-incomplete step.
+The submitter's `_top` target lets the dashboard redirect replace the page instead of looking for a
+`wizard` frame in the response.
+
+The user returns later via `GET /jobs/{job}/edit` — the omitted optional segment lets `resumeStep()`
+land them on the first incomplete step.
 
 ### Abandoned-draft cleanup
 
@@ -324,10 +380,11 @@ deleting.
 - **Schema gets nullable fields** (or a parallel draft table). Pick based on whether drafts and
   published rows share queries.
 - **Validation lives in two places** — per-step rules and publish-time rules. Keeping them in one
-  FormRequest with a `match` on `step` (and a `'publish'` case) helps.
+  rules object or shared rule methods avoids drift.
 - **Drafts need cleanup.** Add a pruning job from day one.
-- **Authorization runs on every step.** Centralize it in the controller's `__construct` or a
-  `middleware('can:update,job')` route group.
+- **Authorization is enforced at every entry point.** The `auth` middleware guards the routes,
+  `edit` checks the bound job in the controller, and both mutation FormRequests check it before
+  validation and controller execution.
 
 ## What this recipe doesn't ship
 

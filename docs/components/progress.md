@@ -53,7 +53,7 @@ attributes directly to those elements.
 | `progress.label` | `span` | `progress-label` |
 | `progress.value` | `span` | `progress-value` |
 
-## Styling Hooks
+## Styling hooks
 
 - `data-slot="progress"`
 - `data-value`

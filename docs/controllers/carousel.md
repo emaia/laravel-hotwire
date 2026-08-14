@@ -5,7 +5,8 @@ declarative targets for navigation buttons and pagination dots, syncs `disabled`
 Stimulus events for integration with other controllers, and cleans itself up on Turbo cache and disconnect.
 
 **Identifier:** `carousel`
-**Install:** `php artisan hotwire:controllers carousel`
+**Loaded by:** auto-loaded after `php artisan hotwire:install`; publish only to customize with
+`php artisan hotwire:controllers carousel`.
 
 > The published file is `carousel_controller.js`. The track geometry ships in
 > `resources/css/structural.css`, which every preset imports, so it applies without publishing anything. Slide size and
@@ -36,7 +37,7 @@ The viewport and container are not Stimulus targets — they're marked with the 
 element Embla measures (`overflow:hidden`); it falls back to the controller element if the hook is absent. The
 container is the flex track Embla animates (Embla finds it via `viewport.firstElementChild`).
 
-## Stimulus Values
+## Values
 
 | Value     | Type     | Default | Description                                                                                                                                                                                                            |
 |-----------|----------|---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|

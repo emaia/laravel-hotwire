@@ -61,7 +61,7 @@ spacing from the shadcn reference.
 
 ## Custom Controls
 
-Use `data-slot="input-group-control"` when composing a custom control so the Nova preset can apply the same group focus
+Use `data-slot="input-group-control"` when composing a custom control so the selected preset can apply the same group focus
 and layout styles.
 
 ```blade
@@ -74,13 +74,13 @@ and layout styles.
 </hw:input-group>
 ```
 
-## Styling Hooks
+## Styling hooks
 
 - `data-slot="input-group"`
 - `data-slot="input-group-addon"`
 - `data-align="inline-start|inline-end|block-start|block-end"`
 - `data-slot="input-group-control"` for custom controls
 
-## Required Controllers
+## Controller integrations
 
 None. Controllers come from the components you compose inside the group, such as `clear-input` on `<hw:input clearable>`.

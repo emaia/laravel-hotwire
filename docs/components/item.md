@@ -57,7 +57,7 @@ trimmed, lowercased, and restricted to `div`, `a`, or `button`; unsupported valu
 | `item.footer` | `div` | `item-footer` |
 | `item.separator` | `div` | `item-separator` |
 
-## Styling Hooks
+## Styling hooks
 
 - `data-slot="item-group"`
 - `data-slot="item"`

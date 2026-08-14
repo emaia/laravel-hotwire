@@ -19,19 +19,23 @@ Each recipe is self-contained — pick the one that matches your use case.
   and floating components stack without losing page context.
 - [Multi-stage forms](./multi-stage-forms.md) — wizards built on a persistent draft model and a
   single Turbo Frame. Per-step validation, browser back, resume-where-you-left-off, no client state.
-- [Composing streams](./composing-streams.md) — chain `refresh`, `update`, `flash` and friends to
+- [Composing streams](./composing-streams.md) — chain `refresh`, `update`, `toast` and friends to
   describe the full UI transition in a single response.
 - [Carousel patterns](./carousel-patterns.md) — thumbnail nav, lightbox modal, infinite Turbo Stream slides,
   URL-deep-linked slides — built on the `carousel` controller.
 - [Carousel as a primitive](./carousel-as-primitive.md) — multi-step wizard, server-driven signage, swipe
   deck and real-time presence — when the carousel is the snap engine, not the gallery.
-- [Accordion](./accordion.md) — compose multiple `disclosure` controllers into an accordion, with
-  patterns for independent or single-open behavior and server-driven initial state.
-- [Conditional fields](./conditional-fields.md) — five real-world form patterns built on
-  `conditional-fields` + `<hw:conditional-field>`: "other" reason, ship-to-different-address,
+- [Accordion](./accordion.md) — build native single- or multiple-open accordions with
+  `<hw:accordion>`, including URL-driven state, disabled items, and change events.
+- [Conditional fields](./conditional-fields.md) — five real-world patterns built with
+  `<hw:form conditional-fields>` and `<hw:conditional-field>`: "other" reason, ship-to-different-address,
   subscription tiers, NPS survey follow-ups, and newsletter preferences.
 - [Charts](./charts.md) — Apache ECharts integration: inline option, URL-fetched option,
   subclass extension, and a drill-down pattern with smooth universal transitions.
+- [Maps](./maps.md) — render inline markers, load GeoJSON, or extend the map controller with
+  custom tiles and interactions.
+- [Rich text image upload](./rich-text-image-upload.md) — connect pasted and dropped editor images
+  to an authorized Laravel upload endpoint.
 - [File upload patterns](./file-upload-patterns.md) — five real-world patterns for the file-upload
   component: MediaMan with lazy thumbnails, async thumbnail via broadcast, stream-rendered gallery with EXIF,
   single-file edit form with stream-replaced cards (avatar pattern), and a rich media library list
@@ -42,5 +46,5 @@ Each recipe is self-contained — pick the one that matches your use case.
 
 ## See also
 
-- [Components catalog](../../README.md#blade-components) — the Blade primitives the recipes build on.
+- [Components catalog](../../README.md#components) — the Blade primitives the recipes build on.
 - [Registry](../registry.md) — where the package metadata lives.

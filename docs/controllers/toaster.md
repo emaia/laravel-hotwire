@@ -5,7 +5,7 @@ emit into. It owns the DOM, the queue, timers, presence and cleanup; there is no
 
 **Identifier:** `toaster`
 
-## Stimulus Values
+## Values
 
 | Value                  | Type      | Default           | Description                                             |
 |------------------------|-----------|-------------------|---------------------------------------------------------|
@@ -18,7 +18,7 @@ emit into. It owns the DOM, the queue, timers, presence and cleanup; there is no
 | `class-name`           | `String`  | `""`              | Extra classes applied to every rendered toast           |
 | `container-aria-label` | `String`  | `"Notifications"` | `aria-label` on the viewport landmark                   |
 
-## Basic usage
+## Basic Usage
 
 ```html
 <body>

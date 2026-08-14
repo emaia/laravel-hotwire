@@ -146,3 +146,9 @@ Renders `data-controller="chart analytics-track"`.
 
 - [Chart controller](../controllers/chart.md) — values, actions, subclass hooks
 - [Charts recipe](../recipes/charts.md) — basic, URL-fetched, and subclass patterns end-to-end
+
+## Styling hooks
+
+The component exposes stable `data-slot` hooks for preset and application CSS:
+
+- `data-slot="chart"`

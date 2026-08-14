@@ -250,6 +250,14 @@ html[data-reveal-rendering] [data-reveal-scope="document"][data-slot="sidebar-co
     view-transition-name: hotwire-sidebar-right;
 }
 
+::view-transition-old(hotwire-sidebar-left),
+::view-transition-new(hotwire-sidebar-left),
+::view-transition-old(hotwire-sidebar-right),
+::view-transition-new(hotwire-sidebar-right) {
+    animation: none;
+    mix-blend-mode: normal;
+}
+
 html[data-reveal-rendering]:has(:is(
     [data-slot="modal-overlay"],
     [data-slot="alert-dialog-overlay"],

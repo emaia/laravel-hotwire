@@ -20,8 +20,8 @@ settings that must always submit an explicit on/off value.
 | `name`              | `string\|null`      | —           | Render a hidden input with this name for optional form/filter submission |
 | `value`             | `mixed`             | `"on"`      | Hidden input value and `change` event detail value                       |
 | `pressed`           | `bool\|string`      | `false`     | Initial pressed state                                                    |
-| `variant`           | `string`            | `"default"` | `default` or `outline` in the Nova preset                                |
-| `size`              | `string`            | `"default"` | `default`, `sm` or `lg` in the Nova preset                               |
+| `variant`           | `string`            | `"default"` | `default` or `outline` in the selected preset                                |
+| `size`              | `string`            | `"default"` | `default`, `sm` or `lg` in the selected preset                               |
 | `type`              | `string`            | `"button"`  | Native button type                                                       |
 | `auto-submit`       | `bool\|string`      | `false`     | Add auto-submit wiring; toggles default to immediate change submit       |
 | `auto-submit-delay` | `int\|string\|null` | `null`      | Per-field debounce override when `auto-submit="debounced"` is used       |
@@ -89,6 +89,12 @@ button.addEventListener("change", (event) => {
 })
 ```
 
-## Required controllers
+## Controller integrations
 
 `<hw:toggle>` mounts the `toggle` controller. `auto-submit` is only required when the `auto-submit` prop is used.
+
+## Styling hooks
+
+The component exposes stable `data-slot` hooks for preset and application CSS:
+
+- `data-slot="toggle"`

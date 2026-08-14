@@ -1,8 +1,11 @@
-# Maps — three patterns
+# Maps
 
-`<hw:map>` covers the 90% case of "show a pin on a map" with very little code. This recipe walks through the three common patterns: inline markers, a GeoJSON endpoint, and a subclass with custom tiles and click handlers.
+Start with `<hw:map>` for sizing, value serialization, and controller wiring. See the
+[component reference](../components/map.md) for all props and the
+[controller reference](../controllers/map.md) for values, actions, and subclass hooks. This
+recipe focuses on complete pin, endpoint, pin-drop, and clustering tasks.
 
-## Pattern 1 — Pin at an address
+## Show a pin at an address
 
 The simplest case: known coordinates, single marker, default OSM tiles.
 
@@ -16,7 +19,7 @@ The simplest case: known coordinates, single marker, default OSM tiles.
 />
 ```
 
-That's it. The marker shows a popup with the store name on click.
+The marker shows a popup with the store name on click.
 
 For multiple known points (say, a list of branches), pass an array:
 
@@ -24,12 +27,12 @@ For multiple known points (say, a list of branches), pass an array:
 <hw:map
     :center="[-23.5505, -46.6333]"
     :zoom="11"
-    :markers="$stores->map(fn (\$s) => [\$s->lat, \$s->lng, \$s->name])->all()"
+    :markers="$stores->map(fn ($store) => [$store->lat, $store->lng, $store->name])->all()"
     height="400px"
 />
 ```
 
-## Pattern 2 — GeoJSON endpoint
+## Load incidents from a GeoJSON endpoint
 
 When the dataset is large, dynamic, or already lives in a service that speaks GeoJSON, skip the inline markers and point `url` at the endpoint.
 
@@ -69,9 +72,11 @@ The map renders with no markers initially, fetches the URL after init, and adds 
 
 > **Note** — Leaflet's GeoJSON in coordinates is `[lng, lat]`, not `[lat, lng]`. The GeoJSON spec uses east-then-north order. Inline markers use `[lat, lng]` because that's Leaflet's `L.marker` argument order.
 
-## Pattern 3 — Custom tiles + click handlers (subclass)
+## Let a user drop a pin
 
-Override the tile provider and wire click events when you need pin-drop, store-locator search, or custom map styling.
+Use an app-owned subclass when a map click needs to update another part of the page. Import the
+package controller through `@hotwire`, then mount the subclass through the component's
+`controller` prop.
 
 ### Subclass
 
@@ -93,10 +98,6 @@ export default class extends MapController {
         };
     }
 
-    defaultView() {
-        return { center: [-23.5505, -46.6333], zoom: 11 };
-    }
-
     afterInit() {
         this.map.on("click", (e) => {
             this.dispatch("pin-drop", {
@@ -107,26 +108,31 @@ export default class extends MapController {
 }
 ```
 
-### Blade — wire the swap
+### Wire the map and form
 
 ```blade
-<hw:map
-    controller="store-locator"
-    height="500px"
-    data-controller="store-locator pin-form"
-/>
+<hw:map controller="store-locator" :center="[-23.5505, -46.6333]" :zoom="11" height="500px" />
 
-<form
+<hw:form
+    :action="route('stores.location.update', $store)"
+    method="patch"
     data-controller="pin-form"
     data-action="store-locator:pin-drop@window->pin-form#captureLatLng"
 >
-    <input type="hidden" name="lat" data-pin-form-target="lat">
-    <input type="hidden" name="lng" data-pin-form-target="lng">
-    <button type="submit">Save pin</button>
-</form>
+    <hw:input type="hidden" name="latitude" data-pin-form-target="lat" />
+    <hw:input type="hidden" name="longitude" data-pin-form-target="lng" />
+    <hw:button type="submit">Save pin</hw:button>
+</hw:form>
 ```
 
-The subclass dispatches a `store-locator:pin-drop` event on click; the form controller listens, stuffs the coords into hidden inputs, and the user submits.
+The component still requires `center`, `markers`, or `url`; a subclass's `defaultView()` cannot
+satisfy that server-side validation. Here the explicit center also makes the initial viewport
+clear in the Blade template.
+
+The subclass dispatches a `store-locator:pin-drop` event on click; the form controller listens,
+puts the coordinates into named hidden fields, and the user submits the PATCH request. `<hw:form>`
+adds the CSRF token and method-spoofing field automatically; the authorized endpoint below persists
+the new location.
 
 ### Companion `pin_form_controller.js`
 
@@ -144,11 +150,58 @@ export default class extends Controller {
 }
 ```
 
-## Marker clustering (out of scope, but easy)
+### Persist the coordinates
 
-For >500 markers, install `leaflet.markercluster` and replace the inline marker loop in a subclass:
+```php
+// routes/web.php
+Route::patch(
+    '/stores/{store}/location',
+    [\App\Http\Controllers\StoreLocationController::class, 'update'],
+)->middleware('auth')->name('stores.location.update');
+```
+
+```php
+// app/Http/Controllers/StoreLocationController.php
+namespace App\Http\Controllers;
+
+use App\Models\Store;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
+
+class StoreLocationController extends Controller
+{
+    public function update(Request $request, Store $store): RedirectResponse
+    {
+        Gate::authorize('update', $store);
+
+        $coordinates = $request->validate([
+            'latitude' => ['required', 'numeric', 'between:-90,90'],
+            'longitude' => ['required', 'numeric', 'between:-180,180'],
+        ]);
+
+        $store->update($coordinates);
+
+        return to_route('stores.show', $store)->with('status', 'Store location updated.');
+    }
+}
+```
+
+The route name matches the form action. Authentication rejects guests, the Store policy controls
+who may update the location, and the normal redirect works with both Turbo Drive and a full-page
+submission.
+
+## Cluster a large marker set
+
+For hundreds of markers, install `leaflet.markercluster` and give the subclass a dedicated
+`clusterMarkers` value:
+
+```bash
+bun add leaflet.markercluster
+```
 
 ```js
+// resources/js/controllers/cluster_map_controller.js
 import MapController from "@hotwire/map_controller.js";
 import L from "leaflet";
 import "leaflet.markercluster/dist/leaflet.markercluster.js";
@@ -156,26 +209,54 @@ import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 
 export default class extends MapController {
+    static values = {
+        ...MapController.values,
+        clusterMarkers: { type: Array, default: [] },
+    };
+
     afterInit() {
+        if (this.clusterMarkersValue.length === 0) return;
+
         const cluster = L.markerClusterGroup();
-        this.markersValue.forEach(([lat, lng, label]) => {
+        this.clusterMarkersValue.forEach(([lat, lng, label]) => {
             const marker = L.marker([lat, lng]);
             if (label) marker.bindPopup(label);
             cluster.addLayer(marker);
         });
         this.map.addLayer(cluster);
 
-        // Suppress the default per-marker loop by clearing the value.
-        // (We've already added them via the cluster group.)
-        this.markersValue = [];
+        const bounds = cluster.getBounds();
+        if (bounds.isValid()) {
+            this.map.fitBounds(bounds, { padding: [20, 20], maxZoom: 15 });
+        }
     }
 }
 ```
 
-The cluster plugin adds ~80KB but turns 5,000 markers from "browser cries" into "smooth".
+Pass cluster data through the component's `stimulus` prop and do not pass its `markers` prop:
+
+```blade
+<hw:map
+    controller="cluster-map"
+    :center="[-23.5505, -46.6333]"
+    :stimulus="stimulus()->controller('cluster-map', [
+        'clusterMarkers' => $stores
+            ->map(fn ($store) => [$store->lat, $store->lng, $store->name])
+            ->values()
+            ->all(),
+    ])"
+    height="500px"
+/>
+```
+
+The Stimulus builder JSON-encodes the marker array and merges its `cluster-map` controller token
+with the component's `controller` prop. The base controller therefore mounts no individual
+markers; only the cluster group owns them. Using `markers` and then clearing `this.markersValue`
+in `afterInit()` is too late because the base controller adds those markers before the hook runs.
 
 ## See also
 
-- `docs/controllers/map.md`
-- `docs/components/map.md`
-- [Leaflet plugins index](https://leafletjs.com/plugins.html) — heatmap, draw, fullscreen, locate, fly-to-bounds, and 200+ others; each is "subclass + import in `afterInit`"
+- [Map component](../components/map.md) — props, auto-fit, sizing, and controller swap
+- [Map controller](../controllers/map.md) — values, actions, lifecycle, and hooks
+- [Extending controllers](../extending-controllers.md) — `@hotwire` subclass and explicit fork paths
+- [Leaflet plugins index](https://leafletjs.com/plugins.html) — heatmap, draw, fullscreen, locate, and other extensions

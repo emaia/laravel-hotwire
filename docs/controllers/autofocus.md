@@ -5,7 +5,8 @@ Focuses the first matching field on `connect()` and again on relevant `turbo:fra
 gap so modals, frame-loaded forms and wizard steps land with the right field focused.
 
 **Identifier:** `autofocus`  
-**Install:** `php artisan hotwire:controllers autofocus`
+**Loaded by:** auto-loaded after `php artisan hotwire:install`; publish only to customize with
+`php artisan hotwire:controllers autofocus`.
 
 ## Requirements
 
@@ -44,7 +45,7 @@ All strategies skip elements that are `[disabled]`, `[type="hidden"]`, `[tabinde
 - Never steals focus: if anything inside the controller scope is already the active element when the
   controller would run, the focus call is skipped.
 
-## Basic usage
+## Basic Usage
 
 The HTML `autofocus` attribute already says what to focus — drop the controller on the form so the
 attribute keeps working across Turbo navigations.

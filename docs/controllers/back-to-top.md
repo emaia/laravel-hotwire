@@ -36,7 +36,7 @@ only to customize it.
 - `data-visible` is set on `connect()` so the initial state matches the current scroll position.
 - Cleans up the listener and any pending frame in `disconnect()`.
 
-## Basic usage
+## Basic Usage
 
 ```html
 

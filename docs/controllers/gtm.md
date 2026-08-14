@@ -4,14 +4,15 @@ Loads Google Tag Manager with lazy loading support (loads only after the first u
 via `data-action`.
 
 **Identifier:** `gtm`  
-**Install:** `php artisan hotwire:controllers gtm`
+**Loaded by:** auto-loaded after `php artisan hotwire:install`; publish only to customize with
+`php artisan hotwire:controllers gtm`.
 
 ## Requirements
 
 - No external dependencies.
 - GTM container ID (format `GTM-XXXXXXX`).
 
-## Stimulus Values
+## Values
 
 | Value  | Type      | Default | Description                                                 |
 |--------|-----------|---------|-------------------------------------------------------------|
@@ -31,7 +32,7 @@ via `data-action`.
 | `event-name`    | `String` | Event name in the dataLayer (required) |
 | `event-payload` | `Object` | Additional data sent with the event    |
 
-## Basic usage — lazy loading (default)
+## Basic Usage — lazy loading (default)
 
 ```html
 <body

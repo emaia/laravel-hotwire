@@ -1,28 +1,15 @@
 # Char Counter
 
-Displays a live character count for an input or textarea. Supports both count-up and countdown modes.
+Displays a live character count for an input or textarea. Use it to show typed characters or remaining characters next to fields with length guidance.
 
-**Identifier:** `char-counter`  
-**Install:** `php artisan hotwire:controllers char-counter`
+**Identifier:** `char-counter`
+**Loaded by:** auto-loaded after `php artisan hotwire:install`; publish only to customize with `php artisan hotwire:controllers char-counter`.
 
 ## Requirements
 
 - No external dependencies.
 
-## Targets
-
-| Target    | Description                              |
-|-----------|------------------------------------------|
-| `input`   | The input or textarea being counted      |
-| `counter` | The element where the count is displayed |
-
-## Stimulus Values
-
-| Value       | Type      | Default | Description                                                                         |
-|-------------|-----------|---------|-------------------------------------------------------------------------------------|
-| `countdown` | `Boolean` | —       | When present, displays remaining characters instead of typed (requires `maxlength`) |
-
-## Basic usage — count up
+## Basic Usage
 
 ```html
 <div data-controller="char-counter">
@@ -35,12 +22,15 @@ Displays a live character count for an input or textarea. Supports both count-up
 </div>
 ```
 
-## Countdown mode
+## Countdown Mode
 
-Requires a `maxlength` attribute on the input. Displays the number of remaining characters.
+Countdown mode requires a `maxlength` attribute on the input and displays the number of remaining characters.
 
 ```html
-<div data-controller="char-counter">
+<div
+    data-controller="char-counter"
+    data-char-counter-countdown-value="true"
+>
     <textarea
         name="bio"
         maxlength="160"
@@ -51,28 +41,7 @@ Requires a `maxlength` attribute on the input. Displays the number of remaining 
 </div>
 ```
 
-Enable countdown mode by adding the `countdown` value:
-
-```html
-<div
-    data-controller="char-counter"
-    data-char-counter-countdown-value="true"
->
-    <input
-        type="text"
-        name="title"
-        maxlength="80"
-        data-char-counter-target="input"
-    />
-    <span data-char-counter-target="counter">80</span> left
-</div>
-```
-
-## Turbo morph support
-
-The controller re-syncs the counter on every `turbo:render` event. When the page is morphed (e.g., after a validation redirect with `<hw:meta refresh />` or `data-turbo-action="morph"`), idiomorph preserves the controller and its targets but rewrites the counter span's `innerHTML` back to the server-rendered initial value (typically `"0"`). The listener re-runs `update()` so the counter reflects the current input value after the morph completes.
-
-## With a form field component
+## With A Form Field Component
 
 ```html
 <div data-controller="char-counter">
@@ -89,3 +58,22 @@ The controller re-syncs the counter on every `turbo:render` event. When the page
     </p>
 </div>
 ```
+
+## Behavior
+
+In count-up mode, the counter displays the current input length. In countdown mode, it displays the remaining characters and requires `maxlength`.
+
+The controller re-syncs the counter on every `turbo:render` event. When the page is morphed, such as after a validation redirect with `<hw:meta refresh />` or `data-turbo-action="morph"`, idiomorph preserves the controller and its targets but rewrites the counter span's `innerHTML` back to the server-rendered initial value, typically `"0"`. The listener re-runs `update()` so the counter reflects the current input value after the morph completes.
+
+## Values
+
+| Value       | Type      | Default | Description                                                                         |
+|-------------|-----------|---------|-------------------------------------------------------------------------------------|
+| `countdown` | `Boolean` | —       | When present, displays remaining characters instead of typed (requires `maxlength`) |
+
+## Targets
+
+| Target    | Description                              |
+|-----------|------------------------------------------|
+| `input`   | The input or textarea being counted      |
+| `counter` | The element where the count is displayed |

@@ -23,8 +23,8 @@ mutually exclusive form choices that must submit one value, and `<hw:checkbox-gr
 | `toggle-group`      | `name`              | `string\|null`         | —            | Hidden input name for form submission. Multiple groups append `[]` when missing. |
 | `toggle-group`      | `value`             | `mixed`                | `null`       | Selected value or selected value array.                                          |
 | `toggle-group`      | `orientation`       | `horizontal\|vertical` | `horizontal` | Layout and ARIA orientation.                                                     |
-| `toggle-group`      | `variant`           | `string`               | `default`    | `default` or `outline` in the Nova preset.                                       |
-| `toggle-group`      | `size`              | `string`               | `default`    | `default`, `sm` or `lg` in the Nova preset.                                      |
+| `toggle-group`      | `variant`           | `string`               | `default`    | `default` or `outline` in the selected preset.                                       |
+| `toggle-group`      | `size`              | `string`               | `default`    | `default`, `sm` or `lg` in the selected preset.                                      |
 | `toggle-group`      | `disabled`          | `bool\|string`         | `false`      | Disables every item and hidden input.                                            |
 | `toggle-group`      | `connected`         | `bool\|string`         | `false`      | Removes spacing and connects item borders.                                       |
 | `toggle-group`      | `old`               | `bool`                 | `true`       | Restores selected values from `old()` input.                                     |
@@ -79,7 +79,7 @@ Single groups allow the current item to be cleared. If the submitted field must 
 The group emits bubbling `change` events from its toggle buttons, so `auto-submit` can submit after the controller has
 enforced single/multiple state and synchronized hidden inputs.
 
-## Styling Hooks
+## Styling hooks
 
 - `data-slot="toggle-group"`
 - `data-slot="toggle-group-item"`
@@ -90,7 +90,7 @@ enforced single/multiple state and synchronized hidden inputs.
 - `data-size="default|sm|lg"`
 - `data-state="on|off"`
 
-## Required controllers
+## Controller integrations
 
 `<hw:toggle-group>` mounts `toggle-group` on the root and each item mounts `toggle`. `auto-submit` is only required when
 the `auto-submit` prop is used.

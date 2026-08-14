@@ -3,13 +3,7 @@
 Base drawer overlay with direction-aware slide transitions, backdrop, focus trap, Escape dismissal and click-outside
 dismissal.
 
-## Requirements
-
-- No external dependencies.
-- Ships with `_composition.js`, `_focus_trap.js`, `_frame_overlay.js`, `_overlay.js`, `_overlay_stack.js`,
-  `_presence.js`, and `_top_layer.js`; publishing the `drawer` controller publishes these helpers too.
-
-## Usage
+## Basic Usage
 
 ```blade
 <hw:drawer direction="down">
@@ -34,35 +28,7 @@ dismissal.
 </hw:drawer>
 ```
 
-## Props
-
-| Prop                  | Default                                                      | Description                                                                |
-|-----------------------|--------------------------------------------------------------|----------------------------------------------------------------------------|
-| `id`                  | auto                                                         | Root element id.                                                           |
-| `direction`           | `down`                                                       | `up`, `right`, `down`, or `left`.                                          |
-| `side`                | `null`                                                       | Legacy alias for `direction`; `top` maps to `up`, `bottom` maps to `down`. |
-| `size`                | `75vw`/`24rem` for side drawers, `auto` for vertical drawers | CSS length assigned to the drawer width or height variable.                |
-| `frame`               | `null`                                                       | String/object Turbo Frame id for layout-shared, server-loaded content.      |
-| `backdrop`            | `true`                                                       | Render the backdrop and click-outside target.                              |
-| `motion`              | `default`                                                    | `default` follows CSS motion; `none` disables it.                          |
-| `lockScroll`          | `true`                                                       | Lock body scroll while open.                                               |
-| `closeOnEscape`       | `true`                                                       | Close when Escape is pressed.                                              |
-| `closeOnClickOutside` | `true`                                                       | Close when the backdrop is clicked.                                        |
-| `viewTransition`      | `false`                                                      | Animate successive renders inside the frame host.                          |
-
-## Components
-
-| Component            | Description                                  |
-|----------------------|----------------------------------------------|
-| `drawer.trigger`     | Button that toggles the drawer.              |
-| `drawer.content`     | Overlay, backdrop and sliding popup wrapper. |
-| `drawer.header`      | Header region.                               |
-| `drawer.title`       | Drawer title.                                |
-| `drawer.description` | Drawer description text.                     |
-| `drawer.footer`      | Footer actions region.                       |
-| `drawer.close`       | Button that closes the drawer.               |
-
-## Behavior
+## Automatic Behavior
 
 The drawer traps focus while open, restores focus to the trigger on close, locks body scroll by default and closes
 synchronously before Turbo caches the page. Its overlay uses `data-state="open|closed"`; Presence waits for actual
@@ -114,7 +80,57 @@ The drawer opens when the frame receives content. Per-link `data-loading-templat
 `loading_template` slot. Return an empty `update` or `replace` stream for the drawer root or frame id, or a `refresh`
 stream, to close it after a successful action. Stream rendering waits for the actual exit motion to finish.
 
+## Requirements
+
+- No external dependencies.
+- Ships with `_composition.js`, `_focus_trap.js`, `_frame_overlay.js`, `_overlay.js`, `_overlay_stack.js`,
+  `_presence.js`, and `_top_layer.js`; publishing the `drawer` controller publishes these helpers too.
+
+## Props
+
+| Prop                  | Default                                                      | Description                                                                |
+|-----------------------|--------------------------------------------------------------|----------------------------------------------------------------------------|
+| `id`                  | auto                                                         | Root element id.                                                           |
+| `direction`           | `down`                                                       | `up`, `right`, `down`, or `left`.                                          |
+| `side`                | `null`                                                       | Legacy alias for `direction`; `top` maps to `up`, `bottom` maps to `down`. |
+| `size`                | `75vw`/`24rem` for side drawers, `auto` for vertical drawers | CSS length assigned to the drawer width or height variable.                |
+| `frame`               | `null`                                                       | String/object Turbo Frame id for layout-shared, server-loaded content.      |
+| `backdrop`            | `true`                                                       | Render the backdrop and click-outside target.                              |
+| `motion`              | `default`                                                    | `default` follows CSS motion; `none` disables it.                          |
+| `lockScroll`          | `true`                                                       | Lock body scroll while open.                                               |
+| `closeOnEscape`       | `true`                                                       | Close when Escape is pressed.                                              |
+| `closeOnClickOutside` | `true`                                                       | Close when the backdrop is clicked.                                        |
+| `viewTransition`      | `false`                                                      | Animate successive renders inside the frame host.                          |
+
+## Components
+
+| Component            | Description                                  |
+|----------------------|----------------------------------------------|
+| `drawer.trigger`     | Button that toggles the drawer.              |
+| `drawer.content`     | Overlay, backdrop and sliding popup wrapper. |
+| `drawer.header`      | Header region.                               |
+| `drawer.title`       | Drawer title.                                |
+| `drawer.description` | Drawer description text.                     |
+| `drawer.footer`      | Footer actions region.                       |
+| `drawer.close`       | Button that closes the drawer.               |
+
 ## Future Enhancements
 
 Swipe gestures, nested drawers and snap points are planned as separate enhancements after the base drawer behavior is
 stable.
+
+## Styling hooks
+
+The component exposes stable `data-slot` hooks for preset and application CSS:
+
+- `data-slot="drawer-overlay"`
+- `data-slot="drawer-trigger"`
+- `data-slot="drawer-backdrop"`
+- `data-slot="drawer-popup"`
+- `data-slot="drawer-content"`
+- `data-slot="drawer-header"`
+- `data-slot="drawer-title"`
+- `data-slot="drawer-description"`
+- `data-slot="drawer-footer"`
+- `data-slot="drawer-close"`
+- `data-slot="drawer"`

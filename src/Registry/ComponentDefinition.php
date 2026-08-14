@@ -12,7 +12,7 @@ final readonly class ComponentDefinition
         public string $class,
         public string $view,
         public string $docs,
-        public string $category,
+        public Category $category,
         public string $description = '',
         public array $controllers = [],
         public Styling $styling = new Styling,

@@ -259,6 +259,19 @@ test("programmatic collapse returns focus from panel content to the trigger", as
     await expect(page.locator("#project-panel")).toHaveAttribute("inert", "");
 });
 
+test("an external open value change returns focus to the trigger before the panel goes inert", async ({ page }) => {
+    await page.setContent(await fixture());
+    await installController(page);
+    await page.locator("#panel-link").focus();
+
+    await page.locator("#layout").evaluate((root) => {
+        window.app.getControllerForElementAndIdentifier(root, "side-panel").openValue = false;
+    });
+
+    await expect(page.locator("#project-trigger")).toBeFocused();
+    await expect(page.locator("#project-panel")).toHaveAttribute("inert", "");
+});
+
 test.describe("reduced motion", () => {
     test.use({ reducedMotion: "reduce" });
 

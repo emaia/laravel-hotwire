@@ -5,7 +5,8 @@ single `dispatch()` action for triggers that don't fit `optimistic--form` or
 `optimistic--link`.
 
 **Identifier:** `optimistic--dispatch`
-**Install:** `php artisan hotwire:controllers optimistic/dispatch`
+**Loaded by:** auto-loaded after `php artisan hotwire:install`; publish only to customize with
+`php artisan hotwire:controllers optimistic/dispatch`.
 
 ## When to use
 

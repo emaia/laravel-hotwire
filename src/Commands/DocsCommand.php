@@ -2,6 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Commands;
 
+use Emaia\LaravelHotwire\Registry\Category;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\DocSearchIndex;
 use Emaia\LaravelHotwire\Support\MarkdownRenderer;
@@ -262,11 +263,34 @@ class DocsCommand extends Command
                 $entry['category'],
                 $entry['description'],
             ];
-        }, $entries);
+        }, $this->sortListEntries($entries));
 
         $this->table(['Type', 'Name', 'Category', 'Description'], $rows);
 
         return self::SUCCESS;
+    }
+
+    /**
+     * @param  array<int, array{type: 'controller'|'component', key: string, title: string, label: string, search: string, docs: string, category: string, description: string, tag?: string, npm?: array<string, string>, controllers?: string[]}>  $entries
+     * @return array<int, array{type: 'controller'|'component', key: string, title: string, label: string, search: string, docs: string, category: string, description: string, tag?: string, npm?: array<string, string>, controllers?: string[]}>
+     */
+    private function sortListEntries(array $entries): array
+    {
+        $categoryOrder = array_flip(array_map(fn (Category $category) => $category->value, Category::cases()));
+
+        usort($entries, function (array $a, array $b) use ($categoryOrder): int {
+            return [
+                $categoryOrder[$a['category']],
+                $a['type'],
+                $a['type'] === 'component' ? $a['tag'] : $a['key'],
+            ] <=> [
+                $categoryOrder[$b['category']],
+                $b['type'],
+                $b['type'] === 'component' ? $b['tag'] : $b['key'],
+            ];
+        });
+
+        return $entries;
     }
 
     /**

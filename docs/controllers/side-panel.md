@@ -1,8 +1,45 @@
-# Side Panel Controller
+# Side Panel
 
 Controls an inline panel's expanded state, accessibility attributes, and cookie persistence.
 
 **Identifier:** `side-panel`
+**Loaded by:** auto-loaded after `php artisan hotwire:install`; publish only to customize with
+`php artisan hotwire:controllers side-panel`.
+
+## Requirements
+
+- No external dependencies.
+
+## Basic Usage
+
+```html
+<div
+    data-controller="side-panel"
+    data-side-panel-name-value="project-navigation"
+    data-side-panel-open-value="true"
+    data-side-panel-cookie-name-value="side_panel_project-navigation_state"
+    data-action="turbo:before-render@window->side-panel#preserveStateForRender"
+    data-state="expanded"
+>
+    <aside id="project-navigation-panel" data-side-panel-target="panel">
+        Navigation
+    </aside>
+
+    <button
+        type="button"
+        data-side-panel-target="trigger"
+        data-action="side-panel#toggle"
+        aria-controls="project-navigation-panel"
+        aria-expanded="true"
+    >
+        Toggle
+    </button>
+</div>
+```
+
+The controller synchronizes root `data-state`, trigger `aria-expanded`, and panel `inert`. When `persist` is enabled and
+`cookieName` is present, state changes write a cookie; `preserveStateForRender` copies the current state into Turbo's next
+body render.
 
 ## Values
 

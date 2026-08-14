@@ -64,3 +64,9 @@ arrows and rich-text toolbar controls. For app-specific icons, compose your own 
 | `name` | `string` | — | Icon identifier (required) |
 
 All standard HTML attributes (`class`, `aria-label`, etc.) are forwarded to the `<svg>` element.
+
+## Styling hooks
+
+The component exposes stable `data-slot` hooks for preset and application CSS:
+
+- `data-slot="icon"`

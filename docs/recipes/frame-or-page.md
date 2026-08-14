@@ -1,34 +1,115 @@
 # Frame-or-page views
 
-Render the **same view** as either a full-page response or a Turbo Frame modal payload, depending on
-how the user reached it. One controller, one view, no duplication.
+Render one view as either a Turbo Frame payload or a standalone page, depending on how the user reached it. The URL,
+controller and form stay the same in both contexts.
 
-> The pattern below is also packaged as [`<hw:frame-or-page>`](../components/frame-or-page.md).
-> Use this recipe when you want to understand the moving parts or when you need to customize the
-> dashboard layout itself; reach for the component when you just want the behavior.
-> The component also provides lazy `.frame` and `.page` subcomponents when the two presentations need
-> different content, and a `frames` prop when one route can target multiple hosts.
+## Quick start
 
-## The problem
+Wrap the shared view in `<hw:frame-or-page>` and declare the receiving frame and full-page layout:
 
-A typical CRUD flow has two ways to open a record's "edit" form:
+```blade
+{{-- resources/views/users/edit.blade.php --}}
+<hw:frame-or-page frame="modal" layout="dashboard">
+    <h1>Change password</h1>
 
-- From the list page → users expect a **modal** (no full navigation, fast feedback).
-- From a direct link / bookmark / refresh → users expect a **standalone page** (URL is shareable,
-  back button works, refresh keeps you on the form).
+    <hw:form :action="route('users.update', $user)" method="patch" track-frame-src>
+        <hw:field name="password" label="New password">
+            <hw:input name="password" type="password" />
+        </hw:field>
 
-Natively, that's two views and two controllers — or one view with branching logic at every level.
+        <hw:button type="submit">Save</hw:button>
+    </hw:form>
+</hw:frame-or-page>
+```
 
-## The pattern
+A request carrying `Turbo-Frame: modal` returns only `<turbo-frame id="modal">`. Direct navigation renders the slot
+inside `<x-layouts.dashboard>`, producing a refresh-safe and bookmarkable page.
 
-Push the branching to a single layout component. The controller stays oblivious to whether the
-caller is a frame or a page.
+Simple layout names resolve ergonomically: `layout="dashboard"` uses `dashboard` when that component exists, otherwise
+it tries `layouts.dashboard`. See the [component reference](../components/frame-or-page.md) for multiple frames, lazy
+context branches, model-aware frame ids and forwarded attributes.
 
-### 1. The layout component
+## Add the frame host
+
+Place one receiving modal in the shared dashboard layout:
+
+```blade
+{{-- resources/views/components/layouts/dashboard.blade.php --}}
+<!DOCTYPE html>
+<html>
+    <head>
+        ...
+    </head>
+    <body>
+        <header>...</header>
+        <main>{{ $slot }}</main>
+
+        <hw:modal frame="modal">
+            <x-slot:loading_template>
+                <div class="flex items-center justify-center p-12">Loading...</div>
+            </x-slot>
+        </hw:modal>
+
+        <hw:toaster />
+    </body>
+</html>
+```
+
+The host is available from every page using that layout. When its frame receives content, the modal opens
+automatically. The loading template also activates for matching frame links outside the modal; no `data-action` is
+required.
+
+## Choose the presentation
+
+Target the host to open the form in the modal:
+
+```blade
+<a href="{{ route('users.edit', $user) }}" data-turbo-frame="modal">Change password</a>
+```
+
+Omit `data-turbo-frame` for a regular page navigation:
+
+```blade
+<a href="{{ route('users.edit', $user) }}">Change password</a>
+```
+
+Both links reach the same route and render the same view. Only the request context changes its outer presentation.
+
+## Close on success
+
+After a successful frame submission, refresh the underlying page, clear the modal frame and show feedback:
+
+```php
+public function update(UpdateUserRequest $request, User $user)
+{
+    $user->update($request->validated());
+
+    if ($request->turboFrameId() === 'modal' && $request->wantsTurboStream()) {
+        return turbo_stream()
+            ->refresh(method: 'morph')
+            ->update('modal')
+            ->toast('success', 'Password updated');
+    }
+
+    return redirect()
+        ->route('users.edit', $user)
+        ->with('status', 'Password updated');
+}
+```
+
+Have `UpdateUserRequest` extend `TurboFormRequest`. Together with `track-frame-src`, validation failures redirect to the
+GET URL that rendered the frame instead of the mutation URL or underlying page. The normal redirect keeps direct and
+non-JavaScript submissions usable.
+
+The [`toast()` stream macro](../components/toast.md#the-toast-stream-macro) is registered by Laravel Hotwire.
+
+## How it works
+
+`<hw:frame-or-page>` packages a small request-header branch. The equivalent lower-level layout looks like this:
 
 ```blade
 {{-- resources/views/components/layouts/modal-base.blade.php --}}
-@if (request()->wasFromTurboFrame('modal'))
+@if (request()->turboFrameId() === 'modal')
     <hw:frame id="modal">
         {{ $slot }}
     </hw:frame>
@@ -39,130 +120,29 @@ caller is a frame or a page.
 @endif
 ```
 
-`request()->wasFromTurboFrame('modal')` is provided by `emaia/laravel-hotwire-turbo` — it checks the
-`Turbo-Frame` request header.
+`turboFrameId()` returns the normalized `Turbo-Frame` request header or `null`. Keeping this branch at the layout
+boundary lets the view and controller remain independent of their presentation.
 
-### 2. The view uses the layout
-
-```blade
-{{-- resources/views/users/edit.blade.php --}}
-<x-layouts.modal-base>
-    <div class="modal:p-5">
-        <x-headings.main-section>Change password</x-headings.main-section>
-
-        <hw:form :action="route('users.update', $user)" method="patch">
-            <hw:field name="password" label="New password">
-                <hw:input type="password" />
-            </hw:field>
-
-            <hw:button type="submit">Save</hw:button>
-        </hw:form>
-    </div>
-</x-layouts.modal-base>
-```
-
-The view itself doesn't know — and doesn't care — whether it's rendered as a modal or as a page.
-
-### 3. The dashboard layout has the modal host
-
-```blade
-{{-- resources/views/components/layouts/dashboard.blade.php --}}
-<!DOCTYPE html>
-<html>
-<head>...</head>
-<body>
-    <header>...</header>
-    <main>{{ $slot }}</main>
-
-    <hw:modal frame="modal">
-        <x-slot:loading_template>
-            <div class="flex items-center justify-center p-12">
-                <span>Loading...</span>
-            </div>
-        </x-slot:loading_template>
-    </hw:modal>
-
-    <hw:toaster />
-    <hw:toast />
-</body>
-</html>
-```
-
-The modal host lives in the dashboard layout — available on every page. `frame="modal"` renders the
-receiving `<turbo-frame id="modal" data-modal-target="dynamicContent">`. When the frame receives
-content, the modal's content observer opens it automatically.
-
-### 4. Links choose the experience
-
-Trigger the modal:
-
-```blade
-<a href="{{ route('users.edit', $user) }}" data-turbo-frame="modal">
-    Change password
-</a>
-```
-
-`data-turbo-frame="modal"` makes Turbo issue the request scoped to the frame, sending the
-`Turbo-Frame: modal` header. The layout sees it and renders only the frame content. The frame
-rendered by `<hw:modal frame="modal">` receives the response, the modal observer fires, and the
-modal opens.
-
-The modal controller listens globally for clicks on `a[data-turbo-frame="<its frame id>"]`, so the
-loading template fires automatically — no `data-action` required, even when the link lives outside
-the modal element.
-
-Trigger the full page (no frame attribute):
-
-```blade
-<a href="{{ route('users.edit', $user) }}">Change password</a>
-```
-
-The same controller, the same view, but now the layout renders the dashboard wrapper and the user
-gets a standalone page.
-
-## Closing on success
-
-When the form submits successfully, you want to close the modal **and** refresh the underlying page.
-Return a Turbo Stream from the controller:
-
-```php
-public function update(Request $request, User $user)
-{
-    $request->validate([...]);
-    $user->update($request->only('password'));
-
-    return turbo_stream()
-        ->refresh(method: 'morph')
-        ->update('modal')
-        ->flash('success', 'Password updated');
-}
-```
-
-Uses the [`toast()` stream macro](../components/toast.md#the-toast-stream-macro), which the package
-registers for you.
+Use the manual form when you need complete control over the layout branch itself. Prefer `<hw:frame-or-page>` for normal
+application views so frame matching, layout resolution and contextual content stay on the package's tested path.
 
 ## Why this works well
 
-- **One URL per resource** — the edit form lives at `/users/{user}/edit` whether it opens as a modal
-  or a page.
-- **Refresh-safe** — refreshing the page on the modal route re-renders as the standalone page (no
-  broken state).
-- **Bookmark/share-friendly** — copying the URL produces the standalone page experience.
-- **Progressive enhancement** — without JS, links navigate normally to the standalone page.
-- **No view duplication** — one Blade file covers both presentations.
+- **One URL per resource** — the form keeps the same route in modal and page contexts.
+- **Refresh-safe** — refreshing the modal URL renders the standalone page.
+- **Bookmarkable** — copied and shared URLs open as regular pages.
+- **Progressive enhancement** — without JavaScript, links navigate to the standalone page.
+- **No duplicated views** — one Blade file covers both presentations.
 
 ## Trade-offs
 
-- The modal and frame must be present on **every** page that triggers modals — typically by living in
-  the shared layout.
-- `data-turbo-frame="modal"` must be set on every link/form that should open as a modal. Easy to forget.
-- The frame id is global — you can't have two modal frames on the same page without renaming. (You
-  rarely want two anyway.)
+- The receiving frame host must be present on every page that triggers it, usually through a shared layout.
+- Every link or form that should use the overlay must declare the correct `data-turbo-frame`.
+- Frame ids are document-global. Use distinct hosts when one layout needs multiple overlay presentations.
 
 ## See also
 
-- [`<hw:modal>`](../components/modal.md) — the modal primitive.
-- [`modal` controller](../controllers/modal.md) — dynamic content observer internals.
-- [Server-driven modals](./server-driven-modals.md) — closing and replacing content from the server.
-- [Composing streams](./composing-streams.md) — chain `refresh + update + flash` for clean
-  success responses.
+- [`<hw:frame-or-page>`](../components/frame-or-page.md) — complete component API and advanced contexts.
+- [`<hw:modal>`](../components/modal.md) — the receiving modal primitive.
+- [Server-driven modals](./server-driven-modals.md) — close and replace modal content from the server.
+- [Composing streams](./composing-streams.md) — combine refresh, update and toast actions.

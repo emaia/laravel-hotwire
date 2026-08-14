@@ -3,21 +3,52 @@
 Adds accessible hover/focus tooltips to any element using Floating UI positioning.
 
 **Identifier:** `tooltip`  
-**Install:** `php artisan hotwire:controllers tooltip`
+**Loaded by:** auto-loaded after `php artisan hotwire:install`; publish only to customize with
+`php artisan hotwire:controllers tooltip`.
 
 ## Requirements
 
 - `@floating-ui/dom` for viewport-aware anchored positioning.
 - Ships with `_composition.js`, `_floating.js`, `_presence.js`, and `_top_layer.js`; publishing the controller publishes
   these helpers too.
-- Without the Nova preset, reset native Popover positioning with
+- Without the selected preset, reset native Popover positioning with
   `[data-hotwire-top-layer][popover] { inset: auto; margin: 0; }`, set
   `[data-hotwire-top-layer][popover][data-slot="tooltip"] { overflow: visible; }` for arrow clipping, and define the
   generated tooltip's border and padding.
 
 Escape dismissal is suspended during IME composition.
 
-## Stimulus Values
+## Basic Usage
+
+```html
+<button
+    type="button"
+    data-controller="tooltip"
+    data-tooltip-content-value="Click to save"
+>
+    Save
+</button>
+```
+
+The controller creates the tooltip element automatically, appends it to `document.body`, positions it with Floating UI,
+and removes it on `disconnect()` or `turbo:before-cache`.
+
+## With HTML content
+
+```html
+<span
+    data-controller="tooltip"
+    data-tooltip-content-value="<strong>Required</strong><br>Fill in this field"
+>
+    Name *
+</span>
+```
+
+Tooltips are hoverable and dismissible with Escape. They set `role="tooltip"` on the generated tooltip element and add
+`aria-describedby` to the trigger while open. Tooltip content should not contain links, buttons or form controls; use
+Popover for interactive content.
+
+## Values
 
 | Value         | Type      | Default     | Description                                                                                                   |
 |---------------|-----------|-------------|---------------------------------------------------------------------------------------------------------------|
@@ -33,30 +64,6 @@ Escape dismissal is suspended during IME composition.
 | `closeDelay`  | `Number`  | `100`       | Delay before closing after hover/focus leaves, in milliseconds.                                               |
 | `enabledWhen` | `String`  | `""`        | Optional ancestor selector. When set, the tooltip only opens while the element is inside a matching ancestor. |
 | `motion`      | `String`  | `"default"` | Presence motion: `default` or `none`. Rendered as `data-motion` on the generated tooltip.                      |
-
-## Basic usage
-
-```html
-<button
-    data-controller="tooltip"
-    data-tooltip-content-value="Click to save"
->
-    Save
-</button>
-```
-
-## With HTML content
-
-```html
-<span
-    data-controller="tooltip"
-    data-tooltip-content-value="<strong>Required</strong><br>Fill in this field"
->
-    Name *
-</span>
-```
-
-Tooltips are hoverable and dismissible with Escape. They set `role="tooltip"` on the generated tooltip element and add `aria-describedby` to the trigger while open. Tooltip content should not contain links, buttons or form controls; use Popover for interactive content.
 
 ## Custom position
 
@@ -89,7 +96,7 @@ The generated tooltip starts as `data-state="closed" hidden inert`. Presence rem
 first placement, then changes the state to `open` and removes `inert`. During exit it changes the state back to `closed`
 and applies `inert` immediately, but does not add `hidden` or remove the generated node until the CSS motion finishes.
 
-The Nova preset transitions only `opacity`, `scale`, and `translate`. Custom CSS can use transitions or finite animations
+The selected preset transitions only `opacity`, `scale`, and `translate`. Custom CSS can use transitions or finite animations
 on `[data-slot="tooltip"]`, keyed by `data-state="open|closed"`. Never set `display: none` or otherwise hide the element
 in the closed-state rule; Presence owns `hidden`. Rapid re-entry cancels stale teardown, and
 `prefers-reduced-motion: reduce` skips motion automatically.
@@ -155,7 +162,7 @@ Tooltips on disabled elements need a wrapper, as the browser blocks events on `d
 </span>
 ```
 
-## Styling Hooks
+## Styling hooks
 
 - `data-slot="tooltip"`
 - `data-state="open|closed"` on the generated tooltip

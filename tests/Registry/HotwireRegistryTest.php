@@ -54,12 +54,34 @@ it('points every registered component class, view, docs and controller source to
 it('points every registered controller source and docs path to a real file', function () {
     $registry = HotwireRegistry::make();
     $basePath = $registry->basePath();
-    $validCategories = ['overlay', 'feedback', 'forms', 'turbo', 'utility', 'dev'];
 
     foreach ($registry->controllers() as $controller) {
         expect(file_exists($controller->sourcePath($basePath)))->toBeTrue();
         expect(file_exists($basePath.'/'.$controller->docs))->toBeTrue();
-        expect($controller->category)->toBeIn($validCategories);
+    }
+});
+
+it('rejects a category outside the shared vocabulary', function () {
+    $catalog = require __DIR__.'/../../src/Registry/catalog.php';
+    $catalog['controllers']['tooltip']['category'] = 'made-up';
+
+    expect(fn () => HotwireRegistry::fromCatalog($catalog, '/tmp'))->toThrow(ValueError::class);
+});
+
+it('keeps a component and the controllers it mounts in the same category', function () {
+    $registry = HotwireRegistry::make();
+
+    foreach ($registry->components() as $key => $component) {
+        $controller = $registry->controller($key);
+
+        if ($controller === null) {
+            continue;
+        }
+
+        expect($controller->category)->toBe(
+            $component->category,
+            "Component \"{$key}\" is [{$component->category->value}] but its controller is [{$controller->category->value}]",
+        );
     }
 });
 

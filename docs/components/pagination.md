@@ -294,7 +294,7 @@ visible control text is hidden or when the paginator needs domain-specific wordi
 | `pagination.next`     | `a` or `span` | `pagination-next`     |
 | `pagination.ellipsis` | `span`        | `pagination-ellipsis` |
 
-## Styling Hooks
+## Styling hooks
 
 - `data-slot="pagination"`
 - `data-slot="pagination" data-state="loading"`

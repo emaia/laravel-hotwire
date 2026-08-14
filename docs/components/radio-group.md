@@ -118,7 +118,7 @@ Use `error-key` when the HTML name differs from the validation key:
 
 Groups submit immediately by default. Use `auto-submit="debounced" auto-submit-delay="..."` to debounce changes.
 
-## Styling Hooks
+## Styling hooks
 
 - `data-slot="radio-group"`
 - `data-slot="radio-group-item"`
@@ -127,6 +127,6 @@ Groups submit immediately by default. Use `auto-submit="debounced" auto-submit-d
 - `data-orientation="horizontal|vertical"`
 - `data-checkable="true"`
 
-## Required controllers
+## Controller integrations
 
 `auto-submit` is only required when the `auto-submit` prop is used.
