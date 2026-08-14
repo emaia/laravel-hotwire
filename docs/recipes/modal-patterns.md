@@ -140,8 +140,7 @@ Drop down to the raw [`modal` controller](../controllers/modal.md) only when:
 - You need a **substantially different DOM structure** (custom backdrop, non-standard panel layout,
   multi-pane modals) that fighting the slot wouldn't cover.
 - You're embedding the modal in a **third-party UI kit** that owns the markup.
-- You want **no Tailwind dependency** in the rendered HTML — the component ships with Tailwind
-  classes baked into the view.
+- You need a markup contract that is not based on the component's `data-slot` styling hooks.
 
 For everything else (custom width, animations, focus-trap behaviour, click-outside semantics), the
 component already exposes props or Stimulus values — no need to drop down.
@@ -152,4 +151,4 @@ component already exposes props or Stimulus values — no need to drop down.
 - [`modal` controller](../controllers/modal.md) — raw controller reference.
 - [Frame-or-page views](./frame-or-page.md) — render the same view as a page or as a modal.
 - [Server-driven modals](./server-driven-modals.md) — open and close from controller responses.
-- [Composing streams](./composing-streams.md) — chain `refresh + update + flash`.
+- [Composing streams](./composing-streams.md) — chain `refresh + update + toast`.

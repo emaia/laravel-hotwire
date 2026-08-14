@@ -10,7 +10,7 @@ modal, the second performs the action.
 2. Link is frame-scoped → server returns a confirmation view inside the modal frame.
 3. The modal opens with server-computed context ("This task has 47 sub-tasks that will be deleted").
 4. User confirms → form POSTs `DELETE` → server returns a Turbo Stream that removes the row, closes
-   the modal, and flashes a toast.
+   the modal, and shows a toast.
 
 Two round-trips, zero client-side conditional logic.
 
@@ -116,7 +116,7 @@ public function destroy(Task $task)
     return turbo_stream()
         ->remove(dom_id($task))
         ->update('modal')
-        ->flash('success', 'Task deleted');
+        ->toast('success', 'Task deleted');
 }
 ```
 
@@ -197,4 +197,4 @@ real route, and the response is a Turbo Stream that Turbo Drive applies to the p
 - [Modal patterns](./modal-patterns.md) — the layout-shared setup this recipe builds on.
 - [Frame-or-page views](./frame-or-page.md) — the layout that makes the confirmation view dual-mode.
 - [Server-driven modals](./server-driven-modals.md) — opening and closing modals from the server.
-- [Composing streams](./composing-streams.md) — chaining `remove + update + flash`.
+- [Composing streams](./composing-streams.md) — chaining `remove + update + toast`.

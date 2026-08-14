@@ -6,7 +6,7 @@ screen they started from. A common admin flow is:
 1. Users index opens an edit form in a shared Turbo Frame modal.
 2. The edit form opens a second modal for roles and permissions.
 3. A destructive role removal uses `alert-dialog` above the second modal.
-4. The server returns Turbo Streams that update the user row, the roles panel and flash feedback.
+4. The server returns Turbo Streams that update the user row, the roles panel and toast feedback.
 
 This gives you SPA-like depth while keeping each screen server-rendered and URL-addressable.
 
@@ -236,7 +236,7 @@ final class UserController
         return turbo_stream()
             ->replace(dom_id($user), view('users._row', ['user' => $user]))
             ->update('user-modal')
-            ->flash('success', 'User updated');
+            ->toast('success', 'User updated');
     }
 }
 ```
@@ -264,7 +264,7 @@ final class UserRoleController
         return turbo_stream()
             ->replace(dom_id($user), view('users._row', ['user' => $user->fresh('roles')]))
             ->update('roles-modal')
-            ->flash('success', 'Roles updated');
+            ->toast('success', 'Roles updated');
     }
 
     public function destroy(User $user, Role $role)
@@ -274,7 +274,7 @@ final class UserRoleController
         return turbo_stream()
             ->remove(dom_id($role, 'assignment'))
             ->replace(dom_id($user), view('users._row', ['user' => $user->fresh('roles')]))
-            ->flash('success', "{$role->name} removed from {$user->name}");
+            ->toast('success', "{$role->name} removed from {$user->name}");
     }
 }
 ```

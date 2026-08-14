@@ -89,7 +89,7 @@ stream. Stream rendering waits for the actual exit motion to finish:
 return turbo_stream()
     ->refresh(method: 'morph')
     ->update('settings-panel')
-    ->flash('success', 'Saved');
+    ->toast('success', 'Saved');
 ```
 
 ## Requirements

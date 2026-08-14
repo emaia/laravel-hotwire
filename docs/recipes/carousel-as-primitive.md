@@ -267,14 +267,14 @@ public function dispatchDecision(Request $request, Candidate $candidate)
         // Optimistic remove already happened — bring the card back and explain.
         return turbo_stream()
             ->refresh(method: 'morph')
-            ->flash('error', __('You hit the daily decision limit.'))
+            ->toast('error', __('You hit the daily decision limit.'))
             ->withResponse(429);
     }
 
     $candidate->recordDecision($request->user(), $request->string('decision'));
 
     return turbo_stream()
-        ->flash('success', $request->string('decision') === 'like' ? __('Liked') : __('Passed'));
+        ->toast('success', $request->string('decision') === 'like' ? __('Liked') : __('Passed'));
 }
 ```
 
@@ -285,7 +285,7 @@ Why this combination works:
 - **Carousel re-measures automatically** — Embla's `watchSlides` MutationObserver picks up the removed node;
   the next card slides into the snap position with the configured duration. No imperative `scrollNext` call.
 - **Rejection path uses `refresh(method: 'morph')`** — when the server says "no" (rate limit, blocked,
-  policy), the morph response re-paints the deck with the rejected card back in place, and the flash
+  policy), the morph response re-paints the deck with the rejected card back in place, and the toast
   explains why.
 
 ## Real-time presence on slides
@@ -748,7 +748,7 @@ public function restore(Snapshot $snapshot)
 
     return turbo_stream()
         ->replace('editor', view('partials.editor', compact('document')))
-        ->flash('success', __('Restored to :when', [
+        ->toast('success', __('Restored to :when', [
             'when' => $snapshot->created_at->diffForHumans(),
         ]));
     // The save itself fires DocumentObserver::saved → a new SnapshotCaptured

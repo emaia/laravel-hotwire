@@ -371,7 +371,7 @@ return response()->json([
     'token' => $token,
     'preview_url' => $previewUrl,
     'stream' => turbo_stream()
-        ->flash('success', 'Upload completed')
+        ->toast('success', 'Upload completed')
         ->render(),
 ], 201);
 ```

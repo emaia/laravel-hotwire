@@ -481,7 +481,7 @@ attributes and the `stimulus_controller()` / `stimulus()->controller()` / `->con
 3. **Published customizations** — package controllers you have published for customization are reported when they drift
    from the package source.
 
-Exits with code `1` if either has pending items (useful for CI).
+Exits with code `1` if any check has pending items (useful for CI).
 
 Both the configured prefix (`hw` by default) and the short `<hw:*>` form are recognized, so views like
 `<hw:toast />` and `<x-hw::toast />` are detected equally. Only controllers shipped by the package are checked — your
@@ -492,8 +492,8 @@ code is skipped.
 # Regenerate the loader stub and add missing npm deps to devDependencies
 php artisan hotwire:check --fix
 
-# Also run the detected package manager install command after adding deps
-php artisan hotwire:check --fix --install
+# Skip the detected package manager install command after adding deps
+php artisan hotwire:check --fix --skip-install
 
 # Scan a custom path
 php artisan hotwire:check --path=resources/views/app
@@ -510,8 +510,8 @@ Required npm dependencies:
   ✗  @floating-ui/dom ^1.8.0  missing from package.json (used by dropdown, tooltip)
 ```
 
-> In interactive mode, `hotwire:check` asks whether to run the detected package manager install command after adding
-> dependencies. In non-interactive scripts, use `--fix --install` to run it automatically.
+> By default, `hotwire:check --fix` runs the detected package manager install command after adding dependencies. Use
+> `--skip-install` when CI or deploy scripts handle dependency installation separately.
 
 ## Configuration
 
@@ -582,12 +582,13 @@ Example component entry:
     'docs' => 'docs/components/modal.md',
     'category' => 'overlay',
     'controllers' => ['modal'],
-    'slots' => [
-        'modal' => 'structural',
-        'modal-overlay' => 'visual',
-        'modal-panel' => 'visual',
+    'styling' => [
+        'slots' => [
+            'modal' => 'structural',
+            'modal-overlay' => 'visual',
+            'modal-panel' => 'visual',
+        ],
     ],
-    'sizes' => ['sm', 'md', 'lg', 'xl', 'full', 'auto'],
 ],
 ```
 
@@ -599,9 +600,11 @@ Example controller entry:
     'docs' => 'docs/controllers/tooltip.md',
     'category' => 'utility',
     'npm' => ['@floating-ui/dom' => '^1.8.0'],
-    'slots' => [
-        'tooltip' => 'visual',
-        'tooltip-arrow' => 'visual',
+    'styling' => [
+        'slots' => [
+            'tooltip' => 'visual',
+            'tooltip-arrow' => 'visual',
+        ],
     ],
 ],
 ```
@@ -642,14 +645,23 @@ window.Stimulus = Stimulus
 export {Stimulus}
 
 // resources/js/controllers/index.js
-import {Stimulus} from "../libs/stimulus";
-import {registerControllers} from "@emaia/stimulus-lazy-loader";
+import { Stimulus } from "../libs/stimulus";
+import { registerControllers } from "@emaia/stimulus-lazy-loader";
 
-const controllers = import.meta.glob("./**/*_controller.{js,ts}", {
-    eager: false,
-});
+const packageControllers = import.meta.glob(
+    "../../../vendor/emaia/laravel-hotwire/resources/js/controllers/**/*_controller.js",
+    { eager: false }
+);
 
-registerControllers(Stimulus, controllers);
+const userControllers = import.meta.glob(
+    "./**/*_controller.{js,ts}",
+    { eager: false }
+);
+
+registerControllers(Stimulus, {
+    ...packageControllers,
+    ...userControllers,
+}, { warnOnDuplicate: false });
 ```
 
 Install the required js dependencies:

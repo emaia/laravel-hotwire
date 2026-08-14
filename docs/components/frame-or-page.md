@@ -216,7 +216,7 @@ public function update(Request $request, Message $message)
     return turbo_stream()
         ->refresh(method: 'morph')
         ->update('modal')
-        ->flash('success', 'Saved');
+        ->toast('success', 'Saved');
 }
 ```
 

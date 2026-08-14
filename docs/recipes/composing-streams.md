@@ -30,11 +30,11 @@ public function update(Request $request, Post $post)
 ```
 
 Order matters less than you might think — Turbo applies streams in order, but `refresh` morphs the
-DOM in place, the modal frame is cleared, and the flash appends to the persistent toaster.
+DOM in place, the modal frame is cleared, and the toast appends to the persistent toaster.
 
 ### Optimistic action rejected → revert + explain
 
-Pair `refresh` (which morphs back to the real state) with a flash to explain the rollback:
+Pair `refresh` (which morphs back to the real state) with a toast to explain the rollback:
 
 ```php
 public function favorite(Request $request, Post $post)

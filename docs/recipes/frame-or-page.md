@@ -134,7 +134,7 @@ public function update(Request $request, User $user)
     return turbo_stream()
         ->refresh(method: 'morph')
         ->update('modal')
-        ->flash('success', 'Password updated');
+        ->toast('success', 'Password updated');
 }
 ```
 
@@ -164,5 +164,5 @@ registers for you.
 - [`<hw:modal>`](../components/modal.md) — the modal primitive.
 - [`modal` controller](../controllers/modal.md) — dynamic content observer internals.
 - [Server-driven modals](./server-driven-modals.md) — closing and replacing content from the server.
-- [Composing streams](./composing-streams.md) — chain `refresh + update + flash` for clean
+- [Composing streams](./composing-streams.md) — chain `refresh + update + toast` for clean
   success responses.
