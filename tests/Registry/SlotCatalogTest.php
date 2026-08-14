@@ -75,7 +75,7 @@ it('documents component styling hooks from the catalog', function () {
     foreach ($slotsByDoc as $doc => $slots) {
         $contents = File::get(__DIR__.'/../../'.$doc);
 
-        expect($contents)->toMatch('/^## Styling hooks$/m');
+        expect($contents)->toMatch('/^## Styling hooks\r?$/m');
 
         foreach ($slots as $slot) {
             expect($contents)->toContain("data-slot=\"{$slot}\"");
