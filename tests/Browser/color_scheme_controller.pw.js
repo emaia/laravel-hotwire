@@ -168,6 +168,66 @@ test("silences colour transitions while the scheme swap runs", async ({ page }) 
     }
 });
 
+test("a skipped transition does not surface as an unhandled rejection", async ({ page }) => {
+    const server = createServer((_request, response) => {
+        response.writeHead(200, { "cache-control": "no-store", "content-type": "text/html; charset=utf-8" });
+        response.end(`
+            <!doctype html>
+            <html>
+                <body>
+                    <button
+                        id="toggle"
+                        data-controller="color-scheme"
+                        data-action="color-scheme#toggle"
+                        data-color-scheme-view-transition-value="true"
+                    >Toggle scheme</button>
+                </body>
+            </html>
+        `);
+    });
+    await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const origin = `http://127.0.0.1:${server.address().port}`;
+
+    try {
+        await page.emulateMedia({ reducedMotion: "no-preference" });
+        await page.goto(origin);
+        await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+        await page.addScriptTag({ content: await browserControllerScript() });
+        await page.evaluate(() => {
+            window.StimulusApplication = window.Stimulus.Application.start();
+            window.StimulusApplication.register("color-scheme", window.ColorSchemeController);
+        });
+
+        const seen = await page.evaluate(async () => {
+            const rejections = [];
+            window.addEventListener("unhandledrejection", (event) => rejections.push(String(event.reason?.name)));
+
+            const native = document.startViewTransition.bind(document);
+            document.startViewTransition = (callback) => {
+                const transition = native(callback);
+                transition.skipTransition();
+
+                return transition;
+            };
+
+            document.getElementById("toggle").click();
+            await new Promise((resolve) => setTimeout(resolve, 600));
+
+            return {
+                rejections,
+                marker: document.documentElement.hasAttribute("data-color-scheme-transitioning"),
+            };
+        });
+
+        // A transition can be skipped by another one starting, or by the page being hidden. Its
+        // promise rejects, which is routine here and must not reach the console.
+        expect(seen.rejections).toEqual([]);
+        expect(seen.marker).toBe(false);
+    } finally {
+        await new Promise((resolve) => server.close(resolve));
+    }
+});
+
 async function browserControllerScript() {
     const source = await readFile("resources/js/controllers/color_scheme_controller.js", "utf8");
 

@@ -4,6 +4,7 @@ import { Controller } from "@hotwired/stimulus";
 const ITEM_SELECTOR = "[data-reveal-item]";
 const CONTAINER_SELECTOR = '[data-controller~="reveal"]';
 const REPLACING_ACTIONS = new Set(["replace", "update", "morph"]);
+const MAX_RENDER_WAIT = 2000;
 const finishes = (animation) => Number.isFinite(animation.effect?.getComputedTiming?.().iterations ?? Infinity);
 const connectedControllers = new Set();
 const handleVisit = () => {
@@ -11,10 +12,17 @@ const handleVisit = () => {
 };
 // Marks the window in which the Sidebar may carry a view transition name. A name is global, so
 // structural.css keys it on this to stay out of transitions that are not navigation.
+let renderGuard = null;
 const handleRenderStart = () => {
+    clearTimeout(renderGuard);
     document.documentElement.dataset.revealRendering = "";
+    // A visit can be aborted or superseded and never reach turbo:load. Left set, the marker keeps
+    // the Sidebar named for every later transition, which is what the marker exists to prevent.
+    renderGuard = setTimeout(handleRenderEnd, MAX_RENDER_WAIT);
 };
 const handleRenderEnd = () => {
+    clearTimeout(renderGuard);
+    renderGuard = null;
     delete document.documentElement.dataset.revealRendering;
 };
 const handleStream = (event) => {

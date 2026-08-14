@@ -17,14 +17,23 @@ let sequence = 0;
 // chunk beats and a lazily imported one does not. Document scope is deliberate — the listener has
 // to predate the viewport it protects.
 let renderInFlight = false;
+let renderGuard = null;
+
+function endRender() {
+    clearTimeout(renderGuard);
+    renderGuard = null;
+    renderInFlight = false;
+}
 
 if (typeof document !== "undefined") {
     document.addEventListener("turbo:before-render", () => {
+        clearTimeout(renderGuard);
         renderInFlight = true;
+        // A visit can be aborted or superseded after this event and never reach turbo:load. Bound
+        // the wait, or every later toast pays it for a render that is no longer coming.
+        renderGuard = setTimeout(endRender, MAX_RENDER_WAIT);
     });
-    document.addEventListener("turbo:load", () => {
-        renderInFlight = false;
-    });
+    document.addEventListener("turbo:load", endRender);
 }
 
 /** Show a toast, buffering it until a viewport exists. Returns its id. */

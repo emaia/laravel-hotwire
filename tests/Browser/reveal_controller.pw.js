@@ -124,6 +124,27 @@ test("names the Sidebar for the transition only while Turbo is rendering", async
     await expect(sidebar).toHaveCSS("view-transition-name", "none");
 });
 
+test("drops the render marker when a render never lands", async ({ page }) => {
+    const structural = await readFile("resources/css/structural.css", "utf8");
+
+    await page.setContent(`
+        <style>${structural}</style>
+        <div data-slot="sidebar-container" data-side="left" data-controller="reveal" data-reveal-scope="document">
+            <div id="nav" data-reveal-item>Navigation</div>
+        </div>
+    `);
+    await installController(page);
+
+    const sidebar = page.locator('[data-slot="sidebar-container"]');
+
+    await page.evaluate(() => document.dispatchEvent(new CustomEvent("turbo:before-render")));
+    await expect(sidebar).toHaveCSS("view-transition-name", "hotwire-sidebar-left");
+
+    // Left set by an aborted visit, the marker would keep the chrome named for every later
+    // transition — the very thing it exists to prevent.
+    await expect(sidebar).toHaveCSS("view-transition-name", "none", { timeout: 4000 });
+});
+
 test("collapsed desktop Sidebar labels suppress Reveal without changing expanded or mobile labels", async ({
     page,
 }) => {

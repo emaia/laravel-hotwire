@@ -123,7 +123,10 @@ export default class extends Controller {
                     this.pendingTransition = null;
                     pendingTransition.update();
                 });
-                transition.finished.finally(() => this.restoreTransitions());
+                // Both promises reject when a transition is skipped — by another one starting, or
+                // by the page being hidden. Routine here, and it must not reach the console.
+                transition.ready.catch(() => {});
+                transition.finished.catch(() => {}).finally(() => this.restoreTransitions());
 
                 return;
             }

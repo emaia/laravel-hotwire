@@ -167,6 +167,33 @@ test("holds the entry back when the view transition is already running", async (
     expect(seen.released.y).toBe(0);
 });
 
+test("recovers when a render never lands", async ({ page }) => {
+    await setup(page);
+
+    const waited = await page.evaluate(async () => {
+        // A visit that is aborted or superseded never reaches turbo:load.
+        document.dispatchEvent(new CustomEvent("turbo:before-render"));
+        await new Promise((resolve) => setTimeout(resolve, 2100));
+
+        const started = performance.now();
+        window.toaster.success("Saved", { duration: 0 });
+
+        await new Promise((resolve) => {
+            const tick = () => {
+                const toast = document.querySelector('[data-slot="toast"]');
+                if ((toast && !toast.hidden) || performance.now() - started > 3000) resolve();
+                else requestAnimationFrame(tick);
+            };
+            requestAnimationFrame(tick);
+        });
+
+        return Math.round(performance.now() - started);
+    });
+
+    // Without bounding the flag every later toast pays the full wait for a render that is gone.
+    expect(waited).toBeLessThan(300);
+});
+
 test("survives a webfont landing mid-entry", async ({ page }) => {
     await setup(page);
 
