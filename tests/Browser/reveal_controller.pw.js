@@ -124,6 +124,40 @@ test("names the Sidebar for the transition only while Turbo is rendering", async
     await expect(sidebar).toHaveCSS("view-transition-name", "none");
 });
 
+test("keeps named Sidebar snapshots from crossfading during Turbo renders", async ({ page }) => {
+    const structural = await readFile("resources/css/structural.css", "utf8");
+
+    await page.setContent(`
+        <style>${structural}</style>
+        <div data-slot="sidebar-container" data-side="left" data-controller="reveal" data-reveal-scope="document">
+            <div id="nav" data-reveal-item>Pending</div>
+        </div>
+    `);
+    await installController(page);
+
+    const animationNames = await page.evaluate(async () => {
+        document.dispatchEvent(new CustomEvent("turbo:before-render"));
+
+        const transition = document.startViewTransition(() => {
+            document.getElementById("nav").textContent = "Done";
+        });
+
+        await transition.ready;
+
+        const oldSnapshot = getComputedStyle(document.documentElement, "::view-transition-old(hotwire-sidebar-left)");
+        const newSnapshot = getComputedStyle(document.documentElement, "::view-transition-new(hotwire-sidebar-left)");
+
+        const names = [oldSnapshot.animationName, newSnapshot.animationName];
+
+        await transition.finished;
+        document.dispatchEvent(new CustomEvent("turbo:load"));
+
+        return names;
+    });
+
+    expect(animationNames).toEqual(["none", "none"]);
+});
+
 test("drops the render marker when a render never lands", async ({ page }) => {
     const structural = await readFile("resources/css/structural.css", "utf8");
 
