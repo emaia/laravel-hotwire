@@ -12,6 +12,7 @@
         'href' => $tag === 'a' ? $href : null,
         'data-turbo-frame' => $resolvedFrame,
         'data-turbo-stream' => $tag === 'a' && $turboStream ? true : null,
+        'role' => $isDisabled ? 'link' : null,
         'aria-label' => $ariaLabel,
         'aria-disabled' => $isDisabled ? 'true' : null,
         'data-slot' => 'pagination-next',
