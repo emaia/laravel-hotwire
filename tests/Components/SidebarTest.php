@@ -278,11 +278,11 @@ it('renders a sidebar brand with full and icon logos', function () {
         ->assertSeeText('AC');
 });
 
-it('renders a sidebar brand without an icon slot', function () {
+it('does not apply a link label to a non-link sidebar brand', function () {
     $view = $this->blade('<x-hw::sidebar.provider><x-hw::sidebar.brand label="Acme"><span>Acme Cloud</span></x-hw::sidebar.brand></x-hw::sidebar.provider>');
 
     $view->assertSee('data-slot="sidebar-brand"', false)
-        ->assertSee('aria-label="Acme"', false)
+        ->assertDontSee('aria-label="Acme"', false)
         ->assertSee('data-slot="sidebar-brand-logo"', false)
         ->assertDontSee('data-slot="sidebar-brand-icon"', false)
         ->assertSeeText('Acme Cloud');

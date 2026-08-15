@@ -8,7 +8,7 @@
     {{ $brandAttributes->merge([
         'href' => $tag === 'a' ? $href : null,
         'data-turbo-frame' => $resolvedFrame,
-        'aria-label' => $label,
+        'aria-label' => $tag === 'a' ? $label : null,
         'data-slot' => 'sidebar-brand',
         'data-sidebar' => 'brand',
     ]) }}

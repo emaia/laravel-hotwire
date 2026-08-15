@@ -662,8 +662,7 @@
     [data-slot="sidebar"][data-collapsible="icon"] [data-slot="sidebar-brand"]:has([data-slot="sidebar-brand-icon"]) { @apply md:justify-center md:px-0; }
     [data-slot="sidebar"][data-collapsible="icon"] [data-slot="sidebar-brand"]:has([data-slot="sidebar-brand-icon"]) [data-slot="sidebar-brand-logo"] { @apply md:pointer-events-none md:absolute md:inset-0 md:scale-95 md:opacity-0; }
     [data-slot="sidebar"][data-collapsible="icon"] [data-slot="sidebar-brand-icon"] { @apply md:scale-100 md:opacity-100; }
-    [data-slot="sidebar-content"] { @apply flex min-h-0 flex-1 flex-col gap-2 overflow-auto; }
-    [data-slot="sidebar"][data-collapsible="icon"] [data-slot="sidebar-content"] { @apply md:overflow-hidden; }
+    [data-slot="sidebar-content"] { @apply gap-2; }
     [data-slot="sidebar-input"] { @apply h-8 w-full rounded-md border border-input bg-background px-2 text-sm shadow-none outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-sidebar-ring focus-visible:ring-2 focus-visible:ring-sidebar-ring/50; }
     [data-slot="sidebar-separator"] { @apply mx-2 h-px w-auto shrink-0 bg-sidebar-border; }
     [data-slot="sidebar-group"] { @apply relative flex w-full min-w-0 flex-col p-2; }

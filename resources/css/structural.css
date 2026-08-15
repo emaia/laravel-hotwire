@@ -19,6 +19,29 @@
 @source inline("hidden overflow-hidden");
 
 /*
+ * --- Sidebar content scroll ---
+ *
+ * The content column has to yield within the full-height sidebar before it can scroll. Icon mode
+ * clips only the horizontal axis so labels leaving during the width transition cannot create a
+ * scrollbar while every navigation item remains vertically reachable.
+ */
+
+[data-slot="sidebar-content"] {
+    display: flex;
+    min-block-size: 0;
+    flex: 1 1 0%;
+    flex-direction: column;
+    overflow: auto;
+}
+
+@media (min-width: 768px) {
+    [data-slot="sidebar"][data-collapsible="icon"] [data-slot="sidebar-content"] {
+        overflow-x: hidden;
+        overflow-y: auto;
+    }
+}
+
+/*
  * --- Side Panel layout ---
  *
  * The outer column changes width while its content keeps the configured measure. Clipping the

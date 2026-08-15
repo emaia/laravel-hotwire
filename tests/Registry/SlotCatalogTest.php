@@ -176,6 +176,20 @@ it('keeps Side Panel collapse mechanics in the structural stylesheet', function 
         ->toContain('overflow: hidden');
 });
 
+it('keeps Sidebar content overflow mechanics in the structural stylesheet', function () {
+    $structural = File::get(__DIR__.'/../../resources/css/structural.css');
+    $preset = File::get(__DIR__.'/../../resources/css/presets/nova.css');
+
+    expect($structural)
+        ->toContain('[data-slot="sidebar-content"]')
+        ->toContain('overflow: auto')
+        ->toContain('[data-collapsible="icon"] [data-slot="sidebar-content"]')
+        ->toContain('overflow-x: hidden')
+        ->toContain('overflow-y: auto')
+        ->and($preset)
+        ->not->toContain('md:overflow-hidden');
+});
+
 it('keeps rules that name no slot out of the presets', function (string $preset) {
     // A preset groups by component; a rule keyed on a technical hook alone belongs to none of them.
     $css = File::get(__DIR__."/../../resources/css/presets/{$preset}.css");
