@@ -56,6 +56,10 @@ For less common values, use `action="..."`, which maps to `data-turbo-action`. Y
 `action`. Passing `advance` and `replace` together without `action` or `data-turbo-action` is invalid because the history
 behavior would be ambiguous.
 
+Keep the default history policy on the frame even when links or buttons that target it live elsewhere on the page. A
+single trigger can diverge by passing native `data-turbo-action` directly; see
+[`<hw:button>`](./button.md#controlling-turbo-history) for a complete example.
+
 ## Controller integrations
 
 Enable View Transitions for frame updates with `view-transition`:
@@ -156,6 +160,7 @@ otherwise non-actionable elements omit frame metadata.
 
 ## See also
 
+- [`<hw:button>`](./button.md#controlling-turbo-history) — target this frame and override its history policy per link.
 - [`<hw:form>`](./form.md) — use `frame="results"` to submit a form into a frame.
 - [`<hw:frame-or-page>`](./frame-or-page.md) — render a route as a frame payload or full page depending on the request.
 - [`emaia/laravel-hotwire-turbo`](https://github.com/emaia/laravel-hotwire-turbo) — lower-level Turbo integration.

@@ -90,6 +90,43 @@ This renders `data-turbo-frame="modal"`. `frame` accepts a string or object; obj
 `false`, empty strings, and whitespace-only strings omit the attribute. If you pass an explicit `data-turbo-frame`, it
 wins over `frame`; bind it to `false` to suppress the prop explicitly.
 
+## Controlling Turbo history
+
+Set the default history behavior on the destination frame. Use `advance` when each frame navigation should push a URL,
+or `replace` when it should update the current history entry:
+
+```blade
+<hw:frame id="results" advance>
+    ...
+</hw:frame>
+
+<hw:button
+    as="a"
+    href="{{ route('tasks.index', ['status' => 'done']) }}"
+    frame="results"
+>
+    Done
+</hw:button>
+```
+
+The link targets `results` and follows the frame's `advance` policy. When one link should differ from that default, pass
+Turbo's native `data-turbo-action` attribute directly:
+
+```blade
+<hw:button
+    as="a"
+    href="{{ route('tasks.index', ['status' => 'done']) }}"
+    frame="results"
+    data-turbo-action="replace"
+>
+    Done
+</hw:button>
+```
+
+Button deliberately has no `action`, `advance`, or `replace` prop. Those names would only rename a native Turbo
+attribute without adding resolution or validation. See [`<hw:frame>`](./frame.md#url-history-actions) for the host-level
+aliases and precedence rules.
+
 ## Keyboard shortcuts
 
 Use `hotkey` to mount the `hotkey` controller on the button and click it from a global keydown action:
