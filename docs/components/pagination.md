@@ -31,7 +31,9 @@ Semantic pagination navigation with composed subcomponents and automatic Laravel
 ```
 
 The active page renders as a `<span aria-current="page">` instead of linking to itself. Disabled previous and next
-controls render as spans with `aria-disabled="true"`.
+controls render as `<span role="link" aria-disabled="true">`. The explicit role is required: a bare `<span>` maps to
+the `generic` role, which prohibits `aria-label`, so the control would reach assistive technology with no accessible
+name at all instead of being announced as unavailable.
 
 ## Paginator Mode
 

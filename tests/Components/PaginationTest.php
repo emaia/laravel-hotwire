@@ -517,6 +517,56 @@ it('renders disabled previous and next controls as spans without href', function
         ->assertDontSee('href=', false);
 });
 
+it('gives disabled previous and next controls a link role so their aria label is allowed', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::pagination>
+            <x-hw::pagination.content>
+                <x-hw::pagination.item>
+                    <x-hw::pagination.previous disabled />
+                </x-hw::pagination.item>
+                <x-hw::pagination.item>
+                    <x-hw::pagination.next disabled />
+                </x-hw::pagination.item>
+            </x-hw::pagination.content>
+        </x-hw::pagination>
+    BLADE);
+
+    $html = (string) $view;
+
+    preg_match('/<span[^>]*data-slot="pagination-previous"[^>]*>/', $html, $previous);
+    preg_match('/<span[^>]*data-slot="pagination-next"[^>]*>/', $html, $next);
+
+    expect($previous[0] ?? '')
+        ->toContain('role="link"')
+        ->toContain('aria-label="Go to previous page"')
+        ->and($next[0] ?? '')
+        ->toContain('role="link"')
+        ->toContain('aria-label="Go to next page"');
+});
+
+it('keeps enabled previous and next controls free of a redundant link role', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::pagination>
+            <x-hw::pagination.content>
+                <x-hw::pagination.item>
+                    <x-hw::pagination.previous href="/users?page=1" />
+                </x-hw::pagination.item>
+                <x-hw::pagination.item>
+                    <x-hw::pagination.next href="/users?page=3" />
+                </x-hw::pagination.item>
+            </x-hw::pagination.content>
+        </x-hw::pagination>
+    BLADE);
+
+    $html = (string) $view;
+
+    preg_match('/<a[^>]*data-slot="pagination-previous"[^>]*>/', $html, $previous);
+    preg_match('/<a[^>]*data-slot="pagination-next"[^>]*>/', $html, $next);
+
+    expect($previous[0] ?? '')->not->toContain('role=')
+        ->and($next[0] ?? '')->not->toContain('role=');
+});
+
 it('registers pagination in the component catalog and subcomponent aliases', function () {
     $pagination = HotwireRegistry::make()->component('pagination');
 
