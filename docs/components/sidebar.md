@@ -188,8 +188,9 @@ an anchor; otherwise it renders a button. `type` defaults to `button` and accept
 
 ### Brand
 
-`sidebar.brand` accepts `href`, `label`, and `frame`. The default slot renders while the sidebar is expanded. The `icon` slot
-renders when `collapsible="icon"` is collapsed:
+`sidebar.brand` accepts `href`, `label`, and `frame`. `label` provides the accessible name when `href` makes the brand a
+link; without `href`, the default slot provides the non-link brand's accessible content. The default slot renders while
+the sidebar is expanded. The `icon` slot renders when `collapsible="icon"` is collapsed:
 
 ```blade
 <hw:sidebar.header>
