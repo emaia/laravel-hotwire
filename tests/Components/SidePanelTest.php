@@ -1,5 +1,6 @@
 <?php
 
+use Emaia\LaravelHotwire\Components\SidePanel;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
 use Illuminate\View\ViewException;
@@ -117,6 +118,30 @@ it('merges custom stimulus wiring without allowing side panel state overrides', 
         ->assertSee('aria-expanded="true"', false)
         ->assertDontSee(' inert', false)
         ->assertSee('click->workspace-panel#toggle click->analytics#track', false);
+});
+
+it('keeps the side panel identifier through an intermediate accordion', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::side-panel name="filters" controller="workspace-panel">
+            <x-hw::accordion>
+                <x-hw::accordion.item value="section">
+                    <x-hw::side-panel.panel>Filters</x-hw::side-panel.panel>
+                    <x-hw::side-panel.trigger />
+                </x-hw::accordion.item>
+            </x-hw::accordion>
+        </x-hw::side-panel>
+    BLADE);
+
+    $view->assertSee('data-workspace-panel-target="panel"', false)
+        ->assertSee('data-workspace-panel-target="trigger"', false)
+        ->assertSee('data-action="click->workspace-panel#toggle"', false)
+        ->assertDontSee('data-accordion-target="panel"', false)
+        ->assertDontSee('data-accordion-target="trigger"', false)
+        ->assertDontSee('click->accordion#toggle', false);
+
+    $data = (new SidePanel(name: 'filters', controller: 'workspace-panel'))->data();
+    expect($data['identifier'])->toBe('workspace-panel')
+        ->and($data['sidePanelIdentifier'])->toBe('workspace-panel');
 });
 
 it('registers side panel in the component catalog and aliases', function () {

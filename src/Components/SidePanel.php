@@ -15,6 +15,8 @@ class SidePanel extends Component
 
     public string $identifier;
 
+    public string $sidePanelIdentifier;
+
     public string $panelId;
 
     public bool $resolvedOpen;
@@ -38,6 +40,7 @@ class SidePanel extends Component
 
         $this->cookieName = "side_panel_{$key}_state";
         $this->identifier = $controller;
+        $this->sidePanelIdentifier = $controller;
         $this->panelId = $panelId !== null && $panelId !== '' ? $panelId : "{$key}-panel";
         $this->resolvedOpen = $this->resolveOpen();
         $this->sidePanelState = $this->resolvedOpen ? 'expanded' : 'collapsed';
@@ -64,23 +67,23 @@ class SidePanel extends Component
         return [
             'sidePanelAttributes' => StimulusAttributes::merge([
                 'data-slot' => 'side-panel',
-                'data-controller' => $this->identifier,
+                'data-controller' => $this->sidePanelIdentifier,
                 'data-state' => $this->sidePanelState,
                 'data-side' => $this->side,
-                "data-{$this->identifier}-name-value" => $this->name,
-                "data-{$this->identifier}-open-value" => $this->resolvedOpen ? 'true' : 'false',
-                "data-{$this->identifier}-persist-value" => $this->persist ? 'true' : 'false',
-                "data-{$this->identifier}-cookie-name-value" => $this->cookieName,
-                'data-action' => "turbo:before-render@window->{$this->identifier}#preserveStateForRender",
+                "data-{$this->sidePanelIdentifier}-name-value" => $this->name,
+                "data-{$this->sidePanelIdentifier}-open-value" => $this->resolvedOpen ? 'true' : 'false',
+                "data-{$this->sidePanelIdentifier}-persist-value" => $this->persist ? 'true' : 'false',
+                "data-{$this->sidePanelIdentifier}-cookie-name-value" => $this->cookieName,
+                'data-action' => "turbo:before-render@window->{$this->sidePanelIdentifier}#preserveStateForRender",
                 'style' => $style,
             ], $attributes, $this->stimulus, except: [
                 'data-slot',
                 'data-state',
                 'data-side',
-                "data-{$this->identifier}-name-value",
-                "data-{$this->identifier}-open-value",
-                "data-{$this->identifier}-persist-value",
-                "data-{$this->identifier}-cookie-name-value",
+                "data-{$this->sidePanelIdentifier}-name-value",
+                "data-{$this->sidePanelIdentifier}-open-value",
+                "data-{$this->sidePanelIdentifier}-persist-value",
+                "data-{$this->sidePanelIdentifier}-cookie-name-value",
                 'style',
             ]),
         ];

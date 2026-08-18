@@ -13,6 +13,8 @@ class Accordion extends Component
 
     public string $identifier;
 
+    public string $accordionIdentifier;
+
     /** @var string[] */
     public array $accordionValue;
 
@@ -28,6 +30,7 @@ class Accordion extends Component
     ) {
         $this->accordionId = $id !== null && $id !== '' ? $id : 'hw-accordion-'.uniqid();
         $this->identifier = $controller;
+        $this->accordionIdentifier = $controller;
         $this->accordionValue = $this->normalizeValue($value);
         $this->accordionValueAttribute = $this->serializeValue($value);
     }
@@ -52,13 +55,13 @@ class Accordion extends Component
             'accordionAttributes' => StimulusAttributes::merge([
                 'id' => $this->accordionId,
                 'data-slot' => 'accordion',
-                'data-controller' => $this->identifier,
-                "data-{$this->identifier}-type-value" => $this->type,
-                "data-{$this->identifier}-value-value" => $this->accordionValueAttribute,
+                'data-controller' => $this->accordionIdentifier,
+                "data-{$this->accordionIdentifier}-type-value" => $this->type,
+                "data-{$this->accordionIdentifier}-value-value" => $this->accordionValueAttribute,
                 'class' => $this->class ?: null,
             ], $attributes, $this->stimulus, protectedPrefixes: [
-                "data-{$this->identifier}-type-",
-                "data-{$this->identifier}-value-",
+                "data-{$this->accordionIdentifier}-type-",
+                "data-{$this->accordionIdentifier}-value-",
             ]),
         ];
     }

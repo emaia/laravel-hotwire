@@ -1,5 +1,6 @@
 <?php
 
+use Emaia\LaravelHotwire\Components\Tabs;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 
 it('renders the tabs root with controller and slot hooks', function () {
@@ -179,6 +180,32 @@ it('swaps the Stimulus identifier when controller prop is set', function () {
         ->assertSee('data-settings-tabs-delay-value="300"', false)
         ->assertDontSee('data-settings-tabs-selected-index-value="9"', false)
         ->assertDontSee('data-settings-tabs-target="override"', false);
+});
+
+it('keeps the tabs identifier through an intermediate accordion', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::tabs id="settings" controller="settings-tabs" active="profile">
+            <x-hw::accordion>
+                <x-hw::accordion.item value="section">
+                    <x-hw::tabs.list aria-label="Settings">
+                        <x-hw::tabs.trigger value="profile">Profile</x-hw::tabs.trigger>
+                    </x-hw::tabs.list>
+                    <x-hw::tabs.panel value="profile">Profile settings</x-hw::tabs.panel>
+                </x-hw::accordion.item>
+            </x-hw::accordion>
+        </x-hw::tabs>
+    BLADE);
+
+    $view->assertSee('data-action="click->settings-tabs#select keydown->settings-tabs#navigate"', false)
+        ->assertSee('data-settings-tabs-target="tab"', false)
+        ->assertSee('data-settings-tabs-target="panel"', false)
+        ->assertDontSee('click->accordion#select', false)
+        ->assertDontSee('data-accordion-target="tab"', false)
+        ->assertDontSee('data-accordion-target="panel"', false);
+
+    $data = (new Tabs(controller: 'settings-tabs'))->data();
+    expect($data['identifier'])->toBe('settings-tabs')
+        ->and($data['tabsIdentifier'])->toBe('settings-tabs');
 });
 
 it('lets trigger and panel ids be overridden', function () {
