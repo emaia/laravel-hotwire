@@ -1,5 +1,6 @@
 <?php
 
+use Emaia\LaravelHotwire\Components\Sidebar\Provider;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
 use Illuminate\View\ViewException;
@@ -116,6 +117,55 @@ it('merges user stimulus attributes on the provider', function () {
 
     $view->assertSee('data-controller="sidebar analytics"', false)
         ->assertSee('keydown@window->sidebar#shortcut turbo:before-cache@window->sidebar#closeForCache turbo:before-render@window->sidebar#preserveStateForRender sidebar:change->analytics#track', false);
+});
+
+it('scopes sidebar targets and actions to a custom provider controller', function () {
+    $view = $this->blade('<x-hw::sidebar.provider controller="panel"><x-hw::sidebar>Nav</x-hw::sidebar><x-hw::sidebar.trigger /></x-hw::sidebar.provider>');
+
+    $view->assertSee('data-panel-target="modal"', false)
+        ->assertSee('data-panel-target="backdrop"', false)
+        ->assertSee('data-panel-target="dialog"', false)
+        ->assertSee('data-action="click->panel#clickOutside"', false)
+        ->assertSee('click-&gt;panel#toggle', false)
+        ->assertDontSee('data-sidebar-target', false)
+        ->assertDontSee('sidebar#', false);
+});
+
+it('keeps sidebar targets on its own provider inside another controller component', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::sidebar.provider>
+            <x-hw::accordion>
+                <x-hw::accordion.item value="a" heading="A">
+                    <x-hw::sidebar>Nav</x-hw::sidebar>
+                    <x-hw::sidebar.trigger />
+                </x-hw::accordion.item>
+            </x-hw::accordion>
+        </x-hw::sidebar.provider>
+    BLADE);
+
+    $view->assertSee('data-sidebar-target="modal"', false)
+        ->assertSee('data-sidebar-target="backdrop"', false)
+        ->assertSee('data-sidebar-target="dialog"', false)
+        ->assertSee('data-action="click->sidebar#clickOutside"', false)
+        ->assertSee('click-&gt;sidebar#toggle', false)
+        ->assertDontSee('data-accordion-target="modal"', false)
+        ->assertDontSee('accordion#clickOutside', false);
+});
+
+it('keeps the identifier aware key available for custom controls', function () {
+    // What @aware(['identifier' => 'sidebar']) consumes in a component built against the provider.
+    $data = (new Provider(controller: 'workspace-panel'))->data();
+
+    expect($data['identifier'])->toBe('workspace-panel')
+        ->and($data['sidebarIdentifier'])->toBe('workspace-panel');
+});
+
+it('renders sidebar targets for a hyphenated provider controller', function () {
+    $view = $this->blade('<x-hw::sidebar.provider controller="workspace-panel"><x-hw::sidebar>Nav</x-hw::sidebar></x-hw::sidebar.provider>');
+
+    $view->assertSee('data-workspace-panel-target="modal"', false)
+        ->assertSee('data-workspace-panel-open-value="true"', false)
+        ->assertSee('data-action="click->workspace-panel#clickOutside"', false);
 });
 
 it('renders sidebar side variant collapsible and inner structure', function () {

@@ -1,6 +1,6 @@
 import { afterEach, expect, test } from "bun:test";
 
-import { mountController, wait } from "../../resources/js/helpers/test_stimulus.js";
+import { mountController, mountControllers, wait } from "../../resources/js/helpers/test_stimulus.js";
 import SidebarController from "../../resources/js/controllers/sidebar_controller.js";
 
 let mounted;
@@ -10,6 +10,7 @@ afterEach(async () => {
     await mounted?.cleanup();
     mounted = null;
     document.cookie = "sidebar_state=; path=/; max-age=0";
+    document.cookie = "panel_state=; path=/; max-age=0";
     if (originalMatchMedia) window.matchMedia = originalMatchMedia;
     document.body.className = "";
 });
@@ -387,6 +388,202 @@ test("mobile modified link clicks are not intercepted", async () => {
     expect(event.defaultPrevented).toBe(false);
     expect(sidebar().dataset.mobileState).toBe("open");
 });
+
+test("toggling the outer provider leaves a nested provider untouched", async () => {
+    await mountNested();
+
+    byTestId("outer-trigger").click();
+    await wait(0);
+
+    expect(byTestId("outer-sidebar").dataset.state).toBe("collapsed");
+    expect(byTestId("outer-trigger").getAttribute("aria-expanded")).toBe("false");
+    expect(byTestId("inner-sidebar").dataset.state).toBe("expanded");
+    expect(byTestId("inner-sidebar").dataset.collapsible).toBe("");
+    expect(byTestId("inner-trigger").getAttribute("aria-expanded")).toBe("true");
+    expect(innerRoot().dataset.state).toBe("expanded");
+});
+
+test("toggling a nested provider leaves the outer provider untouched", async () => {
+    await mountNested();
+
+    byTestId("inner-trigger").click();
+    await wait(0);
+
+    expect(byTestId("inner-sidebar").dataset.state).toBe("collapsed");
+    expect(byTestId("inner-sidebar").dataset.collapsible).toBe("icon");
+    expect(byTestId("inner-trigger").getAttribute("aria-expanded")).toBe("false");
+    expect(byTestId("outer-sidebar").dataset.state).toBe("expanded");
+    expect(byTestId("outer-trigger").getAttribute("aria-expanded")).toBe("true");
+    expect(outerRoot().dataset.state).toBe("expanded");
+});
+
+test("the outer provider mobile sync leaves a nested provider untouched", async () => {
+    await mountNested(nestedTemplate({ innerOpen: false }));
+
+    mounted.controllers[0].mediaQuery = { matches: true };
+    mounted.controllers[0].syncMobileState("open");
+    await wait(0);
+
+    expect(byTestId("outer-sidebar").dataset.mobileState).toBe("open");
+    expect(byTestId("outer-trigger").getAttribute("aria-expanded")).toBe("true");
+    expect(byTestId("inner-sidebar").dataset.mobileState).toBe("closed");
+    expect(byTestId("inner-trigger").getAttribute("aria-expanded")).toBe("false");
+});
+
+test("the outer provider skips a nested provider mounted on a custom identifier", async () => {
+    await mountNested(nestedTemplate({ innerIdentifier: "panel" }), "panel");
+
+    byTestId("outer-trigger").click();
+    await wait(0);
+
+    expect(byTestId("outer-sidebar").dataset.state).toBe("collapsed");
+    expect(byTestId("inner-sidebar").dataset.state).toBe("expanded");
+    expect(byTestId("inner-trigger").getAttribute("aria-expanded")).toBe("true");
+
+    byTestId("inner-trigger").click();
+    await wait(0);
+
+    expect(byTestId("inner-sidebar").dataset.state).toBe("collapsed");
+    expect(byTestId("outer-sidebar").dataset.state).toBe("collapsed");
+    expect(byTestId("outer-trigger").getAttribute("aria-expanded")).toBe("false");
+});
+
+test("the outer provider does not adopt the overlay of a nested provider", async () => {
+    await mountNested(nestedTemplate({ innerIdentifier: "panel" }), "panel");
+
+    const outer = mounted.controllers[0];
+    outer.mediaQuery = { matches: true };
+    outer.toggle();
+    await wait(20);
+
+    expect(outer.modalTarget).toBe(byTestId("outer-sidebar"));
+    expect(byTestId("outer-sidebar").dataset.mobileState).toBe("open");
+    expect(byTestId("inner-sidebar").dataset.mobileState).toBe("closed");
+});
+
+test("Turbo renders preserve the outer state without rewriting the nested provider", async () => {
+    await mountNested(nestedTemplate({ outerOpen: false, innerOpen: false }));
+
+    const newBody = document.createElement("body");
+    newBody.innerHTML = nestedTemplate();
+
+    mounted.controllers[0].preserveStateForRender({ detail: { newBody } });
+
+    expect(byTestId("outer-sidebar", newBody).dataset.state).toBe("collapsed");
+    expect(byTestId("outer-trigger", newBody).getAttribute("aria-expanded")).toBe("false");
+    expect(innerRoot(newBody).dataset.state).toBe("expanded");
+    expect(byTestId("inner-sidebar", newBody).dataset.state).toBe("expanded");
+    expect(byTestId("inner-sidebar", newBody).dataset.collapsible).toBe("");
+    expect(byTestId("inner-trigger", newBody).getAttribute("aria-expanded")).toBe("true");
+
+    mounted.controllers[1].preserveStateForRender({ detail: { newBody } });
+
+    expect(innerRoot(newBody).dataset.state).toBe("collapsed");
+    expect(byTestId("inner-sidebar", newBody).dataset.state).toBe("collapsed");
+    expect(byTestId("outer-sidebar", newBody).dataset.state).toBe("collapsed");
+});
+
+test("Turbo renders leave a next body where the outer provider is gone alone", async () => {
+    await mountNested(nestedTemplate({ outerOpen: false }));
+
+    const newBody = document.createElement("body");
+    newBody.innerHTML = standaloneInnerTemplate();
+
+    mounted.controllers[0].preserveStateForRender({ detail: { newBody } });
+
+    expect(innerRoot(newBody).dataset.state).toBe("expanded");
+    expect(innerRoot(newBody).dataset.sidebarOpenValue).toBe("true");
+    expect(byTestId("inner-sidebar", newBody).dataset.state).toBe("expanded");
+    expect(byTestId("inner-trigger", newBody).getAttribute("aria-expanded")).toBe("true");
+});
+
+async function mountNested(html = nestedTemplate(), extraIdentifier = null) {
+    mounted = await mountControllers("sidebar", SidebarController, html);
+    if (extraIdentifier) {
+        mounted.application.register(extraIdentifier, SidebarController);
+        await wait(0);
+    }
+}
+
+// Mirrors what <hw:sidebar.provider> + <hw:sidebar> render, including the overlay targets
+// namespaced to the provider identifier.
+function nestedTemplate({ innerIdentifier = "sidebar", outerOpen = true, innerOpen = true } = {}) {
+    return `
+        <div data-controller="sidebar"
+             data-slot="sidebar-wrapper"
+             data-sidebar-open-value="${outerOpen}"
+             data-sidebar-cookie-name-value="sidebar_state"
+             data-state="${outerOpen ? "expanded" : "collapsed"}">
+            <button data-slot="sidebar-trigger"
+                    data-testid="outer-trigger"
+                    aria-expanded="${outerOpen}"
+                    data-action="click->sidebar#toggle">Outer</button>
+            ${sidebarPart("sidebar", "outer-sidebar", "offcanvas", outerOpen)}
+            <main>
+                <div data-controller="${innerIdentifier}"
+                     data-slot="sidebar-wrapper"
+                     data-testid="inner-root"
+                     data-${innerIdentifier}-open-value="${innerOpen}"
+                     data-${innerIdentifier}-cookie-name-value="panel_state"
+                     data-state="${innerOpen ? "expanded" : "collapsed"}">
+                    <button data-slot="sidebar-trigger"
+                            data-testid="inner-trigger"
+                            aria-expanded="${innerOpen}"
+                            data-action="click->${innerIdentifier}#toggle">Inner</button>
+                    ${sidebarPart(innerIdentifier, "inner-sidebar", "icon", innerOpen)}
+                </div>
+            </main>
+        </div>
+    `;
+}
+
+// The nested provider alone at the top level, as a page without the shell would render it.
+function standaloneInnerTemplate(open = true) {
+    return `
+        <div data-controller="sidebar"
+             data-slot="sidebar-wrapper"
+             data-testid="inner-root"
+             data-sidebar-open-value="${open}"
+             data-sidebar-cookie-name-value="panel_state"
+             data-state="${open ? "expanded" : "collapsed"}">
+            <button data-slot="sidebar-trigger"
+                    data-testid="inner-trigger"
+                    aria-expanded="${open}"
+                    data-action="click->sidebar#toggle">Inner</button>
+            ${sidebarPart("sidebar", "inner-sidebar", "icon", open)}
+        </div>
+    `;
+}
+
+function sidebarPart(identifier, testId, collapsible, open) {
+    return `
+        <div data-slot="sidebar"
+             data-testid="${testId}"
+             data-${identifier}-target="modal"
+             data-sidebar-collapsible="${collapsible}"
+             data-state="${open ? "expanded" : "collapsed"}"
+             data-mobile-state="closed"
+             data-motion="default"
+             data-collapsible="${open ? "" : collapsible}">
+            <div data-slot="sidebar-backdrop" data-${identifier}-target="backdrop" data-action="click->${identifier}#clickOutside"></div>
+            <div data-slot="sidebar-container" data-${identifier}-target="dialog">
+                <aside data-slot="sidebar-inner"></aside>
+            </div>
+        </div>
+    `;
+}
+
+function byTestId(id, scope = document) {
+    return scope.querySelector(`[data-testid='${id}']`);
+}
+
+function outerRoot(scope = document) {
+    return scope.querySelector("[data-controller~='sidebar']");
+}
+
+function innerRoot(scope = document) {
+    return byTestId("inner-root", scope);
+}
 
 function fakeAnimation() {
     const finished = deferred();

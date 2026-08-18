@@ -1,11 +1,11 @@
-@aware(['identifier' => 'sidebar'])
+@aware(['sidebarIdentifier' => 'sidebar'])
 
 <button
     {{ $attributes->merge([
         'type' => 'button',
         'data-slot' => 'sidebar-trigger',
         'data-sidebar' => 'trigger',
-        'data-action' => "click->{$identifier}#toggle",
+        'data-action' => "click->{$sidebarIdentifier}#toggle",
         'aria-label' => $label,
     ]) }}
 >

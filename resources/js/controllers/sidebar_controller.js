@@ -6,6 +6,8 @@ import { createOverlay } from "./_overlay.js";
 
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
 const MOBILE_QUERY = "(max-width: 767px)";
+const WRAPPER_SELECTOR = '[data-slot="sidebar-wrapper"]';
+const DEFAULT_COOKIE_NAME = "sidebar_state";
 
 export default class extends Controller {
     static targets = ["modal", "backdrop", "dialog"];
@@ -15,7 +17,7 @@ export default class extends Controller {
     static values = {
         open: { type: Boolean, default: true },
         persist: { type: Boolean, default: true },
-        cookieName: { type: String, default: "sidebar_state" },
+        cookieName: { type: String, default: DEFAULT_COOKIE_NAME },
     };
 
     connected = false;
@@ -253,7 +255,8 @@ export default class extends Controller {
         const state = open ? "expanded" : "collapsed";
 
         root.dataset.state = state;
-        root.dataset[`${this.identifier}OpenValue`] = open ? "true" : "false";
+        // Not dataset: a kebab-case identifier makes an invalid dataset key, which throws on write.
+        root.setAttribute(`data-${this.identifier}-open-value`, open ? "true" : "false");
         this.sidebarElementsFor(root).forEach((sidebar) => {
             sidebar.dataset.state = state;
             const collapsible = sidebar.dataset.sidebarCollapsible || "offcanvas";
@@ -275,10 +278,42 @@ export default class extends Controller {
             if (matchingId) return matchingId;
         }
 
-        const currentRoots = Array.from(document.querySelectorAll(selector));
+        const candidates = nextRoots.filter((root) => this.matchesProvider(root));
+        const currentRoots = Array.from(document.querySelectorAll(selector)).filter((root) => this.matchesProvider(root));
         const index = currentRoots.indexOf(this.element);
 
-        return nextRoots[index] ?? null;
+        return candidates[index] ?? null;
+    }
+
+    /**
+     * Tell whether `root` is this provider rather than another one sharing the identifier.
+     *
+     * Position alone pairs the wrong roots once the next page drops the outer provider or
+     * nests them differently, which would hand a nested provider the outer state. The cookie
+     * name and the wrapper depth are what the markup already carries to tell them apart, so
+     * an unrecognised root yields no match and the server-rendered state stands.
+     */
+    matchesProvider(root) {
+        return this.cookieNameOf(root) === this.cookieNameValue && this.wrapperDepthOf(root) === this.wrapperDepthOf(this.element);
+    }
+
+    cookieNameOf(root) {
+        return root.getAttribute(`data-${this.identifier}-cookie-name-value`) ?? DEFAULT_COOKIE_NAME;
+    }
+
+    wrapperDepthOf(element) {
+        let depth = 0;
+        let parent = element.parentElement;
+
+        while (parent) {
+            const wrapper = parent.closest(WRAPPER_SELECTOR);
+            if (!wrapper) break;
+
+            depth++;
+            parent = wrapper.parentElement;
+        }
+
+        return depth;
     }
 
     get state() {
@@ -294,11 +329,26 @@ export default class extends Controller {
     }
 
     sidebarElementsFor(root) {
-        return Array.from(root.querySelectorAll('[data-slot="sidebar"][data-sidebar-collapsible]'));
+        return this.ownedBy(root, '[data-slot="sidebar"][data-sidebar-collapsible]');
     }
 
     triggerElementsFor(root) {
-        return Array.from(root.querySelectorAll('[data-slot="sidebar-trigger"]'));
+        return this.ownedBy(root, '[data-slot="sidebar-trigger"]');
+    }
+
+    /**
+     * Match the elements under `root` that no nested provider claims first.
+     *
+     * The boundary is the wrapper slot rather than the controller identifier, because a
+     * nested provider is free to run a custom controller. A root without the slot declares
+     * no boundary of its own, so it keeps everything its nearest wrapper doesn't own.
+     */
+    ownedBy(root, selector) {
+        return Array.from(root.querySelectorAll(selector)).filter((element) => {
+            const wrapper = element.closest(WRAPPER_SELECTOR);
+
+            return wrapper === root || wrapper === null || !root.contains(wrapper);
+        });
     }
 
     get isMobile() {
