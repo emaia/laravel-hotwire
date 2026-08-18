@@ -1,4 +1,4 @@
-@aware(['sidebarState' => 'expanded'])
+@aware(['sidebarState' => 'expanded', 'sidebarIdentifier' => 'sidebar'])
 
 @php
     use Emaia\LaravelHotwire\Support\StimulusAttributes;
@@ -22,7 +22,7 @@
     ]), $attributes, except: ['style'], protectedPrefixes: array_values(array_filter([
         'data-slot',
         'data-side',
-        'data-sidebar-target',
+        "data-{$sidebarIdentifier}-target",
         // Only while the internal Reveal is the one driving them; with the prop off the visitor is
         // free to mount their own reveal and configure it.
         $reveal ? 'data-reveal-' : null,
@@ -43,7 +43,7 @@
 @else
     <div
         data-slot="sidebar"
-        data-sidebar-target="modal"
+        data-{{ $sidebarIdentifier }}-target="modal"
         data-state="{{ $sidebarState }}"
         data-mobile-state="closed"
         data-motion="{{ $motion }}"
@@ -54,15 +54,15 @@
     >
         <div
             data-slot="sidebar-backdrop"
-            data-sidebar-target="backdrop"
-            data-action="click->sidebar#clickOutside"
+            data-{{ $sidebarIdentifier }}-target="backdrop"
+            data-action="click->{{ $sidebarIdentifier }}#clickOutside"
         ></div>
         <div data-slot="sidebar-gap"></div>
         <div
             {{ $surfaceAttributes([
                 'data-slot' => 'sidebar-container',
                 'data-side' => $side,
-                'data-sidebar-target' => 'dialog',
+                "data-{$sidebarIdentifier}-target" => 'dialog',
             ]) }}
         >
             <aside data-slot="sidebar-inner" data-sidebar="sidebar">

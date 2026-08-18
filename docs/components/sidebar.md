@@ -289,6 +289,20 @@ state. `data-mobile-state="open|closed"`, `hidden`, and `inert` coordinate the m
 Clicking a normal link inside the open mobile drawer waits for the actual exit motion before navigation continues.
 Modified clicks, non-`_self` `target` links, downloads and `mailto:`/`tel:` links are not intercepted.
 
+### Nested providers
+
+A provider only drives the sidebars and triggers up to the next `data-slot="sidebar-wrapper"` below it, so a collapsible
+panel nested inside the shell sidebar keeps its own state. The boundary is the wrapper slot, not the controller
+identifier, so it holds whether or not the inner provider runs a custom `controller` — `<hw:sidebar>` names its overlay
+targets after the provider it belongs to, so a nested drawer stays wired to its own provider.
+
+Give each nested provider a distinct `cookieName`. Besides keeping the persisted states apart, it is how a provider
+recognizes itself in the next page during a Turbo render: providers that share a cookie name are told apart by position
+alone, and a page that drops the outer provider then shifts that position. When no match is found the provider leaves
+the incoming markup as the server rendered it.
+
+Both providers still answer Cmd/Ctrl+B, since that shortcut is bound to the window.
+
 ## Styling hooks
 
 The preset styles all parts through semantic hooks:

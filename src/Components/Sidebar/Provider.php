@@ -9,7 +9,7 @@ use Illuminate\View\ComponentAttributeBag;
 
 class Provider extends Component
 {
-    public string $identifier;
+    public string $sidebarIdentifier;
 
     public string $sidebarState;
 
@@ -24,7 +24,7 @@ class Provider extends Component
         public string $controller = 'sidebar',
         public ?Htmlable $stimulus = null,
     ) {
-        $this->identifier = $controller;
+        $this->sidebarIdentifier = $controller;
         $this->resolvedOpen = $this->resolveOpen();
         $this->sidebarState = $this->resolvedOpen ? 'expanded' : 'collapsed';
     }
@@ -50,14 +50,14 @@ class Provider extends Component
         return [
             'providerAttributes' => StimulusAttributes::merge([
                 'data-slot' => 'sidebar-wrapper',
-                'data-controller' => $this->identifier,
+                'data-controller' => $this->sidebarIdentifier,
                 'data-state' => $this->sidebarState,
-                "data-{$this->identifier}-open-value" => $this->resolvedOpen ? 'true' : 'false',
-                "data-{$this->identifier}-cookie-name-value" => $this->cookieName,
-                "data-{$this->identifier}-lock-scroll-class" => 'overflow-hidden',
-                'data-action' => "keydown@window->{$this->identifier}#shortcut turbo:before-cache@window->{$this->identifier}#closeForCache turbo:before-render@window->{$this->identifier}#preserveStateForRender",
+                "data-{$this->sidebarIdentifier}-open-value" => $this->resolvedOpen ? 'true' : 'false',
+                "data-{$this->sidebarIdentifier}-cookie-name-value" => $this->cookieName,
+                "data-{$this->sidebarIdentifier}-lock-scroll-class" => 'overflow-hidden',
+                'data-action' => "keydown@window->{$this->sidebarIdentifier}#shortcut turbo:before-cache@window->{$this->sidebarIdentifier}#closeForCache turbo:before-render@window->{$this->sidebarIdentifier}#preserveStateForRender",
                 'style' => "--sidebar-width: {$this->width}; --sidebar-width-mobile: {$this->mobileWidth}; --sidebar-width-icon: {$this->iconWidth}",
-            ], $attributes, $this->stimulus, protectedPrefixes: ["data-{$this->identifier}-open-"]),
+            ], $attributes, $this->stimulus, protectedPrefixes: ["data-{$this->sidebarIdentifier}-open-"]),
         ];
     }
 
