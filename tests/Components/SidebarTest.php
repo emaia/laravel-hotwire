@@ -1,5 +1,6 @@
 <?php
 
+use Emaia\LaravelHotwire\Components\Sidebar\Provider;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
 use Illuminate\View\ViewException;
@@ -149,6 +150,14 @@ it('keeps sidebar targets on its own provider inside another controller componen
         ->assertSee('click-&gt;sidebar#toggle', false)
         ->assertDontSee('data-accordion-target="modal"', false)
         ->assertDontSee('accordion#clickOutside', false);
+});
+
+it('keeps the identifier aware key available for custom controls', function () {
+    // What @aware(['identifier' => 'sidebar']) consumes in a component built against the provider.
+    $data = (new Provider(controller: 'workspace-panel'))->data();
+
+    expect($data['identifier'])->toBe('workspace-panel')
+        ->and($data['sidebarIdentifier'])->toBe('workspace-panel');
 });
 
 it('renders sidebar targets for a hyphenated provider controller', function () {
