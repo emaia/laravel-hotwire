@@ -152,12 +152,11 @@ it('keeps sidebar targets on its own provider inside another controller componen
         ->assertDontSee('accordion#clickOutside', false);
 });
 
-it('keeps the identifier aware key available for custom controls', function () {
-    // What @aware(['identifier' => 'sidebar']) consumes in a component built against the provider.
+it('exposes only the sidebar-specific identifier key', function () {
     $data = (new Provider(controller: 'workspace-panel'))->data();
 
-    expect($data['identifier'])->toBe('workspace-panel')
-        ->and($data['sidebarIdentifier'])->toBe('workspace-panel');
+    expect($data['sidebarIdentifier'])->toBe('workspace-panel')
+        ->and($data)->not->toHaveKey('identifier');
 });
 
 it('renders sidebar targets for a hyphenated provider controller', function () {

@@ -1,7 +1,9 @@
 <?php
 
+use Emaia\LaravelHotwire\Components\SidePanel;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\View\ViewException;
 
 it('renders a composable side panel with server state and accessibility hooks', function () {
@@ -118,6 +120,42 @@ it('merges custom stimulus wiring without allowing side panel state overrides', 
         ->assertDontSee(' inert', false)
         ->assertSee('click->workspace-panel#toggle click->analytics#track', false);
 });
+
+it('keeps the side panel identifier through an intermediate accordion', function () {
+    Blade::anonymousComponentPath(__DIR__.'/../Fixtures/views/components');
+
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::side-panel name="filters" controller="workspace-panel">
+            <x-panel-id-wrapper panel-id="shadow-panel">
+                <x-hw::accordion>
+                    <x-hw::accordion.item value="section">
+                        <x-hw::side-panel.panel>Filters</x-hw::side-panel.panel>
+                        <x-hw::side-panel.trigger />
+                    </x-hw::accordion.item>
+                </x-hw::accordion>
+            </x-panel-id-wrapper>
+        </x-hw::side-panel>
+    BLADE);
+
+    $view->assertSee('data-workspace-panel-target="panel"', false)
+        ->assertSee('data-workspace-panel-target="trigger"', false)
+        ->assertSee('data-action="click->workspace-panel#toggle"', false)
+        ->assertDontSee('data-accordion-target="panel"', false)
+        ->assertDontSee('data-accordion-target="trigger"', false)
+        ->assertDontSee('click->accordion#toggle', false)
+        ->assertSee('id="filters-panel"', false)
+        ->assertSee('aria-controls="filters-panel"', false);
+
+    $data = (new SidePanel(name: 'filters', controller: 'workspace-panel'))->data();
+    expect($data['sidePanelIdentifier'])->toBe('workspace-panel')
+        ->and($data['sidePanelPanelId'])->toBe('filters-panel')
+        ->and($data)->not->toHaveKeys(['identifier', 'panelId']);
+});
+
+it('requires side panel subcomponents to render inside a side panel root', function (string $component) {
+    $this->blade("<x-hw::side-panel.{$component}>{$component}</x-hw::side-panel.{$component}>");
+})->with(['panel', 'trigger'])
+    ->throws(ViewException::class, 'must be rendered inside a Side Panel root');
 
 it('registers side panel in the component catalog and aliases', function () {
     $component = HotwireRegistry::make()->component('side-panel');

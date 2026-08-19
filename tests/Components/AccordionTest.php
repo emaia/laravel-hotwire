@@ -1,7 +1,9 @@
 <?php
 
+use Emaia\LaravelHotwire\Components\Accordion;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
+use Illuminate\View\ViewException;
 
 it('renders an accordion root with controller and native details items', function () {
     $view = $this->blade(<<<'BLADE'
@@ -71,6 +73,35 @@ it('merges user controllers on the accordion root', function () {
 
     $view->assertSee('data-controller="accordion analytics"', false);
 });
+
+it('keeps the accordion identifier through intermediate tabs', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::accordion id="faq" controller="faq-accordion" value="shipping">
+            <x-hw::tabs id="nested-tabs">
+                <x-hw::tabs.panel value="details">
+                    <x-hw::accordion.item value="shipping">
+                        <x-hw::accordion.trigger>Shipping</x-hw::accordion.trigger>
+                        <x-hw::accordion.content>Shipping answers.</x-hw::accordion.content>
+                    </x-hw::accordion.item>
+                </x-hw::tabs.panel>
+            </x-hw::tabs>
+        </x-hw::accordion>
+    BLADE);
+
+    $view->assertSee('data-controller="faq-accordion"', false)
+        ->assertSee('data-faq-accordion-value-value="shipping"', false)
+        ->assertSee('data-faq-accordion-target="item"', false)
+        ->assertDontSee('data-tabs-target="item"', false);
+    expect((string) $view)->toMatch('/<details[^>]*data-value="shipping"[^>]*open/');
+
+    $data = (new Accordion(controller: 'faq-accordion'))->data();
+    expect($data['accordionIdentifier'])->toBe('faq-accordion')
+        ->and($data)->not->toHaveKey('identifier');
+});
+
+it('requires accordion items to render inside an accordion root', function () {
+    $this->blade('<x-hw::accordion.item value="shipping">Shipping</x-hw::accordion.item>');
+})->throws(ViewException::class, 'must be rendered inside an Accordion root');
 
 it('registers accordion in the component catalog and subcomponent aliases', function () {
     $accordion = HotwireRegistry::make()->component('accordion');

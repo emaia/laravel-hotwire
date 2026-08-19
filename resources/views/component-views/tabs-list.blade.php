@@ -1,7 +1,7 @@
-@aware(['identifier' => 'tabs', 'tabsOrientation' => 'horizontal'])
+@aware(['tabsIdentifier' => 'tabs', 'tabsOrientation' => 'horizontal'])
 
 @php
-    extract($compute($identifier, $tabsOrientation, $attributes));
+    extract($compute($tabsIdentifier, $tabsOrientation, $attributes));
 @endphp
 
 <div

@@ -1,7 +1,7 @@
-@aware(['tabsId' => null, 'active' => null, 'identifier' => 'tabs'])
+@aware(['tabsId' => null, 'tabsActive' => null, 'tabsIdentifier' => 'tabs'])
 
 @php
-    extract($compute($tabsId, $active, $identifier, $attributes));
+    extract($compute($tabsId, $tabsActive, $tabsIdentifier, $attributes));
 @endphp
 
 <button

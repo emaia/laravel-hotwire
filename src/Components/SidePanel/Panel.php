@@ -5,6 +5,7 @@ namespace Emaia\LaravelHotwire\Components\SidePanel;
 use Emaia\LaravelHotwire\Support\StimulusAttributes;
 use Illuminate\View\Component;
 use Illuminate\View\ComponentAttributeBag;
+use InvalidArgumentException;
 
 class Panel extends Component
 {
@@ -28,6 +29,10 @@ class Panel extends Component
         string $sidePanelState,
         ComponentAttributeBag $attributes,
     ): array {
+        if ($panelId === null) {
+            throw new InvalidArgumentException('Side Panel panel must be rendered inside a Side Panel root.');
+        }
+
         return [
             'panelAttributes' => StimulusAttributes::merge([
                 'id' => $panelId,

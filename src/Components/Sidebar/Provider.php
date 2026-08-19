@@ -11,13 +11,6 @@ class Provider extends Component
 {
     public string $sidebarIdentifier;
 
-    /**
-     * Kept for components built against the published `@aware(['identifier'])` key. The package
-     * views read `sidebarIdentifier` instead, so a Sidebar nested in another controller component
-     * cannot inherit that component's identifier.
-     */
-    public string $identifier;
-
     public string $sidebarState;
 
     public bool $resolvedOpen;
@@ -32,7 +25,6 @@ class Provider extends Component
         public ?Htmlable $stimulus = null,
     ) {
         $this->sidebarIdentifier = $controller;
-        $this->identifier = $controller;
         $this->resolvedOpen = $this->resolveOpen();
         $this->sidebarState = $this->resolvedOpen ? 'expanded' : 'collapsed';
     }

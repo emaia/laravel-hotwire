@@ -1,7 +1,7 @@
-@aware(['identifier' => 'accordion', 'accordionValue' => []])
+@aware(['accordionIdentifier' => null, 'accordionValue' => []])
 
 @php
-    extract($compute($identifier, $accordionValue, $attributes));
+    extract($compute($accordionIdentifier, $accordionValue, $attributes));
 @endphp
 
 <details

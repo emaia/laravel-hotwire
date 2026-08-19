@@ -11,7 +11,9 @@ class Tabs extends Component
 {
     public string $tabsId;
 
-    public string $identifier;
+    public string $tabsIdentifier;
+
+    public ?string $tabsActive;
 
     public string $tabsOrientation;
 
@@ -25,7 +27,8 @@ class Tabs extends Component
         public ?Htmlable $stimulus = null,
     ) {
         $this->tabsId = $id !== null && $id !== '' ? $id : 'hw-tabs-'.uniqid();
-        $this->identifier = $controller;
+        $this->tabsIdentifier = $controller;
+        $this->tabsActive = $active;
         $this->tabsOrientation = $orientation;
     }
 
@@ -52,10 +55,10 @@ class Tabs extends Component
                 'id' => $this->tabsId,
                 'data-slot' => 'tabs',
                 'data-orientation' => $this->orientation,
-                'data-controller' => $this->identifier,
-                "data-{$this->identifier}-selected-index-value" => $this->selectedIndex,
+                'data-controller' => $this->tabsIdentifier,
+                "data-{$this->tabsIdentifier}-selected-index-value" => $this->selectedIndex,
                 'class' => $this->class ?: null,
-            ], $attributes, $this->stimulus, protectedPrefixes: ["data-{$this->identifier}-selected-index-"]),
+            ], $attributes, $this->stimulus, protectedPrefixes: ["data-{$this->tabsIdentifier}-selected-index-"]),
         ];
     }
 }
