@@ -6,7 +6,7 @@
     'fixedTop' => false,
     'side' => 'bottom',
     'direction' => 'left',
-    'axis' => 'x',
+    'axis' => 'y',
     'backdrop' => true,
     'frame' => 'shadow-frame',
     'motion' => 'default',

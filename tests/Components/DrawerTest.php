@@ -174,17 +174,23 @@ it('keeps drawer aware context through an intermediate component', function () {
         ->toContain('data-drawer-frame-owner="drawer-shell"')
         ->toContain('turbo--view-transition')
         ->not->toContain('data-direction="left"')
+        ->not->toContain('data-axis="y"')
         ->not->toContain('id="shadow-frame"')
         ->not->toContain('data-drawer-frame-owner="shadow-overlay"')
         ->not->toContain('data-slot="drawer-backdrop"');
 });
 
-it('requires drawer content and triggers to render inside a drawer root', function (string $component) {
-    $tag = $component === 'trigger' ? 'x-hw::drawer.trigger' : 'x-hw::drawer.content';
-
-    $this->blade("<{$tag}>Content</{$tag}>");
-})->with(['content', 'trigger'])
+it('requires drawer content to render inside a drawer root', function () {
+    $this->blade('<x-hw::drawer.content>Content</x-hw::drawer.content>');
+})
     ->throws(ViewException::class, 'must be rendered inside a Drawer root');
+
+it('renders drawer triggers without requiring an owning drawer root', function () {
+    $view = $this->blade('<x-hw::drawer.trigger>Open</x-hw::drawer.trigger>');
+
+    $view->assertSee('data-slot="drawer-trigger"', false)
+        ->assertSee('data-action="click-&gt;drawer#toggle"', false);
+});
 
 it('rejects an unmanaged turbo frame with the drawer frame id', function () {
     $this->blade('<x-hw::drawer id="drawer-shell" frame="drawer-panel"><turbo-frame id="drawer-panel"></turbo-frame></x-hw::drawer>');

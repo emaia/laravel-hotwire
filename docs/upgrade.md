@@ -17,7 +17,7 @@ Update application subcomponents that consume the old internal keys:
 
 | Component family | Before | After |
 | --- | --- | --- |
-| Modal id | `@aware(['id' => null])` | `@aware(['modalId' => null])` |
+| Modal id | `@aware(['id' => ''])` | `@aware(['modalId' => null])` |
 | Modal size | `@aware(['size' => 'md'])` | `@aware(['modalSize' => 'md'])` |
 | Modal panel class | `@aware(['class' => ''])` | `@aware(['modalClass' => ''])` |
 | Modal close icon | `@aware(['closeButton' => true])` | `@aware(['modalCloseButton' => true])` |
@@ -25,24 +25,27 @@ Update application subcomponents that consume the old internal keys:
 | Modal frame | `@aware(['frame' => null])` | `@aware(['modalFrame' => null])` |
 | Modal motion | `@aware(['motion' => 'default'])` | `@aware(['modalMotion' => 'default'])` |
 | Modal view transition | `@aware(['viewTransition' => false])` | `@aware(['modalViewTransition' => false])` |
-| Sheet id | `@aware(['id' => null])` | `@aware(['sheetId' => null])` |
+| Sheet id | `@aware(['id' => ''])` | `@aware(['sheetId' => null])` |
 | Sheet side | `@aware(['side' => 'right'])` | `@aware(['sheetSide' => 'right'])` |
+| Sheet size | `@aware(['size' => ...])` | no replacement; size is root-only styling |
 | Sheet backdrop | `@aware(['backdrop' => true])` | `@aware(['sheetBackdrop' => true])` |
 | Sheet frame | `@aware(['frame' => null])` | `@aware(['sheetFrame' => null])` |
 | Sheet motion | `@aware(['motion' => 'default'])` | `@aware(['sheetMotion' => 'default'])` |
 | Sheet view transition | `@aware(['viewTransition' => false])` | `@aware(['sheetViewTransition' => false])` |
-| Drawer id | `@aware(['id' => null])` | `@aware(['drawerId' => null])` |
+| Drawer id | `@aware(['id' => ''])` | `@aware(['drawerId' => null])` |
 | Drawer direction | `@aware(['direction' => 'down'])` | `@aware(['drawerDirection' => 'down'])` |
+| Drawer side | `@aware(['side' => ...])` | no replacement; use `drawerDirection` |
+| Drawer size | `@aware(['size' => ...])` | no replacement; size is root-only styling |
 | Drawer axis | `@aware(['axis' => 'y'])` | `@aware(['drawerAxis' => 'y'])` |
 | Drawer backdrop | `@aware(['backdrop' => true])` | `@aware(['drawerBackdrop' => true])` |
 | Drawer frame | `@aware(['frame' => null])` | `@aware(['drawerFrame' => null])` |
 | Drawer motion | `@aware(['motion' => 'default'])` | `@aware(['drawerMotion' => 'default'])` |
 | Drawer view transition | `@aware(['viewTransition' => false])` | `@aware(['drawerViewTransition' => false])` |
 
-Modal content and triggers, Sheet content and triggers, and Drawer content and triggers now throw when rendered without
-their owning root. Render the owner in the same Blade tree so it can supply the scoped controller, frame and overlay
-context. For Turbo Streams, replace the content inside the overlay's frame or render the owning root instead of rendering
-the dependent subcomponent alone.
+Modal content and triggers, Sheet content, and Drawer content now throw when rendered without their owning root. Render
+the owner in the same Blade tree so it can supply the scoped controller, frame and overlay context. For Turbo Streams,
+replace the content inside the overlay's frame or render the owning root instead of rendering the dependent subcomponent
+alone. Sheet and Drawer triggers still render standalone because they do not consume root context.
 
 ### Component-aware context keys are scoped
 

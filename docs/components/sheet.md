@@ -29,9 +29,10 @@ Use `Sheet` for side-panel dialogs. Use [`<hw:drawer>`](./drawer.md) for the Bas
 </hw:sheet>
 ```
 
-`sheet.trigger` and `sheet.content` must render inside the same `sheet` root. The root supplies the frame target, side,
-backdrop and motion context used by the dependent subcomponents. For Turbo Stream updates, replace the sheet frame or
-render the owning Sheet root rather than rendering a dependent subcomponent by itself.
+`sheet.content` must render inside the same `sheet` root. The root supplies the frame target, side, backdrop and motion
+context used by the dependent content. For Turbo Stream updates, replace the sheet frame or render the owning Sheet root
+rather than rendering `sheet.content` by itself. `sheet.trigger` does not consume root context and may be rendered by a
+standalone partial that lands inside an existing sheet root.
 
 ## Automatic Behavior
 

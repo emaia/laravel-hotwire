@@ -176,12 +176,17 @@ it('keeps sheet aware context through an intermediate component', function () {
         ->not->toContain('data-slot="sheet-backdrop"');
 });
 
-it('requires sheet content and triggers to render inside a sheet root', function (string $component) {
-    $tag = $component === 'trigger' ? 'x-hw::sheet.trigger' : 'x-hw::sheet.content';
-
-    $this->blade("<{$tag}>Content</{$tag}>");
-})->with(['content', 'trigger'])
+it('requires sheet content to render inside a sheet root', function () {
+    $this->blade('<x-hw::sheet.content>Content</x-hw::sheet.content>');
+})
     ->throws(ViewException::class, 'must be rendered inside a Sheet root');
+
+it('renders sheet triggers without requiring an owning sheet root', function () {
+    $view = $this->blade('<x-hw::sheet.trigger>Open</x-hw::sheet.trigger>');
+
+    $view->assertSee('data-slot="sheet-trigger"', false)
+        ->assertSee('data-action="click-&gt;sheet#toggle"', false);
+});
 
 it('rejects an unmanaged turbo frame with the sheet frame id', function () {
     $this->blade('<x-hw::sheet id="sheet-shell" frame="sheet-panel"><turbo-frame id="sheet-panel"></turbo-frame></x-hw::sheet>');
