@@ -232,7 +232,7 @@ it('keeps the active tab through an intermediate active component', function () 
 it('requires tabs subcomponents to render inside a tabs root', function (string $component) {
     $this->blade("<x-hw::tabs.{$component} value=\"profile\">Profile</x-hw::tabs.{$component}>");
 })->with(['trigger', 'panel'])
-    ->throws(ViewException::class, 'must be rendered inside <hw:tabs>');
+    ->throws(ViewException::class, 'must be rendered inside a Tabs root');
 
 it('lets trigger and panel ids be overridden', function () {
     $view = $this->blade(<<<'BLADE'

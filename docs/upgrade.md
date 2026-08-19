@@ -6,6 +6,25 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 
 ## Unreleased
 
+### Component-aware context keys are scoped
+
+Tabs, Accordion and Side Panel no longer expose the generic `identifier` component-data key. Side Panel also no longer
+exposes its resolved id as `panelId`; the public `panel-id` input prop is unchanged. These generic keys allowed an
+unrelated intermediate Blade component to silently replace context consumed through `@aware`.
+
+Update application subcomponents that consume the old keys:
+
+| Component family | Before | After |
+| --- | --- | --- |
+| Tabs | `@aware(['identifier' => 'tabs'])` | `@aware(['tabsIdentifier' => 'tabs'])` |
+| Accordion | `@aware(['identifier' => 'accordion'])` | `@aware(['accordionIdentifier' => 'accordion'])` |
+| Side Panel controller | `@aware(['identifier' => 'side-panel'])` | `@aware(['sidePanelIdentifier' => 'side-panel'])` |
+| Side Panel panel id | `@aware(['panelId' => null])` | `@aware(['sidePanelPanelId' => null])` |
+
+Tabs triggers and panels, Accordion items, and Side Panel panels and triggers now throw when rendered without their owning
+root. Render the owner in the same Blade tree so it can supply the scoped controller, state and ARIA context. For Turbo
+Streams, replace the subcomponent's inner content or render the owning root instead of rendering the subcomponent alone.
+
 ### Stimulus lazy loader v2 and critical controller policy
 
 The generated controller loader now requires `@emaia/stimulus-lazy-loader ^2.0.0`. Re-run the installer to update an

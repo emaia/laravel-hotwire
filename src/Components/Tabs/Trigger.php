@@ -40,7 +40,7 @@ class Trigger extends Component
         ComponentAttributeBag $attributes,
     ): array {
         if ($tabsId === null) {
-            throw new InvalidArgumentException('Tabs trigger must be rendered inside <hw:tabs>.');
+            throw new InvalidArgumentException('Tabs trigger must be rendered inside a Tabs root.');
         }
 
         $suffix = $this->suffix($this->value);

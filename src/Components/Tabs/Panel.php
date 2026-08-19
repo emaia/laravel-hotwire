@@ -39,7 +39,7 @@ class Panel extends Component
         ComponentAttributeBag $attributes,
     ): array {
         if ($tabsId === null) {
-            throw new InvalidArgumentException('Tabs panel must be rendered inside <hw:tabs>.');
+            throw new InvalidArgumentException('Tabs panel must be rendered inside a Tabs root.');
         }
 
         $suffix = $this->suffix($this->value);

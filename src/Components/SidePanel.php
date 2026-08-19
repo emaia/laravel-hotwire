@@ -15,9 +15,6 @@ class SidePanel extends Component
 
     public string $sidePanelIdentifier;
 
-    /** Keep the public resolved panel id while package views consume the scoped context key. */
-    public string $panelId;
-
     public string $sidePanelPanelId;
 
     public bool $resolvedOpen;
@@ -42,7 +39,6 @@ class SidePanel extends Component
         $this->cookieName = "side_panel_{$key}_state";
         $this->sidePanelIdentifier = $controller;
         $this->sidePanelPanelId = $panelId !== null && $panelId !== '' ? $panelId : "{$key}-panel";
-        $this->panelId = $this->sidePanelPanelId;
         $this->resolvedOpen = $this->resolveOpen();
         $this->sidePanelState = $this->resolvedOpen ? 'expanded' : 'collapsed';
     }

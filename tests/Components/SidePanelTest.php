@@ -148,10 +148,14 @@ it('keeps the side panel identifier through an intermediate accordion', function
 
     $data = (new SidePanel(name: 'filters', controller: 'workspace-panel'))->data();
     expect($data['sidePanelIdentifier'])->toBe('workspace-panel')
-        ->and($data['panelId'])->toBe('filters-panel')
         ->and($data['sidePanelPanelId'])->toBe('filters-panel')
-        ->and($data)->not->toHaveKey('identifier');
+        ->and($data)->not->toHaveKeys(['identifier', 'panelId']);
 });
+
+it('requires side panel subcomponents to render inside a side panel root', function (string $component) {
+    $this->blade("<x-hw::side-panel.{$component}>{$component}</x-hw::side-panel.{$component}>");
+})->with(['panel', 'trigger'])
+    ->throws(ViewException::class, 'must be rendered inside a Side Panel root');
 
 it('registers side panel in the component catalog and aliases', function () {
     $component = HotwireRegistry::make()->component('side-panel');

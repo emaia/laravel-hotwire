@@ -3,6 +3,7 @@
 use Emaia\LaravelHotwire\Components\Accordion;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
+use Illuminate\View\ViewException;
 
 it('renders an accordion root with controller and native details items', function () {
     $view = $this->blade(<<<'BLADE'
@@ -97,6 +98,10 @@ it('keeps the accordion identifier through intermediate tabs', function () {
     expect($data['accordionIdentifier'])->toBe('faq-accordion')
         ->and($data)->not->toHaveKey('identifier');
 });
+
+it('requires accordion items to render inside an accordion root', function () {
+    $this->blade('<x-hw::accordion.item value="shipping">Shipping</x-hw::accordion.item>');
+})->throws(ViewException::class, 'must be rendered inside an Accordion root');
 
 it('registers accordion in the component catalog and subcomponent aliases', function () {
     $accordion = HotwireRegistry::make()->component('accordion');

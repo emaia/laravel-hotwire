@@ -6,6 +6,7 @@ use Emaia\LaravelHotwire\Support\StimulusAttributes;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\Component;
 use Illuminate\View\ComponentAttributeBag;
+use InvalidArgumentException;
 
 class Item extends Component
 {
@@ -34,10 +35,14 @@ class Item extends Component
      * @return array<string, mixed>
      */
     private function computeResolved(
-        string $identifier,
+        ?string $identifier,
         array $accordionValue,
         ComponentAttributeBag $attributes,
     ): array {
+        if ($identifier === null) {
+            throw new InvalidArgumentException('Accordion item must be rendered inside an Accordion root.');
+        }
+
         $open = ! $this->disabled && ($this->open ?? in_array($this->value, $accordionValue, true));
 
         return [
