@@ -49,6 +49,11 @@ controller targets/actions, and can server-render the active tab for progressive
 | `tabs.panel` | `value` | required | Stable value paired with a trigger. |
 | `tabs.panel` | `stimulus` | `null` | Optional extra Stimulus binding merged into the panel element. |
 
+`tabs.trigger` and `tabs.panel` must render inside the same `tabs` root. The root supplies the shared base id, active
+state and Stimulus identifier that keep their ARIA relationship and controller targets aligned. For a Turbo Stream
+update, replace the panel's inner content or render the owning Tabs root rather than rendering a panel component by
+itself.
+
 ## Active tab
 
 Pass `active` when the server knows the current tab. The matching trigger gets `aria-selected="true"` and `tabindex="0"`;
@@ -139,8 +144,13 @@ By default, `value="profile"` inside `<hw:tabs id="settings">` renders `settings
 `settings-panel-profile`. Override ids only when you also pass the matching ARIA attributes:
 
 ```blade
-<hw:tabs.trigger value="profile" id="profile-tab" aria-controls="profile-panel">Profile</hw:tabs.trigger>
-<hw:tabs.panel value="profile" id="profile-panel" aria-labelledby="profile-tab">Profile settings…</hw:tabs.panel>
+<hw:tabs id="settings">
+    <hw:tabs.list aria-label="Settings">
+        <hw:tabs.trigger value="profile" id="profile-tab" aria-controls="profile-panel">Profile</hw:tabs.trigger>
+    </hw:tabs.list>
+
+    <hw:tabs.panel value="profile" id="profile-panel" aria-labelledby="profile-tab">Profile settings…</hw:tabs.panel>
+</hw:tabs>
 ```
 
 For URL syncing or analytics, listen to the `tabs:change` event documented in the controller docs.

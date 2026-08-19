@@ -94,8 +94,8 @@ it('keeps the accordion identifier through intermediate tabs', function () {
     expect((string) $view)->toMatch('/<details[^>]*data-value="shipping"[^>]*open/');
 
     $data = (new Accordion(controller: 'faq-accordion'))->data();
-    expect($data['identifier'])->toBe('faq-accordion')
-        ->and($data['accordionIdentifier'])->toBe('faq-accordion');
+    expect($data['accordionIdentifier'])->toBe('faq-accordion')
+        ->and($data)->not->toHaveKey('identifier');
 });
 
 it('registers accordion in the component catalog and subcomponent aliases', function () {

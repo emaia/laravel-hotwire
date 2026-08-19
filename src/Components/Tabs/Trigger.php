@@ -6,6 +6,7 @@ use Emaia\LaravelHotwire\Support\StimulusAttributes;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\Component;
 use Illuminate\View\ComponentAttributeBag;
+use InvalidArgumentException;
 
 class Trigger extends Component
 {
@@ -33,11 +34,15 @@ class Trigger extends Component
      * @return array<string, mixed>
      */
     private function computeResolved(
-        string $tabsId,
+        ?string $tabsId,
         ?string $active,
         string $identifier,
         ComponentAttributeBag $attributes,
     ): array {
+        if ($tabsId === null) {
+            throw new InvalidArgumentException('Tabs trigger must be rendered inside <hw:tabs>.');
+        }
+
         $suffix = $this->suffix($this->value);
         $resolvedId = $this->id ?: "{$tabsId}-tab-{$suffix}";
         $panelId = "{$tabsId}-panel-{$suffix}";

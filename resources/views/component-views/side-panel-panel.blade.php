@@ -1,7 +1,7 @@
-@aware(['sidePanelIdentifier' => 'side-panel', 'panelId' => null, 'sidePanelState' => 'expanded'])
+@aware(['sidePanelIdentifier' => 'side-panel', 'sidePanelPanelId' => null, 'sidePanelState' => 'expanded'])
 
 @php
-    extract($compute($panelId, $sidePanelIdentifier, $sidePanelState, $attributes));
+    extract($compute($sidePanelPanelId, $sidePanelIdentifier, $sidePanelState, $attributes));
 @endphp
 
 <aside {{ $panelAttributes }}>

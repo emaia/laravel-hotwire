@@ -3,6 +3,7 @@
 use Emaia\LaravelHotwire\Components\SidePanel;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\View\ViewException;
 
 it('renders a composable side panel with server state and accessibility hooks', function () {
@@ -121,14 +122,18 @@ it('merges custom stimulus wiring without allowing side panel state overrides', 
 });
 
 it('keeps the side panel identifier through an intermediate accordion', function () {
+    Blade::anonymousComponentPath(__DIR__.'/../Fixtures/views/components');
+
     $view = $this->blade(<<<'BLADE'
         <x-hw::side-panel name="filters" controller="workspace-panel">
-            <x-hw::accordion>
-                <x-hw::accordion.item value="section">
-                    <x-hw::side-panel.panel>Filters</x-hw::side-panel.panel>
-                    <x-hw::side-panel.trigger />
-                </x-hw::accordion.item>
-            </x-hw::accordion>
+            <x-panel-id-wrapper panel-id="shadow-panel">
+                <x-hw::accordion>
+                    <x-hw::accordion.item value="section">
+                        <x-hw::side-panel.panel>Filters</x-hw::side-panel.panel>
+                        <x-hw::side-panel.trigger />
+                    </x-hw::accordion.item>
+                </x-hw::accordion>
+            </x-panel-id-wrapper>
         </x-hw::side-panel>
     BLADE);
 
@@ -137,11 +142,15 @@ it('keeps the side panel identifier through an intermediate accordion', function
         ->assertSee('data-action="click->workspace-panel#toggle"', false)
         ->assertDontSee('data-accordion-target="panel"', false)
         ->assertDontSee('data-accordion-target="trigger"', false)
-        ->assertDontSee('click->accordion#toggle', false);
+        ->assertDontSee('click->accordion#toggle', false)
+        ->assertSee('id="filters-panel"', false)
+        ->assertSee('aria-controls="filters-panel"', false);
 
     $data = (new SidePanel(name: 'filters', controller: 'workspace-panel'))->data();
-    expect($data['identifier'])->toBe('workspace-panel')
-        ->and($data['sidePanelIdentifier'])->toBe('workspace-panel');
+    expect($data['sidePanelIdentifier'])->toBe('workspace-panel')
+        ->and($data['panelId'])->toBe('filters-panel')
+        ->and($data['sidePanelPanelId'])->toBe('filters-panel')
+        ->and($data)->not->toHaveKey('identifier');
 });
 
 it('registers side panel in the component catalog and aliases', function () {

@@ -1,7 +1,7 @@
-@aware(['tabsId' => null, 'active' => null, 'tabsIdentifier' => 'tabs'])
+@aware(['tabsId' => null, 'tabsActive' => null, 'tabsIdentifier' => 'tabs'])
 
 @php
-    extract($compute($tabsId, $active, $tabsIdentifier, $attributes));
+    extract($compute($tabsId, $tabsActive, $tabsIdentifier, $attributes));
 @endphp
 
 <div

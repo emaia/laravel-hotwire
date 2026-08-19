@@ -2,6 +2,7 @@
 
 use Emaia\LaravelHotwire\Components\Tabs;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
+use Illuminate\View\ViewException;
 
 it('renders the tabs root with controller and slot hooks', function () {
     $view = $this->blade('<x-hw::tabs id="settings"><x-hw::tabs.list /></x-hw::tabs>');
@@ -204,9 +205,34 @@ it('keeps the tabs identifier through an intermediate accordion', function () {
         ->assertDontSee('data-accordion-target="panel"', false);
 
     $data = (new Tabs(controller: 'settings-tabs'))->data();
-    expect($data['identifier'])->toBe('settings-tabs')
-        ->and($data['tabsIdentifier'])->toBe('settings-tabs');
+    expect($data['tabsIdentifier'])->toBe('settings-tabs')
+        ->and($data)->not->toHaveKey('identifier');
 });
+
+it('keeps the active tab through an intermediate active component', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::tabs id="settings" active="profile">
+            <x-hw::sidebar.menu-button :active="true">
+                <x-hw::tabs.trigger value="profile">Profile</x-hw::tabs.trigger>
+                <x-hw::tabs.panel value="profile">Profile settings</x-hw::tabs.panel>
+            </x-hw::sidebar.menu-button>
+        </x-hw::tabs>
+    BLADE);
+
+    expect((string) $view)->toMatch('/<button[^>]*data-slot="tabs-trigger"[^>]*data-state="active"/')
+        ->and((string) $view)->toMatch('/<button[^>]*data-slot="tabs-trigger"[^>]*aria-selected="true"/')
+        ->and((string) $view)->toMatch('/<div[^>]*data-slot="tabs-panel"[^>]*data-state="active"/')
+        ->and((string) $view)->not->toMatch('/<div[^>]*data-slot="tabs-panel"[^>]*hidden/');
+
+    $data = (new Tabs(active: 'profile'))->data();
+    expect($data['active'])->toBe('profile')
+        ->and($data['tabsActive'])->toBe('profile');
+});
+
+it('requires tabs subcomponents to render inside a tabs root', function (string $component) {
+    $this->blade("<x-hw::tabs.{$component} value=\"profile\">Profile</x-hw::tabs.{$component}>");
+})->with(['trigger', 'panel'])
+    ->throws(ViewException::class, 'must be rendered inside <hw:tabs>');
 
 it('lets trigger and panel ids be overridden', function () {
     $view = $this->blade(<<<'BLADE'

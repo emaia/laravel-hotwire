@@ -11,8 +11,6 @@ class Accordion extends Component
 {
     public string $accordionId;
 
-    public string $identifier;
-
     public string $accordionIdentifier;
 
     /** @var string[] */
@@ -29,7 +27,6 @@ class Accordion extends Component
         public ?Htmlable $stimulus = null,
     ) {
         $this->accordionId = $id !== null && $id !== '' ? $id : 'hw-accordion-'.uniqid();
-        $this->identifier = $controller;
         $this->accordionIdentifier = $controller;
         $this->accordionValue = $this->normalizeValue($value);
         $this->accordionValueAttribute = $this->serializeValue($value);

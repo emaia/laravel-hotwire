@@ -11,9 +11,9 @@ class Tabs extends Component
 {
     public string $tabsId;
 
-    public string $identifier;
-
     public string $tabsIdentifier;
+
+    public ?string $tabsActive;
 
     public string $tabsOrientation;
 
@@ -27,8 +27,8 @@ class Tabs extends Component
         public ?Htmlable $stimulus = null,
     ) {
         $this->tabsId = $id !== null && $id !== '' ? $id : 'hw-tabs-'.uniqid();
-        $this->identifier = $controller;
         $this->tabsIdentifier = $controller;
+        $this->tabsActive = $active;
         $this->tabsOrientation = $orientation;
     }
 
