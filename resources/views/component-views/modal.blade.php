@@ -1,16 +1,16 @@
 @php
     $modalAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
-        'id' => $id,
+        'id' => $modalId,
         'data-slot' => 'modal',
         'data-controller' => 'modal',
         'data-modal-lock-scroll-class' => 'overflow-hidden',
         'data-action' => 'turbo:before-cache@window->modal#closeForCache',
     ], $attributes, $stimulus, protectedPrefixes: ['data-modal-']);
-    $frameHostCount = $frame === null ? 0 : \Emaia\LaravelHotwire\Support\OverlayFrameHost::count(
+    $frameHostCount = $modalFrame === null ? 0 : \Emaia\LaravelHotwire\Support\OverlayFrameHost::count(
         $slot->toHtml(),
-        $frame,
+        $modalFrame,
         'data-modal-frame-owner',
-        $id,
+        $modalId,
         'modal.content',
     );
 @endphp
@@ -20,7 +20,7 @@
 >
     {{ $slot }}
 
-    @if ($frame !== null && $frameHostCount === 0)
+    @if ($modalFrame !== null && $frameHostCount === 0)
         <x-hw::modal.content />
     @endif
 

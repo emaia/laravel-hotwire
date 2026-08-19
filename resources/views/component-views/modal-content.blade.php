@@ -1,23 +1,27 @@
 @aware([
-    'size' => 'md',
-    'id' => '',
-    'class' => '',
-    'closeButton' => true,
-    'fixedTop' => false,
-    'frame' => null,
-    'motion' => 'default',
-    'viewTransition' => false,
+    'modalId' => null,
+    'modalSize' => 'md',
+    'modalClass' => '',
+    'modalCloseButton' => true,
+    'modalFixedTop' => false,
+    'modalFrame' => null,
+    'modalMotion' => 'default',
+    'modalViewTransition' => false,
 ])
 
 @php
+    if ($modalId === null) {
+        throw new InvalidArgumentException('Modal content must be rendered inside a Modal root.');
+    }
+
     $presetSizes = ['sm', 'md', 'lg', 'xl', 'full', 'auto'];
-    $sizeStyle = in_array($size, $presetSizes, true) ? '' : "max-width: {$size};";
+    $sizeStyle = in_array($modalSize, $presetSizes, true) ? '' : "max-width: {$modalSize};";
 @endphp
 
 <div
     data-slot="modal-overlay"
     data-state="closed"
-    data-motion="{{ $motion }}"
+    data-motion="{{ $modalMotion }}"
     data-modal-target="modal"
     data-action="click->modal#clickOutside"
     role="dialog"
@@ -32,20 +36,20 @@
 
     <div
         data-slot="modal-positioner"
-        data-size="{{ $size }}"
-        data-fixed-top="{{ $fixedTop ? 'true' : 'false' }}"
+        data-size="{{ $modalSize }}"
+        data-fixed-top="{{ $modalFixedTop ? 'true' : 'false' }}"
         data-modal-target="dialog"
         @if ($sizeStyle !== '') style="{{ $sizeStyle }}" @endif
     >
-        <div data-slot="modal-panel" data-size="{{ $size }}" @if ($class !== '') class="{{ $class }}" @endif>
-            <div data-slot="modal-content" data-size="{{ $size }}" {{ $attributes }}>
-                @if ($frame !== null)
+        <div data-slot="modal-panel" data-size="{{ $modalSize }}" @if ($modalClass !== '') class="{{ $modalClass }}" @endif>
+            <div data-slot="modal-content" data-size="{{ $modalSize }}" {{ $attributes }}>
+                @if ($modalFrame !== null)
                     <x-hw::frame
-                        :id="$frame"
-                        :view-transition="$viewTransition"
-                        :data-turbo--view-transition-skip-initial-value="$viewTransition ? 'true' : null"
+                        :id="$modalFrame"
+                        :view-transition="$modalViewTransition"
+                        :data-turbo--view-transition-skip-initial-value="$modalViewTransition ? 'true' : null"
                         data-modal-target="dynamicContent"
-                        data-modal-frame-owner="{{ $id }}"
+                        data-modal-frame-owner="{{ $modalId }}"
                     >
                         {{ $slot }}
                     </x-hw::frame>
@@ -54,11 +58,11 @@
                 @endif
             </div>
 
-            @if ($closeButton)
+            @if ($modalCloseButton)
                 <button
                     type="button"
                     data-slot="modal-close-icon"
-                    data-modal-size="{{ $size }}"
+                    data-modal-size="{{ $modalSize }}"
                     data-action="click->modal#close"
                     aria-label="Close modal"
                 >

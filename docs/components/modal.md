@@ -56,6 +56,10 @@ To display a modal, place a trigger and content inside the root `<hw:modal>` com
 This example is self-contained: the root component mounts the `modal` Stimulus controller, the trigger opens it, and the
 content component renders the overlay, backdrop, dialog surface, and close button.
 
+`modal.trigger` and `modal.content` must render inside the same `modal` root. The root supplies the frame target, motion,
+size and close-button context used by the dependent subcomponents. For Turbo Stream updates, replace the modal frame or
+render the owning Modal root rather than rendering a dependent subcomponent by itself.
+
 ## Opening a Modal
 
 `<hw:modal.trigger>` renders a button-like control that opens the modal. It supports the same visual variants and sizes

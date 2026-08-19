@@ -3,6 +3,7 @@
 use Emaia\LaravelHotwire\Components\Sheet;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\View\ViewException;
 
 it('renders sheet markup and controller hooks', function () {
@@ -149,6 +150,38 @@ it('does not mistake arbitrary sheet owner metadata for a frame host', function 
 
     expect(substr_count((string) $view, '<turbo-frame'))->toBe(1);
 });
+
+it('keeps sheet aware context through an intermediate component', function () {
+    Blade::anonymousComponentPath(__DIR__.'/../Fixtures/views/components');
+
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::sheet id="sheet-shell" side="left" frame="sheet-panel" :backdrop="false" motion="none" view-transition>
+            <x-overlay-context-wrapper>
+                <x-hw::sheet.trigger>Open</x-hw::sheet.trigger>
+                <x-hw::sheet.content>Owned content</x-hw::sheet.content>
+            </x-overlay-context-wrapper>
+        </x-hw::sheet>
+    BLADE);
+
+    $html = (string) $view;
+
+    expect($html)->toContain('data-side="left"')
+        ->toContain('data-motion="none"')
+        ->toContain('id="sheet-panel"')
+        ->toContain('data-sheet-frame-owner="sheet-shell"')
+        ->toContain('turbo--view-transition')
+        ->not->toContain('data-side="bottom"')
+        ->not->toContain('id="shadow-frame"')
+        ->not->toContain('data-sheet-frame-owner="shadow-overlay"')
+        ->not->toContain('data-slot="sheet-backdrop"');
+});
+
+it('requires sheet content and triggers to render inside a sheet root', function (string $component) {
+    $tag = $component === 'trigger' ? 'x-hw::sheet.trigger' : 'x-hw::sheet.content';
+
+    $this->blade("<{$tag}>Content</{$tag}>");
+})->with(['content', 'trigger'])
+    ->throws(ViewException::class, 'must be rendered inside a Sheet root');
 
 it('rejects an unmanaged turbo frame with the sheet frame id', function () {
     $this->blade('<x-hw::sheet id="sheet-shell" frame="sheet-panel"><turbo-frame id="sheet-panel"></turbo-frame></x-hw::sheet>');

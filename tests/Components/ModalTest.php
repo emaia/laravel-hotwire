@@ -238,6 +238,40 @@ it('does not mistake arbitrary modal owner metadata for a frame host', function 
     expect(substr_count((string) $view, '<turbo-frame'))->toBe(1);
 });
 
+it('keeps modal aware context through an intermediate component', function () {
+    Blade::anonymousComponentPath(__DIR__.'/../Fixtures/views/components');
+
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::modal id="modal-shell" size="full" class="owner-class" :close-button="false" :fixed-top="true" frame="modal-frame" motion="none" view-transition>
+            <x-overlay-context-wrapper>
+                <x-hw::modal.trigger as="a" href="/open">Open</x-hw::modal.trigger>
+                <x-hw::modal.content>Owned content</x-hw::modal.content>
+            </x-overlay-context-wrapper>
+        </x-hw::modal>
+    BLADE);
+
+    $html = (string) $view;
+
+    expect($html)->toContain('data-turbo-frame="modal-frame"')
+        ->toContain('data-modal-frame-owner="modal-shell"')
+        ->toContain('data-size="full"')
+        ->toContain('data-fixed-top="true"')
+        ->toContain('data-motion="none"')
+        ->toContain('owner-class')
+        ->toContain('turbo--view-transition')
+        ->not->toContain('data-turbo-frame="shadow-frame"')
+        ->not->toContain('data-modal-frame-owner="shadow-overlay"')
+        ->not->toContain('shadow-class')
+        ->not->toContain('data-slot="modal-close-icon"');
+});
+
+it('requires modal content and triggers to render inside a modal root', function (string $component) {
+    $tag = $component === 'trigger' ? 'x-hw::modal.trigger' : 'x-hw::modal.content';
+
+    $this->blade("<{$tag}>Content</{$tag}>");
+})->with(['content', 'trigger'])
+    ->throws(ViewException::class, 'must be rendered inside a Modal root');
+
 it('rejects an unmanaged turbo frame with the modal frame id', function () {
     $this->blade('<x-hw::modal id="modal-shell" frame="modal"><turbo-frame id="modal"></turbo-frame></x-hw::modal>');
 })->throws(ViewException::class, 'A modal with a frame prop must render exactly one modal.content host.');

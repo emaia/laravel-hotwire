@@ -58,6 +58,25 @@ class Drawer extends Component
     {
         $data = parent::data();
         $data['compute'] = $this->computeResolved(...);
+        $data['drawerId'] = $this->id;
+        $data['drawerDirection'] = $this->direction;
+        $data['drawerAxis'] = $this->axis;
+        $data['drawerBackdrop'] = $this->backdrop;
+        $data['drawerFrame'] = $this->frame;
+        $data['drawerMotion'] = $this->motion;
+        $data['drawerViewTransition'] = $this->viewTransition;
+
+        unset(
+            $data['id'],
+            $data['direction'],
+            $data['side'],
+            $data['size'],
+            $data['axis'],
+            $data['backdrop'],
+            $data['frame'],
+            $data['motion'],
+            $data['viewTransition'],
+        );
 
         return $data;
     }

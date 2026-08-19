@@ -6,6 +6,44 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 
 ## Unreleased
 
+### Modal overlay context keys are scoped
+
+Modal, Sheet and Drawer no longer expose their overlay configuration through generic component-data keys such as `id`,
+`size`, `class`, `closeButton`, `fixedTop`, `side`, `direction`, `axis`, `backdrop`, `frame`, `motion` and
+`viewTransition`. Their package subcomponents now consume family-specific keys so an unrelated intermediate Blade
+component cannot replace the owner overlay's ARIA, frame, backdrop, motion or placement context.
+
+Update application subcomponents that consume the old internal keys:
+
+| Component family | Before | After |
+| --- | --- | --- |
+| Modal id | `@aware(['id' => null])` | `@aware(['modalId' => null])` |
+| Modal size | `@aware(['size' => 'md'])` | `@aware(['modalSize' => 'md'])` |
+| Modal panel class | `@aware(['class' => ''])` | `@aware(['modalClass' => ''])` |
+| Modal close icon | `@aware(['closeButton' => true])` | `@aware(['modalCloseButton' => true])` |
+| Modal top alignment | `@aware(['fixedTop' => false])` | `@aware(['modalFixedTop' => false])` |
+| Modal frame | `@aware(['frame' => null])` | `@aware(['modalFrame' => null])` |
+| Modal motion | `@aware(['motion' => 'default'])` | `@aware(['modalMotion' => 'default'])` |
+| Modal view transition | `@aware(['viewTransition' => false])` | `@aware(['modalViewTransition' => false])` |
+| Sheet id | `@aware(['id' => null])` | `@aware(['sheetId' => null])` |
+| Sheet side | `@aware(['side' => 'right'])` | `@aware(['sheetSide' => 'right'])` |
+| Sheet backdrop | `@aware(['backdrop' => true])` | `@aware(['sheetBackdrop' => true])` |
+| Sheet frame | `@aware(['frame' => null])` | `@aware(['sheetFrame' => null])` |
+| Sheet motion | `@aware(['motion' => 'default'])` | `@aware(['sheetMotion' => 'default'])` |
+| Sheet view transition | `@aware(['viewTransition' => false])` | `@aware(['sheetViewTransition' => false])` |
+| Drawer id | `@aware(['id' => null])` | `@aware(['drawerId' => null])` |
+| Drawer direction | `@aware(['direction' => 'down'])` | `@aware(['drawerDirection' => 'down'])` |
+| Drawer axis | `@aware(['axis' => 'y'])` | `@aware(['drawerAxis' => 'y'])` |
+| Drawer backdrop | `@aware(['backdrop' => true])` | `@aware(['drawerBackdrop' => true])` |
+| Drawer frame | `@aware(['frame' => null])` | `@aware(['drawerFrame' => null])` |
+| Drawer motion | `@aware(['motion' => 'default'])` | `@aware(['drawerMotion' => 'default'])` |
+| Drawer view transition | `@aware(['viewTransition' => false])` | `@aware(['drawerViewTransition' => false])` |
+
+Modal content and triggers, Sheet content and triggers, and Drawer content and triggers now throw when rendered without
+their owning root. Render the owner in the same Blade tree so it can supply the scoped controller, frame and overlay
+context. For Turbo Streams, replace the content inside the overlay's frame or render the owning root instead of rendering
+the dependent subcomponent alone.
+
 ### Component-aware context keys are scoped
 
 Tabs, Accordion and Side Panel no longer expose the generic `identifier` component-data key. Side Panel also no longer

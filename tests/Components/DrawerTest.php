@@ -3,6 +3,7 @@
 use Emaia\LaravelHotwire\Components\Drawer;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\View\ViewException;
 
 it('renders drawer markup and controller hooks', function () {
@@ -151,6 +152,39 @@ it('does not mistake arbitrary drawer owner metadata for a frame host', function
 
     expect(substr_count((string) $view, '<turbo-frame'))->toBe(1);
 });
+
+it('keeps drawer aware context through an intermediate component', function () {
+    Blade::anonymousComponentPath(__DIR__.'/../Fixtures/views/components');
+
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::drawer id="drawer-shell" direction="right" frame="drawer-panel" :backdrop="false" motion="none" view-transition>
+            <x-overlay-context-wrapper>
+                <x-hw::drawer.trigger>Open</x-hw::drawer.trigger>
+                <x-hw::drawer.content>Owned content</x-hw::drawer.content>
+            </x-overlay-context-wrapper>
+        </x-hw::drawer>
+    BLADE);
+
+    $html = (string) $view;
+
+    expect($html)->toContain('data-direction="right"')
+        ->toContain('data-axis="x"')
+        ->toContain('data-motion="none"')
+        ->toContain('id="drawer-panel"')
+        ->toContain('data-drawer-frame-owner="drawer-shell"')
+        ->toContain('turbo--view-transition')
+        ->not->toContain('data-direction="left"')
+        ->not->toContain('id="shadow-frame"')
+        ->not->toContain('data-drawer-frame-owner="shadow-overlay"')
+        ->not->toContain('data-slot="drawer-backdrop"');
+});
+
+it('requires drawer content and triggers to render inside a drawer root', function (string $component) {
+    $tag = $component === 'trigger' ? 'x-hw::drawer.trigger' : 'x-hw::drawer.content';
+
+    $this->blade("<{$tag}>Content</{$tag}>");
+})->with(['content', 'trigger'])
+    ->throws(ViewException::class, 'must be rendered inside a Drawer root');
 
 it('rejects an unmanaged turbo frame with the drawer frame id', function () {
     $this->blade('<x-hw::drawer id="drawer-shell" frame="drawer-panel"><turbo-frame id="drawer-panel"></turbo-frame></x-hw::drawer>');

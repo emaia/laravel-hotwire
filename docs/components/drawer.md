@@ -28,6 +28,10 @@ dismissal.
 </hw:drawer>
 ```
 
+`drawer.trigger` and `drawer.content` must render inside the same `drawer` root. The root supplies the frame target,
+direction, axis, backdrop and motion context used by the dependent subcomponents. For Turbo Stream updates, replace the
+drawer frame or render the owning Drawer root rather than rendering a dependent subcomponent by itself.
+
 ## Automatic Behavior
 
 The drawer traps focus while open, restores focus to the trigger on close, locks body scroll by default and closes

@@ -57,4 +57,32 @@ class Modal extends Component
     {
         return view('hotwire::component-views.modal');
     }
+
+    /** @return array<string, mixed> */
+    public function data(): array
+    {
+        $data = parent::data();
+
+        $data['modalId'] = $this->id;
+        $data['modalSize'] = $this->size;
+        $data['modalClass'] = $this->class;
+        $data['modalCloseButton'] = $this->closeButton;
+        $data['modalFixedTop'] = $this->fixedTop;
+        $data['modalFrame'] = $this->frame;
+        $data['modalMotion'] = $this->motion;
+        $data['modalViewTransition'] = $this->viewTransition;
+
+        unset(
+            $data['id'],
+            $data['size'],
+            $data['class'],
+            $data['closeButton'],
+            $data['fixedTop'],
+            $data['frame'],
+            $data['motion'],
+            $data['viewTransition'],
+        );
+
+        return $data;
+    }
 }

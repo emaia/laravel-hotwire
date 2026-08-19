@@ -29,6 +29,10 @@ Use `Sheet` for side-panel dialogs. Use [`<hw:drawer>`](./drawer.md) for the Bas
 </hw:sheet>
 ```
 
+`sheet.trigger` and `sheet.content` must render inside the same `sheet` root. The root supplies the frame target, side,
+backdrop and motion context used by the dependent subcomponents. For Turbo Stream updates, replace the sheet frame or
+render the owning Sheet root rather than rendering a dependent subcomponent by itself.
+
 ## Automatic Behavior
 
 The sheet traps focus while open, restores focus to the trigger on close, locks body scroll by default and closes
