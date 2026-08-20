@@ -1,6 +1,7 @@
 <?php
 
 use Emaia\LaravelHotwire\Components\Popover;
+use Emaia\LaravelHotwire\Components\Popover\Content as PopoverContent;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
 use Illuminate\Support\Facades\Blade;
@@ -164,6 +165,16 @@ it('requires popover trigger and content to render inside a popover root', funct
 })->with(['trigger', 'content'])
     ->throws(ViewException::class, 'must be rendered inside a Popover root');
 
+it('renders standalone popover subcomponents when owner wiring is explicit', function () {
+    $trigger = $this->blade('<x-hw::popover.trigger aria-controls="external-popover">Open</x-hw::popover.trigger>');
+    $content = $this->blade('<x-hw::popover.content id="external-popover" motion="none">Content</x-hw::popover.content>');
+
+    $trigger->assertSee('aria-controls="external-popover"', false)
+        ->assertSee('data-popover-target="trigger"', false);
+    $content->assertSee('id="external-popover"', false)
+        ->assertSee('data-motion="none"', false);
+});
+
 it('does not expose popover root props as generic component data', function () {
     $data = (new Popover)->data();
     $frameworkKeys = ['componentName', 'attributes', 'ignoredParameterNames'];
@@ -185,6 +196,18 @@ it('does not expose popover root props as generic component data', function () {
             'popoverOpen',
             'popoverStimulus',
         ]);
+});
+
+it('does not expose popover content props as generic component data', function () {
+    $data = (new PopoverContent)->data();
+    $frameworkKeys = ['componentName', 'attributes', 'ignoredParameterNames'];
+    $genericKeys = array_values(array_filter(
+        array_keys($data),
+        fn (string $key) => ! str_starts_with($key, 'popoverContent') && ! in_array($key, $frameworkKeys, true),
+    ));
+
+    expect($genericKeys)->toBe([])
+        ->and($data)->toHaveKey('popoverContentMotion');
 });
 
 it('uses semantic motion values without transition class attributes', function () {

@@ -8,10 +8,10 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 
 ### Floating overlay context keys are scoped
 
-Dropdown, Popover and Hover Card no longer expose their owner context through generic component-data keys such as `id`,
-`open`, `side`, `align`, offsets, strategy, delay values or `stimulus`. Their trigger and content subcomponents now
-consume family-specific keys so an unrelated intermediate Blade component cannot replace the owner overlay's ARIA,
-state or placement context.
+Dropdown, Popover and Hover Card no longer expose root or dependent subcomponent context through generic component-data
+keys such as `id`, `open`, `side`, `align`, offsets, strategy, delay values, `motion`, trigger variant props or
+`stimulus`. Their trigger and content subcomponents now consume family-specific keys so an unrelated intermediate Blade
+component cannot replace the owner overlay's ARIA, state or placement context.
 
 Update application subcomponents that consume the old internal keys:
 
@@ -21,6 +21,16 @@ Update application subcomponents that consume the old internal keys:
 | Dropdown open state | `@aware(['open' => false])` | `@aware(['dropdownOpen' => false])` |
 | Dropdown close on select | `@aware(['closeOnSelect' => true])` | `@aware(['dropdownCloseOnSelect' => true])` |
 | Dropdown stimulus | `@aware(['stimulus' => null])` | `@aware(['dropdownStimulus' => null])` |
+| Dropdown content side | `@aware(['side' => 'bottom'])` | `@aware(['dropdownContentSide' => 'bottom'])` |
+| Dropdown content align | `@aware(['align' => 'start'])` | `@aware(['dropdownContentAlign' => 'start'])` |
+| Dropdown content side offset | `@aware(['sideOffset' => 4])` | `@aware(['dropdownContentSideOffset' => 4])` |
+| Dropdown content align offset | `@aware(['alignOffset' => 0])` | `@aware(['dropdownContentAlignOffset' => 0])` |
+| Dropdown content strategy | `@aware(['strategy' => 'absolute'])` | `@aware(['dropdownContentStrategy' => 'absolute'])` |
+| Dropdown content flip | `@aware(['flip' => true])` | `@aware(['dropdownContentFlip' => true])` |
+| Dropdown content shift | `@aware(['shift' => true])` | `@aware(['dropdownContentShift' => true])` |
+| Dropdown content mobile side | `@aware(['mobileSide' => null])` | `@aware(['dropdownContentMobileSide' => null])` |
+| Dropdown content mobile align | `@aware(['mobileAlign' => null])` | `@aware(['dropdownContentMobileAlign' => null])` |
+| Dropdown content motion | `@aware(['motion' => 'default'])` | `@aware(['dropdownContentMotion' => 'default'])` |
 | Popover id | `@aware(['id' => ''])` | `@aware(['popoverId' => null])` |
 | Popover open state | `@aware(['open' => false])` | `@aware(['popoverOpen' => false])` |
 | Popover side | `@aware(['side' => 'bottom'])` | `@aware(['popoverSide' => 'bottom'])` |
@@ -31,6 +41,7 @@ Update application subcomponents that consume the old internal keys:
 | Popover flip | `@aware(['flip' => true])` | `@aware(['popoverFlip' => true])` |
 | Popover shift | `@aware(['shift' => true])` | `@aware(['popoverShift' => true])` |
 | Popover stimulus | `@aware(['stimulus' => null])` | `@aware(['popoverStimulus' => null])` |
+| Popover content motion | `@aware(['motion' => 'default'])` | `@aware(['popoverContentMotion' => 'default'])` |
 | Hover Card id | `@aware(['id' => ''])` | `@aware(['hoverCardId' => null])` |
 | Hover Card open state | `@aware(['open' => false])` | `@aware(['hoverCardOpen' => false])` |
 | Hover Card side | `@aware(['side' => 'bottom'])` | `@aware(['hoverCardSide' => 'bottom'])` |
@@ -43,10 +54,17 @@ Update application subcomponents that consume the old internal keys:
 | Hover Card open delay | `@aware(['openDelay' => 10])` | `@aware(['hoverCardOpenDelay' => 10])` |
 | Hover Card close delay | `@aware(['closeDelay' => 100])` | `@aware(['hoverCardCloseDelay' => 100])` |
 | Hover Card stimulus | `@aware(['stimulus' => null])` | `@aware(['hoverCardStimulus' => null])` |
+| Hover Card trigger element | `@aware(['as' => 'button'])` | `@aware(['hoverCardTriggerAs' => 'button'])` |
+| Hover Card trigger variant | `@aware(['variant' => 'link'])` | `@aware(['hoverCardTriggerVariant' => 'link'])` |
+| Hover Card trigger size | `@aware(['size' => 'default'])` | `@aware(['hoverCardTriggerSize' => 'default'])` |
+| Hover Card trigger type | `@aware(['type' => 'button'])` | `@aware(['hoverCardTriggerType' => 'button'])` |
+| Hover Card content motion | `@aware(['motion' => 'default'])` | `@aware(['hoverCardContentMotion' => 'default'])` |
 
 Dropdown, Popover and Hover Card triggers and content now throw when rendered without their owning root. Render the owner
-in the same Blade tree so it can supply the scoped ARIA, state and placement context. For Turbo Streams, replace content
-inside the floating panel or render the owning root instead of rendering these dependent subcomponents alone.
+in the same Blade tree so it can supply the scoped ARIA, state and placement context. If you deliberately render one of
+these subcomponents standalone, pass the owner wiring explicitly: `aria-controls` on Dropdown/Popover triggers,
+`aria-describedby` on Hover Card triggers, or `id` on content. For Turbo Streams, prefer replacing content inside the
+floating panel or rendering the owning root instead of rendering these dependent subcomponents alone.
 
 ### Modal overlay context keys are scoped
 

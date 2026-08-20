@@ -1,7 +1,9 @@
 @aware(['dropdownId' => null, 'dropdownOpen' => false])
 
 @php
-    if ($dropdownId === null) {
+    $controls = $dropdownId ?? $attributes->get('aria-controls');
+
+    if ($controls === null || $controls === '') {
         throw new InvalidArgumentException('Dropdown trigger must be rendered inside a Dropdown root.');
     }
 
@@ -11,7 +13,7 @@
         'data-action' => 'dropdown#toggle',
         'aria-haspopup' => 'true',
         'aria-expanded' => $dropdownOpen ? 'true' : 'false',
-        'aria-controls' => $dropdownId,
+        'aria-controls' => $controls,
         'data-dropdown-state' => $state,
     ], $attributes, except: ['data-dropdown-target', 'aria-haspopup', 'aria-expanded', 'aria-controls'], protectedPrefixes: ['data-dropdown-']);
 @endphp

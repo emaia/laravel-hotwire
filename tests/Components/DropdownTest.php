@@ -1,6 +1,7 @@
 <?php
 
 use Emaia\LaravelHotwire\Components\Dropdown;
+use Emaia\LaravelHotwire\Components\Dropdown\Content as DropdownContent;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
 use Illuminate\Support\Facades\Blade;
@@ -162,6 +163,17 @@ it('requires dropdown trigger and content to render inside a dropdown root', fun
 })->with(['trigger', 'content'])
     ->throws(ViewException::class, 'must be rendered inside a Dropdown root');
 
+it('renders standalone dropdown subcomponents when owner wiring is explicit', function () {
+    $trigger = $this->blade('<x-hw::dropdown.trigger aria-controls="external-menu">Open</x-hw::dropdown.trigger>');
+    $content = $this->blade('<x-hw::dropdown.content id="external-menu" side="left" align="end">Content</x-hw::dropdown.content>');
+
+    $trigger->assertSee('aria-controls="external-menu"', false)
+        ->assertSee('data-dropdown-target="trigger"', false);
+    $content->assertSee('id="external-menu"', false)
+        ->assertSee('data-side="left"', false)
+        ->assertSee('data-align="end"', false);
+});
+
 it('does not expose dropdown root props as generic component data', function () {
     $data = (new Dropdown)->data();
     $frameworkKeys = ['componentName', 'attributes', 'ignoredParameterNames'];
@@ -176,6 +188,35 @@ it('does not expose dropdown root props as generic component data', function () 
             'dropdownOpen',
             'dropdownCloseOnSelect',
             'dropdownStimulus',
+        ]);
+});
+
+it('does not expose dropdown content props as generic component data', function () {
+    $data = (new DropdownContent)->data();
+    $frameworkKeys = ['componentName', 'attributes', 'ignoredParameterNames'];
+    $genericKeys = array_values(array_filter(
+        array_keys($data),
+        fn (string $key) => ! str_starts_with($key, 'dropdownContent') && ! in_array($key, $frameworkKeys, true),
+    ));
+
+    expect($genericKeys)->toBe([])
+        ->and($data)->toHaveKeys([
+            'dropdownContentAlign',
+            'dropdownContentSide',
+            'dropdownContentSideOffset',
+            'dropdownContentAlignOffset',
+            'dropdownContentStrategy',
+            'dropdownContentFlip',
+            'dropdownContentShift',
+            'dropdownContentMobileSide',
+            'dropdownContentMobileAlign',
+            'dropdownContentMobileMedia',
+            'dropdownContentCollapsedSide',
+            'dropdownContentCollapsedAlign',
+            'dropdownContentCollapsedWhen',
+            'dropdownContentMotion',
+            'dropdownContentWidth',
+            'dropdownContentMenuClass',
         ]);
 });
 

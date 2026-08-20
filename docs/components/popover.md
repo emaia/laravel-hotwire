@@ -33,9 +33,10 @@ and positions the content with Floating UI.
 `popover.trigger` renders the button, links it to `popover.content` with `aria-controls`, and keeps `aria-expanded` and
 `data-popover-state="open|closed"` in sync. The content uses `data-state="open|closed"` for Presence styling.
 
-`popover.trigger` and `popover.content` must render inside the same `popover` root. The root supplies the shared id, open
-state and placement context that keep ARIA, controller targets and Floating UI wiring aligned. For Turbo Stream updates,
-replace the panel's inner content or render the owning Popover root rather than rendering a trigger or content
+`popover.trigger` and `popover.content` must normally render inside the same `popover` root. The root supplies the shared
+id, open state and placement context that keep ARIA, controller targets and Floating UI wiring aligned. For standalone
+partials, pass `aria-controls` to the trigger or `id` to the content explicitly. For Turbo Stream updates, prefer
+replacing the panel's inner content or rendering the owning Popover root rather than rendering a trigger or content
 subcomponent by itself.
 
 ## Positioning

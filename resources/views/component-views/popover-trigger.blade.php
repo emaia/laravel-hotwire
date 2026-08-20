@@ -1,7 +1,9 @@
 @aware(['popoverId' => null, 'popoverOpen' => false])
 
 @php
-    if ($popoverId === null) {
+    $controls = $popoverId ?? $attributes->get('aria-controls');
+
+    if ($controls === null || $controls === '') {
         throw new InvalidArgumentException('Popover trigger must be rendered inside a Popover root.');
     }
 
@@ -12,7 +14,7 @@
         'data-action' => 'popover#toggle',
         'aria-haspopup' => 'dialog',
         'aria-expanded' => $popoverOpen ? 'true' : 'false',
-        'aria-controls' => $popoverId,
+        'aria-controls' => $controls,
         'data-popover-state' => $popoverOpen ? 'open' : 'closed',
     ], $attributes, except: ['type', 'data-slot', 'aria-haspopup', 'aria-expanded', 'aria-controls'], protectedPrefixes: ['data-popover-']);
 @endphp

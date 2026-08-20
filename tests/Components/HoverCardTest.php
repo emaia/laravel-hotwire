@@ -1,6 +1,8 @@
 <?php
 
 use Emaia\LaravelHotwire\Components\HoverCard;
+use Emaia\LaravelHotwire\Components\HoverCard\Content as HoverCardContent;
+use Emaia\LaravelHotwire\Components\HoverCard\Trigger as HoverCardTrigger;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
 use Illuminate\Support\Facades\Blade;
@@ -200,6 +202,16 @@ it('requires hover card trigger and content to render inside a hover card root',
 })->with(['trigger', 'content'])
     ->throws(ViewException::class, 'must be rendered inside a Hover Card root');
 
+it('renders standalone hover card subcomponents when owner wiring is explicit', function () {
+    $trigger = $this->blade('<x-hw::hover-card.trigger aria-describedby="external-card">Open</x-hw::hover-card.trigger>');
+    $content = $this->blade('<x-hw::hover-card.content id="external-card" motion="none">Content</x-hw::hover-card.content>');
+
+    $trigger->assertSee('aria-describedby="external-card"', false)
+        ->assertSee('data-hover-card-target="trigger"', false);
+    $content->assertSee('id="external-card"', false)
+        ->assertSee('data-motion="none"', false);
+});
+
 it('does not expose hover card root props as generic component data', function () {
     $data = (new HoverCard)->data();
     $frameworkKeys = ['componentName', 'attributes', 'ignoredParameterNames'];
@@ -223,6 +235,35 @@ it('does not expose hover card root props as generic component data', function (
             'hoverCardOpen',
             'hoverCardStimulus',
         ]);
+});
+
+it('does not expose hover card trigger props as generic component data', function () {
+    $data = (new HoverCardTrigger)->data();
+    $frameworkKeys = ['componentName', 'attributes', 'ignoredParameterNames'];
+    $genericKeys = array_values(array_filter(
+        array_keys($data),
+        fn (string $key) => ! str_starts_with($key, 'hoverCardTrigger') && ! in_array($key, $frameworkKeys, true),
+    ));
+
+    expect($genericKeys)->toBe([])
+        ->and($data)->toHaveKeys([
+            'hoverCardTriggerAs',
+            'hoverCardTriggerVariant',
+            'hoverCardTriggerSize',
+            'hoverCardTriggerType',
+        ]);
+});
+
+it('does not expose hover card content props as generic component data', function () {
+    $data = (new HoverCardContent)->data();
+    $frameworkKeys = ['componentName', 'attributes', 'ignoredParameterNames'];
+    $genericKeys = array_values(array_filter(
+        array_keys($data),
+        fn (string $key) => ! str_starts_with($key, 'hoverCardContent') && ! in_array($key, $frameworkKeys, true),
+    ));
+
+    expect($genericKeys)->toBe([])
+        ->and($data)->toHaveKey('hoverCardContentMotion');
 });
 
 it('renders configurable trigger elements, variants and sizes', function () {
