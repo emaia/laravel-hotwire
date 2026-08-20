@@ -1,10 +1,10 @@
-@aware(['frame' => null])
+@aware(['modalFrame' => null])
 
 @php
     $isButton = $as === 'button';
     $isAnchor = $as === 'a';
     $disabled = $attributes->has('disabled') && ! in_array($attributes->get('disabled'), [false, null], true);
-    $frameTarget = $attributes->has('frame') ? $attributes->get('frame') : $frame;
+    $frameTarget = $attributes->has('frame') ? $attributes->get('frame') : $modalFrame;
     $resolvedFrame = $isAnchor && ! $disabled
         ? \Emaia\LaravelHotwire\Support\FrameTarget::resolve($frameTarget, $attributes)
         : null;

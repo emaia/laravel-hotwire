@@ -1,16 +1,22 @@
-@aware(['id' => '', 'side' => 'right', 'backdrop' => true, 'frame' => null, 'motion' => 'default', 'viewTransition' => false])
+@aware(['sheetId' => null, 'sheetSide' => 'right', 'sheetBackdrop' => true, 'sheetFrame' => null, 'sheetMotion' => 'default', 'sheetViewTransition' => false])
+
+@php
+    if ($sheetId === null) {
+        throw new InvalidArgumentException('Sheet content must be rendered inside a Sheet root.');
+    }
+@endphp
 
 <div
     data-slot="sheet-overlay"
     data-sheet-target="modal"
     data-state="closed"
-    data-motion="{{ $motion }}"
+    data-motion="{{ $sheetMotion }}"
     role="dialog"
     aria-modal="true"
     hidden
     inert
 >
-    @if ($backdrop)
+    @if ($sheetBackdrop)
         <div
             data-slot="sheet-backdrop"
             data-sheet-target="backdrop"
@@ -20,17 +26,17 @@
 
     <div
         data-slot="sheet-content"
-        data-side="{{ $side }}"
+        data-side="{{ $sheetSide }}"
         data-sheet-target="dialog"
         {{ $attributes }}
     >
-        @if ($frame !== null)
+        @if ($sheetFrame !== null)
             <x-hw::frame
-                :id="$frame"
-                :view-transition="$viewTransition"
-                :data-turbo--view-transition-skip-initial-value="$viewTransition ? 'true' : null"
+                :id="$sheetFrame"
+                :view-transition="$sheetViewTransition"
+                :data-turbo--view-transition-skip-initial-value="$sheetViewTransition ? 'true' : null"
                 data-sheet-target="dynamicContent"
-                data-sheet-frame-owner="{{ $id }}"
+                data-sheet-frame-owner="{{ $sheetId }}"
             >
                 {{ $slot }}
             </x-hw::frame>

@@ -1,16 +1,22 @@
-@aware(['id' => '', 'direction' => 'down', 'axis' => 'y', 'backdrop' => true, 'frame' => null, 'motion' => 'default', 'viewTransition' => false])
+@aware(['drawerId' => null, 'drawerDirection' => 'down', 'drawerAxis' => 'y', 'drawerBackdrop' => true, 'drawerFrame' => null, 'drawerMotion' => 'default', 'drawerViewTransition' => false])
+
+@php
+    if ($drawerId === null) {
+        throw new InvalidArgumentException('Drawer content must be rendered inside a Drawer root.');
+    }
+@endphp
 
 <div
     data-slot="drawer-overlay"
     data-drawer-target="modal"
     data-state="closed"
-    data-motion="{{ $motion }}"
+    data-motion="{{ $drawerMotion }}"
     role="dialog"
     aria-modal="true"
     hidden
     inert
 >
-    @if ($backdrop)
+    @if ($drawerBackdrop)
         <div
             data-slot="drawer-backdrop"
             data-drawer-target="backdrop"
@@ -20,19 +26,19 @@
 
     <div
         data-slot="drawer-popup"
-        data-direction="{{ $direction }}"
-        data-axis="{{ $axis }}"
+        data-direction="{{ $drawerDirection }}"
+        data-axis="{{ $drawerAxis }}"
         data-drawer-target="dialog"
         {{ $attributes }}
     >
         <div data-slot="drawer-content">
-            @if ($frame !== null)
+            @if ($drawerFrame !== null)
                 <x-hw::frame
-                    :id="$frame"
-                    :view-transition="$viewTransition"
-                    :data-turbo--view-transition-skip-initial-value="$viewTransition ? 'true' : null"
+                    :id="$drawerFrame"
+                    :view-transition="$drawerViewTransition"
+                    :data-turbo--view-transition-skip-initial-value="$drawerViewTransition ? 'true' : null"
                     data-drawer-target="dynamicContent"
-                    data-drawer-frame-owner="{{ $id }}"
+                    data-drawer-frame-owner="{{ $drawerId }}"
                 >
                     {{ $slot }}
                 </x-hw::frame>

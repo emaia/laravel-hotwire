@@ -1,10 +1,10 @@
 @php
     extract($compute($attributes));
-    $frameHostCount = $frame === null ? 0 : \Emaia\LaravelHotwire\Support\OverlayFrameHost::count(
+    $frameHostCount = $drawerFrame === null ? 0 : \Emaia\LaravelHotwire\Support\OverlayFrameHost::count(
         $slot->toHtml(),
-        $frame,
+        $drawerFrame,
         'data-drawer-frame-owner',
-        $id,
+        $drawerId,
         'drawer.content',
     );
 @endphp
@@ -12,7 +12,7 @@
 <div {{ $drawerAttributes }}>
     {{ $slot }}
 
-    @if ($frame !== null && $frameHostCount === 0)
+    @if ($drawerFrame !== null && $frameHostCount === 0)
         <x-hw::drawer.content />
     @endif
 

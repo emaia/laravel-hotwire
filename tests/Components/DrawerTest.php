@@ -3,6 +3,7 @@
 use Emaia\LaravelHotwire\Components\Drawer;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\View\ViewException;
 
 it('renders drawer markup and controller hooks', function () {
@@ -152,6 +153,55 @@ it('does not mistake arbitrary drawer owner metadata for a frame host', function
     expect(substr_count((string) $view, '<turbo-frame'))->toBe(1);
 });
 
+it('keeps drawer aware context through an intermediate component', function () {
+    Blade::anonymousComponentPath(__DIR__.'/../Fixtures/views/components');
+
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::drawer id="drawer-shell" direction="right" frame="drawer-panel" :backdrop="false" motion="none" view-transition>
+            <x-overlay-context-wrapper
+                id="shadow-overlay"
+                direction="left"
+                axis="y"
+                :backdrop="true"
+                frame="shadow-frame"
+                motion="default"
+                :view-transition="false"
+            >
+                <x-hw::drawer.trigger>Open</x-hw::drawer.trigger>
+                <x-hw::drawer.content>Owned content</x-hw::drawer.content>
+            </x-overlay-context-wrapper>
+        </x-hw::drawer>
+    BLADE);
+
+    $html = (string) $view;
+
+    expect($html)->toContain('data-direction="right"')
+        ->toContain('data-axis="x"')
+        ->toContain('data-motion="none"')
+        ->toContain('id="drawer-panel"')
+        ->toContain('data-drawer-frame-owner="drawer-shell"')
+        ->toContain('turbo--view-transition')
+        ->not->toContain('data-direction="left"')
+        ->not->toContain('data-axis="y"')
+        ->not->toContain('id="shadow-frame"')
+        ->not->toContain('data-drawer-frame-owner="shadow-overlay"')
+        ->not->toContain('data-slot="drawer-backdrop"')
+        ->and(substr_count($html, 'data-slot="drawer-overlay"'))->toBe(1)
+        ->and(substr_count($html, '<turbo-frame'))->toBe(1);
+});
+
+it('requires drawer content to render inside a drawer root', function () {
+    $this->blade('<x-hw::drawer.content>Content</x-hw::drawer.content>');
+})
+    ->throws(ViewException::class, 'must be rendered inside a Drawer root');
+
+it('renders drawer triggers without requiring an owning drawer root', function () {
+    $view = $this->blade('<x-hw::drawer.trigger>Open</x-hw::drawer.trigger>');
+
+    $view->assertSee('data-slot="drawer-trigger"', false)
+        ->assertSee('data-action="click-&gt;drawer#toggle"', false);
+});
+
 it('rejects an unmanaged turbo frame with the drawer frame id', function () {
     $this->blade('<x-hw::drawer id="drawer-shell" frame="drawer-panel"><turbo-frame id="drawer-panel"></turbo-frame></x-hw::drawer>');
 })->throws(ViewException::class, 'A drawer with a frame prop must render exactly one drawer.content host.');
@@ -175,6 +225,26 @@ it('keeps view transition as the final positional constructor argument', functio
 
     expect($component->motion)->toBe('none')
         ->and($component->viewTransition)->toBeTrue();
+});
+
+it('does not expose drawer root props as generic component data', function () {
+    $data = (new Drawer)->data();
+    $frameworkKeys = ['componentName', 'attributes', 'ignoredParameterNames'];
+    $genericKeys = array_values(array_filter(
+        array_keys($data),
+        fn (string $key) => ! str_starts_with($key, 'drawer') && ! in_array($key, [...$frameworkKeys, 'compute'], true),
+    ));
+
+    expect($genericKeys)->toBe([])
+        ->and($data)->toHaveKeys([
+            'drawerId',
+            'drawerDirection',
+            'drawerAxis',
+            'drawerBackdrop',
+            'drawerFrame',
+            'drawerMotion',
+            'drawerViewTransition',
+        ]);
 });
 
 it('registers drawer in the component catalog and subcomponent aliases', function () {

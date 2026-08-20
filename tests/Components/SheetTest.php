@@ -3,6 +3,7 @@
 use Emaia\LaravelHotwire\Components\Sheet;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\View\ViewException;
 
 it('renders sheet markup and controller hooks', function () {
@@ -150,6 +151,52 @@ it('does not mistake arbitrary sheet owner metadata for a frame host', function 
     expect(substr_count((string) $view, '<turbo-frame'))->toBe(1);
 });
 
+it('keeps sheet aware context through an intermediate component', function () {
+    Blade::anonymousComponentPath(__DIR__.'/../Fixtures/views/components');
+
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::sheet id="sheet-shell" side="left" frame="sheet-panel" :backdrop="false" motion="none" view-transition>
+            <x-overlay-context-wrapper
+                id="shadow-overlay"
+                side="bottom"
+                :backdrop="true"
+                frame="shadow-frame"
+                motion="default"
+                :view-transition="false"
+            >
+                <x-hw::sheet.trigger>Open</x-hw::sheet.trigger>
+                <x-hw::sheet.content>Owned content</x-hw::sheet.content>
+            </x-overlay-context-wrapper>
+        </x-hw::sheet>
+    BLADE);
+
+    $html = (string) $view;
+
+    expect($html)->toContain('data-side="left"')
+        ->toContain('data-motion="none"')
+        ->toContain('id="sheet-panel"')
+        ->toContain('data-sheet-frame-owner="sheet-shell"')
+        ->toContain('turbo--view-transition')
+        ->not->toContain('data-side="bottom"')
+        ->not->toContain('id="shadow-frame"')
+        ->not->toContain('data-sheet-frame-owner="shadow-overlay"')
+        ->not->toContain('data-slot="sheet-backdrop"')
+        ->and(substr_count($html, 'data-slot="sheet-overlay"'))->toBe(1)
+        ->and(substr_count($html, '<turbo-frame'))->toBe(1);
+});
+
+it('requires sheet content to render inside a sheet root', function () {
+    $this->blade('<x-hw::sheet.content>Content</x-hw::sheet.content>');
+})
+    ->throws(ViewException::class, 'must be rendered inside a Sheet root');
+
+it('renders sheet triggers without requiring an owning sheet root', function () {
+    $view = $this->blade('<x-hw::sheet.trigger>Open</x-hw::sheet.trigger>');
+
+    $view->assertSee('data-slot="sheet-trigger"', false)
+        ->assertSee('data-action="click-&gt;sheet#toggle"', false);
+});
+
 it('rejects an unmanaged turbo frame with the sheet frame id', function () {
     $this->blade('<x-hw::sheet id="sheet-shell" frame="sheet-panel"><turbo-frame id="sheet-panel"></turbo-frame></x-hw::sheet>');
 })->throws(ViewException::class, 'A sheet with a frame prop must render exactly one sheet.content host.');
@@ -173,6 +220,25 @@ it('keeps view transition as the final positional constructor argument', functio
 
     expect($component->motion)->toBe('none')
         ->and($component->viewTransition)->toBeTrue();
+});
+
+it('does not expose sheet root props as generic component data', function () {
+    $data = (new Sheet)->data();
+    $frameworkKeys = ['componentName', 'attributes', 'ignoredParameterNames'];
+    $genericKeys = array_values(array_filter(
+        array_keys($data),
+        fn (string $key) => ! str_starts_with($key, 'sheet') && ! in_array($key, [...$frameworkKeys, 'compute'], true),
+    ));
+
+    expect($genericKeys)->toBe([])
+        ->and($data)->toHaveKeys([
+            'sheetId',
+            'sheetSide',
+            'sheetBackdrop',
+            'sheetFrame',
+            'sheetMotion',
+            'sheetViewTransition',
+        ]);
 });
 
 it('registers sheet in the component catalog and subcomponent aliases', function () {

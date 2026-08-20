@@ -28,6 +28,11 @@ dismissal.
 </hw:drawer>
 ```
 
+`drawer.content` must render inside the same `drawer` root. The root supplies the frame target, direction, axis, backdrop
+and motion context used by the dependent content. For Turbo Stream updates, replace the drawer frame or render the owning
+Drawer root rather than rendering `drawer.content` by itself. `drawer.trigger` does not consume root context and may be
+rendered by a standalone partial that lands inside an existing drawer root.
+
 ## Automatic Behavior
 
 The drawer traps focus while open, restores focus to the trigger on close, locks body scroll by default and closes

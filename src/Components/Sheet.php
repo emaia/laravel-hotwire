@@ -52,6 +52,26 @@ class Sheet extends Component
     {
         $data = parent::data();
         $data['compute'] = $this->computeResolved(...);
+        $data['sheetId'] = $this->id;
+        $data['sheetSide'] = $this->side;
+        $data['sheetBackdrop'] = $this->backdrop;
+        $data['sheetFrame'] = $this->frame;
+        $data['sheetMotion'] = $this->motion;
+        $data['sheetViewTransition'] = $this->viewTransition;
+
+        unset(
+            $data['id'],
+            $data['side'],
+            $data['size'],
+            $data['backdrop'],
+            $data['frame'],
+            $data['lockScroll'],
+            $data['closeOnEscape'],
+            $data['closeOnClickOutside'],
+            $data['stimulus'],
+            $data['motion'],
+            $data['viewTransition'],
+        );
 
         return $data;
     }
