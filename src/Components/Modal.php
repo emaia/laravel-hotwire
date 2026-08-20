@@ -69,6 +69,7 @@ class Modal extends Component
         $data['modalCloseButton'] = $this->closeButton;
         $data['modalFixedTop'] = $this->fixedTop;
         $data['modalFrame'] = $this->frame;
+        $data['modalStimulus'] = $this->stimulus;
         $data['modalMotion'] = $this->motion;
         $data['modalViewTransition'] = $this->viewTransition;
 
@@ -79,6 +80,7 @@ class Modal extends Component
             $data['closeButton'],
             $data['fixedTop'],
             $data['frame'],
+            $data['stimulus'],
             $data['motion'],
             $data['viewTransition'],
         );

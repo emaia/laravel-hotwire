@@ -9,9 +9,10 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 ### Modal overlay context keys are scoped
 
 Modal, Sheet and Drawer no longer expose their overlay configuration through generic component-data keys such as `id`,
-`size`, `class`, `closeButton`, `fixedTop`, `side`, `direction`, `axis`, `backdrop`, `frame`, `motion` and
-`viewTransition`. Their package subcomponents now consume family-specific keys so an unrelated intermediate Blade
-component cannot replace the owner overlay's ARIA, frame, backdrop, motion or placement context.
+`size`, `class`, `closeButton`, `fixedTop`, `side`, `direction`, `axis`, `backdrop`, `frame`, `stimulus`, `motion`,
+`viewTransition`, `lockScroll`, `closeOnEscape` and `closeOnClickOutside`. Their package subcomponents now consume
+family-specific keys so an unrelated intermediate Blade component cannot replace the owner overlay's ARIA, frame,
+backdrop, motion or placement context.
 
 Update application subcomponents that consume the old internal keys:
 
@@ -23,6 +24,7 @@ Update application subcomponents that consume the old internal keys:
 | Modal close icon | `@aware(['closeButton' => true])` | `@aware(['modalCloseButton' => true])` |
 | Modal top alignment | `@aware(['fixedTop' => false])` | `@aware(['modalFixedTop' => false])` |
 | Modal frame | `@aware(['frame' => null])` | `@aware(['modalFrame' => null])` |
+| Modal stimulus | `@aware(['stimulus' => null])` | no replacement; stimulus is root-only wiring |
 | Modal motion | `@aware(['motion' => 'default'])` | `@aware(['modalMotion' => 'default'])` |
 | Modal view transition | `@aware(['viewTransition' => false])` | `@aware(['modalViewTransition' => false])` |
 | Sheet id | `@aware(['id' => ''])` | `@aware(['sheetId' => null])` |
@@ -30,6 +32,10 @@ Update application subcomponents that consume the old internal keys:
 | Sheet size | `@aware(['size' => ...])` | no replacement; size is root-only styling |
 | Sheet backdrop | `@aware(['backdrop' => true])` | `@aware(['sheetBackdrop' => true])` |
 | Sheet frame | `@aware(['frame' => null])` | `@aware(['sheetFrame' => null])` |
+| Sheet lock scroll | `@aware(['lockScroll' => true])` | no replacement; lock scroll is root-only controller config |
+| Sheet escape close | `@aware(['closeOnEscape' => true])` | no replacement; escape close is root-only controller config |
+| Sheet outside close | `@aware(['closeOnClickOutside' => true])` | no replacement; outside close is root-only controller config |
+| Sheet stimulus | `@aware(['stimulus' => null])` | no replacement; stimulus is root-only wiring |
 | Sheet motion | `@aware(['motion' => 'default'])` | `@aware(['sheetMotion' => 'default'])` |
 | Sheet view transition | `@aware(['viewTransition' => false])` | `@aware(['sheetViewTransition' => false])` |
 | Drawer id | `@aware(['id' => ''])` | `@aware(['drawerId' => null])` |
@@ -39,13 +45,18 @@ Update application subcomponents that consume the old internal keys:
 | Drawer axis | `@aware(['axis' => 'y'])` | `@aware(['drawerAxis' => 'y'])` |
 | Drawer backdrop | `@aware(['backdrop' => true])` | `@aware(['drawerBackdrop' => true])` |
 | Drawer frame | `@aware(['frame' => null])` | `@aware(['drawerFrame' => null])` |
+| Drawer lock scroll | `@aware(['lockScroll' => true])` | no replacement; lock scroll is root-only controller config |
+| Drawer escape close | `@aware(['closeOnEscape' => true])` | no replacement; escape close is root-only controller config |
+| Drawer outside close | `@aware(['closeOnClickOutside' => true])` | no replacement; outside close is root-only controller config |
+| Drawer stimulus | `@aware(['stimulus' => null])` | no replacement; stimulus is root-only wiring |
 | Drawer motion | `@aware(['motion' => 'default'])` | `@aware(['drawerMotion' => 'default'])` |
 | Drawer view transition | `@aware(['viewTransition' => false])` | `@aware(['drawerViewTransition' => false])` |
 
-Modal content and triggers, Sheet content, and Drawer content now throw when rendered without their owning root. Render
-the owner in the same Blade tree so it can supply the scoped controller, frame and overlay context. For Turbo Streams,
-replace the content inside the overlay's frame or render the owning root instead of rendering the dependent subcomponent
-alone. Sheet and Drawer triggers still render standalone because they do not consume root context.
+Modal content, Sheet content and Drawer content now throw when rendered without their owning root. Render the owner in
+the same Blade tree so it can supply the scoped controller, frame and overlay context. For Turbo Streams, replace the
+content inside the overlay's frame or render the owning root instead of rendering the dependent content subcomponent
+alone. Modal, Sheet and Drawer triggers still render standalone. Pass `frame` or `data-turbo-frame` explicitly to a
+standalone Modal trigger when it should target a layout-shared Modal frame.
 
 ### Component-aware context keys are scoped
 

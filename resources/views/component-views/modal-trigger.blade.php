@@ -1,10 +1,6 @@
 @aware(['modalId' => null, 'modalFrame' => null])
 
 @php
-    if ($modalId === null) {
-        throw new InvalidArgumentException('Modal trigger must be rendered inside a Modal root.');
-    }
-
     $isButton = $as === 'button';
     $isAnchor = $as === 'a';
     $disabled = $attributes->has('disabled') && ! in_array($attributes->get('disabled'), [false, null], true);

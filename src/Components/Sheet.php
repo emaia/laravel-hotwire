@@ -65,6 +65,10 @@ class Sheet extends Component
             $data['size'],
             $data['backdrop'],
             $data['frame'],
+            $data['lockScroll'],
+            $data['closeOnEscape'],
+            $data['closeOnClickOutside'],
+            $data['stimulus'],
             $data['motion'],
             $data['viewTransition'],
         );

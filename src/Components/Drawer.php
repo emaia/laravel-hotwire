@@ -74,6 +74,10 @@ class Drawer extends Component
             $data['axis'],
             $data['backdrop'],
             $data['frame'],
+            $data['lockScroll'],
+            $data['closeOnEscape'],
+            $data['closeOnClickOutside'],
+            $data['stimulus'],
             $data['motion'],
             $data['viewTransition'],
         );

@@ -91,6 +91,15 @@ it('targets the configured modal frame from an anchor trigger', function () {
         ->assertSee('data-action="click->modal#open"', false);
 });
 
+it('renders modal anchor triggers with an explicit frame outside a modal root', function () {
+    $view = $this->blade('<x-hw::modal.trigger as="a" href="/posts/1/edit" frame="modal-content">Edit</x-hw::modal.trigger>');
+
+    $view->assertSee('data-slot="modal-trigger"', false)
+        ->assertSee('href="/posts/1/edit"', false)
+        ->assertSee('data-turbo-frame="modal-content"', false)
+        ->assertSee('data-action="click->modal#open"', false);
+});
+
 it('lets anchor triggers override or suppress the inherited modal frame', function () {
     $override = $this->blade('<x-hw::modal frame="modal-content"><x-hw::modal.trigger as="a" href="/open" frame="drawer-content">Open</x-hw::modal.trigger></x-hw::modal>');
     $suppressed = $this->blade('<x-hw::modal frame="modal-content"><x-hw::modal.trigger as="a" href="/open" :frame="false">Open</x-hw::modal.trigger></x-hw::modal>');
@@ -265,11 +274,9 @@ it('keeps modal aware context through an intermediate component', function () {
         ->not->toContain('data-slot="modal-close-icon"');
 });
 
-it('requires modal content and triggers to render inside a modal root', function (string $component) {
-    $tag = $component === 'trigger' ? 'x-hw::modal.trigger' : 'x-hw::modal.content';
-
-    $this->blade("<{$tag}>Content</{$tag}>");
-})->with(['content', 'trigger'])
+it('requires modal content to render inside a modal root', function () {
+    $this->blade('<x-hw::modal.content>Content</x-hw::modal.content>');
+})
     ->throws(ViewException::class, 'must be rendered inside a Modal root');
 
 it('rejects an unmanaged turbo frame with the modal frame id', function () {
