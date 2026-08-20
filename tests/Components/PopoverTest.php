@@ -199,15 +199,10 @@ it('does not expose popover root props as generic component data', function () {
         ]);
 });
 
-it('does not expose popover trigger props as generic component data', function () {
+it('exposes only framework component data for the popover trigger', function () {
     $data = (new PopoverTrigger)->data();
-    $frameworkKeys = ['componentName', 'attributes', 'ignoredParameterNames'];
-    $genericKeys = array_values(array_filter(
-        array_keys($data),
-        fn (string $key) => ! str_starts_with($key, 'popoverTrigger') && ! in_array($key, $frameworkKeys, true),
-    ));
 
-    expect($genericKeys)->toBe([]);
+    expect(array_keys($data))->toEqualCanonicalizing(['componentName', 'attributes', 'ignoredParameterNames']);
 });
 
 it('does not expose popover content props as generic component data', function () {

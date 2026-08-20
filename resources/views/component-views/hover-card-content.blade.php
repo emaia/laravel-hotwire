@@ -2,7 +2,7 @@
 
 @php
     if ($hoverCardId === null) {
-        throw new InvalidArgumentException('Hover Card content must be rendered inside a Hover Card root.');
+        throw new InvalidArgumentException('Hover Card content must be rendered inside a Hover Card root. If a root is present, check for an intermediate component declaring a hoverCardId prop, which shadows the root context.');
     }
 
     $contentAttributes = [

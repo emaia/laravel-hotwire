@@ -86,6 +86,11 @@ their own: the Stimulus controller is mounted on the root element, so a trigger 
 controller to attach to. For Turbo Streams, replace content inside the floating panel or render the owning root instead
 of streaming a dependent subcomponent alone.
 
+Floating overlay triggers are stricter than Modal, Sheet and Drawer triggers, which still render standalone. A floating
+trigger carries `aria-controls` and `aria-expanded` pointing at one specific panel, and is a Stimulus target of the root
+controller, so it is meaningless without its root. A Modal, Sheet or Drawer trigger only carries an optional `frame`,
+which can be passed explicitly.
+
 ### Modal overlay context keys are scoped
 
 Modal, Sheet and Drawer no longer expose their overlay configuration through generic component-data keys such as `id`,

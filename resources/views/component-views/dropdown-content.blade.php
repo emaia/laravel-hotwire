@@ -2,7 +2,7 @@
 
 @php
     if ($dropdownId === null) {
-        throw new InvalidArgumentException('Dropdown content must be rendered inside a Dropdown root.');
+        throw new InvalidArgumentException('Dropdown content must be rendered inside a Dropdown root. If a root is present, check for an intermediate component declaring a dropdownId prop, which shadows the root context.');
     }
 
     $contentAttributes = [
