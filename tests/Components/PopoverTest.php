@@ -181,12 +181,39 @@ it('renders standalone popover subcomponents when owner wiring is explicit', fun
         ->assertSee('data-motion="none"', false);
 });
 
+it('keeps explicit standalone popover wiring inside another popover root', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::popover id="outer-popover" side="bottom" align="start">
+            <x-hw::popover.trigger standalone aria-controls="inner-popover">Inner trigger</x-hw::popover.trigger>
+            <x-hw::popover.content standalone id="inner-popover" side="top" align="end">Inner content</x-hw::popover.content>
+            <x-hw::popover.content>Outer content</x-hw::popover.content>
+        </x-hw::popover>
+    BLADE);
+
+    $html = (string) $view;
+
+    expect($html)->toContain('aria-controls="inner-popover"')
+        ->toContain('id="inner-popover"')
+        ->toContain('data-side="top"')
+        ->toContain('data-align="end"')
+        ->and(substr_count($html, 'id="outer-popover"'))->toBe(1);
+});
+
 it('does not treat explicit popover wiring as standalone without opt-in', function (string $template) {
     $this->blade($template);
 })->with([
     'trigger' => '<x-hw::popover.trigger aria-controls="external-popover">Open</x-hw::popover.trigger>',
     'content' => '<x-hw::popover.content id="external-popover">Content</x-hw::popover.content>',
 ])->throws(ViewException::class, 'must be rendered inside a Popover root');
+
+it('rejects standalone-only popover content placement props inside a popover root', function () {
+    $this->blade(<<<'BLADE'
+        <x-hw::popover>
+            <x-hw::popover.trigger>Open</x-hw::popover.trigger>
+            <x-hw::popover.content side="top">Content</x-hw::popover.content>
+        </x-hw::popover>
+    BLADE);
+})->throws(ViewException::class, 'Popover content side and align props are only supported when standalone is true');
 
 it('does not expose popover root props as generic component data', function () {
     $data = (new Popover)->data();

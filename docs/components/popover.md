@@ -146,7 +146,11 @@ Custom CSS may use transitions or finite animations keyed by `data-state`. A clo
 | `popover` | `shift` | `true` | Shift within the viewport when the content would overflow. |
 | `popover` | `open` | `false` | Start open without enter motion. |
 | `popover` | `stimulus` | `null` | Optional Stimulus binding from `stimulus()`, merged with the internal controller. |
+| `popover.trigger` | `standalone` | `false` | Use explicit `aria-controls` wiring instead of an owning Popover root. |
 | `popover.content` | `motion` | `default` | Presence motion: `default` or `none`. |
+| `popover.content` | `standalone` | `false` | Use explicit `id`, `side` and `align` wiring instead of an owning Popover root. |
+| `popover.content` | `side` | `bottom` | Standalone-only preferred side: `top`, `right`, `bottom` or `left`. |
+| `popover.content` | `align` | `start` | Standalone-only content alignment: `start`, `center` or `end`. |
 
 ## Components
 

@@ -134,6 +134,9 @@ Custom CSS may use transitions or finite animations keyed by `data-state`. A clo
 | `hover-card` | `open` | `false` | Start open without waiting for hover or focus. |
 | `hover-card` | `stimulus` | `null` | Optional Stimulus binding from `stimulus()`, merged with the internal controller. |
 | `hover-card.content` | `motion` | `default` | Presence motion: `default` or `none`. |
+| `hover-card.content` | `standalone` | `false` | Use explicit `id`, `side` and `align` wiring instead of an owning Hover Card root. |
+| `hover-card.content` | `side` | `bottom` | Standalone-only preferred side: `top`, `right`, `bottom` or `left`. |
+| `hover-card.content` | `align` | `start` | Standalone-only content alignment: `start`, `center` or `end`. |
 
 ## Trigger Props
 
@@ -143,6 +146,7 @@ Custom CSS may use transitions or finite animations keyed by `data-state`. A clo
 | `variant` | `link`    | Button preset variant: `default`, `outline`, `ghost`, `link`, etc. |
 | `size`    | `default` | Button preset size.                                                |
 | `type`    | `button`  | Native button type: `button`, `submit`, or `reset`.                 |
+| `standalone` | `false` | Use explicit `aria-describedby` wiring instead of an owning Hover Card root. |
 
 ## Components
 

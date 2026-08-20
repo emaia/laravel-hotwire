@@ -214,12 +214,39 @@ it('renders standalone hover card subcomponents when owner wiring is explicit', 
         ->assertSee('data-motion="none"', false);
 });
 
+it('keeps explicit standalone hover card wiring inside another hover card root', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::hover-card id="outer-card" side="bottom" align="start">
+            <x-hw::hover-card.trigger standalone aria-describedby="inner-card">Inner trigger</x-hw::hover-card.trigger>
+            <x-hw::hover-card.content standalone id="inner-card" side="top" align="end">Inner content</x-hw::hover-card.content>
+            <x-hw::hover-card.content>Outer content</x-hw::hover-card.content>
+        </x-hw::hover-card>
+    BLADE);
+
+    $html = (string) $view;
+
+    expect($html)->toContain('aria-describedby="inner-card"')
+        ->toContain('id="inner-card"')
+        ->toContain('data-side="top"')
+        ->toContain('data-align="end"')
+        ->and(substr_count($html, 'id="outer-card"'))->toBe(1);
+});
+
 it('does not treat explicit hover card wiring as standalone without opt-in', function (string $template) {
     $this->blade($template);
 })->with([
     'trigger' => '<x-hw::hover-card.trigger aria-describedby="external-card">Open</x-hw::hover-card.trigger>',
     'content' => '<x-hw::hover-card.content id="external-card">Content</x-hw::hover-card.content>',
 ])->throws(ViewException::class, 'must be rendered inside a Hover Card root');
+
+it('rejects standalone-only hover card content placement props inside a hover card root', function () {
+    $this->blade(<<<'BLADE'
+        <x-hw::hover-card>
+            <x-hw::hover-card.trigger>Open</x-hw::hover-card.trigger>
+            <x-hw::hover-card.content side="top">Content</x-hw::hover-card.content>
+        </x-hw::hover-card>
+    BLADE);
+})->throws(ViewException::class, 'Hover Card content side and align props are only supported when standalone is true');
 
 it('does not expose hover card root props as generic component data', function () {
     $data = (new HoverCard)->data();

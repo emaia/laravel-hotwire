@@ -282,6 +282,7 @@ closed.
 | `dropdown` | `open` | `false` | Start open without an enter animation. |
 | `dropdown` | `close-on-select` | `true` | Close when an `<a>` or `<button>` inside the content is clicked. |
 | `dropdown.trigger` | `as-child` | `false` | Merge trigger behavior into one button or anchor root instead of rendering a button. |
+| `dropdown.trigger` | `standalone` | `false` | Use explicit `aria-controls` wiring instead of an owning Dropdown root. |
 | `dropdown.content` | `side` | `bottom` | Preferred side: `top`, `right`, `bottom` or `left`. |
 | `dropdown.content` | `align` | `start` | Content alignment: `start`, `center` or `end`. |
 | `dropdown.content` | `mobile-side` | `null` | Side override while the mobile media query matches. |
@@ -297,6 +298,7 @@ closed.
 | `dropdown.content` | `shift` | `true` | Shift within the viewport when the content would overflow. |
 | `dropdown.content` | `motion` | `default` | Presence motion: `default` or `none`. |
 | `dropdown.content` | `width` | `''` | Content width classes; overrides the trigger-width default when set. |
+| `dropdown.content` | `standalone` | `false` | Use an explicit `id` instead of an owning Dropdown root. |
 | `dropdown.label` | `inset` | `false` | Align the label with inset items. |
 | `dropdown.item` | `href` | `null` | Render an anchor instead of a button. |
 | `dropdown.item` | `frame` | `null` | Turbo Frame target for an enabled anchor item. |

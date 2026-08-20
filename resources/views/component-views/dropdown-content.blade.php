@@ -5,7 +5,9 @@
         throw new InvalidArgumentException('Dropdown content must be rendered inside a Dropdown root.');
     }
 
-    $resolvedId = $dropdownId ?? $attributes->get('id');
+    $resolvedId = $dropdownContentStandalone
+        ? ($attributes->get('id') ?? $dropdownId)
+        : $dropdownId;
 
     if ($resolvedId === null || $resolvedId === '') {
         throw new InvalidArgumentException('Standalone Dropdown content requires an id attribute.');

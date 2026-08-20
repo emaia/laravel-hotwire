@@ -176,6 +176,24 @@ it('renders standalone dropdown subcomponents when owner wiring is explicit', fu
         ->assertSee('data-align="end"', false);
 });
 
+it('keeps explicit standalone dropdown wiring inside another dropdown root', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::dropdown id="outer-menu">
+            <x-hw::dropdown.trigger standalone aria-controls="inner-menu">Inner trigger</x-hw::dropdown.trigger>
+            <x-hw::dropdown.content standalone id="inner-menu" side="left" align="end">Inner content</x-hw::dropdown.content>
+            <x-hw::dropdown.content>Outer content</x-hw::dropdown.content>
+        </x-hw::dropdown>
+    BLADE);
+
+    $html = (string) $view;
+
+    expect($html)->toContain('aria-controls="inner-menu"')
+        ->toContain('id="inner-menu"')
+        ->toContain('data-side="left"')
+        ->toContain('data-align="end"')
+        ->and(substr_count($html, 'id="outer-menu"'))->toBe(1);
+});
+
 it('does not treat explicit dropdown wiring as standalone without opt-in', function (string $template) {
     $this->blade($template);
 })->with([

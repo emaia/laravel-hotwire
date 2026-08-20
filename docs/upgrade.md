@@ -37,9 +37,7 @@ Update application subcomponents that consume the old internal keys:
 | Dropdown content motion | `@aware(['motion' => 'default'])` | `@aware(['dropdownContentMotion' => 'default'])` |
 | Dropdown content width | `@aware(['width' => ''])` | `@aware(['dropdownContentWidth' => ''])` |
 | Dropdown content menu class | `@aware(['menuClass' => ''])` | `@aware(['dropdownContentMenuClass' => ''])` |
-| Dropdown content standalone | `@aware(['standalone' => false])` | `@aware(['dropdownContentStandalone' => false])` |
 | Dropdown trigger as child | `@aware(['asChild' => false])` | `@aware(['dropdownTriggerAsChild' => false])` |
-| Dropdown trigger standalone | `@aware(['standalone' => false])` | `@aware(['dropdownTriggerStandalone' => false])` |
 | Dropdown item href | `@aware(['href' => null])` | `@aware(['dropdownItemHref' => null])` |
 | Dropdown item variant | `@aware(['variant' => 'default'])` | `@aware(['dropdownItemVariant' => 'default'])` |
 | Dropdown item disabled | `@aware(['disabled' => false])` | `@aware(['dropdownItemDisabled' => false])` |
@@ -56,11 +54,7 @@ Update application subcomponents that consume the old internal keys:
 | Popover flip | `@aware(['flip' => true])` | `@aware(['popoverFlip' => true])` |
 | Popover shift | `@aware(['shift' => true])` | `@aware(['popoverShift' => true])` |
 | Popover stimulus | `@aware(['stimulus' => null])` | `@aware(['popoverStimulus' => null])` |
-| Popover trigger standalone | `@aware(['standalone' => false])` | `@aware(['popoverTriggerStandalone' => false])` |
 | Popover content motion | `@aware(['motion' => 'default'])` | `@aware(['popoverContentMotion' => 'default'])` |
-| Popover content side | `@aware(['side' => 'bottom'])` | `@aware(['popoverContentSide' => 'bottom'])` |
-| Popover content align | `@aware(['align' => 'start'])` | `@aware(['popoverContentAlign' => 'start'])` |
-| Popover content standalone | `@aware(['standalone' => false])` | `@aware(['popoverContentStandalone' => false])` |
 | Popover header tag | `@aware(['tag' => 'div'])` | `@aware(['popoverHeaderTag' => 'div'])` |
 | Popover header slot name | `@aware(['slotName' => 'popover-header'])` | `@aware(['popoverHeaderSlotName' => 'popover-header'])` |
 | Popover title tag | `@aware(['tag' => 'h2'])` | `@aware(['popoverTitleTag' => 'h2'])` |
@@ -83,11 +77,7 @@ Update application subcomponents that consume the old internal keys:
 | Hover Card trigger variant | `@aware(['variant' => 'link'])` | `@aware(['hoverCardTriggerVariant' => 'link'])` |
 | Hover Card trigger size | `@aware(['size' => 'default'])` | `@aware(['hoverCardTriggerSize' => 'default'])` |
 | Hover Card trigger type | `@aware(['type' => 'button'])` | `@aware(['hoverCardTriggerType' => 'button'])` |
-| Hover Card trigger standalone | `@aware(['standalone' => false])` | `@aware(['hoverCardTriggerStandalone' => false])` |
 | Hover Card content motion | `@aware(['motion' => 'default'])` | `@aware(['hoverCardContentMotion' => 'default'])` |
-| Hover Card content side | `@aware(['side' => 'bottom'])` | `@aware(['hoverCardContentSide' => 'bottom'])` |
-| Hover Card content align | `@aware(['align' => 'start'])` | `@aware(['hoverCardContentAlign' => 'start'])` |
-| Hover Card content standalone | `@aware(['standalone' => false])` | `@aware(['hoverCardContentStandalone' => false])` |
 
 Dropdown, Popover and Hover Card triggers and content now throw when rendered without their owning root. Render the owner
 in the same Blade tree so it can supply the scoped ARIA, state and placement context. If you deliberately render one of
@@ -95,6 +85,9 @@ these subcomponents standalone, pass `standalone` plus the owner wiring explicit
 triggers, `aria-describedby` on Hover Card triggers, or `id` on content. For standalone Popover/Hover Card content, pass
 `side` and `align` too when the owner uses non-default placement. For Turbo Streams, prefer replacing content inside the
 floating panel or rendering the owning root instead of rendering these dependent subcomponents alone.
+
+The `standalone` prop is new on floating overlay triggers and content. The `side` and `align` props are also new on
+standalone Popover/Hover Card content; in normal usage, continue setting placement on the Popover or Hover Card root.
 
 ### Modal overlay context keys are scoped
 

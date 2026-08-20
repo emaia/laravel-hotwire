@@ -5,7 +5,9 @@
         throw new InvalidArgumentException('Popover trigger must be rendered inside a Popover root.');
     }
 
-    $controls = $popoverId ?? $attributes->get('aria-controls');
+    $controls = $popoverTriggerStandalone
+        ? ($attributes->get('aria-controls') ?? $popoverId)
+        : $popoverId;
 
     if ($controls === null || $controls === '') {
         throw new InvalidArgumentException('Standalone Popover trigger requires an aria-controls attribute.');

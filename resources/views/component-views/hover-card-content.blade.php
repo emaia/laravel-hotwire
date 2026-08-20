@@ -5,14 +5,20 @@
         throw new InvalidArgumentException('Hover Card content must be rendered inside a Hover Card root.');
     }
 
-    $resolvedId = $hoverCardId ?? $attributes->get('id');
+    if (! $hoverCardContentStandalone && ($hoverCardContentSide !== 'bottom' || $hoverCardContentAlign !== 'start')) {
+        throw new InvalidArgumentException('Hover Card content side and align props are only supported when standalone is true. Set side and align on the Hover Card root instead.');
+    }
+
+    $resolvedId = $hoverCardContentStandalone
+        ? ($attributes->get('id') ?? $hoverCardId)
+        : $hoverCardId;
 
     if ($resolvedId === null || $resolvedId === '') {
         throw new InvalidArgumentException('Standalone Hover Card content requires an id attribute.');
     }
 
-    $resolvedSide = $hoverCardId === null ? $hoverCardContentSide : $hoverCardSide;
-    $resolvedAlign = $hoverCardId === null ? $hoverCardContentAlign : $hoverCardAlign;
+    $resolvedSide = $hoverCardContentStandalone ? $hoverCardContentSide : $hoverCardSide;
+    $resolvedAlign = $hoverCardContentStandalone ? $hoverCardContentAlign : $hoverCardAlign;
 
     $contentAttributes = [
         'id' => $resolvedId,

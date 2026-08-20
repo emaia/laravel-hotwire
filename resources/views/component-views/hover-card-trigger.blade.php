@@ -5,7 +5,9 @@
         throw new InvalidArgumentException('Hover Card trigger must be rendered inside a Hover Card root.');
     }
 
-    $describedBy = $hoverCardId ?? $attributes->get('aria-describedby');
+    $describedBy = $hoverCardTriggerStandalone
+        ? ($attributes->get('aria-describedby') ?? $hoverCardId)
+        : $hoverCardId;
 
     if ($describedBy === null || $describedBy === '') {
         throw new InvalidArgumentException('Standalone Hover Card trigger requires an aria-describedby attribute.');

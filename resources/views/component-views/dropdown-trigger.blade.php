@@ -5,7 +5,9 @@
         throw new InvalidArgumentException('Dropdown trigger must be rendered inside a Dropdown root.');
     }
 
-    $controls = $dropdownId ?? $attributes->get('aria-controls');
+    $controls = $dropdownTriggerStandalone
+        ? ($attributes->get('aria-controls') ?? $dropdownId)
+        : $dropdownId;
 
     if ($controls === null || $controls === '') {
         throw new InvalidArgumentException('Standalone Dropdown trigger requires an aria-controls attribute.');

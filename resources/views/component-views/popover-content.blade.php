@@ -5,14 +5,20 @@
         throw new InvalidArgumentException('Popover content must be rendered inside a Popover root.');
     }
 
-    $resolvedId = $popoverId ?? $attributes->get('id');
+    if (! $popoverContentStandalone && ($popoverContentSide !== 'bottom' || $popoverContentAlign !== 'start')) {
+        throw new InvalidArgumentException('Popover content side and align props are only supported when standalone is true. Set side and align on the Popover root instead.');
+    }
+
+    $resolvedId = $popoverContentStandalone
+        ? ($attributes->get('id') ?? $popoverId)
+        : $popoverId;
 
     if ($resolvedId === null || $resolvedId === '') {
         throw new InvalidArgumentException('Standalone Popover content requires an id attribute.');
     }
 
-    $resolvedSide = $popoverId === null ? $popoverContentSide : $popoverSide;
-    $resolvedAlign = $popoverId === null ? $popoverContentAlign : $popoverAlign;
+    $resolvedSide = $popoverContentStandalone ? $popoverContentSide : $popoverSide;
+    $resolvedAlign = $popoverContentStandalone ? $popoverContentAlign : $popoverAlign;
 
     $contentAttributes = [
         'id' => $resolvedId,
