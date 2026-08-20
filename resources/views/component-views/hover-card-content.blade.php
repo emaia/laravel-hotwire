@@ -1,19 +1,26 @@
 @aware(['hoverCardId' => null, 'hoverCardSide' => 'bottom', 'hoverCardAlign' => 'start'])
 
 @php
+    if ($hoverCardId === null && ! $hoverCardContentStandalone) {
+        throw new InvalidArgumentException('Hover Card content must be rendered inside a Hover Card root.');
+    }
+
     $resolvedId = $hoverCardId ?? $attributes->get('id');
 
     if ($resolvedId === null || $resolvedId === '') {
-        throw new InvalidArgumentException('Hover Card content must be rendered inside a Hover Card root.');
+        throw new InvalidArgumentException('Standalone Hover Card content requires an id attribute.');
     }
+
+    $resolvedSide = $hoverCardId === null ? $hoverCardContentSide : $hoverCardSide;
+    $resolvedAlign = $hoverCardId === null ? $hoverCardContentAlign : $hoverCardAlign;
 
     $contentAttributes = [
         'id' => $resolvedId,
         'data-slot' => 'hover-card-content',
         'data-state' => 'closed',
         'data-motion' => $hoverCardContentMotion,
-        'data-side' => $hoverCardSide,
-        'data-align' => $hoverCardAlign,
+        'data-side' => $resolvedSide,
+        'data-align' => $resolvedAlign,
         'hidden' => true,
         'inert' => true,
         'data-hover-card-target' => 'content',

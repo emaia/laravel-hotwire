@@ -35,9 +35,10 @@ and positions the content with Floating UI.
 
 `popover.trigger` and `popover.content` must normally render inside the same `popover` root. The root supplies the shared
 id, open state and placement context that keep ARIA, controller targets and Floating UI wiring aligned. For standalone
-partials, pass `aria-controls` to the trigger or `id` to the content explicitly. For Turbo Stream updates, prefer
-replacing the panel's inner content or rendering the owning Popover root rather than rendering a trigger or content
-subcomponent by itself.
+partials, pass `standalone` plus `aria-controls` to the trigger or `id` to the content explicitly; also pass `side` and
+`align` to standalone content when the owner uses non-default placement. For Turbo Stream updates, prefer replacing the
+panel's inner content or rendering the owning Popover root rather than rendering a trigger or content subcomponent by
+itself.
 
 ## Positioning
 

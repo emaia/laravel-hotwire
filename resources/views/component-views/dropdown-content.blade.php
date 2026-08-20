@@ -1,10 +1,14 @@
 @aware(['dropdownId' => null])
 
 @php
+    if ($dropdownId === null && ! $dropdownContentStandalone) {
+        throw new InvalidArgumentException('Dropdown content must be rendered inside a Dropdown root.');
+    }
+
     $resolvedId = $dropdownId ?? $attributes->get('id');
 
     if ($resolvedId === null || $resolvedId === '') {
-        throw new InvalidArgumentException('Dropdown content must be rendered inside a Dropdown root.');
+        throw new InvalidArgumentException('Standalone Dropdown content requires an id attribute.');
     }
 
     $contentAttributes = [

@@ -1,10 +1,14 @@
 @aware(['dropdownId' => null, 'dropdownOpen' => false])
 
 @php
+    if ($dropdownId === null && ! $dropdownTriggerStandalone) {
+        throw new InvalidArgumentException('Dropdown trigger must be rendered inside a Dropdown root.');
+    }
+
     $controls = $dropdownId ?? $attributes->get('aria-controls');
 
     if ($controls === null || $controls === '') {
-        throw new InvalidArgumentException('Dropdown trigger must be rendered inside a Dropdown root.');
+        throw new InvalidArgumentException('Standalone Dropdown trigger requires an aria-controls attribute.');
     }
 
     $state = $dropdownOpen ? 'open' : 'closed';
@@ -18,7 +22,7 @@
     ], $attributes, except: ['data-dropdown-target', 'aria-haspopup', 'aria-expanded', 'aria-controls'], protectedPrefixes: ['data-dropdown-']);
 @endphp
 
-@if ($asChild)
+@if ($dropdownTriggerAsChild)
     {!! \Emaia\LaravelHotwire\Support\SlotAttributes::mergeIntoFirstElement($slot, $triggerAttributes) !!}
 @else
     <button {{ $triggerAttributes->merge(['type' => 'button', 'data-slot' => 'dropdown-trigger']) }}>{{ $slot }}</button>

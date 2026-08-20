@@ -2,6 +2,8 @@
 
 use Emaia\LaravelHotwire\Components\Dropdown;
 use Emaia\LaravelHotwire\Components\Dropdown\Content as DropdownContent;
+use Emaia\LaravelHotwire\Components\Dropdown\Item as DropdownItem;
+use Emaia\LaravelHotwire\Components\Dropdown\Trigger as DropdownTrigger;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
 use Illuminate\Support\Facades\Blade;
@@ -164,8 +166,8 @@ it('requires dropdown trigger and content to render inside a dropdown root', fun
     ->throws(ViewException::class, 'must be rendered inside a Dropdown root');
 
 it('renders standalone dropdown subcomponents when owner wiring is explicit', function () {
-    $trigger = $this->blade('<x-hw::dropdown.trigger aria-controls="external-menu">Open</x-hw::dropdown.trigger>');
-    $content = $this->blade('<x-hw::dropdown.content id="external-menu" side="left" align="end">Content</x-hw::dropdown.content>');
+    $trigger = $this->blade('<x-hw::dropdown.trigger standalone aria-controls="external-menu">Open</x-hw::dropdown.trigger>');
+    $content = $this->blade('<x-hw::dropdown.content standalone id="external-menu" side="left" align="end">Content</x-hw::dropdown.content>');
 
     $trigger->assertSee('aria-controls="external-menu"', false)
         ->assertSee('data-dropdown-target="trigger"', false);
@@ -173,6 +175,13 @@ it('renders standalone dropdown subcomponents when owner wiring is explicit', fu
         ->assertSee('data-side="left"', false)
         ->assertSee('data-align="end"', false);
 });
+
+it('does not treat explicit dropdown wiring as standalone without opt-in', function (string $template) {
+    $this->blade($template);
+})->with([
+    'trigger' => '<x-hw::dropdown.trigger aria-controls="external-menu">Open</x-hw::dropdown.trigger>',
+    'content' => '<x-hw::dropdown.content id="external-menu">Content</x-hw::dropdown.content>',
+])->throws(ViewException::class, 'must be rendered inside a Dropdown root');
 
 it('does not expose dropdown root props as generic component data', function () {
     $data = (new Dropdown)->data();
@@ -189,6 +198,18 @@ it('does not expose dropdown root props as generic component data', function () 
             'dropdownCloseOnSelect',
             'dropdownStimulus',
         ]);
+});
+
+it('does not expose dropdown trigger props as generic component data', function () {
+    $data = (new DropdownTrigger)->data();
+    $frameworkKeys = ['componentName', 'attributes', 'ignoredParameterNames'];
+    $genericKeys = array_values(array_filter(
+        array_keys($data),
+        fn (string $key) => ! str_starts_with($key, 'dropdownTrigger') && ! in_array($key, $frameworkKeys, true),
+    ));
+
+    expect($genericKeys)->toBe([])
+        ->and($data)->toHaveKeys(['dropdownTriggerAsChild', 'dropdownTriggerStandalone']);
 });
 
 it('does not expose dropdown content props as generic component data', function () {
@@ -217,6 +238,26 @@ it('does not expose dropdown content props as generic component data', function 
             'dropdownContentMotion',
             'dropdownContentWidth',
             'dropdownContentMenuClass',
+            'dropdownContentStandalone',
+        ]);
+});
+
+it('does not expose dropdown item props as generic component data', function () {
+    $data = (new DropdownItem)->data();
+    $frameworkKeys = ['componentName', 'attributes', 'ignoredParameterNames'];
+    $genericKeys = array_values(array_filter(
+        array_keys($data),
+        fn (string $key) => ! str_starts_with($key, 'dropdownItem') && ! in_array($key, $frameworkKeys, true),
+    ));
+
+    expect($genericKeys)->toBe([])
+        ->and($data)->toHaveKeys([
+            'dropdownItemHref',
+            'dropdownItemVariant',
+            'dropdownItemDisabled',
+            'dropdownItemInset',
+            'dropdownItemType',
+            'dropdownItemFrame',
         ]);
 });
 

@@ -2,6 +2,10 @@
 
 use Emaia\LaravelHotwire\Components\Popover;
 use Emaia\LaravelHotwire\Components\Popover\Content as PopoverContent;
+use Emaia\LaravelHotwire\Components\Popover\Description as PopoverDescription;
+use Emaia\LaravelHotwire\Components\Popover\Header as PopoverHeader;
+use Emaia\LaravelHotwire\Components\Popover\Title as PopoverTitle;
+use Emaia\LaravelHotwire\Components\Popover\Trigger as PopoverTrigger;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
 use Illuminate\Support\Facades\Blade;
@@ -166,14 +170,23 @@ it('requires popover trigger and content to render inside a popover root', funct
     ->throws(ViewException::class, 'must be rendered inside a Popover root');
 
 it('renders standalone popover subcomponents when owner wiring is explicit', function () {
-    $trigger = $this->blade('<x-hw::popover.trigger aria-controls="external-popover">Open</x-hw::popover.trigger>');
-    $content = $this->blade('<x-hw::popover.content id="external-popover" motion="none">Content</x-hw::popover.content>');
+    $trigger = $this->blade('<x-hw::popover.trigger standalone aria-controls="external-popover">Open</x-hw::popover.trigger>');
+    $content = $this->blade('<x-hw::popover.content standalone id="external-popover" side="top" align="end" motion="none">Content</x-hw::popover.content>');
 
     $trigger->assertSee('aria-controls="external-popover"', false)
         ->assertSee('data-popover-target="trigger"', false);
     $content->assertSee('id="external-popover"', false)
+        ->assertSee('data-side="top"', false)
+        ->assertSee('data-align="end"', false)
         ->assertSee('data-motion="none"', false);
 });
+
+it('does not treat explicit popover wiring as standalone without opt-in', function (string $template) {
+    $this->blade($template);
+})->with([
+    'trigger' => '<x-hw::popover.trigger aria-controls="external-popover">Open</x-hw::popover.trigger>',
+    'content' => '<x-hw::popover.content id="external-popover">Content</x-hw::popover.content>',
+])->throws(ViewException::class, 'must be rendered inside a Popover root');
 
 it('does not expose popover root props as generic component data', function () {
     $data = (new Popover)->data();
@@ -198,6 +211,18 @@ it('does not expose popover root props as generic component data', function () {
         ]);
 });
 
+it('does not expose popover trigger props as generic component data', function () {
+    $data = (new PopoverTrigger)->data();
+    $frameworkKeys = ['componentName', 'attributes', 'ignoredParameterNames'];
+    $genericKeys = array_values(array_filter(
+        array_keys($data),
+        fn (string $key) => ! str_starts_with($key, 'popoverTrigger') && ! in_array($key, $frameworkKeys, true),
+    ));
+
+    expect($genericKeys)->toBe([])
+        ->and($data)->toHaveKey('popoverTriggerStandalone');
+});
+
 it('does not expose popover content props as generic component data', function () {
     $data = (new PopoverContent)->data();
     $frameworkKeys = ['componentName', 'attributes', 'ignoredParameterNames'];
@@ -207,8 +232,29 @@ it('does not expose popover content props as generic component data', function (
     ));
 
     expect($genericKeys)->toBe([])
-        ->and($data)->toHaveKey('popoverContentMotion');
+        ->and($data)->toHaveKeys([
+            'popoverContentMotion',
+            'popoverContentSide',
+            'popoverContentAlign',
+            'popoverContentStandalone',
+        ]);
 });
+
+it('does not expose popover semantic slot props as generic component data', function (object $component, string $prefix) {
+    $data = $component->data();
+    $frameworkKeys = ['componentName', 'attributes', 'ignoredParameterNames'];
+    $genericKeys = array_values(array_filter(
+        array_keys($data),
+        fn (string $key) => ! str_starts_with($key, $prefix) && ! in_array($key, $frameworkKeys, true),
+    ));
+
+    expect($genericKeys)->toBe([])
+        ->and($data)->toHaveKeys(["{$prefix}Tag", "{$prefix}SlotName"]);
+})->with([
+    [new PopoverHeader, 'popoverHeader'],
+    [new PopoverTitle, 'popoverTitle'],
+    [new PopoverDescription, 'popoverDescription'],
+]);
 
 it('uses semantic motion values without transition class attributes', function () {
     $on = $this->blade('

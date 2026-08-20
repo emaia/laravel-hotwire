@@ -24,4 +24,28 @@ class Item extends Component
     {
         return view('hotwire::component-views.dropdown-item');
     }
+
+    /** @return array<string, mixed> */
+    public function data(): array
+    {
+        $data = parent::data();
+
+        $data['dropdownItemHref'] = $this->href;
+        $data['dropdownItemVariant'] = $this->variant;
+        $data['dropdownItemDisabled'] = $this->disabled;
+        $data['dropdownItemInset'] = $this->inset;
+        $data['dropdownItemType'] = $this->type;
+        $data['dropdownItemFrame'] = $this->frame;
+
+        unset(
+            $data['href'],
+            $data['variant'],
+            $data['disabled'],
+            $data['inset'],
+            $data['type'],
+            $data['frame'],
+        );
+
+        return $data;
+    }
 }

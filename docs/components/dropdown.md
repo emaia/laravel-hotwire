@@ -32,9 +32,9 @@ accessibility attributes for you.
 an `<a>` or `<button>` inside the content closes the dropdown by default.
 
 `dropdown.trigger` and `dropdown.content` must normally render inside the same `dropdown` root. The root supplies the
-shared id and open state that keep ARIA and controller targets aligned. For standalone partials, pass `aria-controls` to
-the trigger or `id` to the content explicitly. For Turbo Stream updates, prefer replacing the menu's inner content or
-rendering the owning Dropdown root rather than rendering a trigger or content subcomponent by itself.
+shared id and open state that keep ARIA and controller targets aligned. For standalone partials, pass `standalone` plus
+`aria-controls` to the trigger or `id` to the content explicitly. For Turbo Stream updates, prefer replacing the menu's
+inner content or rendering the owning Dropdown root rather than rendering a trigger or content subcomponent by itself.
 
 Add `data-slot="dropdown-trigger-icon"` to a chevron inside the trigger when you want it to rotate with the open state.
 The default preset CSS targets the trigger's `aria-expanded="true"` state, so no group class is required.

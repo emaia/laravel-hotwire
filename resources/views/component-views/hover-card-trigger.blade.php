@@ -1,10 +1,14 @@
 @aware(['hoverCardId' => null, 'hoverCardOpen' => false])
 
 @php
+    if ($hoverCardId === null && ! $hoverCardTriggerStandalone) {
+        throw new InvalidArgumentException('Hover Card trigger must be rendered inside a Hover Card root.');
+    }
+
     $describedBy = $hoverCardId ?? $attributes->get('aria-describedby');
 
     if ($describedBy === null || $describedBy === '') {
-        throw new InvalidArgumentException('Hover Card trigger must be rendered inside a Hover Card root.');
+        throw new InvalidArgumentException('Standalone Hover Card trigger requires an aria-describedby attribute.');
     }
 
     $disabled = $attributes->has('disabled') && ! in_array($attributes->get('disabled'), [false, null], true);

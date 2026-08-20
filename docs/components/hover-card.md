@@ -48,9 +48,10 @@ omit `href` and receive `aria-disabled="true"` and `tabindex="-1"`.
 
 `hover-card.trigger` and `hover-card.content` must normally render inside the same `hover-card` root. The root supplies
 the shared id, open state and placement context that keep ARIA, controller targets and Floating UI wiring aligned. For
-standalone partials, pass `aria-describedby` to the trigger or `id` to the content explicitly. For Turbo Stream updates,
-prefer replacing the card's inner content or rendering the owning Hover Card root rather than rendering a trigger or
-content subcomponent by itself.
+standalone partials, pass `standalone` plus `aria-describedby` to the trigger or `id` to the content explicitly; also
+pass `side` and `align` to standalone content when the owner uses non-default placement. For Turbo Stream updates, prefer
+replacing the card's inner content or rendering the owning Hover Card root rather than rendering a trigger or content
+subcomponent by itself.
 
 ## Delays
 

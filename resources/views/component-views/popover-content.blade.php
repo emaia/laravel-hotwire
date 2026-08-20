@@ -1,19 +1,26 @@
 @aware(['popoverId' => null, 'popoverSide' => 'bottom', 'popoverAlign' => 'start'])
 
 @php
+    if ($popoverId === null && ! $popoverContentStandalone) {
+        throw new InvalidArgumentException('Popover content must be rendered inside a Popover root.');
+    }
+
     $resolvedId = $popoverId ?? $attributes->get('id');
 
     if ($resolvedId === null || $resolvedId === '') {
-        throw new InvalidArgumentException('Popover content must be rendered inside a Popover root.');
+        throw new InvalidArgumentException('Standalone Popover content requires an id attribute.');
     }
+
+    $resolvedSide = $popoverId === null ? $popoverContentSide : $popoverSide;
+    $resolvedAlign = $popoverId === null ? $popoverContentAlign : $popoverAlign;
 
     $contentAttributes = [
         'id' => $resolvedId,
         'data-slot' => 'popover-content',
         'data-state' => 'closed',
         'data-motion' => $popoverContentMotion,
-        'data-side' => $popoverSide,
-        'data-align' => $popoverAlign,
+        'data-side' => $resolvedSide,
+        'data-align' => $resolvedAlign,
         'hidden' => true,
         'inert' => true,
         'data-popover-target' => 'content',

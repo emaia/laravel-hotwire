@@ -8,10 +8,24 @@ class Trigger extends Component
 {
     public function __construct(
         public bool $asChild = false,
+        public bool $standalone = false,
     ) {}
 
     public function render()
     {
         return view('hotwire::component-views.dropdown-trigger');
+    }
+
+    /** @return array<string, mixed> */
+    public function data(): array
+    {
+        $data = parent::data();
+
+        $data['dropdownTriggerAsChild'] = $this->asChild;
+        $data['dropdownTriggerStandalone'] = $this->standalone;
+
+        unset($data['asChild'], $data['standalone']);
+
+        return $data;
     }
 }

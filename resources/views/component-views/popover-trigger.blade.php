@@ -1,10 +1,14 @@
 @aware(['popoverId' => null, 'popoverOpen' => false])
 
 @php
+    if ($popoverId === null && ! $popoverTriggerStandalone) {
+        throw new InvalidArgumentException('Popover trigger must be rendered inside a Popover root.');
+    }
+
     $controls = $popoverId ?? $attributes->get('aria-controls');
 
     if ($controls === null || $controls === '') {
-        throw new InvalidArgumentException('Popover trigger must be rendered inside a Popover root.');
+        throw new InvalidArgumentException('Standalone Popover trigger requires an aria-controls attribute.');
     }
 
     $triggerAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([

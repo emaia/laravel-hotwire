@@ -203,14 +203,23 @@ it('requires hover card trigger and content to render inside a hover card root',
     ->throws(ViewException::class, 'must be rendered inside a Hover Card root');
 
 it('renders standalone hover card subcomponents when owner wiring is explicit', function () {
-    $trigger = $this->blade('<x-hw::hover-card.trigger aria-describedby="external-card">Open</x-hw::hover-card.trigger>');
-    $content = $this->blade('<x-hw::hover-card.content id="external-card" motion="none">Content</x-hw::hover-card.content>');
+    $trigger = $this->blade('<x-hw::hover-card.trigger standalone aria-describedby="external-card">Open</x-hw::hover-card.trigger>');
+    $content = $this->blade('<x-hw::hover-card.content standalone id="external-card" side="top" align="end" motion="none">Content</x-hw::hover-card.content>');
 
     $trigger->assertSee('aria-describedby="external-card"', false)
         ->assertSee('data-hover-card-target="trigger"', false);
     $content->assertSee('id="external-card"', false)
+        ->assertSee('data-side="top"', false)
+        ->assertSee('data-align="end"', false)
         ->assertSee('data-motion="none"', false);
 });
+
+it('does not treat explicit hover card wiring as standalone without opt-in', function (string $template) {
+    $this->blade($template);
+})->with([
+    'trigger' => '<x-hw::hover-card.trigger aria-describedby="external-card">Open</x-hw::hover-card.trigger>',
+    'content' => '<x-hw::hover-card.content id="external-card">Content</x-hw::hover-card.content>',
+])->throws(ViewException::class, 'must be rendered inside a Hover Card root');
 
 it('does not expose hover card root props as generic component data', function () {
     $data = (new HoverCard)->data();
@@ -251,6 +260,7 @@ it('does not expose hover card trigger props as generic component data', functio
             'hoverCardTriggerVariant',
             'hoverCardTriggerSize',
             'hoverCardTriggerType',
+            'hoverCardTriggerStandalone',
         ]);
 });
 
@@ -263,7 +273,12 @@ it('does not expose hover card content props as generic component data', functio
     ));
 
     expect($genericKeys)->toBe([])
-        ->and($data)->toHaveKey('hoverCardContentMotion');
+        ->and($data)->toHaveKeys([
+            'hoverCardContentMotion',
+            'hoverCardContentSide',
+            'hoverCardContentAlign',
+            'hoverCardContentStandalone',
+        ]);
 });
 
 it('renders configurable trigger elements, variants and sizes', function () {
