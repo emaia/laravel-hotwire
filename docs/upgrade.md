@@ -44,6 +44,7 @@ Update application subcomponents that consume the old internal keys:
 | Dropdown item inset | `@aware(['inset' => false])` | `@aware(['dropdownItemInset' => false])` |
 | Dropdown item type | `@aware(['type' => 'button'])` | `@aware(['dropdownItemType' => 'button'])` |
 | Dropdown item frame | `@aware(['frame' => null])` | `@aware(['dropdownItemFrame' => null])` |
+| Dropdown label inset | `@aware(['inset' => false])` | `@aware(['dropdownLabelInset' => false])` |
 | Popover id | `@aware(['id' => ''])` | `@aware(['popoverId' => null])` |
 | Popover open state | `@aware(['open' => false])` | `@aware(['popoverOpen' => false])` |
 | Popover side | `@aware(['side' => 'bottom'])` | `@aware(['popoverSide' => 'bottom'])` |

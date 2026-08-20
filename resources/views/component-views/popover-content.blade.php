@@ -5,20 +5,20 @@
         throw new InvalidArgumentException('Popover content must be rendered inside a Popover root.');
     }
 
-    if (! $popoverContentStandalone && ($popoverContentSide !== 'bottom' || $popoverContentAlign !== 'start')) {
+    if (! $popoverContentStandalone && ($popoverContentSideProvided || $popoverContentAlignProvided)) {
         throw new InvalidArgumentException('Popover content side and align props are only supported when standalone is true. Set side and align on the Popover root instead.');
     }
 
     $resolvedId = $popoverContentStandalone
-        ? ($attributes->get('id') ?? $popoverId)
+        ? $attributes->get('id')
         : $popoverId;
 
     if ($resolvedId === null || $resolvedId === '') {
         throw new InvalidArgumentException('Standalone Popover content requires an id attribute.');
     }
 
-    $resolvedSide = $popoverContentStandalone ? $popoverContentSide : $popoverSide;
-    $resolvedAlign = $popoverContentStandalone ? $popoverContentAlign : $popoverAlign;
+    $resolvedSide = $popoverContentStandalone && $popoverContentSideProvided ? $popoverContentSide : $popoverSide;
+    $resolvedAlign = $popoverContentStandalone && $popoverContentAlignProvided ? $popoverContentAlign : $popoverAlign;
 
     $contentAttributes = [
         'id' => $resolvedId,
@@ -29,7 +29,7 @@
         'data-align' => $resolvedAlign,
         'hidden' => true,
         'inert' => true,
-        'data-popover-target' => 'content',
+        'data-popover-target' => $popoverContentStandalone ? null : 'content',
         'role' => 'dialog',
         'tabindex' => '-1',
     ];

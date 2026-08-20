@@ -6,19 +6,20 @@
     }
 
     $controls = $dropdownTriggerStandalone
-        ? ($attributes->get('aria-controls') ?? $dropdownId)
+        ? $attributes->get('aria-controls')
         : $dropdownId;
 
     if ($controls === null || $controls === '') {
         throw new InvalidArgumentException('Standalone Dropdown trigger requires an aria-controls attribute.');
     }
 
-    $state = $dropdownOpen ? 'open' : 'closed';
+    $isOpen = $dropdownTriggerStandalone ? false : $dropdownOpen;
+    $state = $isOpen ? 'open' : 'closed';
     $triggerAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
-        'data-dropdown-target' => 'trigger',
+        'data-dropdown-target' => $dropdownTriggerStandalone ? null : 'trigger',
         'data-action' => 'dropdown#toggle',
         'aria-haspopup' => 'true',
-        'aria-expanded' => $dropdownOpen ? 'true' : 'false',
+        'aria-expanded' => $isOpen ? 'true' : 'false',
         'aria-controls' => $controls,
         'data-dropdown-state' => $state,
     ], $attributes, except: ['data-dropdown-target', 'aria-haspopup', 'aria-expanded', 'aria-controls'], protectedPrefixes: ['data-dropdown-']);

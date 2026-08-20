@@ -6,7 +6,7 @@
     }
 
     $resolvedId = $dropdownContentStandalone
-        ? ($attributes->get('id') ?? $dropdownId)
+        ? $attributes->get('id')
         : $dropdownId;
 
     if ($resolvedId === null || $resolvedId === '') {
@@ -22,7 +22,7 @@
         'data-align' => $dropdownContentAlign,
         'hidden' => true,
         'inert' => true,
-        'data-dropdown-target' => 'menu',
+        'data-dropdown-target' => $dropdownContentStandalone ? null : 'menu',
         'data-dropdown-side-value' => $dropdownContentSide,
         'data-dropdown-align-value' => $dropdownContentAlign,
         'data-dropdown-side-offset-value' => $dropdownContentSideOffset,

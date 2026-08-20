@@ -14,4 +14,16 @@ class Label extends Component
     {
         return view('hotwire::component-views.dropdown-label');
     }
+
+    /** @return array<string, mixed> */
+    public function data(): array
+    {
+        $data = parent::data();
+
+        $data['dropdownLabelInset'] = $this->inset;
+
+        unset($data['inset']);
+
+        return $data;
+    }
 }

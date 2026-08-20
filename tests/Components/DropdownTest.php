@@ -3,6 +3,7 @@
 use Emaia\LaravelHotwire\Components\Dropdown;
 use Emaia\LaravelHotwire\Components\Dropdown\Content as DropdownContent;
 use Emaia\LaravelHotwire\Components\Dropdown\Item as DropdownItem;
+use Emaia\LaravelHotwire\Components\Dropdown\Label as DropdownLabel;
 use Emaia\LaravelHotwire\Components\Dropdown\Trigger as DropdownTrigger;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
@@ -170,8 +171,9 @@ it('renders standalone dropdown subcomponents when owner wiring is explicit', fu
     $content = $this->blade('<x-hw::dropdown.content standalone id="external-menu" side="left" align="end">Content</x-hw::dropdown.content>');
 
     $trigger->assertSee('aria-controls="external-menu"', false)
-        ->assertSee('data-dropdown-target="trigger"', false);
+        ->assertDontSee('data-dropdown-target="trigger"', false);
     $content->assertSee('id="external-menu"', false)
+        ->assertDontSee('data-dropdown-target="menu"', false)
         ->assertSee('data-side="left"', false)
         ->assertSee('data-align="end"', false);
 });
@@ -191,8 +193,17 @@ it('keeps explicit standalone dropdown wiring inside another dropdown root', fun
         ->toContain('id="inner-menu"')
         ->toContain('data-side="left"')
         ->toContain('data-align="end"')
-        ->and(substr_count($html, 'id="outer-menu"'))->toBe(1);
+        ->and(substr_count($html, 'id="outer-menu"'))->toBe(1)
+        ->and(substr_count($html, 'data-dropdown-target="trigger"'))->toBe(0)
+        ->and(substr_count($html, 'data-dropdown-target="menu"'))->toBe(1);
 });
+
+it('requires explicit dropdown wiring when standalone is used inside a dropdown root', function (string $template) {
+    $this->blade($template);
+})->with([
+    'trigger' => '<x-hw::dropdown id="menu"><x-hw::dropdown.trigger standalone>Open</x-hw::dropdown.trigger></x-hw::dropdown>',
+    'content' => '<x-hw::dropdown id="menu"><x-hw::dropdown.content standalone>Content</x-hw::dropdown.content></x-hw::dropdown>',
+])->throws(ViewException::class, 'requires');
 
 it('does not treat explicit dropdown wiring as standalone without opt-in', function (string $template) {
     $this->blade($template);
@@ -277,6 +288,18 @@ it('does not expose dropdown item props as generic component data', function () 
             'dropdownItemType',
             'dropdownItemFrame',
         ]);
+});
+
+it('does not expose dropdown label props as generic component data', function () {
+    $data = (new DropdownLabel)->data();
+    $frameworkKeys = ['componentName', 'attributes', 'ignoredParameterNames'];
+    $genericKeys = array_values(array_filter(
+        array_keys($data),
+        fn (string $key) => ! str_starts_with($key, 'dropdownLabel') && ! in_array($key, $frameworkKeys, true),
+    ));
+
+    expect($genericKeys)->toBe([])
+        ->and($data)->toHaveKey('dropdownLabelInset');
 });
 
 it('links the trigger to the menu via id and aria-controls', function () {
