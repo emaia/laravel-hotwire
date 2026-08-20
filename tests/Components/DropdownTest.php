@@ -166,46 +166,7 @@ it('requires dropdown trigger and content to render inside a dropdown root', fun
 })->with(['trigger', 'content'])
     ->throws(ViewException::class, 'must be rendered inside a Dropdown root');
 
-it('renders standalone dropdown subcomponents when owner wiring is explicit', function () {
-    $trigger = $this->blade('<x-hw::dropdown.trigger standalone aria-controls="external-menu">Open</x-hw::dropdown.trigger>');
-    $content = $this->blade('<x-hw::dropdown.content standalone id="external-menu" side="left" align="end">Content</x-hw::dropdown.content>');
-
-    $trigger->assertSee('aria-controls="external-menu"', false)
-        ->assertDontSee('data-dropdown-target="trigger"', false);
-    $content->assertSee('id="external-menu"', false)
-        ->assertDontSee('data-dropdown-target="menu"', false)
-        ->assertSee('data-side="left"', false)
-        ->assertSee('data-align="end"', false);
-});
-
-it('keeps explicit standalone dropdown wiring inside another dropdown root', function () {
-    $view = $this->blade(<<<'BLADE'
-        <x-hw::dropdown id="outer-menu">
-            <x-hw::dropdown.trigger standalone aria-controls="inner-menu">Inner trigger</x-hw::dropdown.trigger>
-            <x-hw::dropdown.content standalone id="inner-menu" side="left" align="end">Inner content</x-hw::dropdown.content>
-            <x-hw::dropdown.content>Outer content</x-hw::dropdown.content>
-        </x-hw::dropdown>
-    BLADE);
-
-    $html = (string) $view;
-
-    expect($html)->toContain('aria-controls="inner-menu"')
-        ->toContain('id="inner-menu"')
-        ->toContain('data-side="left"')
-        ->toContain('data-align="end"')
-        ->and(substr_count($html, 'id="outer-menu"'))->toBe(1)
-        ->and(substr_count($html, 'data-dropdown-target="trigger"'))->toBe(0)
-        ->and(substr_count($html, 'data-dropdown-target="menu"'))->toBe(1);
-});
-
-it('requires explicit dropdown wiring when standalone is used inside a dropdown root', function (string $template) {
-    $this->blade($template);
-})->with([
-    'trigger' => '<x-hw::dropdown id="menu"><x-hw::dropdown.trigger standalone>Open</x-hw::dropdown.trigger></x-hw::dropdown>',
-    'content' => '<x-hw::dropdown id="menu"><x-hw::dropdown.content standalone>Content</x-hw::dropdown.content></x-hw::dropdown>',
-])->throws(ViewException::class, 'requires');
-
-it('does not treat explicit dropdown wiring as standalone without opt-in', function (string $template) {
+it('requires a dropdown root even when explicit wiring is supplied', function (string $template) {
     $this->blade($template);
 })->with([
     'trigger' => '<x-hw::dropdown.trigger aria-controls="external-menu">Open</x-hw::dropdown.trigger>',
@@ -238,7 +199,7 @@ it('does not expose dropdown trigger props as generic component data', function 
     ));
 
     expect($genericKeys)->toBe([])
-        ->and($data)->toHaveKeys(['dropdownTriggerAsChild', 'dropdownTriggerStandalone']);
+        ->and($data)->toHaveKey('dropdownTriggerAsChild');
 });
 
 it('does not expose dropdown content props as generic component data', function () {
@@ -267,7 +228,6 @@ it('does not expose dropdown content props as generic component data', function 
             'dropdownContentMotion',
             'dropdownContentWidth',
             'dropdownContentMenuClass',
-            'dropdownContentStandalone',
         ]);
 });
 

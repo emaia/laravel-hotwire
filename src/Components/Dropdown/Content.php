@@ -23,7 +23,6 @@ class Content extends Component
         public string $motion = 'default',
         public string $width = '',
         public string $menuClass = '',
-        public bool $standalone = false,
     ) {
         $this->side = $this->oneOf($this->side, ['top', 'right', 'bottom', 'left'], 'bottom');
         $this->align = $this->oneOf($this->align, ['start', 'center', 'end'], 'start');
@@ -63,7 +62,6 @@ class Content extends Component
         $data['dropdownContentMotion'] = $this->motion;
         $data['dropdownContentWidth'] = $this->width;
         $data['dropdownContentMenuClass'] = $this->menuClass;
-        $data['dropdownContentStandalone'] = $this->standalone;
 
         unset(
             $data['align'],
@@ -82,7 +80,6 @@ class Content extends Component
             $data['motion'],
             $data['width'],
             $data['menuClass'],
-            $data['standalone'],
         );
 
         return $data;

@@ -33,12 +33,10 @@ and positions the content with Floating UI.
 `popover.trigger` renders the button, links it to `popover.content` with `aria-controls`, and keeps `aria-expanded` and
 `data-popover-state="open|closed"` in sync. The content uses `data-state="open|closed"` for Presence styling.
 
-`popover.trigger` and `popover.content` must normally render inside the same `popover` root. The root supplies the shared
-id, open state and placement context that keep ARIA, controller targets and Floating UI wiring aligned. For standalone
-partials, pass `standalone` plus `aria-controls` to the trigger or `id` to the content explicitly; also pass `side` and
-`align` to standalone content when the owner uses non-default placement. For Turbo Stream updates, prefer replacing the
-panel's inner content or rendering the owning Popover root rather than rendering a trigger or content subcomponent by
-itself.
+`popover.trigger` and `popover.content` must render inside the same `popover` root, and throw when they do not. The root
+supplies the shared id, open state and placement context that keep ARIA, controller targets and Floating UI wiring
+aligned; a subcomponent rendered on its own has no controller to attach to. For Turbo Stream updates, replace the panel's
+inner content or render the owning Popover root rather than rendering a trigger or content subcomponent by itself.
 
 ## Positioning
 
@@ -146,11 +144,7 @@ Custom CSS may use transitions or finite animations keyed by `data-state`. A clo
 | `popover` | `shift` | `true` | Shift within the viewport when the content would overflow. |
 | `popover` | `open` | `false` | Start open without enter motion. |
 | `popover` | `stimulus` | `null` | Optional Stimulus binding from `stimulus()`, merged with the internal controller. |
-| `popover.trigger` | `standalone` | `false` | Use explicit `aria-controls` wiring instead of an owning Popover root. |
 | `popover.content` | `motion` | `default` | Presence motion: `default` or `none`. |
-| `popover.content` | `standalone` | `false` | Use explicit `id`, `side` and `align` wiring instead of an owning Popover root. |
-| `popover.content` | `side` | `bottom` | Standalone-only preferred side: `top`, `right`, `bottom` or `left`. |
-| `popover.content` | `align` | `start` | Standalone-only content alignment: `start`, `center` or `end`. |
 
 ## Components
 

@@ -81,14 +81,10 @@ Update application subcomponents that consume the old internal keys:
 | Hover Card content motion | `@aware(['motion' => 'default'])` | `@aware(['hoverCardContentMotion' => 'default'])` |
 
 Dropdown, Popover and Hover Card triggers and content now throw when rendered without their owning root. Render the owner
-in the same Blade tree so it can supply the scoped ARIA, state and placement context. If you deliberately render one of
-these subcomponents standalone, pass `standalone` plus the owner wiring explicitly: `aria-controls` on Dropdown/Popover
-triggers, `aria-describedby` on Hover Card triggers, or `id` on content. For standalone Popover/Hover Card content, pass
-`side` and `align` too when the owner uses non-default placement. For Turbo Streams, prefer replacing content inside the
-floating panel or rendering the owning root instead of rendering these dependent subcomponents alone.
-
-The `standalone` prop is new on floating overlay triggers and content. The `side` and `align` props are also new on
-standalone Popover/Hover Card content; in normal usage, continue setting placement on the Popover or Hover Card root.
+in the same Blade tree so it can supply the scoped ARIA, state and placement context. These subcomponents cannot stand on
+their own: the Stimulus controller is mounted on the root element, so a trigger or panel rendered outside it has no
+controller to attach to. For Turbo Streams, replace content inside the floating panel or render the owning root instead
+of streaming a dependent subcomponent alone.
 
 ### Modal overlay context keys are scoped
 

@@ -8,7 +8,6 @@ class Trigger extends Component
 {
     public function __construct(
         public bool $asChild = false,
-        public bool $standalone = false,
     ) {}
 
     public function render()
@@ -22,9 +21,8 @@ class Trigger extends Component
         $data = parent::data();
 
         $data['dropdownTriggerAsChild'] = $this->asChild;
-        $data['dropdownTriggerStandalone'] = $this->standalone;
 
-        unset($data['asChild'], $data['standalone']);
+        unset($data['asChild']);
 
         return $data;
     }

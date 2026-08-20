@@ -46,12 +46,11 @@ Trigger `as` values are trimmed, lowercased, and restricted to `button` or `a`. 
 `submit`, or `reset`. An anchor without `href` receives `tabindex="0"` so focus can still open the card. Disabled anchors
 omit `href` and receive `aria-disabled="true"` and `tabindex="-1"`.
 
-`hover-card.trigger` and `hover-card.content` must normally render inside the same `hover-card` root. The root supplies
-the shared id, open state and placement context that keep ARIA, controller targets and Floating UI wiring aligned. For
-standalone partials, pass `standalone` plus `aria-describedby` to the trigger or `id` to the content explicitly; also
-pass `side` and `align` to standalone content when the owner uses non-default placement. For Turbo Stream updates, prefer
-replacing the card's inner content or rendering the owning Hover Card root rather than rendering a trigger or content
-subcomponent by itself.
+`hover-card.trigger` and `hover-card.content` must render inside the same `hover-card` root, and throw when they do not.
+The root supplies the shared id, open state and placement context that keep ARIA, controller targets and Floating UI
+wiring aligned; a subcomponent rendered on its own has no controller to attach to. For Turbo Stream updates, replace the
+card's inner content or render the owning Hover Card root rather than rendering a trigger or content subcomponent by
+itself.
 
 ## Delays
 
@@ -134,9 +133,6 @@ Custom CSS may use transitions or finite animations keyed by `data-state`. A clo
 | `hover-card` | `open` | `false` | Start open without waiting for hover or focus. |
 | `hover-card` | `stimulus` | `null` | Optional Stimulus binding from `stimulus()`, merged with the internal controller. |
 | `hover-card.content` | `motion` | `default` | Presence motion: `default` or `none`. |
-| `hover-card.content` | `standalone` | `false` | Use explicit `id`, `side` and `align` wiring instead of an owning Hover Card root. |
-| `hover-card.content` | `side` | `bottom` | Standalone-only preferred side: `top`, `right`, `bottom` or `left`. |
-| `hover-card.content` | `align` | `start` | Standalone-only content alignment: `start`, `center` or `end`. |
 
 ## Trigger Props
 
@@ -146,7 +142,6 @@ Custom CSS may use transitions or finite animations keyed by `data-state`. A clo
 | `variant` | `link`    | Button preset variant: `default`, `outline`, `ghost`, `link`, etc. |
 | `size`    | `default` | Button preset size.                                                |
 | `type`    | `button`  | Native button type: `button`, `submit`, or `reset`.                 |
-| `standalone` | `false` | Use explicit `aria-describedby` wiring instead of an owning Hover Card root. |
 
 ## Components
 

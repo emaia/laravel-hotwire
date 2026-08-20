@@ -1,35 +1,20 @@
 @aware(['hoverCardId' => null, 'hoverCardSide' => 'bottom', 'hoverCardAlign' => 'start'])
 
 @php
-    if ($hoverCardId === null && ! $hoverCardContentStandalone) {
+    if ($hoverCardId === null) {
         throw new InvalidArgumentException('Hover Card content must be rendered inside a Hover Card root.');
     }
 
-    if (! $hoverCardContentStandalone && ($hoverCardContentSideProvided || $hoverCardContentAlignProvided)) {
-        throw new InvalidArgumentException('Hover Card content side and align props are only supported when standalone is true. Set side and align on the Hover Card root instead.');
-    }
-
-    $resolvedId = $hoverCardContentStandalone
-        ? $attributes->get('id')
-        : $hoverCardId;
-
-    if ($resolvedId === null || $resolvedId === '') {
-        throw new InvalidArgumentException('Standalone Hover Card content requires an id attribute.');
-    }
-
-    $resolvedSide = $hoverCardContentStandalone && $hoverCardContentSideProvided ? $hoverCardContentSide : $hoverCardSide;
-    $resolvedAlign = $hoverCardContentStandalone && $hoverCardContentAlignProvided ? $hoverCardContentAlign : $hoverCardAlign;
-
     $contentAttributes = [
-        'id' => $resolvedId,
+        'id' => $hoverCardId,
         'data-slot' => 'hover-card-content',
         'data-state' => 'closed',
         'data-motion' => $hoverCardContentMotion,
-        'data-side' => $resolvedSide,
-        'data-align' => $resolvedAlign,
+        'data-side' => $hoverCardSide,
+        'data-align' => $hoverCardAlign,
         'hidden' => true,
         'inert' => true,
-        'data-hover-card-target' => $hoverCardContentStandalone ? null : 'content',
+        'data-hover-card-target' => 'content',
         'data-action' => 'mouseenter->hover-card#pointerEnter mouseleave->hover-card#pointerLeave focusin->hover-card#focusIn focusout->hover-card#focusOut',
         'role' => 'tooltip',
     ];

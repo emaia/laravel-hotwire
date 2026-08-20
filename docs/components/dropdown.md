@@ -31,10 +31,10 @@ accessibility attributes for you.
 `data-dropdown-state="open|closed"` in sync. The content uses `data-state="open|closed"` for Presence styling. Clicking
 an `<a>` or `<button>` inside the content closes the dropdown by default.
 
-`dropdown.trigger` and `dropdown.content` must normally render inside the same `dropdown` root. The root supplies the
-shared id and open state that keep ARIA and controller targets aligned. For standalone partials, pass `standalone` plus
-`aria-controls` to the trigger or `id` to the content explicitly. For Turbo Stream updates, prefer replacing the menu's
-inner content or rendering the owning Dropdown root rather than rendering a trigger or content subcomponent by itself.
+`dropdown.trigger` and `dropdown.content` must render inside the same `dropdown` root, and throw when they do not. The
+root supplies the shared id and open state that keep ARIA and controller targets aligned; a subcomponent rendered on its
+own has no controller to attach to. For Turbo Stream updates, replace the menu's inner content or render the owning
+Dropdown root rather than rendering a trigger or content subcomponent by itself.
 
 Add `data-slot="dropdown-trigger-icon"` to a chevron inside the trigger when you want it to rotate with the open state.
 The default preset CSS targets the trigger's `aria-expanded="true"` state, so no group class is required.
@@ -282,7 +282,6 @@ closed.
 | `dropdown` | `open` | `false` | Start open without an enter animation. |
 | `dropdown` | `close-on-select` | `true` | Close when an `<a>` or `<button>` inside the content is clicked. |
 | `dropdown.trigger` | `as-child` | `false` | Merge trigger behavior into one button or anchor root instead of rendering a button. |
-| `dropdown.trigger` | `standalone` | `false` | Use explicit `aria-controls` wiring instead of an owning Dropdown root. |
 | `dropdown.content` | `side` | `bottom` | Preferred side: `top`, `right`, `bottom` or `left`. |
 | `dropdown.content` | `align` | `start` | Content alignment: `start`, `center` or `end`. |
 | `dropdown.content` | `mobile-side` | `null` | Side override while the mobile media query matches. |
@@ -298,7 +297,6 @@ closed.
 | `dropdown.content` | `shift` | `true` | Shift within the viewport when the content would overflow. |
 | `dropdown.content` | `motion` | `default` | Presence motion: `default` or `none`. |
 | `dropdown.content` | `width` | `''` | Content width classes; overrides the trigger-width default when set. |
-| `dropdown.content` | `standalone` | `false` | Use an explicit `id` instead of an owning Dropdown root. |
 | `dropdown.label` | `inset` | `false` | Align the label with inset items. |
 | `dropdown.item` | `href` | `null` | Render an anchor instead of a button. |
 | `dropdown.item` | `frame` | `null` | Turbo Frame target for an enabled anchor item. |

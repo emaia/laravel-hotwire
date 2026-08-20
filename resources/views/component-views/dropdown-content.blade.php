@@ -1,20 +1,12 @@
 @aware(['dropdownId' => null])
 
 @php
-    if ($dropdownId === null && ! $dropdownContentStandalone) {
+    if ($dropdownId === null) {
         throw new InvalidArgumentException('Dropdown content must be rendered inside a Dropdown root.');
     }
 
-    $resolvedId = $dropdownContentStandalone
-        ? $attributes->get('id')
-        : $dropdownId;
-
-    if ($resolvedId === null || $resolvedId === '') {
-        throw new InvalidArgumentException('Standalone Dropdown content requires an id attribute.');
-    }
-
     $contentAttributes = [
-        'id' => $resolvedId,
+        'id' => $dropdownId,
         'data-slot' => 'dropdown-menu',
         'data-state' => 'closed',
         'data-motion' => $dropdownContentMotion,
@@ -22,7 +14,7 @@
         'data-align' => $dropdownContentAlign,
         'hidden' => true,
         'inert' => true,
-        'data-dropdown-target' => $dropdownContentStandalone ? null : 'menu',
+        'data-dropdown-target' => 'menu',
         'data-dropdown-side-value' => $dropdownContentSide,
         'data-dropdown-align-value' => $dropdownContentAlign,
         'data-dropdown-side-offset-value' => $dropdownContentSideOffset,

@@ -202,86 +202,12 @@ it('requires hover card trigger and content to render inside a hover card root',
 })->with(['trigger', 'content'])
     ->throws(ViewException::class, 'must be rendered inside a Hover Card root');
 
-it('renders standalone hover card subcomponents when owner wiring is explicit', function () {
-    $trigger = $this->blade('<x-hw::hover-card.trigger standalone aria-describedby="external-card">Open</x-hw::hover-card.trigger>');
-    $content = $this->blade('<x-hw::hover-card.content standalone id="external-card" side="top" align="end" motion="none">Content</x-hw::hover-card.content>');
-
-    $trigger->assertSee('aria-describedby="external-card"', false)
-        ->assertSee('aria-expanded="false"', false)
-        ->assertDontSee('data-hover-card-target="trigger"', false);
-    $content->assertSee('id="external-card"', false)
-        ->assertDontSee('data-hover-card-target="content"', false)
-        ->assertSee('data-side="top"', false)
-        ->assertSee('data-align="end"', false)
-        ->assertSee('data-motion="none"', false);
-});
-
-it('keeps explicit standalone hover card wiring inside another hover card root', function () {
-    $view = $this->blade(<<<'BLADE'
-        <x-hw::hover-card id="outer-card" side="bottom" align="start">
-            <x-hw::hover-card.trigger standalone aria-describedby="inner-card">Inner trigger</x-hw::hover-card.trigger>
-            <x-hw::hover-card.content standalone id="inner-card" side="top" align="end">Inner content</x-hw::hover-card.content>
-            <x-hw::hover-card.content>Outer content</x-hw::hover-card.content>
-        </x-hw::hover-card>
-    BLADE);
-
-    $html = (string) $view;
-
-    expect($html)->toContain('aria-describedby="inner-card"')
-        ->toContain('id="inner-card"')
-        ->toContain('data-side="top"')
-        ->toContain('data-align="end"')
-        ->and(substr_count($html, 'id="outer-card"'))->toBe(1)
-        ->and(substr_count($html, 'data-hover-card-target="trigger"'))->toBe(0)
-        ->and(substr_count($html, 'data-hover-card-target="content"'))->toBe(1);
-});
-
-it('falls back to hover card root placement for standalone content without explicit placement', function () {
-    $view = $this->blade(<<<'BLADE'
-        <x-hw::hover-card id="outer-card" side="top" align="end">
-            <x-hw::hover-card.content standalone id="inner-card">Inner content</x-hw::hover-card.content>
-            <x-hw::hover-card.content>Outer content</x-hw::hover-card.content>
-        </x-hw::hover-card>
-    BLADE);
-
-    $html = (string) $view;
-
-    expect($html)->toContain('id="inner-card"')
-        ->toContain('data-side="top"')
-        ->toContain('data-align="end"');
-});
-
-it('requires explicit hover card wiring when standalone is used inside a hover card root', function (string $template) {
-    $this->blade($template);
-})->with([
-    'trigger' => '<x-hw::hover-card id="card"><x-hw::hover-card.trigger standalone>Open</x-hw::hover-card.trigger></x-hw::hover-card>',
-    'content' => '<x-hw::hover-card id="card"><x-hw::hover-card.content standalone>Content</x-hw::hover-card.content></x-hw::hover-card>',
-])->throws(ViewException::class, 'requires');
-
-it('does not treat explicit hover card wiring as standalone without opt-in', function (string $template) {
+it('requires a hover card root even when explicit wiring is supplied', function (string $template) {
     $this->blade($template);
 })->with([
     'trigger' => '<x-hw::hover-card.trigger aria-describedby="external-card">Open</x-hw::hover-card.trigger>',
     'content' => '<x-hw::hover-card.content id="external-card">Content</x-hw::hover-card.content>',
 ])->throws(ViewException::class, 'must be rendered inside a Hover Card root');
-
-it('rejects standalone-only hover card content placement props inside a hover card root', function () {
-    $this->blade(<<<'BLADE'
-        <x-hw::hover-card>
-            <x-hw::hover-card.trigger>Open</x-hw::hover-card.trigger>
-            <x-hw::hover-card.content side="top">Content</x-hw::hover-card.content>
-        </x-hw::hover-card>
-    BLADE);
-})->throws(ViewException::class, 'Hover Card content side and align props are only supported when standalone is true');
-
-it('rejects invalid standalone-only hover card content placement props inside a hover card root', function () {
-    $this->blade(<<<'BLADE'
-        <x-hw::hover-card>
-            <x-hw::hover-card.trigger>Open</x-hw::hover-card.trigger>
-            <x-hw::hover-card.content side="oops">Content</x-hw::hover-card.content>
-        </x-hw::hover-card>
-    BLADE);
-})->throws(ViewException::class, 'Hover Card content side and align props are only supported when standalone is true');
 
 it('does not expose hover card root props as generic component data', function () {
     $data = (new HoverCard)->data();
@@ -322,7 +248,6 @@ it('does not expose hover card trigger props as generic component data', functio
             'hoverCardTriggerVariant',
             'hoverCardTriggerSize',
             'hoverCardTriggerType',
-            'hoverCardTriggerStandalone',
         ]);
 });
 
@@ -335,12 +260,7 @@ it('does not expose hover card content props as generic component data', functio
     ));
 
     expect($genericKeys)->toBe([])
-        ->and($data)->toHaveKeys([
-            'hoverCardContentMotion',
-            'hoverCardContentSide',
-            'hoverCardContentAlign',
-            'hoverCardContentStandalone',
-        ]);
+        ->and($data)->toHaveKey('hoverCardContentMotion');
 });
 
 it('renders configurable trigger elements, variants and sizes', function () {
