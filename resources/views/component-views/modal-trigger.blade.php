@@ -1,4 +1,4 @@
-@aware(['modalId' => null, 'modalFrame' => null])
+@aware(['modalFrame' => null])
 
 @php
     $isButton = $as === 'button';

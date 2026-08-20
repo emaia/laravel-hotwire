@@ -158,7 +158,15 @@ it('keeps drawer aware context through an intermediate component', function () {
 
     $view = $this->blade(<<<'BLADE'
         <x-hw::drawer id="drawer-shell" direction="right" frame="drawer-panel" :backdrop="false" motion="none" view-transition>
-            <x-overlay-context-wrapper>
+            <x-overlay-context-wrapper
+                id="shadow-overlay"
+                direction="left"
+                axis="y"
+                :backdrop="true"
+                frame="shadow-frame"
+                motion="default"
+                :view-transition="false"
+            >
                 <x-hw::drawer.trigger>Open</x-hw::drawer.trigger>
                 <x-hw::drawer.content>Owned content</x-hw::drawer.content>
             </x-overlay-context-wrapper>
@@ -177,7 +185,9 @@ it('keeps drawer aware context through an intermediate component', function () {
         ->not->toContain('data-axis="y"')
         ->not->toContain('id="shadow-frame"')
         ->not->toContain('data-drawer-frame-owner="shadow-overlay"')
-        ->not->toContain('data-slot="drawer-backdrop"');
+        ->not->toContain('data-slot="drawer-backdrop"')
+        ->and(substr_count($html, 'data-slot="drawer-overlay"'))->toBe(1)
+        ->and(substr_count($html, '<turbo-frame'))->toBe(1);
 });
 
 it('requires drawer content to render inside a drawer root', function () {
@@ -215,6 +225,34 @@ it('keeps view transition as the final positional constructor argument', functio
 
     expect($component->motion)->toBe('none')
         ->and($component->viewTransition)->toBeTrue();
+});
+
+it('does not expose drawer root props as generic component data', function () {
+    $data = (new Drawer)->data();
+
+    expect($data)->not->toHaveKeys([
+        'id',
+        'direction',
+        'side',
+        'size',
+        'frame',
+        'backdrop',
+        'motion',
+        'lockScroll',
+        'closeOnEscape',
+        'closeOnClickOutside',
+        'stimulus',
+        'viewTransition',
+        'axis',
+    ])->and($data)->toHaveKeys([
+        'drawerId',
+        'drawerDirection',
+        'drawerAxis',
+        'drawerBackdrop',
+        'drawerFrame',
+        'drawerMotion',
+        'drawerViewTransition',
+    ]);
 });
 
 it('registers drawer in the component catalog and subcomponent aliases', function () {

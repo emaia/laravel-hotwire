@@ -252,7 +252,16 @@ it('keeps modal aware context through an intermediate component', function () {
 
     $view = $this->blade(<<<'BLADE'
         <x-hw::modal id="modal-shell" size="full" class="owner-class" :close-button="false" :fixed-top="true" frame="modal-frame" motion="none" view-transition>
-            <x-overlay-context-wrapper>
+            <x-overlay-context-wrapper
+                id="shadow-overlay"
+                size="sm"
+                class="shadow-class"
+                :close-button="true"
+                :fixed-top="false"
+                frame="shadow-frame"
+                motion="default"
+                :view-transition="false"
+            >
                 <x-hw::modal.trigger as="a" href="/open">Open</x-hw::modal.trigger>
                 <x-hw::modal.content>Owned content</x-hw::modal.content>
             </x-overlay-context-wrapper>
@@ -271,7 +280,9 @@ it('keeps modal aware context through an intermediate component', function () {
         ->not->toContain('data-turbo-frame="shadow-frame"')
         ->not->toContain('data-modal-frame-owner="shadow-overlay"')
         ->not->toContain('shadow-class')
-        ->not->toContain('data-slot="modal-close-icon"');
+        ->not->toContain('data-slot="modal-close-icon"')
+        ->and(substr_count($html, 'data-slot="modal-overlay"'))->toBe(1)
+        ->and(substr_count($html, '<turbo-frame'))->toBe(1);
 });
 
 it('requires modal content to render inside a modal root', function () {
@@ -318,6 +329,32 @@ it('keeps view transition as the final positional constructor argument', functio
 
     expect($component->motion)->toBe('none')
         ->and($component->viewTransition)->toBeTrue();
+});
+
+it('does not expose modal root props as generic component data', function () {
+    $data = (new Modal)->data();
+
+    expect($data)->not->toHaveKeys([
+        'id',
+        'size',
+        'class',
+        'closeButton',
+        'fixedTop',
+        'frame',
+        'stimulus',
+        'motion',
+        'viewTransition',
+    ])->and($data)->toHaveKeys([
+        'modalId',
+        'modalSize',
+        'modalClass',
+        'modalCloseButton',
+        'modalFixedTop',
+        'modalFrame',
+        'modalStimulus',
+        'modalMotion',
+        'modalViewTransition',
+    ]);
 });
 
 it('registers modal view transition dependency in the component catalog', function () {

@@ -24,7 +24,7 @@ Update application subcomponents that consume the old internal keys:
 | Modal close icon | `@aware(['closeButton' => true])` | `@aware(['modalCloseButton' => true])` |
 | Modal top alignment | `@aware(['fixedTop' => false])` | `@aware(['modalFixedTop' => false])` |
 | Modal frame | `@aware(['frame' => null])` | `@aware(['modalFrame' => null])` |
-| Modal stimulus | `@aware(['stimulus' => null])` | no replacement; stimulus is root-only wiring |
+| Modal stimulus | `@aware(['stimulus' => null])` | `@aware(['modalStimulus' => null])` |
 | Modal motion | `@aware(['motion' => 'default'])` | `@aware(['modalMotion' => 'default'])` |
 | Modal view transition | `@aware(['viewTransition' => false])` | `@aware(['modalViewTransition' => false])` |
 | Sheet id | `@aware(['id' => ''])` | `@aware(['sheetId' => null])` |

@@ -156,7 +156,14 @@ it('keeps sheet aware context through an intermediate component', function () {
 
     $view = $this->blade(<<<'BLADE'
         <x-hw::sheet id="sheet-shell" side="left" frame="sheet-panel" :backdrop="false" motion="none" view-transition>
-            <x-overlay-context-wrapper>
+            <x-overlay-context-wrapper
+                id="shadow-overlay"
+                side="bottom"
+                :backdrop="true"
+                frame="shadow-frame"
+                motion="default"
+                :view-transition="false"
+            >
                 <x-hw::sheet.trigger>Open</x-hw::sheet.trigger>
                 <x-hw::sheet.content>Owned content</x-hw::sheet.content>
             </x-overlay-context-wrapper>
@@ -173,7 +180,9 @@ it('keeps sheet aware context through an intermediate component', function () {
         ->not->toContain('data-side="bottom"')
         ->not->toContain('id="shadow-frame"')
         ->not->toContain('data-sheet-frame-owner="shadow-overlay"')
-        ->not->toContain('data-slot="sheet-backdrop"');
+        ->not->toContain('data-slot="sheet-backdrop"')
+        ->and(substr_count($html, 'data-slot="sheet-overlay"'))->toBe(1)
+        ->and(substr_count($html, '<turbo-frame'))->toBe(1);
 });
 
 it('requires sheet content to render inside a sheet root', function () {
@@ -211,6 +220,31 @@ it('keeps view transition as the final positional constructor argument', functio
 
     expect($component->motion)->toBe('none')
         ->and($component->viewTransition)->toBeTrue();
+});
+
+it('does not expose sheet root props as generic component data', function () {
+    $data = (new Sheet)->data();
+
+    expect($data)->not->toHaveKeys([
+        'id',
+        'side',
+        'size',
+        'frame',
+        'backdrop',
+        'motion',
+        'lockScroll',
+        'closeOnEscape',
+        'closeOnClickOutside',
+        'stimulus',
+        'viewTransition',
+    ])->and($data)->toHaveKeys([
+        'sheetId',
+        'sheetSide',
+        'sheetBackdrop',
+        'sheetFrame',
+        'sheetMotion',
+        'sheetViewTransition',
+    ]);
 });
 
 it('registers sheet in the component catalog and subcomponent aliases', function () {
