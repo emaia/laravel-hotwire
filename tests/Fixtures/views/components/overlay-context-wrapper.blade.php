@@ -1,10 +1,12 @@
 @props([
     'id' => 'shadow-overlay',
+    'open' => false,
     'size' => 'sm',
     'class' => 'shadow-class',
     'closeButton' => true,
     'fixedTop' => false,
     'side' => 'bottom',
+    'align' => 'start',
     'direction' => 'left',
     'axis' => 'y',
     'backdrop' => true,

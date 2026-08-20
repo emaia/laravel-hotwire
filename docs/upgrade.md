@@ -6,6 +6,48 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 
 ## Unreleased
 
+### Floating overlay context keys are scoped
+
+Dropdown, Popover and Hover Card no longer expose their owner context through generic component-data keys such as `id`,
+`open`, `side`, `align`, offsets, strategy, delay values or `stimulus`. Their trigger and content subcomponents now
+consume family-specific keys so an unrelated intermediate Blade component cannot replace the owner overlay's ARIA,
+state or placement context.
+
+Update application subcomponents that consume the old internal keys:
+
+| Component family | Before | After |
+| --- | --- | --- |
+| Dropdown id | `@aware(['id' => ''])` | `@aware(['dropdownId' => null])` |
+| Dropdown open state | `@aware(['open' => false])` | `@aware(['dropdownOpen' => false])` |
+| Dropdown close on select | `@aware(['closeOnSelect' => true])` | `@aware(['dropdownCloseOnSelect' => true])` |
+| Dropdown stimulus | `@aware(['stimulus' => null])` | `@aware(['dropdownStimulus' => null])` |
+| Popover id | `@aware(['id' => ''])` | `@aware(['popoverId' => null])` |
+| Popover open state | `@aware(['open' => false])` | `@aware(['popoverOpen' => false])` |
+| Popover side | `@aware(['side' => 'bottom'])` | `@aware(['popoverSide' => 'bottom'])` |
+| Popover align | `@aware(['align' => 'start'])` | `@aware(['popoverAlign' => 'start'])` |
+| Popover side offset | `@aware(['sideOffset' => 4])` | `@aware(['popoverSideOffset' => 4])` |
+| Popover align offset | `@aware(['alignOffset' => 0])` | `@aware(['popoverAlignOffset' => 0])` |
+| Popover strategy | `@aware(['strategy' => 'fixed'])` | `@aware(['popoverStrategy' => 'fixed'])` |
+| Popover flip | `@aware(['flip' => true])` | `@aware(['popoverFlip' => true])` |
+| Popover shift | `@aware(['shift' => true])` | `@aware(['popoverShift' => true])` |
+| Popover stimulus | `@aware(['stimulus' => null])` | `@aware(['popoverStimulus' => null])` |
+| Hover Card id | `@aware(['id' => ''])` | `@aware(['hoverCardId' => null])` |
+| Hover Card open state | `@aware(['open' => false])` | `@aware(['hoverCardOpen' => false])` |
+| Hover Card side | `@aware(['side' => 'bottom'])` | `@aware(['hoverCardSide' => 'bottom'])` |
+| Hover Card align | `@aware(['align' => 'start'])` | `@aware(['hoverCardAlign' => 'start'])` |
+| Hover Card side offset | `@aware(['sideOffset' => 4])` | `@aware(['hoverCardSideOffset' => 4])` |
+| Hover Card align offset | `@aware(['alignOffset' => 0])` | `@aware(['hoverCardAlignOffset' => 0])` |
+| Hover Card strategy | `@aware(['strategy' => 'fixed'])` | `@aware(['hoverCardStrategy' => 'fixed'])` |
+| Hover Card flip | `@aware(['flip' => true])` | `@aware(['hoverCardFlip' => true])` |
+| Hover Card shift | `@aware(['shift' => true])` | `@aware(['hoverCardShift' => true])` |
+| Hover Card open delay | `@aware(['openDelay' => 10])` | `@aware(['hoverCardOpenDelay' => 10])` |
+| Hover Card close delay | `@aware(['closeDelay' => 100])` | `@aware(['hoverCardCloseDelay' => 100])` |
+| Hover Card stimulus | `@aware(['stimulus' => null])` | `@aware(['hoverCardStimulus' => null])` |
+
+Dropdown, Popover and Hover Card triggers and content now throw when rendered without their owning root. Render the owner
+in the same Blade tree so it can supply the scoped ARIA, state and placement context. For Turbo Streams, replace content
+inside the floating panel or render the owning root instead of rendering these dependent subcomponents alone.
+
 ### Modal overlay context keys are scoped
 
 Modal, Sheet and Drawer no longer expose their overlay configuration through generic component-data keys such as `id`,

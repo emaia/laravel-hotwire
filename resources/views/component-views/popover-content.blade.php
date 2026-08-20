@@ -1,13 +1,17 @@
-@aware(['id' => '', 'open' => false, 'side' => 'bottom', 'align' => 'start'])
+@aware(['popoverId' => null, 'popoverSide' => 'bottom', 'popoverAlign' => 'start'])
 
 @php
+    if ($popoverId === null) {
+        throw new InvalidArgumentException('Popover content must be rendered inside a Popover root.');
+    }
+
     $contentAttributes = [
-        'id' => $id,
+        'id' => $popoverId,
         'data-slot' => 'popover-content',
         'data-state' => 'closed',
         'data-motion' => $motion,
-        'data-side' => $side,
-        'data-align' => $align,
+        'data-side' => $popoverSide,
+        'data-align' => $popoverAlign,
         'hidden' => true,
         'inert' => true,
         'data-popover-target' => 'content',

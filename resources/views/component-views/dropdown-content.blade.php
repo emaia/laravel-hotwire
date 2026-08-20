@@ -1,8 +1,12 @@
-@aware(['id' => '', 'open' => false])
+@aware(['dropdownId' => null])
 
 @php
+    if ($dropdownId === null) {
+        throw new InvalidArgumentException('Dropdown content must be rendered inside a Dropdown root.');
+    }
+
     $contentAttributes = [
-        'id' => $id,
+        'id' => $dropdownId,
         'data-slot' => 'dropdown-menu',
         'data-state' => 'closed',
         'data-motion' => $motion,

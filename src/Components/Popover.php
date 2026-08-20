@@ -35,6 +35,38 @@ class Popover extends Component
         return view('hotwire::component-views.popover');
     }
 
+    /** @return array<string, mixed> */
+    public function data(): array
+    {
+        $data = parent::data();
+
+        $data['popoverId'] = $this->id;
+        $data['popoverAlign'] = $this->align;
+        $data['popoverSide'] = $this->side;
+        $data['popoverSideOffset'] = $this->sideOffset;
+        $data['popoverAlignOffset'] = $this->alignOffset;
+        $data['popoverStrategy'] = $this->strategy;
+        $data['popoverFlip'] = $this->flip;
+        $data['popoverShift'] = $this->shift;
+        $data['popoverOpen'] = $this->open;
+        $data['popoverStimulus'] = $this->stimulus;
+
+        unset(
+            $data['id'],
+            $data['align'],
+            $data['side'],
+            $data['sideOffset'],
+            $data['alignOffset'],
+            $data['strategy'],
+            $data['flip'],
+            $data['shift'],
+            $data['open'],
+            $data['stimulus'],
+        );
+
+        return $data;
+    }
+
     /** @param  string[]  $allowed */
     private function oneOf(string $value, array $allowed, string $default): string
     {

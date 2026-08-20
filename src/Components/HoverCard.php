@@ -39,6 +39,42 @@ class HoverCard extends Component
         return view('hotwire::component-views.hover-card');
     }
 
+    /** @return array<string, mixed> */
+    public function data(): array
+    {
+        $data = parent::data();
+
+        $data['hoverCardId'] = $this->id;
+        $data['hoverCardAlign'] = $this->align;
+        $data['hoverCardSide'] = $this->side;
+        $data['hoverCardSideOffset'] = $this->sideOffset;
+        $data['hoverCardAlignOffset'] = $this->alignOffset;
+        $data['hoverCardStrategy'] = $this->strategy;
+        $data['hoverCardFlip'] = $this->flip;
+        $data['hoverCardShift'] = $this->shift;
+        $data['hoverCardOpenDelay'] = $this->openDelay;
+        $data['hoverCardCloseDelay'] = $this->closeDelay;
+        $data['hoverCardOpen'] = $this->open;
+        $data['hoverCardStimulus'] = $this->stimulus;
+
+        unset(
+            $data['id'],
+            $data['align'],
+            $data['side'],
+            $data['sideOffset'],
+            $data['alignOffset'],
+            $data['strategy'],
+            $data['flip'],
+            $data['shift'],
+            $data['openDelay'],
+            $data['closeDelay'],
+            $data['open'],
+            $data['stimulus'],
+        );
+
+        return $data;
+    }
+
     /** @param  string[]  $allowed */
     private function oneOf(string $value, array $allowed, string $default): string
     {

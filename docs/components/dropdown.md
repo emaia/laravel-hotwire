@@ -31,6 +31,10 @@ accessibility attributes for you.
 `data-dropdown-state="open|closed"` in sync. The content uses `data-state="open|closed"` for Presence styling. Clicking
 an `<a>` or `<button>` inside the content closes the dropdown by default.
 
+`dropdown.trigger` and `dropdown.content` must render inside the same `dropdown` root. The root supplies the shared id and
+open state that keep ARIA and controller targets aligned. For Turbo Stream updates, replace the menu's inner content or
+render the owning Dropdown root rather than rendering a trigger or content subcomponent by itself.
+
 Add `data-slot="dropdown-trigger-icon"` to a chevron inside the trigger when you want it to rotate with the open state.
 The default preset CSS targets the trigger's `aria-expanded="true"` state, so no group class is required.
 

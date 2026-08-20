@@ -1,13 +1,17 @@
-@aware(['id' => '', 'open' => false, 'side' => 'bottom', 'align' => 'start'])
+@aware(['hoverCardId' => null, 'hoverCardSide' => 'bottom', 'hoverCardAlign' => 'start'])
 
 @php
+    if ($hoverCardId === null) {
+        throw new InvalidArgumentException('Hover Card content must be rendered inside a Hover Card root.');
+    }
+
     $contentAttributes = [
-        'id' => $id,
+        'id' => $hoverCardId,
         'data-slot' => 'hover-card-content',
         'data-state' => 'closed',
         'data-motion' => $motion,
-        'data-side' => $side,
-        'data-align' => $align,
+        'data-side' => $hoverCardSide,
+        'data-align' => $hoverCardAlign,
         'hidden' => true,
         'inert' => true,
         'data-hover-card-target' => 'content',

@@ -22,4 +22,24 @@ class Dropdown extends Component
     {
         return view('hotwire::component-views.dropdown');
     }
+
+    /** @return array<string, mixed> */
+    public function data(): array
+    {
+        $data = parent::data();
+
+        $data['dropdownId'] = $this->id;
+        $data['dropdownOpen'] = $this->open;
+        $data['dropdownCloseOnSelect'] = $this->closeOnSelect;
+        $data['dropdownStimulus'] = $this->stimulus;
+
+        unset(
+            $data['id'],
+            $data['open'],
+            $data['closeOnSelect'],
+            $data['stimulus'],
+        );
+
+        return $data;
+    }
 }
