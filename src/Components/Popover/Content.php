@@ -16,4 +16,16 @@ class Content extends Component
     {
         return view('hotwire::component-views.popover-content');
     }
+
+    /** @return array<string, mixed> */
+    public function data(): array
+    {
+        $data = parent::data();
+
+        $data['popoverContentMotion'] = $this->motion;
+
+        unset($data['motion']);
+
+        return $data;
+    }
 }

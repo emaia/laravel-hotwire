@@ -1,7 +1,15 @@
 <?php
 
+use Emaia\LaravelHotwire\Components\Popover;
+use Emaia\LaravelHotwire\Components\Popover\Content as PopoverContent;
+use Emaia\LaravelHotwire\Components\Popover\Description as PopoverDescription;
+use Emaia\LaravelHotwire\Components\Popover\Header as PopoverHeader;
+use Emaia\LaravelHotwire\Components\Popover\Title as PopoverTitle;
+use Emaia\LaravelHotwire\Components\Popover\Trigger as PopoverTrigger;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
+use Illuminate\Support\Facades\Blade;
+use Illuminate\View\ViewException;
 
 it('renders popover controller, trigger and content wiring', function () {
     $view = $this->blade('
@@ -127,6 +135,103 @@ it('does not overwrite a trigger state owned by another behavior', function () {
     expect($trigger?->getAttribute('data-state'))->toBe('on')
         ->and($trigger?->getAttribute('data-popover-state'))->toBe('closed');
 });
+
+it('keeps popover aware context through an intermediate component', function () {
+    Blade::anonymousComponentPath(__DIR__.'/../Fixtures/views/components');
+
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::popover id="owner-popover" :open="true" side="right" align="end">
+            <x-overlay-context-wrapper id="shadow-popover" :open="false" side="left" align="start">
+                <x-hw::popover.trigger>Open</x-hw::popover.trigger>
+                <x-hw::popover.content>Owned content</x-hw::popover.content>
+            </x-overlay-context-wrapper>
+        </x-hw::popover>
+    BLADE);
+
+    $html = (string) $view;
+
+    expect($html)->toContain('aria-controls="owner-popover"')
+        ->toContain('id="owner-popover"')
+        ->toContain('aria-expanded="true"')
+        ->toContain('data-popover-state="open"')
+        ->toContain('data-side="right"')
+        ->toContain('data-align="end"')
+        ->not->toContain('aria-controls="shadow-popover"')
+        ->not->toContain('id="shadow-popover"')
+        ->not->toContain('data-side="left"')
+        ->and(substr_count($html, 'data-slot="popover-content"'))->toBe(1);
+});
+
+it('requires popover trigger and content to render inside a popover root', function (string $component) {
+    $tag = $component === 'trigger' ? 'x-hw::popover.trigger' : 'x-hw::popover.content';
+
+    $this->blade("<{$tag}>Content</{$tag}>");
+})->with(['trigger', 'content'])
+    ->throws(ViewException::class, 'must be rendered inside a Popover root');
+
+it('requires a popover root even when explicit wiring is supplied', function (string $template) {
+    $this->blade($template);
+})->with([
+    'trigger' => '<x-hw::popover.trigger aria-controls="external-popover">Open</x-hw::popover.trigger>',
+    'content' => '<x-hw::popover.content id="external-popover">Content</x-hw::popover.content>',
+])->throws(ViewException::class, 'must be rendered inside a Popover root');
+
+it('does not expose popover root props as generic component data', function () {
+    $data = (new Popover)->data();
+    $frameworkKeys = ['componentName', 'attributes', 'ignoredParameterNames'];
+    $genericKeys = array_values(array_filter(
+        array_keys($data),
+        fn (string $key) => ! str_starts_with($key, 'popover') && ! in_array($key, $frameworkKeys, true),
+    ));
+
+    expect($genericKeys)->toBe([])
+        ->and($data)->toHaveKeys([
+            'popoverId',
+            'popoverAlign',
+            'popoverSide',
+            'popoverSideOffset',
+            'popoverAlignOffset',
+            'popoverStrategy',
+            'popoverFlip',
+            'popoverShift',
+            'popoverOpen',
+            'popoverStimulus',
+        ]);
+});
+
+it('exposes only framework component data for the popover trigger', function () {
+    $data = (new PopoverTrigger)->data();
+
+    expect(array_keys($data))->toEqualCanonicalizing(['componentName', 'attributes', 'ignoredParameterNames']);
+});
+
+it('does not expose popover content props as generic component data', function () {
+    $data = (new PopoverContent)->data();
+    $frameworkKeys = ['componentName', 'attributes', 'ignoredParameterNames'];
+    $genericKeys = array_values(array_filter(
+        array_keys($data),
+        fn (string $key) => ! str_starts_with($key, 'popoverContent') && ! in_array($key, $frameworkKeys, true),
+    ));
+
+    expect($genericKeys)->toBe([])
+        ->and($data)->toHaveKey('popoverContentMotion');
+});
+
+it('does not expose popover semantic slot props as generic component data', function (object $component, string $prefix) {
+    $data = $component->data();
+    $frameworkKeys = ['componentName', 'attributes', 'ignoredParameterNames'];
+    $genericKeys = array_values(array_filter(
+        array_keys($data),
+        fn (string $key) => ! str_starts_with($key, $prefix) && ! in_array($key, $frameworkKeys, true),
+    ));
+
+    expect($genericKeys)->toBe([])
+        ->and($data)->toHaveKeys(["{$prefix}Tag", "{$prefix}SlotName"]);
+})->with([
+    [new PopoverHeader, 'popoverHeader'],
+    [new PopoverTitle, 'popoverTitle'],
+    [new PopoverDescription, 'popoverDescription'],
+]);
 
 it('uses semantic motion values without transition class attributes', function () {
     $on = $this->blade('

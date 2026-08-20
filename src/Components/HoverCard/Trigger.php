@@ -21,4 +21,24 @@ class Trigger extends Component
     {
         return view('hotwire::component-views.hover-card-trigger');
     }
+
+    /** @return array<string, mixed> */
+    public function data(): array
+    {
+        $data = parent::data();
+
+        $data['hoverCardTriggerAs'] = $this->as;
+        $data['hoverCardTriggerVariant'] = $this->variant;
+        $data['hoverCardTriggerSize'] = $this->size;
+        $data['hoverCardTriggerType'] = $this->type;
+
+        unset(
+            $data['as'],
+            $data['variant'],
+            $data['size'],
+            $data['type'],
+        );
+
+        return $data;
+    }
 }

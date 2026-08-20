@@ -1,30 +1,34 @@
-@aware(['id' => '', 'open' => false])
+@aware(['dropdownId' => null])
 
 @php
+    if ($dropdownId === null) {
+        throw new InvalidArgumentException('Dropdown content must be rendered inside a Dropdown root. If a root is present, check for an intermediate component declaring a dropdownId prop, which shadows the root context.');
+    }
+
     $contentAttributes = [
-        'id' => $id,
+        'id' => $dropdownId,
         'data-slot' => 'dropdown-menu',
         'data-state' => 'closed',
-        'data-motion' => $motion,
-        'data-side' => $side,
-        'data-align' => $align,
+        'data-motion' => $dropdownContentMotion,
+        'data-side' => $dropdownContentSide,
+        'data-align' => $dropdownContentAlign,
         'hidden' => true,
         'inert' => true,
         'data-dropdown-target' => 'menu',
-        'data-dropdown-side-value' => $side,
-        'data-dropdown-align-value' => $align,
-        'data-dropdown-side-offset-value' => $sideOffset,
-        'data-dropdown-align-offset-value' => $alignOffset,
-        'data-dropdown-strategy-value' => $strategy,
-        'data-dropdown-flip-value' => $flip ? 'true' : 'false',
-        'data-dropdown-shift-value' => $shift ? 'true' : 'false',
-        'data-dropdown-mobile-side-value' => $mobileSide,
-        'data-dropdown-mobile-align-value' => $mobileAlign,
-        'data-dropdown-mobile-media-value' => $mobileSide !== null || $mobileAlign !== null ? $mobileMedia : null,
-        'data-dropdown-collapsed-side-value' => $collapsedSide,
-        'data-dropdown-collapsed-align-value' => $collapsedAlign,
-        'data-dropdown-collapsed-when-value' => $collapsedSide !== null || $collapsedAlign !== null ? $collapsedWhen : null,
-        'class' => trim($width.' '.$menuClass) ?: null,
+        'data-dropdown-side-value' => $dropdownContentSide,
+        'data-dropdown-align-value' => $dropdownContentAlign,
+        'data-dropdown-side-offset-value' => $dropdownContentSideOffset,
+        'data-dropdown-align-offset-value' => $dropdownContentAlignOffset,
+        'data-dropdown-strategy-value' => $dropdownContentStrategy,
+        'data-dropdown-flip-value' => $dropdownContentFlip ? 'true' : 'false',
+        'data-dropdown-shift-value' => $dropdownContentShift ? 'true' : 'false',
+        'data-dropdown-mobile-side-value' => $dropdownContentMobileSide,
+        'data-dropdown-mobile-align-value' => $dropdownContentMobileAlign,
+        'data-dropdown-mobile-media-value' => $dropdownContentMobileSide !== null || $dropdownContentMobileAlign !== null ? $dropdownContentMobileMedia : null,
+        'data-dropdown-collapsed-side-value' => $dropdownContentCollapsedSide,
+        'data-dropdown-collapsed-align-value' => $dropdownContentCollapsedAlign,
+        'data-dropdown-collapsed-when-value' => $dropdownContentCollapsedSide !== null || $dropdownContentCollapsedAlign !== null ? $dropdownContentCollapsedWhen : null,
+        'class' => trim($dropdownContentWidth.' '.$dropdownContentMenuClass) ?: null,
     ];
 
     $contentAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge(

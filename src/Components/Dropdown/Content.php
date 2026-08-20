@@ -41,6 +41,50 @@ class Content extends Component
         return view('hotwire::component-views.dropdown-content');
     }
 
+    /** @return array<string, mixed> */
+    public function data(): array
+    {
+        $data = parent::data();
+
+        $data['dropdownContentAlign'] = $this->align;
+        $data['dropdownContentSide'] = $this->side;
+        $data['dropdownContentSideOffset'] = $this->sideOffset;
+        $data['dropdownContentAlignOffset'] = $this->alignOffset;
+        $data['dropdownContentStrategy'] = $this->strategy;
+        $data['dropdownContentFlip'] = $this->flip;
+        $data['dropdownContentShift'] = $this->shift;
+        $data['dropdownContentMobileSide'] = $this->mobileSide;
+        $data['dropdownContentMobileAlign'] = $this->mobileAlign;
+        $data['dropdownContentMobileMedia'] = $this->mobileMedia;
+        $data['dropdownContentCollapsedSide'] = $this->collapsedSide;
+        $data['dropdownContentCollapsedAlign'] = $this->collapsedAlign;
+        $data['dropdownContentCollapsedWhen'] = $this->collapsedWhen;
+        $data['dropdownContentMotion'] = $this->motion;
+        $data['dropdownContentWidth'] = $this->width;
+        $data['dropdownContentMenuClass'] = $this->menuClass;
+
+        unset(
+            $data['align'],
+            $data['side'],
+            $data['sideOffset'],
+            $data['alignOffset'],
+            $data['strategy'],
+            $data['flip'],
+            $data['shift'],
+            $data['mobileSide'],
+            $data['mobileAlign'],
+            $data['mobileMedia'],
+            $data['collapsedSide'],
+            $data['collapsedAlign'],
+            $data['collapsedWhen'],
+            $data['motion'],
+            $data['width'],
+            $data['menuClass'],
+        );
+
+        return $data;
+    }
+
     /** @param  string[]  $allowed */
     private function oneOf(string $value, array $allowed, string $default): string
     {

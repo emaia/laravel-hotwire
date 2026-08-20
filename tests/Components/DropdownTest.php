@@ -1,7 +1,13 @@
 <?php
 
+use Emaia\LaravelHotwire\Components\Dropdown;
+use Emaia\LaravelHotwire\Components\Dropdown\Content as DropdownContent;
+use Emaia\LaravelHotwire\Components\Dropdown\Item as DropdownItem;
+use Emaia\LaravelHotwire\Components\Dropdown\Label as DropdownLabel;
+use Emaia\LaravelHotwire\Components\Dropdown\Trigger as DropdownTrigger;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\View\ViewException;
 
 it('targets only enabled dropdown links with frame', function () {
@@ -128,6 +134,132 @@ it('does not render a trigger when no trigger subcomponent is provided', functio
     $view->assertSee('data-controller="dropdown"', false);
     $view->assertDontSee('data-dropdown-target="trigger"', false);
     $view->assertSee('href="/x"', false);
+});
+
+it('keeps dropdown aware context through an intermediate component', function () {
+    Blade::anonymousComponentPath(__DIR__.'/../Fixtures/views/components');
+
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::dropdown id="owner-menu" :open="true">
+            <x-overlay-context-wrapper id="shadow-menu" :open="false">
+                <x-hw::dropdown.trigger>Options</x-hw::dropdown.trigger>
+                <x-hw::dropdown.content>Owned content</x-hw::dropdown.content>
+            </x-overlay-context-wrapper>
+        </x-hw::dropdown>
+    BLADE);
+
+    $html = (string) $view;
+
+    expect($html)->toContain('aria-controls="owner-menu"')
+        ->toContain('id="owner-menu"')
+        ->toContain('aria-expanded="true"')
+        ->toContain('data-dropdown-state="open"')
+        ->not->toContain('aria-controls="shadow-menu"')
+        ->not->toContain('id="shadow-menu"')
+        ->and(substr_count($html, 'data-slot="dropdown-menu"'))->toBe(1);
+});
+
+it('requires dropdown trigger and content to render inside a dropdown root', function (string $component) {
+    $tag = $component === 'trigger' ? 'x-hw::dropdown.trigger' : 'x-hw::dropdown.content';
+
+    $this->blade("<{$tag}>Content</{$tag}>");
+})->with(['trigger', 'content'])
+    ->throws(ViewException::class, 'must be rendered inside a Dropdown root');
+
+it('requires a dropdown root even when explicit wiring is supplied', function (string $template) {
+    $this->blade($template);
+})->with([
+    'trigger' => '<x-hw::dropdown.trigger aria-controls="external-menu">Open</x-hw::dropdown.trigger>',
+    'content' => '<x-hw::dropdown.content id="external-menu">Content</x-hw::dropdown.content>',
+])->throws(ViewException::class, 'must be rendered inside a Dropdown root');
+
+it('does not expose dropdown root props as generic component data', function () {
+    $data = (new Dropdown)->data();
+    $frameworkKeys = ['componentName', 'attributes', 'ignoredParameterNames'];
+    $genericKeys = array_values(array_filter(
+        array_keys($data),
+        fn (string $key) => ! str_starts_with($key, 'dropdown') && ! in_array($key, $frameworkKeys, true),
+    ));
+
+    expect($genericKeys)->toBe([])
+        ->and($data)->toHaveKeys([
+            'dropdownId',
+            'dropdownOpen',
+            'dropdownCloseOnSelect',
+            'dropdownStimulus',
+        ]);
+});
+
+it('does not expose dropdown trigger props as generic component data', function () {
+    $data = (new DropdownTrigger)->data();
+    $frameworkKeys = ['componentName', 'attributes', 'ignoredParameterNames'];
+    $genericKeys = array_values(array_filter(
+        array_keys($data),
+        fn (string $key) => ! str_starts_with($key, 'dropdownTrigger') && ! in_array($key, $frameworkKeys, true),
+    ));
+
+    expect($genericKeys)->toBe([])
+        ->and($data)->toHaveKey('dropdownTriggerAsChild');
+});
+
+it('does not expose dropdown content props as generic component data', function () {
+    $data = (new DropdownContent)->data();
+    $frameworkKeys = ['componentName', 'attributes', 'ignoredParameterNames'];
+    $genericKeys = array_values(array_filter(
+        array_keys($data),
+        fn (string $key) => ! str_starts_with($key, 'dropdownContent') && ! in_array($key, $frameworkKeys, true),
+    ));
+
+    expect($genericKeys)->toBe([])
+        ->and($data)->toHaveKeys([
+            'dropdownContentAlign',
+            'dropdownContentSide',
+            'dropdownContentSideOffset',
+            'dropdownContentAlignOffset',
+            'dropdownContentStrategy',
+            'dropdownContentFlip',
+            'dropdownContentShift',
+            'dropdownContentMobileSide',
+            'dropdownContentMobileAlign',
+            'dropdownContentMobileMedia',
+            'dropdownContentCollapsedSide',
+            'dropdownContentCollapsedAlign',
+            'dropdownContentCollapsedWhen',
+            'dropdownContentMotion',
+            'dropdownContentWidth',
+            'dropdownContentMenuClass',
+        ]);
+});
+
+it('does not expose dropdown item props as generic component data', function () {
+    $data = (new DropdownItem)->data();
+    $frameworkKeys = ['componentName', 'attributes', 'ignoredParameterNames'];
+    $genericKeys = array_values(array_filter(
+        array_keys($data),
+        fn (string $key) => ! str_starts_with($key, 'dropdownItem') && ! in_array($key, $frameworkKeys, true),
+    ));
+
+    expect($genericKeys)->toBe([])
+        ->and($data)->toHaveKeys([
+            'dropdownItemHref',
+            'dropdownItemVariant',
+            'dropdownItemDisabled',
+            'dropdownItemInset',
+            'dropdownItemType',
+            'dropdownItemFrame',
+        ]);
+});
+
+it('does not expose dropdown label props as generic component data', function () {
+    $data = (new DropdownLabel)->data();
+    $frameworkKeys = ['componentName', 'attributes', 'ignoredParameterNames'];
+    $genericKeys = array_values(array_filter(
+        array_keys($data),
+        fn (string $key) => ! str_starts_with($key, 'dropdownLabel') && ! in_array($key, $frameworkKeys, true),
+    ));
+
+    expect($genericKeys)->toBe([])
+        ->and($data)->toHaveKey('dropdownLabelInset');
 });
 
 it('links the trigger to the menu via id and aria-controls', function () {

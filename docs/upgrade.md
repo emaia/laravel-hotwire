@@ -6,6 +6,91 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 
 ## Unreleased
 
+### Floating overlay context keys are scoped
+
+Dropdown, Popover and Hover Card no longer expose root or dependent subcomponent context through generic component-data
+keys such as `id`, `open`, `side`, `align`, offsets, strategy, delay values, `motion`, trigger variant props or
+`stimulus`. Their trigger and content subcomponents now consume family-specific keys so an unrelated intermediate Blade
+component cannot replace the owner overlay's ARIA, state or placement context.
+
+Update application subcomponents that consume the old internal keys:
+
+| Component family | Before | After |
+| --- | --- | --- |
+| Dropdown id | `@aware(['id' => ''])` | `@aware(['dropdownId' => null])` |
+| Dropdown open state | `@aware(['open' => false])` | `@aware(['dropdownOpen' => false])` |
+| Dropdown close on select | `@aware(['closeOnSelect' => true])` | `@aware(['dropdownCloseOnSelect' => true])` |
+| Dropdown stimulus | `@aware(['stimulus' => null])` | `@aware(['dropdownStimulus' => null])` |
+| Dropdown content side | `@aware(['side' => 'bottom'])` | `@aware(['dropdownContentSide' => 'bottom'])` |
+| Dropdown content align | `@aware(['align' => 'start'])` | `@aware(['dropdownContentAlign' => 'start'])` |
+| Dropdown content side offset | `@aware(['sideOffset' => 4])` | `@aware(['dropdownContentSideOffset' => 4])` |
+| Dropdown content align offset | `@aware(['alignOffset' => 0])` | `@aware(['dropdownContentAlignOffset' => 0])` |
+| Dropdown content strategy | `@aware(['strategy' => 'absolute'])` | `@aware(['dropdownContentStrategy' => 'absolute'])` |
+| Dropdown content flip | `@aware(['flip' => true])` | `@aware(['dropdownContentFlip' => true])` |
+| Dropdown content shift | `@aware(['shift' => true])` | `@aware(['dropdownContentShift' => true])` |
+| Dropdown content mobile side | `@aware(['mobileSide' => null])` | `@aware(['dropdownContentMobileSide' => null])` |
+| Dropdown content mobile align | `@aware(['mobileAlign' => null])` | `@aware(['dropdownContentMobileAlign' => null])` |
+| Dropdown content mobile media | `@aware(['mobileMedia' => '(max-width: 767px)'])` | `@aware(['dropdownContentMobileMedia' => '(max-width: 767px)'])` |
+| Dropdown content collapsed side | `@aware(['collapsedSide' => null])` | `@aware(['dropdownContentCollapsedSide' => null])` |
+| Dropdown content collapsed align | `@aware(['collapsedAlign' => null])` | `@aware(['dropdownContentCollapsedAlign' => null])` |
+| Dropdown content collapsed condition | `@aware(['collapsedWhen' => ...])` | `@aware(['dropdownContentCollapsedWhen' => ...])` |
+| Dropdown content motion | `@aware(['motion' => 'default'])` | `@aware(['dropdownContentMotion' => 'default'])` |
+| Dropdown content width | `@aware(['width' => ''])` | `@aware(['dropdownContentWidth' => ''])` |
+| Dropdown content menu class | `@aware(['menuClass' => ''])` | `@aware(['dropdownContentMenuClass' => ''])` |
+| Dropdown trigger as child | `@aware(['asChild' => false])` | `@aware(['dropdownTriggerAsChild' => false])` |
+| Dropdown item href | `@aware(['href' => null])` | `@aware(['dropdownItemHref' => null])` |
+| Dropdown item variant | `@aware(['variant' => 'default'])` | `@aware(['dropdownItemVariant' => 'default'])` |
+| Dropdown item disabled | `@aware(['disabled' => false])` | `@aware(['dropdownItemDisabled' => false])` |
+| Dropdown item inset | `@aware(['inset' => false])` | `@aware(['dropdownItemInset' => false])` |
+| Dropdown item type | `@aware(['type' => 'button'])` | `@aware(['dropdownItemType' => 'button'])` |
+| Dropdown item frame | `@aware(['frame' => null])` | `@aware(['dropdownItemFrame' => null])` |
+| Dropdown label inset | `@aware(['inset' => false])` | `@aware(['dropdownLabelInset' => false])` |
+| Popover id | `@aware(['id' => ''])` | `@aware(['popoverId' => null])` |
+| Popover open state | `@aware(['open' => false])` | `@aware(['popoverOpen' => false])` |
+| Popover side | `@aware(['side' => 'bottom'])` | `@aware(['popoverSide' => 'bottom'])` |
+| Popover align | `@aware(['align' => 'start'])` | `@aware(['popoverAlign' => 'start'])` |
+| Popover side offset | `@aware(['sideOffset' => 4])` | `@aware(['popoverSideOffset' => 4])` |
+| Popover align offset | `@aware(['alignOffset' => 0])` | `@aware(['popoverAlignOffset' => 0])` |
+| Popover strategy | `@aware(['strategy' => 'fixed'])` | `@aware(['popoverStrategy' => 'fixed'])` |
+| Popover flip | `@aware(['flip' => true])` | `@aware(['popoverFlip' => true])` |
+| Popover shift | `@aware(['shift' => true])` | `@aware(['popoverShift' => true])` |
+| Popover stimulus | `@aware(['stimulus' => null])` | `@aware(['popoverStimulus' => null])` |
+| Popover content motion | `@aware(['motion' => 'default'])` | `@aware(['popoverContentMotion' => 'default'])` |
+| Popover header tag | `@aware(['tag' => 'div'])` | `@aware(['popoverHeaderTag' => 'div'])` |
+| Popover header slot name | `@aware(['slotName' => 'popover-header'])` | `@aware(['popoverHeaderSlotName' => 'popover-header'])` |
+| Popover title tag | `@aware(['tag' => 'h2'])` | `@aware(['popoverTitleTag' => 'h2'])` |
+| Popover title slot name | `@aware(['slotName' => 'popover-title'])` | `@aware(['popoverTitleSlotName' => 'popover-title'])` |
+| Popover description tag | `@aware(['tag' => 'p'])` | `@aware(['popoverDescriptionTag' => 'p'])` |
+| Popover description slot name | `@aware(['slotName' => 'popover-description'])` | `@aware(['popoverDescriptionSlotName' => 'popover-description'])` |
+| Hover Card id | `@aware(['id' => ''])` | `@aware(['hoverCardId' => null])` |
+| Hover Card open state | `@aware(['open' => false])` | `@aware(['hoverCardOpen' => false])` |
+| Hover Card side | `@aware(['side' => 'bottom'])` | `@aware(['hoverCardSide' => 'bottom'])` |
+| Hover Card align | `@aware(['align' => 'start'])` | `@aware(['hoverCardAlign' => 'start'])` |
+| Hover Card side offset | `@aware(['sideOffset' => 4])` | `@aware(['hoverCardSideOffset' => 4])` |
+| Hover Card align offset | `@aware(['alignOffset' => 0])` | `@aware(['hoverCardAlignOffset' => 0])` |
+| Hover Card strategy | `@aware(['strategy' => 'fixed'])` | `@aware(['hoverCardStrategy' => 'fixed'])` |
+| Hover Card flip | `@aware(['flip' => true])` | `@aware(['hoverCardFlip' => true])` |
+| Hover Card shift | `@aware(['shift' => true])` | `@aware(['hoverCardShift' => true])` |
+| Hover Card open delay | `@aware(['openDelay' => 10])` | `@aware(['hoverCardOpenDelay' => 10])` |
+| Hover Card close delay | `@aware(['closeDelay' => 100])` | `@aware(['hoverCardCloseDelay' => 100])` |
+| Hover Card stimulus | `@aware(['stimulus' => null])` | `@aware(['hoverCardStimulus' => null])` |
+| Hover Card trigger element | `@aware(['as' => 'button'])` | `@aware(['hoverCardTriggerAs' => 'button'])` |
+| Hover Card trigger variant | `@aware(['variant' => 'link'])` | `@aware(['hoverCardTriggerVariant' => 'link'])` |
+| Hover Card trigger size | `@aware(['size' => 'default'])` | `@aware(['hoverCardTriggerSize' => 'default'])` |
+| Hover Card trigger type | `@aware(['type' => 'button'])` | `@aware(['hoverCardTriggerType' => 'button'])` |
+| Hover Card content motion | `@aware(['motion' => 'default'])` | `@aware(['hoverCardContentMotion' => 'default'])` |
+
+Dropdown, Popover and Hover Card triggers and content now throw when rendered without their owning root. Render the owner
+in the same Blade tree so it can supply the scoped ARIA, state and placement context. These subcomponents cannot stand on
+their own: the Stimulus controller is mounted on the root element, so a trigger or panel rendered outside it has no
+controller to attach to. For Turbo Streams, replace content inside the floating panel or render the owning root instead
+of streaming a dependent subcomponent alone.
+
+Floating overlay triggers are stricter than Modal, Sheet and Drawer triggers, which still render standalone. A floating
+trigger carries `aria-controls` and `aria-expanded` pointing at one specific panel, and is a Stimulus target of the root
+controller, so it is meaningless without its root. A Modal, Sheet or Drawer trigger only carries an optional `frame`,
+which can be passed explicitly.
+
 ### Modal overlay context keys are scoped
 
 Modal, Sheet and Drawer no longer expose their overlay configuration through generic component-data keys such as `id`,

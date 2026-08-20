@@ -1,1 +1,1 @@
-<div {{ $attributes->merge(['data-slot' => 'dropdown-label', 'data-inset' => $inset ? 'true' : null]) }}>{{ $slot }}</div>
+<div {{ $attributes->merge(['data-slot' => 'dropdown-label', 'data-inset' => $dropdownLabelInset ? 'true' : null]) }}>{{ $slot }}</div>

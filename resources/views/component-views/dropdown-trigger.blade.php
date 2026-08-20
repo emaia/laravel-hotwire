@@ -1,18 +1,22 @@
-@aware(['id' => '', 'open' => false])
+@aware(['dropdownId' => null, 'dropdownOpen' => false])
 
 @php
-    $state = $open ? 'open' : 'closed';
+    if ($dropdownId === null) {
+        throw new InvalidArgumentException('Dropdown trigger must be rendered inside a Dropdown root. If a root is present, check for an intermediate component declaring a dropdownId prop, which shadows the root context.');
+    }
+
+    $state = $dropdownOpen ? 'open' : 'closed';
     $triggerAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
         'data-dropdown-target' => 'trigger',
         'data-action' => 'dropdown#toggle',
         'aria-haspopup' => 'true',
-        'aria-expanded' => $open ? 'true' : 'false',
-        'aria-controls' => $id,
+        'aria-expanded' => $dropdownOpen ? 'true' : 'false',
+        'aria-controls' => $dropdownId,
         'data-dropdown-state' => $state,
     ], $attributes, except: ['data-dropdown-target', 'aria-haspopup', 'aria-expanded', 'aria-controls'], protectedPrefixes: ['data-dropdown-']);
 @endphp
 
-@if ($asChild)
+@if ($dropdownTriggerAsChild)
     {!! \Emaia\LaravelHotwire\Support\SlotAttributes::mergeIntoFirstElement($slot, $triggerAttributes) !!}
 @else
     <button {{ $triggerAttributes->merge(['type' => 'button', 'data-slot' => 'dropdown-trigger']) }}>{{ $slot }}</button>

@@ -14,4 +14,16 @@ class Trigger extends Component
     {
         return view('hotwire::component-views.dropdown-trigger');
     }
+
+    /** @return array<string, mixed> */
+    public function data(): array
+    {
+        $data = parent::data();
+
+        $data['dropdownTriggerAsChild'] = $this->asChild;
+
+        unset($data['asChild']);
+
+        return $data;
+    }
 }
