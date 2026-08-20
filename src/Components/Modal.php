@@ -8,8 +8,6 @@ use Illuminate\View\Component;
 
 class Modal extends Component
 {
-    private const SIZE_PRESETS = ['sm', 'md', 'lg', 'xl', 'full', 'auto'];
-
     public function __construct(
         public string $id = '',
         public string $size = 'md',
@@ -32,25 +30,6 @@ class Modal extends Component
         }
 
         $this->motion = in_array($this->motion, ['default', 'none'], true) ? $this->motion : 'default';
-    }
-
-    public function isFullSize(): bool
-    {
-        return $this->size === 'full';
-    }
-
-    public function isPresetSize(): bool
-    {
-        return in_array($this->size, self::SIZE_PRESETS, true);
-    }
-
-    public function sizeStyle(): string
-    {
-        if ($this->isPresetSize()) {
-            return '';
-        }
-
-        return "max-width: {$this->size};";
     }
 
     public function render()

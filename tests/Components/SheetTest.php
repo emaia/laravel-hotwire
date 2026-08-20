@@ -224,27 +224,21 @@ it('keeps view transition as the final positional constructor argument', functio
 
 it('does not expose sheet root props as generic component data', function () {
     $data = (new Sheet)->data();
+    $frameworkKeys = ['componentName', 'attributes', 'ignoredParameterNames'];
+    $genericKeys = array_values(array_filter(
+        array_keys($data),
+        fn (string $key) => ! str_starts_with($key, 'sheet') && ! in_array($key, [...$frameworkKeys, 'compute'], true),
+    ));
 
-    expect($data)->not->toHaveKeys([
-        'id',
-        'side',
-        'size',
-        'frame',
-        'backdrop',
-        'motion',
-        'lockScroll',
-        'closeOnEscape',
-        'closeOnClickOutside',
-        'stimulus',
-        'viewTransition',
-    ])->and($data)->toHaveKeys([
-        'sheetId',
-        'sheetSide',
-        'sheetBackdrop',
-        'sheetFrame',
-        'sheetMotion',
-        'sheetViewTransition',
-    ]);
+    expect($genericKeys)->toBe([])
+        ->and($data)->toHaveKeys([
+            'sheetId',
+            'sheetSide',
+            'sheetBackdrop',
+            'sheetFrame',
+            'sheetMotion',
+            'sheetViewTransition',
+        ]);
 });
 
 it('registers sheet in the component catalog and subcomponent aliases', function () {

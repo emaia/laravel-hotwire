@@ -333,28 +333,24 @@ it('keeps view transition as the final positional constructor argument', functio
 
 it('does not expose modal root props as generic component data', function () {
     $data = (new Modal)->data();
+    $frameworkKeys = ['componentName', 'attributes', 'ignoredParameterNames'];
+    $genericKeys = array_values(array_filter(
+        array_keys($data),
+        fn (string $key) => ! str_starts_with($key, 'modal') && ! in_array($key, $frameworkKeys, true),
+    ));
 
-    expect($data)->not->toHaveKeys([
-        'id',
-        'size',
-        'class',
-        'closeButton',
-        'fixedTop',
-        'frame',
-        'stimulus',
-        'motion',
-        'viewTransition',
-    ])->and($data)->toHaveKeys([
-        'modalId',
-        'modalSize',
-        'modalClass',
-        'modalCloseButton',
-        'modalFixedTop',
-        'modalFrame',
-        'modalStimulus',
-        'modalMotion',
-        'modalViewTransition',
-    ]);
+    expect($genericKeys)->toBe([])
+        ->and($data)->toHaveKeys([
+            'modalId',
+            'modalSize',
+            'modalClass',
+            'modalCloseButton',
+            'modalFixedTop',
+            'modalFrame',
+            'modalStimulus',
+            'modalMotion',
+            'modalViewTransition',
+        ]);
 });
 
 it('registers modal view transition dependency in the component catalog', function () {

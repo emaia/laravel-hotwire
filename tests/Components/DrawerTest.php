@@ -229,30 +229,22 @@ it('keeps view transition as the final positional constructor argument', functio
 
 it('does not expose drawer root props as generic component data', function () {
     $data = (new Drawer)->data();
+    $frameworkKeys = ['componentName', 'attributes', 'ignoredParameterNames'];
+    $genericKeys = array_values(array_filter(
+        array_keys($data),
+        fn (string $key) => ! str_starts_with($key, 'drawer') && ! in_array($key, [...$frameworkKeys, 'compute'], true),
+    ));
 
-    expect($data)->not->toHaveKeys([
-        'id',
-        'direction',
-        'side',
-        'size',
-        'frame',
-        'backdrop',
-        'motion',
-        'lockScroll',
-        'closeOnEscape',
-        'closeOnClickOutside',
-        'stimulus',
-        'viewTransition',
-        'axis',
-    ])->and($data)->toHaveKeys([
-        'drawerId',
-        'drawerDirection',
-        'drawerAxis',
-        'drawerBackdrop',
-        'drawerFrame',
-        'drawerMotion',
-        'drawerViewTransition',
-    ]);
+    expect($genericKeys)->toBe([])
+        ->and($data)->toHaveKeys([
+            'drawerId',
+            'drawerDirection',
+            'drawerAxis',
+            'drawerBackdrop',
+            'drawerFrame',
+            'drawerMotion',
+            'drawerViewTransition',
+        ]);
 });
 
 it('registers drawer in the component catalog and subcomponent aliases', function () {
