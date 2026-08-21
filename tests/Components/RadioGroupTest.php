@@ -151,7 +151,7 @@ it('keeps radio group context through an intermediate component', function () {
 
     $view = $this->blade(<<<'BLADE'
         <x-hw::radio-group name="plan" id="owner-radio" selected="pro" auto-submit="debounced" auto-submit-delay="700">
-            <x-selection-context-wrapper>
+            <x-selection-context-wrapper name="shadow-group" id="shadow-group-id" error-key="shadow.group" :selected="[]" :old="false" disabled :select-all="false" type="single" variant="outline" size="lg" group-disabled :auto-submit="false" :auto-submit-delay="1">
                 <x-hw::radio-group.item value="pro">Pro</x-hw::radio-group.item>
             </x-selection-context-wrapper>
         </x-hw::radio-group>

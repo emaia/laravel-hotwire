@@ -16,7 +16,7 @@
 
 @php
     if (! $checkboxGroupContext) {
-        throw new InvalidArgumentException('Checkbox Group item must be rendered inside a Checkbox Group root. If a root is present, check for an intermediate component declaring a checkboxGroupContext prop, which shadows the root context.');
+        throw new InvalidArgumentException('Checkbox Group item must be rendered inside a Checkbox Group root. If the item is passed into the slot of a wrapper component, move it inside the Checkbox Group root itself: slot content renders before the view of the wrapper, so the root is not on the stack yet. Otherwise check for an intermediate component declaring a checkboxGroupContext prop, which shadows the root context.');
     }
 
     extract($compute(

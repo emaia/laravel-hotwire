@@ -180,7 +180,7 @@ it('keeps checkbox group context through an intermediate component', function ()
 
     $view = $this->blade(<<<'BLADE'
         <x-hw::checkbox-group name="roles[]" id="owner-checkbox" :selected="['admin']" select-all auto-submit="debounced" auto-submit-delay="700">
-            <x-selection-context-wrapper>
+            <x-selection-context-wrapper name="shadow-group" id="shadow-group-id" error-key="shadow.group" :selected="[]" :old="false" disabled :select-all="false" type="single" variant="outline" size="lg" group-disabled :auto-submit="false" :auto-submit-delay="1">
                 <x-hw::checkbox-group.item value="admin">Admin</x-hw::checkbox-group.item>
             </x-selection-context-wrapper>
         </x-hw::checkbox-group>

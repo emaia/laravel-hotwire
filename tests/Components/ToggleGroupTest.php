@@ -111,7 +111,7 @@ it('keeps toggle group context through an intermediate component', function () {
 
     $view = $this->blade(<<<'BLADE'
         <x-hw::toggle-group name="formats" id="owner-toggle" type="multiple" :value="['bold']" variant="default" size="sm">
-            <x-selection-context-wrapper>
+            <x-selection-context-wrapper name="shadow-group" id="shadow-group-id" error-key="shadow.group" :selected="[]" :old="false" disabled :select-all="false" type="single" variant="outline" size="lg" group-disabled :auto-submit="false" :auto-submit-delay="1">
                 <x-hw::toggle-group.item value="bold">Bold</x-hw::toggle-group.item>
             </x-selection-context-wrapper>
         </x-hw::toggle-group>
@@ -307,3 +307,9 @@ it('resolves field error and label against the toggle group name without a field
         ->toContain('for="formats"')
         ->not->toContain('hw-error-');
 });
+
+it('points a slot-hoisted toggle item at the wrapper slot as the likely cause', function () {
+    Blade::anonymousComponentPath(__DIR__.'/../Fixtures/views/components');
+
+    $this->blade('<x-selection-slot-wrapper><x-hw::toggle-group.item value="bold">Bold</x-hw::toggle-group.item></x-selection-slot-wrapper>');
+})->throws(ViewException::class, 'slot content renders before the view of the wrapper');

@@ -329,7 +329,7 @@ it('keeps field context through an intermediate component with generic props', f
 
     $view = $this->blade(<<<'BLADE'
         <x-hw::field name="email" id="email-control" error-key="profile.email" required>
-            <x-field-context-wrapper>
+            <x-field-context-wrapper name="shadow-field" id="shadow-field-id" error-key="shadow.field" :required="false">
                 <x-hw::field.label>Email</x-hw::field.label>
                 <x-hw::input />
                 <x-hw::field.error />
@@ -371,7 +371,7 @@ it('keeps scoped field identity across every field-aware control', function (str
 
     $view = $this->blade(<<<BLADE
         <x-hw::field name="profile[email]" id="owner-control" :error="false">
-            <x-field-context-wrapper>
+            <x-field-context-wrapper name="shadow-field" id="shadow-field-id" error-key="shadow.field" :required="false">
                 {$component}
             </x-field-context-wrapper>
         </x-hw::field>

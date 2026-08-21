@@ -178,8 +178,24 @@ The internal component-data keys are `fieldName`, `fieldId`, `fieldErrorKey`, an
 subcomponents that intentionally consume Field context should use those scoped names. Explicit control props take
 precedence over inherited context; an explicit `:required="false"` also opts a control out of a required Field.
 
+### Field owners other than `<hw:field>`
+
+A selection group also owns a name, an id base and an error key, so `field.label` and `field.error` nested inside a
+`<hw:radio-group>`, `<hw:checkbox-group>` or `<hw:toggle-group>` resolve against that group even with no `<hw:field>`
+above it. Groups publish this through `fieldOwnerName`, `fieldOwnerId` and `fieldOwnerErrorKey`, and only when the group
+carries its own value, so a group without a name still inherits the surrounding Field.
+
+This is deliberately a separate protocol from `fieldName`/`fieldId`/`fieldErrorKey`. Group items end their fallback
+chain on the Field keys, so publishing there would let an outer group's name reach a nameless inner group. Application
+components that own a field identity and want to feed `field.label` and `field.error` should publish the `fieldOwner*`
+keys; components that want to feed controls and group items should publish the `field*` keys.
+
 Controls emit `aria-describedby="{id}-error"`. `field.error` keeps the matching element in the DOM, hidden when there are
 no messages, so the ARIA reference stays stable.
+
+`field.error` derives its id with the same precedence a control uses: its own `id`, then the owner id base, then the
+resolved name. It cannot see a control's rendered id, so giving a control an explicit `id` that diverges from the owner
+means passing the matching `id` to `field.error` as well.
 
 The automatic error follows the Field identity. If a child overrides `name`, `id`, or `error-key`, disable the automatic
 error with `:error="false"` and render a matching `<hw:field.error>` for that child identity.

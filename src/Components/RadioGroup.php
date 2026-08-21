@@ -35,7 +35,6 @@ class RadioGroup extends Component
         $this->orientation = in_array($this->orientation, ['horizontal', 'vertical'], true)
             ? $this->orientation
             : 'vertical';
-
     }
 
     public function render()
