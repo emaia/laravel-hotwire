@@ -5,6 +5,7 @@ namespace Emaia\LaravelHotwire\Components\Field;
 use Emaia\LaravelHotwire\Components\Concerns\StripsNullProps;
 use Emaia\LaravelHotwire\Support\FieldKey;
 use Emaia\LaravelHotwire\Support\FieldLabel;
+use Emaia\LaravelHotwire\Support\FieldOwnerContext;
 use Illuminate\View\Component;
 
 class Label extends Component
@@ -43,23 +44,33 @@ class Label extends Component
         ?string $id,
         mixed $slot,
         bool $labelsSet = false,
+        ?FieldOwnerContext $ownerContext = null,
     ): array {
         $slotHtml = (string) $slot;
         $slotWrapsControl = preg_match('/<(input|select|textarea)\b/i', $slotHtml) === 1;
 
         // A set has no single labelable control, so `for` would dangle. The owner names
         // itself with aria-labelledby against the id emitted here instead.
-        if ($this->for !== null) {
-            $resolvedFor = $this->for;
-        } elseif ($slotWrapsControl || $labelsSet) {
+        if ($labelsSet) {
+            $resolvedFor = null;
+        } elseif ($this->for !== null) {
+            $resolvedFor = $this->for !== '' ? $this->for : null;
+        } elseif ($slotWrapsControl) {
             $resolvedFor = null;
         } else {
             $resolvedFor = $id ?? ($name ? FieldKey::toId($name) : null);
         }
 
+        $resolvedId = $this->id;
+
+        if ($labelsSet) {
+            $resolvedId ??= FieldLabel::idFor($id, $name);
+            $resolvedId = $ownerContext?->registerLabel($resolvedId) ?? $resolvedId;
+        }
+
         return [
             'resolvedFor' => $resolvedFor,
-            'resolvedId' => $this->id ?? ($labelsSet && $this->for === null ? FieldLabel::idFor($id, $name) : null),
+            'resolvedId' => $resolvedId,
             'slotHtml' => $slotHtml,
         ];
     }

@@ -1,10 +1,14 @@
-@aware(['fieldName' => null, 'fieldId' => null, 'fieldErrorKey' => null, 'fieldRequired' => false])
+@aware(['fieldName' => null, 'fieldId' => null, 'fieldErrorKey' => null, 'fieldRequired' => false, 'fieldControlContext' => null])
 
 @php
     $name = $name ?? $fieldName;
     $id = $id ?? $fieldId;
     $errorKey = $errorKey ?? $fieldErrorKey;
     extract($compute($name, $id, $errorKey, $fieldRequired ?? false, $errors, $attributes));
+
+    if ($fieldControlContext instanceof \Emaia\LaravelHotwire\Support\FieldContext && $resolvedId) {
+        $fieldControlContext->registerControl($resolvedId, $name);
+    }
 
     $selectAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
         'data-slot' => 'select',

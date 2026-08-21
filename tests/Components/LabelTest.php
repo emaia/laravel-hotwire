@@ -147,6 +147,18 @@ it('uses an explicit id once when labeling a selection group', function () {
         ->and($html)->not->toContain('id="plan-label"');
 });
 
+it('keeps an idref label when explicit for is empty', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::radio-group name="plan" :options="['free' => 'Free']">
+            <x-hw::field.label for="">Plan</x-hw::field.label>
+        </x-hw::radio-group>
+    BLADE);
+
+    expect($html)->toContain('id="plan-label"')
+        ->toContain('aria-labelledby="plan-label"')
+        ->not->toContain(' for=');
+});
+
 // --- @aware propagation from field ---
 
 it('picks up name and derives for from field via @aware', function () {

@@ -1,13 +1,14 @@
-@aware(['fieldName' => null, 'fieldId' => null, 'fieldErrorKey' => null, 'fieldLabel' => null])
+@aware(['fieldName' => null, 'fieldId' => null, 'fieldErrorKey' => null, 'fieldContext' => null])
 
 @php
-    $labelId = \Emaia\LaravelHotwire\Support\FieldLabel::findIn((string) $slot);
-
-    if ($labelId === null && $fieldLabel !== null && $fieldLabel !== '') {
-        $labelId = \Emaia\LaravelHotwire\Support\FieldLabel::idFor($fieldId, $fieldName);
-    }
-
     extract($compute($checkboxGroupName ?? $fieldName, $checkboxGroupId ?? $fieldId, $checkboxGroupErrorKey ?? $fieldErrorKey, $errors, $attributes));
+
+    $labelId = $fieldOwnerContext->labelId();
+    $hasExplicitAccessibleName = $attributes->has('aria-label') || $attributes->has('aria-labelledby');
+
+    if ($fieldContext instanceof \Emaia\LaravelHotwire\Support\FieldContext) {
+        $labelId = $fieldContext->registerSelection($baseId, $name, $labelId, $hasExplicitAccessibleName);
+    }
 
     $checkboxGroupAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
         'data-slot' => 'checkbox-group',

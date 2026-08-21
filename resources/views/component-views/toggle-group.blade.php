@@ -1,13 +1,16 @@
-@aware(['fieldName' => null, 'fieldId' => null, 'fieldLabel' => null])
+@aware(['fieldName' => null, 'fieldId' => null, 'fieldContext' => null])
 
 @php
-    $labelId = \Emaia\LaravelHotwire\Support\FieldLabel::findIn((string) $slot);
-
-    if ($labelId === null && $fieldLabel !== null && $fieldLabel !== '') {
-        $labelId = \Emaia\LaravelHotwire\Support\FieldLabel::idFor($fieldId, $fieldName);
-    }
-
     extract($compute($attributes));
+
+    $resolvedName = $toggleGroupName ?? $fieldName;
+    $baseId = $toggleGroupId ?? $fieldId ?? ($resolvedName ? \Emaia\LaravelHotwire\Support\FieldKey::toId($resolvedName) : null);
+    $labelId = $fieldOwnerContext->labelId();
+    $hasExplicitAccessibleName = $attributes->has('aria-label') || $attributes->has('aria-labelledby');
+
+    if ($fieldContext instanceof \Emaia\LaravelHotwire\Support\FieldContext) {
+        $labelId = $fieldContext->registerSelection($baseId, $resolvedName, $labelId, $hasExplicitAccessibleName);
+    }
 
     $groupAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
         'role' => 'group',

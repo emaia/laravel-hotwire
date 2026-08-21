@@ -589,6 +589,8 @@ it('keeps per-value ids on group inputs when the field supplies the id base', fu
 
     expect($html)->toContain('id="plan-free"')
         ->toContain('id="plan-pro"')
+        ->toContain('role="radiogroup"')
+        ->toContain('aria-labelledby="plan-label"')
         ->and(substr_count($html, 'id="plan"'))->toBe(0);
 });
 

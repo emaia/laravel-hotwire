@@ -24,7 +24,7 @@ Application subcomponents that consume Field context must update their `@aware` 
 
 The Field root no longer exposes its other props as generic component data either. Their scoped names are `fieldLabel`,
 `fieldDescription`, `fieldRequiredLabel`, `fieldError`, `fieldOrientation`, `fieldClass`, `fieldWrapperId`,
-`fieldDisabled`, and `fieldInvalid`.
+`fieldDisabled`, `fieldInvalid`, `fieldSet`, and `fieldLabelId`.
 
 `<hw:field id="...">` now defines the nested control id base and keeps labels, controls, selection items, and errors on
 the same ARIA identity. If application code previously used `id` to identify the wrapper `<div>`, replace it with
@@ -33,6 +33,20 @@ the same ARIA identity. If application code previously used `id` to identify the
 ```blade
 <hw:field name="email" id="email-control" wrapper-id="email-field">
     <hw:input />
+</hw:field>
+```
+
+Field now resolves label ownership from the controls and selection groups that render in its slot. A selection group's
+own `field.label` suppresses the Field's automatic label, and only the selection group emits the set role and
+`aria-labelledby`. A single control keeps `label for`, including controls whose name ends in `[]`.
+
+Raw HTML and application components cannot participate in this internal registration. If they form a set, declare it
+on Field and provide the automatic label id explicitly:
+
+```blade
+<hw:field label="Choices" set="radiogroup" label-id="choices-label">
+    <input type="radio" name="choice" value="a">
+    <input type="radio" name="choice" value="b">
 </hw:field>
 ```
 

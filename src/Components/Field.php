@@ -2,10 +2,14 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Emaia\LaravelHotwire\Support\FieldContext;
 use Illuminate\View\Component;
+use InvalidArgumentException;
 
 class Field extends Component
 {
+    private FieldContext $context;
+
     public function __construct(
         public ?string $name = null,
         public ?string $label = null,
@@ -20,7 +24,15 @@ class Field extends Component
         public bool $invalid = false,
         public ?string $id = null,
         public ?string $wrapperId = null,
-    ) {}
+        public ?string $set = null,
+        public ?string $labelId = null,
+    ) {
+        if (! in_array($this->set, [null, 'group', 'radiogroup'], true)) {
+            throw new InvalidArgumentException('The Field set prop must be group, radiogroup, or null.');
+        }
+
+        $this->context = new FieldContext($this->name, $this->id, $this->label, $this->set, $this->labelId);
+    }
 
     public function render()
     {
@@ -44,6 +56,18 @@ class Field extends Component
         $data['fieldWrapperId'] = $this->wrapperId;
         $data['fieldDisabled'] = $this->disabled;
         $data['fieldInvalid'] = $this->invalid;
+        $data['fieldSet'] = $this->set;
+        $data['fieldLabelId'] = $this->labelId;
+        $data['fieldContext'] = $this->context;
+        $data['fieldControlContext'] = $this->context;
+
+        // A Field always starts a fresh owner boundary, even when nested inside a group.
+        $data['fieldOwner'] = false;
+        $data['fieldOwnerName'] = null;
+        $data['fieldOwnerId'] = null;
+        $data['fieldOwnerErrorKey'] = null;
+        $data['fieldOwnerSet'] = false;
+        $data['fieldOwnerContext'] = null;
 
         unset(
             $data['name'],
@@ -59,6 +83,8 @@ class Field extends Component
             $data['wrapperId'],
             $data['disabled'],
             $data['invalid'],
+            $data['set'],
+            $data['labelId'],
         );
 
         return $data;

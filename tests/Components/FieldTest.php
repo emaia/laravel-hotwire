@@ -470,3 +470,74 @@ it('keeps a label for on a field that wraps a single control', function () {
     $view->assertSee('for="email"', false)
         ->assertDontSee('aria-labelledby', false);
 });
+
+it('resets a selection owner at a nested field boundary', function () {
+    shareFieldErrors(['outer.key' => ['Outer message'], 'inner' => ['Inner message']]);
+
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::radio-group name="outer" id="outer-id" error-key="outer.key">
+            <x-hw::field name="inner" label="Inner">
+                <x-hw::input />
+            </x-hw::field>
+        </x-hw::radio-group>
+    BLADE);
+
+    expect($html)->toContain('for="inner"')
+        ->toContain('id="inner"')
+        ->toContain('id="inner-error"')
+        ->toContain('Inner message')
+        ->not->toContain('for="outer-id"')
+        ->not->toContain('id="outer-id-error"')
+        ->not->toContain('Outer message');
+});
+
+it('uses a named selection group to identify a label from a nameless field', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::field label="Tags" :error="false">
+            <x-hw::checkbox-group name="tags" :options="['one' => 'One']" />
+        </x-hw::field>
+    BLADE);
+
+    expect($html)->toContain('id="tags-label"')
+        ->toMatch('/<div(?=[^>]*data-slot="checkbox-group")(?=[^>]*aria-labelledby="tags-label")[^>]*>/');
+});
+
+it('lets an inner selection label suppress the outer automatic label', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::field name="plan" label="Plan" :error="false">
+            <x-hw::radio-group>
+                <x-hw::field.label>Choose</x-hw::field.label>
+                <x-hw::radio-group.item value="free">Free</x-hw::radio-group.item>
+            </x-hw::radio-group>
+        </x-hw::field>
+    BLADE);
+
+    expect(substr_count($html, 'id="plan-label"'))->toBe(1)
+        ->and($html)->toContain('Choose')
+        ->and($html)->not->toContain('>Plan<');
+});
+
+it('assigns set ownership only to the nested selection group', function () {
+    $html = (string) $this->blade('<x-hw::field name="plan" label="Plan" :error="false"><x-hw::radio-group :options="[\'free\' => \'Free\']" /></x-hw::field>');
+
+    expect($html)->toMatch('/<div(?=[^>]*data-slot="radio-group")(?=[^>]*role="radiogroup")(?=[^>]*aria-labelledby="plan-label")[^>]*>/')
+        ->toMatch('/<div(?=[^>]*data-slot="field")(?![^>]*role=)(?![^>]*aria-labelledby=)[^>]*>/');
+});
+
+it('supports explicit set semantics for raw custom controls', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::field label="Choices" set="radiogroup" label-id="choices-label" :error="false">
+            <input type="radio" name="choice" value="a">
+            <input type="radio" name="choice" value="b">
+        </x-hw::field>
+    BLADE);
+
+    expect($html)->toMatch('/<div(?=[^>]*data-slot="field")(?=[^>]*role="radiogroup")(?=[^>]*aria-labelledby="choices-label")[^>]*>/')
+        ->toContain('id="choices-label"')
+        ->not->toContain(' for=');
+});
+
+it('rejects unsupported explicit set semantics', function () {
+    expect(fn () => new Field(set: 'listbox'))
+        ->toThrow(InvalidArgumentException::class, 'The Field set prop must be group, radiogroup, or null.');
+});

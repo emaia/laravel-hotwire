@@ -199,13 +199,12 @@ no messages, so the ARIA reference stays stable.
 resolved name. It cannot see a control's rendered id, so giving a control an explicit `id` that diverges from the owner
 means passing the matching `id` to `field.error` as well.
 
-### Labelling a set of controls
+### Labelling controls and sets
 
 A radio set, checkbox set or toggle set has no single labelable control, so `<label for>` would point at an id no
-control carries. When the label sits inside a `<hw:radio-group>`, `<hw:checkbox-group>` or `<hw:toggle-group>`, or when
-a `<hw:field>` holds one of those groups, several radios, or checkbox-array inputs, `field.label` drops `for` and emits
-`id="{base}-label"` instead. The owning container carries `aria-labelledby` pointing at it, and selection groups expose
-the matching role: `radiogroup` for `<hw:radio-group>`, `group` for the other two.
+control carries. `<hw:radio-group>`, `<hw:checkbox-group>`, and `<hw:toggle-group>` therefore own the set semantics:
+`field.label` drops `for` and emits `id="{base}-label"`, while the group carries the matching `role` and
+`aria-labelledby`. The surrounding Field does not duplicate those attributes.
 
 ```blade
 {{-- label inside the group --}}
@@ -219,7 +218,22 @@ the matching role: `radiogroup` for `<hw:radio-group>`, `group` for the other tw
 </hw:field>
 ```
 
-A `<hw:field>` wrapping a single control keeps `<label for>` as before.
+An explicit label inside a selection group takes precedence over the surrounding Field's automatic `label`; only the
+inner label renders. A nameless Field can also derive the automatic label id from its named selection group.
+
+Field-aware package controls register their final ids while Blade renders the slot. A Field wrapping one control keeps
+`<label for>` even when its name ends in `[]`. Two or more package radio inputs with the same name are inferred as a
+`radiogroup`; two or more package checkbox inputs with the same name are inferred as a `group`. Controls with different
+identities are not grouped automatically.
+
+For raw HTML or application components, declare set semantics explicitly and provide a deterministic label id:
+
+```blade
+<hw:field label="Choices" set="radiogroup" label-id="choices-label">
+    <input type="radio" name="choice" value="a">
+    <input type="radio" name="choice" value="b">
+</hw:field>
+```
 
 One shape is not covered: a `<hw:field.label>` written directly in a `<hw:field>` slot as a sibling of the group. Blade
 renders slot content before the surrounding view, so the label cannot know a set follows it and still emits `for`. Use
@@ -321,6 +335,8 @@ orientation state for the preset.
 | `id`             | `string\|null`                     | `null`     | Control id base propagated to labels, controls, selection groups, and errors.                |
 | `wrapper-id`     | `string\|null`                     | `null`     | Optional id for the Field wrapper itself.                                                     |
 | `label`          | `string\|null`                     | `null`     | Auto-renders `field.label` before the slot. Empty string skips it.                           |
+| `label-id`       | `string\|null`                     | `null`     | Id for an automatic set label, typically paired with `set`.                                  |
+| `set`            | `group\|radiogroup\|null`         | `null`     | Explicit set semantics for raw HTML or application controls.                                 |
 | `description`    | `string\|null`                     | `null`     | Auto-renders `field.description` after the slot and before the error. Empty string skips it. |
 | `required-label` | `string`                           | `"*"`      | Marker text passed to the auto-rendered `field.label`.                                       |
 | `error-key`      | `string\|null`                     | `null`     | Overrides Laravel validation key derivation.                                                 |

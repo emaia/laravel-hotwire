@@ -31,6 +31,18 @@ it('renders a native checkbox with switch role', function () {
     $view->assertSee('value="1"', false);
 });
 
+it('keeps label for on a single array-named switch', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::field name="opts[]" label="Opts" :error="false">
+            <x-hw::switch name="opts[]" value="a" />
+        </x-hw::field>
+    BLADE);
+
+    $view->assertSee('for="opts"', false)
+        ->assertSee('id="opts"', false)
+        ->assertDontSee('aria-labelledby', false);
+});
+
 it('renders a small switch size', function () {
     $view = $this->blade('<x-hw::switch name="enabled" size="sm" />');
 

@@ -3,12 +3,15 @@
 namespace Emaia\LaravelHotwire\Components;
 
 use Emaia\LaravelHotwire\Support\AutoSubmit;
+use Emaia\LaravelHotwire\Support\FieldOwnerContext;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\Component;
 use Illuminate\View\ComponentAttributeBag;
 
 class ToggleGroup extends Component
 {
+    private FieldOwnerContext $ownerContext;
+
     /** @var string[] */
     public array $selected;
 
@@ -28,6 +31,8 @@ class ToggleGroup extends Component
         public int|string|null $autoSubmitDelay = null,
         public ?Htmlable $stimulus = null,
     ) {
+        $this->ownerContext = new FieldOwnerContext;
+
         $this->type = in_array($type, ['single', 'multiple'], true) ? $type : 'multiple';
         $this->selected = $this->normalizeSelected($value, $this->type);
     }
@@ -78,6 +83,8 @@ class ToggleGroup extends Component
         $data['fieldOwnerName'] = $this->name;
         $data['fieldOwnerId'] = $this->id;
         $data['fieldOwnerErrorKey'] = $this->errorKey;
+        $data['fieldOwnerContext'] = $this->ownerContext;
+        $data['fieldControlContext'] = null;
         $data['internalPrefixes'] = ['data-toggle-group-'];
 
         if (AutoSubmit::enabled($this->autoSubmit)) {

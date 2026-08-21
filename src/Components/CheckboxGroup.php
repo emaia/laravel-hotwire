@@ -4,6 +4,7 @@ namespace Emaia\LaravelHotwire\Components;
 
 use Emaia\LaravelHotwire\Support\AutoSubmit;
 use Emaia\LaravelHotwire\Support\FieldKey;
+use Emaia\LaravelHotwire\Support\FieldOwnerContext;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\ViewErrorBag;
 use Illuminate\View\Component;
@@ -11,6 +12,8 @@ use Illuminate\View\ComponentAttributeBag;
 
 class CheckboxGroup extends Component
 {
+    private FieldOwnerContext $ownerContext;
+
     /** @param array<int|string, string> $options */
     public function __construct(
         public ?string $name = null,
@@ -31,6 +34,8 @@ class CheckboxGroup extends Component
         public int|string|null $autoSubmitDelay = null,
         public bool $disableIndeterminate = false,
     ) {
+        $this->ownerContext = new FieldOwnerContext;
+
         if ($options !== [] && array_keys($options) === range(0, count($options) - 1)) {
             $this->options = array_combine($options, $options);
         }
@@ -88,6 +93,8 @@ class CheckboxGroup extends Component
         $data['fieldOwnerName'] = $this->name;
         $data['fieldOwnerId'] = $this->id;
         $data['fieldOwnerErrorKey'] = $this->errorKey;
+        $data['fieldOwnerContext'] = $this->ownerContext;
+        $data['fieldControlContext'] = null;
         $data['internalPrefixes'] = array_values(array_filter([
             $this->selectAll ? 'data-checkbox-select-all-' : null,
             AutoSubmit::enabled($this->autoSubmit) ? 'data-auto-submit-' : null,
