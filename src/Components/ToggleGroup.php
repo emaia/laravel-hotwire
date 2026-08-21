@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Components;
 
 use Emaia\LaravelHotwire\Support\AutoSubmit;
+use Emaia\LaravelHotwire\Support\FieldContext;
 use Emaia\LaravelHotwire\Support\FieldOwnerContext;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\Component;
@@ -84,6 +85,8 @@ class ToggleGroup extends Component
         $data['fieldOwnerId'] = $this->id;
         $data['fieldOwnerErrorKey'] = $this->errorKey;
         $data['fieldOwnerContext'] = $this->ownerContext;
+        $data['toggleGroupFieldContext'] = FieldContext::consume();
+        $data['fieldContext'] = null;
         $data['fieldControlContext'] = null;
         $data['internalPrefixes'] = ['data-toggle-group-'];
 

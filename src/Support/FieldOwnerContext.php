@@ -6,13 +6,25 @@ final class FieldOwnerContext
 {
     private ?string $labelId = null;
 
-    /** Register the exact id rendered by the first label belonging to this owner. */
+    /** @var array<string, true> */
+    private array $usedLabelIds = [];
+
+    /** Reserve a unique rendered id while retaining the first as the owner's reference. */
     public function registerLabel(?string $id): string
     {
-        $id = $id !== null && $id !== '' ? $id : 'hw-field-label-'.uniqid();
-        $this->labelId ??= $id;
+        $baseId = $id !== null && $id !== '' ? $id : 'hw-field-label-'.uniqid();
+        $resolvedId = $baseId;
+        $suffix = 2;
 
-        return $id;
+        while (isset($this->usedLabelIds[$resolvedId])) {
+            $resolvedId = $baseId.'-'.$suffix;
+            $suffix++;
+        }
+
+        $this->usedLabelIds[$resolvedId] = true;
+        $this->labelId ??= $resolvedId;
+
+        return $resolvedId;
     }
 
     /** Return the id registered by this owner's label. */

@@ -159,6 +159,31 @@ it('keeps an idref label when explicit for is empty', function () {
         ->not->toContain(' for=');
 });
 
+it('keeps an explicit for target inside a selection group', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::checkbox-group name="roles[]" :options="['a' => 'A']">
+            <x-hw::field.label for="roles-a">A label</x-hw::field.label>
+        </x-hw::checkbox-group>
+    BLADE);
+
+    expect($html)->toContain('for="roles-a"')
+        ->toContain('id="roles-label"')
+        ->toContain('aria-labelledby="roles-label"');
+});
+
+it('gives repeated labels under one owner unique ids', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::checkbox-group name="roles[]" :options="['a' => 'A']">
+            <x-hw::field.label>Roles</x-hw::field.label>
+            <x-hw::field.label>Choose one or more</x-hw::field.label>
+        </x-hw::checkbox-group>
+    BLADE);
+
+    expect(substr_count($html, 'id="roles-label"'))->toBe(1)
+        ->and($html)->toContain('id="roles-label-2"')
+        ->toContain('aria-labelledby="roles-label"');
+});
+
 // --- @aware propagation from field ---
 
 it('picks up name and derives for from field via @aware', function () {

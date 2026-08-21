@@ -1,4 +1,4 @@
-@aware(['fieldName' => null, 'fieldId' => null, 'fieldContext' => null])
+@aware(['fieldName' => null, 'fieldId' => null])
 
 @php
     extract($compute($attributes));
@@ -8,8 +8,8 @@
     $labelId = $fieldOwnerContext->labelId();
     $hasExplicitAccessibleName = $attributes->has('aria-label') || $attributes->has('aria-labelledby');
 
-    if ($fieldContext instanceof \Emaia\LaravelHotwire\Support\FieldContext) {
-        $labelId = $fieldContext->registerSelection($baseId, $resolvedName, $labelId, $hasExplicitAccessibleName);
+    if ($toggleGroupFieldContext instanceof \Emaia\LaravelHotwire\Support\FieldContext) {
+        $labelId = $toggleGroupFieldContext->registerSelection($baseId, $resolvedName, $labelId, $hasExplicitAccessibleName);
     }
 
     $groupAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([

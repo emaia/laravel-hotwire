@@ -36,9 +36,11 @@ the same ARIA identity. If application code previously used `id` to identify the
 </hw:field>
 ```
 
-Field now resolves label ownership from the controls and selection groups that render in its slot. A selection group's
-own `field.label` suppresses the Field's automatic label, and only the selection group emits the set role and
-`aria-labelledby`. A single control keeps `label for`, including controls whose name ends in `[]`.
+Field now resolves label ownership from the controls and selection groups that render in its slot. A sole selection
+group's own `field.label` suppresses the Field's automatic label, and only that group emits the set role and
+`aria-labelledby`. Nested groups start a new ownership boundary. A group's own `aria-label` or `aria-labelledby` does
+not hide the Field's visible label, and Fields containing multiple owners keep their label text. A single control keeps
+`label for`, including controls whose name ends in `[]`.
 
 Raw HTML and application components cannot participate in this internal registration. If they form a set, declare it
 on Field and provide the automatic label id explicitly:
@@ -49,6 +51,9 @@ on Field and provide the automatic label id explicitly:
     <input type="radio" name="choice" value="b">
 </hw:field>
 ```
+
+When the visible label already exists elsewhere, `label-id` remains active without the `label` prop and names an
+explicit set through that external element.
 
 ### Selection group context keys are scoped
 

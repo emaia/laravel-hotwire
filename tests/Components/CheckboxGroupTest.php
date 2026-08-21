@@ -162,7 +162,7 @@ it('publishes only checkbox-group-scoped component data', function () {
 
     $groupGenericKeys = array_values(array_filter(
         array_keys($groupData),
-        fn (string $key) => ! str_starts_with($key, 'checkboxGroup') && ! str_starts_with($key, 'fieldOwner') && $key !== 'fieldControlContext' && ! in_array($key, $frameworkKeys, true),
+        fn (string $key) => ! str_starts_with($key, 'checkboxGroup') && ! str_starts_with($key, 'fieldOwner') && ! in_array($key, ['fieldContext', 'fieldControlContext'], true) && ! in_array($key, $frameworkKeys, true),
     ));
     $itemGenericKeys = array_values(array_filter(
         array_keys($itemData),
@@ -172,6 +172,7 @@ it('publishes only checkbox-group-scoped component data', function () {
     expect($groupGenericKeys)->toBe([])
         ->and($itemGenericKeys)->toBe([])
         ->and($groupData)->toHaveKeys(['checkboxGroupContext', 'checkboxGroupName', 'checkboxGroupSelected', 'checkboxGroupDisabled'])
+        ->and($groupData)->toHaveKey('fieldContext', null)
         ->and($groupData)->toHaveKey('fieldControlContext', null)
         ->and($itemData)->toHaveKeys(['checkboxGroupItemValue', 'checkboxGroupItemName', 'checkboxGroupItemDisabled']);
 });

@@ -51,10 +51,10 @@ class Label extends Component
 
         // A set has no single labelable control, so `for` would dangle. The owner names
         // itself with aria-labelledby against the id emitted here instead.
-        if ($labelsSet) {
-            $resolvedFor = null;
-        } elseif ($this->for !== null) {
+        if ($this->for !== null) {
             $resolvedFor = $this->for !== '' ? $this->for : null;
+        } elseif ($labelsSet) {
+            $resolvedFor = null;
         } elseif ($slotWrapsControl) {
             $resolvedFor = null;
         } else {

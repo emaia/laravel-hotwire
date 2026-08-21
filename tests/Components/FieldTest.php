@@ -541,3 +541,67 @@ it('rejects unsupported explicit set semantics', function () {
     expect(fn () => new Field(set: 'listbox'))
         ->toThrow(InvalidArgumentException::class, 'The Field set prop must be group, radiogroup, or null.');
 });
+
+it('keeps the automatic label and its idref when a field contains multiple selection groups', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::field label="Preferences" :error="false">
+            <x-hw::radio-group name="plan" :options="['free' => 'Free']" />
+            <x-hw::checkbox-group name="topics" :options="['news' => 'News']" />
+        </x-hw::field>
+    BLADE);
+
+    expect($html)->toContain('Preferences')
+        ->toContain('id="plan-label"')
+        ->toContain('aria-labelledby="plan-label"');
+});
+
+it('keeps the automatic label and its idref when a field contains a selection group and a control', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::field label="Preferences" :error="false">
+            <x-hw::radio-group name="plan" :options="['free' => 'Free']" />
+            <x-hw::input name="notes" />
+        </x-hw::field>
+    BLADE);
+
+    expect($html)->toContain('Preferences')
+        ->toContain('id="plan-label"')
+        ->toContain('aria-labelledby="plan-label"');
+});
+
+it('lets only the outer selection group consume a field automatic label', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::field label="Preferences" :error="false">
+            <x-hw::checkbox-group name="topics">
+                <x-hw::radio-group name="plan" :options="['free' => 'Free']" />
+            </x-hw::checkbox-group>
+        </x-hw::field>
+    BLADE);
+
+    expect($html)->toContain('Preferences')
+        ->toContain('id="topics-label"')
+        ->toMatch('/<div(?=[^>]*data-slot="checkbox-group")(?=[^>]*aria-labelledby="topics-label")[^>]*>/')
+        ->toMatch('/<div(?=[^>]*data-slot="radio-group")(?![^>]*aria-labelledby)[^>]*>/')
+        ->not->toContain('aria-labelledby="plan-label"');
+});
+
+it('keeps a visible field label when a selection group supplies aria-label', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::field name="plan" label="Visible plan" :error="false">
+            <x-hw::radio-group aria-label="Plan" :options="['free' => 'Free']" />
+        </x-hw::field>
+    BLADE);
+
+    expect($html)->toContain('Visible plan')
+        ->toContain('aria-label="Plan"');
+});
+
+it('honors an external label id for an explicit set without automatic label text', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <span id="external-label">Choices</span>
+        <x-hw::field set="radiogroup" label-id="external-label" :error="false">
+            <input type="radio" name="choice" value="a">
+        </x-hw::field>
+    BLADE);
+
+    expect($html)->toMatch('/<div(?=[^>]*data-slot="field")(?=[^>]*role="radiogroup")(?=[^>]*aria-labelledby="external-label")[^>]*>/');
+});

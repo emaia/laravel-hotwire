@@ -7,7 +7,7 @@ final class FieldContext
     /** @var array<int, array{id: string, name: ?string, kind: 'control'|'radio'|'checkbox'}> */
     private array $controls = [];
 
-    /** @var array<int, array{labelId: ?string, usesAutomaticLabel: bool}> */
+    /** @var array<int, array{labelId: ?string, usesAutomaticLabel: bool, hasLocalLabel: bool}> */
     private array $selections = [];
 
     private ?string $resolvedLabelId;
@@ -20,6 +20,15 @@ final class FieldContext
         ?string $labelId,
     ) {
         $this->resolvedLabelId = $labelId;
+    }
+
+    /** Return the Field context visible to the component currently being created. */
+    public static function consume(): ?self
+    {
+        $view = app('view');
+        $context = $view->getConsumableComponentData('fieldContext');
+
+        return $context instanceof self ? $context : null;
     }
 
     /**
@@ -59,6 +68,7 @@ final class FieldContext
         $this->selections[] = [
             'labelId' => $labelId,
             'usesAutomaticLabel' => $usesAutomaticLabel,
+            'hasLocalLabel' => $localLabelId !== null,
         ];
 
         return $labelId;
@@ -75,20 +85,32 @@ final class FieldContext
             $selection = $this->selections[0];
 
             return $this->resolution(
-                renderLabel: $this->hasAutomaticLabel() && $selection['usesAutomaticLabel'],
+                renderLabel: $this->hasAutomaticLabel() && ! $selection['hasLocalLabel'],
+                labelFor: $selection['usesAutomaticLabel'] ? null : '',
                 labelId: $selection['labelId'],
-                labelSet: true,
+                labelSet: $selection['usesAutomaticLabel'],
             );
         }
 
         if ($this->selections !== []) {
-            return $this->resolution(renderLabel: false);
+            $labelId = $this->resolvedLabelId;
+
+            return $this->resolution(
+                renderLabel: $this->hasAutomaticLabel(),
+                labelFor: $labelId === null ? '' : null,
+                labelId: $labelId,
+                labelSet: $labelId !== null,
+            );
         }
 
         $setRole = $this->set ?? $this->inferredSetRole();
 
         if ($setRole !== null) {
-            $labelId = $this->hasAutomaticLabel() ? $this->resolveLabelId() : null;
+            $labelId = $this->resolvedLabelId;
+
+            if (($labelId === null || $labelId === '') && $this->hasAutomaticLabel()) {
+                $labelId = $this->resolveLabelId();
+            }
 
             return $this->resolution(
                 renderLabel: $this->hasAutomaticLabel(),

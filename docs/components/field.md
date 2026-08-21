@@ -218,8 +218,13 @@ control carries. `<hw:radio-group>`, `<hw:checkbox-group>`, and `<hw:toggle-grou
 </hw:field>
 ```
 
-An explicit label inside a selection group takes precedence over the surrounding Field's automatic `label`; only the
-inner label renders. A nameless Field can also derive the automatic label id from its named selection group.
+An explicit label inside a sole selection group takes precedence over the surrounding Field's automatic `label`; only
+the inner label renders. A group's `aria-label` or `aria-labelledby` does not hide the Field's visible label text. A
+nameless Field can also derive the automatic label id from its named selection group.
+
+Only a selection group directly owned by the Field can consume its automatic label. Nested selection groups start a new
+boundary, so an inner group must provide its own accessible name. If a Field contains multiple controls or groups, its
+label remains visible; give every additional semantic group an explicit accessible name.
 
 Field-aware package controls register their final ids while Blade renders the slot. A Field wrapping one control keeps
 `<label for>` even when its name ends in `[]`. Two or more package radio inputs with the same name are inferred as a
@@ -233,6 +238,14 @@ For raw HTML or application components, declare set semantics explicitly and pro
     <input type="radio" name="choice" value="a">
     <input type="radio" name="choice" value="b">
 </hw:field>
+```
+
+`label-id` can also reference visible text rendered elsewhere. Without the `label` prop, Field does not render another
+label but still emits `aria-labelledby` on an explicit set:
+
+```blade
+<span id="choices-label">Choices</span>
+<hw:field set="radiogroup" label-id="choices-label">...</hw:field>
 ```
 
 One shape is not covered: a `<hw:field.label>` written directly in a `<hw:field>` slot as a sibling of the group. Blade
@@ -335,7 +348,7 @@ orientation state for the preset.
 | `id`             | `string\|null`                     | `null`     | Control id base propagated to labels, controls, selection groups, and errors.                |
 | `wrapper-id`     | `string\|null`                     | `null`     | Optional id for the Field wrapper itself.                                                     |
 | `label`          | `string\|null`                     | `null`     | Auto-renders `field.label` before the slot. Empty string skips it.                           |
-| `label-id`       | `string\|null`                     | `null`     | Id for an automatic set label, typically paired with `set`.                                  |
+| `label-id`       | `string\|null`                     | `null`     | Id for an automatic or external set label, typically paired with `set`.                      |
 | `set`            | `group\|radiogroup\|null`         | `null`     | Explicit set semantics for raw HTML or application controls.                                 |
 | `description`    | `string\|null`                     | `null`     | Auto-renders `field.description` after the slot and before the error. Empty string skips it. |
 | `required-label` | `string`                           | `"*"`      | Marker text passed to the auto-rendered `field.label`.                                       |
@@ -386,7 +399,8 @@ Form `<label>` that derives `for` from the surrounding field and renders an opti
 ```
 
 If the label wraps an `<input>`, `<select>`, or `<textarea>`, the component omits `for` and uses HTML's implicit labeling
-pattern.
+pattern. An explicit `for`, including one on a label inside a selection group, always takes precedence. Repeated labels
+under one selection owner receive unique ids; its `aria-labelledby` continues to reference the first.
 
 ### `<hw:field.title>`
 

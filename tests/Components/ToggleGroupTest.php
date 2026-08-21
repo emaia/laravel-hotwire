@@ -92,7 +92,7 @@ it('publishes only toggle-group-scoped component data', function () {
 
     $groupGenericKeys = array_values(array_filter(
         array_keys($groupData),
-        fn (string $key) => ! str_starts_with($key, 'toggleGroup') && ! str_starts_with($key, 'fieldOwner') && $key !== 'fieldControlContext' && ! in_array($key, $frameworkKeys, true),
+        fn (string $key) => ! str_starts_with($key, 'toggleGroup') && ! str_starts_with($key, 'fieldOwner') && ! in_array($key, ['fieldContext', 'fieldControlContext'], true) && ! in_array($key, $frameworkKeys, true),
     ));
     $itemGenericKeys = array_values(array_filter(
         array_keys($itemData),
@@ -102,6 +102,7 @@ it('publishes only toggle-group-scoped component data', function () {
     expect($groupGenericKeys)->toBe([])
         ->and($itemGenericKeys)->toBe([])
         ->and($groupData)->toHaveKeys(['toggleGroupContext', 'toggleGroupName', 'toggleGroupSelected', 'toggleGroupDisabled'])
+        ->and($groupData)->toHaveKey('fieldContext', null)
         ->and($groupData)->toHaveKey('fieldControlContext', null)
         ->and($groupData)->not->toHaveKey('groupDisabled')
         ->and($itemData)->toHaveKeys(['toggleGroupItemValue', 'toggleGroupItemName', 'toggleGroupItemDisabled']);

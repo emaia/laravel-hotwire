@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Components;
 
 use Emaia\LaravelHotwire\Support\AutoSubmit;
+use Emaia\LaravelHotwire\Support\FieldContext;
 use Emaia\LaravelHotwire\Support\FieldKey;
 use Emaia\LaravelHotwire\Support\FieldOwnerContext;
 use Illuminate\Contracts\Support\Htmlable;
@@ -94,6 +95,8 @@ class CheckboxGroup extends Component
         $data['fieldOwnerId'] = $this->id;
         $data['fieldOwnerErrorKey'] = $this->errorKey;
         $data['fieldOwnerContext'] = $this->ownerContext;
+        $data['checkboxGroupFieldContext'] = FieldContext::consume();
+        $data['fieldContext'] = null;
         $data['fieldControlContext'] = null;
         $data['internalPrefixes'] = array_values(array_filter([
             $this->selectAll ? 'data-checkbox-select-all-' : null,
