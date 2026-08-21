@@ -133,7 +133,7 @@ it('publishes only radio-group-scoped component data', function () {
 
     $groupGenericKeys = array_values(array_filter(
         array_keys($groupData),
-        fn (string $key) => ! str_starts_with($key, 'radioGroup') && ! in_array($key, $frameworkKeys, true),
+        fn (string $key) => ! str_starts_with($key, 'radioGroup') && ! str_starts_with($key, 'fieldOwner') && ! in_array($key, $frameworkKeys, true),
     ));
     $itemGenericKeys = array_values(array_filter(
         array_keys($itemData),
@@ -363,4 +363,25 @@ it('registers radio group in the component catalog', function () {
         ->and($radioItem->class)->toBe(Item::class)
         ->and($radioItem->view)->toBe('hotwire::component-views.radio-group-item')
         ->and($radioItem->controllers)->toBe(['auto-submit']);
+});
+
+it('resolves field error and label against the radio group name without a field root', function () {
+    $bag = new ViewErrorBag;
+    $bag->put('default', new MessageBag(['plan' => ['Escolha uma opcao']]));
+    view()->share('errors', $bag);
+
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::radio-group name="plan" :options="['free' => 'Free']">
+            <x-hw::field.label>Rotulo</x-hw::field.label>
+            
+            <x-hw::field.error />
+        </x-hw::radio-group>
+    BLADE);
+
+    $html = (string) $view;
+
+    expect($html)->toContain('id="plan-error"')
+        ->toContain('Escolha uma opcao')
+        ->toContain('for="plan"')
+        ->not->toContain('hw-error-');
 });

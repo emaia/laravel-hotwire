@@ -576,3 +576,29 @@ it('passes through arbitrary attributes', function () {
     $view->assertSee('placeholder="you@example.com"', false);
     $view->assertSee('data-test="x"', false);
 });
+
+it('keeps per-value ids on group inputs when the field supplies the id base', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::field name="plan" id="plan" label="Plan">
+            <x-hw::input type="radio" value="free" />
+            <x-hw::input type="radio" value="pro" />
+        </x-hw::field>
+    BLADE);
+
+    $html = (string) $view;
+
+    expect($html)->toContain('id="plan-free"')
+        ->toContain('id="plan-pro"')
+        ->and(substr_count($html, 'id="plan"'))->toBe(0);
+});
+
+it('lets an explicit input id pin a group input against the field id base', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::field name="plan" id="plan" label="Plan">
+            <x-hw::input type="radio" value="free" id="pinned" />
+        </x-hw::field>
+    BLADE);
+
+    expect((string) $view)->toContain('id="pinned"')
+        ->not->toContain('id="pinned-free"');
+});

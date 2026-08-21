@@ -72,6 +72,7 @@ class Input extends Component
     private function computeResolved(
         ?string $name,
         ?string $id,
+        ?string $fieldId,
         ?string $errorKey,
         bool $required,
         ViewErrorBag $errorsBag,
@@ -80,7 +81,7 @@ class Input extends Component
         $isCheckable = $this->isCheckable();
         $hasName = $name !== null && $name !== '';
 
-        $baseId = $id ?: ($hasName ? FieldKey::toId($name) : 'hw-input-'.uniqid());
+        $baseId = $id ?: ($fieldId ?: ($hasName ? FieldKey::toId($name) : 'hw-input-'.uniqid()));
         $resolvedId = $baseId;
 
         $isGroupInput = $isCheckable

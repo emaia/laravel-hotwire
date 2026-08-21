@@ -92,7 +92,7 @@ it('publishes only toggle-group-scoped component data', function () {
 
     $groupGenericKeys = array_values(array_filter(
         array_keys($groupData),
-        fn (string $key) => ! str_starts_with($key, 'toggleGroup') && ! in_array($key, $frameworkKeys, true),
+        fn (string $key) => ! str_starts_with($key, 'toggleGroup') && ! str_starts_with($key, 'fieldOwner') && ! in_array($key, $frameworkKeys, true),
     ));
     $itemGenericKeys = array_values(array_filter(
         array_keys($itemData),
@@ -285,4 +285,25 @@ it('registers toggle group in the component and controller catalogs', function (
         ->and($controller->source)->toBe('resources/js/controllers/toggle_group_controller.js')
         ->and($controller->docs)->toBe('docs/controllers/toggle-group.md')
         ->and(ComponentAliases::subComponents())->toHaveKey('toggle-group.item', ToggleGroupItem::class);
+});
+
+it('resolves field error and label against the toggle group name without a field root', function () {
+    $bag = new ViewErrorBag;
+    $bag->put('default', new MessageBag(['formats' => ['Escolha uma opcao']]));
+    view()->share('errors', $bag);
+
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::toggle-group name="formats">
+            <x-hw::field.label>Rotulo</x-hw::field.label>
+            <x-hw::toggle-group.item value="bold">Bold</x-hw::toggle-group.item>
+            <x-hw::field.error />
+        </x-hw::toggle-group>
+    BLADE);
+
+    $html = (string) $view;
+
+    expect($html)->toContain('id="formats-error"')
+        ->toContain('Escolha uma opcao')
+        ->toContain('for="formats"')
+        ->not->toContain('hw-error-');
 });

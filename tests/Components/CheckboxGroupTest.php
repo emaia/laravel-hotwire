@@ -162,7 +162,7 @@ it('publishes only checkbox-group-scoped component data', function () {
 
     $groupGenericKeys = array_values(array_filter(
         array_keys($groupData),
-        fn (string $key) => ! str_starts_with($key, 'checkboxGroup') && ! in_array($key, $frameworkKeys, true),
+        fn (string $key) => ! str_starts_with($key, 'checkboxGroup') && ! str_starts_with($key, 'fieldOwner') && ! in_array($key, $frameworkKeys, true),
     ));
     $itemGenericKeys = array_values(array_filter(
         array_keys($itemData),
@@ -600,4 +600,25 @@ it('uses error key for error lookup, aria-describedby from name', function () {
     $view->assertSee('aria-invalid="true"', false);
     // error-key prop is consumed by component, not leaked as DOM attribute
     $view->assertDontSee('error-key', false);
+});
+
+it('resolves field error and label against the checkbox group name without a field root', function () {
+    $bag = new ViewErrorBag;
+    $bag->put('default', new MessageBag(['roles' => ['Escolha uma opcao']]));
+    view()->share('errors', $bag);
+
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::checkbox-group name="roles[]" :options="['admin' => 'Admin']">
+            <x-hw::field.label>Rotulo</x-hw::field.label>
+            
+            <x-hw::field.error />
+        </x-hw::checkbox-group>
+    BLADE);
+
+    $html = (string) $view;
+
+    expect($html)->toContain('id="roles-error"')
+        ->toContain('Escolha uma opcao')
+        ->toContain('for="roles"')
+        ->not->toContain('hw-error-');
 });

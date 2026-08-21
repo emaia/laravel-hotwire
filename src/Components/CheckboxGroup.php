@@ -66,6 +66,24 @@ class CheckboxGroup extends Component
         $data['checkboxGroupAutoSubmit'] = $this->autoSubmit;
         $data['checkboxGroupAutoSubmitDelay'] = $this->autoSubmitDelay;
         $data['checkboxGroupDisableIndeterminate'] = $this->disableIndeterminate;
+
+        // A selection group owns a name, an id base and an error key, so field.label and
+        // field.error nested in it must resolve against the group rather than a Field far
+        // above. This is deliberately not the fieldName/fieldId/fieldErrorKey protocol:
+        // group items end their fallback chain on those keys, and reusing them here would
+        // let an outer group's name leak into a nameless inner group. Publish only the
+        // keys this group actually owns, so a surrounding Field still passes through.
+        if ($this->name !== null && $this->name !== '') {
+            $data['fieldOwnerName'] = $this->name;
+        }
+
+        if ($this->id !== null && $this->id !== '') {
+            $data['fieldOwnerId'] = $this->id;
+        }
+
+        if ($this->errorKey !== null && $this->errorKey !== '') {
+            $data['fieldOwnerErrorKey'] = $this->errorKey;
+        }
         $data['internalPrefixes'] = array_values(array_filter([
             $this->selectAll ? 'data-checkbox-select-all-' : null,
             AutoSubmit::enabled($this->autoSubmit) ? 'data-auto-submit-' : null,

@@ -2,9 +2,8 @@
 
 @php
     $name = $name ?? $fieldName;
-    $id = $id ?? $fieldId;
     $errorKey = $errorKey ?? $fieldErrorKey;
-    extract($compute($name, $id, $errorKey, $fieldRequired ?? false, $errors ?? new \Illuminate\Support\ViewErrorBag, $attributes));
+    extract($compute($name, $id ?? null, $fieldId, $errorKey, $fieldRequired ?? false, $errors ?? new \Illuminate\Support\ViewErrorBag, $attributes));
 
     $inputAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
         'data-slot' => 'input',

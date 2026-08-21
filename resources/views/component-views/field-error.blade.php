@@ -1,8 +1,9 @@
-@aware(['fieldName' => null, 'fieldId' => null, 'fieldErrorKey' => null])
+@aware(['fieldName' => null, 'fieldId' => null, 'fieldErrorKey' => null, 'fieldOwnerName' => null, 'fieldOwnerId' => null, 'fieldOwnerErrorKey' => null])
 
 @php
-    $resolvedContextId = $id ?? ($fieldId ? $fieldId.'-error' : null);
-    extract($compute($name ?? $fieldName, $errorKey ?? $fieldErrorKey, $resolvedContextId, $errors));
+    $ownerId = $fieldOwnerId ?? $fieldId;
+    $resolvedContextId = $id ?? ($ownerId ? $ownerId.'-error' : null);
+    extract($compute($name ?? $fieldOwnerName ?? $fieldName, $errorKey ?? $fieldOwnerErrorKey ?? $fieldErrorKey, $resolvedContextId, $errors));
 @endphp
 
 <div
