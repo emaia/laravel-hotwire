@@ -1,9 +1,11 @@
-@aware(['fieldName' => null, 'fieldId' => null, 'fieldErrorKey' => null, 'fieldOwnerName' => null, 'fieldOwnerId' => null, 'fieldOwnerErrorKey' => null])
+@aware(['fieldName' => null, 'fieldId' => null, 'fieldErrorKey' => null, 'fieldOwner' => false, 'fieldOwnerName' => null, 'fieldOwnerId' => null, 'fieldOwnerErrorKey' => null])
 
 @php
-    $ownerId = $fieldOwnerId ?? $fieldId;
+    $ownerName = $fieldOwner ? $fieldOwnerName : $fieldName;
+    $ownerId = $fieldOwner ? $fieldOwnerId : $fieldId;
+    $ownerErrorKey = $fieldOwner ? $fieldOwnerErrorKey : $fieldErrorKey;
     $resolvedContextId = $id ?? ($ownerId ? $ownerId.'-error' : null);
-    extract($compute($name ?? $fieldOwnerName ?? $fieldName, $errorKey ?? $fieldOwnerErrorKey ?? $fieldErrorKey, $resolvedContextId, $errors));
+    extract($compute($name ?? $ownerName, $errorKey ?? $ownerErrorKey, $resolvedContextId, $errors));
 @endphp
 
 <div

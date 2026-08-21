@@ -1,8 +1,10 @@
-@aware(['fieldName' => null, 'fieldId' => null, 'fieldRequired' => false, 'fieldOwnerName' => null, 'fieldOwnerId' => null])
+@aware(['fieldName' => null, 'fieldId' => null, 'fieldRequired' => false, 'fieldOwner' => false, 'fieldOwnerName' => null, 'fieldOwnerId' => null])
 
 @php
     $resolvedRequired = $required ?? $fieldRequired ?? false;
-    extract($compute($name ?? $fieldOwnerName ?? $fieldName, $fieldOwnerId ?? $fieldId, $slot));
+    $ownerName = $fieldOwner ? $fieldOwnerName : $fieldName;
+    $ownerId = $fieldOwner ? $fieldOwnerId : $fieldId;
+    extract($compute($name ?? $ownerName, $ownerId, $slot));
 @endphp
 
 <label

@@ -610,7 +610,7 @@ it('resolves field error and label against the checkbox group name without a fie
     $view = $this->blade(<<<'BLADE'
         <x-hw::checkbox-group name="roles[]" :options="['admin' => 'Admin']">
             <x-hw::field.label>Rotulo</x-hw::field.label>
-            
+
             <x-hw::field.error />
         </x-hw::checkbox-group>
     BLADE);

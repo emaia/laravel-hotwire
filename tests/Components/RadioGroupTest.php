@@ -373,7 +373,7 @@ it('resolves field error and label against the radio group name without a field 
     $view = $this->blade(<<<'BLADE'
         <x-hw::radio-group name="plan" :options="['free' => 'Free']">
             <x-hw::field.label>Rotulo</x-hw::field.label>
-            
+
             <x-hw::field.error />
         </x-hw::radio-group>
     BLADE);
@@ -384,4 +384,24 @@ it('resolves field error and label against the radio group name without a field 
         ->toContain('Escolha uma opcao')
         ->toContain('for="plan"')
         ->not->toContain('hw-error-');
+});
+
+it('does not mix owner identity between nested radio groups', function () {
+    shareRadioGroupErrors(['outer.key' => ['Outer message'], 'inner' => ['Inner message']]);
+
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::radio-group name="outer" id="outer-id" error-key="outer.key">
+            <x-hw::radio-group name="inner">
+                <x-hw::field.label>Inner</x-hw::field.label>
+                <x-hw::field.error />
+            </x-hw::radio-group>
+        </x-hw::radio-group>
+    BLADE);
+
+    $view->assertSee('for="inner"', false)
+        ->assertSee('id="inner-error"', false)
+        ->assertSee('Inner message', false)
+        ->assertDontSee('for="outer-id"', false)
+        ->assertDontSee('id="outer-id-error"', false)
+        ->assertDontSee('Outer message', false);
 });
