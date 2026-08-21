@@ -31,6 +31,15 @@ final class FieldContext
         return $context instanceof self ? $context : null;
     }
 
+    /** Return the control-registration context visible to the component currently being created. */
+    public static function consumeControl(): ?self
+    {
+        $view = app('view');
+        $context = $view->getConsumableComponentData('fieldControlContext');
+
+        return $context instanceof self ? $context : null;
+    }
+
     /**
      * Register the final identity of a labelable control rendered by the package.
      *
@@ -47,8 +56,6 @@ final class FieldContext
 
     /** Register a selection owner and return the label id it should reference. */
     public function registerSelection(
-        ?string $id,
-        ?string $name,
         ?string $localLabelId,
         bool $hasExplicitLabelledby,
     ): ?string {
@@ -59,10 +66,9 @@ final class FieldContext
             $labelId === null
             && ! $hasExplicitLabelledby
             && $this->set === null
-            && $this->hasAutomaticLabel()
-            && $this->selections === []
+            && ($this->hasAutomaticLabel() || $this->resolvedLabelId !== null)
         ) {
-            $labelId = $this->resolveLabelId($id, $name);
+            $labelId = $this->resolveLabelId();
             $usesAutomaticLabel = true;
         }
 
@@ -81,6 +87,12 @@ final class FieldContext
         return $id
             ?: $this->id
             ?: ($name !== null && $name !== '' ? FieldKey::toId($name) : null);
+    }
+
+    /** Determine whether this Field explicitly owns set semantics. */
+    public function ownsSet(): bool
+    {
+        return $this->set !== null;
     }
 
     /**
@@ -109,14 +121,13 @@ final class FieldContext
             $labelId = $this->hasAutomaticLabel()
                 ? $this->resolveLabelId()
                 : $this->resolvedLabelId;
+            $labelFor = count($this->controls) === 1 ? $this->controls[0]['id'] : null;
 
             return $this->resolution(
                 renderLabel: $this->hasAutomaticLabel(),
-                labelFor: $labelId === null ? '' : null,
+                labelFor: $labelFor ?? ($labelId === null ? '' : null),
                 labelId: $labelId,
                 labelSet: $labelId !== null,
-                role: 'group',
-                ariaLabelledby: $labelId,
             );
         }
 
@@ -176,20 +187,25 @@ final class FieldContext
         );
     }
 
-    private function resolveLabelId(?string $fallbackId = null, ?string $fallbackName = null): string
+    private function resolveLabelId(): string
     {
         if ($this->resolvedLabelId !== null && $this->resolvedLabelId !== '') {
             return $this->resolvedLabelId;
         }
 
         $base = $this->id
-            ?: ($this->name ? FieldKey::toId($this->name) : null)
-            ?: $fallbackId
-            ?: ($fallbackName ? FieldKey::toId($fallbackName) : null);
+            ?: ($this->name ? FieldKey::toId($this->name) : null);
 
-        return $this->resolvedLabelId = $base
-            ? $base.'-label'
-            : 'hw-field-label-'.uniqid();
+        $labelId = $base ? $base.'-label' : 'hw-field-label-'.uniqid();
+        $claimedIds = array_column($this->selections, 'labelId');
+        $suffix = 2;
+
+        while (in_array($labelId, $claimedIds, true)) {
+            $labelId = ($base ? $base.'-label' : $labelId).'-'.$suffix;
+            $suffix++;
+        }
+
+        return $this->resolvedLabelId = $labelId;
     }
 
     private function inferredSetRole(): ?string

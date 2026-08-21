@@ -33,6 +33,19 @@ message is a status message shown next to the list rather than a listbox option.
 />
 ```
 
+## Field Labels
+
+Inside `<hw:field>`, Multi Select registers its visible trigger as the label target. Its optional search input belongs to
+the popup and never replaces that association:
+
+```blade
+<hw:field name="categories" label="Categories">
+    <hw:multi-select :options="$categories" />
+</hw:field>
+```
+
+The label keeps `for="categories"` whether search is enabled or disabled.
+
 ## Positioning
 
 The listbox uses the shared Floating UI helper and supports Dropdown's core side, alignment, offset, strategy, flip, and

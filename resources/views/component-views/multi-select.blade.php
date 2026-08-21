@@ -6,6 +6,10 @@
     $errorKey = $errorKey ?? $fieldErrorKey;
     extract($compute($name, $id, $errorKey, $fieldRequired ?? false, $errors, $attributes));
 
+    if ($multiSelectFieldContext instanceof \Emaia\LaravelHotwire\Support\FieldContext) {
+        $multiSelectFieldContext->registerControl($resolvedId, $submissionName);
+    }
+
     $multiSelectAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
         'data-slot' => 'multi-select',
         'data-controller' => 'multi-select',

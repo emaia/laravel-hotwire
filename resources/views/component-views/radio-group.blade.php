@@ -4,16 +4,18 @@
     extract($compute($radioGroupName ?? $fieldName, $radioGroupId ?? $fieldId, $radioGroupErrorKey ?? $fieldErrorKey, $errors, $attributes));
 
     $labelId = $fieldOwnerContext->labelId();
-    $hasExplicitLabelledby = $attributes->has('aria-labelledby');
+    $fieldOwnsSet = $radioGroupFieldContext instanceof \Emaia\LaravelHotwire\Support\FieldContext
+        && $radioGroupFieldContext->ownsSet();
+    $hasExplicitAccessibleName = $attributes->has('aria-labelledby') || $attributes->has('aria-label');
 
     if ($radioGroupFieldContext instanceof \Emaia\LaravelHotwire\Support\FieldContext) {
-        $labelId = $radioGroupFieldContext->registerSelection($baseId, $name, $labelId, $hasExplicitLabelledby);
+        $labelId = $radioGroupFieldContext->registerSelection($labelId, $hasExplicitAccessibleName);
     }
 
     $radioGroupAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
         'data-slot' => 'radio-group',
-        'role' => 'radiogroup',
-        'aria-labelledby' => $labelId,
+        'role' => $fieldOwnsSet ? null : 'radiogroup',
+        'aria-labelledby' => $fieldOwnsSet || $hasExplicitAccessibleName ? null : $labelId,
         'data-orientation' => $radioGroupOrientation,
         'class' => filled($radioGroupWrapperClass) ? $radioGroupWrapperClass : null,
     ], $attributes, $radioGroupStimulus, except: ['auto-submit', 'auto-submit-delay', 'orientation', 'disabled'], protectedPrefixes: $internalPrefixes);

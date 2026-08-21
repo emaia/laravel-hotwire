@@ -4,16 +4,18 @@
     extract($compute($checkboxGroupName ?? $fieldName, $checkboxGroupId ?? $fieldId, $checkboxGroupErrorKey ?? $fieldErrorKey, $errors, $attributes));
 
     $labelId = $fieldOwnerContext->labelId();
-    $hasExplicitLabelledby = $attributes->has('aria-labelledby');
+    $fieldOwnsSet = $checkboxGroupFieldContext instanceof \Emaia\LaravelHotwire\Support\FieldContext
+        && $checkboxGroupFieldContext->ownsSet();
+    $hasExplicitAccessibleName = $attributes->has('aria-labelledby') || $attributes->has('aria-label');
 
     if ($checkboxGroupFieldContext instanceof \Emaia\LaravelHotwire\Support\FieldContext) {
-        $labelId = $checkboxGroupFieldContext->registerSelection($baseId, $name, $labelId, $hasExplicitLabelledby);
+        $labelId = $checkboxGroupFieldContext->registerSelection($labelId, $hasExplicitAccessibleName);
     }
 
     $checkboxGroupAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
         'data-slot' => 'checkbox-group',
-        'role' => 'group',
-        'aria-labelledby' => $labelId,
+        'role' => $fieldOwnsSet ? null : 'group',
+        'aria-labelledby' => $fieldOwnsSet || $hasExplicitAccessibleName ? null : $labelId,
         'data-orientation' => $checkboxGroupOrientation,
         'data-controller' => $wrapperController ?: null,
         'data-checkbox-select-all-disable-indeterminate-value' => $checkboxGroupSelectAll && $checkboxGroupDisableIndeterminate ? 'true' : null,

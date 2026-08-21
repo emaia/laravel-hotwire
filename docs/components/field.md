@@ -224,14 +224,13 @@ control carries. `<hw:radio-group>`, `<hw:checkbox-group>`, and `<hw:toggle-grou
 ```
 
 An explicit label inside a sole selection group takes precedence over the surrounding Field's automatic `label`; only
-the inner label renders. A group's `aria-label` does not hide the Field's visible label text: the group also references
-that label with `aria-labelledby`. An explicit `aria-labelledby` remains authoritative. A nameless Field can derive the
-automatic label id from its named selection group.
+the inner label renders. Explicit `aria-label` and `aria-labelledby` attributes on a group remain authoritative and do
+not hide the Field's visible text. A nameless Field generates its own render-scoped label id; pass `label-id` when the id
+must be deterministic.
 
 Only a selection group directly owned by the Field can consume its automatic label. Nested selection groups start a new
-boundary, so an inner group must provide its own accessible name. If a Field contains multiple controls or groups, its
-wrapper keeps `role="group"` and is named by the visible label; give every additional semantic group an explicit
-accessible name.
+boundary, so an inner group must provide its own accessible name. Multiple direct selection groups each reference the
+same Field label, while the Field wrapper leaves role ownership to those groups.
 
 Field-aware package controls register their final ids while Blade renders the slot. A Field wrapping one control keeps
 `<label for>` even when its name ends in `[]`. Two or more package radio inputs with the same name are inferred as a
@@ -248,15 +247,16 @@ For raw HTML or application components, declare set semantics explicitly and pro
 ```
 
 `label-id` can also reference visible text rendered elsewhere. Without the `label` prop, Field does not render another
-label but still emits `aria-labelledby` on an explicit set:
+label but still supplies `aria-labelledby` to direct selection groups or an explicit set:
 
 ```blade
 <span id="choices-label">Choices</span>
 <hw:field set="radiogroup" label-id="choices-label">...</hw:field>
 ```
 
-An explicit `set` keeps semantic ownership on Field even when its slot contains a selection-group component. Omit `set`
-to delegate ownership to a sole selection group.
+An explicit `set` keeps semantic ownership on Field even when its slot contains selection-group components. Their roots
+cede `role` and generated `aria-labelledby` to avoid nested set semantics. Omit `set` to delegate ownership to the
+selection groups.
 
 One shape is not covered: a `<hw:field.label>` written directly in a `<hw:field>` slot as a sibling of the group. Blade
 renders slot content before the surrounding view, so the label cannot know a set follows it and still emits `for`. Use
@@ -265,10 +265,12 @@ the `label` prop on `<hw:field>` or move the label inside the group.
 The automatic error follows the Field identity. If a child overrides `name`, `id`, or `error-key`, disable the automatic
 error with `:error="false"` and render a matching `<hw:field.error>` for that child identity.
 
-`field.label` uses `for` for a single labelable native control. Selection groups and native radio/checkbox sets use the
-`aria-labelledby` contract above. Other composite controls such as File Upload, Multi Select, and Rich Text still use
-the Field id as an internal/root id base rather than a single label target; give those controls their own accessible
-name and use `field.title` for visible text.
+`field.label` uses `for` for a single labelable native control. Multi Select registers its trigger as that control and
+keeps its internal search input out of Field ownership. Selection groups and native radio/checkbox sets use the
+`aria-labelledby` contract above. Other composite controls such as File Upload and Rich Text still use the Field id as
+an internal/root id base rather than a single label target; give those controls their own accessible name and use
+`field.title` for visible text. Package interaction boundaries such as Dropdown do not leak their internal controls into
+the surrounding Field.
 
 ```blade
 <hw:field name="variables[0][name]" error-key="indicator.name">

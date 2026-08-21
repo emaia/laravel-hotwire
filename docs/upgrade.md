@@ -41,10 +41,13 @@ reusing the Field id. This prevents sibling controls with different names from r
 inherit or repeat the Field name still inherit its id.
 
 Field now resolves label ownership from the controls and selection groups that render in its slot. A sole selection
-group’s own `field.label` suppresses the Field's automatic label, and only that group emits the set role and
-`aria-labelledby`. Nested groups start a new ownership boundary. A group's own `aria-label` or `aria-labelledby` does
-not hide the Field's visible label, and Fields containing multiple owners keep their label text. A single control keeps
-`label for`, including controls whose name ends in `[]`.
+group's own `field.label` suppresses the Field's automatic label, and only that group emits the set role and
+`aria-labelledby`. Nested groups start a new ownership boundary. Explicit `aria-label` and `aria-labelledby` attributes
+remain authoritative. Multiple direct selection groups each reference the same Field label without adding a competing
+role to the Field wrapper. A single control keeps `label for`, including controls whose name ends in `[]`.
+
+Multi Select now registers its visible trigger with Field and blocks its popup search input from taking over the label.
+Dropdown similarly blocks nested interaction controls from registering with a surrounding Field.
 
 Raw HTML and application components cannot participate in this internal registration. If they form a set, declare it
 on Field and provide the automatic label id explicitly:
@@ -56,8 +59,9 @@ on Field and provide the automatic label id explicitly:
 </hw:field>
 ```
 
-When the visible label already exists elsewhere, `label-id` remains active without the `label` prop and names an
-explicit set through that external element.
+When the visible label already exists elsewhere, `label-id` remains active without the `label` prop and names direct
+selection groups or an explicit set through that external element. With `set`, selection-group roots cede their own
+generated roles and labels to the Field wrapper.
 
 ### Selection group context keys are scoped
 

@@ -6,15 +6,17 @@
     $resolvedName = $toggleGroupName ?? $fieldName;
     $baseId = $toggleGroupId ?? $fieldId ?? ($resolvedName ? \Emaia\LaravelHotwire\Support\FieldKey::toId($resolvedName) : null);
     $labelId = $fieldOwnerContext->labelId();
-    $hasExplicitLabelledby = $attributes->has('aria-labelledby');
+    $fieldOwnsSet = $toggleGroupFieldContext instanceof \Emaia\LaravelHotwire\Support\FieldContext
+        && $toggleGroupFieldContext->ownsSet();
+    $hasExplicitAccessibleName = $attributes->has('aria-labelledby') || $attributes->has('aria-label');
 
     if ($toggleGroupFieldContext instanceof \Emaia\LaravelHotwire\Support\FieldContext) {
-        $labelId = $toggleGroupFieldContext->registerSelection($baseId, $resolvedName, $labelId, $hasExplicitLabelledby);
+        $labelId = $toggleGroupFieldContext->registerSelection($labelId, $hasExplicitAccessibleName);
     }
 
     $groupAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
-        'role' => 'group',
-        'aria-labelledby' => $labelId,
+        'role' => $fieldOwnsSet ? null : 'group',
+        'aria-labelledby' => $fieldOwnsSet || $hasExplicitAccessibleName ? null : $labelId,
         'data-slot' => 'toggle-group',
         'data-controller' => $elementController,
         'data-action' => $elementAction,

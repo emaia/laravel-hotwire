@@ -498,8 +498,10 @@ it('uses a named selection group to identify a label from a nameless field', fun
         </x-hw::field>
     BLADE);
 
-    expect($html)->toContain('id="tags-label"')
-        ->toMatch('/<div(?=[^>]*data-slot="checkbox-group")(?=[^>]*aria-labelledby="tags-label")[^>]*>/');
+    preg_match('/<label[^>]*id="([^"]+)"/', $html, $label);
+
+    expect($label[1] ?? null)->toStartWith('hw-field-label-')
+        ->and($html)->toContain('aria-labelledby="'.$label[1].'"');
 });
 
 it('lets an inner selection label suppress the outer automatic label', function () {
@@ -544,16 +546,18 @@ it('rejects unsupported explicit set semantics', function () {
 
 it('keeps the automatic label and its idref when a field contains multiple selection groups', function () {
     $html = (string) $this->blade(<<<'BLADE'
-        <x-hw::field label="Preferences" :error="false">
+        <x-hw::field name="preferences" label="Preferences" :error="false">
             <x-hw::radio-group name="plan" :options="['free' => 'Free']" />
             <x-hw::checkbox-group name="topics" :options="['news' => 'News']" />
         </x-hw::field>
     BLADE);
 
     expect($html)->toContain('Preferences')
-        ->toContain('id="plan-label"')
-        ->toContain('aria-labelledby="plan-label"')
-        ->toMatch('/<div(?=[^>]*data-slot="field")(?=[^>]*role="group")(?=[^>]*aria-labelledby="plan-label")[^>]*>/');
+        ->toContain('id="preferences-label"')
+        ->toMatch('/<div(?=[^>]*data-slot="radio-group")(?=[^>]*aria-labelledby="preferences-label")[^>]*>/')
+        ->toMatch('/<div(?=[^>]*data-slot="checkbox-group")(?=[^>]*aria-labelledby="preferences-label")[^>]*>/')
+        ->toMatch('/<div(?=[^>]*data-slot="field")(?![^>]*role=)(?![^>]*aria-labelledby=)[^>]*>/')
+        ->and(substr_count($html, 'id="preferences-label"'))->toBe(1);
 });
 
 it('keeps the automatic label and its idref when a field contains a selection group and a control', function () {
@@ -564,9 +568,12 @@ it('keeps the automatic label and its idref when a field contains a selection gr
         </x-hw::field>
     BLADE);
 
+    preg_match('/<label[^>]*id="([^"]+)"/', $html, $label);
+
     expect($html)->toContain('Preferences')
-        ->toContain('id="plan-label"')
-        ->toContain('aria-labelledby="plan-label"');
+        ->toContain('for="notes"')
+        ->toContain('aria-labelledby="'.$label[1].'"')
+        ->and($label[1] ?? null)->toStartWith('hw-field-label-');
 });
 
 it('lets only the outer selection group consume a field automatic label', function () {
@@ -578,11 +585,13 @@ it('lets only the outer selection group consume a field automatic label', functi
         </x-hw::field>
     BLADE);
 
+    preg_match('/<label[^>]*id="([^"]+)"/', $html, $label);
+
     expect($html)->toContain('Preferences')
-        ->toContain('id="topics-label"')
-        ->toMatch('/<div(?=[^>]*data-slot="checkbox-group")(?=[^>]*aria-labelledby="topics-label")[^>]*>/')
+        ->toContain('aria-labelledby="'.$label[1].'"')
         ->toMatch('/<div(?=[^>]*data-slot="radio-group")(?![^>]*aria-labelledby)[^>]*>/')
-        ->not->toContain('aria-labelledby="plan-label"');
+        ->not->toContain('aria-labelledby="plan-label"')
+        ->and($label[1] ?? null)->toStartWith('hw-field-label-');
 });
 
 it('keeps a visible field label when a selection group supplies aria-label', function () {
@@ -593,9 +602,8 @@ it('keeps a visible field label when a selection group supplies aria-label', fun
     BLADE);
 
     expect($html)->toContain('Visible plan')
-        ->toContain('id="plan-label"')
         ->toContain('aria-label="Plan"')
-        ->toContain('aria-labelledby="plan-label"');
+        ->not->toContain('aria-labelledby="plan-label"');
 });
 
 it('honors an external label id for an explicit set without automatic label text', function () {
@@ -670,5 +678,51 @@ it('lets explicit field set semantics override a selection group child', functio
         </x-hw::field>
     BLADE);
 
-    expect($html)->toMatch('/<div(?=[^>]*data-slot="field")(?=[^>]*role="radiogroup")(?=[^>]*aria-labelledby="plan-label")[^>]*>/');
+    expect($html)->toMatch('/<div(?=[^>]*data-slot="field")(?=[^>]*role="radiogroup")(?=[^>]*aria-labelledby="plan-label")[^>]*>/')
+        ->toMatch('/<div(?=[^>]*data-slot="checkbox-group")(?![^>]*role=)(?![^>]*aria-labelledby=)[^>]*>/')
+        ->and(substr_count($html, 'role="radiogroup"'))->toBe(1);
+});
+
+it('keeps automatic and inner owner label ids unique when the field owns the set', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::field name="format" label="Format" set="radiogroup" :error="false">
+            <x-hw::radio-group>
+                <x-hw::field.label>Inner format</x-hw::field.label>
+                <x-hw::radio-group.item value="plain">Plain</x-hw::radio-group.item>
+            </x-hw::radio-group>
+        </x-hw::field>
+    BLADE);
+
+    expect($html)->toContain('id="format-label"')
+        ->toContain('id="format-label-2"')
+        ->toMatch('/<div(?=[^>]*data-slot="field")(?=[^>]*aria-labelledby="format-label-2")[^>]*>/')
+        ->toMatch('/<div(?=[^>]*data-slot="radio-group")(?![^>]*role=)(?![^>]*aria-labelledby=)[^>]*>/');
+});
+
+it('uses label-id to name selection groups without rendering a field label', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <span id="external-label">Plans</span>
+        <x-hw::field label-id="external-label" :error="false">
+            <x-hw::radio-group name="plan" :options="['free' => 'Free']" />
+        </x-hw::field>
+    BLADE);
+
+    expect($html)->toMatch('/<div(?=[^>]*data-slot="radio-group")(?=[^>]*aria-labelledby="external-label")[^>]*>/')
+        ->and(substr_count($html, 'id="external-label"'))->toBe(1);
+});
+
+it('does not register controls nested inside a dropdown with the surrounding field', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::field name="query" label="Query" :error="false">
+            <x-hw::dropdown>
+                <x-hw::dropdown.trigger>Open</x-hw::dropdown.trigger>
+                <x-hw::dropdown.content>
+                    <x-hw::input name="inner" />
+                </x-hw::dropdown.content>
+            </x-hw::dropdown>
+        </x-hw::field>
+    BLADE);
+
+    expect($html)->toContain('for="query"')
+        ->not->toContain('for="inner"');
 });
