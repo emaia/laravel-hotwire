@@ -2,7 +2,6 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
-use Emaia\LaravelHotwire\Components\Concerns\StripsNullProps;
 use Emaia\LaravelHotwire\Support\AutoSubmit;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\Component;
@@ -10,12 +9,8 @@ use Illuminate\View\ComponentAttributeBag;
 
 class ToggleGroup extends Component
 {
-    use StripsNullProps;
-
     /** @var string[] */
     public array $selected;
-
-    public bool|string $groupDisabled;
 
     public function __construct(
         public ?string $name = null,
@@ -35,7 +30,6 @@ class ToggleGroup extends Component
     ) {
         $this->type = in_array($type, ['single', 'multiple'], true) ? $type : 'multiple';
         $this->selected = $this->normalizeSelected($value, $this->type);
-        $this->groupDisabled = $disabled;
     }
 
     public function render()
@@ -46,6 +40,22 @@ class ToggleGroup extends Component
     public function data(): array
     {
         $data = parent::data();
+        $data['toggleGroupContext'] = true;
+        $data['toggleGroupName'] = $this->name;
+        $data['toggleGroupValue'] = $this->value;
+        $data['toggleGroupType'] = $this->type;
+        $data['toggleGroupOrientation'] = $this->orientation;
+        $data['toggleGroupVariant'] = $this->variant;
+        $data['toggleGroupSize'] = $this->size;
+        $data['toggleGroupDisabled'] = $this->disabled;
+        $data['toggleGroupConnected'] = $this->connected;
+        $data['toggleGroupOld'] = $this->old;
+        $data['toggleGroupId'] = $this->id;
+        $data['toggleGroupErrorKey'] = $this->errorKey;
+        $data['toggleGroupAutoSubmit'] = $this->autoSubmit;
+        $data['toggleGroupAutoSubmitDelay'] = $this->autoSubmitDelay;
+        $data['toggleGroupStimulus'] = $this->stimulus;
+        $data['toggleGroupSelected'] = $this->selected;
         $data['internalPrefixes'] = ['data-toggle-group-'];
 
         if (AutoSubmit::enabled($this->autoSubmit)) {
@@ -54,7 +64,25 @@ class ToggleGroup extends Component
 
         $data['compute'] = $this->computeResolved(...);
 
-        return $this->stripNullProps($data, ['name', 'id', 'errorKey']);
+        unset(
+            $data['name'],
+            $data['value'],
+            $data['type'],
+            $data['orientation'],
+            $data['variant'],
+            $data['size'],
+            $data['disabled'],
+            $data['connected'],
+            $data['old'],
+            $data['id'],
+            $data['errorKey'],
+            $data['autoSubmit'],
+            $data['autoSubmitDelay'],
+            $data['stimulus'],
+            $data['selected'],
+        );
+
+        return $data;
     }
 
     /** @return array<string, mixed> */

@@ -6,6 +6,79 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 
 ## Unreleased
 
+### Field context keys are scoped
+
+Field now exposes its descendant context through family-specific component-data keys so intermediate Blade components
+declaring generic `name`, `id`, `errorKey`, or `required` props cannot replace the owning Field's form, validation, or
+ARIA identity. Field-aware controls, labels, errors, and selection groups consume the scoped keys. Explicit control
+props continue to win; an explicit `:required="false"` now opts a control out of a required Field.
+
+Application subcomponents that consume Field context must update their `@aware` declarations:
+
+| Field context | Before | After |
+| --- | --- | --- |
+| Name | `@aware(['name' => null])` | `@aware(['fieldName' => null])` |
+| Control id | `@aware(['id' => null])` | `@aware(['fieldId' => null])` |
+| Error key | `@aware(['errorKey' => null])` | `@aware(['fieldErrorKey' => null])` |
+| Required state | `@aware(['required' => false])` | `@aware(['fieldRequired' => false])` |
+
+The Field root no longer exposes its other props as generic component data either. Their scoped names are `fieldLabel`,
+`fieldDescription`, `fieldRequiredLabel`, `fieldError`, `fieldOrientation`, `fieldClass`, `fieldWrapperId`,
+`fieldDisabled`, and `fieldInvalid`.
+
+`<hw:field id="...">` now defines the nested control id base and keeps labels, controls, selection items, and errors on
+the same ARIA identity. If application code previously used `id` to identify the wrapper `<div>`, replace it with
+`wrapper-id`:
+
+```blade
+<hw:field name="email" id="email-control" wrapper-id="email-field">
+    <hw:input />
+</hw:field>
+```
+
+### Selection group context keys are scoped
+
+Radio Group, Checkbox Group, and Toggle Group now publish root and item data under their own family prefixes. This keeps
+items attached to the correct owner through intermediate components and across nested groups. All three disabled keys
+now follow the same convention: `radioGroupDisabled`, `checkboxGroupDisabled`, and `toggleGroupDisabled`; the old Toggle
+Group `groupDisabled` key has been removed.
+
+Update application subcomponents that consume group context:
+
+| Component family | Before | After |
+| --- | --- | --- |
+| Radio Group name | `@aware(['name' => null])` | `@aware(['radioGroupName' => null])` |
+| Radio Group id | `@aware(['id' => null])` | `@aware(['radioGroupId' => null])` |
+| Radio Group error key | `@aware(['errorKey' => null])` | `@aware(['radioGroupErrorKey' => null])` |
+| Radio Group selection | `@aware(['selected' => null])` | `@aware(['radioGroupSelected' => null])` |
+| Radio Group old input | `@aware(['old' => true])` | `@aware(['radioGroupOld' => true])` |
+| Radio Group auto-submit | `@aware(['autoSubmit' => false])` | `@aware(['radioGroupAutoSubmit' => false])` |
+| Radio Group auto-submit delay | `@aware(['autoSubmitDelay' => null])` | `@aware(['radioGroupAutoSubmitDelay' => null])` |
+| Checkbox Group name | `@aware(['name' => null])` | `@aware(['checkboxGroupName' => null])` |
+| Checkbox Group id | `@aware(['id' => null])` | `@aware(['checkboxGroupId' => null])` |
+| Checkbox Group error key | `@aware(['errorKey' => null])` | `@aware(['checkboxGroupErrorKey' => null])` |
+| Checkbox Group selection | `@aware(['selected' => []])` | `@aware(['checkboxGroupSelected' => []])` |
+| Checkbox Group old input | `@aware(['old' => true])` | `@aware(['checkboxGroupOld' => true])` |
+| Checkbox Group select all | `@aware(['selectAll' => false])` | `@aware(['checkboxGroupSelectAll' => false])` |
+| Checkbox Group auto-submit | `@aware(['autoSubmit' => false])` | `@aware(['checkboxGroupAutoSubmit' => false])` |
+| Checkbox Group auto-submit delay | `@aware(['autoSubmitDelay' => null])` | `@aware(['checkboxGroupAutoSubmitDelay' => null])` |
+| Toggle Group name | `@aware(['name' => null])` | `@aware(['toggleGroupName' => null])` |
+| Toggle Group type | `@aware(['type' => 'multiple'])` | `@aware(['toggleGroupType' => 'multiple'])` |
+| Toggle Group selection | `@aware(['selected' => []])` | `@aware(['toggleGroupSelected' => []])` |
+| Toggle Group old input | `@aware(['old' => true])` | `@aware(['toggleGroupOld' => true])` |
+| Toggle Group id | `@aware(['id' => null])` | `@aware(['toggleGroupId' => null])` |
+| Toggle Group error key | `@aware(['errorKey' => null])` | `@aware(['toggleGroupErrorKey' => null])` |
+| Toggle Group variant | `@aware(['variant' => 'default'])` | `@aware(['toggleGroupVariant' => 'default'])` |
+| Toggle Group size | `@aware(['size' => 'default'])` | `@aware(['toggleGroupSize' => 'default'])` |
+| Toggle Group disabled | `@aware(['groupDisabled' => false])` | `@aware(['toggleGroupDisabled' => false])` |
+
+Root and item props that application descendants intentionally consume follow the same prefix pattern, such as
+`radioGroupOptions`, `checkboxGroupSelectAllLabel`, `toggleGroupConnected`, `radioGroupItemValue`,
+`checkboxGroupItemChecked`, and `toggleGroupItemPressed`.
+
+Radio Group, Checkbox Group, and Toggle Group items now throw when rendered without their owning root. For Turbo Streams,
+replace the item's inner content or render the owning group instead of streaming a dependent item alone.
+
 ### Floating overlay context keys are scoped
 
 Dropdown, Popover and Hover Card no longer expose root or dependent subcomponent context through generic component-data

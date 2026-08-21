@@ -3,7 +3,7 @@
 Compose accessible, Laravel-aware form fields with labels, controls, helper text, validation errors, and semantic groups.
 
 The field set provides small primitives that share `data-slot` styling hooks and integrate with Laravel validation through
-`name`, `errorKey`, `required`, and `@aware`.
+scoped `name`, `id`, `errorKey`, and `required` context.
 
 ## Usage
 
@@ -30,8 +30,8 @@ For full control over ordering and content, compose the primitives manually:
 </hw:field>
 ```
 
-All field primitives forward extra HTML attributes. Use `class`, `id`, `data-*`, and `aria-*` directly on the element
-that should receive them.
+All field primitives forward extra HTML attributes. On `<hw:field>`, `id` identifies the nested control and
+`wrapper-id` identifies the field container; `data-*` and `aria-*` attributes apply to the container.
 
 ## Composition
 
@@ -42,7 +42,8 @@ A single control with label, helper text, and validation feedback.
 ```text
 field
 ├── field.label
-├── input / checkbox / switch / slider / select / textarea / checkbox-group / radio-group / file / file-upload
+├── input / checkbox / switch / slider / select / textarea / checkbox-group / radio-group / toggle-group
+│   / file / file-upload / multi-select / rich-text
 ├── field.description
 └── field.error
 ```
@@ -166,14 +167,27 @@ Use `field.label` instead of `field.title` when a real label association is need
 
 `<hw:field>` propagates context to nested field-aware controls via `@aware`:
 
-| Context    | Used By                                                                                              | Purpose                                                                          |
-|------------|------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|
-| `name`     | `field.label`, `input`, `checkbox`, `switch`, `slider`, `select`, `textarea`, `checkbox-group`, `radio-group`, `file`, `file-upload`, `field.error` | Derives `for`, `id`, `name`, `aria-describedby`, and validation keys.            |
-| `errorKey` | Controls and `field.error`                                                                           | Looks up Laravel validation messages when HTML name differs from validation key. |
-| `required` | `field.label` and controls                                                                           | Renders the required marker and ARIA required state.                             |
+| Context    | Used By                                                                                                               | Purpose                                                                          |
+|------------|-----------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|
+| `name`     | `field.label`, field-aware controls, selection groups, and `field.error`                                              | Supplies the form name and derives ids and validation keys.                      |
+| `id`       | `field.label`, field-aware controls, selection groups, and `field.error`                                              | Supplies the control id base, label target, and error id base.                   |
+| `errorKey` | Field-aware controls, selection groups, and `field.error`                                                            | Looks up Laravel validation messages when HTML name differs from validation key. |
+| `required` | `field.label` and controls that support required state                                                               | Renders the required marker and ARIA/native required state.                      |
+
+The internal component-data keys are `fieldName`, `fieldId`, `fieldErrorKey`, and `fieldRequired`. Application
+subcomponents that intentionally consume Field context should use those scoped names. Explicit control props take
+precedence over inherited context; an explicit `:required="false"` also opts a control out of a required Field.
 
 Controls emit `aria-describedby="{id}-error"`. `field.error` keeps the matching element in the DOM, hidden when there are
 no messages, so the ARIA reference stays stable.
+
+The automatic error follows the Field identity. If a child overrides `name`, `id`, or `error-key`, disable the automatic
+error with `:error="false"` and render a matching `<hw:field.error>` for that child identity.
+
+`field.label` uses `for` and is intended for a single labelable native control whose resolved id exactly matches the
+Field id. Composite controls such as selection groups, File Upload, Multi Select, and Rich Text use the Field id as an
+internal/root id base rather than a single label target. Give those controls their own accessible name and use
+`field.title` for visible group text instead of an automatic label.
 
 ```blade
 <hw:field name="variables[0][name]" error-key="indicator.name">
@@ -260,6 +274,8 @@ orientation state for the preset.
 | Prop             | Type                               | Default    | Description                                                                                  |
 |------------------|------------------------------------|------------|----------------------------------------------------------------------------------------------|
 | `name`           | `string\|null`                     | `null`     | Field name propagated to nested field-aware children.                                        |
+| `id`             | `string\|null`                     | `null`     | Control id base propagated to labels, controls, selection groups, and errors.                |
+| `wrapper-id`     | `string\|null`                     | `null`     | Optional id for the Field wrapper itself.                                                     |
 | `label`          | `string\|null`                     | `null`     | Auto-renders `field.label` before the slot. Empty string skips it.                           |
 | `description`    | `string\|null`                     | `null`     | Auto-renders `field.description` after the slot and before the error. Empty string skips it. |
 | `required-label` | `string`                           | `"*"`      | Marker text passed to the auto-rendered `field.label`.                                       |
@@ -267,6 +283,8 @@ orientation state for the preset.
 | `required`       | `bool\|null`                       | `null`     | Propagates required state to label and controls.                                             |
 | `error`          | `bool`                             | `true`     | Auto-renders `field.error` when `name` is set.                                               |
 | `orientation`    | `vertical\|horizontal\|responsive` | `vertical` | Layout state consumed by the preset.                                                         |
+| `disabled`       | `bool`                             | `false`    | Emits disabled state on the wrapper; does not disable the control automatically.             |
+| `invalid`        | `bool`                             | `false`    | Emits invalid state on the wrapper.                                                          |
 
 ```blade
 <hw:field name="email" label="Email" orientation="horizontal">

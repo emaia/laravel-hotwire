@@ -121,7 +121,9 @@ class Input extends Component
         }
 
         $hasErrors = $resolvedErrorKey !== '' && $errorsBag->has($resolvedErrorKey);
-        $isRequired = ($attributes->has('required') && $attributes->get('required') !== false) || $required;
+        $isRequired = $attributes->has('required')
+            ? $attributes->get('required') !== false
+            : $required;
 
         $elementController = trim(implode(' ', array_filter([
             (! $isCheckable && $this->autoSelect) ? 'auto-select' : null,

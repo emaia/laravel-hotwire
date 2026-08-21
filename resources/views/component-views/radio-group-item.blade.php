@@ -1,29 +1,48 @@
 @aware([
-    'name' => null,
-    'id' => null,
-    'errorKey' => null,
-    'selected' => null,
-    'old' => true,
+    'radioGroupContext' => false,
+    'radioGroupName' => null,
+    'radioGroupId' => null,
+    'radioGroupErrorKey' => null,
+    'radioGroupSelected' => null,
+    'radioGroupOld' => true,
     'radioGroupDisabled' => false,
-    'autoSubmit' => false,
-    'autoSubmitDelay' => null,
+    'radioGroupAutoSubmit' => false,
+    'radioGroupAutoSubmitDelay' => null,
+    'fieldName' => null,
+    'fieldId' => null,
+    'fieldErrorKey' => null,
 ])
 
 @php
-    extract($compute($name, $id, $errorKey, $selected, $old, $radioGroupDisabled, $autoSubmit, $autoSubmitDelay, $errors, $attributes));
+    if (! $radioGroupContext) {
+        throw new InvalidArgumentException('Radio Group item must be rendered inside a Radio Group root. If a root is present, check for an intermediate component declaring a radioGroupContext prop, which shadows the root context.');
+    }
+
+    extract($compute(
+        $radioGroupItemName ?? $radioGroupName ?? $fieldName,
+        $radioGroupItemId ?? $radioGroupId ?? $fieldId,
+        $radioGroupItemErrorKey ?? $radioGroupErrorKey ?? $fieldErrorKey,
+        $radioGroupSelected,
+        $radioGroupOld,
+        $radioGroupDisabled,
+        $radioGroupAutoSubmit,
+        $radioGroupAutoSubmitDelay,
+        $errors,
+        $attributes,
+    ));
 @endphp
 
 <label
     data-slot="radio-group-item"
-    {{ trim($labelClass) !== '' ? $attributes->merge(['class' => $labelClass]) : $attributes->except('class') }}
+    {{ trim($radioGroupItemLabelClass) !== '' ? $attributes->merge(['class' => $radioGroupItemLabelClass]) : $attributes->except('class') }}
 >
     <input
         data-slot="radio-group-input"
         data-checkable="true"
         type="radio"
-        @if (filled($class)) class="{{ $class }}" @endif
+        @if (filled($radioGroupItemClass)) class="{{ $radioGroupItemClass }}" @endif
         @if ($name) name="{{ $name }}" @endif
-        value="{{ $value }}"
+        value="{{ $radioGroupItemValue }}"
         @if ($resolvedId) id="{{ $resolvedId }}" @endif
         @if ($errorId) aria-describedby="{{ $errorId }}" @endif
         @if ($hasErrors) aria-invalid="true" data-invalid @endif

@@ -1,6 +1,9 @@
-@aware(['name' => null, 'id' => null, 'required' => false])
+@aware(['fieldName' => null, 'fieldId' => null, 'fieldRequired' => false])
 
-@php extract($compute($name, $id, $slot)) @endphp
+@php
+    $resolvedRequired = $required ?? $fieldRequired ?? false;
+    extract($compute($name ?? $fieldName, $fieldId, $slot));
+@endphp
 
 <label
     data-slot="field-label"
@@ -9,7 +12,7 @@
 >
     {{ trim($slotHtml) !== '' ? $slot : $value }}
 
-    @if ($required)
+    @if ($resolvedRequired)
         <span data-slot="field-label-required" aria-hidden="true">{{ $requiredLabel }}</span>
     @endif
 </label>

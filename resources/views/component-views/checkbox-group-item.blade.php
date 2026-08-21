@@ -1,30 +1,50 @@
 @aware([
-    'name' => null,
-    'id' => null,
-    'errorKey' => null,
-    'selected' => [],
-    'old' => true,
-    'selectAll' => false,
+    'checkboxGroupContext' => false,
+    'checkboxGroupName' => null,
+    'checkboxGroupId' => null,
+    'checkboxGroupErrorKey' => null,
+    'checkboxGroupSelected' => [],
+    'checkboxGroupOld' => true,
+    'checkboxGroupSelectAll' => false,
     'checkboxGroupDisabled' => false,
-    'autoSubmit' => false,
-    'autoSubmitDelay' => null,
+    'checkboxGroupAutoSubmit' => false,
+    'checkboxGroupAutoSubmitDelay' => null,
+    'fieldName' => null,
+    'fieldId' => null,
+    'fieldErrorKey' => null,
 ])
 
 @php
-    extract($compute($name, $id, $errorKey, $selected, $old, $selectAll, $checkboxGroupDisabled, $autoSubmit, $autoSubmitDelay, $errors, $attributes));
+    if (! $checkboxGroupContext) {
+        throw new InvalidArgumentException('Checkbox Group item must be rendered inside a Checkbox Group root. If a root is present, check for an intermediate component declaring a checkboxGroupContext prop, which shadows the root context.');
+    }
+
+    extract($compute(
+        $checkboxGroupItemName ?? $checkboxGroupName ?? $fieldName,
+        $checkboxGroupItemId ?? $checkboxGroupId ?? $fieldId,
+        $checkboxGroupItemErrorKey ?? $checkboxGroupErrorKey ?? $fieldErrorKey,
+        $checkboxGroupSelected,
+        $checkboxGroupOld,
+        $checkboxGroupSelectAll,
+        $checkboxGroupDisabled,
+        $checkboxGroupAutoSubmit,
+        $checkboxGroupAutoSubmitDelay,
+        $errors,
+        $attributes,
+    ));
 @endphp
 
 <label
     data-slot="checkbox-group-item"
-    {{ trim($labelClass) !== '' ? $attributes->merge(['class' => $labelClass]) : $attributes->except('class') }}
+    {{ trim($checkboxGroupItemLabelClass) !== '' ? $attributes->merge(['class' => $checkboxGroupItemLabelClass]) : $attributes->except('class') }}
 >
     <input
         data-slot="checkbox-group-input"
         data-checkable="true"
         type="checkbox"
-        @if (filled($class)) class="{{ $class }}" @endif
+        @if (filled($checkboxGroupItemClass)) class="{{ $checkboxGroupItemClass }}" @endif
         @if ($name) name="{{ $name }}" @endif
-        value="{{ $value }}"
+        value="{{ $checkboxGroupItemValue }}"
         @if ($resolvedId) id="{{ $resolvedId }}" @endif
         @if ($errorId) aria-describedby="{{ $errorId }}" @endif
         @if ($hasErrors) aria-invalid="true" data-invalid @endif

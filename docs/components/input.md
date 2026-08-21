@@ -158,7 +158,7 @@ Passing an explicit `id` opts out of the auto-derivation: the component uses you
 
 ## Inheriting from `<hw:field>`
 
-`<hw:field>` propagates `name`, `errorKey`, and `required` to nested children via `@aware`. It auto-renders
+`<hw:field>` propagates `name`, `id`, `errorKey`, and `required` through scoped Field context. It auto-renders
 `<hw:field.label>`, `<hw:field.description>`, and `<hw:field.error>` when the corresponding props are set:
 
 ```blade

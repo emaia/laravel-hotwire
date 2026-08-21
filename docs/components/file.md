@@ -152,7 +152,7 @@ selection would be dropped.
 </hw:field>
 ```
 
-`name`, `id`, `errorKey`, and `required` are inherited via `@aware`. The field auto-renders `<hw:field.label>` and
+`name`, `id`, `errorKey`, and `required` are inherited through scoped Field context. The field auto-renders `<hw:field.label>` and
 `<hw:field.error>`. The ARIA contract is maintained — the input's `aria-describedby` always matches the error element.
 
 ## Accepting file types

@@ -1,26 +1,23 @@
 @php
-    $name = $name ?? null;
-    $errorKey = $errorKey ?? null;
-    $required = $required ?? null;
-
     $fieldAttributes = $attributes->merge([
-        'data-disabled' => $disabled ? 'true' : null,
-        'data-invalid' => $invalid ? 'true' : null,
-    ])->class($class ?: null);
+        'id' => $fieldWrapperId,
+        'data-disabled' => $fieldDisabled ? 'true' : null,
+        'data-invalid' => $fieldInvalid ? 'true' : null,
+    ])->class($fieldClass ?: null);
 @endphp
 
-<div role="group" data-slot="field" data-orientation="{{ $orientation }}" {{ $fieldAttributes }}>
-    @if ($label !== null && $label !== '')
-        <x-hw::field.label :required-label="$requiredLabel">{{ $label }}</x-hw::field.label>
+<div role="group" data-slot="field" data-orientation="{{ $fieldOrientation }}" {{ $fieldAttributes }}>
+    @if ($fieldLabel !== null && $fieldLabel !== '')
+        <x-hw::field.label :required-label="$fieldRequiredLabel">{{ $fieldLabel }}</x-hw::field.label>
     @endif
 
     {{ $slot }}
 
-    @if ($description !== null && $description !== '')
-        <x-hw::field.description>{{ $description }}</x-hw::field.description>
+    @if ($fieldDescription !== null && $fieldDescription !== '')
+        <x-hw::field.description>{{ $fieldDescription }}</x-hw::field.description>
     @endif
 
-    @if ($error && $name)
-        <x-hw::field.error :name="$name" :error-key="$errorKey" />
+    @if ($fieldError && $fieldName)
+        <x-hw::field.error :name="$fieldName" :error-key="$fieldErrorKey" />
     @endif
 </div>

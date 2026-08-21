@@ -1,6 +1,9 @@
-@aware(['name' => null, 'errorKey' => null, 'id' => null])
+@aware(['fieldName' => null, 'fieldId' => null, 'fieldErrorKey' => null])
 
-@php extract($compute($name, $errorKey, $id, $errors)) @endphp
+@php
+    $resolvedContextId = $id ?? ($fieldId ? $fieldId.'-error' : null);
+    extract($compute($name ?? $fieldName, $errorKey ?? $fieldErrorKey, $resolvedContextId, $errors));
+@endphp
 
 <div
     data-slot="field-error"

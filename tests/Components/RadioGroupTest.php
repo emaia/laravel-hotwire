@@ -3,8 +3,10 @@
 use Emaia\LaravelHotwire\Components\RadioGroup;
 use Emaia\LaravelHotwire\Components\RadioGroup\Item;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\MessageBag;
 use Illuminate\Support\ViewErrorBag;
+use Illuminate\View\ViewException;
 
 function shareRadioGroupErrors(array $errorsByKey): void
 {
@@ -123,6 +125,95 @@ it('restores rich item checked state from old input', function () {
 });
 
 // --- Field awareness ---
+
+it('publishes only radio-group-scoped component data', function () {
+    $groupData = (new RadioGroup(name: 'plan', selected: 'pro', disabled: true))->data();
+    $itemData = (new Item(value: 'pro', name: 'item-plan', disabled: false))->data();
+    $frameworkKeys = ['componentName', 'attributes', 'ignoredParameterNames', 'internalPrefixes', 'compute'];
+
+    $groupGenericKeys = array_values(array_filter(
+        array_keys($groupData),
+        fn (string $key) => ! str_starts_with($key, 'radioGroup') && ! in_array($key, $frameworkKeys, true),
+    ));
+    $itemGenericKeys = array_values(array_filter(
+        array_keys($itemData),
+        fn (string $key) => ! str_starts_with($key, 'radioGroupItem') && ! in_array($key, $frameworkKeys, true),
+    ));
+
+    expect($groupGenericKeys)->toBe([])
+        ->and($itemGenericKeys)->toBe([])
+        ->and($groupData)->toHaveKeys(['radioGroupContext', 'radioGroupName', 'radioGroupSelected', 'radioGroupDisabled'])
+        ->and($itemData)->toHaveKeys(['radioGroupItemValue', 'radioGroupItemName', 'radioGroupItemDisabled']);
+});
+
+it('keeps radio group context through an intermediate component', function () {
+    Blade::anonymousComponentPath(__DIR__.'/../Fixtures/views/components');
+
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::radio-group name="plan" id="owner-radio" selected="pro" auto-submit="debounced" auto-submit-delay="700">
+            <x-selection-context-wrapper>
+                <x-hw::radio-group.item value="pro">Pro</x-hw::radio-group.item>
+            </x-selection-context-wrapper>
+        </x-hw::radio-group>
+    BLADE);
+
+    $view->assertSee('name="plan"', false)
+        ->assertSee('id="owner-radio-pro"', false)
+        ->assertSee('checked', false)
+        ->assertSee('data-action="change->auto-submit#debouncedSubmit"', false)
+        ->assertSee('data-auto-submit-delay-param="700"', false)
+        ->assertDontSee('shadow-group', false)
+        ->assertDontSee(' disabled', false);
+});
+
+it('keeps radio items bound to their family across another selection group', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::radio-group name="plan" selected="pro">
+            <x-hw::checkbox-group name="roles[]" :selected="['admin']">
+                <x-hw::radio-group.item value="pro">Pro</x-hw::radio-group.item>
+            </x-hw::checkbox-group>
+        </x-hw::radio-group>
+    BLADE);
+
+    $view->assertSee('name="plan"', false)
+        ->assertSee('id="plan-pro"', false)
+        ->assertSee('checked', false);
+});
+
+it('binds radio items to the nearest same-family root without leaking nullable context', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::radio-group name="outer-plan" selected="outer">
+            <x-hw::radio-group selected="inner">
+                <x-hw::radio-group.item value="inner">Inner</x-hw::radio-group.item>
+            </x-hw::radio-group>
+        </x-hw::radio-group>
+    BLADE);
+
+    $view->assertSee('checked', false)
+        ->assertDontSee('name="outer-plan"', false)
+        ->assertDontSee('id="outer-plan-inner"', false);
+});
+
+it('keeps explicit radio item identity ahead of group and field context', function () {
+    shareRadioGroupErrors(['item.plan' => ['Choose a plan.']]);
+
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::field name="field-plan" id="field-radio" error-key="field.plan">
+            <x-hw::radio-group name="group-plan" id="group-radio" error-key="group.plan">
+                <x-hw::radio-group.item value="pro" name="item-plan" id="item-radio" error-key="item.plan">Pro</x-hw::radio-group.item>
+            </x-hw::radio-group>
+        </x-hw::field>
+    BLADE);
+
+    $view->assertSee('name="item-plan"', false)
+        ->assertSee('id="item-radio-pro"', false)
+        ->assertSee('aria-describedby="item-radio-error"', false)
+        ->assertSee('aria-invalid="true"', false);
+});
+
+it('requires radio group items to render inside a radio group root', function () {
+    $this->blade('<x-hw::radio-group.item value="pro" name="plan">Pro</x-hw::radio-group.item>');
+})->throws(ViewException::class, 'must be rendered inside a Radio Group root');
 
 it('inherits name from field wrapper', function () {
     $view = $this->blade('

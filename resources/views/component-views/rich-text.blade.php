@@ -1,7 +1,10 @@
-@aware(['name' => null, 'id' => null, 'errorKey' => null, 'required' => false])
+@aware(['fieldName' => null, 'fieldId' => null, 'fieldErrorKey' => null, 'fieldRequired' => false])
 
 @php
-    extract($compute($name, $id, $errorKey, $required, $errors, $attributes));
+    $name = $name ?? $fieldName;
+    $id = $id ?? $fieldId;
+    $errorKey = $errorKey ?? $fieldErrorKey;
+    extract($compute($name, $id, $errorKey, $fieldRequired ?? false, $errors, $attributes));
     // Escape `\` and `'` so an id containing either still produces a valid CSS attribute selector.
     $escapedId = addcslashes($resolvedId, "\\'");
     $outletSelector = '[data-'.$identifier."-id-value='".$escapedId."']";

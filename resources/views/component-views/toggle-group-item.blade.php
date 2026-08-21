@@ -1,17 +1,37 @@
 @aware([
-    'name' => null,
-    'type' => 'multiple',
-    'selected' => [],
-    'old' => true,
-    'id' => null,
-    'errorKey' => null,
-    'variant' => 'default',
-    'size' => 'default',
-    'groupDisabled' => false,
+    'toggleGroupContext' => false,
+    'toggleGroupName' => null,
+    'toggleGroupType' => 'multiple',
+    'toggleGroupSelected' => [],
+    'toggleGroupOld' => true,
+    'toggleGroupId' => null,
+    'toggleGroupErrorKey' => null,
+    'toggleGroupVariant' => 'default',
+    'toggleGroupSize' => 'default',
+    'toggleGroupDisabled' => false,
+    'fieldName' => null,
+    'fieldId' => null,
+    'fieldErrorKey' => null,
 ])
 
 @php
-    extract($compute($name, $type, $selected, $old, $id, $errorKey, $variant, $size, $groupDisabled, $errors, $attributes));
+    if (! $toggleGroupContext) {
+        throw new InvalidArgumentException('Toggle Group item must be rendered inside a Toggle Group root. If a root is present, check for an intermediate component declaring a toggleGroupContext prop, which shadows the root context.');
+    }
+
+    extract($compute(
+        $toggleGroupItemName ?? $toggleGroupName ?? $fieldName,
+        $toggleGroupType,
+        $toggleGroupSelected,
+        $toggleGroupOld,
+        $toggleGroupItemId ?? $toggleGroupId ?? $fieldId,
+        $toggleGroupItemErrorKey ?? $toggleGroupErrorKey ?? $fieldErrorKey,
+        $toggleGroupVariant,
+        $toggleGroupSize,
+        $toggleGroupDisabled,
+        $errors,
+        $attributes,
+    ));
 
     $userClasses = preg_split('/\s+/', trim((string) $attributes->get('class', ''))) ?: [];
     $toggleGroupClass = in_array('group/toggle', $userClasses, true) ? null : 'group/toggle';
@@ -35,7 +55,7 @@
         'data-toggle-value-value' => $htmlValue,
         'data-toggle-input-id-value' => $inputId,
         'class' => $toggleGroupClass,
-    ], $attributes, $stimulus, except: ['value', 'pressed', 'disabled', 'name', 'id', 'error-key'], protectedPrefixes: ['data-toggle-', 'data-toggle-group-']);
+    ], $attributes, $toggleGroupItemStimulus, except: ['value', 'pressed', 'disabled', 'name', 'id', 'error-key'], protectedPrefixes: ['data-toggle-', 'data-toggle-group-']);
 @endphp
 
 @if ($name)

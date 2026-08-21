@@ -64,6 +64,9 @@ This renders `value="free"`, `value="pro"`, and `value="team"`.
 Use `<hw:radio-group.item>` when each option needs custom markup. The item inherits `name`, `selected`, `old`,
 `errorKey`, `disabled`, and `auto-submit` from the parent group.
 
+Explicit `name`, `id`, `error-key`, and `disabled` props on an item take precedence over inherited group and Field
+context.
+
 ```blade
 <hw:radio-group name="plan" selected="pro">
     <hw:radio-group.item value="free">
@@ -80,13 +83,17 @@ Use `<hw:radio-group.item>` when each option needs custom markup. The item inher
 
 You can combine `options` and rich items in the same group; options render first, then the slot content.
 
+An item must render inside its owning `<hw:radio-group>` in the same Blade tree. For Turbo Streams, replace the item's
+inner content or render the owning group instead of streaming a standalone `<hw:radio-group.item>`.
+
 ## Inheriting from `<hw:field>`
 
-When inside `<hw:field>`, `name`, `id`, and `errorKey` are inherited via `@aware`:
+When inside `<hw:field>`, `name`, `id`, and `errorKey` are inherited from the scoped Field context:
 
 ```blade
-<hw:field name="plan" label="Plan">
-    <hw:radio-group :options="['free' => 'Free', 'pro' => 'Pro']" />
+<hw:field name="plan" id="plan-options">
+    <hw:field.title>Plan</hw:field.title>
+    <hw:radio-group aria-label="Plan" :options="['free' => 'Free', 'pro' => 'Pro']" />
 </hw:field>
 ```
 

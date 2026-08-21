@@ -2,7 +2,6 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
-use Emaia\LaravelHotwire\Components\Concerns\StripsNullProps;
 use Emaia\LaravelHotwire\Support\AutoSubmit;
 use Emaia\LaravelHotwire\Support\FieldKey;
 use Illuminate\Contracts\Support\Htmlable;
@@ -12,8 +11,6 @@ use Illuminate\View\ComponentAttributeBag;
 
 class CheckboxGroup extends Component
 {
-    use StripsNullProps;
-
     /** @param array<int|string, string> $options */
     public function __construct(
         public ?string $name = null,
@@ -51,14 +48,51 @@ class CheckboxGroup extends Component
     public function data(): array
     {
         $data = parent::data();
+        $data['checkboxGroupContext'] = true;
+        $data['checkboxGroupName'] = $this->name;
+        $data['checkboxGroupOptions'] = $this->options;
+        $data['checkboxGroupSelected'] = $this->selected;
+        $data['checkboxGroupSelectAll'] = $this->selectAll;
+        $data['checkboxGroupSelectAllLabel'] = $this->selectAllLabel;
+        $data['checkboxGroupOrientation'] = $this->orientation;
         $data['checkboxGroupDisabled'] = $this->disabled;
+        $data['checkboxGroupClass'] = $this->class;
+        $data['checkboxGroupWrapperClass'] = $this->wrapperClass;
+        $data['checkboxGroupLabelClass'] = $this->labelClass;
+        $data['checkboxGroupOld'] = $this->old;
+        $data['checkboxGroupId'] = $this->id;
+        $data['checkboxGroupErrorKey'] = $this->errorKey;
+        $data['checkboxGroupStimulus'] = $this->stimulus;
+        $data['checkboxGroupAutoSubmit'] = $this->autoSubmit;
+        $data['checkboxGroupAutoSubmitDelay'] = $this->autoSubmitDelay;
+        $data['checkboxGroupDisableIndeterminate'] = $this->disableIndeterminate;
         $data['internalPrefixes'] = array_values(array_filter([
             $this->selectAll ? 'data-checkbox-select-all-' : null,
             AutoSubmit::enabled($this->autoSubmit) ? 'data-auto-submit-' : null,
         ]));
         $data['compute'] = $this->computeResolved(...);
 
-        return $this->stripNullProps($data, ['name', 'id', 'errorKey']);
+        unset(
+            $data['name'],
+            $data['options'],
+            $data['selected'],
+            $data['selectAll'],
+            $data['selectAllLabel'],
+            $data['orientation'],
+            $data['disabled'],
+            $data['class'],
+            $data['wrapperClass'],
+            $data['labelClass'],
+            $data['old'],
+            $data['id'],
+            $data['errorKey'],
+            $data['stimulus'],
+            $data['autoSubmit'],
+            $data['autoSubmitDelay'],
+            $data['disableIndeterminate'],
+        );
+
+        return $data;
     }
 
     /**

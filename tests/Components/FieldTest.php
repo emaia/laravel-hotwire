@@ -1,5 +1,7 @@
 <?php
 
+use Emaia\LaravelHotwire\Components\Field;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\MessageBag;
 use Illuminate\Support\ViewErrorBag;
 
@@ -266,6 +268,134 @@ it('auto-rendered description appears after slot and before error', function () 
 });
 
 // --- @aware propagation ---
+
+it('publishes only field-scoped component data', function () {
+    $data = (new Field(
+        name: 'email',
+        id: 'email-control',
+        label: 'Email',
+        description: 'Work address',
+        requiredLabel: 'Required',
+        errorKey: 'profile.email',
+        required: true,
+        error: false,
+        orientation: 'horizontal',
+        class: 'field-class',
+        wrapperId: 'email-field',
+        disabled: true,
+        invalid: true,
+    ))->data();
+    $frameworkKeys = ['componentName', 'attributes', 'ignoredParameterNames'];
+    $genericKeys = array_values(array_filter(
+        array_keys($data),
+        fn (string $key) => ! str_starts_with($key, 'field') && ! in_array($key, $frameworkKeys, true),
+    ));
+
+    expect($genericKeys)->toBe([])
+        ->and($data)->toHaveKeys([
+            'fieldName',
+            'fieldId',
+            'fieldLabel',
+            'fieldDescription',
+            'fieldRequiredLabel',
+            'fieldErrorKey',
+            'fieldRequired',
+            'fieldError',
+            'fieldOrientation',
+            'fieldClass',
+            'fieldWrapperId',
+            'fieldDisabled',
+            'fieldInvalid',
+        ]);
+});
+
+it('uses id for the control context and wrapper-id for the field container', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::field name="email" id="email-control" wrapper-id="email-field" label="Email">
+            <x-hw::input />
+        </x-hw::field>
+    BLADE);
+
+    $view->assertSee('id="email-field"', false)
+        ->assertSee('id="email-control"', false)
+        ->assertSee('for="email-control"', false)
+        ->assertSee('aria-describedby="email-control-error"', false)
+        ->assertSee('id="email-control-error"', false);
+});
+
+it('keeps field context through an intermediate component with generic props', function () {
+    Blade::anonymousComponentPath(__DIR__.'/../Fixtures/views/components');
+    shareFieldErrors(['profile.email' => ['Required']]);
+
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::field name="email" id="email-control" error-key="profile.email" required>
+            <x-field-context-wrapper>
+                <x-hw::field.label>Email</x-hw::field.label>
+                <x-hw::input />
+                <x-hw::field.error />
+            </x-field-context-wrapper>
+        </x-hw::field>
+    BLADE);
+
+    $view->assertSee('name="email"', false)
+        ->assertSee('id="email-control"', false)
+        ->assertSee('for="email-control"', false)
+        ->assertSee('id="email-control-error"', false)
+        ->assertSee('aria-invalid="true"', false)
+        ->assertSee('aria-required="true"', false)
+        ->assertDontSee('shadow-field', false)
+        ->assertDontSee('shadow-field-id', false);
+});
+
+it('keeps explicit control props ahead of field context', function () {
+    shareFieldErrors(['child.email' => ['Invalid']]);
+
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::field name="email" id="email-control" error-key="profile.email" required :error="false">
+            <x-hw::input name="alternate" id="alternate-control" error-key="child.email" :required="false" />
+            <x-hw::field.error name="alternate" id="alternate-control-error" error-key="child.email" />
+        </x-hw::field>
+    BLADE);
+
+    $view->assertSee('name="alternate"', false)
+        ->assertSee('id="alternate-control"', false)
+        ->assertSee('aria-describedby="alternate-control-error"', false)
+        ->assertSee('id="alternate-control-error"', false)
+        ->assertSee('aria-invalid="true"', false)
+        ->assertDontSee('aria-required="true"', false)
+        ->assertDontSee(' required', false);
+});
+
+it('keeps scoped field identity across every field-aware control', function (string $component, string $identity) {
+    Blade::anonymousComponentPath(__DIR__.'/../Fixtures/views/components');
+
+    $view = $this->blade(<<<BLADE
+        <x-hw::field name="profile[email]" id="owner-control" :error="false">
+            <x-field-context-wrapper>
+                {$component}
+            </x-field-context-wrapper>
+        </x-hw::field>
+    BLADE);
+
+    $view->assertSee('profile[email]', false)
+        ->assertSee($identity, false)
+        ->assertDontSee('shadow-field', false)
+        ->assertDontSee('shadow-field-id', false);
+})->with([
+    'input' => ['<x-hw::input />', 'id="owner-control"'],
+    'select' => ['<x-hw::select><option value="x">X</option></x-hw::select>', 'id="owner-control"'],
+    'checkbox' => ['<x-hw::checkbox />', 'id="owner-control"'],
+    'switch' => ['<x-hw::switch />', 'id="owner-control"'],
+    'textarea' => ['<x-hw::textarea />', 'id="owner-control"'],
+    'file' => ['<x-hw::file />', 'id="owner-control"'],
+    'file upload' => ['<x-hw::file-upload url="/uploads" />', 'id="owner-control"'],
+    'multi select' => ['<x-hw::multi-select :options="[\'active\' => \'Active\']" />', 'id="owner-control"'],
+    'rich text' => ['<x-hw::rich-text />', 'data-rich-text-id-value="owner-control"'],
+    'slider' => ['<x-hw::slider />', 'id="owner-control"'],
+    'radio group' => ['<x-hw::radio-group :options="[\'free\' => \'Free\']" />', 'id="owner-control-free"'],
+    'checkbox group' => ['<x-hw::checkbox-group :options="[\'admin\' => \'Admin\']" />', 'id="owner-control-admin"'],
+    'toggle group' => ['<x-hw::toggle-group><x-hw::toggle-group.item value="bold">Bold</x-hw::toggle-group.item></x-hw::toggle-group>', 'id="owner-control-bold-input"'],
+]);
 
 it('propagates name to nested input', function () {
     $view = $this->blade('

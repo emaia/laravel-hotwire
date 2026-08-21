@@ -2,7 +2,6 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
-use Emaia\LaravelHotwire\Components\Concerns\StripsNullProps;
 use Emaia\LaravelHotwire\Support\AutoSubmit;
 use Emaia\LaravelHotwire\Support\FieldKey;
 use Illuminate\Contracts\Support\Htmlable;
@@ -12,10 +11,6 @@ use Illuminate\View\ComponentAttributeBag;
 
 class RadioGroup extends Component
 {
-    use StripsNullProps;
-
-    public bool $radioGroupDisabled;
-
     /** @param array<int|string, string> $options */
     public function __construct(
         public ?string $name = null,
@@ -41,7 +36,6 @@ class RadioGroup extends Component
             ? $this->orientation
             : 'vertical';
 
-        $this->radioGroupDisabled = $this->disabled;
     }
 
     public function render()
@@ -52,12 +46,44 @@ class RadioGroup extends Component
     public function data(): array
     {
         $data = parent::data();
+        $data['radioGroupContext'] = true;
+        $data['radioGroupName'] = $this->name;
+        $data['radioGroupOptions'] = $this->options;
+        $data['radioGroupSelected'] = $this->selected;
+        $data['radioGroupDisabled'] = $this->disabled;
+        $data['radioGroupOrientation'] = $this->orientation;
+        $data['radioGroupClass'] = $this->class;
+        $data['radioGroupWrapperClass'] = $this->wrapperClass;
+        $data['radioGroupLabelClass'] = $this->labelClass;
+        $data['radioGroupOld'] = $this->old;
+        $data['radioGroupId'] = $this->id;
+        $data['radioGroupErrorKey'] = $this->errorKey;
+        $data['radioGroupStimulus'] = $this->stimulus;
+        $data['radioGroupAutoSubmit'] = $this->autoSubmit;
+        $data['radioGroupAutoSubmitDelay'] = $this->autoSubmitDelay;
         $data['internalPrefixes'] = array_filter([
             AutoSubmit::enabled($this->autoSubmit) ? 'data-auto-submit-' : null,
         ]);
         $data['compute'] = $this->computeResolved(...);
 
-        return $this->stripNullProps($data, ['name', 'id', 'errorKey']);
+        unset(
+            $data['name'],
+            $data['options'],
+            $data['selected'],
+            $data['disabled'],
+            $data['orientation'],
+            $data['class'],
+            $data['wrapperClass'],
+            $data['labelClass'],
+            $data['old'],
+            $data['id'],
+            $data['errorKey'],
+            $data['stimulus'],
+            $data['autoSubmit'],
+            $data['autoSubmitDelay'],
+        );
+
+        return $data;
     }
 
     /** @return array<string, mixed> */

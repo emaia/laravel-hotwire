@@ -2,13 +2,10 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
-use Emaia\LaravelHotwire\Components\Concerns\StripsNullProps;
 use Illuminate\View\Component;
 
 class Field extends Component
 {
-    use StripsNullProps;
-
     public function __construct(
         public ?string $name = null,
         public ?string $label = null,
@@ -21,6 +18,8 @@ class Field extends Component
         public string $class = '',
         public bool $disabled = false,
         public bool $invalid = false,
+        public ?string $id = null,
+        public ?string $wrapperId = null,
     ) {}
 
     public function render()
@@ -30,6 +29,38 @@ class Field extends Component
 
     public function data(): array
     {
-        return $this->stripNullProps(parent::data(), ['name', 'errorKey', 'required']);
+        $data = parent::data();
+
+        $data['fieldName'] = $this->name;
+        $data['fieldId'] = $this->id;
+        $data['fieldLabel'] = $this->label;
+        $data['fieldDescription'] = $this->description;
+        $data['fieldRequiredLabel'] = $this->requiredLabel;
+        $data['fieldErrorKey'] = $this->errorKey;
+        $data['fieldRequired'] = $this->required;
+        $data['fieldError'] = $this->error;
+        $data['fieldOrientation'] = $this->orientation;
+        $data['fieldClass'] = $this->class;
+        $data['fieldWrapperId'] = $this->wrapperId;
+        $data['fieldDisabled'] = $this->disabled;
+        $data['fieldInvalid'] = $this->invalid;
+
+        unset(
+            $data['name'],
+            $data['id'],
+            $data['label'],
+            $data['description'],
+            $data['requiredLabel'],
+            $data['errorKey'],
+            $data['required'],
+            $data['error'],
+            $data['orientation'],
+            $data['class'],
+            $data['wrapperId'],
+            $data['disabled'],
+            $data['invalid'],
+        );
+
+        return $data;
     }
 }

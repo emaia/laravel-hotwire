@@ -1,6 +1,9 @@
-@aware(['name' => null, 'id' => null, 'errorKey' => null])
+@aware(['fieldName' => null, 'fieldId' => null, 'fieldErrorKey' => null])
 
 @php
+    $name = $name ?? $fieldName;
+    $id = $id ?? $fieldId;
+    $errorKey = $errorKey ?? $fieldErrorKey;
     extract($compute($name, $id, $errorKey, $errors ?? new \Illuminate\Support\ViewErrorBag));
 
     $sliderAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([

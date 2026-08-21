@@ -85,6 +85,9 @@ wrapped in `data-slot="checkbox-group-item-content"`, matching the item spacing 
 Use `<hw:checkbox-group.item>` when each option needs custom markup. The item inherits `name`, `selected`, `old`,
 `errorKey`, `select-all`, and `auto-submit` from the parent group.
 
+Explicit `name`, `id`, `error-key`, and `disabled` props on an item take precedence over inherited group and Field
+context.
+
 ```blade
 <hw:checkbox-group name="roles[]" :selected="$user->roles ?? []" select-all>
     <hw:checkbox-group.item value="admin">
@@ -100,6 +103,9 @@ Use `<hw:checkbox-group.item>` when each option needs custom markup. The item in
 ```
 
 You can combine `options` and rich items in the same group; options render first, then the slot content.
+
+An item must render inside its owning `<hw:checkbox-group>` in the same Blade tree. For Turbo Streams, replace the
+item's inner content or render the owning group instead of streaming a standalone `<hw:checkbox-group.item>`.
 
 ## With select-all
 
@@ -132,11 +138,12 @@ This renders `value="main"`, `value="dev"`, `value="next"` — not `value="0"`, 
 
 ## Inheriting from `<hw:field>`
 
-When inside `<hw:field>`, `name`, `id`, and `errorKey` are inherited via `@aware`:
+When inside `<hw:field>`, `name`, `id`, and `errorKey` are inherited from the scoped Field context:
 
 ```blade
-<hw:field name="roles[]" label="Roles">
-    <hw:checkbox-group :options="[1 => 'Admin', 2 => 'Editor']" />
+<hw:field name="roles[]" id="role-options">
+    <hw:field.title>Roles</hw:field.title>
+    <hw:checkbox-group aria-label="Roles" :options="[1 => 'Admin', 2 => 'Editor']" />
 </hw:field>
 ```
 
