@@ -89,7 +89,7 @@ class Input extends Component
             && $this->value !== ''
             && ($this->type === 'radio' || ($hasName && str_ends_with($name, '[]')));
 
-        if ($isGroupInput && $id === null) {
+        if ($isGroupInput && $this->id === null) {
             $valueSlug = Str::slug((string) $this->value);
             if ($valueSlug !== '') {
                 $resolvedId = $baseId.'-'.$valueSlug;

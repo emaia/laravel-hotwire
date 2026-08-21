@@ -667,3 +667,17 @@ it('names a checkbox group from a surrounding field label', function () {
         ->toContain('id="roles-label"')
         ->not->toContain('for="roles"');
 });
+
+it('shares the resolved group id base with a nested field error', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::field id="field-id" :error="false">
+            <x-hw::checkbox-group name="colors" :options="['red' => 'Red']">
+                <x-hw::field.error />
+            </x-hw::checkbox-group>
+        </x-hw::field>
+    BLADE);
+
+    expect($html)->toContain('aria-describedby="field-id-error"')
+        ->toContain('id="field-id-error"')
+        ->not->toContain('id="colors-error"');
+});

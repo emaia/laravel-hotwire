@@ -552,7 +552,8 @@ it('keeps the automatic label and its idref when a field contains multiple selec
 
     expect($html)->toContain('Preferences')
         ->toContain('id="plan-label"')
-        ->toContain('aria-labelledby="plan-label"');
+        ->toContain('aria-labelledby="plan-label"')
+        ->toMatch('/<div(?=[^>]*data-slot="field")(?=[^>]*role="group")(?=[^>]*aria-labelledby="plan-label")[^>]*>/');
 });
 
 it('keeps the automatic label and its idref when a field contains a selection group and a control', function () {
@@ -592,7 +593,9 @@ it('keeps a visible field label when a selection group supplies aria-label', fun
     BLADE);
 
     expect($html)->toContain('Visible plan')
-        ->toContain('aria-label="Plan"');
+        ->toContain('id="plan-label"')
+        ->toContain('aria-label="Plan"')
+        ->toContain('aria-labelledby="plan-label"');
 });
 
 it('honors an external label id for an explicit set without automatic label text', function () {
@@ -604,4 +607,68 @@ it('honors an external label id for an explicit set without automatic label text
     BLADE);
 
     expect($html)->toMatch('/<div(?=[^>]*data-slot="field")(?=[^>]*role="radiogroup")(?=[^>]*aria-labelledby="external-label")[^>]*>/');
+});
+
+it('deduplicates automatic and manual set label ids owned by a field', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::field name="n" label="Automatic" set="group" :error="false">
+            <x-hw::field.label set>Manual</x-hw::field.label>
+        </x-hw::field>
+    BLADE);
+
+    expect(substr_count($html, 'id="n-label"'))->toBe(1)
+        ->and($html)->toContain('id="n-label-2"')
+        ->toContain('aria-labelledby="n-label"');
+});
+
+it('derives ids from explicit control names that differ from the field identity', function (string $component, string $identity) {
+    $html = (string) $this->blade(<<<BLADE
+        <x-hw::field name="field-name" id="field-id" :error="false">
+            {$component}
+        </x-hw::field>
+    BLADE);
+
+    expect($html)->toContain($identity)
+        ->not->toContain('id="field-id"');
+})->with([
+    'input' => ['<x-hw::input name="control" />', 'id="control"'],
+    'select' => ['<x-hw::select name="control" />', 'id="control"'],
+    'checkbox' => ['<x-hw::checkbox name="control" />', 'id="control"'],
+    'switch' => ['<x-hw::switch name="control" />', 'id="control"'],
+    'textarea' => ['<x-hw::textarea name="control" />', 'id="control"'],
+    'file' => ['<x-hw::file name="control" />', 'id="control"'],
+    'file upload' => ['<x-hw::file-upload name="control" url="/uploads" />', 'id="control"'],
+    'multi select' => ['<x-hw::multi-select name="control" />', 'id="control"'],
+    'rich text' => ['<x-hw::rich-text name="control" />', 'data-rich-text-id-value="control"'],
+    'slider' => ['<x-hw::slider name="control" />', 'id="control"'],
+]);
+
+it('keeps different explicit control names from sharing the field id', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::field label="Label" name="n" id="field-id" :error="false">
+            <x-hw::input name="one" />
+            <x-hw::input name="two" />
+        </x-hw::field>
+    BLADE);
+
+    expect($html)->toContain('id="one"')
+        ->toContain('id="two"')
+        ->not->toContain('id="field-id"');
+});
+
+it('normalizes an empty label id before rendering explicit set semantics', function () {
+    $html = (string) $this->blade('<x-hw::field set="radiogroup" label-id="" :error="false"><input type="radio" name="choice"></x-hw::field>');
+
+    expect($html)->toContain('role="radiogroup"')
+        ->not->toContain('aria-labelledby=""');
+});
+
+it('lets explicit field set semantics override a selection group child', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::field name="plan" label="Plan" set="radiogroup" :error="false">
+            <x-hw::checkbox-group :options="['free' => 'Free']" />
+        </x-hw::field>
+    BLADE);
+
+    expect($html)->toMatch('/<div(?=[^>]*data-slot="field")(?=[^>]*role="radiogroup")(?=[^>]*aria-labelledby="plan-label")[^>]*>/');
 });

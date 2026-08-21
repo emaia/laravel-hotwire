@@ -1,9 +1,10 @@
 @aware(['fieldName' => null, 'fieldId' => null, 'fieldErrorKey' => null, 'fieldRequired' => false, 'fieldControlContext' => null])
 
 @php
+    $id = \Emaia\LaravelHotwire\Support\FieldKey::controlId($id ?? null, $name ?? null, $fieldId, $fieldName);
     $name = $name ?? $fieldName;
     $errorKey = $errorKey ?? $fieldErrorKey;
-    extract($compute($name, $id ?? null, $fieldId, $errorKey, $fieldRequired ?? false, $errors ?? new \Illuminate\Support\ViewErrorBag, $attributes));
+    extract($compute($name, $id, $fieldId, $errorKey, $fieldRequired ?? false, $errors ?? new \Illuminate\Support\ViewErrorBag, $attributes));
 
     if ($fieldControlContext instanceof \Emaia\LaravelHotwire\Support\FieldContext && $resolvedId) {
         $fieldControlContext->registerControl($resolvedId, $name, in_array($type, ['radio', 'checkbox'], true) ? $type : 'control');

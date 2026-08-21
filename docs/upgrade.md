@@ -36,8 +36,12 @@ the same ARIA identity. If application code previously used `id` to identify the
 </hw:field>
 ```
 
+A control with an explicit `name` different from the Field name now derives its id from that control name instead of
+reusing the Field id. This prevents sibling controls with different names from rendering duplicate ids. Controls that
+inherit or repeat the Field name still inherit its id.
+
 Field now resolves label ownership from the controls and selection groups that render in its slot. A sole selection
-group's own `field.label` suppresses the Field's automatic label, and only that group emits the set role and
+group’s own `field.label` suppresses the Field's automatic label, and only that group emits the set role and
 `aria-labelledby`. Nested groups start a new ownership boundary. A group's own `aria-label` or `aria-labelledby` does
 not hide the Field's visible label, and Fields containing multiple owners keep their label text. A single control keeps
 `label for`, including controls whose name ends in `[]`.

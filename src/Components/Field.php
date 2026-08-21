@@ -3,12 +3,15 @@
 namespace Emaia\LaravelHotwire\Components;
 
 use Emaia\LaravelHotwire\Support\FieldContext;
+use Emaia\LaravelHotwire\Support\FieldOwnerContext;
 use Illuminate\View\Component;
 use InvalidArgumentException;
 
 class Field extends Component
 {
     private FieldContext $context;
+
+    private FieldOwnerContext $ownerContext;
 
     public function __construct(
         public ?string $name = null,
@@ -32,6 +35,7 @@ class Field extends Component
         }
 
         $this->context = new FieldContext($this->name, $this->id, $this->label, $this->set, $this->labelId);
+        $this->ownerContext = new FieldOwnerContext;
     }
 
     public function render()
@@ -67,7 +71,7 @@ class Field extends Component
         $data['fieldOwnerId'] = null;
         $data['fieldOwnerErrorKey'] = null;
         $data['fieldOwnerSet'] = false;
-        $data['fieldOwnerContext'] = null;
+        $data['fieldOwnerContext'] = $this->ownerContext;
 
         unset(
             $data['name'],

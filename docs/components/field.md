@@ -176,7 +176,9 @@ Use `field.label` instead of `field.title` when a real label association is need
 
 The internal component-data keys are `fieldName`, `fieldId`, `fieldErrorKey`, and `fieldRequired`. Application
 subcomponents that intentionally consume Field context should use those scoped names. Explicit control props take
-precedence over inherited context; an explicit `:required="false"` also opts a control out of a required Field.
+precedence over inherited context; an explicit `:required="false"` also opts a control out of a required Field. A
+control that declares a different `name` derives its own id instead of reusing the Field id. Controls that inherit the
+Field name, or explicitly repeat it, continue to inherit the Field id.
 
 ### Field owners other than `<hw:field>`
 
@@ -199,6 +201,9 @@ no messages, so the ARIA reference stays stable.
 resolved name. It cannot see a control's rendered id, so giving a control an explicit `id` that diverges from the owner
 means passing the matching `id` to `field.error` as well.
 
+Selection groups publish their resolved owner id base, including an inherited Field id, so nested `field.error` and the
+group inputs always agree on `aria-describedby`.
+
 ### Labelling controls and sets
 
 A radio set, checkbox set or toggle set has no single labelable control, so `<label for>` would point at an id no
@@ -219,12 +224,14 @@ control carries. `<hw:radio-group>`, `<hw:checkbox-group>`, and `<hw:toggle-grou
 ```
 
 An explicit label inside a sole selection group takes precedence over the surrounding Field's automatic `label`; only
-the inner label renders. A group's `aria-label` or `aria-labelledby` does not hide the Field's visible label text. A
-nameless Field can also derive the automatic label id from its named selection group.
+the inner label renders. A group's `aria-label` does not hide the Field's visible label text: the group also references
+that label with `aria-labelledby`. An explicit `aria-labelledby` remains authoritative. A nameless Field can derive the
+automatic label id from its named selection group.
 
 Only a selection group directly owned by the Field can consume its automatic label. Nested selection groups start a new
 boundary, so an inner group must provide its own accessible name. If a Field contains multiple controls or groups, its
-label remains visible; give every additional semantic group an explicit accessible name.
+wrapper keeps `role="group"` and is named by the visible label; give every additional semantic group an explicit
+accessible name.
 
 Field-aware package controls register their final ids while Blade renders the slot. A Field wrapping one control keeps
 `<label for>` even when its name ends in `[]`. Two or more package radio inputs with the same name are inferred as a
@@ -247,6 +254,9 @@ label but still emits `aria-labelledby` on an explicit set:
 <span id="choices-label">Choices</span>
 <hw:field set="radiogroup" label-id="choices-label">...</hw:field>
 ```
+
+An explicit `set` keeps semantic ownership on Field even when its slot contains a selection-group component. Omit `set`
+to delegate ownership to a sole selection group.
 
 One shape is not covered: a `<hw:field.label>` written directly in a `<hw:field>` slot as a sibling of the group. Blade
 renders slot content before the surrounding view, so the label cannot know a set follows it and still emits `for`. Use
@@ -400,7 +410,7 @@ Form `<label>` that derives `for` from the surrounding field and renders an opti
 
 If the label wraps an `<input>`, `<select>`, or `<textarea>`, the component omits `for` and uses HTML's implicit labeling
 pattern. An explicit `for`, including one on a label inside a selection group, always takes precedence. Repeated labels
-under one selection owner receive unique ids; its `aria-labelledby` continues to reference the first.
+under one Field or selection owner receive unique ids; its `aria-labelledby` continues to reference the first.
 
 ### `<hw:field.title>`
 

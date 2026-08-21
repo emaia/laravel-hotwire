@@ -86,10 +86,12 @@ class RadioGroup extends Component
 
         $data['fieldOwner'] = $ownsFieldIdentity;
         $data['fieldOwnerName'] = $this->name;
-        $data['fieldOwnerId'] = $this->id;
+        $fieldContext = FieldContext::consume();
+        $data['fieldOwnerId'] = $fieldContext?->selectionId($this->id, $this->name)
+            ?? ($this->id ?: ($this->name ? FieldKey::toId($this->name) : null));
         $data['fieldOwnerErrorKey'] = $this->errorKey;
         $data['fieldOwnerContext'] = $this->ownerContext;
-        $data['radioGroupFieldContext'] = FieldContext::consume();
+        $data['radioGroupFieldContext'] = $fieldContext;
         $data['fieldContext'] = null;
         $data['fieldControlContext'] = null;
         $data['internalPrefixes'] = array_filter([

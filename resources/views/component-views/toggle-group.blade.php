@@ -6,10 +6,10 @@
     $resolvedName = $toggleGroupName ?? $fieldName;
     $baseId = $toggleGroupId ?? $fieldId ?? ($resolvedName ? \Emaia\LaravelHotwire\Support\FieldKey::toId($resolvedName) : null);
     $labelId = $fieldOwnerContext->labelId();
-    $hasExplicitAccessibleName = $attributes->has('aria-label') || $attributes->has('aria-labelledby');
+    $hasExplicitLabelledby = $attributes->has('aria-labelledby');
 
     if ($toggleGroupFieldContext instanceof \Emaia\LaravelHotwire\Support\FieldContext) {
-        $labelId = $toggleGroupFieldContext->registerSelection($baseId, $resolvedName, $labelId, $hasExplicitAccessibleName);
+        $labelId = $toggleGroupFieldContext->registerSelection($baseId, $resolvedName, $labelId, $hasExplicitLabelledby);
     }
 
     $groupAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([

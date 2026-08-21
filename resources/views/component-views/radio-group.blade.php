@@ -4,10 +4,10 @@
     extract($compute($radioGroupName ?? $fieldName, $radioGroupId ?? $fieldId, $radioGroupErrorKey ?? $fieldErrorKey, $errors, $attributes));
 
     $labelId = $fieldOwnerContext->labelId();
-    $hasExplicitAccessibleName = $attributes->has('aria-label') || $attributes->has('aria-labelledby');
+    $hasExplicitLabelledby = $attributes->has('aria-labelledby');
 
     if ($radioGroupFieldContext instanceof \Emaia\LaravelHotwire\Support\FieldContext) {
-        $labelId = $radioGroupFieldContext->registerSelection($baseId, $name, $labelId, $hasExplicitAccessibleName);
+        $labelId = $radioGroupFieldContext->registerSelection($baseId, $name, $labelId, $hasExplicitLabelledby);
     }
 
     $radioGroupAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([

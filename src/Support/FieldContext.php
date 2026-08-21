@@ -19,7 +19,7 @@ final class FieldContext
         private readonly ?string $set,
         ?string $labelId,
     ) {
-        $this->resolvedLabelId = $labelId;
+        $this->resolvedLabelId = $labelId !== '' ? $labelId : null;
     }
 
     /** Return the Field context visible to the component currently being created. */
@@ -50,14 +50,15 @@ final class FieldContext
         ?string $id,
         ?string $name,
         ?string $localLabelId,
-        bool $hasExplicitAccessibleName,
+        bool $hasExplicitLabelledby,
     ): ?string {
         $usesAutomaticLabel = false;
         $labelId = $localLabelId;
 
         if (
             $labelId === null
-            && ! $hasExplicitAccessibleName
+            && ! $hasExplicitLabelledby
+            && $this->set === null
             && $this->hasAutomaticLabel()
             && $this->selections === []
         ) {
@@ -74,6 +75,14 @@ final class FieldContext
         return $labelId;
     }
 
+    /** Resolve the id base a direct selection owner inherits from this Field. */
+    public function selectionId(?string $id, ?string $name): ?string
+    {
+        return $id
+            ?: $this->id
+            ?: ($name !== null && $name !== '' ? FieldKey::toId($name) : null);
+    }
+
     /**
      * Resolve the Field wrapper and automatic label after its slot has rendered.
      *
@@ -81,6 +90,10 @@ final class FieldContext
      */
     public function resolve(): array
     {
+        if ($this->set !== null) {
+            return $this->setResolution($this->set);
+        }
+
         if (count($this->selections) === 1 && $this->controls === []) {
             $selection = $this->selections[0];
 
@@ -93,32 +106,24 @@ final class FieldContext
         }
 
         if ($this->selections !== []) {
-            $labelId = $this->resolvedLabelId;
+            $labelId = $this->hasAutomaticLabel()
+                ? $this->resolveLabelId()
+                : $this->resolvedLabelId;
 
             return $this->resolution(
                 renderLabel: $this->hasAutomaticLabel(),
                 labelFor: $labelId === null ? '' : null,
                 labelId: $labelId,
                 labelSet: $labelId !== null,
+                role: 'group',
+                ariaLabelledby: $labelId,
             );
         }
 
-        $setRole = $this->set ?? $this->inferredSetRole();
+        $setRole = $this->inferredSetRole();
 
         if ($setRole !== null) {
-            $labelId = $this->resolvedLabelId;
-
-            if (($labelId === null || $labelId === '') && $this->hasAutomaticLabel()) {
-                $labelId = $this->resolveLabelId();
-            }
-
-            return $this->resolution(
-                renderLabel: $this->hasAutomaticLabel(),
-                labelId: $labelId,
-                labelSet: true,
-                role: $setRole,
-                ariaLabelledby: $labelId,
-            );
+            return $this->setResolution($setRole);
         }
 
         if (count($this->controls) === 1) {
@@ -151,6 +156,24 @@ final class FieldContext
     private function hasAutomaticLabel(): bool
     {
         return $this->label !== null && $this->label !== '';
+    }
+
+    /** @return array{renderLabel: bool, labelFor: ?string, labelId: ?string, labelSet: bool, role: ?string, ariaLabelledby: ?string} */
+    private function setResolution(string $role): array
+    {
+        $labelId = $this->resolvedLabelId;
+
+        if ($labelId === null && $this->hasAutomaticLabel()) {
+            $labelId = $this->resolveLabelId();
+        }
+
+        return $this->resolution(
+            renderLabel: $this->hasAutomaticLabel(),
+            labelId: $labelId,
+            labelSet: true,
+            role: $role,
+            ariaLabelledby: $labelId,
+        );
     }
 
     private function resolveLabelId(?string $fallbackId = null, ?string $fallbackName = null): string

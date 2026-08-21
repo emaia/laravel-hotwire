@@ -4,10 +4,10 @@
     extract($compute($checkboxGroupName ?? $fieldName, $checkboxGroupId ?? $fieldId, $checkboxGroupErrorKey ?? $fieldErrorKey, $errors, $attributes));
 
     $labelId = $fieldOwnerContext->labelId();
-    $hasExplicitAccessibleName = $attributes->has('aria-label') || $attributes->has('aria-labelledby');
+    $hasExplicitLabelledby = $attributes->has('aria-labelledby');
 
     if ($checkboxGroupFieldContext instanceof \Emaia\LaravelHotwire\Support\FieldContext) {
-        $labelId = $checkboxGroupFieldContext->registerSelection($baseId, $name, $labelId, $hasExplicitAccessibleName);
+        $labelId = $checkboxGroupFieldContext->registerSelection($baseId, $name, $labelId, $hasExplicitLabelledby);
     }
 
     $checkboxGroupAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
