@@ -69,6 +69,10 @@ class ToggleGroup extends Component
         // name. fieldOwner marks the boundary because a published null is indistinguishable
         // from an absent key once the consumer applies ??. A group with no identity at all
         // publishes nothing, so a surrounding Field still passes through.
+        // Always a set: there is no single labelable control, so a nested field.label must
+        // drop `for` even when the identity itself comes from a surrounding Field.
+        $data['fieldOwnerSet'] = true;
+
         $ownsFieldIdentity = ($this->name !== null && $this->name !== '')
             || ($this->id !== null && $this->id !== '')
             || ($this->errorKey !== null && $this->errorKey !== '');

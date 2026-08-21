@@ -197,6 +197,32 @@ no messages, so the ARIA reference stays stable.
 resolved name. It cannot see a control's rendered id, so giving a control an explicit `id` that diverges from the owner
 means passing the matching `id` to `field.error` as well.
 
+### Labelling a set of controls
+
+A radio set, checkbox set or toggle set has no single labelable control, so `<label for>` would point at an id no
+control carries. When the label sits inside a `<hw:radio-group>`, `<hw:checkbox-group>` or `<hw:toggle-group>`, or when
+a `<hw:field>` holds one of those groups or several radios, `field.label` drops `for` and emits `id="{base}-label"`
+instead. The owning container carries `aria-labelledby` pointing at it, and selection groups now expose the matching
+role: `radiogroup` for `<hw:radio-group>`, `group` for the other two.
+
+```blade
+{{-- label inside the group --}}
+<hw:radio-group name="plan" :options="$plans">
+    <hw:field.label>Plan</hw:field.label>
+</hw:radio-group>
+
+{{-- or from the surrounding field --}}
+<hw:field name="plan" label="Plan">
+    <hw:radio-group :options="$plans" />
+</hw:field>
+```
+
+A `<hw:field>` wrapping a single control keeps `<label for>` as before.
+
+One shape is not covered: a `<hw:field.label>` written directly in a `<hw:field>` slot as a sibling of the group. Blade
+renders slot content before the surrounding view, so the label cannot know a set follows it and still emits `for`. Use
+the `label` prop on `<hw:field>` or move the label inside the group.
+
 The automatic error follows the Field identity. If a child overrides `name`, `id`, or `error-key`, disable the automatic
 error with `:error="false"` and render a matching `<hw:field.error>` for that child identity.
 

@@ -304,7 +304,8 @@ it('resolves field error and label against the toggle group name without a field
 
     expect($html)->toContain('id="formats-error"')
         ->toContain('Escolha uma opcao')
-        ->toContain('for="formats"')
+        ->toContain('aria-labelledby="formats-label"')
+        ->toContain('id="formats-label"')
         ->not->toContain('hw-error-');
 });
 
@@ -313,3 +314,17 @@ it('points a slot-hoisted toggle item at the wrapper slot as the likely cause', 
 
     $this->blade('<x-selection-slot-wrapper><x-hw::toggle-group.item value="bold">Bold</x-hw::toggle-group.item></x-selection-slot-wrapper>');
 })->throws(ViewException::class, 'slot content renders before the view of the wrapper');
+
+it('names a toggle group with aria-labelledby instead of a dangling label for', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::toggle-group name="formats">
+            <x-hw::field.label>Formats</x-hw::field.label>
+            <x-hw::toggle-group.item value="bold">Bold</x-hw::toggle-group.item>
+        </x-hw::toggle-group>
+    BLADE);
+
+    $view->assertSee('role="group"', false)
+        ->assertSee('aria-labelledby="formats-label"', false)
+        ->assertSee('id="formats-label"', false)
+        ->assertDontSee('for="formats"', false);
+});

@@ -1,10 +1,13 @@
 @aware(['fieldName' => null, 'fieldId' => null, 'fieldErrorKey' => null])
 
 @php
+    $labelId = \Emaia\LaravelHotwire\Support\FieldLabel::findIn((string) $slot);
     extract($compute($radioGroupName ?? $fieldName, $radioGroupId ?? $fieldId, $radioGroupErrorKey ?? $fieldErrorKey, $errors, $attributes));
 
     $radioGroupAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
         'data-slot' => 'radio-group',
+        'role' => 'radiogroup',
+        'aria-labelledby' => $labelId,
         'data-orientation' => $radioGroupOrientation,
         'class' => filled($radioGroupWrapperClass) ? $radioGroupWrapperClass : null,
     ], $attributes, $radioGroupStimulus, except: ['auto-submit', 'auto-submit-delay', 'orientation', 'disabled'], protectedPrefixes: $internalPrefixes);

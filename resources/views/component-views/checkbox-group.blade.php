@@ -1,10 +1,13 @@
 @aware(['fieldName' => null, 'fieldId' => null, 'fieldErrorKey' => null])
 
 @php
+    $labelId = \Emaia\LaravelHotwire\Support\FieldLabel::findIn((string) $slot);
     extract($compute($checkboxGroupName ?? $fieldName, $checkboxGroupId ?? $fieldId, $checkboxGroupErrorKey ?? $fieldErrorKey, $errors, $attributes));
 
     $checkboxGroupAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
         'data-slot' => 'checkbox-group',
+        'role' => 'group',
+        'aria-labelledby' => $labelId,
         'data-orientation' => $checkboxGroupOrientation,
         'data-controller' => $wrapperController ?: null,
         'data-checkbox-select-all-disable-indeterminate-value' => $checkboxGroupSelectAll && $checkboxGroupDisableIndeterminate ? 'true' : null,

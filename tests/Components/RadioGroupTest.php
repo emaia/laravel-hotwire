@@ -382,7 +382,8 @@ it('resolves field error and label against the radio group name without a field 
 
     expect($html)->toContain('id="plan-error"')
         ->toContain('Escolha uma opcao')
-        ->toContain('for="plan"')
+        ->toContain('aria-labelledby="plan-label"')
+        ->toContain('id="plan-label"')
         ->not->toContain('hw-error-');
 });
 
@@ -398,10 +399,33 @@ it('does not mix owner identity between nested radio groups', function () {
         </x-hw::radio-group>
     BLADE);
 
-    $view->assertSee('for="inner"', false)
+    $view->assertSee('id="inner-label"', false)
+        ->assertSee('aria-labelledby="inner-label"', false)
         ->assertSee('id="inner-error"', false)
         ->assertSee('Inner message', false)
-        ->assertDontSee('for="outer-id"', false)
+        ->assertDontSee('inner-label"><', false)
+        ->assertDontSee('outer-id-label', false)
         ->assertDontSee('id="outer-id-error"', false)
         ->assertDontSee('Outer message', false);
+});
+
+it('names a radio group with aria-labelledby instead of a dangling label for', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::radio-group name="plan" :options="['free' => 'Free']">
+            <x-hw::field.label>Plan</x-hw::field.label>
+        </x-hw::radio-group>
+    BLADE);
+
+    $view->assertSee('role="radiogroup"', false)
+        ->assertSee('aria-labelledby="plan-label"', false)
+        ->assertSee('id="plan-label"', false)
+        ->assertDontSee('for="plan"', false);
+});
+
+it('names a radio group from a surrounding field label', function () {
+    $view = $this->blade('<x-hw::field name="plan" label="Plan" :error="false"><x-hw::radio-group :options="[\'free\' => \'Free\']" /></x-hw::field>');
+
+    $view->assertSee('aria-labelledby="plan-label"', false)
+        ->assertSee('id="plan-label"', false)
+        ->assertDontSee('for="plan"', false);
 });

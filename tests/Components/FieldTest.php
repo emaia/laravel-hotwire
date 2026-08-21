@@ -463,3 +463,10 @@ it('overrides errorKey when explicit error-key is set on field', function () {
     $view->assertSee('Required');
     $view->assertSee('aria-invalid="true"', false);
 });
+
+it('keeps a label for on a field that wraps a single control', function () {
+    $view = $this->blade('<x-hw::field name="email" label="Email" :error="false"><x-hw::input /></x-hw::field>');
+
+    $view->assertSee('for="email"', false)
+        ->assertDontSee('aria-labelledby', false);
+});

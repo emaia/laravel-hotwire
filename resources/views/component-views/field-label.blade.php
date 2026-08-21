@@ -1,14 +1,15 @@
-@aware(['fieldName' => null, 'fieldId' => null, 'fieldRequired' => false, 'fieldOwner' => false, 'fieldOwnerName' => null, 'fieldOwnerId' => null])
+@aware(['fieldName' => null, 'fieldId' => null, 'fieldRequired' => false, 'fieldOwner' => false, 'fieldOwnerName' => null, 'fieldOwnerId' => null, 'fieldOwnerSet' => false])
 
 @php
     $resolvedRequired = $required ?? $fieldRequired ?? false;
     $ownerName = $fieldOwner ? $fieldOwnerName : $fieldName;
     $ownerId = $fieldOwner ? $fieldOwnerId : $fieldId;
-    extract($compute($name ?? $ownerName, $ownerId, $slot));
+    extract($compute($name ?? $ownerName, $ownerId, $slot, $set ?? $fieldOwnerSet));
 @endphp
 
 <label
     data-slot="field-label"
+    @if ($resolvedId) id="{{ $resolvedId }}" @endif
     @if ($resolvedFor) for="{{ $resolvedFor }}" @endif
     {{ trim($class) !== '' ? $attributes->merge(['class' => $class]) : $attributes->except('class') }}
 >

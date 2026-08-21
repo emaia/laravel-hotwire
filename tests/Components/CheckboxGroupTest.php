@@ -619,6 +619,20 @@ it('resolves field error and label against the checkbox group name without a fie
 
     expect($html)->toContain('id="roles-error"')
         ->toContain('Escolha uma opcao')
-        ->toContain('for="roles"')
+        ->toContain('aria-labelledby="roles-label"')
+        ->toContain('id="roles-label"')
         ->not->toContain('hw-error-');
+});
+
+it('names a checkbox group with aria-labelledby instead of a dangling label for', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::checkbox-group name="roles[]" :options="['admin' => 'Admin']">
+            <x-hw::field.label>Roles</x-hw::field.label>
+        </x-hw::checkbox-group>
+    BLADE);
+
+    $view->assertSee('role="group"', false)
+        ->assertSee('aria-labelledby="roles-label"', false)
+        ->assertSee('id="roles-label"', false)
+        ->assertDontSee('for="roles"', false);
 });

@@ -1,8 +1,10 @@
 @php
+    $labelId = \Emaia\LaravelHotwire\Support\FieldLabel::findIn((string) $slot);
     extract($compute($attributes));
 
     $groupAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
         'role' => 'group',
+        'aria-labelledby' => $labelId,
         'data-slot' => 'toggle-group',
         'data-controller' => $elementController,
         'data-action' => $elementAction,
