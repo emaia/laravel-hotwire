@@ -4,7 +4,8 @@
     // A slot holding a selection group or several radios has no single labelable control,
     // so the auto label drops `for` and this container names itself against the label id.
     $slotHoldsSet = preg_match('/data-slot="(radio-group|checkbox-group|toggle-group)"/', $slotHtml) === 1
-        || preg_match('/<input[^>]*type="radio"/i', $slotHtml) === 1;
+        || preg_match('/<input[^>]*type="radio"/i', $slotHtml) === 1
+        || preg_match('/<input(?=[^>]*type="checkbox")(?=[^>]*name="[^"]*\[\]")[^>]*>/i', $slotHtml) === 1;
 
     $labelId = $slotHoldsSet
         ? \Emaia\LaravelHotwire\Support\FieldLabel::idFor($fieldId, $fieldName)

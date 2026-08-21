@@ -63,12 +63,9 @@ class ToggleGroup extends Component
         // group items end their fallback chain on those keys, and reusing them here would
         // let an outer group's name leak into a nameless inner group.
         //
-        // The three keys move together. A group that carries any identity of its own is a
-        // complete owner, so it publishes all three even where its own value is null; that
-        // is what stops an outer owner's id or error key from pairing with this group's
-        // name. fieldOwner marks the boundary because a published null is indistinguishable
-        // from an absent key once the consumer applies ??. A group with no identity at all
-        // publishes nothing, so a surrounding Field still passes through.
+        // The three keys always move together so this root blocks another group's owner
+        // context. fieldOwner selects this group's values when it has any identity of its
+        // own; otherwise field.label and field.error fall back to the separate Field keys.
         // Always a set: there is no single labelable control, so a nested field.label must
         // drop `for` even when the identity itself comes from a surrounding Field.
         $data['fieldOwnerSet'] = true;
@@ -77,12 +74,10 @@ class ToggleGroup extends Component
             || ($this->id !== null && $this->id !== '')
             || ($this->errorKey !== null && $this->errorKey !== '');
 
-        if ($ownsFieldIdentity) {
-            $data['fieldOwner'] = true;
-            $data['fieldOwnerName'] = $this->name;
-            $data['fieldOwnerId'] = $this->id;
-            $data['fieldOwnerErrorKey'] = $this->errorKey;
-        }
+        $data['fieldOwner'] = $ownsFieldIdentity;
+        $data['fieldOwnerName'] = $this->name;
+        $data['fieldOwnerId'] = $this->id;
+        $data['fieldOwnerErrorKey'] = $this->errorKey;
         $data['internalPrefixes'] = ['data-toggle-group-'];
 
         if (AutoSubmit::enabled($this->autoSubmit)) {

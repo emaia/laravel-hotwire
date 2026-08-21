@@ -1,5 +1,12 @@
+@aware(['fieldName' => null, 'fieldId' => null, 'fieldLabel' => null])
+
 @php
     $labelId = \Emaia\LaravelHotwire\Support\FieldLabel::findIn((string) $slot);
+
+    if ($labelId === null && $fieldLabel !== null && $fieldLabel !== '') {
+        $labelId = \Emaia\LaravelHotwire\Support\FieldLabel::idFor($fieldId, $fieldName);
+    }
+
     extract($compute($attributes));
 
     $groupAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([

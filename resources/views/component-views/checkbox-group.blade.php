@@ -1,7 +1,12 @@
-@aware(['fieldName' => null, 'fieldId' => null, 'fieldErrorKey' => null])
+@aware(['fieldName' => null, 'fieldId' => null, 'fieldErrorKey' => null, 'fieldLabel' => null])
 
 @php
     $labelId = \Emaia\LaravelHotwire\Support\FieldLabel::findIn((string) $slot);
+
+    if ($labelId === null && $fieldLabel !== null && $fieldLabel !== '') {
+        $labelId = \Emaia\LaravelHotwire\Support\FieldLabel::idFor($fieldId, $fieldName);
+    }
+
     extract($compute($checkboxGroupName ?? $fieldName, $checkboxGroupId ?? $fieldId, $checkboxGroupErrorKey ?? $fieldErrorKey, $errors, $attributes));
 
     $checkboxGroupAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([

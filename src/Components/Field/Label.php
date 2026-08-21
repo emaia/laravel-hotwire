@@ -19,6 +19,7 @@ class Label extends Component
         public ?bool $required = null,
         public string $requiredLabel = '*',
         public string $class = '',
+        public ?string $id = null,
     ) {}
 
     public function render()
@@ -31,7 +32,7 @@ class Label extends Component
         $data = parent::data();
         $data['compute'] = $this->computeResolved(...);
 
-        return $this->stripNullProps($data, ['name', 'for', 'required', 'set']);
+        return $this->stripNullProps($data, ['name', 'for', 'required', 'set', 'id']);
     }
 
     /**
@@ -58,7 +59,7 @@ class Label extends Component
 
         return [
             'resolvedFor' => $resolvedFor,
-            'resolvedId' => $labelsSet && $this->for === null ? FieldLabel::idFor($id, $name) : null,
+            'resolvedId' => $this->id ?? ($labelsSet && $this->for === null ? FieldLabel::idFor($id, $name) : null),
             'slotHtml' => $slotHtml,
         ];
     }

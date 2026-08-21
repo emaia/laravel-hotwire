@@ -182,8 +182,10 @@ precedence over inherited context; an explicit `:required="false"` also opts a c
 
 A selection group also owns a name, an id base and an error key, so `field.label` and `field.error` nested inside a
 `<hw:radio-group>`, `<hw:checkbox-group>` or `<hw:toggle-group>` resolve against that group even with no `<hw:field>`
-above it. Groups publish this through `fieldOwnerName`, `fieldOwnerId` and `fieldOwnerErrorKey`, and only when the group
-carries its own value, so a group without a name still inherits the surrounding Field.
+above it. Groups publish a `fieldOwner` marker together with `fieldOwnerName`, `fieldOwnerId` and `fieldOwnerErrorKey`.
+Every root publishes the complete nullable boundary, preventing an outer group from leaking through a nameless inner
+group. The marker selects the group's values when it carries its own identity; otherwise the root falls back only to the
+separate scoped Field context.
 
 This is deliberately a separate protocol from `fieldName`/`fieldId`/`fieldErrorKey`. Group items end their fallback
 chain on the Field keys, so publishing there would let an outer group's name reach a nameless inner group. Application
@@ -201,9 +203,9 @@ means passing the matching `id` to `field.error` as well.
 
 A radio set, checkbox set or toggle set has no single labelable control, so `<label for>` would point at an id no
 control carries. When the label sits inside a `<hw:radio-group>`, `<hw:checkbox-group>` or `<hw:toggle-group>`, or when
-a `<hw:field>` holds one of those groups or several radios, `field.label` drops `for` and emits `id="{base}-label"`
-instead. The owning container carries `aria-labelledby` pointing at it, and selection groups now expose the matching
-role: `radiogroup` for `<hw:radio-group>`, `group` for the other two.
+a `<hw:field>` holds one of those groups, several radios, or checkbox-array inputs, `field.label` drops `for` and emits
+`id="{base}-label"` instead. The owning container carries `aria-labelledby` pointing at it, and selection groups expose
+the matching role: `radiogroup` for `<hw:radio-group>`, `group` for the other two.
 
 ```blade
 {{-- label inside the group --}}
@@ -226,10 +228,10 @@ the `label` prop on `<hw:field>` or move the label inside the group.
 The automatic error follows the Field identity. If a child overrides `name`, `id`, or `error-key`, disable the automatic
 error with `:error="false"` and render a matching `<hw:field.error>` for that child identity.
 
-`field.label` uses `for` and is intended for a single labelable native control whose resolved id exactly matches the
-Field id. Composite controls such as selection groups, File Upload, Multi Select, and Rich Text use the Field id as an
-internal/root id base rather than a single label target. Give those controls their own accessible name and use
-`field.title` for visible group text instead of an automatic label.
+`field.label` uses `for` for a single labelable native control. Selection groups and native radio/checkbox sets use the
+`aria-labelledby` contract above. Other composite controls such as File Upload, Multi Select, and Rich Text still use
+the Field id as an internal/root id base rather than a single label target; give those controls their own accessible
+name and use `field.title` for visible text.
 
 ```blade
 <hw:field name="variables[0][name]" error-key="indicator.name">
@@ -356,6 +358,8 @@ Form `<label>` that derives `for` from the surrounding field and renders an opti
 | Prop             | Type           | Default             | Description                                           |
 |------------------|----------------|---------------------|-------------------------------------------------------|
 | `for`            | `string\|null` | derived from `name` | Overrides the label target. Pass `for=""` to omit it. |
+| `id`             | `string\|null` | derived for sets    | Overrides the label id referenced by `aria-labelledby`. |
+| `set`            | `bool\|null`   | inherited           | Labels a control set with `aria-labelledby` instead of `for`. |
 | `name`           | `string\|null` | inherited           | Used to derive `for` when `for` is omitted.           |
 | `value`          | `string\|null` | `null`              | Label text as an alternative to slot content.         |
 | `required`       | `bool\|null`   | inherited           | Shows the required marker.                            |

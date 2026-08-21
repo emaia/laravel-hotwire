@@ -409,6 +409,22 @@ it('does not mix owner identity between nested radio groups', function () {
         ->assertDontSee('Outer message', false);
 });
 
+it('blocks an outer field owner when the inner radio group is nameless', function () {
+    shareRadioGroupErrors(['outer.key' => ['Outer message']]);
+
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::radio-group name="outer" id="outer-id" error-key="outer.key">
+            <x-hw::radio-group>
+                <x-hw::field.error />
+            </x-hw::radio-group>
+        </x-hw::radio-group>
+    BLADE);
+
+    $view->assertSee('hw-error-', false)
+        ->assertDontSee('id="outer-id-error"', false)
+        ->assertDontSee('Outer message', false);
+});
+
 it('names a radio group with aria-labelledby instead of a dangling label for', function () {
     $view = $this->blade(<<<'BLADE'
         <x-hw::radio-group name="plan" :options="['free' => 'Free']">
@@ -424,8 +440,9 @@ it('names a radio group with aria-labelledby instead of a dangling label for', f
 
 it('names a radio group from a surrounding field label', function () {
     $view = $this->blade('<x-hw::field name="plan" label="Plan" :error="false"><x-hw::radio-group :options="[\'free\' => \'Free\']" /></x-hw::field>');
+    $html = (string) $view;
 
-    $view->assertSee('aria-labelledby="plan-label"', false)
-        ->assertSee('id="plan-label"', false)
-        ->assertDontSee('for="plan"', false);
+    expect($html)->toMatch('/<div(?=[^>]*data-slot="radio-group")(?=[^>]*aria-labelledby="plan-label")[^>]*>/')
+        ->toContain('id="plan-label"')
+        ->not->toContain('for="plan"');
 });

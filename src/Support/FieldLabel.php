@@ -28,7 +28,7 @@ final class FieldLabel
         }
 
         return preg_match('/<label[^>]*data-slot="field-label"[^>]*\bid="([^"]+)"/s', $html, $matches) === 1
-            ? $matches[1]
+            ? html_entity_decode($matches[1], ENT_QUOTES | ENT_HTML5, 'UTF-8')
             : null;
     }
 }

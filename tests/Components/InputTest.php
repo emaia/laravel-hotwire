@@ -602,3 +602,18 @@ it('lets an explicit input id pin a group input against the field id base', func
     expect((string) $view)->toContain('id="pinned"')
         ->not->toContain('id="pinned-free"');
 });
+
+it('names checkbox array inputs as a set instead of emitting a dangling label for', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::field name="roles[]" id="roles" label="Roles" :error="false">
+            <x-hw::input type="checkbox" value="admin" />
+            <x-hw::input type="checkbox" value="editor" />
+        </x-hw::field>
+    BLADE);
+
+    $view->assertSee('aria-labelledby="roles-label"', false)
+        ->assertSee('id="roles-label"', false)
+        ->assertDontSee('for="roles"', false)
+        ->assertSee('id="roles-admin"', false)
+        ->assertSee('id="roles-editor"', false);
+});

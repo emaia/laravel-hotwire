@@ -175,6 +175,15 @@ it('publishes only checkbox-group-scoped component data', function () {
         ->and($itemData)->toHaveKeys(['checkboxGroupItemValue', 'checkboxGroupItemName', 'checkboxGroupItemDisabled']);
 });
 
+it('publishes a null field owner boundary when the checkbox group is nameless', function () {
+    $data = (new CheckboxGroup)->data();
+
+    expect($data)->toHaveKey('fieldOwner', false)
+        ->and($data)->toHaveKey('fieldOwnerName', null)
+        ->and($data)->toHaveKey('fieldOwnerId', null)
+        ->and($data)->toHaveKey('fieldOwnerErrorKey', null);
+});
+
 it('keeps checkbox group context through an intermediate component', function () {
     Blade::anonymousComponentPath(__DIR__.'/../Fixtures/views/components');
 
@@ -635,4 +644,12 @@ it('names a checkbox group with aria-labelledby instead of a dangling label for'
         ->assertSee('aria-labelledby="roles-label"', false)
         ->assertSee('id="roles-label"', false)
         ->assertDontSee('for="roles"', false);
+});
+
+it('names a checkbox group from a surrounding field label', function () {
+    $html = (string) $this->blade('<x-hw::field name="roles[]" label="Roles" :error="false"><x-hw::checkbox-group :options="[\'admin\' => \'Admin\']" /></x-hw::field>');
+
+    expect($html)->toMatch('/<div(?=[^>]*data-slot="checkbox-group")(?=[^>]*aria-labelledby="roles-label")[^>]*>/')
+        ->toContain('id="roles-label"')
+        ->not->toContain('for="roles"');
 });

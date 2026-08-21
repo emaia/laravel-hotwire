@@ -106,6 +106,15 @@ it('publishes only toggle-group-scoped component data', function () {
         ->and($itemData)->toHaveKeys(['toggleGroupItemValue', 'toggleGroupItemName', 'toggleGroupItemDisabled']);
 });
 
+it('publishes a null field owner boundary when the toggle group is nameless', function () {
+    $data = (new ToggleGroup)->data();
+
+    expect($data)->toHaveKey('fieldOwner', false)
+        ->and($data)->toHaveKey('fieldOwnerName', null)
+        ->and($data)->toHaveKey('fieldOwnerId', null)
+        ->and($data)->toHaveKey('fieldOwnerErrorKey', null);
+});
+
 it('keeps toggle group context through an intermediate component', function () {
     Blade::anonymousComponentPath(__DIR__.'/../Fixtures/views/components');
 
@@ -327,4 +336,12 @@ it('names a toggle group with aria-labelledby instead of a dangling label for', 
         ->assertSee('aria-labelledby="formats-label"', false)
         ->assertSee('id="formats-label"', false)
         ->assertDontSee('for="formats"', false);
+});
+
+it('names a toggle group from a surrounding field label', function () {
+    $html = (string) $this->blade('<x-hw::field name="formats" label="Formats" :error="false"><x-hw::toggle-group><x-hw::toggle-group.item value="bold">Bold</x-hw::toggle-group.item></x-hw::toggle-group></x-hw::field>');
+
+    expect($html)->toMatch('/<div(?=[^>]*data-slot="toggle-group")(?=[^>]*aria-labelledby="formats-label")[^>]*>/')
+        ->toContain('id="formats-label"')
+        ->not->toContain('for="formats"');
 });
