@@ -81,12 +81,16 @@ final class FieldContext
         ];
     }
 
-    /** Register a selection owner and return the label id it should reference. */
+    /**
+     * Register a selection owner and return the label id it should reference.
+     *
+     * @param  string|null  $id  Base id used to derive the selection's error node id.
+     */
     public function registerSelection(
         ?string $localLabelId,
         bool $hasExplicitLabelledby,
         ?string $name = null,
-        ?string $errorId = null,
+        ?string $id = null,
         ?string $errorKey = null,
     ): ?string {
         $usesAutomaticLabel = false;
@@ -107,7 +111,7 @@ final class FieldContext
             'usesAutomaticLabel' => $usesAutomaticLabel,
             'hasLocalLabel' => $localLabelId !== null,
             'name' => $name,
-            'errorId' => $errorId !== '' ? $errorId : null,
+            'errorId' => $id !== null && $id !== '' ? $id.'-error' : null,
             'errorKey' => $errorKey !== '' ? $errorKey : null,
         ];
 
@@ -231,14 +235,8 @@ final class FieldContext
 
         $base = FieldKey::resolveId($this->id, $this->name, null, null);
 
-        $labelId = $base ? $base.'-label' : 'hw-field-label-'.uniqid();
-        $claimedIds = array_column($this->selections, 'labelId');
-        $suffix = 2;
-
-        while (in_array($labelId, $claimedIds, true)) {
-            $labelId = ($base ? $base.'-label' : $labelId).'-'.$suffix;
-            $suffix++;
-        }
+        $baseLabelId = $base ? $base.'-label' : 'hw-field-label-'.uniqid();
+        $labelId = FieldLabel::uniqueId($baseLabelId, array_column($this->selections, 'labelId'));
 
         return $this->resolvedLabelId = $labelId;
     }

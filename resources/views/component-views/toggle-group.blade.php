@@ -6,7 +6,6 @@
     $explicitName = $toggleGroupName ?? null;
     $resolvedName = $explicitName ?? $fieldName;
     $resolvedErrorKey = \Emaia\LaravelHotwire\Support\FieldKey::resolveErrorKey($toggleGroupErrorKey ?? null, $explicitName, $fieldErrorKey, $fieldName);
-    $errorId = $fieldOwnerId ? $fieldOwnerId.'-error' : null;
     $labelId = $fieldOwnerContext->labelId();
     $fieldOwnsSet = $toggleGroupFieldContext instanceof \Emaia\LaravelHotwire\Support\FieldContext
         && $toggleGroupFieldContext->ownsSet();
@@ -17,7 +16,7 @@
             $labelId,
             $hasExplicitAccessibleName,
             $resolvedName,
-            $errorId,
+            $fieldOwnerId,
             $resolvedErrorKey,
         );
     }

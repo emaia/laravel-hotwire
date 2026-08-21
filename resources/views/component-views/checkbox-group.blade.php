@@ -16,8 +16,8 @@
         $labelId = $checkboxGroupFieldContext->registerSelection(
             $labelId,
             $hasExplicitAccessibleName,
-            $name,
-            $errorId,
+            $resolvedName,
+            $baseId,
             $resolvedErrorKey,
         );
     }

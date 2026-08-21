@@ -17,7 +17,7 @@
             $labelId,
             $hasExplicitAccessibleName,
             $name,
-            $errorId,
+            $baseId,
             $resolvedErrorKey,
         );
     }

@@ -13,13 +13,7 @@ final class FieldOwnerContext
     public function registerLabel(?string $id): string
     {
         $baseId = $id !== null && $id !== '' ? $id : 'hw-field-label-'.uniqid();
-        $resolvedId = $baseId;
-        $suffix = 2;
-
-        while (isset($this->usedLabelIds[$resolvedId])) {
-            $resolvedId = $baseId.'-'.$suffix;
-            $suffix++;
-        }
+        $resolvedId = FieldLabel::uniqueId($baseId, array_keys($this->usedLabelIds));
 
         $this->usedLabelIds[$resolvedId] = true;
         $this->labelId ??= $resolvedId;
