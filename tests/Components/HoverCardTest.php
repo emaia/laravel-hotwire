@@ -214,7 +214,7 @@ it('does not expose hover card root props as generic component data', function (
     $frameworkKeys = ['componentName', 'attributes', 'ignoredParameterNames'];
     $genericKeys = array_values(array_filter(
         array_keys($data),
-        fn (string $key) => ! str_starts_with($key, 'hoverCard') && ! in_array($key, $frameworkKeys, true),
+        fn (string $key) => ! str_starts_with($key, 'hoverCard') && ! in_array($key, [...$frameworkKeys, 'fieldContext', 'fieldControlContext'], true),
     ));
 
     expect($genericKeys)->toBe([])
@@ -231,7 +231,9 @@ it('does not expose hover card root props as generic component data', function (
             'hoverCardCloseDelay',
             'hoverCardOpen',
             'hoverCardStimulus',
-        ]);
+        ])
+        ->and($data)->toHaveKey('fieldContext', null)
+        ->toHaveKey('fieldControlContext', null);
 });
 
 it('does not expose hover card trigger props as generic component data', function () {

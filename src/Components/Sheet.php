@@ -58,6 +58,8 @@ class Sheet extends Component
         $data['sheetFrame'] = $this->frame;
         $data['sheetMotion'] = $this->motion;
         $data['sheetViewTransition'] = $this->viewTransition;
+        $data['fieldContext'] = null;
+        $data['fieldControlContext'] = null;
 
         unset(
             $data['id'],

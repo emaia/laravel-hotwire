@@ -227,7 +227,7 @@ it('does not expose sheet root props as generic component data', function () {
     $frameworkKeys = ['componentName', 'attributes', 'ignoredParameterNames'];
     $genericKeys = array_values(array_filter(
         array_keys($data),
-        fn (string $key) => ! str_starts_with($key, 'sheet') && ! in_array($key, [...$frameworkKeys, 'compute'], true),
+        fn (string $key) => ! str_starts_with($key, 'sheet') && ! in_array($key, [...$frameworkKeys, 'compute', 'fieldContext', 'fieldControlContext'], true),
     ));
 
     expect($genericKeys)->toBe([])
@@ -238,7 +238,9 @@ it('does not expose sheet root props as generic component data', function () {
             'sheetFrame',
             'sheetMotion',
             'sheetViewTransition',
-        ]);
+        ])
+        ->and($data)->toHaveKey('fieldContext', null)
+        ->toHaveKey('fieldControlContext', null);
 });
 
 it('registers sheet in the component catalog and subcomponent aliases', function () {

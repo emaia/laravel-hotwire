@@ -1,6 +1,13 @@
 <?php
 
+use Emaia\LaravelHotwire\Components\AlertDialog;
+use Emaia\LaravelHotwire\Components\Drawer;
+use Emaia\LaravelHotwire\Components\Dropdown;
 use Emaia\LaravelHotwire\Components\Field;
+use Emaia\LaravelHotwire\Components\HoverCard;
+use Emaia\LaravelHotwire\Components\Modal;
+use Emaia\LaravelHotwire\Components\Popover;
+use Emaia\LaravelHotwire\Components\Sheet;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\MessageBag;
 use Illuminate\Support\ViewErrorBag;
@@ -718,11 +725,65 @@ it('does not register controls nested inside a dropdown with the surrounding fie
                 <x-hw::dropdown.trigger>Open</x-hw::dropdown.trigger>
                 <x-hw::dropdown.content>
                     <x-hw::input name="inner" />
+                    <x-hw::radio-group name="inner-choice" :options="['a' => 'A']" />
                 </x-hw::dropdown.content>
             </x-hw::dropdown>
         </x-hw::field>
     BLADE);
 
     expect($html)->toContain('for="query"')
-        ->not->toContain('for="inner"');
+        ->not->toContain('for="inner"')
+        ->not->toContain('aria-labelledby="query-label"');
 });
+
+it('keeps automatic and explicit labels on the registered control identity', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::field id="field-id" name="owner" label="Automatic" :error="false">
+            <x-hw::field.label name="child">Explicit</x-hw::field.label>
+            <x-hw::input name="child" />
+        </x-hw::field>
+    BLADE);
+
+    expect(substr_count($html, 'for="child"'))->toBe(2)
+        ->and($html)->not->toContain('for="field-id"');
+});
+
+it('names a multi-control field without emitting a dangling for', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::field name="preferences" label="Preferences" :error="false">
+            <x-hw::switch name="email" />
+            <x-hw::switch name="sms" />
+        </x-hw::field>
+    BLADE);
+
+    expect($html)->toContain('id="preferences-label"')
+        ->toMatch('/<div(?=[^>]*data-slot="field")(?=[^>]*role="group")(?=[^>]*aria-labelledby="preferences-label")[^>]*>/')
+        ->not->toContain('for="preferences"');
+});
+
+it('renders non-semantic label text when a group supplies its own accessible name', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::field name="plan" label="Visible plan" :error="false">
+            <x-hw::radio-group aria-label="Choose plan" :options="['free' => 'Free']" />
+        </x-hw::field>
+    BLADE);
+
+    expect($html)->toContain('<span data-slot="field-label">Visible plan</span>')
+        ->not->toMatch('/<label[^>]*data-slot="field-label"/')
+        ->toContain('aria-label="Choose plan"');
+});
+
+it('publishes symmetric field boundaries from overlay roots', function (string $component) {
+    $data = (new $component)->data();
+
+    expect($data)->toHaveKey('fieldContext', null)
+        ->toHaveKey('fieldControlContext', null);
+})->with([
+    AlertDialog::class,
+    Drawer::class,
+    Dropdown::class,
+    HoverCard::class,
+    Modal::class,
+    Popover::class,
+    Sheet::class,
+]);

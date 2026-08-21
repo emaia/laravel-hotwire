@@ -1,7 +1,7 @@
 @aware(['fieldName' => null, 'fieldId' => null, 'fieldErrorKey' => null, 'fieldControlContext' => null])
 
 @php
-    $id = \Emaia\LaravelHotwire\Support\FieldKey::controlId($id ?? null, $name ?? null, $fieldId, $fieldName);
+    $id = \Emaia\LaravelHotwire\Support\FieldKey::resolveId($id ?? null, $name ?? null, $fieldId, $fieldName);
     $name = $name ?? $fieldName;
     $errorKey = $errorKey ?? $fieldErrorKey;
     extract($compute($name, $id, $errorKey, $errors ?? new \Illuminate\Support\ViewErrorBag));

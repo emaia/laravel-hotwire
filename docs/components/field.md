@@ -178,7 +178,8 @@ The internal component-data keys are `fieldName`, `fieldId`, `fieldErrorKey`, an
 subcomponents that intentionally consume Field context should use those scoped names. Explicit control props take
 precedence over inherited context; an explicit `:required="false"` also opts a control out of a required Field. A
 control that declares a different `name` derives its own id instead of reusing the Field id. Controls that inherit the
-Field name, or explicitly repeat it, continue to inherit the Field id.
+Field name, or explicitly repeat it, continue to inherit the Field id. `field.label` and `field.error` use the same
+resolution order, keeping explicit names, `for`, error ids, and `aria-describedby` aligned.
 
 ### Field owners other than `<hw:field>`
 
@@ -225,8 +226,9 @@ control carries. `<hw:radio-group>`, `<hw:checkbox-group>`, and `<hw:toggle-grou
 
 An explicit label inside a sole selection group takes precedence over the surrounding Field's automatic `label`; only
 the inner label renders. Explicit `aria-label` and `aria-labelledby` attributes on a group remain authoritative and do
-not hide the Field's visible text. A nameless Field generates its own render-scoped label id; pass `label-id` when the id
-must be deterministic.
+not hide the Field's visible text. Because that text does not provide the group's accessible name, Field renders it as a
+styled `<span data-slot="field-label">` instead of an unassociated `<label>`. A nameless Field generates its own
+render-scoped label id; pass `label-id` when the id must be deterministic.
 
 Only a selection group directly owned by the Field can consume its automatic label. Nested selection groups start a new
 boundary, so an inner group must provide its own accessible name. Multiple direct selection groups each reference the
@@ -235,7 +237,7 @@ same Field label, while the Field wrapper leaves role ownership to those groups.
 Field-aware package controls register their final ids while Blade renders the slot. A Field wrapping one control keeps
 `<label for>` even when its name ends in `[]`. Two or more package radio inputs with the same name are inferred as a
 `radiogroup`; two or more package checkbox inputs with the same name are inferred as a `group`. Controls with different
-identities are not grouped automatically.
+identities receive a named `role="group"` wrapper and no dangling `for`.
 
 For raw HTML or application components, declare set semantics explicitly and provide a deterministic label id:
 
@@ -269,8 +271,9 @@ error with `:error="false"` and render a matching `<hw:field.error>` for that ch
 keeps its internal search input out of Field ownership. Selection groups and native radio/checkbox sets use the
 `aria-labelledby` contract above. Other composite controls such as File Upload and Rich Text still use the Field id as
 an internal/root id base rather than a single label target; give those controls their own accessible name and use
-`field.title` for visible text. Package interaction boundaries such as Dropdown do not leak their internal controls into
-the surrounding Field.
+`field.title` for visible text. Package overlay roots (Alert Dialog, Drawer, Dropdown, Hover Card, Modal, Popover, and
+Sheet) are Field boundaries: controls and selection groups inside them do not register with a surrounding Field. A Field
+rendered inside an overlay starts a fresh context normally.
 
 ```blade
 <hw:field name="variables[0][name]" error-key="indicator.name">

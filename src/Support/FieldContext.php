@@ -147,14 +147,21 @@ final class FieldContext
         }
 
         if (count($this->controls) > 1) {
+            $labelId = $this->hasAutomaticLabel()
+                ? $this->resolveLabelId()
+                : $this->resolvedLabelId;
+
             return $this->resolution(
                 renderLabel: $this->hasAutomaticLabel(),
-                labelId: $this->resolvedLabelId,
+                labelFor: '',
+                labelId: $labelId,
+                labelSet: $labelId !== null,
                 role: 'group',
+                ariaLabelledby: $labelId,
             );
         }
 
-        $fallbackFor = $this->id ?: ($this->name ? FieldKey::toId($this->name) : null);
+        $fallbackFor = FieldKey::resolveId($this->id, $this->name, null, null);
 
         return $this->resolution(
             renderLabel: $this->hasAutomaticLabel(),
@@ -193,8 +200,7 @@ final class FieldContext
             return $this->resolvedLabelId;
         }
 
-        $base = $this->id
-            ?: ($this->name ? FieldKey::toId($this->name) : null);
+        $base = FieldKey::resolveId($this->id, $this->name, null, null);
 
         $labelId = $base ? $base.'-label' : 'hw-field-label-'.uniqid();
         $claimedIds = array_column($this->selections, 'labelId');

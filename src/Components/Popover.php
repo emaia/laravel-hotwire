@@ -50,6 +50,8 @@ class Popover extends Component
         $data['popoverShift'] = $this->shift;
         $data['popoverOpen'] = $this->open;
         $data['popoverStimulus'] = $this->stimulus;
+        $data['fieldContext'] = null;
+        $data['fieldControlContext'] = null;
 
         unset(
             $data['id'],

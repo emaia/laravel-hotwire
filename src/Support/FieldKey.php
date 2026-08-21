@@ -4,8 +4,8 @@ namespace Emaia\LaravelHotwire\Support;
 
 final class FieldKey
 {
-    /** Resolve the id override a control should receive from its own and surrounding Field identities. */
-    public static function controlId(
+    /** Resolve one id from an explicit identity and its surrounding owner identity. */
+    public static function resolveId(
         ?string $id,
         ?string $name,
         ?string $fieldId,
@@ -19,7 +19,13 @@ final class FieldKey
             return self::toId($name);
         }
 
-        return $fieldId !== null && $fieldId !== '' ? $fieldId : null;
+        if ($fieldId !== null && $fieldId !== '') {
+            return $fieldId;
+        }
+
+        $resolvedName = $name !== null && $name !== '' ? $name : $fieldName;
+
+        return $resolvedName !== null && $resolvedName !== '' ? self::toId($resolvedName) : null;
     }
 
     public static function toErrorKey(string $name): string

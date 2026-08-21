@@ -38,7 +38,11 @@ the same ARIA identity. If application code previously used `id` to identify the
 
 A control with an explicit `name` different from the Field name now derives its id from that control name instead of
 reusing the Field id. This prevents sibling controls with different names from rendering duplicate ids. Controls that
-inherit or repeat the Field name still inherit its id.
+inherit or repeat the Field name still inherit its id. Labels and errors use the same resolver, keeping explicit names,
+`for`, error ids, and `aria-describedby` aligned.
+
+Application components calling `FieldKey::controlId()` directly must rename that call to `FieldKey::resolveId()`; the
+argument order is unchanged.
 
 Field now resolves label ownership from the controls and selection groups that render in its slot. A sole selection
 group's own `field.label` suppresses the Field's automatic label, and only that group emits the set role and
@@ -46,8 +50,13 @@ group's own `field.label` suppresses the Field's automatic label, and only that 
 remain authoritative. Multiple direct selection groups each reference the same Field label without adding a competing
 role to the Field wrapper. A single control keeps `label for`, including controls whose name ends in `[]`.
 
+Fields containing several unrelated controls omit `for` and name their `role="group"` wrapper with the automatic label.
+When a selection group supplies its own `aria-label` or `aria-labelledby`, the Field's separate visible text renders as
+a styled `<span>` rather than an unassociated `<label>`.
+
 Multi Select now registers its visible trigger with Field and blocks its popup search input from taking over the label.
-Dropdown similarly blocks nested interaction controls from registering with a surrounding Field.
+Package overlay roots (Alert Dialog, Drawer, Dropdown, Hover Card, Modal, Popover, and Sheet) block both Field ownership
+contexts, so nested controls and selection groups cannot register with a surrounding Field.
 
 Raw HTML and application components cannot participate in this internal registration. If they form a set, declare it
 on Field and provide the automatic label id explicitly:

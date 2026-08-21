@@ -65,6 +65,8 @@ class Drawer extends Component
         $data['drawerFrame'] = $this->frame;
         $data['drawerMotion'] = $this->motion;
         $data['drawerViewTransition'] = $this->viewTransition;
+        $data['fieldContext'] = null;
+        $data['fieldControlContext'] = null;
 
         unset(
             $data['id'],

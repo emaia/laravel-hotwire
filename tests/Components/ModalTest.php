@@ -336,7 +336,7 @@ it('does not expose modal root props as generic component data', function () {
     $frameworkKeys = ['componentName', 'attributes', 'ignoredParameterNames'];
     $genericKeys = array_values(array_filter(
         array_keys($data),
-        fn (string $key) => ! str_starts_with($key, 'modal') && ! in_array($key, $frameworkKeys, true),
+        fn (string $key) => ! str_starts_with($key, 'modal') && ! in_array($key, [...$frameworkKeys, 'fieldContext', 'fieldControlContext'], true),
     ));
 
     expect($genericKeys)->toBe([])
@@ -350,7 +350,9 @@ it('does not expose modal root props as generic component data', function () {
             'modalStimulus',
             'modalMotion',
             'modalViewTransition',
-        ]);
+        ])
+        ->and($data)->toHaveKey('fieldContext', null)
+        ->toHaveKey('fieldControlContext', null);
 });
 
 it('registers modal view transition dependency in the component catalog', function () {

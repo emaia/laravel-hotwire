@@ -178,7 +178,7 @@ it('does not expose dropdown root props as generic component data', function () 
     $frameworkKeys = ['componentName', 'attributes', 'ignoredParameterNames'];
     $genericKeys = array_values(array_filter(
         array_keys($data),
-        fn (string $key) => ! str_starts_with($key, 'dropdown') && $key !== 'fieldControlContext' && ! in_array($key, $frameworkKeys, true),
+        fn (string $key) => ! str_starts_with($key, 'dropdown') && ! in_array($key, [...$frameworkKeys, 'fieldContext', 'fieldControlContext'], true),
     ));
 
     expect($genericKeys)->toBe([])
@@ -188,7 +188,8 @@ it('does not expose dropdown root props as generic component data', function () 
             'dropdownCloseOnSelect',
             'dropdownStimulus',
         ])
-        ->and($data)->toHaveKey('fieldControlContext', null);
+        ->and($data)->toHaveKey('fieldContext', null)
+        ->toHaveKey('fieldControlContext', null);
 });
 
 it('does not expose dropdown trigger props as generic component data', function () {

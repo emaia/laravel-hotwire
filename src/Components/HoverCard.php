@@ -56,6 +56,8 @@ class HoverCard extends Component
         $data['hoverCardCloseDelay'] = $this->closeDelay;
         $data['hoverCardOpen'] = $this->open;
         $data['hoverCardStimulus'] = $this->stimulus;
+        $data['fieldContext'] = null;
+        $data['fieldControlContext'] = null;
 
         unset(
             $data['id'],

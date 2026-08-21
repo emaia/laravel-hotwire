@@ -33,4 +33,14 @@ class AlertDialog extends Component
     {
         return view('hotwire::component-views.alert-dialog');
     }
+
+    /** @return array<string, mixed> */
+    public function data(): array
+    {
+        $data = parent::data();
+        $data['fieldContext'] = null;
+        $data['fieldControlContext'] = null;
+
+        return $data;
+    }
 }

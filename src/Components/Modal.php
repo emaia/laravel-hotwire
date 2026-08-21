@@ -51,6 +51,8 @@ class Modal extends Component
         $data['modalStimulus'] = $this->stimulus;
         $data['modalMotion'] = $this->motion;
         $data['modalViewTransition'] = $this->viewTransition;
+        $data['fieldContext'] = null;
+        $data['fieldControlContext'] = null;
 
         unset(
             $data['id'],

@@ -4,7 +4,9 @@
     $resolvedRequired = $required ?? $fieldRequired ?? false;
     $ownerName = $fieldOwner ? $fieldOwnerName : $fieldName;
     $ownerId = $fieldOwner ? $fieldOwnerId : $fieldId;
-    extract($compute($name ?? $ownerName, $ownerId, $slot, $set ?? $fieldOwnerSet, $fieldOwnerContext));
+    $resolvedName = $name ?? $ownerName;
+    $resolvedTargetId = \Emaia\LaravelHotwire\Support\FieldKey::resolveId(null, $name ?? null, $ownerId, $ownerName);
+    extract($compute($resolvedName, $resolvedTargetId, $slot, $set ?? $fieldOwnerSet, $fieldOwnerContext));
 @endphp
 
 <label

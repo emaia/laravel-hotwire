@@ -4,8 +4,10 @@
     $ownerName = $fieldOwner ? $fieldOwnerName : $fieldName;
     $ownerId = $fieldOwner ? $fieldOwnerId : $fieldId;
     $ownerErrorKey = $fieldOwner ? $fieldOwnerErrorKey : $fieldErrorKey;
-    $resolvedContextId = $id ?? ($ownerId ? $ownerId.'-error' : null);
-    extract($compute($name ?? $ownerName, $errorKey ?? $ownerErrorKey, $resolvedContextId, $errors));
+    $resolvedName = $name ?? $ownerName;
+    $resolvedBaseId = \Emaia\LaravelHotwire\Support\FieldKey::resolveId(null, $name ?? null, $ownerId, $ownerName);
+    $resolvedContextId = $id ?? ($resolvedBaseId ? $resolvedBaseId.'-error' : null);
+    extract($compute($resolvedName, $errorKey ?? $ownerErrorKey, $resolvedContextId, $errors));
 @endphp
 
 <div

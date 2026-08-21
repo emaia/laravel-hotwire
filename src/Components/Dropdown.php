@@ -32,6 +32,7 @@ class Dropdown extends Component
         $data['dropdownOpen'] = $this->open;
         $data['dropdownCloseOnSelect'] = $this->closeOnSelect;
         $data['dropdownStimulus'] = $this->stimulus;
+        $data['fieldContext'] = null;
         $data['fieldControlContext'] = null;
 
         unset(

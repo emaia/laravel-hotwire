@@ -1,10 +1,6 @@
-@aware(['fieldName' => null, 'fieldId' => null])
-
 @php
     extract($compute($attributes));
 
-    $resolvedName = $toggleGroupName ?? $fieldName;
-    $baseId = $toggleGroupId ?? $fieldId ?? ($resolvedName ? \Emaia\LaravelHotwire\Support\FieldKey::toId($resolvedName) : null);
     $labelId = $fieldOwnerContext->labelId();
     $fieldOwnsSet = $toggleGroupFieldContext instanceof \Emaia\LaravelHotwire\Support\FieldContext
         && $toggleGroupFieldContext->ownsSet();
