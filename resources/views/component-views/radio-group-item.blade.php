@@ -18,10 +18,18 @@
         throw new InvalidArgumentException('Radio Group item must be rendered inside a Radio Group root. If the item is passed into the slot of a wrapper component, move it inside the Radio Group root itself: slot content renders before the view of the wrapper, so the root is not on the stack yet. Otherwise check for an intermediate component declaring a radioGroupContext prop, which shadows the root context.');
     }
 
+    $ownerName = $radioGroupName ?? $fieldName;
+    $ownerId = $radioGroupId ?? $fieldId;
+    $ownerErrorKey = \Emaia\LaravelHotwire\Support\FieldKey::resolveErrorKey($radioGroupErrorKey ?? null, $radioGroupName ?? null, $fieldErrorKey, $fieldName);
+    $explicitName = $radioGroupItemName ?? null;
+    $resolvedName = $explicitName ?? $ownerName;
+    $resolvedId = \Emaia\LaravelHotwire\Support\FieldKey::resolveId($radioGroupItemId ?? null, $explicitName, $ownerId, $ownerName);
+    $resolvedErrorKey = \Emaia\LaravelHotwire\Support\FieldKey::resolveErrorKey($radioGroupItemErrorKey ?? null, $explicitName, $ownerErrorKey, $ownerName);
+
     extract($compute(
-        $radioGroupItemName ?? $radioGroupName ?? $fieldName,
-        $radioGroupItemId ?? $radioGroupId ?? $fieldId,
-        $radioGroupItemErrorKey ?? $radioGroupErrorKey ?? $fieldErrorKey,
+        $resolvedName,
+        $resolvedId,
+        $resolvedErrorKey,
         $radioGroupSelected,
         $radioGroupOld,
         $radioGroupDisabled,

@@ -1,13 +1,25 @@
+@aware(['fieldName' => null, 'fieldErrorKey' => null])
+
 @php
     extract($compute($attributes));
 
+    $explicitName = $toggleGroupName ?? null;
+    $resolvedName = $explicitName ?? $fieldName;
+    $resolvedErrorKey = \Emaia\LaravelHotwire\Support\FieldKey::resolveErrorKey($toggleGroupErrorKey ?? null, $explicitName, $fieldErrorKey, $fieldName);
+    $errorId = $fieldOwnerId ? $fieldOwnerId.'-error' : null;
     $labelId = $fieldOwnerContext->labelId();
     $fieldOwnsSet = $toggleGroupFieldContext instanceof \Emaia\LaravelHotwire\Support\FieldContext
         && $toggleGroupFieldContext->ownsSet();
     $hasExplicitAccessibleName = $attributes->has('aria-labelledby') || $attributes->has('aria-label');
 
     if ($toggleGroupFieldContext instanceof \Emaia\LaravelHotwire\Support\FieldContext) {
-        $labelId = $toggleGroupFieldContext->registerSelection($labelId, $hasExplicitAccessibleName);
+        $labelId = $toggleGroupFieldContext->registerSelection(
+            $labelId,
+            $hasExplicitAccessibleName,
+            $resolvedName,
+            $errorId,
+            $resolvedErrorKey,
+        );
     }
 
     $groupAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([

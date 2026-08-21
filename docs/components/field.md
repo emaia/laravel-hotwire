@@ -196,7 +196,8 @@ components that own a field identity and want to feed `field.label` and `field.e
 keys; components that want to feed controls and group items should publish the `field*` keys.
 
 Controls emit `aria-describedby="{id}-error"`. `field.error` keeps the matching element in the DOM, hidden when there are
-no messages, so the ARIA reference stays stable.
+no messages, so the ARIA reference stays stable. The automatic error follows the final identity of a sole registered
+control or selection group, including explicit `name`, `id`, and `error-key` overrides.
 
 `field.error` derives its id with the same precedence a control uses: its own `id`, then the owner id base, then the
 resolved name. It cannot see a control's rendered id, so giving a control an explicit `id` that diverges from the owner
@@ -227,8 +228,9 @@ control carries. `<hw:radio-group>`, `<hw:checkbox-group>`, and `<hw:toggle-grou
 An explicit label inside a sole selection group takes precedence over the surrounding Field's automatic `label`; only
 the inner label renders. Explicit `aria-label` and `aria-labelledby` attributes on a group remain authoritative and do
 not hide the Field's visible text. Because that text does not provide the group's accessible name, Field renders it as a
-styled `<span data-slot="field-label">` instead of an unassociated `<label>`. A nameless Field generates its own
-render-scoped label id; pass `label-id` when the id must be deterministic.
+styled `<span data-slot="field-label">` instead of an unassociated `<label>`. When `label-id` is supplied, the span keeps
+that id so an explicit `aria-labelledby` reference remains valid. A nameless Field generates its own render-scoped label
+id; pass `label-id` when the id must be deterministic.
 
 Only a selection group directly owned by the Field can consume its automatic label. Nested selection groups start a new
 boundary, so an inner group must provide its own accessible name. Multiple direct selection groups each reference the
@@ -264,16 +266,18 @@ One shape is not covered: a `<hw:field.label>` written directly in a `<hw:field>
 renders slot content before the surrounding view, so the label cannot know a set follows it and still emits `for`. Use
 the `label` prop on `<hw:field>` or move the label inside the group.
 
-The automatic error follows the Field identity. If a child overrides `name`, `id`, or `error-key`, disable the automatic
-error with `:error="false"` and render a matching `<hw:field.error>` for that child identity.
+When several children expose different error identities, the automatic error falls back to the Field identity because
+there is no unambiguous child to follow. Use `:error="false"` and render matching `<hw:field.error>` components for those
+children.
 
 `field.label` uses `for` for a single labelable native control. Multi Select registers its trigger as that control and
 keeps its internal search input out of Field ownership. Selection groups and native radio/checkbox sets use the
 `aria-labelledby` contract above. Other composite controls such as File Upload and Rich Text still use the Field id as
 an internal/root id base rather than a single label target; give those controls their own accessible name and use
 `field.title` for visible text. Package overlay roots (Alert Dialog, Drawer, Dropdown, Hover Card, Modal, Popover, and
-Sheet) are Field boundaries: controls and selection groups inside them do not register with a surrounding Field. A Field
-rendered inside an overlay starts a fresh context normally.
+Sheet) are Field boundaries: inherited Field name, id, error, required state, and ownership registration do not cross
+into them. A Field rendered inside an overlay starts a fresh context normally. If no labelable control registers, Field
+renders its label prop as visual text without guessing a `for` target.
 
 ```blade
 <hw:field name="variables[0][name]" error-key="indicator.name">

@@ -86,6 +86,7 @@ class ToggleGroup extends Component
         $fieldContext = FieldContext::consume();
         $data['fieldOwnerId'] = $fieldContext?->selectionId($this->id, $this->name)
             ?? ($this->id ?: ($this->name ? FieldKey::toId($this->name) : null));
+        $data['toggleGroupId'] = $data['fieldOwnerId'];
         $data['fieldOwnerErrorKey'] = $this->errorKey;
         $data['fieldOwnerContext'] = $this->ownerContext;
         $data['toggleGroupFieldContext'] = $fieldContext;

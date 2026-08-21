@@ -1,13 +1,20 @@
 @aware(['fieldName' => null, 'fieldId' => null, 'fieldErrorKey' => null, 'fieldRequired' => false, 'fieldControlContext' => null])
 
 @php
-    $id = \Emaia\LaravelHotwire\Support\FieldKey::resolveId($id ?? null, $name ?? null, $fieldId, $fieldName);
-    $name = $name ?? $fieldName;
-    $errorKey = $errorKey ?? $fieldErrorKey;
+    $explicitName = $name ?? null;
+    $id = \Emaia\LaravelHotwire\Support\FieldKey::resolveId($id ?? null, $explicitName, $fieldId, $fieldName);
+    $errorKey = \Emaia\LaravelHotwire\Support\FieldKey::resolveErrorKey($errorKey ?? null, $explicitName, $fieldErrorKey, $fieldName);
+    $name = $explicitName ?? $fieldName;
     extract($compute($name, $id, $fieldId, $errorKey, $fieldRequired ?? false, $errors ?? new \Illuminate\Support\ViewErrorBag, $attributes));
 
     if ($fieldControlContext instanceof \Emaia\LaravelHotwire\Support\FieldContext && $resolvedId) {
-        $fieldControlContext->registerControl($resolvedId, $name, in_array($type, ['radio', 'checkbox'], true) ? $type : 'control');
+        $fieldControlContext->registerControl(
+            $resolvedId,
+            $name,
+            in_array($type, ['radio', 'checkbox'], true) ? $type : 'control',
+            $errorId,
+            $resolvedErrorKey,
+        );
     }
 
     $inputAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([

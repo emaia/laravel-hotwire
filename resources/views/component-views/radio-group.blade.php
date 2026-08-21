@@ -1,7 +1,11 @@
 @aware(['fieldName' => null, 'fieldId' => null, 'fieldErrorKey' => null])
 
 @php
-    extract($compute($radioGroupName ?? $fieldName, $radioGroupId ?? $fieldId, $radioGroupErrorKey ?? $fieldErrorKey, $errors, $attributes));
+    $explicitName = $radioGroupName ?? null;
+    $resolvedName = $explicitName ?? $fieldName;
+    $resolvedId = \Emaia\LaravelHotwire\Support\FieldKey::resolveId($radioGroupId ?? null, $explicitName, $fieldId, $fieldName);
+    $resolvedErrorKey = \Emaia\LaravelHotwire\Support\FieldKey::resolveErrorKey($radioGroupErrorKey ?? null, $explicitName, $fieldErrorKey, $fieldName);
+    extract($compute($resolvedName, $resolvedId, $resolvedErrorKey, $errors, $attributes));
 
     $labelId = $fieldOwnerContext->labelId();
     $fieldOwnsSet = $radioGroupFieldContext instanceof \Emaia\LaravelHotwire\Support\FieldContext
@@ -9,7 +13,13 @@
     $hasExplicitAccessibleName = $attributes->has('aria-labelledby') || $attributes->has('aria-label');
 
     if ($radioGroupFieldContext instanceof \Emaia\LaravelHotwire\Support\FieldContext) {
-        $labelId = $radioGroupFieldContext->registerSelection($labelId, $hasExplicitAccessibleName);
+        $labelId = $radioGroupFieldContext->registerSelection(
+            $labelId,
+            $hasExplicitAccessibleName,
+            $name,
+            $errorId,
+            $resolvedErrorKey,
+        );
     }
 
     $radioGroupAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([

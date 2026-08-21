@@ -2,6 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Emaia\LaravelHotwire\Support\FieldContext;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\Component;
 
@@ -38,8 +39,7 @@ class AlertDialog extends Component
     public function data(): array
     {
         $data = parent::data();
-        $data['fieldContext'] = null;
-        $data['fieldControlContext'] = null;
+        $data = array_replace($data, FieldContext::boundaryData());
 
         return $data;
     }

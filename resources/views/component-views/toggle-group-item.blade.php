@@ -19,13 +19,26 @@
         throw new InvalidArgumentException('Toggle Group item must be rendered inside a Toggle Group root. If the item is passed into the slot of a wrapper component, move it inside the Toggle Group root itself: slot content renders before the view of the wrapper, so the root is not on the stack yet. Otherwise check for an intermediate component declaring a toggleGroupContext prop, which shadows the root context.');
     }
 
+    $ownerName = $toggleGroupName ?? $fieldName;
+    $ownerId = $toggleGroupId ?? $fieldId;
+    $ownerErrorKey = \Emaia\LaravelHotwire\Support\FieldKey::resolveErrorKey($toggleGroupErrorKey ?? null, $toggleGroupName ?? null, $fieldErrorKey, $fieldName);
+    $explicitName = $toggleGroupItemName ?? null;
+    $resolvedName = $explicitName ?? $ownerName;
+    $resolvedId = \Emaia\LaravelHotwire\Support\FieldKey::resolveId($toggleGroupItemId ?? null, $explicitName, $ownerId, $ownerName);
+    $resolvedErrorKey = \Emaia\LaravelHotwire\Support\FieldKey::resolveErrorKey(
+        $toggleGroupItemErrorKey ?? null,
+        $explicitName,
+        $ownerErrorKey,
+        $ownerName,
+    );
+
     extract($compute(
-        $toggleGroupItemName ?? $toggleGroupName ?? $fieldName,
+        $resolvedName,
         $toggleGroupType,
         $toggleGroupSelected,
         $toggleGroupOld,
-        $toggleGroupItemId ?? $toggleGroupId ?? $fieldId,
-        $toggleGroupItemErrorKey ?? $toggleGroupErrorKey ?? $fieldErrorKey,
+        $resolvedId,
+        $resolvedErrorKey,
         $toggleGroupVariant,
         $toggleGroupSize,
         $toggleGroupDisabled,

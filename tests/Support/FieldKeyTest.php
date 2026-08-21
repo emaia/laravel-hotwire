@@ -76,3 +76,22 @@ it('resolves one identity precedence for controls labels and errors', function (
     'inherited owner name' => [null, null, null, 'owner[field]', 'owner-field'],
     'no identity' => [null, null, null, null, null],
 ]);
+
+// --- resolveErrorKey ---
+
+it('resolves one validation key precedence for controls and errors', function (
+    ?string $errorKey,
+    ?string $name,
+    ?string $ownerErrorKey,
+    ?string $ownerName,
+    ?string $expected,
+) {
+    expect(FieldKey::resolveErrorKey($errorKey, $name, $ownerErrorKey, $ownerName))->toBe($expected);
+})->with([
+    'explicit error key' => ['validation.child', 'child', 'validation.owner', 'owner', 'validation.child'],
+    'divergent explicit name' => [null, 'child', 'validation.owner', 'owner', 'child'],
+    'matching explicit name' => [null, 'owner', 'validation.owner', 'owner', 'validation.owner'],
+    'inherited owner error key' => [null, null, 'validation.owner', 'owner', 'validation.owner'],
+    'inherited owner name' => [null, null, null, 'owner[field]', 'owner.field'],
+    'no identity' => [null, null, null, null, null],
+]);

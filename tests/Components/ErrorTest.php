@@ -143,7 +143,7 @@ it('picks up name from field via @aware', function () {
 
 it('derives its id from an explicit divergent name inside a field', function () {
     $html = (string) $this->blade(<<<'BLADE'
-        <x-hw::field id="field-id" name="owner" label="Owner">
+        <x-hw::field id="field-id" name="owner" label="Owner" :error="false">
             <x-hw::input name="child" />
             <x-hw::field.error name="child" />
         </x-hw::field>
@@ -151,5 +151,5 @@ it('derives its id from an explicit divergent name inside a field', function () 
 
     expect($html)->toContain('aria-describedby="child-error"')
         ->toContain('id="child-error"')
-        ->and(substr_count($html, 'id="field-id-error"'))->toBe(1);
+        ->not->toContain('id="field-id-error"');
 });

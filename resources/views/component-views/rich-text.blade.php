@@ -1,9 +1,10 @@
 @aware(['fieldName' => null, 'fieldId' => null, 'fieldErrorKey' => null, 'fieldRequired' => false])
 
 @php
-    $id = \Emaia\LaravelHotwire\Support\FieldKey::resolveId($id ?? null, $name ?? null, $fieldId, $fieldName);
-    $name = $name ?? $fieldName;
-    $errorKey = $errorKey ?? $fieldErrorKey;
+    $explicitName = $name ?? null;
+    $id = \Emaia\LaravelHotwire\Support\FieldKey::resolveId($id ?? null, $explicitName, $fieldId, $fieldName);
+    $errorKey = \Emaia\LaravelHotwire\Support\FieldKey::resolveErrorKey($errorKey ?? null, $explicitName, $fieldErrorKey, $fieldName);
+    $name = $explicitName ?? $fieldName;
     extract($compute($name, $id, $errorKey, $fieldRequired ?? false, $errors, $attributes));
     // Escape `\` and `'` so an id containing either still produces a valid CSS attribute selector.
     $escapedId = addcslashes($resolvedId, "\\'");

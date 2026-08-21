@@ -731,7 +731,8 @@ it('does not register controls nested inside a dropdown with the surrounding fie
         </x-hw::field>
     BLADE);
 
-    expect($html)->toContain('for="query"')
+    expect($html)->toMatch('/<span[^>]*data-slot="field-label"[^>]*>Query<\/span>/')
+        ->not->toContain('for="query"')
         ->not->toContain('for="inner"')
         ->not->toContain('aria-labelledby="query-label"');
 });
@@ -768,15 +769,122 @@ it('renders non-semantic label text when a group supplies its own accessible nam
         </x-hw::field>
     BLADE);
 
-    expect($html)->toContain('<span data-slot="field-label">Visible plan</span>')
+    expect($html)->toMatch('/<span[^>]*data-slot="field-label"[^>]*>Visible plan<\/span>/')
         ->not->toMatch('/<label[^>]*data-slot="field-label"/')
         ->toContain('aria-label="Choose plan"');
+});
+
+it('keeps an explicit label id on visual label text', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::field name="plan" label="Visible plan" label-id="plan-label" :error="false">
+            <x-hw::radio-group aria-labelledby="plan-label" :options="['free' => 'Free']" />
+        </x-hw::field>
+    BLADE);
+
+    expect($html)->toMatch('/<span(?=[^>]*data-slot="field-label")(?=[^>]*id="plan-label")[^>]*>Visible plan<\/span>/')
+        ->and(substr_count($html, 'id="plan-label"'))->toBe(1)
+        ->and($html)->toContain('aria-labelledby="plan-label"');
+});
+
+it('does not guess a label target when no labelable control registers', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::field name="body" label="Body" :error="false">
+            <x-hw::rich-text />
+        </x-hw::field>
+    BLADE);
+
+    expect($html)->toMatch('/<span[^>]*data-slot="field-label"[^>]*>Body<\/span>/')
+        ->not->toContain('for="body"');
+});
+
+it('uses a sole registered control identity for the automatic error', function () {
+    shareFieldErrors(['validation.child' => ['Choose a child']]);
+
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::field id="field-id" name="owner" label="Owner">
+            <x-hw::select name="child" error-key="validation.child" :options="['one' => 'One']" />
+        </x-hw::field>
+    BLADE);
+
+    expect($html)->toContain('aria-describedby="child-error"')
+        ->toContain('id="child-error"')
+        ->toContain('Choose a child')
+        ->not->toContain('id="field-id-error"');
+});
+
+it('does not inherit the field error key when a control name diverges', function () {
+    shareFieldErrors(['child' => ['Choose a child'], 'validation.owner' => ['Wrong message']]);
+
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::field name="owner" error-key="validation.owner">
+            <x-hw::select name="child" :options="['one' => 'One']" />
+        </x-hw::field>
+    BLADE);
+
+    expect($html)->toContain('aria-describedby="child-error"')
+        ->toContain('Choose a child')
+        ->not->toContain('Wrong message');
+});
+
+it('uses a sole selection group identity for the automatic error', function () {
+    shareFieldErrors(['colors' => ['Choose a color']]);
+
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::field id="field-id" name="owner" label="Colors">
+            <x-hw::checkbox-group name="colors" :options="['red' => 'Red']" />
+        </x-hw::field>
+    BLADE);
+
+    expect($html)->toContain('aria-describedby="colors-error"')
+        ->toContain('id="colors-error"')
+        ->toContain('Choose a color')
+        ->not->toContain('id="field-id-error"');
+});
+
+it('keeps selection item identity overrides ahead of group and field identity', function (
+    string $component,
+    string $expectedName,
+    string $expectedId,
+) {
+    shareFieldErrors(['child' => ['Invalid child']]);
+
+    $html = (string) $this->blade(<<<BLADE
+        <x-hw::field name="owner" id="field-id" error-key="validation.owner" :error="false">
+            {$component}
+        </x-hw::field>
+    BLADE);
+
+    expect($html)->toContain('name="'.$expectedName.'"')
+        ->toContain('id="'.$expectedId.'"')
+        ->toContain('aria-describedby="child-error"')
+        ->toContain('aria-invalid="true"');
+})->with([
+    'radio item' => ['<x-hw::radio-group name="group"><x-hw::radio-group.item name="child" value="one">One</x-hw::radio-group.item></x-hw::radio-group>', 'child', 'child-one'],
+    'checkbox item' => ['<x-hw::checkbox-group name="group"><x-hw::checkbox-group.item name="child" value="one">One</x-hw::checkbox-group.item></x-hw::checkbox-group>', 'child[]', 'child-one'],
+    'toggle item' => ['<x-hw::toggle-group name="group"><x-hw::toggle-group.item name="child" value="one">One</x-hw::toggle-group.item></x-hw::toggle-group>', 'child[]', 'child-one-input'],
+]);
+
+it('blocks inherited field identity inside an overlay', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::field name="query" label="Query" required :error="false">
+            <x-hw::modal>
+                <x-hw::modal.content><x-hw::input /></x-hw::modal.content>
+            </x-hw::modal>
+        </x-hw::field>
+    BLADE);
+
+    expect($html)->toMatch('/<input(?=[^>]*data-slot="input")(?![^>]*name="query")(?![^>]*id="query")(?![^>]*required)[^>]*>/')
+        ->not->toContain('aria-describedby="query-error"');
 });
 
 it('publishes symmetric field boundaries from overlay roots', function (string $component) {
     $data = (new $component)->data();
 
-    expect($data)->toHaveKey('fieldContext', null)
+    expect($data)->toHaveKey('fieldName', null)
+        ->toHaveKey('fieldId', null)
+        ->toHaveKey('fieldErrorKey', null)
+        ->toHaveKey('fieldRequired', false)
+        ->toHaveKey('fieldContext', null)
         ->toHaveKey('fieldControlContext', null);
 })->with([
     AlertDialog::class,

@@ -1,7 +1,11 @@
 @aware(['fieldName' => null, 'fieldId' => null, 'fieldErrorKey' => null])
 
 @php
-    extract($compute($checkboxGroupName ?? $fieldName, $checkboxGroupId ?? $fieldId, $checkboxGroupErrorKey ?? $fieldErrorKey, $errors, $attributes));
+    $explicitName = $checkboxGroupName ?? null;
+    $resolvedName = $explicitName ?? $fieldName;
+    $resolvedId = \Emaia\LaravelHotwire\Support\FieldKey::resolveId($checkboxGroupId ?? null, $explicitName, $fieldId, $fieldName);
+    $resolvedErrorKey = \Emaia\LaravelHotwire\Support\FieldKey::resolveErrorKey($checkboxGroupErrorKey ?? null, $explicitName, $fieldErrorKey, $fieldName);
+    extract($compute($resolvedName, $resolvedId, $resolvedErrorKey, $errors, $attributes));
 
     $labelId = $fieldOwnerContext->labelId();
     $fieldOwnsSet = $checkboxGroupFieldContext instanceof \Emaia\LaravelHotwire\Support\FieldContext
@@ -9,7 +13,13 @@
     $hasExplicitAccessibleName = $attributes->has('aria-labelledby') || $attributes->has('aria-label');
 
     if ($checkboxGroupFieldContext instanceof \Emaia\LaravelHotwire\Support\FieldContext) {
-        $labelId = $checkboxGroupFieldContext->registerSelection($labelId, $hasExplicitAccessibleName);
+        $labelId = $checkboxGroupFieldContext->registerSelection(
+            $labelId,
+            $hasExplicitAccessibleName,
+            $name,
+            $errorId,
+            $resolvedErrorKey,
+        );
     }
 
     $checkboxGroupAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([

@@ -1,13 +1,14 @@
 @aware(['fieldName' => null, 'fieldId' => null, 'fieldErrorKey' => null, 'fieldRequired' => false])
 
 @php
-    $id = \Emaia\LaravelHotwire\Support\FieldKey::resolveId($id ?? null, $name ?? null, $fieldId, $fieldName);
-    $name = $name ?? $fieldName;
-    $errorKey = $errorKey ?? $fieldErrorKey;
+    $explicitName = $name ?? null;
+    $id = \Emaia\LaravelHotwire\Support\FieldKey::resolveId($id ?? null, $explicitName, $fieldId, $fieldName);
+    $errorKey = \Emaia\LaravelHotwire\Support\FieldKey::resolveErrorKey($errorKey ?? null, $explicitName, $fieldErrorKey, $fieldName);
+    $name = $explicitName ?? $fieldName;
     extract($compute($name, $id, $errorKey, $fieldRequired ?? false, $errors, $attributes));
 
-    if ($multiSelectFieldContext instanceof \Emaia\LaravelHotwire\Support\FieldContext) {
-        $multiSelectFieldContext->registerControl($resolvedId, $submissionName);
+    if ($multiSelectFieldContext instanceof \Emaia\LaravelHotwire\Support\FieldContext && $resolvedId) {
+        $multiSelectFieldContext->registerControl($resolvedId, $submissionName, errorId: $errorId, errorKey: $resolvedErrorKey);
     }
 
     $multiSelectAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([

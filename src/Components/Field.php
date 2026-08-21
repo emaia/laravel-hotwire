@@ -34,7 +34,7 @@ class Field extends Component
             throw new InvalidArgumentException('The Field set prop must be group, radiogroup, or null.');
         }
 
-        $this->context = new FieldContext($this->name, $this->id, $this->label, $this->set, $this->labelId);
+        $this->context = new FieldContext($this->name, $this->id, $this->label, $this->set, $this->labelId, $this->errorKey);
         $this->ownerContext = new FieldOwnerContext;
     }
 

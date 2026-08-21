@@ -19,10 +19,18 @@
         throw new InvalidArgumentException('Checkbox Group item must be rendered inside a Checkbox Group root. If the item is passed into the slot of a wrapper component, move it inside the Checkbox Group root itself: slot content renders before the view of the wrapper, so the root is not on the stack yet. Otherwise check for an intermediate component declaring a checkboxGroupContext prop, which shadows the root context.');
     }
 
+    $ownerName = $checkboxGroupName ?? $fieldName;
+    $ownerId = $checkboxGroupId ?? $fieldId;
+    $ownerErrorKey = \Emaia\LaravelHotwire\Support\FieldKey::resolveErrorKey($checkboxGroupErrorKey ?? null, $checkboxGroupName ?? null, $fieldErrorKey, $fieldName);
+    $explicitName = $checkboxGroupItemName ?? null;
+    $resolvedName = $explicitName ?? $ownerName;
+    $resolvedId = \Emaia\LaravelHotwire\Support\FieldKey::resolveId($checkboxGroupItemId ?? null, $explicitName, $ownerId, $ownerName);
+    $resolvedErrorKey = \Emaia\LaravelHotwire\Support\FieldKey::resolveErrorKey($checkboxGroupItemErrorKey ?? null, $explicitName, $ownerErrorKey, $ownerName);
+
     extract($compute(
-        $checkboxGroupItemName ?? $checkboxGroupName ?? $fieldName,
-        $checkboxGroupItemId ?? $checkboxGroupId ?? $fieldId,
-        $checkboxGroupItemErrorKey ?? $checkboxGroupErrorKey ?? $fieldErrorKey,
+        $resolvedName,
+        $resolvedId,
+        $resolvedErrorKey,
         $checkboxGroupSelected,
         $checkboxGroupOld,
         $checkboxGroupSelectAll,

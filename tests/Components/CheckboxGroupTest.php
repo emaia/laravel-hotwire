@@ -677,7 +677,7 @@ it('shares the resolved group id base with a nested field error', function () {
         </x-hw::field>
     BLADE);
 
-    expect($html)->toContain('aria-describedby="field-id-error"')
-        ->toContain('id="field-id-error"')
-        ->not->toContain('id="colors-error"');
+    expect($html)->toContain('aria-describedby="colors-error"')
+        ->toContain('id="colors-error"')
+        ->not->toContain('id="field-id-error"');
 });

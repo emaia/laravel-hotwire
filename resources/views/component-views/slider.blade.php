@@ -1,13 +1,14 @@
 @aware(['fieldName' => null, 'fieldId' => null, 'fieldErrorKey' => null, 'fieldControlContext' => null])
 
 @php
-    $id = \Emaia\LaravelHotwire\Support\FieldKey::resolveId($id ?? null, $name ?? null, $fieldId, $fieldName);
-    $name = $name ?? $fieldName;
-    $errorKey = $errorKey ?? $fieldErrorKey;
+    $explicitName = $name ?? null;
+    $id = \Emaia\LaravelHotwire\Support\FieldKey::resolveId($id ?? null, $explicitName, $fieldId, $fieldName);
+    $errorKey = \Emaia\LaravelHotwire\Support\FieldKey::resolveErrorKey($errorKey ?? null, $explicitName, $fieldErrorKey, $fieldName);
+    $name = $explicitName ?? $fieldName;
     extract($compute($name, $id, $errorKey, $errors ?? new \Illuminate\Support\ViewErrorBag));
 
     if ($fieldControlContext instanceof \Emaia\LaravelHotwire\Support\FieldContext && $resolvedId) {
-        $fieldControlContext->registerControl($resolvedId, $name);
+        $fieldControlContext->registerControl($resolvedId, $name, errorId: $errorId, errorKey: $resolvedErrorKey);
     }
 
     $sliderAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([

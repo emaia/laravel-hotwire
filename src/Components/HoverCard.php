@@ -2,6 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Emaia\LaravelHotwire\Support\FieldContext;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\Component;
 
@@ -56,8 +57,7 @@ class HoverCard extends Component
         $data['hoverCardCloseDelay'] = $this->closeDelay;
         $data['hoverCardOpen'] = $this->open;
         $data['hoverCardStimulus'] = $this->stimulus;
-        $data['fieldContext'] = null;
-        $data['fieldControlContext'] = null;
+        $data = array_replace($data, FieldContext::boundaryData());
 
         unset(
             $data['id'],

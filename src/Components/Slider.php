@@ -67,6 +67,7 @@ class Slider extends Component
 
         return [
             'resolvedId' => $resolvedId,
+            'resolvedErrorKey' => $resolvedErrorKey,
             'errorId' => $resolvedId.'-error',
             'resolvedValue' => $resolvedValue,
             'hasErrors' => $hasErrors,

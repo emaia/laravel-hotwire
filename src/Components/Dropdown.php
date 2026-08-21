@@ -2,6 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Emaia\LaravelHotwire\Support\FieldContext;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\Component;
 
@@ -32,8 +33,7 @@ class Dropdown extends Component
         $data['dropdownOpen'] = $this->open;
         $data['dropdownCloseOnSelect'] = $this->closeOnSelect;
         $data['dropdownStimulus'] = $this->stimulus;
-        $data['fieldContext'] = null;
-        $data['fieldControlContext'] = null;
+        $data = array_replace($data, FieldContext::boundaryData());
 
         unset(
             $data['id'],

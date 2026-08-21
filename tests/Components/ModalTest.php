@@ -3,6 +3,7 @@
 use Emaia\LaravelHotwire\Components\Modal;
 use Emaia\LaravelHotwire\LaravelHotwireServiceProvider;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
+use Emaia\LaravelHotwire\Support\FieldContext;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\HtmlString;
 use Illuminate\View\ViewException;
@@ -336,7 +337,7 @@ it('does not expose modal root props as generic component data', function () {
     $frameworkKeys = ['componentName', 'attributes', 'ignoredParameterNames'];
     $genericKeys = array_values(array_filter(
         array_keys($data),
-        fn (string $key) => ! str_starts_with($key, 'modal') && ! in_array($key, [...$frameworkKeys, 'fieldContext', 'fieldControlContext'], true),
+        fn (string $key) => ! str_starts_with($key, 'modal') && ! in_array($key, [...$frameworkKeys, ...array_keys(FieldContext::boundaryData())], true),
     ));
 
     expect($genericKeys)->toBe([])

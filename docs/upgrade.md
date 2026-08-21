@@ -52,11 +52,17 @@ role to the Field wrapper. A single control keeps `label for`, including control
 
 Fields containing several unrelated controls omit `for` and name their `role="group"` wrapper with the automatic label.
 When a selection group supplies its own `aria-label` or `aria-labelledby`, the Field's separate visible text renders as
-a styled `<span>` rather than an unassociated `<label>`.
+a styled `<span>` rather than an unassociated `<label>`. An explicit `label-id` remains on that span. Fields with no
+registered labelable control also render visual text without guessing a `for` target.
+
+The automatic error now follows a sole registered control or selection group's final name, id, and error key. Fields
+with several different child error identities continue to use the Field identity; render explicit errors when each child
+needs separate validation output.
 
 Multi Select now registers its visible trigger with Field and blocks its popup search input from taking over the label.
-Package overlay roots (Alert Dialog, Drawer, Dropdown, Hover Card, Modal, Popover, and Sheet) block both Field ownership
-contexts, so nested controls and selection groups cannot register with a surrounding Field.
+Package overlay roots (Alert Dialog, Drawer, Dropdown, Hover Card, Modal, Popover, and Sheet) block inherited Field name,
+id, error key, required state, and both ownership contexts. Nested form controls therefore need their own identity or a
+new Field inside the overlay.
 
 Raw HTML and application components cannot participate in this internal registration. If they form a set, declare it
 on Field and provide the automatic label id explicitly:
