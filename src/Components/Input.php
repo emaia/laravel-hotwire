@@ -72,6 +72,7 @@ class Input extends Component
     private function computeResolved(
         ?string $name,
         ?string $id,
+        ?string $fieldId,
         ?string $errorKey,
         bool $required,
         ViewErrorBag $errorsBag,
@@ -80,7 +81,7 @@ class Input extends Component
         $isCheckable = $this->isCheckable();
         $hasName = $name !== null && $name !== '';
 
-        $baseId = $id ?: ($hasName ? FieldKey::toId($name) : 'hw-input-'.uniqid());
+        $baseId = $id ?: ($fieldId ?: ($hasName ? FieldKey::toId($name) : 'hw-input-'.uniqid()));
         $resolvedId = $baseId;
 
         $isGroupInput = $isCheckable
@@ -88,7 +89,7 @@ class Input extends Component
             && $this->value !== ''
             && ($this->type === 'radio' || ($hasName && str_ends_with($name, '[]')));
 
-        if ($isGroupInput && $id === null) {
+        if ($isGroupInput && $this->id === null) {
             $valueSlug = Str::slug((string) $this->value);
             if ($valueSlug !== '') {
                 $resolvedId = $baseId.'-'.$valueSlug;
@@ -121,7 +122,9 @@ class Input extends Component
         }
 
         $hasErrors = $resolvedErrorKey !== '' && $errorsBag->has($resolvedErrorKey);
-        $isRequired = ($attributes->has('required') && $attributes->get('required') !== false) || $required;
+        $isRequired = $attributes->has('required')
+            ? $attributes->get('required') !== false
+            : $required;
 
         $elementController = trim(implode(' ', array_filter([
             (! $isCheckable && $this->autoSelect) ? 'auto-select' : null,

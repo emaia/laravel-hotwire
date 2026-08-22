@@ -1,7 +1,15 @@
-@aware(['name' => null, 'id' => null, 'errorKey' => null, 'required' => false])
+@aware(['fieldName' => null, 'fieldId' => null, 'fieldErrorKey' => null, 'fieldRequired' => false, 'fieldControlContext' => null])
 
 @php
-    extract($compute($name, $id, $errorKey, $required, $errors, $attributes));
+    $explicitName = $name ?? null;
+    $id = \Emaia\LaravelHotwire\Support\FieldKey::resolveId($id ?? null, $explicitName, $fieldId, $fieldName);
+    $errorKey = \Emaia\LaravelHotwire\Support\FieldKey::resolveErrorKey($errorKey ?? null, $explicitName, $fieldErrorKey, $fieldName);
+    $name = $explicitName ?? $fieldName;
+    extract($compute($name, $id, $errorKey, $fieldRequired ?? false, $errors, $attributes));
+    $errorReference = $fieldControlContext instanceof \Emaia\LaravelHotwire\Support\FieldContext
+        ? $fieldControlContext->errorReference($errorId, $name, $resolvedErrorKey)
+        : null;
+    $describedBy = $describedBy === $errorId ? $errorReference : $describedBy;
 
     $messageCopy = $messages ?? [];
     $defaultTitle = $messageCopy['button'] ?? $messageCopy[$multiple ? 'idleMultiple' : 'idle'] ?? 'Choose files';

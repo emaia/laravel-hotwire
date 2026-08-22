@@ -64,10 +64,10 @@ it('generates random id when name is absent', function () {
 
 // --- ARIA ---
 
-it('always sets aria-describedby pointing to error id', function () {
+it('does not invent an error reference without a field owner', function () {
     $view = $this->blade('<x-hw::file name="avatar" />');
 
-    $view->assertSee('aria-describedby="avatar-error"', false);
+    $view->assertDontSee('aria-describedby', false);
 });
 
 it('sets aria-invalid and data-invalid when error present', function () {
@@ -108,8 +108,8 @@ it('sets aria-required when required attribute is present', function () {
     $view->assertSee('aria-required="true"', false);
 });
 
-it('sets aria-describedby with bracket notation', function () {
-    $view = $this->blade('<x-hw::file name="variables[0][name]" />');
+it('sets aria-describedby with bracket notation under a field owner', function () {
+    $view = $this->blade('<x-hw::field name="variables[0][name]"><x-hw::file /></x-hw::field>');
 
     $view->assertSee('aria-describedby="variables-0-name-error"', false);
 });
@@ -229,7 +229,7 @@ it('keeps id and error key derived without brackets when multiple', function () 
     $view = $this->blade('<x-hw::file name="cover" multiple />');
 
     $view->assertSee('id="cover"', false);
-    $view->assertSee('aria-describedby="cover-error"', false);
+    $view->assertDontSee('aria-describedby', false);
     $view->assertSee('aria-invalid="true"', false);
 });
 

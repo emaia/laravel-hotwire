@@ -2,7 +2,6 @@
 
 namespace Emaia\LaravelHotwire\Components\ToggleGroup;
 
-use Emaia\LaravelHotwire\Components\Concerns\StripsNullProps;
 use Emaia\LaravelHotwire\Support\FieldKey;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Str;
@@ -12,8 +11,6 @@ use Illuminate\View\ComponentAttributeBag;
 
 class Item extends Component
 {
-    use StripsNullProps;
-
     public function __construct(
         public mixed $value,
         public bool|string|null $pressed = null,
@@ -32,9 +29,26 @@ class Item extends Component
     public function data(): array
     {
         $data = parent::data();
+        $data['toggleGroupItemValue'] = $this->value;
+        $data['toggleGroupItemPressed'] = $this->pressed;
+        $data['toggleGroupItemDisabled'] = $this->disabled;
+        $data['toggleGroupItemName'] = $this->name;
+        $data['toggleGroupItemId'] = $this->id;
+        $data['toggleGroupItemErrorKey'] = $this->errorKey;
+        $data['toggleGroupItemStimulus'] = $this->stimulus;
         $data['compute'] = $this->computeResolved(...);
 
-        return $this->stripNullProps($data, ['name', 'id', 'errorKey']);
+        unset(
+            $data['value'],
+            $data['pressed'],
+            $data['disabled'],
+            $data['name'],
+            $data['id'],
+            $data['errorKey'],
+            $data['stimulus'],
+        );
+
+        return $data;
     }
 
     /**
@@ -50,7 +64,7 @@ class Item extends Component
         ?string $errorKey,
         string $variant,
         string $size,
-        bool|string|null $groupDisabled,
+        bool|string|null $toggleGroupDisabled,
         ViewErrorBag $errorsBag,
         ComponentAttributeBag $attributes,
     ): array {
@@ -70,7 +84,7 @@ class Item extends Component
         $isPressed = $this->isPressedPropTruthy()
             || in_array($htmlValue, array_map('strval', $selectedValues), true);
 
-        $isDisabled = $this->isTruthy($groupDisabled)
+        $isDisabled = $this->isTruthy($toggleGroupDisabled)
             || $this->isTruthy($this->disabled)
             || ($attributes->has('disabled') && $attributes->get('disabled') !== false);
         $hasErrors = $resolvedErrorKey !== '' && $errorsBag->has($resolvedErrorKey);

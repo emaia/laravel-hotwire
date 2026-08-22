@@ -2,6 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Emaia\LaravelHotwire\Support\FieldContext;
 use Emaia\LaravelHotwire\Support\FrameTarget;
 use Emaia\LaravelHotwire\Support\StimulusAttributes;
 use Illuminate\Contracts\Support\Htmlable;
@@ -58,6 +59,7 @@ class Sheet extends Component
         $data['sheetFrame'] = $this->frame;
         $data['sheetMotion'] = $this->motion;
         $data['sheetViewTransition'] = $this->viewTransition;
+        $data = array_replace($data, FieldContext::boundaryData());
 
         unset(
             $data['id'],

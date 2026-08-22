@@ -12,7 +12,6 @@ preservation across Turbo morphs via `file-preserve`, and optional reset after s
 Renders an `<input type="file">` with:
 
 - `id="avatar"`, `name="avatar"`
-- `aria-describedby="avatar-error"` (always set, for stable screen-reader binding)
 - `aria-invalid="true"` and `data-invalid` when `$errors->has('avatar')`
 - `aria-required="true"` and `required` when `required` is present
 
@@ -52,7 +51,7 @@ Same convention as `<hw:input>`:
 
 ```blade
 <hw:file name="variables[0][name]" />
-{{-- id="variables-0-name", aria-describedby="variables-0-name-error", errorKey="variables.0.name" --}}
+{{-- id="variables-0-name", errorKey="variables.0.name" --}}
 ```
 
 Use `error-key` when the HTML name and the validation key diverge:
@@ -67,7 +66,7 @@ By default, the component renders a **bare `<input>`** with the `file-preserve` 
 enabled) mounted directly on it:
 
 ```html
-<input type="file" id="avatar" name="avatar" data-controller="file-preserve" aria-describedby="avatar-error" />
+<input type="file" id="avatar" name="avatar" data-controller="file-preserve" />
 ```
 
 A wrapping `<div data-slot="file-wrapper">` is added **only when needed** — when `current-url` is set (to hold the link) or when
@@ -152,8 +151,9 @@ selection would be dropped.
 </hw:field>
 ```
 
-`name`, `id`, `errorKey`, and `required` are inherited via `@aware`. The field auto-renders `<hw:field.label>` and
-`<hw:field.error>`. The ARIA contract is maintained — the input's `aria-describedby` always matches the error element.
+`name`, `id`, `errorKey`, and `required` are inherited through scoped Field context. The field auto-renders `<hw:field.label>` and
+`<hw:field.error>`. The ARIA contract is maintained: Field-owned inputs reference that error element. A standalone File
+does not invent an error reference; pass `aria-describedby` explicitly when rendering your own error node.
 
 ## Accepting file types
 

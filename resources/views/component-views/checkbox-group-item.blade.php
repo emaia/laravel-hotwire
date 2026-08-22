@@ -1,32 +1,64 @@
 @aware([
-    'name' => null,
-    'id' => null,
-    'errorKey' => null,
-    'selected' => [],
-    'old' => true,
-    'selectAll' => false,
+    'checkboxGroupContext' => false,
+    'checkboxGroupName' => null,
+    'checkboxGroupId' => null,
+    'checkboxGroupErrorKey' => null,
+    'checkboxGroupSelected' => [],
+    'checkboxGroupOld' => true,
+    'checkboxGroupSelectAll' => false,
     'checkboxGroupDisabled' => false,
-    'autoSubmit' => false,
-    'autoSubmitDelay' => null,
+    'checkboxGroupAutoSubmit' => false,
+    'checkboxGroupAutoSubmitDelay' => null,
+    'fieldName' => null,
+    'fieldId' => null,
+    'fieldErrorKey' => null,
+    'checkboxGroupFieldContext' => null,
 ])
 
 @php
-    extract($compute($name, $id, $errorKey, $selected, $old, $selectAll, $checkboxGroupDisabled, $autoSubmit, $autoSubmitDelay, $errors, $attributes));
+    if (! $checkboxGroupContext) {
+        throw new InvalidArgumentException('Checkbox Group item must be rendered inside a Checkbox Group root. If the item is passed into the slot of a wrapper component, move it inside the Checkbox Group root itself: slot content renders before the view of the wrapper, so the root is not on the stack yet. Otherwise check for an intermediate component declaring a checkboxGroupContext prop, which shadows the root context.');
+    }
+
+    $ownerName = $checkboxGroupName ?? $fieldName;
+    $ownerId = $checkboxGroupId ?? $fieldId;
+    $ownerErrorKey = \Emaia\LaravelHotwire\Support\FieldKey::resolveErrorKey($checkboxGroupErrorKey ?? null, $checkboxGroupName ?? null, $fieldErrorKey, $fieldName);
+    $explicitName = $checkboxGroupItemName ?? null;
+    $resolvedName = $explicitName ?? $ownerName;
+    $resolvedId = \Emaia\LaravelHotwire\Support\FieldKey::resolveId($checkboxGroupItemId ?? null, $explicitName, $ownerId, $ownerName);
+    $resolvedErrorKey = \Emaia\LaravelHotwire\Support\FieldKey::resolveErrorKey($checkboxGroupItemErrorKey ?? null, $explicitName, $ownerErrorKey, $ownerName);
+
+    extract($compute(
+        $resolvedName,
+        $resolvedId,
+        $resolvedErrorKey,
+        $checkboxGroupSelected,
+        $checkboxGroupOld,
+        $checkboxGroupSelectAll,
+        $checkboxGroupDisabled,
+        $checkboxGroupAutoSubmit,
+        $checkboxGroupAutoSubmitDelay,
+        $errors,
+        $attributes,
+    ));
+    $errorReference = $checkboxGroupFieldContext instanceof \Emaia\LaravelHotwire\Support\FieldContext
+        ? $checkboxGroupFieldContext->errorReference($errorId, $name, $resolvedErrorKey)
+        : null;
 @endphp
 
 <label
     data-slot="checkbox-group-item"
-    {{ trim($labelClass) !== '' ? $attributes->merge(['class' => $labelClass]) : $attributes->except('class') }}
+    {{ trim($checkboxGroupItemLabelClass) !== '' ? $attributes->merge(['class' => $checkboxGroupItemLabelClass]) : $attributes->except('class') }}
 >
     <input
         data-slot="checkbox-group-input"
         data-checkable="true"
         type="checkbox"
-        @if (filled($class)) class="{{ $class }}" @endif
+        @if (filled($checkboxGroupItemClass)) class="{{ $checkboxGroupItemClass }}" @endif
         @if ($name) name="{{ $name }}" @endif
-        value="{{ $value }}"
+        value="{{ $checkboxGroupItemValue }}"
         @if ($resolvedId) id="{{ $resolvedId }}" @endif
-        @if ($errorId) aria-describedby="{{ $errorId }}" @endif
+        @if ($errorReference) aria-describedby="{{ $errorReference }}" @endif
         @if ($hasErrors) aria-invalid="true" data-invalid @endif
         @if ($isDisabled) disabled @endif
         @if ($selectAllTarget) data-checkbox-select-all-target="{{ $selectAllTarget }}" @endif

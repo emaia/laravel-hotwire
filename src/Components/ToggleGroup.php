@@ -2,20 +2,20 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
-use Emaia\LaravelHotwire\Components\Concerns\StripsNullProps;
 use Emaia\LaravelHotwire\Support\AutoSubmit;
+use Emaia\LaravelHotwire\Support\FieldContext;
+use Emaia\LaravelHotwire\Support\FieldKey;
+use Emaia\LaravelHotwire\Support\FieldOwnerContext;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\Component;
 use Illuminate\View\ComponentAttributeBag;
 
 class ToggleGroup extends Component
 {
-    use StripsNullProps;
+    private FieldOwnerContext $ownerContext;
 
     /** @var string[] */
     public array $selected;
-
-    public bool|string $groupDisabled;
 
     public function __construct(
         public ?string $name = null,
@@ -33,9 +33,10 @@ class ToggleGroup extends Component
         public int|string|null $autoSubmitDelay = null,
         public ?Htmlable $stimulus = null,
     ) {
+        $this->ownerContext = new FieldOwnerContext;
+
         $this->type = in_array($type, ['single', 'multiple'], true) ? $type : 'multiple';
         $this->selected = $this->normalizeSelected($value, $this->type);
-        $this->groupDisabled = $disabled;
     }
 
     public function render()
@@ -46,6 +47,51 @@ class ToggleGroup extends Component
     public function data(): array
     {
         $data = parent::data();
+        $data['toggleGroupContext'] = true;
+        $data['toggleGroupName'] = $this->name;
+        $data['toggleGroupValue'] = $this->value;
+        $data['toggleGroupType'] = $this->type;
+        $data['toggleGroupOrientation'] = $this->orientation;
+        $data['toggleGroupVariant'] = $this->variant;
+        $data['toggleGroupSize'] = $this->size;
+        $data['toggleGroupDisabled'] = $this->disabled;
+        $data['toggleGroupConnected'] = $this->connected;
+        $data['toggleGroupOld'] = $this->old;
+        $data['toggleGroupId'] = $this->id;
+        $data['toggleGroupErrorKey'] = $this->errorKey;
+        $data['toggleGroupAutoSubmit'] = $this->autoSubmit;
+        $data['toggleGroupAutoSubmitDelay'] = $this->autoSubmitDelay;
+        $data['toggleGroupStimulus'] = $this->stimulus;
+        $data['toggleGroupSelected'] = $this->selected;
+
+        // A selection group owns a name, an id base and an error key, so field.label and
+        // field.error nested in it must resolve against the group rather than a Field far
+        // above. This is deliberately not the fieldName/fieldId/fieldErrorKey protocol:
+        // group items end their fallback chain on those keys, and reusing them here would
+        // let an outer group's name leak into a nameless inner group.
+        //
+        // The three keys always move together so this root blocks another group's owner
+        // context. fieldOwner selects this group's values when it has any identity of its
+        // own; otherwise field.label and field.error fall back to the separate Field keys.
+        // Always a set: there is no single labelable control, so a nested field.label must
+        // drop `for` even when the identity itself comes from a surrounding Field.
+        $data['fieldOwnerSet'] = true;
+
+        $ownsFieldIdentity = ($this->name !== null && $this->name !== '')
+            || ($this->id !== null && $this->id !== '')
+            || ($this->errorKey !== null && $this->errorKey !== '');
+
+        $data['fieldOwner'] = $ownsFieldIdentity;
+        $data['fieldOwnerName'] = $this->name;
+        $fieldContext = FieldContext::consume();
+        $data['fieldOwnerId'] = $fieldContext?->selectionId($this->id, $this->name)
+            ?? ($this->id ?: ($this->name ? FieldKey::toId($this->name) : null));
+        $data['toggleGroupId'] = $data['fieldOwnerId'];
+        $data['fieldOwnerErrorKey'] = $this->errorKey;
+        $data['fieldOwnerContext'] = $this->ownerContext;
+        $data['toggleGroupFieldContext'] = $fieldContext;
+        $data['fieldContext'] = null;
+        $data['fieldControlContext'] = null;
         $data['internalPrefixes'] = ['data-toggle-group-'];
 
         if (AutoSubmit::enabled($this->autoSubmit)) {
@@ -54,7 +100,25 @@ class ToggleGroup extends Component
 
         $data['compute'] = $this->computeResolved(...);
 
-        return $this->stripNullProps($data, ['name', 'id', 'errorKey']);
+        unset(
+            $data['name'],
+            $data['value'],
+            $data['type'],
+            $data['orientation'],
+            $data['variant'],
+            $data['size'],
+            $data['disabled'],
+            $data['connected'],
+            $data['old'],
+            $data['id'],
+            $data['errorKey'],
+            $data['autoSubmit'],
+            $data['autoSubmitDelay'],
+            $data['stimulus'],
+            $data['selected'],
+        );
+
+        return $data;
     }
 
     /** @return array<string, mixed> */

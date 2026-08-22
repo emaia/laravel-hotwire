@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Components;
 
 use Emaia\LaravelHotwire\Components\Concerns\StripsNullProps;
+use Emaia\LaravelHotwire\Support\FieldContext;
 use Emaia\LaravelHotwire\Support\FieldKey;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\ViewErrorBag;
@@ -69,6 +70,8 @@ class MultiSelect extends Component
     {
         $data = parent::data();
         $data['compute'] = $this->computeResolved(...);
+        $data['multiSelectFieldContext'] = FieldContext::consumeControl();
+        $data['fieldControlContext'] = null;
 
         return $this->stripNullProps($data, ['name', 'id', 'errorKey']);
     }
@@ -111,7 +114,9 @@ class MultiSelect extends Component
         }
 
         $hasErrors = $resolvedErrorKey !== '' && $errorsBag->has($resolvedErrorKey);
-        $isRequired = ($attributes->has('required') && $attributes->get('required') !== false) || $required;
+        $isRequired = $attributes->has('required')
+            ? $attributes->get('required') !== false
+            : $required;
 
         return [
             'resolvedId' => $resolvedId,

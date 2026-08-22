@@ -39,6 +39,29 @@ mutually exclusive form choices that must submit one value, and `<hw:checkbox-gr
 Any other HTML attribute passes through. Internal `data-toggle-group-*` and `data-toggle-*` attributes are protected; use
 props instead.
 
+## Items and ownership
+
+Items inherit `name`, `type`, selected values, `old`, `id`, `errorKey`, `variant`, `size`, and `disabled` from their
+owning group. Explicit `name`, `id`, `error-key`, and `disabled` item props take precedence where the existing item API
+allows an override.
+
+An item must render inside its owning `<hw:toggle-group>` in the same Blade tree. For Turbo Streams, replace the item's
+inner content or render the owning group instead of streaming a standalone `<hw:toggle-group.item>`.
+
+## Inheriting from `<hw:field>`
+
+When inside `<hw:field>`, `name`, `id`, and `errorKey` are inherited from the scoped Field context:
+
+```blade
+<hw:field name="formats" id="editor-formats">
+    <hw:field.title>Formatting</hw:field.title>
+    <hw:toggle-group aria-label="Formatting">
+        <hw:toggle-group.item value="bold">Bold</hw:toggle-group.item>
+        <hw:toggle-group.item value="italic">Italic</hw:toggle-group.item>
+    </hw:toggle-group>
+</hw:field>
+```
+
 ## Multiple Values
 
 ```blade

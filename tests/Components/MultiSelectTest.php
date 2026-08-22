@@ -57,8 +57,24 @@ it('normalizes names for array submission', function () {
     $view->assertSee('name="status[]"', false);
     $view->assertSee('id="status"', false);
     $view->assertSee('aria-controls="status-content"', false);
-    $view->assertSee('aria-describedby="status-error"', false);
+    $view->assertDontSee('aria-describedby="status-error"', false);
 });
+
+it('registers its trigger instead of its internal search input with a field', function (bool $search) {
+    $searchValue = $search ? 'true' : 'false';
+    $html = (string) $this->blade(<<<BLADE
+        <x-hw::field name="categories" label="Categories" :error="false">
+            <x-hw::multi-select :search="{$searchValue}" :options="['news' => 'News']" />
+        </x-hw::field>
+    BLADE);
+
+    expect($html)->toContain('for="categories"')
+        ->toContain('id="categories"')
+        ->not->toContain('for="categories-search"');
+})->with([
+    'search enabled' => true,
+    'search disabled' => false,
+]);
 
 it('renders options and selected state from the selected prop', function () {
     $view = $this->blade('<x-hw::multi-select name="status[]" :options="[\'active\' => \'Active\', \'paused\' => \'Paused\']" :selected="[\'paused\']" />');

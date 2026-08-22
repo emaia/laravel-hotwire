@@ -6,6 +6,7 @@ use Emaia\LaravelHotwire\Components\Concerns\StripsNullProps;
 use Emaia\LaravelHotwire\Support\AutoSubmit;
 use Emaia\LaravelHotwire\Support\FieldKey;
 use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Support\Str;
 use Illuminate\Support\ViewErrorBag;
 use Illuminate\View\Component;
 use Illuminate\View\ComponentAttributeBag;
@@ -56,7 +57,14 @@ class Checkbox extends Component
         ComponentAttributeBag $attributes,
     ): array {
         $hasName = $name !== null && $name !== '';
-        $resolvedId = $id ?: ($hasName ? FieldKey::toId($name) : 'hw-checkbox-'.uniqid());
+        $baseId = $id ?: ($hasName ? FieldKey::toId($name) : 'hw-checkbox-'.uniqid());
+        $resolvedId = $baseId;
+
+        if ($this->id === null && $hasName && str_ends_with($name, '[]') && $this->value !== null && $this->value !== '') {
+            $valueSlug = Str::slug((string) $this->value);
+            $resolvedId = $valueSlug !== '' ? $baseId.'-'.$valueSlug : $baseId;
+        }
+
         $resolvedErrorKey = $errorKey ?: ($hasName ? FieldKey::toErrorKey($name) : '');
         $htmlValue = (string) ($this->value ?? 'on');
         $isChecked = $this->isCheckedPropTruthy();
@@ -72,12 +80,14 @@ class Checkbox extends Component
         }
 
         $hasErrors = $resolvedErrorKey !== '' && $errorsBag->has($resolvedErrorKey);
-        $isRequired = ($attributes->has('required') && $attributes->get('required') !== false) || $required;
+        $isRequired = $attributes->has('required')
+            ? $attributes->get('required') !== false
+            : $required;
 
         return [
             'resolvedId' => $resolvedId,
             'resolvedErrorKey' => $resolvedErrorKey,
-            'errorId' => $resolvedId.'-error',
+            'errorId' => $baseId.'-error',
             'isChecked' => $isChecked,
             'hasErrors' => $hasErrors,
             'isRequired' => $isRequired,

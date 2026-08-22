@@ -79,7 +79,9 @@ class Select extends Component
         }
 
         $hasErrors = $resolvedErrorKey !== '' && $errorsBag->has($resolvedErrorKey);
-        $isRequired = ($attributes->has('required') && $attributes->get('required') !== false) || $required;
+        $isRequired = $attributes->has('required')
+            ? $attributes->get('required') !== false
+            : $required;
 
         return [
             'resolvedId' => $resolvedId,

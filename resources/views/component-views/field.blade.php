@@ -1,26 +1,41 @@
 @php
-    $name = $name ?? null;
-    $errorKey = $errorKey ?? null;
-    $required = $required ?? null;
+    $resolvedContext = $fieldContext->resolve();
 
     $fieldAttributes = $attributes->merge([
-        'data-disabled' => $disabled ? 'true' : null,
-        'data-invalid' => $invalid ? 'true' : null,
-    ])->class($class ?: null);
+        'id' => $fieldWrapperId,
+        'role' => $resolvedContext['role'],
+        'aria-labelledby' => $resolvedContext['ariaLabelledby'],
+        'data-disabled' => $fieldDisabled ? 'true' : null,
+        'data-invalid' => $fieldInvalid ? 'true' : null,
+    ])->class($fieldClass ?: null);
 @endphp
 
-<div role="group" data-slot="field" data-orientation="{{ $orientation }}" {{ $fieldAttributes }}>
-    @if ($label !== null && $label !== '')
-        <x-hw::field.label :required-label="$requiredLabel">{{ $label }}</x-hw::field.label>
+<div data-slot="field" data-orientation="{{ $fieldOrientation }}" {{ $fieldAttributes }}>
+    @if ($resolvedContext['renderLabel'])
+        @if ($resolvedContext['labelFor'] === '' && ! $resolvedContext['labelSet'])
+            <span data-slot="field-label" @if ($resolvedContext['labelId']) id="{{ $resolvedContext['labelId'] }}" @endif>{{ $fieldLabel }}@if ($resolvedContext['labelRequired'])<span data-slot="field-label-required" aria-hidden="true">{{ $fieldRequiredLabel }}</span>@endif</span>
+        @else
+            <x-hw::field.label
+                :id="$resolvedContext['labelId']"
+                :for="$resolvedContext['labelFor']"
+                :set="$resolvedContext['labelSet']"
+                :required="$resolvedContext['labelRequired']"
+                :required-label="$fieldRequiredLabel"
+            >{{ $fieldLabel }}</x-hw::field.label>
+        @endif
     @endif
 
     {{ $slot }}
 
-    @if ($description !== null && $description !== '')
-        <x-hw::field.description>{{ $description }}</x-hw::field.description>
+    @if ($fieldDescription !== null && $fieldDescription !== '')
+        <x-hw::field.description>{{ $fieldDescription }}</x-hw::field.description>
     @endif
 
-    @if ($error && $name)
-        <x-hw::field.error :name="$name" :error-key="$errorKey" />
+    @if ($fieldError && ($resolvedContext['errorName'] || $resolvedContext['errorKey']))
+        <x-hw::field.error
+            :name="$resolvedContext['errorName']"
+            :id="$resolvedContext['errorId']"
+            :error-key="$resolvedContext['errorKey']"
+        />
     @endif
 </div>

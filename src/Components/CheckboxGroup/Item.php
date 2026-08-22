@@ -2,7 +2,6 @@
 
 namespace Emaia\LaravelHotwire\Components\CheckboxGroup;
 
-use Emaia\LaravelHotwire\Components\Concerns\StripsNullProps;
 use Emaia\LaravelHotwire\Support\AutoSubmit;
 use Emaia\LaravelHotwire\Support\FieldKey;
 use Illuminate\Support\Str;
@@ -12,8 +11,6 @@ use Illuminate\View\ComponentAttributeBag;
 
 class Item extends Component
 {
-    use StripsNullProps;
-
     public function __construct(
         public mixed $value,
         public bool|string|null $checked = false,
@@ -33,9 +30,28 @@ class Item extends Component
     public function data(): array
     {
         $data = parent::data();
+        $data['checkboxGroupItemValue'] = $this->value;
+        $data['checkboxGroupItemChecked'] = $this->checked;
+        $data['checkboxGroupItemClass'] = $this->class;
+        $data['checkboxGroupItemLabelClass'] = $this->labelClass;
+        $data['checkboxGroupItemName'] = $this->name;
+        $data['checkboxGroupItemId'] = $this->id;
+        $data['checkboxGroupItemErrorKey'] = $this->errorKey;
+        $data['checkboxGroupItemDisabled'] = $this->disabled;
         $data['compute'] = $this->computeResolved(...);
 
-        return $this->stripNullProps($data, ['name', 'id', 'errorKey']);
+        unset(
+            $data['value'],
+            $data['checked'],
+            $data['class'],
+            $data['labelClass'],
+            $data['name'],
+            $data['id'],
+            $data['errorKey'],
+            $data['disabled'],
+        );
+
+        return $data;
     }
 
     /**

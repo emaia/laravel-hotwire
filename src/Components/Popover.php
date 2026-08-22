@@ -2,6 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Emaia\LaravelHotwire\Support\FieldContext;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\Component;
 
@@ -50,6 +51,7 @@ class Popover extends Component
         $data['popoverShift'] = $this->shift;
         $data['popoverOpen'] = $this->open;
         $data['popoverStimulus'] = $this->stimulus;
+        $data = array_replace($data, FieldContext::boundaryData());
 
         unset(
             $data['id'],

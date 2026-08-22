@@ -43,13 +43,13 @@ controllers — see those for the runtime side.
 
 | Prop          | Type                        | Default       | Description                                                                                                                                                                                                                                                                                                          |
 |---------------|-----------------------------|---------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `name`        | `?string`                   | `null`        | Used for the textarea's `name` and to derive the Stimulus id when `id` is omitted. Omit for a standalone editor that isn't part of a form submission. Inherited from `<hw:field>` via `@aware` when absent.                                                                                                          |
-| `id`          | `?string`                   | derived       | Stable identifier used in the toolbar's outlet selector. Defaults to `\Emaia\LaravelHotwire\Support\FieldKey::toId($name)` (so `user[bio]` becomes `user-bio`); falls back to a generated `hw-rich-text-<uniqid>` when both `name` and `id` are absent. Inherited from `<hw:field>` via `@aware` when absent.        |
+| `name`        | `?string`                   | `null`        | Used for the textarea's `name` and to derive the Stimulus id when `id` is omitted. Omit for a standalone editor that isn't part of a form submission. Inherited from scoped Field context when absent.                                                                                                             |
+| `id`          | `?string`                   | derived       | Stable identifier used in the toolbar's outlet selector. Defaults to `\Emaia\LaravelHotwire\Support\FieldKey::toId($name)` (so `user[bio]` becomes `user-bio`); falls back to a generated `hw-rich-text-<uniqid>` when both `name` and `id` are absent. Inherited from scoped Field context when absent.           |
 | `value`       | `mixed`                     | `null`        | Initial HTML (or JSON when `output="json"`). Cast to string in the view. On a request with validation errors, `old()` takes precedence.                                                                                                                                                                              |
-| `errorKey`    | `?string`                   | derived       | Validation key for `old()` and error lookups. Derived from `name` (e.g. `user.bio` from `user[bio]`); override only when the validation key doesn't match the field name. Inherited from `<hw:field>` via `@aware` when absent.                                                                                      |
+| `errorKey`    | `?string`                   | derived       | Validation key for `old()` and error lookups. Derived from `name` (e.g. `user.bio` from `user[bio]`); override only when the validation key doesn't match the field name. Inherited from scoped Field context when absent.                                                                                         |
 | `placeholder` | `?string`                   | `null`        | Empty-state text. When set, adds the Tiptap Placeholder extension.                                                                                                                                                                                                                                                   |
 | `editable`    | `bool`                      | `true`        | Set to `false` for a read-only editor.                                                                                                                                                                                                                                                                               |
-| `required`    | `bool`/HTML attr            | `false`       | Marks the field as required for a11y (`aria-required="true"` on wrapper + textarea). The HTML `required` attribute is **intentionally not emitted** — see [Required + client-side validation](#required--client-side-validation). Inherited from `<hw:field required>` via `@aware`.                                 |
+| `required`    | `bool`/HTML attr            | `false`       | Marks the field as required for a11y (`aria-required="true"` on wrapper + textarea). The HTML `required` attribute is **intentionally not emitted** — see [Required + client-side validation](#required--client-side-validation). Inherited from scoped Field context.                                                |
 | `output`      | `string`                    | `'html'`      | `html` writes serialized HTML into the textarea; `json` writes `JSON.stringify`'d ProseMirror JSON.                                                                                                                                                                                                                  |
 | `toolbar`     | `bool\|string\|array\|null` | `true`        | Render packaged toolbar buttons. `true`, `null`, and `basic` render bold, italic, link, bullet list, ordered list. `classic` renders the previous broad toolbar plus `strike`, inline `code`, and `horizontal-rule`. Pass a string/array of button keys for a custom set, or `false` to render slot content instead. |
 | `imageUpload` | `bool`                      | `false`       | Intercept image paste/drop and dispatch `rich-text:image-upload` for the app to handle.                                                                                                                                                                                                                              |
@@ -65,7 +65,7 @@ a `name`.
 
 ### Inside a `<hw:field>`
 
-When nested in a field, the rich text component inherits `name`, `id`, and `errorKey` from the field via `@aware`, so
+When nested in a field, the rich text component inherits `name`, `id`, and `errorKey` from scoped Field context, so
 you don't repeat them:
 
 ```blade
@@ -129,7 +129,7 @@ When validation rejects the form, the component marks itself invalid the same wa
 See the [Styling](#styling) section below for a full recipe using `aria-invalid:*` variants on Tailwind.
 
 `hasErrors` is resolved from `errorKey` (derived from `name` when omitted), so nesting inside
-`<hw:field name="bio" error>` propagates the error state via `@aware` automatically.
+`<hw:field name="bio" error>` propagates the error state through scoped Field context automatically.
 
 ### Required + client-side validation
 
@@ -409,7 +409,7 @@ through the component's semantic hooks. No additional application CSS is require
 
 The wrapper carries `aria-invalid="true"` automatically when validation flags the field, so the destructive ring appears
 without extra wiring. Nesting inside `<hw:field required>` propagates
-`required` to the textarea via `@aware`.
+`required` to the textarea through scoped Field context.
 
 **Vanilla CSS** — same idea, no preprocessor:
 

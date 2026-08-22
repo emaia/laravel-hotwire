@@ -13,7 +13,6 @@ Renders an `<input>` with:
 
 - `id="email"`, `name="email"`
 - `value` from `old('email', $value)`
-- `aria-describedby="email-error"` (always set, for stable screen-reader binding)
 - `aria-invalid="true"` and `data-invalid` when `$errors->has('email')`
 - `aria-required="true"` when `required` is present
 
@@ -63,7 +62,7 @@ the conversion for you:
 
 ```blade
 <hw:input name="variables[0][name]" />
-{{-- id="variables-0-name", aria-describedby="variables-0-name-error", errorKey="variables.0.name" --}}
+{{-- id="variables-0-name", errorKey="variables.0.name" --}}
 ```
 
 Use `error-key` when the HTML name and the validation key diverge:
@@ -149,16 +148,16 @@ collide on `id`. The component avoids that by appending `-{slug(value)}` to the 
 <hw:input type="radio"    name="plan"   value="pro" />          {{-- id="plan-pro" --}}
 ```
 
-The slug uses `Illuminate\Support\Str::slug`, so any string value is safe. `aria-describedby` still points to the
-**base error id** (`plan-error`, `size-error`), so all inputs in the group bind to the same `<hw:field.error>` node — which is
-what Laravel's per-name validation produces.
+The slug uses `Illuminate\Support\Str::slug`, so any string value is safe. Inside `<hw:field>`, `aria-describedby` still
+points to the **base error id** (`plan-error`, `size-error`), so all inputs in the group bind to the same
+`<hw:field.error>` node — which is what Laravel's per-name validation produces.
 
-Passing an explicit `id` opts out of the auto-derivation: the component uses your id verbatim and derives
-`aria-describedby` from it.
+Passing an explicit `id` opts out of the auto-derivation: the component uses your id verbatim. Inside `<hw:field>`, the
+error reference derives from that id.
 
 ## Inheriting from `<hw:field>`
 
-`<hw:field>` propagates `name`, `errorKey`, and `required` to nested children via `@aware`. It auto-renders
+`<hw:field>` propagates `name`, `id`, `errorKey`, and `required` through scoped Field context. It auto-renders
 `<hw:field.label>`, `<hw:field.description>`, and `<hw:field.error>` when the corresponding props are set:
 
 ```blade
@@ -167,10 +166,9 @@ Passing an explicit `id` opts out of the auto-derivation: the component uses you
 </hw:field>
 ```
 
-> **ARIA contract:** the input always emits `aria-describedby="{id}-error"`. The field auto-renders `<hw:field.error>` for
-> you, so the reference is always satisfied by default. Opt out with `:error="false"` and render `<hw:field.error>`
-> manually
-> if needed.
+> **ARIA contract:** Field-owned inputs emit `aria-describedby="{id}-error"`, and Field auto-renders the matching
+> `<hw:field.error>`. Standalone inputs do not invent an error reference; pass `aria-describedby` explicitly when you
+> render your own help or error node. With `:error="false"`, render the referenced node manually if needed.
 
 ## Controller integrations
 

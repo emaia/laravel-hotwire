@@ -55,6 +55,17 @@ it('uses explicit id', function () {
     $view->assertSee('id="custom-id"', false);
 });
 
+it('derives unique ids from array values', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::checkbox name="filter_status[]" value="active" />
+        <x-hw::checkbox name="filter_status[]" value="archived" />
+    BLADE);
+
+    expect($html)->toContain('id="filter_status-active"')
+        ->toContain('id="filter_status-archived"')
+        ->and(substr_count($html, 'id="filter_status"'))->toBe(0);
+});
+
 it('generates a stable prefix when name is absent', function () {
     $view = $this->blade('<x-hw::checkbox />');
 
@@ -172,12 +183,12 @@ it('can force debounced auto-submit with a field delay', function () {
 
 // --- ARIA + field integration ---
 
-it('sets aria-describedby and validation state', function () {
+it('sets validation state without inventing an error reference', function () {
     shareCheckboxErrors(['notify' => ['Required.']]);
 
     $view = $this->blade('<x-hw::checkbox name="notify" />');
 
-    $view->assertSee('aria-describedby="notify-error"', false);
+    $view->assertDontSee('aria-describedby', false);
     $view->assertSee('aria-invalid="true"', false);
     $view->assertSee('data-invalid', false);
 });

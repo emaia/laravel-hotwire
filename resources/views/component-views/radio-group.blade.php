@@ -1,34 +1,57 @@
-@aware(['name' => null, 'id' => null, 'errorKey' => null])
+@aware(['fieldName' => null, 'fieldId' => null, 'fieldErrorKey' => null])
 
 @php
-    extract($compute($name, $id, $errorKey, $errors, $attributes));
+    $explicitName = $radioGroupName ?? null;
+    $resolvedName = $explicitName ?? $fieldName;
+    $resolvedId = \Emaia\LaravelHotwire\Support\FieldKey::resolveId($radioGroupId ?? null, $explicitName, $fieldId, $fieldName);
+    $resolvedErrorKey = \Emaia\LaravelHotwire\Support\FieldKey::resolveErrorKey($radioGroupErrorKey ?? null, $explicitName, $fieldErrorKey, $fieldName);
+    extract($compute($resolvedName, $resolvedId, $resolvedErrorKey, $errors, $attributes));
+
+    $labelId = $fieldOwnerContext->labelId();
+    $fieldOwnsSet = $radioGroupFieldContext instanceof \Emaia\LaravelHotwire\Support\FieldContext
+        && $radioGroupFieldContext->ownsSet();
+    $hasExplicitAccessibleName = $attributes->has('aria-labelledby') || $attributes->has('aria-label');
+    $errorReference = null;
+
+    if ($radioGroupFieldContext instanceof \Emaia\LaravelHotwire\Support\FieldContext) {
+        $labelId = $radioGroupFieldContext->registerSelection(
+            $labelId,
+            $hasExplicitAccessibleName,
+            $name,
+            $baseId,
+            $resolvedErrorKey,
+        );
+        $errorReference = $radioGroupFieldContext->errorReference($errorId, $name, $resolvedErrorKey);
+    }
 
     $radioGroupAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
         'data-slot' => 'radio-group',
-        'data-orientation' => $orientation,
-        'class' => filled($wrapperClass) ? $wrapperClass : null,
-    ], $attributes, $stimulus, except: ['auto-submit', 'auto-submit-delay', 'orientation', 'disabled'], protectedPrefixes: $internalPrefixes);
+        'role' => $fieldOwnsSet ? null : 'radiogroup',
+        'aria-labelledby' => $fieldOwnsSet || $hasExplicitAccessibleName ? null : $labelId,
+        'data-orientation' => $radioGroupOrientation,
+        'class' => filled($radioGroupWrapperClass) ? $radioGroupWrapperClass : null,
+    ], $attributes, $radioGroupStimulus, except: ['auto-submit', 'auto-submit-delay', 'orientation', 'disabled'], protectedPrefixes: $internalPrefixes);
 @endphp
 
 <div
     {{ $radioGroupAttributes }}
 >
-    @foreach ($options as $value => $label)
+    @foreach ($radioGroupOptions as $value => $label)
         @php
             $resolvedId = $baseId ? $baseId.'-'.\Illuminate\Support\Str::slug((string) $value) : null;
         @endphp
-        <label data-slot="radio-group-item" @if (filled($labelClass)) class="{{ $labelClass }}" @endif>
+        <label data-slot="radio-group-item" @if (filled($radioGroupLabelClass)) class="{{ $radioGroupLabelClass }}" @endif>
             <input
                 data-slot="radio-group-input"
                 data-checkable="true"
                 type="radio"
-                @if (filled($class)) class="{{ $class }}" @endif
+                @if (filled($radioGroupClass)) class="{{ $radioGroupClass }}" @endif
                 @if ($name) name="{{ $name }}" @endif
                 value="{{ $value }}"
                 @if ($resolvedId) id="{{ $resolvedId }}" @endif
-                @if ($errorId) aria-describedby="{{ $errorId }}" @endif
+                @if ($errorReference) aria-describedby="{{ $errorReference }}" @endif
                 @if ($hasErrors) aria-invalid="true" data-invalid @endif
-                @if ($disabled) disabled @endif
+                @if ($radioGroupDisabled) disabled @endif
                 @if ($elementAction) data-action="{!! $elementAction !!}" @endif
                 @if ($autoSubmitDelayParam !== null) data-auto-submit-delay-param="{{ $autoSubmitDelayParam }}" @endif
                 @if ((string) $resolvedSelected === (string) $value) checked @endif

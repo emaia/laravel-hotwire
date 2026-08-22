@@ -7,6 +7,7 @@ use Emaia\LaravelHotwire\Components\Dropdown\Label as DropdownLabel;
 use Emaia\LaravelHotwire\Components\Dropdown\Trigger as DropdownTrigger;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
+use Emaia\LaravelHotwire\Support\FieldContext;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\View\ViewException;
 
@@ -178,7 +179,7 @@ it('does not expose dropdown root props as generic component data', function () 
     $frameworkKeys = ['componentName', 'attributes', 'ignoredParameterNames'];
     $genericKeys = array_values(array_filter(
         array_keys($data),
-        fn (string $key) => ! str_starts_with($key, 'dropdown') && ! in_array($key, $frameworkKeys, true),
+        fn (string $key) => ! str_starts_with($key, 'dropdown') && ! in_array($key, [...$frameworkKeys, ...array_keys(FieldContext::boundaryData())], true),
     ));
 
     expect($genericKeys)->toBe([])
@@ -187,7 +188,9 @@ it('does not expose dropdown root props as generic component data', function () 
             'dropdownOpen',
             'dropdownCloseOnSelect',
             'dropdownStimulus',
-        ]);
+        ])
+        ->and($data)->toHaveKey('fieldContext', null)
+        ->toHaveKey('fieldControlContext', null);
 });
 
 it('does not expose dropdown trigger props as generic component data', function () {

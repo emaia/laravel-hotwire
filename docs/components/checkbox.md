@@ -59,6 +59,15 @@ Unchecked checkboxes do not submit a value. Pass `unchecked-value` when the back
 
 This renders a hidden input before the checkbox so checked submissions still win by normal form ordering.
 
+When several standalone checkboxes intentionally use the same array name, their values disambiguate the generated ids:
+
+```blade
+<hw:checkbox name="status[]" value="active" />   {{-- id="status-active" --}}
+<hw:checkbox name="status[]" value="archived" /> {{-- id="status-archived" --}}
+```
+
+An explicit `id` remains unchanged.
+
 ## Indeterminate state
 
 HTML has no `indeterminate` attribute; it is a DOM property. The component mounts the lightweight `checkbox` controller

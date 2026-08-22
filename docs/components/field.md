@@ -3,7 +3,7 @@
 Compose accessible, Laravel-aware form fields with labels, controls, helper text, validation errors, and semantic groups.
 
 The field set provides small primitives that share `data-slot` styling hooks and integrate with Laravel validation through
-`name`, `errorKey`, `required`, and `@aware`.
+scoped `name`, `id`, `errorKey`, and `required` context.
 
 ## Usage
 
@@ -30,8 +30,8 @@ For full control over ordering and content, compose the primitives manually:
 </hw:field>
 ```
 
-All field primitives forward extra HTML attributes. Use `class`, `id`, `data-*`, and `aria-*` directly on the element
-that should receive them.
+All field primitives forward extra HTML attributes. On `<hw:field>`, `id` identifies the nested control and
+`wrapper-id` identifies the field container; `data-*` and `aria-*` attributes apply to the container.
 
 ## Composition
 
@@ -42,7 +42,8 @@ A single control with label, helper text, and validation feedback.
 ```text
 field
 ├── field.label
-├── input / checkbox / switch / slider / select / textarea / checkbox-group / radio-group / file / file-upload
+├── input / checkbox / switch / slider / select / textarea / checkbox-group / radio-group / toggle-group
+│   / file / file-upload / multi-select / rich-text
 ├── field.description
 └── field.error
 ```
@@ -166,14 +167,123 @@ Use `field.label` instead of `field.title` when a real label association is need
 
 `<hw:field>` propagates context to nested field-aware controls via `@aware`:
 
-| Context    | Used By                                                                                              | Purpose                                                                          |
-|------------|------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|
-| `name`     | `field.label`, `input`, `checkbox`, `switch`, `slider`, `select`, `textarea`, `checkbox-group`, `radio-group`, `file`, `file-upload`, `field.error` | Derives `for`, `id`, `name`, `aria-describedby`, and validation keys.            |
-| `errorKey` | Controls and `field.error`                                                                           | Looks up Laravel validation messages when HTML name differs from validation key. |
-| `required` | `field.label` and controls                                                                           | Renders the required marker and ARIA required state.                             |
+| Context    | Used By                                                                                                               | Purpose                                                                          |
+|------------|-----------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|
+| `name`     | `field.label`, field-aware controls, selection groups, and `field.error`                                              | Supplies the form name and derives ids and validation keys.                      |
+| `id`       | `field.label`, field-aware controls, selection groups, and `field.error`                                              | Supplies the control id base, label target, and error id base.                   |
+| `errorKey` | Field-aware controls, selection groups, and `field.error`                                                            | Looks up Laravel validation messages when HTML name differs from validation key. |
+| `required` | `field.label` and controls that support required state                                                               | Renders the required marker and ARIA/native required state.                      |
 
-Controls emit `aria-describedby="{id}-error"`. `field.error` keeps the matching element in the DOM, hidden when there are
-no messages, so the ARIA reference stays stable.
+The internal component-data keys are `fieldName`, `fieldId`, `fieldErrorKey`, and `fieldRequired`. Application
+subcomponents that intentionally consume Field context should use those scoped names. Explicit control props take
+precedence over inherited context; an explicit `:required="false"` also opts a control out of a required Field. A
+control that declares a different `name` derives its own id instead of reusing the Field id. Controls that inherit the
+Field name, or explicitly repeat it, continue to inherit the Field id. `field.label` and `field.error` use the same
+resolution order, keeping explicit names, `for`, error ids, and `aria-describedby` aligned.
+
+### Field owners other than `<hw:field>`
+
+A selection group also owns a name, an id base and an error key, so `field.label` and `field.error` nested inside a
+`<hw:radio-group>`, `<hw:checkbox-group>` or `<hw:toggle-group>` resolve against that group even with no `<hw:field>`
+above it. Groups publish a `fieldOwner` marker together with `fieldOwnerName`, `fieldOwnerId` and `fieldOwnerErrorKey`.
+Every root publishes the complete nullable boundary, preventing an outer group from leaking through a nameless inner
+group. The marker selects the group's values when it carries its own identity; otherwise the root falls back only to the
+separate scoped Field context.
+
+This is deliberately a separate protocol from `fieldName`/`fieldId`/`fieldErrorKey`. Group items end their fallback
+chain on the Field keys, so publishing there would let an outer group's name reach a nameless inner group. Application
+components that own a field identity and want to feed `field.label` and `field.error` should publish the `fieldOwner*`
+keys; components that want to feed controls and group items should publish the `field*` keys.
+
+Field-owned controls emit `aria-describedby="{id}-error"`. `field.error` keeps the matching element in the DOM, hidden
+when there are no messages, so the ARIA reference stays stable. Standalone controls do not emit an automatic error
+reference; pass `aria-describedby` explicitly when rendering a separate error node. The automatic error follows the
+final identity of a sole registered control or selection group, including explicit `name`, `id`, and `error-key`
+overrides.
+
+`field.error` derives its id with the same precedence a control uses: its own `id`, then the owner id base, then the
+resolved name. It cannot see a control's rendered id, so giving a control an explicit `id` that diverges from the owner
+means passing the matching `id` to `field.error` as well.
+
+Selection groups publish their resolved owner id base, including an inherited Field id, so nested `field.error` and the
+group inputs always agree on `aria-describedby`.
+
+### Labelling controls and sets
+
+A radio set, checkbox set or toggle set has no single labelable control, so `<label for>` would point at an id no
+control carries. `<hw:radio-group>`, `<hw:checkbox-group>`, and `<hw:toggle-group>` therefore own the set semantics:
+`field.label` drops `for` and emits `id="{base}-label"`, while the group carries the matching `role` and
+`aria-labelledby`. The surrounding Field does not duplicate those attributes.
+
+```blade
+{{-- label inside the group --}}
+<hw:radio-group name="plan" :options="$plans">
+    <hw:field.label>Plan</hw:field.label>
+</hw:radio-group>
+
+{{-- or from the surrounding field --}}
+<hw:field name="plan" label="Plan">
+    <hw:radio-group :options="$plans" />
+</hw:field>
+```
+
+An explicit label inside a sole selection group takes precedence over the surrounding Field's automatic `label`; only
+the inner label renders. Explicit `aria-label` and `aria-labelledby` attributes on a group remain authoritative and do
+not hide the Field's visible text. Because that text does not provide the group's accessible name, Field renders it as a
+styled `<span data-slot="field-label">` instead of an unassociated `<label>`. When `label-id` is supplied, the span keeps
+that id so an explicit `aria-labelledby` reference remains valid. A nameless Field generates its own render-scoped label
+id; pass `label-id` when the id must be deterministic.
+
+Only a selection group directly owned by the Field can consume its automatic label. Nested selection groups start a new
+boundary, so an inner group must provide its own accessible name. Multiple direct selection groups each reference the
+same Field label, while the Field wrapper leaves role ownership to those groups.
+
+Field-aware package controls register their final ids while Blade renders the slot. A Field wrapping one control keeps
+`<label for>` even when its name ends in `[]`. Two or more package radio inputs with the same name are inferred as a
+`radiogroup`; two or more package checkbox inputs with the same name are inferred as a `group`. Controls with different
+identities receive a named `role="group"` wrapper and no dangling `for`.
+
+The automatic required marker follows the resolved state of a sole registered control, so `:required="false"` removes
+both native required state and the marker inherited from a required Field. Fields with several controls retain the
+Field-level marker because no single control owns the requirement.
+
+For raw HTML or application components, declare set semantics explicitly and provide a deterministic label id:
+
+```blade
+<hw:field label="Choices" set="radiogroup" label-id="choices-label">
+    <input type="radio" name="choice" value="a">
+    <input type="radio" name="choice" value="b">
+</hw:field>
+```
+
+`label-id` can also reference visible text rendered elsewhere. Without the `label` prop, Field does not render another
+label but still supplies `aria-labelledby` to direct selection groups or an explicit set:
+
+```blade
+<span id="choices-label">Choices</span>
+<hw:field set="radiogroup" label-id="choices-label">...</hw:field>
+```
+
+An explicit `set` keeps semantic ownership on Field even when its slot contains selection-group components. Their roots
+cede `role` and generated `aria-labelledby` to avoid nested set semantics. Omit `set` to delegate ownership to the
+selection groups.
+
+One shape is not covered: a `<hw:field.label>` written directly in a `<hw:field>` slot as a sibling of the group. Blade
+renders slot content before the surrounding view, so the label cannot know a set follows it and still emits `for`. Use
+the `label` prop on `<hw:field>` or move the label inside the group.
+
+When several children expose different error identities, the automatic error falls back to the Field identity because
+there is no unambiguous child to follow. Use `:error="false"` and render matching `<hw:field.error>` components for those
+children.
+
+`field.label` uses `for` for a single labelable native control. Multi Select registers its trigger as that control and
+keeps its internal search input out of Field ownership. Selection groups and native radio/checkbox sets use the
+`aria-labelledby` contract above. Other composite controls such as File Upload and Rich Text still use the Field id as
+an internal/root id base rather than a single label target; give those controls their own accessible name and use
+`field.title` for visible text. Package overlay roots (Alert Dialog, Drawer, Dropdown, Hover Card, Modal, Popover, and
+Sheet) are Field boundaries: inherited Field name, id, error, required state, and ownership registration do not cross
+into them. A Field rendered inside an overlay starts a fresh context normally. If no labelable control registers, Field
+renders its label prop as visual text without guessing a `for` target.
 
 ```blade
 <hw:field name="variables[0][name]" error-key="indicator.name">
@@ -260,13 +370,19 @@ orientation state for the preset.
 | Prop             | Type                               | Default    | Description                                                                                  |
 |------------------|------------------------------------|------------|----------------------------------------------------------------------------------------------|
 | `name`           | `string\|null`                     | `null`     | Field name propagated to nested field-aware children.                                        |
+| `id`             | `string\|null`                     | `null`     | Control id base propagated to labels, controls, selection groups, and errors.                |
+| `wrapper-id`     | `string\|null`                     | `null`     | Optional id for the Field wrapper itself.                                                     |
 | `label`          | `string\|null`                     | `null`     | Auto-renders `field.label` before the slot. Empty string skips it.                           |
+| `label-id`       | `string\|null`                     | `null`     | Id for an automatic or external set label, typically paired with `set`.                      |
+| `set`            | `group\|radiogroup\|null`         | `null`     | Explicit set semantics for raw HTML or application controls.                                 |
 | `description`    | `string\|null`                     | `null`     | Auto-renders `field.description` after the slot and before the error. Empty string skips it. |
 | `required-label` | `string`                           | `"*"`      | Marker text passed to the auto-rendered `field.label`.                                       |
 | `error-key`      | `string\|null`                     | `null`     | Overrides Laravel validation key derivation.                                                 |
 | `required`       | `bool\|null`                       | `null`     | Propagates required state to label and controls.                                             |
 | `error`          | `bool`                             | `true`     | Auto-renders `field.error` when `name` is set.                                               |
 | `orientation`    | `vertical\|horizontal\|responsive` | `vertical` | Layout state consumed by the preset.                                                         |
+| `disabled`       | `bool`                             | `false`    | Emits disabled state on the wrapper; does not disable the control automatically.             |
+| `invalid`        | `bool`                             | `false`    | Emits invalid state on the wrapper.                                                          |
 
 ```blade
 <hw:field name="email" label="Email" orientation="horizontal">
@@ -296,6 +412,8 @@ Form `<label>` that derives `for` from the surrounding field and renders an opti
 | Prop             | Type           | Default             | Description                                           |
 |------------------|----------------|---------------------|-------------------------------------------------------|
 | `for`            | `string\|null` | derived from `name` | Overrides the label target. Pass `for=""` to omit it. |
+| `id`             | `string\|null` | derived for sets    | Overrides the label id referenced by `aria-labelledby`. |
+| `set`            | `bool\|null`   | inherited           | Labels a control set with `aria-labelledby` instead of `for`. |
 | `name`           | `string\|null` | inherited           | Used to derive `for` when `for` is omitted.           |
 | `value`          | `string\|null` | `null`              | Label text as an alternative to slot content.         |
 | `required`       | `bool\|null`   | inherited           | Shows the required marker.                            |
@@ -306,7 +424,8 @@ Form `<label>` that derives `for` from the surrounding field and renders an opti
 ```
 
 If the label wraps an `<input>`, `<select>`, or `<textarea>`, the component omits `for` and uses HTML's implicit labeling
-pattern.
+pattern. An explicit `for`, including one on a label inside a selection group, always takes precedence. Repeated labels
+under one Field or selection owner receive unique ids; its `aria-labelledby` continues to reference the first.
 
 ### `<hw:field.title>`
 

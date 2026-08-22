@@ -133,6 +133,57 @@ it('passes through arbitrary attributes', function () {
     $view->assertSee('data-test="x"', false);
 });
 
+it('uses an explicit id once when labeling a selection group', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::radio-group name="plan" :options="['free' => 'Free']">
+            <x-hw::field.label id="custom-plan-label">Plan</x-hw::field.label>
+        </x-hw::radio-group>
+    BLADE);
+
+    $html = (string) $view;
+
+    expect(substr_count($html, 'id="custom-plan-label"'))->toBe(1)
+        ->and($html)->toContain('aria-labelledby="custom-plan-label"')
+        ->and($html)->not->toContain('id="plan-label"');
+});
+
+it('keeps an idref label when explicit for is empty', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::radio-group name="plan" :options="['free' => 'Free']">
+            <x-hw::field.label for="">Plan</x-hw::field.label>
+        </x-hw::radio-group>
+    BLADE);
+
+    expect($html)->toContain('id="plan-label"')
+        ->toContain('aria-labelledby="plan-label"')
+        ->not->toContain(' for=');
+});
+
+it('keeps an explicit for target inside a selection group', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::checkbox-group name="roles[]" :options="['a' => 'A']">
+            <x-hw::field.label for="roles-a">A label</x-hw::field.label>
+        </x-hw::checkbox-group>
+    BLADE);
+
+    expect($html)->toContain('for="roles-a"')
+        ->toContain('id="roles-label"')
+        ->toContain('aria-labelledby="roles-label"');
+});
+
+it('gives repeated labels under one owner unique ids', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::checkbox-group name="roles[]" :options="['a' => 'A']">
+            <x-hw::field.label>Roles</x-hw::field.label>
+            <x-hw::field.label>Choose one or more</x-hw::field.label>
+        </x-hw::checkbox-group>
+    BLADE);
+
+    expect(substr_count($html, 'id="roles-label"'))->toBe(1)
+        ->and($html)->toContain('id="roles-label-2"')
+        ->toContain('aria-labelledby="roles-label"');
+});
+
 // --- @aware propagation from field ---
 
 it('picks up name and derives for from field via @aware', function () {

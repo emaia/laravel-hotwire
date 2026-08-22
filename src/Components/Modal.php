@@ -2,6 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Emaia\LaravelHotwire\Support\FieldContext;
 use Emaia\LaravelHotwire\Support\FrameTarget;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\Component;
@@ -51,6 +52,7 @@ class Modal extends Component
         $data['modalStimulus'] = $this->stimulus;
         $data['modalMotion'] = $this->motion;
         $data['modalViewTransition'] = $this->viewTransition;
+        $data = array_replace($data, FieldContext::boundaryData());
 
         unset(
             $data['id'],

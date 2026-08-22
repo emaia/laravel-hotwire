@@ -1,5 +1,14 @@
 <?php
 
+use Emaia\LaravelHotwire\Components\AlertDialog;
+use Emaia\LaravelHotwire\Components\Drawer;
+use Emaia\LaravelHotwire\Components\Dropdown;
+use Emaia\LaravelHotwire\Components\Field;
+use Emaia\LaravelHotwire\Components\HoverCard;
+use Emaia\LaravelHotwire\Components\Modal;
+use Emaia\LaravelHotwire\Components\Popover;
+use Emaia\LaravelHotwire\Components\Sheet;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\MessageBag;
 use Illuminate\Support\ViewErrorBag;
 
@@ -160,6 +169,18 @@ it('auto-rendered label shows default asterisk when required', function () {
     expect($html)->toContain('<span data-slot="field-label-required"');
 });
 
+it('hides the automatic required marker when the sole control opts out', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::field name="email" label="E-mail" required>
+            <x-hw::input :required="false" />
+        </x-hw::field>
+    BLADE);
+
+    expect($html)->not->toContain('data-slot="field-label-required"')
+        ->not->toContain('aria-required="true"')
+        ->not->toContain(' required');
+});
+
 it('does not auto-render label when label prop is null', function () {
     $view = $this->blade('
         <x-hw::field name="email">
@@ -267,6 +288,134 @@ it('auto-rendered description appears after slot and before error', function () 
 
 // --- @aware propagation ---
 
+it('publishes only field-scoped component data', function () {
+    $data = (new Field(
+        name: 'email',
+        id: 'email-control',
+        label: 'Email',
+        description: 'Work address',
+        requiredLabel: 'Required',
+        errorKey: 'profile.email',
+        required: true,
+        error: false,
+        orientation: 'horizontal',
+        class: 'field-class',
+        wrapperId: 'email-field',
+        disabled: true,
+        invalid: true,
+    ))->data();
+    $frameworkKeys = ['componentName', 'attributes', 'ignoredParameterNames'];
+    $genericKeys = array_values(array_filter(
+        array_keys($data),
+        fn (string $key) => ! str_starts_with($key, 'field') && ! in_array($key, $frameworkKeys, true),
+    ));
+
+    expect($genericKeys)->toBe([])
+        ->and($data)->toHaveKeys([
+            'fieldName',
+            'fieldId',
+            'fieldLabel',
+            'fieldDescription',
+            'fieldRequiredLabel',
+            'fieldErrorKey',
+            'fieldRequired',
+            'fieldError',
+            'fieldOrientation',
+            'fieldClass',
+            'fieldWrapperId',
+            'fieldDisabled',
+            'fieldInvalid',
+        ]);
+});
+
+it('uses id for the control context and wrapper-id for the field container', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::field name="email" id="email-control" wrapper-id="email-field" label="Email">
+            <x-hw::input />
+        </x-hw::field>
+    BLADE);
+
+    $view->assertSee('id="email-field"', false)
+        ->assertSee('id="email-control"', false)
+        ->assertSee('for="email-control"', false)
+        ->assertSee('aria-describedby="email-control-error"', false)
+        ->assertSee('id="email-control-error"', false);
+});
+
+it('keeps field context through an intermediate component with generic props', function () {
+    Blade::anonymousComponentPath(__DIR__.'/../Fixtures/views/components');
+    shareFieldErrors(['profile.email' => ['Required']]);
+
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::field name="email" id="email-control" error-key="profile.email" required>
+            <x-field-context-wrapper name="shadow-field" id="shadow-field-id" error-key="shadow.field" :required="false">
+                <x-hw::field.label>Email</x-hw::field.label>
+                <x-hw::input />
+                <x-hw::field.error />
+            </x-field-context-wrapper>
+        </x-hw::field>
+    BLADE);
+
+    $view->assertSee('name="email"', false)
+        ->assertSee('id="email-control"', false)
+        ->assertSee('for="email-control"', false)
+        ->assertSee('id="email-control-error"', false)
+        ->assertSee('aria-invalid="true"', false)
+        ->assertSee('aria-required="true"', false)
+        ->assertDontSee('shadow-field', false)
+        ->assertDontSee('shadow-field-id', false);
+});
+
+it('keeps explicit control props ahead of field context', function () {
+    shareFieldErrors(['child.email' => ['Invalid']]);
+
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::field name="email" id="email-control" error-key="profile.email" required :error="false">
+            <x-hw::input name="alternate" id="alternate-control" error-key="child.email" :required="false" />
+            <x-hw::field.error name="alternate" id="alternate-control-error" error-key="child.email" />
+        </x-hw::field>
+    BLADE);
+
+    $view->assertSee('name="alternate"', false)
+        ->assertSee('id="alternate-control"', false)
+        ->assertSee('aria-describedby="alternate-control-error"', false)
+        ->assertSee('id="alternate-control-error"', false)
+        ->assertSee('aria-invalid="true"', false)
+        ->assertDontSee('aria-required="true"', false)
+        ->assertDontSee(' required', false);
+});
+
+it('keeps scoped field identity across every field-aware control', function (string $component, string $identity) {
+    Blade::anonymousComponentPath(__DIR__.'/../Fixtures/views/components');
+
+    $view = $this->blade(<<<BLADE
+        <x-hw::field name="profile[email]" id="owner-control" :error="false">
+            <x-field-context-wrapper name="shadow-field" id="shadow-field-id" error-key="shadow.field" :required="false">
+                {$component}
+            </x-field-context-wrapper>
+        </x-hw::field>
+    BLADE);
+
+    $view->assertSee('profile[email]', false)
+        ->assertSee($identity, false)
+        ->assertDontSee('shadow-field', false)
+        ->assertDontSee('shadow-field-id', false);
+})->with([
+    'input' => ['<x-hw::input />', 'id="owner-control"'],
+    'select' => ['<x-hw::select><option value="x">X</option></x-hw::select>', 'id="owner-control"'],
+    'checkbox' => ['<x-hw::checkbox />', 'id="owner-control"'],
+    'switch' => ['<x-hw::switch />', 'id="owner-control"'],
+    'textarea' => ['<x-hw::textarea />', 'id="owner-control"'],
+    'file' => ['<x-hw::file />', 'id="owner-control"'],
+    'file upload' => ['<x-hw::file-upload url="/uploads" />', 'id="owner-control"'],
+    'multi select' => ['<x-hw::multi-select :options="[\'active\' => \'Active\']" />', 'id="owner-control"'],
+    'rich text' => ['<x-hw::rich-text />', 'data-rich-text-id-value="owner-control"'],
+    'slider' => ['<x-hw::slider />', 'id="owner-control"'],
+    'radio group' => ['<x-hw::radio-group :options="[\'free\' => \'Free\']" />', 'id="owner-control-free"'],
+    'checkbox group' => ['<x-hw::checkbox-group :options="[\'admin\' => \'Admin\']" />', 'id="owner-control-admin"'],
+    'toggle group' => ['<x-hw::toggle-group><x-hw::toggle-group.item value="bold">Bold</x-hw::toggle-group.item></x-hw::toggle-group>', 'id="owner-control-bold-input"'],
+]);
+
 it('propagates name to nested input', function () {
     $view = $this->blade('
         <x-hw::field name="email">
@@ -333,3 +482,428 @@ it('overrides errorKey when explicit error-key is set on field', function () {
     $view->assertSee('Required');
     $view->assertSee('aria-invalid="true"', false);
 });
+
+it('keeps a label for on a field that wraps a single control', function () {
+    $view = $this->blade('<x-hw::field name="email" label="Email" :error="false"><x-hw::input /></x-hw::field>');
+
+    $view->assertSee('for="email"', false)
+        ->assertDontSee('aria-labelledby', false);
+});
+
+it('resets a selection owner at a nested field boundary', function () {
+    shareFieldErrors(['outer.key' => ['Outer message'], 'inner' => ['Inner message']]);
+
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::radio-group name="outer" id="outer-id" error-key="outer.key">
+            <x-hw::field name="inner" label="Inner">
+                <x-hw::input />
+            </x-hw::field>
+        </x-hw::radio-group>
+    BLADE);
+
+    expect($html)->toContain('for="inner"')
+        ->toContain('id="inner"')
+        ->toContain('id="inner-error"')
+        ->toContain('Inner message')
+        ->not->toContain('for="outer-id"')
+        ->not->toContain('id="outer-id-error"')
+        ->not->toContain('Outer message');
+});
+
+it('uses a named selection group to identify a label from a nameless field', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::field label="Tags" :error="false">
+            <x-hw::checkbox-group name="tags" :options="['one' => 'One']" />
+        </x-hw::field>
+    BLADE);
+
+    preg_match('/<label[^>]*id="([^"]+)"/', $html, $label);
+
+    expect($label[1] ?? null)->toStartWith('hw-field-label-')
+        ->and($html)->toContain('aria-labelledby="'.$label[1].'"');
+});
+
+it('lets an inner selection label suppress the outer automatic label', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::field name="plan" label="Plan" :error="false">
+            <x-hw::radio-group>
+                <x-hw::field.label>Choose</x-hw::field.label>
+                <x-hw::radio-group.item value="free">Free</x-hw::radio-group.item>
+            </x-hw::radio-group>
+        </x-hw::field>
+    BLADE);
+
+    expect(substr_count($html, 'id="plan-label"'))->toBe(1)
+        ->and($html)->toContain('Choose')
+        ->and($html)->not->toContain('>Plan<');
+});
+
+it('assigns set ownership only to the nested selection group', function () {
+    $html = (string) $this->blade('<x-hw::field name="plan" label="Plan" :error="false"><x-hw::radio-group :options="[\'free\' => \'Free\']" /></x-hw::field>');
+
+    expect($html)->toMatch('/<div(?=[^>]*data-slot="radio-group")(?=[^>]*role="radiogroup")(?=[^>]*aria-labelledby="plan-label")[^>]*>/')
+        ->toMatch('/<div(?=[^>]*data-slot="field")(?![^>]*role=)(?![^>]*aria-labelledby=)[^>]*>/');
+});
+
+it('supports explicit set semantics for raw custom controls', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::field label="Choices" set="radiogroup" label-id="choices-label" :error="false">
+            <input type="radio" name="choice" value="a">
+            <input type="radio" name="choice" value="b">
+        </x-hw::field>
+    BLADE);
+
+    expect($html)->toMatch('/<div(?=[^>]*data-slot="field")(?=[^>]*role="radiogroup")(?=[^>]*aria-labelledby="choices-label")[^>]*>/')
+        ->toContain('id="choices-label"')
+        ->not->toContain(' for=');
+});
+
+it('rejects unsupported explicit set semantics', function () {
+    expect(fn () => new Field(set: 'listbox'))
+        ->toThrow(InvalidArgumentException::class, 'The Field set prop must be group, radiogroup, or null.');
+});
+
+it('keeps the automatic label and its idref when a field contains multiple selection groups', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::field name="preferences" label="Preferences" :error="false">
+            <x-hw::radio-group name="plan" :options="['free' => 'Free']" />
+            <x-hw::checkbox-group name="topics" :options="['news' => 'News']" />
+        </x-hw::field>
+    BLADE);
+
+    expect($html)->toContain('Preferences')
+        ->toContain('id="preferences-label"')
+        ->toMatch('/<div(?=[^>]*data-slot="radio-group")(?=[^>]*aria-labelledby="preferences-label")[^>]*>/')
+        ->toMatch('/<div(?=[^>]*data-slot="checkbox-group")(?=[^>]*aria-labelledby="preferences-label")[^>]*>/')
+        ->toMatch('/<div(?=[^>]*data-slot="field")(?![^>]*role=)(?![^>]*aria-labelledby=)[^>]*>/')
+        ->and(substr_count($html, 'id="preferences-label"'))->toBe(1);
+});
+
+it('keeps the automatic label and its idref when a field contains a selection group and a control', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::field label="Preferences" :error="false">
+            <x-hw::radio-group name="plan" :options="['free' => 'Free']" />
+            <x-hw::input name="notes" />
+        </x-hw::field>
+    BLADE);
+
+    preg_match('/<label[^>]*id="([^"]+)"/', $html, $label);
+
+    expect($html)->toContain('Preferences')
+        ->toContain('for="notes"')
+        ->toContain('aria-labelledby="'.$label[1].'"')
+        ->and($label[1] ?? null)->toStartWith('hw-field-label-');
+});
+
+it('lets only the outer selection group consume a field automatic label', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::field label="Preferences" :error="false">
+            <x-hw::checkbox-group name="topics">
+                <x-hw::radio-group name="plan" :options="['free' => 'Free']" />
+            </x-hw::checkbox-group>
+        </x-hw::field>
+    BLADE);
+
+    preg_match('/<label[^>]*id="([^"]+)"/', $html, $label);
+
+    expect($html)->toContain('Preferences')
+        ->toContain('aria-labelledby="'.$label[1].'"')
+        ->toMatch('/<div(?=[^>]*data-slot="radio-group")(?![^>]*aria-labelledby)[^>]*>/')
+        ->not->toContain('aria-labelledby="plan-label"')
+        ->and($label[1] ?? null)->toStartWith('hw-field-label-');
+});
+
+it('keeps a visible field label when a selection group supplies aria-label', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::field name="plan" label="Visible plan" :error="false">
+            <x-hw::radio-group aria-label="Plan" :options="['free' => 'Free']" />
+        </x-hw::field>
+    BLADE);
+
+    expect($html)->toContain('Visible plan')
+        ->toContain('aria-label="Plan"')
+        ->not->toContain('aria-labelledby="plan-label"');
+});
+
+it('honors an external label id for an explicit set without automatic label text', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <span id="external-label">Choices</span>
+        <x-hw::field set="radiogroup" label-id="external-label" :error="false">
+            <input type="radio" name="choice" value="a">
+        </x-hw::field>
+    BLADE);
+
+    expect($html)->toMatch('/<div(?=[^>]*data-slot="field")(?=[^>]*role="radiogroup")(?=[^>]*aria-labelledby="external-label")[^>]*>/');
+});
+
+it('deduplicates automatic and manual set label ids owned by a field', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::field name="n" label="Automatic" set="group" :error="false">
+            <x-hw::field.label set>Manual</x-hw::field.label>
+        </x-hw::field>
+    BLADE);
+
+    expect(substr_count($html, 'id="n-label"'))->toBe(1)
+        ->and($html)->toContain('id="n-label-2"')
+        ->toContain('aria-labelledby="n-label"');
+});
+
+it('derives ids from explicit control names that differ from the field identity', function (string $component, string $identity) {
+    $html = (string) $this->blade(<<<BLADE
+        <x-hw::field name="field-name" id="field-id" :error="false">
+            {$component}
+        </x-hw::field>
+    BLADE);
+
+    expect($html)->toContain($identity)
+        ->not->toContain('id="field-id"');
+})->with([
+    'input' => ['<x-hw::input name="control" />', 'id="control"'],
+    'select' => ['<x-hw::select name="control" />', 'id="control"'],
+    'checkbox' => ['<x-hw::checkbox name="control" />', 'id="control"'],
+    'switch' => ['<x-hw::switch name="control" />', 'id="control"'],
+    'textarea' => ['<x-hw::textarea name="control" />', 'id="control"'],
+    'file' => ['<x-hw::file name="control" />', 'id="control"'],
+    'file upload' => ['<x-hw::file-upload name="control" url="/uploads" />', 'id="control"'],
+    'multi select' => ['<x-hw::multi-select name="control" />', 'id="control"'],
+    'rich text' => ['<x-hw::rich-text name="control" />', 'data-rich-text-id-value="control"'],
+    'slider' => ['<x-hw::slider name="control" />', 'id="control"'],
+]);
+
+it('keeps different explicit control names from sharing the field id', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::field label="Label" name="n" id="field-id" :error="false">
+            <x-hw::input name="one" />
+            <x-hw::input name="two" />
+        </x-hw::field>
+    BLADE);
+
+    expect($html)->toContain('id="one"')
+        ->toContain('id="two"')
+        ->not->toContain('id="field-id"');
+});
+
+it('normalizes an empty label id before rendering explicit set semantics', function () {
+    $html = (string) $this->blade('<x-hw::field set="radiogroup" label-id="" :error="false"><input type="radio" name="choice"></x-hw::field>');
+
+    expect($html)->toContain('role="radiogroup"')
+        ->not->toContain('aria-labelledby=""');
+});
+
+it('lets explicit field set semantics override a selection group child', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::field name="plan" label="Plan" set="radiogroup" :error="false">
+            <x-hw::checkbox-group :options="['free' => 'Free']" />
+        </x-hw::field>
+    BLADE);
+
+    expect($html)->toMatch('/<div(?=[^>]*data-slot="field")(?=[^>]*role="radiogroup")(?=[^>]*aria-labelledby="plan-label")[^>]*>/')
+        ->toMatch('/<div(?=[^>]*data-slot="checkbox-group")(?![^>]*role=)(?![^>]*aria-labelledby=)[^>]*>/')
+        ->and(substr_count($html, 'role="radiogroup"'))->toBe(1);
+});
+
+it('keeps automatic and inner owner label ids unique when the field owns the set', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::field name="format" label="Format" set="radiogroup" :error="false">
+            <x-hw::radio-group>
+                <x-hw::field.label>Inner format</x-hw::field.label>
+                <x-hw::radio-group.item value="plain">Plain</x-hw::radio-group.item>
+            </x-hw::radio-group>
+        </x-hw::field>
+    BLADE);
+
+    expect($html)->toContain('id="format-label"')
+        ->toContain('id="format-label-2"')
+        ->toMatch('/<div(?=[^>]*data-slot="field")(?=[^>]*aria-labelledby="format-label-2")[^>]*>/')
+        ->toMatch('/<div(?=[^>]*data-slot="radio-group")(?![^>]*role=)(?![^>]*aria-labelledby=)[^>]*>/');
+});
+
+it('uses label-id to name selection groups without rendering a field label', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <span id="external-label">Plans</span>
+        <x-hw::field label-id="external-label" :error="false">
+            <x-hw::radio-group name="plan" :options="['free' => 'Free']" />
+        </x-hw::field>
+    BLADE);
+
+    expect($html)->toMatch('/<div(?=[^>]*data-slot="radio-group")(?=[^>]*aria-labelledby="external-label")[^>]*>/')
+        ->and(substr_count($html, 'id="external-label"'))->toBe(1);
+});
+
+it('does not register controls nested inside a dropdown with the surrounding field', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::field name="query" label="Query" :error="false">
+            <x-hw::dropdown>
+                <x-hw::dropdown.trigger>Open</x-hw::dropdown.trigger>
+                <x-hw::dropdown.content>
+                    <x-hw::input name="inner" />
+                    <x-hw::radio-group name="inner-choice" :options="['a' => 'A']" />
+                </x-hw::dropdown.content>
+            </x-hw::dropdown>
+        </x-hw::field>
+    BLADE);
+
+    expect($html)->toMatch('/<span[^>]*data-slot="field-label"[^>]*>Query<\/span>/')
+        ->not->toContain('for="query"')
+        ->not->toContain('for="inner"')
+        ->not->toContain('aria-labelledby="query-label"');
+});
+
+it('keeps automatic and explicit labels on the registered control identity', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::field id="field-id" name="owner" label="Automatic" :error="false">
+            <x-hw::field.label name="child">Explicit</x-hw::field.label>
+            <x-hw::input name="child" />
+        </x-hw::field>
+    BLADE);
+
+    expect(substr_count($html, 'for="child"'))->toBe(2)
+        ->and($html)->not->toContain('for="field-id"');
+});
+
+it('names a multi-control field without emitting a dangling for', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::field name="preferences" label="Preferences" :error="false">
+            <x-hw::switch name="email" />
+            <x-hw::switch name="sms" />
+        </x-hw::field>
+    BLADE);
+
+    expect($html)->toContain('id="preferences-label"')
+        ->toMatch('/<div(?=[^>]*data-slot="field")(?=[^>]*role="group")(?=[^>]*aria-labelledby="preferences-label")[^>]*>/')
+        ->not->toContain('for="preferences"');
+});
+
+it('renders non-semantic label text when a group supplies its own accessible name', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::field name="plan" label="Visible plan" :error="false">
+            <x-hw::radio-group aria-label="Choose plan" :options="['free' => 'Free']" />
+        </x-hw::field>
+    BLADE);
+
+    expect($html)->toMatch('/<span[^>]*data-slot="field-label"[^>]*>Visible plan<\/span>/')
+        ->not->toMatch('/<label[^>]*data-slot="field-label"/')
+        ->toContain('aria-label="Choose plan"');
+});
+
+it('keeps an explicit label id on visual label text', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::field name="plan" label="Visible plan" label-id="plan-label" :error="false">
+            <x-hw::radio-group aria-labelledby="plan-label" :options="['free' => 'Free']" />
+        </x-hw::field>
+    BLADE);
+
+    expect($html)->toMatch('/<span(?=[^>]*data-slot="field-label")(?=[^>]*id="plan-label")[^>]*>Visible plan<\/span>/')
+        ->and(substr_count($html, 'id="plan-label"'))->toBe(1)
+        ->and($html)->toContain('aria-labelledby="plan-label"');
+});
+
+it('does not guess a label target when no labelable control registers', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::field name="body" label="Body" :error="false">
+            <x-hw::rich-text />
+        </x-hw::field>
+    BLADE);
+
+    expect($html)->toMatch('/<span[^>]*data-slot="field-label"[^>]*>Body<\/span>/')
+        ->not->toContain('for="body"');
+});
+
+it('uses a sole registered control identity for the automatic error', function () {
+    shareFieldErrors(['validation.child' => ['Choose a child']]);
+
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::field id="field-id" name="owner" label="Owner">
+            <x-hw::select name="child" error-key="validation.child" :options="['one' => 'One']" />
+        </x-hw::field>
+    BLADE);
+
+    expect($html)->toContain('aria-describedby="child-error"')
+        ->toContain('id="child-error"')
+        ->toContain('Choose a child')
+        ->not->toContain('id="field-id-error"');
+});
+
+it('does not inherit the field error key when a control name diverges', function () {
+    shareFieldErrors(['child' => ['Choose a child'], 'validation.owner' => ['Wrong message']]);
+
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::field name="owner" error-key="validation.owner">
+            <x-hw::select name="child" :options="['one' => 'One']" />
+        </x-hw::field>
+    BLADE);
+
+    expect($html)->toContain('aria-describedby="child-error"')
+        ->toContain('Choose a child')
+        ->not->toContain('Wrong message');
+});
+
+it('uses a sole selection group identity for the automatic error', function () {
+    shareFieldErrors(['colors' => ['Choose a color']]);
+
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::field id="field-id" name="owner" label="Colors">
+            <x-hw::checkbox-group name="colors" :options="['red' => 'Red']" />
+        </x-hw::field>
+    BLADE);
+
+    expect($html)->toContain('aria-describedby="colors-error"')
+        ->toContain('id="colors-error"')
+        ->toContain('Choose a color')
+        ->not->toContain('id="field-id-error"');
+});
+
+it('keeps selection item identity overrides ahead of group and field identity', function (
+    string $component,
+    string $expectedName,
+    string $expectedId,
+) {
+    shareFieldErrors(['child' => ['Invalid child']]);
+
+    $html = (string) $this->blade(<<<BLADE
+        <x-hw::field name="owner" id="field-id" error-key="validation.owner" :error="false">
+            {$component}
+        </x-hw::field>
+    BLADE);
+
+    expect($html)->toContain('name="'.$expectedName.'"')
+        ->toContain('id="'.$expectedId.'"')
+        ->toContain('aria-describedby="child-error"')
+        ->toContain('aria-invalid="true"');
+})->with([
+    'radio item' => ['<x-hw::radio-group name="group"><x-hw::radio-group.item name="child" value="one">One</x-hw::radio-group.item></x-hw::radio-group>', 'child', 'child-one'],
+    'checkbox item' => ['<x-hw::checkbox-group name="group"><x-hw::checkbox-group.item name="child" value="one">One</x-hw::checkbox-group.item></x-hw::checkbox-group>', 'child[]', 'child-one'],
+    'toggle item' => ['<x-hw::toggle-group name="group"><x-hw::toggle-group.item name="child" value="one">One</x-hw::toggle-group.item></x-hw::toggle-group>', 'child[]', 'child-one-input'],
+]);
+
+it('blocks inherited field identity inside an overlay', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::field name="query" label="Query" required :error="false">
+            <x-hw::modal>
+                <x-hw::modal.content><x-hw::input /></x-hw::modal.content>
+            </x-hw::modal>
+        </x-hw::field>
+    BLADE);
+
+    expect($html)->toMatch('/<input(?=[^>]*data-slot="input")(?![^>]*name="query")(?![^>]*id="query")(?![^>]*required)[^>]*>/')
+        ->not->toContain('aria-describedby="query-error"');
+});
+
+it('publishes symmetric field boundaries from overlay roots', function (string $component) {
+    $data = (new $component)->data();
+
+    expect($data)->toHaveKey('fieldName', null)
+        ->toHaveKey('fieldId', null)
+        ->toHaveKey('fieldErrorKey', null)
+        ->toHaveKey('fieldRequired', false)
+        ->toHaveKey('fieldContext', null)
+        ->toHaveKey('fieldControlContext', null);
+})->with([
+    AlertDialog::class,
+    Drawer::class,
+    Dropdown::class,
+    HoverCard::class,
+    Modal::class,
+    Popover::class,
+    Sheet::class,
+]);

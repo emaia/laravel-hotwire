@@ -71,7 +71,9 @@ class Textarea extends Component
             : $this->value;
 
         $hasErrors = $resolvedErrorKey !== '' && $errorsBag->has($resolvedErrorKey);
-        $isRequired = ($attributes->has('required') && $attributes->get('required') !== false) || $required;
+        $isRequired = $attributes->has('required')
+            ? $attributes->get('required') !== false
+            : $required;
 
         $elementController = trim(implode(' ', array_filter([
             $this->autoResize ? 'auto-resize' : null,

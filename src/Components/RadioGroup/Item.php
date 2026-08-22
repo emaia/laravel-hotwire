@@ -2,7 +2,6 @@
 
 namespace Emaia\LaravelHotwire\Components\RadioGroup;
 
-use Emaia\LaravelHotwire\Components\Concerns\StripsNullProps;
 use Emaia\LaravelHotwire\Support\AutoSubmit;
 use Emaia\LaravelHotwire\Support\FieldKey;
 use Illuminate\Support\Str;
@@ -12,8 +11,6 @@ use Illuminate\View\ComponentAttributeBag;
 
 class Item extends Component
 {
-    use StripsNullProps;
-
     public function __construct(
         public mixed $value,
         public bool|string|null $checked = false,
@@ -33,9 +30,28 @@ class Item extends Component
     public function data(): array
     {
         $data = parent::data();
+        $data['radioGroupItemValue'] = $this->value;
+        $data['radioGroupItemChecked'] = $this->checked;
+        $data['radioGroupItemClass'] = $this->class;
+        $data['radioGroupItemLabelClass'] = $this->labelClass;
+        $data['radioGroupItemName'] = $this->name;
+        $data['radioGroupItemId'] = $this->id;
+        $data['radioGroupItemErrorKey'] = $this->errorKey;
+        $data['radioGroupItemDisabled'] = $this->disabled;
         $data['compute'] = $this->computeResolved(...);
 
-        return $this->stripNullProps($data, ['name', 'id', 'errorKey']);
+        unset(
+            $data['value'],
+            $data['checked'],
+            $data['class'],
+            $data['labelClass'],
+            $data['name'],
+            $data['id'],
+            $data['errorKey'],
+            $data['disabled'],
+        );
+
+        return $data;
     }
 
     /** @return array<string, mixed> */
@@ -45,7 +61,7 @@ class Item extends Component
         ?string $errorKey,
         mixed $selected,
         bool $old,
-        bool $groupDisabled,
+        bool $radioGroupDisabled,
         bool|string $autoSubmit,
         int|string|null $autoSubmitDelay,
         ViewErrorBag $errorsBag,
@@ -71,7 +87,7 @@ class Item extends Component
             'resolvedId' => $resolvedId,
             'errorId' => $baseId ? $baseId.'-error' : '',
             'isChecked' => $isChecked,
-            'isDisabled' => $this->disabled ?? $groupDisabled,
+            'isDisabled' => $this->disabled ?? $radioGroupDisabled,
             'hasErrors' => $hasErrors,
             'elementAction' => AutoSubmit::action($autoSubmit, 'change', 'submit'),
             'autoSubmitDelayParam' => AutoSubmit::delayParam($autoSubmit, $autoSubmitDelay, 'submit'),

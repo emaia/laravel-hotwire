@@ -1,7 +1,17 @@
-@aware(['name' => null, 'id' => null, 'errorKey' => null, 'required' => false])
+@aware(['fieldName' => null, 'fieldId' => null, 'fieldErrorKey' => null, 'fieldRequired' => false, 'fieldControlContext' => null])
 
 @php
-    extract($compute($name, $id, $errorKey, $required, $errors, $attributes));
+    $explicitName = $name ?? null;
+    $id = \Emaia\LaravelHotwire\Support\FieldKey::resolveId($id ?? null, $explicitName, $fieldId, $fieldName);
+    $errorKey = \Emaia\LaravelHotwire\Support\FieldKey::resolveErrorKey($errorKey ?? null, $explicitName, $fieldErrorKey, $fieldName);
+    $name = $explicitName ?? $fieldName;
+    extract($compute($name, $id, $errorKey, $fieldRequired ?? false, $errors, $attributes));
+
+    $errorReference = null;
+    if ($fieldControlContext instanceof \Emaia\LaravelHotwire\Support\FieldContext && $resolvedId) {
+        $fieldControlContext->registerControl($resolvedId, $renderName, errorId: $errorId, errorKey: $resolvedErrorKey, required: $isRequired);
+        $errorReference = $fieldControlContext->errorReference($errorId, $renderName, $resolvedErrorKey);
+    }
 
     $fileAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
         'data-slot' => 'file-input',
@@ -11,7 +21,7 @@
         'name' => $renderName ?: null,
         'multiple' => $multiple ? true : null,
         'data-reset-on-success' => $resetOnSuccess ? 'true' : null,
-        'aria-describedby' => $errorId,
+        'aria-describedby' => $errorReference,
         'aria-invalid' => $hasErrors ? 'true' : null,
         'data-invalid' => $hasErrors ? true : null,
         'aria-required' => $isRequired ? 'true' : null,

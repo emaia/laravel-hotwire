@@ -4,8 +4,10 @@ use Emaia\LaravelHotwire\Components\ToggleGroup;
 use Emaia\LaravelHotwire\Components\ToggleGroup\Item as ToggleGroupItem;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\MessageBag;
 use Illuminate\Support\ViewErrorBag;
+use Illuminate\View\ViewException;
 
 function shareToggleGroupErrors(array $errorsByKey): void
 {
@@ -83,6 +85,107 @@ it('inherits name from a field wrapper and keeps single names scalar', function 
 
 // --- Value + old() ---
 
+it('publishes only toggle-group-scoped component data', function () {
+    $groupData = (new ToggleGroup(name: 'formats', value: ['bold'], disabled: true))->data();
+    $itemData = (new ToggleGroupItem(value: 'bold', name: 'item-formats', disabled: false))->data();
+    $frameworkKeys = ['componentName', 'attributes', 'ignoredParameterNames', 'internalPrefixes', 'compute'];
+
+    $groupGenericKeys = array_values(array_filter(
+        array_keys($groupData),
+        fn (string $key) => ! str_starts_with($key, 'toggleGroup') && ! str_starts_with($key, 'fieldOwner') && ! in_array($key, ['fieldContext', 'fieldControlContext'], true) && ! in_array($key, $frameworkKeys, true),
+    ));
+    $itemGenericKeys = array_values(array_filter(
+        array_keys($itemData),
+        fn (string $key) => ! str_starts_with($key, 'toggleGroupItem') && ! in_array($key, $frameworkKeys, true),
+    ));
+
+    expect($groupGenericKeys)->toBe([])
+        ->and($itemGenericKeys)->toBe([])
+        ->and($groupData)->toHaveKeys(['toggleGroupContext', 'toggleGroupName', 'toggleGroupSelected', 'toggleGroupDisabled'])
+        ->and($groupData)->toHaveKey('fieldContext', null)
+        ->and($groupData)->toHaveKey('fieldControlContext', null)
+        ->and($groupData)->not->toHaveKey('groupDisabled')
+        ->and($itemData)->toHaveKeys(['toggleGroupItemValue', 'toggleGroupItemName', 'toggleGroupItemDisabled']);
+});
+
+it('publishes a null field owner boundary when the toggle group is nameless', function () {
+    $data = (new ToggleGroup)->data();
+
+    expect($data)->toHaveKey('fieldOwner', false)
+        ->and($data)->toHaveKey('fieldOwnerName', null)
+        ->and($data)->toHaveKey('fieldOwnerId', null)
+        ->and($data)->toHaveKey('fieldOwnerErrorKey', null);
+});
+
+it('keeps toggle group context through an intermediate component', function () {
+    Blade::anonymousComponentPath(__DIR__.'/../Fixtures/views/components');
+
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::toggle-group name="formats" id="owner-toggle" type="multiple" :value="['bold']" variant="default" size="sm">
+            <x-selection-context-wrapper name="shadow-group" id="shadow-group-id" error-key="shadow.group" :selected="[]" :old="false" disabled :select-all="false" type="single" variant="outline" size="lg" group-disabled :auto-submit="false" :auto-submit-delay="1">
+                <x-hw::toggle-group.item value="bold">Bold</x-hw::toggle-group.item>
+            </x-selection-context-wrapper>
+        </x-hw::toggle-group>
+    BLADE);
+
+    $view->assertSee('name="formats[]"', false)
+        ->assertSee('id="owner-toggle-bold-input"', false)
+        ->assertSee('data-variant="default"', false)
+        ->assertSee('data-size="sm"', false)
+        ->assertSee('data-toggle-pressed-value="true"', false)
+        ->assertDontSee('shadow-group', false)
+        ->assertDontSee(' disabled', false);
+});
+
+it('keeps toggle items bound to their family across another selection group', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::toggle-group name="formats" :value="['bold']">
+            <x-hw::radio-group name="plan" selected="pro">
+                <x-hw::toggle-group.item value="bold">Bold</x-hw::toggle-group.item>
+            </x-hw::radio-group>
+        </x-hw::toggle-group>
+    BLADE);
+
+    $view->assertSee('name="formats[]"', false)
+        ->assertSee('id="formats-bold-input"', false)
+        ->assertSee('data-toggle-pressed-value="true"', false);
+});
+
+it('binds toggle items to the nearest same-family root without leaking nullable context', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::toggle-group name="outer-formats" value="outer">
+            <x-hw::toggle-group value="inner">
+                <x-hw::toggle-group.item value="inner">Inner</x-hw::toggle-group.item>
+            </x-hw::toggle-group>
+        </x-hw::toggle-group>
+    BLADE);
+
+    $view->assertSee('data-toggle-pressed-value="true"', false)
+        ->assertDontSee('name="outer-formats[]"', false)
+        ->assertDontSee('id="outer-formats-inner-input"', false);
+});
+
+it('keeps explicit toggle item identity ahead of group and field context', function () {
+    shareToggleGroupErrors(['item.formats' => ['Choose a format.']]);
+
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::field name="field-formats" id="field-toggle" error-key="field.formats">
+            <x-hw::toggle-group name="group-formats" id="group-toggle" error-key="group.formats">
+                <x-hw::toggle-group.item value="bold" name="item-formats" id="item-toggle" error-key="item.formats">Bold</x-hw::toggle-group.item>
+            </x-hw::toggle-group>
+        </x-hw::field>
+    BLADE);
+
+    $view->assertSee('name="item-formats[]"', false)
+        ->assertSee('id="item-toggle-bold-input"', false)
+        ->assertSee('aria-describedby="item-toggle-error"', false)
+        ->assertSee('aria-invalid="true"', false);
+});
+
+it('requires toggle group items to render inside a toggle group root', function () {
+    $this->blade('<x-hw::toggle-group.item value="bold" name="formats">Bold</x-hw::toggle-group.item>');
+})->throws(ViewException::class, 'must be rendered inside a Toggle Group root');
+
 it('restores selected values from old input', function () {
     session()->put('_old_input', ['formats' => ['italic']]);
 
@@ -135,7 +238,7 @@ it('sets validation state from the group error key on items', function () {
         </x-hw::toggle-group>
     BLADE);
 
-    $view->assertSee('aria-describedby="formats-error"', false)
+    $view->assertDontSee('aria-describedby', false)
         ->assertSee('aria-invalid="true"', false)
         ->assertSee('data-invalid', false);
 });
@@ -193,4 +296,54 @@ it('registers toggle group in the component and controller catalogs', function (
         ->and($controller->source)->toBe('resources/js/controllers/toggle_group_controller.js')
         ->and($controller->docs)->toBe('docs/controllers/toggle-group.md')
         ->and(ComponentAliases::subComponents())->toHaveKey('toggle-group.item', ToggleGroupItem::class);
+});
+
+it('resolves field error and label against the toggle group name without a field root', function () {
+    $bag = new ViewErrorBag;
+    $bag->put('default', new MessageBag(['formats' => ['Escolha uma opcao']]));
+    view()->share('errors', $bag);
+
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::toggle-group name="formats">
+            <x-hw::field.label>Rotulo</x-hw::field.label>
+            <x-hw::toggle-group.item value="bold">Bold</x-hw::toggle-group.item>
+            <x-hw::field.error />
+        </x-hw::toggle-group>
+    BLADE);
+
+    $html = (string) $view;
+
+    expect($html)->toContain('id="formats-error"')
+        ->toContain('Escolha uma opcao')
+        ->toContain('aria-labelledby="formats-label"')
+        ->toContain('id="formats-label"')
+        ->not->toContain('hw-error-');
+});
+
+it('points a slot-hoisted toggle item at the wrapper slot as the likely cause', function () {
+    Blade::anonymousComponentPath(__DIR__.'/../Fixtures/views/components');
+
+    $this->blade('<x-selection-slot-wrapper><x-hw::toggle-group.item value="bold">Bold</x-hw::toggle-group.item></x-selection-slot-wrapper>');
+})->throws(ViewException::class, 'slot content renders before the view of the wrapper');
+
+it('names a toggle group with aria-labelledby instead of a dangling label for', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::toggle-group name="formats">
+            <x-hw::field.label>Formats</x-hw::field.label>
+            <x-hw::toggle-group.item value="bold">Bold</x-hw::toggle-group.item>
+        </x-hw::toggle-group>
+    BLADE);
+
+    $view->assertSee('role="group"', false)
+        ->assertSee('aria-labelledby="formats-label"', false)
+        ->assertSee('id="formats-label"', false)
+        ->assertDontSee('for="formats"', false);
+});
+
+it('names a toggle group from a surrounding field label', function () {
+    $html = (string) $this->blade('<x-hw::field name="formats" label="Formats" :error="false"><x-hw::toggle-group><x-hw::toggle-group.item value="bold">Bold</x-hw::toggle-group.item></x-hw::toggle-group></x-hw::field>');
+
+    expect($html)->toMatch('/<div(?=[^>]*data-slot="toggle-group")(?=[^>]*aria-labelledby="formats-label")[^>]*>/')
+        ->toContain('id="formats-label"')
+        ->not->toContain('for="formats"');
 });

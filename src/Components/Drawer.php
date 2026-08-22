@@ -2,6 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Emaia\LaravelHotwire\Support\FieldContext;
 use Emaia\LaravelHotwire\Support\FrameTarget;
 use Emaia\LaravelHotwire\Support\StimulusAttributes;
 use Illuminate\Contracts\Support\Htmlable;
@@ -65,6 +66,7 @@ class Drawer extends Component
         $data['drawerFrame'] = $this->frame;
         $data['drawerMotion'] = $this->motion;
         $data['drawerViewTransition'] = $this->viewTransition;
+        $data = array_replace($data, FieldContext::boundaryData());
 
         unset(
             $data['id'],

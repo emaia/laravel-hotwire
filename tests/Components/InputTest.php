@@ -100,10 +100,16 @@ it('uses old() with derived dot-notation key for array names', function () {
 
 // --- Error key + ARIA ---
 
-it('always sets aria-describedby pointing to error id', function () {
+it('does not invent an error reference without a field owner', function () {
     $view = $this->blade('<x-hw::input name="email" />');
 
-    $view->assertSee('aria-describedby="email-error"', false);
+    $view->assertDontSee('aria-describedby', false);
+});
+
+it('preserves an explicit standalone error reference', function () {
+    $view = $this->blade('<x-hw::input name="email" aria-describedby="email-help" />');
+
+    $view->assertSee('aria-describedby="email-help"', false);
 });
 
 it('sets aria-invalid and data-invalid when error present', function () {
@@ -430,14 +436,14 @@ it('radio auto-derives unique id from name and value slug', function () {
 });
 
 it('aria-describedby points to base error id, not the value-slugged id', function () {
-    $view = $this->blade('<x-hw::input type="radio" name="plan" value="pro" />');
+    $view = $this->blade('<x-hw::field name="plan"><x-hw::input type="radio" value="pro" /></x-hw::field>');
 
     $view->assertSee('id="plan-pro"', false);
     $view->assertSee('aria-describedby="plan-error"', false);
 });
 
 it('explicit id wins over auto-derivation for group inputs', function () {
-    $view = $this->blade('<x-hw::input type="radio" name="plan" value="pro" id="custom-id" />');
+    $view = $this->blade('<x-hw::field name="plan"><x-hw::input type="radio" value="pro" id="custom-id" /></x-hw::field>');
 
     $view->assertSee('id="custom-id"', false);
     $view->assertSee('aria-describedby="custom-id-error"', false);
@@ -575,4 +581,47 @@ it('passes through arbitrary attributes', function () {
 
     $view->assertSee('placeholder="you@example.com"', false);
     $view->assertSee('data-test="x"', false);
+});
+
+it('keeps per-value ids on group inputs when the field supplies the id base', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::field name="plan" id="plan" label="Plan">
+            <x-hw::input type="radio" value="free" />
+            <x-hw::input type="radio" value="pro" />
+        </x-hw::field>
+    BLADE);
+
+    $html = (string) $view;
+
+    expect($html)->toContain('id="plan-free"')
+        ->toContain('id="plan-pro"')
+        ->toContain('role="radiogroup"')
+        ->toContain('aria-labelledby="plan-label"')
+        ->and(substr_count($html, 'id="plan"'))->toBe(0);
+});
+
+it('lets an explicit input id pin a group input against the field id base', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::field name="plan" id="plan" label="Plan">
+            <x-hw::input type="radio" value="free" id="pinned" />
+        </x-hw::field>
+    BLADE);
+
+    expect((string) $view)->toContain('id="pinned"')
+        ->not->toContain('id="pinned-free"');
+});
+
+it('names checkbox array inputs as a set instead of emitting a dangling label for', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::field name="roles[]" id="roles" label="Roles" :error="false">
+            <x-hw::input type="checkbox" value="admin" />
+            <x-hw::input type="checkbox" value="editor" />
+        </x-hw::field>
+    BLADE);
+
+    $view->assertSee('aria-labelledby="roles-label"', false)
+        ->assertSee('id="roles-label"', false)
+        ->assertDontSee('for="roles"', false)
+        ->assertSee('id="roles-admin"', false)
+        ->assertSee('id="roles-editor"', false);
 });

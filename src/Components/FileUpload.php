@@ -197,7 +197,9 @@ class FileUpload extends Component
             $describedBy = $errorId;
         }
 
-        $isRequired = ($attributes->has('required') && $attributes->get('required') !== false) || $required;
+        $isRequired = $attributes->has('required')
+            ? $attributes->get('required') !== false
+            : $required;
 
         $initialValues = $hasName ? $this->resolveInitialValues($name) : [];
 

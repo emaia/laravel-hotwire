@@ -69,7 +69,9 @@ class File extends Component
         $hasErrors = $resolvedErrorKey !== ''
             && ($errorsBag->has($resolvedErrorKey) || $errorsBag->has($resolvedErrorKey.'.*'));
 
-        $isRequired = ($attributes->has('required') && $attributes->get('required') !== false) || $required;
+        $isRequired = $attributes->has('required')
+            ? $attributes->get('required') !== false
+            : $required;
 
         $inputController = trim(implode(' ', array_filter([
             'file-preserve',

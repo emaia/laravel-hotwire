@@ -34,7 +34,7 @@ Same convention as `<hw:input>`:
 
 ```blade
 <hw:textarea name="variables[0][name]" />
-{{-- id="variables-0-name", aria-describedby="variables-0-name-error", errorKey="variables.0.name" --}}
+{{-- id="variables-0-name", errorKey="variables.0.name" --}}
 ```
 
 ## Auto-resize

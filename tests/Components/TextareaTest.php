@@ -100,10 +100,10 @@ it('uses old() with derived dot-notation key for array names', function () {
 
 // --- Error key + ARIA ---
 
-it('always sets aria-describedby pointing to error id', function () {
+it('does not invent an error reference without a field owner', function () {
     $view = $this->blade('<x-hw::textarea name="bio" />');
 
-    $view->assertSee('aria-describedby="bio-error"', false);
+    $view->assertDontSee('aria-describedby', false);
 });
 
 it('sets aria-invalid and data-invalid when error present', function () {

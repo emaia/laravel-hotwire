@@ -1,7 +1,11 @@
 <?php
 
+use Emaia\LaravelHotwire\Components\CheckboxGroup;
+use Emaia\LaravelHotwire\Components\CheckboxGroup\Item;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\MessageBag;
 use Illuminate\Support\ViewErrorBag;
+use Illuminate\View\ViewException;
 
 function shareCheckboxGroupErrors(array $errorsByKey): void
 {
@@ -151,6 +155,107 @@ it('restores rich item checked state from old input', function () {
 
 // --- Name auto-normalization ---
 
+it('publishes only checkbox-group-scoped component data', function () {
+    $groupData = (new CheckboxGroup(name: 'roles[]', selected: ['admin'], disabled: true))->data();
+    $itemData = (new Item(value: 'admin', name: 'item-roles[]', disabled: false))->data();
+    $frameworkKeys = ['componentName', 'attributes', 'ignoredParameterNames', 'internalPrefixes', 'compute'];
+
+    $groupGenericKeys = array_values(array_filter(
+        array_keys($groupData),
+        fn (string $key) => ! str_starts_with($key, 'checkboxGroup') && ! str_starts_with($key, 'fieldOwner') && ! in_array($key, ['fieldContext', 'fieldControlContext'], true) && ! in_array($key, $frameworkKeys, true),
+    ));
+    $itemGenericKeys = array_values(array_filter(
+        array_keys($itemData),
+        fn (string $key) => ! str_starts_with($key, 'checkboxGroupItem') && ! in_array($key, $frameworkKeys, true),
+    ));
+
+    expect($groupGenericKeys)->toBe([])
+        ->and($itemGenericKeys)->toBe([])
+        ->and($groupData)->toHaveKeys(['checkboxGroupContext', 'checkboxGroupName', 'checkboxGroupSelected', 'checkboxGroupDisabled'])
+        ->and($groupData)->toHaveKey('fieldContext', null)
+        ->and($groupData)->toHaveKey('fieldControlContext', null)
+        ->and($itemData)->toHaveKeys(['checkboxGroupItemValue', 'checkboxGroupItemName', 'checkboxGroupItemDisabled']);
+});
+
+it('publishes a null field owner boundary when the checkbox group is nameless', function () {
+    $data = (new CheckboxGroup)->data();
+
+    expect($data)->toHaveKey('fieldOwner', false)
+        ->and($data)->toHaveKey('fieldOwnerName', null)
+        ->and($data)->toHaveKey('fieldOwnerId', null)
+        ->and($data)->toHaveKey('fieldOwnerErrorKey', null);
+});
+
+it('keeps checkbox group context through an intermediate component', function () {
+    Blade::anonymousComponentPath(__DIR__.'/../Fixtures/views/components');
+
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::checkbox-group name="roles[]" id="owner-checkbox" :selected="['admin']" select-all auto-submit="debounced" auto-submit-delay="700">
+            <x-selection-context-wrapper name="shadow-group" id="shadow-group-id" error-key="shadow.group" :selected="[]" :old="false" disabled :select-all="false" type="single" variant="outline" size="lg" group-disabled :auto-submit="false" :auto-submit-delay="1">
+                <x-hw::checkbox-group.item value="admin">Admin</x-hw::checkbox-group.item>
+            </x-selection-context-wrapper>
+        </x-hw::checkbox-group>
+    BLADE);
+
+    $view->assertSee('name="roles[]"', false)
+        ->assertSee('id="owner-checkbox-admin"', false)
+        ->assertSee('checked', false)
+        ->assertSee('data-checkbox-select-all-target="checkbox"', false)
+        ->assertSee('data-action="change->auto-submit#debouncedSubmit"', false)
+        ->assertSee('data-auto-submit-delay-param="700"', false)
+        ->assertDontSee('shadow-group', false)
+        ->assertDontSee(' disabled', false);
+});
+
+it('keeps checkbox items bound to their family across another selection group', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::checkbox-group name="roles[]" :selected="['admin']">
+            <x-hw::radio-group name="plan" selected="pro">
+                <x-hw::checkbox-group.item value="admin">Admin</x-hw::checkbox-group.item>
+            </x-hw::radio-group>
+        </x-hw::checkbox-group>
+    BLADE);
+
+    $view->assertSee('name="roles[]"', false)
+        ->assertSee('id="roles-admin"', false)
+        ->assertSee('checked', false);
+});
+
+it('binds checkbox items to the nearest same-family root without leaking nullable context', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::checkbox-group name="outer-roles[]" :selected="['outer']">
+            <x-hw::checkbox-group :selected="['inner']">
+                <x-hw::checkbox-group.item value="inner">Inner</x-hw::checkbox-group.item>
+            </x-hw::checkbox-group>
+        </x-hw::checkbox-group>
+    BLADE);
+
+    $view->assertSee('checked', false)
+        ->assertDontSee('name="outer-roles[]"', false)
+        ->assertDontSee('id="outer-roles-inner"', false);
+});
+
+it('keeps explicit checkbox item identity ahead of group and field context', function () {
+    shareCheckboxGroupErrors(['item.roles' => ['Choose a role.']]);
+
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::field name="field-roles" id="field-checkbox" error-key="field.roles">
+            <x-hw::checkbox-group name="group-roles[]" id="group-checkbox" error-key="group.roles">
+                <x-hw::checkbox-group.item value="admin" name="item-roles[]" id="item-checkbox" error-key="item.roles">Admin</x-hw::checkbox-group.item>
+            </x-hw::checkbox-group>
+        </x-hw::field>
+    BLADE);
+
+    $view->assertSee('name="item-roles[]"', false)
+        ->assertSee('id="item-checkbox-admin"', false)
+        ->assertSee('aria-describedby="item-checkbox-error"', false)
+        ->assertSee('aria-invalid="true"', false);
+});
+
+it('requires checkbox group items to render inside a checkbox group root', function () {
+    $this->blade('<x-hw::checkbox-group.item value="admin" name="roles[]">Admin</x-hw::checkbox-group.item>');
+})->throws(ViewException::class, 'must be rendered inside a Checkbox Group root');
+
 it('auto-appends [] when name does not end with brackets', function () {
     $view = $this->blade('<x-hw::checkbox-group name="ids" :options="[1 => \'One\', 2 => \'Two\']" />');
 
@@ -177,9 +282,9 @@ it('normalizes name from @aware via field wrapper', function () {
 it('uses unbracketed name for id and error key derivation after normalization', function () {
     $view = $this->blade('<x-hw::checkbox-group name="ids" :options="[1 => \'One\']" />');
 
-    // id and aria-describedby still derive from the unbracketed name
+    // The id still derives from the unbracketed name.
     $view->assertSee('id="ids-1"', false);
-    $view->assertSee('aria-describedby="ids-error"', false);
+    $view->assertDontSee('aria-describedby', false);
 });
 
 // --- Select all ---
@@ -443,10 +548,10 @@ it('does not set id when no name and no explicit id', function () {
 
 // --- ARIA ---
 
-it('always sets aria-describedby on checkboxes', function () {
+it('does not invent an error reference without a field owner', function () {
     $view = $this->blade('<x-hw::checkbox-group name="ids[]" :options="[1 => \'One\', 2 => \'Two\']" />');
 
-    $view->assertSee('aria-describedby="ids-error"', false);
+    $view->assertDontSee('aria-describedby', false);
 });
 
 it('sets aria-invalid and data-invalid when error present', function () {
@@ -490,20 +595,88 @@ it('applies validation state to rich item checkboxes', function () {
         </x-hw::checkbox-group>
     ');
 
-    $view->assertSee('aria-describedby="roles-error"', false);
+    $view->assertDontSee('aria-describedby', false);
     $view->assertSee('aria-invalid="true"', false);
     $view->assertSee('data-invalid', false);
 });
 
-it('uses error key for error lookup, aria-describedby from name', function () {
+it('uses error key for error lookup without inventing an error reference', function () {
     shareCheckboxGroupErrors(['custom' => ['Required.']]);
 
     $view = $this->blade('<x-hw::checkbox-group name="ids[]" error-key="custom" :options="[1 => \'One\']" />');
 
-    // aria-describedby follows the name-derived id, not the error key
-    $view->assertSee('aria-describedby="ids-error"', false);
+    $view->assertDontSee('aria-describedby', false);
     // Errors looked up on the explicit error key
     $view->assertSee('aria-invalid="true"', false);
     // error-key prop is consumed by component, not leaked as DOM attribute
     $view->assertDontSee('error-key', false);
+});
+
+it('resolves field error and label against the checkbox group name without a field root', function () {
+    $bag = new ViewErrorBag;
+    $bag->put('default', new MessageBag(['roles' => ['Escolha uma opcao']]));
+    view()->share('errors', $bag);
+
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::checkbox-group name="roles[]" :options="['admin' => 'Admin']">
+            <x-hw::field.label>Rotulo</x-hw::field.label>
+
+            <x-hw::field.error />
+        </x-hw::checkbox-group>
+    BLADE);
+
+    $html = (string) $view;
+
+    expect($html)->toContain('id="roles-error"')
+        ->toContain('Escolha uma opcao')
+        ->toContain('aria-labelledby="roles-label"')
+        ->toContain('id="roles-label"')
+        ->not->toContain('hw-error-');
+});
+
+it('names a checkbox group with aria-labelledby instead of a dangling label for', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::checkbox-group name="roles[]" :options="['admin' => 'Admin']">
+            <x-hw::field.label>Roles</x-hw::field.label>
+        </x-hw::checkbox-group>
+    BLADE);
+
+    $view->assertSee('role="group"', false)
+        ->assertSee('aria-labelledby="roles-label"', false)
+        ->assertSee('id="roles-label"', false)
+        ->assertDontSee('for="roles"', false);
+});
+
+it('ignores attributes ending in id when resolving the group label', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::checkbox-group name="tags" :options="['one' => 'One']">
+            <x-hw::field.label data-tooltip-id="tip">Tags</x-hw::field.label>
+        </x-hw::checkbox-group>
+    BLADE);
+
+    expect($html)->toContain('id="tags-label"')
+        ->toContain('aria-labelledby="tags-label"')
+        ->not->toContain('aria-labelledby="tip"');
+});
+
+it('names a checkbox group from a surrounding field label', function () {
+    $html = (string) $this->blade('<x-hw::field name="roles[]" label="Roles" :error="false"><x-hw::checkbox-group :options="[\'admin\' => \'Admin\']" /></x-hw::field>');
+
+    expect($html)->toMatch('/<div(?=[^>]*data-slot="checkbox-group")(?=[^>]*aria-labelledby="roles-label")[^>]*>/')
+        ->toContain('id="roles-label"')
+        ->not->toContain('for="roles"');
+});
+
+it('shares the resolved group id base with a nested field error', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::field id="field-id" :error="false">
+            <x-hw::checkbox-group name="colors" :options="['red' => 'Red']">
+                <x-hw::field.error />
+            </x-hw::checkbox-group>
+        </x-hw::field>
+    BLADE);
+
+    expect($html)->toContain('aria-describedby="colors-error"')
+        ->toContain('id="colors-error"')
+        ->not->toContain('id="field-id-error"');
 });

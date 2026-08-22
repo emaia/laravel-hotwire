@@ -1,6 +1,16 @@
-@aware(['name' => null, 'errorKey' => null, 'id' => null])
+@aware(['fieldName' => null, 'fieldId' => null, 'fieldErrorKey' => null, 'fieldOwner' => false, 'fieldOwnerName' => null, 'fieldOwnerId' => null, 'fieldOwnerErrorKey' => null])
 
-@php extract($compute($name, $errorKey, $id, $errors)) @endphp
+@php
+    $ownerName = $fieldOwner ? $fieldOwnerName : $fieldName;
+    $ownerId = $fieldOwner ? $fieldOwnerId : $fieldId;
+    $ownerErrorKey = $fieldOwner ? $fieldOwnerErrorKey : $fieldErrorKey;
+    $explicitName = $name ?? null;
+    $resolvedName = $explicitName ?? $ownerName;
+    $resolvedBaseId = \Emaia\LaravelHotwire\Support\FieldKey::resolveId(null, $explicitName, $ownerId, $ownerName);
+    $resolvedErrorKey = \Emaia\LaravelHotwire\Support\FieldKey::resolveErrorKey($errorKey ?? null, $explicitName, $ownerErrorKey, $ownerName);
+    $resolvedContextId = $id ?? ($resolvedBaseId ? $resolvedBaseId.'-error' : null);
+    extract($compute($resolvedName, $resolvedErrorKey, $resolvedContextId, $errors));
+@endphp
 
 <div
     data-slot="field-error"

@@ -377,7 +377,7 @@ return [
             'view' => 'hotwire::component-views.field',
             'docs' => 'docs/components/field.md',
             'category' => 'forms',
-            'description' => 'Wraps label, input, description and error — propagates name/errorKey/required via @aware',
+            'description' => 'Wraps label, input, description and error — propagates scoped name/id/errorKey/required context',
             'controllers' => [],
             'styling' => [
                 'slots' => $slots(

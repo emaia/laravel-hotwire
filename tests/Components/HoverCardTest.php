@@ -5,6 +5,7 @@ use Emaia\LaravelHotwire\Components\HoverCard\Content as HoverCardContent;
 use Emaia\LaravelHotwire\Components\HoverCard\Trigger as HoverCardTrigger;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
+use Emaia\LaravelHotwire\Support\FieldContext;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\View\ViewException;
 
@@ -214,7 +215,7 @@ it('does not expose hover card root props as generic component data', function (
     $frameworkKeys = ['componentName', 'attributes', 'ignoredParameterNames'];
     $genericKeys = array_values(array_filter(
         array_keys($data),
-        fn (string $key) => ! str_starts_with($key, 'hoverCard') && ! in_array($key, $frameworkKeys, true),
+        fn (string $key) => ! str_starts_with($key, 'hoverCard') && ! in_array($key, [...$frameworkKeys, ...array_keys(FieldContext::boundaryData())], true),
     ));
 
     expect($genericKeys)->toBe([])
@@ -231,7 +232,9 @@ it('does not expose hover card root props as generic component data', function (
             'hoverCardCloseDelay',
             'hoverCardOpen',
             'hoverCardStimulus',
-        ]);
+        ])
+        ->and($data)->toHaveKey('fieldContext', null)
+        ->toHaveKey('fieldControlContext', null);
 });
 
 it('does not expose hover card trigger props as generic component data', function () {
