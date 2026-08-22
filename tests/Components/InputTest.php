@@ -100,10 +100,16 @@ it('uses old() with derived dot-notation key for array names', function () {
 
 // --- Error key + ARIA ---
 
-it('always sets aria-describedby pointing to error id', function () {
+it('does not invent an error reference without a field owner', function () {
     $view = $this->blade('<x-hw::input name="email" />');
 
-    $view->assertSee('aria-describedby="email-error"', false);
+    $view->assertDontSee('aria-describedby', false);
+});
+
+it('preserves an explicit standalone error reference', function () {
+    $view = $this->blade('<x-hw::input name="email" aria-describedby="email-help" />');
+
+    $view->assertSee('aria-describedby="email-help"', false);
 });
 
 it('sets aria-invalid and data-invalid when error present', function () {
@@ -430,14 +436,14 @@ it('radio auto-derives unique id from name and value slug', function () {
 });
 
 it('aria-describedby points to base error id, not the value-slugged id', function () {
-    $view = $this->blade('<x-hw::input type="radio" name="plan" value="pro" />');
+    $view = $this->blade('<x-hw::field name="plan"><x-hw::input type="radio" value="pro" /></x-hw::field>');
 
     $view->assertSee('id="plan-pro"', false);
     $view->assertSee('aria-describedby="plan-error"', false);
 });
 
 it('explicit id wins over auto-derivation for group inputs', function () {
-    $view = $this->blade('<x-hw::input type="radio" name="plan" value="pro" id="custom-id" />');
+    $view = $this->blade('<x-hw::field name="plan"><x-hw::input type="radio" value="pro" id="custom-id" /></x-hw::field>');
 
     $view->assertSee('id="custom-id"', false);
     $view->assertSee('aria-describedby="custom-id-error"', false);

@@ -57,7 +57,7 @@ it('normalizes names for array submission', function () {
     $view->assertSee('name="status[]"', false);
     $view->assertSee('id="status"', false);
     $view->assertSee('aria-controls="status-content"', false);
-    $view->assertSee('aria-describedby="status-error"', false);
+    $view->assertDontSee('aria-describedby="status-error"', false);
 });
 
 it('registers its trigger instead of its internal search input with a field', function (bool $search) {

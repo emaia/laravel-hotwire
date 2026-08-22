@@ -102,8 +102,11 @@ When inside `<hw:field>`, `name`, `id`, and `errorKey` are inherited from the sc
 Each radio emits:
 
 - `id="{baseId}-{valueSlug}"` — unique per radio, e.g. `plan-free`
-- `aria-describedby="{baseId}-error"` — points to the group's error element
 - `aria-invalid="true"` and `data-invalid` when the field has validation errors
+
+Inside a Field that owns the group, radios also emit `aria-describedby="{baseId}-error"` pointing to the group's error
+element. Standalone groups do not invent an error reference; pass `aria-describedby` explicitly when rendering a
+separate error node.
 
 Use `error-key` when the HTML name differs from the validation key:
 

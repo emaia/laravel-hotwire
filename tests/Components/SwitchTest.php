@@ -125,12 +125,12 @@ it('can force debounced auto-submit with a field delay', function () {
 
 // --- ARIA + field integration ---
 
-it('sets aria-describedby and validation state', function () {
+it('sets validation state without inventing an error reference', function () {
     shareSwitchErrors(['enabled' => ['Required.']]);
 
     $view = $this->blade('<x-hw::switch name="enabled" />');
 
-    $view->assertSee('aria-describedby="enabled-error"', false);
+    $view->assertDontSee('aria-describedby', false);
     $view->assertSee('aria-invalid="true"', false);
     $view->assertSee('data-invalid', false);
 });

@@ -4,7 +4,7 @@ namespace Emaia\LaravelHotwire\Support;
 
 final class FieldContext
 {
-    /** @var array<int, array{id: string, name: ?string, kind: 'control'|'radio'|'checkbox', errorId: ?string, errorKey: ?string}> */
+    /** @var array<int, array{id: string, name: ?string, kind: 'control'|'radio'|'checkbox', errorId: ?string, errorKey: ?string, required: ?bool}> */
     private array $controls = [];
 
     /** @var array<int, array{labelId: ?string, usesAutomaticLabel: bool, hasLocalLabel: bool, name: ?string, errorId: ?string, errorKey: ?string}> */
@@ -19,6 +19,7 @@ final class FieldContext
         private readonly ?string $set,
         ?string $labelId,
         private readonly ?string $errorKey = null,
+        private readonly bool $required = false,
     ) {
         $this->resolvedLabelId = $labelId !== '' ? $labelId : null;
     }
@@ -71,6 +72,7 @@ final class FieldContext
         string $kind = 'control',
         ?string $errorId = null,
         ?string $errorKey = null,
+        ?bool $required = null,
     ): void {
         $this->controls[] = [
             'id' => $id,
@@ -78,7 +80,16 @@ final class FieldContext
             'kind' => in_array($kind, ['radio', 'checkbox'], true) ? $kind : 'control',
             'errorId' => $errorId !== '' ? $errorId : null,
             'errorKey' => $errorKey !== '' ? $errorKey : null,
+            'required' => $required,
         ];
+    }
+
+    /** Return an error id only when a Field owns the validation identity. */
+    public function errorReference(?string $id, ?string $name, ?string $errorKey): ?string
+    {
+        $hasValidationIdentity = ($name !== null && $name !== '') || ($errorKey !== null && $errorKey !== '');
+
+        return $hasValidationIdentity && $id !== null && $id !== '' ? $id : null;
     }
 
     /**
@@ -133,7 +144,7 @@ final class FieldContext
     /**
      * Resolve the Field wrapper and automatic label after its slot has rendered.
      *
-     * @return array{renderLabel: bool, labelFor: ?string, labelId: ?string, labelSet: bool, role: ?string, ariaLabelledby: ?string, errorName: ?string, errorId: ?string, errorKey: ?string}
+     * @return array{renderLabel: bool, labelFor: ?string, labelId: ?string, labelSet: bool, labelRequired: bool, role: ?string, ariaLabelledby: ?string, errorName: ?string, errorId: ?string, errorKey: ?string}
      */
     public function resolve(): array
     {
@@ -209,7 +220,7 @@ final class FieldContext
         return $this->label !== null && $this->label !== '';
     }
 
-    /** @return array{renderLabel: bool, labelFor: ?string, labelId: ?string, labelSet: bool, role: ?string, ariaLabelledby: ?string, errorName: ?string, errorId: ?string, errorKey: ?string} */
+    /** @return array{renderLabel: bool, labelFor: ?string, labelId: ?string, labelSet: bool, labelRequired: bool, role: ?string, ariaLabelledby: ?string, errorName: ?string, errorId: ?string, errorKey: ?string} */
     private function setResolution(string $role): array
     {
         $labelId = $this->resolvedLabelId;
@@ -261,7 +272,7 @@ final class FieldContext
         };
     }
 
-    /** @return array{renderLabel: bool, labelFor: ?string, labelId: ?string, labelSet: bool, role: ?string, ariaLabelledby: ?string, errorName: ?string, errorId: ?string, errorKey: ?string} */
+    /** @return array{renderLabel: bool, labelFor: ?string, labelId: ?string, labelSet: bool, labelRequired: bool, role: ?string, ariaLabelledby: ?string, errorName: ?string, errorId: ?string, errorKey: ?string} */
     private function resolution(
         bool $renderLabel,
         ?string $labelFor = null,
@@ -277,10 +288,20 @@ final class FieldContext
             'labelFor' => $labelFor,
             'labelId' => $labelId,
             'labelSet' => $labelSet,
+            'labelRequired' => $this->resolveRequired(),
             'role' => $role,
             'ariaLabelledby' => $ariaLabelledby,
             ...$error,
         ];
+    }
+
+    private function resolveRequired(): bool
+    {
+        if (count($this->controls) === 1 && $this->controls[0]['required'] !== null) {
+            return $this->controls[0]['required'];
+        }
+
+        return $this->required;
     }
 
     /** @return array{errorName: ?string, errorId: ?string, errorKey: ?string} */

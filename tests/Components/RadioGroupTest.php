@@ -269,10 +269,10 @@ it('derives rich item id from group name and value', function () {
     $view->assertSee('id="plan-team-plan"', false);
 });
 
-it('always sets aria-describedby on radios', function () {
+it('does not invent an error reference without a field owner', function () {
     $view = $this->blade('<x-hw::radio-group name="plan" :options="[\'free\' => \'Free\']" />');
 
-    $view->assertSee('aria-describedby="plan-error"', false);
+    $view->assertDontSee('aria-describedby', false);
 });
 
 it('sets aria-invalid and data-invalid when error present', function () {
@@ -290,7 +290,7 @@ it('uses explicit error key override', function () {
     $view = $this->blade('<x-hw::radio-group name="plan" error-key="custom.path" :options="[\'free\' => \'Free\']" />');
 
     $view->assertSee('aria-invalid="true"', false);
-    $view->assertSee('aria-describedby="plan-error"', false);
+    $view->assertDontSee('aria-describedby', false);
     $view->assertDontSee('error-key', false);
 });
 

@@ -11,6 +11,7 @@
     $fieldOwnsSet = $checkboxGroupFieldContext instanceof \Emaia\LaravelHotwire\Support\FieldContext
         && $checkboxGroupFieldContext->ownsSet();
     $hasExplicitAccessibleName = $attributes->has('aria-labelledby') || $attributes->has('aria-label');
+    $errorReference = null;
 
     if ($checkboxGroupFieldContext instanceof \Emaia\LaravelHotwire\Support\FieldContext) {
         $labelId = $checkboxGroupFieldContext->registerSelection(
@@ -20,6 +21,7 @@
             $baseId,
             $resolvedErrorKey,
         );
+        $errorReference = $checkboxGroupFieldContext->errorReference($errorId, $resolvedName, $resolvedErrorKey);
     }
 
     $checkboxGroupAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
@@ -48,7 +50,7 @@
                 @if (filled($checkboxGroupClass)) class="{{ $checkboxGroupClass }}" @endif
                 data-checkbox-select-all-target="checkboxAll"
                 @if ($selectAllId) id="{{ $selectAllId }}" @endif
-                @if ($errorId) aria-describedby="{{ $errorId }}" @endif
+                @if ($errorReference) aria-describedby="{{ $errorReference }}" @endif
                 @if ($hasErrors) aria-invalid="true" data-invalid @endif
                 @if ($checkboxGroupDisabled) disabled @endif
                 @if ($elementAction) data-action="{!! $elementAction !!}" @endif
@@ -71,7 +73,7 @@
                 @if ($name) name="{{ $name }}" @endif
                 value="{{ $value }}"
                 @if ($resolvedId) id="{{ $resolvedId }}" @endif
-                @if ($errorId) aria-describedby="{{ $errorId }}" @endif
+                @if ($errorReference) aria-describedby="{{ $errorReference }}" @endif
                 @if ($hasErrors) aria-invalid="true" data-invalid @endif
                 @if ($checkboxGroupDisabled) disabled @endif
                 @if ($checkboxGroupSelectAll) data-checkbox-select-all-target="checkbox" @endif

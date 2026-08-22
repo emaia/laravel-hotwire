@@ -34,7 +34,7 @@ Same convention as `<hw:input>`:
 
 ```blade
 <hw:select name="variables[0][status]" :options="[...]" />
-{{-- id="variables-0-status", aria-describedby="variables-0-status-error", errorKey="variables.0.status" --}}
+{{-- id="variables-0-status", errorKey="variables.0.status" --}}
 ```
 
 ## Placeholder

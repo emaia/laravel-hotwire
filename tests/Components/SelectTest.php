@@ -176,10 +176,10 @@ it('uses placeholder text when both nullable and placeholder are provided', func
 
 // --- Error key + ARIA ---
 
-it('always sets aria-describedby pointing to error id', function () {
+it('does not invent an error reference without a field owner', function () {
     $view = $this->blade('<x-hw::select name="status" :options="[1 => \'Active\']" />');
 
-    $view->assertSee('aria-describedby="status-error"', false);
+    $view->assertDontSee('aria-describedby', false);
 });
 
 it('sets aria-invalid and data-invalid when error present', function () {

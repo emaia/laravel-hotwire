@@ -7,8 +7,10 @@
     $name = $explicitName ?? $fieldName;
     extract($compute($name, $id, $errorKey, $fieldRequired ?? false, $errors, $attributes));
 
+    $errorReference = null;
     if ($fieldControlContext instanceof \Emaia\LaravelHotwire\Support\FieldContext && $resolvedId) {
-        $fieldControlContext->registerControl($resolvedId, $name, 'checkbox', $errorId, $resolvedErrorKey);
+        $fieldControlContext->registerControl($resolvedId, $name, 'checkbox', $errorId, $resolvedErrorKey, $isRequired);
+        $errorReference = $fieldControlContext->errorReference($errorId, $name, $resolvedErrorKey);
     }
 
     $switchAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
@@ -21,7 +23,7 @@
         'name' => $name ?: null,
         'value' => $value,
         'checked' => $isChecked ? true : null,
-        'aria-describedby' => $errorId,
+        'aria-describedby' => $errorReference,
         'aria-invalid' => $hasErrors ? 'true' : null,
         'data-invalid' => $hasErrors ? true : null,
         'data-disabled' => $isDisabled ? 'true' : null,

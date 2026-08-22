@@ -11,6 +11,7 @@
     'fieldName' => null,
     'fieldId' => null,
     'fieldErrorKey' => null,
+    'radioGroupFieldContext' => null,
 ])
 
 @php
@@ -38,6 +39,9 @@
         $errors,
         $attributes,
     ));
+    $errorReference = $radioGroupFieldContext instanceof \Emaia\LaravelHotwire\Support\FieldContext
+        ? $radioGroupFieldContext->errorReference($errorId, $name, $resolvedErrorKey)
+        : null;
 @endphp
 
 <label
@@ -52,7 +56,7 @@
         @if ($name) name="{{ $name }}" @endif
         value="{{ $radioGroupItemValue }}"
         @if ($resolvedId) id="{{ $resolvedId }}" @endif
-        @if ($errorId) aria-describedby="{{ $errorId }}" @endif
+        @if ($errorReference) aria-describedby="{{ $errorReference }}" @endif
         @if ($hasErrors) aria-invalid="true" data-invalid @endif
         @if ($isDisabled) disabled @endif
         @if ($elementAction) data-action="{!! $elementAction !!}" @endif

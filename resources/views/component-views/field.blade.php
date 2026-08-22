@@ -13,12 +13,13 @@
 <div data-slot="field" data-orientation="{{ $fieldOrientation }}" {{ $fieldAttributes }}>
     @if ($resolvedContext['renderLabel'])
         @if ($resolvedContext['labelFor'] === '' && ! $resolvedContext['labelSet'])
-            <span data-slot="field-label" @if ($resolvedContext['labelId']) id="{{ $resolvedContext['labelId'] }}" @endif>{{ $fieldLabel }}@if ($fieldRequired)<span data-slot="field-label-required" aria-hidden="true">{{ $fieldRequiredLabel }}</span>@endif</span>
+            <span data-slot="field-label" @if ($resolvedContext['labelId']) id="{{ $resolvedContext['labelId'] }}" @endif>{{ $fieldLabel }}@if ($resolvedContext['labelRequired'])<span data-slot="field-label-required" aria-hidden="true">{{ $fieldRequiredLabel }}</span>@endif</span>
         @else
             <x-hw::field.label
                 :id="$resolvedContext['labelId']"
                 :for="$resolvedContext['labelFor']"
                 :set="$resolvedContext['labelSet']"
+                :required="$resolvedContext['labelRequired']"
                 :required-label="$fieldRequiredLabel"
             >{{ $fieldLabel }}</x-hw::field.label>
         @endif

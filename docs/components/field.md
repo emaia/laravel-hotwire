@@ -195,9 +195,11 @@ chain on the Field keys, so publishing there would let an outer group's name rea
 components that own a field identity and want to feed `field.label` and `field.error` should publish the `fieldOwner*`
 keys; components that want to feed controls and group items should publish the `field*` keys.
 
-Controls emit `aria-describedby="{id}-error"`. `field.error` keeps the matching element in the DOM, hidden when there are
-no messages, so the ARIA reference stays stable. The automatic error follows the final identity of a sole registered
-control or selection group, including explicit `name`, `id`, and `error-key` overrides.
+Field-owned controls emit `aria-describedby="{id}-error"`. `field.error` keeps the matching element in the DOM, hidden
+when there are no messages, so the ARIA reference stays stable. Standalone controls do not emit an automatic error
+reference; pass `aria-describedby` explicitly when rendering a separate error node. The automatic error follows the
+final identity of a sole registered control or selection group, including explicit `name`, `id`, and `error-key`
+overrides.
 
 `field.error` derives its id with the same precedence a control uses: its own `id`, then the owner id base, then the
 resolved name. It cannot see a control's rendered id, so giving a control an explicit `id` that diverges from the owner
@@ -240,6 +242,10 @@ Field-aware package controls register their final ids while Blade renders the sl
 `<label for>` even when its name ends in `[]`. Two or more package radio inputs with the same name are inferred as a
 `radiogroup`; two or more package checkbox inputs with the same name are inferred as a `group`. Controls with different
 identities receive a named `role="group"` wrapper and no dangling `for`.
+
+The automatic required marker follows the resolved state of a sole registered control, so `:required="false"` removes
+both native required state and the marker inherited from a required Field. Fields with several controls retain the
+Field-level marker because no single control owns the requirement.
 
 For raw HTML or application components, declare set semantics explicitly and provide a deterministic label id:
 

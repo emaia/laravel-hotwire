@@ -7,8 +7,10 @@
     $name = $explicitName ?? $fieldName;
     extract($compute($name, $id, $errorKey, $fieldRequired ?? false, $errors, $attributes));
 
+    $errorReference = null;
     if ($fieldControlContext instanceof \Emaia\LaravelHotwire\Support\FieldContext && $resolvedId) {
-        $fieldControlContext->registerControl($resolvedId, $renderName, errorId: $errorId, errorKey: $resolvedErrorKey);
+        $fieldControlContext->registerControl($resolvedId, $renderName, errorId: $errorId, errorKey: $resolvedErrorKey, required: $isRequired);
+        $errorReference = $fieldControlContext->errorReference($errorId, $renderName, $resolvedErrorKey);
     }
 
     $fileAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
@@ -19,7 +21,7 @@
         'name' => $renderName ?: null,
         'multiple' => $multiple ? true : null,
         'data-reset-on-success' => $resetOnSuccess ? 'true' : null,
-        'aria-describedby' => $errorId,
+        'aria-describedby' => $errorReference,
         'aria-invalid' => $hasErrors ? 'true' : null,
         'data-invalid' => $hasErrors ? true : null,
         'aria-required' => $isRequired ? 'true' : null,

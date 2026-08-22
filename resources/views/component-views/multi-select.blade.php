@@ -7,8 +7,10 @@
     $name = $explicitName ?? $fieldName;
     extract($compute($name, $id, $errorKey, $fieldRequired ?? false, $errors, $attributes));
 
+    $errorReference = null;
     if ($multiSelectFieldContext instanceof \Emaia\LaravelHotwire\Support\FieldContext && $resolvedId) {
-        $multiSelectFieldContext->registerControl($resolvedId, $submissionName, errorId: $errorId, errorKey: $resolvedErrorKey);
+        $multiSelectFieldContext->registerControl($resolvedId, $submissionName, errorId: $errorId, errorKey: $resolvedErrorKey, required: $isRequired);
+        $errorReference = $multiSelectFieldContext->errorReference($errorId, $submissionName, $resolvedErrorKey);
     }
 
     $multiSelectAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
@@ -63,7 +65,7 @@
         aria-expanded="false"
         data-multi-select-state="closed"
         aria-controls="{{ $contentId }}"
-        aria-describedby="{{ $errorId }}"
+        @if ($errorReference) aria-describedby="{{ $errorReference }}" @endif
         @if ($hasErrors) aria-invalid="true" data-invalid @endif
         @if ($isRequired) aria-required="true" @endif
         @if ($triggerClass !== '') class="{{ $triggerClass }}" @endif

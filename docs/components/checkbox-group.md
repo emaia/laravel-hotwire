@@ -3,8 +3,8 @@
 Renders a group of checkboxes from an `options` array or from rich `<hw:checkbox-group.item>` children, with optional
 "select-all" master checkbox via the `checkbox-select-all` Stimulus controller.
 
-Each checkbox gets a unique `id` derived from the group name and option value. All checkboxes share the same
-`aria-describedby` pointing to the group's error element.
+Each checkbox gets a unique `id` derived from the group name and option value. Inside a Field that owns the group, all
+checkboxes share the same `aria-describedby` pointing to the group's error element.
 
 Flat (non-associative) options arrays are automatically normalized: `['main', 'dev']` becomes
 `['main' => 'main', 'dev' => 'dev']`.
@@ -54,15 +54,18 @@ automatically when missing:
 
 Both produce `<input ... name="ids[]" ...>`. In debug mode (`APP_DEBUG=true`, non-testing env), passing `name="ids"`
 triggers an `E_USER_NOTICE` so you can tighten the call site. Validation keys and per-checkbox ids are unaffected —
-they're always derived from the unbracketed name (`ids`, `ids-1`, `ids-error`).
+they're always derived from the unbracketed name (`ids`, `ids-1`).
 
 ## ARIA
 
 Each checkbox (including the select-all master) emits:
 
 - `id="{baseId}-{valueSlug}"` — unique per checkbox (e.g. `roles-admin`, `roles-editor`)
-- `aria-describedby="{baseId}-error"` — points to the group's error element
 - `aria-invalid="true"` and `data-invalid` when the field has validation errors
+
+Inside a Field that owns the group, checkboxes also emit `aria-describedby="{baseId}-error"` pointing to the group's
+error element. Standalone groups do not invent an error reference; pass `aria-describedby` explicitly when rendering a
+separate error node.
 
 The select-all checkbox gets `id="{baseId}-all"`.
 

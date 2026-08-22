@@ -12,6 +12,7 @@
     'fieldName' => null,
     'fieldId' => null,
     'fieldErrorKey' => null,
+    'toggleGroupFieldContext' => null,
 ])
 
 @php
@@ -45,6 +46,9 @@
         $errors,
         $attributes,
     ));
+    $errorReference = $toggleGroupFieldContext instanceof \Emaia\LaravelHotwire\Support\FieldContext
+        ? $toggleGroupFieldContext->errorReference($errorId, $name, $resolvedErrorKey)
+        : null;
 
     $userClasses = preg_split('/\s+/', trim((string) $attributes->get('class', ''))) ?: [];
     $toggleGroupClass = in_array('group/toggle', $userClasses, true) ? null : 'group/toggle';
@@ -61,7 +65,7 @@
         'data-disabled' => $isDisabled ? 'true' : null,
         'disabled' => $isDisabled ? true : null,
         'aria-pressed' => $isPressed ? 'true' : 'false',
-        'aria-describedby' => $errorId,
+        'aria-describedby' => $errorReference,
         'aria-invalid' => $hasErrors ? 'true' : null,
         'data-invalid' => $hasErrors ? true : null,
         'data-toggle-pressed-value' => $isPressed ? 'true' : 'false',

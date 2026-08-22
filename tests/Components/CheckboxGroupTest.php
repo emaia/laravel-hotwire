@@ -282,9 +282,9 @@ it('normalizes name from @aware via field wrapper', function () {
 it('uses unbracketed name for id and error key derivation after normalization', function () {
     $view = $this->blade('<x-hw::checkbox-group name="ids" :options="[1 => \'One\']" />');
 
-    // id and aria-describedby still derive from the unbracketed name
+    // The id still derives from the unbracketed name.
     $view->assertSee('id="ids-1"', false);
-    $view->assertSee('aria-describedby="ids-error"', false);
+    $view->assertDontSee('aria-describedby', false);
 });
 
 // --- Select all ---
@@ -548,10 +548,10 @@ it('does not set id when no name and no explicit id', function () {
 
 // --- ARIA ---
 
-it('always sets aria-describedby on checkboxes', function () {
+it('does not invent an error reference without a field owner', function () {
     $view = $this->blade('<x-hw::checkbox-group name="ids[]" :options="[1 => \'One\', 2 => \'Two\']" />');
 
-    $view->assertSee('aria-describedby="ids-error"', false);
+    $view->assertDontSee('aria-describedby', false);
 });
 
 it('sets aria-invalid and data-invalid when error present', function () {
@@ -595,18 +595,17 @@ it('applies validation state to rich item checkboxes', function () {
         </x-hw::checkbox-group>
     ');
 
-    $view->assertSee('aria-describedby="roles-error"', false);
+    $view->assertDontSee('aria-describedby', false);
     $view->assertSee('aria-invalid="true"', false);
     $view->assertSee('data-invalid', false);
 });
 
-it('uses error key for error lookup, aria-describedby from name', function () {
+it('uses error key for error lookup without inventing an error reference', function () {
     shareCheckboxGroupErrors(['custom' => ['Required.']]);
 
     $view = $this->blade('<x-hw::checkbox-group name="ids[]" error-key="custom" :options="[1 => \'One\']" />');
 
-    // aria-describedby follows the name-derived id, not the error key
-    $view->assertSee('aria-describedby="ids-error"', false);
+    $view->assertDontSee('aria-describedby', false);
     // Errors looked up on the explicit error key
     $view->assertSee('aria-invalid="true"', false);
     // error-key prop is consumed by component, not leaked as DOM attribute

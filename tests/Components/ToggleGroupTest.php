@@ -238,7 +238,7 @@ it('sets validation state from the group error key on items', function () {
         </x-hw::toggle-group>
     BLADE);
 
-    $view->assertSee('aria-describedby="formats-error"', false)
+    $view->assertDontSee('aria-describedby', false)
         ->assertSee('aria-invalid="true"', false)
         ->assertSee('data-invalid', false);
 });

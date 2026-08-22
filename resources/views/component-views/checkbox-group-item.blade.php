@@ -12,6 +12,7 @@
     'fieldName' => null,
     'fieldId' => null,
     'fieldErrorKey' => null,
+    'checkboxGroupFieldContext' => null,
 ])
 
 @php
@@ -40,6 +41,9 @@
         $errors,
         $attributes,
     ));
+    $errorReference = $checkboxGroupFieldContext instanceof \Emaia\LaravelHotwire\Support\FieldContext
+        ? $checkboxGroupFieldContext->errorReference($errorId, $name, $resolvedErrorKey)
+        : null;
 @endphp
 
 <label
@@ -54,7 +58,7 @@
         @if ($name) name="{{ $name }}" @endif
         value="{{ $checkboxGroupItemValue }}"
         @if ($resolvedId) id="{{ $resolvedId }}" @endif
-        @if ($errorId) aria-describedby="{{ $errorId }}" @endif
+        @if ($errorReference) aria-describedby="{{ $errorReference }}" @endif
         @if ($hasErrors) aria-invalid="true" data-invalid @endif
         @if ($isDisabled) disabled @endif
         @if ($selectAllTarget) data-checkbox-select-all-target="{{ $selectAllTarget }}" @endif

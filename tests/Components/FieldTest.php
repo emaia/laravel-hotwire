@@ -169,6 +169,18 @@ it('auto-rendered label shows default asterisk when required', function () {
     expect($html)->toContain('<span data-slot="field-label-required"');
 });
 
+it('hides the automatic required marker when the sole control opts out', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::field name="email" label="E-mail" required>
+            <x-hw::input :required="false" />
+        </x-hw::field>
+    BLADE);
+
+    expect($html)->not->toContain('data-slot="field-label-required"')
+        ->not->toContain('aria-required="true"')
+        ->not->toContain(' required');
+});
+
 it('does not auto-render label when label prop is null', function () {
     $view = $this->blade('
         <x-hw::field name="email">

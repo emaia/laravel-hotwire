@@ -59,6 +59,14 @@ The automatic error now follows a sole registered control or selection group's f
 with several different child error identities continue to use the Field identity; render explicit errors when each child
 needs separate validation output.
 
+Automatic `aria-describedby="{id}-error"` is now limited to controls owned by a Field, where a matching error node can be
+rendered. Standalone controls no longer emit a dangling reference; pass `aria-describedby` explicitly when providing a
+standalone help or error node. Repeated `<hw:checkbox name="...[]">` controls now append a slug of `value` to generated
+ids, matching low-level checkable Input behavior. An explicit checkbox `id` remains unchanged.
+
+For a required Field with one registered control, an explicit `:required="false"` on that control now also removes the
+automatic label marker. Multi-control Fields retain the Field-level marker.
+
 Multi Select now registers its visible trigger with Field and blocks its popup search input from taking over the label.
 Package overlay roots (Alert Dialog, Drawer, Dropdown, Hover Card, Modal, Popover, and Sheet) block inherited Field name,
 id, error key, required state, and both ownership contexts. Nested form controls therefore need their own identity or a

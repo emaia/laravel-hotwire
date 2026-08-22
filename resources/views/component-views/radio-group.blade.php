@@ -11,6 +11,7 @@
     $fieldOwnsSet = $radioGroupFieldContext instanceof \Emaia\LaravelHotwire\Support\FieldContext
         && $radioGroupFieldContext->ownsSet();
     $hasExplicitAccessibleName = $attributes->has('aria-labelledby') || $attributes->has('aria-label');
+    $errorReference = null;
 
     if ($radioGroupFieldContext instanceof \Emaia\LaravelHotwire\Support\FieldContext) {
         $labelId = $radioGroupFieldContext->registerSelection(
@@ -20,6 +21,7 @@
             $baseId,
             $resolvedErrorKey,
         );
+        $errorReference = $radioGroupFieldContext->errorReference($errorId, $name, $resolvedErrorKey);
     }
 
     $radioGroupAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
@@ -47,7 +49,7 @@
                 @if ($name) name="{{ $name }}" @endif
                 value="{{ $value }}"
                 @if ($resolvedId) id="{{ $resolvedId }}" @endif
-                @if ($errorId) aria-describedby="{{ $errorId }}" @endif
+                @if ($errorReference) aria-describedby="{{ $errorReference }}" @endif
                 @if ($hasErrors) aria-invalid="true" data-invalid @endif
                 @if ($radioGroupDisabled) disabled @endif
                 @if ($elementAction) data-action="{!! $elementAction !!}" @endif

@@ -161,7 +161,7 @@ it('sets aria validation state from derived and explicit error keys', function (
     $derived = $this->blade('<x-hw::slider name="filters[price]" />');
     $explicit = $this->blade('<x-hw::slider name="volume" error-key="custom.volume" />');
 
-    $derived->assertSee('aria-describedby="filters-price-error"', false)
+    $derived->assertDontSee('aria-describedby', false)
         ->assertSee('aria-invalid="true"', false)
         ->assertSee('data-invalid', false);
     $explicit->assertSee('aria-invalid="true"', false)

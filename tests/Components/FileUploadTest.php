@@ -361,7 +361,7 @@ it('preserves validation aria semantics on custom dropzones', function () {
         </x-hw::file-upload>
     ');
 
-    $view->assertSee('aria-describedby="attachments-error upload-help attachments-feedback"', false)
+    $view->assertSee('aria-describedby="upload-help attachments-feedback"', false)
         ->assertSee('aria-invalid="true"', false)
         ->assertSee('aria-required="true"', false)
         ->assertDontSee('aria-invalid="false"', false)
@@ -567,7 +567,7 @@ it('sets invalid state when direct or sub-key errors are present', function () {
     $view = $this->blade('<x-hw::file-upload name="attachments" url="/uploads" multiple />');
 
     $view->assertSee('aria-invalid="true"', false)
-        ->assertSee('aria-describedby="attachments-error attachments-feedback"', false)
+        ->assertSee('aria-describedby="attachments-feedback"', false)
         ->assertSee('data-invalid', false);
 });
 
@@ -585,7 +585,7 @@ it('puts validation aria attributes on the focusable dropzone', function () {
         ->not->toContain('aria-invalid')
         ->not->toContain('aria-required')
         ->and($dropzone[1])
-        ->toContain('aria-describedby="attachments-error attachments-feedback"')
+        ->toContain('aria-describedby="attachments-feedback"')
         ->toContain('aria-invalid="true"')
         ->toContain('aria-required="true"');
 });
