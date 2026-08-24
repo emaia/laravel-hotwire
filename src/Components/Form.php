@@ -9,8 +9,6 @@ use Illuminate\View\ComponentAttributeBag;
 
 class Form extends Component
 {
-    public mixed $formState;
-
     public function __construct(
         public bool $autoSubmit = false,
         public bool $unsavedChanges = false,
@@ -25,8 +23,6 @@ class Form extends Component
         public ?Htmlable $stimulus = null,
     ) {
         $this->frame = FrameTarget::normalize($this->frame);
-
-        $this->formState = $this->state;
     }
 
     public function render()
@@ -34,10 +30,27 @@ class Form extends Component
         return view('hotwire::component-views.form');
     }
 
+    /** @return array<string, mixed> */
     public function data(): array
     {
         $data = parent::data();
+        $data['formRoot'] = $this;
+        $data['conditionalFieldState'] = $this->state;
         $data['compute'] = $this->computeResolved(...);
+
+        unset(
+            $data['autoSubmit'],
+            $data['unsavedChanges'],
+            $data['errorScroll'],
+            $data['cleanQueryParams'],
+            $data['conditionalFields'],
+            $data['trackFrameSrc'],
+            $data['autoSubmitDelay'],
+            $data['frame'],
+            $data['enctype'],
+            $data['state'],
+            $data['stimulus'],
+        );
 
         return $data;
     }

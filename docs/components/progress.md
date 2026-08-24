@@ -23,10 +23,21 @@ Use `max` when the total is not `100`.
 </hw:progress>
 ```
 
+An empty `<hw:progress.value />` reads the percentage from its nearest Progress root and must be rendered inside one.
+Explicit content does not consume root context and can render standalone:
+
+```blade
+<hw:progress.value>3 of 5</hw:progress.value>
+```
+
+Define an empty value inside the root's Blade body; slot content passed to a wrapper renders before the wrapper view, so
+a Progress root created by that wrapper cannot provide its percentage to the caller's value.
+
 ## Composition
 
 The root renders a track and indicator automatically. Use the track and indicator subcomponents when you need to attach
-attributes directly to those elements.
+attributes directly to those elements. Raw `data-slot="progress-track"` markup is also recognized; tracks inside a nested
+Progress belong only to that nested root.
 
 ```blade
 <hw:progress value="25">

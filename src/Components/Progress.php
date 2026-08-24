@@ -32,6 +32,24 @@ class Progress extends Component
         return view('hotwire::component-views.progress');
     }
 
+    /** @return array<string, mixed> */
+    public function data(): array
+    {
+        $data = parent::data();
+        $data['progressRoot'] = $this;
+        $data['progressPercentage'] = $this->formattedPercentage;
+
+        unset(
+            $data['value'],
+            $data['max'],
+            $data['formattedValue'],
+            $data['formattedMax'],
+            $data['formattedPercentage'],
+        );
+
+        return $data;
+    }
+
     private function number(int|float|string|null $value, float $default): float
     {
         if ($value === null || $value === '' || ! is_numeric($value)) {

@@ -2,6 +2,7 @@
 
 use Emaia\LaravelHotwire\Components\ConditionalField;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Blade;
 
 class ConditionalFieldMessage extends Model
 {
@@ -137,6 +138,19 @@ it('lets local state override inherited state', function () {
             'fieldState' => ['type' => 'link'],
         ],
     );
+
+    $view->assertDontSee(' hidden', false)
+        ->assertDontSee(' disabled', false);
+});
+
+it('accepts scoped state from an application context provider', function () {
+    Blade::anonymousComponentPath(__DIR__.'/../Fixtures/views/components');
+
+    $view = $this->blade(<<<'BLADE'
+        <x-residual-context-wrapper :conditional-field-state="['type' => 'link']">
+            <x-hw::conditional-field when="type=link">URL</x-hw::conditional-field>
+        </x-residual-context-wrapper>
+    BLADE);
 
     $view->assertDontSee(' hidden', false)
         ->assertDontSee(' disabled', false);

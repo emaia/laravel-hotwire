@@ -1,15 +1,16 @@
 @php
+    $form = $formRoot;
     extract($compute($attributes));
-    $resolvedFrame = \Emaia\LaravelHotwire\Support\FrameTarget::resolve($frame, $attributes);
+    $resolvedFrame = \Emaia\LaravelHotwire\Support\FrameTarget::resolve($form->frame, $attributes);
 
     $formAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
         'data-slot' => 'form',
         'data-controller' => $controller ?: null,
-        'data-auto-submit-delay-value' => $autoSubmit ? $autoSubmitDelay : null,
+        'data-auto-submit-delay-value' => $form->autoSubmit ? $form->autoSubmitDelay : null,
         'data-turbo-frame' => $resolvedFrame,
         'method' => $isSpoofMethod ? 'post' : $method,
-        'enctype' => $enctype,
-    ], $attributes, $stimulus, except: [
+        'enctype' => $form->enctype,
+    ], $attributes, $form->stimulus, except: [
         'method',
         'enctype',
         'auto-submit',
@@ -23,11 +24,11 @@
         'data-turbo-frame',
         'state',
     ], protectedPrefixes: array_values(array_filter([
-        $autoSubmit ? 'data-auto-submit-' : null,
-        $unsavedChanges ? 'data-unsaved-changes-' : null,
-        $errorScroll ? 'data-error-scroll-' : null,
-        $cleanQueryParams ? 'data-clean-query-params-' : null,
-        $conditionalFields ? 'data-conditional-fields-' : null,
+        $form->autoSubmit ? 'data-auto-submit-' : null,
+        $form->unsavedChanges ? 'data-unsaved-changes-' : null,
+        $form->errorScroll ? 'data-error-scroll-' : null,
+        $form->cleanQueryParams ? 'data-clean-query-params-' : null,
+        $form->conditionalFields ? 'data-conditional-fields-' : null,
     ])));
 @endphp
 
@@ -42,7 +43,7 @@
         @method($method)
     @endif
 
-    @if ($trackFrameSrc)
+    @if ($form->trackFrameSrc)
         <input type="hidden" name="_turbo_frame_src" value="{{ url()->full() }}">
     @endif
 
