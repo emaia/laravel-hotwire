@@ -9,6 +9,20 @@ use Illuminate\View\ComponentAttributeBag;
 
 class Form extends Component
 {
+    protected $except = [
+        'autoSubmit',
+        'unsavedChanges',
+        'errorScroll',
+        'cleanQueryParams',
+        'conditionalFields',
+        'trackFrameSrc',
+        'autoSubmitDelay',
+        'frame',
+        'enctype',
+        'state',
+        'stimulus',
+    ];
+
     public function __construct(
         public bool $autoSubmit = false,
         public bool $unsavedChanges = false,
@@ -37,20 +51,6 @@ class Form extends Component
         $data['formRoot'] = $this;
         $data['conditionalFieldState'] = $this->state;
         $data['compute'] = $this->computeResolved(...);
-
-        unset(
-            $data['autoSubmit'],
-            $data['unsavedChanges'],
-            $data['errorScroll'],
-            $data['cleanQueryParams'],
-            $data['conditionalFields'],
-            $data['trackFrameSrc'],
-            $data['autoSubmitDelay'],
-            $data['frame'],
-            $data['enctype'],
-            $data['state'],
-            $data['stimulus'],
-        );
 
         return $data;
     }

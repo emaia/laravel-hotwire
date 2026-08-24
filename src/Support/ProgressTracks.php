@@ -15,16 +15,11 @@ final class ProgressTracks
             return false;
         }
 
-        return self::tracksOutsideNestedProgress($html) ?? true;
+        return self::tracksOutsideNestedProgress($html);
     }
 
-    /** @return bool|null null when the fragment cannot be parsed */
-    private static function tracksOutsideNestedProgress(string $html): ?bool
+    private static function tracksOutsideNestedProgress(string $html): bool
     {
-        if (! class_exists(DOMDocument::class)) {
-            return null;
-        }
-
         $document = new DOMDocument;
         $previous = libxml_use_internal_errors(true);
         $loaded = $document->loadHTML(
@@ -35,13 +30,13 @@ final class ProgressTracks
         libxml_use_internal_errors($previous);
 
         if (! $loaded) {
-            return null;
+            return false;
         }
 
         $tracks = (new DOMXPath($document))->query('//*[@data-slot="progress-track"]');
 
         if ($tracks === false) {
-            return null;
+            return false;
         }
 
         foreach ($tracks as $track) {

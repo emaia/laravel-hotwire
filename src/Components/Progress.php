@@ -6,6 +6,14 @@ use Illuminate\View\Component;
 
 class Progress extends Component
 {
+    protected $except = [
+        'value',
+        'max',
+        'formattedValue',
+        'formattedMax',
+        'formattedPercentage',
+    ];
+
     public string $formattedValue;
 
     public string $formattedMax;
@@ -38,14 +46,6 @@ class Progress extends Component
         $data = parent::data();
         $data['progressRoot'] = $this;
         $data['progressPercentage'] = $this->formattedPercentage;
-
-        unset(
-            $data['value'],
-            $data['max'],
-            $data['formattedValue'],
-            $data['formattedMax'],
-            $data['formattedPercentage'],
-        );
 
         return $data;
     }

@@ -300,11 +300,14 @@ Update application subcomponents that consume the old keys:
 `<hw:conditional-field>` remains valid without `<hw:form>`: pass its local `state` prop, rely on Laravel `old()` input,
 and mount the `conditional-fields` controller on an appropriate ancestor when runtime updates are required.
 
-`<hw:progress.value>` without explicit slot content now throws when rendered without a Progress root because there is no
-percentage to display. A value with explicit content remains standalone and can be rendered by a Turbo Stream.
+`<hw:progress.value>` without rendered slot content reads the percentage from its nearest Progress root and throws without
+one. Non-empty explicit content remains standalone. When standalone or Turbo Stream content may render empty, pass the
+new `standalone` prop to distinguish that intentional empty value from a missing owner.
 
 Progress now resolves explicit tracks structurally, so package and raw tracks belong to the nearest Progress root even
-when a wrapper's caller slot rendered the track before creating that root.
+when a wrapper's caller slot rendered the track before creating that root. The root and every Progress subcomponent now
+reserve their documented `data-slot`; migrate application hooks passed through `data-slot` to `class`, `id` or another
+`data-*` attribute.
 
 ### Stimulus lazy loader v2 and critical controller policy
 

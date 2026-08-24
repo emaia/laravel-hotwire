@@ -1,6 +1,7 @@
 <?php
 
 use Emaia\LaravelHotwire\Components\Progress;
+use Emaia\LaravelHotwire\Components\Progress\Value as ProgressValue;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
 use Illuminate\Support\Facades\Blade;
@@ -82,9 +83,9 @@ it('uses the nearest progress across nested owners', function () {
     expect(preg_replace('/\s+/', ' ', $html))->toMatch('/>25%<.*>75%<.*>25%</s');
 });
 
-it('requires an owning progress for the value subcomponent', function () {
+it('requires an owning Progress for an implicit value', function () {
     expect(fn () => $this->blade('<x-hw::progress.value />'))
-        ->toThrow(ViewException::class, 'Progress value without explicit content must be rendered inside a Progress root.');
+        ->toThrow(ViewException::class, 'Progress value without rendered content must be inside a Progress root.');
 });
 
 it('renders explicit value content without a Progress owner', function () {
@@ -94,7 +95,28 @@ it('renders explicit value content without a Progress owner', function () {
         ->assertSeeText('3 of 5');
 });
 
-it('explains the Blade slot boundary when a wrapper creates the progress owner', function () {
+it('renders standalone dynamic content that resolves empty without a Progress owner', function () {
+    $view = $this->blade(
+        '<x-hw::progress.value standalone>{{ $label }}</x-hw::progress.value>',
+        ['label' => ''],
+    );
+
+    $view->assertSee('data-slot="progress-value"', false)
+        ->assertDontSee(' standalone', false)
+        ->assertDontSeeText('%');
+});
+
+it('lets standalone suppress the inherited percentage when dynamic content resolves empty', function () {
+    $view = $this->blade(
+        '<x-hw::progress value="42"><x-hw::progress.value standalone>{{ $label }}</x-hw::progress.value></x-hw::progress>',
+        ['label' => ''],
+    );
+
+    $view->assertSee('data-slot="progress-value"', false)
+        ->assertDontSeeText('42%');
+});
+
+it('explains the Blade slot boundary when a wrapper creates the Progress owner', function () {
     Blade::anonymousComponentPath(__DIR__.'/../Fixtures/views/components');
 
     expect(fn () => $this->blade(<<<'BLADE'
@@ -121,16 +143,23 @@ it('allows composed track and indicator without rendering a duplicate track', fu
 it('protects structural Progress slots from user overrides', function () {
     $html = (string) $this->blade(<<<'BLADE'
         <x-hw::progress value="25" data-slot="custom-root">
+            <x-hw::progress.label data-slot="progress-track">Upload</x-hw::progress.label>
+            <x-hw::progress.value data-slot="custom-value">25%</x-hw::progress.value>
             <x-hw::progress.track data-slot="custom-track">
-                <x-hw::progress.indicator />
+                <x-hw::progress.indicator data-slot="custom-indicator" />
             </x-hw::progress.track>
         </x-hw::progress>
     BLADE);
 
     expect(substr_count($html, 'data-slot="progress"'))->toBe(1)
         ->and(substr_count($html, 'data-slot="progress-track"'))->toBe(1)
+        ->and(substr_count($html, 'data-slot="progress-label"'))->toBe(1)
+        ->and(substr_count($html, 'data-slot="progress-value"'))->toBe(1)
+        ->and(substr_count($html, 'data-slot="progress-indicator"'))->toBe(1)
         ->and($html)->not->toContain('custom-root')
-        ->not->toContain('custom-track');
+        ->not->toContain('custom-track')
+        ->not->toContain('custom-value')
+        ->not->toContain('custom-indicator');
 });
 
 it('allows a raw composed track without rendering a duplicate track', function () {
@@ -220,13 +249,19 @@ it('does not expose progress root props as generic component data', function () 
 
     expect($data['progressRoot'])->toBe($progress)
         ->and($data['progressPercentage'])->toBe('75')
-        ->and($data)->not->toHaveKeys([
-            'value',
-            'max',
-            'formattedValue',
-            'formattedMax',
-            'formattedPercentage',
-        ]);
+        ->and(array_intersect_key($data, array_flip(
+            collect((new ReflectionClass(Progress::class))->getProperties(ReflectionProperty::IS_PUBLIC))
+                ->filter(fn (ReflectionProperty $property) => $property->getDeclaringClass()->getName() === Progress::class)
+                ->map(fn (ReflectionProperty $property) => $property->getName())
+                ->all(),
+        )))->toBe([]);
+});
+
+it('does not expose the standalone value prop as generic component data', function () {
+    $data = (new ProgressValue(standalone: true))->data();
+
+    expect($data['progressValueStandalone'])->toBeTrue()
+        ->and($data)->not->toHaveKey('standalone');
 });
 
 it('registers progress in the component catalog and subcomponent aliases', function () {

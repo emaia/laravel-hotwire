@@ -178,20 +178,13 @@ it('does not expose form root props as generic component data', function () {
 
     expect($data['formRoot'])->toBe($form)
         ->and($data['conditionalFieldState'])->toBe(['type' => 'link'])
-        ->and($data)->not->toHaveKeys([
-            'autoSubmit',
-            'unsavedChanges',
-            'errorScroll',
-            'cleanQueryParams',
-            'conditionalFields',
-            'trackFrameSrc',
-            'autoSubmitDelay',
-            'frame',
-            'enctype',
-            'state',
-            'stimulus',
-            'formState',
-        ]);
+        ->and($data)->not->toHaveKey('formState')
+        ->and(array_intersect_key($data, array_flip(
+            collect((new ReflectionClass(Form::class))->getProperties(ReflectionProperty::IS_PUBLIC))
+                ->filter(fn (ReflectionProperty $property) => $property->getDeclaringClass()->getName() === Form::class)
+                ->map(fn (ReflectionProperty $property) => $property->getName())
+                ->all(),
+        )))->toBe([]);
 });
 
 it('keeps form and progress contexts independent when crossed', function () {
