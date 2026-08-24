@@ -20,13 +20,13 @@
     $clearAllLabel = $messageCopy['clearAll'] ?? 'Clear all';
     $retryLabel = $messageCopy['retry'] ?? 'Retry upload';
     $dropzoneActions = implode(' ', [
-        "click->{$identifier}#openPicker",
-        "keydown.enter->{$identifier}#openPicker",
-        "keydown.space->{$identifier}#openPicker",
-        "dragenter->{$identifier}#dragEnter",
-        "dragover->{$identifier}#dragOver",
-        "dragleave->{$identifier}#dragLeave",
-        "drop->{$identifier}#drop",
+        "click->{$controller}#openPicker",
+        "keydown.enter->{$controller}#openPicker",
+        "keydown.space->{$controller}#openPicker",
+        "dragenter->{$controller}#dragEnter",
+        "dragover->{$controller}#dragOver",
+        "dragleave->{$controller}#dragLeave",
+        "drop->{$controller}#drop",
     ]);
     $hasCustomDropzone = isset($dropzone);
     if ($dropzoneVariant === 'bare' && ! $hasCustomDropzone) {
@@ -44,7 +44,7 @@
     $dropzoneAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
         'data-slot' => 'file-upload-dropzone',
         'data-file-upload-dropzone-variant' => $resolvedDropzoneVariant,
-        "data-{$identifier}-target" => 'dropzone',
+        "data-{$controller}-target" => 'dropzone',
         'data-action' => $dropzoneActions,
         'role' => 'button',
         'tabindex' => '0',
@@ -58,29 +58,29 @@
         'aria-describedby',
         'aria-invalid',
         'aria-required',
-    ]), protectedPrefixes: ['data-slot', 'data-file-upload-dropzone-variant', "data-{$identifier}-target"]);
+    ]), protectedPrefixes: ['data-slot', 'data-file-upload-dropzone-variant', "data-{$controller}-target"]);
 
     $fileUploadAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
         'data-slot' => 'file-upload',
         'id' => $resolvedId,
-        'data-controller' => $mergedController,
+        'data-controller' => $controller,
         'data-density' => $density,
         'data-view' => $view,
-        "data-{$identifier}-url-value" => $url,
-        "data-{$identifier}-hidden-name-value" => $hiddenName,
-        "data-{$identifier}-accept-value" => $accept,
-        "data-{$identifier}-max-size-bytes-value" => $maxSizeBytes,
-        "data-{$identifier}-max-files-value" => $maxFiles,
-        "data-{$identifier}-multiple-value" => $multiple ? 'true' : null,
-        "data-{$identifier}-mode-value" => $mode !== 'managed' ? $mode : null,
-        "data-{$identifier}-output-mode-value" => $outputMode !== 'full' ? $outputMode : null,
-        "data-{$identifier}-param-name-value" => $paramName !== 'file' ? $paramName : null,
-        "data-{$identifier}-response-key-value" => $responseKey !== 'token' ? $responseKey : null,
-        "data-{$identifier}-preview-url-key-value" => $previewUrlKey !== 'preview_url' ? $previewUrlKey : null,
-        "data-{$identifier}-delete-url-value" => $deleteUrl,
-        "data-{$identifier}-parallel-uploads-value" => $parallelUploads !== 3 ? $parallelUploads : null,
-        "data-{$identifier}-view-value" => $view !== 'list' ? $view : null,
-        "data-{$identifier}-messages-value" => $messagesJson !== null ? e($messagesJson) : null,
+        "data-{$controller}-url-value" => $url,
+        "data-{$controller}-hidden-name-value" => $hiddenName,
+        "data-{$controller}-accept-value" => $accept,
+        "data-{$controller}-max-size-bytes-value" => $maxSizeBytes,
+        "data-{$controller}-max-files-value" => $maxFiles,
+        "data-{$controller}-multiple-value" => $multiple ? 'true' : null,
+        "data-{$controller}-mode-value" => $mode !== 'managed' ? $mode : null,
+        "data-{$controller}-output-mode-value" => $outputMode !== 'full' ? $outputMode : null,
+        "data-{$controller}-param-name-value" => $paramName !== 'file' ? $paramName : null,
+        "data-{$controller}-response-key-value" => $responseKey !== 'token' ? $responseKey : null,
+        "data-{$controller}-preview-url-key-value" => $previewUrlKey !== 'preview_url' ? $previewUrlKey : null,
+        "data-{$controller}-delete-url-value" => $deleteUrl,
+        "data-{$controller}-parallel-uploads-value" => $parallelUploads !== 3 ? $parallelUploads : null,
+        "data-{$controller}-view-value" => $view !== 'list' ? $view : null,
+        "data-{$controller}-messages-value" => $messagesJson !== null ? e($messagesJson) : null,
         'data-invalid' => $hasErrors ? true : null,
         'class' => $class ?: null,
     ], $attributes->except(['aria-label', 'options']), $stimulus, except: ['required', 'options'], protectedPrefixes: $internalPrefixes);
@@ -99,8 +99,8 @@
         form="{{ $inputFormId }}"
         @if ($accept) accept="{{ $accept }}" @endif
         @if ($multiple) multiple @endif
-        data-{{ $identifier }}-target="input"
-        data-action="change->{{ $identifier }}#select"
+        data-{{ $controller }}-target="input"
+        data-action="change->{{ $controller }}#select"
     >
 
     @if ($view === 'image')
@@ -111,7 +111,7 @@
                 </div>
                 <img
                     data-slot="file-upload-image-preview"
-                    data-{{ $identifier }}-target="imagePreview"
+                    data-{{ $controller }}-target="imagePreview"
                     alt=""
                     hidden
                 >
@@ -120,7 +120,7 @@
             <div
                 data-slot="file-upload-dropzone"
                 data-file-upload-dropzone-variant="{{ $resolvedDropzoneVariant }}"
-                data-{{ $identifier }}-target="dropzone"
+                data-{{ $controller }}-target="dropzone"
                 data-action="{{ $dropzoneActions }}"
                 role="button"
                 tabindex="0"
@@ -135,7 +135,7 @@
                 </div>
                 <img
                     data-slot="file-upload-image-preview"
-                    data-{{ $identifier }}-target="imagePreview"
+                    data-{{ $controller }}-target="imagePreview"
                     alt=""
                     hidden
                 >
@@ -145,7 +145,7 @@
         <p
             id="{{ $feedbackId }}"
             data-slot="file-upload-feedback"
-            data-{{ $identifier }}-target="feedback"
+            data-{{ $controller }}-target="feedback"
             data-file-upload-default-feedback=""
             hidden
         ></p>
@@ -157,7 +157,7 @@
         <p
             id="{{ $feedbackId }}"
             data-slot="file-upload-feedback"
-            data-{{ $identifier }}-target="feedback"
+            data-{{ $controller }}-target="feedback"
             data-file-upload-default-feedback=""
             hidden
         ></p>
@@ -165,7 +165,7 @@
         <div
             data-slot="file-upload-dropzone"
             data-file-upload-dropzone-variant="{{ $resolvedDropzoneVariant }}"
-            data-{{ $identifier }}-target="dropzone"
+            data-{{ $controller }}-target="dropzone"
             data-action="{{ $dropzoneActions }}"
             role="button"
             tabindex="0"
@@ -183,7 +183,7 @@
                     <div
                         id="{{ $feedbackId }}"
                         data-slot="empty-state-description"
-                        data-{{ $identifier }}-target="feedback"
+                        data-{{ $controller }}-target="feedback"
                         data-file-upload-default-feedback="{{ $dropzoneDescription }}"
                     >{{ $dropzoneDescription }}</div>
                 </x-hw::empty-state.header>
@@ -193,16 +193,16 @@
 
     @if ($isClearable)
         <div data-slot="file-upload-actions">
-            <x-hw::button type="button" variant="ghost" size="sm" hidden data-file-upload-clear data-action="{{ $identifier }}#clear">
+            <x-hw::button type="button" variant="ghost" size="sm" hidden data-file-upload-clear data-action="{{ $controller }}#clear">
                 {{ $clearAllLabel }}
             </x-hw::button>
         </div>
     @endif
 
     @if ($view !== 'image' && $rendersPreview)
-        <div data-slot="attachment-group" role="list" data-{{ $identifier }}-target="list"></div>
+        <div data-slot="attachment-group" role="list" data-{{ $controller }}-target="list"></div>
 
-        <template data-{{ $identifier }}-target="template">
+        <template data-{{ $controller }}-target="template">
             <x-hw::attachment state="idle" :orientation="$attachmentOrientation" role="listitem" data-file-upload-attachment>
                 <x-hw::attachment.media variant="icon">
                     <x-hw::icon name="copy" />
@@ -215,10 +215,10 @@
                     </div>
                 </x-hw::attachment.content>
                 <x-hw::attachment.actions>
-                    <x-hw::attachment.action hidden data-file-upload-retry data-action="{{ $identifier }}#retry" aria-label="{{ $retryLabel }}">
+                    <x-hw::attachment.action hidden data-file-upload-retry data-action="{{ $controller }}#retry" aria-label="{{ $retryLabel }}">
                         <x-hw::icon name="redo-2" />
                     </x-hw::attachment.action>
-                    <x-hw::attachment.action data-file-upload-remove data-action="{{ $identifier }}#remove" aria-label="{{ $removeLabel }}">
+                    <x-hw::attachment.action data-file-upload-remove data-action="{{ $controller }}#remove" aria-label="{{ $removeLabel }}">
                         <x-hw::icon name="x" />
                     </x-hw::attachment.action>
                 </x-hw::attachment.actions>
@@ -230,7 +230,7 @@
         data-slot="file-upload-announcer"
         role="status"
         aria-live="polite"
-        data-{{ $identifier }}-target="announcer"
+        data-{{ $controller }}-target="announcer"
         style="position:absolute;clip:rect(0 0 0 0);clip-path:inset(50%);overflow:hidden;width:1px;height:1px;white-space:nowrap"
     ></div>
 </div>

@@ -104,12 +104,26 @@ it('honors custom height and width props', function () {
 
 // --- Controller swap ---
 
+it('does not publish a generic identifier in component data', function () {
+    $data = (new Map(center: [0, 0], controller: 'store-locator'))->data();
+
+    expect($data)
+        ->not->toHaveKey('identifier')
+        ->and($data['controller'])->toBe('store-locator');
+});
+
 it('swaps the Stimulus identifier when controller prop is set', function () {
-    $view = $this->blade('<x-hw::map :center="[0, 0]" controller="store-locator" />');
+    $view = $this->blade('<x-hw::map :center="[0, 0]" :markers="[[1, 2]]" url="/locations" :zoom="8" :scroll-wheel-zoom="false" :fit="true" controller="store-locator" />');
 
     $view->assertSee('data-controller="store-locator"', false);
     $view->assertSee('data-store-locator-center-value=', false);
+    $view->assertSee('data-store-locator-zoom-value="8"', false);
+    $view->assertSee('data-store-locator-markers-value=', false);
+    $view->assertSee('data-store-locator-url-value="/locations"', false);
+    $view->assertSee('data-store-locator-scroll-wheel-zoom-value="false"', false);
+    $view->assertSee('data-store-locator-fit-value="true"', false);
     $view->assertDontSee('data-controller="map"', false);
+    $view->assertDontSee('data-map-center-value', false);
 });
 
 // --- Attribute forwarding ---

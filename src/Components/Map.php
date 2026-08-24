@@ -8,8 +8,6 @@ use InvalidArgumentException;
 
 class Map extends Component
 {
-    public string $identifier;
-
     public ?string $encodedMarkers;
 
     public bool $resolvedFit;
@@ -38,7 +36,6 @@ class Map extends Component
             );
         }
 
-        $this->identifier = $this->controller;
         $this->encodedMarkers = $markers !== null
             ? json_encode($markers, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
             : null;

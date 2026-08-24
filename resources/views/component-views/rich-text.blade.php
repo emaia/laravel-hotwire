@@ -8,28 +8,28 @@
     extract($compute($name, $id, $errorKey, $fieldRequired ?? false, $errors, $attributes));
     // Escape `\` and `'` so an id containing either still produces a valid CSS attribute selector.
     $escapedId = addcslashes($resolvedId, "\\'");
-    $outletSelector = '[data-'.$identifier."-id-value='".$escapedId."']";
+    $outletSelector = '[data-'.$controller."-id-value='".$escapedId."']";
 
     $richTextAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
         'data-slot' => 'rich-text',
         'class' => $class ?: null,
-        'data-controller' => $dataController,
-        "data-{$identifier}-id-value" => $resolvedId,
-        "data-{$identifier}-placeholder-value" => $placeholder,
-        "data-{$identifier}-editable-value" => $editable ? null : 'false',
-        "data-{$identifier}-output-value" => $output !== 'html' ? $output : null,
-        "data-{$identifier}-editor-class-value" => $editorClass !== '' ? $editorClass : null,
-        "data-{$identifier}-image-upload-value" => $imageUpload ? 'true' : null,
+        'data-controller' => $controller,
+        "data-{$controller}-id-value" => $resolvedId,
+        "data-{$controller}-placeholder-value" => $placeholder,
+        "data-{$controller}-editable-value" => $editable ? null : 'false',
+        "data-{$controller}-output-value" => $output !== 'html' ? $output : null,
+        "data-{$controller}-editor-class-value" => $editorClass !== '' ? $editorClass : null,
+        "data-{$controller}-image-upload-value" => $imageUpload ? 'true' : null,
         'aria-required' => $isRequired ? 'true' : null,
         'aria-invalid' => $hasErrors ? 'true' : null,
         'data-invalid' => $hasErrors ? true : null,
     ], $attributes, $stimulus, except: ['required'], protectedPrefixes: [
-        "data-{$identifier}-id-",
-        "data-{$identifier}-placeholder-",
-        "data-{$identifier}-editable-",
-        "data-{$identifier}-output-",
-        "data-{$identifier}-editor-class-",
-        "data-{$identifier}-image-upload-",
+        "data-{$controller}-id-",
+        "data-{$controller}-placeholder-",
+        "data-{$controller}-editable-",
+        "data-{$controller}-output-",
+        "data-{$controller}-editor-class-",
+        "data-{$controller}-image-upload-",
     ]);
 @endphp
 
@@ -44,7 +44,7 @@
     <textarea
         data-slot="rich-text-input"
         @if ($name) name="{{ $name }}" @endif
-        data-{{ $identifier }}-target="input"
+        data-{{ $controller }}-target="input"
         @if ($isRequired) aria-required="true" @endif
         @if ($hasErrors) aria-invalid="true" @endif
         @if ($inputClass !== '') class="{{ $inputClass }}" @else hidden @endif
@@ -75,5 +75,5 @@
         {{ $slot ?? '' }}
     @endif
 
-    <div data-slot="rich-text-editor" data-{{ $identifier }}-target="editor"></div>
+    <div data-slot="rich-text-editor" data-{{ $controller }}-target="editor"></div>
 </div>
