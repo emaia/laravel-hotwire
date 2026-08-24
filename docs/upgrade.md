@@ -285,6 +285,30 @@ Tabs triggers and panels, Accordion items, and Side Panel panels and triggers no
 root. Render the owner in the same Blade tree so it can supply the scoped controller, state and ARIA context. For Turbo
 Streams, replace the subcomponent's inner content or render the owning root instead of rendering the subcomponent alone.
 
+### Form and Progress context keys are scoped
+
+Form and Progress now expose descendant state through family-specific component data instead of generic keys an
+intermediate Blade component can replace. They also no longer expose their public props as generic component data.
+
+Update application subcomponents that consume the old keys:
+
+| Component family | Before | After |
+| --- | --- | --- |
+| Conditional Field state | `@aware(['formState' => null])` | `@aware(['conditionalFieldState' => null])` |
+| Progress percentage | `@aware(['formattedPercentage' => null])` | `@aware(['progressPercentage' => null])` |
+
+`<hw:conditional-field>` remains valid without `<hw:form>`: pass its local `state` prop, rely on Laravel `old()` input,
+and mount the `conditional-fields` controller on an appropriate ancestor when runtime updates are required.
+
+`<hw:progress.value>` without rendered slot content reads the percentage from its nearest Progress root and throws without
+one. Non-empty explicit content remains standalone. When standalone or Turbo Stream content may render empty, pass the
+new `standalone` prop to distinguish that intentional empty value from a missing owner.
+
+Progress now resolves explicit tracks structurally, so package and raw tracks belong to the nearest Progress root even
+when a wrapper's caller slot rendered the track before creating that root. The root and every Progress subcomponent now
+reserve their documented `data-slot`; migrate application hooks passed through `data-slot` to `class`, `id` or another
+`data-*` attribute.
+
 ### Stimulus lazy loader v2 and critical controller policy
 
 The generated controller loader now requires `@emaia/stimulus-lazy-loader ^2.0.0`. Re-run the installer to update an

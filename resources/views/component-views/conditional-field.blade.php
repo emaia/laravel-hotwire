@@ -1,7 +1,7 @@
-@aware(['formState' => null])
+@aware(['conditionalFieldState' => null])
 
 @php
-    $resolvedMatches = $state !== null ? $matches : $matchesWith($formState);
+    $resolvedMatches = $state !== null ? $matches : $matchesWith($conditionalFieldState);
 
     $conditionalFieldAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge(array_merge([
         'data-slot' => 'conditional-field',

@@ -1,5 +1,7 @@
 <?php
 
+use Emaia\LaravelHotwire\Components\Form;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ViewErrorBag;
 
 beforeEach(function () {
@@ -124,6 +126,80 @@ it('provides form state to nested conditional fields', function () {
         ->assertSee('data-when-type="link"', false)
         ->assertDontSee(' hidden', false)
         ->assertDontSee(' disabled', false);
+});
+
+it('keeps conditional field state through an intermediate component with generic props', function () {
+    Blade::anonymousComponentPath(__DIR__.'/../Fixtures/views/components');
+
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::form conditional-fields :state="['type' => 'link']">
+            <x-residual-context-wrapper :form-state="['type' => 'shadow']">
+                <x-hw::conditional-field when="type=link">URL</x-hw::conditional-field>
+            </x-residual-context-wrapper>
+        </x-hw::form>
+    BLADE);
+
+    $view->assertSee('data-when-type="link"', false)
+        ->assertDontSee(' hidden', false)
+        ->assertDontSee(' disabled', false);
+});
+
+it('uses the nearest form state across nested owners', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::form :state="['type' => 'link']">
+            <x-hw::conditional-field when="type=link" data-owner="outer-before">Outer before</x-hw::conditional-field>
+            <x-hw::form :state="['type' => 'text']">
+                <x-hw::conditional-field when="type=link" data-owner="inner">Inner</x-hw::conditional-field>
+            </x-hw::form>
+            <x-hw::conditional-field when="type=link" data-owner="outer-after">Outer after</x-hw::conditional-field>
+        </x-hw::form>
+    BLADE);
+
+    expect($html)
+        ->toMatch('/<fieldset(?=[^>]*data-owner="outer-before")(?![^>]* hidden)(?![^>]* disabled)[^>]*>/')
+        ->toMatch('/<fieldset(?=[^>]*data-owner="inner")(?=[^>]* hidden)(?=[^>]* disabled)[^>]*>/')
+        ->toMatch('/<fieldset(?=[^>]*data-owner="outer-after")(?![^>]* hidden)(?![^>]* disabled)[^>]*>/');
+});
+
+it('does not expose form root props as generic component data', function () {
+    $form = new Form(
+        autoSubmit: true,
+        unsavedChanges: true,
+        errorScroll: true,
+        cleanQueryParams: true,
+        conditionalFields: true,
+        trackFrameSrc: true,
+        autoSubmitDelay: 250,
+        frame: 'results',
+        enctype: 'multipart/form-data',
+        state: ['type' => 'link'],
+    );
+    $data = $form->data();
+
+    expect($data['formRoot'])->toBe($form)
+        ->and($data['conditionalFieldState'])->toBe(['type' => 'link'])
+        ->and($data)->not->toHaveKey('formState')
+        ->and(array_intersect_key($data, array_flip(
+            collect((new ReflectionClass(Form::class))->getProperties(ReflectionProperty::IS_PUBLIC))
+                ->filter(fn (ReflectionProperty $property) => $property->getDeclaringClass()->getName() === Form::class)
+                ->map(fn (ReflectionProperty $property) => $property->getName())
+                ->all(),
+        )))->toBe([]);
+});
+
+it('keeps form and progress contexts independent when crossed', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::form :state="['type' => 'link']">
+            <x-hw::progress value="25">
+                <x-hw::conditional-field when="type=link" data-owner="conditional">URL</x-hw::conditional-field>
+                <x-hw::progress.value />
+            </x-hw::progress>
+        </x-hw::form>
+    BLADE);
+
+    expect($html)
+        ->toMatch('/<fieldset(?=[^>]*data-owner="conditional")(?![^>]* hidden)(?![^>]* disabled)[^>]*>/')
+        ->toContain('>25%</span>');
 });
 
 it('merges inline stimulus attributes with internal controllers', function () {

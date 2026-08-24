@@ -7,6 +7,12 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 
 beforeEach(function () {
+    // The diagnostic comment is opt-in behaviour gated on app.debug, and two tests below
+    // turn it on deliberately. Pin the off state here so the tests that assert silence do
+    // not inherit it from the ambient environment: Testbench boots from its own skeleton,
+    // whose .env carries APP_DEBUG=true when one exists on the machine.
+    config()->set('app.debug', false);
+
     $this->appBase = isolateAppPaths();
     File::ensureDirectoryExists(public_path('build'));
     File::put(base_path('composer.json'), json_encode([

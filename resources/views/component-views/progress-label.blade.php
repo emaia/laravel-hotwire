@@ -1,1 +1,1 @@
-<span {{ $attributes->merge(['data-slot' => 'progress-label']) }}>{{ $slot }}</span>
+<span {{ $attributes->except('data-slot')->merge(['data-slot' => 'progress-label']) }}>{{ $slot }}</span>

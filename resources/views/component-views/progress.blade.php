@@ -1,19 +1,22 @@
 @php
+    use Emaia\LaravelHotwire\Support\ProgressTracks;
+
+    $progress = $progressRoot;
     $userStyle = trim((string) $attributes->get('style'));
-    $style = "--progress-value: {$formattedPercentage}%;".($userStyle !== '' ? " {$userStyle}" : '');
+    $style = "--progress-value: {$progress->formattedPercentage}%;".($userStyle !== '' ? " {$userStyle}" : '');
     $slotHtml = $slot->toHtml();
-    $hasTrack = str_contains($slotHtml, 'data-slot="progress-track"') || str_contains($slotHtml, "data-slot='progress-track'");
+    $hasTrack = ProgressTracks::declaresTrack($slotHtml);
 @endphp
 
 <div
-    {{ $attributes->except('style')->merge([
+    {{ $attributes->except(['style', 'data-slot'])->merge([
         'data-slot' => 'progress',
         'role' => 'progressbar',
         'aria-valuemin' => '0',
-        'aria-valuemax' => $formattedMax,
-        'aria-valuenow' => $formattedValue,
-        'data-value' => $formattedValue,
-        'data-max' => $formattedMax,
+        'aria-valuemax' => $progress->formattedMax,
+        'aria-valuenow' => $progress->formattedValue,
+        'data-value' => $progress->formattedValue,
+        'data-max' => $progress->formattedMax,
         'style' => $style,
     ]) }}
 >

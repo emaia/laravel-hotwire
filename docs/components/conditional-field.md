@@ -45,6 +45,14 @@ render needs model-backed trigger values, such as edit forms:
 `state` can be an Eloquent model, array, or object readable by `data_get()`. Validation retries still
 win over state via `old()`, so the initial visibility matches the values the user just submitted.
 
+The component may also render without `<hw:form>`. In that case, pass `state` directly when server-rendered visibility
+needs model data; Laravel `old()` input still takes precedence. For runtime updates, mount the
+[`conditional-fields`](../controllers/conditional-fields.md) controller on an ancestor that contains both the trigger
+controls and the dependent component.
+
+Application wrapper components can provide inherited state through the scoped `conditionalFieldState` component-data
+key. This keeps custom controller hosts possible without exposing or consuming a generic `state` key.
+
 ## String Rules
 
 For common rules, pass a compact `field=value` string:

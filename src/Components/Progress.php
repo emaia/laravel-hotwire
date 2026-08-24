@@ -6,6 +6,14 @@ use Illuminate\View\Component;
 
 class Progress extends Component
 {
+    protected $except = [
+        'value',
+        'max',
+        'formattedValue',
+        'formattedMax',
+        'formattedPercentage',
+    ];
+
     public string $formattedValue;
 
     public string $formattedMax;
@@ -30,6 +38,16 @@ class Progress extends Component
     public function render()
     {
         return view('hotwire::component-views.progress');
+    }
+
+    /** @return array<string, mixed> */
+    public function data(): array
+    {
+        $data = parent::data();
+        $data['progressRoot'] = $this;
+        $data['progressPercentage'] = $this->formattedPercentage;
+
+        return $data;
     }
 
     private function number(int|float|string|null $value, float $default): float
