@@ -6,7 +6,7 @@ use Emaia\LaravelHotwireTurbo\TurboStreamBuilder;
 // Macros live in a static registry and would leak between tests.
 beforeEach(function () {
     TurboStreamBuilder::flushMacros();
-    (new LaravelHotwireServiceProvider($this->app))->packageBooted();
+    (new LaravelHotwireServiceProvider($this->app))->bootBladeIntegration();
 });
 
 afterEach(function () {
@@ -57,7 +57,7 @@ it('renders through the hw alias even when the prefix is customized', function (
     config()->set('hotwire.prefix', 'custom');
 
     $provider = new LaravelHotwireServiceProvider($this->app);
-    $provider->packageBooted();
+    $provider->bootBladeIntegration();
 
     expect(turbo_stream()->toast('success', 'Saved')->toHtml())
         ->toContain('data-toast-message-value="Saved"');
@@ -78,7 +78,7 @@ it('leaves an application macro of the same name alone', function () {
     TurboStreamBuilder::flushMacros();
     TurboStreamBuilder::macro('toast', fn (): string => 'application macro');
 
-    (new LaravelHotwireServiceProvider($this->app))->packageBooted();
+    (new LaravelHotwireServiceProvider($this->app))->bootBladeIntegration();
 
     expect(turbo_stream()->toast())->toBe('application macro');
 });

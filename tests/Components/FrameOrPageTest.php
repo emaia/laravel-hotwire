@@ -399,7 +399,7 @@ it('uses the nearest frame-or-page ancestor for nested contextual components', f
 it('registers contextual subcomponents for default and custom prefixes', function () {
     config()->set('hotwire.prefix', 'custom');
 
-    (new LaravelHotwireServiceProvider($this->app))->packageBooted();
+    (new LaravelHotwireServiceProvider($this->app))->bootBladeIntegration();
 
     expect(Blade::getClassComponentAliases())
         ->toHaveKeys([

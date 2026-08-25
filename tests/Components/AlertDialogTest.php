@@ -151,7 +151,7 @@ it('registers with custom prefix', function () {
     config()->set('hotwire.prefix', 'custom');
 
     $provider = new LaravelHotwireServiceProvider($this->app);
-    $provider->packageBooted();
+    $provider->bootBladeIntegration();
 
     expect(Blade::getClassComponentAliases())->toHaveKey('custom::alert-dialog');
 });

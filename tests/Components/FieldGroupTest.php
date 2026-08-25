@@ -21,7 +21,7 @@ it('registers with custom prefix', function () {
     config()->set('hotwire.prefix', 'h');
 
     $provider = new LaravelHotwireServiceProvider($this->app);
-    $provider->packageBooted();
+    $provider->bootBladeIntegration();
 
     expect(Blade::getClassComponentAliases())->toHaveKey('h::field.group');
 });

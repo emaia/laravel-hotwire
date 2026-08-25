@@ -23,41 +23,46 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\HtmlString;
+use Illuminate\Support\ServiceProvider;
 use RuntimeException;
-use Spatie\LaravelPackageTools\Package;
-use Spatie\LaravelPackageTools\PackageServiceProvider;
 use WeakMap;
 
-class LaravelHotwireServiceProvider extends PackageServiceProvider
+class LaravelHotwireServiceProvider extends ServiceProvider
 {
     /** @var WeakMap<object, Vite>|null */
     private static ?WeakMap $viteControllerPreloadUsage = null;
 
-    public function configurePackage(Package $package): void
-    {
-        $package
-            ->name('hotwire')
-            ->hasConfigFile()
-            ->hasTranslations()
-            ->hasViews()
-            ->hasCommands([
-                InstallCommand::class,
-                MakeControllerCommand::class,
-                MakePresetCommand::class,
-                PublishControllersCommand::class,
-                ListComponentsCommand::class,
-                CheckCommand::class,
-                DocsCommand::class,
-                IdeJsonCommand::class,
-            ]);
-    }
+    private const COMMANDS = [
+        InstallCommand::class,
+        MakeControllerCommand::class,
+        MakePresetCommand::class,
+        PublishControllersCommand::class,
+        ListComponentsCommand::class,
+        CheckCommand::class,
+        DocsCommand::class,
+        IdeJsonCommand::class,
+    ];
 
-    public function packageRegistered(): void
+    public function register(): void
     {
+        $this->mergeConfigFrom(self::packagePath('config/hotwire.php'), 'hotwire');
+
         $this->app->scopedIf(SessionToast::class);
     }
 
-    public function packageBooted(): void
+    public function boot(): void
+    {
+        $this->bootPackageResources();
+        $this->bootBladeIntegration();
+    }
+
+    /**
+     * Register the component aliases, tag compiler and macros.
+     *
+     * Public and separate from boot() because it is the only part that is safe to re-run
+     * after the configured prefix changes — tests rely on that.
+     */
+    public function bootBladeIntegration(): void
     {
         $prefix = config('hotwire.prefix', 'hw');
         $registry = HotwireRegistry::make();
@@ -76,6 +81,34 @@ class LaravelHotwireServiceProvider extends PackageServiceProvider
         $this->registerToastMacro();
         $this->registerRedirectToastMacro();
         $this->registerViteControllerPreloadsMacro();
+    }
+
+    /**
+     * Register views, translations, commands and the publish tags documented in the README.
+     */
+    private function bootPackageResources(): void
+    {
+        $views = self::packagePath('resources/views');
+        $translations = self::packagePath('resources/lang');
+
+        $this->loadViewsFrom($views, 'hotwire');
+        $this->loadTranslationsFrom($translations, 'hotwire');
+        $this->loadJsonTranslationsFrom($translations);
+        $this->loadJsonTranslationsFrom(lang_path('vendor/hotwire'));
+        $this->commands(self::COMMANDS);
+
+        if (! $this->app->runningInConsole()) {
+            return;
+        }
+
+        $this->publishes([self::packagePath('config/hotwire.php') => config_path('hotwire.php')], 'hotwire-config');
+        $this->publishes([$views => base_path('resources/views/vendor/hotwire')], 'hotwire-views');
+        $this->publishes([$translations => lang_path('vendor/hotwire')], 'hotwire-translations');
+    }
+
+    private static function packagePath(string $path): string
+    {
+        return dirname(__DIR__).'/'.$path;
     }
 
     private function registerToastMacro(): void

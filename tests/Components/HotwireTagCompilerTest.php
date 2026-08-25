@@ -57,7 +57,7 @@ it('supports the configured tag prefix', function () {
     config()->set('hotwire.prefix', 'ui');
 
     $provider = new LaravelHotwireServiceProvider($this->app);
-    $provider->packageBooted();
+    $provider->bootBladeIntegration();
 
     $view = $this->blade('<ui:button>Save</ui:button>');
 
