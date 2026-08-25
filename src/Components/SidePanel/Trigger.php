@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Components\SidePanel;
 
 use Emaia\LaravelHotwire\Support\StimulusAttributes;
+use Emaia\LaravelHotwire\Support\StimulusIdentifier;
 use Illuminate\View\Component;
 use Illuminate\View\ComponentAttributeBag;
 use InvalidArgumentException;
@@ -33,6 +34,8 @@ class Trigger extends Component
         string $sidePanelState,
         ComponentAttributeBag $attributes,
     ): array {
+        StimulusIdentifier::guard($identifier, 'side-panel.trigger');
+
         if ($panelId === null) {
             throw new InvalidArgumentException('Side Panel trigger must be rendered inside a Side Panel root.');
         }

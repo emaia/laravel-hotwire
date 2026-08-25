@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Components\Sidebar;
 
 use Emaia\LaravelHotwire\Support\StimulusAttributes;
+use Emaia\LaravelHotwire\Support\StimulusIdentifier;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\Component;
 use Illuminate\View\ComponentAttributeBag;
@@ -24,6 +25,8 @@ class Provider extends Component
         public string $controller = 'sidebar',
         public ?Htmlable $stimulus = null,
     ) {
+        StimulusIdentifier::guard($controller, 'sidebar');
+
         $this->sidebarIdentifier = $controller;
         $this->resolvedOpen = $this->resolveOpen();
         $this->sidebarState = $this->resolvedOpen ? 'expanded' : 'collapsed';

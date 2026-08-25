@@ -1,6 +1,7 @@
 @aware(['fieldName' => null, 'fieldId' => null, 'fieldErrorKey' => null, 'fieldRequired' => false])
 
 @php
+    $controller = \Emaia\LaravelHotwire\Support\StimulusIdentifier::guard((string) $controller, 'rich-text');
     $explicitName = $name ?? null;
     $id = \Emaia\LaravelHotwire\Support\FieldKey::resolveId($id ?? null, $explicitName, $fieldId, $fieldName);
     $errorKey = \Emaia\LaravelHotwire\Support\FieldKey::resolveErrorKey($errorKey ?? null, $explicitName, $fieldErrorKey, $fieldName);

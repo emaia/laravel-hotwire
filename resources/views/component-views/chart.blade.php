@@ -1,4 +1,6 @@
 @php
+    $controller = \Emaia\LaravelHotwire\Support\StimulusIdentifier::guard((string) $controller, 'chart');
+
     $chartAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
         'data-slot' => 'chart',
         'data-controller' => $controller,

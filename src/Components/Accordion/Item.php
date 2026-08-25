@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Components\Accordion;
 
 use Emaia\LaravelHotwire\Support\StimulusAttributes;
+use Emaia\LaravelHotwire\Support\StimulusIdentifier;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\Component;
 use Illuminate\View\ComponentAttributeBag;
@@ -42,6 +43,8 @@ class Item extends Component
         if ($identifier === null) {
             throw new InvalidArgumentException('Accordion item must be rendered inside an Accordion root.');
         }
+
+        StimulusIdentifier::guard($identifier, 'accordion.item');
 
         $open = ! $this->disabled && ($this->open ?? in_array($this->value, $accordionValue, true));
 

@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Components\Tabs;
 
 use Emaia\LaravelHotwire\Support\StimulusAttributes;
+use Emaia\LaravelHotwire\Support\StimulusIdentifier;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\Component;
 use Illuminate\View\ComponentAttributeBag;
@@ -39,6 +40,8 @@ class Trigger extends Component
         string $identifier,
         ComponentAttributeBag $attributes,
     ): array {
+        StimulusIdentifier::guard($identifier, 'tabs.trigger');
+
         if ($tabsId === null) {
             throw new InvalidArgumentException('Tabs trigger must be rendered inside a Tabs root.');
         }

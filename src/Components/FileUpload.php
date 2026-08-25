@@ -5,6 +5,7 @@ namespace Emaia\LaravelHotwire\Components;
 use Emaia\LaravelHotwire\Components\Concerns\StripsNullProps;
 use Emaia\LaravelHotwire\Support\ComponentId;
 use Emaia\LaravelHotwire\Support\FieldKey;
+use Emaia\LaravelHotwire\Support\StimulusIdentifier;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\ViewErrorBag;
 use Illuminate\View\Component;
@@ -83,9 +84,7 @@ class FileUpload extends Component
             $this->id = app(ComponentId::class)->resolve($this->id, 'hw-file-upload', 'file-upload');
         }
 
-        if (! preg_match('/^[a-z0-9][a-z0-9_-]*(?:--[a-z0-9][a-z0-9_-]*)*$/', $controller)) {
-            throw new InvalidArgumentException('Invalid file-upload controller identifier.');
-        }
+        StimulusIdentifier::guard($controller, 'file-upload');
 
         if (! in_array($density, self::DENSITIES, true)) {
             throw new InvalidArgumentException('Unsupported file-upload density. Supported values: default, compact.');

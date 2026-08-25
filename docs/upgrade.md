@@ -360,6 +360,20 @@ Application PHP code that read `$component->identifier` should read `$component-
 subcomponents using `@aware(['identifier' => ...])` should receive their identifier explicitly; these four roots do not
 publish descendant context.
 
+### The `controller` prop is validated
+
+Every component that swaps its Stimulus identifier — Accordion, Carousel, Chart, File Upload, Map, Read More, Rich Text,
+Sidebar, Side Panel and Tabs — now rejects a `controller` value that is not a valid Stimulus identifier, throwing
+`InvalidArgumentException` with `Invalid <component> controller identifier.`. File Upload already enforced this; the rule
+is now shared by all ten.
+
+The identifier is interpolated into attribute *names* (`data-{controller}-url-value`), which no escaping layer covers, so
+a value carrying a quote or a space closed the attribute and injected arbitrary markup into the rendered tag.
+
+Accepted: lowercase letters, digits, `_` and `-`, starting with a letter or digit — `sales-chart`, `chart2`, `my_chart`,
+`turbo--progress`. Rejected: uppercase (`salesChart`), whitespace, quotes, and every other character. Rename any custom
+identifier that does not fit, and rename the matching controller file so the two still line up.
+
 ### Form and Progress context keys are scoped
 
 Form and Progress now expose descendant state through family-specific component data instead of generic keys an
