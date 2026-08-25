@@ -182,3 +182,26 @@ it('reads the first error of a named bag', function () {
     $view->assertSee('data-toast-message-value="Email is required"', false);
     $view->assertSee('data-toast-type-value="error"', false);
 });
+
+// --- Quoted content ---
+
+it('survives a double quote in the message', function () {
+    $view = $this->blade('<x-hw::toast :message="\'He said &quot;hello&quot; to me\'" />');
+
+    // \" would end the attribute at the first quote and drop the rest of the sentence.
+    $view->assertSee('data-toast-message-value="He said &quot;hello&quot; to me"', false);
+    $view->assertDontSee('\\"', false);
+});
+
+it('survives a double quote coming from the session', function () {
+    session()->flash('toast', [
+        'type' => 'success',
+        'message' => 'Renamed to "Q3 report"',
+        'description' => 'The old name was "Q2 report"',
+    ]);
+
+    $view = $this->blade('<x-hw::toaster />');
+
+    $view->assertSee('data-toast-message-value="Renamed to &quot;Q3 report&quot;"', false);
+    $view->assertSee('data-toast-description-value="The old name was &quot;Q2 report&quot;"', false);
+});

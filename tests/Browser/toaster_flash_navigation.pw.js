@@ -16,7 +16,7 @@ test("renders a flash toast that arrives during a Drive navigation", async ({ pa
                 <div data-slot="toast-trigger"
                      data-turbo-temporary
                      data-controller="toast"
-                     data-toast-message-value="Task updated"
+                     data-toast-message-value="Renamed to &quot;Q3 report&quot;"
                      data-toast-type-value="success"></div>
             `));
 
@@ -53,7 +53,8 @@ test("renders a flash toast that arrives during a Drive navigation", async ({ pa
 
         // The permanent element survived the visit, and the toast reached it.
         await expect(viewport).toHaveAttribute("data-host-token", "original");
-        await expect(page.locator('[data-slot="toast-title"]')).toHaveText("Task updated");
+        // The quotes arrive encoded; a backslash-escaped value would have been cut at the first one.
+        await expect(page.locator('[data-slot="toast-title"]')).toHaveText('Renamed to "Q3 report"');
     } finally {
         await new Promise((resolve) => server.close(resolve));
     }

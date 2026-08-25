@@ -66,3 +66,11 @@ it('leaves an application macro of the same name alone', function () {
 
     expect(redirectResponse()->toast())->toBe('application macro');
 });
+
+it('survives a double quote through the redirect macro', function () {
+    redirectResponse()->toast('success', 'Renamed to "Q3 report"');
+
+    $view = $this->blade('<x-hw::toaster />');
+
+    $view->assertSee('data-toast-message-value="Renamed to &quot;Q3 report&quot;"', false);
+});

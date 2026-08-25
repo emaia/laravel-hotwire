@@ -102,3 +102,11 @@ it('renders nothing for an empty message', function () {
 
     expect($html)->not->toContain('data-controller="toast"');
 });
+
+it('survives a double quote in the message', function () {
+    $html = turbo_stream()->toast('success', 'Renamed to "Q3 report"')->toHtml();
+
+    expect($html)
+        ->toContain('data-toast-message-value="Renamed to &quot;Q3 report&quot;"')
+        ->not->toContain('\\"');
+});
