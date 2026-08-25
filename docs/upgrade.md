@@ -24,8 +24,9 @@ layout:
 two renders first fires it and the other stays silent — the toast is not doubled. Delete `<hw:toast />` when
 convenient.
 
-**Layouts carrying only `<hw:toaster />` gain toasts they did not have.** If your app flashes `success`, `error` or
-`errors` and renders that feedback inline — an alert partial, `@error` under a field — those messages now *also*
+**Layouts carrying only `<hw:toaster />` gain toasts they did not have.** The viewport claims six session keys —
+`toast`, `success`, `error`, `errors`, `warning` and `info`. If your app flashes any of them and renders that feedback
+inline — an alert partial, `@error` under a field, a banner keyed on `warning` or `info` — those messages now *also*
 appear as toasts. Opt out and nothing changes:
 
 ```blade

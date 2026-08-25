@@ -635,3 +635,32 @@ function wait(ms) {
 function frame() {
     return new Promise((resolve) => requestAnimationFrame(() => resolve()));
 }
+
+// --- A replaced viewport ---
+
+test("buffers a toast emitted while the active viewport is detached", () => {
+    mount();
+    emitToast({ message: "Before the visit", type: "success" });
+
+    expect(toasts()).toHaveLength(1);
+
+    // A viewport without data-turbo-permanent leaves with the old body, and the manager outlives it
+    // when auto-disconnect is off. An emission here would otherwise be built into the detached node.
+    viewport.remove();
+
+    const replacement = document.createElement("div");
+    replacement.dataset.slot = "toaster";
+    document.body.appendChild(replacement);
+
+    emitToast({ message: "Task updated", type: "success" });
+
+    expect(replacement.querySelectorAll('[data-slot="toast"]')).toHaveLength(0);
+
+    // The new controller connects and builds its manager; the buffer drains into it.
+    toaster.destroy();
+    toaster = createToaster(replacement, {});
+
+    expect([...replacement.querySelectorAll('[data-slot="toast-title"]')].map((n) => n.textContent)).toEqual([
+        "Task updated",
+    ]);
+});

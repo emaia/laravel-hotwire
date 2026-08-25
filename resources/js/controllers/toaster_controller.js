@@ -1,7 +1,7 @@
 // @hotwire-package
 import { Controller } from "@hotwired/stimulus";
 
-import { createToaster } from "./_toaster.js";
+import { createToaster, isDetached } from "./_toaster.js";
 import { createTopLayer } from "./_top_layer.js";
 
 export default class extends Controller {
@@ -81,5 +81,5 @@ function isToaster(value) {
 
 /** An instance whose viewport was removed from the document. Absent element means never stale. */
 function isStale(value) {
-    return isToaster(value) && value.element?.isConnected === false;
+    return isToaster(value) && isDetached(value);
 }

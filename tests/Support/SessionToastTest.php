@@ -203,3 +203,25 @@ it('does not let a lower-priority key win over a named bag', function () {
 
     expect(sessionToast()->resolve()['message'])->toBe('Email is required');
 });
+
+it('skips a bag whose first message is blank', function () {
+    // The bag order is the order they were put in. A blank first message must not shadow the real
+    // error in the bag after it.
+    session()->flash('errors', tap(new ViewErrorBag, function ($bag) {
+        $bag->put('login', new MessageBag(['email' => ['   ']]));
+        $bag->put('profile', new MessageBag(['name' => ['Name is required']]));
+    }));
+
+    expect(sessionToast()->resolve())->toMatchArray([
+        'type' => 'error',
+        'message' => 'Name is required',
+    ]);
+});
+
+it('returns null when every bag is blank', function () {
+    session()->flash('errors', tap(new ViewErrorBag, function ($bag) {
+        $bag->put('login', new MessageBag(['email' => ['   ']]));
+    }));
+
+    expect(sessionToast()->resolve())->toBeNull();
+});

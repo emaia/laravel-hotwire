@@ -36,11 +36,23 @@ if (typeof document !== "undefined") {
     document.addEventListener("turbo:load", endRender);
 }
 
+/**
+ * A manager whose viewport left the document. Its cards would be built into a detached node, so it
+ * counts as no viewport at all.
+ */
+export function isDetached(instance) {
+    return instance?.element?.isConnected === false;
+}
+
 /** Show a toast, buffering it until a viewport exists. Returns its id. */
 export function emitToast(payload) {
     const toast = { ...payload, id: payload.id ?? nextId() };
 
-    if (active) {
+    // A viewport rendered without data-turbo-permanent is replaced on every Drive visit, and the
+    // manager outlives it until the new controller connects. Emissions landing in that window —
+    // routine, since lazy chunks connect in whatever order they arrive — must buffer rather than
+    // disappear into the old element.
+    if (active && !isDetached(active)) {
         active.show(toast);
     } else {
         pending.push(toast);

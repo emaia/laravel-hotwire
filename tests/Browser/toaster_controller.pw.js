@@ -379,12 +379,14 @@ async function setup(page, { createToaster = true } = {}) {
 }
 
 async function bundle() {
+    // The modules are inlined as a plain script, so every export keyword has to go. Stripping them
+    // by name meant a newly exported helper became a SyntaxError that took the whole bundle with it.
     const presence = (await readFile("resources/js/controllers/_presence.js", "utf8"))
-        .replace("export function createPresence", "function createPresence");
+        .replace(/export function /g, "function ");
 
     const toaster = (await readFile("resources/js/controllers/_toaster.js", "utf8"))
         .replace(/import \{[^}]*\} from "\.\/_presence\.js";\s*/, "")
-        .replace(/export function (emitToast|resetToaster|createToaster)/g, "function $1");
+        .replace(/export function /g, "function ");
 
     return `${presence}\n${toaster}\nwindow.createToaster = createToaster;\nwindow.emitToast = emitToast;`;
 }
