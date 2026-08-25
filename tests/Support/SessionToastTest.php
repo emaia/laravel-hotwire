@@ -225,3 +225,24 @@ it('returns null when every bag is blank', function () {
 
     expect(sessionToast()->resolve())->toBeNull();
 });
+
+it('skips a blank message inside a bag', function () {
+    session()->flash('errors', tap(new ViewErrorBag, fn ($bag) => $bag->put('default', new MessageBag([
+        'email' => ['   '],
+        'name' => ['Name is required'],
+    ]))));
+
+    expect(sessionToast()->resolve())->toMatchArray([
+        'type' => 'error',
+        'message' => 'Name is required',
+    ]);
+});
+
+it('skips a blank message in a bare message bag', function () {
+    session()->flash('errors', new MessageBag([
+        'email' => ['   '],
+        'name' => ['Name is required'],
+    ]));
+
+    expect(sessionToast()->resolve()['message'])->toBe('Name is required');
+});

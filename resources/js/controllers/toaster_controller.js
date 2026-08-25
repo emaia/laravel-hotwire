@@ -1,7 +1,7 @@
 // @hotwire-package
 import { Controller } from "@hotwired/stimulus";
 
-import { createToaster, isDetached } from "./_toaster.js";
+import { createToaster, flushPending, isDetached } from "./_toaster.js";
 import { createTopLayer } from "./_top_layer.js";
 
 export default class extends Controller {
@@ -34,6 +34,8 @@ export default class extends Controller {
         if (!isToaster(window.toaster)) {
             window.toaster = this.createToaster(this.#buildOptions());
         }
+
+        flushPending();
     }
 
     createToaster(options) {

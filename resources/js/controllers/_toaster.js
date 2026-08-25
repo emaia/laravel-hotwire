@@ -34,6 +34,7 @@ if (typeof document !== "undefined") {
         renderGuard = setTimeout(endRender, MAX_RENDER_WAIT);
     });
     document.addEventListener("turbo:load", endRender);
+    document.addEventListener("turbo:load", flushPending);
 }
 
 /**
@@ -42,6 +43,14 @@ if (typeof document !== "undefined") {
  */
 export function isDetached(instance) {
     return instance?.element?.isConnected === false;
+}
+
+export function flushPending() {
+    if (!active || isDetached(active) || pending.length === 0) return;
+
+    const buffered = pending;
+    pending = [];
+    buffered.forEach((toast) => active.show(toast));
 }
 
 /** Show a toast, buffering it until a viewport exists. Returns its id. */
@@ -462,9 +471,7 @@ export function createToaster(element, options = {}) {
     };
 
     active = instance;
-    const buffered = pending;
-    pending = [];
-    buffered.forEach(show);
+    flushPending();
 
     return instance;
 }

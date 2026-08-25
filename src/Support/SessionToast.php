@@ -96,7 +96,7 @@ class SessionToast
         // bag whose first message is blank must not shadow the ones after it.
         if ($bag instanceof ViewErrorBag) {
             foreach ($bag->getBags() as $messageBag) {
-                if (($text = $this->text($messageBag->first())) !== null) {
+                if (($text = $this->firstMessage($messageBag)) !== null) {
                     return $text;
                 }
             }
@@ -104,7 +104,19 @@ class SessionToast
             return null;
         }
 
-        return $bag instanceof MessageBag ? $this->text($bag->first()) : null;
+        return $bag instanceof MessageBag ? $this->firstMessage($bag) : null;
+    }
+
+    /** first() only reaches the first message of the first key, which may itself be blank. */
+    private function firstMessage(MessageBag $bag): ?string
+    {
+        foreach ($bag->all() as $message) {
+            if (($text = $this->text($message)) !== null) {
+                return $text;
+            }
+        }
+
+        return null;
     }
 
     private function text(mixed $value): ?string
