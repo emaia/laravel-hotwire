@@ -246,3 +246,13 @@ it('skips a blank message in a bare message bag', function () {
 
     expect(sessionToast()->resolve()['message'])->toBe('Name is required');
 });
+
+it('reads raw messages past a decorating bag format', function () {
+    $messages = new MessageBag(['email' => ['   '], 'name' => ['Name is required']]);
+    $messages->setFormat('<li>:message</li>');
+
+    session()->flash('errors', tap(new ViewErrorBag, fn ($bag) => $bag->put('default', $messages)));
+
+    // The format would make the blank message look usable and would ride into the card as text.
+    expect(sessionToast()->resolve()['message'])->toBe('Name is required');
+});

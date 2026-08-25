@@ -107,10 +107,9 @@ class SessionToast
         return $bag instanceof MessageBag ? $this->firstMessage($bag) : null;
     }
 
-    /** first() only reaches the first message of the first key, which may itself be blank. */
     private function firstMessage(MessageBag $bag): ?string
     {
-        foreach ($bag->all() as $message) {
+        foreach ($bag->all(':message') as $message) {
             if (($text = $this->text($message)) !== null) {
                 return $text;
             }
