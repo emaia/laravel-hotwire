@@ -23,6 +23,14 @@ export default class extends Controller {
         this.#topLayer.show();
         document.addEventListener("hotwire:top-layer:show", this.#handleTopLayerShow);
 
+        // A viewport rendered without data-turbo-permanent is a different element after every Drive
+        // visit, and the manager it left behind is still live. Reusing it would hand every later
+        // toast to a detached node, so nothing would ever appear again.
+        if (isStale(window.toaster)) {
+            window.toaster.destroy();
+            window.toaster = null;
+        }
+
         if (!isToaster(window.toaster)) {
             window.toaster = this.createToaster(this.#buildOptions());
         }
@@ -69,4 +77,9 @@ export default class extends Controller {
  */
 function isToaster(value) {
     return Boolean(value) && typeof value.destroy === "function" && value.destroyed !== true;
+}
+
+/** An instance whose viewport was removed from the document. Absent element means never stale. */
+function isStale(value) {
+    return isToaster(value) && value.element?.isConnected === false;
 }

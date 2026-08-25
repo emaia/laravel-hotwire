@@ -434,6 +434,10 @@ export function createToaster(element, options = {}) {
         get destroyed() {
             return destroyed;
         },
+        /** The viewport this manager writes into; the controller reads it to spot a stale global. */
+        get element() {
+            return element;
+        },
         show,
         dismiss,
         destroy,

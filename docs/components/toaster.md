@@ -72,8 +72,12 @@ return redirect()->back()->with('success', 'Item created successfully!');
 ```
 
 The keys are read in the order above and the first usable message wins. A failed validation therefore surfaces its
-first error as a toast on its own, with no extra wiring. An empty message — including `withErrors([])` — renders
-nothing rather than an empty card.
+first error as a toast on its own, with no extra wiring, named bags (`validateWithBag`, `withErrors(…, 'login')`)
+included. An empty message — including `withErrors([])` — renders nothing rather than an empty card.
+
+The keys are read from the session whether they were flashed or stored, so put them there with `->with(…)` or
+`session()->flash(…)`. A value written with `session([…])` persists across requests and would raise its toast again
+on each one.
 
 Exactly one toast is rendered per request from the flash. If your layout still carries a standalone
 [`<hw:toast />`](./toast.md), whichever of the two renders first claims the message and the other stays silent, so

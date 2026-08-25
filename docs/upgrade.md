@@ -20,14 +20,24 @@ layout:
 <hw:toaster position="top-center" />
 ```
 
-**No action is required.** Leaving `<hw:toast />` in place does not double the toast: the flashed message is claimed
-once per request, so whichever of the two renders first fires it and the other stays silent. Delete the tag when
-convenient, or keep the old split explicitly with `<hw:toaster :flash="false" />`.
+**Layouts carrying both tags need no action.** The flashed message is claimed once per request, so whichever of the
+two renders first fires it and the other stays silent — the toast is not doubled. Delete `<hw:toast />` when
+convenient.
+
+**Layouts carrying only `<hw:toaster />` gain toasts they did not have.** If your app flashes `success`, `error` or
+`errors` and renders that feedback inline — an alert partial, `@error` under a field — those messages now *also*
+appear as toasts. Opt out and nothing changes:
+
+```blade
+<hw:toaster :flash="false" />
+```
 
 Two behaviours do change:
 
-- An empty flash renders nothing instead of an empty card. `redirect()->withErrors([])` leaves `errors` in the
-  session with no message in it, which previously produced a toast with an empty title.
+- An empty message renders nothing instead of an empty card. This covers `redirect()->withErrors([])`, which leaves
+  `errors` in the session with no message in it, and an explicit empty string — `<hw:toast message="" />` or
+  `turbo_stream()->toast('success', $request->input('message', ''))` — which the docs already described as absent but
+  which used to render a toast with no text. An empty message now falls back to the session, like an omitted one.
 - Only one of the viewport and a standalone `<hw:toast />` fires per request. If you were deliberately rendering the
   same flashed message twice, pass it explicitly to the second tag.
 

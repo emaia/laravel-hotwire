@@ -94,3 +94,11 @@ it('leaves the flashed message for the layout', function () {
 
     $view->assertSee('data-toast-message-value="Item created"', false);
 });
+
+it('renders nothing for an empty message', function () {
+    // Documented as "empty strings are treated as absent", which matters when the values come
+    // straight from request input. The redirect twin discards it the same way.
+    $html = turbo_stream()->toast('success', '')->toHtml();
+
+    expect($html)->not->toContain('data-controller="toast"');
+});

@@ -91,10 +91,19 @@ class SessionToast
     {
         $bag = Session::get('errors');
 
-        return match (true) {
-            $bag instanceof ViewErrorBag, $bag instanceof MessageBag => $bag->first(),
-            default => null,
-        };
+        // ViewErrorBag::first() delegates to the default bag alone, so validateWithBag() and
+        // withErrors(..., 'login') would resolve to nothing. Every bag it holds is fair game.
+        if ($bag instanceof ViewErrorBag) {
+            foreach ($bag->getBags() as $messageBag) {
+                if ($messageBag->isNotEmpty()) {
+                    return $messageBag->first();
+                }
+            }
+
+            return null;
+        }
+
+        return $bag instanceof MessageBag ? $bag->first() : null;
     }
 
     private function text(mixed $value): ?string

@@ -25,11 +25,13 @@ class Toaster extends Component
         public bool $expand = false,
         public bool $autoDisconnect = false,
         public bool $turboPermanent = true,
-        public bool $flash = true,
         public string $class = '',
         public ?string $className = null,
         public ?string $containerAriaLabel = null,
         public ?Htmlable $stimulus = null,
+        // Appended rather than grouped with turbo-permanent: an earlier slot would shift every
+        // positional argument after it.
+        public bool $flash = true,
     ) {
         if (! $this->flash) {
             return;

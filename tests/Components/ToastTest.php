@@ -2,6 +2,7 @@
 
 use Emaia\LaravelHotwire\Components\Toast;
 use Illuminate\Support\MessageBag;
+use Illuminate\Support\ViewErrorBag;
 
 it('renders with explicit message', function () {
     $view = $this->blade('<x-hw::toast message="Done!" type="success" />');
@@ -147,4 +148,37 @@ it('does not render class-name attribute when not provided', function () {
     $view = $this->blade('<x-hw::toast message="Saved" type="success" />');
 
     $view->assertDontSee('class-name-value', false);
+});
+
+// --- Empty messages ---
+
+it('does not render an empty message', function () {
+    $view = $this->blade('<x-hw::toast message="" type="success" />');
+
+    $view->assertDontSee('data-controller="toast"', false);
+});
+
+it('does not render a whitespace-only message', function () {
+    $view = $this->blade('<x-hw::toast message="   " />');
+
+    $view->assertDontSee('data-controller="toast"', false);
+});
+
+it('falls back to the session when the message is empty', function () {
+    session()->flash('success', 'Item created');
+
+    $view = $this->blade('<x-hw::toast message="" />');
+
+    $view->assertSee('data-toast-message-value="Item created"', false);
+});
+
+// --- Named error bags ---
+
+it('reads the first error of a named bag', function () {
+    session()->flash('errors', tap(new ViewErrorBag, fn ($bag) => $bag->put('login', new MessageBag(['email' => ['Email is required']]))));
+
+    $view = $this->blade('<x-hw::toast />');
+
+    $view->assertSee('data-toast-message-value="Email is required"', false);
+    $view->assertSee('data-toast-type-value="error"', false);
 });

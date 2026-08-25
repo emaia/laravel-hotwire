@@ -187,3 +187,19 @@ it('is scoped so a new request starts unclaimed', function () {
 
     expect(sessionToast()->consume())->not->toBeNull();
 });
+
+it('reads the first error of a named bag', function () {
+    session()->flash('errors', tap(new ViewErrorBag, fn ($bag) => $bag->put('login', new MessageBag(['email' => ['Email is required']]))));
+
+    expect(sessionToast()->resolve())->toMatchArray([
+        'type' => 'error',
+        'message' => 'Email is required',
+    ]);
+});
+
+it('does not let a lower-priority key win over a named bag', function () {
+    session()->flash('errors', tap(new ViewErrorBag, fn ($bag) => $bag->put('login', new MessageBag(['email' => ['Email is required']]))));
+    session()->flash('info', 'Lower priority');
+
+    expect(sessionToast()->resolve()['message'])->toBe('Email is required');
+});
