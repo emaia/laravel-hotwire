@@ -29,7 +29,16 @@ final class StimulusAttributes
 
         $stimulusAttributes = $stimulus instanceof Arrayable ? $stimulus->toArray() : [];
 
-        return new ComponentAttributeBag(self::mergeArrays($protectedPrefixes, $internal, $user, $stimulusAttributes));
+        return new ComponentAttributeBag(array_map(
+            self::encode(...),
+            self::mergeArrays($protectedPrefixes, $internal, $user, $stimulusAttributes),
+        ));
+    }
+
+    /** ComponentAttributeBag renders a quote as \", ending the attribute early and truncating the value. */
+    private static function encode(mixed $value): mixed
+    {
+        return is_string($value) ? str_replace('"', '&quot;', $value) : $value;
     }
 
     /**
