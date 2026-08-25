@@ -5,10 +5,17 @@ import { createPresence } from "./_presence.js";
 const TYPES = ["default", "success", "error", "warning", "info"];
 const MAX_RENDER_WAIT = 2000;
 
+// Emissions routinely arrive before a viewport exists: the trigger sits earlier in the document
+// than the layout's, and lazy-loaded controllers connect in whatever order their chunks land.
 let pending = [];
 let active = null;
 let sequence = 0;
 
+// A toast born inside Turbo's swap would play its entry behind the transition snapshot and land
+// fully formed. Two signals cover the two arrival orders because neither covers both: the
+// pseudo-element animations only become observable once the transition is ready, which a preloaded
+// chunk beats and a lazily imported one does not. Document scope is deliberate — the listener has
+// to predate the viewport it protects.
 let renderInFlight = false;
 let renderGuard = null;
 
@@ -92,6 +99,8 @@ export function createToaster(element, options = {}) {
         const entry = build(id, payload);
         entries.set(id, entry);
         element.insertBefore(entry.element, element.firstChild);
+        // Anything that forces layout has to run before presence stages the closed frame: a
+        // suppressed read afterwards becomes the transition's base style and the toast snaps in.
         measure(entry);
         observe(entry);
         entry.presence.sync(false);
