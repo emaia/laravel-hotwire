@@ -139,9 +139,6 @@ it('keeps the trigger outside the permanent element', function () {
 
     $html = $this->blade('<x-hw::toaster />')->__toString();
 
-    // Turbo swaps the new page's [data-turbo-permanent] element — subtree included — for the
-    // current one, so a trigger nested in the viewport would be dropped on the very Drive visit
-    // that follows a redirect. It has to be a sibling.
     expect($html)->toMatch('/<div[^>]*id="toaster"[^>]*>\s*<\/div>/');
 
     $viewport = strpos($html, 'id="toaster"');

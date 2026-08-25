@@ -29,8 +29,7 @@ class Toaster extends Component
         public ?string $className = null,
         public ?string $containerAriaLabel = null,
         public ?Htmlable $stimulus = null,
-        // Appended rather than grouped with turbo-permanent: an earlier slot would shift every
-        // positional argument after it.
+        // Appended, not grouped with turbo-permanent: an earlier slot shifts every positional argument.
         public bool $flash = true,
     ) {
         if (! $this->flash) {

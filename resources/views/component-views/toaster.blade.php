@@ -22,11 +22,8 @@
 
 <div {{ $toasterAttributes }}></div>
 @if ($flashMessage !== null)
-    {{--
-        A sibling, never a child: Turbo swaps the new page's [data-turbo-permanent] element — subtree
-        included — for the current one, so a trigger nested here would be dropped on the very Drive
-        visit that follows a redirect, which is the case this exists for.
-    --}}
+    {{-- A sibling, never a child: Turbo swaps the new page's permanent element for the current one,
+         so a trigger nested here is dropped on the Drive visit that follows a redirect. --}}
     <x-hw::toast
         :message="$flashMessage"
         :type="$flashType"

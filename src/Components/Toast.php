@@ -24,12 +24,9 @@ class Toast extends Component
         public ?string $className = null,
         public ?Htmlable $stimulus = null,
     ) {
-        // An empty string is absent, not a message: the values routinely come from request input
-        // or a macro argument, and rendering one produces a card with no text in it.
         $message = $this->message !== null && trim($this->message) !== '' ? $this->message : null;
 
-        // An explicit message is the caller's own, so it must not spend the session's — the toaster
-        // (or a later <hw:toast />) still has to render that one. The type keeps falling back to it.
+        // An explicit message must not spend the session's; the toaster still has to render that one.
         $claims = $message === null;
         $session = app(SessionToast::class);
         $flash = $claims ? $session->consume() : $session->resolve();

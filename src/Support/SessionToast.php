@@ -8,7 +8,6 @@ use Illuminate\Support\ViewErrorBag;
 
 class SessionToast
 {
-    /** Priority order, and the toast type each key maps to. */
     private const array KEYS = [
         'success' => 'success',
         'error' => 'error',
@@ -30,6 +29,8 @@ class SessionToast
     }
 
     /**
+     * Claim the flashed toast; every later call returns null so it renders exactly once.
+     *
      * @return array{type: string, message: string, description: ?string, position: ?string}|null
      */
     public function consume(): ?array
@@ -83,17 +84,12 @@ class SessionToast
         return null;
     }
 
-    /**
-     * The bag is never forgotten — @error and ViewErrorBag still need it downstream, and the claim
-     * this class hands out is in-memory only so an aborted render doesn't burn the flash.
-     */
+    /** The bag is never forgotten: @error and ViewErrorBag still need it downstream. */
     private function firstError(): ?string
     {
         $bag = Session::get('errors');
 
-        // ViewErrorBag::first() delegates to the default bag alone, so validateWithBag() and
-        // withErrors(..., 'login') would resolve to nothing. Every bag it holds is fair game, and a
-        // bag whose first message is blank must not shadow the ones after it.
+        // ViewErrorBag::first() reaches the default bag alone, so named bags would resolve to nothing.
         if ($bag instanceof ViewErrorBag) {
             foreach ($bag->getBags() as $messageBag) {
                 if (($text = $this->firstMessage($messageBag)) !== null) {
@@ -107,6 +103,7 @@ class SessionToast
         return $bag instanceof MessageBag ? $this->firstMessage($bag) : null;
     }
 
+    /** ':message' overrides the bag's own format, which would decorate the text and ride into the card. */
     private function firstMessage(MessageBag $bag): ?string
     {
         foreach ($bag->all(':message') as $message) {

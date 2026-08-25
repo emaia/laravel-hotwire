@@ -645,8 +645,7 @@ test("buffers a toast emitted while the active viewport is detached", () => {
 
     expect(toasts()).toHaveLength(1);
 
-    // A viewport without data-turbo-permanent leaves with the old body, and the manager outlives it
-    // when auto-disconnect is off. An emission here would otherwise be built into the detached node.
+    // Without data-turbo-permanent the viewport leaves with the old body; the manager outlives it.
     viewport.remove();
 
     const replacement = document.createElement("div");
@@ -657,7 +656,6 @@ test("buffers a toast emitted while the active viewport is detached", () => {
 
     expect(replacement.querySelectorAll('[data-slot="toast"]')).toHaveLength(0);
 
-    // The new controller connects and builds its manager; the buffer drains into it.
     toaster.destroy();
     toaster = createToaster(replacement, {});
 
@@ -669,8 +667,7 @@ test("buffers a toast emitted while the active viewport is detached", () => {
 test("drains into the same viewport after it is detached and put back", () => {
     mount();
 
-    // Turbo takes the permanent viewport away with the old body and puts the very same element back
-    // once the swap is done, so the manager is never recreated and nothing else would drain.
+    // Turbo puts the very same element back after the swap, so the manager is never recreated.
     viewport.remove();
     emitToast({ message: "Task updated", type: "success" });
 

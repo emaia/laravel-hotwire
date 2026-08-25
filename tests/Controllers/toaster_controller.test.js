@@ -190,9 +190,7 @@ async function mount(html) {
 }
 
 test.serial("recreates the instance when its viewport left the document", async () => {
-    // Without data-turbo-permanent the viewport is a new element after every Drive visit. The
-    // manager left behind is still live, so the id guard alone would keep writing toasts into the
-    // detached node.
+    // The manager left behind is still live, so the id guard alone would keep writing into it.
     await mount(`<div data-controller="toaster"></div>`);
 
     const stale = window.toaster;

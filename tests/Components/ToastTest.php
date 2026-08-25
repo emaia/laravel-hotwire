@@ -188,7 +188,6 @@ it('reads the first error of a named bag', function () {
 it('survives a double quote in the message', function () {
     $view = $this->blade('<x-hw::toast :message="\'He said &quot;hello&quot; to me\'" />');
 
-    // \" would end the attribute at the first quote and drop the rest of the sentence.
     $view->assertSee('data-toast-message-value="He said &quot;hello&quot; to me"', false);
     $view->assertDontSee('\\"', false);
 });

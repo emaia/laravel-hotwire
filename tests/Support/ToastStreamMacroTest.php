@@ -88,16 +88,12 @@ it('leaves the flashed message for the layout', function () {
 
     turbo_stream()->toast('error', 'Failed')->toHtml();
 
-    // The macro renders <x-hw::toast> with an explicit message, so it must not claim the session's
-    // — the toaster in the layout still has to render that one.
     $view = $this->blade('<x-hw::toaster />');
 
     $view->assertSee('data-toast-message-value="Item created"', false);
 });
 
 it('renders nothing for an empty message', function () {
-    // Documented as "empty strings are treated as absent", which matters when the values come
-    // straight from request input. The redirect twin discards it the same way.
     $html = turbo_stream()->toast('success', '')->toHtml();
 
     expect($html)->not->toContain('data-controller="toast"');

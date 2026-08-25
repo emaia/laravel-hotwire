@@ -2,10 +2,8 @@ import { expect, test } from "@playwright/test";
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 
-// A flash toast rides a full Turbo Drive navigation. The viewport is data-turbo-permanent, so Turbo
-// detaches it with the old body and puts the very same element back after the swap — and the swap is
-// awaited, so Stimulus connects the trigger in the new body while the viewport is still detached.
-// Nothing here can be faked: the window only exists because Turbo's renderer yields inside it.
+// A unit test cannot reach this: the gap where the viewport is detached exists only because Turbo's
+// renderer awaits the body swap between detaching the permanent element and putting it back.
 test("renders a flash toast that arrives during a Drive navigation", async ({ page }) => {
     const server = createServer((request, response) => {
         const url = new URL(request.url, "http://localhost");
@@ -51,7 +49,6 @@ test("renders a flash toast that arrives during a Drive navigation", async ({ pa
         await page.locator("#save").click();
         await expect(page.locator("h1")).toHaveText("Done");
 
-        // The permanent element survived the visit, and the toast reached it.
         await expect(viewport).toHaveAttribute("data-host-token", "original");
         // The quotes arrive encoded; a backslash-escaped value would have been cut at the first one.
         await expect(page.locator('[data-slot="toast-title"]')).toHaveText('Renamed to "Q3 report"');
@@ -80,7 +77,6 @@ function layout(content) {
     `;
 }
 
-// The modules are inlined as one plain script, mirroring the other browser harnesses.
 async function controllerScript() {
     const read = async (path) => readFile(`resources/js/controllers/${path}`, "utf8");
     const strip = (source) => source.replace(/export function /g, "function ");
@@ -89,8 +85,7 @@ async function controllerScript() {
     const topLayer = strip(await read("_top_layer.js"));
     const toaster = strip(await read("_toaster.js")).replace(/import \{[^}]*\} from "\.\/_presence\.js";\s*/, "");
 
-    // Controller is destructured once for the whole script; declaring it per controller would be a
-    // duplicate binding and take the entire bundle down with a SyntaxError.
+    // Destructured once: declaring Controller per controller is a duplicate binding, and a SyntaxError.
     const controller = async (path, name) =>
         (await read(path))
             .replace(/import \{[^}]*\} from "@hotwired\/stimulus";\s*/, "")

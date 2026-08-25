@@ -205,8 +205,6 @@ it('does not let a lower-priority key win over a named bag', function () {
 });
 
 it('skips a bag whose first message is blank', function () {
-    // The bag order is the order they were put in. A blank first message must not shadow the real
-    // error in the bag after it.
     session()->flash('errors', tap(new ViewErrorBag, function ($bag) {
         $bag->put('login', new MessageBag(['email' => ['   ']]));
         $bag->put('profile', new MessageBag(['name' => ['Name is required']]));
@@ -253,6 +251,5 @@ it('reads raw messages past a decorating bag format', function () {
 
     session()->flash('errors', tap(new ViewErrorBag, fn ($bag) => $bag->put('default', $messages)));
 
-    // The format would make the blank message look usable and would ride into the card as text.
     expect(sessionToast()->resolve()['message'])->toBe('Name is required');
 });

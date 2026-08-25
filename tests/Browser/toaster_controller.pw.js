@@ -379,8 +379,7 @@ async function setup(page, { createToaster = true } = {}) {
 }
 
 async function bundle() {
-    // The modules are inlined as a plain script, so every export keyword has to go. Stripping them
-    // by name meant a newly exported helper became a SyntaxError that took the whole bundle with it.
+    // Inlined as a plain script, so every export has to go — stripping by name broke on the next one.
     const presence = (await readFile("resources/js/controllers/_presence.js", "utf8"))
         .replace(/export function /g, "function ");
 
