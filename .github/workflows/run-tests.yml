@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - '**.php'
+      - '**.css'
       - '.github/workflows/run-tests.yml'
       - 'phpunit.xml.dist'
       - 'composer.json'
@@ -12,6 +13,7 @@ on:
   pull_request:
     paths:
       - '**.php'
+      - '**.css'
       - '.github/workflows/run-tests.yml'
       - 'phpunit.xml.dist'
       - 'composer.json'

@@ -1,0 +1,13 @@
+{
+    "tailwindVersion": "4.3.3",
+    "presets": {
+        "nova": {
+            "rawBytes": 318575,
+            "gzipBytes": 33716
+        }
+    },
+    "selective": {
+        "rawBytes": 59173,
+        "gzipBytes": 11285
+    }
+}

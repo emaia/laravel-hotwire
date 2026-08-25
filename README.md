@@ -176,9 +176,13 @@ detected package manager install command; use `--skip-install` when CI handles t
 composer test
 composer analyse
 bun run test
+bun run test:css
 bun run test:browser
 composer format
 ```
+
+`bun run build:css` compiles every public preset plus the selective fixture and reports raw/gzip sizes. After an
+intentional output change, refresh the committed size baseline with `bun run test:css:update`.
 
 The registry in [`src/Registry/catalog.php`](src/Registry/catalog.php) is the source of truth for package components,
 controllers, npm dependencies, docs paths and styling hooks. Update it whenever you add or rename a package component or

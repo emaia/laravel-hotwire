@@ -1,0 +1,19 @@
+@import "tailwindcss";
+@import "../../vendor/emaia/laravel-hotwire/resources/css/tokens.css";
+@import "../../vendor/emaia/laravel-hotwire/resources/css/custom-variants.css";
+@import "../../vendor/emaia/laravel-hotwire/resources/css/structural.css";
+
+@source "../../vendor/emaia/laravel-hotwire/resources/views/**/*.blade.php";
+@source "../../vendor/emaia/laravel-hotwire/src/**/*.php";
+@source "../../vendor/emaia/laravel-hotwire/resources/js/**/*.js";
+@source "../../vendor/emaia/laravel-hotwire/resources/css/**/*.css";
+
+@layer components {
+    [data-slot="button"] {
+        @apply bg-primary text-primary-foreground inline-flex items-center justify-center rounded-md;
+    }
+
+    [data-slot="card"] {
+        @apply border-border bg-card text-card-foreground rounded-xl border;
+    }
+}
