@@ -2,6 +2,8 @@
 
 use Emaia\LaravelHotwire\LaravelHotwireServiceProvider;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\MessageBag;
+use Illuminate\Support\ViewErrorBag;
 
 // --- Defaults ---
 
@@ -118,4 +120,129 @@ it('registers with custom prefix', function () {
     $provider->packageBooted();
 
     expect(Blade::getClassComponentAliases())->toHaveKey('custom::toaster');
+});
+
+// --- Session flash ---
+
+it('renders the flashed message as a toast trigger', function () {
+    session()->flash('success', 'Item created');
+
+    $view = $this->blade('<x-hw::toaster />');
+
+    $view->assertSee('data-controller="toast"', false);
+    $view->assertSee('data-toast-message-value="Item created"', false);
+    $view->assertSee('data-toast-type-value="success"', false);
+});
+
+it('keeps the trigger outside the permanent element', function () {
+    session()->flash('success', 'Item created');
+
+    $html = $this->blade('<x-hw::toaster />')->__toString();
+
+    // Turbo swaps the new page's [data-turbo-permanent] element — subtree included — for the
+    // current one, so a trigger nested in the viewport would be dropped on the very Drive visit
+    // that follows a redirect. It has to be a sibling.
+    expect($html)->toMatch('/<div[^>]*id="toaster"[^>]*>\s*<\/div>/');
+
+    $viewport = strpos($html, 'id="toaster"');
+    $trigger = strpos($html, 'data-slot="toast-trigger"');
+
+    expect($trigger)->toBeGreaterThan($viewport)
+        ->and(substr($html, $viewport, $trigger - $viewport))->toContain('</div>');
+});
+
+it('renders no trigger without a flashed message', function () {
+    $view = $this->blade('<x-hw::toaster />');
+
+    $view->assertDontSee('data-slot="toast-trigger"', false);
+    $view->assertDontSee('data-controller="toast"', false);
+});
+
+it('renders no trigger when the flash is disabled', function () {
+    session()->flash('success', 'Item created');
+
+    $view = $this->blade('<x-hw::toaster :flash="false" />');
+
+    $view->assertDontSee('data-slot="toast-trigger"', false);
+});
+
+it('maps each flash key to its toast type', function (string $key, string $type) {
+    session()->flash($key, 'Message');
+
+    $view = $this->blade('<x-hw::toaster />');
+
+    $view->assertSee('data-toast-type-value="'.$type.'"', false);
+})->with([
+    ['success', 'success'],
+    ['error', 'error'],
+    ['warning', 'warning'],
+    ['info', 'info'],
+]);
+
+it('renders the first validation error', function () {
+    session()->flash('errors', tap(new ViewErrorBag, fn ($bag) => $bag->put('default', new MessageBag(['email' => ['Email is required']]))));
+
+    $view = $this->blade('<x-hw::toaster />');
+
+    $view->assertSee('data-toast-message-value="Email is required"', false);
+    $view->assertSee('data-toast-type-value="error"', false);
+});
+
+it('renders no trigger for an empty error bag', function () {
+    session()->flash('errors', new ViewErrorBag);
+
+    $view = $this->blade('<x-hw::toaster />');
+
+    $view->assertDontSee('data-slot="toast-trigger"', false);
+});
+
+it('forwards description and position from a structured payload', function () {
+    session()->flash('toast', [
+        'type' => 'success',
+        'message' => 'Task updated',
+        'description' => 'Your changes are now live.',
+        'position' => 'top-center',
+    ]);
+
+    $view = $this->blade('<x-hw::toaster />');
+
+    $view->assertSee('data-toast-message-value="Task updated"', false);
+    $view->assertSee('data-toast-description-value="Your changes are now live."', false);
+    $view->assertSee('data-toast-position-value="top-center"', false);
+});
+
+it('renders the trigger alongside a custom id', function () {
+    session()->flash('success', 'Item created');
+
+    $view = $this->blade('<x-hw::toaster id="toaster-root" />');
+
+    $view->assertSee('id="toaster-root"', false);
+    $view->assertSee('data-toast-message-value="Item created"', false);
+});
+
+// --- Claiming the flash ---
+
+it('fires once when a standalone toast follows it', function () {
+    session()->flash('success', 'Item created');
+
+    $html = $this->blade('<x-hw::toaster /><x-hw::toast />')->__toString();
+
+    expect(substr_count($html, 'data-controller="toast"'))->toBe(1);
+});
+
+it('fires once when a standalone toast precedes it', function () {
+    session()->flash('success', 'Item created');
+
+    $html = $this->blade('<x-hw::toast /><x-hw::toaster />')->__toString();
+
+    expect(substr_count($html, 'data-controller="toast"'))->toBe(1);
+});
+
+it('leaves the flash to the toaster when an explicit toast renders first', function () {
+    session()->flash('success', 'Item created');
+
+    $html = $this->blade('<x-hw::toast message="Explicit" /><x-hw::toaster />')->__toString();
+
+    expect($html)->toContain('data-toast-message-value="Explicit"')
+        ->and($html)->toContain('data-toast-message-value="Item created"');
 });

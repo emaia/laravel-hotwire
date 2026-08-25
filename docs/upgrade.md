@@ -6,6 +6,43 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 
 ## Unreleased
 
+### The toaster reads the session flash
+
+`<hw:toaster />` now renders the flashed message itself, so the standalone `<hw:toast />` is no longer needed in a
+layout:
+
+```blade
+{{-- before --}}
+<hw:toaster position="top-center" />
+<hw:toast />
+
+{{-- after --}}
+<hw:toaster position="top-center" />
+```
+
+**No action is required.** Leaving `<hw:toast />` in place does not double the toast: the flashed message is claimed
+once per request, so whichever of the two renders first fires it and the other stays silent. Delete the tag when
+convenient, or keep the old split explicitly with `<hw:toaster :flash="false" />`.
+
+Two behaviours do change:
+
+- An empty flash renders nothing instead of an empty card. `redirect()->withErrors([])` leaves `errors` in the
+  session with no message in it, which previously produced a toast with an empty title.
+- Only one of the viewport and a standalone `<hw:toast />` fires per request. If you were deliberately rendering the
+  same flashed message twice, pass it explicitly to the second tag.
+
+A redirect can now carry the same arguments as a stream:
+
+```php
+// both branches read alike
+return turbo_stream()->update('modal')->toast('success', 'Task updated', 'Your changes are now live.');
+return to_route('tasks.show', $task)->toast('success', 'Task updated', 'Your changes are now live.');
+```
+
+The macro flashes a `toast` key holding `type`, `message`, `description` and `position`. The conventional `success`,
+`error`, `errors`, `warning` and `info` keys keep working unchanged. If your application already defines a `toast`
+macro on `RedirectResponse`, yours wins.
+
 ### Field context keys are scoped
 
 Field now exposes its descendant context through family-specific component-data keys so intermediate Blade components
@@ -355,7 +392,6 @@ compatibility aliases — the old tags no longer resolve. The `FlashContainer` a
 
 {{-- after --}}
 <hw:toaster position="bottom-end" />
-<hw:toast />
 ```
 
 The viewport's default `id` changes from `flash-container` to `toaster`, which is also the default Turbo Stream

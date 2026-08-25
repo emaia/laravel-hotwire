@@ -97,8 +97,8 @@ final class UpdatePostRequest extends TurboFormRequest
 ```
 
 `track-frame-src` sends the URL that rendered the form; `TurboFormRequest` validates that source and
-uses it for the validation redirect. The [`<hw:toast>`](../components/toast.md) component can then
-pick up the first validation error from the session and show a toast.
+uses it for the validation redirect. [`<hw:toaster>`](../components/toaster.md) then picks up the
+first validation error from the session and shows it as a toast, with nothing else to wire up.
 
 ### Append a row → reset the form → toast
 

@@ -1035,10 +1035,10 @@ return [
             'view' => 'hotwire::component-views.toaster',
             'docs' => 'docs/components/toaster.md',
             'category' => 'feedback',
-            'description' => 'Hosts the toast stack and persists it across Turbo Drive navigations',
-            'controllers' => ['toaster'],
+            'description' => 'Hosts the toast stack, reads the session flash and persists across Turbo Drive navigations',
+            'controllers' => ['toaster', 'toast'],
             'styling' => [
-                'slots' => $slots(structural: ['toaster']),
+                'slots' => $slots(structural: ['toaster', 'toast-trigger']),
             ],
         ],
         'toggle' => [

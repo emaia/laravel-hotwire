@@ -1,7 +1,8 @@
 # Toaster
 
 Hosts the toast stack once per page and persists it across Turbo Drive navigations. It is the host element for every
-toast fired by [`<hw:toast />`](./toast.md), by appended Turbo Streams, or from your own JavaScript.
+toast fired from a redirect's flash message, by appended Turbo Streams, by [`<hw:toast />`](./toast.md), or from your
+own JavaScript.
 
 The component maps to the `toaster` Stimulus controller, which creates the toast manager on connect and publishes it
 as `window.toaster`. Rendering, stacking and timers are owned by the package — there is no third-party
@@ -19,24 +20,64 @@ Place the viewport once in your main layout, typically before `</body>`:
 {{ $slot }}
 
 <hw:toaster />
-<hw:toast />
 </body>
 </html>
 ```
 
+That single tag is the whole layout-side setup: the viewport reads the session flash itself, so a redirect carrying a
+message shows a toast with nothing else on the page.
+
 The viewport defaults to `id="toaster"` and ships with `data-turbo-permanent`, so it survives Turbo Drive
-navigations and keeps the stack alive. The default id also lets you target it from Turbo Streams:
+navigations and keeps the stack alive. The default id is also what Turbo Streams target:
 
 ```php
-use Illuminate\Support\Facades\Blade;
-
-return turbo_stream()->append('toaster', Blade::render(
-    '<hw:toast :message="$message" type="success" />',
-    ['message' => 'Saved!'],
-));
+return turbo_stream()->update('task_1', $view)->toast('success', 'Saved!');
 ```
 
 Order does not matter: a toast emitted before the viewport connects is buffered and drained as soon as it does.
+
+## Session flash
+
+A redirect flashes the toast; the viewport renders it on the page that follows.
+
+```php
+return to_route('tasks.show', $task)
+    ->toast('success', 'Task updated', 'Your changes are now live.');
+```
+
+The `toast()` macro takes the same arguments as [its Turbo Stream twin](./toast.md#the-toast-stream-macro) —
+`type`, `message`, and the optional `description` and `position` — so both branches of a controller read alike:
+
+```php
+if ($request->wasFromTurboFrame('modal')) {
+    return turbo_stream()->update('modal')->toast('success', 'Task updated', 'Your changes are now live.');
+}
+
+return to_route('tasks.show', $task)->toast('success', 'Task updated', 'Your changes are now live.');
+```
+
+Laravel's conventional flash keys work too, and need no macro:
+
+| Session key | Toast type | Message                                     |
+|-------------|------------|---------------------------------------------|
+| `toast`     | from payload | `['type' => …, 'message' => …, 'description' => …, 'position' => …]`, or a bare string |
+| `success`   | `success`  | The flashed string                          |
+| `error`     | `error`    | The flashed string                          |
+| `errors`    | `error`    | The first message in the `MessageBag`       |
+| `warning`   | `warning`  | The flashed string                          |
+| `info`      | `info`     | The flashed string                          |
+
+```php
+return redirect()->back()->with('success', 'Item created successfully!');
+```
+
+The keys are read in the order above and the first usable message wins. A failed validation therefore surfaces its
+first error as a toast on its own, with no extra wiring. An empty message — including `withErrors([])` — renders
+nothing rather than an empty card.
+
+Exactly one toast is rendered per request from the flash. If your layout still carries a standalone
+[`<hw:toast />`](./toast.md), whichever of the two renders first claims the message and the other stays silent, so
+upgrading does not double up. Set `:flash="false"` to hand the session back to `<hw:toast />` entirely.
 
 ## Props
 
@@ -50,6 +91,7 @@ Order does not matter: a toast emitted before the viewport connects is buffered 
 | `expand`               | `bool`    | `false`           | Keeps the stack expanded instead of collapsing it when the pointer leaves       |
 | `auto-disconnect`      | `bool`    | `false`           | Destroys the manager when the controller disconnects                            |
 | `turbo-permanent`      | `bool`    | `true`            | Renders `data-turbo-permanent` on the viewport                                  |
+| `flash`                | `bool`    | `true`            | Renders the session flash message as a toast; disable to place `<hw:toast />` yourself |
 | `class`                | `string`  | `''`              | CSS class applied to the viewport `<div>` itself                                |
 | `class-name`           | `?string` | `null`            | Extra classes applied to every rendered toast                                   |
 | `container-aria-label` | `?string` | `Notifications`   | `aria-label` on the viewport landmark                                           |
@@ -138,6 +180,9 @@ driven by custom properties you can override anywhere in your own CSS:
 Slots: `toaster`, `toast`, `toast-icon`, `toast-content`, `toast-body`, `toast-title`, `toast-description`,
 `toast-close`.
 
+The flash message renders as an empty `data-slot="toast-trigger"` element next to the viewport. It carries the payload,
+hands it to the manager on connect and removes itself, so it is never visible and needs no styling.
+
 ## Accessibility
 
 - The viewport is a labelled landmark (`role="region"`), so screen readers can jump to it with their landmark
@@ -155,8 +200,14 @@ Slots: `toaster`, `toast`, `toast-icon`, `toast-content`, `toast-body`, `toast-t
 
 - The viewport uses `data-turbo-permanent` by default, so the stack stays alive across Turbo Drive navigations and
   a toast fired before a visit keeps counting down after it.
-- Turbo Streams can append rendered `<hw:toast />` markup to the viewport — see the `Blade::render()` example in
-  [Setup](#setup), and the [`toast()` macro](./toast.md#the-toast-stream-macro).
+- Turbo Streams append rendered `<hw:toast />` markup to the viewport — see the
+  [`toast()` macro](./toast.md#the-toast-stream-macro).
+- The flash trigger renders as a *sibling* of the viewport, never inside it. Turbo swaps the new page's
+  `data-turbo-permanent` element — subtree included — for the current one, so anything nested in the viewport would be
+  dropped on the very Drive visit that follows a redirect. For the same reason, do not wrap the viewport in a
+  `data-turbo-permanent` element of your own: that would discard the trigger along with it.
+- A response consumed as a Turbo Frame renders only the frame, so a flash message left in the layout never reaches the
+  page. Use `turbo_stream()->toast(...)` for frame-driven flows.
 
 ## See also
 

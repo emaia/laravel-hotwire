@@ -14,10 +14,12 @@ use Emaia\LaravelHotwire\Commands\PublishControllersCommand;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
 use Emaia\LaravelHotwire\Support\HotwireTagCompiler;
+use Emaia\LaravelHotwire\Support\SessionToast;
 use Emaia\LaravelHotwire\Support\ViteControllerAssetResolver;
 use Emaia\LaravelHotwireTurbo\TurboStreamBuilder;
 use Illuminate\Foundation\Vite;
 use Illuminate\Foundation\ViteException;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\HtmlString;
@@ -50,6 +52,11 @@ class LaravelHotwireServiceProvider extends PackageServiceProvider
             ]);
     }
 
+    public function packageRegistered(): void
+    {
+        $this->app->scopedIf(SessionToast::class);
+    }
+
     public function packageBooted(): void
     {
         $prefix = config('hotwire.prefix', 'hw');
@@ -67,6 +74,7 @@ class LaravelHotwireServiceProvider extends PackageServiceProvider
 
         $this->registerTagCompiler($prefix);
         $this->registerToastMacro();
+        $this->registerRedirectToastMacro();
         $this->registerViteControllerPreloadsMacro();
     }
 
@@ -88,6 +96,28 @@ class LaravelHotwireServiceProvider extends PackageServiceProvider
                 '<x-hw::toast :type="$type" :message="$message" :description="$description" :position="$position" />',
                 compact('type', 'message', 'description', 'position'),
             ));
+        });
+    }
+
+    private function registerRedirectToastMacro(): void
+    {
+        if (RedirectResponse::hasMacro('toast')) {
+            return;
+        }
+
+        RedirectResponse::macro('toast', function (
+            string $type,
+            string $message,
+            ?string $description = null,
+            ?string $position = null,
+        ) {
+            /** @var RedirectResponse $this */
+            return $this->with('toast', array_filter([
+                'type' => $type,
+                'message' => $message,
+                'description' => $description,
+                'position' => $position,
+            ], fn (?string $value): bool => $value !== null));
         });
     }
 
@@ -185,7 +215,6 @@ class LaravelHotwireServiceProvider extends PackageServiceProvider
         });
     }
 
-    /** Flush request-scoped Vite state across Laravel versions. */
     private static function flushViteState(object $vite): void
     {
         if (is_callable([$vite, 'flush'])) {

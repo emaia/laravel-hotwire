@@ -1,7 +1,10 @@
 # Toast
 
-Fires a single toast notification — either reading from the Laravel session or from explicit props. Rendered in a
-layout alongside [`<hw:toaster />`](./toaster.md), which hosts the stack the toasts are drawn into.
+Fires a single toast notification from explicit props — the unit a Turbo Stream appends, and the escape hatch for
+firing a toast from anywhere in a template. It draws into the stack hosted by [`<hw:toaster />`](./toaster.md).
+
+For the ordinary case — a redirect carrying a flash message — you do not need this component at all:
+[`<hw:toaster />` reads the session itself](./toaster.md#session-flash).
 
 The component maps to the `toast` Stimulus controller, which hands the payload to the toast manager on connect and
 removes itself from the DOM. It keeps no state and no listeners, and needs no third-party package.
@@ -14,47 +17,19 @@ a Turbo Stream before the layout has hydrated.
 
 - `<hw:toaster />` rendered once in the layout
 
-## Setup
-
-Place `<hw:toast />` once in your main layout, after `<hw:toaster />`:
-
-```html
-<!DOCTYPE html>
-<html>
-<head>...</head>
-<body>
-{{ $slot }}
-
-<hw:toaster />
-<hw:toast />
-</body>
-</html>
-```
-
 ## Usage via session
 
-The component renders automatically when the session contains a flash message:
+With no `message` prop the component falls back to the session, using the same keys and the same precedence as the
+viewport — see [Session flash](./toaster.md#session-flash) for the table.
 
 ```php
-// Controller
 return redirect()->back()->with('success', 'Item created successfully!');
 ```
 
-```php
-// Other session types
-return redirect()->back()->with('error', 'Failed to process.');
-return redirect()->back()->with('warning', 'Warning: limit almost reached.');
-return redirect()->back()->with('info', 'New version available.');
-```
-
-With validation errors, the first error from the `MessageBag` is shown automatically:
-
-```php
-// Form Request or validate() — shows the first error as a toast
-$request->validate([
-    'email' => 'required|email',
-]);
-```
+Since `<hw:toaster />` already does this, placing `<hw:toast />` in a layout is redundant. It is not harmful: the
+message is claimed once per request, so whichever renders first fires it and the other stays silent. Reach for the
+standalone tag when you want the flash rendered somewhere other than next to the viewport, and set
+`<hw:toaster :flash="false" />` to make the split explicit.
 
 ## Explicit message
 
@@ -90,7 +65,7 @@ follow the document's writing direction, so a stack anchored to `-end` sits on t
 
 | Prop          | Type      | Default | Description                                                                                    |
 |---------------|-----------|---------|------------------------------------------------------------------------------------------------|
-| `message`     | `?string` | `null`  | Toast message. If `null`, reads from session                                                   |
+| `message`     | `?string` | `null`  | Toast message. If `null`, claims the session flash                                             |
 | `description` | `?string` | `null`  | Additional description shown below the message                                                 |
 | `type`        | `?string` | `null`  | Toast type: `success`, `error`, `warning`, `info`, `default`. If `null`, detected from session |
 | `position`    | `?string` | `null`  | Override the toaster position for this toast only: `top-start`, `top-center`, `top-end`, `bottom-start`, `bottom-center`, `bottom-end`. If `null`, uses the [`<hw:toaster />`](./toaster.md) default |
@@ -98,15 +73,12 @@ follow the document's writing direction, so a stack anchored to `-end` sits on t
 
 ### Supported session keys
 
-| Session key           | Toast type                     |
-|-----------------------|--------------------------------|
-| `success`             | `success`                      |
-| `error`               | `error`                        |
-| `errors` (MessageBag) | `error` (uses the first error) |
-| `warning`             | `warning`                      |
-| `info`                | `info`                         |
+See [Session flash](./toaster.md#session-flash) on the viewport for the full table — `toast`, `success`, `error`,
+`errors`, `warning` and `info`, read in that order.
 
-Explicit props take priority over the session.
+Explicit props take priority over the session. An explicit `message` also means the component does *not* claim the
+flashed one, which is left for the viewport (or a later `<hw:toast />`) to render; only the `type` still falls back to
+it.
 
 ## Turbo integration
 
@@ -166,6 +138,10 @@ return turbo_stream()->toast(
 
 If your application already defines a `toast` macro, yours wins — the package only registers its own when the name
 is free.
+
+The same macro exists on `RedirectResponse`, with the same `type`, `message`, `description` and `position`, so a
+controller that answers both a frame and a full redirect writes the call once per branch — see
+[Session flash](./toaster.md#session-flash).
 
 ## See also
 

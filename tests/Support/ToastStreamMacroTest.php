@@ -82,3 +82,15 @@ it('leaves an application macro of the same name alone', function () {
 
     expect(turbo_stream()->toast())->toBe('application macro');
 });
+
+it('leaves the flashed message for the layout', function () {
+    session()->flash('success', 'Item created');
+
+    turbo_stream()->toast('error', 'Failed')->toHtml();
+
+    // The macro renders <x-hw::toast> with an explicit message, so it must not claim the session's
+    // — the toaster in the layout still has to render that one.
+    $view = $this->blade('<x-hw::toaster />');
+
+    $view->assertSee('data-toast-message-value="Item created"', false);
+});
