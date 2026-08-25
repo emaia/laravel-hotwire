@@ -82,3 +82,27 @@ it('leaves an application macro of the same name alone', function () {
 
     expect(turbo_stream()->toast())->toBe('application macro');
 });
+
+it('leaves the flashed message for the layout', function () {
+    session()->flash('success', 'Item created');
+
+    turbo_stream()->toast('error', 'Failed')->toHtml();
+
+    $view = $this->blade('<x-hw::toaster />');
+
+    $view->assertSee('data-toast-message-value="Item created"', false);
+});
+
+it('renders nothing for an empty message', function () {
+    $html = turbo_stream()->toast('success', '')->toHtml();
+
+    expect($html)->not->toContain('data-controller="toast"');
+});
+
+it('survives a double quote in the message', function () {
+    $html = turbo_stream()->toast('success', 'Renamed to "Q3 report"')->toHtml();
+
+    expect($html)
+        ->toContain('data-toast-message-value="Renamed to &quot;Q3 report&quot;"')
+        ->not->toContain('\\"');
+});

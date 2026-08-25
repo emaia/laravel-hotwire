@@ -2,8 +2,8 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Emaia\LaravelHotwire\Support\SessionToast;
 use Illuminate\Contracts\Support\Htmlable;
-use Illuminate\Support\Facades\Session;
 use Illuminate\View\Component;
 
 class Toast extends Component
@@ -11,6 +11,10 @@ class Toast extends Component
     public string $finalType;
 
     public ?string $finalMessage;
+
+    public ?string $finalDescription;
+
+    public ?string $finalPosition;
 
     public function __construct(
         public ?string $message = null,
@@ -20,25 +24,17 @@ class Toast extends Component
         public ?string $className = null,
         public ?Htmlable $stimulus = null,
     ) {
-        $sessionType = match (true) {
-            Session::has('success') => 'success',
-            Session::has('error') => 'error',
-            Session::has('errors') => 'error',
-            Session::has('warning') => 'warning',
-            Session::has('info') => 'info',
-            default => null,
-        };
+        $message = $this->message !== null && trim($this->message) !== '' ? $this->message : null;
 
-        $sessionMessage = match ($sessionType) {
-            'success' => Session::get('success'),
-            'error' => Session::get('error') ?: Session::get('errors')?->first(),
-            'warning' => Session::get('warning'),
-            'info' => Session::get('info'),
-            default => null,
-        };
+        // An explicit message must not spend the session's; the toaster still has to render that one.
+        $claims = $message === null;
+        $session = app(SessionToast::class);
+        $flash = $claims ? $session->consume() : $session->resolve();
 
-        $this->finalType = $this->type ?? $sessionType ?? 'default';
-        $this->finalMessage = $this->message ?? $sessionMessage;
+        $this->finalType = $this->type ?? $flash['type'] ?? 'default';
+        $this->finalMessage = $message ?? $flash['message'] ?? null;
+        $this->finalDescription = $this->description ?? ($claims ? $flash['description'] ?? null : null);
+        $this->finalPosition = $this->position ?? ($claims ? $flash['position'] ?? null : null);
     }
 
     public function shouldRender(): bool

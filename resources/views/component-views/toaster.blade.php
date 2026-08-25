@@ -1,7 +1,9 @@
 @php
+    use Emaia\LaravelHotwire\Support\StimulusAttributes;
+
     $bool = fn (bool $v) => $v ? 'true' : 'false';
 
-    $toasterAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
+    $toasterAttributes = StimulusAttributes::merge([
         'data-slot' => 'toaster',
         'id' => $id,
         'data-turbo-permanent' => $turboPermanent ? true : null,
@@ -17,6 +19,15 @@
         'data-toaster-container-aria-label-value' => $containerAriaLabel,
     ], $attributes, $stimulus, protectedPrefixes: ['data-toaster-']);
 @endphp
-<div
-    {{ $toasterAttributes }}
-></div>
+
+<div {{ $toasterAttributes }}></div>
+@if ($flashMessage !== null)
+    {{-- A sibling, never a child: Turbo swaps the new page's permanent element for the current one,
+         so a trigger nested here is dropped on the Drive visit that follows a redirect. --}}
+    <x-hw::toast
+        :message="$flashMessage"
+        :type="$flashType"
+        :description="$flashDescription"
+        :position="$flashPosition"
+    />
+@endif

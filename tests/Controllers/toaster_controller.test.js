@@ -27,7 +27,7 @@ class TestToasterController extends ToasterController {
     createToaster(options) {
         createCalls.push(options);
 
-        return { destroy: destroyMock };
+        return { destroy: destroyMock, element: this.element };
     }
 }
 
@@ -188,3 +188,26 @@ test.serial("disconnect with autoDisconnect=false (default) keeps toaster alive"
 async function mount(html) {
     mounted = await mountController("toaster", TestToasterController, html);
 }
+
+test.serial("recreates the instance when its viewport left the document", async () => {
+    // The manager left behind is still live, so the id guard alone would keep writing into it.
+    await mount(`<div data-controller="toaster"></div>`);
+
+    const stale = window.toaster;
+    mounted.root.remove();
+    mounted.controller.connect();
+
+    expect(destroyMock).toHaveBeenCalledTimes(1);
+    expect(createCalls).toHaveLength(2);
+    expect(window.toaster).not.toBe(stale);
+});
+
+test.serial("keeps the instance while its viewport is still in the document", async () => {
+    await mount(`<div data-controller="toaster"></div>`);
+
+    const first = window.toaster;
+    mounted.controller.connect();
+
+    expect(destroyMock).not.toHaveBeenCalled();
+    expect(window.toaster).toBe(first);
+});

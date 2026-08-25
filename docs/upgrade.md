@@ -6,6 +6,54 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 
 ## Unreleased
 
+### The toaster reads the session flash
+
+`<hw:toaster />` now renders the flashed message itself, so the standalone `<hw:toast />` is no longer needed in a
+layout:
+
+```blade
+{{-- before --}}
+<hw:toaster position="top-center" />
+<hw:toast />
+
+{{-- after --}}
+<hw:toaster position="top-center" />
+```
+
+**Layouts carrying both tags need no action.** The flashed message is claimed once per request, so whichever of the
+two renders first fires it and the other stays silent — the toast is not doubled. Delete `<hw:toast />` when
+convenient.
+
+**Layouts carrying only `<hw:toaster />` gain toasts they did not have.** The viewport claims six session keys —
+`toast`, `success`, `error`, `errors`, `warning` and `info`. If your app flashes any of them and renders that feedback
+inline — an alert partial, `@error` under a field, a banner keyed on `warning` or `info` — those messages now *also*
+appear as toasts. Opt out and nothing changes:
+
+```blade
+<hw:toaster :flash="false" />
+```
+
+Two behaviours do change:
+
+- An empty message renders nothing instead of an empty card. This covers `redirect()->withErrors([])`, which leaves
+  `errors` in the session with no message in it, and an explicit empty string — `<hw:toast message="" />` or
+  `turbo_stream()->toast('success', $request->input('message', ''))` — which the docs already described as absent but
+  which used to render a toast with no text. An empty message now falls back to the session, like an omitted one.
+- Only one of the viewport and a standalone `<hw:toast />` fires per request. If you were deliberately rendering the
+  same flashed message twice, pass it explicitly to the second tag.
+
+A redirect can now carry the same arguments as a stream:
+
+```php
+// both branches read alike
+return turbo_stream()->update('modal')->toast('success', 'Task updated', 'Your changes are now live.');
+return to_route('tasks.show', $task)->toast('success', 'Task updated', 'Your changes are now live.');
+```
+
+The macro flashes a `toast` key holding `type`, `message`, `description` and `position`. The conventional `success`,
+`error`, `errors`, `warning` and `info` keys keep working unchanged. If your application already defines a `toast`
+macro on `RedirectResponse`, yours wins.
+
 ### Field context keys are scoped
 
 Field now exposes its descendant context through family-specific component-data keys so intermediate Blade components
@@ -355,7 +403,6 @@ compatibility aliases — the old tags no longer resolve. The `FlashContainer` a
 
 {{-- after --}}
 <hw:toaster position="bottom-end" />
-<hw:toast />
 ```
 
 The viewport's default `id` changes from `flash-container` to `toaster`, which is also the default Turbo Stream

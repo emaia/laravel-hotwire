@@ -3,6 +3,7 @@ import { Window } from "happy-dom";
 
 let createToaster;
 let emitToast;
+let flushPending;
 let resetToaster;
 let testWindow;
 let viewport;
@@ -22,7 +23,7 @@ beforeEach(async () => {
     globalThis.requestAnimationFrame = testWindow.requestAnimationFrame.bind(testWindow);
     globalThis.cancelAnimationFrame = testWindow.cancelAnimationFrame.bind(testWindow);
 
-    ({ createToaster, emitToast, resetToaster } = await import(
+    ({ createToaster, emitToast, flushPending, resetToaster } = await import(
         "../../resources/js/controllers/_toaster.js"
     ));
     resetToaster();
@@ -635,3 +636,59 @@ function wait(ms) {
 function frame() {
     return new Promise((resolve) => requestAnimationFrame(() => resolve()));
 }
+
+// --- A replaced viewport ---
+
+test("buffers a toast emitted while the active viewport is detached", () => {
+    mount();
+    emitToast({ message: "Before the visit", type: "success" });
+
+    expect(toasts()).toHaveLength(1);
+
+    // Without data-turbo-permanent the viewport leaves with the old body; the manager outlives it.
+    viewport.remove();
+
+    const replacement = document.createElement("div");
+    replacement.dataset.slot = "toaster";
+    document.body.appendChild(replacement);
+
+    emitToast({ message: "Task updated", type: "success" });
+
+    expect(replacement.querySelectorAll('[data-slot="toast"]')).toHaveLength(0);
+
+    toaster.destroy();
+    toaster = createToaster(replacement, {});
+
+    expect([...replacement.querySelectorAll('[data-slot="toast-title"]')].map((n) => n.textContent)).toEqual([
+        "Task updated",
+    ]);
+});
+
+test("drains into the same viewport after it is detached and put back", () => {
+    mount();
+
+    // Turbo puts the very same element back after the swap, so the manager is never recreated.
+    viewport.remove();
+    emitToast({ message: "Task updated", type: "success" });
+
+    expect(toasts()).toHaveLength(0);
+
+    document.body.appendChild(viewport);
+    flushPending();
+
+    expect([...viewport.querySelectorAll('[data-slot="toast-title"]')].map((n) => n.textContent)).toEqual([
+        "Task updated",
+    ]);
+});
+
+test("leaves the buffer alone while the viewport is still detached", () => {
+    mount();
+    viewport.remove();
+    emitToast({ message: "Task updated", type: "success" });
+
+    flushPending();
+    document.body.appendChild(viewport);
+    flushPending();
+
+    expect(toasts()).toHaveLength(1);
+});

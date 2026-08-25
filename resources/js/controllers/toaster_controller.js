@@ -1,7 +1,7 @@
 // @hotwire-package
 import { Controller } from "@hotwired/stimulus";
 
-import { createToaster } from "./_toaster.js";
+import { createToaster, flushPending, isDetached } from "./_toaster.js";
 import { createTopLayer } from "./_top_layer.js";
 
 export default class extends Controller {
@@ -23,9 +23,16 @@ export default class extends Controller {
         this.#topLayer.show();
         document.addEventListener("hotwire:top-layer:show", this.#handleTopLayerShow);
 
+        if (isStale(window.toaster)) {
+            window.toaster.destroy();
+            window.toaster = null;
+        }
+
         if (!isToaster(window.toaster)) {
             window.toaster = this.createToaster(this.#buildOptions());
         }
+
+        flushPending();
     }
 
     createToaster(options) {
@@ -62,11 +69,10 @@ export default class extends Controller {
     }
 }
 
-/**
- * The container carries id="toaster", and named access on the Window object publishes that element
- * as window.toaster before any script runs. A truthiness check would read the div and skip creating
- * the real instance, leaving every toast to vanish without an error.
- */
 function isToaster(value) {
     return Boolean(value) && typeof value.destroy === "function" && value.destroyed !== true;
+}
+
+function isStale(value) {
+    return isToaster(value) && isDetached(value);
 }
