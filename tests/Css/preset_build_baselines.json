@@ -1,13 +1,16 @@
 {
-    "tailwindVersion": "4.3.3",
+    "toolchain": {
+        "tailwindcss": "4.3.3",
+        "cli": "4.3.3"
+    },
     "presets": {
         "nova": {
-            "rawBytes": 318575,
-            "gzipBytes": 33716
+            "rawBytes": 285449,
+            "gzipBytes": 28003
         }
     },
     "selective": {
-        "rawBytes": 59173,
-        "gzipBytes": 11285
+        "rawBytes": 24112,
+        "gzipBytes": 5393
     }
 }

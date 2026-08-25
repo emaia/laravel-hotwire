@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readFile, readdir, rm, symlink, writeFile } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, readFile, readdir, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -8,17 +8,28 @@ const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const baselinePath = join(root, "tests/Css/preset_build_baselines.json");
 const presetDirectory = join(root, "resources/css/presets");
 const tailwindBinary = join(root, "node_modules/.bin/tailwindcss");
+const packageSourceFixture = join(root, "tests/Fixtures/css/package_source.blade.php");
 const unresolvedDirective = /@(import|apply|theme|custom-variant|source|utility|variant|reference|config|plugin)\b/;
 
 async function createInstalledAppFixture() {
     const directory = await mkdtemp(join(tmpdir(), "hotwire-css-build-"));
     const packageDirectory = join(directory, "vendor/emaia/laravel-hotwire");
+    const packageResources = join(packageDirectory, "resources");
 
     await mkdir(join(directory, "resources/css"), { recursive: true });
-    await mkdir(dirname(packageDirectory), { recursive: true });
+    await mkdir(packageDirectory, { recursive: true });
     await mkdir(join(directory, "dist"), { recursive: true });
-    await symlink(root, packageDirectory, "dir");
+    await Promise.all([
+        cp(join(root, "resources/css"), join(packageResources, "css"), { recursive: true }),
+        cp(join(root, "resources/js"), join(packageResources, "js"), { recursive: true }),
+        cp(join(root, "resources/views"), join(packageResources, "views"), { recursive: true }),
+        cp(join(root, "src"), join(packageDirectory, "src"), { recursive: true }),
+    ]);
     await symlink(join(root, "node_modules"), join(directory, "node_modules"), "dir");
+    await writeFile(
+        join(packageResources, "views/css_build_contract.blade.php"),
+        await readFile(packageSourceFixture, "utf8"),
+    );
 
     return directory;
 }
@@ -78,14 +89,29 @@ async function publicPresetNames() {
 async function appEntrypointFor(preset) {
     const stub = await readFile(join(root, "stubs/resources/css/app.css"), "utf8");
 
-    return stub.replace(/presets\/[^"']+\.css/, `presets/${preset}.css`);
+    return replacePresetImport(stub, preset);
+}
+
+export function replacePresetImport(stub, preset) {
+    const presetImport = /@import\s+["'][^"']*\/resources\/css\/presets\/[^"']+\.css["']\s*;/g;
+    const imports = stub.match(presetImport) ?? [];
+
+    if (imports.length !== 1) {
+        throw new Error(`Expected exactly one public preset import in the app stub, found ${imports.length}.`);
+    }
+
+    return stub.replace(imports[0], imports[0].replace(/presets\/[^"']+\.css/, `presets/${preset}.css`));
 }
 
 export async function compileCssFixture(entrypoint) {
     const directory = await createInstalledAppFixture();
 
     try {
-        await writeFile(join(directory, "resources/css/app.css"), entrypoint);
+        // Keep the fixture deterministic and make explicit package sources observable.
+        await writeFile(
+            join(directory, "resources/css/app.css"),
+            entrypoint.replace(/@import\s+(["'])tailwindcss\1\s*;/, '@import "tailwindcss" source(none);'),
+        );
 
         return await runTailwind(directory);
     } finally {
@@ -110,7 +136,10 @@ export async function buildCssContract() {
     }
 
     const selective = await compileCssFixture(await readFile(join(root, "tests/Fixtures/css/selective.css"), "utf8"));
-    const tailwindPackage = JSON.parse(await readFile(join(root, "node_modules/tailwindcss/package.json"), "utf8"));
+    const [tailwindPackage, cliPackage] = await Promise.all([
+        readPackage("tailwindcss"),
+        readPackage("@tailwindcss/cli"),
+    ]);
 
     return {
         outputs: {
@@ -118,36 +147,57 @@ export async function buildCssContract() {
             selective,
         },
         measurements: {
-            tailwindVersion: tailwindPackage.version,
+            toolchain: {
+                tailwindcss: tailwindPackage.version,
+                cli: cliPackage.version,
+            },
             presets: presetMeasurements,
             selective: measure(selective),
         },
     };
 }
 
-async function run() {
-    const contract = await buildCssContract();
-    let baselines = JSON.parse(await readFile(baselinePath, "utf8"));
+async function readPackage(name) {
+    return JSON.parse(await readFile(join(root, "node_modules", name, "package.json"), "utf8"));
+}
 
-    if (globalThis.process.argv.includes("--update-baselines")) {
-        await writeFile(baselinePath, `${JSON.stringify(contract.measurements, null, 4)}\n`);
-        baselines = contract.measurements;
+export async function resolveBaselines(measurements, options = {}) {
+    const path = options.path ?? baselinePath;
+
+    if (options.update) {
+        await writeFile(path, `${JSON.stringify(measurements, null, 4)}\n`);
+
+        return measurements;
     }
 
-    console.table([
-        ...Object.entries(contract.measurements.presets).map(([name, measurement]) => ({
-            build: `preset:${name}`,
-            ...measurement,
-            rawDelta: measurement.rawBytes - (baselines.presets[name]?.rawBytes ?? measurement.rawBytes),
-            gzipDelta: measurement.gzipBytes - (baselines.presets[name]?.gzipBytes ?? measurement.gzipBytes),
-        })),
-        {
-            build: "selective",
-            ...contract.measurements.selective,
-            rawDelta: contract.measurements.selective.rawBytes - baselines.selective.rawBytes,
-            gzipDelta: contract.measurements.selective.gzipBytes - baselines.selective.gzipBytes,
-        },
-    ]);
+    return JSON.parse(await readFile(path, "utf8"));
+}
+
+export function measurementRows(measurements, baselines = {}) {
+    const row = (build, measurement, baseline) => ({
+        build,
+        tailwindcss: measurements.toolchain.tailwindcss,
+        cli: measurements.toolchain.cli,
+        ...measurement,
+        rawDelta: measurement.rawBytes - (baseline?.rawBytes ?? measurement.rawBytes),
+        gzipDelta: measurement.gzipBytes - (baseline?.gzipBytes ?? measurement.gzipBytes),
+    });
+
+    return [
+        ...Object.entries(measurements.presets).map(([name, measurement]) =>
+            row(`preset:${name}`, measurement, baselines.presets?.[name]),
+        ),
+        row("selective", measurements.selective, baselines.selective),
+    ];
+}
+
+async function run() {
+    const contract = await buildCssContract();
+    const baselines = await resolveBaselines(contract.measurements, {
+        update: globalThis.process.argv.includes("--update-baselines"),
+    });
+
+    console.table(measurementRows(contract.measurements, baselines));
 }
 
 if (import.meta.main) {
