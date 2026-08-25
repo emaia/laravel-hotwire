@@ -6,7 +6,7 @@ use Illuminate\Http\RedirectResponse;
 // Macros live in a static registry and would leak between tests.
 beforeEach(function () {
     RedirectResponse::flushMacros();
-    (new LaravelHotwireServiceProvider($this->app))->packageBooted();
+    (new LaravelHotwireServiceProvider($this->app))->bootBladeIntegration();
 });
 
 afterEach(function () {
@@ -62,7 +62,7 @@ it('leaves an application macro of the same name alone', function () {
     RedirectResponse::flushMacros();
     RedirectResponse::macro('toast', fn (): string => 'application macro');
 
-    (new LaravelHotwireServiceProvider($this->app))->packageBooted();
+    (new LaravelHotwireServiceProvider($this->app))->bootBladeIntegration();
 
     expect(redirectResponse()->toast())->toBe('application macro');
 });
