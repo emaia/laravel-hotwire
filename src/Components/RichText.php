@@ -59,8 +59,6 @@ class RichText extends Component
         'redo' => ['action' => 'redo', 'target' => null, 'label' => 'Redo', 'icon' => 'redo-2'],
     ];
 
-    public string $identifier;
-
     public function __construct(
         public ?string $name = null,
         public ?string $id = null,
@@ -77,9 +75,7 @@ class RichText extends Component
         public string $editorClass = '',
         public string $controller = 'rich-text',
         public ?Htmlable $stimulus = null,
-    ) {
-        $this->identifier = $this->controller;
-    }
+    ) {}
 
     public function render()
     {
@@ -176,7 +172,6 @@ class RichText extends Component
             'resolvedValue' => $resolvedValue,
             'hasErrors' => $hasErrors,
             'isRequired' => $isRequired,
-            'dataController' => $this->identifier,
         ];
     }
 }

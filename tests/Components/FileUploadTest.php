@@ -453,6 +453,14 @@ it('wires click, keyboard and drag-drop actions to the native controller', funct
 
 // --- Stimulus values ---
 
+it('does not publish a generic identifier in component data', function () {
+    $data = (new FileUpload(url: '/uploads', controller: 'my-upload'))->data();
+
+    expect($data)
+        ->not->toHaveKey('identifier')
+        ->and($data['controller'])->toBe('my-upload');
+});
+
 it('emits controller data values for the native uploader', function () {
     $view = $this->blade('<x-hw::file-upload
         name="attachments"

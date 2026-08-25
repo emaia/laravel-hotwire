@@ -46,8 +46,6 @@ class FileUpload extends Component
 
     private const VIEWS = ['list', 'grid', 'image'];
 
-    public string $identifier;
-
     public string $outputMode;
 
     public function __construct(
@@ -131,7 +129,6 @@ class FileUpload extends Component
         }
 
         $this->accept = $this->normalizeAccept($accept ?? ($view === 'image' ? 'image/*' : null));
-        $this->identifier = $this->controller;
     }
 
     public function render()
@@ -145,21 +142,21 @@ class FileUpload extends Component
         $data['density'] = $this->density;
         $data['view'] = $this->view;
         $data['internalPrefixes'] = [
-            "data-{$this->identifier}-url-",
-            "data-{$this->identifier}-hidden-name-",
-            "data-{$this->identifier}-accept-",
-            "data-{$this->identifier}-max-size-bytes-",
-            "data-{$this->identifier}-max-files-",
-            "data-{$this->identifier}-multiple-",
-            "data-{$this->identifier}-mode-",
-            "data-{$this->identifier}-output-mode-",
-            "data-{$this->identifier}-param-name-",
-            "data-{$this->identifier}-response-key-",
-            "data-{$this->identifier}-preview-url-key-",
-            "data-{$this->identifier}-delete-url-",
-            "data-{$this->identifier}-parallel-uploads-",
-            "data-{$this->identifier}-view-",
-            "data-{$this->identifier}-messages-",
+            "data-{$this->controller}-url-",
+            "data-{$this->controller}-hidden-name-",
+            "data-{$this->controller}-accept-",
+            "data-{$this->controller}-max-size-bytes-",
+            "data-{$this->controller}-max-files-",
+            "data-{$this->controller}-multiple-",
+            "data-{$this->controller}-mode-",
+            "data-{$this->controller}-output-mode-",
+            "data-{$this->controller}-param-name-",
+            "data-{$this->controller}-response-key-",
+            "data-{$this->controller}-preview-url-key-",
+            "data-{$this->controller}-delete-url-",
+            "data-{$this->controller}-parallel-uploads-",
+            "data-{$this->controller}-view-",
+            "data-{$this->controller}-messages-",
         ];
         $data['compute'] = $this->computeResolved(...);
 
@@ -215,7 +212,6 @@ class FileUpload extends Component
             'isRequired' => $isRequired,
             'isClearable' => $this->clearable ?? ($this->multiple && ($this->rendersPreview() || $this->emitsHidden())),
             'attachmentOrientation' => $this->view === 'grid' ? 'vertical' : 'horizontal',
-            'mergedController' => $this->identifier,
             'initialValues' => $initialValues,
             'messagesJson' => $this->resolveMessagesJson(),
             'rendersPreview' => $this->rendersPreview(),

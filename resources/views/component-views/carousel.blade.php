@@ -4,7 +4,6 @@
     // $controller is the Stimulus identifier (default "carousel"); override it to
     // point at a subclass (e.g., controller="gallery"). All data-* / action prefixes
     // follow it, while the structural CSS hooks below stay identifier-independent.
-    $identifier = $controller;
 
     $style = collect([
         $slideSize !== null ? "--carousel-slide-size: {$slideSize}" : null,
@@ -13,12 +12,12 @@
 
     $carouselAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
         'data-slot' => 'carousel',
-        'data-controller' => $identifier,
-        "data-{$identifier}-options-value" => e($optionsJson()),
+        'data-controller' => $controller,
+        "data-{$controller}-options-value" => e($optionsJson()),
         'data-carousel-axis' => $axis,
-        "data-{$identifier}-active-dot-class" => $activeDotClass !== '' ? $activeDotClass : null,
-        "data-{$identifier}-disabled-nav-class" => $disabledNavClass !== '' ? $disabledNavClass : null,
-        'data-action' => "turbo:before-cache@window->{$identifier}#teardownForCache",
+        "data-{$controller}-active-dot-class" => $activeDotClass !== '' ? $activeDotClass : null,
+        "data-{$controller}-disabled-nav-class" => $disabledNavClass !== '' ? $disabledNavClass : null,
+        'data-action' => "turbo:before-cache@window->{$controller}#teardownForCache",
         'style' => $style !== '' ? $style : null,
         'id' => $id,
         'class' => $class,
@@ -36,13 +35,13 @@
 
     @if ($progress)
         <div data-slot="carousel-progress-wrapper" class="{{ $progressWrapperClass }}">
-            <div data-slot="carousel-progress" data-{{ $identifier }}-target="progress" class="{{ $progressClass }}" style="width: 0"></div>
+            <div data-slot="carousel-progress" data-{{ $controller }}-target="progress" class="{{ $progressClass }}" style="width: 0"></div>
         </div>
     @endif
 
     @if ($counter)
         <div data-slot="carousel-counter" class="{{ $counterClass }}">
-            <span data-{{ $identifier }}-target="indexLabel"></span>/<span data-{{ $identifier }}-target="totalLabel"></span>
+            <span data-{{ $controller }}-target="indexLabel"></span>/<span data-{{ $controller }}-target="totalLabel"></span>
         </div>
     @endif
 
@@ -54,20 +53,20 @@
             $prevButtonAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
                 'type' => 'button',
                 'data-slot' => 'carousel-prev-button',
-                "data-{$identifier}-target" => 'prevButton',
-                'data-action' => "{$identifier}#prev",
+                "data-{$controller}-target" => 'prevButton',
+                'data-action' => "{$controller}#prev",
                 'aria-label' => 'Previous',
                 'class' => $navClass,
-            ], ($prev_button ?? new ComponentSlot)->attributes, protectedPrefixes: ["data-{$identifier}-target"]);
+            ], ($prev_button ?? new ComponentSlot)->attributes, protectedPrefixes: ["data-{$controller}-target"]);
 
             $nextButtonAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
                 'type' => 'button',
                 'data-slot' => 'carousel-next-button',
-                "data-{$identifier}-target" => 'nextButton',
-                'data-action' => "{$identifier}#next",
+                "data-{$controller}-target" => 'nextButton',
+                'data-action' => "{$controller}#next",
                 'aria-label' => 'Next',
                 'class' => $navClass,
-            ], ($next_button ?? new ComponentSlot)->attributes, protectedPrefixes: ["data-{$identifier}-target"]);
+            ], ($next_button ?? new ComponentSlot)->attributes, protectedPrefixes: ["data-{$controller}-target"]);
         @endphp
         <button
             {{ $prevButtonAttributes }}
@@ -87,18 +86,18 @@
     @if ($dots)
         <div
             data-slot="carousel-dot-list"
-            data-{{ $identifier }}-target="dotList"
+            data-{{ $controller }}-target="dotList"
             class="{{ $dotListClass }}"
             role="group"
             aria-label="{{ $dotListLabel }}"
         ></div>
 
-        <template data-{{ $identifier }}-target="dotTemplate">
+        <template data-{{ $controller }}-target="dotTemplate">
             @php
                 $dotButtonAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
                     'type' => 'button',
                     'data-slot' => 'carousel-dot-button',
-                    'data-action' => "{$identifier}#scrollTo",
+                    'data-action' => "{$controller}#scrollTo",
                     'class' => $dotClass,
                 ], ($dot_template ?? new ComponentSlot)->attributes);
             @endphp

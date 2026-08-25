@@ -285,6 +285,16 @@ Tabs triggers and panels, Accordion items, and Side Panel panels and triggers no
 root. Render the owner in the same Blade tree so it can supply the scoped controller, state and ARIA context. For Turbo
 Streams, replace the subcomponent's inner content or render the owning root instead of rendering the subcomponent alone.
 
+### Stimulus component identifiers are no longer duplicated
+
+Chart, Map, Rich Text, and File Upload no longer expose the redundant generic `identifier` component-data key. Their
+public `controller` prop is unchanged, and custom identifiers still prefix every component-owned Stimulus value, target,
+action, outlet selector, and protected attribute.
+
+Application PHP code that read `$component->identifier` should read `$component->controller` instead. Application
+subcomponents using `@aware(['identifier' => ...])` should receive their identifier explicitly; these four roots do not
+publish descendant context.
+
 ### Form and Progress context keys are scoped
 
 Form and Progress now expose descendant state through family-specific component data instead of generic keys an

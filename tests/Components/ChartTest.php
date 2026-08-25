@@ -74,6 +74,14 @@ it('does not throw when only url is provided', function () {
 
 // --- Controller swap (subclass extensibility) ---
 
+it('does not publish a generic identifier in component data', function () {
+    $data = (new Chart(option: ['x' => 1], controller: 'sales-chart'))->data();
+
+    expect($data)
+        ->not->toHaveKey('identifier')
+        ->and($data['controller'])->toBe('sales-chart');
+});
+
 it('swaps the Stimulus identifier when controller prop is set', function () {
     $view = $this->blade('<x-hw::chart controller="sales-chart" url="/api/charts/sales" />');
 

@@ -9,8 +9,6 @@ use InvalidArgumentException;
 
 class Chart extends Component
 {
-    public string $identifier;
-
     public ?string $encodedOption;
 
     /**
@@ -33,7 +31,6 @@ class Chart extends Component
             );
         }
 
-        $this->identifier = $this->controller;
         $this->encodedOption = $option !== null
             ? json_encode($option, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
             : null;

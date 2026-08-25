@@ -1,5 +1,6 @@
 <?php
 
+use Emaia\LaravelHotwire\Components\RichText;
 use Illuminate\Support\MessageBag;
 use Illuminate\Support\ViewErrorBag;
 
@@ -361,11 +362,28 @@ it('honors an explicit id prop', function () {
 
 // --- Controller swap ---
 
+it('does not publish a generic identifier in component data', function () {
+    $data = (new RichText(controller: 'markdown-editor'))->data();
+
+    expect($data)
+        ->not->toHaveKey('identifier')
+        ->and($data['controller'])->toBe('markdown-editor');
+});
+
 it('swaps the Stimulus identifier when controller prop is set', function () {
-    $view = $this->blade('<x-hw::rich-text name="content" controller="markdown-editor" />');
+    $view = $this->blade('<x-hw::rich-text name="content" controller="markdown-editor" placeholder="Write" :editable="false" output="json" editor-class="prose" image-upload />');
 
     $view->assertSee('data-controller="markdown-editor"', false);
     $view->assertSee('data-markdown-editor-id-value="content"', false);
+    $view->assertSee('data-markdown-editor-placeholder-value="Write"', false);
+    $view->assertSee('data-markdown-editor-editable-value="false"', false);
+    $view->assertSee('data-markdown-editor-output-value="json"', false);
+    $view->assertSee('data-markdown-editor-editor-class-value="prose"', false);
+    $view->assertSee('data-markdown-editor-image-upload-value="true"', false);
+    $view->assertSee('data-markdown-editor-target="input"', false);
+    $view->assertSee('data-markdown-editor-target="editor"', false);
+    $view->assertSee('[data-markdown-editor-id-value=', false);
+    $view->assertDontSee('data-rich-text-target', false);
 });
 
 it('lets subclass data values pass through while filtering owned rich-text values', function () {
