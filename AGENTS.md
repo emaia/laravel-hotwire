@@ -76,6 +76,14 @@ The complete Hotwire stack for Laravel — Turbo Drive, Turbo Streams, Stimulus 
   the element. User-provided `data-{identifier}-*` for internal controllers active via props is filtered to prevent
   conflicts; for other controllers these pass through freely. Expose supported controller configuration as explicit
   Blade props instead of relying on user-provided `data-*` attributes.
+- **Exposing a `controller` prop.** A component exposes `controller` — letting the app swap the Stimulus identifier for
+  its own subclass — only when the controller encapsulates configuration the package cannot proxy through props: ECharts
+  `option`, Leaflet layers, Tiptap extensions, Embla plugins, the File Upload pipeline. Where the controller's surface is
+  closed (overlays sharing `_overlay.js`, the Floating UI positioners, satellites like `char-counter`, `clear-input` or
+  `timeago`), the extension path is composition — the merge rule above already lets the app stack its own
+  `data-controller` on the element and react to the component's events. Every `controller` prop is permanent public API,
+  one more entry point to validate, and one more identifier flowing through `@aware`, so open one on demand rather than
+  for symmetry: reach for an event or a specific prop first.
 - Components that derive field ids/error keys (Input, File, Select, etc.) use `Support\FieldKey`; components that omit
   null props from the rendered tag use the `StripsNullProps` concern. Reuse these instead of reimplementing.
 
