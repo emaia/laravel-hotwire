@@ -1,13 +1,19 @@
 <?php
 
+use Emaia\LaravelHotwire\Support\CssPresetFiles;
+
 $stubPath = realpath(__DIR__.'/../../stubs/resources/css/app.css');
 $tokensPath = realpath(__DIR__.'/../../resources/css/tokens.css');
 $variantsPath = realpath(__DIR__.'/../../resources/css/custom-variants.css');
-$novaPresetPath = realpath(__DIR__.'/../../resources/css/presets/nova.css');
 
 dataset('design presets', fn () => collect(glob(__DIR__.'/../../resources/css/presets/*.css') ?: [])
-    ->mapWithKeys(fn (string $path): array => [pathinfo($path, PATHINFO_FILENAME) => [$path]])
+    ->mapWithKeys(fn (string $path): array => [pathinfo($path, PATHINFO_FILENAME) => [pathinfo($path, PATHINFO_FILENAME)]])
     ->all());
+
+function presetVisualCss(string $preset): string
+{
+    return app(CssPresetFiles::class)->source($preset)->visualCss();
+}
 
 // --- Token system and install stub ---
 
@@ -107,8 +113,8 @@ it('safelists runtime classes applied by Stimulus controllers', function () {
         ->toContain('overflow-hidden');
 });
 
-it('applies shared button styles to attachment actions', function () use ($novaPresetPath) {
-    $lines = collect(explode("\n", file_get_contents($novaPresetPath)));
+it('applies shared button styles to attachment actions', function () {
+    $lines = collect(explode("\n", presetVisualCss('nova')));
     $base = $lines->first(fn (string $line): bool => str_contains($line, ':is([data-slot="button"]'));
     $ghost = $lines->first(fn (string $line): bool => str_contains($line, ':is([data-slot="button"]') && str_contains($line, '[data-variant="ghost"]'));
     $iconXs = $lines->first(fn (string $line): bool => str_contains($line, ':is([data-slot="button"]') && str_contains($line, '[data-size="icon-xs"]'));
@@ -118,8 +124,8 @@ it('applies shared button styles to attachment actions', function () use ($novaP
         ->and($iconXs)->toContain('[data-slot="attachment-action"]');
 });
 
-it('applies shared button styles and visibility states to back to top', function () use ($novaPresetPath) {
-    $lines = collect(explode("\n", file_get_contents($novaPresetPath)));
+it('applies shared button styles and visibility states to back to top', function () {
+    $lines = collect(explode("\n", presetVisualCss('nova')));
     $buttonRules = $lines->filter(fn (string $line): bool => str_contains($line, ':is([data-slot="button"]'));
     $css = $lines->implode("\n");
 
@@ -137,16 +143,16 @@ it('applies shared button styles and visibility states to back to top', function
         ->not->toContain('motion-reduce:transition-none');
 });
 
-it('keeps closed floating surfaces visible until Presence applies hidden', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
+it('keeps closed floating surfaces visible until Presence applies hidden', function () {
+    $css = presetVisualCss('nova');
 
     expect($css)
         ->toContain('[data-slot="multi-select-content"])[data-state="closed"] { @apply pointer-events-none scale-95 opacity-0; }')
         ->not->toContain('[data-state="closed"] { @apply hidden');
 });
 
-it('uses the pre-connect color scheme mode to avoid toggle icon flicker', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
+it('uses the pre-connect color scheme mode to avoid toggle icon flicker', function () {
+    $css = presetVisualCss('nova');
 
     expect($css)
         ->toContain('html[data-color-scheme-mode="system"] [data-slot="color-scheme-toggle"][data-color-scheme-modes-value~="system"] [data-mode-icon="system"]')
@@ -155,8 +161,8 @@ it('uses the pre-connect color scheme mode to avoid toggle icon flicker', functi
         ->toContain('html:not([data-color-scheme-mode]) [data-slot="color-scheme-toggle"][data-mode="system"][data-color-scheme-modes-value~="system"] [data-mode-icon="system"]');
 });
 
-it('uses resolved icons when system is outside a color scheme toggle cycle', function () use ($novaPresetPath) {
-    $css = file_get_contents($novaPresetPath);
+it('uses resolved icons when system is outside a color scheme toggle cycle', function () {
+    $css = presetVisualCss('nova');
 
     expect($css)
         ->toContain('html[data-color-scheme-mode="system"] [data-slot="color-scheme-toggle"][data-color-scheme-modes-value~="system"] [data-mode-icon="system"]')
@@ -206,11 +212,18 @@ it('rides transition-behavior inside the shorthand, never as its own declaration
     // Lightning CSS reorders declarations. A `transition` shorthand emitted after a standalone
     // `transition-behavior` resets it to normal, and the Accordion then snaps shut instead of
     // collapsing — the source order looks correct and the built stylesheet is wrong.
-    $root = dirname(__DIR__, 2).'/resources/css';
+    $stylesheets = [
+        'structural.css' => file_get_contents(dirname(__DIR__, 2).'/resources/css/structural.css'),
+    ];
 
-    foreach ([...(glob("{$root}/presets/*.css") ?: []), "{$root}/structural.css"] as $path) {
-        expect(file_get_contents($path))
-            ->not->toContain('transition-behavior:', basename($path).' declares transition-behavior on its own line.');
+    foreach (app(CssPresetFiles::class)->names() as $preset) {
+        foreach (app(CssPresetFiles::class)->source($preset)->visualStylesheets() as $index => $css) {
+            $stylesheets["{$preset} visual source {$index}"] = $css;
+        }
+    }
+
+    foreach ($stylesheets as $name => $css) {
+        expect($css)->not->toContain('transition-behavior:', "{$name} declares transition-behavior on its own line.");
     }
 });
 
@@ -224,7 +237,7 @@ it('keeps the Accordion collapse in the structural stylesheet', function () {
 
 it('leaves the runtime safelist to the structural stylesheet', function (string $preset) {
     // A preset restating it snapshots the list, and goes stale the next time a controller applies one.
-    expect(file_get_contents($preset))
+    expect(file_get_contents(app(CssPresetFiles::class)->path($preset)))
         ->not->toContain('@source inline(')
         ->toContain('@import "../structural.css";');
 })->with('design presets');
@@ -265,7 +278,7 @@ function runtimeAppliedClasses(): array
 }
 
 it('keeps closed floating surfaces renderable until Presence hides them', function (string $preset) {
-    $css = file_get_contents($preset);
+    $css = presetVisualCss($preset);
 
     expect($css)
         ->toContain('[data-slot="multi-select-content"])[data-state="closed"]')
@@ -274,7 +287,7 @@ it('keeps closed floating surfaces renderable until Presence hides them', functi
 })->with('design presets');
 
 it('uses pre-connect and resolved color scheme hooks', function (string $preset) {
-    $css = file_get_contents($preset);
+    $css = presetVisualCss($preset);
 
     expect($css)
         ->toContain('html[data-color-scheme-mode="system"]')
@@ -287,7 +300,7 @@ it('uses pre-connect and resolved color scheme hooks', function (string $preset)
 })->with('design presets');
 
 it('keeps file upload state and bare dropzone contracts', function (string $preset) {
-    $css = file_get_contents($preset);
+    $css = presetVisualCss($preset);
 
     expect($css)
         ->toContain('[data-file-upload-dropzone-variant="bare"]')
@@ -301,7 +314,7 @@ it('keeps file upload state and bare dropzone contracts', function (string $pres
 })->with('design presets');
 
 it('keeps sidebar icon collapse responsive and labels in layout flow', function (string $preset) {
-    $css = file_get_contents($preset);
+    $css = presetVisualCss($preset);
 
     expect($css)
         ->toContain('[data-slot="sidebar"][data-collapsible="icon"] [data-slot="sidebar-menu-button"] { @apply md:')
@@ -310,7 +323,7 @@ it('keeps sidebar icon collapse responsive and labels in layout flow', function 
 })->with('design presets');
 
 it('drives native slider tracks from the controller value', function (string $preset) {
-    $css = file_get_contents($preset);
+    $css = presetVisualCss($preset);
 
     expect($css)
         ->toContain('[data-orientation="horizontal"]::-webkit-slider-runnable-track')
@@ -360,13 +373,13 @@ it('keeps the toaster viewport eligible for top-layer stacking from the structur
 });
 
 it('keeps clear input visibility owned by its controller', function (string $preset) {
-    $declaration = presetDeclaration(file_get_contents($preset), '[data-slot="clear-input-button"]');
+    $declaration = presetDeclaration(presetVisualCss($preset), '[data-slot="clear-input-button"]');
 
     expect($declaration)->not->toMatch('/\bhidden\b/');
 })->with('design presets');
 
 it('styles generated rich text DOM through granular hooks', function (string $preset) {
-    $css = file_get_contents($preset);
+    $css = presetVisualCss($preset);
 
     expect($css)
         ->toContain('[data-slot="rich-text"]')
@@ -379,7 +392,7 @@ it('styles generated rich text DOM through granular hooks', function (string $pr
 })->with('design presets');
 
 it('uses Floating UI geometry tokens instead of css-only offsets', function (string $preset) {
-    $css = file_get_contents($preset);
+    $css = presetVisualCss($preset);
 
     foreach (['--available-height', '--anchor-width', '--transform-origin'] as $token) {
         expect($css)->toContain($token);
@@ -391,7 +404,7 @@ it('uses Floating UI geometry tokens instead of css-only offsets', function (str
 })->with('design presets');
 
 it('drives floating presence from semantic state and motion hooks', function (string $preset) {
-    $css = file_get_contents($preset);
+    $css = presetVisualCss($preset);
 
     expect($css)
         ->toContain('[data-state="closed"]')
@@ -402,7 +415,7 @@ it('drives floating presence from semantic state and motion hooks', function (st
 })->with('design presets');
 
 it('drives overlay motion from semantic presence state', function (string $preset) {
-    $css = file_get_contents($preset);
+    $css = presetVisualCss($preset);
 
     expect($css)
         ->toContain('[data-slot="modal-overlay"][data-state="open"]')
@@ -416,7 +429,7 @@ it('drives overlay motion from semantic presence state', function (string $prese
 })->with('design presets');
 
 it('keeps multi-select state selectors aligned with controller output', function (string $preset) {
-    $css = file_get_contents($preset);
+    $css = presetVisualCss($preset);
 
     expect($css)
         ->toContain('[data-slot="multi-select-content"]')
@@ -427,7 +440,7 @@ it('keeps multi-select state selectors aligned with controller output', function
 })->with('design presets');
 
 it('preserves component custom-property contracts', function (string $preset) {
-    $css = file_get_contents($preset);
+    $css = presetVisualCss($preset);
 
     expect($css)
         ->toContain('[data-slot="aspect-ratio"]')
@@ -441,7 +454,7 @@ it('preserves component custom-property contracts', function (string $preset) {
 // --- Known bug guards ---
 
 it('does not reintroduce known clipping, stacking, sizing or marker bugs', function (string $preset) {
-    $css = file_get_contents($preset);
+    $css = presetVisualCss($preset);
     $avatar = presetDeclaration($css, '[data-slot="avatar"]');
     $avatarImage = presetDeclaration($css, '[data-slot="avatar-image"]');
     $itemIcon = presetDeclaration($css, '[data-slot="item-media"][data-variant="icon"]');
@@ -459,7 +472,7 @@ it('does not reintroduce known clipping, stacking, sizing or marker bugs', funct
 })->with('design presets');
 
 it('keeps input-group focus and addon layout owned by the group', function (string $preset) {
-    $css = file_get_contents($preset);
+    $css = presetVisualCss($preset);
     $inlineStart = presetDeclaration($css, '[data-slot="input-group-addon"][data-align="inline-start"]');
     $inlineEnd = presetDeclaration($css, '[data-slot="input-group-addon"][data-align="inline-end"]');
 

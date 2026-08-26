@@ -1,7 +1,26 @@
 import { expect, test } from "@playwright/test";
+import { execFile } from "node:child_process";
 import { readFile } from "node:fs/promises";
+import { promisify } from "node:util";
+
+const run = promisify(execFile);
+const compiler = `
+    import { readFile } from "node:fs/promises";
+    import { compileCssFixture } from "./scripts/css_build_contract.js";
+
+    process.stdout.write(await compileCssFixture(await readFile("stubs/resources/css/app.css", "utf8")));
+`;
+
+let novaCss;
 
 test.use({ reducedMotion: "no-preference" });
+
+test.beforeAll(async () => {
+    ({ stdout: novaCss } = await run("bun", ["-e", compiler], {
+        cwd: process.cwd(),
+        maxBuffer: 1024 * 1024,
+    }));
+});
 
 test("reveals content through CSS when JavaScript never connects", async ({ browser }) => {
     const context = await browser.newContext({ javaScriptEnabled: false, reducedMotion: "no-preference" });
@@ -29,11 +48,8 @@ test("reveals content through CSS when JavaScript never connects", async ({ brow
 });
 
 test("raw controller markup receives Nova rise motion", async ({ page }) => {
-    const structural = await readFile("resources/css/structural.css", "utf8");
-    const nova = await readFile("resources/css/presets/nova.css", "utf8");
-
     await page.setContent(`
-        <style>${structural}\n${nova}</style>
+        <style>${novaCss}</style>
         <section data-controller="reveal">
             <article id="raw" data-reveal-item>Raw markup</article>
         </section>
@@ -58,11 +74,8 @@ test("structural fallback keeps animation name and fill mode unambiguous", async
 });
 
 test("Sidebar Reveal integration receives its selected Nova motion", async ({ page }) => {
-    const structural = await readFile("resources/css/structural.css", "utf8");
-    const nova = await readFile("resources/css/presets/nova.css", "utf8");
-
     await page.setContent(`
-        <style>${structural}\n${nova}</style>
+        <style>${novaCss}</style>
         <div data-slot="sidebar-container" data-controller="reveal" data-motion="flat">
             <div id="sidebar-item" data-reveal-item>Navigation</div>
         </div>
@@ -182,12 +195,9 @@ test("drops the render marker when a render never lands", async ({ page }) => {
 test("collapsed desktop Sidebar labels suppress Reveal without changing expanded or mobile labels", async ({
     page,
 }) => {
-    const structural = await readFile("resources/css/structural.css", "utf8");
-    const nova = await readFile("resources/css/presets/nova.css", "utf8");
-
     await page.setViewportSize({ width: 1024, height: 768 });
     await page.setContent(`
-        <style>${structural}\n${nova}</style>
+        <style>${novaCss}</style>
         <div data-slot="sidebar" data-collapsible="icon">
             <div id="collapsed-label" data-slot="sidebar-group-label" data-reveal-item>Collapsed</div>
         </div>

@@ -16,6 +16,9 @@ The installer writes a thin `resources/css/app.css` that imports Tailwind and en
 @import '../../vendor/emaia/laravel-hotwire/resources/css/presets/nova.css';
 ```
 
+That public entrypoint aggregates Nova's ordered visual sources. Their internal paths are an implementation detail;
+applications should keep importing `presets/nova.css` rather than individual package files.
+
 ## Generate a custom preset
 
 Generate an empty preset scaffold when token overrides are not enough:
@@ -60,12 +63,16 @@ To customize Nova instead of starting from empty selectors, clone it into the ap
 php artisan hotwire:make-preset brand --from=nova
 ```
 
+The clone is one application-owned file: package foundation imports are rewritten to their vendor paths and Nova's
+private visual sources are flattened in canonical order. It never leaves imports to package-internal module paths.
+
 Use `--force` to replace an existing generated file. The command never edits `resources/css/app.css`, so application
 styles and import ordering remain under your control.
 
-The rules arrive in the order the source preset declares them, and that order is worth keeping. Every rule sits in the
-same `@layer components`, so between two selectors of equal specificity the later one wins. Reordering the scaffold as
-you fill it in can therefore change which rule applies without changing a single declaration.
+The rules arrive in the order the source preset declares them, and that order is worth keeping. Between equal-specificity
+rules in the same layer, the later one wins. Presets may also declare ordered component sublayers; the scaffold preserves
+those boundaries and their explicit order. Reordering the scaffold as you fill it in can therefore change which rule
+applies without changing a single declaration.
 
 ### A note on IDE warnings
 

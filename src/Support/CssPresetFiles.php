@@ -6,7 +6,10 @@ use Illuminate\Filesystem\Filesystem;
 
 final readonly class CssPresetFiles
 {
-    public function __construct(private Filesystem $files) {}
+    public function __construct(
+        private Filesystem $files,
+        private PresetSourceResolver $sources,
+    ) {}
 
     /** @return array<string, string> */
     public function all(): array
@@ -31,5 +34,13 @@ final readonly class CssPresetFiles
     public function path(string $name): ?string
     {
         return $this->all()[$name] ?? null;
+    }
+
+    /** Resolve a shipped preset by name. */
+    public function source(string $name): ?PresetSource
+    {
+        $path = $this->path($name);
+
+        return $path === null ? null : $this->sources->resolve($path);
     }
 }

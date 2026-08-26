@@ -41,7 +41,10 @@ final readonly class PresetSkeleton
                 }
 
                 $selector = (string) array_pop($chain);
-                $preludes = array_values(array_filter($chain, fn (string $block): bool => ! str_starts_with($block, '@layer')));
+                $preludes = array_values(array_filter(array_map(
+                    $this->normalizePrelude(...),
+                    $chain,
+                )));
                 $key = implode('|', [...$preludes, $selector]);
 
                 if (isset($seen[$key])) {
@@ -59,7 +62,7 @@ final readonly class PresetSkeleton
             }
         }
 
-        $lines = [];
+        $lines = $this->layerOrders($stylesheets);
 
         foreach ($buckets as $label => $rules) {
             if ($rules === []) {
@@ -67,6 +70,45 @@ final readonly class PresetSkeleton
             }
 
             $lines = [...$lines, '', "    /* $label */", ...$this->block($rules)];
+        }
+
+        return $lines;
+    }
+
+    /**
+     * Preserve explicit component sublayer order before grouping rules by catalog owner.
+     *
+     * @param  string[]  $stylesheets
+     * @return string[]
+     */
+    private function layerOrders(array $stylesheets): array
+    {
+        $lines = [];
+        $seen = [];
+
+        foreach ($stylesheets as $css) {
+            preg_match_all('/@layer\s+([^;{}]+);/', $this->rules->stripComments($css), $matches);
+
+            foreach ($matches[1] as $declaration) {
+                $layers = array_map('trim', explode(',', $declaration));
+
+                if (array_filter(
+                    $layers,
+                    fn (string $layer): bool => ! str_starts_with($layer, 'components.'),
+                ) !== []) {
+                    continue;
+                }
+
+                $order = implode(', ', array_map(
+                    fn (string $layer): string => substr($layer, strlen('components.')),
+                    $layers,
+                ));
+
+                if (! isset($seen[$order])) {
+                    $lines[] = "    @layer {$order};";
+                    $seen[$order] = true;
+                }
+            }
         }
 
         return $lines;
@@ -140,5 +182,18 @@ final readonly class PresetSkeleton
     private function indent(int $level): string
     {
         return str_repeat(' ', 4 * $level);
+    }
+
+    private function normalizePrelude(string $prelude): ?string
+    {
+        if ($prelude === '@layer components') {
+            return null;
+        }
+
+        if (str_starts_with($prelude, '@layer components.')) {
+            return '@layer '.substr($prelude, strlen('@layer components.'));
+        }
+
+        return $prelude;
     }
 }

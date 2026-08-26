@@ -12,5 +12,23 @@ it('discovers shipped css presets in sorted order', function () {
     expect($presets->all())->toBe($expected)
         ->and($presets->names())->toBe(array_keys($expected))
         ->and($presets->path('nova'))->toBe($expected['nova'])
+        ->and($presets->source('nova')?->visualCss())->toContain('[data-slot="button"]')
         ->and($presets->path('missing'))->toBeNull();
+});
+
+it('resolves every private Nova module exactly once without exposing it as a preset', function () {
+    $presets = app(CssPresetFiles::class);
+    $source = $presets->source('nova');
+    $modules = glob(dirname($presets->path('nova')).'/nova/*.css') ?: [];
+
+    expect($modules)->toHaveCount(count($source->visualStylesheets()))
+        ->not->toBeEmpty()
+        ->and($source->foundationImports())->toBe([
+            'tokens.css',
+            'custom-variants.css',
+            'structural.css',
+        ])
+        ->and(file_get_contents($presets->path('nova')))
+        ->not->toContain('[data-slot=')
+        ->and($presets->names())->toBe(['nova']);
 });

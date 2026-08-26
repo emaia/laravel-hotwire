@@ -56,8 +56,9 @@ Structural slots are containers, assistive nodes or geometry a controller styles
 expected to style them, and `hotwire:make-preset` leaves them out of the scaffold.
 
 The values a slot varies by are deliberately **not** declared here. Only a stylesheet knows them, and it knows all of
-them: a slot varies by `data-orientation` because a rule says so. `Support\PresetAxes` reads them straight from a
-shipped preset, so `hotwire:make-preset` documents every axis without anything being kept in sync by hand.
+them: a slot varies by `data-orientation` because a rule says so. The preset source resolver gives
+`Support\PresetAxes` the complete ordered visual CSS, so `hotwire:make-preset` documents every axis without anything
+being kept in sync by hand.
 
 It reads every attribute a rule matches on, not only the `data-` ones — `aria-expanded`, `aria-invalid`, `type` and the
 `open` an Accordion `<details>` carries are axes too, whether they are written in the selector or as a Tailwind variant

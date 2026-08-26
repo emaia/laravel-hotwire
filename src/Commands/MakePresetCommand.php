@@ -5,6 +5,8 @@ namespace Emaia\LaravelHotwire\Commands;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\CssPresetFiles;
 use Emaia\LaravelHotwire\Support\PresetSkeleton;
+use Emaia\LaravelHotwire\Support\PresetSource;
+use Emaia\LaravelHotwire\Support\PresetSourceException;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Filesystem\Filesystem;
@@ -61,7 +63,7 @@ class MakePresetCommand extends Command
 
         $content = $source === null
             ? $this->buildScaffold()
-            : $this->rewritePackageImports($this->files->get($source));
+            : $this->clonePreset($source);
 
         $this->files->ensureDirectoryExists(dirname($target));
         $this->files->put($target, $content);
@@ -74,7 +76,7 @@ class MakePresetCommand extends Command
         return self::SUCCESS;
     }
 
-    private function sourcePreset(): ?string
+    private function sourcePreset(): ?PresetSource
     {
         $name = $this->option('from');
 
@@ -82,7 +84,13 @@ class MakePresetCommand extends Command
             return null;
         }
 
-        $source = $this->presets->path((string) $name);
+        try {
+            $source = $this->presets->source((string) $name);
+        } catch (PresetSourceException $exception) {
+            warning($exception->getMessage());
+
+            return null;
+        }
 
         if ($source !== null) {
             return $source;
@@ -136,7 +144,13 @@ class MakePresetCommand extends Command
      */
     private function stylesheets(): array
     {
-        return array_values(array_map(fn (string $path): string => $this->files->get($path), $this->presets->all()));
+        $stylesheets = [];
+
+        foreach ($this->presets->names() as $preset) {
+            $stylesheets = [...$stylesheets, ...$this->presets->source($preset)?->visualStylesheets() ?? []];
+        }
+
+        return $stylesheets;
     }
 
     /**
@@ -180,12 +194,13 @@ class MakePresetCommand extends Command
         return implode("\n", $lines);
     }
 
-    private function rewritePackageImports(string $content): string
+    private function clonePreset(PresetSource $source): string
     {
-        return str_replace(
-            ['@import "../tokens.css";', '@import "../custom-variants.css";', '@import "../structural.css";'],
-            [self::TOKENS_IMPORT, self::VARIANTS_IMPORT, self::STRUCTURAL_IMPORT],
-            $content,
+        $imports = array_map(
+            fn (string $path): string => "@import \"../../../vendor/emaia/laravel-hotwire/resources/css/{$path}\";",
+            $source->foundationImports(),
         );
+
+        return implode("\n", [...$imports, '', $source->visualCss(), '']);
     }
 }
