@@ -134,7 +134,7 @@ Custom CSS may use transitions or finite animations keyed by `data-state`. A clo
 
 | Component | Prop | Default | Description |
 |---|---|---|---|
-| `popover` | `id` | `uniqid('popover-')` | Content id and trigger `aria-controls`. |
+| `popover` | `id` | generated | String or model content id and trigger `aria-controls`; see [stable component ids](../recipes/stable-component-ids.md). |
 | `popover` | `side` | `bottom` | Preferred side: `top`, `right`, `bottom` or `left`. |
 | `popover` | `align` | `start` | Content alignment: `start`, `center` or `end`. |
 | `popover` | `side-offset` | `4` | Main-axis gap between the trigger and content. |

@@ -412,6 +412,7 @@ test.serial("re-initialises the map when turbo:morph-element fires and the leafl
 
     // The mocked L.map doesn't add a `.leaflet-pane` child, so isStale is true.
     mounted.root.dispatchEvent(new CustomEvent("turbo:morph-element", { bubbles: true }));
+    await Promise.resolve();
 
     expect(mapState.initCalls.length).toBe(initBefore + 1);
 });
@@ -425,6 +426,7 @@ test.serial("does NOT re-initialise on morph when a leaflet-pane is present", as
 
     const initBefore = mapState.initCalls.length;
     mounted.root.dispatchEvent(new CustomEvent("turbo:morph-element", { bubbles: true }));
+    await Promise.resolve();
 
     expect(mapState.initCalls.length).toBe(initBefore);
 });
@@ -436,6 +438,7 @@ test.serial("disconnect detaches the morph recovery listener", async () => {
 
     const initBefore = mapState.initCalls.length;
     mounted.root.dispatchEvent(new CustomEvent("turbo:morph-element", { bubbles: true }));
+    await Promise.resolve();
 
     expect(mapState.initCalls.length).toBe(initBefore);
 });

@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Components\Field;
 
 use Emaia\LaravelHotwire\Components\Concerns\StripsNullProps;
+use Emaia\LaravelHotwire\Support\ComponentId;
 use Emaia\LaravelHotwire\Support\FieldKey;
 use Illuminate\Support\ViewErrorBag;
 use Illuminate\View\Component;
@@ -54,7 +55,7 @@ class Error extends Component
         $hasName = $name !== null && $name !== '';
 
         $resolvedErrorKey = $errorKey ?: ($hasName ? FieldKey::toErrorKey($name) : null);
-        $resolvedId = $id ?: ($hasName ? FieldKey::toId($name).'-error' : 'hw-error-'.uniqid());
+        $resolvedId = $id ?: ($hasName ? FieldKey::toId($name).'-error' : app(ComponentId::class)->next('hw-error'));
 
         $messages = $this->explicitMessages ?? ($resolvedErrorKey ? $errorsBag->get($resolvedErrorKey) : []);
         $isEmpty = empty($messages);

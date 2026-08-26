@@ -36,7 +36,7 @@ multiple-item and disabled behavior; native browser disclosure semantics remain 
 
 | Component | Prop | Default | Description |
 | --- | --- | --- | --- |
-| `accordion` | `id` | generated | Root id. |
+| `accordion` | `id` | generated | String or model root id; see [stable component ids](../recipes/stable-component-ids.md). |
 | `accordion` | `type` | `single` | Use `multiple` to allow more than one item open. |
 | `accordion` | `value` | `null` | Open value, or array of values when `type="multiple"`. |
 | `accordion` | `controller` | `accordion` | Stimulus identifier, useful for subclasses. |

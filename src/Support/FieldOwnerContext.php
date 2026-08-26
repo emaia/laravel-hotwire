@@ -12,7 +12,7 @@ final class FieldOwnerContext
     /** Reserve a unique rendered id while retaining the first as the owner's reference. */
     public function registerLabel(?string $id): string
     {
-        $baseId = $id !== null && $id !== '' ? $id : 'hw-field-label-'.uniqid();
+        $baseId = $id !== null && $id !== '' ? $id : app(ComponentId::class)->next('hw-field-label');
         $resolvedId = FieldLabel::uniqueId($baseId, array_keys($this->usedLabelIds));
 
         $this->usedLabelIds[$resolvedId] = true;

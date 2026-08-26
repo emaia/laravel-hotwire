@@ -107,7 +107,7 @@ return turbo_stream()
 
 | Prop                  | Default                                           | Description                                                    |
 |-----------------------|---------------------------------------------------|----------------------------------------------------------------|
-| `id`                  | auto                                              | Root element id.                                               |
+| `id`                  | auto                                              | String or model root id; see [stable component ids](../recipes/stable-component-ids.md). |
 | `side`                | `right`                                           | `left`, `right`, `top`, or `bottom`.                           |
 | `size`                | `75%` for side sheets, `auto` for vertical sheets | CSS length assigned to `--sheet-width` or `--sheet-height`.    |
 | `frame`               | `null`                                            | String/object Turbo Frame id for layout-shared, server-loaded content. |

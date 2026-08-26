@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Components;
 
 use Emaia\LaravelHotwire\Components\Concerns\StripsNullProps;
+use Emaia\LaravelHotwire\Support\ComponentId;
 use Emaia\LaravelHotwire\Support\FieldKey;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\ViewErrorBag;
@@ -50,7 +51,7 @@ class FileUpload extends Component
 
     public function __construct(
         public ?string $name = null,
-        public ?string $id = null,
+        public string|object|null $id = null,
         public ?string $errorKey = null,
         public ?string $url = null,
         public ?string $accept = null,
@@ -76,6 +77,10 @@ class FileUpload extends Component
     ) {
         if ($url === null || $url === '') {
             throw new InvalidArgumentException('hw:file-upload requires a `url` prop.');
+        }
+
+        if (is_object($this->id)) {
+            $this->id = app(ComponentId::class)->resolve($this->id, 'file-upload');
         }
 
         if (! preg_match('/^[a-z0-9][a-z0-9_-]*(?:--[a-z0-9][a-z0-9_-]*)*$/', $controller)) {
@@ -176,7 +181,7 @@ class FileUpload extends Component
     ): array {
         $hasName = $name !== null && $name !== '';
 
-        $resolvedId = $id ?: ($hasName ? FieldKey::toId($name) : 'hw-file-upload-'.uniqid());
+        $resolvedId = $id ?: ($hasName ? FieldKey::toId($name) : app(ComponentId::class)->next('hw-file-upload'));
         $resolvedErrorKey = $errorKey ?: ($hasName ? FieldKey::toErrorKey($name) : '');
         $errorId = $resolvedId.'-error';
         $describedBy = null;

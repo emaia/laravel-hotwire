@@ -4,6 +4,7 @@ namespace Emaia\LaravelHotwire\Components;
 
 use Emaia\LaravelHotwire\Components\Concerns\StripsNullProps;
 use Emaia\LaravelHotwire\Support\AutoSubmit;
+use Emaia\LaravelHotwire\Support\ComponentId;
 use Emaia\LaravelHotwire\Support\FieldKey;
 use Emaia\LaravelHotwire\Support\MaskPresets;
 use Illuminate\Contracts\Support\Htmlable;
@@ -81,7 +82,7 @@ class Input extends Component
         $isCheckable = $this->isCheckable();
         $hasName = $name !== null && $name !== '';
 
-        $baseId = $id ?: ($fieldId ?: ($hasName ? FieldKey::toId($name) : 'hw-input-'.uniqid()));
+        $baseId = $id ?: ($fieldId ?: ($hasName ? FieldKey::toId($name) : app(ComponentId::class)->next('hw-input')));
         $resolvedId = $baseId;
 
         $isGroupInput = $isCheckable

@@ -32,7 +32,8 @@ Any other HTML attribute (`id`, `class`, `disabled`, `aria-*`, `data-*`) passes 
 ## Form filters
 
 Passing `name` renders a hidden input associated with the toggle. The input is enabled only while the toggle is pressed,
-so unpressed toggles are omitted from the submitted form data:
+so unpressed toggles are omitted from the submitted form data. Its id is derived from `name`; array names also include
+the toggle value so sibling filters remain distinct:
 
 ```blade
 <hw:form method="get" action="/posts" frame="posts" auto-submit>

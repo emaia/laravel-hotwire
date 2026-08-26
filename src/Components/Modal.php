@@ -2,6 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Emaia\LaravelHotwire\Support\ComponentId;
 use Emaia\LaravelHotwire\Support\FieldContext;
 use Emaia\LaravelHotwire\Support\FrameTarget;
 use Illuminate\Contracts\Support\Htmlable;
@@ -10,7 +11,7 @@ use Illuminate\View\Component;
 class Modal extends Component
 {
     public function __construct(
-        public string $id = '',
+        public string|object $id = '',
         public string $size = 'md',
         public string $class = '',
         public bool $closeButton = true,
@@ -20,9 +21,7 @@ class Modal extends Component
         public string $motion = 'default',
         public bool $viewTransition = false,
     ) {
-        if ($this->id === '') {
-            $this->id = uniqid('modal-');
-        }
+        $this->id = app(ComponentId::class)->resolve($this->id, 'modal');
 
         $this->frame = FrameTarget::normalize($this->frame);
 

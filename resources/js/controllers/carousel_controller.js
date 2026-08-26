@@ -26,11 +26,11 @@ export default class extends Controller {
 
         this.detachMorphRecovery = attachMorphRecovery(this, {
             // After morph, Embla still holds references to slide nodes that may
-            // no longer be in the DOM. If the first registered slide is gone,
-            // the carousel needs a re-init against the new children.
+            // no longer be in the DOM. If any registered slide is gone, the
+            // carousel needs a re-init against the new children.
             isStale: () => {
                 const slides = this.embla?.slideNodes?.() ?? [];
-                return slides.length > 0 && !document.contains(slides[0]);
+                return slides.some((slide) => !document.contains(slide));
             },
             recover: () => this.initEmbla(),
         });

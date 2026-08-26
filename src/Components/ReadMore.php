@@ -2,6 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Emaia\LaravelHotwire\Support\ComponentId;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\Component;
 
@@ -13,7 +14,7 @@ class ReadMore extends Component
 
     /** Create a progressively enhanced preview for overflowing content. */
     public function __construct(
-        public ?string $id = null,
+        public string|object|null $id = null,
         public int $collapsedHeight = 320,
         public bool $expanded = false,
         public string $moreLabel = 'Read more',
@@ -24,7 +25,7 @@ class ReadMore extends Component
         public string $controller = 'read-more',
         public ?Htmlable $stimulus = null,
     ) {
-        $this->readMoreId = $id !== null && $id !== '' ? $id : 'hw-read-more-'.uniqid();
+        $this->readMoreId = app(ComponentId::class)->resolve($id, 'hw-read-more', 'read-more');
         $this->contentId = $this->readMoreId.'-content';
     }
 

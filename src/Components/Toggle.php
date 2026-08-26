@@ -4,6 +4,7 @@ namespace Emaia\LaravelHotwire\Components;
 
 use Emaia\LaravelHotwire\Components\Concerns\StripsNullProps;
 use Emaia\LaravelHotwire\Support\AutoSubmit;
+use Emaia\LaravelHotwire\Support\FieldKey;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\Component;
 use Illuminate\View\ComponentAttributeBag;
@@ -44,10 +45,16 @@ class Toggle extends Component
         $isDisabled = $attributes->has('disabled') && $attributes->get('disabled') !== false;
         $hasName = $name !== null && $name !== '';
         $htmlValue = (string) ($this->value ?? 'on');
+        $inputId = $hasName ? FieldKey::toId($name) : null;
+
+        if ($inputId !== null && str_ends_with($name, '[]')) {
+            $valueKey = rawurlencode($htmlValue);
+            $inputId .= $valueKey !== '' ? '-'.$valueKey : '';
+        }
 
         return [
             'htmlValue' => $htmlValue,
-            'inputId' => $hasName ? 'hw-toggle-input-'.uniqid() : null,
+            'inputId' => $inputId !== null ? $inputId.'-input' : null,
             'isDisabled' => $isDisabled,
             'isPressed' => $isPressed,
             'state' => $isPressed ? 'on' : 'off',

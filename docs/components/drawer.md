@@ -95,7 +95,7 @@ stream, to close it after a successful action. Stream rendering waits for the ac
 
 | Prop                  | Default                                                      | Description                                                                |
 |-----------------------|--------------------------------------------------------------|----------------------------------------------------------------------------|
-| `id`                  | auto                                                         | Root element id.                                                           |
+| `id`                  | auto                                                         | String or model root id; see [stable component ids](../recipes/stable-component-ids.md). |
 | `direction`           | `down`                                                       | `up`, `right`, `down`, or `left`.                                          |
 | `side`                | `null`                                                       | Legacy alias for `direction`; `top` maps to `up`, `bottom` maps to `down`. |
 | `size`                | `75vw`/`24rem` for side drawers, `auto` for vertical drawers | CSS length assigned to the drawer width or height variable.                |

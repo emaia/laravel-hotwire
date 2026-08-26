@@ -587,6 +587,7 @@ test.serial("re-initialises Embla when turbo:morph-element fires and the registe
 
     // Default slideNodes are placeholder objects ({}, {}, {}), never in document → stale.
     mounted.root.dispatchEvent(new CustomEvent("turbo:morph-element", { bubbles: true }));
+    await Promise.resolve();
 
     expect(emblaState.calls.length).toBe(callsBefore + 1);
 });
@@ -603,8 +604,26 @@ test.serial("does NOT re-initialise on morph when slide references are still in 
 
     const callsBefore = emblaState.calls.length;
     mounted.root.dispatchEvent(new CustomEvent("turbo:morph-element", { bubbles: true }));
+    await Promise.resolve();
 
     expect(emblaState.calls.length).toBe(callsBefore);
+});
+
+test.serial("re-initialises Embla when a later registered slide is no longer in the DOM", async () => {
+    await mount();
+
+    const liveSlides = [
+        mounted.root.querySelector("[data-carousel-container] > div:nth-child(1)"),
+        mounted.root.querySelector("[data-carousel-container] > div:nth-child(2)"),
+    ];
+    emblaState.slideNodes = liveSlides;
+    liveSlides[1].replaceWith(document.createElement("div"));
+
+    const callsBefore = emblaState.calls.length;
+    mounted.root.dispatchEvent(new CustomEvent("turbo:morph-element", { bubbles: true }));
+    await Promise.resolve();
+
+    expect(emblaState.calls.length).toBe(callsBefore + 1);
 });
 
 test.serial("disconnect detaches the morph recovery listener", async () => {
@@ -614,6 +633,7 @@ test.serial("disconnect detaches the morph recovery listener", async () => {
 
     const callsBefore = emblaState.calls.length;
     mounted.root.dispatchEvent(new CustomEvent("turbo:morph-element", { bubbles: true }));
+    await Promise.resolve();
 
     expect(emblaState.calls.length).toBe(callsBefore);
 });

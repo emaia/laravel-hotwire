@@ -21,6 +21,8 @@ Each recipe is self-contained — pick the one that matches your use case.
   single Turbo Frame. Per-step validation, browser back, resume-where-you-left-off, no client state.
 - [Composing streams](./composing-streams.md) — chain `refresh`, `update`, `toast` and friends to
   describe the full UI transition in a single response.
+- [Stable component ids](./stable-component-ids.md) - choose automatic, model-derived, or explicit ids for components
+  rendered across Turbo morphs and separate fragment requests.
 - [Carousel patterns](./carousel-patterns.md) — thumbnail nav, lightbox modal, infinite Turbo Stream slides,
   URL-deep-linked slides — built on the `carousel` controller.
 - [Carousel as a primitive](./carousel-as-primitive.md) — multi-step wizard, server-driven signage, swipe

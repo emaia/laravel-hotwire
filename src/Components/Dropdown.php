@@ -2,6 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Emaia\LaravelHotwire\Support\ComponentId;
 use Emaia\LaravelHotwire\Support\FieldContext;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\Component;
@@ -9,14 +10,12 @@ use Illuminate\View\Component;
 class Dropdown extends Component
 {
     public function __construct(
-        public string $id = '',
+        public string|object $id = '',
         public bool $open = false,
         public bool $closeOnSelect = true,
         public ?Htmlable $stimulus = null,
     ) {
-        if ($this->id === '') {
-            $this->id = uniqid('dropdown-');
-        }
+        $this->id = app(ComponentId::class)->resolve($this->id, 'dropdown');
     }
 
     public function render()

@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Components;
 
 use Emaia\LaravelHotwire\Components\Concerns\StripsNullProps;
+use Emaia\LaravelHotwire\Support\ComponentId;
 use Emaia\LaravelHotwire\Support\FieldContext;
 use Emaia\LaravelHotwire\Support\FieldKey;
 use Illuminate\Contracts\Support\Htmlable;
@@ -17,7 +18,7 @@ class MultiSelect extends Component
     /** @param array<int|string, string> $options */
     public function __construct(
         public ?string $name = null,
-        public ?string $id = null,
+        public string|object|null $id = null,
         public array $options = [],
         public array $selected = [],
         public ?string $errorKey = null,
@@ -48,6 +49,10 @@ class MultiSelect extends Component
         public string $contentClass = '',
         public ?Htmlable $stimulus = null,
     ) {
+        if (is_object($this->id)) {
+            $this->id = app(ComponentId::class)->resolve($this->id, 'multi-select');
+        }
+
         if ($options !== [] && array_keys($options) === range(0, count($options) - 1)) {
             $this->options = array_combine($options, $options);
         }
@@ -91,7 +96,7 @@ class MultiSelect extends Component
         $submissionName = $hasName && ! str_ends_with($name, '[]') ? $name.'[]' : $name;
         $fieldName = $hasName ? $submissionName : null;
 
-        $resolvedId = $id ?: ($hasName ? FieldKey::toId($submissionName) : 'hw-multi-select-'.uniqid());
+        $resolvedId = $id ?: ($hasName ? FieldKey::toId($submissionName) : app(ComponentId::class)->next('hw-multi-select'));
         $resolvedErrorKey = $errorKey ?: ($hasName ? FieldKey::toErrorKey($submissionName) : '');
         $errorId = $resolvedId.'-error';
         $contentId = $resolvedId.'-content';

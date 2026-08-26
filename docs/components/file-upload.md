@@ -25,7 +25,7 @@ Successful JSON responses write a hidden input with `response.token` by default.
 | `url`              | `string`       | required      | Endpoint that accepts each upload request.                                                                     |
 | `name`             | `string\|null` | `null`        | Hidden input name. With `multiple`, `[]` is appended automatically.                                            |
 | `value`            | `mixed`        | `null`        | Initial token(s). Overridden by `old($name)` after validation redirect-back.                                   |
-| `id`               | `string\|null` | derived       | Root id. Falls back to `hw-file-upload-{uniqid}` without a name.                                               |
+| `id`               | `string\|object\|null` | derived | Root id. Accepts a model; falls back to a deterministic render-scoped id without a name.                  |
 | `error-key`        | `string\|null` | derived       | Validation key override.                                                                                       |
 | `accept`           | `string\|null` | `null`        | Native accept list (`image/*`, `.pdf,.csv`). Defaults to `image/*` for `view="image"`.                         |
 | `max-size-bytes`   | `int\|null`    | `null`        | Per-file client-side size limit. Server validation is still required.                                          |

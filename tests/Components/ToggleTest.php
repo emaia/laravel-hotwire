@@ -82,9 +82,37 @@ it('renders a hidden input when name is provided', function () {
         ->and($html)->toContain('name="filters[]"')
         ->and($html)->toContain('value="featured"')
         ->and($html)->toContain('data-toggle-input')
-        ->and($html)->toContain('data-toggle-input-id-value="hw-toggle-input-')
+        ->and($html)->toContain('data-toggle-input-id-value="filters-featured-input"')
         ->and($html)->not->toContain('name="filters[]" disabled')
         ->and(substr_count($html, 'name="filters[]"'))->toBe(1);
+});
+
+it('keeps hidden input ids distinct for repeated array names', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::toggle name="filters[]" value="featured">Featured</x-hw::toggle>
+        <x-hw::toggle name="filters[]" value="archived">Archived</x-hw::toggle>
+    BLADE);
+
+    expect($html)->toContain('id="filters-featured-input"')
+        ->and($html)->toContain('id="filters-archived-input"');
+});
+
+it('does not collapse distinct array values onto the same hidden input id', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::toggle name="filters[]" value="foo bar">Spaced</x-hw::toggle>
+        <x-hw::toggle name="filters[]" value="foo-bar">Hyphenated</x-hw::toggle>
+    BLADE);
+
+    expect($html)->toContain('id="filters-foo%20bar-input"')
+        ->and($html)->toContain('id="filters-foo-bar-input"');
+});
+
+it('derives the hidden input id deterministically from its name', function () {
+    $first = (string) $this->blade('<x-hw::toggle name="notify">Notify</x-hw::toggle>');
+    $second = (string) $this->blade('<x-hw::toggle name="notify">Notify</x-hw::toggle>');
+
+    expect($first)->toContain('id="notify-input"')
+        ->and($second)->toContain('id="notify-input"');
 });
 
 it('disables the hidden input while unpressed', function () {

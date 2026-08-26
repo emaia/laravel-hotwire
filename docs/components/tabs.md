@@ -35,7 +35,7 @@ controller targets/actions, and can server-render the active tab for progressive
 
 | Component | Prop | Default | Description |
 | --- | --- | --- | --- |
-| `tabs` | `id` | generated | Base id used to derive trigger and panel ids. |
+| `tabs` | `id` | generated | String or model base id used to derive trigger and panel ids; see [stable component ids](../recipes/stable-component-ids.md). |
 | `tabs` | `active` | `null` | Value of the tab to render selected on the server. |
 | `tabs` | `selectedIndex` | `null` | Zero-based fallback passed to the controller as `selected-index`. |
 | `tabs` | `controller` | `tabs` | Stimulus identifier, useful for subclasses. |

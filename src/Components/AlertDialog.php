@@ -2,6 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Emaia\LaravelHotwire\Support\ComponentId;
 use Emaia\LaravelHotwire\Support\FieldContext;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\Component;
@@ -17,15 +18,13 @@ class AlertDialog extends Component
         public string $cancelVariant = 'outline',
         public string $confirmClass = '',
         public string $cancelClass = '',
-        public string $id = '',
+        public string|object $id = '',
         public string $motion = 'default',
         public bool $lockScroll = true,
         public bool $closeOnClickOutside = true,
         public ?Htmlable $stimulus = null,
     ) {
-        if ($this->id === '') {
-            $this->id = uniqid('alert-');
-        }
+        $this->id = app(ComponentId::class)->resolve($this->id, 'alert');
 
         $this->motion = in_array($this->motion, ['default', 'none'], true) ? $this->motion : 'default';
     }

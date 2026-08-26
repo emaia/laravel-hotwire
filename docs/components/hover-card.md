@@ -120,7 +120,7 @@ Custom CSS may use transitions or finite animations keyed by `data-state`. A clo
 
 | Component | Prop | Default | Description |
 |---|---|---|---|
-| `hover-card` | `id` | `uniqid('hover-card-')` | Content id and trigger `aria-describedby`. |
+| `hover-card` | `id` | generated | String or model content id and trigger `aria-describedby`; see [stable component ids](../recipes/stable-component-ids.md). |
 | `hover-card` | `side` | `bottom` | Preferred side: `top`, `right`, `bottom` or `left`. |
 | `hover-card` | `align` | `start` | Content alignment: `start`, `center` or `end`. |
 | `hover-card` | `side-offset` | `4` | Main-axis gap between the trigger and content. |

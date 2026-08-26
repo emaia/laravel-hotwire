@@ -109,7 +109,7 @@ and `data-pinning`; configure those through props and controller actions rather 
 
 | Prop               | Type             | Default          | Description                                                       |
 | ------------------ | ---------------- | ---------------- | ----------------------------------------------------------------- |
-| `id`               | `?string`        | generated        | Root id; the controlled content uses `<id>-content`.              |
+| `id`               | `string\|object\|null` | generated  | Root id; accepts a model for [cross-request identity](../recipes/stable-component-ids.md). |
 | `collapsed-height` | `int`            | `320`            | Preview height in pixels.                                         |
 | `expanded`         | `bool`           | `false`          | Requested initial expansion state.                                |
 | `more-label`       | `string`         | `'Read more'`    | Label shown while collapsed.                                      |
