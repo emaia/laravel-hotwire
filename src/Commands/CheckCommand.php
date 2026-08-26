@@ -706,23 +706,7 @@ class CheckCommand extends Command
 
     private function isUnconditionalImport(string $conditions): bool
     {
-        if ($conditions === '' || strcasecmp($conditions, 'layer') === 0) {
-            return true;
-        }
-
-        $layer = <<<'REGEX'
-~
-    (?(DEFINE)
-        (?<escape>\\(?:[0-9a-f]{1,6}[ \t\r\n\f]?|[^\r\n\f0-9a-f]))
-        (?<start>[_a-z\x{80}-\x{10ffff}]|(?&escape))
-        (?<char>[-_a-z0-9\x{80}-\x{10ffff}]|(?&escape))
-        (?<ident>(?:--(?&char)*|-?(?&start)(?&char)*))
-    )
-    ^layer\(\s*(?&ident)(?:\s*\.\s*(?&ident))*\s*\)$
-~iux
-REGEX;
-
-        return preg_match($layer, $conditions) === 1;
+        return $conditions === '';
     }
 
     /** @return array<int, array{path: string, conditions: string}> */
@@ -767,6 +751,10 @@ REGEX;
     /** @return string[] */
     private function topLevelImportRules(string $content): array
     {
+        if (str_starts_with($content, "\xEF\xBB\xBF")) {
+            $content = substr($content, 3);
+        }
+
         $rules = [];
         $length = strlen($content);
         $depth = 0;

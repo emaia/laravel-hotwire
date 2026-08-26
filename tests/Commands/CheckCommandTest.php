@@ -177,20 +177,31 @@ it('accepts comments as whitespace in a complete preset import', function () {
         ->assertSuccessful();
 });
 
-it('accepts a complete preset imported into a cascade layer', function (string $layer) {
+it('does not treat a complete preset imported into a cascade layer as complete coverage', function (string $layer) {
     writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
     $this->artisan('hotwire:styles --components=modal --no-interaction')->assertSuccessful();
     File::put(resource_path('css/app.css'), '@import "'.shippedPresetImportPath().'" '.$layer.';');
 
-    $this->artisan('hotwire:check --no-interaction')
-        ->doesntExpectOutputToContain('not covered by any generated CSS bundle')
-        ->assertSuccessful();
+    $exit = Artisan::call('hotwire:check --no-interaction');
+
+    expect($exit)->toBe(1)
+        ->and(Artisan::output())->toContain('<x-hw::badge>', 'not covered by any generated CSS bundle');
 })->with([
     'anonymous' => 'layer',
     'ascii' => 'layer(hotwire)',
     'unicode' => 'layer(über)',
     'escaped' => 'layer(\\31 foo)',
 ]);
+
+it('accepts a complete preset import after a UTF-8 BOM', function () {
+    writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
+    $this->artisan('hotwire:styles --components=modal --no-interaction')->assertSuccessful();
+    File::put(resource_path('css/app.css'), "\xEF\xBB\xBF".'@import "'.shippedPresetImportPath().'";');
+
+    $this->artisan('hotwire:check --no-interaction')
+        ->doesntExpectOutputToContain('not covered by any generated CSS bundle')
+        ->assertSuccessful();
+});
 
 it('accepts complete preset imports after allowed CSS prelude rules', function () {
     writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
