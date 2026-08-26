@@ -10,8 +10,9 @@ The registry is the single source of truth for everything the package exposes pu
 - documentation paths
 - categories
 
-It lives in [`src/Registry/catalog.php`](../src/Registry/catalog.php) and is consumed by every command and the service
-provider — so editing the catalog is the only change needed to register a new component or controller.
+Public component and controller metadata lives in [`src/Registry/catalog.php`](../src/Registry/catalog.php). Visual CSS
+ownership and dependency closure live separately in [`src/Registry/styles.php`](../src/Registry/styles.php), where each
+official preset maps those logical modules to its private sources in canonical cascade order.
 
 ## Catalog entries
 
@@ -56,8 +57,9 @@ Structural slots are containers, assistive nodes or geometry a controller styles
 expected to style them, and `hotwire:make-preset` leaves them out of the scaffold.
 
 The values a slot varies by are deliberately **not** declared here. Only a stylesheet knows them, and it knows all of
-them: a slot varies by `data-orientation` because a rule says so. `Support\PresetAxes` reads them straight from a
-shipped preset, so `hotwire:make-preset` documents every axis without anything being kept in sync by hand.
+them: a slot varies by `data-orientation` because a rule says so. The preset source resolver gives
+`Support\PresetAxes` the complete ordered visual CSS, so `hotwire:make-preset` documents every axis without anything
+being kept in sync by hand.
 
 It reads every attribute a rule matches on, not only the `data-` ones — `aria-expanded`, `aria-invalid`, `type` and the
 `open` an Accordion `<details>` carries are axes too, whether they are written in the selector or as a Tailwind variant
@@ -108,21 +110,23 @@ The identifier is derived automatically: `/` → `--`, `_` → `-`.
 1. Create the PHP class in `src/Components/` and the Blade view in `resources/views/component-views/`.
 2. Add the component entry to `catalog.php`. Reference every required Stimulus controller and declare every emitted
    slot under `styling`. Include slots from package subcomponents that belong to the component family.
-3. If new controllers are needed, add their entries too (see [Adding a new controller](#adding-a-new-controller)).
-4. Create `tests/Components/<Name>Test.php` covering rendering and props (follow `tests/Components/ModalTest.php` as
+3. If it has visual slots, register its module ownership and every official preset source in `styles.php`.
+4. If new controllers are needed, add their entries too (see [Adding a new controller](#adding-a-new-controller)).
+5. Create `tests/Components/<Name>Test.php` covering rendering and props (follow `tests/Components/ModalTest.php` as
    reference).
-5. Create `docs/components/<name>.md`.
-6. Run `composer test`.
+6. Create `docs/components/<name>.md`.
+7. Run `composer test`.
 
 ## Adding a new controller
 
 1. Create the controller file in `resources/js/controllers/` (`{name}_controller.{js|ts}`).
 2. Add the controller entry to `catalog.php`. Declare any external npm packages in `npm` and, if the controller
    builds its own DOM, the slots it creates under `styling`.
-3. Create `tests/Controllers/<name>_controller.test.js` covering the controller's behavior (follow
+3. If it has visual slots, register its module ownership and every official preset source in `styles.php`.
+4. Create `tests/Controllers/<name>_controller.test.js` covering the controller's behavior (follow
    `tests/Controllers/auto_save_controller.test.js` as reference).
-4. Create `docs/controllers/<name>.md`.
-5. Run `bun test`.
+5. Create `docs/controllers/<name>.md`.
+6. Run `bun test`.
 
 ## Categories
 

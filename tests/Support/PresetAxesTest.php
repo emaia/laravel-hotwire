@@ -1,7 +1,7 @@
 <?php
 
+use Emaia\LaravelHotwire\Support\CssPresetFiles;
 use Emaia\LaravelHotwire\Support\PresetAxes;
-use Illuminate\Support\Facades\File;
 
 it('reads the values a slot varies by', function () {
     $axes = (new PresetAxes)->extract(<<<'CSS'
@@ -104,7 +104,7 @@ it('ignores selectors without a slot and never treats slot as an axis', function
 });
 
 it('reads the shipped Nova preset', function () {
-    $axes = (new PresetAxes)->extract(File::get(__DIR__.'/../../resources/css/presets/nova.css'));
+    $axes = (new PresetAxes)->extract(app(CssPresetFiles::class)->source('nova')->visualCss());
 
     expect($axes['badge']['data-variant'])->toContain('destructive')
         ->and($axes['attachment']['data-orientation'])->toContain('vertical')
@@ -287,11 +287,11 @@ it('reports how much of the stylesheet it managed to read', function () {
 it('reads every slot occurrence of every shipped preset', function () {
     $extractor = new PresetAxes;
 
-    foreach (glob(__DIR__.'/../../resources/css/presets/*.css') ?: [] as $path) {
-        $coverage = $extractor->coverage(File::get($path));
+    foreach (app(CssPresetFiles::class)->names() as $preset) {
+        $coverage = $extractor->coverage(app(CssPresetFiles::class)->source($preset)->visualCss());
 
         expect($coverage['total'])->toBeGreaterThan(0)
-            ->and($coverage['visited'])->toBe($coverage['total'], basename($path).' has rules the scanner cannot read.');
+            ->and($coverage['visited'])->toBe($coverage['total'], "Preset [{$preset}] has rules the scanner cannot read.");
     }
 });
 

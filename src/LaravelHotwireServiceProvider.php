@@ -11,8 +11,10 @@ use Emaia\LaravelHotwire\Commands\ListComponentsCommand;
 use Emaia\LaravelHotwire\Commands\MakeControllerCommand;
 use Emaia\LaravelHotwire\Commands\MakePresetCommand;
 use Emaia\LaravelHotwire\Commands\PublishControllersCommand;
+use Emaia\LaravelHotwire\Commands\StylesCommand;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
+use Emaia\LaravelHotwire\Support\CssModuleManifest;
 use Emaia\LaravelHotwire\Support\HotwireTagCompiler;
 use Emaia\LaravelHotwire\Support\SessionToast;
 use Emaia\LaravelHotwire\Support\ViteControllerAssetResolver;
@@ -36,6 +38,7 @@ class LaravelHotwireServiceProvider extends ServiceProvider
         InstallCommand::class,
         MakeControllerCommand::class,
         MakePresetCommand::class,
+        StylesCommand::class,
         PublishControllersCommand::class,
         ListComponentsCommand::class,
         CheckCommand::class,
@@ -47,6 +50,7 @@ class LaravelHotwireServiceProvider extends ServiceProvider
     {
         $this->mergeConfigFrom(self::packagePath('config/hotwire.php'), 'hotwire');
 
+        $this->app->singleton(CssModuleManifest::class, fn (): CssModuleManifest => CssModuleManifest::load());
         $this->app->scopedIf(SessionToast::class);
     }
 

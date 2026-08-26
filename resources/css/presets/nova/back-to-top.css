@@ -1,0 +1,10 @@
+@layer components {
+    /* Back To Top */
+    [data-slot="back-to-top"][data-visible] { @apply fixed end-4 bottom-4 z-40 rounded-full shadow-lg transition-opacity sm:end-6 sm:bottom-6; }
+    [data-slot="back-to-top"][data-visible="false"] { @apply pointer-events-none opacity-0; }
+    [data-slot="back-to-top"][data-visible="true"] { @apply pointer-events-auto opacity-100; }
+
+    @media (prefers-reduced-motion: reduce) {
+        [data-slot="back-to-top"][data-visible] { transition: none; }
+    }
+}

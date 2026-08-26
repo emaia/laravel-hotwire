@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, test } from "bun:test";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import baselines from "./preset_build_baselines.json";
@@ -8,6 +8,7 @@ import {
     compileCssFixture,
     disableAutomaticSources,
     measurementRows,
+    packageSourceEntrypoint,
     replacePresetImport,
     resolveBaselines,
 } from "../../scripts/css_build_contract.js";
@@ -50,8 +51,18 @@ describe("public CSS presets", () => {
         }
     });
 
-    test("compiles a selective fixture without omitted visual slots", () => {
+    test("compiles the generated selective bundle without omitted visual slots", () => {
         const css = contract.outputs.selective;
+        const source = contract.sources.selective;
+
+        expect(source).toStartWith("/* @hotwire-package */");
+        expect(source).toContain(
+            '@import "../../../vendor/emaia/laravel-hotwire/resources/css/tokens.css";',
+        );
+        expect(source).toMatch(slotSelector("button"));
+        expect(source).toMatch(slotSelector("card"));
+        expect(source).toMatch(slotSelector("tooltip"));
+        expect(source).not.toMatch(slotSelector("badge"));
 
         expect(css).toContain("--background:");
         expect(css).toContain("--radius:");
@@ -92,7 +103,7 @@ describe("public CSS presets", () => {
     });
 
     test("requires every explicit package source to discover its vendor candidates", async () => {
-        const fixture = await readFile(new URL("../Fixtures/css/selective.css", import.meta.url), "utf8");
+        const fixture = packageSourceEntrypoint();
 
         for (const { directive, utility } of packageSources) {
             const withoutSource = fixture.replace(`${directive}\n`, "");

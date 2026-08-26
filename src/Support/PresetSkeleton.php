@@ -41,7 +41,10 @@ final readonly class PresetSkeleton
                 }
 
                 $selector = (string) array_pop($chain);
-                $preludes = array_values(array_filter($chain, fn (string $block): bool => ! str_starts_with($block, '@layer')));
+                $preludes = array_values(array_filter(
+                    $chain,
+                    fn (string $prelude): bool => $prelude !== '@layer components',
+                ));
                 $key = implode('|', [...$preludes, $selector]);
 
                 if (isset($seen[$key])) {

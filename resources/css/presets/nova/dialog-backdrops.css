@@ -1,0 +1,4 @@
+@layer components {
+    [data-slot="modal-backdrop"], [data-slot="alert-dialog-backdrop"] { @apply absolute inset-0 isolate bg-black/10 opacity-0 backdrop-blur-xs transition-opacity duration-100 ease-out; }
+    [data-slot="modal-overlay"][data-state="open"] > [data-slot="modal-backdrop"], [data-slot="alert-dialog-overlay"][data-state="open"] > [data-slot="alert-dialog-backdrop"] { @apply opacity-100; }
+}

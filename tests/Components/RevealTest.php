@@ -4,6 +4,7 @@ use Emaia\LaravelHotwire\Components\Reveal;
 use Emaia\LaravelHotwire\Components\Reveal\Item;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
+use Emaia\LaravelHotwire\Support\CssPresetFiles;
 use Illuminate\Support\Facades\File;
 
 it('renders direct children as reveal items without per-item markup', function () {
@@ -135,7 +136,7 @@ it('registers Reveal components and controller metadata', function () {
 
 it('ships first-paint mechanics separately from preset motion', function () {
     $structural = File::get(__DIR__.'/../../resources/css/structural.css');
-    $nova = File::get(__DIR__.'/../../resources/css/presets/nova.css');
+    $nova = app(CssPresetFiles::class)->source('nova')->visualCss();
 
     expect($structural)
         ->toContain('[data-reveal-armed]')

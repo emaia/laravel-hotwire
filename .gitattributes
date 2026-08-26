@@ -22,3 +22,4 @@
 /UPGRADING.md       export-ignore
 /phpstan.neon.dist  export-ignore
 /phpstan-baseline.neon  export-ignore
+/scripts/run_styles_fixture.php export-ignore

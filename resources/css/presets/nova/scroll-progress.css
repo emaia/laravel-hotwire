@@ -1,0 +1,4 @@
+@layer components {
+    /* Scroll Progress */
+    [data-slot="scroll-progress"] { @apply fixed left-0 top-0 z-50 h-1 bg-primary; }
+}

@@ -1,0 +1,12 @@
+@layer components {
+    /* Alert Dialog */
+    [data-slot="alert-dialog-overlay"] { @apply overflow-y-auto p-4; }
+    [data-slot="alert-dialog-backdrop"] { @apply opacity-0; }
+    [data-slot="alert-dialog-panel"] { @apply relative z-10 my-auto w-full max-w-sm min-w-0 scale-90 rounded-xl bg-popover p-4 text-sm text-popover-foreground opacity-0 ring-1 ring-foreground/10 transition duration-200 ease-in-out lg:max-w-lg; }
+    [data-slot="alert-dialog-overlay"][data-state="open"] > [data-slot="alert-dialog-panel"] { @apply scale-100 opacity-100; }
+    [data-slot="alert-dialog-header"] { @apply grid grid-rows-[auto_1fr] place-items-center gap-1.5 text-center sm:place-items-start sm:text-left; }
+    [data-slot="alert-dialog-title"] { @apply text-base font-medium text-foreground; }
+    [data-slot="alert-dialog-description"] { @apply text-sm text-balance text-muted-foreground md:text-pretty; }
+    [data-slot="alert-dialog-body"] { @apply mt-4; }
+    [data-slot="alert-dialog-footer"] { @apply -mx-4 -mb-4 mt-4 flex flex-col-reverse gap-2 rounded-b-xl border-t bg-muted/50 p-4 sm:flex-row sm:justify-end; }
+}

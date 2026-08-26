@@ -16,6 +16,58 @@ The installer writes a thin `resources/css/app.css` that imports Tailwind and en
 @import '../../vendor/emaia/laravel-hotwire/resources/css/presets/nova.css';
 ```
 
+That public entrypoint aggregates Nova's ordered visual sources. Their internal paths are an implementation detail;
+applications should keep importing `presets/nova.css` rather than individual package files.
+
+## Generate a selective bundle
+
+The complete preset is the safe default. For a layout that uses a known subset of components, generate an
+application entrypoint without the omitted visual modules:
+
+```bash
+php artisan hotwire:styles \
+  --preset=nova \
+  --components=badge,button,field,input,navbar,pagination,popover \
+  --include=tooltip \
+  --output=resources/css/hotwire-front.css
+```
+
+Replace the complete preset import in that layout's CSS entrypoint with the generated file. Do not import both:
+
+```css
+@import "tailwindcss";
+
+@import "./hotwire-front.css";
+```
+
+`--components` accepts catalog component keys and may be repeated or comma-separated. The command automatically
+includes controllers mounted by those components, shared visual modules and their transitive dependencies.
+`--include` accepts additional component keys or Stimulus controller identifiers; use it for UI rendered dynamically
+by PHP, Turbo Streams, vendor views or JavaScript when that UI is not represented by the layout's initial component
+list. Controller identifiers with `--` may also use their publish form, such as `turbo/progress`. The output must stay
+under `resources/css`, which is the same boundary `hotwire:check` audits. Paths elsewhere in the application, including
+`vendor`, are rejected.
+
+Tokens, custom variants and structural CSS remain complete foundations and are imported exactly once. The selective
+part is the preset's visual layer, so progressive enhancement and runtime utility coverage do not depend on which
+components were listed.
+
+The generated file starts with the package marker and should not be edited. Re-run the same command with `--force`
+after changing the selection or upgrading Laravel Hotwire. Only an existing `hotwire:styles` bundle is replaceable;
+application-owned files and other package-marked CSS are never replaced, even with `--force`. If the complete set of
+dynamic components is not known, keep the public `presets/nova.css` import as the fallback instead of guessing.
+
+Generated bundles also record their canonical component, controller and module selection in a versioned header.
+`hotwire:check` inspects marked bundles under `resources/css` and reports visual components/controllers found in the
+scanned Blade views when none of those bundles covers them. With multiple layout bundles this is deliberately a global
+safety net, not layout inference: coverage in any generated bundle satisfies the check. If any CSS entrypoint under
+`resources/css` retains an official complete preset import, or imports an application preset from
+`resources/css/presets`, it acts as complete coverage for mixed-layout applications. The check also reconstructs each
+generated bundle from its recorded plan, so stale or truncated CSS fails even when its metadata remains intact. `--fix`
+never changes a CSS selection because it cannot know which layout should own the missing component; regenerate the
+appropriate bundle explicitly. Dynamic PHP, Turbo or JavaScript markup still requires `--include` because static view
+scanning cannot see it.
+
 ## Generate a custom preset
 
 Generate an empty preset scaffold when token overrides are not enough:
@@ -60,12 +112,15 @@ To customize Nova instead of starting from empty selectors, clone it into the ap
 php artisan hotwire:make-preset brand --from=nova
 ```
 
+The clone is one application-owned file: package foundation imports are rewritten to their vendor paths and Nova's
+private visual sources are flattened in canonical order. It never leaves imports to package-internal module paths.
+
 Use `--force` to replace an existing generated file. The command never edits `resources/css/app.css`, so application
 styles and import ordering remain under your control.
 
-The rules arrive in the order the source preset declares them, and that order is worth keeping. Every rule sits in the
-same `@layer components`, so between two selectors of equal specificity the later one wins. Reordering the scaffold as
-you fill it in can therefore change which rule applies without changing a single declaration.
+The rules arrive in the order the source preset declares them, and that order is worth keeping. Between equal-specificity
+rules in the same layer, the later one wins. Reordering the scaffold as you fill it in can therefore change which rule
+applies without changing a single declaration.
 
 ### A note on IDE warnings
 

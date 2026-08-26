@@ -1,0 +1,7 @@
+@layer components {
+    :is([data-slot="modal-overlay"], [data-slot="alert-dialog-overlay"], [data-slot="drawer-overlay"], [data-slot="sheet-overlay"], [data-slot="sidebar"]):is([data-motion="none"], [data-presence="instant"]) > :is([data-slot="modal-backdrop"], [data-slot="modal-positioner"], [data-slot="alert-dialog-backdrop"], [data-slot="alert-dialog-panel"], [data-slot="drawer-backdrop"], [data-slot="drawer-popup"], [data-slot="sheet-backdrop"], [data-slot="sheet-content"], [data-slot="sidebar-backdrop"], [data-slot="sidebar-container"]) { transition: none !important; animation: none !important; }
+
+    @media (prefers-reduced-motion: reduce) {
+        :is([data-slot="modal-backdrop"], [data-slot="modal-positioner"], [data-slot="alert-dialog-backdrop"], [data-slot="alert-dialog-panel"], [data-slot="drawer-backdrop"], [data-slot="drawer-popup"], [data-slot="sheet-backdrop"], [data-slot="sheet-content"], [data-slot="sidebar-backdrop"], [data-slot="sidebar-container"]) { transition: none !important; animation: none !important; }
+    }
+}

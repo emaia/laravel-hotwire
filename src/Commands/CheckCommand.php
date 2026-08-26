@@ -9,9 +9,14 @@ use Emaia\LaravelHotwire\Support\ControllerLoadConfiguration;
 use Emaia\LaravelHotwire\Support\ControllerLoadPlan;
 use Emaia\LaravelHotwire\Support\ControllerOrigin;
 use Emaia\LaravelHotwire\Support\ControllerResolver;
+use Emaia\LaravelHotwire\Support\CssModuleManifest;
+use Emaia\LaravelHotwire\Support\CssPresetFiles;
+use Emaia\LaravelHotwire\Support\GeneratedStyleBundle;
 use Emaia\LaravelHotwire\Support\LoaderStub;
 use Emaia\LaravelHotwire\Support\PackageInstaller;
 use Emaia\LaravelHotwire\Support\PackageMarker;
+use Emaia\LaravelHotwire\Support\PresetSourceException;
+use Emaia\LaravelHotwire\Support\PresetSourceResolver;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Filesystem\Filesystem;
@@ -58,6 +63,9 @@ class CheckCommand extends Command
         private readonly PackageInstaller $packageInstaller,
         private readonly ControllerImports $imports,
         private readonly PackageMarker $marker,
+        private readonly CssModuleManifest $styleManifest,
+        private readonly CssPresetFiles $presetFiles,
+        private readonly GeneratedStyleBundle $styleBundle,
     ) {
         parent::__construct();
     }
@@ -67,6 +75,7 @@ class CheckCommand extends Command
      */
     public function handle(): int
     {
+        $this->resetState();
         $prefix = config('hotwire.prefix', 'hw');
         $paths = $this->scanPaths();
         $targetBase = resource_path('js/controllers');
@@ -75,6 +84,7 @@ class CheckCommand extends Command
         $totalFiles = 0;
         ['components' => $usedComponentKeys, 'controllers' => $standaloneControllers] =
             $this->scanViews($paths, $prefix, $registry, $totalFiles);
+        $styleIssues = $this->reportStyleCoverage($usedComponentKeys, $standaloneControllers, $registry);
 
         $this->line('Scanning '.implode(', ', array_map('basename', $paths))." ($totalFiles files)...");
         $this->line('');
@@ -91,7 +101,7 @@ class CheckCommand extends Command
             return self::FAILURE;
         }
 
-        if (empty($usedComponentKeys) && empty($standaloneControllers) && $configuredControllers === []) {
+        if (empty($usedComponentKeys) && empty($standaloneControllers) && $configuredControllers === [] && $styleIssues === 0) {
             info('No Hotwire components or controllers found in views.');
 
             if (! $loaderUpgrade && ! $policyDrift) {
@@ -135,7 +145,7 @@ class CheckCommand extends Command
         $hasStubDrift = ! empty($excludedFromStub);
         $hasProblemLines = ! empty($this->problemLines);
 
-        if (! $hasControllerIssues && ! $hasMissingDeps && ! $hasLoaderUpgrade && ! $hasPolicyDrift && ! $hasStubDrift && ! $hasProblemLines) {
+        if (! $hasControllerIssues && ! $hasMissingDeps && ! $hasLoaderUpgrade && ! $hasPolicyDrift && ! $hasStubDrift && ! $hasProblemLines && $styleIssues === 0) {
             info('All controllers up to date.');
 
             return self::SUCCESS;
@@ -144,10 +154,15 @@ class CheckCommand extends Command
         $this->printProblemLines();
         $this->printIssueSummary($issues, $missingDeps, $excludedFromStub, $policyDrift);
 
+        if ($styleIssues > 0) {
+            $this->line("<comment>{$styleIssues} generated CSS issue(s) require manual regeneration.</comment>");
+            $this->line('');
+        }
+
         // Only user-owned divergences are present — nothing for --fix to do.
         // Report visibility but keep the exit code green (e.g. CI stays happy).
         if (! $hasControllerIssues && ! $hasMissingDeps && ! $hasLoaderUpgrade && ! $hasPolicyDrift && ! $hasStubDrift) {
-            return self::SUCCESS;
+            return $styleIssues > 0 ? self::FAILURE : self::SUCCESS;
         }
 
         if ($this->shouldFix(
@@ -178,17 +193,29 @@ class CheckCommand extends Command
 
             if ($depsAdded > 0) {
                 if ($this->shouldInstallDependencies()) {
-                    return $this->installDependencies();
+                    $status = $this->installDependencies();
+
+                    return $status === self::SUCCESS && $styleIssues > 0 ? self::FAILURE : $status;
                 }
 
                 $this->line('');
                 $this->line('<comment>Run your package manager install command to fetch the new dependencies.</comment>');
             }
 
-            return self::SUCCESS;
+            return $styleIssues > 0 ? self::FAILURE : self::SUCCESS;
         }
 
         return self::FAILURE;
+    }
+
+    private function resetState(): void
+    {
+        $this->problemLines = [];
+        $this->okComponentControllerLines = [];
+        $this->okNoControllerLines = [];
+        $this->okStandaloneLines = [];
+        $this->okHelperLines = [];
+        $this->controllerResolver = null;
     }
 
     /**
@@ -489,6 +516,447 @@ class CheckCommand extends Command
         }
 
         return ['components' => $components, 'controllers' => $controllers];
+    }
+
+    /**
+     * Report visual owners used in views but absent from every generated selective bundle.
+     *
+     * This deliberately checks global coverage only. A complete preset import satisfies that
+     * coverage, but mapping a view/layout to one of several selective bundles requires an
+     * explicit application contract.
+     *
+     * @param  array<string, string>  $components
+     * @param  array<string, ControllerDefinition>  $standaloneControllers
+     */
+    private function reportStyleCoverage(array $components, array $standaloneControllers, HotwireRegistry $registry): int
+    {
+        $directory = resource_path('css');
+
+        if (! is_dir($directory)) {
+            return 0;
+        }
+
+        $plans = [];
+        $issues = 0;
+        $hasCompletePreset = false;
+
+        foreach (Finder::create()->files()->name('*.css')->in($directory) as $file) {
+            $content = $file->getContents();
+            $plan = $this->styleBundle->planFromContent($content);
+            $stylesheet = $file->getPathname();
+            $path = 'resources/css/'.ltrim(str_replace('\\', '/', $file->getRelativePathname()), '/');
+            $hasCompletePreset = $hasCompletePreset || $this->importsCompletePreset($content, $stylesheet);
+
+            if ($plan !== null) {
+                $source = $this->presetFiles->sourceForSelection($plan['preset'], $plan['components'], $plan['controllers']);
+                $modules = $this->styleManifest->modulesFor($plan['components'], $plan['controllers']);
+
+                if ($source === null || ! $this->styleBundle->matches($content, $this->styleBundle->render(
+                    $path,
+                    $source,
+                    $plan['preset'],
+                    $plan['components'],
+                    $plan['controllers'],
+                    $modules,
+                ))) {
+                    $this->problemLines[] = [
+                        'key' => "styles-content-{$path}",
+                        'line' => "  <error>✗</error>  {$path}  generated CSS content does not match its plan  <fg=gray>(regenerate with the recorded `hotwire:styles` selection and --force)</>",
+                    ];
+                    $issues++;
+
+                    continue;
+                }
+
+                $plans[] = array_fill_keys($plan['modules'], true);
+
+                continue;
+            }
+
+            if ($this->styleBundle->looksGenerated($content)) {
+                $this->problemLines[] = [
+                    'key' => "styles-metadata-{$path}",
+                    'line' => "  <error>✗</error>  {$path}  generated CSS metadata unavailable  <fg=gray>(regenerate with the original `hotwire:styles` selection and --force)</>",
+                ];
+                $issues++;
+            }
+        }
+
+        // Coverage is unknowable while a discovered generated bundle has no readable plan.
+        if ($issues > 0 || $hasCompletePreset || $plans === []) {
+            return $issues;
+        }
+
+        $mountedControllers = [];
+
+        foreach ($components as $key => $tag) {
+            $component = $registry->component($key);
+
+            if ($component === null) {
+                continue;
+            }
+
+            $controllers = array_map(
+                fn (ControllerDefinition $controller): string => $controller->identifier,
+                $registry->controllersForComponent($component),
+            );
+            $mountedControllers = [...$mountedControllers, ...$controllers];
+            $required = $this->styleManifest->modulesFor([$key], $controllers);
+
+            if ($required !== [] && ! $this->modulesCovered($required, $plans)) {
+                $this->problemLines[] = [
+                    'key' => "styles-component-{$key}",
+                    'line' => "  <error>✗</error>  {$tag}  not covered by any generated CSS bundle  <fg=gray>(add `{$key}` to the appropriate `hotwire:styles` selection and regenerate with --force)</>",
+                ];
+                $issues++;
+            }
+        }
+
+        foreach (array_diff_key($standaloneControllers, array_fill_keys($mountedControllers, true)) as $identifier => $_controller) {
+            $required = $this->styleManifest->modulesFor([], [$identifier]);
+
+            if ($required !== [] && ! $this->modulesCovered($required, $plans)) {
+                $this->problemLines[] = [
+                    'key' => "styles-controller-{$identifier}",
+                    'line' => "  <error>✗</error>  {$identifier}  not covered by any generated CSS bundle  <fg=gray>(add it with `--include={$identifier}` and regenerate with --force)</>",
+                ];
+                $issues++;
+            }
+        }
+
+        return $issues;
+    }
+
+    private function importsCompletePreset(string $content, string $stylesheet): bool
+    {
+        $presetDirectory = realpath(resource_path('css/presets'));
+
+        if ($presetDirectory !== false && $this->containsPath($presetDirectory, realpath($stylesheet) ?: $stylesheet)) {
+            return false;
+        }
+
+        foreach ($this->cssImports($content) as $rule) {
+            if (! $this->isUnconditionalImport($rule['conditions'])) {
+                continue;
+            }
+
+            $import = preg_replace('/[?#].*$/', '', str_replace('\\', '/', $rule['path'])) ?? $rule['path'];
+
+            if (str_starts_with($import, '/') || preg_match('/^[a-z][a-z0-9+.-]*:/i', $import) === 1) {
+                continue;
+            }
+
+            $resolved = realpath(dirname($stylesheet).'/'.$import);
+
+            if ($resolved === false) {
+                continue;
+            }
+
+            foreach ($this->presetFiles->names() as $preset) {
+                if ($this->matchesShippedPreset($resolved, $preset)) {
+                    return true;
+                }
+            }
+
+            if ($presetDirectory !== false && is_file($resolved) && $this->samePath($presetDirectory, dirname($resolved))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function matchesShippedPreset(string $resolved, string $preset): bool
+    {
+        $official = $this->presetFiles->path($preset);
+
+        if (! is_file($resolved) || $official === null) {
+            return false;
+        }
+
+        if ($this->samePath(realpath($official) ?: $official, $resolved)) {
+            return true;
+        }
+
+        try {
+            $expected = $this->presetFiles->source($preset);
+            $actual = (new PresetSourceResolver($this->files, dirname($resolved, 2)))->resolve($resolved);
+        } catch (PresetSourceException) {
+            return false;
+        }
+
+        if ($expected === null
+            || $actual->foundationImports() !== $expected->foundationImports()
+            || $actual->visualCss() !== $expected->visualCss()) {
+            return false;
+        }
+
+        foreach ($actual->foundationImports() as $foundation) {
+            $actualPath = dirname($resolved, 2).'/'.$foundation;
+            $expectedPath = dirname($official, 2).'/'.$foundation;
+
+            if (! is_file($actualPath) || ! is_file($expectedPath)
+                || hash_file('sha256', $actualPath) !== hash_file('sha256', $expectedPath)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private function isUnconditionalImport(string $conditions): bool
+    {
+        return $conditions === '';
+    }
+
+    /** @return array<int, array{path: string, conditions: string}> */
+    private function cssImports(string $content): array
+    {
+        $pattern = <<<'REGEX'
+~^@import\s+(?:
+        (?<quote>["'])(?<quoted_path>[^"']+)\k<quote>
+        |
+        url\(\s*(?:
+            (?<url_quote>["'])(?<url_quoted_path>[^"']+)\k<url_quote>
+            |
+            (?<url_path>[^)\s]+)
+        )\s*\)
+    )(?<conditions>[^;]*);
+~isx
+REGEX;
+        $imports = [];
+
+        foreach ($this->topLevelImportRules($content) as $rule) {
+            $rule = preg_replace('~/\*.*?\*/~s', ' ', $rule) ?? $rule;
+
+            if (preg_match($pattern, $rule, $match, PREG_UNMATCHED_AS_NULL) !== 1) {
+                continue;
+            }
+
+            $path = $match['quoted_path'] ?? $match['url_quoted_path'] ?? $match['url_path'];
+
+            if (! is_string($path)) {
+                continue;
+            }
+
+            $imports[] = [
+                'path' => $path,
+                'conditions' => trim((string) $match['conditions']),
+            ];
+        }
+
+        return $imports;
+    }
+
+    /** @return string[] */
+    private function topLevelImportRules(string $content): array
+    {
+        if (str_starts_with($content, "\xEF\xBB\xBF")) {
+            $content = substr($content, 3);
+        }
+
+        $rules = [];
+        $length = strlen($content);
+        $depth = 0;
+        $ruleStart = true;
+        $importsAllowed = true;
+
+        for ($offset = 0; $offset < $length; $offset++) {
+            if (substr($content, $offset, 2) === '/*') {
+                $offset = $this->skipCssComment($content, $offset);
+
+                continue;
+            }
+
+            if ($content[$offset] === '"' || $content[$offset] === "'") {
+                if ($depth === 0) {
+                    if ($ruleStart) {
+                        $importsAllowed = false;
+                    }
+
+                    $ruleStart = false;
+                }
+
+                $offset = $this->skipCssString($content, $offset);
+
+                continue;
+            }
+
+            if ($content[$offset] === '{') {
+                if ($depth === 0) {
+                    $importsAllowed = false;
+                    $ruleStart = false;
+                }
+
+                $depth++;
+
+                continue;
+            }
+
+            if ($content[$offset] === '}') {
+                $depth = max(0, $depth - 1);
+
+                if ($depth === 0) {
+                    $ruleStart = true;
+                }
+
+                continue;
+            }
+
+            if ($depth !== 0) {
+                continue;
+            }
+
+            if (ctype_space($content[$offset])) {
+                continue;
+            }
+
+            if ($content[$offset] === ';') {
+                $ruleStart = true;
+
+                continue;
+            }
+
+            if (! $ruleStart) {
+                continue;
+            }
+
+            if (strncasecmp(substr($content, $offset, 7), '@import', 7) !== 0) {
+                if (! $this->startsAllowedImportPrelude($content, $offset)) {
+                    $importsAllowed = false;
+                }
+
+                $ruleStart = false;
+
+                continue;
+            }
+
+            if (! $importsAllowed) {
+                $ruleStart = false;
+
+                continue;
+            }
+
+            $boundary = $content[$offset + 7] ?? '';
+
+            if ($boundary !== '' && ! ctype_space($boundary) && substr($content, $offset + 7, 2) !== '/*') {
+                $ruleStart = false;
+
+                continue;
+            }
+
+            $ruleStart = false;
+
+            for ($end = $offset + 7; $end < $length; $end++) {
+                if (substr($content, $end, 2) === '/*') {
+                    $end = $this->skipCssComment($content, $end);
+
+                    continue;
+                }
+
+                if ($content[$end] === '"' || $content[$end] === "'") {
+                    $end = $this->skipCssString($content, $end);
+
+                    continue;
+                }
+
+                if ($content[$end] === ';') {
+                    $rules[] = substr($content, $offset, $end - $offset + 1);
+                    $offset = $end;
+                    $ruleStart = true;
+
+                    break;
+                }
+
+                if ($content[$end] === '{') {
+                    break;
+                }
+            }
+        }
+
+        return $rules;
+    }
+
+    private function startsAllowedImportPrelude(string $content, int $offset): bool
+    {
+        foreach (['@charset', '@layer'] as $keyword) {
+            if (strncasecmp(substr($content, $offset, strlen($keyword)), $keyword, strlen($keyword)) !== 0) {
+                continue;
+            }
+
+            $boundary = $content[$offset + strlen($keyword)] ?? '';
+
+            if ($boundary === '' || ctype_space($boundary) || substr($content, $offset + strlen($keyword), 2) === '/*') {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function skipCssComment(string $content, int $offset): int
+    {
+        $end = strpos($content, '*/', $offset + 2);
+
+        return $end === false ? strlen($content) - 1 : $end + 1;
+    }
+
+    private function skipCssString(string $content, int $offset): int
+    {
+        $quote = $content[$offset];
+        $length = strlen($content);
+
+        for ($end = $offset + 1; $end < $length; $end++) {
+            if ($content[$end] === '\\') {
+                $end++;
+
+                continue;
+            }
+
+            if ($content[$end] === $quote) {
+                return $end;
+            }
+        }
+
+        return $length - 1;
+    }
+
+    private function containsPath(string $parent, string $path): bool
+    {
+        $parent = str_replace('\\', '/', $parent);
+        $path = str_replace('\\', '/', $path);
+
+        if (PHP_OS_FAMILY === 'Windows') {
+            $parent = strtolower($parent);
+            $path = strtolower($path);
+        }
+
+        return $path === $parent || str_starts_with($path, rtrim($parent, '/').'/');
+    }
+
+    private function samePath(string $left, string $right): bool
+    {
+        $left = str_replace('\\', '/', $left);
+        $right = str_replace('\\', '/', $right);
+
+        return PHP_OS_FAMILY === 'Windows'
+            ? strtolower($left) === strtolower($right)
+            : $left === $right;
+    }
+
+    /**
+     * @param  string[]  $required
+     * @param  array<int, array<string, true>>  $plans
+     */
+    private function modulesCovered(array $required, array $plans): bool
+    {
+        foreach ($plans as $modules) {
+            if (array_diff($required, array_keys($modules)) === []) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /** @return string[] */

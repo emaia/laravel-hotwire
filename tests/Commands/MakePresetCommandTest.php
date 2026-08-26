@@ -1,6 +1,7 @@
 <?php
 
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
+use Emaia\LaravelHotwire\Support\CssPresetFiles;
 use Emaia\LaravelHotwire\Support\CssRules;
 use Illuminate\Support\Facades\File;
 
@@ -83,7 +84,7 @@ it('scaffolds no rule the shipped presets do not define', function () {
 function sourceSelectors(): array
 {
     $rules = new CssRules;
-    $css = File::get(__DIR__.'/../../resources/css/presets/nova.css');
+    $css = app(CssPresetFiles::class)->source('nova')->visualCss();
     $selectors = [];
 
     foreach ($rules->parse($rules->stripComments($css)) as ['chain' => $chain]) {
@@ -177,19 +178,19 @@ function blockTokens(string $blockPattern, string $css): array
     return $tokens[1];
 }
 
-it('clones a shipped preset and rewrites package imports', function () {
+it('clones a shipped preset with package imports and flattened visual sources', function () {
     $this->artisan('hotwire:make-preset brand --from=nova --no-interaction')
         ->assertSuccessful();
 
-    $expected = str_replace(
-        ['@import "../tokens.css";', '@import "../custom-variants.css";', '@import "../structural.css";'],
-        [
-            '@import "../../../vendor/emaia/laravel-hotwire/resources/css/tokens.css";',
-            '@import "../../../vendor/emaia/laravel-hotwire/resources/css/custom-variants.css";',
-            '@import "../../../vendor/emaia/laravel-hotwire/resources/css/structural.css";',
-        ],
-        File::get(__DIR__.'/../../resources/css/presets/nova.css'),
-    );
+    $source = app(CssPresetFiles::class)->source('nova');
+    $expected = implode("\n", [
+        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/tokens.css";',
+        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/custom-variants.css";',
+        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/structural.css";',
+        '',
+        $source->visualCss(),
+        '',
+    ]);
 
     expect(File::get($this->targetDir.'/brand.css'))->toBe($expected);
 });

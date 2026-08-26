@@ -2,6 +2,7 @@
 
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
+use Emaia\LaravelHotwire\Support\CssPresetFiles;
 use Emaia\LaravelHotwire\Support\CssRules;
 use Emaia\LaravelHotwire\Support\PresetAxes;
 use Illuminate\Support\Facades\Blade;
@@ -178,7 +179,7 @@ it('keeps Side Panel collapse mechanics in the structural stylesheet', function 
 
 it('keeps Sidebar content overflow mechanics in the structural stylesheet', function () {
     $structural = File::get(__DIR__.'/../../resources/css/structural.css');
-    $preset = File::get(__DIR__.'/../../resources/css/presets/nova.css');
+    $preset = app(CssPresetFiles::class)->source('nova')->visualCss();
 
     expect($structural)
         ->toContain('[data-slot="sidebar-content"]')
@@ -192,7 +193,7 @@ it('keeps Sidebar content overflow mechanics in the structural stylesheet', func
 
 it('keeps rules that name no slot out of the presets', function (string $preset) {
     // A preset groups by component; a rule keyed on a technical hook alone belongs to none of them.
-    $css = File::get(__DIR__."/../../resources/css/presets/{$preset}.css");
+    $css = app(CssPresetFiles::class)->source($preset)->visualCss();
     $slotless = [];
 
     foreach ((new CssRules)->parse((new CssRules)->stripComments($css)) as ['chain' => $chain]) {
@@ -206,7 +207,8 @@ it('keeps rules that name no slot out of the presets', function (string $preset)
     expect($slotless)->toBe([], "Preset [{$preset}] styles something no component owns. Structural rules belong in resources/css/structural.css.")
         ->and(File::get(__DIR__.'/../../resources/css/structural.css'))
         ->toContain(':where([data-hotwire-top-layer][popover])')
-        ->and($css)->toContain('@import "../structural.css";');
+        ->and(File::get(app(CssPresetFiles::class)->path($preset)))
+        ->toContain('@import "../structural.css";');
 })->with('slot catalog presets');
 
 it('declares every literal slot emitted by any component view', function () {
@@ -252,7 +254,7 @@ it('declares slots rendered by components with trivial constructors', function (
 it('styles the default value of every variant and size prop', function (string $preset) {
     // Defaults that carry no appearance of their own — the slot's base rule already is that look.
     $baseIsEnough = ['icon', 'legend', 'auto', 'default'];
-    $styled = (new PresetAxes)->extract(File::get(__DIR__."/../../resources/css/presets/{$preset}.css"));
+    $styled = (new PresetAxes)->extract(app(CssPresetFiles::class)->source($preset)->visualCss());
     $components = HotwireRegistry::make()->components();
     $classes = collect($components)->map(fn ($definition): string => $definition->class)
         ->merge(ComponentAliases::subComponents())
@@ -313,7 +315,7 @@ it('styles every visual catalog slot in each preset', function (string $preset) 
         ->unique()
         ->values()
         ->all();
-    $css = File::get(__DIR__."/../../resources/css/presets/{$preset}.css");
+    $css = app(CssPresetFiles::class)->source($preset)->visualCss();
     preg_match_all('/\[data-slot=["\']([a-z0-9-]+)["\']\]/', $css, $matches);
 
     expect(array_values(array_diff($required, array_unique($matches[1]))))->toBe([]);
@@ -325,9 +327,9 @@ it('styles every visual catalog slot in each preset', function (string $preset) 
  */
 it('differentiates each slot by the same axes in every preset', function () {
     $axes = new PresetAxes;
-    $byPreset = collect(glob(__DIR__.'/../../resources/css/presets/*.css') ?: [])
-        ->mapWithKeys(fn (string $path): array => [
-            pathinfo($path, PATHINFO_FILENAME) => $axes->extract(File::get($path)),
+    $byPreset = collect(app(CssPresetFiles::class)->names())
+        ->mapWithKeys(fn (string $preset): array => [
+            $preset => $axes->extract(app(CssPresetFiles::class)->source($preset)->visualCss()),
         ]);
     $reference = $byPreset->first();
     $referenceName = $byPreset->keys()->first();

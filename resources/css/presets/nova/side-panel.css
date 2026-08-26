@@ -1,0 +1,9 @@
+@layer components {
+    /* Side Panel */
+    [data-slot="side-panel"] { @apply w-full bg-background text-foreground; }
+    [data-slot="side-panel"]::before { @apply bg-border; }
+    [data-slot="side-panel-panel-content"] { @apply h-full bg-muted/30 text-foreground; }
+    [data-slot="side-panel-inset"] { @apply flex flex-col bg-background; }
+    [data-slot="side-panel-trigger"] { @apply top-3 z-10 inline-flex items-center justify-center rounded-full border border-border bg-background text-muted-foreground shadow-sm transition-[left,right,color,background-color,box-shadow] duration-200 outline-none hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50; }
+    [data-slot="side-panel-trigger-icon"] { @apply size-4 transition-transform duration-200; }
+}
