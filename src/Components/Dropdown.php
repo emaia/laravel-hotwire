@@ -15,7 +15,7 @@ class Dropdown extends Component
         public bool $closeOnSelect = true,
         public ?Htmlable $stimulus = null,
     ) {
-        $this->id = app(ComponentId::class)->resolve($this->id, 'dropdown');
+        $this->id = app(ComponentId::class)->resolve($this->id, 'hw-dropdown', 'dropdown');
     }
 
     public function render()

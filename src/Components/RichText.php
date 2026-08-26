@@ -78,7 +78,7 @@ class RichText extends Component
         public ?Htmlable $stimulus = null,
     ) {
         if (is_object($this->id)) {
-            $this->id = app(ComponentId::class)->resolve($this->id, 'rich-text');
+            $this->id = app(ComponentId::class)->resolve($this->id, 'hw-rich-text', 'rich-text');
         }
     }
 

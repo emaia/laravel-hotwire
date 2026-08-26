@@ -45,11 +45,12 @@ class Toggle extends Component
         $isDisabled = $attributes->has('disabled') && $attributes->get('disabled') !== false;
         $hasName = $name !== null && $name !== '';
         $htmlValue = (string) ($this->value ?? 'on');
-        $inputId = $hasName ? FieldKey::toId($name) : null;
+        $isArray = $hasName && str_ends_with($name, '[]');
+        $inputId = $hasName ? 'toggle-field-'.FieldKey::toId($name) : null;
 
-        if ($inputId !== null && str_ends_with($name, '[]')) {
-            $valueKey = rawurlencode($htmlValue);
-            $inputId .= $valueKey !== '' ? '-'.$valueKey : '';
+        if ($inputId !== null && $isArray) {
+            $nameKey = rawurlencode(substr($name, 0, -2));
+            $inputId = 'toggle-array-'.strlen($nameKey).'-'.$nameKey.'-'.rawurlencode($htmlValue);
         }
 
         return [

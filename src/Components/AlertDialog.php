@@ -24,7 +24,7 @@ class AlertDialog extends Component
         public bool $closeOnClickOutside = true,
         public ?Htmlable $stimulus = null,
     ) {
-        $this->id = app(ComponentId::class)->resolve($this->id, 'alert');
+        $this->id = app(ComponentId::class)->resolve($this->id, 'hw-alert', 'alert');
 
         $this->motion = in_array($this->motion, ['default', 'none'], true) ? $this->motion : 'default';
     }

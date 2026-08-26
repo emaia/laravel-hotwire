@@ -21,7 +21,7 @@ class Popover extends Component
         public bool $open = false,
         public ?Htmlable $stimulus = null,
     ) {
-        $this->id = app(ComponentId::class)->resolve($this->id, 'popover');
+        $this->id = app(ComponentId::class)->resolve($this->id, 'hw-popover', 'popover');
 
         $this->side = $this->oneOf($this->side, ['top', 'right', 'bottom', 'left'], 'bottom');
         $this->align = $this->oneOf($this->align, ['start', 'center', 'end'], 'start');

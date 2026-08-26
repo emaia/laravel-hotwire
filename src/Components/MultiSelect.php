@@ -50,7 +50,7 @@ class MultiSelect extends Component
         public ?Htmlable $stimulus = null,
     ) {
         if (is_object($this->id)) {
-            $this->id = app(ComponentId::class)->resolve($this->id, 'multi-select');
+            $this->id = app(ComponentId::class)->resolve($this->id, 'hw-multi-select', 'multi-select');
         }
 
         if ($options !== [] && array_keys($options) === range(0, count($options) - 1)) {

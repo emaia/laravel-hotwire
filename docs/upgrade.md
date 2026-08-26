@@ -18,9 +18,10 @@ collections, eager frames refreshed separately, or fragments rendered by another
 resolved with the `dom_id()` naming convention and a component-specific prefix. See
 [Stable component ids](./recipes/stable-component-ids.md) for the decision guide.
 
-Toggle hidden inputs now derive their id from `name` instead of `uniqid()`. Array names include a URL-encoded value, so
-`name="filters[]" value="featured"` produces `filters-featured-input`. Update selectors or tests that inspected this
-internal hidden input id.
+Toggle hidden inputs now derive their id from `name` instead of `uniqid()`. Scalar names use a `toggle-field-` namespace;
+array names use `toggle-array-`, a name-length boundary, and a URL-encoded value. For example,
+`name="filters[]" value="featured"` produces `toggle-array-7-filters-featured-input`. Update selectors or tests that
+inspected this internal hidden input id.
 
 ### The toaster reads the session flash
 

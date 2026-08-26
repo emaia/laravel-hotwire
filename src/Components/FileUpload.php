@@ -80,7 +80,7 @@ class FileUpload extends Component
         }
 
         if (is_object($this->id)) {
-            $this->id = app(ComponentId::class)->resolve($this->id, 'file-upload');
+            $this->id = app(ComponentId::class)->resolve($this->id, 'hw-file-upload', 'file-upload');
         }
 
         if (! preg_match('/^[a-z0-9][a-z0-9_-]*(?:--[a-z0-9][a-z0-9_-]*)*$/', $controller)) {

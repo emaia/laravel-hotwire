@@ -82,7 +82,7 @@ it('renders a hidden input when name is provided', function () {
         ->and($html)->toContain('name="filters[]"')
         ->and($html)->toContain('value="featured"')
         ->and($html)->toContain('data-toggle-input')
-        ->and($html)->toContain('data-toggle-input-id-value="filters-featured-input"')
+        ->and($html)->toContain('data-toggle-input-id-value="toggle-array-7-filters-featured-input"')
         ->and($html)->not->toContain('name="filters[]" disabled')
         ->and(substr_count($html, 'name="filters[]"'))->toBe(1);
 });
@@ -93,8 +93,8 @@ it('keeps hidden input ids distinct for repeated array names', function () {
         <x-hw::toggle name="filters[]" value="archived">Archived</x-hw::toggle>
     BLADE);
 
-    expect($html)->toContain('id="filters-featured-input"')
-        ->and($html)->toContain('id="filters-archived-input"');
+    expect($html)->toContain('id="toggle-array-7-filters-featured-input"')
+        ->and($html)->toContain('id="toggle-array-7-filters-archived-input"');
 });
 
 it('does not collapse distinct array values onto the same hidden input id', function () {
@@ -103,16 +103,36 @@ it('does not collapse distinct array values onto the same hidden input id', func
         <x-hw::toggle name="filters[]" value="foo-bar">Hyphenated</x-hw::toggle>
     BLADE);
 
-    expect($html)->toContain('id="filters-foo%20bar-input"')
-        ->and($html)->toContain('id="filters-foo-bar-input"');
+    expect($html)->toContain('id="toggle-array-7-filters-foo%20bar-input"')
+        ->and($html)->toContain('id="toggle-array-7-filters-foo-bar-input"');
+});
+
+it('keeps array ids distinct across name and value boundaries', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::toggle name="filters[]" value="archived-old">First</x-hw::toggle>
+        <x-hw::toggle name="filters-archived[]" value="old">Second</x-hw::toggle>
+    BLADE);
+
+    expect($html)->toContain('id="toggle-array-7-filters-archived-old-input"')
+        ->and($html)->toContain('id="toggle-array-16-filters-archived-old-input"');
+});
+
+it('keeps an empty array value distinct from a scalar field name', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::toggle name="filters[]" value="">Array</x-hw::toggle>
+        <x-hw::toggle name="filters-">Scalar</x-hw::toggle>
+    BLADE);
+
+    expect($html)->toContain('id="toggle-array-7-filters--input"')
+        ->and($html)->toContain('id="toggle-field-filters--input"');
 });
 
 it('derives the hidden input id deterministically from its name', function () {
     $first = (string) $this->blade('<x-hw::toggle name="notify">Notify</x-hw::toggle>');
     $second = (string) $this->blade('<x-hw::toggle name="notify">Notify</x-hw::toggle>');
 
-    expect($first)->toContain('id="notify-input"')
-        ->and($second)->toContain('id="notify-input"');
+    expect($first)->toContain('id="toggle-field-notify-input"')
+        ->and($second)->toContain('id="toggle-field-notify-input"');
 });
 
 it('disables the hidden input while unpressed', function () {

@@ -314,7 +314,7 @@ it('sets custom id', function () {
 it('generates unique id when not provided', function () {
     $component = new Modal;
 
-    expect($component->id)->toStartWith('modal-');
+    expect($component->id)->toStartWith('hw-modal-');
 });
 
 it('keeps stimulus as the seventh positional constructor argument', function () {

@@ -23,7 +23,7 @@ class HoverCard extends Component
         public bool $open = false,
         public ?Htmlable $stimulus = null,
     ) {
-        $this->id = app(ComponentId::class)->resolve($this->id, 'hover-card');
+        $this->id = app(ComponentId::class)->resolve($this->id, 'hw-hover-card', 'hover-card');
 
         $this->side = $this->oneOf($this->side, ['top', 'right', 'bottom', 'left'], 'bottom');
         $this->align = $this->oneOf($this->align, ['start', 'center', 'end'], 'start');

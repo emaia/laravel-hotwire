@@ -21,7 +21,7 @@ class Modal extends Component
         public string $motion = 'default',
         public bool $viewTransition = false,
     ) {
-        $this->id = app(ComponentId::class)->resolve($this->id, 'modal');
+        $this->id = app(ComponentId::class)->resolve($this->id, 'hw-modal', 'modal');
 
         $this->frame = FrameTarget::normalize($this->frame);
 

@@ -58,9 +58,27 @@ it('keeps automatic ids unique in one response and stable in a fresh scope', fun
     app()->forgetScopedInstances();
     $second = (string) $this->blade($template);
 
-    expect($first)->toContain('id="modal-page-1"', 'id="modal-page-2"')
+    expect($first)->toContain('id="hw-modal-page-1"', 'id="hw-modal-page-2"')
         ->and($second)->toBe($first);
 });
+
+it('uses one package namespace for automatic stateful component ids', function (Closure $make, string $property, string $prefix) {
+    app()->forgetScopedInstances();
+
+    expect($make()->{$property})->toBe("hw-{$prefix}-page-1");
+})->with([
+    'accordion' => [fn () => new Accordion, 'accordionId', 'accordion'],
+    'alert dialog' => [fn () => new AlertDialog, 'id', 'alert'],
+    'carousel' => [fn () => new Carousel, 'id', 'carousel'],
+    'drawer' => [fn () => new Drawer, 'id', 'drawer'],
+    'dropdown' => [fn () => new Dropdown, 'id', 'dropdown'],
+    'hover card' => [fn () => new HoverCard, 'id', 'hover-card'],
+    'modal' => [fn () => new Modal, 'id', 'modal'],
+    'popover' => [fn () => new Popover, 'id', 'popover'],
+    'read more' => [fn () => new ReadMore, 'readMoreId', 'read-more'],
+    'sheet' => [fn () => new Sheet, 'id', 'sheet'],
+    'tabs' => [fn () => new Tabs, 'tabsId', 'tabs'],
+]);
 
 it('preserves the Carousel empty-string id behavior', function () {
     expect((new Carousel(id: ''))->id)->toBe('');

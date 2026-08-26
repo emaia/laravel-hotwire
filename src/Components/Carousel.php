@@ -46,8 +46,8 @@ class Carousel extends Component
         public ?Htmlable $stimulus = null,
     ) {
         $this->id = is_object($this->id)
-            ? app(ComponentId::class)->resolve($this->id, 'carousel')
-            : ($this->id ?? app(ComponentId::class)->next('carousel'));
+            ? app(ComponentId::class)->resolve($this->id, 'hw-carousel', 'carousel')
+            : ($this->id ?? app(ComponentId::class)->next('hw-carousel'));
     }
 
     public function render()

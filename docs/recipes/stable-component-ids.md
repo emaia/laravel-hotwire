@@ -13,11 +13,16 @@ Use the automatic id when the component has a stable position and every render c
 <hw:carousel>...</hw:carousel>
 ```
 
-The sequence is unique within the rendered response. A requested Turbo Frame has its own namespace so a lazy frame does
-not collide with the surrounding page.
+The sequence is unique within the rendered response. Automatic IDs use the `hw-` package namespace. A requested Turbo
+Frame has its own namespace so a lazy frame does not collide with the surrounding page.
 
 An eager frame first rendered as part of a full page and later refreshed as an individual frame crosses response roots.
 Pass a model or explicit string in that case, just as you would for a Turbo Stream fragment.
+
+The ordinal also assumes that earlier automatic components with the same prefix stay in the same order. If a conditional
+sibling of the same component type appears before another, both receive new semantic positions: during a morph, the old
+ID can match the new sibling and mix their state instead of merely losing it. Give the affected components model-derived
+or explicit IDs.
 
 ## Lists and server-rendered fragments
 
@@ -64,11 +69,26 @@ If the same component appears more than once for one record, derive distinct ids
 Automatic ids are an internal identity mechanism, not a public selector contract. An explicit id remains the right
 choice whenever other application code needs to address the element.
 
+## Development diagnostics
+
+Mount `dev--duplicate-ids` on the application root in development to warn when a separate response inserts an automatic
+package ID that is already present:
+
+```blade
+<body @env('local') data-controller="dev--duplicate-ids" @endenv>
+    ...
+</body>
+```
+
+The warning identifies the duplicate ID and its matching elements before silent first-match behavior in DOM APIs,
+ARIA references, labels, or Turbo morphing hides the source of the problem.
+
 ## Decision guide
 
 | Situation | Recommended id |
 | --- | --- |
 | Stable component rendered repeatedly from the same page or frame root | Omit `id` |
+| A conditional component can appear before another with the same automatic prefix | Pass a model or explicit string to both |
 | Component in a list, eager frame refresh, reordered collection, or cross-request fragment | Pass a persisted model with `:id="$record"` |
 | Component targeted by CSS, JavaScript, tests, or Turbo Streams | Pass an explicit string |
 | Two instances of the same component for one model | Use distinct `dom_id()` prefixes |

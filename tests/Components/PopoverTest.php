@@ -60,8 +60,8 @@ it('auto-generates a content id when none is given', function () {
         </x-hw::popover>
     ');
 
-    $view->assertSee('id="popover-', false)
-        ->assertSee('aria-controls="popover-', false);
+    $view->assertSee('id="hw-popover-', false)
+        ->assertSee('aria-controls="hw-popover-', false);
 });
 
 it('emits positioning defaults for Floating UI', function () {

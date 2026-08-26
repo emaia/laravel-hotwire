@@ -27,7 +27,7 @@ class Sheet extends Component
         public ?Htmlable $stimulus = null,
         public bool $viewTransition = false,
     ) {
-        $this->id = app(ComponentId::class)->resolve($this->id, 'sheet');
+        $this->id = app(ComponentId::class)->resolve($this->id, 'hw-sheet', 'sheet');
 
         $this->frame = FrameTarget::normalize($this->frame);
 
