@@ -636,13 +636,19 @@ class CheckCommand extends Command
         }
 
         foreach ($this->cssImports($content) as $rule) {
-            if ($rule['conditions'] !== '') {
+            if (! $this->isUnconditionalImport($rule['conditions'])) {
                 continue;
             }
 
             $import = preg_replace('/[?#].*$/', '', str_replace('\\', '/', $rule['path'])) ?? $rule['path'];
 
             if (str_starts_with($import, '/') || preg_match('/^[a-z][a-z0-9+.-]*:/i', $import) === 1) {
+                continue;
+            }
+
+            $resolved = realpath(dirname($stylesheet).'/'.$import);
+
+            if ($resolved === false) {
                 continue;
             }
 
@@ -654,14 +660,18 @@ class CheckCommand extends Command
                 }
             }
 
-            $resolved = realpath(dirname($stylesheet).'/'.$import);
-
-            if ($presetDirectory !== false && $resolved !== false && $this->samePath($presetDirectory, dirname($resolved))) {
+            if ($presetDirectory !== false && $this->samePath($presetDirectory, dirname($resolved))) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    private function isUnconditionalImport(string $conditions): bool
+    {
+        return $conditions === ''
+            || preg_match('/^layer(?:\(\s*[-_a-z][-_a-z0-9]*(?:\s*\.\s*[-_a-z][-_a-z0-9]*)*\s*\))?$/i', $conditions) === 1;
     }
 
     /** @return array<int, array{path: string, conditions: string}> */

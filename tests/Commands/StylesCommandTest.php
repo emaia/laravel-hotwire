@@ -213,3 +213,14 @@ it('rejects output paths through symlinks that the coverage scan would not follo
 
     expect(File::exists(resource_path('css/real/hotwire.css')))->toBeFalse();
 });
+
+it('rejects output paths whose earlier segment is a symlink', function () {
+    File::ensureDirectoryExists(resource_path('css/.real/sub'));
+    symlink(resource_path('css/.real'), resource_path('css/generated'));
+
+    $this->artisan('hotwire:styles --components=modal --output=resources/css/generated/sub/hotwire.css --no-interaction')
+        ->expectsOutputToContain('Output must resolve inside resources/css')
+        ->assertFailed();
+
+    expect(File::exists(resource_path('css/.real/sub/hotwire.css')))->toBeFalse();
+});

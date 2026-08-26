@@ -243,6 +243,13 @@ class StylesCommand extends Command
         }
 
         $this->files->ensureDirectoryExists($styles);
+
+        if ($this->traversesSymlink($styles, $target)) {
+            warning('Output must resolve inside resources/css.');
+
+            return null;
+        }
+
         $styles = realpath($styles);
         $existing = $target;
 
@@ -279,5 +286,22 @@ class StylesCommand extends Command
         }
 
         return $path === $parent || str_starts_with($path, rtrim($parent, '/').'/');
+    }
+
+    private function traversesSymlink(string $root, string $target): bool
+    {
+        $root = rtrim(str_replace('\\', '/', $root), '/');
+        $target = str_replace('\\', '/', $target);
+        $current = $root;
+
+        foreach (explode('/', substr($target, strlen($root) + 1)) as $segment) {
+            $current .= '/'.$segment;
+
+            if (is_link($current)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
