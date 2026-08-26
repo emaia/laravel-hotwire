@@ -61,6 +61,7 @@ it('registers every package command', function () {
         'hotwire:install',
         'hotwire:make-controller',
         'hotwire:make-preset',
+        'hotwire:styles',
         'hotwire:controllers',
         'hotwire:components',
         'hotwire:check',

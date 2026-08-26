@@ -155,6 +155,16 @@ php artisan hotwire:make-preset brand
 php artisan hotwire:make-preset brand --from=nova
 ```
 
+For a layout with an explicit component set, generate a smaller visual bundle while retaining the shared structural
+foundation:
+
+```bash
+php artisan hotwire:styles \
+  --components=badge,button,field,input,navbar,pagination \
+  --include=tooltip \
+  --output=resources/css/hotwire-front.css
+```
+
 See [Presets](docs/presets.md) and [Theming](docs/theming.md).
 
 ## Check Your Setup

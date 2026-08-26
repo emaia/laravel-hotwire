@@ -15,8 +15,12 @@ final class PresetSourceResolver
         $this->cssRoot = rtrim($cssRoot ?? dirname(__DIR__, 2).'/resources/css', '/');
     }
 
-    /** Resolve a preset entrypoint into ordered foundation imports and visual sources. */
-    public function resolve(string $entrypoint): PresetSource
+    /**
+     * Resolve a preset entrypoint into ordered foundation imports and visual sources.
+     *
+     * @param  string[]|null  $selectedSources
+     */
+    public function resolve(string $entrypoint, ?array $selectedSources = null): PresetSource
     {
         $entrypoint = $this->normalize($entrypoint);
         $name = pathinfo($entrypoint, PATHINFO_FILENAME);
@@ -28,6 +32,7 @@ final class PresetSourceResolver
         $foundations = [];
         $foundationSet = [];
         $visualStylesheets = [];
+        $visualPaths = [];
         $visited = [];
         $stack = [];
 
@@ -37,9 +42,42 @@ final class PresetSourceResolver
             foundations: $foundations,
             foundationSet: $foundationSet,
             visualStylesheets: $visualStylesheets,
+            visualPaths: $visualPaths,
             visited: $visited,
             stack: $stack,
         );
+
+        if ($selectedSources === null) {
+            return new PresetSource($name, $foundations, $visualStylesheets);
+        }
+
+        $positions = array_flip(array_map($this->relative(...), $visualPaths));
+        $lastPosition = -1;
+
+        foreach ($selectedSources as $selectedSource) {
+            $position = $positions[$selectedSource] ?? null;
+
+            if ($position === null) {
+                throw new PresetSourceException(
+                    "Selected visual source [{$selectedSource}] is not imported by preset [{$name}]."
+                );
+            }
+
+            if ($position <= $lastPosition) {
+                throw new PresetSourceException(
+                    "Selected visual sources for preset [{$name}] do not follow canonical import order."
+                );
+            }
+
+            $lastPosition = $position;
+        }
+
+        $selected = array_fill_keys($selectedSources, true);
+        $visualStylesheets = array_values(array_filter(
+            $visualStylesheets,
+            fn (string $_css, int $index): bool => isset($selected[$this->relative($visualPaths[$index])]),
+            ARRAY_FILTER_USE_BOTH,
+        ));
 
         return new PresetSource($name, $foundations, $visualStylesheets);
     }
@@ -48,6 +86,7 @@ final class PresetSourceResolver
      * @param  string[]  $foundations
      * @param  array<string, true>  $foundationSet
      * @param  string[]  $visualStylesheets
+     * @param  string[]  $visualPaths
      * @param  array<string, true>  $visited
      * @param  string[]  $stack
      */
@@ -57,6 +96,7 @@ final class PresetSourceResolver
         array &$foundations,
         array &$foundationSet,
         array &$visualStylesheets,
+        array &$visualPaths,
         array &$visited,
         array &$stack,
     ): void {
@@ -108,6 +148,7 @@ final class PresetSourceResolver
                     foundations: $foundations,
                     foundationSet: $foundationSet,
                     visualStylesheets: $visualStylesheets,
+                    visualPaths: $visualPaths,
                     visited: $visited,
                     stack: $stack,
                 );
@@ -129,6 +170,7 @@ final class PresetSourceResolver
 
         if ($visual !== '') {
             $visualStylesheets[] = $visual;
+            $visualPaths[] = $path;
         }
     }
 

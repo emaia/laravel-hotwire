@@ -11,6 +11,7 @@ The complete Hotwire stack for Laravel — Turbo Drive, Turbo Streams, Stimulus 
   for resolving a controller's shared JS deps, doc search/render/paging, installer)
 - `src/Registry/catalog.php` — single source of truth mapping every component and controller to its class/source, view,
   docs, category and dependencies
+- `src/Registry/styles.php` — preset-neutral visual module ownership, dependencies and canonical source order
 - `resources/js/controllers/` — Stimulus controllers shipped with the package (published to user's app)
 - `resources/views/component-views/` — Blade component views
 - `stubs/resources/` — Scaffolding files copied by `hotwire:install`
@@ -26,6 +27,7 @@ The complete Hotwire stack for Laravel — Turbo Drive, Turbo Streams, Stimulus 
 | `hotwire:install`         | Scaffold JS/CSS setup, add npm deps to package.json                                                                    |
 | `hotwire:make-controller` | Create a new Stimulus controller (interactive scaffolding)                                                             |
 | `hotwire:make-preset`     | Generate a complete custom CSS preset scaffold or clone a shipped preset                                               |
+| `hotwire:styles`          | Generate a selective preset bundle from explicit component and controller selections                                  |
 | `hotwire:controllers`     | Publish package Stimulus controllers to the app for customization (`--outdated` to update only published+changed ones) |
 | `hotwire:components`      | List available Blade components and their controller dependencies                                                      |
 | `hotwire:check`           | Verify required npm dependencies are installed and report outdated/diverged published controllers (CI-friendly)        |

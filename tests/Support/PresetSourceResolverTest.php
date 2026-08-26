@@ -124,3 +124,45 @@ it('rejects conditions on local imports instead of changing their semantics', fu
     expect(fn () => $this->resolver->resolve($entrypoint))
         ->toThrow(PresetSourceException::class, 'Preset [demo] local import [./demo/forms.css] uses unsupported import conditions.');
 });
+
+it('filters visual sources without changing their canonical import order', function () {
+    writePresetCss($this->root, 'tokens.css', ':root {}');
+    writePresetCss($this->root, 'presets/demo/modal.css', '[data-slot="modal"] {}');
+    writePresetCss($this->root, 'presets/demo/button.css', '[data-slot="button"] {}');
+    writePresetCss($this->root, 'presets/demo/carousel.css', '[data-slot="carousel"] {}');
+    $entrypoint = writePresetCss($this->root, 'presets/demo.css', <<<'CSS'
+        @import "../tokens.css";
+        @import "./demo/modal.css";
+        @import "./demo/button.css";
+        @import "./demo/carousel.css";
+        CSS);
+
+    $source = $this->resolver->resolve($entrypoint, [
+        'presets/demo/modal.css',
+        'presets/demo/button.css',
+    ]);
+
+    expect($source->foundationImports())->toBe(['tokens.css'])
+        ->and($source->visualStylesheets())->toBe([
+            '[data-slot="modal"] {}',
+            '[data-slot="button"] {}',
+        ])
+        ->and($source->visualCss())->not->toContain('carousel');
+});
+
+it('rejects selected sources outside canonical import order', function () {
+    writePresetCss($this->root, 'presets/demo/a.css', '[data-slot="a"] {}');
+    writePresetCss($this->root, 'presets/demo/b.css', '[data-slot="b"] {}');
+    $entrypoint = writePresetCss($this->root, 'presets/demo.css', <<<'CSS'
+        @import "./demo/a.css";
+        @import "./demo/b.css";
+        CSS);
+
+    expect(fn () => $this->resolver->resolve($entrypoint, [
+        'presets/demo/b.css',
+        'presets/demo/a.css',
+    ]))->toThrow(
+        PresetSourceException::class,
+        'Selected visual sources for preset [demo] do not follow canonical import order.',
+    );
+});

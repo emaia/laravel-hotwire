@@ -1,5 +1,6 @@
 <?php
 
+use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\CssPresetFiles;
 
 it('discovers shipped css presets in sorted order', function () {
@@ -49,4 +50,28 @@ it('uses responsibility-oriented Nova modules instead of mechanical source chunk
             'tooltip.css',
         )
         ->each->not->toMatch('/^\d+-/');
+});
+
+it('resolves complete and selective preset sources from catalog owners', function () {
+    $presets = app(CssPresetFiles::class);
+    $registry = HotwireRegistry::make();
+    $components = array_keys(array_filter(
+        $registry->components(),
+        fn ($component): bool => $component->styling->visualSlots() !== [],
+    ));
+    $controllers = array_keys(array_filter(
+        $registry->controllers(),
+        fn ($controller): bool => $controller->styling->visualSlots() !== [],
+    ));
+
+    expect($presets->sourceForSelection('nova', $components, $controllers)->visualStylesheets())
+        ->toBe($presets->source('nova')->visualStylesheets());
+
+    $modal = $presets->sourceForSelection('nova', ['modal']);
+
+    expect($modal->visualCss())
+        ->toContain('[data-slot="modal-panel"]')
+        ->toContain('[data-slot="modal-trigger"]')
+        ->toContain('[data-slot="drawer-overlay"]')
+        ->not->toContain('[data-slot="carousel"]');
 });

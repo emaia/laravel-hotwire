@@ -19,6 +19,42 @@ The installer writes a thin `resources/css/app.css` that imports Tailwind and en
 That public entrypoint aggregates Nova's ordered visual sources. Their internal paths are an implementation detail;
 applications should keep importing `presets/nova.css` rather than individual package files.
 
+## Generate a selective bundle
+
+The complete preset is the safe default. For a layout that uses a known subset of components, generate an
+application entrypoint without the omitted visual modules:
+
+```bash
+php artisan hotwire:styles \
+  --preset=nova \
+  --components=badge,button,field,input,navbar,pagination,popover \
+  --include=tooltip \
+  --output=resources/css/hotwire-front.css
+```
+
+Replace the complete preset import in that layout's CSS entrypoint with the generated file. Do not import both:
+
+```css
+@import "tailwindcss";
+
+@import "./hotwire-front.css";
+```
+
+`--components` accepts catalog component keys and may be repeated or comma-separated. The command automatically
+includes controllers mounted by those components, shared visual modules and their transitive dependencies.
+`--include` accepts additional component keys or Stimulus controller identifiers; use it for UI rendered dynamically
+by PHP, Turbo Streams, vendor views or JavaScript when that UI is not represented by the layout's initial component
+list. Controller identifiers with `--` may also use their publish form, such as `turbo/progress`.
+
+Tokens, custom variants and structural CSS remain complete foundations and are imported exactly once. The selective
+part is the preset's visual layer, so progressive enhancement and runtime utility coverage do not depend on which
+components were listed.
+
+The generated file starts with the package marker and should not be edited. Re-run the same command with `--force`
+after changing the selection or upgrading Laravel Hotwire. A file without the marker is treated as application-owned
+and is never replaced, even with `--force`; choose another output or remove it yourself. If the complete set of
+dynamic components is not known, keep the public `presets/nova.css` import as the fallback instead of guessing.
+
 ## Generate a custom preset
 
 Generate an empty preset scaffold when token overrides are not enough:

@@ -9,6 +9,7 @@ final readonly class CssPresetFiles
     public function __construct(
         private Filesystem $files,
         private PresetSourceResolver $sources,
+        private CssModuleManifest $manifest,
     ) {}
 
     /** @return array<string, string> */
@@ -42,5 +43,24 @@ final readonly class CssPresetFiles
         $path = $this->path($name);
 
         return $path === null ? null : $this->sources->resolve($path);
+    }
+
+    /**
+     * Resolve a shipped preset for selected catalog owners.
+     *
+     * @param  string[]  $components
+     * @param  string[]  $controllers
+     */
+    public function sourceForSelection(string $name, array $components = [], array $controllers = []): ?PresetSource
+    {
+        $path = $this->path($name);
+
+        if ($path === null) {
+            return null;
+        }
+
+        $modules = $this->manifest->modulesFor($components, $controllers);
+
+        return $this->sources->resolve($path, $this->manifest->sourcesFor($name, $modules));
     }
 }
