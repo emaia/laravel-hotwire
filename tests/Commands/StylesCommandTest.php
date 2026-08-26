@@ -1,5 +1,6 @@
 <?php
 
+use Emaia\LaravelHotwire\Support\GeneratedStyleBundle;
 use Emaia\LaravelHotwire\Support\PackageMarker;
 use Illuminate\Support\Facades\File;
 
@@ -47,6 +48,29 @@ it('accepts repeated manual component and controller inclusions', function () {
         ->toContain('[data-slot="modal-panel"]')
         ->toContain('[data-slot="tooltip"]')
         ->not->toContain('[data-slot="carousel"]');
+});
+
+it('records a canonical regeneration plan with effective modules and controllers', function () {
+    $this->artisan('hotwire:styles --components=modal --include=turbo/progress --no-interaction')
+        ->assertSuccessful();
+
+    $plan = app(GeneratedStyleBundle::class)->planFromContent(File::get($this->output));
+
+    expect($plan)
+        ->not->toBeNull()
+        ->and($plan['version'])->toBe(1)
+        ->and($plan['preset'])->toBe('nova')
+        ->and($plan['components'])->toBe(['modal'])
+        ->and($plan['controllers'])->toContain('modal', 'turbo--progress')
+        ->and($plan['modules'])->toContain('modal', 'button-surfaces', 'overlay-foundation');
+});
+
+it('treats equivalent selection order as an idempotent generation', function () {
+    $this->artisan('hotwire:styles --components=modal,badge --no-interaction')->assertSuccessful();
+
+    $this->artisan('hotwire:styles --components=badge,modal --no-interaction')
+        ->expectsOutputToContain('Up to date')
+        ->assertSuccessful();
 });
 
 it('parses comma-separated components and adjusts imports for a custom output depth', function () {
@@ -114,4 +138,21 @@ it('rejects output paths outside the application', function () {
         ->assertFailed();
 
     expect(File::exists(dirname($this->appBase).'/hotwire.css'))->toBeFalse();
+});
+
+it('rejects output paths that escape through a symlink', function () {
+    $outside = sys_get_temp_dir().'/hotwire-styles-outside-'.uniqid();
+    File::ensureDirectoryExists(resource_path('css'));
+    File::ensureDirectoryExists($outside);
+    symlink($outside, resource_path('css/generated'));
+
+    try {
+        $this->artisan('hotwire:styles --components=modal --output=resources/css/generated/hotwire.css --no-interaction')
+            ->expectsOutputToContain('Output must resolve inside the application')
+            ->assertFailed();
+
+        expect(File::exists($outside.'/hotwire.css'))->toBeFalse();
+    } finally {
+        File::deleteDirectory($outside);
+    }
 });

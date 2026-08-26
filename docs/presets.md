@@ -55,6 +55,13 @@ after changing the selection or upgrading Laravel Hotwire. A file without the ma
 and is never replaced, even with `--force`; choose another output or remove it yourself. If the complete set of
 dynamic components is not known, keep the public `presets/nova.css` import as the fallback instead of guessing.
 
+Generated bundles also record their canonical component, controller and module selection in a versioned header.
+`hotwire:check` inspects marked bundles under `resources/css` and reports visual components/controllers found in the
+scanned Blade views when none of those bundles covers them. With multiple layout bundles this is deliberately a global
+safety net, not layout inference: coverage in any generated bundle satisfies the check. `--fix` never changes a CSS
+selection because it cannot know which layout should own the missing component; regenerate the appropriate bundle
+explicitly. Dynamic PHP, Turbo or JavaScript markup still requires `--include` because static view scanning cannot see it.
+
 ## Generate a custom preset
 
 Generate an empty preset scaffold when token overrides are not enough:
@@ -106,8 +113,7 @@ Use `--force` to replace an existing generated file. The command never edits `re
 styles and import ordering remain under your control.
 
 The rules arrive in the order the source preset declares them, and that order is worth keeping. Between equal-specificity
-rules in the same layer, the later one wins. Presets may also declare ordered component sublayers; the scaffold preserves
-those boundaries and their explicit order. Reordering the scaffold as you fill it in can therefore change which rule
+rules in the same layer, the later one wins. Reordering the scaffold as you fill it in can therefore change which rule
 applies without changing a single declaration.
 
 ### A note on IDE warnings

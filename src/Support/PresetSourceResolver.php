@@ -12,7 +12,8 @@ final class PresetSourceResolver
         private readonly Filesystem $files,
         ?string $cssRoot = null,
     ) {
-        $this->cssRoot = rtrim($cssRoot ?? dirname(__DIR__, 2).'/resources/css', '/');
+        $cssRoot = $this->normalize($cssRoot ?? dirname(__DIR__, 2).'/resources/css');
+        $this->cssRoot = rtrim($this->normalize(realpath($cssRoot) ?: $cssRoot), '/');
     }
 
     /**
@@ -27,6 +28,12 @@ final class PresetSourceResolver
 
         if (! $this->files->isFile($entrypoint)) {
             throw new PresetSourceException("Preset [{$name}] entrypoint does not exist.");
+        }
+
+        $entrypoint = $this->normalize(realpath($entrypoint) ?: $entrypoint);
+
+        if (! $this->insideCssRoot($entrypoint)) {
+            throw new PresetSourceException("Preset [{$name}] entrypoint leaves the package CSS directory.");
         }
 
         $foundations = [];
@@ -45,10 +52,20 @@ final class PresetSourceResolver
             visualPaths: $visualPaths,
             visited: $visited,
             stack: $stack,
+            entrypoint: true,
         );
 
         if ($selectedSources === null) {
-            return new PresetSource($name, $foundations, $visualStylesheets);
+            return new PresetSource(
+                $name,
+                $foundations,
+                $visualStylesheets,
+                array_map($this->relative(...), $visualPaths),
+            );
+        }
+
+        if (in_array($entrypoint, $visualPaths, true)) {
+            throw new PresetSourceException("Selective preset [{$name}] entrypoint must contain only imports.");
         }
 
         $positions = array_flip(array_map($this->relative(...), $visualPaths));
@@ -73,13 +90,19 @@ final class PresetSourceResolver
         }
 
         $selected = array_fill_keys($selectedSources, true);
-        $visualStylesheets = array_values(array_filter(
-            $visualStylesheets,
-            fn (string $_css, int $index): bool => isset($selected[$this->relative($visualPaths[$index])]),
-            ARRAY_FILTER_USE_BOTH,
-        ));
+        $selectedStylesheets = [];
+        $selectedPaths = [];
 
-        return new PresetSource($name, $foundations, $visualStylesheets);
+        foreach ($visualStylesheets as $index => $stylesheet) {
+            $path = $this->relative($visualPaths[$index]);
+
+            if (isset($selected[$path])) {
+                $selectedStylesheets[] = $stylesheet;
+                $selectedPaths[] = $path;
+            }
+        }
+
+        return new PresetSource($name, $foundations, $selectedStylesheets, $selectedPaths);
     }
 
     /**
@@ -99,6 +122,7 @@ final class PresetSourceResolver
         array &$visualPaths,
         array &$visited,
         array &$stack,
+        bool $entrypoint = false,
     ): void {
         $cycleAt = array_search($path, $stack, true);
 
@@ -118,9 +142,14 @@ final class PresetSourceResolver
         $visited[$path] = true;
         $stack[] = $path;
         $css = $this->files->get($path);
-        $imports = $this->localImports($css);
+        $imports = $this->imports($css);
+        $hasVisualImport = false;
 
         foreach ($imports as $import) {
+            if (! $import['local']) {
+                throw new PresetSourceException("Preset [{$preset}] supports only local CSS imports.");
+            }
+
             if ($import['conditions'] !== '') {
                 throw new PresetSourceException(
                     "Preset [{$preset}] local import [{$import['path']}] uses unsupported import conditions."
@@ -141,7 +170,16 @@ final class PresetSourceResolver
                 );
             }
 
+            $target = $this->normalize(realpath($target) ?: $target);
+
+            if (! $this->insideCssRoot($target)) {
+                throw new PresetSourceException(
+                    "Preset [{$preset}] local import [{$import['path']}] from [{$this->relative($path)}] leaves the package CSS directory."
+                );
+            }
+
             if ($this->isVisual($target)) {
+                $hasVisualImport = true;
                 $this->walk(
                     path: $target,
                     preset: $preset,
@@ -154,6 +192,16 @@ final class PresetSourceResolver
                 );
 
                 continue;
+            }
+
+            if (! $entrypoint) {
+                throw new PresetSourceException(
+                    "Preset [{$preset}] visual source [{$this->relative($path)}] cannot import shared foundations."
+                );
+            }
+
+            if ($hasVisualImport) {
+                throw new PresetSourceException("Preset [{$preset}] must import shared foundations before visual sources.");
             }
 
             $relative = $this->relative($target);
@@ -175,9 +223,9 @@ final class PresetSourceResolver
     }
 
     /**
-     * @return array<int, array{path: string, conditions: string, offset: int, length: int}>
+     * @return array<int, array{path: string, local: bool, conditions: string, offset: int, length: int}>
      */
-    private function localImports(string $css): array
+    private function imports(string $css): array
     {
         $pattern = <<<'REGEX'
             ~
@@ -202,12 +250,9 @@ final class PresetSourceResolver
         foreach ($matches as $match) {
             $import = $match['quoted_path'][0] ?? $match['url_quoted_path'][0] ?? $match['url_path'][0];
 
-            if (! str_starts_with($import, '.')) {
-                continue;
-            }
-
             $imports[] = [
                 'path' => $import,
+                'local' => str_starts_with($import, '.'),
                 'conditions' => trim($match['conditions'][0]),
                 'offset' => $match[0][1],
                 'length' => strlen($match[0][0]),
@@ -231,12 +276,15 @@ final class PresetSourceResolver
 
     private function isVisual(string $path): bool
     {
-        return str_starts_with($path, $this->cssRoot.'/presets/');
+        return str_starts_with($this->comparable($path), $this->comparable($this->cssRoot.'/presets/'));
     }
 
     private function insideCssRoot(string $path): bool
     {
-        return $path === $this->cssRoot || str_starts_with($path, $this->cssRoot.'/');
+        $path = $this->comparable($path);
+        $root = $this->comparable($this->cssRoot);
+
+        return $path === $root || str_starts_with($path, $root.'/');
     }
 
     private function relative(string $path): string
@@ -246,9 +294,23 @@ final class PresetSourceResolver
 
     private function normalize(string $path): string
     {
+        $path = str_replace('\\', '/', $path);
+        $prefix = '';
+
+        if (preg_match('/^([A-Za-z]:)(?:\/(.*))?$/', $path, $matches) === 1) {
+            $prefix = strtoupper($matches[1]).'/';
+            $path = $matches[2] ?? '';
+        } elseif (str_starts_with($path, '//')) {
+            $prefix = '//';
+            $path = ltrim($path, '/');
+        } elseif (str_starts_with($path, '/')) {
+            $prefix = '/';
+            $path = ltrim($path, '/');
+        }
+
         $segments = [];
 
-        foreach (explode('/', str_replace('\\', '/', $path)) as $segment) {
+        foreach (explode('/', $path) as $segment) {
             if ($segment === '' || $segment === '.') {
                 continue;
             }
@@ -262,6 +324,13 @@ final class PresetSourceResolver
             $segments[] = $segment;
         }
 
-        return '/'.implode('/', $segments);
+        return $prefix.implode('/', $segments);
+    }
+
+    private function comparable(string $path): string
+    {
+        return preg_match('/^[A-Za-z]:\//', $path) === 1 || str_starts_with($path, '//')
+            ? strtolower($path)
+            : $path;
     }
 }

@@ -8,12 +8,18 @@ const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const baselinePath = join(root, "tests/Css/preset_build_baselines.json");
 const presetDirectory = join(root, "resources/css/presets");
 const tailwindBinary = join(root, "node_modules/.bin/tailwindcss");
+const stylesFixtureScript = join(root, "scripts/run_styles_fixture.php");
 const packageSourceFixtures = [
     ["package_source.blade.php", "resources/views/css_build_contract.blade.php"],
     ["package_source.php", "src/css_build_contract.php"],
     ["package_source.js", "resources/js/css_build_contract.js"],
 ];
 const automaticSourceFixture = '<div class="w-[811px]"></div>\n';
+const packageSourceDirectives = [
+    '@source "../../vendor/emaia/laravel-hotwire/resources/views/**/*.blade.php";',
+    '@source "../../vendor/emaia/laravel-hotwire/src/**/*.php";',
+    '@source "../../vendor/emaia/laravel-hotwire/resources/js/**/*.js";',
+];
 const unresolvedDirective = /@(import|apply|theme|custom-variant|source|utility|variant|reference|config|plugin)\b/;
 
 async function createInstalledAppFixture() {
@@ -72,6 +78,35 @@ async function runTailwind(directory) {
     }
 
     return css;
+}
+
+async function generateSelectiveBundle(directory, output) {
+    const process = Bun.spawn(
+        [
+            globalThis.process.env.PHP_BINARY ?? "php",
+            stylesFixtureScript,
+            directory,
+            "nova",
+            output,
+            "button,card",
+            "tooltip",
+        ],
+        {
+            cwd: root,
+            env: processEnv(),
+            stdout: "pipe",
+            stderr: "pipe",
+        },
+    );
+    const [exitCode, stdout, stderr] = await Promise.all([
+        process.exited,
+        new Response(process.stdout).text(),
+        new Response(process.stderr).text(),
+    ]);
+
+    if (exitCode !== 0) {
+        throw new Error(`Selective CSS generation failed (exit ${exitCode}).\n${stderr || stdout}`);
+    }
 }
 
 function processEnv() {
@@ -139,10 +174,11 @@ export function disableAutomaticSources(entrypoint) {
     return entrypoint.replace(imports[0], replacement);
 }
 
-export async function compileCssFixture(entrypoint) {
+export async function compileCssFixture(entrypoint, options = {}) {
     const directory = await createInstalledAppFixture();
 
     try {
+        await options.setup?.(directory);
         // Keep the fixture deterministic and make explicit package sources observable.
         await writeFile(join(directory, "resources/css/app.css"), disableAutomaticSources(entrypoint));
 
@@ -150,6 +186,16 @@ export async function compileCssFixture(entrypoint) {
     } finally {
         await rm(directory, { recursive: true, force: true });
     }
+}
+
+export function packageSourceEntrypoint(stylesheet = null) {
+    return [
+        '@import "tailwindcss";',
+        ...(stylesheet === null ? [] : [`@import "${stylesheet}";`]),
+        "",
+        ...packageSourceDirectives,
+        "",
+    ].join("\n");
 }
 
 export async function buildCssContract() {
@@ -168,7 +214,14 @@ export async function buildCssContract() {
         presetMeasurements[preset] = measure(css);
     }
 
-    const selective = await compileCssFixture(await readFile(join(root, "tests/Fixtures/css/selective.css"), "utf8"));
+    const selectiveOutput = "resources/css/generated/hotwire.css";
+    let selectiveSource = null;
+    const selective = await compileCssFixture(packageSourceEntrypoint("./generated/hotwire.css"), {
+        setup: async (directory) => {
+            await generateSelectiveBundle(directory, selectiveOutput);
+            selectiveSource = await readFile(join(directory, selectiveOutput), "utf8");
+        },
+    });
     const [tailwindPackage, cliPackage] = await Promise.all([
         readPackage("tailwindcss"),
         readPackage("@tailwindcss/cli"),
@@ -178,6 +231,9 @@ export async function buildCssContract() {
         outputs: {
             presets: presetOutputs,
             selective,
+        },
+        sources: {
+            selective: selectiveSource,
         },
         measurements: {
             toolchain: {

@@ -193,6 +193,7 @@ final readonly class CssModuleManifest
             }
 
             $paths = [];
+            $mappedModules = [];
 
             foreach ($definition['sources'] as $source) {
                 if (! is_array($source) || ! isset($source['path'], $source['modules'])
@@ -212,7 +213,17 @@ final readonly class CssModuleManifest
                     if (! isset($modules[$module])) {
                         throw new PresetSourceException("CSS source [{$source['path']}] references undefined module [{$module}].");
                     }
+
+                    $mappedModules[$module] = true;
                 }
+            }
+
+            $missingModules = array_diff(array_keys($modules), array_keys($mappedModules));
+
+            if ($missingModules !== []) {
+                throw new PresetSourceException(
+                    "CSS module preset [{$preset}] does not map modules: ".implode(', ', $missingModules).'.'
+                );
             }
         }
     }

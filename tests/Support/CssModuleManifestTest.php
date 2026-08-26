@@ -96,6 +96,22 @@ it('reports the complete module dependency cycle', function () {
     ]);
 })->throws(PresetSourceException::class, 'CSS module dependency cycle: modal -> overlay -> floating -> modal.');
 
+it('rejects presets that omit a declared module source', function () {
+    CssModuleManifest::fromArray([
+        'modules' => [
+            'button-surfaces' => ['components' => [], 'controllers' => [], 'dependencies' => []],
+            'modal' => ['components' => ['modal'], 'controllers' => [], 'dependencies' => ['button-surfaces']],
+        ],
+        'presets' => [
+            'nova' => [
+                'sources' => [
+                    ['path' => 'presets/nova/modal.css', 'modules' => ['modal']],
+                ],
+            ],
+        ],
+    ]);
+})->throws(PresetSourceException::class, 'CSS module preset [nova] does not map modules: button-surfaces.');
+
 it('covers every catalog owner with visual slots', function () {
     $manifest = app(CssModuleManifest::class);
     $registry = HotwireRegistry::make();

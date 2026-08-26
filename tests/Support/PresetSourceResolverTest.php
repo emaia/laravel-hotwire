@@ -56,30 +56,63 @@ it('resolves visual stylesheets depth first in CSS import order', function () {
 
 it('deduplicates shared foundation imports at first inclusion', function () {
     writePresetCss($this->root, 'tokens.css', ':root {}');
-    writePresetCss($this->root, 'presets/demo/forms.css', <<<'CSS'
-        @import "../../tokens.css";
-        [data-slot="input"] {}
-        CSS);
+    writePresetCss($this->root, 'custom-variants.css', '@custom-variant demo {}');
+    writePresetCss($this->root, 'presets/demo/forms.css', '[data-slot="input"] {}');
     $entrypoint = writePresetCss($this->root, 'presets/demo.css', <<<'CSS'
+        @import "../tokens.css";
+        @import "../custom-variants.css";
         @import "../tokens.css";
         @import "./demo/forms.css";
         CSS);
 
-    expect($this->resolver->resolve($entrypoint)->foundationImports())->toBe(['tokens.css']);
+    expect($this->resolver->resolve($entrypoint)->foundationImports())->toBe([
+        'tokens.css',
+        'custom-variants.css',
+    ]);
 });
 
-it('leaves bare and remote imports in visual CSS and ignores commented imports', function () {
+it('rejects imports that cannot be preserved when visual sources are flattened', function (string $import) {
+    $entrypoint = writePresetCss($this->root, 'presets/demo.css', "@import {$import};");
+
+    expect(fn () => $this->resolver->resolve($entrypoint))
+        ->toThrow(PresetSourceException::class, 'Preset [demo] supports only local CSS imports.');
+})->with([
+    'bare' => '"tailwindcss"',
+    'remote' => 'url("https://example.com/theme.css")',
+]);
+
+it('ignores imports inside comments and strings', function () {
     $entrypoint = writePresetCss($this->root, 'presets/demo.css', <<<'CSS'
-        /* @import "./missing.css"; */
-        @import "tailwindcss";
-        @import url("https://example.com/theme.css");
+        /* @import "tailwindcss"; */
         [data-slot="button"] { content: "@import './also-missing.css';"; }
         CSS);
 
     expect($this->resolver->resolve($entrypoint)->visualCss())
-        ->toContain('@import "tailwindcss";')
-        ->toContain('@import url("https://example.com/theme.css");')
         ->toContain("@import './also-missing.css';");
+});
+
+it('requires shared foundations before visual sources', function () {
+    writePresetCss($this->root, 'tokens.css', ':root {}');
+    writePresetCss($this->root, 'presets/demo/forms.css', '[data-slot="input"] {}');
+    $entrypoint = writePresetCss($this->root, 'presets/demo.css', <<<'CSS'
+        @import "./demo/forms.css";
+        @import "../tokens.css";
+        CSS);
+
+    expect(fn () => $this->resolver->resolve($entrypoint))
+        ->toThrow(PresetSourceException::class, 'Preset [demo] must import shared foundations before visual sources.');
+});
+
+it('rejects foundation imports from private visual sources', function () {
+    writePresetCss($this->root, 'tokens.css', ':root {}');
+    writePresetCss($this->root, 'presets/demo/forms.css', <<<'CSS'
+        @import "../../tokens.css";
+        [data-slot="input"] {}
+        CSS);
+    $entrypoint = writePresetCss($this->root, 'presets/demo.css', '@import "./demo/forms.css";');
+
+    expect(fn () => $this->resolver->resolve($entrypoint))
+        ->toThrow(PresetSourceException::class, 'Preset [demo] visual source [presets/demo/forms.css] cannot import shared foundations.');
 });
 
 it('fails when a local import is missing', function () {
@@ -117,6 +150,43 @@ it('rejects imports that leave the package CSS directory', function () {
         ->toThrow(PresetSourceException::class, 'Preset [demo] local import [../../private.css] from [presets/demo.css] leaves the package CSS directory.');
 });
 
+it('rejects imports that escape through a symlink', function () {
+    $outside = sys_get_temp_dir().'/hotwire-preset-outside-'.uniqid().'.css';
+    file_put_contents($outside, '[data-slot="private"] {}');
+    symlink($outside, $this->root.'/presets/demo/external.css');
+    $entrypoint = writePresetCss($this->root, 'presets/demo.css', '@import "./demo/external.css";');
+
+    try {
+        expect(fn () => $this->resolver->resolve($entrypoint))
+            ->toThrow(PresetSourceException::class, 'Preset [demo] local import [./demo/external.css] from [presets/demo.css] leaves the package CSS directory.');
+    } finally {
+        @unlink($outside);
+    }
+});
+
+it('normalizes Windows-style separators for roots and entrypoints', function () {
+    writePresetCss($this->root, 'presets/demo/forms.css', '[data-slot="input"] {}');
+    $entrypoint = writePresetCss($this->root, 'presets/demo.css', '@import "./demo/forms.css";');
+    $resolver = new PresetSourceResolver($this->files, str_replace('/', '\\', $this->root));
+
+    expect($resolver->resolve(str_replace('/', '\\', $entrypoint))->visualCss())
+        ->toContain('[data-slot="input"]');
+});
+
+it('compares Windows drive and UNC paths case-insensitively', function (string $root, string $source) {
+    $resolver = new PresetSourceResolver($this->files, $root);
+    $insideCssRoot = new ReflectionMethod($resolver, 'insideCssRoot');
+    $isVisual = new ReflectionMethod($resolver, 'isVisual');
+    $relative = new ReflectionMethod($resolver, 'relative');
+
+    expect($insideCssRoot->invoke($resolver, $source))->toBeTrue()
+        ->and($isVisual->invoke($resolver, $source))->toBeTrue()
+        ->and($relative->invoke($resolver, $source))->toBe('presets/nova/button.css');
+})->with([
+    'drive' => ['C:\\Package\\Resources\\CSS', 'c:/package/resources/css/presets/nova/button.css'],
+    'UNC' => ['\\\\Server\\Share\\CSS', '//server/share/css/presets/nova/button.css'],
+]);
+
 it('rejects conditions on local imports instead of changing their semantics', function () {
     writePresetCss($this->root, 'presets/demo/forms.css', '[data-slot="input"] {}');
     $entrypoint = writePresetCss($this->root, 'presets/demo.css', '@import "./demo/forms.css" layer(forms);');
@@ -148,6 +218,17 @@ it('filters visual sources without changing their canonical import order', funct
             '[data-slot="button"] {}',
         ])
         ->and($source->visualCss())->not->toContain('carousel');
+});
+
+it('rejects visual declarations in an entrypoint used for selective resolution', function () {
+    writePresetCss($this->root, 'presets/demo/modal.css', '[data-slot="modal"] {}');
+    $entrypoint = writePresetCss($this->root, 'presets/demo.css', <<<'CSS'
+        @import "./demo/modal.css";
+        [data-slot="entrypoint"] {}
+        CSS);
+
+    expect(fn () => $this->resolver->resolve($entrypoint, ['presets/demo/modal.css']))
+        ->toThrow(PresetSourceException::class, 'Selective preset [demo] entrypoint must contain only imports.');
 });
 
 it('rejects selected sources outside canonical import order', function () {

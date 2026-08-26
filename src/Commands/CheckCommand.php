@@ -9,6 +9,8 @@ use Emaia\LaravelHotwire\Support\ControllerLoadConfiguration;
 use Emaia\LaravelHotwire\Support\ControllerLoadPlan;
 use Emaia\LaravelHotwire\Support\ControllerOrigin;
 use Emaia\LaravelHotwire\Support\ControllerResolver;
+use Emaia\LaravelHotwire\Support\CssModuleManifest;
+use Emaia\LaravelHotwire\Support\GeneratedStyleBundle;
 use Emaia\LaravelHotwire\Support\LoaderStub;
 use Emaia\LaravelHotwire\Support\PackageInstaller;
 use Emaia\LaravelHotwire\Support\PackageMarker;
@@ -58,6 +60,8 @@ class CheckCommand extends Command
         private readonly PackageInstaller $packageInstaller,
         private readonly ControllerImports $imports,
         private readonly PackageMarker $marker,
+        private readonly CssModuleManifest $styleManifest,
+        private readonly GeneratedStyleBundle $styleBundle,
     ) {
         parent::__construct();
     }
@@ -67,6 +71,7 @@ class CheckCommand extends Command
      */
     public function handle(): int
     {
+        $this->resetState();
         $prefix = config('hotwire.prefix', 'hw');
         $paths = $this->scanPaths();
         $targetBase = resource_path('js/controllers');
@@ -75,6 +80,7 @@ class CheckCommand extends Command
         $totalFiles = 0;
         ['components' => $usedComponentKeys, 'controllers' => $standaloneControllers] =
             $this->scanViews($paths, $prefix, $registry, $totalFiles);
+        $styleIssues = $this->reportStyleCoverage($usedComponentKeys, $standaloneControllers, $registry);
 
         $this->line('Scanning '.implode(', ', array_map('basename', $paths))." ($totalFiles files)...");
         $this->line('');
@@ -91,7 +97,7 @@ class CheckCommand extends Command
             return self::FAILURE;
         }
 
-        if (empty($usedComponentKeys) && empty($standaloneControllers) && $configuredControllers === []) {
+        if (empty($usedComponentKeys) && empty($standaloneControllers) && $configuredControllers === [] && $styleIssues === 0) {
             info('No Hotwire components or controllers found in views.');
 
             if (! $loaderUpgrade && ! $policyDrift) {
@@ -135,7 +141,7 @@ class CheckCommand extends Command
         $hasStubDrift = ! empty($excludedFromStub);
         $hasProblemLines = ! empty($this->problemLines);
 
-        if (! $hasControllerIssues && ! $hasMissingDeps && ! $hasLoaderUpgrade && ! $hasPolicyDrift && ! $hasStubDrift && ! $hasProblemLines) {
+        if (! $hasControllerIssues && ! $hasMissingDeps && ! $hasLoaderUpgrade && ! $hasPolicyDrift && ! $hasStubDrift && ! $hasProblemLines && $styleIssues === 0) {
             info('All controllers up to date.');
 
             return self::SUCCESS;
@@ -144,10 +150,15 @@ class CheckCommand extends Command
         $this->printProblemLines();
         $this->printIssueSummary($issues, $missingDeps, $excludedFromStub, $policyDrift);
 
+        if ($styleIssues > 0) {
+            $this->line("<comment>{$styleIssues} generated CSS issue(s) require manual regeneration.</comment>");
+            $this->line('');
+        }
+
         // Only user-owned divergences are present — nothing for --fix to do.
         // Report visibility but keep the exit code green (e.g. CI stays happy).
         if (! $hasControllerIssues && ! $hasMissingDeps && ! $hasLoaderUpgrade && ! $hasPolicyDrift && ! $hasStubDrift) {
-            return self::SUCCESS;
+            return $styleIssues > 0 ? self::FAILURE : self::SUCCESS;
         }
 
         if ($this->shouldFix(
@@ -178,17 +189,29 @@ class CheckCommand extends Command
 
             if ($depsAdded > 0) {
                 if ($this->shouldInstallDependencies()) {
-                    return $this->installDependencies();
+                    $status = $this->installDependencies();
+
+                    return $status === self::SUCCESS && $styleIssues > 0 ? self::FAILURE : $status;
                 }
 
                 $this->line('');
                 $this->line('<comment>Run your package manager install command to fetch the new dependencies.</comment>');
             }
 
-            return self::SUCCESS;
+            return $styleIssues > 0 ? self::FAILURE : self::SUCCESS;
         }
 
         return self::FAILURE;
+    }
+
+    private function resetState(): void
+    {
+        $this->problemLines = [];
+        $this->okComponentControllerLines = [];
+        $this->okNoControllerLines = [];
+        $this->okStandaloneLines = [];
+        $this->okHelperLines = [];
+        $this->controllerResolver = null;
     }
 
     /**
@@ -489,6 +512,108 @@ class CheckCommand extends Command
         }
 
         return ['components' => $components, 'controllers' => $controllers];
+    }
+
+    /**
+     * Report visual owners used in views but absent from every generated selective bundle.
+     *
+     * This deliberately checks global coverage only. Mapping a view/layout to one of several
+     * bundles requires an explicit application contract rather than CSS import guessing.
+     *
+     * @param  array<string, string>  $components
+     * @param  array<string, ControllerDefinition>  $standaloneControllers
+     */
+    private function reportStyleCoverage(array $components, array $standaloneControllers, HotwireRegistry $registry): int
+    {
+        $directory = resource_path('css');
+
+        if (! is_dir($directory)) {
+            return 0;
+        }
+
+        $plans = [];
+        $issues = 0;
+
+        foreach (Finder::create()->files()->name('*.css')->in($directory) as $file) {
+            $content = $file->getContents();
+            $plan = $this->styleBundle->planFromContent($content);
+
+            if ($plan !== null) {
+                $plans[] = array_fill_keys($plan['modules'], true);
+
+                continue;
+            }
+
+            if ($this->styleBundle->looksGenerated($content)) {
+                $path = str_replace('\\', '/', $file->getRealPath());
+                $base = rtrim(str_replace('\\', '/', base_path()), '/').'/';
+                $path = str_starts_with($path, $base) ? substr($path, strlen($base)) : $file->getFilename();
+                $this->problemLines[] = [
+                    'key' => "styles-metadata-{$path}",
+                    'line' => "  <error>✗</error>  {$path}  generated CSS metadata unavailable  <fg=gray>(regenerate with the original `hotwire:styles` selection and --force)</>",
+                ];
+                $issues++;
+            }
+        }
+
+        // Coverage is unknowable while a discovered generated bundle has no readable plan.
+        if ($issues > 0 || $plans === []) {
+            return $issues;
+        }
+
+        $mountedControllers = [];
+
+        foreach ($components as $key => $tag) {
+            $component = $registry->component($key);
+
+            if ($component === null) {
+                continue;
+            }
+
+            $controllers = array_map(
+                fn (ControllerDefinition $controller): string => $controller->identifier,
+                $registry->controllersForComponent($component),
+            );
+            $mountedControllers = [...$mountedControllers, ...$controllers];
+            $required = $this->styleManifest->modulesFor([$key], $controllers);
+
+            if ($required !== [] && ! $this->modulesCovered($required, $plans)) {
+                $this->problemLines[] = [
+                    'key' => "styles-component-{$key}",
+                    'line' => "  <error>✗</error>  {$tag}  not covered by any generated CSS bundle  <fg=gray>(add `{$key}` to the appropriate `hotwire:styles` selection and regenerate with --force)</>",
+                ];
+                $issues++;
+            }
+        }
+
+        foreach (array_diff_key($standaloneControllers, array_fill_keys($mountedControllers, true)) as $identifier => $_controller) {
+            $required = $this->styleManifest->modulesFor([], [$identifier]);
+
+            if ($required !== [] && ! $this->modulesCovered($required, $plans)) {
+                $this->problemLines[] = [
+                    'key' => "styles-controller-{$identifier}",
+                    'line' => "  <error>✗</error>  {$identifier}  not covered by any generated CSS bundle  <fg=gray>(add it with `--include={$identifier}` and regenerate with --force)</>",
+                ];
+                $issues++;
+            }
+        }
+
+        return $issues;
+    }
+
+    /**
+     * @param  string[]  $required
+     * @param  array<int, array<string, true>>  $plans
+     */
+    private function modulesCovered(array $required, array $plans): bool
+    {
+        foreach ($plans as $modules) {
+            if (array_diff($required, array_keys($modules)) === []) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /** @return string[] */

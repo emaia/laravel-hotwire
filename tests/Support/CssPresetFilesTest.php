@@ -1,6 +1,7 @@
 <?php
 
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
+use Emaia\LaravelHotwire\Support\CssModuleManifest;
 use Emaia\LaravelHotwire\Support\CssPresetFiles;
 
 it('discovers shipped css presets in sorted order', function () {
@@ -63,9 +64,12 @@ it('resolves complete and selective preset sources from catalog owners', functio
         $registry->controllers(),
         fn ($controller): bool => $controller->styling->visualSlots() !== [],
     ));
+    $modules = app(CssModuleManifest::class)->modulesFor($components, $controllers);
 
     expect($presets->sourceForSelection('nova', $components, $controllers)->visualStylesheets())
-        ->toBe($presets->source('nova')->visualStylesheets());
+        ->toBe($presets->source('nova')->visualStylesheets())
+        ->and(app(CssModuleManifest::class)->sourcesFor('nova', $modules))
+        ->toBe($presets->source('nova')->visualStylesheetPaths());
 
     $modal = $presets->sourceForSelection('nova', ['modal']);
 
