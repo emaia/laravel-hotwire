@@ -1,0 +1,63 @@
+@import "tailwindcss";
+@import "../../vendor/emaia/laravel-hotwire/resources/css/tokens.css";
+
+@source inline("rounded-none");
+
+@layer components {
+    :is(
+        [data-slot="button"],
+        [data-slot="attachment-action"],
+        [data-slot="modal-trigger"],
+        [data-slot="modal-close"],
+        [data-slot="alert-dialog-cancel"],
+        [data-slot="alert-dialog-action"],
+        [data-slot="hover-card-trigger"],
+        [data-slot="color-scheme-toggle"],
+        [data-slot="back-to-top"],
+        [data-slot="read-more-trigger"]
+    ) {
+        @apply focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent text-sm font-medium transition-all outline-none focus-visible:ring-3 active:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:ring-3;
+    }
+
+    :is(
+        [data-slot="button"],
+        [data-slot="attachment-action"],
+        [data-slot="modal-trigger"],
+        [data-slot="modal-close"],
+        [data-slot="alert-dialog-cancel"],
+        [data-slot="alert-dialog-action"],
+        [data-slot="hover-card-trigger"],
+        [data-slot="color-scheme-toggle"],
+        [data-slot="back-to-top"],
+        [data-slot="read-more-trigger"]
+    )[data-variant="default"] {
+        @apply bg-primary text-primary-foreground hover:bg-primary/80;
+    }
+
+    :is(
+        [data-slot="button"],
+        [data-slot="attachment-action"],
+        [data-slot="modal-trigger"],
+        [data-slot="modal-close"],
+        [data-slot="alert-dialog-cancel"],
+        [data-slot="alert-dialog-action"],
+        [data-slot="hover-card-trigger"],
+        [data-slot="color-scheme-toggle"],
+        [data-slot="back-to-top"],
+        [data-slot="read-more-trigger"]
+    )[data-variant="destructive"] {
+        @apply bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20;
+    }
+
+    :is([data-slot="input"], [data-slot="select"]) {
+        @apply border-input bg-background text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 flex h-8 w-full rounded-md border px-3 py-1 text-base shadow-xs transition-colors outline-none focus-visible:ring-3 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:ring-3 md:text-sm;
+    }
+
+    [data-slot="select"] {
+        @apply appearance-none pr-8;
+    }
+
+    [data-slot="textarea"] {
+        @apply border-input bg-background text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 flex min-h-16 w-full rounded-md border px-3 py-2 text-base shadow-xs transition-colors outline-none focus-visible:ring-3 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:ring-3 md:text-sm;
+    }
+}
