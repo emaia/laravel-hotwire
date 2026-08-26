@@ -137,6 +137,27 @@ it('accepts visual coverage from any generated CSS bundle', function () {
         ->assertSuccessful();
 });
 
+it('accepts a complete preset fallback alongside generated CSS bundles', function () {
+    writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
+    $this->artisan('hotwire:styles --components=modal --no-interaction')->assertSuccessful();
+    File::put(resource_path('css/app.css'), '@import "../../vendor/emaia/laravel-hotwire/resources/css/presets/nova.css";');
+
+    $this->artisan('hotwire:check --no-interaction')
+        ->doesntExpectOutputToContain('not covered by any generated CSS bundle')
+        ->assertSuccessful();
+});
+
+it('ignores commented complete preset imports', function () {
+    writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
+    $this->artisan('hotwire:styles --components=modal --no-interaction')->assertSuccessful();
+    File::put(resource_path('css/app.css'), '/* @import "../../vendor/emaia/laravel-hotwire/resources/css/presets/nova.css"; */');
+
+    $exit = Artisan::call('hotwire:check --no-interaction');
+
+    expect($exit)->toBe(1)
+        ->and(Artisan::output())->toContain('<x-hw::badge>', 'not covered by any generated CSS bundle');
+});
+
 it('checks standalone visual controller coverage', function () {
     writeView('page.blade.php', '<button data-controller="tooltip">Help</button>');
     $this->artisan('hotwire:styles --components=badge --no-interaction')->assertSuccessful();

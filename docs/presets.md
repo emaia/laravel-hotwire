@@ -58,9 +58,11 @@ dynamic components is not known, keep the public `presets/nova.css` import as th
 Generated bundles also record their canonical component, controller and module selection in a versioned header.
 `hotwire:check` inspects marked bundles under `resources/css` and reports visual components/controllers found in the
 scanned Blade views when none of those bundles covers them. With multiple layout bundles this is deliberately a global
-safety net, not layout inference: coverage in any generated bundle satisfies the check. `--fix` never changes a CSS
-selection because it cannot know which layout should own the missing component; regenerate the appropriate bundle
-explicitly. Dynamic PHP, Turbo or JavaScript markup still requires `--include` because static view scanning cannot see it.
+safety net, not layout inference: coverage in any generated bundle satisfies the check. If any CSS entrypoint under
+`resources/css` retains an official complete preset import, it acts as complete coverage for mixed-layout applications.
+`--fix` never changes a CSS selection because it cannot know which layout should own the missing component; regenerate
+the appropriate bundle explicitly. Dynamic PHP, Turbo or JavaScript markup still requires `--include` because static
+view scanning cannot see it.
 
 ## Generate a custom preset
 

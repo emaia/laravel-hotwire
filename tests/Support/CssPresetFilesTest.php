@@ -66,10 +66,10 @@ it('resolves complete and selective preset sources from catalog owners', functio
     ));
     $modules = app(CssModuleManifest::class)->modulesFor($components, $controllers);
 
-    expect($presets->sourceForSelection('nova', $components, $controllers)->visualStylesheets())
-        ->toBe($presets->source('nova')->visualStylesheets())
-        ->and(app(CssModuleManifest::class)->sourcesFor('nova', $modules))
-        ->toBe($presets->source('nova')->visualStylesheetPaths());
+    expect(app(CssModuleManifest::class)->sourcesFor('nova', $modules))
+        ->toBe($presets->source('nova')->visualStylesheetPaths())
+        ->and($presets->sourceForSelection('nova', $components, $controllers)->visualStylesheets())
+        ->toBe($presets->source('nova')->visualStylesheets());
 
     $modal = $presets->sourceForSelection('nova', ['modal']);
 

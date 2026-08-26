@@ -91,9 +91,10 @@ The complete Hotwire stack for Laravel — Turbo Drive, Turbo Streams, Stimulus 
 
 ### Registry
 
-`src/Registry/catalog.php` is the single source of truth for everything the package ships — `hotwire:components`,
-`hotwire:controllers`, `hotwire:check` and `hotwire:docs` all read from it. **Any new component or controller must be
-registered here**, or the commands won't see it.
+`src/Registry/catalog.php` is the public component and controller contract — `hotwire:components`,
+`hotwire:controllers`, `hotwire:check` and `hotwire:docs` all read from it. `src/Registry/styles.php` separately owns
+visual CSS modules, their dependencies and source order. **Any new component or controller must be registered in the
+catalog, and any visual ownership must also be registered in styles.php**, or the commands won't see it.
 
 - `components` entries: `class`, `view`, `docs`, `category`, `description`, and `controllers` (the list of Stimulus
   identifiers the component depends on — keep it in sync with what the Blade view actually mounts, since

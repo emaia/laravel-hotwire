@@ -10,6 +10,7 @@ use Emaia\LaravelHotwire\Support\ControllerLoadPlan;
 use Emaia\LaravelHotwire\Support\ControllerOrigin;
 use Emaia\LaravelHotwire\Support\ControllerResolver;
 use Emaia\LaravelHotwire\Support\CssModuleManifest;
+use Emaia\LaravelHotwire\Support\CssPresetFiles;
 use Emaia\LaravelHotwire\Support\GeneratedStyleBundle;
 use Emaia\LaravelHotwire\Support\LoaderStub;
 use Emaia\LaravelHotwire\Support\PackageInstaller;
@@ -61,6 +62,7 @@ class CheckCommand extends Command
         private readonly ControllerImports $imports,
         private readonly PackageMarker $marker,
         private readonly CssModuleManifest $styleManifest,
+        private readonly CssPresetFiles $presetFiles,
         private readonly GeneratedStyleBundle $styleBundle,
     ) {
         parent::__construct();
@@ -533,10 +535,12 @@ class CheckCommand extends Command
 
         $plans = [];
         $issues = 0;
+        $hasCompletePreset = false;
 
         foreach (Finder::create()->files()->name('*.css')->in($directory) as $file) {
             $content = $file->getContents();
             $plan = $this->styleBundle->planFromContent($content);
+            $hasCompletePreset = $hasCompletePreset || $this->importsCompletePreset($content);
 
             if ($plan !== null) {
                 $plans[] = array_fill_keys($plan['modules'], true);
@@ -557,7 +561,7 @@ class CheckCommand extends Command
         }
 
         // Coverage is unknowable while a discovered generated bundle has no readable plan.
-        if ($issues > 0 || $plans === []) {
+        if ($issues > 0 || $hasCompletePreset || $plans === []) {
             return $issues;
         }
 
@@ -599,6 +603,22 @@ class CheckCommand extends Command
         }
 
         return $issues;
+    }
+
+    private function importsCompletePreset(string $content): bool
+    {
+        $content = preg_replace('~/\*.*?\*/~s', '', $content) ?? $content;
+
+        foreach ($this->presetFiles->names() as $preset) {
+            $preset = preg_quote($preset, '~');
+            $pattern = '~@import\s+(?:url\(\s*)?(?<quote>["\'])[^"\'\r\n]*[/\\\\]resources[/\\\\]css[/\\\\]presets[/\\\\]'.$preset.'\.css\k<quote>~i';
+
+            if (preg_match($pattern, $content) === 1) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
