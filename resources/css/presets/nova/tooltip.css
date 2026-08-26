@@ -1,0 +1,8 @@
+@layer components {
+    /* Tooltip controller */
+    [data-slot="tooltip"] { @apply pointer-events-auto z-50 w-fit max-w-64 origin-(--transform-origin) overflow-visible rounded-md bg-foreground px-3 py-1.5 text-xs text-balance text-background shadow-md duration-150 ease-out; }
+    [data-slot="tooltip"]:has(> [data-slot="kbd"]) { @apply inline-flex items-center gap-1.5; }
+    [data-slot="tooltip"][data-anchor-hidden] { @apply invisible; }
+    [data-slot="tooltip"] [data-slot="kbd"] { @apply bg-background/20 text-background dark:bg-background/10; }
+    [data-slot="tooltip-arrow"] { @apply pointer-events-none absolute z-50 size-2.5 rotate-45 rounded-[2px] bg-foreground; }
+}

@@ -1,0 +1,5 @@
+@layer components {
+    [data-slot="reveal"], [data-slot="sidebar-container"][data-controller~="reveal"], [data-slot="sidebar"][data-controller~="reveal"] { --reveal-blur: 6px; --reveal-shift: 0.75rem; }
+    [data-slot="reveal"][data-motion="flat"], [data-slot="sidebar-container"][data-controller~="reveal"][data-motion="flat"], [data-slot="sidebar"][data-controller~="reveal"][data-motion="flat"] { --reveal-animation: hotwire-reveal-flat; }
+    [data-slot="reveal"][data-motion="fade"], [data-slot="sidebar-container"][data-controller~="reveal"][data-motion="fade"], [data-slot="sidebar"][data-controller~="reveal"][data-motion="fade"] { --reveal-animation: hotwire-reveal-fade; }
+}

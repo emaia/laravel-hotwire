@@ -1,0 +1,6 @@
+@layer components {
+    /* Modal */
+    [data-slot="modal-overlay"], [data-slot="alert-dialog-overlay"] { @apply pointer-events-none fixed inset-0 z-50 flex items-center justify-center; }
+    :is([data-slot="modal-overlay"], [data-slot="alert-dialog-overlay"], [data-slot="drawer-overlay"], [data-slot="sheet-overlay"])[data-state="open"] { @apply pointer-events-auto; }
+    :where([data-hotwire-top-layer][popover]:is([data-slot="modal-overlay"], [data-slot="alert-dialog-overlay"], [data-slot="drawer-overlay"], [data-slot="sheet-overlay"], [data-slot="sidebar"])) { @apply h-dvh w-screen max-w-none max-h-none overflow-visible border-0 bg-transparent p-0 text-inherit; }
+}

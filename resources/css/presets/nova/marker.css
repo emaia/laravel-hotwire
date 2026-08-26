@@ -1,0 +1,9 @@
+@layer components {
+    /* Marker */
+    [data-slot="marker"] { @apply relative flex min-h-4 w-full items-center gap-2 text-left text-sm text-muted-foreground [a]:underline [a]:underline-offset-3 [a]:hover:text-foreground [&_svg:not([class*='size-'])]:size-4; }
+    [data-slot="marker"][data-variant="separator"] { @apply before:mr-1 before:h-px before:min-w-0 before:flex-1 before:bg-border after:ml-1 after:h-px after:min-w-0 after:flex-1 after:bg-border; }
+    [data-slot="marker"][data-variant="border"] { @apply border-b border-border pb-2; }
+    [data-slot="marker-icon"] { @apply size-4 shrink-0 [&_svg:not([class*='size-'])]:size-4; }
+    [data-slot="marker-content"] { @apply min-w-0 break-words *:[a]:underline *:[a]:underline-offset-3 *:[a]:hover:text-foreground; }
+    [data-slot="marker"][data-variant="separator"] [data-slot="marker-content"] { @apply flex-none text-center; }
+}

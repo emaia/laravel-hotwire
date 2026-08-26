@@ -1,0 +1,6 @@
+@layer components {
+    /* Oembed controller */
+    [data-slot="oembed"] { @apply my-5 block aspect-video w-full overflow-hidden rounded-lg bg-muted; }
+    [data-slot="oembed-frame"] { @apply size-full border-0; }
+    [data-slot="oembed-link"] { @apply break-all text-primary underline underline-offset-4 hover:no-underline; }
+}

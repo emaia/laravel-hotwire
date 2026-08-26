@@ -1,0 +1,4 @@
+@layer components {
+    /* Skeleton */
+    [data-slot="skeleton"] { @apply animate-pulse rounded-md bg-muted; }
+}

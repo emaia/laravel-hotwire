@@ -1,9 +1,4 @@
 @layer components {
-    /* Oembed controller */
-    [data-slot="oembed"] { @apply my-5 block aspect-video w-full overflow-hidden rounded-lg bg-muted; }
-    [data-slot="oembed-frame"] { @apply size-full border-0; }
-    [data-slot="oembed-link"] { @apply break-all text-primary underline underline-offset-4 hover:no-underline; }
-
     /* Toaster controller */
     [data-slot="toast"] { @apply w-(--toast-width,24rem) max-w-[calc(100vw-2rem)] origin-bottom rounded-2xl border border-border bg-popover text-popover-foreground shadow-lg outline-none select-none; transition: transform 500ms cubic-bezier(0.22, 1, 0.36, 1), opacity 500ms, block-size 150ms; }
     [data-slot="toast"]:focus-visible { @apply border-ring ring-3 ring-ring/50; }
@@ -30,11 +25,4 @@
     @media (prefers-reduced-motion: reduce) {
         [data-slot="toast"] { transition: opacity 150ms ease; }
     }
-
-    /* Tooltip controller */
-    [data-slot="tooltip"] { @apply pointer-events-auto z-50 w-fit max-w-64 origin-(--transform-origin) overflow-visible rounded-md bg-foreground px-3 py-1.5 text-xs text-balance text-background shadow-md duration-150 ease-out; }
-    [data-slot="tooltip"]:has(> [data-slot="kbd"]) { @apply inline-flex items-center gap-1.5; }
-    [data-slot="tooltip"][data-anchor-hidden] { @apply invisible; }
-    [data-slot="tooltip"] [data-slot="kbd"] { @apply bg-background/20 text-background dark:bg-background/10; }
-    [data-slot="tooltip-arrow"] { @apply pointer-events-none absolute z-50 size-2.5 rotate-45 rounded-[2px] bg-foreground; }
 }

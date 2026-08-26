@@ -1,0 +1,3 @@
+@layer components {
+    [data-theme="dark"] :is([data-slot="input"][type="date"], [data-slot="input"][type="datetime-local"], [data-slot="input"][type="month"], [data-slot="input"][type="time"], [data-slot="input"][type="week"]) { color-scheme: dark; }
+}

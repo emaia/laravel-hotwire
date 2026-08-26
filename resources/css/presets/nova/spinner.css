@@ -1,0 +1,4 @@
+@layer components {
+    /* Spinner */
+    [data-slot="spinner"] { @apply size-4 animate-spin; }
+}

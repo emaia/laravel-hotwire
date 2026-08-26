@@ -1,0 +1,4 @@
+@layer components {
+    /* Input */
+    [data-slot="input-wrapper"], [data-slot="textarea-wrapper"], [data-slot="file-wrapper"] { @apply relative; }
+}

@@ -32,3 +32,21 @@ it('resolves every private Nova module exactly once without exposing it as a pre
         ->not->toContain('[data-slot=')
         ->and($presets->names())->toBe(['nova']);
 });
+
+it('uses responsibility-oriented Nova modules instead of mechanical source chunks', function () {
+    $modules = collect(glob(__DIR__.'/../../resources/css/presets/nova/*.css') ?: [])
+        ->map(fn (string $path): string => basename($path))
+        ->values();
+
+    expect($modules)
+        ->toContain(
+            'accordion.css',
+            'button-surfaces.css',
+            'floating-presence.css',
+            'overlay-foundation.css',
+            'checkable-controls.css',
+            'sidebar.css',
+            'tooltip.css',
+        )
+        ->each->not->toMatch('/^\d+-/');
+});

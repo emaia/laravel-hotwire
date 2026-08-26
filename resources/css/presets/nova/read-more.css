@@ -1,0 +1,9 @@
+@layer components {
+    /* Read More */
+    [data-slot="read-more"] { @apply relative; }
+    [data-slot="read-more-content"] { @apply min-w-0; }
+    [data-slot="read-more-fade"] { @apply pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-linear-to-t from-background via-background/90 to-transparent; }
+    [data-slot="read-more-trigger"] { @apply mt-2; }
+    [data-slot="read-more-trigger-icon"] { @apply transition-transform duration-200; }
+    [data-slot="read-more-trigger-icon"][data-state="expanded"] { @apply rotate-180; }
+}

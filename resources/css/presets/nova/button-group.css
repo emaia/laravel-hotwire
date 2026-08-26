@@ -1,0 +1,15 @@
+@layer components {
+    /* Button Group */
+    [data-slot="button-group"] { @apply flex w-fit items-stretch; }
+    [data-slot="button-group"] > *:focus-visible { @apply relative z-10; }
+    [data-slot="button-group"]:has(> [data-slot="button-group"]) { @apply gap-2; }
+    [data-slot="button-group"][data-orientation="vertical"] { @apply flex-col; }
+    [data-slot="button-group"][data-orientation="horizontal"] > [data-slot] { @apply rounded-r-none; }
+    [data-slot="button-group"][data-orientation="horizontal"] > [data-slot]:not(:has(~ [data-slot])) { @apply rounded-r-lg; }
+    [data-slot="button-group"][data-orientation="horizontal"] > [data-slot] ~ [data-slot] { @apply rounded-l-none border-l-0; }
+    [data-slot="button-group"][data-orientation="vertical"] > [data-slot] { @apply rounded-b-none; }
+    [data-slot="button-group"][data-orientation="vertical"] > [data-slot]:not(:has(~ [data-slot])) { @apply rounded-b-lg; }
+    [data-slot="button-group"][data-orientation="vertical"] > [data-slot] ~ [data-slot] { @apply rounded-t-none border-t-0; }
+    [data-slot="button-group-text"] { @apply flex items-center gap-2 rounded-lg border bg-muted px-2.5 text-sm font-medium [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4; }
+    [data-slot="button-group-separator"] { @apply relative self-stretch bg-input data-[orientation=horizontal]:mx-px data-[orientation=horizontal]:w-auto data-[orientation=vertical]:my-px data-[orientation=vertical]:h-auto; }
+}

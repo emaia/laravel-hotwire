@@ -1,0 +1,10 @@
+@layer components {
+    /* Breadcrumb */
+    [data-slot="breadcrumb"] { @apply text-sm text-muted-foreground; }
+    [data-slot="breadcrumb-list"] { @apply flex flex-wrap items-center gap-1.5 break-words; }
+    [data-slot="breadcrumb-item"] { @apply inline-flex items-center gap-1.5; }
+    [data-slot="breadcrumb-link"] { @apply inline-flex items-center gap-1.5 transition-colors hover:text-foreground; }
+    [data-slot="breadcrumb-page"] { @apply font-normal text-foreground; }
+    [data-slot="breadcrumb-separator"] { @apply inline-flex items-center text-muted-foreground/70 [&>svg]:size-3.5; }
+    [data-slot="breadcrumb-ellipsis"] { @apply inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:text-foreground [&>svg]:size-4; }
+}

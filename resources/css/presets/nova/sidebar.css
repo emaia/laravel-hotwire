@@ -102,6 +102,4 @@
         [data-slot="sidebar"][data-mobile-state="closed"] > [data-slot="sidebar-container"][data-side="right"] { @apply translate-x-full; }
         [data-slot="sidebar"][data-mobile-state="open"] > [data-slot="sidebar-container"] { @apply translate-x-0; }
     }
-
-
 }
