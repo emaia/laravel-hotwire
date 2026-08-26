@@ -329,7 +329,8 @@ it('accepts canonical generated CSS checked out with CRLF line endings', functio
     writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
     $this->artisan('hotwire:styles --components=badge --no-interaction')->assertSuccessful();
     $path = resource_path('css/hotwire.css');
-    File::put($path, str_replace("\n", "\r\n", File::get($path)));
+    $css = str_replace(["\r\n", "\r"], "\n", File::get($path));
+    File::put($path, str_replace("\n", "\r\n", $css));
 
     $this->artisan('hotwire:check --no-interaction')
         ->doesntExpectOutputToContain('generated CSS content does not match its plan')
