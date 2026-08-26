@@ -176,6 +176,7 @@ it('only writes bundles under resources css', function (string $output) {
     'vendor' => 'vendor/emaia/laravel-hotwire/resources/css/presets/probe.css',
     'hidden file' => 'resources/css/.hotwire.css',
     'hidden directory' => 'resources/css/.generated/hotwire.css',
+    'NTFS alternate stream' => 'resources/css/hotwire.css:stream.css',
 ]);
 
 it('rejects output paths outside the application', function () {

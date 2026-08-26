@@ -200,6 +200,17 @@ it('accepts a complete preset imported into a cascade layer', function (string $
     'escaped' => 'layer(\\31 foo)',
 ]);
 
+it('accepts complete preset imports after allowed CSS prelude rules', function () {
+    writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
+    $this->artisan('hotwire:styles --components=modal --no-interaction')->assertSuccessful();
+    $css = '@charset "UTF-8"; @layer theme; @import "'.shippedPresetImportPath().'";';
+    File::put(resource_path('css/app.css'), $css);
+
+    $this->artisan('hotwire:check --no-interaction')
+        ->doesntExpectOutputToContain('not covered by any generated CSS bundle')
+        ->assertSuccessful();
+});
+
 it('accepts an imported application preset as complete coverage', function () {
     writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
     $this->artisan('hotwire:styles --components=modal --no-interaction')->assertSuccessful();
@@ -227,6 +238,8 @@ it('does not treat conditional remote or quoted preset references as complete co
     'custom property' => ':root { --example: @import url(__PRESET__); }',
     'at-rule prelude' => '@custom @import url(__PRESET__);',
     'missing local import' => '@import "./missing/resources/css/presets/nova.css";',
+    'after style rule' => 'body {} @import "__PRESET__";',
+    'after namespace' => '@namespace svg url(http://www.w3.org/2000/svg); @import "__PRESET__";',
 ]);
 
 it('does not treat an existing impostor path as a shipped preset', function () {
@@ -236,6 +249,18 @@ it('does not treat an existing impostor path as a shipped preset', function () {
     File::ensureDirectoryExists(dirname($impostor));
     File::put($impostor, '');
     File::put(resource_path('css/app.css'), '@import "./fake/resources/css/presets/nova.css";');
+
+    $exit = Artisan::call('hotwire:check --no-interaction');
+
+    expect($exit)->toBe(1)
+        ->and(Artisan::output())->toContain('<x-hw::badge>', 'not covered by any generated CSS bundle');
+});
+
+it('does not treat a preset-named directory as complete coverage', function () {
+    writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
+    $this->artisan('hotwire:styles --components=modal --no-interaction')->assertSuccessful();
+    File::ensureDirectoryExists(resource_path('css/presets/brand.css'));
+    File::put(resource_path('css/app.css'), '@import "./presets/brand.css";');
 
     $exit = Artisan::call('hotwire:check --no-interaction');
 

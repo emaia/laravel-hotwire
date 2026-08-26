@@ -655,12 +655,12 @@ class CheckCommand extends Command
             foreach ($this->presetFiles->names() as $preset) {
                 $official = $this->presetFiles->path($preset);
 
-                if ($official !== null && $this->samePath(realpath($official) ?: $official, $resolved)) {
+                if (is_file($resolved) && $official !== null && $this->samePath(realpath($official) ?: $official, $resolved)) {
                     return true;
                 }
             }
 
-            if ($presetDirectory !== false && $this->samePath($presetDirectory, dirname($resolved))) {
+            if ($presetDirectory !== false && is_file($resolved) && $this->samePath($presetDirectory, dirname($resolved))) {
                 return true;
             }
         }
@@ -735,6 +735,7 @@ REGEX;
         $length = strlen($content);
         $depth = 0;
         $ruleStart = true;
+        $importsAllowed = true;
 
         for ($offset = 0; $offset < $length; $offset++) {
             if (substr($content, $offset, 2) === '/*') {
@@ -745,6 +746,10 @@ REGEX;
 
             if ($content[$offset] === '"' || $content[$offset] === "'") {
                 if ($depth === 0) {
+                    if ($ruleStart) {
+                        $importsAllowed = false;
+                    }
+
                     $ruleStart = false;
                 }
 
@@ -755,6 +760,7 @@ REGEX;
 
             if ($content[$offset] === '{') {
                 if ($depth === 0) {
+                    $importsAllowed = false;
                     $ruleStart = false;
                 }
 
@@ -787,7 +793,21 @@ REGEX;
                 continue;
             }
 
-            if (! $ruleStart || strncasecmp(substr($content, $offset, 7), '@import', 7) !== 0) {
+            if (! $ruleStart) {
+                continue;
+            }
+
+            if (strncasecmp(substr($content, $offset, 7), '@import', 7) !== 0) {
+                if (! $this->startsAllowedImportPrelude($content, $offset)) {
+                    $importsAllowed = false;
+                }
+
+                $ruleStart = false;
+
+                continue;
+            }
+
+            if (! $importsAllowed) {
                 $ruleStart = false;
 
                 continue;
@@ -831,6 +851,23 @@ REGEX;
         }
 
         return $rules;
+    }
+
+    private function startsAllowedImportPrelude(string $content, int $offset): bool
+    {
+        foreach (['@charset', '@layer'] as $keyword) {
+            if (strncasecmp(substr($content, $offset, strlen($keyword)), $keyword, strlen($keyword)) !== 0) {
+                continue;
+            }
+
+            $boundary = $content[$offset + strlen($keyword)] ?? '';
+
+            if ($boundary === '' || ctype_space($boundary) || substr($content, $offset + strlen($keyword), 2) === '/*') {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function skipCssComment(string $content, int $offset): int

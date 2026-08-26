@@ -197,7 +197,8 @@ class StylesCommand extends Command
         $segments = explode('/', $output);
 
         if ($output === '' || str_starts_with($output, '/') || preg_match('/^[A-Za-z]:\//', $output) === 1
-            || in_array('..', $segments, true) || pathinfo($output, PATHINFO_EXTENSION) !== 'css') {
+            || str_contains($output, ':') || in_array('..', $segments, true)
+            || pathinfo($output, PATHINFO_EXTENSION) !== 'css') {
             warning('Output must be a relative .css path under resources/css.');
 
             return null;
