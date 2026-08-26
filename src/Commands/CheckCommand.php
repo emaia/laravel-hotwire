@@ -519,8 +519,9 @@ class CheckCommand extends Command
     /**
      * Report visual owners used in views but absent from every generated selective bundle.
      *
-     * This deliberately checks global coverage only. Mapping a view/layout to one of several
-     * bundles requires an explicit application contract rather than CSS import guessing.
+     * This deliberately checks global coverage only. A complete preset import satisfies that
+     * coverage, but mapping a view/layout to one of several selective bundles requires an
+     * explicit application contract.
      *
      * @param  array<string, string>  $components
      * @param  array<string, ControllerDefinition>  $standaloneControllers
@@ -540,18 +541,39 @@ class CheckCommand extends Command
         foreach (Finder::create()->files()->name('*.css')->in($directory) as $file) {
             $content = $file->getContents();
             $plan = $this->styleBundle->planFromContent($content);
-            $hasCompletePreset = $hasCompletePreset || $this->importsCompletePreset($content);
+            $stylesheet = $file->getPathname();
+            $path = str_replace('\\', '/', $stylesheet);
+            $base = rtrim(str_replace('\\', '/', base_path()), '/').'/';
+            $path = $this->pathStartsWith($path, $base) ? substr($path, strlen($base)) : $file->getFilename();
+            $hasCompletePreset = $hasCompletePreset || $this->importsCompletePreset($content, $stylesheet);
 
             if ($plan !== null) {
+                $source = $this->presetFiles->sourceForSelection($plan['preset'], $plan['components'], $plan['controllers']);
+                $modules = $this->styleManifest->modulesFor($plan['components'], $plan['controllers']);
+
+                if ($source === null || ! $this->styleBundle->matches($content, $this->styleBundle->render(
+                    $path,
+                    $source,
+                    $plan['preset'],
+                    $plan['components'],
+                    $plan['controllers'],
+                    $modules,
+                ))) {
+                    $this->problemLines[] = [
+                        'key' => "styles-content-{$path}",
+                        'line' => "  <error>✗</error>  {$path}  generated CSS content does not match its plan  <fg=gray>(regenerate with the recorded `hotwire:styles` selection and --force)</>",
+                    ];
+                    $issues++;
+
+                    continue;
+                }
+
                 $plans[] = array_fill_keys($plan['modules'], true);
 
                 continue;
             }
 
             if ($this->styleBundle->looksGenerated($content)) {
-                $path = str_replace('\\', '/', $file->getRealPath());
-                $base = rtrim(str_replace('\\', '/', base_path()), '/').'/';
-                $path = str_starts_with($path, $base) ? substr($path, strlen($base)) : $file->getFilename();
                 $this->problemLines[] = [
                     'key' => "styles-metadata-{$path}",
                     'line' => "  <error>✗</error>  {$path}  generated CSS metadata unavailable  <fg=gray>(regenerate with the original `hotwire:styles` selection and --force)</>",
@@ -605,20 +627,242 @@ class CheckCommand extends Command
         return $issues;
     }
 
-    private function importsCompletePreset(string $content): bool
+    private function importsCompletePreset(string $content, string $stylesheet): bool
     {
-        $content = preg_replace('~/\*.*?\*/~s', '', $content) ?? $content;
+        $presetDirectory = realpath(resource_path('css/presets'));
 
-        foreach ($this->presetFiles->names() as $preset) {
-            $preset = preg_quote($preset, '~');
-            $pattern = '~@import\s+(?:url\(\s*)?(?<quote>["\'])[^"\'\r\n]*[/\\\\]resources[/\\\\]css[/\\\\]presets[/\\\\]'.$preset.'\.css\k<quote>~i';
+        if ($presetDirectory !== false && $this->containsPath($presetDirectory, realpath($stylesheet) ?: $stylesheet)) {
+            return false;
+        }
 
-            if (preg_match($pattern, $content) === 1) {
+        foreach ($this->cssImports($content) as $rule) {
+            if ($rule['conditions'] !== '') {
+                continue;
+            }
+
+            $import = preg_replace('/[?#].*$/', '', str_replace('\\', '/', $rule['path'])) ?? $rule['path'];
+
+            if (str_starts_with($import, '/') || preg_match('/^[a-z][a-z0-9+.-]*:/i', $import) === 1) {
+                continue;
+            }
+
+            $candidate = '/'.ltrim($import, '/');
+
+            foreach ($this->presetFiles->names() as $preset) {
+                if (str_ends_with(strtolower($candidate), "/resources/css/presets/{$preset}.css")) {
+                    return true;
+                }
+            }
+
+            $resolved = realpath(dirname($stylesheet).'/'.$import);
+
+            if ($presetDirectory !== false && $resolved !== false && $this->samePath($presetDirectory, dirname($resolved))) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    /** @return array<int, array{path: string, conditions: string}> */
+    private function cssImports(string $content): array
+    {
+        $pattern = <<<'REGEX'
+~^@import\s+(?:
+        (?<quote>["'])(?<quoted_path>[^"']+)\k<quote>
+        |
+        url\(\s*(?:
+            (?<url_quote>["'])(?<url_quoted_path>[^"']+)\k<url_quote>
+            |
+            (?<url_path>[^)\s]+)
+        )\s*\)
+    )(?<conditions>[^;]*);
+~isx
+REGEX;
+        $imports = [];
+
+        foreach ($this->topLevelImportRules($content) as $rule) {
+            $rule = preg_replace('~/\*.*?\*/~s', ' ', $rule) ?? $rule;
+
+            if (preg_match($pattern, $rule, $match, PREG_UNMATCHED_AS_NULL) !== 1) {
+                continue;
+            }
+
+            $path = $match['quoted_path'] ?? $match['url_quoted_path'] ?? $match['url_path'];
+
+            if (! is_string($path)) {
+                continue;
+            }
+
+            $imports[] = [
+                'path' => $path,
+                'conditions' => trim((string) $match['conditions']),
+            ];
+        }
+
+        return $imports;
+    }
+
+    /** @return string[] */
+    private function topLevelImportRules(string $content): array
+    {
+        $rules = [];
+        $length = strlen($content);
+        $depth = 0;
+        $ruleStart = true;
+
+        for ($offset = 0; $offset < $length; $offset++) {
+            if (substr($content, $offset, 2) === '/*') {
+                $offset = $this->skipCssComment($content, $offset);
+
+                continue;
+            }
+
+            if ($content[$offset] === '"' || $content[$offset] === "'") {
+                if ($depth === 0) {
+                    $ruleStart = false;
+                }
+
+                $offset = $this->skipCssString($content, $offset);
+
+                continue;
+            }
+
+            if ($content[$offset] === '{') {
+                if ($depth === 0) {
+                    $ruleStart = false;
+                }
+
+                $depth++;
+
+                continue;
+            }
+
+            if ($content[$offset] === '}') {
+                $depth = max(0, $depth - 1);
+
+                if ($depth === 0) {
+                    $ruleStart = true;
+                }
+
+                continue;
+            }
+
+            if ($depth !== 0) {
+                continue;
+            }
+
+            if (ctype_space($content[$offset])) {
+                continue;
+            }
+
+            if ($content[$offset] === ';') {
+                $ruleStart = true;
+
+                continue;
+            }
+
+            if (! $ruleStart || strncasecmp(substr($content, $offset, 7), '@import', 7) !== 0) {
+                $ruleStart = false;
+
+                continue;
+            }
+
+            $boundary = $content[$offset + 7] ?? '';
+
+            if ($boundary !== '' && ! ctype_space($boundary) && substr($content, $offset + 7, 2) !== '/*') {
+                $ruleStart = false;
+
+                continue;
+            }
+
+            $ruleStart = false;
+
+            for ($end = $offset + 7; $end < $length; $end++) {
+                if (substr($content, $end, 2) === '/*') {
+                    $end = $this->skipCssComment($content, $end);
+
+                    continue;
+                }
+
+                if ($content[$end] === '"' || $content[$end] === "'") {
+                    $end = $this->skipCssString($content, $end);
+
+                    continue;
+                }
+
+                if ($content[$end] === ';') {
+                    $rules[] = substr($content, $offset, $end - $offset + 1);
+                    $offset = $end;
+                    $ruleStart = true;
+
+                    break;
+                }
+
+                if ($content[$end] === '{') {
+                    break;
+                }
+            }
+        }
+
+        return $rules;
+    }
+
+    private function skipCssComment(string $content, int $offset): int
+    {
+        $end = strpos($content, '*/', $offset + 2);
+
+        return $end === false ? strlen($content) - 1 : $end + 1;
+    }
+
+    private function skipCssString(string $content, int $offset): int
+    {
+        $quote = $content[$offset];
+        $length = strlen($content);
+
+        for ($end = $offset + 1; $end < $length; $end++) {
+            if ($content[$end] === '\\') {
+                $end++;
+
+                continue;
+            }
+
+            if ($content[$end] === $quote) {
+                return $end;
+            }
+        }
+
+        return $length - 1;
+    }
+
+    private function containsPath(string $parent, string $path): bool
+    {
+        $parent = str_replace('\\', '/', $parent);
+        $path = str_replace('\\', '/', $path);
+
+        if (PHP_OS_FAMILY === 'Windows') {
+            $parent = strtolower($parent);
+            $path = strtolower($path);
+        }
+
+        return $path === $parent || str_starts_with($path, rtrim($parent, '/').'/');
+    }
+
+    private function samePath(string $left, string $right): bool
+    {
+        $left = str_replace('\\', '/', $left);
+        $right = str_replace('\\', '/', $right);
+
+        return PHP_OS_FAMILY === 'Windows'
+            ? strtolower($left) === strtolower($right)
+            : $left === $right;
+    }
+
+    private function pathStartsWith(string $path, string $prefix): bool
+    {
+        return PHP_OS_FAMILY === 'Windows'
+            ? str_starts_with(strtolower($path), strtolower($prefix))
+            : str_starts_with($path, $prefix);
     }
 
     /**

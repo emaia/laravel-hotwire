@@ -44,25 +44,29 @@ Replace the complete preset import in that layout's CSS entrypoint with the gene
 includes controllers mounted by those components, shared visual modules and their transitive dependencies.
 `--include` accepts additional component keys or Stimulus controller identifiers; use it for UI rendered dynamically
 by PHP, Turbo Streams, vendor views or JavaScript when that UI is not represented by the layout's initial component
-list. Controller identifiers with `--` may also use their publish form, such as `turbo/progress`.
+list. Controller identifiers with `--` may also use their publish form, such as `turbo/progress`. The output must stay
+under `resources/css`, which is the same boundary `hotwire:check` audits. Paths elsewhere in the application, including
+`vendor`, are rejected.
 
 Tokens, custom variants and structural CSS remain complete foundations and are imported exactly once. The selective
 part is the preset's visual layer, so progressive enhancement and runtime utility coverage do not depend on which
 components were listed.
 
 The generated file starts with the package marker and should not be edited. Re-run the same command with `--force`
-after changing the selection or upgrading Laravel Hotwire. A file without the marker is treated as application-owned
-and is never replaced, even with `--force`; choose another output or remove it yourself. If the complete set of
+after changing the selection or upgrading Laravel Hotwire. Only an existing `hotwire:styles` bundle is replaceable;
+application-owned files and other package-marked CSS are never replaced, even with `--force`. If the complete set of
 dynamic components is not known, keep the public `presets/nova.css` import as the fallback instead of guessing.
 
 Generated bundles also record their canonical component, controller and module selection in a versioned header.
 `hotwire:check` inspects marked bundles under `resources/css` and reports visual components/controllers found in the
 scanned Blade views when none of those bundles covers them. With multiple layout bundles this is deliberately a global
 safety net, not layout inference: coverage in any generated bundle satisfies the check. If any CSS entrypoint under
-`resources/css` retains an official complete preset import, it acts as complete coverage for mixed-layout applications.
-`--fix` never changes a CSS selection because it cannot know which layout should own the missing component; regenerate
-the appropriate bundle explicitly. Dynamic PHP, Turbo or JavaScript markup still requires `--include` because static
-view scanning cannot see it.
+`resources/css` retains an official complete preset import, or imports an application preset from
+`resources/css/presets`, it acts as complete coverage for mixed-layout applications. The check also reconstructs each
+generated bundle from its recorded plan, so stale or truncated CSS fails even when its metadata remains intact. `--fix`
+never changes a CSS selection because it cannot know which layout should own the missing component; regenerate the
+appropriate bundle explicitly. Dynamic PHP, Turbo or JavaScript markup still requires `--include` because static view
+scanning cannot see it.
 
 ## Generate a custom preset
 

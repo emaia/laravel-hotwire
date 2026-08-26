@@ -72,6 +72,11 @@ it('selects controller-owned visual modules and their dependencies', function ()
         ->toEqualCanonicalizing(['floating-presence', 'tooltip']);
 });
 
+it('includes upload state styling with the file upload component', function () {
+    expect(app(CssModuleManifest::class)->modulesFor(['file-upload'], []))
+        ->toContain('file-upload', 'text-shimmer');
+});
+
 it('rejects dependencies on undefined modules', function () {
     CssModuleManifest::fromArray([
         'modules' => [

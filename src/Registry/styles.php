@@ -122,7 +122,7 @@ return [
         'file' => $module(['file']),
         'file-upload' => $module(
             ['file-upload'],
-            dependencies: ['attachment', 'empty-state', 'icon', 'progress'],
+            dependencies: ['attachment', 'empty-state', 'icon', 'progress', 'text-shimmer'],
         ),
         'hover-card' => $module(['hover-card']),
         'icon' => $module(['icon']),
