@@ -19,8 +19,7 @@ resolved with the `dom_id()` naming convention and a component-specific prefix. 
 [Stable component ids](./recipes/stable-component-ids.md) for the decision guide.
 
 Toggle hidden inputs now derive their id from `name` instead of `uniqid()`. Scalar names use a URL-encoded
-`toggle-field-` namespace with a name-length boundary; array names use `toggle-array-`, the same boundary, and a
-URL-encoded value. For example,
+`toggle-field-` namespace; array names use `toggle-array-`, a name-length boundary, and a URL-encoded value. For example,
 `name="filters[]" value="featured"` produces `toggle-array-7-filters-featured-input`. Update selectors or tests that
 inspected this internal hidden input id.
 

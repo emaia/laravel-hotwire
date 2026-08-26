@@ -46,7 +46,7 @@ class Toggle extends Component
         $htmlValue = (string) ($this->value ?? 'on');
         $isArray = $hasName && str_ends_with($name, '[]');
         $nameKey = $hasName ? rawurlencode($name) : null;
-        $inputId = $nameKey !== null ? 'toggle-field-'.strlen($nameKey).'-'.$nameKey : null;
+        $inputId = $nameKey !== null ? 'toggle-field-'.$nameKey : null;
 
         if ($inputId !== null && $isArray) {
             $nameKey = rawurlencode(substr($name, 0, -2));
