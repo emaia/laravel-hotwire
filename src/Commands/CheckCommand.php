@@ -15,6 +15,8 @@ use Emaia\LaravelHotwire\Support\GeneratedStyleBundle;
 use Emaia\LaravelHotwire\Support\LoaderStub;
 use Emaia\LaravelHotwire\Support\PackageInstaller;
 use Emaia\LaravelHotwire\Support\PackageMarker;
+use Emaia\LaravelHotwire\Support\PresetSourceException;
+use Emaia\LaravelHotwire\Support\PresetSourceResolver;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Filesystem\Filesystem;
@@ -542,9 +544,7 @@ class CheckCommand extends Command
             $content = $file->getContents();
             $plan = $this->styleBundle->planFromContent($content);
             $stylesheet = $file->getPathname();
-            $path = str_replace('\\', '/', $stylesheet);
-            $base = rtrim(str_replace('\\', '/', base_path()), '/').'/';
-            $path = $this->pathStartsWith($path, $base) ? substr($path, strlen($base)) : $file->getFilename();
+            $path = 'resources/css/'.ltrim(str_replace('\\', '/', $file->getRelativePathname()), '/');
             $hasCompletePreset = $hasCompletePreset || $this->importsCompletePreset($content, $stylesheet);
 
             if ($plan !== null) {
@@ -653,9 +653,7 @@ class CheckCommand extends Command
             }
 
             foreach ($this->presetFiles->names() as $preset) {
-                $official = $this->presetFiles->path($preset);
-
-                if (is_file($resolved) && $official !== null && $this->samePath(realpath($official) ?: $official, $resolved)) {
+                if ($this->matchesShippedPreset($resolved, $preset)) {
                     return true;
                 }
             }
@@ -666,6 +664,44 @@ class CheckCommand extends Command
         }
 
         return false;
+    }
+
+    private function matchesShippedPreset(string $resolved, string $preset): bool
+    {
+        $official = $this->presetFiles->path($preset);
+
+        if (! is_file($resolved) || $official === null) {
+            return false;
+        }
+
+        if ($this->samePath(realpath($official) ?: $official, $resolved)) {
+            return true;
+        }
+
+        try {
+            $expected = $this->presetFiles->source($preset);
+            $actual = (new PresetSourceResolver($this->files, dirname($resolved, 2)))->resolve($resolved);
+        } catch (PresetSourceException) {
+            return false;
+        }
+
+        if ($expected === null
+            || $actual->foundationImports() !== $expected->foundationImports()
+            || $actual->visualCss() !== $expected->visualCss()) {
+            return false;
+        }
+
+        foreach ($actual->foundationImports() as $foundation) {
+            $actualPath = dirname($resolved, 2).'/'.$foundation;
+            $expectedPath = dirname($official, 2).'/'.$foundation;
+
+            if (! is_file($actualPath) || ! is_file($expectedPath)
+                || hash_file('sha256', $actualPath) !== hash_file('sha256', $expectedPath)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private function isUnconditionalImport(string $conditions): bool
@@ -918,13 +954,6 @@ REGEX;
         return PHP_OS_FAMILY === 'Windows'
             ? strtolower($left) === strtolower($right)
             : $left === $right;
-    }
-
-    private function pathStartsWith(string $path, string $prefix): bool
-    {
-        return PHP_OS_FAMILY === 'Windows'
-            ? str_starts_with(strtolower($path), strtolower($prefix))
-            : str_starts_with($path, $prefix);
     }
 
     /**

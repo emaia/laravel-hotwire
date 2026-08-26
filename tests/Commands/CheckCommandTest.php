@@ -2,7 +2,6 @@
 
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ControllerImports;
-use Emaia\LaravelHotwire\Support\CssPresetFiles;
 use Emaia\LaravelHotwire\Support\LoaderStub;
 use Illuminate\Support\Facades\File;
 
@@ -28,19 +27,12 @@ function writeView(string $name, string $content): void
 
 function shippedPresetImportPath(string $name = 'nova'): string
 {
-    $from = explode('/', trim(str_replace('\\', '/', resource_path('css')), '/'));
-    $target = app(CssPresetFiles::class)->path($name);
-    $to = explode('/', trim(str_replace('\\', '/', (string) $target), '/'));
-    $common = 0;
+    $source = dirname(__DIR__, 2).'/resources/css';
+    $target = base_path('vendor/emaia/laravel-hotwire/resources/css');
+    File::ensureDirectoryExists(dirname($target));
+    File::copyDirectory($source, $target);
 
-    while (isset($from[$common], $to[$common])
-        && (PHP_OS_FAMILY === 'Windows'
-            ? strtolower($from[$common]) === strtolower($to[$common])
-            : $from[$common] === $to[$common])) {
-        $common++;
-    }
-
-    return str_repeat('../', count($from) - $common).implode('/', array_slice($to, $common));
+    return "../../vendor/emaia/laravel-hotwire/resources/css/presets/{$name}.css";
 }
 
 function publishController(string $identifier, string $targetDir): void
