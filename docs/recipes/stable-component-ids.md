@@ -71,8 +71,8 @@ choice whenever other application code needs to address the element.
 
 ## Development diagnostics
 
-Mount `dev--duplicate-ids` on the application root in development to warn when a separate response inserts an automatic
-package ID that is already present:
+Mount `dev--duplicate-ids` on the application root in development to warn when a separate response inserts any ID that
+is already present:
 
 ```blade
 <body @env('local') data-controller="dev--duplicate-ids" @endenv>
@@ -80,8 +80,9 @@ package ID that is already present:
 </body>
 ```
 
-The warning identifies the duplicate ID and its matching elements before silent first-match behavior in DOM APIs,
-ARIA references, labels, or Turbo morphing hides the source of the problem.
+The warning identifies the duplicate ID and its matching elements before silent first-match behavior in DOM APIs, ARIA
+references, labels, or Turbo morphing hides the source of the problem. Automatic package IDs receive targeted guidance;
+model-derived and explicit IDs are checked too, including when the same model-backed component appears twice.
 
 ## Decision guide
 

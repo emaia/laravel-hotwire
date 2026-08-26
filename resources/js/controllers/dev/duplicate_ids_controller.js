@@ -23,14 +23,12 @@ export default class extends Controller {
 
     scan() {
         const elements = [
-            ...(this.element.matches('[id^="hw-"]') ? [this.element] : []),
-            ...this.element.querySelectorAll('[id^="hw-"]'),
+            ...(this.element.hasAttribute("id") ? [this.element] : []),
+            ...this.element.querySelectorAll("[id]"),
         ];
         const byId = new Map();
 
         for (const element of elements) {
-            if (!automaticIdPattern.test(element.id)) continue;
-
             const matches = byId.get(element.id) ?? [];
             matches.push(element);
             byId.set(element.id, matches);
@@ -44,8 +42,12 @@ export default class extends Controller {
             duplicateIds.add(id);
 
             if (!this.duplicateIds.has(id)) {
+                const message = automaticIdPattern.test(id)
+                    ? `Duplicate package-style component id "${id}". Pass a model or explicit id when rendering across requests or unstable sibling order.`
+                    : `Duplicate DOM id "${id}". Every id must be unique; use distinct explicit ids when rendering the same model or element more than once.`;
+
                 console.warn(
-                    `[Laravel Hotwire] Duplicate package-style component id "${id}". Pass a model or explicit id when rendering across requests or unstable sibling order.`,
+                    `[Laravel Hotwire] ${message}`,
                     matches,
                 );
             }

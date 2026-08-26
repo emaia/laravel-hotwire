@@ -1196,7 +1196,7 @@ return [
             'source' => 'resources/js/controllers/dev/duplicate_ids_controller.js',
             'docs' => 'docs/controllers/dev/duplicate-ids.md',
             'category' => 'dev',
-            'description' => 'Warns when package-style automatic component ids are duplicated in one render root',
+            'description' => 'Warns when DOM ids are duplicated in one render root, with guidance for automatic component ids',
         ],
         'dev--log' => [
             'source' => 'resources/js/controllers/dev/log_controller.js',

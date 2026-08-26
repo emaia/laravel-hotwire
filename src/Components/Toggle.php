@@ -4,7 +4,6 @@ namespace Emaia\LaravelHotwire\Components;
 
 use Emaia\LaravelHotwire\Components\Concerns\StripsNullProps;
 use Emaia\LaravelHotwire\Support\AutoSubmit;
-use Emaia\LaravelHotwire\Support\FieldKey;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\Component;
 use Illuminate\View\ComponentAttributeBag;
@@ -46,7 +45,8 @@ class Toggle extends Component
         $hasName = $name !== null && $name !== '';
         $htmlValue = (string) ($this->value ?? 'on');
         $isArray = $hasName && str_ends_with($name, '[]');
-        $inputId = $hasName ? 'toggle-field-'.FieldKey::toId($name) : null;
+        $nameKey = $hasName ? rawurlencode($name) : null;
+        $inputId = $nameKey !== null ? 'toggle-field-'.strlen($nameKey).'-'.$nameKey : null;
 
         if ($inputId !== null && $isArray) {
             $nameKey = rawurlencode(substr($name, 0, -2));

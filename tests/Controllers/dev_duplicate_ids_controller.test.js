@@ -32,15 +32,19 @@ test.serial("warns when an automatic package id is duplicated", async () => {
     expect(console.warn.mock.calls[0][1]).toHaveLength(2);
 });
 
-test.serial("ignores duplicated explicit ids", async () => {
+test.serial("warns when a model-derived component id is duplicated", async () => {
     await mount(`
         <main data-controller="dev--duplicate-ids">
-            <div id="task-editor"></div>
-            <div id="task-editor"></div>
+            <div id="dropdown_task_42"></div>
+            <div id="dropdown_task_42"></div>
         </main>
     `);
 
-    expect(console.warn).not.toHaveBeenCalled();
+    expect(console.warn).toHaveBeenCalledTimes(1);
+    expect(console.warn.mock.calls[0][0]).toContain(
+        'Duplicate DOM id "dropdown_task_42"',
+    );
+    expect(console.warn.mock.calls[0][1]).toHaveLength(2);
 });
 
 async function mount(html) {
