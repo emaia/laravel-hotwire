@@ -89,11 +89,11 @@ it('contains the base layer border and outline contract', function () use ($toke
         ->toContain('@apply border-border outline-ring/50');
 });
 
-it('scans package CSS instead of Blade or PHP sources', function () use ($stubPath) {
+it('does not scan package sources because presets and runtime safelists compile through imports', function () use ($stubPath) {
     $css = file_get_contents($stubPath);
 
     expect($css)
-        ->toContain("@source '../../vendor/emaia/laravel-hotwire/resources/css/**/*.css'")
+        ->not->toContain('@source')
         ->not->toContain('resources/views/**/*.blade.php')
         ->not->toContain('src/Components/**/*.php');
 });
@@ -173,13 +173,13 @@ it('preserves existing @custom-variant rules', function () use ($variantsPath) {
     }
 });
 
-it('keeps the app css stub thin and scans package css', function () use ($stubPath) {
+it('keeps the app css stub thin', function () use ($stubPath) {
     $css = file_get_contents($stubPath);
 
     expect($css)
         ->toContain('@import "tailwindcss"')
         ->toContain("@import '../../vendor/emaia/laravel-hotwire/resources/css/presets/nova.css'")
-        ->toContain("@source '../../vendor/emaia/laravel-hotwire/resources/css/**/*.css'")
+        ->not->toContain('@source')
         ->not->toContain('resources/views/**/*.blade.php')
         ->not->toContain('src/Components/**/*.php')
         ->not->toContain('@theme inline')

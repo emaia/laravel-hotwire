@@ -1013,17 +1013,17 @@ When you install with `--with-deps=carousel` and later add `<hw:chart>` to a vie
 
 ### What you must do manually
 
-#### 1. Add the `@source` directive for package CSS
+#### 1. Remove the obsolete `@source` directive for package CSS
 
-Package styles now live in CSS preset files. Tailwind v4 needs to scan those package CSS files so utilities used in presets and runtime safelists are generated.
+Tailwind processes utilities used by imported CSS presets directly. Scanning those CSS files as content is unnecessary and does not change the generated output.
 
-Open your application's `resources/css/app.css` and add the package CSS source:
+If an earlier install added the package CSS source to `resources/css/app.css`, remove it:
 
 ```diff
-+ @source '../../vendor/emaia/laravel-hotwire/resources/css/**/*.css';
+- @source '../../vendor/emaia/laravel-hotwire/resources/css/**/*.css';
 ```
 
-Apps installed via `hotwire:install` from `0.33.0` onwards get this automatically — the change applies only to apps installed on an earlier version.
+New installs omit this directive automatically.
 
 #### 2. Re-publish the CSS stub if you customised it
 
@@ -1101,12 +1101,10 @@ Re-run the CSS installer if your app has not customised the file:
 php artisan hotwire:install --only=css --force
 ```
 
-If you customised it, keep your app CSS and add the preset source/import shape manually:
+If you customised it, keep your app CSS and add the preset import manually:
 
 ```css
 @import "tailwindcss";
-
-@source '../../vendor/emaia/laravel-hotwire/resources/css/**/*.css';
 
 @import '../../vendor/emaia/laravel-hotwire/resources/css/presets/nova.css';
 ```

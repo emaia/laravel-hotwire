@@ -3,10 +3,13 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "build": "vite build",
+        "build": "bun run build:css",
+        "build:css": "bun scripts/css_build_contract.js",
         "dev": "vite",
         "test": "bun test --isolate",
         "test:browser": "playwright test",
+        "test:css": "bun test --isolate ./tests/Css",
+        "test:css:update": "bun scripts/css_build_contract.js --update-baselines",
         "test:watch": "bun test --watch --isolate"
     },
     "dependencies": {
@@ -26,11 +29,13 @@
     },
     "devDependencies": {
         "@playwright/test": "^1.61.1",
+        "@tailwindcss/cli": "^4",
         "@types/bun": "^1.3.14",
         "happy-dom": "^20.10.6",
         "prettier": "^3.9.5",
         "prettier-plugin-blade": "^2.1.21",
         "prettier-plugin-tailwindcss": "^0.7.4",
+        "tailwindcss": "^4",
         "vite": "^8.1.4"
     }
 }

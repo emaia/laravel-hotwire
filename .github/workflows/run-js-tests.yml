@@ -12,6 +12,8 @@ on:
       - 'playwright.config.js'
       - 'src/Support/Controller*.php'
       - 'src/Support/LoaderStub.php'
+      - 'tests/Css/**'
+      - 'tests/Fixtures/css/**'
       - 'tests/Support/LoaderStubViteBuildTest.php'
   pull_request:
     paths:
@@ -23,6 +25,8 @@ on:
       - 'playwright.config.js'
       - 'src/Support/Controller*.php'
       - 'src/Support/LoaderStub.php'
+      - 'tests/Css/**'
+      - 'tests/Fixtures/css/**'
       - 'tests/Support/LoaderStubViteBuildTest.php'
 
 concurrency:
@@ -57,6 +61,9 @@ jobs:
 
       - name: Run Bun tests
         run: bun run test
+
+      - name: Verify CSS builds
+        run: bun run test:css
 
       - name: Verify mixed Vite controller build
         run: vendor/bin/pest tests/Support/LoaderStubViteBuildTest.php
