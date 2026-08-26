@@ -45,6 +45,8 @@ describe("public CSS presets", () => {
             expect(css).toContain("--radius:");
             expect(css).toMatch(slotSelector("button"));
             expect(css).toMatch(carouselMechanic);
+            expect(css).toContain(".hidden{display:none}");
+            expect(css).toContain(".overflow-hidden{overflow:hidden}");
         }
     });
 
