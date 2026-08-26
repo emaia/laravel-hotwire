@@ -2,6 +2,7 @@
 
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ControllerImports;
+use Emaia\LaravelHotwire\Support\CssPresetFiles;
 use Emaia\LaravelHotwire\Support\LoaderStub;
 use Illuminate\Support\Facades\File;
 
@@ -25,11 +26,21 @@ function writeView(string $name, string $content): void
     File::put($path, $content);
 }
 
-function writeShippedPresetStub(string $name = 'nova'): void
+function shippedPresetImportPath(string $name = 'nova'): string
 {
-    $path = base_path("vendor/emaia/laravel-hotwire/resources/css/presets/{$name}.css");
-    File::ensureDirectoryExists(dirname($path));
-    File::put($path, '/* shipped preset */');
+    $from = explode('/', trim(str_replace('\\', '/', resource_path('css')), '/'));
+    $target = app(CssPresetFiles::class)->path($name);
+    $to = explode('/', trim(str_replace('\\', '/', (string) $target), '/'));
+    $common = 0;
+
+    while (isset($from[$common], $to[$common])
+        && (PHP_OS_FAMILY === 'Windows'
+            ? strtolower($from[$common]) === strtolower($to[$common])
+            : $from[$common] === $to[$common])) {
+        $common++;
+    }
+
+    return str_repeat('../', count($from) - $common).implode('/', array_slice($to, $common));
 }
 
 function publishController(string $identifier, string $targetDir): void
@@ -147,8 +158,7 @@ it('accepts visual coverage from any generated CSS bundle', function () {
 it('accepts a complete preset fallback alongside generated CSS bundles', function () {
     writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
     $this->artisan('hotwire:styles --components=modal --no-interaction')->assertSuccessful();
-    writeShippedPresetStub();
-    File::put(resource_path('css/app.css'), '@import "../../vendor/emaia/laravel-hotwire/resources/css/presets/nova.css";');
+    File::put(resource_path('css/app.css'), '@import "'.shippedPresetImportPath().'";');
 
     $this->artisan('hotwire:check --no-interaction')
         ->doesntExpectOutputToContain('not covered by any generated CSS bundle')
@@ -158,8 +168,7 @@ it('accepts a complete preset fallback alongside generated CSS bundles', functio
 it('accepts an unquoted url import of a complete shipped preset', function () {
     writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
     $this->artisan('hotwire:styles --components=modal --no-interaction')->assertSuccessful();
-    writeShippedPresetStub();
-    File::put(resource_path('css/app.css'), '@import url(../../vendor/emaia/laravel-hotwire/resources/css/presets/nova.css);');
+    File::put(resource_path('css/app.css'), '@import url('.shippedPresetImportPath().');');
 
     $this->artisan('hotwire:check --no-interaction')
         ->doesntExpectOutputToContain('not covered by any generated CSS bundle')
@@ -169,24 +178,27 @@ it('accepts an unquoted url import of a complete shipped preset', function () {
 it('accepts comments as whitespace in a complete preset import', function () {
     writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
     $this->artisan('hotwire:styles --components=modal --no-interaction')->assertSuccessful();
-    writeShippedPresetStub();
-    File::put(resource_path('css/app.css'), '@import /* preset */ url(../../vendor/emaia/laravel-hotwire/resources/css/presets/nova.css) /* complete */;');
+    File::put(resource_path('css/app.css'), '@import /* preset */ url('.shippedPresetImportPath().') /* complete */;');
 
     $this->artisan('hotwire:check --no-interaction')
         ->doesntExpectOutputToContain('not covered by any generated CSS bundle')
         ->assertSuccessful();
 });
 
-it('accepts a complete preset imported into a cascade layer', function () {
+it('accepts a complete preset imported into a cascade layer', function (string $layer) {
     writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
     $this->artisan('hotwire:styles --components=modal --no-interaction')->assertSuccessful();
-    writeShippedPresetStub();
-    File::put(resource_path('css/app.css'), '@import "../../vendor/emaia/laravel-hotwire/resources/css/presets/nova.css" layer(hotwire);');
+    File::put(resource_path('css/app.css'), '@import "'.shippedPresetImportPath().'" '.$layer.';');
 
     $this->artisan('hotwire:check --no-interaction')
         ->doesntExpectOutputToContain('not covered by any generated CSS bundle')
         ->assertSuccessful();
-});
+})->with([
+    'anonymous' => 'layer',
+    'ascii' => 'layer(hotwire)',
+    'unicode' => 'layer(über)',
+    'escaped' => 'layer(\\31 foo)',
+]);
 
 it('accepts an imported application preset as complete coverage', function () {
     writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
@@ -202,21 +214,34 @@ it('accepts an imported application preset as complete coverage', function () {
 it('does not treat conditional remote or quoted preset references as complete coverage', function (string $css) {
     writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
     $this->artisan('hotwire:styles --components=modal --no-interaction')->assertSuccessful();
-    writeShippedPresetStub();
-    File::put(resource_path('css/app.css'), $css);
+    File::put(resource_path('css/app.css'), str_replace('__PRESET__', shippedPresetImportPath(), $css));
 
     $exit = Artisan::call('hotwire:check --no-interaction');
 
     expect($exit)->toBe(1)
         ->and(Artisan::output())->toContain('<x-hw::badge>', 'not covered by any generated CSS bundle');
 })->with([
-    'conditional import' => '@import url(../../vendor/emaia/laravel-hotwire/resources/css/presets/nova.css) print;',
+    'conditional import' => '@import url(__PRESET__) print;',
     'remote import' => '@import "https://example.com/resources/css/presets/nova.css";',
-    'quoted declaration' => 'body::before { content: \'@import "../../vendor/emaia/laravel-hotwire/resources/css/presets/nova.css";\'; }',
-    'custom property' => ':root { --example: @import url(../../vendor/emaia/laravel-hotwire/resources/css/presets/nova.css); }',
-    'at-rule prelude' => '@custom @import url(../../vendor/emaia/laravel-hotwire/resources/css/presets/nova.css);',
+    'quoted declaration' => 'body::before { content: \'@import "__PRESET__";\'; }',
+    'custom property' => ':root { --example: @import url(__PRESET__); }',
+    'at-rule prelude' => '@custom @import url(__PRESET__);',
     'missing local import' => '@import "./missing/resources/css/presets/nova.css";',
 ]);
+
+it('does not treat an existing impostor path as a shipped preset', function () {
+    writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
+    $this->artisan('hotwire:styles --components=modal --no-interaction')->assertSuccessful();
+    $impostor = resource_path('css/fake/resources/css/presets/nova.css');
+    File::ensureDirectoryExists(dirname($impostor));
+    File::put($impostor, '');
+    File::put(resource_path('css/app.css'), '@import "./fake/resources/css/presets/nova.css";');
+
+    $exit = Artisan::call('hotwire:check --no-interaction');
+
+    expect($exit)->toBe(1)
+        ->and(Artisan::output())->toContain('<x-hw::badge>', 'not covered by any generated CSS bundle');
+});
 
 it('does not treat imports inside preset files as application entrypoints', function () {
     writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
@@ -233,8 +258,7 @@ it('does not treat imports inside preset files as application entrypoints', func
 it('ignores commented complete preset imports', function () {
     writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
     $this->artisan('hotwire:styles --components=modal --no-interaction')->assertSuccessful();
-    writeShippedPresetStub();
-    File::put(resource_path('css/app.css'), '/* @import "../../vendor/emaia/laravel-hotwire/resources/css/presets/nova.css"; */');
+    File::put(resource_path('css/app.css'), '/* @import "'.shippedPresetImportPath().'"; */');
 
     $exit = Artisan::call('hotwire:check --no-interaction');
 

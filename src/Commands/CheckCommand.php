@@ -652,10 +652,10 @@ class CheckCommand extends Command
                 continue;
             }
 
-            $candidate = '/'.ltrim($import, '/');
-
             foreach ($this->presetFiles->names() as $preset) {
-                if (str_ends_with(strtolower($candidate), "/resources/css/presets/{$preset}.css")) {
+                $official = $this->presetFiles->path($preset);
+
+                if ($official !== null && $this->samePath(realpath($official) ?: $official, $resolved)) {
                     return true;
                 }
             }
@@ -670,8 +670,23 @@ class CheckCommand extends Command
 
     private function isUnconditionalImport(string $conditions): bool
     {
-        return $conditions === ''
-            || preg_match('/^layer(?:\(\s*[-_a-z][-_a-z0-9]*(?:\s*\.\s*[-_a-z][-_a-z0-9]*)*\s*\))?$/i', $conditions) === 1;
+        if ($conditions === '' || strcasecmp($conditions, 'layer') === 0) {
+            return true;
+        }
+
+        $layer = <<<'REGEX'
+~
+    (?(DEFINE)
+        (?<escape>\\(?:[0-9a-f]{1,6}[ \t\r\n\f]?|[^\r\n\f0-9a-f]))
+        (?<start>[_a-z\x{80}-\x{10ffff}]|(?&escape))
+        (?<char>[-_a-z0-9\x{80}-\x{10ffff}]|(?&escape))
+        (?<ident>(?:--(?&char)*|-?(?&start)(?&char)*))
+    )
+    ^layer\(\s*(?&ident)(?:\s*\.\s*(?&ident))*\s*\)$
+~iux
+REGEX;
+
+        return preg_match($layer, $conditions) === 1;
     }
 
     /** @return array<int, array{path: string, conditions: string}> */
