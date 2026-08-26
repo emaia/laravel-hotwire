@@ -329,9 +329,9 @@ temporary context that may be stale.
   `resources/css/tokens.css` via `@theme inline` with OKLCH values for light and dark mode.
 - **Dark mode via `data-theme`** on `<html>`, not `class="dark"`. Default is `:root` (light);
   `[data-theme="dark"]` activates the dark palette.
-- **Tailwind v4 scanner constraint.** Shipped component styling lives in CSS presets under `resources/css/**`, and the
-  installed stub scans those CSS files with `@source`. Do not add Tailwind utility defaults back to package Blade/PHP
-  unless they are also represented by preset CSS or the `@source inline(...)` safelist in
+- **Tailwind v4 scanner constraint.** Imported presets are processed directly and must not be scanned as content with
+  `@source`. Do not add Tailwind utility defaults back to package Blade/PHP unless they are also represented by preset
+  CSS or the `@source inline(...)` safelist in
   `resources/css/structural.css`, which every preset imports.
 - **Structural vs visual CSS.** Mechanics live in `resources/css/structural.css` — the rules whose absence leaves a
   component broken rather than restyled (the carousel track, the Accordion's `::details-content` collapse). Every preset

@@ -8,14 +8,12 @@ Laravel Hotwire components render semantic attributes (`data-slot`, `data-varian
 php artisan hotwire:install --preset=nova
 ```
 
-The installer writes a thin `resources/css/app.css` that imports Tailwind, scans package CSS, and enables one preset:
+The installer writes a thin `resources/css/app.css` that imports Tailwind and enables one preset:
 
 ```css
 @import "tailwindcss";
 
 @import '../../vendor/emaia/laravel-hotwire/resources/css/presets/nova.css';
-
-@source '../../vendor/emaia/laravel-hotwire/resources/css/**/*.css';
 ```
 
 ## Generate a custom preset

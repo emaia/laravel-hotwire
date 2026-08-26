@@ -3,6 +3,4 @@
 /* Preset: import one default design system. */
 @import '../../vendor/emaia/laravel-hotwire/resources/css/presets/nova.css';
 
-@source '../../vendor/emaia/laravel-hotwire/resources/css/**/*.css';
-
 /* Your app CSS below: override tokens, add components, or extend a preset. */

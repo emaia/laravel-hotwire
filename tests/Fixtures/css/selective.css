@@ -6,7 +6,6 @@
 @source "../../vendor/emaia/laravel-hotwire/resources/views/**/*.blade.php";
 @source "../../vendor/emaia/laravel-hotwire/src/**/*.php";
 @source "../../vendor/emaia/laravel-hotwire/resources/js/**/*.js";
-@source "../../vendor/emaia/laravel-hotwire/resources/css/**/*.css";
 
 @layer components {
     [data-slot="button"] {

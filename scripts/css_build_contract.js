@@ -8,7 +8,12 @@ const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const baselinePath = join(root, "tests/Css/preset_build_baselines.json");
 const presetDirectory = join(root, "resources/css/presets");
 const tailwindBinary = join(root, "node_modules/.bin/tailwindcss");
-const packageSourceFixture = join(root, "tests/Fixtures/css/package_source.blade.php");
+const packageSourceFixtures = [
+    ["package_source.blade.php", "resources/views/css_build_contract.blade.php"],
+    ["package_source.php", "src/css_build_contract.php"],
+    ["package_source.js", "resources/js/css_build_contract.js"],
+];
+const automaticSourceFixture = '<div class="w-[811px]"></div>\n';
 const unresolvedDirective = /@(import|apply|theme|custom-variant|source|utility|variant|reference|config|plugin)\b/;
 
 async function createInstalledAppFixture() {
@@ -17,6 +22,7 @@ async function createInstalledAppFixture() {
     const packageResources = join(packageDirectory, "resources");
 
     await mkdir(join(directory, "resources/css"), { recursive: true });
+    await mkdir(join(directory, "resources/views"), { recursive: true });
     await mkdir(packageDirectory, { recursive: true });
     await mkdir(join(directory, "dist"), { recursive: true });
     await Promise.all([
@@ -26,9 +32,14 @@ async function createInstalledAppFixture() {
         cp(join(root, "src"), join(packageDirectory, "src"), { recursive: true }),
     ]);
     await symlink(join(root, "node_modules"), join(directory, "node_modules"), "dir");
-    await writeFile(
-        join(packageResources, "views/css_build_contract.blade.php"),
-        await readFile(packageSourceFixture, "utf8"),
+    await writeFile(join(directory, "resources/views/css_build_contract.blade.php"), automaticSourceFixture);
+    await Promise.all(
+        packageSourceFixtures.map(async ([source, destination]) => {
+            await writeFile(
+                join(packageDirectory, destination),
+                await readFile(join(root, "tests/Fixtures/css", source), "utf8"),
+            );
+        }),
     );
 
     return directory;
@@ -103,15 +114,37 @@ export function replacePresetImport(stub, preset) {
     return stub.replace(imports[0], imports[0].replace(/presets\/[^"']+\.css/, `presets/${preset}.css`));
 }
 
+export function disableAutomaticSources(entrypoint) {
+    const tailwindImport = /@import\s+(["'])tailwindcss\1[^;]*;/g;
+    const imports = entrypoint.match(tailwindImport) ?? [];
+
+    if (imports.length !== 1) {
+        throw new Error(`Expected exactly one Tailwind import in the CSS entrypoint, found ${imports.length}.`);
+    }
+
+    if (/\bsource\(none\)/.test(imports[0])) {
+        return entrypoint;
+    }
+
+    if (/\bsource\(/.test(imports[0])) {
+        throw new Error("The Tailwind import already configures an incompatible source.");
+    }
+
+    const replacement = imports[0].replace(/(["']tailwindcss["'])/, "$1 source(none)");
+
+    if (replacement === imports[0]) {
+        throw new Error("Could not disable automatic Tailwind source detection.");
+    }
+
+    return entrypoint.replace(imports[0], replacement);
+}
+
 export async function compileCssFixture(entrypoint) {
     const directory = await createInstalledAppFixture();
 
     try {
         // Keep the fixture deterministic and make explicit package sources observable.
-        await writeFile(
-            join(directory, "resources/css/app.css"),
-            entrypoint.replace(/@import\s+(["'])tailwindcss\1\s*;/, '@import "tailwindcss" source(none);'),
-        );
+        await writeFile(join(directory, "resources/css/app.css"), disableAutomaticSources(entrypoint));
 
         return await runTailwind(directory);
     } finally {

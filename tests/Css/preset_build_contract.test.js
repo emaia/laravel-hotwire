@@ -6,6 +6,7 @@ import baselines from "./preset_build_baselines.json";
 import {
     buildCssContract,
     compileCssFixture,
+    disableAutomaticSources,
     measurementRows,
     replacePresetImport,
     resolveBaselines,
@@ -13,8 +14,21 @@ import {
 
 const slotSelector = (slot) => new RegExp(`\\[data-slot=(?:["'])?${slot}(?:["'])?\\]`);
 const carouselMechanic = /\[data-carousel-container\]/;
-const unresolvedDirective = /@(import|apply|theme|custom-variant|source|utility|variant|reference|config|plugin)\b/;
-const scannedPackageUtility = String.raw`.min-h-\[137px\]`;
+const automaticSourceUtility = String.raw`.w-\[811px\]`;
+const packageSources = [
+    {
+        directive: '@source "../../vendor/emaia/laravel-hotwire/resources/views/**/*.blade.php";',
+        utility: String.raw`.min-h-\[137px\]`,
+    },
+    {
+        directive: '@source "../../vendor/emaia/laravel-hotwire/src/**/*.php";',
+        utility: String.raw`.max-w-\[913px\]`,
+    },
+    {
+        directive: '@source "../../vendor/emaia/laravel-hotwire/resources/js/**/*.js";',
+        utility: String.raw`.z-\[31415\]`,
+    },
+];
 
 let contract;
 
@@ -28,10 +42,9 @@ describe("public CSS presets", () => {
 
         for (const css of Object.values(contract.outputs.presets)) {
             expect(css).toContain("--background:");
-            expect(css).toContain("--radius-md:");
+            expect(css).toContain("--radius:");
             expect(css).toMatch(slotSelector("button"));
             expect(css).toMatch(carouselMechanic);
-            expect(css).not.toMatch(unresolvedDirective);
         }
     });
 
@@ -39,13 +52,14 @@ describe("public CSS presets", () => {
         const css = contract.outputs.selective;
 
         expect(css).toContain("--background:");
-        expect(css).toContain("--radius-md:");
+        expect(css).toContain("--radius:");
         expect(css).toMatch(slotSelector("button"));
         expect(css).toMatch(slotSelector("card"));
         expect(css).toMatch(carouselMechanic);
-        expect(css).toContain(scannedPackageUtility);
+        for (const { utility } of packageSources) {
+            expect(css).toContain(utility);
+        }
         expect(css).not.toMatch(slotSelector("badge"));
-        expect(css).not.toMatch(unresolvedDirective);
     });
 
     test("reports raw and gzip sizes against non-blocking baselines", () => {
@@ -75,11 +89,37 @@ describe("public CSS presets", () => {
         expect(css).toContain(".overflow-hidden{overflow:hidden}");
     });
 
-    test("requires explicit package sources to discover vendor candidates", async () => {
+    test("requires every explicit package source to discover its vendor candidates", async () => {
         const fixture = await readFile(new URL("../Fixtures/css/selective.css", import.meta.url), "utf8");
-        const css = await compileCssFixture(fixture.replace(/^@source .*;\n/gm, ""));
 
-        expect(css).not.toContain(scannedPackageUtility);
+        for (const { directive, utility } of packageSources) {
+            const withoutSource = fixture.replace(`${directive}\n`, "");
+            expect(withoutSource).not.toBe(fixture);
+
+            const css = await compileCssFixture(withoutSource);
+            expect(css).not.toContain(utility);
+        }
+    });
+
+    test("disables automatic sources for exactly one Tailwind import", async () => {
+        expect(disableAutomaticSources('@import "tailwindcss";')).toBe('@import "tailwindcss" source(none);');
+        expect(disableAutomaticSources('@import "tailwindcss" theme(static);')).toBe(
+            '@import "tailwindcss" source(none) theme(static);',
+        );
+        expect(disableAutomaticSources('@import "tailwindcss" source(none);')).toBe(
+            '@import "tailwindcss" source(none);',
+        );
+        expect(() => disableAutomaticSources('@import "./app.css";')).toThrow(/exactly one Tailwind import/);
+        expect(() => disableAutomaticSources('@import "tailwindcss";\n@import "tailwindcss";')).toThrow(
+            /exactly one Tailwind import/,
+        );
+        expect(() => disableAutomaticSources('@import "tailwindcss" source("./app");')).toThrow(/incompatible source/);
+
+        const css = await compileCssFixture('@import "tailwindcss" theme(static);');
+        expect(css).not.toContain(automaticSourceUtility);
+        for (const { utility } of packageSources) {
+            expect(css).not.toContain(utility);
+        }
     });
 
     test("requires exactly one public preset import in the app stub", () => {
@@ -144,6 +184,11 @@ describe("public CSS presets", () => {
     });
 
     test("fails when an imported stylesheet is missing", async () => {
-        await expect(compileCssFixture('@import "./missing-stylesheet.css";')).rejects.toThrow();
+        await expect(
+            compileCssFixture(`
+                @import "tailwindcss";
+                @import "./missing-stylesheet.css";
+            `),
+        ).rejects.toThrow();
     });
 });
