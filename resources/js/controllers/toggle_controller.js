@@ -57,6 +57,11 @@ export default class extends Controller {
     get inputElement() {
         if (!this.hasInputIdValue) return null;
 
+        const sibling = this.element.previousElementSibling;
+        if (sibling?.matches("[data-toggle-input]") && sibling.id === this.inputIdValue) {
+            return sibling;
+        }
+
         return this.element.ownerDocument.getElementById(this.inputIdValue);
     }
 

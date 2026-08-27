@@ -47,6 +47,10 @@ the toggle value so sibling filters remain distinct:
 </turbo-frame>
 ```
 
+If the same scalar `name`, or the same array `name` and `value` combination, appears more than once in a document, pass a
+distinct `id` to each Toggle. The hidden input uses that explicit id with an `-input` suffix, and the controller always
+prefers its own adjacent input over a duplicate elsewhere in the document.
+
 This keeps Toggle suitable for filters and action state without replacing checkbox/switch behavior. If your server needs
 an explicit false value, use `<hw:checkbox unchecked-value="0">` or `<hw:switch unchecked-value="0">` instead.
 

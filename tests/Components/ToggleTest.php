@@ -145,6 +145,14 @@ it('derives the hidden input id deterministically from its name', function () {
         ->and($second)->toContain('id="toggle-field-notify-input"');
 });
 
+it('derives the hidden input id from an explicit button id', function () {
+    $html = (string) $this->blade('<x-hw::toggle id="profile-notify" name="notify">Notify</x-hw::toggle>');
+
+    expect($html)->toContain('id="profile-notify-input"')
+        ->and($html)->toContain('data-toggle-input-id-value="profile-notify-input"')
+        ->and($html)->toContain('id="profile-notify"');
+});
+
 it('disables the hidden input while unpressed', function () {
     $html = (string) $this->blade('<x-hw::toggle name="featured" value="1">Featured</x-hw::toggle>');
 
