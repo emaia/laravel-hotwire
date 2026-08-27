@@ -1,6 +1,7 @@
 @php
     use Emaia\LaravelHotwire\Support\StimulusAttributes;
 
+    $controller = \Emaia\LaravelHotwire\Support\StimulusIdentifier::guard((string) $controller, 'read-more');
     $userStyle = trim((string) $attributes->get('style'));
     $style = collect([
         $userStyle !== '' ? $userStyle : null,

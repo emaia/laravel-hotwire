@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Components;
 
 use Emaia\LaravelHotwire\Support\StimulusAttributes;
+use Emaia\LaravelHotwire\Support\StimulusIdentifier;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\Component;
 use Illuminate\View\ComponentAttributeBag;
@@ -31,6 +32,8 @@ class SidePanel extends Component
         public string $controller = 'side-panel',
         public ?Htmlable $stimulus = null,
     ) {
+        StimulusIdentifier::guard($controller, 'side-panel');
+
         $key = $this->key($name);
         if (! in_array($this->side, self::SIDES, true)) {
             throw new \InvalidArgumentException('Side Panel side must be one of: '.implode(', ', self::SIDES).". Got: {$this->side}");

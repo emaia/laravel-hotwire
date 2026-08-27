@@ -2,6 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Emaia\LaravelHotwire\Support\StimulusIdentifier;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\Component;
@@ -25,6 +26,8 @@ class Chart extends Component
         public string $controller = 'chart',
         public ?Htmlable $stimulus = null,
     ) {
+        StimulusIdentifier::guard($controller, 'chart');
+
         if ($option === null && ($url === null || $url === '')) {
             throw new InvalidArgumentException(
                 'hw:chart requires either an `option` or a `url` prop.'

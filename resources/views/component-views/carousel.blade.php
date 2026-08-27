@@ -1,6 +1,8 @@
 @php
     use Illuminate\View\ComponentSlot;
 
+    $controller = \Emaia\LaravelHotwire\Support\StimulusIdentifier::guard((string) $controller, 'carousel');
+
     // $controller is the Stimulus identifier (default "carousel"); override it to
     // point at a subclass (e.g., controller="gallery"). All data-* / action prefixes
     // follow it, while the structural CSS hooks below stay identifier-independent.

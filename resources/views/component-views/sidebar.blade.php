@@ -2,7 +2,9 @@
 
 @php
     use Emaia\LaravelHotwire\Support\StimulusAttributes;
+    use Emaia\LaravelHotwire\Support\StimulusIdentifier;
 
+    $sidebarIdentifier = StimulusIdentifier::guard((string) $sidebarIdentifier, 'sidebar');
     $collapsed = $sidebarState === 'collapsed';
     $userStyle = trim((string) $attributes->get('style'));
     $revealStyle = $reveal ? collect([

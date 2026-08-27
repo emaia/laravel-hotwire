@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Components;
 
 use Emaia\LaravelHotwire\Support\ComponentId;
+use Emaia\LaravelHotwire\Support\StimulusIdentifier;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\Component;
 
@@ -45,6 +46,8 @@ class Carousel extends Component
         public string $counterClass = '',
         public ?Htmlable $stimulus = null,
     ) {
+        StimulusIdentifier::guard($controller, 'carousel');
+
         $this->id = is_object($this->id)
             ? app(ComponentId::class)->resolve($this->id, 'hw-carousel', 'carousel')
             : ($this->id ?? app(ComponentId::class)->next('hw-carousel'));

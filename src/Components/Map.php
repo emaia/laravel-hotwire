@@ -2,6 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Emaia\LaravelHotwire\Support\StimulusIdentifier;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\Component;
 use InvalidArgumentException;
@@ -30,6 +31,8 @@ class Map extends Component
         public string $controller = 'map',
         public ?Htmlable $stimulus = null,
     ) {
+        StimulusIdentifier::guard($controller, 'map');
+
         if ($center === null && $markers === null && ($url === null || $url === '')) {
             throw new InvalidArgumentException(
                 'hw:map requires at least one of `center`, `markers`, or `url`.'

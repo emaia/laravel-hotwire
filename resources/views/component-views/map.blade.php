@@ -1,4 +1,6 @@
 @php
+    $controller = \Emaia\LaravelHotwire\Support\StimulusIdentifier::guard((string) $controller, 'map');
+
     $mapAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
         'data-slot' => 'map',
         'data-controller' => $controller,

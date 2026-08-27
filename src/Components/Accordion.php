@@ -4,6 +4,7 @@ namespace Emaia\LaravelHotwire\Components;
 
 use Emaia\LaravelHotwire\Support\ComponentId;
 use Emaia\LaravelHotwire\Support\StimulusAttributes;
+use Emaia\LaravelHotwire\Support\StimulusIdentifier;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\Component;
 use Illuminate\View\ComponentAttributeBag;
@@ -27,6 +28,8 @@ class Accordion extends Component
         public string $class = '',
         public ?Htmlable $stimulus = null,
     ) {
+        StimulusIdentifier::guard($controller, 'accordion');
+
         $this->accordionId = app(ComponentId::class)->resolve($id, 'hw-accordion', 'accordion');
         $this->accordionIdentifier = $controller;
         $this->accordionValue = $this->normalizeValue($value);

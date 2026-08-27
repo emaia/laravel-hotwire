@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Components\Tabs;
 
 use Emaia\LaravelHotwire\Support\StimulusAttributes;
+use Emaia\LaravelHotwire\Support\StimulusIdentifier;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\Component;
 use Illuminate\View\ComponentAttributeBag;
@@ -36,6 +37,8 @@ class TabList extends Component
         string $tabsOrientation,
         ComponentAttributeBag $attributes,
     ): array {
+        StimulusIdentifier::guard($identifier, 'tabs.list');
+
         $resolvedOrientation = $this->orientation ?? $tabsOrientation;
 
         return [
