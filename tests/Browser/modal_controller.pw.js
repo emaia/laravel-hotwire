@@ -61,7 +61,7 @@ test("opens when dynamic content is inserted and closes cleanly through the publ
 
     await page.locator("#dynamic-modal").evaluate((element) => element.removeAttribute("aria-label"));
     await expect(modal).not.toHaveAttribute("aria-label", /.+/);
-    await expect(modal).toHaveAttribute("aria-labelledby", "dynamic-modal-title");
+    await expect(modal).toHaveAttribute("aria-labelledby", "step-2-heading");
 
     await page.evaluate(() => {
         const root = document.querySelector('[data-controller~="modal"]');

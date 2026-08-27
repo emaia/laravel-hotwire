@@ -122,10 +122,15 @@ final class OverlayLabelContext
             return [];
         }
 
+        $html = $contents->toHtml();
+        if (preg_match('/\sid\s*=/i', $html) !== 1) {
+            return [];
+        }
+
         $document = new DOMDocument;
         $previous = libxml_use_internal_errors(true);
         $loaded = $document->loadHTML(
-            '<?xml encoding="UTF-8"?><div>'.$contents->toHtml().'</div>',
+            '<?xml encoding="UTF-8"?><div>'.$html.'</div>',
             LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD | LIBXML_NOERROR | LIBXML_NOWARNING,
         );
         libxml_clear_errors();

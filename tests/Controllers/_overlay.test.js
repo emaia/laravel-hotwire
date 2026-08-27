@@ -307,6 +307,193 @@ test("copies an application-authored accessible name from the controller root", 
     expect(modal.hasAttribute("aria-labelledby")).toBe(false);
 });
 
+test("restores a target-authored labelledby after a root aria-label is removed", () => {
+    const root = document.createElement("div");
+    const { modal, backdrop, dialog } = elements();
+    root.setAttribute("aria-label", "Fallback");
+    modal.setAttribute("role", "dialog");
+    modal.setAttribute("aria-labelledby", "author-title");
+    root.append(modal);
+    overlay = createOverlay({ element: root }, options({
+        modal,
+        backdrop,
+        dialog,
+        accessibilityPrefix: "modal",
+    }));
+
+    expect(modal.getAttribute("aria-label")).toBe("Fallback");
+    expect(modal.hasAttribute("aria-labelledby")).toBe(false);
+
+    modal.setAttribute("aria-labelledby", "newer-author-title");
+    root.setAttribute("aria-label", "Updated fallback");
+    modal.dispatchEvent(morphedElementEvent());
+    expect(modal.hasAttribute("aria-labelledby")).toBe(false);
+
+    root.setAttribute("aria-labelledby", "root-title");
+    modal.dispatchEvent(morphedElementEvent());
+    expect(modal.getAttribute("aria-labelledby")).toBe("root-title");
+
+    root.removeAttribute("aria-label");
+    modal.dispatchEvent(morphedElementEvent());
+
+    expect(modal.hasAttribute("aria-label")).toBe(false);
+    expect(modal.getAttribute("aria-labelledby")).toBe("root-title");
+
+    root.removeAttribute("aria-labelledby");
+    modal.dispatchEvent(morphedElementEvent());
+
+    expect(modal.hasAttribute("aria-label")).toBe(false);
+    expect(modal.getAttribute("aria-labelledby")).toBe("newer-author-title");
+});
+
+test("restores a target-authored labelledby after a root labelledby is removed", () => {
+    const root = document.createElement("div");
+    const { modal, backdrop, dialog } = elements();
+    root.setAttribute("aria-labelledby", "root-title");
+    modal.setAttribute("role", "dialog");
+    modal.setAttribute("aria-labelledby", "author-title");
+    root.append(modal);
+    overlay = createOverlay({ element: root }, options({
+        modal,
+        backdrop,
+        dialog,
+        accessibilityPrefix: "modal",
+    }));
+
+    expect(modal.getAttribute("aria-labelledby")).toBe("root-title");
+
+    modal.setAttribute("aria-labelledby", "newer-author-title");
+    root.setAttribute("aria-labelledby", "updated-root-title");
+    modal.dispatchEvent(morphedElementEvent());
+    expect(modal.getAttribute("aria-labelledby")).toBe("updated-root-title");
+
+    root.removeAttribute("aria-labelledby");
+    modal.dispatchEvent(morphedElementEvent());
+
+    expect(modal.getAttribute("aria-labelledby")).toBe("newer-author-title");
+});
+
+test("cleanup restores target-authored accessibility before reconnect", () => {
+    const root = document.createElement("div");
+    const { modal, backdrop, dialog } = elements();
+    root.setAttribute("aria-label", "Root label");
+    root.setAttribute("aria-describedby", "root-description");
+    modal.setAttribute("role", "dialog");
+    modal.setAttribute("aria-labelledby", "author-title");
+    modal.setAttribute("aria-describedby", "author-description");
+    root.append(modal);
+    const overlayOptions = options({
+        modal,
+        backdrop,
+        dialog,
+        accessibilityPrefix: "modal",
+    });
+    overlay = createOverlay({ element: root }, overlayOptions);
+
+    expect(modal.getAttribute("aria-label")).toBe("Root label");
+    expect(modal.hasAttribute("aria-labelledby")).toBe(false);
+    expect(modal.getAttribute("aria-describedby")).toBe("root-description");
+
+    overlay.cleanup();
+    overlay = null;
+
+    expect(modal.hasAttribute("aria-label")).toBe(false);
+    expect(modal.getAttribute("aria-labelledby")).toBe("author-title");
+    expect(modal.getAttribute("aria-describedby")).toBe("author-description");
+
+    overlay = createOverlay({ element: root }, overlayOptions);
+    root.removeAttribute("aria-label");
+    root.removeAttribute("aria-describedby");
+    modal.dispatchEvent(morphedElementEvent());
+
+    expect(modal.getAttribute("aria-labelledby")).toBe("author-title");
+    expect(modal.getAttribute("aria-describedby")).toBe("author-description");
+});
+
+test("does not protect stale ownership after a synchronous root override", () => {
+    const root = document.createElement("div");
+    const { modal, backdrop, dialog } = elements();
+    const title = document.createElement("h2");
+    root.id = "account-modal";
+    modal.setAttribute("role", "dialog");
+    title.dataset.slot = "modal-title";
+    dialog.prepend(title);
+    root.append(modal);
+    overlay = createOverlay({ element: root }, options({
+        modal,
+        backdrop,
+        dialog,
+        accessibilityPrefix: "modal",
+    }));
+
+    root.setAttribute("aria-label", "Root override");
+    const incomingModal = modal.cloneNode(true);
+    incomingModal.querySelector('[data-slot="modal-title"]').id = "server-title";
+    incomingModal.setAttribute("aria-labelledby", "server-title");
+    modal.dispatchEvent(morphElementEvent(incomingModal));
+
+    expect(modal.dispatchEvent(morphAttributeEvent("aria-labelledby"))).toBe(true);
+    title.id = "server-title";
+    modal.setAttribute("aria-labelledby", "server-title");
+    modal.dispatchEvent(morphedElementEvent());
+    expect(modal.getAttribute("aria-label")).toBe("Root override");
+    expect(modal.hasAttribute("aria-labelledby")).toBe(false);
+
+    root.removeAttribute("aria-label");
+    modal.dispatchEvent(morphedElementEvent());
+    expect(modal.getAttribute("aria-labelledby")).toBe("server-title");
+});
+
+test("allows a server morph after managed labelledby ownership becomes stale", () => {
+    const root = document.createElement("div");
+    const { modal, backdrop, dialog } = elements();
+    const title = document.createElement("h2");
+    root.id = "account-modal";
+    modal.setAttribute("role", "dialog");
+    title.dataset.slot = "modal-title";
+    dialog.prepend(title);
+    root.append(modal);
+    overlay = createOverlay({ element: root }, options({
+        modal,
+        backdrop,
+        dialog,
+        accessibilityPrefix: "modal",
+    }));
+    modal.setAttribute("aria-labelledby", "foreign");
+
+    const incomingModal = modal.cloneNode(true);
+    incomingModal.querySelector('[data-slot="modal-title"]').id = "m3-title";
+    incomingModal.setAttribute("aria-labelledby", "m3-title");
+    modal.dispatchEvent(morphElementEvent(incomingModal));
+
+    expect(modal.dispatchEvent(morphAttributeEvent("aria-labelledby"))).toBe(true);
+    title.id = "m3-title";
+    modal.setAttribute("aria-labelledby", "m3-title");
+    modal.dispatchEvent(morphedElementEvent());
+
+    expect(modal.getAttribute("aria-labelledby")).toBe("m3-title");
+    expect(modal.dispatchEvent(morphAttributeEvent("aria-labelledby"))).toBe(false);
+});
+
+test("generates accessible references for manual overlays without ids", () => {
+    const root = document.createElement("div");
+    const { modal, backdrop, dialog } = elements();
+    const title = document.createElement("h2");
+    modal.setAttribute("role", "dialog");
+    title.dataset.slot = "modal-title";
+    dialog.prepend(title);
+    root.append(modal);
+    overlay = createOverlay({ element: root }, options({
+        modal,
+        backdrop,
+        dialog,
+        accessibilityPrefix: "modal",
+    }));
+
+    expect(title.id).toMatch(/^hw-modal-\d+-title$/);
+    expect(modal.getAttribute("aria-labelledby")).toBe(title.id);
+});
+
 test("releases and reacquires a managed accessible name across morphs", () => {
     const root = document.createElement("div");
     const { modal, backdrop, dialog } = elements();

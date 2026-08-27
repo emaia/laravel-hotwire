@@ -9,6 +9,7 @@ import { createTopLayer } from "./_top_layer.js";
 
 const ESCAPE_SCOPE_SELECTOR = "[data-hotwire-escape-scope]";
 const handledEscapeEvents = new WeakSet();
+let overlayAccessibilityId = 0;
 
 const bodyScrollLock = {
     count: 0,
@@ -291,9 +292,11 @@ export function createOverlay(controller, {
 
 function createOverlayAccessibility(controller, modalTarget, prefix) {
     const roleSelector = '[role="dialog"], [role="alertdialog"]';
-    const rootId = controller?.element?.id || modalTarget.id;
+    const rootId = controller?.element?.id || modalTarget.id || nextOverlayAccessibilityId(modalTarget, prefix);
     const root = controller?.element && controller.element !== modalTarget ? controller.element : null;
     const rootAccessibilityValues = new Map();
+    const rootAccessibilityFallbacks = new Map();
+    let suppressedLabelReference;
     let managesLabel = false;
     let managesDescription = false;
     let managedLabelReference = null;
@@ -391,8 +394,16 @@ function createOverlayAccessibility(controller, modalTarget, prefix) {
         morphToken++;
         managesLabel = pendingLabelManagement ?? managesLabel;
         managesDescription = pendingDescriptionManagement ?? managesDescription;
-        if (pendingLabelManagement === false) managedLabelReference = null;
-        if (pendingDescriptionManagement === false) managedDescriptionReference = null;
+        if (pendingLabelManagement === true) {
+            managedLabelReference = modalTarget.getAttribute("aria-labelledby");
+        } else if (pendingLabelManagement === false) {
+            managedLabelReference = null;
+        }
+        if (pendingDescriptionManagement === true) {
+            managedDescriptionReference = modalTarget.getAttribute("aria-describedby");
+        } else if (pendingDescriptionManagement === false) {
+            managedDescriptionReference = null;
+        }
         pendingLabelManagement = null;
         pendingDescriptionManagement = null;
         syncRootAccessibility();
@@ -429,18 +440,62 @@ function createOverlayAccessibility(controller, modalTarget, prefix) {
             const previousValue = rootAccessibilityValues.get(attributeName);
             if (root.hasAttribute(attributeName)) {
                 const value = root.getAttribute(attributeName);
+                const hasTargetValue = modalTarget.hasAttribute(attributeName);
+                const targetValue = modalTarget.getAttribute(attributeName);
+                if ((previousValue === undefined && hasTargetValue)
+                    || (previousValue !== undefined && targetValue !== previousValue)) {
+                    rootAccessibilityFallbacks.set(attributeName, hasTargetValue ? targetValue : null);
+                }
                 modalTarget.setAttribute(attributeName, value);
                 rootAccessibilityValues.set(attributeName, value);
             } else if (previousValue !== undefined) {
                 if (modalTarget.getAttribute(attributeName) === previousValue) {
-                    modalTarget.removeAttribute(attributeName);
+                    const hasFallback = rootAccessibilityFallbacks.has(attributeName);
+                    const fallback = rootAccessibilityFallbacks.get(attributeName);
+                    if (hasFallback && fallback !== null) {
+                        modalTarget.setAttribute(attributeName, fallback);
+                    } else {
+                        modalTarget.removeAttribute(attributeName);
+                    }
                 }
+                rootAccessibilityFallbacks.delete(attributeName);
                 rootAccessibilityValues.delete(attributeName);
             }
         }
 
-        if (root.hasAttribute("aria-label") && !root.hasAttribute("aria-labelledby")) {
+        const suppressesLabelReference = root.hasAttribute("aria-label") && !root.hasAttribute("aria-labelledby");
+        if (suppressesLabelReference) {
+            if (modalTarget.hasAttribute("aria-labelledby")) {
+                suppressedLabelReference = modalTarget.getAttribute("aria-labelledby");
+            }
             modalTarget.removeAttribute("aria-labelledby");
+        } else if (!root.hasAttribute("aria-labelledby") && suppressedLabelReference !== undefined) {
+            if (!modalTarget.hasAttribute("aria-labelledby")) {
+                modalTarget.setAttribute("aria-labelledby", suppressedLabelReference);
+            }
+            suppressedLabelReference = undefined;
+        }
+    }
+
+    function restoreRootAccessibility() {
+        for (const [attributeName, copiedValue] of rootAccessibilityValues) {
+            if (modalTarget.getAttribute(attributeName) !== copiedValue) continue;
+
+            if (!rootAccessibilityFallbacks.has(attributeName)
+                || rootAccessibilityFallbacks.get(attributeName) === null) {
+                modalTarget.removeAttribute(attributeName);
+            } else {
+                modalTarget.setAttribute(attributeName, rootAccessibilityFallbacks.get(attributeName));
+            }
+        }
+        rootAccessibilityValues.clear();
+        rootAccessibilityFallbacks.clear();
+
+        if (suppressedLabelReference !== undefined) {
+            if (!modalTarget.hasAttribute("aria-labelledby")) {
+                modalTarget.setAttribute("aria-labelledby", suppressedLabelReference);
+            }
+            suppressedLabelReference = undefined;
         }
     }
 
@@ -503,11 +558,17 @@ function createOverlayAccessibility(controller, modalTarget, prefix) {
         prepareMorph,
         completeMorph,
         manages(attributeName) {
+            if (isRootAuthored(attributeName)) return false;
+
             const labelManagement = pendingLabelManagement ?? managesLabel;
             const descriptionManagement = pendingDescriptionManagement ?? managesDescription;
 
-            return (attributeName === "aria-labelledby" && labelManagement)
-                || (attributeName === "aria-describedby" && descriptionManagement);
+            return (attributeName === "aria-labelledby"
+                    && labelManagement
+                    && modalTarget.getAttribute(attributeName) === managedLabelReference)
+                || (attributeName === "aria-describedby"
+                    && descriptionManagement
+                    && modalTarget.getAttribute(attributeName) === managedDescriptionReference);
         },
         cleanup() {
             active = false;
@@ -519,8 +580,20 @@ function createOverlayAccessibility(controller, modalTarget, prefix) {
             refreshFrame = null;
             observer?.disconnect();
             rootObserver?.disconnect();
+            restoreRootAccessibility();
         },
     };
+}
+
+function nextOverlayAccessibilityId(modalTarget, prefix) {
+    const document = modalTarget.ownerDocument;
+    let id;
+
+    do {
+        id = `hw-${prefix}-${++overlayAccessibilityId}`;
+    } while (document.getElementById(`${id}-title`) || document.getElementById(`${id}-description`));
+
+    return id;
 }
 
 function isNestedEscapeScopeEvent(event, dialogTarget) {
