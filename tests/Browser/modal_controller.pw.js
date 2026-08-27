@@ -45,6 +45,16 @@ test("opens when dynamic content is inserted and closes cleanly through the publ
     await expect(page.locator("#dynamic-modal-title")).toHaveText("Loaded title");
     await expect(page.locator("#dynamic-modal-description")).toHaveText("Loaded description");
 
+    await modal.evaluate((element) => {
+        const heading = document.createElement("h2");
+        heading.id = "step-2-heading";
+        heading.textContent = "Step 2";
+        element.append(heading);
+        element.setAttribute("aria-labelledby", heading.id);
+        element.append(document.createElement("span"));
+    });
+    await expect(modal).toHaveAttribute("aria-labelledby", "step-2-heading");
+
     await page.locator("#dynamic-modal").evaluate((element) => element.setAttribute("aria-label", "Loaded settings"));
     await expect(modal).toHaveAttribute("aria-label", "Loaded settings");
     await expect(modal).not.toHaveAttribute("aria-labelledby", /.+/);

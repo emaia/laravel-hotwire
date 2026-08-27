@@ -100,6 +100,42 @@ it('does not name a parent modal from a nested modal title', function () {
         ->and($dialogs->item(1)->getAttribute('aria-labelledby'))->toBe('child-modal-title');
 });
 
+it('does not name a modal from a title inside its loading template', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::modal id="settings-modal" frame="settings-frame">
+            <x-slot:loading_template>
+                <x-hw::modal.title>Loading settings</x-hw::modal.title>
+            </x-slot:loading_template>
+        </x-hw::modal>
+    BLADE);
+    $xpath = new DOMXPath(dom((string) $view));
+    $dialog = $xpath->query('//*[@data-slot="modal-overlay"]')->item(0);
+
+    expect($dialog)->toBeInstanceOf(DOMElement::class)
+        ->and($dialog->hasAttribute('aria-labelledby'))->toBeFalse()
+        ->and($xpath->query('//template//*[@id="settings-modal-title"]'))->toHaveCount(0);
+});
+
+it('does not name an outer modal from a modal title inside a nested sheet', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::modal id="outer-modal">
+            <x-hw::modal.content>
+                <x-hw::sheet id="inner-sheet">
+                    <x-hw::sheet.content>
+                        <x-hw::modal.title>Wrong owner</x-hw::modal.title>
+                    </x-hw::sheet.content>
+                </x-hw::sheet>
+            </x-hw::modal.content>
+        </x-hw::modal>
+    BLADE);
+    $xpath = new DOMXPath(dom((string) $view));
+    $outerDialog = $xpath->query('//*[@data-slot="modal-overlay"]')->item(0);
+
+    expect($outerDialog)->toBeInstanceOf(DOMElement::class)
+        ->and($outerDialog->hasAttribute('aria-labelledby'))->toBeFalse()
+        ->and($xpath->query('//*[@id="outer-modal-title"]'))->toHaveCount(0);
+});
+
 it('renders alert-dialog subcomponents with semantic slots', function () {
     $view = $this->blade('
         <x-hw::alert-dialog.header>

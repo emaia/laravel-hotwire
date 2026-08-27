@@ -40,11 +40,11 @@
             data-alert-dialog-target="dialog"
         >
             <div data-slot="alert-dialog-header">
-                @if ($title)
+                @if ($title !== '')
                     <h2 id="{{ $alertDialogOverlayLabelContext->titleId() }}" data-slot="alert-dialog-title">{{ $title }}</h2>
                 @endif
 
-                @if ($description)
+                @if ($description !== '')
                     <p id="{{ $alertDialogOverlayLabelContext->descriptionId() }}" data-slot="alert-dialog-description" style="text-wrap-mode: wrap">{{ $description }}</p>
                 @endif
 

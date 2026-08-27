@@ -17,6 +17,20 @@ final class OverlayLabelContext
         private readonly string $slotPrefix,
     ) {}
 
+    /** Return component data that prevents label ownership from crossing an overlay root. */
+    public static function boundaryData(): array
+    {
+        return ['overlayLabelOwnerContext' => null];
+    }
+
+    /** Return component data that lets an overlay content component own its labels. */
+    public static function ownerData(string $contextKey): array
+    {
+        $context = app('view')->getConsumableComponentData($contextKey);
+
+        return ['overlayLabelOwnerContext' => $context instanceof self ? $context : null];
+    }
+
     /** Register an owned title or description and return its resolved id. */
     public function register(string $slotName, ?string $explicitId = null): ?string
     {

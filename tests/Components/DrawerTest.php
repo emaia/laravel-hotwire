@@ -4,6 +4,7 @@ use Emaia\LaravelHotwire\Components\Drawer;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
 use Emaia\LaravelHotwire\Support\FieldContext;
+use Emaia\LaravelHotwire\Support\OverlayLabelContext;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\View\ViewException;
 
@@ -233,7 +234,7 @@ it('does not expose drawer root props as generic component data', function () {
     $frameworkKeys = ['componentName', 'attributes', 'ignoredParameterNames'];
     $genericKeys = array_values(array_filter(
         array_keys($data),
-        fn (string $key) => ! str_starts_with($key, 'drawer') && ! in_array($key, [...$frameworkKeys, 'compute', ...array_keys(FieldContext::boundaryData())], true),
+        fn (string $key) => ! str_starts_with($key, 'drawer') && ! in_array($key, [...$frameworkKeys, 'compute', ...array_keys(FieldContext::boundaryData()), ...array_keys(OverlayLabelContext::boundaryData())], true),
     ));
 
     expect($genericKeys)->toBe([])

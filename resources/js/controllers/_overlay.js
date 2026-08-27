@@ -296,16 +296,28 @@ function createOverlayAccessibility(controller, modalTarget, prefix) {
     const rootAccessibilityValues = new Map();
     let managesLabel = false;
     let managesDescription = false;
+    let managedLabelReference = null;
+    let managedDescriptionReference = null;
     let pendingLabelManagement = null;
     let pendingDescriptionManagement = null;
     let morphToken = 0;
 
     function refresh() {
-        managesLabel = syncReference("labelledby", "title", managesLabel);
-        managesDescription = syncReference("describedby", "description", managesDescription);
+        ({ managed: managesLabel, reference: managedLabelReference } = syncReference(
+            "labelledby",
+            "title",
+            managesLabel,
+            managedLabelReference,
+        ));
+        ({ managed: managesDescription, reference: managedDescriptionReference } = syncReference(
+            "describedby",
+            "description",
+            managesDescription,
+            managedDescriptionReference,
+        ));
     }
 
-    function syncReference(attributeSuffix, slotSuffix, managed) {
+    function syncReference(attributeSuffix, slotSuffix, managed, managedReference) {
         const attributeName = `aria-${attributeSuffix}`;
         const candidate = findOwnedSlot(modalTarget, slotSuffix);
 
@@ -314,37 +326,43 @@ function createOverlayAccessibility(controller, modalTarget, prefix) {
         }
 
         if (isRootAuthored(attributeName)) {
-            return false;
+            return { managed: false, reference: null };
         }
 
         if (managed) {
+            if (modalTarget.getAttribute(attributeName) !== managedReference) {
+                return { managed: false, reference: null };
+            }
+
             if (candidate?.id) {
                 modalTarget.setAttribute(attributeName, candidate.id);
 
-                return true;
+                return { managed: true, reference: candidate.id };
             }
 
             modalTarget.removeAttribute(attributeName);
 
-            return false;
+            return { managed: false, reference: null };
         }
 
         const currentReference = modalTarget.getAttribute(attributeName);
         if (currentReference !== null) {
-            return currentReference === candidate?.id;
+            const ownsReference = currentReference === candidate?.id;
+
+            return { managed: ownsReference, reference: ownsReference ? currentReference : null };
         }
 
         if (attributeSuffix === "labelledby" && modalTarget.hasAttribute("aria-label")) {
-            return false;
+            return { managed: false, reference: null };
         }
 
         if (!candidate?.id) {
-            return false;
+            return { managed: false, reference: null };
         }
 
         modalTarget.setAttribute(attributeName, candidate.id);
 
-        return true;
+        return { managed: true, reference: candidate.id };
     }
 
     function prepareMorph(newElement) {
@@ -366,6 +384,8 @@ function createOverlayAccessibility(controller, modalTarget, prefix) {
         morphToken++;
         managesLabel = pendingLabelManagement ?? managesLabel;
         managesDescription = pendingDescriptionManagement ?? managesDescription;
+        if (pendingLabelManagement === false) managedLabelReference = null;
+        if (pendingDescriptionManagement === false) managedDescriptionReference = null;
         pendingLabelManagement = null;
         pendingDescriptionManagement = null;
         syncRootAccessibility();

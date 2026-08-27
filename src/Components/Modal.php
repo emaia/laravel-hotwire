@@ -56,6 +56,7 @@ class Modal extends Component
         $data['modalMotion'] = $this->motion;
         $data['modalViewTransition'] = $this->viewTransition;
         $data['modalOverlayLabelContext'] = $this->overlayLabelContext;
+        $data = array_replace($data, OverlayLabelContext::boundaryData());
         $data = array_replace($data, FieldContext::boundaryData());
 
         unset(

@@ -51,6 +51,7 @@ class AlertDialog extends Component
     {
         $data = parent::data();
         $data['alertDialogOverlayLabelContext'] = $this->overlayLabelContext;
+        $data = array_replace($data, OverlayLabelContext::boundaryData());
         $data = array_replace($data, FieldContext::boundaryData());
 
         return $data;

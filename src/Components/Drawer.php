@@ -70,6 +70,7 @@ class Drawer extends Component
         $data['drawerMotion'] = $this->motion;
         $data['drawerViewTransition'] = $this->viewTransition;
         $data['drawerOverlayLabelContext'] = $this->overlayLabelContext;
+        $data = array_replace($data, OverlayLabelContext::boundaryData());
         $data = array_replace($data, FieldContext::boundaryData());
 
         unset(

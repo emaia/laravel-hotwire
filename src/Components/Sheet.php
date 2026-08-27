@@ -63,6 +63,7 @@ class Sheet extends Component
         $data['sheetMotion'] = $this->motion;
         $data['sheetViewTransition'] = $this->viewTransition;
         $data['sheetOverlayLabelContext'] = $this->overlayLabelContext;
+        $data = array_replace($data, OverlayLabelContext::boundaryData());
         $data = array_replace($data, FieldContext::boundaryData());
 
         unset(

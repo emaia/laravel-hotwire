@@ -33,6 +33,17 @@ it('links its title and description to the alert dialog surface', function () {
         ->and($xpath->query('//*[@id="delete-account-description"]'))->toHaveCount(1);
 });
 
+it('links zero-valued title and description text', function () {
+    $view = $this->blade('<x-hw::alert-dialog id="zero-alert" title="0" description="0"><button>x</button></x-hw::alert-dialog>');
+    $xpath = new DOMXPath(dom((string) $view));
+    $dialog = $xpath->query('//*[@role="alertdialog"]')->item(0);
+
+    expect($dialog->getAttribute('aria-labelledby'))->toBe('zero-alert-title')
+        ->and($dialog->getAttribute('aria-describedby'))->toBe('zero-alert-description')
+        ->and($xpath->query('//*[@id="zero-alert-title" and text()="0"]'))->toHaveCount(1)
+        ->and($xpath->query('//*[@id="zero-alert-description" and text()="0"]'))->toHaveCount(1);
+});
+
 it('uses the default slot as the trigger', function () {
     $view = $this->blade('
         <x-hw::alert-dialog title="Are you sure?">
