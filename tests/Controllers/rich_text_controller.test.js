@@ -464,6 +464,7 @@ test("re-initialises the editor when turbo:morph-element fires and the ProseMirr
     // preserving the host element and the editor target.
     editorTarget.innerHTML = "";
     mounted.root.dispatchEvent(new CustomEvent("turbo:morph-element", { bubbles: true }));
+    await Promise.resolve();
 
     expect(editorState.constructed).toBe(constructedBefore + 1);
 });
@@ -479,6 +480,7 @@ test("does NOT re-initialise on morph when a ProseMirror node is still present",
     pm.className = "ProseMirror";
     editorTarget.appendChild(pm);
     mounted.root.dispatchEvent(new CustomEvent("turbo:morph-element", { bubbles: true }));
+    await Promise.resolve();
 
     expect(editorState.constructed).toBe(constructedBefore);
 });
@@ -492,6 +494,7 @@ test("disconnect detaches the morph recovery listener", async () => {
     const editorTarget = mounted.root.querySelector("[data-rich-text-target='editor']");
     editorTarget.innerHTML = "";
     mounted.root.dispatchEvent(new CustomEvent("turbo:morph-element", { bubbles: true }));
+    await Promise.resolve();
 
     expect(editorState.constructed).toBe(constructedBefore);
 });

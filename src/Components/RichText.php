@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Components;
 
 use Emaia\LaravelHotwire\Components\Concerns\StripsNullProps;
+use Emaia\LaravelHotwire\Support\ComponentId;
 use Emaia\LaravelHotwire\Support\FieldKey;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\ViewErrorBag;
@@ -61,7 +62,7 @@ class RichText extends Component
 
     public function __construct(
         public ?string $name = null,
-        public ?string $id = null,
+        public string|object|null $id = null,
         public mixed $value = null,
         public ?string $errorKey = null,
         public ?string $placeholder = null,
@@ -75,7 +76,11 @@ class RichText extends Component
         public string $editorClass = '',
         public string $controller = 'rich-text',
         public ?Htmlable $stimulus = null,
-    ) {}
+    ) {
+        if (is_object($this->id)) {
+            $this->id = app(ComponentId::class)->resolve($this->id, 'hw-rich-text', 'rich-text');
+        }
+    }
 
     public function render()
     {
@@ -150,7 +155,7 @@ class RichText extends Component
 
         $resolvedId = $id !== null && $id !== ''
             ? $id
-            : ($hasName ? FieldKey::toId($name) : 'hw-rich-text-'.uniqid());
+            : ($hasName ? FieldKey::toId($name) : app(ComponentId::class)->next('hw-rich-text'));
 
         $resolvedErrorKey = $errorKey !== null && $errorKey !== ''
             ? $errorKey

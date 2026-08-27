@@ -25,7 +25,7 @@ async function render(page, wrapperStyle) {
     await page.addScriptTag({ path: "node_modules/embla-carousel/embla-carousel.umd.js" });
 
     return page.evaluate(() => {
-        const viewport = document.querySelector('[data-carousel-viewport]');
+        const viewport = document.querySelector("[data-carousel-viewport]");
         const embla = window.EmblaCarousel(viewport, { loop: true, align: "center", axis: "x" });
         const v = viewport.getBoundingClientRect();
         const slides = embla.slideNodes();
@@ -74,10 +74,93 @@ test("--carousel-slide-size is overridable by an app class (no default rule to f
             </div>
         `);
         return page.evaluate(() =>
-            Math.round(document.querySelector('[data-carousel-container] > *').getBoundingClientRect().width),
+            Math.round(document.querySelector("[data-carousel-container] > *").getBoundingClientRect().width),
         );
     }
 
     expect(await slideWidth("")).toBeGreaterThan(1000); // fallback ~100%
     expect(await slideWidth("half")).toBeLessThan(700); // class wins → ~50%
 });
+
+test("Turbo morph restores Embla at the selected snap when its managed transform resets", async ({ page }) => {
+    const css = await readFile("resources/css/structural.css", "utf8");
+
+    await page.setViewportSize({ width: 800, height: 600 });
+    await page.setContent(`
+        <style>
+            * { box-sizing: border-box; }
+            ${css}
+            #carousel { width: 300px; --carousel-slide-size: 100%; }
+        </style>
+        ${carouselMarkup()}
+    `);
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ path: "node_modules/@hotwired/turbo/dist/turbo.es2017-umd.js" });
+    await page.addScriptTag({ path: "node_modules/embla-carousel/embla-carousel.umd.js" });
+    await page.addScriptTag({ content: await browserCarouselScript() });
+    await page.evaluate(() => {
+        window.app = window.Stimulus.Application.start();
+        window.app.register("carousel", window.CarouselController);
+    });
+    await page.waitForFunction(() => {
+        const root = document.querySelector("#carousel");
+        return window.app.getControllerForElementAndIdentifier(root, "carousel")?.embla;
+    });
+
+    const result = await page.evaluate(async (replacementMarkup) => {
+        const root = document.querySelector("#carousel");
+        const controller = window.app.getControllerForElementAndIdentifier(root, "carousel");
+        const container = document.querySelector("#carousel-container");
+        const slide = document.querySelector("#slide-2");
+
+        controller.embla.scrollTo(1, true);
+        const transformBefore = container.style.transform;
+
+        const template = document.createElement("template");
+        template.innerHTML = replacementMarkup;
+        window.Turbo.morphElements(root, template.content.firstElementChild);
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
+        return {
+            containerPreserved: document.querySelector("#carousel-container") === container,
+            slidePreserved: document.querySelector("#slide-2") === slide,
+            selected: controller.embla.selectedScrollSnap(),
+            transformBefore,
+            transformAfter: container.style.transform,
+        };
+    }, carouselMarkup());
+
+    expect(result.containerPreserved).toBe(true);
+    expect(result.slidePreserved).toBe(true);
+    expect(result.selected).toBe(1);
+    expect(result.transformBefore).not.toBe("");
+    expect(result.transformAfter).not.toBe("");
+});
+
+function carouselMarkup() {
+    return `
+        <div id="carousel" data-controller="carousel" data-carousel-options-value='{}'>
+            <div id="carousel-viewport" data-carousel-viewport>
+                <div id="carousel-container" data-carousel-container>
+                    <div id="slide-1">Slide 1</div>
+                    <div id="slide-2">Slide 2</div>
+                    <div id="slide-3">Slide 3</div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+async function browserCarouselScript() {
+    const recovery = (await readFile("resources/js/controllers/_turbo_morph_recovery.js", "utf8")).replace(
+        "export function attachMorphRecovery",
+        "function attachMorphRecovery",
+    );
+    const controller = (await readFile("resources/js/controllers/carousel_controller.js", "utf8"))
+        .replace('import { Controller } from "@hotwired/stimulus";', "const { Controller } = window.Stimulus;")
+        .replace('import EmblaCarousel from "embla-carousel";', "const EmblaCarousel = window.EmblaCarousel;")
+        .replace(/import \{ attachMorphRecovery \} from "\.\/_turbo_morph_recovery\.js";\s*/, "")
+        .replace("export default class extends Controller", "class CarouselController extends Controller");
+
+    return `${recovery}\n${controller}\nwindow.CarouselController = CarouselController;`;
+}

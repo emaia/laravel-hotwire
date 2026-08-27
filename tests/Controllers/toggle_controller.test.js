@@ -66,6 +66,32 @@ test.serial("syncs an associated hidden input", async () => {
     expect(input.disabled).toBe(true);
 });
 
+test.serial("prefers the component sibling when duplicate input ids exist", async () => {
+    mounted = await mountController(
+        "toggle",
+        ToggleController,
+        `<input id="toggle-field-notify-input" data-toggle-input type="hidden" name="notify" disabled>
+        <form>
+            <input id="toggle-field-notify-input" data-toggle-input type="hidden" name="notify" disabled>
+            <button
+                data-controller="toggle"
+                data-action="click->toggle#toggle"
+                data-toggle-input-id-value="toggle-field-notify-input"
+                data-toggle-pressed-value="false"
+                aria-pressed="false"
+            >Notify</button>
+        </form>`,
+    );
+
+    const inputs = document.querySelectorAll("input");
+
+    dispatchEvent(mounted.root, "click");
+    await wait(0);
+
+    expect(inputs[0].disabled).toBe(true);
+    expect(inputs[1].disabled).toBe(false);
+});
+
 test.serial("dispatches a bubbling change event after toggling", async () => {
     await mount(`<button data-toggle-pressed-value="false">Bold</button>`);
 

@@ -109,7 +109,7 @@ The dialog closes synchronously on `turbo:before-cache`, preventing ghost dialog
 
 | Prop                     | Type             | Default            | Description                                                  |
 |--------------------------|------------------|--------------------|--------------------------------------------------------------|
-| `id`                     | `string`         | `uniqid('alert-')` | Root element ID                                              |
+| `id`                     | `string\|object` | generated          | Root id. Pass a model for a [stable cross-request id](../recipes/stable-component-ids.md). |
 | `title`                  | `string`         | `''`               | Dialog heading                                               |
 | `description`            | `string`         | `''`               | Body text below the title                                    |
 | `confirm-label`          | `string`         | `'Confirm'`        | Action button label                                          |

@@ -32,7 +32,8 @@ Any other HTML attribute (`id`, `class`, `disabled`, `aria-*`, `data-*`) passes 
 ## Form filters
 
 Passing `name` renders a hidden input associated with the toggle. The input is enabled only while the toggle is pressed,
-so unpressed toggles are omitted from the submitted form data:
+so unpressed toggles are omitted from the submitted form data. Its id is derived from `name`; array names also include
+the toggle value so sibling filters remain distinct:
 
 ```blade
 <hw:form method="get" action="/posts" frame="posts" auto-submit>
@@ -45,6 +46,10 @@ so unpressed toggles are omitted from the submitted form data:
     ...
 </turbo-frame>
 ```
+
+If the same scalar `name`, or the same array `name` and `value` combination, appears more than once in a document, pass a
+distinct `id` to each Toggle. The hidden input uses that explicit id with an `-input` suffix, and the controller always
+prefers its own adjacent input over a duplicate elsewhere in the document.
 
 This keeps Toggle suitable for filters and action state without replacing checkbox/switch behavior. If your server needs
 an explicit false value, use `<hw:checkbox unchecked-value="0">` or `<hw:switch unchecked-value="0">` instead.

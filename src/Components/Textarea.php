@@ -4,6 +4,7 @@ namespace Emaia\LaravelHotwire\Components;
 
 use Emaia\LaravelHotwire\Components\Concerns\StripsNullProps;
 use Emaia\LaravelHotwire\Support\AutoSubmit;
+use Emaia\LaravelHotwire\Support\ComponentId;
 use Emaia\LaravelHotwire\Support\FieldKey;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\ViewErrorBag;
@@ -62,7 +63,7 @@ class Textarea extends Component
     ): array {
         $hasName = $name !== null && $name !== '';
 
-        $resolvedId = $id ?: ($hasName ? FieldKey::toId($name) : 'hw-textarea-'.uniqid());
+        $resolvedId = $id ?: ($hasName ? FieldKey::toId($name) : app(ComponentId::class)->next('hw-textarea'));
         $resolvedErrorKey = $errorKey ?: ($hasName ? FieldKey::toErrorKey($name) : '');
         $errorId = $resolvedId.'-error';
 

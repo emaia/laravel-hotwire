@@ -285,8 +285,8 @@ it('auto-generates a menu id when none is given', function () {
         </x-hw::dropdown>
     ');
 
-    $view->assertSee('id="dropdown-', false);
-    $view->assertSee('aria-controls="dropdown-', false);
+    $view->assertSee('id="hw-dropdown-', false);
+    $view->assertSee('aria-controls="hw-dropdown-', false);
 });
 
 it('is hidden and closed by default', function () {

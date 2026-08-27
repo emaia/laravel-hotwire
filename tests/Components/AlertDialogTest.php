@@ -144,7 +144,7 @@ it('sets custom id', function () {
 it('generates unique id when not provided', function () {
     $component = new AlertDialog(title: 'Continue?');
 
-    expect($component->id)->toStartWith('alert-');
+    expect($component->id)->toStartWith('hw-alert-');
 });
 
 it('registers with custom prefix', function () {

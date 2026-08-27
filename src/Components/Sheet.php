@@ -2,6 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Emaia\LaravelHotwire\Support\ComponentId;
 use Emaia\LaravelHotwire\Support\FieldContext;
 use Emaia\LaravelHotwire\Support\FrameTarget;
 use Emaia\LaravelHotwire\Support\StimulusAttributes;
@@ -14,7 +15,7 @@ class Sheet extends Component
     private const SIDES = ['left', 'right', 'top', 'bottom'];
 
     public function __construct(
-        public string $id = '',
+        public string|object $id = '',
         public string $side = 'right',
         public string $size = '',
         public string|object|bool|null $frame = null,
@@ -26,9 +27,7 @@ class Sheet extends Component
         public ?Htmlable $stimulus = null,
         public bool $viewTransition = false,
     ) {
-        if ($this->id === '') {
-            $this->id = uniqid('sheet-');
-        }
+        $this->id = app(ComponentId::class)->resolve($this->id, 'hw-sheet', 'sheet');
 
         $this->frame = FrameTarget::normalize($this->frame);
 

@@ -6,6 +6,23 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 
 ## Unreleased
 
+### Automatic component ids are stable across morphs
+
+Components no longer use `uniqid()` for automatic DOM ids. Anonymous ids now use a deterministic sequence scoped to
+the full page or requested Turbo Frame. Rendering the same structure from the same response root preserves node identity
+during a Turbo morph. Explicit ids and form-control ids derived from `name` are unchanged.
+
+Alert Dialog, Accordion, Carousel, Drawer, Dropdown, File Upload, Hover Card, Modal, Multi Select, Popover, Read More,
+Rich Text, Sheet, and Tabs now also accept a model through `id`. Use `:id="$record"` for components in reordered
+collections, eager frames refreshed separately, or fragments rendered by another request. The persisted model is
+resolved with the `dom_id()` naming convention and a component-specific prefix. See
+[Stable component ids](./recipes/stable-component-ids.md) for the decision guide.
+
+Toggle hidden inputs now derive their id from `name` instead of `uniqid()`. Scalar names use a URL-encoded
+`toggle-field-` namespace; array names use `toggle-array-`, a name-length boundary, and a URL-encoded value. For example,
+`name="filters[]" value="featured"` produces `toggle-array-7-filters-featured-input`. Update selectors or tests that
+inspected this internal hidden input id.
+
 ### The toaster reads the session flash
 
 `<hw:toaster />` now renders the flashed message itself, so the standalone `<hw:toast />` is no longer needed in a

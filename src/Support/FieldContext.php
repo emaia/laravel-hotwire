@@ -246,7 +246,7 @@ final class FieldContext
 
         $base = FieldKey::resolveId($this->id, $this->name, null, null);
 
-        $baseLabelId = $base ? $base.'-label' : 'hw-field-label-'.uniqid();
+        $baseLabelId = $base ? $base.'-label' : app(ComponentId::class)->next('hw-field-label');
         $labelId = FieldLabel::uniqueId($baseLabelId, array_column($this->selections, 'labelId'));
 
         return $this->resolvedLabelId = $labelId;

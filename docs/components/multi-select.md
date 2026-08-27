@@ -102,6 +102,7 @@ specific icon set:
 | Prop | Default | Description |
 | --- | --- | --- |
 | `name` | `null` | Submitted field name. Appends `[]` automatically when missing. |
+| `id` | derived | String or model trigger id; see [stable component ids](../recipes/stable-component-ids.md). |
 | `options` | `[]` | Value/label options. |
 | `selected` | `[]` | Initially selected values, merged with `old()` by default. |
 | `placeholder` | `Select options` | Trigger text when nothing is selected. |

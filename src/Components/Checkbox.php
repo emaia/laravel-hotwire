@@ -4,6 +4,7 @@ namespace Emaia\LaravelHotwire\Components;
 
 use Emaia\LaravelHotwire\Components\Concerns\StripsNullProps;
 use Emaia\LaravelHotwire\Support\AutoSubmit;
+use Emaia\LaravelHotwire\Support\ComponentId;
 use Emaia\LaravelHotwire\Support\FieldKey;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Str;
@@ -57,7 +58,7 @@ class Checkbox extends Component
         ComponentAttributeBag $attributes,
     ): array {
         $hasName = $name !== null && $name !== '';
-        $baseId = $id ?: ($hasName ? FieldKey::toId($name) : 'hw-checkbox-'.uniqid());
+        $baseId = $id ?: ($hasName ? FieldKey::toId($name) : app(ComponentId::class)->next('hw-checkbox'));
         $resolvedId = $baseId;
 
         if ($this->id === null && $hasName && str_ends_with($name, '[]') && $this->value !== null && $this->value !== '') {

@@ -2,6 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Emaia\LaravelHotwire\Support\ComponentId;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\Component;
 
@@ -12,7 +13,7 @@ class Carousel extends Component
      * @param  array<string, mixed>  $options  catch-all merged into the Embla options (overrides)
      */
     public function __construct(
-        public ?string $id = null,
+        public string|object|null $id = null,
         public string $controller = 'carousel',
         public bool $loop = false,
         public string $align = 'center',
@@ -44,7 +45,9 @@ class Carousel extends Component
         public string $counterClass = '',
         public ?Htmlable $stimulus = null,
     ) {
-        $this->id ??= uniqid('carousel-');
+        $this->id = is_object($this->id)
+            ? app(ComponentId::class)->resolve($this->id, 'hw-carousel', 'carousel')
+            : ($this->id ?? app(ComponentId::class)->next('hw-carousel'));
     }
 
     public function render()

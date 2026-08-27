@@ -257,7 +257,7 @@ it('merges dot_template slot attributes onto the dot button', function () {
 });
 
 it('auto-generates an id and accepts a custom one', function () {
-    $this->blade('<x-hw::carousel>x</x-hw::carousel>')->assertSee('id="carousel-', false);
+    $this->blade('<x-hw::carousel>x</x-hw::carousel>')->assertSee('id="hw-carousel-', false);
     $this->blade('<x-hw::carousel id="gallery">x</x-hw::carousel>')->assertSee('id="gallery"', false);
 });
 

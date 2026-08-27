@@ -66,7 +66,7 @@ it('renders hover card controller, trigger and content wiring', function () {
         ->assertSee('data-hover-card-target="trigger"', false)
         ->assertSee('mouseenter->hover-card#pointerEnter', false)
         ->assertSee('focusin->hover-card#focusIn', false)
-        ->assertSee('aria-describedby="hover-card-', false)
+        ->assertSee('aria-describedby="hw-hover-card-', false)
         ->assertSee('aria-expanded="false"', false)
         ->assertSee('data-hover-card-state="closed"', false)
         ->assertDontSee('tabindex="0"', false)

@@ -14,6 +14,7 @@ use Emaia\LaravelHotwire\Commands\PublishControllersCommand;
 use Emaia\LaravelHotwire\Commands\StylesCommand;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
+use Emaia\LaravelHotwire\Support\ComponentId;
 use Emaia\LaravelHotwire\Support\CssModuleManifest;
 use Emaia\LaravelHotwire\Support\HotwireTagCompiler;
 use Emaia\LaravelHotwire\Support\SessionToast;
@@ -51,6 +52,7 @@ class LaravelHotwireServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(self::packagePath('config/hotwire.php'), 'hotwire');
 
         $this->app->singleton(CssModuleManifest::class, fn (): CssModuleManifest => CssModuleManifest::load());
+        $this->app->scopedIf(ComponentId::class);
         $this->app->scopedIf(SessionToast::class);
     }
 

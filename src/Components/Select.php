@@ -4,6 +4,7 @@ namespace Emaia\LaravelHotwire\Components;
 
 use Emaia\LaravelHotwire\Components\Concerns\StripsNullProps;
 use Emaia\LaravelHotwire\Support\AutoSubmit;
+use Emaia\LaravelHotwire\Support\ComponentId;
 use Emaia\LaravelHotwire\Support\FieldKey;
 use Illuminate\Support\ViewErrorBag;
 use Illuminate\View\Component;
@@ -55,7 +56,7 @@ class Select extends Component
     ): array {
         $hasName = $name !== null && $name !== '';
 
-        $resolvedId = $id ?: ($hasName ? FieldKey::toId($name) : 'hw-select-'.uniqid());
+        $resolvedId = $id ?: ($hasName ? FieldKey::toId($name) : app(ComponentId::class)->next('hw-select'));
         $resolvedErrorKey = $errorKey ?: ($hasName ? FieldKey::toErrorKey($name) : '');
         $errorId = $resolvedId.'-error';
 

@@ -21,7 +21,10 @@ const emblaState = {
     handlers: {},
 };
 
-function createInstance() {
+function createInstance(node) {
+    const container = node.querySelector("[data-carousel-container]");
+    if (container) container.style.transform = "translate3d(0px, 0px, 0px)";
+
     const instance = {
         scrollNext: mock(() => {}),
         scrollPrev: mock(() => {}),
@@ -41,13 +44,14 @@ function createInstance() {
         plugins: () => emblaState.plugins,
         slidesInView: () => emblaState.inView,
         slideNodes: () => emblaState.slideNodes,
+        containerNode: () => container,
         scrollProgress: () => emblaState.progress,
     };
     return instance;
 }
 
 const emblaFactory = mock((node, options, plugins) => {
-    const instance = createInstance();
+    const instance = createInstance(node);
     emblaState.instance = instance;
     emblaState.calls.push({ node, options, plugins });
     return instance;
@@ -464,12 +468,16 @@ test.serial("syncs progress on slidesChanged using snap position", async () => {
 });
 
 test.serial("progress target is optional (no error when absent)", async () => {
-    const m = await mountController("carousel", CarouselController, `
+    const m = await mountController(
+        "carousel",
+        CarouselController,
+        `
         <div data-controller="carousel" data-carousel-options-value='{}'>
             <div data-carousel-viewport>
                 <div data-carousel-container><div>slide</div></div>
             </div>
-        </div>`);
+        </div>`,
+    );
 
     expect(() => {
         emblaState.selected = 1;
@@ -518,12 +526,16 @@ test.serial("updates totalLabel on reInit and slidesChanged", async () => {
 test.serial("counter targets are optional (no error when absent)", async () => {
     emblaState.snaps = [0, 0.5, 1];
 
-    const m = await mountController("carousel", CarouselController, `
+    const m = await mountController(
+        "carousel",
+        CarouselController,
+        `
         <div data-controller="carousel" data-carousel-options-value='{}'>
             <div data-carousel-viewport>
                 <div data-carousel-container><div>slide</div></div>
             </div>
-        </div>`);
+        </div>`,
+    );
 
     expect(() => {
         emblaState.selected = 1;
@@ -581,15 +593,21 @@ function emit(event) {
 
 // --- morph recovery ---
 
-test.serial("re-initialises Embla when turbo:morph-element fires and the registered slides are no longer in the DOM", async () => {
-    await mount();
-    const callsBefore = emblaState.calls.length;
+test.serial(
+    "re-initialises Embla when turbo:morph-element fires and the registered slides are no longer in the DOM",
+    async () => {
+        await mount();
+        const callsBefore = emblaState.calls.length;
+        emblaState.selected = 2;
 
-    // Default slideNodes are placeholder objects ({}, {}, {}), never in document → stale.
-    mounted.root.dispatchEvent(new CustomEvent("turbo:morph-element", { bubbles: true }));
+        // Default slideNodes are placeholder objects ({}, {}, {}), never in document → stale.
+        mounted.root.dispatchEvent(new CustomEvent("turbo:morph-element", { bubbles: true }));
+        await Promise.resolve();
 
-    expect(emblaState.calls.length).toBe(callsBefore + 1);
-});
+        expect(emblaState.calls.length).toBe(callsBefore + 1);
+        expect(emblaState.calls.at(-1).options).toEqual({ startIndex: 2 });
+    },
+);
 
 test.serial("does NOT re-initialise on morph when slide references are still in the DOM", async () => {
     await mount();
@@ -603,8 +621,79 @@ test.serial("does NOT re-initialise on morph when slide references are still in 
 
     const callsBefore = emblaState.calls.length;
     mounted.root.dispatchEvent(new CustomEvent("turbo:morph-element", { bubbles: true }));
+    await Promise.resolve();
 
     expect(emblaState.calls.length).toBe(callsBefore);
+});
+
+test.serial("re-initialises at the selected slide when a morph resets rendered counter state", async () => {
+    await mount({ options: { loop: true } });
+
+    const liveSlides = [
+        mounted.root.querySelector("[data-carousel-container] > div:nth-child(1)"),
+        mounted.root.querySelector("[data-carousel-container] > div:nth-child(2)"),
+        mounted.root.querySelector("[data-carousel-container] > div:nth-child(3)"),
+    ];
+    emblaState.slideNodes = liveSlides;
+    emblaState.selected = 1;
+    emit("select");
+
+    mounted.root.querySelector('[data-carousel-target="indexLabel"]').textContent = "";
+    mounted.root.querySelector('[data-carousel-target="totalLabel"]').textContent = "";
+
+    const callsBefore = emblaState.calls.length;
+    mounted.root.dispatchEvent(new CustomEvent("turbo:morph-element", { bubbles: true }));
+    await Promise.resolve();
+
+    expect(emblaState.calls.length).toBe(callsBefore + 1);
+    expect(emblaState.calls.at(-1).options).toEqual({ loop: true, startIndex: 1 });
+    expect(mounted.root.querySelector('[data-carousel-target="indexLabel"]').textContent).toBe("2");
+    expect(mounted.root.querySelector('[data-carousel-target="totalLabel"]').textContent).toBe("3");
+});
+
+test.serial("re-initialises when a morph resets Embla state without optional output targets", async () => {
+    mounted = await mountController(
+        "carousel",
+        CarouselController,
+        `
+        <div data-controller="carousel" data-carousel-options-value='{}'>
+            <div data-carousel-viewport>
+                <div data-carousel-container>
+                    <div>slide 1</div>
+                    <div>slide 2</div>
+                    <div>slide 3</div>
+                </div>
+            </div>
+        </div>`,
+    );
+
+    emblaState.slideNodes = [...mounted.root.querySelectorAll("[data-carousel-container] > div")];
+    emblaState.selected = 1;
+    mounted.root.querySelector("[data-carousel-container]").style.transform = "";
+
+    const callsBefore = emblaState.calls.length;
+    mounted.root.dispatchEvent(new CustomEvent("turbo:morph-element", { bubbles: true }));
+    await Promise.resolve();
+
+    expect(emblaState.calls.length).toBe(callsBefore + 1);
+    expect(emblaState.calls.at(-1).options).toEqual({ startIndex: 1 });
+});
+
+test.serial("re-initialises Embla when a later registered slide is no longer in the DOM", async () => {
+    await mount();
+
+    const liveSlides = [
+        mounted.root.querySelector("[data-carousel-container] > div:nth-child(1)"),
+        mounted.root.querySelector("[data-carousel-container] > div:nth-child(2)"),
+    ];
+    emblaState.slideNodes = liveSlides;
+    liveSlides[1].replaceWith(document.createElement("div"));
+
+    const callsBefore = emblaState.calls.length;
+    mounted.root.dispatchEvent(new CustomEvent("turbo:morph-element", { bubbles: true }));
+    await Promise.resolve();
+
+    expect(emblaState.calls.length).toBe(callsBefore + 1);
 });
 
 test.serial("disconnect detaches the morph recovery listener", async () => {
@@ -614,6 +703,7 @@ test.serial("disconnect detaches the morph recovery listener", async () => {
 
     const callsBefore = emblaState.calls.length;
     mounted.root.dispatchEvent(new CustomEvent("turbo:morph-element", { bubbles: true }));
+    await Promise.resolve();
 
     expect(emblaState.calls.length).toBe(callsBefore);
 });

@@ -2,6 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Emaia\LaravelHotwire\Support\ComponentId;
 use Emaia\LaravelHotwire\Support\FieldContext;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\Component;
@@ -9,7 +10,7 @@ use Illuminate\View\Component;
 class HoverCard extends Component
 {
     public function __construct(
-        public string $id = '',
+        public string|object $id = '',
         public string $align = 'start',
         public string $side = 'bottom',
         public int|float|string $sideOffset = 4,
@@ -22,9 +23,7 @@ class HoverCard extends Component
         public bool $open = false,
         public ?Htmlable $stimulus = null,
     ) {
-        if ($this->id === '') {
-            $this->id = uniqid('hover-card-');
-        }
+        $this->id = app(ComponentId::class)->resolve($this->id, 'hw-hover-card', 'hover-card');
 
         $this->side = $this->oneOf($this->side, ['top', 'right', 'bottom', 'left'], 'bottom');
         $this->align = $this->oneOf($this->align, ['start', 'center', 'end'], 'start');

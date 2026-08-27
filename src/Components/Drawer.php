@@ -2,6 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Emaia\LaravelHotwire\Support\ComponentId;
 use Emaia\LaravelHotwire\Support\FieldContext;
 use Emaia\LaravelHotwire\Support\FrameTarget;
 use Emaia\LaravelHotwire\Support\StimulusAttributes;
@@ -16,7 +17,7 @@ class Drawer extends Component
     public string $axis;
 
     public function __construct(
-        public string $id = '',
+        public string|object $id = '',
         public string $direction = 'down',
         public ?string $side = null,
         public string $size = '',
@@ -29,9 +30,7 @@ class Drawer extends Component
         public ?Htmlable $stimulus = null,
         public bool $viewTransition = false,
     ) {
-        if ($this->id === '') {
-            $this->id = uniqid('drawer-');
-        }
+        $this->id = app(ComponentId::class)->resolve($this->id, 'hw-drawer', 'drawer');
 
         $this->frame = FrameTarget::normalize($this->frame);
 

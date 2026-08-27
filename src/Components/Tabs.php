@@ -2,6 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Emaia\LaravelHotwire\Support\ComponentId;
 use Emaia\LaravelHotwire\Support\StimulusAttributes;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\Component;
@@ -18,7 +19,7 @@ class Tabs extends Component
     public string $tabsOrientation;
 
     public function __construct(
-        public ?string $id = null,
+        public string|object|null $id = null,
         public ?string $active = null,
         public ?int $selectedIndex = null,
         public string $orientation = 'horizontal',
@@ -26,7 +27,7 @@ class Tabs extends Component
         public string $class = '',
         public ?Htmlable $stimulus = null,
     ) {
-        $this->tabsId = $id !== null && $id !== '' ? $id : 'hw-tabs-'.uniqid();
+        $this->tabsId = app(ComponentId::class)->resolve($id, 'hw-tabs', 'tabs');
         $this->tabsIdentifier = $controller;
         $this->tabsActive = $active;
         $this->tabsOrientation = $orientation;

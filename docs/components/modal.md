@@ -231,7 +231,7 @@ stale teardown. Reduced-motion preference skips the wait.
 
 | Prop              | Type                         | Default            | Description                                                                         |
 |-------------------|------------------------------|--------------------|-------------------------------------------------------------------------------------|
-| `id`              | `string`                     | `uniqid('modal-')` | Root element ID                                                                     |
+| `id`              | `string\|object`             | generated          | Root id. Pass a model for a [stable cross-request id](../recipes/stable-component-ids.md). |
 | `size`            | `string`                     | `'md'`             | Preset (`sm`/`md`/`lg`/`xl`/`full`/`auto`) or arbitrary width (`800px`, `60vw`)     |
 | `class`           | `string`                     | `''`               | Additional CSS classes on the panel                                                 |
 | `close-button`    | `bool`                       | `true`             | Shows the X close icon                                                              |

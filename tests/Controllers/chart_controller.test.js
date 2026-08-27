@@ -393,6 +393,7 @@ test.serial("re-initialises the chart when turbo:morph-element fires and the can
     // Simulate morph: a Turbo morph wiped the embedded canvas while preserving the host.
     mounted.root.innerHTML = "";
     mounted.root.dispatchEvent(new CustomEvent("turbo:morph-element", { bubbles: true }));
+    await Promise.resolve();
 
     expect(chartState.initCalls.length).toBe(initBefore + 1);
 });
@@ -406,6 +407,7 @@ test.serial("does NOT re-initialise on morph when the canvas is still present", 
     const canvas = document.createElement("canvas");
     mounted.root.appendChild(canvas);
     mounted.root.dispatchEvent(new CustomEvent("turbo:morph-element", { bubbles: true }));
+    await Promise.resolve();
 
     expect(chartState.initCalls.length).toBe(initBefore);
 });
@@ -418,6 +420,7 @@ test.serial("disconnect detaches the morph recovery listener", async () => {
     const initBefore = chartState.initCalls.length;
     mounted.root.innerHTML = "";
     mounted.root.dispatchEvent(new CustomEvent("turbo:morph-element", { bubbles: true }));
+    await Promise.resolve();
 
     expect(chartState.initCalls.length).toBe(initBefore);
 });

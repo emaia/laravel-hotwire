@@ -278,7 +278,7 @@ closed.
 
 | Component | Prop | Default | Description |
 | --- | --- | --- | --- |
-| `dropdown` | `id` | `uniqid('dropdown-')` | Content `id` and trigger `aria-controls`. |
+| `dropdown` | `id` | generated | String or model content id and trigger `aria-controls`; see [stable component ids](../recipes/stable-component-ids.md). |
 | `dropdown` | `open` | `false` | Start open without an enter animation. |
 | `dropdown` | `close-on-select` | `true` | Close when an `<a>` or `<button>` inside the content is clicked. |
 | `dropdown.trigger` | `as-child` | `false` | Merge trigger behavior into one button or anchor root instead of rendering a button. |

@@ -2,6 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Emaia\LaravelHotwire\Support\ComponentId;
 use Emaia\LaravelHotwire\Support\StimulusAttributes;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\Component;
@@ -19,14 +20,14 @@ class Accordion extends Component
     public ?string $accordionValueAttribute;
 
     public function __construct(
-        public ?string $id = null,
+        public string|object|null $id = null,
         public string $type = 'single',
         string|array|null $value = null,
         public string $controller = 'accordion',
         public string $class = '',
         public ?Htmlable $stimulus = null,
     ) {
-        $this->accordionId = $id !== null && $id !== '' ? $id : 'hw-accordion-'.uniqid();
+        $this->accordionId = app(ComponentId::class)->resolve($id, 'hw-accordion', 'accordion');
         $this->accordionIdentifier = $controller;
         $this->accordionValue = $this->normalizeValue($value);
         $this->accordionValueAttribute = $this->serializeValue($value);
