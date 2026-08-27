@@ -5,6 +5,7 @@ namespace Emaia\LaravelHotwire\Components;
 use Emaia\LaravelHotwire\Support\ComponentId;
 use Emaia\LaravelHotwire\Support\FieldContext;
 use Emaia\LaravelHotwire\Support\FrameTarget;
+use Emaia\LaravelHotwire\Support\OverlayLabelContext;
 use Emaia\LaravelHotwire\Support\StimulusAttributes;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\Component;
@@ -13,6 +14,8 @@ use Illuminate\View\ComponentAttributeBag;
 class Sheet extends Component
 {
     private const SIDES = ['left', 'right', 'top', 'bottom'];
+
+    private OverlayLabelContext $overlayLabelContext;
 
     public function __construct(
         public string|object $id = '',
@@ -28,6 +31,7 @@ class Sheet extends Component
         public bool $viewTransition = false,
     ) {
         $this->id = app(ComponentId::class)->resolve($this->id, 'hw-sheet', 'sheet');
+        $this->overlayLabelContext = new OverlayLabelContext($this->id, 'sheet');
 
         $this->frame = FrameTarget::normalize($this->frame);
 
@@ -58,6 +62,7 @@ class Sheet extends Component
         $data['sheetFrame'] = $this->frame;
         $data['sheetMotion'] = $this->motion;
         $data['sheetViewTransition'] = $this->viewTransition;
+        $data['sheetOverlayLabelContext'] = $this->overlayLabelContext;
         $data = array_replace($data, FieldContext::boundaryData());
 
         unset(

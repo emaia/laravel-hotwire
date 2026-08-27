@@ -1,4 +1,4 @@
-@aware(['sheetId' => null, 'sheetSide' => 'right', 'sheetBackdrop' => true, 'sheetFrame' => null, 'sheetMotion' => 'default', 'sheetViewTransition' => false])
+@aware(['sheetId' => null, 'sheetSide' => 'right', 'sheetBackdrop' => true, 'sheetFrame' => null, 'sheetMotion' => 'default', 'sheetViewTransition' => false, 'sheetOverlayLabelContext' => null])
 
 @php
     if ($sheetId === null) {
@@ -13,6 +13,8 @@
     data-motion="{{ $sheetMotion }}"
     role="dialog"
     aria-modal="true"
+    @if ($sheetOverlayLabelContext?->titleId() !== null) aria-labelledby="{{ $sheetOverlayLabelContext->titleId() }}" @endif
+    @if ($sheetOverlayLabelContext?->descriptionId() !== null) aria-describedby="{{ $sheetOverlayLabelContext->descriptionId() }}" @endif
     hidden
     inert
 >

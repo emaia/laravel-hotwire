@@ -23,8 +23,10 @@
         data-motion="{{ $motion }}"
         data-alert-dialog-target="modal"
         data-action="click->alert-dialog#clickOutside"
-        role="dialog"
+        role="alertdialog"
         aria-modal="true"
+        @if ($alertDialogOverlayLabelContext->titleId() !== null) aria-labelledby="{{ $alertDialogOverlayLabelContext->titleId() }}" @endif
+        @if ($alertDialogOverlayLabelContext->descriptionId() !== null) aria-describedby="{{ $alertDialogOverlayLabelContext->descriptionId() }}" @endif
         hidden
         inert
     >
@@ -39,11 +41,11 @@
         >
             <div data-slot="alert-dialog-header">
                 @if ($title)
-                    <h2 data-slot="alert-dialog-title">{{ $title }}</h2>
+                    <h2 id="{{ $alertDialogOverlayLabelContext->titleId() }}" data-slot="alert-dialog-title">{{ $title }}</h2>
                 @endif
 
                 @if ($description)
-                    <p data-slot="alert-dialog-description" style="text-wrap-mode: wrap">{{ $description }}</p>
+                    <p id="{{ $alertDialogOverlayLabelContext->descriptionId() }}" data-slot="alert-dialog-description" style="text-wrap-mode: wrap">{{ $description }}</p>
                 @endif
 
                 @isset($content)

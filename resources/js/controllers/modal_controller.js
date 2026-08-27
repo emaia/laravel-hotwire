@@ -68,6 +68,7 @@ export default class ModalController extends Controller {
             modalTarget: this.modalTarget,
             backdropTarget: this.backdropTarget,
             dialogTarget: this.dialogTarget,
+            accessibilityPrefix: this.identifier,
             lockScrollClasses: this.lockScrollClasses,
             lockScroll: this.lockScrollValue,
             closeOnEscape: this.closeOnEscapeValue,

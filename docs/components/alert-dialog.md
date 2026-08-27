@@ -92,7 +92,9 @@ The dialog closes synchronously on `turbo:before-cache`, preventing ghost dialog
 
 ## Accessibility
 
-- `role="dialog"` and `aria-modal="true"` on the overlay
+- `role="alertdialog"` and `aria-modal="true"` on the overlay
+- `title` and `description` receive stable ids and automatically name and describe the alert dialog
+- For a titleless custom layout, `aria-label` on the root is applied to the alert dialog before it opens
 - Focus trap: Tab/Shift+Tab cycle through focusable elements inside the dialog
 - Focus returns to the trigger element on close
 - Closes on `Escape` key
@@ -107,21 +109,21 @@ The dialog closes synchronously on `turbo:before-cache`, preventing ghost dialog
 
 ## Props
 
-| Prop                     | Type             | Default            | Description                                                  |
-|--------------------------|------------------|--------------------|--------------------------------------------------------------|
-| `id`                     | `string\|object` | generated          | Root id. Pass a model for a [stable cross-request id](../recipes/stable-component-ids.md). |
-| `title`                  | `string`         | `''`               | Dialog heading                                               |
-| `description`            | `string`         | `''`               | Body text below the title                                    |
-| `confirm-label`          | `string`         | `'Confirm'`        | Action button label                                          |
-| `cancel-label`           | `string`         | `'Cancel'`         | Cancel button label                                          |
-| `confirm-variant`        | `string`         | `'default'`        | Action button variant                                        |
-| `cancel-variant`         | `string`         | `'outline'`        | Cancel button variant                                        |
-| `confirm-class`          | `string`         | `''`               | Extra CSS classes for the action button                      |
-| `cancel-class`           | `string`         | `''`               | Extra CSS classes for the cancel button                      |
-| `motion`                 | `string`         | `'default'`        | `default` follows CSS motion; `none` disables it             |
-| `lock-scroll`            | `bool`           | `true`             | Locks body scroll when the dialog is open                    |
-| `close-on-click-outside` | `bool`           | `true`             | Closes when clicking the backdrop                            |
-| `stimulus`               | `Htmlable\|null` | `null`             | Optional extra Stimulus binding merged into the root element |
+| Prop                     | Type             | Default     | Description                                                                                |
+|--------------------------|------------------|-------------|--------------------------------------------------------------------------------------------|
+| `id`                     | `string\|object` | generated   | Root id. Pass a model for a [stable cross-request id](../recipes/stable-component-ids.md). |
+| `title`                  | `string`         | `''`        | Dialog heading                                                                             |
+| `description`            | `string`         | `''`        | Body text below the title                                                                  |
+| `confirm-label`          | `string`         | `'Confirm'` | Action button label                                                                        |
+| `cancel-label`           | `string`         | `'Cancel'`  | Cancel button label                                                                        |
+| `confirm-variant`        | `string`         | `'default'` | Action button variant                                                                      |
+| `cancel-variant`         | `string`         | `'outline'` | Cancel button variant                                                                      |
+| `confirm-class`          | `string`         | `''`        | Extra CSS classes for the action button                                                    |
+| `cancel-class`           | `string`         | `''`        | Extra CSS classes for the cancel button                                                    |
+| `motion`                 | `string`         | `'default'` | `default` follows CSS motion; `none` disables it                                           |
+| `lock-scroll`            | `bool`           | `true`      | Locks body scroll when the dialog is open                                                  |
+| `close-on-click-outside` | `bool`           | `true`      | Closes when clicking the backdrop                                                          |
+| `stimulus`               | `Htmlable\|null` | `null`      | Optional extra Stimulus binding merged into the root element                               |
 
 Regular `data-controller` / `data-action` attributes and the `stimulus` prop are merged and deduplicated with the
 internal `alert-dialog` controller. Component-owned `data-alert-dialog-*` attributes are protected; configure supported

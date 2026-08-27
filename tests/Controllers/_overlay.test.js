@@ -171,6 +171,154 @@ test("Turbo morphs cannot overwrite managed presence attributes", async () => {
     expect(descendant.dispatchEvent(morphAttributeEvent("hidden"))).toBe(true);
 });
 
+test("links package titles and descriptions and protects their references during morphs", () => {
+    const root = document.createElement("div");
+    const { modal, backdrop, dialog } = elements();
+    const title = document.createElement("h2");
+    const description = document.createElement("p");
+    root.id = "account-modal";
+    modal.setAttribute("role", "dialog");
+    title.dataset.slot = "modal-title";
+    description.dataset.slot = "modal-description";
+    dialog.prepend(title, description);
+    root.append(modal);
+    overlay = createOverlay({ element: root }, options({
+        modal,
+        backdrop,
+        dialog,
+        accessibilityPrefix: "modal",
+    }));
+
+    expect(title.id).toBe("account-modal-title");
+    expect(description.id).toBe("account-modal-description");
+    expect(modal.getAttribute("aria-labelledby")).toBe(title.id);
+    expect(modal.getAttribute("aria-describedby")).toBe(description.id);
+    expect(modal.dispatchEvent(morphAttributeEvent("aria-labelledby"))).toBe(false);
+    expect(modal.dispatchEvent(morphAttributeEvent("aria-describedby"))).toBe(false);
+});
+
+test("does not name an overlay from a nested overlay title", () => {
+    const root = document.createElement("div");
+    const { modal, backdrop, dialog } = elements();
+    const nestedModal = document.createElement("div");
+    const nestedTitle = document.createElement("h2");
+    root.id = "parent-modal";
+    modal.setAttribute("role", "dialog");
+    nestedModal.setAttribute("role", "dialog");
+    nestedTitle.dataset.slot = "modal-title";
+    nestedModal.append(nestedTitle);
+    dialog.prepend(nestedModal);
+    root.append(modal);
+    overlay = createOverlay({ element: root }, options({
+        modal,
+        backdrop,
+        dialog,
+        accessibilityPrefix: "modal",
+    }));
+
+    expect(modal.hasAttribute("aria-labelledby")).toBe(false);
+    expect(nestedTitle.id).toBe("");
+});
+
+test("preserves an application-authored accessible name", () => {
+    const root = document.createElement("div");
+    const { modal, backdrop, dialog } = elements();
+    const title = document.createElement("h2");
+    root.id = "account-modal";
+    modal.setAttribute("role", "dialog");
+    modal.setAttribute("aria-labelledby", "application-title");
+    title.dataset.slot = "modal-title";
+    dialog.prepend(title);
+    root.append(modal);
+    overlay = createOverlay({ element: root }, options({
+        modal,
+        backdrop,
+        dialog,
+        accessibilityPrefix: "modal",
+    }));
+
+    expect(modal.getAttribute("aria-labelledby")).toBe("application-title");
+    expect(modal.dispatchEvent(morphAttributeEvent("aria-labelledby"))).toBe(true);
+});
+
+test("copies an application-authored accessible name from the controller root", () => {
+    const root = document.createElement("div");
+    const { modal, backdrop, dialog } = elements();
+    root.setAttribute("aria-label", "Account settings");
+    modal.setAttribute("role", "dialog");
+    root.append(modal);
+    overlay = createOverlay({ element: root }, options({
+        modal,
+        backdrop,
+        dialog,
+        accessibilityPrefix: "modal",
+    }));
+
+    expect(modal.getAttribute("aria-label")).toBe("Account settings");
+    expect(modal.hasAttribute("aria-labelledby")).toBe(false);
+});
+
+test("releases and reacquires a managed accessible name across morphs", () => {
+    const root = document.createElement("div");
+    const { modal, backdrop, dialog } = elements();
+    const title = document.createElement("h2");
+    const incomingModal = document.createElement("div");
+    root.id = "account-modal";
+    modal.setAttribute("role", "dialog");
+    title.dataset.slot = "modal-title";
+    dialog.prepend(title);
+    root.append(modal);
+    overlay = createOverlay({ element: root }, options({
+        modal,
+        backdrop,
+        dialog,
+        accessibilityPrefix: "modal",
+    }));
+    incomingModal.setAttribute("role", "dialog");
+    incomingModal.setAttribute("aria-labelledby", "application-title");
+
+    modal.dispatchEvent(morphElementEvent(incomingModal));
+
+    expect(modal.dispatchEvent(morphAttributeEvent("aria-labelledby"))).toBe(true);
+    modal.setAttribute("aria-labelledby", "application-title");
+    modal.dispatchEvent(morphedElementEvent());
+    expect(modal.getAttribute("aria-labelledby")).toBe("application-title");
+
+    const restoredModal = modal.cloneNode(true);
+    restoredModal.removeAttribute("aria-labelledby");
+    modal.dispatchEvent(morphElementEvent(restoredModal));
+    expect(modal.dispatchEvent(morphAttributeEvent("aria-labelledby"))).toBe(true);
+    modal.removeAttribute("aria-labelledby");
+    modal.dispatchEvent(morphedElementEvent());
+    expect(modal.getAttribute("aria-labelledby")).toBe("account-modal-title");
+});
+
+test("keeps managed ownership when a morph is canceled", async () => {
+    const root = document.createElement("div");
+    const { modal, backdrop, dialog } = elements();
+    const title = document.createElement("h2");
+    const incomingModal = document.createElement("div");
+    root.id = "account-modal";
+    modal.setAttribute("role", "dialog");
+    title.dataset.slot = "modal-title";
+    dialog.prepend(title);
+    root.append(modal);
+    overlay = createOverlay({ element: root }, options({
+        modal,
+        backdrop,
+        dialog,
+        accessibilityPrefix: "modal",
+    }));
+    incomingModal.setAttribute("role", "dialog");
+    incomingModal.setAttribute("aria-labelledby", "application-title");
+    modal.addEventListener("turbo:before-morph-element", (event) => event.preventDefault(), { once: true });
+
+    expect(modal.dispatchEvent(morphElementEvent(incomingModal))).toBe(false);
+    await tick();
+
+    expect(modal.dispatchEvent(morphAttributeEvent("aria-labelledby"))).toBe(false);
+});
+
 test("Turbo morph protection follows a custom state attribute", () => {
     const { modal, backdrop, dialog } = elements();
     overlay = createOverlay(null, options({
@@ -300,6 +448,20 @@ function morphAttributeEvent(attributeName) {
         bubbles: true,
         cancelable: true,
         detail: { attributeName, mutationType: "update" },
+    });
+}
+
+function morphElementEvent(newElement) {
+    return new CustomEvent("turbo:before-morph-element", {
+        bubbles: true,
+        cancelable: true,
+        detail: { newElement },
+    });
+}
+
+function morphedElementEvent() {
+    return new CustomEvent("turbo:morph-element", {
+        bubbles: true,
     });
 }
 

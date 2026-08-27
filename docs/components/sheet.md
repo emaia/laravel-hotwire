@@ -40,6 +40,10 @@ The sheet traps focus while open, restores focus to the trigger on close, locks 
 synchronously before Turbo caches the page. Presence derives completion from actual finite CSS motion and supports rapid
 reopen, `motion="none"`, and reduced motion without duration timers.
 
+`sheet.title` and `sheet.description` receive stable ids and automatically name and describe the dialog overlay,
+including content that arrives through the configured Turbo Frame. For a titleless custom layout, set `aria-label` on
+the Sheet root.
+
 ## Frame Content
 
 Use `frame` when one sheet host in your layout should receive many server-rendered panels:
@@ -81,8 +85,8 @@ The root owns the matching frame id. Use one `<hw:sheet.content>` for fallback c
 
 `view-transition` mounts `turbo--view-transition` on the internal frame host for both automatic and explicit
 `sheet.content` markup. It does nothing without `frame`; unsupported browsers keep the normal Turbo render. Enable it on
-the sheet host rather than only on the response's `<hw:frame-or-page>` because Turbo preserves the existing host and does
-not copy attributes from the response frame.
+the sheet host rather than only on the response's `<hw:frame-or-page>` because Turbo preserves the existing host and
+does not copy attributes from the response frame.
 
 When the frame receives content, the sheet opens automatically. A trigger can override the loading state with
 `data-loading-template="#template-id"`; otherwise the `loading_template` slot is used.
@@ -105,18 +109,18 @@ return turbo_stream()
 
 ## Props
 
-| Prop                  | Default                                           | Description                                                    |
-|-----------------------|---------------------------------------------------|----------------------------------------------------------------|
+| Prop                  | Default                                           | Description                                                                              |
+|-----------------------|---------------------------------------------------|------------------------------------------------------------------------------------------|
 | `id`                  | auto                                              | String or model root id; see [stable component ids](../recipes/stable-component-ids.md). |
-| `side`                | `right`                                           | `left`, `right`, `top`, or `bottom`.                           |
-| `size`                | `75%` for side sheets, `auto` for vertical sheets | CSS length assigned to `--sheet-width` or `--sheet-height`.    |
-| `frame`               | `null`                                            | String/object Turbo Frame id for layout-shared, server-loaded content. |
-| `backdrop`            | `true`                                            | Render the backdrop and click-outside target.                  |
-| `motion`              | `default`                                         | `default` follows CSS motion; `none` disables it.              |
-| `lockScroll`          | `true`                                            | Lock body scroll while open.                                   |
-| `closeOnEscape`       | `true`                                            | Close when Escape is pressed.                                  |
-| `closeOnClickOutside` | `true`                                            | Close when the backdrop is clicked.                            |
-| `viewTransition`      | `false`                                           | Animate successive renders inside the frame host.              |
+| `side`                | `right`                                           | `left`, `right`, `top`, or `bottom`.                                                     |
+| `size`                | `75%` for side sheets, `auto` for vertical sheets | CSS length assigned to `--sheet-width` or `--sheet-height`.                              |
+| `frame`               | `null`                                            | String/object Turbo Frame id for layout-shared, server-loaded content.                   |
+| `backdrop`            | `true`                                            | Render the backdrop and click-outside target.                                            |
+| `motion`              | `default`                                         | `default` follows CSS motion; `none` disables it.                                        |
+| `lockScroll`          | `true`                                            | Lock body scroll while open.                                                             |
+| `closeOnEscape`       | `true`                                            | Close when Escape is pressed.                                                            |
+| `closeOnClickOutside` | `true`                                            | Close when the backdrop is clicked.                                                      |
+| `viewTransition`      | `false`                                           | Animate successive renders inside the frame host.                                        |
 
 ## Components
 

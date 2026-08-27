@@ -5,6 +5,7 @@ namespace Emaia\LaravelHotwire\Components;
 use Emaia\LaravelHotwire\Support\ComponentId;
 use Emaia\LaravelHotwire\Support\FieldContext;
 use Emaia\LaravelHotwire\Support\FrameTarget;
+use Emaia\LaravelHotwire\Support\OverlayLabelContext;
 use Emaia\LaravelHotwire\Support\StimulusAttributes;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\Component;
@@ -12,7 +13,9 @@ use Illuminate\View\ComponentAttributeBag;
 
 class Drawer extends Component
 {
-    private const DIRECTIONS = ['up', 'right', 'down', 'left'];
+    private const array DIRECTIONS = ['up', 'right', 'down', 'left'];
+
+    private OverlayLabelContext $overlayLabelContext;
 
     public string $axis;
 
@@ -31,6 +34,7 @@ class Drawer extends Component
         public bool $viewTransition = false,
     ) {
         $this->id = app(ComponentId::class)->resolve($this->id, 'hw-drawer', 'drawer');
+        $this->overlayLabelContext = new OverlayLabelContext($this->id, 'drawer');
 
         $this->frame = FrameTarget::normalize($this->frame);
 
@@ -65,6 +69,7 @@ class Drawer extends Component
         $data['drawerFrame'] = $this->frame;
         $data['drawerMotion'] = $this->motion;
         $data['drawerViewTransition'] = $this->viewTransition;
+        $data['drawerOverlayLabelContext'] = $this->overlayLabelContext;
         $data = array_replace($data, FieldContext::boundaryData());
 
         unset(

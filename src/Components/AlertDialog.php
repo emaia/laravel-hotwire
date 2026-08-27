@@ -4,11 +4,14 @@ namespace Emaia\LaravelHotwire\Components;
 
 use Emaia\LaravelHotwire\Support\ComponentId;
 use Emaia\LaravelHotwire\Support\FieldContext;
+use Emaia\LaravelHotwire\Support\OverlayLabelContext;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\Component;
 
 class AlertDialog extends Component
 {
+    private OverlayLabelContext $overlayLabelContext;
+
     public function __construct(
         public string $title = '',
         public string $description = '',
@@ -25,6 +28,15 @@ class AlertDialog extends Component
         public ?Htmlable $stimulus = null,
     ) {
         $this->id = app(ComponentId::class)->resolve($this->id, 'hw-alert', 'alert');
+        $this->overlayLabelContext = new OverlayLabelContext($this->id, 'alert-dialog');
+
+        if ($this->title !== '') {
+            $this->overlayLabelContext->register('alert-dialog-title');
+        }
+
+        if ($this->description !== '') {
+            $this->overlayLabelContext->register('alert-dialog-description');
+        }
 
         $this->motion = in_array($this->motion, ['default', 'none'], true) ? $this->motion : 'default';
     }
@@ -38,6 +50,7 @@ class AlertDialog extends Component
     public function data(): array
     {
         $data = parent::data();
+        $data['alertDialogOverlayLabelContext'] = $this->overlayLabelContext;
         $data = array_replace($data, FieldContext::boundaryData());
 
         return $data;

@@ -39,6 +39,10 @@ The drawer traps focus while open, restores focus to the trigger on close, locks
 synchronously before Turbo caches the page. Its overlay uses `data-state="open|closed"`; Presence waits for actual
 finite CSS motion and cancels stale teardown when the drawer rapidly reopens. Customize transition duration in CSS.
 
+`drawer.title` and `drawer.description` receive stable ids and automatically name and describe the dialog overlay,
+including content that arrives through the configured Turbo Frame. For a titleless custom layout, set `aria-label` on
+the Drawer root.
+
 Use `<hw:sheet>` instead when you want a side panel with an always-visible close button.
 
 ## Frame Content

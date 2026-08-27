@@ -7,6 +7,7 @@
     'modalFrame' => null,
     'modalMotion' => 'default',
     'modalViewTransition' => false,
+    'modalOverlayLabelContext' => null,
 ])
 
 @php
@@ -26,6 +27,8 @@
     data-action="click->modal#clickOutside"
     role="dialog"
     aria-modal="true"
+    @if ($modalOverlayLabelContext?->titleId() !== null) aria-labelledby="{{ $modalOverlayLabelContext->titleId() }}" @endif
+    @if ($modalOverlayLabelContext?->descriptionId() !== null) aria-describedby="{{ $modalOverlayLabelContext->descriptionId() }}" @endif
     hidden
     inert
 >

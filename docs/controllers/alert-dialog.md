@@ -32,13 +32,14 @@ Escape cancellation and focus trapping are suspended during IME composition.
         data-action="click->alert-dialog#clickOutside"
         hidden
         inert
-        role="dialog"
+        role="alertdialog"
         aria-modal="true"
+        aria-labelledby="confirmation-title"
     >
         <div data-alert-dialog-target="backdrop"></div>
 
         <div data-alert-dialog-target="dialog">
-            <p>Are you sure?</p>
+            <h2 id="confirmation-title">Are you sure?</h2>
 
             <button type="button" data-action="alert-dialog#cancel">Cancel</button>
             <button type="button" data-action="alert-dialog#confirm">Confirm</button>
@@ -67,18 +68,18 @@ The controller stores the clicked element, opens the dialog, traps focus, and on
 
 ## Stimulus Classes
 
-| Class                                  | Description                                                                |
-|----------------------------------------|----------------------------------------------------------------------------|
-| `lock-scroll`                          | Applied to `<body>` while the dialog is open when `lock-scroll` is enabled |
+| Class         | Description                                                                |
+|---------------|----------------------------------------------------------------------------|
+| `lock-scroll` | Applied to `<body>` while the dialog is open when `lock-scroll` is enabled |
 
 ## Actions
 
-| Action                      | Description                                                                 |
-|-----------------------------|-----------------------------------------------------------------------------|
-| `alert-dialog#intercept`    | Intercepts a click, stores the original element, and opens the dialog       |
-| `alert-dialog#confirm`      | Closes the dialog and re-fires the original click after the close animation |
-| `alert-dialog#cancel`       | Cancels the pending action and closes the dialog                            |
-| `alert-dialog#clickOutside` | Cancels when clicking outside the dialog panel                              |
+| Action                       | Description                                                                 |
+|------------------------------|-----------------------------------------------------------------------------|
+| `alert-dialog#intercept`     | Intercepts a click, stores the original element, and opens the dialog       |
+| `alert-dialog#confirm`       | Closes the dialog and re-fires the original click after the close animation |
+| `alert-dialog#cancel`        | Cancels the pending action and closes the dialog                            |
+| `alert-dialog#clickOutside`  | Cancels when clicking outside the dialog panel                              |
 | `alert-dialog#closeForCache` | Clears the pending action and closes synchronously for Turbo cache          |
 
 ## Copyable Minimal Markup
@@ -99,11 +100,14 @@ The controller stores the clicked element, opens the dialog, traps focus, and on
         data-motion="default"
         data-action="click->alert-dialog#clickOutside"
         hidden inert
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="confirmation-title"
     >
         <div data-alert-dialog-target="backdrop"></div>
 
         <div data-alert-dialog-target="dialog">
-            <p>Are you sure?</p>
+            <h2 id="confirmation-title">Are you sure?</h2>
 
             <button type="button" data-action="alert-dialog#cancel">Cancel</button>
             <button type="button" data-action="alert-dialog#confirm">Confirm</button>
@@ -150,13 +154,14 @@ integration:
 - Focus is trapped within the dialog while it is open.
 - Focus returns to the intercepted trigger element when the dialog closes.
 - Pressing `Escape` cancels the dialog.
-- `role="dialog"` and `aria-modal="true"` should be applied to the visible overlay container.
+- `role="alertdialog"`, `aria-modal="true"`, and an accessible name should be applied to the visible overlay container.
 
 ## Turbo integration
 
 Cancel the dialog on `turbo:before-cache` to avoid restoring an open modal from Turbo Drive cache:
 
 ```html
+
 <div
     data-controller="alert-dialog"
     data-action="turbo:before-cache@window->alert-dialog#closeForCache"
@@ -168,5 +173,5 @@ Cancel the dialog on `turbo:before-cache` to avoid restoring an open modal from 
 ## Use the Blade component when possible
 
 If you want the full markup, default classes, labels, and slots already wired, use
-[`<hw:alert-dialog>`](../components/alert-dialog.md). Use the controller directly when you need custom HTML
-structure or custom styling.
+[`<hw:alert-dialog>`](../components/alert-dialog.md). Use the controller directly when you need custom HTML structure or
+custom styling.

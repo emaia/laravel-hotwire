@@ -68,6 +68,7 @@ export default class DrawerController extends Controller {
             modalTarget: this.modalTarget,
             backdropTarget: this.hasBackdropTarget ? this.backdropTarget : null,
             dialogTarget: this.dialogTarget,
+            accessibilityPrefix: this.identifier,
             lockScrollClasses: this.lockScrollClasses,
             lockScroll: this.lockScrollValue,
             closeOnEscape: this.closeOnEscapeValue,

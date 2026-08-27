@@ -5,11 +5,14 @@ namespace Emaia\LaravelHotwire\Components;
 use Emaia\LaravelHotwire\Support\ComponentId;
 use Emaia\LaravelHotwire\Support\FieldContext;
 use Emaia\LaravelHotwire\Support\FrameTarget;
+use Emaia\LaravelHotwire\Support\OverlayLabelContext;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\Component;
 
 class Modal extends Component
 {
+    private OverlayLabelContext $overlayLabelContext;
+
     public function __construct(
         public string|object $id = '',
         public string $size = 'md',
@@ -22,6 +25,7 @@ class Modal extends Component
         public bool $viewTransition = false,
     ) {
         $this->id = app(ComponentId::class)->resolve($this->id, 'hw-modal', 'modal');
+        $this->overlayLabelContext = new OverlayLabelContext($this->id, 'modal');
 
         $this->frame = FrameTarget::normalize($this->frame);
 
@@ -51,6 +55,7 @@ class Modal extends Component
         $data['modalStimulus'] = $this->stimulus;
         $data['modalMotion'] = $this->motion;
         $data['modalViewTransition'] = $this->viewTransition;
+        $data['modalOverlayLabelContext'] = $this->overlayLabelContext;
         $data = array_replace($data, FieldContext::boundaryData());
 
         unset(

@@ -1,4 +1,4 @@
-@aware(['drawerId' => null, 'drawerDirection' => 'down', 'drawerAxis' => 'y', 'drawerBackdrop' => true, 'drawerFrame' => null, 'drawerMotion' => 'default', 'drawerViewTransition' => false])
+@aware(['drawerId' => null, 'drawerDirection' => 'down', 'drawerAxis' => 'y', 'drawerBackdrop' => true, 'drawerFrame' => null, 'drawerMotion' => 'default', 'drawerViewTransition' => false, 'drawerOverlayLabelContext' => null])
 
 @php
     if ($drawerId === null) {
@@ -13,6 +13,8 @@
     data-motion="{{ $drawerMotion }}"
     role="dialog"
     aria-modal="true"
+    @if ($drawerOverlayLabelContext?->titleId() !== null) aria-labelledby="{{ $drawerOverlayLabelContext->titleId() }}" @endif
+    @if ($drawerOverlayLabelContext?->descriptionId() !== null) aria-describedby="{{ $drawerOverlayLabelContext->descriptionId() }}" @endif
     hidden
     inert
 >

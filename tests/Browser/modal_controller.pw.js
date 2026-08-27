@@ -3,12 +3,13 @@ import { readFile } from "node:fs/promises";
 
 test("opens when dynamic content is inserted and closes cleanly through the public API", async ({ page }) => {
     await page.setContent(`
-        <div data-controller="modal">
+        <div id="dynamic-modal" data-controller="modal">
             <div
                 data-modal-target="modal"
                 data-state="closed"
                 data-motion="none"
                 data-modal-lock-scroll-class="overflow-hidden"
+                role="dialog"
                 hidden inert
             >
                 <div data-modal-target="backdrop"></div>
@@ -30,14 +31,27 @@ test("opens when dynamic content is inserted and closes cleanly through the publ
     const modal = page.locator('[data-modal-target="modal"]');
 
     await frame.evaluate((element) => {
-        const content = document.createElement("div");
-        content.textContent = "Loaded content";
-        element.appendChild(content);
+        element.innerHTML = `
+            <h2 data-slot="modal-title">Loaded title</h2>
+            <p data-slot="modal-description">Loaded description</p>
+        `;
     });
 
     await expect(modal).toHaveAttribute("data-state", "open");
     await expect(modal).not.toHaveAttribute("hidden", "");
-    await expect(frame).toContainText("Loaded content");
+    await expect(frame).toContainText("Loaded title");
+    await expect(modal).toHaveAttribute("aria-labelledby", "dynamic-modal-title");
+    await expect(modal).toHaveAttribute("aria-describedby", "dynamic-modal-description");
+    await expect(page.locator("#dynamic-modal-title")).toHaveText("Loaded title");
+    await expect(page.locator("#dynamic-modal-description")).toHaveText("Loaded description");
+
+    await page.locator("#dynamic-modal").evaluate((element) => element.setAttribute("aria-label", "Loaded settings"));
+    await expect(modal).toHaveAttribute("aria-label", "Loaded settings");
+    await expect(modal).not.toHaveAttribute("aria-labelledby", /.+/);
+
+    await page.locator("#dynamic-modal").evaluate((element) => element.removeAttribute("aria-label"));
+    await expect(modal).not.toHaveAttribute("aria-label", /.+/);
+    await expect(modal).toHaveAttribute("aria-labelledby", "dynamic-modal-title");
 
     await page.evaluate(() => {
         const root = document.querySelector('[data-controller~="modal"]');

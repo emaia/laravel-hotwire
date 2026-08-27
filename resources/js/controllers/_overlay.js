@@ -16,7 +16,7 @@ const bodyScrollLock = {
     paddingRight: null,
 };
 
-export function createOverlay(_controller, {
+export function createOverlay(controller, {
     modalTarget,
     backdropTarget,
     dialogTarget,
@@ -31,6 +31,7 @@ export function createOverlay(_controller, {
     onClose,
     getTriggerElement,
     stateAttribute = "state",
+    accessibilityPrefix = null,
 }) {
     const presence = createPresence(modalTarget, {
         motionElements: [backdropTarget, dialogTarget],
@@ -46,6 +47,9 @@ export function createOverlay(_controller, {
     let scrollLocked = false;
     let opening = null;
     let closing = null;
+    const accessibility = accessibilityPrefix
+        ? createOverlayAccessibility(controller, modalTarget, accessibilityPrefix)
+        : null;
     const managedPresenceAttributes = new Set([
         "data-presence",
         "hidden",
@@ -64,9 +68,22 @@ export function createOverlay(_controller, {
         const attributeName = event.detail?.attributeName;
         const managedPresence = managedPresenceAttributes.has(attributeName);
         const activeTopLayer = topLayerHandle.isShown && managedTopLayerAttributes.has(attributeName);
-        if (!managedPresence && !activeTopLayer) return;
+        const managedAccessibility = accessibility?.manages(attributeName) ?? false;
+        if (!managedPresence && !activeTopLayer && !managedAccessibility) return;
 
         event.preventDefault();
+    }
+
+    function prepareManagedAttributesForMorph(event) {
+        if (event.target !== modalTarget) return;
+
+        accessibility?.prepareMorph(event.detail?.newElement);
+    }
+
+    function refreshManagedAttributesAfterMorph(event) {
+        if (event.target !== modalTarget) return;
+
+        accessibility?.completeMorph();
     }
 
     function handleEscapeKey(event) {
@@ -91,11 +108,15 @@ export function createOverlay(_controller, {
     }
 
     document.addEventListener("keydown", handleEscapeKey, escapeCapture);
+    modalTarget.addEventListener("turbo:before-morph-element", prepareManagedAttributesForMorph);
     modalTarget.addEventListener("turbo:before-morph-attribute", preserveManagedAttributesDuringMorph);
+    modalTarget.addEventListener("turbo:morph-element", refreshManagedAttributesAfterMorph);
 
     async function open() {
         if (destroyed) return false;
         if (desiredOpen && presence.phase !== "closing") return opening ?? true;
+
+        accessibility?.refresh();
 
         desiredOpen = true;
         triggerElement = typeof getTriggerElement === "function"
@@ -159,12 +180,15 @@ export function createOverlay(_controller, {
 
         destroyed = true;
         document.removeEventListener("keydown", handleEscapeKey, escapeCapture);
+        modalTarget.removeEventListener("turbo:before-morph-element", prepareManagedAttributesForMorph);
         modalTarget.removeEventListener("turbo:before-morph-attribute", preserveManagedAttributesDuringMorph);
+        modalTarget.removeEventListener("turbo:morph-element", refreshManagedAttributesAfterMorph);
         desiredOpen = false;
         presence.cleanup();
         unregisterStack();
         unlockScrollIfNeeded();
         focusTrap.deactivate();
+        accessibility?.cleanup();
         topLayerHandle.cleanup();
         triggerElement = null;
     }
@@ -186,6 +210,8 @@ export function createOverlay(_controller, {
 
     function setOpen({ notify = true, stackPosition = null, topLayerPosition = null } = {}) {
         if (destroyed || desiredOpen) return false;
+
+        accessibility?.refresh();
 
         desiredOpen = true;
         triggerElement = typeof getTriggerElement === "function"
@@ -260,6 +286,182 @@ export function createOverlay(_controller, {
         close,
         closeNow,
         cleanup,
+    };
+}
+
+function createOverlayAccessibility(controller, modalTarget, prefix) {
+    const roleSelector = '[role="dialog"], [role="alertdialog"]';
+    const rootId = controller?.element?.id || modalTarget.id;
+    const root = controller?.element && controller.element !== modalTarget ? controller.element : null;
+    const rootAccessibilityValues = new Map();
+    let managesLabel = false;
+    let managesDescription = false;
+    let pendingLabelManagement = null;
+    let pendingDescriptionManagement = null;
+    let morphToken = 0;
+
+    function refresh() {
+        managesLabel = syncReference("labelledby", "title", managesLabel);
+        managesDescription = syncReference("describedby", "description", managesDescription);
+    }
+
+    function syncReference(attributeSuffix, slotSuffix, managed) {
+        const attributeName = `aria-${attributeSuffix}`;
+        const candidate = findOwnedSlot(modalTarget, slotSuffix);
+
+        if (candidate && !candidate.id && rootId) {
+            candidate.id = `${rootId}-${slotSuffix}`;
+        }
+
+        if (isRootAuthored(attributeName)) {
+            return false;
+        }
+
+        if (managed) {
+            if (candidate?.id) {
+                modalTarget.setAttribute(attributeName, candidate.id);
+
+                return true;
+            }
+
+            modalTarget.removeAttribute(attributeName);
+
+            return false;
+        }
+
+        const currentReference = modalTarget.getAttribute(attributeName);
+        if (currentReference !== null) {
+            return currentReference === candidate?.id;
+        }
+
+        if (attributeSuffix === "labelledby" && modalTarget.hasAttribute("aria-label")) {
+            return false;
+        }
+
+        if (!candidate?.id) {
+            return false;
+        }
+
+        modalTarget.setAttribute(attributeName, candidate.id);
+
+        return true;
+    }
+
+    function prepareMorph(newElement) {
+        if (!newElement?.querySelectorAll) return;
+
+        pendingLabelManagement = prepareReference("labelledby", "title", managesLabel, newElement);
+        pendingDescriptionManagement = prepareReference("describedby", "description", managesDescription, newElement);
+        const token = ++morphToken;
+        queueMicrotask(() => {
+            if (token !== morphToken) return;
+
+            pendingLabelManagement = null;
+            pendingDescriptionManagement = null;
+            refresh();
+        });
+    }
+
+    function completeMorph() {
+        morphToken++;
+        managesLabel = pendingLabelManagement ?? managesLabel;
+        managesDescription = pendingDescriptionManagement ?? managesDescription;
+        pendingLabelManagement = null;
+        pendingDescriptionManagement = null;
+        syncRootAccessibility();
+        refresh();
+    }
+
+    function prepareReference(attributeSuffix, slotSuffix, managed, newElement) {
+        if (!managed) return false;
+
+        const attributeName = `aria-${attributeSuffix}`;
+        const incomingReference = newElement.getAttribute(attributeName);
+        const incomingCandidate = findOwnedSlot(newElement, slotSuffix);
+
+        if (incomingReference !== null) {
+            return incomingReference === incomingCandidate?.id;
+        }
+
+        if (attributeSuffix === "labelledby" && newElement.hasAttribute("aria-label")) {
+            return false;
+        }
+
+        return true;
+    }
+
+    function findOwnedSlot(root, slotSuffix) {
+        return [...root.querySelectorAll(`[data-slot="${prefix}-${slotSuffix}"]`)]
+            .find((element) => element.closest(roleSelector) === root);
+    }
+
+    function syncRootAccessibility() {
+        if (!root) return;
+
+        for (const attributeName of ["aria-label", "aria-labelledby", "aria-describedby"]) {
+            const previousValue = rootAccessibilityValues.get(attributeName);
+            if (root.hasAttribute(attributeName)) {
+                const value = root.getAttribute(attributeName);
+                modalTarget.setAttribute(attributeName, value);
+                rootAccessibilityValues.set(attributeName, value);
+            } else if (previousValue !== undefined) {
+                if (modalTarget.getAttribute(attributeName) === previousValue) {
+                    modalTarget.removeAttribute(attributeName);
+                }
+                rootAccessibilityValues.delete(attributeName);
+            }
+        }
+
+        if (root.hasAttribute("aria-label") && !root.hasAttribute("aria-labelledby")) {
+            modalTarget.removeAttribute("aria-labelledby");
+        }
+    }
+
+    function isRootAuthored(attributeName) {
+        if (!root) return false;
+
+        if (root.hasAttribute(attributeName)) return true;
+
+        return attributeName === "aria-labelledby"
+            && root.hasAttribute("aria-label")
+            && !root.hasAttribute("aria-labelledby");
+    }
+
+    syncRootAccessibility();
+    refresh();
+
+    const Observer = modalTarget.ownerDocument.defaultView?.MutationObserver;
+    const observer = Observer ? new Observer(refresh) : null;
+    observer?.observe(modalTarget, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ["id", "data-slot"],
+    });
+    const rootObserver = root && Observer ? new Observer(() => {
+        syncRootAccessibility();
+        refresh();
+    }) : null;
+    rootObserver?.observe(root, {
+        attributes: true,
+        attributeFilter: ["aria-label", "aria-labelledby", "aria-describedby"],
+    });
+
+    return {
+        refresh,
+        prepareMorph,
+        completeMorph,
+        manages(attributeName) {
+            const labelManagement = pendingLabelManagement ?? managesLabel;
+            const descriptionManagement = pendingDescriptionManagement ?? managesDescription;
+
+            return (attributeName === "aria-labelledby" && labelManagement)
+                || (attributeName === "aria-describedby" && descriptionManagement);
+        },
+        cleanup() {
+            observer?.disconnect();
+            rootObserver?.disconnect();
+        },
     };
 }
 

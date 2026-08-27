@@ -12,15 +12,17 @@ Controls `<hw:sheet>` open and close behavior. It is the sheet-flavoured variant
 - No external dependencies.
 - Turbo is optional and only needed when using dynamic frame content.
 
-`sheet` extends the drawer controller, so it supports the same Presence lifecycle, dynamic frame targets and stream-close
-behavior with the `data-sheet-*` target names. Empty `update`/`replace` streams and `refresh` streams wait for actual exit
-motion before rendering. The overlay contract is `data-state="closed" data-motion="default" hidden inert`.
+`sheet` extends the drawer controller, so it supports the same Presence lifecycle, dynamic frame targets and
+stream-close behavior with the `data-sheet-*` target names. Empty `update`/`replace` streams and `refresh` streams wait
+for actual exit motion before rendering. The overlay contract is
+`data-state="closed" data-motion="default" hidden inert`.
 
 Escape dismissal and focus trapping are suspended during IME composition.
 
 ## Basic Usage
 
 ```html
+
 <div
     data-controller="sheet"
     data-sheet-lock-scroll-class="overflow-hidden"
@@ -30,14 +32,22 @@ Escape dismissal and focus trapping are suspended during IME composition.
         Open sheet
     </button>
 
-    <div data-sheet-target="modal" data-state="closed" data-motion="default" hidden inert>
+    <div
+        data-sheet-target="modal"
+        data-state="closed"
+        data-motion="default"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="sheet-title"
+        hidden inert
+    >
         <div
             data-sheet-target="backdrop"
             data-action="click->sheet#clickOutside"
         ></div>
 
-        <aside data-sheet-target="dialog" role="dialog" aria-modal="true">
-            <h2>Details</h2>
+        <aside data-sheet-target="dialog">
+            <h2 id="sheet-title">Details</h2>
             <button type="button" data-action="sheet#close">Close</button>
         </aside>
     </div>
@@ -54,17 +64,17 @@ Sheet uses the Drawer targets and values with the `sheet` identifier: `trigger`,
 
 ## Actions
 
-| Action | Description |
-|--------|-------------|
-| `sheet#open` | Open the sheet. |
-| `sheet#close` | Close the sheet. |
-| `sheet#toggle` | Toggle the sheet. |
-| `sheet#clickOutside` | Close when the backdrop is clicked. |
+| Action                | Description                                     |
+|-----------------------|-------------------------------------------------|
+| `sheet#open`          | Open the sheet.                                 |
+| `sheet#close`         | Close the sheet.                                |
+| `sheet#toggle`        | Toggle the sheet.                               |
+| `sheet#clickOutside`  | Close when the backdrop is clicked.             |
 | `sheet#closeForCache` | Close immediately before Turbo caches the page. |
 
 ## Events
 
-| Event | Description |
-|-------|-------------|
-| `sheet:opened` | Dispatched after the open transition. |
+| Event          | Description                            |
+|----------------|----------------------------------------|
+| `sheet:opened` | Dispatched after the open transition.  |
 | `sheet:closed` | Dispatched after the close transition. |

@@ -9,7 +9,7 @@ it('renders with default props', function () {
 
     $view->assertSee('data-controller="alert-dialog"', false);
     $view->assertSee('Continue?');
-    $view->assertSee('role="dialog"', false);
+    $view->assertSee('role="alertdialog"', false);
     $view->assertSee('aria-modal="true"', false);
     $view->assertSee('data-slot="alert-dialog-overlay"', false);
     $view->assertSee('data-state="closed"', false);
@@ -18,6 +18,19 @@ it('renders with default props', function () {
     $view->assertSee('inert', false);
     $view->assertDontSee('data-alert-dialog-hidden-class', false);
     $view->assertDontSee('data-alert-dialog-open-duration-value', false);
+});
+
+it('links its title and description to the alert dialog surface', function () {
+    $view = $this->blade('<x-hw::alert-dialog id="delete-account" title="Delete account?" description="This cannot be undone."><button>x</button></x-hw::alert-dialog>');
+    $xpath = new DOMXPath(dom((string) $view));
+    $dialog = $xpath->query('//*[@role="alertdialog"]')->item(0);
+
+    expect($dialog)
+        ->toBeInstanceOf(DOMElement::class)
+        ->and($dialog->getAttribute('aria-labelledby'))->toBe('delete-account-title')
+        ->and($dialog->getAttribute('aria-describedby'))->toBe('delete-account-description')
+        ->and($xpath->query('//*[@id="delete-account-title"]'))->toHaveCount(1)
+        ->and($xpath->query('//*[@id="delete-account-description"]'))->toHaveCount(1);
 });
 
 it('uses the default slot as the trigger', function () {
@@ -54,7 +67,8 @@ it('renders the description when provided', function () {
 it('does not render description element when empty', function () {
     $view = $this->blade('<x-hw::alert-dialog title="Continue?"><button>x</button></x-hw::alert-dialog>');
 
-    $view->assertDontSee('data-slot="alert-dialog-description"', false);
+    $view->assertDontSee('data-slot="alert-dialog-description"', false)
+        ->assertDontSee('aria-describedby', false);
 });
 
 it('renders custom confirm and cancel labels', function () {
