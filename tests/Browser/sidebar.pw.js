@@ -39,3 +39,34 @@ test("icon mode keeps overflowing content vertically reachable", async ({ page }
     await content.evaluate((element) => (element.scrollTop = element.scrollHeight));
     await expect(page.locator("#item-20")).toBeInViewport();
 });
+
+test("icon mode styles stop at a nested sidebar provider", async ({ page }) => {
+    const structural = await readFile("resources/css/structural.css", "utf8");
+
+    await page.setViewportSize({ width: 1024, height: 768 });
+    await page.setContent(`
+        <style>${structural}</style>
+        <div data-slot="sidebar-wrapper">
+            <aside data-slot="sidebar" data-collapsible="icon">
+                <nav id="outer-content" data-slot="sidebar-content">
+                    <div data-slot="sidebar-wrapper">
+                        <aside data-slot="sidebar" data-collapsible="">
+                            <nav id="nested-content" data-slot="sidebar-content"></nav>
+                        </aside>
+                    </div>
+                </nav>
+            </aside>
+            <main data-slot="sidebar-inset">
+                <div data-slot="sidebar-wrapper">
+                    <aside data-slot="sidebar" data-collapsible="">
+                        <nav id="inset-content" data-slot="sidebar-content"></nav>
+                    </aside>
+                </div>
+            </main>
+        </div>
+    `);
+
+    await expect(page.locator("#outer-content")).toHaveCSS("overflow-x", "hidden");
+    await expect(page.locator("#nested-content")).toHaveCSS("overflow-x", "auto");
+    await expect(page.locator("#inset-content")).toHaveCSS("overflow-x", "auto");
+});

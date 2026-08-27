@@ -223,6 +223,20 @@ it('reads a rule wrapped in @supports and @media', function () {
     ]);
 });
 
+it('reads axes and coverage from @scope preludes', function () {
+    $extractor = new PresetAxes;
+    $css = <<<'CSS'
+        @scope ([data-slot="sidebar"][data-collapsible="icon"]) to ([data-slot="sidebar-wrapper"]) {
+            [data-slot="sidebar-menu-button"] { @apply hidden; }
+        }
+        CSS;
+
+    expect($extractor->extract($css))
+        ->toBe(['sidebar' => ['data-collapsible' => ['icon']]])
+        ->and($extractor->coverage($css))
+        ->toBe(['visited' => 3, 'total' => 3]);
+});
+
 it('reads a selector split across lines', function () {
     $axes = (new PresetAxes)->extract(<<<'CSS'
         [data-slot="badge"],
@@ -247,7 +261,7 @@ it('never reads an axis out of a comment', function () {
 });
 
 it('keeps arbitrary variants that describe another element out', function () {
-    // Unquoted attributes only ever appear inside arbitrary variants, which target descendants.
+    // In shipped presets, unquoted attributes occur only inside arbitrary variants that target descendants.
     $axes = (new PresetAxes)->extract(<<<'CSS'
         [data-slot="card"] { @apply [&>[data-slot=card-footer]]:pt-0 has-[[data-active=true]]:ring-2; }
         CSS);
