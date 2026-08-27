@@ -301,6 +301,9 @@ function createOverlayAccessibility(controller, modalTarget, prefix) {
     let pendingLabelManagement = null;
     let pendingDescriptionManagement = null;
     let morphToken = 0;
+    let refreshFrame = null;
+    let pendingRootSync = false;
+    let active = true;
 
     function refresh() {
         ({ managed: managesLabel, reference: managedLabelReference } = syncReference(
@@ -321,10 +324,6 @@ function createOverlayAccessibility(controller, modalTarget, prefix) {
         const attributeName = `aria-${attributeSuffix}`;
         const candidate = findOwnedSlot(modalTarget, slotSuffix);
 
-        if (candidate && !candidate.id && rootId) {
-            candidate.id = `${rootId}-${slotSuffix}`;
-        }
-
         if (isRootAuthored(attributeName)) {
             return { managed: false, reference: null };
         }
@@ -334,6 +333,7 @@ function createOverlayAccessibility(controller, modalTarget, prefix) {
                 return { managed: false, reference: null };
             }
 
+            assignCandidateId(candidate, slotSuffix);
             if (candidate?.id) {
                 modalTarget.setAttribute(attributeName, candidate.id);
 
@@ -356,6 +356,7 @@ function createOverlayAccessibility(controller, modalTarget, prefix) {
             return { managed: false, reference: null };
         }
 
+        assignCandidateId(candidate, slotSuffix);
         if (!candidate?.id) {
             return { managed: false, reference: null };
         }
@@ -363,6 +364,12 @@ function createOverlayAccessibility(controller, modalTarget, prefix) {
         modalTarget.setAttribute(attributeName, candidate.id);
 
         return { managed: true, reference: candidate.id };
+    }
+
+    function assignCandidateId(candidate, slotSuffix) {
+        if (candidate && !candidate.id && rootId) {
+            candidate.id = `${rootId}-${slotSuffix}`;
+        }
     }
 
     function prepareMorph(newElement) {
@@ -447,21 +454,45 @@ function createOverlayAccessibility(controller, modalTarget, prefix) {
             && !root.hasAttribute("aria-labelledby");
     }
 
+    function scheduleRefresh(syncRoot = false) {
+        if (!active) return;
+
+        pendingRootSync ||= syncRoot;
+        if (refreshFrame !== null) return;
+
+        let frameRan = false;
+        const frame = requestAnimationFrame(() => {
+            frameRan = true;
+            refreshFrame = null;
+            if (!active) return;
+
+            if (pendingRootSync) syncRootAccessibility();
+            pendingRootSync = false;
+            refresh();
+        });
+        refreshFrame = frameRan ? null : frame;
+    }
+
+    function ownsMutation(mutation) {
+        if (mutation.attributeName === "role") return true;
+
+        return mutation.target?.closest?.(roleSelector) === modalTarget;
+    }
+
     syncRootAccessibility();
     refresh();
 
     const Observer = modalTarget.ownerDocument.defaultView?.MutationObserver;
-    const observer = Observer ? new Observer(refresh) : null;
+    const observer = Observer ? new Observer((mutations) => {
+        if (mutations.some(ownsMutation)) scheduleRefresh();
+    }) : null;
     observer?.observe(modalTarget, {
         childList: true,
         subtree: true,
         attributes: true,
-        attributeFilter: ["id", "data-slot"],
+        attributeFilter: ["id", "data-slot", "role"],
     });
-    const rootObserver = root && Observer ? new Observer(() => {
-        syncRootAccessibility();
-        refresh();
-    }) : null;
+    const rootObserver = root && Observer ? new Observer(() => scheduleRefresh(true)) : null;
     rootObserver?.observe(root, {
         attributes: true,
         attributeFilter: ["aria-label", "aria-labelledby", "aria-describedby"],
@@ -479,6 +510,13 @@ function createOverlayAccessibility(controller, modalTarget, prefix) {
                 || (attributeName === "aria-describedby" && descriptionManagement);
         },
         cleanup() {
+            active = false;
+            morphToken++;
+            pendingLabelManagement = null;
+            pendingDescriptionManagement = null;
+            pendingRootSync = false;
+            if (refreshFrame !== null) cancelAnimationFrame(refreshFrame);
+            refreshFrame = null;
             observer?.disconnect();
             rootObserver?.disconnect();
         },

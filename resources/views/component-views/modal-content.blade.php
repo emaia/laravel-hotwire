@@ -17,6 +17,7 @@
 
     $presetSizes = ['sm', 'md', 'lg', 'xl', 'full', 'auto'];
     $sizeStyle = in_array($modalSize, $presetSizes, true) ? '' : "max-width: {$modalSize};";
+    $modalLabelReferences = $modalOverlayLabelContext?->referencesFor($slot) ?? ['title' => null, 'description' => null];
 @endphp
 
 <div
@@ -27,8 +28,8 @@
     data-action="click->modal#clickOutside"
     role="dialog"
     aria-modal="true"
-    @if ($modalOverlayLabelContext?->titleId() !== null) aria-labelledby="{{ $modalOverlayLabelContext->titleId() }}" @endif
-    @if ($modalOverlayLabelContext?->descriptionId() !== null) aria-describedby="{{ $modalOverlayLabelContext->descriptionId() }}" @endif
+    @if ($modalLabelReferences['title'] !== null) aria-labelledby="{{ $modalLabelReferences['title'] }}" @endif
+    @if ($modalLabelReferences['description'] !== null) aria-describedby="{{ $modalLabelReferences['description'] }}" @endif
     hidden
     inert
 >

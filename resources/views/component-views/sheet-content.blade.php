@@ -4,6 +4,8 @@
     if ($sheetId === null) {
         throw new InvalidArgumentException('Sheet content must be rendered inside a Sheet root.');
     }
+
+    $sheetLabelReferences = $sheetOverlayLabelContext?->referencesFor($slot) ?? ['title' => null, 'description' => null];
 @endphp
 
 <div
@@ -13,8 +15,8 @@
     data-motion="{{ $sheetMotion }}"
     role="dialog"
     aria-modal="true"
-    @if ($sheetOverlayLabelContext?->titleId() !== null) aria-labelledby="{{ $sheetOverlayLabelContext->titleId() }}" @endif
-    @if ($sheetOverlayLabelContext?->descriptionId() !== null) aria-describedby="{{ $sheetOverlayLabelContext->descriptionId() }}" @endif
+    @if ($sheetLabelReferences['title'] !== null) aria-labelledby="{{ $sheetLabelReferences['title'] }}" @endif
+    @if ($sheetLabelReferences['description'] !== null) aria-describedby="{{ $sheetLabelReferences['description'] }}" @endif
     hidden
     inert
 >

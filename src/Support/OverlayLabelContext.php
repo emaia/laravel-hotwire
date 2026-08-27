@@ -2,15 +2,18 @@
 
 namespace Emaia\LaravelHotwire\Support;
 
+use DOMDocument;
+use DOMElement;
+use DOMXPath;
+use Illuminate\Contracts\Support\Htmlable;
+
 final class OverlayLabelContext
 {
-    private int $titleCount = 0;
+    /** @var string[] */
+    private array $titleIds = [];
 
-    private int $descriptionCount = 0;
-
-    private ?string $titleId = null;
-
-    private ?string $descriptionId = null;
+    /** @var string[] */
+    private array $descriptionIds = [];
 
     public function __construct(
         private readonly string $rootId,
@@ -45,30 +48,137 @@ final class OverlayLabelContext
         }
 
         if ($kind === 'title') {
-            $count = ++$this->titleCount;
+            $count = count($this->titleIds) + 1;
             $id = $this->resolveId($explicitId, $kind, $count);
-            $this->titleId ??= $id;
+            $this->titleIds[] = $id;
 
             return $id;
         }
 
-        $count = ++$this->descriptionCount;
+        $count = count($this->descriptionIds) + 1;
         $id = $this->resolveId($explicitId, $kind, $count);
-        $this->descriptionId ??= $id;
+        $this->descriptionIds[] = $id;
 
         return $id;
     }
 
-    /** Return the first registered title id. */
-    public function titleId(): ?string
+    /** Return the first registered title id reachable in the optional rendered content. */
+    public function titleId(?Htmlable $contents = null): ?string
     {
-        return $this->titleId;
+        if ($contents === null) {
+            return $this->titleIds[0] ?? null;
+        }
+
+        return $this->referencesFor($contents)['title'];
     }
 
-    /** Return the first registered description id. */
-    public function descriptionId(): ?string
+    /** Return the first registered description id reachable in the optional rendered content. */
+    public function descriptionId(?Htmlable $contents = null): ?string
     {
-        return $this->descriptionId;
+        if ($contents === null) {
+            return $this->descriptionIds[0] ?? null;
+        }
+
+        return $this->referencesFor($contents)['description'];
+    }
+
+    /**
+     * Return the first reachable title and description ids in rendered content.
+     *
+     * @return array{title: ?string, description: ?string}
+     */
+    public function referencesFor(Htmlable $contents): array
+    {
+        if ($this->titleIds === [] && $this->descriptionIds === []) {
+            return ['title' => null, 'description' => null];
+        }
+
+        $reachable = $this->registeredIdsIn($contents, excludeTemplates: true);
+        if ($reachable === null) {
+            return ['title' => null, 'description' => null];
+        }
+
+        return [
+            'title' => $this->firstReachableId($this->titleIds, $reachable),
+            'description' => $this->firstReachableId($this->descriptionIds, $reachable),
+        ];
+    }
+
+    /** Report whether rendered content contains a registered overlay label. */
+    public function hasRegisteredLabels(Htmlable $contents): bool
+    {
+        $ids = $this->registeredIdsIn($contents, excludeTemplates: false);
+
+        return $ids !== null && $ids !== [];
+    }
+
+    /**
+     * @return array<string, true>|null null when the fragment cannot be parsed
+     */
+    private function registeredIdsIn(Htmlable $contents, bool $excludeTemplates): ?array
+    {
+        $registered = array_fill_keys([...$this->titleIds, ...$this->descriptionIds], true);
+        if ($registered === []) {
+            return [];
+        }
+
+        $document = new DOMDocument;
+        $previous = libxml_use_internal_errors(true);
+        $loaded = $document->loadHTML(
+            '<?xml encoding="UTF-8"?><div>'.$contents->toHtml().'</div>',
+            LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD | LIBXML_NOERROR | LIBXML_NOWARNING,
+        );
+        libxml_clear_errors();
+        libxml_use_internal_errors($previous);
+
+        if (! $loaded) {
+            return null;
+        }
+
+        $elements = (new DOMXPath($document))->query('//*[@id]');
+        if ($elements === false) {
+            return null;
+        }
+
+        $found = [];
+        foreach ($elements as $element) {
+            if (! $element instanceof DOMElement || ($excludeTemplates && $this->insideTemplate($element))) {
+                continue;
+            }
+
+            $id = $element->getAttribute('id');
+            if (isset($registered[$id])) {
+                $found[$id] = true;
+            }
+        }
+
+        return $found;
+    }
+
+    /**
+     * @param  string[]  $ids
+     * @param  array<string, true>  $reachable
+     */
+    private function firstReachableId(array $ids, array $reachable): ?string
+    {
+        foreach ($ids as $id) {
+            if (isset($reachable[$id])) {
+                return $id;
+            }
+        }
+
+        return null;
+    }
+
+    private function insideTemplate(DOMElement $element): bool
+    {
+        for ($node = $element->parentNode; $node instanceof DOMElement; $node = $node->parentNode) {
+            if ($node->tagName === 'template') {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function resolveId(?string $explicitId, string $kind, int $count): string

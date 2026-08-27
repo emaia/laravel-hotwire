@@ -8,6 +8,18 @@
         'data-alert-dialog-lock-scroll-class' => 'overflow-hidden',
         'data-action' => 'turbo:before-cache@window->alert-dialog#closeForCache',
     ], $attributes, $stimulus, protectedPrefixes: ['data-alert-dialog-']);
+    if ($alertDialogOverlayLabelContext->hasRegisteredLabels($slot)) {
+        throw new InvalidArgumentException('Alert Dialog title and description subcomponents must be rendered in the content slot.');
+    }
+    $contentLabelReferences = isset($content) && ($title === '' || $description === '')
+        ? $alertDialogOverlayLabelContext->referencesFor($content)
+        : ['title' => null, 'description' => null];
+    $alertDialogTitleId = $title !== ''
+        ? $alertDialogOverlayLabelContext->titleId()
+        : $contentLabelReferences['title'];
+    $alertDialogDescriptionId = $description !== ''
+        ? $alertDialogOverlayLabelContext->descriptionId()
+        : $contentLabelReferences['description'];
 @endphp
 
 <div
@@ -25,8 +37,8 @@
         data-action="click->alert-dialog#clickOutside"
         role="alertdialog"
         aria-modal="true"
-        @if ($alertDialogOverlayLabelContext->titleId() !== null) aria-labelledby="{{ $alertDialogOverlayLabelContext->titleId() }}" @endif
-        @if ($alertDialogOverlayLabelContext->descriptionId() !== null) aria-describedby="{{ $alertDialogOverlayLabelContext->descriptionId() }}" @endif
+        @if ($alertDialogTitleId !== null) aria-labelledby="{{ $alertDialogTitleId }}" @endif
+        @if ($alertDialogDescriptionId !== null) aria-describedby="{{ $alertDialogDescriptionId }}" @endif
         hidden
         inert
     >

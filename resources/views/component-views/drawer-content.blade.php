@@ -4,6 +4,8 @@
     if ($drawerId === null) {
         throw new InvalidArgumentException('Drawer content must be rendered inside a Drawer root.');
     }
+
+    $drawerLabelReferences = $drawerOverlayLabelContext?->referencesFor($slot) ?? ['title' => null, 'description' => null];
 @endphp
 
 <div
@@ -13,8 +15,8 @@
     data-motion="{{ $drawerMotion }}"
     role="dialog"
     aria-modal="true"
-    @if ($drawerOverlayLabelContext?->titleId() !== null) aria-labelledby="{{ $drawerOverlayLabelContext->titleId() }}" @endif
-    @if ($drawerOverlayLabelContext?->descriptionId() !== null) aria-describedby="{{ $drawerOverlayLabelContext->descriptionId() }}" @endif
+    @if ($drawerLabelReferences['title'] !== null) aria-labelledby="{{ $drawerLabelReferences['title'] }}" @endif
+    @if ($drawerLabelReferences['description'] !== null) aria-describedby="{{ $drawerLabelReferences['description'] }}" @endif
     hidden
     inert
 >

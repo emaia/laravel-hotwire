@@ -2,6 +2,7 @@
 
 use Emaia\LaravelHotwire\LaravelHotwireServiceProvider;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\View\ViewException;
 
 it('renders modal subcomponents with semantic slots', function () {
     $view = $this->blade('
@@ -46,6 +47,42 @@ it('links overlay titles and descriptions to their dialog surface', function (st
         ->and($xpath->query("//*[@id='account-{$family}-title']"))->toHaveCount(1)
         ->and($xpath->query("//*[@id='account-{$family}-description']"))->toHaveCount(1);
 })->with(['modal', 'sheet', 'drawer']);
+
+it('links alert dialog subcomponents to its alert dialog surface', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::alert-dialog id="delete-alert">
+            <button>Delete</button>
+            <x-slot:content>
+                <x-hw::alert-dialog.content>
+                    <x-hw::alert-dialog.title>Delete account?</x-hw::alert-dialog.title>
+                    <x-hw::alert-dialog.description>This cannot be undone.</x-hw::alert-dialog.description>
+                </x-hw::alert-dialog.content>
+            </x-slot:content>
+        </x-hw::alert-dialog>
+    BLADE);
+    $xpath = new DOMXPath(dom((string) $view));
+    $dialog = $xpath->query('//*[@role="alertdialog"]')->item(0);
+
+    expect($dialog)
+        ->toBeInstanceOf(DOMElement::class)
+        ->and($dialog->getAttribute('aria-labelledby'))->toBe('delete-alert-title')
+        ->and($dialog->getAttribute('aria-describedby'))->toBe('delete-alert-description')
+        ->and($xpath->query('//*[@id="delete-alert-title"]'))->toHaveCount(1)
+        ->and($xpath->query('//*[@id="delete-alert-description"]'))->toHaveCount(1);
+});
+
+it('rejects alert dialog label subcomponents in its trigger slot', function () {
+    expect(fn () => $this->blade(<<<'BLADE'
+        <x-hw::alert-dialog id="delete-alert">
+            <x-hw::alert-dialog.content>
+                <x-hw::alert-dialog.title>Trigger title</x-hw::alert-dialog.title>
+            </x-hw::alert-dialog.content>
+        </x-hw::alert-dialog>
+    BLADE))->toThrow(
+        ViewException::class,
+        'Alert Dialog title and description subcomponents must be rendered in the content slot.',
+    );
+});
 
 it('preserves explicit overlay title ids and omits missing descriptions', function () {
     $view = $this->blade(<<<'BLADE'
@@ -114,6 +151,41 @@ it('does not name a modal from a title inside its loading template', function ()
     expect($dialog)->toBeInstanceOf(DOMElement::class)
         ->and($dialog->hasAttribute('aria-labelledby'))->toBeFalse()
         ->and($xpath->query('//template//*[@id="settings-modal-title"]'))->toHaveCount(0);
+});
+
+it('does not name an overlay from a title inside a native template', function (string $family) {
+    $view = $this->blade(<<<BLADE
+        <x-hw::{$family} id="settings-{$family}">
+            <x-hw::{$family}.content>
+                <template>
+                    <x-hw::{$family}.title>Deferred settings</x-hw::{$family}.title>
+                </template>
+            </x-hw::{$family}.content>
+        </x-hw::{$family}>
+    BLADE);
+    $xpath = new DOMXPath(dom((string) $view));
+    $dialog = $xpath->query("//*[@data-slot='{$family}-overlay']")->item(0);
+
+    expect($dialog)->toBeInstanceOf(DOMElement::class)
+        ->and($dialog->hasAttribute('aria-labelledby'))->toBeFalse();
+})->with(['modal', 'sheet', 'drawer']);
+
+it('uses the first reachable title after a native template', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::modal id="settings-modal">
+            <x-hw::modal.content>
+                <template>
+                    <x-hw::modal.title>Deferred settings</x-hw::modal.title>
+                </template>
+                <x-hw::modal.title>Account settings</x-hw::modal.title>
+            </x-hw::modal.content>
+        </x-hw::modal>
+    BLADE);
+    $xpath = new DOMXPath(dom((string) $view));
+    $dialog = $xpath->query('//*[@data-slot="modal-overlay"]')->item(0);
+
+    expect($dialog->getAttribute('aria-labelledby'))->toBe('settings-modal-title-2')
+        ->and($xpath->query('//*[@id="settings-modal-title-2" and not(ancestor::template)]'))->toHaveCount(1);
 });
 
 it('does not name an outer modal from a modal title inside a nested sheet', function () {

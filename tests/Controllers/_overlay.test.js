@@ -220,6 +220,54 @@ test("does not name an overlay from a nested overlay title", () => {
     expect(nestedTitle.id).toBe("");
 });
 
+test("reconciles ownership when a nested role boundary changes", () => {
+    let observerCallback;
+    let scheduledRefresh;
+    const root = document.createElement("div");
+    const { modal, backdrop, dialog } = elements();
+    const nestedModal = document.createElement("div");
+    const title = document.createElement("h2");
+    root.id = "parent-modal";
+    modal.setAttribute("role", "dialog");
+    title.dataset.slot = "modal-title";
+    nestedModal.append(title);
+    dialog.prepend(nestedModal);
+    root.append(modal);
+    Object.defineProperty(testWindow, "MutationObserver", {
+        configurable: true,
+        value: class {
+            constructor(callback) {
+                observerCallback ??= callback;
+            }
+
+            observe() {}
+            disconnect() {}
+        },
+    });
+    globalThis.requestAnimationFrame = (callback) => {
+        scheduledRefresh = callback;
+
+        return 3;
+    };
+    overlay = createOverlay({ element: root }, options({
+        modal,
+        backdrop,
+        dialog,
+        accessibilityPrefix: "modal",
+    }));
+    expect(modal.getAttribute("aria-labelledby")).toBe("parent-modal-title");
+
+    nestedModal.setAttribute("role", "dialog");
+    observerCallback([{ target: nestedModal, attributeName: "role" }]);
+    scheduledRefresh();
+    expect(modal.hasAttribute("aria-labelledby")).toBe(false);
+
+    nestedModal.removeAttribute("role");
+    observerCallback([{ target: nestedModal, attributeName: "role" }]);
+    scheduledRefresh();
+    expect(modal.getAttribute("aria-labelledby")).toBe("parent-modal-title");
+});
+
 test("preserves an application-authored accessible name", () => {
     const root = document.createElement("div");
     const { modal, backdrop, dialog } = elements();
@@ -238,6 +286,7 @@ test("preserves an application-authored accessible name", () => {
     }));
 
     expect(modal.getAttribute("aria-labelledby")).toBe("application-title");
+    expect(title.id).toBe("");
     expect(modal.dispatchEvent(morphAttributeEvent("aria-labelledby"))).toBe(true);
 });
 
@@ -317,6 +366,101 @@ test("keeps managed ownership when a morph is canceled", async () => {
     await tick();
 
     expect(modal.dispatchEvent(morphAttributeEvent("aria-labelledby"))).toBe(false);
+});
+
+test("cleanup invalidates pending accessibility morph work", async () => {
+    const root = document.createElement("div");
+    const { modal, backdrop, dialog } = elements();
+    const incomingModal = document.createElement("div");
+    const title = document.createElement("h2");
+    root.id = "account-modal";
+    modal.setAttribute("role", "dialog");
+    incomingModal.setAttribute("role", "dialog");
+    title.dataset.slot = "modal-title";
+    root.append(modal);
+    overlay = createOverlay({ element: root }, options({
+        modal,
+        backdrop,
+        dialog,
+        accessibilityPrefix: "modal",
+    }));
+
+    modal.dispatchEvent(morphElementEvent(incomingModal));
+    dialog.prepend(title);
+    overlay.cleanup();
+    overlay = null;
+    await tick();
+
+    expect(title.id).toBe("");
+    expect(modal.hasAttribute("aria-labelledby")).toBe(false);
+});
+
+test("coalesces accessibility observer refreshes", () => {
+    let observerCallback;
+    let scheduledRefresh;
+    let canceledFrame;
+    let queryCount = 0;
+    const { modal, backdrop, dialog } = elements();
+    modal.setAttribute("role", "dialog");
+    const originalQuerySelectorAll = modal.querySelectorAll.bind(modal);
+    modal.querySelectorAll = (...args) => {
+        queryCount++;
+
+        return originalQuerySelectorAll(...args);
+    };
+    Object.defineProperty(testWindow, "MutationObserver", {
+        configurable: true,
+        value: class {
+            constructor(callback) {
+                observerCallback = callback;
+            }
+
+            observe() {}
+            disconnect() {}
+        },
+    });
+    globalThis.requestAnimationFrame = (callback) => {
+        scheduledRefresh = callback;
+
+        return 7;
+    };
+    globalThis.cancelAnimationFrame = (frame) => {
+        canceledFrame = frame;
+    };
+
+    overlay = createOverlay(null, options({
+        modal,
+        backdrop,
+        dialog,
+        accessibilityPrefix: "modal",
+    }));
+    expect(queryCount).toBe(2);
+
+    observerCallback([{ target: modal }]);
+    observerCallback([{ target: modal }]);
+    observerCallback([{ target: modal }]);
+
+    expect(queryCount).toBe(2);
+    scheduledRefresh();
+    expect(queryCount).toBe(4);
+
+    const nestedModal = document.createElement("div");
+    nestedModal.setAttribute("role", "dialog");
+    modal.append(nestedModal);
+    scheduledRefresh = null;
+    observerCallback([{ target: nestedModal }]);
+
+    expect(scheduledRefresh).toBeNull();
+    expect(queryCount).toBe(4);
+
+    observerCallback([{ target: modal }]);
+    const staleRefresh = scheduledRefresh;
+    overlay.cleanup();
+    overlay = null;
+
+    expect(canceledFrame).toBe(7);
+    staleRefresh();
+    expect(queryCount).toBe(4);
 });
 
 test("Turbo morph protection follows a custom state attribute", () => {
