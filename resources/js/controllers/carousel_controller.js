@@ -25,14 +25,8 @@ export default class extends Controller {
         this.initEmbla();
 
         this.detachMorphRecovery = attachMorphRecovery(this, {
-            // After morph, Embla still holds references to slide nodes that may
-            // no longer be in the DOM. If any registered slide is gone, the
-            // carousel needs a re-init against the new children.
-            isStale: () => {
-                const slides = this.embla?.slideNodes?.() ?? [];
-                return slides.some((slide) => !document.contains(slide));
-            },
-            recover: () => this.initEmbla(),
+            isStale: () => this.morphStateIsStale(),
+            recover: () => this.initEmbla(this.embla?.selectedScrollSnap()),
         });
     }
 
@@ -41,16 +35,18 @@ export default class extends Controller {
         this.destroyEmbla();
     }
 
-    initEmbla() {
+    initEmbla(selectedIndex = null) {
         this.destroyEmbla();
 
-        // Viewport/container are found by their structural hooks (not Stimulus
-        // targets) so they stay identifier-independent — a subclass reuses them
-        // and the same CSS without a per-identifier attribute.
+        // Structural hooks let subclasses reuse the markup and CSS under a different Stimulus identifier.
         const node = this.element.querySelector("[data-carousel-viewport]") ?? this.element;
+        const options =
+            selectedIndex === null || selectedIndex === undefined
+                ? this.optionsValue
+                : { ...this.optionsValue, startIndex: selectedIndex };
 
         this.syncAxis();
-        this.embla = EmblaCarousel(node, this.optionsValue, this.emblaPlugins());
+        this.embla = EmblaCarousel(node, options, this.emblaPlugins());
         this.renderDots();
 
         this.embla.on("select", this.onSelect);
@@ -66,6 +62,36 @@ export default class extends Controller {
         this.syncProgress();
 
         this.dispatch("init", { detail: { embla: this.embla } });
+    }
+
+    morphStateIsStale() {
+        if (!this.embla) return false;
+
+        const slides = this.embla.slideNodes();
+        if (slides.some((slide) => !document.contains(slide))) return true;
+
+        const container = this.embla.containerNode();
+        const currentContainer = this.element.querySelector("[data-carousel-container]");
+        if (!document.contains(container) || (currentContainer && currentContainer !== container)) return true;
+        // Server markup has no track transform; losing Embla's inline value resets the visible snap.
+        if (container.style.transform === "") return true;
+
+        const snaps = this.embla.scrollSnapList();
+        const selected = this.embla.selectedScrollSnap();
+
+        if (this.hasIndexLabelTarget && this.indexLabelTarget.textContent !== String(selected + 1)) return true;
+        if (this.hasTotalLabelTarget && this.totalLabelTarget.textContent !== String(snaps.length)) return true;
+        if (this.hasDotListTarget && this.dotListTarget.childElementCount !== snaps.length) return true;
+
+        if (this.hasProgressTarget) {
+            const expected = `${((selected + 1) / snaps.length) * 100}%`;
+            if (this.progressTarget.style.width !== expected) return true;
+        }
+
+        if (this.hasPrevButtonTarget && this.prevButtonTarget.disabled === this.embla.canScrollPrev()) return true;
+        if (this.hasNextButtonTarget && this.nextButtonTarget.disabled === this.embla.canScrollNext()) return true;
+
+        return false;
     }
 
     destroyEmbla() {
@@ -110,9 +136,8 @@ export default class extends Controller {
     }
 
     /**
-     * Override point for Embla plugins. Subclass this controller, install the
-     * plugin packages you want, and return their instances — they load lazily
-     * with your subclass's chunk. See docs/controllers/carousel.md#plugins.
+     * Return Embla plugins from a subclass so dependencies stay in its lazy-loaded chunk.
+     * See docs/controllers/carousel.md#plugins for the extension contract.
      */
     emblaPlugins() {
         return [];
