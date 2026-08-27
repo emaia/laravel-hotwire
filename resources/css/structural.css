@@ -35,9 +35,11 @@
 }
 
 @media (min-width: 768px) {
-    [data-slot="sidebar"][data-collapsible="icon"] [data-slot="sidebar-content"] {
-        overflow-x: hidden;
-        overflow-y: auto;
+    @scope ([data-slot="sidebar"][data-collapsible="icon"]) to ([data-slot="sidebar-wrapper"]) {
+        :where(:scope)[data-slot="sidebar"][data-collapsible="icon"] [data-slot="sidebar-content"] {
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
     }
 }
 
@@ -491,8 +493,6 @@ html[data-reveal="off"] [data-reveal-armed] {
     min-height: 0;
 }
 
-/* --- Horizontal (default) --- */
-
 [data-carousel-axis="x"] [data-carousel-container] {
     flex-direction: row;
     touch-action: pan-y pinch-zoom;
@@ -502,8 +502,6 @@ html[data-reveal="off"] [data-reveal-armed] {
 [data-carousel-axis="x"] [data-carousel-container] > * {
     padding-left: var(--carousel-slide-spacing, 0px);
 }
-
-/* --- Vertical (axis: 'y') --- */
 
 [data-carousel-axis="y"] [data-carousel-container] {
     flex-direction: column;
@@ -589,7 +587,7 @@ html[data-reveal="off"] [data-reveal-armed] {
         scale(var(--toast-scale, 1));
 }
 
-/* Expanded, every card returns to full size at its measured offset, with the gap added per step. */
+/* Restore each card's measured height and offset in expanded mode so unequal toast heights retain a consistent gap. */
 [data-slot="toast"][data-expanded="true"] {
     block-size: var(--toast-height, auto);
     --toast-scale: 1;
@@ -644,10 +642,8 @@ html[data-reveal="off"] [data-reveal-armed] {
 [data-slot="toast"][data-position^="top-"]::after {
     inset-block-end: 100%;
 }
-
-
-/* Anchoring per position: a physical side, then a logical alignment, as with `align` elsewhere in
-   the package. --toast-offset is the supported way to nudge the stack away from the edges. */
+/* Keep top and bottom physical while logical start and end mirror the horizontal edge in RTL.
+   --toast-offset moves the stack away from either edge. */
 
 [data-slot="toast"][data-position^="top-"] {
     top: var(--toast-offset, 1rem);

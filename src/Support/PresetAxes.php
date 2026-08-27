@@ -7,10 +7,9 @@ final class PresetAxes
     public function __construct(private readonly CssRules $rules = new CssRules) {}
 
     /**
-     * Map slot => attribute => values, keyed by the attribute as written (`data-variant`,
-     * `aria-expanded`, `open`). A value counts only for the slot in its own compound, so in
-     * `[data-slot="sidebar"][data-variant="floating"] [data-slot="sidebar-container"]` the variant
-     * belongs to `sidebar`. An attribute written without a value maps to an empty list.
+     * Extract each slot's attribute axes using names as written in CSS.
+     *
+     * Count values only for the slot in their compound and represent valueless attributes with an empty list.
      *
      * @return array<string, array<string, string[]>>
      */
@@ -22,6 +21,10 @@ final class PresetAxes
             $selector = (string) end($chain);
             $subject = $this->subject($chain);
 
+            foreach ($chain as $ancestor) {
+                $this->collectScope($axes, $ancestor);
+            }
+
             $this->collectSelector($axes, $selector, $subject);
             $this->collectVariants($axes, $subject, $declarations);
         }
@@ -30,11 +33,9 @@ final class PresetAxes
     }
 
     /**
-     * How many `[data-slot` mentions the scanner accounted for, against how many the stylesheet
-     * holds. Unread input is otherwise indistinguishable from a slot that varies by nothing, which
-     * is how a reformatted preset can empty the inventory without failing a test. Mentions inside
-     * declarations count on both sides, since restricting the total to selector position would
-     * need the very parse this audits.
+     * Measure parser coverage against every `[data-slot` mention.
+     *
+     * Include declarations on both sides because restricting the total to selectors would require the same parse this audits.
      *
      * @return array{visited: int, total: int}
      */
@@ -47,13 +48,64 @@ final class PresetAxes
             $visited += preg_match_all('/\[data-slot\s*=/', end($chain).' '.$declarations);
         }
 
+        preg_match_all('/@scope\s+([^{}]+)\{/', $stripped, $scopes);
+
+        foreach ($scopes[1] as $scope) {
+            $visited += preg_match_all('/\[data-slot\s*=/', $scope);
+        }
+
         return ['visited' => $visited, 'total' => (int) preg_match_all('/\[data-slot\s*=/', $stripped)];
     }
 
+    /** Collect axes from a scope root without assigning its limit to the styled subject. */
+    private function collectScope(array &$axes, string $ancestor): void
+    {
+        if (! str_starts_with($ancestor, '@scope') || ($root = $this->scopeRoot($ancestor)) === null) {
+            return;
+        }
+
+        $this->collectSelector($axes, $root, $this->subjectSlots($root));
+    }
+
+    private function scopeRoot(string $scope): ?string
+    {
+        $prelude = trim(substr($scope, strlen('@scope')));
+        if (! str_starts_with($prelude, '(')) {
+            return null;
+        }
+
+        $depth = 0;
+        $quote = null;
+
+        foreach (str_split($prelude) as $index => $character) {
+            if ($quote !== null) {
+                if ($character === $quote && ($index === 0 || $prelude[$index - 1] !== '\\')) {
+                    $quote = null;
+                }
+
+                continue;
+            }
+
+            if ($character === '"' || $character === "'") {
+                $quote = $character;
+
+                continue;
+            }
+
+            $depth += (int) ($character === '(') - (int) ($character === ')');
+
+            if ($depth === 0) {
+                return substr($prelude, 1, $index - 1);
+            }
+        }
+
+        return null;
+    }
+
     /**
-     * The slots a rule styles: those of its own selector, or of the nearest enclosing rule that names
-     * any. Inheriting up the chain is what makes `&`-nested rules and `@layer`, `@media` and
-     * `@supports` wrappers work — none of them names a subject of its own.
+     * Resolve styled slots from the selector or nearest enclosing selector.
+     *
+     * Walking outward lets `&`-nested rules and at-rule wrappers inherit a subject.
      *
      * @param  string[]  $chain
      * @return string[]
@@ -74,8 +126,7 @@ final class PresetAxes
     }
 
     /**
-     * Attributes written in the selector. Quoted or bare, since selector text cannot be confused
-     * with the arbitrary variants that carry unquoted attributes inside declarations.
+     * Collect attributes written directly in a selector, accepting quoted and bare values.
      *
      * @param  array<string, array<string, string[]>>  $axes
      * @param  string[]  $subject
@@ -104,8 +155,7 @@ final class PresetAxes
     }
 
     /**
-     * Attributes trailing a slot in the same compound. Written after an `:is(…)` group they belong to
-     * every member, written inside one they belong to that member alone.
+     * Assign attributes after an `:is(…)` group to every member and attributes inside it to that member alone.
      *
      * @param  array<string, array<string, string[]>>  $axes
      */
@@ -119,11 +169,9 @@ final class PresetAxes
     }
 
     /**
-     * Axes written as Tailwind variants — arbitrary `data-[orientation=vertical]:flex` and named
-     * `aria-expanded:bg-muted`. Prefixed forms (`has-`, `group-`, `peer-`, `not-`, `**:`) describe
-     * another element or negate the state, and so do the unquoted attributes that appear inside
-     * arbitrary `[&…]` variants, which never match either shape. Pseudo-class variants such as
-     * `disabled:` stay out: they are DOM state, not part of the attribute vocabulary a preset styles.
+     * Collect axes expressed as Tailwind arbitrary or named variants.
+     *
+     * Ignore prefixes that target another element or negate state, and exclude pseudo-classes from the preset vocabulary.
      *
      * @param  array<string, array<string, string[]>>  $axes
      * @param  string[]  $slots
@@ -150,7 +198,7 @@ final class PresetAxes
     }
 
     /**
-     * The slots a rule actually styles: those in the last compound of each comma-separated selector.
+     * Resolve the slots actually styled by each selector's last compound.
      *
      * @return string[]
      */
@@ -167,9 +215,9 @@ final class PresetAxes
     }
 
     /**
-     * Comma-separated selectors, with a `:is(…)`/`:where(…)` that wraps a whole one unwrapped. Left
-     * wrapped, a descendant chain like `:where(a b c)` would read as a single compound naming three
-     * subjects, which hands `a` and `b` the styling written for `c`.
+     * Split comma-separated selectors and unwrap whole-selector `:is(…)` and `:where(…)` groups.
+     *
+     * Without unwrapping, `:where(a b c)` appears as one compound and assigns the styling for `c` to `a` and `b`.
      *
      * @return string[]
      */
@@ -187,8 +235,7 @@ final class PresetAxes
     }
 
     /**
-     * The slots a trailing compound names — those of the alternatives when it is a bare `:is(…)`
-     * group, as in `:is([data-slot="carousel-prev-button"], [data-slot="carousel-next-button"])`.
+     * Resolve slots named by a trailing compound, including bare `:is(…)` or `:where(…)` alternatives.
      *
      * @return string[]
      */
@@ -229,9 +276,9 @@ final class PresetAxes
     }
 
     /**
-     * Every attribute of a compound, not only the `data-` ones: `[open]`, `[type="date"]` and
-     * `[aria-disabled="true"]` differentiate a slot just as much. Operator forms (`[class*="size-"]`)
-     * enumerate nothing and fall outside the name charset.
+     * Collect every concrete attribute in a compound, including native and ARIA attributes.
+     *
+     * Ignore operator forms such as `[class*="size-"]` because they enumerate no value.
      *
      * @param  array<string, array<string, string[]>>  $axes
      * @param  string[]  $slots

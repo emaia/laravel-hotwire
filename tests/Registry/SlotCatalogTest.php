@@ -191,6 +191,33 @@ it('keeps Sidebar content overflow mechanics in the structural stylesheet', func
         ->not->toContain('md:overflow-hidden');
 });
 
+it('stops Sidebar icon mode rules at nested providers', function () {
+    $stylesheets = [
+        File::get(__DIR__.'/../../resources/css/structural.css'),
+        app(CssPresetFiles::class)->source('nova')->visualCss(),
+    ];
+    $matched = 0;
+
+    foreach ($stylesheets as $css) {
+        foreach ((new CssRules)->parse((new CssRules)->stripComments($css)) as ['chain' => $chain]) {
+            $selector = (string) end($chain);
+
+            if (! str_contains($selector, '[data-slot="sidebar"]')
+                || ! str_contains($selector, '[data-collapsible="icon"]')) {
+                continue;
+            }
+
+            $matched++;
+
+            expect($chain)->toContain(
+                '@scope ([data-slot="sidebar"][data-collapsible="icon"]) to ([data-slot="sidebar-wrapper"])'
+            );
+        }
+    }
+
+    expect($matched)->toBeGreaterThan(0);
+});
+
 it('keeps rules that name no slot out of the presets', function (string $preset) {
     // A preset groups by component; a rule keyed on a technical hook alone belongs to none of them.
     $css = app(CssPresetFiles::class)->source($preset)->visualCss();
@@ -246,11 +273,8 @@ it('declares slots rendered by components with trivial constructors', function (
     }
 });
 
-/**
- * A component's default is the one value it is guaranteed to emit, so a preset that never styles it
- * is either missing a rule or reacting to a typo. Non-default values have no such source to check
- * against — no component validates `variant` against an allowlist.
- */
+// A component's default is the only value it is guaranteed to emit, so an unstyled default signals
+// a missing rule or typo. Non-default values have no validated allowlist to compare against.
 it('styles the default value of every variant and size prop', function (string $preset) {
     // Defaults that carry no appearance of their own — the slot's base rule already is that look.
     $baseIsEnough = ['icon', 'legend', 'auto', 'default'];
@@ -321,10 +345,7 @@ it('styles every visual catalog slot in each preset', function (string $preset) 
     expect(array_values(array_diff($required, array_unique($matches[1]))))->toBe([]);
 })->with('slot catalog presets');
 
-/**
- * Holds vacuously while a single preset ships; it earns its keep the moment a second one can lose a
- * slot's `data-orientation` rules without anything else noticing.
- */
+// This is vacuously true while only one preset ships, but catches missing slot axes when another is added.
 it('differentiates each slot by the same axes in every preset', function () {
     $axes = new PresetAxes;
     $byPreset = collect(app(CssPresetFiles::class)->names())
