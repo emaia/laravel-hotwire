@@ -5,8 +5,7 @@
         throw new InvalidArgumentException('Drawer content must be rendered inside a Drawer root.');
     }
 
-    $drawerOverlayLabelContext?->assertNoIdCollisions($slot);
-    $drawerLabelReferences = $drawerOverlayLabelContext?->referencesFor($slot) ?? ['title' => null, 'description' => null];
+    $drawerLabelReferences = $drawerOverlayLabelContext?->resolveReferences($slot) ?? ['title' => null, 'description' => null];
 @endphp
 
 <div
@@ -14,6 +13,9 @@
     data-drawer-target="modal"
     data-state="closed"
     data-motion="{{ $drawerMotion }}"
+    data-hotwire-overlay-labels
+    @if ($drawerLabelReferences['title'] !== null) data-hotwire-overlay-labelledby="{{ $drawerLabelReferences['title'] }}" @endif
+    @if ($drawerLabelReferences['description'] !== null) data-hotwire-overlay-describedby="{{ $drawerLabelReferences['description'] }}" @endif
     role="dialog"
     aria-modal="true"
     @if ($drawerLabelReferences['title'] !== null) aria-labelledby="{{ $drawerLabelReferences['title'] }}" @endif

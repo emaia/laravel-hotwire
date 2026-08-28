@@ -28,6 +28,15 @@ it('renders modal subcomponents with semantic slots', function () {
         ->assertSee('class="gap-4"', false);
 });
 
+it('keeps isolated frame-response labels idless until they enter an overlay', function (string $family) {
+    $view = $this->blade("<x-hw::{$family}.title>Frame title</x-hw::{$family}.title>");
+    $xpath = new DOMXPath(dom((string) $view));
+    $title = $xpath->query("//*[@data-slot='{$family}-title']")->item(0);
+
+    expect($title)->toBeInstanceOf(DOMElement::class)
+        ->and($title->hasAttribute('id'))->toBeFalse();
+})->with(['modal', 'sheet', 'drawer']);
+
 it('links overlay titles and descriptions to their dialog surface', function (string $family) {
     $view = $this->blade(<<<BLADE
         <x-hw::{$family} id="account-{$family}">
@@ -44,6 +53,9 @@ it('links overlay titles and descriptions to their dialog surface', function (st
         ->toBeInstanceOf(DOMElement::class)
         ->and($dialog->getAttribute('aria-labelledby'))->toBe("account-{$family}-title")
         ->and($dialog->getAttribute('aria-describedby'))->toBe("account-{$family}-description")
+        ->and($dialog->hasAttribute('data-hotwire-overlay-labels'))->toBeTrue()
+        ->and($dialog->getAttribute('data-hotwire-overlay-labelledby'))->toBe("account-{$family}-title")
+        ->and($dialog->getAttribute('data-hotwire-overlay-describedby'))->toBe("account-{$family}-description")
         ->and($xpath->query("//*[@id='account-{$family}-title']"))->toHaveCount(1)
         ->and($xpath->query("//*[@id='account-{$family}-description']"))->toHaveCount(1);
 })->with(['modal', 'sheet', 'drawer']);
@@ -133,6 +145,23 @@ it('does not name a parent modal from a nested modal title', function () {
     expect($dialogs)->toHaveCount(2)
         ->and($dialogs->item(0)->hasAttribute('aria-labelledby'))->toBeFalse()
         ->and($dialogs->item(1)->getAttribute('aria-labelledby'))->toBe('child-modal-title');
+});
+
+it('does not name an overlay from a title inside a manually authored nested dialog', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::modal id="outer-modal">
+            <x-hw::modal.content>
+                <div role="dialog">
+                    <x-hw::modal.title>Nested manual title</x-hw::modal.title>
+                </div>
+            </x-hw::modal.content>
+        </x-hw::modal>
+    BLADE);
+    $xpath = new DOMXPath(dom((string) $view));
+    $outerDialog = $xpath->query('//*[@data-slot="modal-overlay"]')->item(0);
+
+    expect($outerDialog)->toBeInstanceOf(DOMElement::class)
+        ->and($outerDialog->hasAttribute('aria-labelledby'))->toBeFalse();
 });
 
 it('does not name a modal from a title inside its loading template', function () {
@@ -258,10 +287,52 @@ it('rejects authored descendant ids that collide with generated overlay labels',
     );
 });
 
+it('rejects overlay label ids that collide outside the content surface', function (string $family) {
+    expect(fn () => $this->blade(<<<BLADE
+        <x-hw::{$family} id="account-{$family}">
+            <x-hw::{$family}.trigger>
+                <button id="account-{$family}-title">Open</button>
+            </x-hw::{$family}.trigger>
+            <x-hw::{$family}.content>
+                <x-hw::{$family}.title>Account settings</x-hw::{$family}.title>
+            </x-hw::{$family}.content>
+        </x-hw::{$family}>
+    BLADE))->toThrow(
+        ViewException::class,
+        "Overlay label id [account-{$family}-title] conflicts with another element in its root.",
+    );
+})->with(['modal', 'sheet', 'drawer']);
+
+it('rejects overlay labels rendered outside their content surface', function (string $family) {
+    expect(fn () => $this->blade(<<<BLADE
+        <x-hw::{$family} id="account-{$family}">
+            <x-hw::{$family}.title>Outside title</x-hw::{$family}.title>
+            <x-hw::{$family}.content>Account settings</x-hw::{$family}.content>
+        </x-hw::{$family}>
+    BLADE))->toThrow(
+        ViewException::class,
+        ucfirst($family)." title and description subcomponents must be rendered in {$family}.content.",
+    );
+})->with(['modal', 'sheet', 'drawer']);
+
 it('reports authored alert trigger id collisions separately from misplaced labels', function () {
     expect(fn () => $this->blade(<<<'BLADE'
         <x-hw::alert-dialog id="delete" title="Delete account?">
             <button id="delete-title">Delete</button>
+        </x-hw::alert-dialog>
+    BLADE))->toThrow(
+        ViewException::class,
+        'Overlay label id [delete-title] conflicts with another element in its content.',
+    );
+});
+
+it('rejects alert dialog content ids that collide with prop labels', function () {
+    expect(fn () => $this->blade(<<<'BLADE'
+        <x-hw::alert-dialog id="delete" title="Delete account?" description="This cannot be undone.">
+            <button>Delete</button>
+            <x-slot:content>
+                <span id="delete-title">Duplicate title</span>
+            </x-slot:content>
         </x-hw::alert-dialog>
     BLADE))->toThrow(
         ViewException::class,

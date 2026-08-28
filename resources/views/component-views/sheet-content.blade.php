@@ -5,8 +5,7 @@
         throw new InvalidArgumentException('Sheet content must be rendered inside a Sheet root.');
     }
 
-    $sheetOverlayLabelContext?->assertNoIdCollisions($slot);
-    $sheetLabelReferences = $sheetOverlayLabelContext?->referencesFor($slot) ?? ['title' => null, 'description' => null];
+    $sheetLabelReferences = $sheetOverlayLabelContext?->resolveReferences($slot) ?? ['title' => null, 'description' => null];
 @endphp
 
 <div
@@ -14,6 +13,9 @@
     data-sheet-target="modal"
     data-state="closed"
     data-motion="{{ $sheetMotion }}"
+    data-hotwire-overlay-labels
+    @if ($sheetLabelReferences['title'] !== null) data-hotwire-overlay-labelledby="{{ $sheetLabelReferences['title'] }}" @endif
+    @if ($sheetLabelReferences['description'] !== null) data-hotwire-overlay-describedby="{{ $sheetLabelReferences['description'] }}" @endif
     role="dialog"
     aria-modal="true"
     @if ($sheetLabelReferences['title'] !== null) aria-labelledby="{{ $sheetLabelReferences['title'] }}" @endif

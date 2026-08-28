@@ -27,3 +27,39 @@ it('rejects explicit label ids already owned by the overlay', function () {
     expect(fn () => $context->register('modal-title', 'frame-title'))
         ->toThrow(InvalidArgumentException::class, 'Overlay label id [frame-title] is already in use.');
 });
+
+it('finds ids without whitespace before the attribute', function () {
+    $context = new OverlayLabelContext('dialog', 'modal');
+    $context->register('modal-title', 'dialog-title');
+
+    $references = $context->referencesFor(
+        new HtmlString('<h2 class="heading"id="dialog-title" data-slot="modal-title">Title</h2>'),
+    );
+
+    expect($references['title'])->toBe('dialog-title');
+});
+
+it('rejects malformed authored attributes that collide with a registered id', function () {
+    $context = new OverlayLabelContext('dialog', 'modal');
+    $context->register('modal-title', 'dialog-title');
+
+    expect(fn () => $context->assertNoIdCollisions(
+        new HtmlString('<span class="copy"id="dialog-title">Authored content</span>'),
+    ))->toThrow(
+        InvalidArgumentException::class,
+        'Overlay label id [dialog-title] conflicts with another element in its content.',
+    );
+});
+
+it('invalidates inspected fragments when a label registers later', function () {
+    $context = new OverlayLabelContext('dialog', 'modal');
+    $contents = new HtmlString('<span id="dialog-title">Authored content</span>');
+
+    $context->assertNoIdCollisions($contents);
+    $context->register('modal-title');
+
+    expect(fn () => $context->assertNoIdCollisions($contents))->toThrow(
+        InvalidArgumentException::class,
+        'Overlay label id [dialog-title] conflicts with another element in its content.',
+    );
+});

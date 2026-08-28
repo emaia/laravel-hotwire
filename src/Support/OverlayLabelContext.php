@@ -19,6 +19,9 @@ final class OverlayLabelContext
     /** @var array<string, true> */
     private array $usedIds;
 
+    /** @var array<string, list<array{id: string, slot: string, overlay: ?string, insideTemplate: bool}>> */
+    private array $inspectionCache = [];
+
     /** @param string[] $reservedIds */
     public function __construct(
         private readonly string $rootId,
@@ -60,6 +63,8 @@ final class OverlayLabelContext
         if ($kind === null) {
             return null;
         }
+
+        $this->inspectionCache = [];
 
         if ($kind === 'title') {
             $count = count($this->titleIds) + 1;
@@ -108,9 +113,6 @@ final class OverlayLabelContext
         }
 
         $reachable = $this->registeredIdsIn($contents, excludeTemplates: true);
-        if ($reachable === null) {
-            return ['title' => null, 'description' => null];
-        }
 
         return [
             'title' => $this->firstReachableId($this->titleIds, $reachable),
@@ -118,16 +120,22 @@ final class OverlayLabelContext
         ];
     }
 
+    /**
+     * Validate rendered content and return its reachable title and description ids.
+     *
+     * @return array{title: ?string, description: ?string}
+     */
+    public function resolveReferences(Htmlable $contents): array
+    {
+        $this->assertNoIdCollisions($contents);
+
+        return $this->referencesFor($contents);
+    }
+
     /** Report whether rendered content contains a registered overlay label. */
     public function hasRegisteredLabels(Htmlable $contents): bool
     {
-        $elements = $this->registeredElementsIn($contents, excludeTemplates: false);
-
-        if ($elements === null) {
-            return false;
-        }
-
-        foreach ($elements as $element) {
+        foreach ($this->inspect($contents) as $element) {
             if ($this->isRegisteredLabel($element)) {
                 return true;
             }
@@ -139,52 +147,60 @@ final class OverlayLabelContext
     /** Reject authored elements that reuse an id owned by an overlay label. */
     public function assertNoIdCollisions(Htmlable $contents): void
     {
-        $elements = $this->registeredElementsIn($contents, excludeTemplates: false);
+        $this->assertNoIdCollisionsIn($this->inspect($contents), 'content');
+    }
 
-        if ($elements === null) {
-            return;
-        }
+    /** Validate label placement and ids across an overlay's complete rendered slot. */
+    public function validateRoot(Htmlable $contents): void
+    {
+        $elements = $this->inspect($contents);
+        $this->assertNoIdCollisionsIn($elements, 'root');
 
-        $counts = [];
         foreach ($elements as $element) {
-            $id = $element->getAttribute('id');
-            $counts[$id] = ($counts[$id] ?? 0) + 1;
+            if ($this->isSemanticLabel($element) && $element['overlay'] === null) {
+                $component = ucfirst($this->slotPrefix);
 
-            if ($counts[$id] > 1 || ! $this->isRegisteredLabel($element)) {
-                throw new InvalidArgumentException("Overlay label id [{$id}] conflicts with another element in its content.");
+                throw new InvalidArgumentException(
+                    "{$component} title and description subcomponents must be rendered in {$this->slotPrefix}.content.",
+                );
             }
         }
     }
 
-    /**
-     * @return array<string, true>|null null when the fragment cannot be parsed
-     */
-    private function registeredIdsIn(Htmlable $contents, bool $excludeTemplates): ?array
+    /** @return array<string, true> */
+    private function registeredIdsIn(Htmlable $contents, bool $excludeTemplates): array
     {
-        $elements = $this->registeredElementsIn($contents, $excludeTemplates);
-        if ($elements === null) {
-            return null;
-        }
-
+        $registered = array_fill_keys([...$this->titleIds, ...$this->descriptionIds], true);
         $found = [];
-        foreach ($elements as $element) {
-            $found[$element->getAttribute('id')] = true;
+        foreach ($this->inspect($contents) as $element) {
+            if (
+                $element['id'] !== ''
+                && isset($registered[$element['id']])
+                && $element['overlay'] === null
+                && (! $excludeTemplates || ! $element['insideTemplate'])
+            ) {
+                $found[$element['id']] = true;
+            }
         }
 
         return $found;
     }
 
-    /** @return DOMElement[]|null null when the fragment cannot be parsed */
-    private function registeredElementsIn(Htmlable $contents, bool $excludeTemplates): ?array
+    /** @return list<array{id: string, slot: string, overlay: ?string, insideTemplate: bool}> */
+    private function inspect(Htmlable $contents): array
     {
-        $registered = array_fill_keys([...$this->titleIds, ...$this->descriptionIds], true);
-        if ($registered === []) {
-            return [];
+        $html = $contents->toHtml();
+        if (isset($this->inspectionCache[$html])) {
+            return $this->inspectionCache[$html];
         }
 
-        $html = $contents->toHtml();
-        if (preg_match('/\sid\s*=/i', $html) !== 1) {
-            return [];
+        if (
+            $this->titleIds === []
+            && $this->descriptionIds === []
+            && ! str_contains($html, "{$this->slotPrefix}-title")
+            && ! str_contains($html, "{$this->slotPrefix}-description")
+        ) {
+            return $this->inspectionCache[$html] = [];
         }
 
         $document = new DOMDocument;
@@ -197,26 +213,29 @@ final class OverlayLabelContext
         libxml_use_internal_errors($previous);
 
         if (! $loaded) {
-            return null;
+            return $this->inspectionCache[$html] = [];
         }
 
-        $nodes = (new DOMXPath($document))->query('//*[@id]');
+        $nodes = (new DOMXPath($document))->query('//*[@id or @data-slot]');
         if ($nodes === false) {
-            return null;
+            return $this->inspectionCache[$html] = [];
         }
 
         $elements = [];
         foreach ($nodes as $element) {
-            if (
-                $element instanceof DOMElement
-                && isset($registered[$element->getAttribute('id')])
-                && (! $excludeTemplates || ! $this->insideTemplate($element))
-            ) {
-                $elements[] = $element;
+            if (! $element instanceof DOMElement) {
+                continue;
             }
+
+            $elements[] = [
+                'id' => $element->getAttribute('id'),
+                'slot' => $element->getAttribute('data-slot'),
+                'overlay' => $this->nearestOverlaySlot($element),
+                'insideTemplate' => $this->insideTemplate($element),
+            ];
         }
 
-        return $elements;
+        return $this->inspectionCache[$html] = $elements;
     }
 
     /**
@@ -245,13 +264,54 @@ final class OverlayLabelContext
         return false;
     }
 
-    private function isRegisteredLabel(DOMElement $element): bool
+    /** @param array{id: string, slot: string, overlay: ?string, insideTemplate: bool} $element */
+    private function isRegisteredLabel(array $element): bool
     {
-        $id = $element->getAttribute('id');
-        $slot = $element->getAttribute('data-slot');
+        return ($element['slot'] === "{$this->slotPrefix}-title" && in_array($element['id'], $this->titleIds, true))
+            || ($element['slot'] === "{$this->slotPrefix}-description" && in_array($element['id'], $this->descriptionIds, true));
+    }
 
-        return ($slot === "{$this->slotPrefix}-title" && in_array($id, $this->titleIds, true))
-            || ($slot === "{$this->slotPrefix}-description" && in_array($id, $this->descriptionIds, true));
+    /** @param array{id: string, slot: string, overlay: ?string, insideTemplate: bool} $element */
+    private function isSemanticLabel(array $element): bool
+    {
+        return $element['slot'] === "{$this->slotPrefix}-title"
+            || $element['slot'] === "{$this->slotPrefix}-description";
+    }
+
+    /** @param list<array{id: string, slot: string, overlay: ?string, insideTemplate: bool}> $elements */
+    private function assertNoIdCollisionsIn(array $elements, string $scope): void
+    {
+        $registered = array_fill_keys([...$this->titleIds, ...$this->descriptionIds], true);
+        $counts = [];
+        foreach ($elements as $element) {
+            if ($element['id'] === '' || ! isset($registered[$element['id']])) {
+                continue;
+            }
+
+            $counts[$element['id']] = ($counts[$element['id']] ?? 0) + 1;
+            if ($counts[$element['id']] > 1 || ! $this->isRegisteredLabel($element)) {
+                throw new InvalidArgumentException(
+                    "Overlay label id [{$element['id']}] conflicts with another element in its {$scope}.",
+                );
+            }
+        }
+    }
+
+    private function nearestOverlaySlot(DOMElement $element): ?string
+    {
+        for ($node = $element->parentNode; $node instanceof DOMElement; $node = $node->parentNode) {
+            $slot = $node->getAttribute('data-slot');
+            if (in_array($slot, ['modal-overlay', 'sheet-overlay', 'drawer-overlay', 'alert-dialog-overlay'], true)) {
+                return $slot;
+            }
+
+            $role = $node->getAttribute('role');
+            if (in_array($role, ['dialog', 'alertdialog'], true)) {
+                return "role:{$role}";
+            }
+        }
+
+        return null;
     }
 
     private function resolveId(?string $explicitId, string $kind, int $count): string

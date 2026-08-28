@@ -12,11 +12,8 @@
     if ($alertDialogOverlayLabelContext->hasRegisteredLabels($slot)) {
         throw new InvalidArgumentException('Alert Dialog title and description subcomponents must be rendered in the content slot.');
     }
-    if (isset($content)) {
-        $alertDialogOverlayLabelContext->assertNoIdCollisions($content);
-    }
-    $contentLabelReferences = isset($content) && ($title === '' || $description === '')
-        ? $alertDialogOverlayLabelContext->referencesFor($content)
+    $contentLabelReferences = isset($content)
+        ? $alertDialogOverlayLabelContext->resolveReferences($content)
         : ['title' => null, 'description' => null];
     $alertDialogTitleId = $title !== ''
         ? $alertDialogOverlayLabelContext->titleId()

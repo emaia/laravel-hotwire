@@ -17,8 +17,7 @@
 
     $presetSizes = ['sm', 'md', 'lg', 'xl', 'full', 'auto'];
     $sizeStyle = in_array($modalSize, $presetSizes, true) ? '' : "max-width: {$modalSize};";
-    $modalOverlayLabelContext?->assertNoIdCollisions($slot);
-    $modalLabelReferences = $modalOverlayLabelContext?->referencesFor($slot) ?? ['title' => null, 'description' => null];
+    $modalLabelReferences = $modalOverlayLabelContext?->resolveReferences($slot) ?? ['title' => null, 'description' => null];
 @endphp
 
 <div
@@ -27,6 +26,9 @@
     data-motion="{{ $modalMotion }}"
     data-modal-target="modal"
     data-action="click->modal#clickOutside"
+    data-hotwire-overlay-labels
+    @if ($modalLabelReferences['title'] !== null) data-hotwire-overlay-labelledby="{{ $modalLabelReferences['title'] }}" @endif
+    @if ($modalLabelReferences['description'] !== null) data-hotwire-overlay-describedby="{{ $modalLabelReferences['description'] }}" @endif
     role="dialog"
     aria-modal="true"
     @if ($modalLabelReferences['title'] !== null) aria-labelledby="{{ $modalLabelReferences['title'] }}" @endif
