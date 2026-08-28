@@ -42,6 +42,10 @@ finite CSS motion and cancels stale teardown when the drawer rapidly reopens. Cu
 `drawer.title` and `drawer.description` automatically name and describe the dialog overlay. The frame integration assigns
 missing ids and refreshes the references when frame content changes.
 
+Set `aria-label`, `aria-labelledby`, `aria-description`, or `aria-describedby` on `<hw:drawer>` when the application owns
+the accessible text. The component routes these attributes to the semantic dialog overlay for explicit and automatic
+frame content, and authored values take precedence over generated title and description references.
+
 Use `<hw:sheet>` instead when you want a side panel with an always-visible close button.
 
 ## Frame Content
@@ -116,6 +120,10 @@ stream, to close it after a successful action. Stream rendering waits for the ac
 | `closeOnEscape`       | `true`                                                       | Close when Escape is pressed.                                              |
 | `closeOnClickOutside` | `true`                                                       | Close when the backdrop is clicked.                                        |
 | `viewTransition`      | `false`                                                      | Animate successive renders inside the frame host.                          |
+| `aria-label`          | `null`                                                       | Authored accessible name routed to the dialog overlay.                     |
+| `aria-labelledby`     | `null`                                                       | Authored accessible name reference routed to the dialog overlay.           |
+| `aria-description`    | `null`                                                       | Authored accessible description routed to the dialog overlay.              |
+| `aria-describedby`    | `null`                                                       | Authored accessible description reference routed to the dialog overlay.    |
 
 ## Components
 

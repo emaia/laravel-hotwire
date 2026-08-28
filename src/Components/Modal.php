@@ -23,6 +23,10 @@ class Modal extends Component
         public ?Htmlable $stimulus = null,
         public string $motion = 'default',
         public bool $viewTransition = false,
+        public ?string $ariaLabel = null,
+        public ?string $ariaLabelledby = null,
+        public ?string $ariaDescription = null,
+        public ?string $ariaDescribedby = null,
     ) {
         $this->id = app(ComponentId::class)->resolve($this->id, 'hw-modal', 'modal');
         $this->frame = FrameTarget::normalize($this->frame);
@@ -61,6 +65,10 @@ class Modal extends Component
         $data['modalViewTransition'] = $this->viewTransition;
         $data = array_replace($data, OverlayLabelContext::boundaryData());
         $data['modalOverlayLabelContext'] = $this->overlayLabelContext;
+        $data['modalAriaLabel'] = $this->ariaLabel;
+        $data['modalAriaLabelledby'] = $this->ariaLabelledby;
+        $data['modalAriaDescription'] = $this->ariaDescription;
+        $data['modalAriaDescribedby'] = $this->ariaDescribedby;
         $data = array_replace($data, FieldContext::boundaryData());
 
         unset(
@@ -73,6 +81,10 @@ class Modal extends Component
             $data['stimulus'],
             $data['motion'],
             $data['viewTransition'],
+            $data['ariaLabel'],
+            $data['ariaLabelledby'],
+            $data['ariaDescription'],
+            $data['ariaDescribedby'],
         );
 
         return $data;

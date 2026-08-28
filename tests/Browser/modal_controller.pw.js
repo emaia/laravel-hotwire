@@ -164,6 +164,44 @@ test("frame labels do not override an authored accessible description", async ({
     await expect(overlay).not.toHaveAttribute("aria-describedby", /.+/);
 });
 
+test("frame labels preserve an authored describedby reference", async ({ page }) => {
+    await mountFrameOverlay(page, "modal", {
+        beforeOverlay: '<span id="app-description">Authored description</span>',
+        overlayAttributes: 'aria-describedby="app-description"',
+    });
+
+    const overlay = page.locator('[data-modal-target="modal"]');
+    await page.locator("#modal-frame").evaluate((element) => {
+        element.innerHTML = '<p data-slot="modal-description">Loaded description</p>';
+    });
+
+    await expect(overlay).toHaveAttribute("data-state", "open");
+    await expect(overlay).toHaveAttribute("aria-describedby", "app-description");
+    await expect(page.locator("#app-description")).toHaveText("Authored description");
+});
+
+test("frame labels resume generated ownership after a morph removes authored semantics", async ({ page }) => {
+    await mountFrameOverlay(page, "modal", {
+        overlayAttributes: 'aria-label="Authored dialog"',
+    });
+    await page.addScriptTag({ path: "node_modules/@hotwired/turbo/dist/turbo.es2017-umd.js" });
+
+    await page.locator('[data-modal-target="modal"]').evaluate((overlay) => {
+        const replacement = overlay.cloneNode(true);
+        replacement.removeAttribute("aria-label");
+        replacement.querySelector("turbo-frame").innerHTML = '<h2 data-slot="modal-title">Morphed title</h2>';
+
+        window.Turbo.morphElements(overlay, replacement);
+    });
+
+    const overlay = page.locator('[data-modal-target="modal"]');
+    await expect(overlay).toHaveAttribute("data-state", "open");
+    await expect(overlay).not.toHaveAttribute("aria-label", /.+/);
+    await expect(overlay).toHaveAttribute("aria-labelledby", "modal-shell-title");
+    await expect(overlay).toHaveAttribute("data-hotwire-overlay-labelledby", "modal-shell-title");
+    await expect(page.locator("#modal-shell-title")).toHaveText("Morphed title");
+});
+
 test("frame labels reacquire a replaced overlay target", async ({ page }) => {
     await mountFrameOverlay(page, "modal");
     await page.locator("#modal-frame").evaluate((element) => {

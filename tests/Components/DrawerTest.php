@@ -222,7 +222,7 @@ it('throws on an invalid side', function () {
     expect(fn () => new Drawer(side: 'diagonal'))->toThrow(InvalidArgumentException::class);
 });
 
-it('keeps view transition as the final positional constructor argument', function () {
+it('keeps view transition as the twelfth positional constructor argument', function () {
     $component = new Drawer('', 'down', null, '', null, true, 'none', true, true, true, null, true);
 
     expect($component->motion)->toBe('none')

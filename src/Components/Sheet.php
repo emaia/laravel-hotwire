@@ -29,6 +29,10 @@ class Sheet extends Component
         public bool $closeOnClickOutside = true,
         public ?Htmlable $stimulus = null,
         public bool $viewTransition = false,
+        public ?string $ariaLabel = null,
+        public ?string $ariaLabelledby = null,
+        public ?string $ariaDescription = null,
+        public ?string $ariaDescribedby = null,
     ) {
         $this->id = app(ComponentId::class)->resolve($this->id, 'hw-sheet', 'sheet');
         $this->frame = FrameTarget::normalize($this->frame);
@@ -68,6 +72,10 @@ class Sheet extends Component
         $data['sheetViewTransition'] = $this->viewTransition;
         $data = array_replace($data, OverlayLabelContext::boundaryData());
         $data['sheetOverlayLabelContext'] = $this->overlayLabelContext;
+        $data['sheetAriaLabel'] = $this->ariaLabel;
+        $data['sheetAriaLabelledby'] = $this->ariaLabelledby;
+        $data['sheetAriaDescription'] = $this->ariaDescription;
+        $data['sheetAriaDescribedby'] = $this->ariaDescribedby;
         $data = array_replace($data, FieldContext::boundaryData());
 
         unset(
@@ -82,6 +90,10 @@ class Sheet extends Component
             $data['stimulus'],
             $data['motion'],
             $data['viewTransition'],
+            $data['ariaLabel'],
+            $data['ariaLabelledby'],
+            $data['ariaDescription'],
+            $data['ariaDescribedby'],
         );
 
         return $data;

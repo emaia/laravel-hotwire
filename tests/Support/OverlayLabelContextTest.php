@@ -63,3 +63,20 @@ it('invalidates inspected fragments when a label registers later', function () {
         'Overlay label id [dialog-title] conflicts with another element in its content.',
     );
 });
+
+it('ignores semantic labels inside inert templates during root validation', function () {
+    $context = new OverlayLabelContext('dialog', 'modal');
+
+    expect($context->validateRoot(new HtmlString(
+        '<template><h2 data-slot="modal-title">Deferred title</h2></template>',
+    )))->toBeNull();
+});
+
+it('ignores registered id collisions inside inert templates', function () {
+    $context = new OverlayLabelContext('dialog', 'modal');
+    $context->register('modal-title');
+
+    expect($context->validateRoot(new HtmlString(
+        '<template><div id="dialog-title"></div></template><div data-slot="modal-overlay"><h2 id="dialog-title" data-slot="modal-title">Title</h2></div>',
+    )))->toBeNull();
+});

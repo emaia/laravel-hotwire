@@ -167,6 +167,13 @@ export function createFrameOverlay(controller) {
         syncAccessibleName();
     }
 
+    function handleMorphElement(event) {
+        if (!controller.hasModalTarget || event.target !== controller.modalTarget) return;
+
+        resetManagedReferences();
+        syncAccessibleName();
+    }
+
     function isDynamicFrame(frame) {
         if (!frame || frame.tagName !== "TURBO-FRAME") return false;
         if (hasDynamicContent() && frame === dynamicContent()) return true;
@@ -335,6 +342,7 @@ export function createFrameOverlay(controller) {
     document.addEventListener("turbo:frame-render", handleFrameRender);
     document.addEventListener("turbo:frame-load", handleFrameLoad);
     document.addEventListener("turbo:before-stream-render", handleBeforeStreamRender);
+    controller.element.addEventListener("turbo:morph-element", handleMorphElement);
 
     return {
         markDismissedWhileLoading() {
@@ -356,6 +364,7 @@ export function createFrameOverlay(controller) {
             document.removeEventListener("turbo:frame-render", handleFrameRender);
             document.removeEventListener("turbo:frame-load", handleFrameLoad);
             document.removeEventListener("turbo:before-stream-render", handleBeforeStreamRender);
+            controller.element.removeEventListener("turbo:morph-element", handleMorphElement);
         },
     };
 }

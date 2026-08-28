@@ -32,6 +32,10 @@ class Drawer extends Component
         public bool $closeOnClickOutside = true,
         public ?Htmlable $stimulus = null,
         public bool $viewTransition = false,
+        public ?string $ariaLabel = null,
+        public ?string $ariaLabelledby = null,
+        public ?string $ariaDescription = null,
+        public ?string $ariaDescribedby = null,
     ) {
         $this->id = app(ComponentId::class)->resolve($this->id, 'hw-drawer', 'drawer');
         $this->frame = FrameTarget::normalize($this->frame);
@@ -75,6 +79,10 @@ class Drawer extends Component
         $data['drawerViewTransition'] = $this->viewTransition;
         $data = array_replace($data, OverlayLabelContext::boundaryData());
         $data['drawerOverlayLabelContext'] = $this->overlayLabelContext;
+        $data['drawerAriaLabel'] = $this->ariaLabel;
+        $data['drawerAriaLabelledby'] = $this->ariaLabelledby;
+        $data['drawerAriaDescription'] = $this->ariaDescription;
+        $data['drawerAriaDescribedby'] = $this->ariaDescribedby;
         $data = array_replace($data, FieldContext::boundaryData());
 
         unset(
@@ -91,6 +99,10 @@ class Drawer extends Component
             $data['stimulus'],
             $data['motion'],
             $data['viewTransition'],
+            $data['ariaLabel'],
+            $data['ariaLabelledby'],
+            $data['ariaDescription'],
+            $data['ariaDescribedby'],
         );
 
         return $data;

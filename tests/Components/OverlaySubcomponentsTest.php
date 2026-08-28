@@ -197,6 +197,35 @@ it('does not name an overlay from a title inside a native template', function (s
         ->and($dialog->hasAttribute('aria-labelledby'))->toBeFalse();
 })->with(['modal', 'sheet', 'drawer']);
 
+it('allows semantic labels inside an inert root template', function (string $family) {
+    $view = $this->blade(<<<BLADE
+        <x-hw::{$family} id="settings-{$family}" frame="settings-frame">
+            <template id="settings-template">
+                <x-hw::{$family}.title>Deferred settings</x-hw::{$family}.title>
+            </template>
+        </x-hw::{$family}>
+    BLADE);
+
+    $view->assertSee('id="settings-template"', false)
+        ->assertSee("data-slot=\"{$family}-overlay\"", false);
+})->with(['modal', 'sheet', 'drawer']);
+
+it('ignores label id collisions inside inert templates', function (string $family) {
+    $view = $this->blade(<<<BLADE
+        <x-hw::{$family} id="account-{$family}">
+            <template><div id="account-{$family}-title"></div></template>
+            <x-hw::{$family}.content>
+                <x-hw::{$family}.title>Account settings</x-hw::{$family}.title>
+            </x-hw::{$family}.content>
+        </x-hw::{$family}>
+    BLADE);
+    $xpath = new DOMXPath(dom((string) $view));
+    $dialog = $xpath->query("//*[@data-slot='{$family}-overlay']")->item(0);
+
+    expect($dialog)->toBeInstanceOf(DOMElement::class)
+        ->and($dialog->getAttribute('aria-labelledby'))->toBe("account-{$family}-title");
+})->with(['modal', 'sheet', 'drawer']);
+
 it('avoids generated label ids that collide with an overlay frame', function (string $family) {
     $view = $this->blade(<<<BLADE
         <x-hw::{$family} id="account-{$family}" frame="account-{$family}-title">
@@ -273,6 +302,33 @@ it('does not let a content wrapper reclaim label ownership across a nested overl
         ->and($xpath->query('//*[@id="outer-modal-title"]'))->toHaveCount(0);
 });
 
+it('does not let content reclaim authored accessible text across a nested overlay boundary', function (string $outer, string $inner) {
+    $view = $this->blade(<<<BLADE
+        <x-hw::{$outer} id="outer-{$outer}" aria-label="Outer dialog">
+            <x-hw::{$outer}.content>
+                <x-hw::{$inner} id="inner-{$inner}">
+                    <x-hw::{$inner}.content>
+                        <x-hw::{$outer}.content>Wrong owner</x-hw::{$outer}.content>
+                    </x-hw::{$inner}.content>
+                </x-hw::{$inner}>
+            </x-hw::{$outer}.content>
+        </x-hw::{$outer}>
+    BLADE);
+    $xpath = new DOMXPath(dom((string) $view));
+    $outerDialogs = $xpath->query("//*[@data-slot='{$outer}-overlay']");
+
+    expect($outerDialogs)->toHaveCount(2)
+        ->and($outerDialogs->item(0)->getAttribute('aria-label'))->toBe('Outer dialog')
+        ->and($outerDialogs->item(1)->hasAttribute('aria-label'))->toBeFalse();
+})->with([
+    ['modal', 'sheet'],
+    ['modal', 'drawer'],
+    ['sheet', 'modal'],
+    ['sheet', 'drawer'],
+    ['drawer', 'modal'],
+    ['drawer', 'sheet'],
+]);
+
 it('rejects authored descendant ids that collide with generated overlay labels', function () {
     expect(fn () => $this->blade(<<<'BLADE'
         <x-hw::modal id="account-modal">
@@ -314,6 +370,55 @@ it('rejects overlay labels rendered outside their content surface', function (st
         ucfirst($family)." title and description subcomponents must be rendered in {$family}.content.",
     );
 })->with(['modal', 'sheet', 'drawer']);
+
+it('routes authored accessible text from overlay roots to explicit and automatic dialog surfaces', function (string $family, bool $automatic) {
+    $frame = $automatic ? 'frame="account-frame"' : '';
+    $content = $automatic ? '' : <<<BLADE
+        <x-hw::{$family}.content>
+            <x-hw::{$family}.title>Generated title</x-hw::{$family}.title>
+            <x-hw::{$family}.description>Generated description</x-hw::{$family}.description>
+        </x-hw::{$family}.content>
+    BLADE;
+    $view = $this->blade(<<<BLADE
+        <span id="account-title">Account</span>
+        <span id="account-help">Choose the account settings to update.</span>
+        <x-hw::{$family}
+            id="account-{$family}"
+            {$frame}
+            aria-label="Account dialog"
+            aria-labelledby="account-title"
+            aria-description="Account settings"
+            aria-describedby="account-help"
+            data-test-id="overlay-root"
+        >
+            {$content}
+        </x-hw::{$family}>
+    BLADE);
+    $xpath = new DOMXPath(dom((string) $view));
+    $root = $xpath->query("//*[@data-slot='{$family}']")->item(0);
+    $dialog = $xpath->query("//*[@data-slot='{$family}-overlay']")->item(0);
+
+    expect($root)->toBeInstanceOf(DOMElement::class)
+        ->and($root->getAttribute('data-test-id'))->toBe('overlay-root')
+        ->and($root->hasAttribute('aria-label'))->toBeFalse()
+        ->and($root->hasAttribute('aria-labelledby'))->toBeFalse()
+        ->and($root->hasAttribute('aria-description'))->toBeFalse()
+        ->and($root->hasAttribute('aria-describedby'))->toBeFalse()
+        ->and($dialog)->toBeInstanceOf(DOMElement::class)
+        ->and($dialog->getAttribute('aria-label'))->toBe('Account dialog')
+        ->and($dialog->getAttribute('aria-labelledby'))->toBe('account-title')
+        ->and($dialog->getAttribute('aria-description'))->toBe('Account settings')
+        ->and($dialog->getAttribute('aria-describedby'))->toBe('account-help')
+        ->and($dialog->hasAttribute('data-hotwire-overlay-labelledby'))->toBeFalse()
+        ->and($dialog->hasAttribute('data-hotwire-overlay-describedby'))->toBeFalse();
+})->with([
+    ['modal', false],
+    ['modal', true],
+    ['sheet', false],
+    ['sheet', true],
+    ['drawer', false],
+    ['drawer', true],
+]);
 
 it('reports authored alert trigger id collisions separately from misplaced labels', function () {
     expect(fn () => $this->blade(<<<'BLADE'

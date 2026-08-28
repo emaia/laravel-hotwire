@@ -1,4 +1,17 @@
-@aware(['drawerId' => null, 'drawerDirection' => 'down', 'drawerAxis' => 'y', 'drawerBackdrop' => true, 'drawerFrame' => null, 'drawerMotion' => 'default', 'drawerViewTransition' => false, 'drawerOverlayLabelContext' => null])
+@aware([
+    'drawerId' => null,
+    'drawerDirection' => 'down',
+    'drawerAxis' => 'y',
+    'drawerBackdrop' => true,
+    'drawerFrame' => null,
+    'drawerMotion' => 'default',
+    'drawerViewTransition' => false,
+    'drawerAriaLabel' => null,
+    'drawerAriaLabelledby' => null,
+    'drawerAriaDescription' => null,
+    'drawerAriaDescribedby' => null,
+    'drawerOverlayLabelContext' => null,
+])
 
 @php
     if ($drawerId === null) {
@@ -6,6 +19,10 @@
     }
 
     $drawerLabelReferences = $drawerOverlayLabelContext?->resolveReferences($slot) ?? ['title' => null, 'description' => null];
+    $drawerManagedTitle = $drawerAriaLabel === null && $drawerAriaLabelledby === null ? $drawerLabelReferences['title'] : null;
+    $drawerManagedDescription = $drawerAriaDescription === null && $drawerAriaDescribedby === null ? $drawerLabelReferences['description'] : null;
+    $drawerLabelledby = $drawerAriaLabelledby ?? $drawerManagedTitle;
+    $drawerDescribedby = $drawerAriaDescribedby ?? $drawerManagedDescription;
 @endphp
 
 <div
@@ -14,12 +31,14 @@
     data-state="closed"
     data-motion="{{ $drawerMotion }}"
     data-hotwire-overlay-labels
-    @if ($drawerLabelReferences['title'] !== null) data-hotwire-overlay-labelledby="{{ $drawerLabelReferences['title'] }}" @endif
-    @if ($drawerLabelReferences['description'] !== null) data-hotwire-overlay-describedby="{{ $drawerLabelReferences['description'] }}" @endif
+    @if ($drawerManagedTitle !== null) data-hotwire-overlay-labelledby="{{ $drawerManagedTitle }}" @endif
+    @if ($drawerManagedDescription !== null) data-hotwire-overlay-describedby="{{ $drawerManagedDescription }}" @endif
     role="dialog"
     aria-modal="true"
-    @if ($drawerLabelReferences['title'] !== null) aria-labelledby="{{ $drawerLabelReferences['title'] }}" @endif
-    @if ($drawerLabelReferences['description'] !== null) aria-describedby="{{ $drawerLabelReferences['description'] }}" @endif
+    @if ($drawerAriaLabel !== null) aria-label="{{ $drawerAriaLabel }}" @endif
+    @if ($drawerLabelledby !== null) aria-labelledby="{{ $drawerLabelledby }}" @endif
+    @if ($drawerAriaDescription !== null) aria-description="{{ $drawerAriaDescription }}" @endif
+    @if ($drawerDescribedby !== null) aria-describedby="{{ $drawerDescribedby }}" @endif
     hidden
     inert
 >

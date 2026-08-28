@@ -40,6 +40,18 @@ final class OverlayLabelContext
             'sheetOverlayLabelContext' => null,
             'drawerOverlayLabelContext' => null,
             'alertDialogOverlayLabelContext' => null,
+            'modalAriaLabel' => null,
+            'modalAriaLabelledby' => null,
+            'modalAriaDescription' => null,
+            'modalAriaDescribedby' => null,
+            'sheetAriaLabel' => null,
+            'sheetAriaLabelledby' => null,
+            'sheetAriaDescription' => null,
+            'sheetAriaDescribedby' => null,
+            'drawerAriaLabel' => null,
+            'drawerAriaLabelledby' => null,
+            'drawerAriaDescription' => null,
+            'drawerAriaDescribedby' => null,
         ];
     }
 
@@ -136,7 +148,7 @@ final class OverlayLabelContext
     public function hasRegisteredLabels(Htmlable $contents): bool
     {
         foreach ($this->inspect($contents) as $element) {
-            if ($this->isRegisteredLabel($element)) {
+            if (! $element['insideTemplate'] && $this->isRegisteredLabel($element)) {
                 return true;
             }
         }
@@ -157,7 +169,7 @@ final class OverlayLabelContext
         $this->assertNoIdCollisionsIn($elements, 'root');
 
         foreach ($elements as $element) {
-            if ($this->isSemanticLabel($element) && $element['overlay'] === null) {
+            if (! $element['insideTemplate'] && $this->isSemanticLabel($element) && $element['overlay'] === null) {
                 $component = ucfirst($this->slotPrefix);
 
                 throw new InvalidArgumentException(
@@ -284,7 +296,7 @@ final class OverlayLabelContext
         $registered = array_fill_keys([...$this->titleIds, ...$this->descriptionIds], true);
         $counts = [];
         foreach ($elements as $element) {
-            if ($element['id'] === '' || ! isset($registered[$element['id']])) {
+            if ($element['insideTemplate'] || $element['id'] === '' || ! isset($registered[$element['id']])) {
                 continue;
             }
 
