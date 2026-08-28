@@ -17,6 +17,7 @@
 
     $presetSizes = ['sm', 'md', 'lg', 'xl', 'full', 'auto'];
     $sizeStyle = in_array($modalSize, $presetSizes, true) ? '' : "max-width: {$modalSize};";
+    $modalOverlayLabelContext?->assertNoIdCollisions($slot);
     $modalLabelReferences = $modalOverlayLabelContext?->referencesFor($slot) ?? ['title' => null, 'description' => null];
 @endphp
 

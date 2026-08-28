@@ -5,6 +5,7 @@
         throw new InvalidArgumentException('Drawer content must be rendered inside a Drawer root.');
     }
 
+    $drawerOverlayLabelContext?->assertNoIdCollisions($slot);
     $drawerLabelReferences = $drawerOverlayLabelContext?->referencesFor($slot) ?? ['title' => null, 'description' => null];
 @endphp
 

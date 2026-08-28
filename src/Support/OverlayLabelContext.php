@@ -6,6 +6,7 @@ use DOMDocument;
 use DOMElement;
 use DOMXPath;
 use Illuminate\Contracts\Support\Htmlable;
+use InvalidArgumentException;
 
 final class OverlayLabelContext
 {
@@ -15,15 +16,28 @@ final class OverlayLabelContext
     /** @var string[] */
     private array $descriptionIds = [];
 
+    /** @var array<string, true> */
+    private array $usedIds;
+
+    /** @param string[] $reservedIds */
     public function __construct(
         private readonly string $rootId,
         private readonly string $slotPrefix,
-    ) {}
+        array $reservedIds = [],
+    ) {
+        $this->usedIds = array_fill_keys([$rootId, ...$reservedIds], true);
+    }
 
     /** Return component data that prevents label ownership from crossing an overlay root. */
     public static function boundaryData(): array
     {
-        return ['overlayLabelOwnerContext' => null];
+        return [
+            'overlayLabelOwnerContext' => null,
+            'modalOverlayLabelContext' => null,
+            'sheetOverlayLabelContext' => null,
+            'drawerOverlayLabelContext' => null,
+            'alertDialogOverlayLabelContext' => null,
+        ];
     }
 
     /** Return component data that lets an overlay content component own its labels. */
@@ -107,15 +121,61 @@ final class OverlayLabelContext
     /** Report whether rendered content contains a registered overlay label. */
     public function hasRegisteredLabels(Htmlable $contents): bool
     {
-        $ids = $this->registeredIdsIn($contents, excludeTemplates: false);
+        $elements = $this->registeredElementsIn($contents, excludeTemplates: false);
 
-        return $ids !== null && $ids !== [];
+        if ($elements === null) {
+            return false;
+        }
+
+        foreach ($elements as $element) {
+            if ($this->isRegisteredLabel($element)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** Reject authored elements that reuse an id owned by an overlay label. */
+    public function assertNoIdCollisions(Htmlable $contents): void
+    {
+        $elements = $this->registeredElementsIn($contents, excludeTemplates: false);
+
+        if ($elements === null) {
+            return;
+        }
+
+        $counts = [];
+        foreach ($elements as $element) {
+            $id = $element->getAttribute('id');
+            $counts[$id] = ($counts[$id] ?? 0) + 1;
+
+            if ($counts[$id] > 1 || ! $this->isRegisteredLabel($element)) {
+                throw new InvalidArgumentException("Overlay label id [{$id}] conflicts with another element in its content.");
+            }
+        }
     }
 
     /**
      * @return array<string, true>|null null when the fragment cannot be parsed
      */
     private function registeredIdsIn(Htmlable $contents, bool $excludeTemplates): ?array
+    {
+        $elements = $this->registeredElementsIn($contents, $excludeTemplates);
+        if ($elements === null) {
+            return null;
+        }
+
+        $found = [];
+        foreach ($elements as $element) {
+            $found[$element->getAttribute('id')] = true;
+        }
+
+        return $found;
+    }
+
+    /** @return DOMElement[]|null null when the fragment cannot be parsed */
+    private function registeredElementsIn(Htmlable $contents, bool $excludeTemplates): ?array
     {
         $registered = array_fill_keys([...$this->titleIds, ...$this->descriptionIds], true);
         if ($registered === []) {
@@ -140,24 +200,23 @@ final class OverlayLabelContext
             return null;
         }
 
-        $elements = (new DOMXPath($document))->query('//*[@id]');
-        if ($elements === false) {
+        $nodes = (new DOMXPath($document))->query('//*[@id]');
+        if ($nodes === false) {
             return null;
         }
 
-        $found = [];
-        foreach ($elements as $element) {
-            if (! $element instanceof DOMElement || ($excludeTemplates && $this->insideTemplate($element))) {
-                continue;
-            }
-
-            $id = $element->getAttribute('id');
-            if (isset($registered[$id])) {
-                $found[$id] = true;
+        $elements = [];
+        foreach ($nodes as $element) {
+            if (
+                $element instanceof DOMElement
+                && isset($registered[$element->getAttribute('id')])
+                && (! $excludeTemplates || ! $this->insideTemplate($element))
+            ) {
+                $elements[] = $element;
             }
         }
 
-        return $found;
+        return $elements;
     }
 
     /**
@@ -186,14 +245,35 @@ final class OverlayLabelContext
         return false;
     }
 
+    private function isRegisteredLabel(DOMElement $element): bool
+    {
+        $id = $element->getAttribute('id');
+        $slot = $element->getAttribute('data-slot');
+
+        return ($slot === "{$this->slotPrefix}-title" && in_array($id, $this->titleIds, true))
+            || ($slot === "{$this->slotPrefix}-description" && in_array($id, $this->descriptionIds, true));
+    }
+
     private function resolveId(?string $explicitId, string $kind, int $count): string
     {
         if ($explicitId !== null && $explicitId !== '') {
+            if (isset($this->usedIds[$explicitId])) {
+                throw new InvalidArgumentException("Overlay label id [{$explicitId}] is already in use.");
+            }
+
+            $this->usedIds[$explicitId] = true;
+
             return $explicitId;
         }
 
-        $suffix = $count === 1 ? '' : "-{$count}";
+        do {
+            $suffix = $count === 1 ? '' : "-{$count}";
+            $id = "{$this->rootId}-{$kind}{$suffix}";
+            $count++;
+        } while (isset($this->usedIds[$id]));
 
-        return "{$this->rootId}-{$kind}{$suffix}";
+        $this->usedIds[$id] = true;
+
+        return $id;
     }
 }

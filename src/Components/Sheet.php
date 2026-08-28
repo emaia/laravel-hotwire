@@ -31,13 +31,17 @@ class Sheet extends Component
         public bool $viewTransition = false,
     ) {
         $this->id = app(ComponentId::class)->resolve($this->id, 'hw-sheet', 'sheet');
-        $this->overlayLabelContext = new OverlayLabelContext($this->id, 'sheet');
-
         $this->frame = FrameTarget::normalize($this->frame);
 
         if ($this->frame !== null && $this->frame === $this->id) {
             throw new \InvalidArgumentException('The sheet root id and frame id must be different.');
         }
+
+        $this->overlayLabelContext = new OverlayLabelContext(
+            $this->id,
+            'sheet',
+            $this->frame === null ? [] : [$this->frame],
+        );
 
         if (! in_array($this->side, self::SIDES, true)) {
             throw new \InvalidArgumentException('Sheet side must be one of: '.implode(', ', self::SIDES).". Got: {$this->side}");
@@ -62,8 +66,8 @@ class Sheet extends Component
         $data['sheetFrame'] = $this->frame;
         $data['sheetMotion'] = $this->motion;
         $data['sheetViewTransition'] = $this->viewTransition;
-        $data['sheetOverlayLabelContext'] = $this->overlayLabelContext;
         $data = array_replace($data, OverlayLabelContext::boundaryData());
+        $data['sheetOverlayLabelContext'] = $this->overlayLabelContext;
         $data = array_replace($data, FieldContext::boundaryData());
 
         unset(

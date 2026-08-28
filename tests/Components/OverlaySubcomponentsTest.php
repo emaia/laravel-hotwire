@@ -53,10 +53,8 @@ it('links alert dialog subcomponents to its alert dialog surface', function () {
         <x-hw::alert-dialog id="delete-alert">
             <button>Delete</button>
             <x-slot:content>
-                <x-hw::alert-dialog.content>
-                    <x-hw::alert-dialog.title>Delete account?</x-hw::alert-dialog.title>
-                    <x-hw::alert-dialog.description>This cannot be undone.</x-hw::alert-dialog.description>
-                </x-hw::alert-dialog.content>
+                <x-hw::alert-dialog.title>Delete account?</x-hw::alert-dialog.title>
+                <x-hw::alert-dialog.description>This cannot be undone.</x-hw::alert-dialog.description>
             </x-slot:content>
         </x-hw::alert-dialog>
     BLADE);
@@ -170,6 +168,22 @@ it('does not name an overlay from a title inside a native template', function (s
         ->and($dialog->hasAttribute('aria-labelledby'))->toBeFalse();
 })->with(['modal', 'sheet', 'drawer']);
 
+it('avoids generated label ids that collide with an overlay frame', function (string $family) {
+    $view = $this->blade(<<<BLADE
+        <x-hw::{$family} id="account-{$family}" frame="account-{$family}-title">
+            <x-hw::{$family}.content>
+                <x-hw::{$family}.title>Account settings</x-hw::{$family}.title>
+            </x-hw::{$family}.content>
+        </x-hw::{$family}>
+    BLADE);
+    $xpath = new DOMXPath(dom((string) $view));
+    $dialog = $xpath->query("//*[@data-slot='{$family}-overlay']")->item(0);
+
+    expect($dialog->getAttribute('aria-labelledby'))->toBe("account-{$family}-title-2")
+        ->and($xpath->query("//*[@id='account-{$family}-title']"))->toHaveCount(1)
+        ->and($xpath->query("//*[@id='account-{$family}-title-2']"))->toHaveCount(1);
+})->with(['modal', 'sheet', 'drawer']);
+
 it('uses the first reachable title after a native template', function () {
     $view = $this->blade(<<<'BLADE'
         <x-hw::modal id="settings-modal">
@@ -206,6 +220,53 @@ it('does not name an outer modal from a modal title inside a nested sheet', func
     expect($outerDialog)->toBeInstanceOf(DOMElement::class)
         ->and($outerDialog->hasAttribute('aria-labelledby'))->toBeFalse()
         ->and($xpath->query('//*[@id="outer-modal-title"]'))->toHaveCount(0);
+});
+
+it('does not let a content wrapper reclaim label ownership across a nested overlay boundary', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::modal id="outer-modal">
+            <x-hw::modal.content>
+                <x-hw::sheet id="inner-sheet">
+                    <x-hw::sheet.content>
+                        <x-hw::modal.content>
+                            <x-hw::modal.title>Wrong owner</x-hw::modal.title>
+                        </x-hw::modal.content>
+                    </x-hw::sheet.content>
+                </x-hw::sheet>
+            </x-hw::modal.content>
+        </x-hw::modal>
+    BLADE);
+    $xpath = new DOMXPath(dom((string) $view));
+    $outerDialog = $xpath->query('//*[@data-slot="modal-overlay"]')->item(0);
+
+    expect($outerDialog)->toBeInstanceOf(DOMElement::class)
+        ->and($outerDialog->hasAttribute('aria-labelledby'))->toBeFalse()
+        ->and($xpath->query('//*[@id="outer-modal-title"]'))->toHaveCount(0);
+});
+
+it('rejects authored descendant ids that collide with generated overlay labels', function () {
+    expect(fn () => $this->blade(<<<'BLADE'
+        <x-hw::modal id="account-modal">
+            <x-hw::modal.content>
+                <div id="account-modal-title">Authored content</div>
+                <x-hw::modal.title>Account settings</x-hw::modal.title>
+            </x-hw::modal.content>
+        </x-hw::modal>
+    BLADE))->toThrow(
+        ViewException::class,
+        'Overlay label id [account-modal-title] conflicts with another element in its content.',
+    );
+});
+
+it('reports authored alert trigger id collisions separately from misplaced labels', function () {
+    expect(fn () => $this->blade(<<<'BLADE'
+        <x-hw::alert-dialog id="delete" title="Delete account?">
+            <button id="delete-title">Delete</button>
+        </x-hw::alert-dialog>
+    BLADE))->toThrow(
+        ViewException::class,
+        'Overlay label id [delete-title] conflicts with another element in its content.',
+    );
 });
 
 it('renders alert-dialog subcomponents with semantic slots', function () {

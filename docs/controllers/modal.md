@@ -24,21 +24,13 @@ modal or move focus.
 >
     <button type="button" data-action="modal#open">Open modal</button>
 
-    <div
-        data-modal-target="modal"
-        data-state="closed"
-        data-motion="default"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="modal-title"
-        hidden inert
-    >
+    <div data-modal-target="modal" data-state="closed" data-motion="default" hidden inert>
         <div
             data-modal-target="backdrop"
             data-action="click->modal#clickOutside"
         ></div>
 
-        <div data-modal-target="dialog">
+        <div data-modal-target="dialog" role="dialog" aria-modal="true" aria-labelledby="modal-title">
             <h2 id="modal-title">Title</h2>
             <p>Modal content.</p>
 
@@ -103,15 +95,7 @@ closes synchronously before Turbo caches the page.
     <!-- Trigger -->
     <button type="button" data-action="modal#open">Open modal</button>
 
-    <div
-        data-modal-target="modal"
-        data-state="closed"
-        data-motion="default"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="styled-modal-title"
-        hidden inert
-    >
+    <div data-modal-target="modal" data-state="closed" data-motion="default" hidden inert>
         <!-- Backdrop -->
         <div
             class="fixed inset-0 bg-black transition-opacity"
@@ -124,6 +108,9 @@ closes synchronously before Turbo caches the page.
             <div
                 class="bg-white rounded-lg shadow-xl p-6 transition-all"
                 data-modal-target="dialog"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="styled-modal-title"
             >
                 <h2 id="styled-modal-title">Title</h2>
                 <p>Modal content.</p>
@@ -146,8 +133,8 @@ Presence waits for actual finite CSS motion on the backdrop and dialog. Never se
 rule; Presence owns `hidden` and keeps exit content rendered but inert until motion settles.
 
 The Blade component handles trigger ancestry for you via the `trigger` slot. Controller values such as
-`data-modal-close-on-escape-value` belong on the controller root. The modal target owns the dialog role and its ARIA
-name; the Blade component wires these automatically from `modal.title` and `modal.description`.
+`data-modal-close-on-escape-value` belong on the controller root. Put `aria-label` or `aria-labelledby` directly on the
+element carrying `role="dialog"` when writing controller markup manually.
 
 ## With dynamic content via Turbo Frame
 

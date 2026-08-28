@@ -5,6 +5,7 @@
         throw new InvalidArgumentException('Sheet content must be rendered inside a Sheet root.');
     }
 
+    $sheetOverlayLabelContext?->assertNoIdCollisions($slot);
     $sheetLabelReferences = $sheetOverlayLabelContext?->referencesFor($slot) ?? ['title' => null, 'description' => null];
 @endphp
 

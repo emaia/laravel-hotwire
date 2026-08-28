@@ -13,7 +13,7 @@ use Illuminate\View\ComponentAttributeBag;
 
 class Drawer extends Component
 {
-    private const array DIRECTIONS = ['up', 'right', 'down', 'left'];
+    private const DIRECTIONS = ['up', 'right', 'down', 'left'];
 
     private OverlayLabelContext $overlayLabelContext;
 
@@ -34,13 +34,17 @@ class Drawer extends Component
         public bool $viewTransition = false,
     ) {
         $this->id = app(ComponentId::class)->resolve($this->id, 'hw-drawer', 'drawer');
-        $this->overlayLabelContext = new OverlayLabelContext($this->id, 'drawer');
-
         $this->frame = FrameTarget::normalize($this->frame);
 
         if ($this->frame !== null && $this->frame === $this->id) {
             throw new \InvalidArgumentException('The drawer root id and frame id must be different.');
         }
+
+        $this->overlayLabelContext = new OverlayLabelContext(
+            $this->id,
+            'drawer',
+            $this->frame === null ? [] : [$this->frame],
+        );
 
         $this->direction = $this->normalizeDirection($this->side ?? $this->direction);
         $this->axis = in_array($this->direction, ['left', 'right'], true) ? 'x' : 'y';
@@ -69,8 +73,8 @@ class Drawer extends Component
         $data['drawerFrame'] = $this->frame;
         $data['drawerMotion'] = $this->motion;
         $data['drawerViewTransition'] = $this->viewTransition;
-        $data['drawerOverlayLabelContext'] = $this->overlayLabelContext;
         $data = array_replace($data, OverlayLabelContext::boundaryData());
+        $data['drawerOverlayLabelContext'] = $this->overlayLabelContext;
         $data = array_replace($data, FieldContext::boundaryData());
 
         unset(

@@ -25,13 +25,17 @@ class Modal extends Component
         public bool $viewTransition = false,
     ) {
         $this->id = app(ComponentId::class)->resolve($this->id, 'hw-modal', 'modal');
-        $this->overlayLabelContext = new OverlayLabelContext($this->id, 'modal');
-
         $this->frame = FrameTarget::normalize($this->frame);
 
         if ($this->frame !== null && $this->frame === $this->id) {
             throw new \InvalidArgumentException('The modal root id and frame id must be different.');
         }
+
+        $this->overlayLabelContext = new OverlayLabelContext(
+            $this->id,
+            'modal',
+            $this->frame === null ? [] : [$this->frame],
+        );
 
         $this->motion = in_array($this->motion, ['default', 'none'], true) ? $this->motion : 'default';
     }
@@ -55,8 +59,8 @@ class Modal extends Component
         $data['modalStimulus'] = $this->stimulus;
         $data['modalMotion'] = $this->motion;
         $data['modalViewTransition'] = $this->viewTransition;
-        $data['modalOverlayLabelContext'] = $this->overlayLabelContext;
         $data = array_replace($data, OverlayLabelContext::boundaryData());
+        $data['modalOverlayLabelContext'] = $this->overlayLabelContext;
         $data = array_replace($data, FieldContext::boundaryData());
 
         unset(

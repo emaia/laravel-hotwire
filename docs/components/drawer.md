@@ -39,15 +39,17 @@ The drawer traps focus while open, restores focus to the trigger on close, locks
 synchronously before Turbo caches the page. Its overlay uses `data-state="open|closed"`; Presence waits for actual
 finite CSS motion and cancels stale teardown when the drawer rapidly reopens. Customize transition duration in CSS.
 
-`drawer.title` and `drawer.description` receive stable ids and automatically name and describe the dialog overlay,
-including content that arrives through the configured Turbo Frame. For a titleless custom layout, set `aria-label` on
-the Drawer root.
+`drawer.title` and `drawer.description` receive stable ids and automatically name and describe the dialog overlay when
+they render with `drawer.content` in the same server response.
 
 Use `<hw:sheet>` instead when you want a side panel with an always-visible close button.
 
 ## Frame Content
 
 Use `frame` when a shared drawer host should load server-rendered content through Turbo Frames:
+
+Replacing only the inner Turbo Frame cannot recompute attributes on the outer dialog overlay. If its accessible name
+changes, replace or rerender the owning Drawer root instead of only the frame.
 
 ```blade
 {{-- layout --}}
