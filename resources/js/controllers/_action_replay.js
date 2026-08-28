@@ -85,7 +85,7 @@ export function resolveActionElement(action, root) {
 export function replayAction(action, root) {
     if (action.kind === "click") {
         const target = resolveActionElement(action, root);
-        if (!target || target.disabled) return false;
+        if (!target || target.disabled || target.getAttribute("aria-disabled") === "true") return false;
 
         target.click();
 
@@ -255,7 +255,7 @@ function matchesAction(candidate, action, root) {
 }
 
 function actionKind(element) {
-    if (element.localName === "a") return "link";
+    if (element.localName === "a" && element.hasAttribute("href")) return "link";
 
     return element.form && element.type === "submit" ? "submit" : "click";
 }

@@ -55,6 +55,46 @@ test("resolves a replacement trigger by id", () => {
     expect(resolveActionElement(action, root)).toBe(replacement);
 });
 
+test("replays an href-less anchor as a generic click", () => {
+    document.body.innerHTML = `
+        <div id="root">
+            <div id="zone">
+                <a id="trigger" data-action="items#destroy">Delete</a>
+                <a id="empty-href" href="">Reload</a>
+            </div>
+        </div>
+    `;
+    const root = document.getElementById("root");
+    const zone = document.getElementById("zone");
+    const trigger = document.getElementById("trigger");
+    const action = captureAction({ target: trigger, currentTarget: zone }, root);
+    const emptyHrefAction = captureAction({ target: document.getElementById("empty-href"), currentTarget: zone }, root);
+    let clicks = 0;
+    trigger.addEventListener("click", () => clicks++);
+
+    expect(action.kind).toBe("click");
+    expect(emptyHrefAction.kind).toBe("link");
+    expect(replayAction(action, root)).toBe(true);
+    expect(clicks).toBe(1);
+});
+
+test("does not replay an href-less anchor that becomes aria-disabled", () => {
+    document.body.innerHTML = `
+        <div id="root"><div id="zone"><a id="trigger" data-action="items#destroy">Delete</a></div></div>
+    `;
+    const root = document.getElementById("root");
+    const zone = document.getElementById("zone");
+    const trigger = document.getElementById("trigger");
+    const action = captureAction({ target: trigger, currentTarget: zone }, root);
+    let clicks = 0;
+    trigger.addEventListener("click", () => clicks++);
+
+    trigger.setAttribute("aria-disabled", "true");
+
+    expect(replayAction(action, root)).toBe(false);
+    expect(clicks).toBe(0);
+});
+
 test("does not replay a generic click on an unrelated replacement", () => {
     document.body.innerHTML = `
         <div id="root"><div id="zone"><button type="button" data-action="items#destroy">Delete</button></div></div>

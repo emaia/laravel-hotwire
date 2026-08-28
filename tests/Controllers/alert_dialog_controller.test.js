@@ -221,6 +221,28 @@ test.serial("generic button listeners run only after confirmation", async () => 
     expect(mounted.controller.isOpen).toBe(false);
 });
 
+test.serial("href-less anchor listeners run only after confirmation", async () => {
+    await mount();
+    const trigger = document.getElementById("trigger");
+    const anchor = document.createElement("a");
+    anchor.id = "trigger";
+    anchor.dataset.action = "items#destroy";
+    anchor.textContent = "Delete";
+    trigger.replaceWith(anchor);
+    let clicks = 0;
+    anchor.addEventListener("click", () => clicks++);
+
+    clickWith(anchor);
+
+    expect(clicks).toBe(0);
+    expect(mounted.controller.isOpen).toBe(true);
+
+    await mounted.controller.confirm();
+
+    expect(clicks).toBe(1);
+    expect(mounted.controller.isOpen).toBe(false);
+});
+
 test.serial("confirm waits for the actual exit motion before re-issuing the click", async () => {
     await mount();
     const trigger = document.getElementById("trigger");
