@@ -76,6 +76,8 @@ export function createFrameOverlay(controller) {
         observer = new MutationObserver(syncContentState);
 
         observer.observe(dynamicContent(), {
+            attributes: true,
+            attributeFilter: ["id", "data-slot"],
             childList: true,
             characterData: true,
             subtree: true,
@@ -292,7 +294,6 @@ export function createFrameOverlay(controller) {
         }
 
         label.id = id;
-        label.setAttribute("data-hotwire-overlay-generated-id", "");
 
         return id;
     }

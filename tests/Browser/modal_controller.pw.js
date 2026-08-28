@@ -102,6 +102,33 @@ test("frame labels replace ambiguous authored ids with collision-free ids", asyn
     await expect(page.locator("#page-title")).toHaveText("Layout title");
 });
 
+test("frame labels resync after relevant attribute mutations", async ({ page }) => {
+    await mountFrameOverlay(page, "modal");
+
+    const frame = page.locator("#modal-frame");
+    const overlay = page.locator('[data-modal-target="modal"]');
+    await frame.evaluate((element) => {
+        element.innerHTML = '<h2 data-slot="modal-title">Account settings</h2>';
+    });
+
+    await expect(overlay).toHaveAttribute("aria-labelledby", "modal-shell-title");
+
+    await page.locator("#modal-shell-title").evaluate((title) => {
+        title.id = "renamed-title";
+    });
+    await expect(overlay).toHaveAttribute("aria-labelledby", "renamed-title");
+
+    await page.locator("#renamed-title").evaluate((title) => {
+        title.removeAttribute("data-slot");
+    });
+    await expect(overlay).not.toHaveAttribute("aria-labelledby", /.+/);
+
+    await page.getByText("Account settings").evaluate((title) => {
+        title.setAttribute("data-slot", "modal-title");
+    });
+    await expect(overlay).toHaveAttribute("aria-labelledby", "renamed-title");
+});
+
 test("frame labels move from loading content to the response without claiming nested overlays", async ({ page }) => {
     await mountFrameOverlay(page, "modal", {
         beforeOverlay: '<button id="modal-shell-title">Open</button>',
