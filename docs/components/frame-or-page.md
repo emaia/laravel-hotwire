@@ -248,7 +248,8 @@ the hidden input is unavailable, but the server-rendered input remains the deter
 A common confusion: trying to configure shared chrome (a modal, sheet, drawer, or sidebar host) from within a view
 that opens *as a frame*. That chrome lives in the host page's layout — it was already rendered with
 its own settings before the frame request fired. The frame payload only swaps content inside the
-matching `<turbo-frame>`; it cannot retroactively change elements outside the frame.
+matching `<turbo-frame>`; it cannot retroactively change elements outside the frame. Modal, Sheet and Drawer are a narrow
+exception for accessibility: their frame integration links semantic title and description slots to the persistent host.
 
 Three options, in order of how much they cost you:
 

@@ -39,8 +39,8 @@ The drawer traps focus while open, restores focus to the trigger on close, locks
 synchronously before Turbo caches the page. Its overlay uses `data-state="open|closed"`; Presence waits for actual
 finite CSS motion and cancels stale teardown when the drawer rapidly reopens. Customize transition duration in CSS.
 
-`drawer.title` and `drawer.description` receive stable ids and automatically name and describe the dialog overlay when
-they render with `drawer.content` in the same server response.
+`drawer.title` and `drawer.description` automatically name and describe the dialog overlay. The frame integration assigns
+missing ids and refreshes the references when frame content changes.
 
 Use `<hw:sheet>` instead when you want a side panel with an always-visible close button.
 
@@ -48,13 +48,11 @@ Use `<hw:sheet>` instead when you want a side panel with an always-visible close
 
 Use `frame` when a shared drawer host should load server-rendered content through Turbo Frames:
 
-Replacing only the inner Turbo Frame cannot recompute attributes on the outer dialog overlay. If its accessible name
-changes, replace or rerender the owning Drawer root instead of only the frame.
-
 ```blade
 {{-- layout --}}
 <hw:drawer frame="drawer-panel" direction="down" view-transition>
     <x-slot:loading_template>
+        <hw:drawer.title>Loading notifications</hw:drawer.title>
         <div class="p-6">Loading...</div>
     </x-slot:loading_template>
 </hw:drawer>
@@ -70,9 +68,15 @@ In the destination view, use [`<hw:frame-or-page>`](./frame-or-page.md):
 
 ```blade
 <hw:frame-or-page frame="drawer-panel" layout="layouts.app">
+    <hw:drawer.title>Notifications</hw:drawer.title>
+    <hw:drawer.description>Your latest account notifications.</hw:drawer.description>
+
     {{-- drawer content or standalone page content --}}
 </hw:frame-or-page>
 ```
+
+Include a semantic title in any loading template that opens the drawer. Frame-loaded labels are linked before opening,
+and explicit unique label ids are preserved.
 
 The drawer guarantees exactly one frame content host. If the slot has no `<hw:drawer.content>`, it appends an empty host
 even alongside a trigger or plain slot content. One content host wraps the frame and uses its slot as fallback content;

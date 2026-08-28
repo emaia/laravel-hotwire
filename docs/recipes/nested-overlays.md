@@ -34,12 +34,14 @@ separate frame ids makes each layer addressable and avoids replacing the wrong p
 
     <hw:modal id="user-modal-shell" frame="user-modal" size="lg">
         <x-slot:loading_template>
+            <hw:modal.title>Loading user</hw:modal.title>
             <div class="text-muted-foreground flex items-center justify-center p-12 text-sm">Loading user...</div>
         </x-slot>
     </hw:modal>
 
     <hw:modal id="roles-modal-shell" frame="roles-modal" size="md">
         <x-slot:loading_template>
+            <hw:modal.title>Loading roles</hw:modal.title>
             <div class="text-muted-foreground flex items-center justify-center p-12 text-sm">Loading roles...</div>
         </x-slot>
     </hw:modal>

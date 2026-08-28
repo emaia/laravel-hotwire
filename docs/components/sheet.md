@@ -40,20 +40,18 @@ The sheet traps focus while open, restores focus to the trigger on close, locks 
 synchronously before Turbo caches the page. Presence derives completion from actual finite CSS motion and supports rapid
 reopen, `motion="none"`, and reduced motion without duration timers.
 
-`sheet.title` and `sheet.description` receive stable ids and automatically name and describe the dialog overlay when
-they render with `sheet.content` in the same server response.
+`sheet.title` and `sheet.description` automatically name and describe the dialog overlay. The frame integration assigns
+missing ids and refreshes the references when frame content changes.
 
 ## Frame Content
 
 Use `frame` when one sheet host in your layout should receive many server-rendered panels:
 
-Replacing only the inner Turbo Frame cannot recompute attributes on the outer dialog overlay. If its accessible name
-changes, replace or rerender the owning Sheet root instead of only the frame.
-
 ```blade
 {{-- layout --}}
 <hw:sheet frame="settings-panel" side="right" view-transition>
     <x-slot:loading_template>
+        <hw:sheet.title>Loading settings</hw:sheet.title>
         <div class="p-6">Loading...</div>
     </x-slot:loading_template>
 </hw:sheet>
@@ -71,11 +69,17 @@ and frame navigation renders only the panel payload:
 
 ```blade
 <hw:frame-or-page frame="settings-panel" layout="layouts.app">
+    <hw:sheet.title>Settings</hw:sheet.title>
+    <hw:sheet.description>Update your account settings.</hw:sheet.description>
+
     <form method="POST" action="{{ route('settings.update') }}">
         {{-- fields --}}
     </form>
 </hw:frame-or-page>
 ```
+
+Include a semantic title in any loading template that opens the sheet. Frame-loaded labels are linked before opening,
+and explicit unique label ids are preserved.
 
 The sheet guarantees exactly one frame content host. If the slot has no `<hw:sheet.content>`, it appends an empty host
 even alongside a trigger or plain slot content. One content host wraps the frame and uses its slot as fallback content;

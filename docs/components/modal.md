@@ -133,11 +133,24 @@ render a single Turbo Frame host inside the modal content:
 
 <hw:modal id="modal-shell" frame="modal" view-transition>
     <x-slot:loading_template>
+        <hw:modal.title>Loading post</hw:modal.title>
         <div class="flex items-center justify-center p-8">
             Loading...
         </div>
     </x-slot:loading_template>
 </hw:modal>
+```
+
+Render semantic title and description subcomponents in the destination response. The frame integration assigns missing
+ids and updates the persistent dialog references before opening:
+
+```blade
+<hw:frame-or-page frame="modal" layout="layouts.app">
+    <hw:modal.title>Edit post</hw:modal.title>
+    <hw:modal.description>Update the post details.</hw:modal.description>
+
+    <form method="POST">...</form>
+</hw:frame-or-page>
 ```
 
 When the frame receives content, the modal opens automatically. A successful action may close the modal by returning an
@@ -198,6 +211,7 @@ The resolution order is: per-link `data-loading-template`, the modal's `loading_
 </a>
 
 <template id="form-skeleton">
+    <hw:modal.title>Loading post</hw:modal.title>
     <div class="grid gap-3 p-4">
         <hw:skeleton class="h-6 w-1/3" />
         <hw:skeleton class="h-32 w-full" />
@@ -305,6 +319,7 @@ Pass an arbitrary size to set an inline max width on the dialog positioner:
 
 - `role="dialog"` and `aria-modal="true"` on the overlay.
 - `modal.title` and `modal.description` automatically name and describe the overlay.
+- Frame-loaded labels are reconciled before the modal opens, and explicit unique label ids are preserved.
 - Focus is trapped inside the modal while it is open.
 - Focus returns to the element that triggered the modal on close.
 - Escape closes the modal by default and may be configured through the controller value.
@@ -312,9 +327,6 @@ Pass an arbitrary size to set an inline max width on the dialog positioner:
 ## Turbo Integration
 
 The modal closes automatically on `turbo:before-cache`, preventing ghost modals when navigating with Turbo Drive.
-
-Replacing only the inner Turbo Frame cannot recompute attributes on the outer dialog overlay. If its accessible name
-changes, replace or rerender the owning Modal root instead of only the frame.
 
 For modals driven by a Turbo Frame, clearing the frame closes them via the content observer:
 

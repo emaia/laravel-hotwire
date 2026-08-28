@@ -22,6 +22,7 @@ This is the path you want for most "open with content" flows. See the
 ```blade
 <hw:modal frame="modal">
     <x-slot:loading_template>
+        <hw:modal.title>Loading post</hw:modal.title>
         <div class="flex items-center justify-center p-12">
             <span>Loading...</span>
         </div>
