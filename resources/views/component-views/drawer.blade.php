@@ -1,5 +1,6 @@
 @php
     extract($compute($attributes));
+    $drawerOverlayLabelContext->validateRoot($slot);
     $frameHostCount = $drawerFrame === null ? 0 : \Emaia\LaravelHotwire\Support\OverlayFrameHost::count(
         $slot->toHtml(),
         $drawerFrame,

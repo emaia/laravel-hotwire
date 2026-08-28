@@ -39,6 +39,13 @@ The drawer traps focus while open, restores focus to the trigger on close, locks
 synchronously before Turbo caches the page. Its overlay uses `data-state="open|closed"`; Presence waits for actual
 finite CSS motion and cancels stale teardown when the drawer rapidly reopens. Customize transition duration in CSS.
 
+`drawer.title` and `drawer.description` automatically name and describe the dialog overlay. The frame integration assigns
+missing ids and refreshes the references when frame content changes.
+
+Set `aria-label`, `aria-labelledby`, `aria-description`, or `aria-describedby` on `<hw:drawer>` when the application owns
+the accessible text. The component routes these attributes to the semantic dialog overlay for explicit and automatic
+frame content, and authored values take precedence over generated title and description references.
+
 Use `<hw:sheet>` instead when you want a side panel with an always-visible close button.
 
 ## Frame Content
@@ -49,6 +56,7 @@ Use `frame` when a shared drawer host should load server-rendered content throug
 {{-- layout --}}
 <hw:drawer frame="drawer-panel" direction="down" view-transition>
     <x-slot:loading_template>
+        <hw:drawer.title>Loading notifications</hw:drawer.title>
         <div class="p-6">Loading...</div>
     </x-slot:loading_template>
 </hw:drawer>
@@ -64,9 +72,15 @@ In the destination view, use [`<hw:frame-or-page>`](./frame-or-page.md):
 
 ```blade
 <hw:frame-or-page frame="drawer-panel" layout="layouts.app">
+    <hw:drawer.title>Notifications</hw:drawer.title>
+    <hw:drawer.description>Your latest account notifications.</hw:drawer.description>
+
     {{-- drawer content or standalone page content --}}
 </hw:frame-or-page>
 ```
+
+Include a semantic title in any loading template that opens the drawer. Frame-loaded labels are linked before opening,
+and explicit unique label ids are preserved.
 
 The drawer guarantees exactly one frame content host. If the slot has no `<hw:drawer.content>`, it appends an empty host
 even alongside a trigger or plain slot content. One content host wraps the frame and uses its slot as fallback content;
@@ -106,6 +120,10 @@ stream, to close it after a successful action. Stream rendering waits for the ac
 | `closeOnEscape`       | `true`                                                       | Close when Escape is pressed.                                              |
 | `closeOnClickOutside` | `true`                                                       | Close when the backdrop is clicked.                                        |
 | `viewTransition`      | `false`                                                      | Animate successive renders inside the frame host.                          |
+| `aria-label`          | `null`                                                       | Authored accessible name routed to the dialog overlay.                     |
+| `aria-labelledby`     | `null`                                                       | Authored accessible name reference routed to the dialog overlay.           |
+| `aria-description`    | `null`                                                       | Authored accessible description routed to the dialog overlay.              |
+| `aria-describedby`    | `null`                                                       | Authored accessible description reference routed to the dialog overlay.    |
 
 ## Components
 

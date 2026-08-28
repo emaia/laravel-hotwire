@@ -36,8 +36,8 @@ Escape dismissal and focus trapping are suspended during IME composition.
             data-action="click->sheet#clickOutside"
         ></div>
 
-        <aside data-sheet-target="dialog" role="dialog" aria-modal="true">
-            <h2>Details</h2>
+        <aside data-sheet-target="dialog" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+            <h2 id="sheet-title">Details</h2>
             <button type="button" data-action="sheet#close">Close</button>
         </aside>
     </div>

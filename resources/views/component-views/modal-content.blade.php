@@ -7,6 +7,11 @@
     'modalFrame' => null,
     'modalMotion' => 'default',
     'modalViewTransition' => false,
+    'modalAriaLabel' => null,
+    'modalAriaLabelledby' => null,
+    'modalAriaDescription' => null,
+    'modalAriaDescribedby' => null,
+    'modalOverlayLabelContext' => null,
 ])
 
 @php
@@ -16,6 +21,11 @@
 
     $presetSizes = ['sm', 'md', 'lg', 'xl', 'full', 'auto'];
     $sizeStyle = in_array($modalSize, $presetSizes, true) ? '' : "max-width: {$modalSize};";
+    $modalLabelReferences = $modalOverlayLabelContext?->resolveReferences($slot) ?? ['title' => null, 'description' => null];
+    $modalManagedTitle = $modalAriaLabel === null && $modalAriaLabelledby === null ? $modalLabelReferences['title'] : null;
+    $modalManagedDescription = $modalAriaDescription === null && $modalAriaDescribedby === null ? $modalLabelReferences['description'] : null;
+    $modalLabelledby = $modalAriaLabelledby ?? $modalManagedTitle;
+    $modalDescribedby = $modalAriaDescribedby ?? $modalManagedDescription;
 @endphp
 
 <div
@@ -24,8 +34,15 @@
     data-motion="{{ $modalMotion }}"
     data-modal-target="modal"
     data-action="click->modal#clickOutside"
+    data-hotwire-overlay-labels
+    @if ($modalManagedTitle !== null) data-hotwire-overlay-labelledby="{{ $modalManagedTitle }}" @endif
+    @if ($modalManagedDescription !== null) data-hotwire-overlay-describedby="{{ $modalManagedDescription }}" @endif
     role="dialog"
     aria-modal="true"
+    @if ($modalAriaLabel !== null) aria-label="{{ $modalAriaLabel }}" @endif
+    @if ($modalLabelledby !== null) aria-labelledby="{{ $modalLabelledby }}" @endif
+    @if ($modalAriaDescription !== null) aria-description="{{ $modalAriaDescription }}" @endif
+    @if ($modalDescribedby !== null) aria-describedby="{{ $modalDescribedby }}" @endif
     hidden
     inert
 >

@@ -5,6 +5,7 @@ namespace Emaia\LaravelHotwire\Components;
 use Emaia\LaravelHotwire\Support\ComponentId;
 use Emaia\LaravelHotwire\Support\FieldContext;
 use Emaia\LaravelHotwire\Support\FrameTarget;
+use Emaia\LaravelHotwire\Support\OverlayLabelContext;
 use Emaia\LaravelHotwire\Support\StimulusAttributes;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\Component;
@@ -13,6 +14,8 @@ use Illuminate\View\ComponentAttributeBag;
 class Drawer extends Component
 {
     private const DIRECTIONS = ['up', 'right', 'down', 'left'];
+
+    private OverlayLabelContext $overlayLabelContext;
 
     public string $axis;
 
@@ -29,14 +32,23 @@ class Drawer extends Component
         public bool $closeOnClickOutside = true,
         public ?Htmlable $stimulus = null,
         public bool $viewTransition = false,
+        public ?string $ariaLabel = null,
+        public ?string $ariaLabelledby = null,
+        public ?string $ariaDescription = null,
+        public ?string $ariaDescribedby = null,
     ) {
         $this->id = app(ComponentId::class)->resolve($this->id, 'hw-drawer', 'drawer');
-
         $this->frame = FrameTarget::normalize($this->frame);
 
         if ($this->frame !== null && $this->frame === $this->id) {
             throw new \InvalidArgumentException('The drawer root id and frame id must be different.');
         }
+
+        $this->overlayLabelContext = new OverlayLabelContext(
+            $this->id,
+            'drawer',
+            $this->frame === null ? [] : [$this->frame],
+        );
 
         $this->direction = $this->normalizeDirection($this->side ?? $this->direction);
         $this->axis = in_array($this->direction, ['left', 'right'], true) ? 'x' : 'y';
@@ -65,6 +77,12 @@ class Drawer extends Component
         $data['drawerFrame'] = $this->frame;
         $data['drawerMotion'] = $this->motion;
         $data['drawerViewTransition'] = $this->viewTransition;
+        $data = array_replace($data, OverlayLabelContext::boundaryData());
+        $data['drawerOverlayLabelContext'] = $this->overlayLabelContext;
+        $data['drawerAriaLabel'] = $this->ariaLabel;
+        $data['drawerAriaLabelledby'] = $this->ariaLabelledby;
+        $data['drawerAriaDescription'] = $this->ariaDescription;
+        $data['drawerAriaDescribedby'] = $this->ariaDescribedby;
         $data = array_replace($data, FieldContext::boundaryData());
 
         unset(
@@ -81,6 +99,10 @@ class Drawer extends Component
             $data['stimulus'],
             $data['motion'],
             $data['viewTransition'],
+            $data['ariaLabel'],
+            $data['ariaLabelledby'],
+            $data['ariaDescription'],
+            $data['ariaDescribedby'],
         );
 
         return $data;

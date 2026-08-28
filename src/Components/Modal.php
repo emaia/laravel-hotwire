@@ -5,11 +5,14 @@ namespace Emaia\LaravelHotwire\Components;
 use Emaia\LaravelHotwire\Support\ComponentId;
 use Emaia\LaravelHotwire\Support\FieldContext;
 use Emaia\LaravelHotwire\Support\FrameTarget;
+use Emaia\LaravelHotwire\Support\OverlayLabelContext;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\Component;
 
 class Modal extends Component
 {
+    private OverlayLabelContext $overlayLabelContext;
+
     public function __construct(
         public string|object $id = '',
         public string $size = 'md',
@@ -20,14 +23,23 @@ class Modal extends Component
         public ?Htmlable $stimulus = null,
         public string $motion = 'default',
         public bool $viewTransition = false,
+        public ?string $ariaLabel = null,
+        public ?string $ariaLabelledby = null,
+        public ?string $ariaDescription = null,
+        public ?string $ariaDescribedby = null,
     ) {
         $this->id = app(ComponentId::class)->resolve($this->id, 'hw-modal', 'modal');
-
         $this->frame = FrameTarget::normalize($this->frame);
 
         if ($this->frame !== null && $this->frame === $this->id) {
             throw new \InvalidArgumentException('The modal root id and frame id must be different.');
         }
+
+        $this->overlayLabelContext = new OverlayLabelContext(
+            $this->id,
+            'modal',
+            $this->frame === null ? [] : [$this->frame],
+        );
 
         $this->motion = in_array($this->motion, ['default', 'none'], true) ? $this->motion : 'default';
     }
@@ -51,6 +63,12 @@ class Modal extends Component
         $data['modalStimulus'] = $this->stimulus;
         $data['modalMotion'] = $this->motion;
         $data['modalViewTransition'] = $this->viewTransition;
+        $data = array_replace($data, OverlayLabelContext::boundaryData());
+        $data['modalOverlayLabelContext'] = $this->overlayLabelContext;
+        $data['modalAriaLabel'] = $this->ariaLabel;
+        $data['modalAriaLabelledby'] = $this->ariaLabelledby;
+        $data['modalAriaDescription'] = $this->ariaDescription;
+        $data['modalAriaDescribedby'] = $this->ariaDescribedby;
         $data = array_replace($data, FieldContext::boundaryData());
 
         unset(
@@ -63,6 +81,10 @@ class Modal extends Component
             $data['stimulus'],
             $data['motion'],
             $data['viewTransition'],
+            $data['ariaLabel'],
+            $data['ariaLabelledby'],
+            $data['ariaDescription'],
+            $data['ariaDescribedby'],
         );
 
         return $data;

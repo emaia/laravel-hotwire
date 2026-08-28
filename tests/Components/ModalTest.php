@@ -4,6 +4,7 @@ use Emaia\LaravelHotwire\Components\Modal;
 use Emaia\LaravelHotwire\LaravelHotwireServiceProvider;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\FieldContext;
+use Emaia\LaravelHotwire\Support\OverlayLabelContext;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\HtmlString;
 use Illuminate\View\ViewException;
@@ -325,7 +326,7 @@ it('keeps stimulus as the seventh positional constructor argument', function () 
         ->and($component->motion)->toBe('default');
 });
 
-it('keeps view transition as the final positional constructor argument', function () {
+it('keeps view transition as the ninth positional constructor argument', function () {
     $component = new Modal('', 'md', '', true, false, null, null, 'none', true);
 
     expect($component->motion)->toBe('none')
@@ -337,7 +338,7 @@ it('does not expose modal root props as generic component data', function () {
     $frameworkKeys = ['componentName', 'attributes', 'ignoredParameterNames'];
     $genericKeys = array_values(array_filter(
         array_keys($data),
-        fn (string $key) => ! str_starts_with($key, 'modal') && ! in_array($key, [...$frameworkKeys, ...array_keys(FieldContext::boundaryData())], true),
+        fn (string $key) => ! str_starts_with($key, 'modal') && ! in_array($key, [...$frameworkKeys, ...array_keys(FieldContext::boundaryData()), ...array_keys(OverlayLabelContext::boundaryData())], true),
     ));
 
     expect($genericKeys)->toBe([])
@@ -457,18 +458,22 @@ it('applies custom class', function () {
     $view->assertSee('p-8 bg-gray-50', false);
 });
 
-it('forwards arbitrary attributes to the root element', function () {
+it('routes authored accessibility attributes to the dialog and other attributes to the root', function () {
     $view = $this->blade('
         <x-hw::modal
             aria-labelledby="modal-title"
             data-test-id="modal-root"
         >
-            Content
+            <x-hw::modal.content>Content</x-hw::modal.content>
         </x-hw::modal>
     ');
+    $xpath = new DOMXPath(dom((string) $view));
+    $root = $xpath->query('//*[@data-slot="modal"]')->item(0);
+    $dialog = $xpath->query('//*[@data-slot="modal-overlay"]')->item(0);
 
-    $view->assertSee('aria-labelledby="modal-title"', false);
-    $view->assertSee('data-test-id="modal-root"', false);
+    expect($root->getAttribute('data-test-id'))->toBe('modal-root')
+        ->and($root->hasAttribute('aria-labelledby'))->toBeFalse()
+        ->and($dialog->getAttribute('aria-labelledby'))->toBe('modal-title');
 });
 
 it('merges arbitrary stimulus attributes while protecting internal modal attributes', function () {

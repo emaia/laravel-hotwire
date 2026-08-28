@@ -1,5 +1,6 @@
 @php
     extract($compute($attributes));
+    $sheetOverlayLabelContext->validateRoot($slot);
     $frameHostCount = $sheetFrame === null ? 0 : \Emaia\LaravelHotwire\Support\OverlayFrameHost::count(
         $slot->toHtml(),
         $sheetFrame,

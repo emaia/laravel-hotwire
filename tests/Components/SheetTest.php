@@ -4,6 +4,7 @@ use Emaia\LaravelHotwire\Components\Sheet;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
 use Emaia\LaravelHotwire\Support\FieldContext;
+use Emaia\LaravelHotwire\Support\OverlayLabelContext;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\View\ViewException;
 
@@ -216,7 +217,7 @@ it('throws on an invalid side', function () {
     expect(fn () => new Sheet(side: 'diagonal'))->toThrow(InvalidArgumentException::class);
 });
 
-it('keeps view transition as the final positional constructor argument', function () {
+it('keeps view transition as the eleventh positional constructor argument', function () {
     $component = new Sheet('', 'right', '', null, true, 'none', true, true, true, null, true);
 
     expect($component->motion)->toBe('none')
@@ -228,7 +229,7 @@ it('does not expose sheet root props as generic component data', function () {
     $frameworkKeys = ['componentName', 'attributes', 'ignoredParameterNames'];
     $genericKeys = array_values(array_filter(
         array_keys($data),
-        fn (string $key) => ! str_starts_with($key, 'sheet') && ! in_array($key, [...$frameworkKeys, 'compute', ...array_keys(FieldContext::boundaryData())], true),
+        fn (string $key) => ! str_starts_with($key, 'sheet') && ! in_array($key, [...$frameworkKeys, 'compute', ...array_keys(FieldContext::boundaryData()), ...array_keys(OverlayLabelContext::boundaryData())], true),
     ));
 
     expect($genericKeys)->toBe([])

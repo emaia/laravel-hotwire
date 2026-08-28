@@ -10,7 +10,7 @@ Wrap the shared view in `<hw:frame-or-page>` and declare the receiving frame and
 ```blade
 {{-- resources/views/users/edit.blade.php --}}
 <hw:frame-or-page frame="modal" layout="dashboard">
-    <h1>Change password</h1>
+    <hw:modal.title>Change password</hw:modal.title>
 
     <hw:form :action="route('users.update', $user)" method="patch" track-frame-src>
         <hw:field name="password" label="New password">
@@ -46,6 +46,7 @@ Place one receiving modal in the shared dashboard layout:
 
         <hw:modal frame="modal">
             <x-slot:loading_template>
+                <hw:modal.title>Loading account settings</hw:modal.title>
                 <div class="flex items-center justify-center p-12">Loading...</div>
             </x-slot>
         </hw:modal>

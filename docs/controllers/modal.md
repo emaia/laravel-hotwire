@@ -30,8 +30,8 @@ modal or move focus.
             data-action="click->modal#clickOutside"
         ></div>
 
-        <div data-modal-target="dialog" role="dialog" aria-modal="true">
-            <h2>Title</h2>
+        <div data-modal-target="dialog" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+            <h2 id="modal-title">Title</h2>
             <p>Modal content.</p>
 
             <button type="button" data-action="modal#close">Close</button>
@@ -108,8 +108,11 @@ closes synchronously before Turbo caches the page.
             <div
                 class="bg-white rounded-lg shadow-xl p-6 transition-all"
                 data-modal-target="dialog"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="styled-modal-title"
             >
-                <h2>Title</h2>
+                <h2 id="styled-modal-title">Title</h2>
                 <p>Modal content.</p>
 
                 <button type="button" data-action="modal#close">Close</button>
@@ -129,8 +132,9 @@ Style closed and open visuals from the overlay state, scoped to direct children 
 Presence waits for actual finite CSS motion on the backdrop and dialog. Never set `display: none` in the closed-state
 rule; Presence owns `hidden` and keeps exit content rendered but inert until motion settles.
 
-The Blade component handles trigger ancestry for you via the `trigger` slot. Root attributes like
-`data-modal-close-on-escape-value` or `aria-labelledby` belong on that same controller element.
+The Blade component handles trigger ancestry for you via the `trigger` slot. Controller values such as
+`data-modal-close-on-escape-value` belong on the controller root. Put `aria-label` or `aria-labelledby` directly on the
+element carrying `role="dialog"` when writing controller markup manually.
 
 ## With dynamic content via Turbo Frame
 

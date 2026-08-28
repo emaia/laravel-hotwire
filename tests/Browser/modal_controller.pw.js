@@ -51,6 +51,293 @@ test("opens when dynamic content is inserted and closes cleanly through the publ
     await expect(frame).toBeEmpty();
 });
 
+for (const family of ["modal", "sheet", "drawer"]) {
+    test(`frame content names the ${family} before it opens`, async ({ page }) => {
+        await mountFrameOverlay(page, family);
+
+        const frame = page.locator(`#${family}-frame`);
+        const overlay = page.locator(`[data-${family}-target="modal"]`);
+        await frame.evaluate((element, identifier) => {
+            element.innerHTML = `
+                <h2 data-slot="${identifier}-title">Loaded title</h2>
+                <p data-slot="${identifier}-description">Loaded description</p>
+            `;
+        }, family);
+
+        await expect(overlay).toHaveAttribute("data-state", "open");
+        await expect(overlay).toHaveAttribute("aria-labelledby", `${family}-shell-title`);
+        await expect(overlay).toHaveAttribute("aria-describedby", `${family}-shell-description`);
+        await expect(page.locator(`#${family}-shell-title`)).toHaveText("Loaded title");
+        await expect(page.locator(`#${family}-shell-description`)).toHaveText("Loaded description");
+
+        await frame.evaluate((element) => element.replaceChildren());
+
+        await expect(overlay).not.toHaveAttribute("aria-labelledby", /.+/);
+        await expect(overlay).not.toHaveAttribute("aria-describedby", /.+/);
+    });
+}
+
+test("frame labels replace ambiguous authored ids with collision-free ids", async ({ page }) => {
+    await mountFrameOverlay(page, "modal", {
+        beforeOverlay: '<span id="page-title">Layout title</span>',
+    });
+
+    const frame = page.locator("#modal-frame");
+    const overlay = page.locator('[data-modal-target="modal"]');
+    await frame.evaluate((element) => {
+        element.innerHTML = '<h2 data-slot="modal-title">Initial title</h2>';
+    });
+
+    await expect(overlay).toHaveAttribute("aria-labelledby", "modal-shell-title");
+    await expect(page.locator("#modal-shell-title")).toHaveText("Initial title");
+
+    await frame.evaluate((element) => {
+        element.innerHTML = '<h2 id="page-title" data-slot="modal-title">Updated title</h2>';
+    });
+
+    await expect(overlay).toHaveAttribute("aria-labelledby", "modal-shell-title");
+    await expect(overlay).toHaveAttribute("data-hotwire-overlay-labelledby", "modal-shell-title");
+    await expect(page.locator("#modal-shell-title")).toHaveText("Updated title");
+    await expect(page.locator("#page-title")).toHaveCount(1);
+    await expect(page.locator("#page-title")).toHaveText("Layout title");
+});
+
+test("frame labels resync after relevant attribute mutations", async ({ page }) => {
+    await mountFrameOverlay(page, "modal");
+
+    const frame = page.locator("#modal-frame");
+    const overlay = page.locator('[data-modal-target="modal"]');
+    await frame.evaluate((element) => {
+        element.innerHTML = '<h2 data-slot="modal-title">Account settings</h2>';
+    });
+
+    await expect(overlay).toHaveAttribute("aria-labelledby", "modal-shell-title");
+
+    await page.locator("#modal-shell-title").evaluate((title) => {
+        title.id = "renamed-title";
+    });
+    await expect(overlay).toHaveAttribute("aria-labelledby", "renamed-title");
+
+    await page.locator("#renamed-title").evaluate((title) => {
+        title.removeAttribute("data-slot");
+    });
+    await expect(overlay).not.toHaveAttribute("aria-labelledby", /.+/);
+
+    await page.getByText("Account settings").evaluate((title) => {
+        title.setAttribute("data-slot", "modal-title");
+    });
+    await expect(overlay).toHaveAttribute("aria-labelledby", "renamed-title");
+});
+
+test("frame labels move from loading content to the response without claiming nested overlays", async ({ page }) => {
+    await mountFrameOverlay(page, "modal", {
+        beforeOverlay: '<button id="modal-shell-title">Open</button>',
+        loadingTemplate: '<h2 data-slot="modal-title">Loading post</h2>',
+    });
+
+    const frame = page.locator("#modal-frame");
+    const overlay = page.locator('[data-modal-target="modal"]');
+    await frame.dispatchEvent("turbo:before-fetch-request");
+
+    await expect(overlay).toHaveAttribute("aria-labelledby", "modal-shell-title-2");
+    await expect(page.locator("#modal-shell-title-2")).toHaveText("Loading post");
+    await expect(overlay).toHaveAttribute("data-state", "open");
+
+    await frame.evaluate((element) => {
+        const replacement = document.createElement("turbo-frame");
+        replacement.id = element.id;
+        replacement.innerHTML = `
+            <div role="dialog">
+                <h2 data-slot="modal-title">Nested title</h2>
+            </div>
+            <h2 id="response-title" data-slot="modal-title">Edit post</h2>
+        `;
+        element.replaceWith(replacement);
+        replacement.dispatchEvent(new CustomEvent("turbo:frame-render", { bubbles: true }));
+    });
+
+    await expect(overlay).toHaveAttribute("aria-labelledby", "response-title");
+    await expect(page.locator("#response-title")).toHaveText("Edit post");
+    await expect(page.getByText("Nested title")).not.toHaveAttribute("id", /.+/);
+
+    await page.evaluate(() => {
+        const root = document.querySelector('[data-controller~="modal"]');
+        window.StimulusApplication.getControllerForElementAndIdentifier(root, "modal").clearContent();
+    });
+
+    await expect(frame).toBeEmpty();
+    await expect(overlay).not.toHaveAttribute("aria-labelledby", /.+/);
+});
+
+test("frame labels do not override an authored accessible name", async ({ page }) => {
+    await mountFrameOverlay(page, "modal", {
+        overlayAttributes: 'aria-label="Authored dialog"',
+    });
+
+    const frame = page.locator("#modal-frame");
+    const overlay = page.locator('[data-modal-target="modal"]');
+    await frame.evaluate((element) => {
+        element.innerHTML = '<h2 data-slot="modal-title">Loaded title</h2>';
+    });
+
+    await expect(overlay).toHaveAttribute("data-state", "open");
+    await expect(overlay).toHaveAttribute("aria-label", "Authored dialog");
+    await expect(overlay).not.toHaveAttribute("aria-labelledby", /.+/);
+});
+
+test("frame labels preserve an authored labelledby reference", async ({ page }) => {
+    await mountFrameOverlay(page, "modal", {
+        beforeOverlay: '<span id="app-title">Authored title</span>',
+        overlayAttributes: 'aria-labelledby="app-title"',
+    });
+
+    const overlay = page.locator('[data-modal-target="modal"]');
+    await page.locator("#modal-frame").evaluate((element) => {
+        element.innerHTML = '<h2 data-slot="modal-title">Loaded title</h2>';
+    });
+
+    await expect(overlay).toHaveAttribute("data-state", "open");
+    await expect(overlay).toHaveAttribute("aria-labelledby", "app-title");
+    await expect(page.locator("#app-title")).toHaveText("Authored title");
+});
+
+test("frame labels do not override an authored accessible description", async ({ page }) => {
+    await mountFrameOverlay(page, "modal", {
+        overlayAttributes: 'aria-description="Authored description"',
+    });
+
+    const overlay = page.locator('[data-modal-target="modal"]');
+    await page.locator("#modal-frame").evaluate((element) => {
+        element.innerHTML = '<p data-slot="modal-description">Loaded description</p>';
+    });
+
+    await expect(overlay).toHaveAttribute("data-state", "open");
+    await expect(overlay).toHaveAttribute("aria-description", "Authored description");
+    await expect(overlay).not.toHaveAttribute("aria-describedby", /.+/);
+});
+
+test("frame labels preserve an authored describedby reference", async ({ page }) => {
+    await mountFrameOverlay(page, "modal", {
+        beforeOverlay: '<span id="app-description">Authored description</span>',
+        overlayAttributes: 'aria-describedby="app-description"',
+    });
+
+    const overlay = page.locator('[data-modal-target="modal"]');
+    await page.locator("#modal-frame").evaluate((element) => {
+        element.innerHTML = '<p data-slot="modal-description">Loaded description</p>';
+    });
+
+    await expect(overlay).toHaveAttribute("data-state", "open");
+    await expect(overlay).toHaveAttribute("aria-describedby", "app-description");
+    await expect(page.locator("#app-description")).toHaveText("Authored description");
+});
+
+test("frame labels resume generated ownership after a morph removes authored semantics", async ({ page }) => {
+    await mountFrameOverlay(page, "modal", {
+        overlayAttributes: 'aria-label="Authored dialog"',
+    });
+    await page.addScriptTag({ path: "node_modules/@hotwired/turbo/dist/turbo.es2017-umd.js" });
+
+    await page.locator('[data-modal-target="modal"]').evaluate((overlay) => {
+        const replacement = overlay.cloneNode(true);
+        replacement.removeAttribute("aria-label");
+        replacement.querySelector("turbo-frame").innerHTML = '<h2 data-slot="modal-title">Morphed title</h2>';
+
+        window.Turbo.morphElements(overlay, replacement);
+    });
+
+    const overlay = page.locator('[data-modal-target="modal"]');
+    await expect(overlay).toHaveAttribute("data-state", "open");
+    await expect(overlay).not.toHaveAttribute("aria-label", /.+/);
+    await expect(overlay).toHaveAttribute("aria-labelledby", "modal-shell-title");
+    await expect(overlay).toHaveAttribute("data-hotwire-overlay-labelledby", "modal-shell-title");
+    await expect(page.locator("#modal-shell-title")).toHaveText("Morphed title");
+});
+
+test("frame labels reacquire a replaced overlay target", async ({ page }) => {
+    await mountFrameOverlay(page, "modal");
+    await page.locator("#modal-frame").evaluate((element) => {
+        element.innerHTML = '<h2 data-slot="modal-title">Initial title</h2>';
+    });
+    await expect(page.locator('[data-modal-target="modal"]')).toHaveAttribute("aria-labelledby", "modal-shell-title");
+
+    await page.locator('[data-modal-target="modal"]').evaluate((element) => {
+        const replacement = element.cloneNode(true);
+        replacement.removeAttribute("aria-labelledby");
+        replacement.removeAttribute("data-hotwire-overlay-labelledby");
+        replacement.querySelector('[data-slot="modal-title"]').removeAttribute("id");
+        element.replaceWith(replacement);
+    });
+
+    const replacement = page.locator('[data-modal-target="modal"]');
+    await expect(replacement).toHaveAttribute("aria-labelledby", "modal-shell-title");
+    await expect(page.locator("#modal-shell-title")).toHaveText("Initial title");
+});
+
+test("frame removal clears managed references after close", async ({ page }) => {
+    await mountFrameOverlay(page, "modal");
+    await page.locator("#modal-frame").evaluate((element) => {
+        element.innerHTML = `
+            <h2 data-slot="modal-title">Loaded title</h2>
+            <p data-slot="modal-description">Loaded description</p>
+        `;
+    });
+
+    const overlay = page.locator('[data-modal-target="modal"]');
+    await expect(overlay).toHaveAttribute("aria-labelledby", "modal-shell-title");
+    await page.locator("#modal-frame").evaluate((element) => element.remove());
+    await page.evaluate(async () => {
+        const root = document.querySelector('[data-controller~="modal"]');
+        const controller = window.StimulusApplication.getControllerForElementAndIdentifier(root, "modal");
+        await controller.close();
+    });
+
+    await expect(overlay).not.toHaveAttribute("aria-labelledby", /.+/);
+    await expect(overlay).not.toHaveAttribute("aria-describedby", /.+/);
+    await expect(overlay).not.toHaveAttribute("data-hotwire-overlay-labelledby", /.+/);
+    await expect(overlay).not.toHaveAttribute("data-hotwire-overlay-describedby", /.+/);
+});
+
+test("static overlay names survive close and reopen", async ({ page }) => {
+    await page.setContent(`
+        <div id="static-modal" data-controller="modal" data-modal-lock-scroll-class="overflow-hidden">
+            <button id="open" data-action="modal#open">Open</button>
+            <div
+                data-hotwire-overlay-labels
+                data-hotwire-overlay-labelledby="static-modal-title"
+                data-slot="modal-overlay"
+                data-modal-target="modal"
+                data-state="closed"
+                data-motion="none"
+                role="dialog"
+                aria-labelledby="static-modal-title"
+                hidden inert
+            >
+                <div data-modal-target="backdrop"></div>
+                <div data-modal-target="dialog">
+                    <h2 id="static-modal-title" data-slot="modal-title">Static title</h2>
+                    <button id="close" data-action="modal#close">Close</button>
+                </div>
+            </div>
+        </div>
+    `);
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ content: await browserControllerScript("resources/js/controllers/modal_controller.js") });
+    await page.evaluate(() => {
+        window.StimulusApplication = window.Stimulus.Application.start();
+        window.StimulusApplication.register("modal", window.ModalController);
+    });
+
+    const overlay = page.locator('[data-modal-target="modal"]');
+    await page.locator("#open").click();
+    await page.locator("#close").click();
+    await page.locator("#open").click();
+
+    await expect(overlay).toHaveAttribute("data-state", "open");
+    await expect(overlay).toHaveAttribute("aria-labelledby", "static-modal-title");
+    await expect(page.locator("#static-modal-title")).toHaveText("Static title");
+});
+
 test("Turbo morph updates modal content without overwriting its presence state", async ({ page }) => {
     await page.setContent(`
         <div id="modal-shell" data-controller="modal" data-modal-lock-scroll-class="overflow-hidden">
@@ -750,4 +1037,45 @@ async function browserOverlayControllerScript() {
         window.DrawerController = DrawerController;
         window.SheetController = SheetController;
     `;
+}
+
+async function mountFrameOverlay(page, family, {
+    beforeOverlay = "",
+    loadingTemplate = "",
+    overlayAttributes = "",
+} = {}) {
+    await page.setContent(`
+        <div
+            id="${family}-shell"
+            data-controller="${family}"
+            data-${family}-lock-scroll-class="overflow-hidden"
+        >
+            ${beforeOverlay}
+            <div
+                data-hotwire-overlay-labels
+                data-slot="${family}-overlay"
+                data-${family}-target="modal"
+                data-state="closed"
+                data-motion="none"
+                role="dialog"
+                ${overlayAttributes}
+                hidden inert
+            >
+                <div data-${family}-target="backdrop"></div>
+                <div data-${family}-target="dialog">
+                    <turbo-frame id="${family}-frame" data-${family}-target="dynamicContent"></turbo-frame>
+                </div>
+            </div>
+            ${loadingTemplate === "" ? "" : `<template data-${family}-target="loadingTemplate">${loadingTemplate}</template>`}
+        </div>
+    `);
+
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ content: await browserOverlayControllerScript() });
+    await page.evaluate(() => {
+        window.StimulusApplication = window.Stimulus.Application.start();
+        window.StimulusApplication.register("modal", window.ModalController);
+        window.StimulusApplication.register("sheet", window.SheetController);
+        window.StimulusApplication.register("drawer", window.DrawerController);
+    });
 }

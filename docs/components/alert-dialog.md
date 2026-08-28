@@ -92,7 +92,8 @@ The dialog closes synchronously on `turbo:before-cache`, preventing ghost dialog
 
 ## Accessibility
 
-- `role="dialog"` and `aria-modal="true"` on the overlay
+- `role="alertdialog"` and `aria-modal="true"` on the overlay
+- `title` and `description` receive stable ids and automatically name and describe the alert dialog
 - Focus trap: Tab/Shift+Tab cycle through focusable elements inside the dialog
 - Focus returns to the trigger element on close
 - Closes on `Escape` key
@@ -133,6 +134,9 @@ dialog behavior with props instead of overriding those attributes directly.
 |------------------|--------------------------------------------------------------------------|
 | `slot` (default) | Trigger element whose click is intercepted to open the dialog            |
 | `content`        | Optional rich content rendered below `description` and above the buttons |
+
+The `content` slot may use `alert-dialog.title` and `alert-dialog.description` when rich markup is required instead of
+the string props. These subcomponents automatically name and describe the alert dialog.
 
 ## Need more control?
 

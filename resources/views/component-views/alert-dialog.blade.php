@@ -8,6 +8,19 @@
         'data-alert-dialog-lock-scroll-class' => 'overflow-hidden',
         'data-action' => 'turbo:before-cache@window->alert-dialog#closeForCache',
     ], $attributes, $stimulus, protectedPrefixes: ['data-alert-dialog-']);
+    $alertDialogOverlayLabelContext->assertNoIdCollisions($slot, 'trigger slot');
+    if ($alertDialogOverlayLabelContext->hasRegisteredLabels($slot)) {
+        throw new InvalidArgumentException('Alert Dialog title and description subcomponents must be rendered in the content slot.');
+    }
+    $contentLabelReferences = isset($content)
+        ? $alertDialogOverlayLabelContext->resolveReferences($content)
+        : ['title' => null, 'description' => null];
+    $alertDialogTitleId = $title !== ''
+        ? $alertDialogOverlayLabelContext->titleId()
+        : $contentLabelReferences['title'];
+    $alertDialogDescriptionId = $description !== ''
+        ? $alertDialogOverlayLabelContext->descriptionId()
+        : $contentLabelReferences['description'];
 @endphp
 
 <div
@@ -23,8 +36,10 @@
         data-motion="{{ $motion }}"
         data-alert-dialog-target="modal"
         data-action="click->alert-dialog#clickOutside"
-        role="dialog"
+        role="alertdialog"
         aria-modal="true"
+        @if ($alertDialogTitleId !== null) aria-labelledby="{{ $alertDialogTitleId }}" @endif
+        @if ($alertDialogDescriptionId !== null) aria-describedby="{{ $alertDialogDescriptionId }}" @endif
         hidden
         inert
     >
@@ -38,12 +53,12 @@
             data-alert-dialog-target="dialog"
         >
             <div data-slot="alert-dialog-header">
-                @if ($title)
-                    <h2 data-slot="alert-dialog-title">{{ $title }}</h2>
+                @if ($title !== '')
+                    <h2 id="{{ $alertDialogOverlayLabelContext->titleId() }}" data-slot="alert-dialog-title">{{ $title }}</h2>
                 @endif
 
-                @if ($description)
-                    <p data-slot="alert-dialog-description" style="text-wrap-mode: wrap">{{ $description }}</p>
+                @if ($description !== '')
+                    <p id="{{ $alertDialogOverlayLabelContext->descriptionId() }}" data-slot="alert-dialog-description" style="text-wrap-mode: wrap">{{ $description }}</p>
                 @endif
 
                 @isset($content)

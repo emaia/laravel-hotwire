@@ -7,6 +7,29 @@ export function createFrameOverlay(controller) {
     let lastClickedLink = null;
     let pendingStreamRender = null;
     let dynamicContentId = null;
+    let managedReferences = null;
+
+    resetManagedReferences();
+
+    function resetManagedReferences() {
+        managedReferences = {
+            title: managedReference("aria-labelledby", "data-hotwire-overlay-labelledby"),
+            description: managedReference("aria-describedby", "data-hotwire-overlay-describedby"),
+        };
+    }
+
+    function managedReference(attribute, marker) {
+        const value = controller.modalTarget.getAttribute(marker);
+        const current = controller.modalTarget.getAttribute(attribute);
+
+        return {
+            attribute,
+            marker,
+            value,
+            owned: value !== null && current === value,
+            relinquished: value === null && current !== null,
+        };
+    }
 
     function hasDynamicContent() {
         return controller.hasDynamicContentTarget;
@@ -39,10 +62,9 @@ export function createFrameOverlay(controller) {
     }
 
     function clearContent() {
-        if (!hasDynamicContent()) return;
-
-        dynamicContent().innerHTML = "";
+        if (hasDynamicContent()) dynamicContent().innerHTML = "";
         contentState = "";
+        syncAccessibleName();
     }
 
     function initializeContentObserver() {
@@ -54,16 +76,20 @@ export function createFrameOverlay(controller) {
         observer = new MutationObserver(syncContentState);
 
         observer.observe(dynamicContent(), {
+            attributes: true,
+            attributeFilter: ["id", "data-slot"],
             childList: true,
             characterData: true,
             subtree: true,
         });
+        syncAccessibleName();
     }
 
     function refreshContentObserver() {
         observer?.disconnect();
         observer = null;
         dynamicContentId = null;
+        resetManagedReferences();
         initializeContentObserver();
     }
 
@@ -97,6 +123,7 @@ export function createFrameOverlay(controller) {
         const templateHtml = resolveLoadingTemplate();
         if (templateHtml) {
             dynamicContent().innerHTML = templateHtml;
+            syncAccessibleName();
         }
     }
 
@@ -139,6 +166,14 @@ export function createFrameOverlay(controller) {
         if (!isDynamicFrame(event.target)) return;
 
         ensureDynamicTarget(event.target);
+        syncAccessibleName();
+    }
+
+    function handleMorphElement(event) {
+        if (!controller.hasModalTarget || event.target !== controller.modalTarget) return;
+
+        resetManagedReferences();
+        syncAccessibleName();
     }
 
     function isDynamicFrame(frame) {
@@ -164,6 +199,7 @@ export function createFrameOverlay(controller) {
     }
 
     function syncContentState() {
+        syncAccessibleName();
         const currentHash = getContentHash();
         const hasContent = currentHash.length > 0;
         const contentChanged = currentHash !== contentState;
@@ -174,6 +210,92 @@ export function createFrameOverlay(controller) {
         } else if (contentChanged) {
             contentState = currentHash;
         }
+    }
+
+    function syncAccessibleName() {
+        if (!controller.hasModalTarget) return;
+        if (!hasDynamicContent() && dynamicContentId === null) return;
+        if (!controller.modalTarget.hasAttribute("data-hotwire-overlay-labels")) return;
+
+        syncReference("title");
+        syncReference("description");
+    }
+
+    function syncReference(kind) {
+        const state = managedReferences[kind];
+        const current = controller.modalTarget.getAttribute(state.attribute);
+
+        if (state.owned && current !== state.value) {
+            state.owned = false;
+            state.relinquished = true;
+            controller.modalTarget.removeAttribute(state.marker);
+            return;
+        }
+
+        const authoredAttribute = kind === "title" ? "aria-label" : "aria-description";
+        if (controller.modalTarget.hasAttribute(authoredAttribute)) {
+            removeManagedReference(state);
+            state.relinquished = true;
+            return;
+        }
+
+        if (!state.owned && current !== null) {
+            state.relinquished = true;
+        }
+        if (state.relinquished) return;
+
+        const label = findOwnedLabel(kind);
+        const id = label ? resolveLabelId(label, kind) : null;
+        if (!id) {
+            removeManagedReference(state);
+            return;
+        }
+
+        controller.modalTarget.setAttribute(state.attribute, id);
+        controller.modalTarget.setAttribute(state.marker, id);
+        state.value = id;
+        state.owned = true;
+    }
+
+    function removeManagedReference(state) {
+        if (state.owned && controller.modalTarget.getAttribute(state.attribute) === state.value) {
+            controller.modalTarget.removeAttribute(state.attribute);
+        }
+
+        controller.modalTarget.removeAttribute(state.marker);
+        state.value = null;
+        state.owned = false;
+    }
+
+    function findOwnedLabel(kind) {
+        if (!hasDynamicContent()) return null;
+
+        const selector = `[data-slot="${controller.identifier}-${kind}"]`;
+
+        return [...dynamicContent().querySelectorAll(selector)].find((element) => {
+            if (element.closest("template")) return false;
+
+            const boundary = element.closest('[role="dialog"], [role="alertdialog"], [data-hotwire-overlay-labels]');
+
+            return boundary === controller.modalTarget;
+        }) ?? null;
+    }
+
+    function resolveLabelId(label, kind) {
+        if (label.id && document.querySelectorAll(`#${cssEscape(label.id)}`).length === 1) return label.id;
+
+        const root = controller.element.id || dynamicContent().id || `hotwire-${controller.identifier}`;
+        const base = `${root}-${kind}`;
+        let id = base;
+        let suffix = 2;
+        while (document.getElementById(id)) {
+            id = `${base}-${suffix}`;
+            suffix++;
+        }
+
+        label.id = id;
+
+        return id;
     }
 
     function isEmptyStreamForCloseTarget(stream) {
@@ -219,6 +341,7 @@ export function createFrameOverlay(controller) {
     document.addEventListener("turbo:frame-render", handleFrameRender);
     document.addEventListener("turbo:frame-load", handleFrameLoad);
     document.addEventListener("turbo:before-stream-render", handleBeforeStreamRender);
+    controller.element.addEventListener("turbo:morph-element", handleMorphElement);
 
     return {
         markDismissedWhileLoading() {
@@ -240,6 +363,7 @@ export function createFrameOverlay(controller) {
             document.removeEventListener("turbo:frame-render", handleFrameRender);
             document.removeEventListener("turbo:frame-load", handleFrameLoad);
             document.removeEventListener("turbo:before-stream-render", handleBeforeStreamRender);
+            controller.element.removeEventListener("turbo:morph-element", handleMorphElement);
         },
     };
 }

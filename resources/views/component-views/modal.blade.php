@@ -6,6 +6,7 @@
         'data-modal-lock-scroll-class' => 'overflow-hidden',
         'data-action' => 'turbo:before-cache@window->modal#closeForCache',
     ], $attributes, $modalStimulus, protectedPrefixes: ['data-modal-']);
+    $modalOverlayLabelContext->validateRoot($slot);
     $frameHostCount = $modalFrame === null ? 0 : \Emaia\LaravelHotwire\Support\OverlayFrameHost::count(
         $slot->toHtml(),
         $modalFrame,

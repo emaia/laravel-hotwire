@@ -5,6 +5,7 @@ namespace Emaia\LaravelHotwire\Components;
 use Emaia\LaravelHotwire\Support\ComponentId;
 use Emaia\LaravelHotwire\Support\FieldContext;
 use Emaia\LaravelHotwire\Support\FrameTarget;
+use Emaia\LaravelHotwire\Support\OverlayLabelContext;
 use Emaia\LaravelHotwire\Support\StimulusAttributes;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\Component;
@@ -13,6 +14,8 @@ use Illuminate\View\ComponentAttributeBag;
 class Sheet extends Component
 {
     private const SIDES = ['left', 'right', 'top', 'bottom'];
+
+    private OverlayLabelContext $overlayLabelContext;
 
     public function __construct(
         public string|object $id = '',
@@ -26,14 +29,23 @@ class Sheet extends Component
         public bool $closeOnClickOutside = true,
         public ?Htmlable $stimulus = null,
         public bool $viewTransition = false,
+        public ?string $ariaLabel = null,
+        public ?string $ariaLabelledby = null,
+        public ?string $ariaDescription = null,
+        public ?string $ariaDescribedby = null,
     ) {
         $this->id = app(ComponentId::class)->resolve($this->id, 'hw-sheet', 'sheet');
-
         $this->frame = FrameTarget::normalize($this->frame);
 
         if ($this->frame !== null && $this->frame === $this->id) {
             throw new \InvalidArgumentException('The sheet root id and frame id must be different.');
         }
+
+        $this->overlayLabelContext = new OverlayLabelContext(
+            $this->id,
+            'sheet',
+            $this->frame === null ? [] : [$this->frame],
+        );
 
         if (! in_array($this->side, self::SIDES, true)) {
             throw new \InvalidArgumentException('Sheet side must be one of: '.implode(', ', self::SIDES).". Got: {$this->side}");
@@ -58,6 +70,12 @@ class Sheet extends Component
         $data['sheetFrame'] = $this->frame;
         $data['sheetMotion'] = $this->motion;
         $data['sheetViewTransition'] = $this->viewTransition;
+        $data = array_replace($data, OverlayLabelContext::boundaryData());
+        $data['sheetOverlayLabelContext'] = $this->overlayLabelContext;
+        $data['sheetAriaLabel'] = $this->ariaLabel;
+        $data['sheetAriaLabelledby'] = $this->ariaLabelledby;
+        $data['sheetAriaDescription'] = $this->ariaDescription;
+        $data['sheetAriaDescribedby'] = $this->ariaDescribedby;
         $data = array_replace($data, FieldContext::boundaryData());
 
         unset(
@@ -72,6 +90,10 @@ class Sheet extends Component
             $data['stimulus'],
             $data['motion'],
             $data['viewTransition'],
+            $data['ariaLabel'],
+            $data['ariaLabelledby'],
+            $data['ariaDescription'],
+            $data['ariaDescribedby'],
         );
 
         return $data;

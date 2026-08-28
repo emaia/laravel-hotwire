@@ -32,13 +32,14 @@ Escape cancellation and focus trapping are suspended during IME composition.
         data-action="click->alert-dialog#clickOutside"
         hidden
         inert
-        role="dialog"
+        role="alertdialog"
         aria-modal="true"
+        aria-labelledby="confirmation-title"
     >
         <div data-alert-dialog-target="backdrop"></div>
 
         <div data-alert-dialog-target="dialog">
-            <p>Are you sure?</p>
+            <h2 id="confirmation-title">Are you sure?</h2>
 
             <button type="button" data-action="alert-dialog#cancel">Cancel</button>
             <button type="button" data-action="alert-dialog#confirm">Confirm</button>
@@ -99,11 +100,14 @@ The controller stores the clicked element, opens the dialog, traps focus, and on
         data-motion="default"
         data-action="click->alert-dialog#clickOutside"
         hidden inert
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="confirmation-title"
     >
         <div data-alert-dialog-target="backdrop"></div>
 
         <div data-alert-dialog-target="dialog">
-            <p>Are you sure?</p>
+            <h2 id="confirmation-title">Are you sure?</h2>
 
             <button type="button" data-action="alert-dialog#cancel">Cancel</button>
             <button type="button" data-action="alert-dialog#confirm">Confirm</button>
@@ -150,7 +154,7 @@ integration:
 - Focus is trapped within the dialog while it is open.
 - Focus returns to the intercepted trigger element when the dialog closes.
 - Pressing `Escape` cancels the dialog.
-- `role="dialog"` and `aria-modal="true"` should be applied to the visible overlay container.
+- `role="alertdialog"`, `aria-modal="true"`, and an accessible name should be applied to the visible overlay container.
 
 ## Turbo integration
 

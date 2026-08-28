@@ -32,8 +32,8 @@ Escape dismissal and focus trapping are suspended during IME composition.
             data-action="click->drawer#clickOutside"
         ></div>
 
-        <aside data-drawer-target="dialog" role="dialog" aria-modal="true">
-            <h2>Navigation</h2>
+        <aside data-drawer-target="dialog" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
+            <h2 id="drawer-title">Navigation</h2>
             <button type="button" data-action="drawer#close">Close</button>
         </aside>
     </div>

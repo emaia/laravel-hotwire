@@ -16,6 +16,8 @@ modal belongs to one specific spot on the page.
         <form method="POST" action="{{ route('profile.update') }}" class="p-6">
             @csrf
             @method('PATCH')
+            <hw:modal.title>Edit profile</hw:modal.title>
+            <hw:modal.description>Update the information attached to your account.</hw:modal.description>
             {{-- fields --}}
             <button type="submit">Save</button>
         </form>
@@ -42,6 +44,7 @@ makes sense (list rows, navigation, deep in a partial) — Stimulus picks it up 
 
     <hw:modal frame="modal">
         <x-slot:loading_template>
+            <hw:modal.title>Loading</hw:modal.title>
             <div class="flex items-center justify-center p-12">
                 <span>Loading...</span>
             </div>
@@ -84,8 +87,14 @@ Different actions can show different skeletons:
     Comments
 </a>
 
-<template id="form-skeleton">{{-- ... --}}</template>
-<template id="list-skeleton">{{-- ... --}}</template>
+<template id="form-skeleton">
+    <hw:modal.title>Loading form</hw:modal.title>
+    {{-- ... --}}
+</template>
+<template id="list-skeleton">
+    <hw:modal.title>Loading comments</hw:modal.title>
+    {{-- ... --}}
+</template>
 ```
 
 Resolution: per-link template → modal's `loading_template` slot → empty.
@@ -101,8 +110,8 @@ No Turbo Frame, no dynamic content. The modal body is rendered server-side once 
 
     <hw:modal.content>
         <div class="space-y-4 p-6">
-            <h2 class="text-xl font-semibold">Welcome to v2</h2>
-            <p>Here's what changed since you were last here.</p>
+            <hw:modal.title class="text-xl font-semibold">Welcome to v2</hw:modal.title>
+            <hw:modal.description>Here's what changed since you were last here.</hw:modal.description>
             <ul class="list-disc pl-6">
                 <li>Inline comments</li>
                 <li>Faster search</li>

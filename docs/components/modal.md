@@ -133,11 +133,24 @@ render a single Turbo Frame host inside the modal content:
 
 <hw:modal id="modal-shell" frame="modal" view-transition>
     <x-slot:loading_template>
+        <hw:modal.title>Loading post</hw:modal.title>
         <div class="flex items-center justify-center p-8">
             Loading...
         </div>
     </x-slot:loading_template>
 </hw:modal>
+```
+
+Render semantic title and description subcomponents in the destination response. The frame integration assigns missing
+ids and updates the persistent dialog references before opening:
+
+```blade
+<hw:frame-or-page frame="modal" layout="layouts.app">
+    <hw:modal.title>Edit post</hw:modal.title>
+    <hw:modal.description>Update the post details.</hw:modal.description>
+
+    <form method="POST">...</form>
+</hw:frame-or-page>
 ```
 
 When the frame receives content, the modal opens automatically. A successful action may close the modal by returning an
@@ -198,6 +211,7 @@ The resolution order is: per-link `data-loading-template`, the modal's `loading_
 </a>
 
 <template id="form-skeleton">
+    <hw:modal.title>Loading post</hw:modal.title>
     <div class="grid gap-3 p-4">
         <hw:skeleton class="h-6 w-1/3" />
         <hw:skeleton class="h-32 w-full" />
@@ -207,20 +221,28 @@ The resolution order is: per-link `data-loading-template`, the modal's `loading_
 
 ## Behavior
 
-Arbitrary attributes are forwarded to the root modal element. Regular `data-controller` / `data-action` attributes and
-the `stimulus` prop are merged and deduplicated with the internal `modal` controller. Component-owned `data-modal-*`
-attributes are protected; configure supported behavior with props instead.
+Arbitrary attributes are forwarded to the root modal element. The accessibility attributes `aria-label`,
+`aria-labelledby`, `aria-description`, and `aria-describedby` are the exception: set them on `<hw:modal>` and the
+component routes them to the semantic dialog overlay for both explicit and automatic frame content. Authored values take
+precedence over references generated from `modal.title` and `modal.description`.
+
+Regular `data-controller` / `data-action` attributes and the `stimulus` prop are merged and deduplicated with the internal
+`modal` controller. Component-owned `data-modal-*` attributes are protected; configure supported behavior with props
+instead.
 
 ```blade
 <hw:modal
-    aria-labelledby="edit-post-title"
     data-test-id="edit-post-modal"
     data-controller="analytics"
     data-action="modal:opened->analytics#track"
+    aria-label="Edit post"
 >
     ...
 </hw:modal>
 ```
+
+`modal.title` and `modal.description` receive stable ids and automatically set `aria-labelledby` and
+`aria-describedby` when they render with `modal.content` in the same server response.
 
 The overlay uses `data-state="open|closed"`, `data-motion="default|none"`, `hidden`, and `inert`. Presence observes the
 actual finite CSS motion on the backdrop and dialog, so custom timing belongs in CSS rather than a duration prop. During
@@ -240,6 +262,10 @@ stale teardown. Reduced-motion preference skips the wait.
 | `motion`          | `string`                     | `'default'`        | `default` follows CSS motion; `none` disables it                                    |
 | `stimulus`        | `Htmlable\|null`            | `null`             | Additional Stimulus attributes to merge onto the root element                       |
 | `view-transition` | `bool`                       | `false`            | Animates successive renders inside the frame host with the View Transitions API     |
+| `aria-label`      | `string\|null`               | `null`             | Authored accessible name routed to the dialog overlay                               |
+| `aria-labelledby` | `string\|null`              | `null`             | Authored accessible name reference routed to the dialog overlay                     |
+| `aria-description` | `string\|null`             | `null`             | Authored accessible description routed to the dialog overlay                        |
+| `aria-describedby` | `string\|null`             | `null`             | Authored accessible description reference routed to the dialog overlay              |
 
 ## Subcomponents
 
@@ -302,6 +328,9 @@ Pass an arbitrary size to set an inline max width on the dialog positioner:
 ## Accessibility
 
 - `role="dialog"` and `aria-modal="true"` on the overlay.
+- `modal.title` and `modal.description` automatically name and describe the overlay.
+- Frame-loaded labels are reconciled before the modal opens, and explicit unique label ids are preserved.
+- Root `aria-label`, `aria-labelledby`, `aria-description`, and `aria-describedby` values override generated references.
 - Focus is trapped inside the modal while it is open.
 - Focus returns to the element that triggered the modal on close.
 - Escape closes the modal by default and may be configured through the controller value.

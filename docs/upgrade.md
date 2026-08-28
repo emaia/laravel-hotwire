@@ -23,6 +23,43 @@ Toggle hidden inputs now derive their id from `name` instead of `uniqid()`. Scal
 `name="filters[]" value="featured"` produces `toggle-array-7-filters-featured-input`. Update selectors or tests that
 inspected this internal hidden input id.
 
+### Overlay ARIA attributes move to the dialog surface
+
+`aria-label`, `aria-labelledby`, `aria-description`, and `aria-describedby` set on `<hw:modal>`, `<hw:sheet>`, or
+`<hw:drawer>` are now rendered on the internal element with `role="dialog"` instead of the component root. Keep declaring
+these attributes on the root component; only their rendered location changes. This lets authored accessible text apply to
+both explicit content and automatically generated Turbo Frame hosts.
+
+Update CSS selectors, browser queries, and tests that expected these attributes on `data-slot="modal"`,
+`data-slot="sheet"`, or `data-slot="drawer"`:
+
+```css
+/* before */
+[data-slot="modal"][aria-labelledby] { /* ... */ }
+
+/* after */
+[data-slot="modal-overlay"][aria-labelledby] { /* ... */ }
+```
+
+The equivalent semantic surfaces are `sheet-overlay` and `drawer-overlay`. Prefer selecting the dialog role or these
+overlay slots when inspecting accessible-name attributes.
+
+### Alert Dialog uses the alertdialog role
+
+`<hw:alert-dialog>` now renders `role="alertdialog"` instead of `role="dialog"`, matching its interruptive confirmation
+semantics. Update application CSS, browser tests, and query helpers that selected Alert Dialog through
+`[role="dialog"]`:
+
+```css
+/* before */
+[role="dialog"] { /* shared overlay styles */ }
+
+/* after */
+:is([role="dialog"], [role="alertdialog"]) { /* shared overlay styles */ }
+```
+
+Use `[role="alertdialog"]` when a selector should match confirmation dialogs only.
+
 ### The toaster reads the session flash
 
 `<hw:toaster />` now renders the flashed message itself, so the standalone `<hw:toast />` is no longer needed in a
