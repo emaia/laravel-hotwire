@@ -280,9 +280,7 @@ export function createFrameOverlay(controller) {
     }
 
     function resolveLabelId(label, kind) {
-        if (label.id) {
-            return document.querySelectorAll(`#${cssEscape(label.id)}`).length === 1 ? label.id : null;
-        }
+        if (label.id && document.querySelectorAll(`#${cssEscape(label.id)}`).length === 1) return label.id;
 
         const root = controller.element.id || dynamicContent().id || `hotwire-${controller.identifier}`;
         const base = `${root}-${kind}`;
