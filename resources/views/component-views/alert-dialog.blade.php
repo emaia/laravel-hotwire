@@ -8,7 +8,7 @@
         'data-alert-dialog-lock-scroll-class' => 'overflow-hidden',
         'data-action' => 'turbo:before-cache@window->alert-dialog#closeForCache',
     ], $attributes, $stimulus, protectedPrefixes: ['data-alert-dialog-']);
-    $alertDialogOverlayLabelContext->assertNoIdCollisions($slot);
+    $alertDialogOverlayLabelContext->assertNoIdCollisions($slot, 'trigger slot');
     if ($alertDialogOverlayLabelContext->hasRegisteredLabels($slot)) {
         throw new InvalidArgumentException('Alert Dialog title and description subcomponents must be rendered in the content slot.');
     }

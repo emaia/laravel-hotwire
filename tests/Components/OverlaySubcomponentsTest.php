@@ -427,7 +427,7 @@ it('reports authored alert trigger id collisions separately from misplaced label
         </x-hw::alert-dialog>
     BLADE))->toThrow(
         ViewException::class,
-        'Overlay label id [delete-title] conflicts with another element in its content.',
+        'Overlay label id [delete-title] conflicts with another element in its trigger slot.',
     );
 });
 

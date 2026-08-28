@@ -93,24 +93,16 @@ final class OverlayLabelContext
         return $id;
     }
 
-    /** Return the first registered title id reachable in the optional rendered content. */
-    public function titleId(?Htmlable $contents = null): ?string
+    /** Return the first registered title id. */
+    public function titleId(): ?string
     {
-        if ($contents === null) {
-            return $this->titleIds[0] ?? null;
-        }
-
-        return $this->referencesFor($contents)['title'];
+        return $this->titleIds[0] ?? null;
     }
 
-    /** Return the first registered description id reachable in the optional rendered content. */
-    public function descriptionId(?Htmlable $contents = null): ?string
+    /** Return the first registered description id. */
+    public function descriptionId(): ?string
     {
-        if ($contents === null) {
-            return $this->descriptionIds[0] ?? null;
-        }
-
-        return $this->referencesFor($contents)['description'];
+        return $this->descriptionIds[0] ?? null;
     }
 
     /**
@@ -124,7 +116,7 @@ final class OverlayLabelContext
             return ['title' => null, 'description' => null];
         }
 
-        $reachable = $this->registeredIdsIn($contents, excludeTemplates: true);
+        $reachable = $this->registeredIdsIn($contents);
 
         return [
             'title' => $this->firstReachableId($this->titleIds, $reachable),
@@ -157,9 +149,9 @@ final class OverlayLabelContext
     }
 
     /** Reject authored elements that reuse an id owned by an overlay label. */
-    public function assertNoIdCollisions(Htmlable $contents): void
+    public function assertNoIdCollisions(Htmlable $contents, string $scope = 'content'): void
     {
-        $this->assertNoIdCollisionsIn($this->inspect($contents), 'content');
+        $this->assertNoIdCollisionsIn($this->inspect($contents), $scope);
     }
 
     /** Validate label placement and ids across an overlay's complete rendered slot. */
@@ -180,7 +172,7 @@ final class OverlayLabelContext
     }
 
     /** @return array<string, true> */
-    private function registeredIdsIn(Htmlable $contents, bool $excludeTemplates): array
+    private function registeredIdsIn(Htmlable $contents): array
     {
         $registered = array_fill_keys([...$this->titleIds, ...$this->descriptionIds], true);
         $found = [];
@@ -189,7 +181,7 @@ final class OverlayLabelContext
                 $element['id'] !== ''
                 && isset($registered[$element['id']])
                 && $element['overlay'] === null
-                && (! $excludeTemplates || ! $element['insideTemplate'])
+                && ! $element['insideTemplate']
             ) {
                 $found[$element['id']] = true;
             }
