@@ -1,6 +1,6 @@
 # Alert Dialog
 
-Intercepts clicks, opens an alert dialog, and re-fires the original action only after the user confirms. This is the
+Intercepts clicks, opens an alert dialog, and resumes the captured action only after the user confirms. This is the
 low-level Stimulus controller used by [`<hw:alert-dialog>`](../components/alert-dialog.md).
 
 **Identifier:** `alert-dialog`  
@@ -21,7 +21,7 @@ Escape cancellation and focus trapping are suspended during IME composition.
     data-alert-dialog-lock-scroll-class="overflow-hidden"
     data-action="turbo:before-cache@window->alert-dialog#closeForCache"
 >
-    <div data-action="click->alert-dialog#intercept">
+    <div data-action="click->alert-dialog#interceptCapture:capture click->alert-dialog#intercept">
         <button type="button">Continue</button>
     </div>
 
@@ -48,8 +48,17 @@ Escape cancellation and focus trapping are suspended during IME composition.
 </div>
 ```
 
-The controller stores the clicked element, opens the dialog, traps focus, and only calls `element.click()` again after
-`alert-dialog#confirm`. Canceling or closing for Turbo cache clears the pending action without re-firing it.
+The controller captures the link or submit action without retaining the clicked DOM node, opens the dialog, and resumes
+that action through a transient unwired element after `alert-dialog#confirm`. This lets a Turbo morph replace the trigger
+or an external form while the dialog is open. Canceling or closing for Turbo cache clears the pending action.
+
+For link and submit triggers, other click listeners observe the user's original click exactly once. The resumed element
+deliberately omits `data-action` and `data-controller`, so confirming does not invoke those controllers a second time.
+
+The capture-phase `interceptCapture` action prevents every default before trigger listeners run. Link and submit
+listeners still receive that original event; generic `type="button"` handlers are deferred and run once after
+confirmation. If Turbo can replace a generic button while the dialog is open, give it a stable `id` so the controller
+can resolve the replacement without risking a click on a different element.
 
 ## Targets
 
@@ -76,8 +85,9 @@ The controller stores the clicked element, opens the dialog, traps focus, and on
 
 | Action                      | Description                                                                 |
 |-----------------------------|-----------------------------------------------------------------------------|
-| `alert-dialog#intercept`    | Intercepts a click, stores the original element, and opens the dialog       |
-| `alert-dialog#confirm`      | Closes the dialog and re-fires the original click after the close animation |
+| `alert-dialog#interceptCapture` | Captures and prevents the action before trigger listeners; wire with `:capture` |
+| `alert-dialog#intercept`    | Intercepts a link or submit click, captures its action, and opens the dialog |
+| `alert-dialog#confirm`      | Closes the dialog and resumes the action after the close animation          |
 | `alert-dialog#cancel`       | Cancels the pending action and closes the dialog                            |
 | `alert-dialog#clickOutside` | Cancels when clicking outside the dialog panel                              |
 | `alert-dialog#closeForCache` | Clears the pending action and closes synchronously for Turbo cache          |
@@ -90,7 +100,7 @@ The controller stores the clicked element, opens the dialog, traps focus, and on
     data-alert-dialog-lock-scroll-class="overflow-hidden"
     data-action="turbo:before-cache@window->alert-dialog#closeForCache"
 >
-    <div data-action="click->alert-dialog#intercept">
+    <div data-action="click->alert-dialog#interceptCapture:capture click->alert-dialog#intercept">
         <button type="button">Continue</button>
     </div>
 
@@ -120,12 +130,12 @@ The modal target starts closed, hidden and inert so the dialog never flashes bef
 
 ## With a Turbo method link
 
-Because the controller re-fires the original click, it works with Turbo links and `data-turbo-method` without custom
-integration:
+The controller preserves the link destination and Turbo attributes, so `data-turbo-method` continues to work without
+custom integration even if the trigger is replaced while the dialog is open:
 
 ```html
 <div data-controller="alert-dialog" ...>
-    <div data-action="click->alert-dialog#intercept">
+    <div data-action="click->alert-dialog#interceptCapture:capture click->alert-dialog#intercept">
         <a href="/posts/1" data-turbo-method="delete">Delete post</a>
     </div>
 
@@ -141,13 +151,16 @@ integration:
 </form>
 
 <div data-controller="alert-dialog" ...>
-    <div data-action="click->alert-dialog#intercept">
+    <div data-action="click->alert-dialog#interceptCapture:capture click->alert-dialog#intercept">
         <button type="submit" form="report-form">Submit report</button>
     </div>
 
     <!-- modal markup -->
 </div>
 ```
+
+Submitter attributes such as `name`, `value`, `formaction`, `formmethod`, and `data-turbo-frame` are preserved. The form
+is resolved again by its `id` at confirmation time, so an external form replaced during a Turbo morph still submits.
 
 ## Accessibility
 

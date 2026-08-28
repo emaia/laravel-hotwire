@@ -246,6 +246,10 @@ export function createOverlay(_controller, {
         triggerElement.focus();
     }
 
+    function setTriggerElement(element) {
+        triggerElement = element;
+    }
+
     return {
         get isOpen() { return desiredOpen; },
         get isOpening() { return presence.phase === "opening"; },
@@ -259,6 +263,7 @@ export function createOverlay(_controller, {
         open,
         close,
         closeNow,
+        setTriggerElement,
         cleanup,
     };
 }

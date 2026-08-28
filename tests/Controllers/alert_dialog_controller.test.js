@@ -16,7 +16,9 @@ const HTML = `
     <div data-controller="alert-dialog"
          data-alert-dialog-lock-scroll-class="overflow-hidden"
          data-alert-dialog-close-on-click-outside-value="true">
-        <a href="/items/1" data-action="click->alert-dialog#intercept" id="trigger">Delete</a>
+        <div id="trigger-zone" data-action="click->alert-dialog#interceptCapture:capture click->alert-dialog#intercept">
+            <a href="/items/1" id="trigger">Delete</a>
+        </div>
 
         <div data-alert-dialog-target="modal"
              data-state="closed"
@@ -80,6 +82,32 @@ test.serial("intercept ignores click with modifier keys", async () => {
     expect(mounted.controller.isOpen).toBe(false);
 });
 
+test.serial("capture interception prevents the default before trigger listeners run", async () => {
+    await mount();
+    const trigger = document.getElementById("trigger");
+    let triggerSawPrevented = false;
+    trigger.addEventListener("click", (event) => {
+        triggerSawPrevented = event.defaultPrevented;
+    });
+
+    clickWith(trigger);
+
+    expect(triggerSawPrevented).toBe(true);
+    expect(mounted.controller.isOpen).toBe(true);
+});
+
+test.serial("capture interception survives trigger stopPropagation", async () => {
+    await mount();
+    const trigger = document.getElementById("trigger");
+    trigger.addEventListener("click", (event) => event.stopPropagation());
+
+    const defaultPrevented = !clickWith(trigger);
+
+    expect(defaultPrevented).toBe(true);
+    expect(mounted.controller.isOpen).toBe(true);
+    expect(mounted.controller.pendingAction?.kind).toBe("link");
+});
+
 // --- semantic presence state ---
 
 test.serial("after open, modal becomes interactive and lock-scroll is applied to body", async () => {
@@ -135,26 +163,61 @@ test.serial("lock-scroll keeps compensation until the last overlay unlocks", asy
     expect(document.body.style.paddingRight).toBe("");
 });
 
-// --- confirm() re-clicks the original trigger ---
+// --- confirm() executes the captured action ---
 
-test.serial("confirm re-issues the click on the original trigger and lets it through", async () => {
+test.serial("intercept lets other listeners observe the original click", async () => {
     await mount();
     const trigger = document.getElementById("trigger");
+    const triggerZone = document.getElementById("trigger-zone");
+    const originalClick = new MouseEvent("click", { bubbles: true, cancelable: true });
+    let observedClick = null;
 
-    let secondClickReached = false;
-    trigger.addEventListener("click", () => {
-        if (mounted.controller.isOpen === false && mounted.controller.confirmed === false) {
-            // The "second" click is the re-click after confirm; intercept consumed
-            // confirmed=true and reset it to false right before this handler runs.
-            secondClickReached = true;
-        }
+    triggerZone.addEventListener("click", (event) => {
+        observedClick = event;
     });
 
-    clickWith(trigger);                          // first click → intercepted
+    trigger.dispatchEvent(originalClick);
+
+    expect(observedClick).toBe(originalClick);
+    expect(mounted.controller.isOpen).toBe(true);
+});
+
+test.serial("confirm executes the link without firing trigger listeners twice", async () => {
+    await mount();
+    const trigger = document.getElementById("trigger");
+    let triggerClicks = 0;
+    let confirmedClicks = 0;
+
+    trigger.addEventListener("click", () => triggerClicks++);
+    document.body.addEventListener("click", () => confirmedClicks++);
+
+    clickWith(trigger);
     mounted.controller.confirm();
     await wait(20);
 
-    expect(secondClickReached).toBe(true);
+    expect(triggerClicks).toBe(1);
+    expect(confirmedClicks).toBe(1);
+    expect(mounted.controller.isOpen).toBe(false);
+});
+
+test.serial("generic button listeners run only after confirmation", async () => {
+    await mount();
+    const trigger = document.getElementById("trigger");
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = "Archive";
+    trigger.replaceWith(button);
+    let clicks = 0;
+    button.addEventListener("click", () => clicks++);
+
+    clickWith(button);
+
+    expect(clicks).toBe(0);
+    expect(mounted.controller.isOpen).toBe(true);
+
+    await mounted.controller.confirm();
+
+    expect(clicks).toBe(1);
     expect(mounted.controller.isOpen).toBe(false);
 });
 
@@ -164,33 +227,31 @@ test.serial("confirm waits for the actual exit motion before re-issuing the clic
     const modal = document.querySelector('[data-alert-dialog-target="modal"]');
     const dialog = document.querySelector('[data-alert-dialog-target="dialog"]');
     const motion = fakeAnimation();
-    let secondClickReached = false;
+    let confirmedClickReached = false;
 
     modal.dataset.motion = "default";
     dialog.getAnimations = () => modal.dataset.state === "closed" ? [motion.animation] : [];
-    trigger.addEventListener("click", () => {
-        if (!mounted.controller.isOpen && !mounted.controller.confirmed) secondClickReached = true;
-    });
+    document.body.addEventListener("click", () => confirmedClickReached = true);
 
     clickWith(trigger);
     await wait(0);
     const confirming = mounted.controller.confirm();
     await wait(0);
 
-    expect(secondClickReached).toBe(false);
+    expect(confirmedClickReached).toBe(false);
     expect(modal.hidden).toBe(false);
     expect(modal.hasAttribute("inert")).toBe(true);
 
     motion.finish();
     await confirming;
 
-    expect(secondClickReached).toBe(true);
+    expect(confirmedClickReached).toBe(true);
     expect(modal.hidden).toBe(true);
 });
 
 // --- cancel() closes without re-clicking ---
 
-test.serial("cancel closes the dialog and clears the pending element", async () => {
+test.serial("cancel closes the dialog and clears the pending action", async () => {
     await mount();
     const trigger = document.getElementById("trigger");
 
@@ -199,7 +260,7 @@ test.serial("cancel closes the dialog and clears the pending element", async () 
 
     expect(mounted.controller.isOpen).toBe(false);
     expect(document.querySelector('[data-alert-dialog-target="modal"]').dataset.state).toBe("closed");
-    expect(mounted.controller.pendingElement).toBeNull();
+    expect(mounted.controller.pendingAction).toBeNull();
 });
 
 // --- click outside ---
@@ -260,7 +321,7 @@ test.serial("confirm re-click bubbles past the dialog so ancestors can react", a
 
     let ancestorClicks = 0;
     const spy = (event) => {
-        if (event.target.id === "trigger") ancestorClicks++;
+        if (event.target.hasAttribute("data-hotwire-action-replay")) ancestorClicks++;
     };
     document.body.addEventListener("click", spy);
 
@@ -275,9 +336,8 @@ test.serial("confirm re-click bubbles past the dialog so ancestors can react", a
     await wait(20);
 
     expect(mounted.controller.isOpen).toBe(false);
-    // The synthetic re-click on the original trigger reaches ancestor listeners,
-    // letting an enclosing dropdown (or other UI) close gracefully after the
-    // modal has finished its own close transition.
+    // The resumed action reaches ancestor listeners, letting an enclosing
+    // dropdown close after the modal has finished its own close transition.
     expect(ancestorClicks).toBe(1);
 
     document.body.removeEventListener("click", spy);

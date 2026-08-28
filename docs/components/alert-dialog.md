@@ -65,9 +65,15 @@ The `content` slot renders below `description` and above the action buttons.
 ## Automatic Behavior
 
 The default slot is wrapped in a click-intercept zone. When the user clicks any element inside, the click is canceled
-and the alert dialog opens. If the user clicks **Confirm**, the original click is re-fired on the same element
-(bypassing the intercept) after the actual exit motion settles. If the user clicks **Cancel** or presses `Escape`, the
-dialog closes and nothing happens. Rapid reopen cancels stale close completion.
+and the alert dialog opens. If the user clicks **Confirm**, a captured link or submit action resumes through a transient
+unwired element after the actual exit motion settles. Listeners on those triggers therefore observe the user's original
+click only once, and replacing the trigger or its external form while the dialog is open does not discard the action. If
+the user clicks **Cancel** or presses `Escape`, the dialog closes and nothing happens. Rapid reopen cancels stale close
+completion.
+
+Generic `type="button"` actions are deferred in capture phase and run once after confirmation. Give these buttons a
+stable `id` when a Turbo morph may replace them while the dialog is open; unlike links and submits, an arbitrary
+JavaScript action cannot be reconstructed safely from attributes alone.
 
 The trigger element needs no special attributes — place it as the default slot.
 
@@ -103,7 +109,7 @@ The dialog closes synchronously on `turbo:before-cache`, preventing ghost dialog
 ## Requirements
 
 - No external dependencies.
-- Ships with `_composition.js`, `_focus_trap.js`, `_overlay.js`, `_overlay_stack.js`, `_presence.js`, and
+- Ships with `_action_replay.js`, `_composition.js`, `_focus_trap.js`, `_overlay.js`, `_overlay_stack.js`, `_presence.js`, and
   `_top_layer.js`; publishing the `alert-dialog` controller publishes these helpers too.
 
 ## Props

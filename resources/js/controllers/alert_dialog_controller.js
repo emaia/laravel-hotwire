@@ -1,6 +1,7 @@
 // @hotwire-package
 import { Controller } from "@hotwired/stimulus";
 
+import { captureAction, replayAction, resolveActionElement } from "./_action_replay.js";
 import { createOverlay } from "./_overlay.js";
 
 export default class AlertDialogController extends Controller {
@@ -13,8 +14,9 @@ export default class AlertDialogController extends Controller {
         closeOnClickOutside: { type: Boolean, default: true },
     };
 
-    pendingElement = null;
-    confirmed = false;
+    pendingAction = null;
+    replayingAction = false;
+    capturedEvents = new WeakSet();
     overlay = null;
     connected = false;
     overlayRefreshQueued = false;
@@ -31,6 +33,8 @@ export default class AlertDialogController extends Controller {
     disconnect() {
         this.connected = false;
         this.overlayRefreshQueued = false;
+        this.pendingAction = null;
+        this.replayingAction = false;
         this.overlay?.cleanup();
         this.overlay = null;
     }
@@ -70,7 +74,9 @@ export default class AlertDialogController extends Controller {
             escapeCapture: true,
             stopEscapePropagation: true,
             onEscape: () => this.cancel(),
-            getTriggerElement: () => this.pendingElement,
+            getTriggerElement: () => this.pendingAction
+                ? resolveActionElement(this.pendingAction, this.element)
+                : null,
         });
 
         if (forceOpen) {
@@ -81,39 +87,83 @@ export default class AlertDialogController extends Controller {
     }
 
     intercept(event) {
-        if (event.ctrlKey || event.metaKey || event.shiftKey) return;
-        if (event.button !== undefined && event.button !== 0) return;
+        if (this.capturedEvents.has(event)) {
+            this.capturedEvents.delete(event);
+            event.stopPropagation();
 
-        if (this.confirmed) {
-            this.confirmed = false;
             return;
         }
 
-        event.preventDefault();
-        event.stopImmediatePropagation();
+        if (!this.#shouldIntercept(event)) return;
 
-        this.pendingElement = event.target.closest("a, button") ?? event.target;
+        const action = captureAction(event, this.element);
+        if (!action) return;
+
+        this.#intercept(event, action);
+    }
+
+    interceptCapture(event) {
+        if (!this.#shouldIntercept(event)) return;
+
+        const action = captureAction(event, this.element);
+        if (!action) return;
+
+        event.preventDefault();
+        this.capturedEvents.add(event);
+        queueMicrotask(() => this.capturedEvents.delete(event));
+        this.pendingAction = action;
+        this.overlay?.open();
+
+        if (action.kind === "click") event.stopPropagation();
+    }
+
+    #shouldIntercept(event) {
+        if (event.ctrlKey || event.metaKey || event.shiftKey) return false;
+        if (event.button !== undefined && event.button !== 0) return false;
+        if (event.defaultPrevented || this.replayingAction) return false;
+
+        return true;
+    }
+
+    #intercept(event, action) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        this.pendingAction = action;
         this.overlay?.open();
     }
 
     async confirm() {
-        const element = this.pendingElement;
+        const action = this.pendingAction;
+        this.#refreshTriggerElement();
         const closed = await this.overlay?.close();
-        if (!closed || this.pendingElement !== element) return;
+        if (!closed || this.pendingAction !== action) return;
 
-        this.confirmed = true;
-        element?.click();
-        this.pendingElement = null;
+        this.pendingAction = null;
+        this.replayingAction = true;
+        try {
+            if (action) replayAction(action, this.element);
+        } finally {
+            this.replayingAction = false;
+        }
     }
 
     cancel() {
-        this.pendingElement = null;
-        return this.overlay?.close();
+        this.#refreshTriggerElement();
+        const closing = this.overlay?.close();
+        this.pendingAction = null;
+
+        return closing;
     }
 
     closeForCache() {
-        this.pendingElement = null;
+        this.pendingAction = null;
         this.overlay?.closeNow({ restoreFocus: false });
+    }
+
+    #refreshTriggerElement() {
+        const trigger = this.pendingAction ? resolveActionElement(this.pendingAction, this.element) : null;
+        this.overlay?.setTriggerElement(trigger);
     }
 
     #queueOverlayRefresh() {
