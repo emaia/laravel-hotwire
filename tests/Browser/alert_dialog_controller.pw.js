@@ -7,6 +7,7 @@ test("a replaced external-form trigger submits once with its captured action", a
             <input name="query" value="current">
         </form>
 
+        <div id="ancestor">
         <div id="confirmation" data-controller="alert-dialog" data-alert-dialog-lock-scroll-class="overflow-hidden">
             <div
                 id="trigger-zone"
@@ -25,13 +26,14 @@ test("a replaced external-form trigger submits once with its captured action", a
                 >Delete</button>
             </div>
 
-            <div data-alert-dialog-target="modal" data-state="closed" data-motion="none" hidden inert>
+            <div data-alert-dialog-target="modal" data-state="closed" data-motion="none" data-action="click->alert-dialog#clickOutside" hidden inert>
                 <div data-alert-dialog-target="backdrop"></div>
                 <div data-alert-dialog-target="dialog">
                     <button id="cancel" type="button" data-action="alert-dialog#cancel">Cancel</button>
                     <button id="confirm" type="button" data-action="alert-dialog#confirm">Confirm</button>
                 </div>
             </div>
+        </div>
         </div>
     `);
 
@@ -40,12 +42,20 @@ test("a replaced external-form trigger submits once with its captured action", a
     await page.evaluate(() => {
         window.triggerClicks = 0;
         window.zoneClicks = [];
+        window.ancestorClicks = [];
         window.submissions = [];
         window.StimulusApplication = window.Stimulus.Application.start();
         window.StimulusApplication.register("alert-dialog", window.AlertDialogController);
         window.StimulusApplication.register("probe", window.ProbeController);
 
         document.querySelector("#delete-item").addEventListener("click", () => window.triggerClicks++);
+        document.querySelector("#ancestor").addEventListener("click", (event) => {
+            window.ancestorClicks.push({
+                replay: event.target.hasAttribute("data-hotwire-action-replay"),
+                target: event.target.id,
+                trusted: event.isTrusted,
+            });
+        });
         document.addEventListener("submit", (event) => {
             event.preventDefault();
             window.submissions.push({
@@ -60,6 +70,7 @@ test("a replaced external-form trigger submits once with its captured action", a
     });
 
     await page.locator("#delete-item").click();
+    expect(await page.evaluate(() => window.ancestorClicks)).toEqual([]);
     await page.evaluate(() => {
         const form = document.querySelector("#item-form");
         const trigger = document.querySelector("#delete-item");
@@ -79,6 +90,7 @@ test("a replaced external-form trigger submits once with its captured action", a
     }]);
     expect(await page.evaluate(() => window.triggerClicks)).toBe(1);
     expect(await page.evaluate(() => window.zoneClicks)).toEqual([{ trusted: true }]);
+    expect(await page.evaluate(() => window.ancestorClicks)).toEqual([{ replay: true, target: "", trusted: false }]);
     await expect(page.locator("#delete-item")).toBeFocused();
 });
 

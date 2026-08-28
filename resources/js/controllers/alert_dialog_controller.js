@@ -110,7 +110,6 @@ export default class AlertDialogController extends Controller {
 
         event.preventDefault();
         this.capturedEvents.add(event);
-        queueMicrotask(() => this.capturedEvents.delete(event));
         this.pendingAction = action;
         this.overlay?.open();
 
