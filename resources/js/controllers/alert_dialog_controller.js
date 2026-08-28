@@ -1,7 +1,7 @@
 // @hotwire-package
 import { Controller } from "@hotwired/stimulus";
 
-import { captureAction, replayAction, resolveActionElement } from "./_action_replay.js";
+import { captureAction, releaseAction, replayAction, resolveActionElement } from "./_action_replay.js";
 import { createOverlay } from "./_overlay.js";
 
 export default class AlertDialogController extends Controller {
@@ -18,8 +18,10 @@ export default class AlertDialogController extends Controller {
     replayingAction = false;
     capturedEvents = new WeakSet();
     overlay = null;
+    overlayTargets = null;
     connected = false;
     overlayRefreshQueued = false;
+    disconnectTimer = null;
 
     get isOpen() {
         return this.overlay?.isOpen ?? false;
@@ -27,16 +29,41 @@ export default class AlertDialogController extends Controller {
 
     connect() {
         this.connected = true;
-        this.#setupOverlay();
+        if (this.disconnectTimer !== null) {
+            clearTimeout(this.disconnectTimer);
+            this.disconnectTimer = null;
+        }
+        if (this.overlay && this.#overlayTargetsMatch()) {
+            this.overlay.restoreAfterReconnect();
+
+            return;
+        }
+
+        const reopen = this.overlay?.isOpen ?? false;
+        const stackPosition = this.overlay?.stackPosition ?? null;
+        const topLayerPosition = this.overlay?.topLayerPosition ?? null;
+        this.overlay?.cleanup();
+        this.overlay = null;
+        this.overlayTargets = null;
+        this.#setupOverlay(reopen, stackPosition, topLayerPosition);
     }
 
     disconnect() {
         this.connected = false;
         this.overlayRefreshQueued = false;
-        this.pendingAction = null;
-        this.replayingAction = false;
-        this.overlay?.cleanup();
-        this.overlay = null;
+        if (this.disconnectTimer !== null) clearTimeout(this.disconnectTimer);
+        this.disconnectTimer = setTimeout(() => {
+            this.disconnectTimer = null;
+            if (this.connected) return;
+
+            const action = this.pendingAction;
+            this.pendingAction = null;
+            if (action) releaseAction(action, this.element);
+            this.replayingAction = false;
+            this.overlay?.cleanup();
+            this.overlay = null;
+            this.overlayTargets = null;
+        }, 0);
     }
 
     modalTargetConnected() {
@@ -64,10 +91,15 @@ export default class AlertDialogController extends Controller {
     }
 
     #setupOverlay(forceOpen = false, stackPosition = null, topLayerPosition = null) {
+        this.overlayTargets = {
+            modal: this.modalTarget,
+            backdrop: this.backdropTarget,
+            dialog: this.dialogTarget,
+        };
         this.overlay = createOverlay(this, {
-            modalTarget: this.modalTarget,
-            backdropTarget: this.backdropTarget,
-            dialogTarget: this.dialogTarget,
+            modalTarget: this.overlayTargets.modal,
+            backdropTarget: this.overlayTargets.backdrop,
+            dialogTarget: this.overlayTargets.dialog,
             lockScrollClasses: this.lockScrollClasses,
             lockScroll: this.lockScrollValue,
             closeOnEscape: true,
@@ -83,6 +115,8 @@ export default class AlertDialogController extends Controller {
             this.overlay.setOpen({ notify: false, stackPosition, topLayerPosition });
         } else if (this.modalTarget.dataset.state === "open" && !this.modalTarget.hidden) {
             this.overlay.setOpen();
+        } else {
+            this.overlay.closeNow({ restoreFocus: false });
         }
     }
 
@@ -110,7 +144,7 @@ export default class AlertDialogController extends Controller {
 
         event.preventDefault();
         this.capturedEvents.add(event);
-        this.pendingAction = action;
+        this.#setPendingAction(action);
         this.overlay?.open();
 
         if (action.kind === "click") event.stopPropagation();
@@ -128,14 +162,24 @@ export default class AlertDialogController extends Controller {
         event.preventDefault();
         event.stopPropagation();
 
-        this.pendingAction = action;
+        this.#setPendingAction(action);
         this.overlay?.open();
     }
 
     async confirm() {
         const action = this.pendingAction;
         this.#refreshTriggerElement();
-        const closed = await this.overlay?.close();
+        const closingOverlay = this.overlay;
+        let closed = await closingOverlay?.close();
+        if (
+            !closed &&
+            this.connected &&
+            this.pendingAction === action &&
+            this.overlay &&
+            this.overlay !== closingOverlay
+        ) {
+            closed = await this.overlay.close();
+        }
         if (!closed || this.pendingAction !== action) return;
 
         this.pendingAction = null;
@@ -144,20 +188,30 @@ export default class AlertDialogController extends Controller {
             if (action) replayAction(action, this.element);
         } finally {
             this.replayingAction = false;
+            if (action) releaseAction(action, this.element);
         }
     }
 
     cancel() {
+        const action = this.pendingAction;
         this.#refreshTriggerElement();
         const closing = this.overlay?.close();
         this.pendingAction = null;
+        if (action) releaseAction(action, this.element);
 
         return closing;
     }
 
     closeForCache() {
+        const action = this.pendingAction;
         this.pendingAction = null;
+        if (action) releaseAction(action, this.element);
         this.overlay?.closeNow({ restoreFocus: false });
+    }
+
+    #setPendingAction(action) {
+        if (this.pendingAction) releaseAction(this.pendingAction, this.element);
+        this.pendingAction = action;
     }
 
     #refreshTriggerElement() {
@@ -188,10 +242,18 @@ export default class AlertDialogController extends Controller {
             const topLayerPosition = this.overlay?.topLayerPosition ?? -1;
             this.overlay?.cleanup();
             this.overlay = null;
+            this.overlayTargets = null;
             if (!this.hasModalTarget || !this.hasBackdropTarget || !this.hasDialogTarget) return;
 
             this.#setupOverlay(reopen, stackPosition, topLayerPosition);
         });
+    }
+
+    #overlayTargetsMatch() {
+        return this.hasModalTarget && this.hasBackdropTarget && this.hasDialogTarget &&
+            this.overlayTargets?.modal === this.modalTarget &&
+            this.overlayTargets?.backdrop === this.backdropTarget &&
+            this.overlayTargets?.dialog === this.dialogTarget;
     }
 
     clickOutside(event) {

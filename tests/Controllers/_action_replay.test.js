@@ -3,6 +3,7 @@ import { Window } from "happy-dom";
 
 import {
     captureAction,
+    releaseAction,
     replayAction,
     resolveActionElement,
 } from "../../resources/js/controllers/_action_replay.js";
@@ -95,6 +96,44 @@ test("does not replay an href-less anchor that becomes aria-disabled", () => {
     expect(clicks).toBe(0);
 });
 
+test("does not replay proxy actions whose resolved target becomes aria-disabled", () => {
+    document.body.innerHTML = `
+        <form id="item-form"></form>
+        <div id="root">
+            <div id="zone">
+                <a id="link" href="/items/1">Delete link</a>
+                <button id="submit" type="submit" form="item-form">Delete form</button>
+            </div>
+        </div>
+    `;
+    const root = document.getElementById("root");
+    const zone = document.getElementById("zone");
+    const link = document.getElementById("link");
+    const submit = document.getElementById("submit");
+    const linkAction = captureAction({ target: link, currentTarget: zone }, root);
+    const submitAction = captureAction({ target: submit, currentTarget: zone }, root);
+    let proxyClicks = 0;
+    let submissions = 0;
+    root.addEventListener("click", (event) => {
+        if (!event.target.hasAttribute("data-hotwire-action-replay")) return;
+
+        event.preventDefault();
+        proxyClicks++;
+    });
+    document.getElementById("item-form").addEventListener("submit", (event) => {
+        event.preventDefault();
+        submissions++;
+    });
+
+    link.setAttribute("aria-disabled", "true");
+    submit.setAttribute("aria-disabled", "true");
+
+    expect(replayAction(linkAction, root)).toBe(false);
+    expect(replayAction(submitAction, root)).toBe(false);
+    expect(proxyClicks).toBe(0);
+    expect(submissions).toBe(0);
+});
+
 test("does not replay a generic click on an unrelated replacement", () => {
     document.body.innerHTML = `
         <div id="root"><div id="zone"><button type="button" data-action="items#destroy">Delete</button></div></div>
@@ -157,6 +196,73 @@ test("does not resolve duplicate internal action keys", () => {
     expect(clicks).toBe(0);
 });
 
+test("replaces a restored internal key when it is no longer unique", () => {
+    document.body.innerHTML = `
+        <div id="root"><div id="zone"><button type="button">Delete</button></div></div>
+    `;
+    const root = document.getElementById("root");
+    const zone = document.getElementById("zone");
+    const trigger = zone.querySelector("button");
+    trigger.setAttribute("data-hotwire-action-key", "hotwire-action-restored");
+
+    zone.append(trigger.cloneNode(true));
+    const nextAction = captureAction({ target: trigger, currentTarget: zone }, root);
+
+    expect(nextAction.targetKey).not.toBe("hotwire-action-restored");
+    expect(resolveActionElement(nextAction, root)).toBe(trigger);
+});
+
+test("releases transient keys after an action settles", () => {
+    document.body.innerHTML = `
+        <div id="root">
+            <div>
+                <form><button type="submit">Save</button></form>
+            </div>
+        </div>
+    `;
+    const root = document.getElementById("root");
+    const zone = root.firstElementChild;
+    const form = zone.querySelector("form");
+    const trigger = form.querySelector("button");
+    const action = captureAction({ target: trigger, currentTarget: zone }, root);
+
+    expect(trigger.hasAttribute("data-hotwire-action-key")).toBe(true);
+    expect(zone.hasAttribute("data-hotwire-action-key")).toBe(true);
+    expect(form.hasAttribute("data-hotwire-action-form-key")).toBe(true);
+
+    releaseAction(action, root);
+
+    expect(trigger.hasAttribute("data-hotwire-action-key")).toBe(false);
+    expect(zone.hasAttribute("data-hotwire-action-key")).toBe(false);
+    expect(form.hasAttribute("data-hotwire-action-form-key")).toBe(false);
+});
+
+test("retains shared transient keys until every captured action settles", () => {
+    document.body.innerHTML = `
+        <div id="root"><div><button type="button">Delete</button></div></div>
+    `;
+    const root = document.getElementById("root");
+    const zone = root.firstElementChild;
+    const trigger = zone.querySelector("button");
+    const firstAction = captureAction({ target: trigger, currentTarget: zone }, root);
+    const cloneRoot = root.cloneNode(true);
+    cloneRoot.id = "clone-root";
+    document.body.append(cloneRoot);
+    const cloneZone = cloneRoot.firstElementChild;
+    const cloneTrigger = cloneZone.querySelector("button");
+    const secondAction = captureAction({ target: cloneTrigger, currentTarget: cloneZone }, cloneRoot);
+
+    releaseAction(firstAction, root);
+
+    expect(trigger.hasAttribute("data-hotwire-action-key")).toBe(true);
+    expect(cloneTrigger.hasAttribute("data-hotwire-action-key")).toBe(true);
+
+    releaseAction(secondAction, cloneRoot);
+
+    expect(trigger.hasAttribute("data-hotwire-action-key")).toBe(false);
+    expect(cloneTrigger.hasAttribute("data-hotwire-action-key")).toBe(false);
+});
+
 test("does not replay through duplicate trigger boundaries", () => {
     document.body.innerHTML = `
         <div id="root"><div data-slot="alert-dialog-trigger" data-action="click->alert-dialog#intercept"><a href="/items/1">Delete</a></div></div>
@@ -192,6 +298,29 @@ test("replays a submit from an id-less form inside the trigger zone", () => {
 
     expect(replayAction(action, root)).toBe(true);
     expect(submitted).toBe(true);
+});
+
+test("resolves a root-boundary submitter before inserting its replay proxy", () => {
+    document.body.innerHTML = `
+        <form id="item-form"></form>
+        <div id="root">
+            <button type="submit" form="item-form" data-turbo-submits-with="Saving...">Save</button>
+        </div>
+    `;
+    const root = document.getElementById("root");
+    const form = document.getElementById("item-form");
+    const button = root.querySelector("button");
+    const action = captureAction({ target: button, currentTarget: root }, root);
+    let submitter = null;
+    form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        submitter = event.submitter;
+    });
+
+    button.removeAttribute("data-hotwire-action-key");
+
+    expect(replayAction(action, root)).toBe(true);
+    expect(submitter).toBe(button);
 });
 
 test("replays a submit from an id-less form wrapping the controller root", () => {

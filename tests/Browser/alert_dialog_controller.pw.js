@@ -203,6 +203,143 @@ test("a generic button action runs once only after confirmation", async ({ page 
     await expect.poll(() => page.evaluate(() => window.executions)).toEqual([{ trusted: false }]);
 });
 
+test("moving an open dialog preserves its pending action across reconnect", async ({ page }) => {
+    await page.setContent(`
+        <div id="first">
+            <div id="confirmation" data-controller="alert-dialog" data-alert-dialog-lock-scroll-class="overflow-hidden">
+                <div data-action="click->alert-dialog#interceptCapture:capture click->alert-dialog#intercept">
+                    <button id="trigger" type="button" data-controller="probe" data-action="click->probe#execute">Archive</button>
+                </div>
+
+                <div data-alert-dialog-target="modal" data-state="closed" data-motion="none" hidden inert>
+                    <div data-alert-dialog-target="backdrop"></div>
+                    <div data-alert-dialog-target="dialog">
+                        <button type="button" data-action="alert-dialog#cancel">Cancel</button>
+                        <button id="confirm" type="button" data-action="alert-dialog#confirm">Confirm</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="second"></div>
+    `);
+
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ content: await browserControllerScript() });
+    await page.evaluate(() => {
+        window.executions = [];
+        window.StimulusApplication = window.Stimulus.Application.start();
+        window.StimulusApplication.register("alert-dialog", window.AlertDialogController);
+        window.StimulusApplication.register("probe", window.ProbeController);
+    });
+
+    await page.locator("#trigger").click();
+    await page.evaluate(() => document.querySelector("#second").append(document.querySelector("#confirmation")));
+    await expect(page.locator("#confirm")).toBeVisible();
+    await page.locator("#confirm").click();
+
+    await expect.poll(() => page.evaluate(() => window.executions)).toEqual([{ trusted: false }]);
+});
+
+test("moving a dialog with replaced targets during its close transition still replays the action", async ({ page }) => {
+    await page.setContent(`
+        <style>
+            [data-alert-dialog-target="dialog"] { opacity: 1; transition: opacity 200ms linear; }
+            [data-alert-dialog-target="modal"][data-state="closed"] [data-alert-dialog-target="dialog"] { opacity: 0; }
+        </style>
+        <div id="first">
+            <div id="confirmation" data-controller="alert-dialog" data-alert-dialog-lock-scroll-class="overflow-hidden">
+                <div data-action="click->alert-dialog#interceptCapture:capture click->alert-dialog#intercept">
+                    <button id="trigger" type="button" data-controller="probe" data-action="click->probe#execute">Archive</button>
+                </div>
+
+                <div data-alert-dialog-target="modal" data-state="closed" data-motion="default" hidden inert>
+                    <div data-alert-dialog-target="backdrop"></div>
+                    <div data-alert-dialog-target="dialog">
+                        <button type="button" data-action="alert-dialog#cancel">Cancel</button>
+                        <button id="confirm" type="button" data-action="alert-dialog#confirm">Confirm</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="second"></div>
+    `);
+
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ content: await browserControllerScript() });
+    await page.evaluate(() => {
+        window.executions = [];
+        window.StimulusApplication = window.Stimulus.Application.start();
+        window.StimulusApplication.register("alert-dialog", window.AlertDialogController);
+        window.StimulusApplication.register("probe", window.ProbeController);
+    });
+
+    await page.locator("#trigger").click();
+    await page.locator("#confirm").click();
+    await page.evaluate(() => {
+        const confirmation = document.querySelector("#confirmation");
+        const modal = confirmation.querySelector('[data-alert-dialog-target="modal"]');
+        modal.replaceWith(modal.cloneNode(true));
+        document.querySelector("#second").append(confirmation);
+    });
+
+    await expect.poll(() => page.evaluate(() => window.executions)).toEqual([{ trusted: false }]);
+    await expect(page.locator("#confirm")).toBeHidden();
+});
+
+test("moving multiple open dialogs preserves their overlay order", async ({ page }) => {
+    const dialog = (id) => `
+        <div id="${id}" data-controller="alert-dialog" data-alert-dialog-lock-scroll-class="overflow-hidden">
+            <div data-action="click->alert-dialog#interceptCapture:capture click->alert-dialog#intercept">
+                <button id="${id}-trigger" type="button">Open ${id}</button>
+            </div>
+
+            <div id="${id}-modal" data-alert-dialog-target="modal" data-state="closed" data-motion="none" hidden inert>
+                <div data-alert-dialog-target="backdrop"></div>
+                <div data-alert-dialog-target="dialog">
+                    <button type="button" data-action="alert-dialog#cancel">Cancel</button>
+                    <button type="button" data-action="alert-dialog#confirm">Confirm</button>
+                </div>
+            </div>
+        </div>
+    `;
+    await page.setContent(`
+        <style>
+            [id$="-modal"] { position: fixed; inset: 0; width: 100vw; height: 100vh; margin: 0; }
+        </style>
+        <div id="first"><div id="dialogs">${dialog("first")}${dialog("second")}${dialog("third")}</div></div>
+        <div id="destination"></div>
+    `);
+
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ content: await browserControllerScript() });
+    await page.evaluate(() => {
+        window.StimulusApplication = window.Stimulus.Application.start();
+        window.StimulusApplication.register("alert-dialog", window.AlertDialogController);
+    });
+
+    await page.locator("#first-trigger").click();
+    await page.locator("#third-trigger").evaluate((trigger) => trigger.click());
+    await page.locator("#second-trigger").evaluate((trigger) => trigger.click());
+    await expect(page.locator("#second-modal")).toBeVisible();
+    await page.evaluate(() => {
+        for (const id of ["second-modal", "third-modal"]) {
+            const modal = document.getElementById(id);
+            modal.replaceWith(modal.cloneNode(true));
+        }
+        document.querySelector("#destination").append(document.querySelector("#dialogs"));
+    });
+
+    expect(await page.evaluate(() =>
+        document.elementFromPoint(window.innerWidth / 2, window.innerHeight / 2)
+            ?.closest('[id$="-modal"]')?.id,
+    )).toBe("second-modal");
+
+    await page.keyboard.press("Escape");
+
+    await expect(page.locator("#second-modal")).toBeHidden();
+    await expect(page.locator("#third-modal")).toBeVisible();
+});
+
 test("a replaced submitter retains Turbo busy state", async ({ page }) => {
     await page.route("https://example.test/**", async (route) => {
         if (route.request().url().endsWith("/current")) {

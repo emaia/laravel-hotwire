@@ -31,6 +31,7 @@ const TURBO_ATTRIBUTES = new Set([
 ]);
 const ACTION_KEY_ATTRIBUTE = "data-hotwire-action-key";
 const FORM_KEY_ATTRIBUTE = "data-hotwire-action-form-key";
+const retainedKeys = new Map();
 let generatedKey = 0;
 
 export function captureAction(event, root) {
@@ -45,7 +46,7 @@ export function captureAction(event, root) {
     const form = target.form ?? null;
     const kind = actionKind(target);
 
-    return {
+    const action = {
         kind,
         tagName: target.localName,
         targetId: target.id,
@@ -62,6 +63,10 @@ export function captureAction(event, root) {
         turboEnabled: inheritedAttribute(target, root, "data-turbo"),
         frameTarget: resolvedFrameTarget(target, form, kind),
     };
+
+    retainAction(action);
+
+    return action;
 }
 
 export function resolveActionElement(action, root) {
@@ -83,9 +88,11 @@ export function resolveActionElement(action, root) {
 }
 
 export function replayAction(action, root) {
+    const target = resolveActionElement(action, root);
+    if (target && isDisabled(target)) return false;
+
     if (action.kind === "click") {
-        const target = resolveActionElement(action, root);
-        if (!target || target.disabled || target.getAttribute("aria-disabled") === "true") return false;
+        if (!target) return false;
 
         target.click();
 
@@ -128,7 +135,7 @@ export function replayAction(action, root) {
         if (action.kind === "submit" && proxy.form === null) return false;
         if (action.frameTarget !== "") proxy.setAttribute("data-turbo-frame", action.frameTarget);
 
-        const submitter = action.kind === "submit" ? resolveActionElement(action, root) : null;
+        const submitter = action.kind === "submit" ? target : null;
         if (submitter && submitter.form === form && !submitter.disabled) {
             form.requestSubmit(submitter);
             proxy.type = "button";
@@ -145,6 +152,27 @@ export function replayAction(action, root) {
         proxy.remove();
         if (temporaryFormId && form?.id === temporaryFormId) form.removeAttribute("id");
     }
+}
+
+export function releaseAction(action, root) {
+    for (const [attribute, key] of actionKeyEntries(action)) {
+        const identity = `${attribute}:${key}`;
+        const retained = retainedKeys.get(identity) ?? 1;
+        if (retained > 1) {
+            retainedKeys.set(identity, retained - 1);
+
+            continue;
+        }
+
+        retainedKeys.delete(identity);
+        for (const searchRoot of new Set([root, document.documentElement])) {
+            for (const element of elementsByKey(searchRoot, attribute, key)) element.removeAttribute(attribute);
+        }
+    }
+}
+
+function isDisabled(element) {
+    return element.matches(":disabled, [aria-disabled='true']");
 }
 
 function resolveForm(action, root) {
@@ -216,9 +244,40 @@ function resolvedFrameTarget(element, form, kind) {
 }
 
 function elementKey(element, attribute, prefix) {
-    if (!element.hasAttribute(attribute)) element.setAttribute(attribute, uniqueId(`hotwire-${prefix}`));
+    const current = element.getAttribute(attribute);
+    if (current) {
+        const identity = `${attribute}:${current}`;
+        if (
+            elementsByKey(document.documentElement, attribute, current).length === 1 ||
+            retainedKeys.has(identity)
+        ) return current;
+    }
 
-    return element.getAttribute(attribute);
+    const key = uniqueAttributeKey(`hotwire-${prefix}`, attribute);
+    element.setAttribute(attribute, key);
+
+    return key;
+}
+
+function retainAction(action) {
+    for (const [attribute, key] of actionKeyEntries(action)) {
+        const identity = `${attribute}:${key}`;
+        retainedKeys.set(identity, (retainedKeys.get(identity) ?? 0) + 1);
+    }
+}
+
+function actionKeyEntries(action) {
+    const entries = [
+        [ACTION_KEY_ATTRIBUTE, action.targetKey],
+        [ACTION_KEY_ATTRIBUTE, action.boundaryKey],
+        [FORM_KEY_ATTRIBUTE, action.formKey],
+    ].filter(([, key]) => key !== "");
+
+    return entries.filter(([attribute, key], index) =>
+        entries.findIndex(([candidateAttribute, candidateKey]) =>
+            candidateAttribute === attribute && candidateKey === key,
+        ) === index,
+    );
 }
 
 function findByKey(root, attribute, key) {
@@ -274,6 +333,16 @@ function uniqueId(prefix) {
     } while (document.getElementById(id));
 
     return id;
+}
+
+function uniqueAttributeKey(prefix, attribute) {
+    let key;
+    do {
+        generatedKey++;
+        key = `${prefix}-${generatedKey}`;
+    } while (elementsByKey(document.documentElement, attribute, key).length > 0);
+
+    return key;
 }
 
 function pathFrom(root, element) {

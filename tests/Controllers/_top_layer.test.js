@@ -58,6 +58,57 @@ test("bringToFront re-enters an already shown element", () => {
     expect(topLayer.isShown).toBe(true);
 });
 
+test("restores a shown popover after a DOM move closes its native top layer", () => {
+    const element = document.createElement("div");
+    const showPopover = mock(() => {});
+    const shown = mock(() => {});
+    element.showPopover = showPopover;
+    element.hidePopover = mock(() => {});
+    element.matches = mock(() => false);
+    document.addEventListener("hotwire:top-layer:show", shown);
+    const topLayer = createTopLayer(element);
+    topLayer.show();
+
+    topLayer.restore();
+
+    expect(showPopover).toHaveBeenCalledTimes(2);
+    expect(shown).toHaveBeenCalledTimes(2);
+    expect(topLayer.isShown).toBe(true);
+});
+
+test("cleanup removes a detached entry retained after a failed raise", () => {
+    const lowerElement = document.createElement("div");
+    lowerElement.showPopover = mock(() => {});
+    lowerElement.hidePopover = mock(() => {});
+    lowerElement.matches = mock(() => false);
+    const upperElement = document.createElement("div");
+    let upperShows = 0;
+    upperElement.showPopover = mock(() => {
+        upperShows++;
+        if (upperShows > 1) throw new Error("detached");
+    });
+    upperElement.hidePopover = mock(() => {});
+    const lower = createTopLayer(lowerElement);
+    const upper = createTopLayer(upperElement);
+    lower.show();
+    upper.show();
+    const releasedPosition = upper.position;
+
+    lower.restore();
+    upper.cleanup();
+
+    const replacementElement = document.createElement("div");
+    replacementElement.showPopover = mock(() => {});
+    replacementElement.hidePopover = mock(() => {});
+    const replacement = createTopLayer(replacementElement);
+    replacement.show();
+
+    expect(replacement.position).toBe(releasedPosition);
+
+    lower.cleanup();
+    replacement.cleanup();
+});
+
 test("does not preserve package-owned popover attributes cloned from an open element", () => {
     const element = document.createElement("div");
     element.setAttribute("popover", "manual");

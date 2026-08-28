@@ -225,7 +225,6 @@ test.serial("href-less anchor listeners run only after confirmation", async () =
     await mount();
     const trigger = document.getElementById("trigger");
     const anchor = document.createElement("a");
-    anchor.id = "trigger";
     anchor.dataset.action = "items#destroy";
     anchor.textContent = "Delete";
     trigger.replaceWith(anchor);
@@ -236,11 +235,13 @@ test.serial("href-less anchor listeners run only after confirmation", async () =
 
     expect(clicks).toBe(0);
     expect(mounted.controller.isOpen).toBe(true);
+    expect(anchor.hasAttribute("data-hotwire-action-key")).toBe(true);
 
     await mounted.controller.confirm();
 
     expect(clicks).toBe(1);
     expect(mounted.controller.isOpen).toBe(false);
+    expect(anchor.hasAttribute("data-hotwire-action-key")).toBe(false);
 });
 
 test.serial("confirm waits for the actual exit motion before re-issuing the click", async () => {
@@ -276,13 +277,35 @@ test.serial("confirm waits for the actual exit motion before re-issuing the clic
 test.serial("cancel closes the dialog and clears the pending action", async () => {
     await mount();
     const trigger = document.getElementById("trigger");
+    const zone = document.getElementById("trigger-zone");
+    trigger.removeAttribute("id");
+    zone.removeAttribute("id");
 
     clickWith(trigger);
+    expect(trigger.hasAttribute("data-hotwire-action-key")).toBe(true);
+    expect(zone.hasAttribute("data-hotwire-action-key")).toBe(true);
     mounted.controller.cancel();
 
     expect(mounted.controller.isOpen).toBe(false);
     expect(document.querySelector('[data-alert-dialog-target="modal"]').dataset.state).toBe("closed");
     expect(mounted.controller.pendingAction).toBeNull();
+    expect(trigger.hasAttribute("data-hotwire-action-key")).toBe(false);
+    expect(zone.hasAttribute("data-hotwire-action-key")).toBe(false);
+});
+
+test.serial("closeForCache clears pending action keys before snapshot", async () => {
+    await mount();
+    const trigger = document.getElementById("trigger");
+    const zone = document.getElementById("trigger-zone");
+    trigger.removeAttribute("id");
+    zone.removeAttribute("id");
+
+    clickWith(trigger);
+    mounted.controller.closeForCache();
+
+    expect(mounted.controller.pendingAction).toBeNull();
+    expect(trigger.hasAttribute("data-hotwire-action-key")).toBe(false);
+    expect(zone.hasAttribute("data-hotwire-action-key")).toBe(false);
 });
 
 // --- click outside ---
@@ -412,16 +435,24 @@ test.serial("Escape does not reach other document keydown listeners while modal 
 
 // --- disconnect cleanup ---
 
-test.serial("disconnect detaches the keydown listener and closes an open dialog", async () => {
+test.serial("permanent disconnect releases the pending action and closes the dialog", async () => {
     await mount();
     const trigger = document.getElementById("trigger");
+    const zone = document.getElementById("trigger-zone");
+    trigger.removeAttribute("id");
+    zone.removeAttribute("id");
 
     clickWith(trigger);
     expect(mounted.controller.isOpen).toBe(true);
+    expect(trigger.hasAttribute("data-hotwire-action-key")).toBe(true);
 
     mounted.controller.disconnect();
+    await wait(0);
 
     expect(mounted.controller.isOpen).toBe(false);
+    expect(mounted.controller.pendingAction).toBeNull();
+    expect(trigger.hasAttribute("data-hotwire-action-key")).toBe(false);
+    expect(zone.hasAttribute("data-hotwire-action-key")).toBe(false);
 
     // Subsequent Escape no longer reaches the (disconnected) controller.
     // Just verify no throw.
