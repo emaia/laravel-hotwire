@@ -54,9 +54,19 @@
                     "className": "\\Emaia\\LaravelHotwire\\Components\\AlertDialog\\Header"
                 },
                 {
+                    "name": "alert-dialog.host",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\AlertDialog\\Host"
+                },
+                {
                     "name": "alert-dialog.title",
                     "namespace": "hw",
                     "className": "\\Emaia\\LaravelHotwire\\Components\\AlertDialog\\Title"
+                },
+                {
+                    "name": "alert-dialog.trigger",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\AlertDialog\\Trigger"
                 },
                 {
                     "name": "alert.action",

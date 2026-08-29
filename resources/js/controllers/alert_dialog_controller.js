@@ -5,13 +5,14 @@ import { captureAction, replayAction, resolveActionElement } from "./_action_rep
 import { createOverlay } from "./_overlay.js";
 
 export default class AlertDialogController extends Controller {
-    static targets = ["modal", "backdrop", "dialog"];
+    static targets = ["modal", "backdrop", "dialog", "title", "description", "cancel", "confirm"];
 
     static classes = ["lockScroll"];
 
     static values = {
         lockScroll: { type: Boolean, default: true },
         closeOnClickOutside: { type: Boolean, default: true },
+        shared: { type: Boolean, default: false },
     };
 
     pendingAction = null;
@@ -21,6 +22,14 @@ export default class AlertDialogController extends Controller {
     connected = false;
     overlayRefreshQueued = false;
     disconnectTimer = null;
+    sharedDefaults = null;
+    sharedTargetsChanged = new Map();
+    sharedRefreshQueued = false;
+    sharedMorphRefreshQueued = false;
+    sharedPendingMorphAttributes = new Map();
+    sharedMorphOperations = [];
+    beforeMorphAttribute = (event) => this.#trackCanceledSharedMorphAttribute(event);
+    morphElement = (event) => this.#refreshSharedMorphPresentation(event);
 
     get isOpen() {
         return this.overlay?.isOpen ?? false;
@@ -28,6 +37,11 @@ export default class AlertDialogController extends Controller {
 
     connect() {
         this.connected = true;
+        if (this.sharedValue && this.sharedDefaults === null) this.#captureSharedDefaults();
+        if (this.sharedValue) {
+            this.element.addEventListener("turbo:before-morph-attribute", this.beforeMorphAttribute);
+            this.element.addEventListener("turbo:morph-element", this.morphElement);
+        }
         if (this.disconnectTimer !== null) {
             clearTimeout(this.disconnectTimer);
             this.disconnectTimer = null;
@@ -50,6 +64,13 @@ export default class AlertDialogController extends Controller {
     disconnect() {
         this.connected = false;
         this.overlayRefreshQueued = false;
+        this.sharedRefreshQueued = false;
+        this.sharedMorphRefreshQueued = false;
+        this.sharedTargetsChanged.clear();
+        this.sharedPendingMorphAttributes.clear();
+        this.sharedMorphOperations = [];
+        this.element.removeEventListener("turbo:before-morph-attribute", this.beforeMorphAttribute);
+        this.element.removeEventListener("turbo:morph-element", this.morphElement);
         if (this.disconnectTimer !== null) clearTimeout(this.disconnectTimer);
         this.disconnectTimer = setTimeout(() => {
             this.disconnectTimer = null;
@@ -57,14 +78,17 @@ export default class AlertDialogController extends Controller {
 
             this.pendingAction = null;
             this.replayingAction = false;
+            this.#resetSharedPresentation();
             this.overlay?.cleanup();
             this.overlay = null;
             this.overlayTargets = null;
+            this.sharedDefaults = null;
         }, 0);
     }
 
-    modalTargetConnected() {
+    modalTargetConnected(element) {
         this.#queueOverlayRefresh();
+        this.#queueSharedTargetRefresh("modal", element);
     }
 
     modalTargetDisconnected() {
@@ -85,6 +109,22 @@ export default class AlertDialogController extends Controller {
 
     dialogTargetDisconnected() {
         this.#queueOverlayRefresh();
+    }
+
+    titleTargetConnected(element) {
+        this.#queueSharedTargetRefresh("title", element);
+    }
+
+    descriptionTargetConnected(element) {
+        this.#queueSharedTargetRefresh("description", element);
+    }
+
+    cancelTargetConnected(element) {
+        this.#queueSharedTargetRefresh("cancel", element);
+    }
+
+    confirmTargetConnected(element) {
+        this.#queueSharedTargetRefresh("confirm", element);
     }
 
     #setupOverlay(forceOpen = false, stackPosition = null, topLayerPosition = null) {
@@ -120,22 +160,45 @@ export default class AlertDialogController extends Controller {
     intercept(event) {
         if (!this.#shouldIntercept(event)) return;
 
+        const trigger = this.#sharedTriggerFor(event);
+        if (this.sharedValue && !trigger) return;
+        if (this.#sharedTriggerDisabled(trigger)) {
+            this.#preventAction(event);
+
+            return;
+        }
+        if (this.sharedValue && this.pendingAction) {
+            this.#preventAction(event);
+
+            return;
+        }
+
         const action = captureAction(event, this.element);
         if (!action) return;
 
-        this.#intercept(event, action);
+        this.#intercept(event, action, trigger);
     }
 
     interceptCapture(event) {
         if (!this.#shouldIntercept(event)) return;
 
+        const trigger = this.#sharedTriggerFor(event);
+        if (this.sharedValue && !trigger) return;
+        if (this.#sharedTriggerDisabled(trigger)) {
+            this.#preventAction(event);
+
+            return;
+        }
+        if (this.sharedValue && this.pendingAction) {
+            this.#preventAction(event);
+
+            return;
+        }
+
         const action = captureAction(event, this.element);
         if (!action) return;
 
-        event.preventDefault();
-        event.stopPropagation();
-        this.pendingAction = action;
-        this.overlay?.open();
+        this.#intercept(event, action, trigger);
     }
 
     #shouldIntercept(event) {
@@ -146,12 +209,17 @@ export default class AlertDialogController extends Controller {
         return true;
     }
 
-    #intercept(event, action) {
-        event.preventDefault();
-        event.stopPropagation();
+    #intercept(event, action, trigger = null) {
+        this.#preventAction(event);
 
         this.pendingAction = action;
+        if (trigger) this.#applySharedPresentation(trigger);
         this.overlay?.open();
+    }
+
+    #preventAction(event) {
+        event.preventDefault();
+        event.stopPropagation();
     }
 
     async confirm() {
@@ -170,11 +238,13 @@ export default class AlertDialogController extends Controller {
         }
         if (!closed || this.pendingAction !== action) return;
 
+        const sharedTrigger = this.sharedValue ? this.#currentSharedTrigger() : null;
         this.pendingAction = null;
+        this.#resetSharedPresentation();
         let replayed = true;
         this.replayingAction = true;
         try {
-            if (action) replayed = replayAction(action, this.element);
+            if (action) replayed = (!this.sharedValue || sharedTrigger !== null) && replayAction(action, this.element);
         } finally {
             this.replayingAction = false;
         }
@@ -191,16 +261,260 @@ export default class AlertDialogController extends Controller {
         const closing = this.overlay?.close();
         this.pendingAction = null;
 
-        return closing;
+        if (!this.sharedValue) return closing;
+
+        return Promise.resolve(closing).then((closed) => {
+            if (this.pendingAction === null) this.#resetSharedPresentation();
+
+            return closed;
+        });
     }
 
     closeForCache() {
         this.pendingAction = null;
+        this.#resetSharedPresentation();
         this.overlay?.closeNow({ restoreFocus: false });
     }
 
+    #sharedTriggerFor(event) {
+        if (!this.sharedValue || !(event.target instanceof Element)) return null;
+
+        const trigger = event.target.closest("[data-alert-dialog-trigger]");
+        if (!trigger || !this.element.contains(trigger)) return null;
+
+        const owner = trigger.closest('[data-controller~="alert-dialog"][data-alert-dialog-shared-value="true"]');
+
+        return owner === this.element ? trigger : null;
+    }
+
+    #sharedTriggerDisabled(trigger) {
+        return trigger?.hasAttribute("disabled")
+            || trigger?.getAttribute("aria-disabled")?.trim().toLowerCase() === "true";
+    }
+
+    #captureSharedDefaults() {
+        if (!this.sharedValue) return;
+
+        this.sharedDefaults = {};
+        if (this.hasModalTarget) this.#captureSharedTarget("modal", this.modalTarget);
+        if (this.hasTitleTarget) this.#captureSharedTarget("title", this.titleTarget);
+        if (this.hasDescriptionTarget) this.#captureSharedTarget("description", this.descriptionTarget);
+        if (this.hasCancelTarget) this.#captureSharedTarget("cancel", this.cancelTarget);
+        if (this.hasConfirmTarget) this.#captureSharedTarget("confirm", this.confirmTarget);
+    }
+
+    #captureSharedTarget(name, element, canceledAttributes = new Set()) {
+        if (this.sharedDefaults === null) this.sharedDefaults = {};
+
+        if (name === "modal") {
+            if (!canceledAttributes.has("aria-describedby")) {
+                this.sharedDefaults.describedBy = element.getAttribute("aria-describedby");
+            }
+
+            return;
+        }
+
+        if (name === "title" || name === "description") {
+            this.sharedDefaults[name] = element.textContent;
+            if (!canceledAttributes.has("hidden")) {
+                this.sharedDefaults[`${name}Hidden`] = element.hidden;
+            }
+
+            return;
+        }
+
+        this.sharedDefaults[`${name}Label`] = element.textContent;
+        if (!canceledAttributes.has("data-variant")) {
+            this.sharedDefaults[`${name}Variant`] = element.getAttribute("data-variant");
+        }
+    }
+
+    #applySharedPresentation(trigger) {
+        if (!this.sharedValue || this.sharedDefaults === null) return;
+
+        if (this.hasTitleTarget) {
+            const title = this.#triggerOverride(trigger, "data-alert-dialog-title", this.sharedDefaults.title);
+            this.titleTarget.textContent = title;
+            this.titleTarget.hidden = title === "";
+        }
+        if (this.hasDescriptionTarget) {
+            const description = this.#triggerOverride(
+                trigger,
+                "data-alert-dialog-description",
+                this.sharedDefaults.description,
+                true,
+            );
+            this.descriptionTarget.textContent = description;
+            this.descriptionTarget.hidden = description === "";
+            if (this.hasModalTarget) {
+                const describedBy = description === ""
+                    ? null
+                    : this.sharedDefaults.describedBy || this.descriptionTarget.id || null;
+                this.#setOptionalAttribute(this.modalTarget, "aria-describedby", describedBy);
+            }
+        }
+        if (this.hasCancelTarget) {
+            this.cancelTarget.textContent = this.#triggerOverride(
+                trigger,
+                "data-alert-dialog-cancel-label",
+                this.sharedDefaults.cancelLabel,
+            );
+            this.#setOptionalAttribute(
+                this.cancelTarget,
+                "data-variant",
+                this.#triggerOverride(trigger, "data-alert-dialog-cancel-variant", this.sharedDefaults.cancelVariant),
+            );
+        }
+        if (this.hasConfirmTarget) {
+            this.confirmTarget.textContent = this.#triggerOverride(
+                trigger,
+                "data-alert-dialog-confirm-label",
+                this.sharedDefaults.confirmLabel,
+            );
+            this.#setOptionalAttribute(
+                this.confirmTarget,
+                "data-variant",
+                this.#triggerOverride(trigger, "data-alert-dialog-confirm-variant", this.sharedDefaults.confirmVariant),
+            );
+        }
+    }
+
+    #resetSharedPresentation() {
+        if (!this.sharedValue || this.sharedDefaults === null) return;
+
+        if (this.hasTitleTarget) {
+            this.titleTarget.textContent = this.sharedDefaults.title;
+            this.titleTarget.hidden = this.sharedDefaults.titleHidden;
+        }
+        if (this.hasDescriptionTarget) {
+            this.descriptionTarget.textContent = this.sharedDefaults.description;
+            this.descriptionTarget.hidden = this.sharedDefaults.descriptionHidden;
+        }
+        if (this.hasModalTarget) {
+            this.#setOptionalAttribute(this.modalTarget, "aria-describedby", this.sharedDefaults.describedBy);
+        }
+        if (this.hasCancelTarget) {
+            this.cancelTarget.textContent = this.sharedDefaults.cancelLabel;
+            this.#setOptionalAttribute(this.cancelTarget, "data-variant", this.sharedDefaults.cancelVariant);
+        }
+        if (this.hasConfirmTarget) {
+            this.confirmTarget.textContent = this.sharedDefaults.confirmLabel;
+            this.#setOptionalAttribute(this.confirmTarget, "data-variant", this.sharedDefaults.confirmVariant);
+        }
+    }
+
+    #triggerOverride(trigger, attribute, fallback, allowEmpty = false) {
+        if (!trigger.hasAttribute(attribute)) return fallback;
+
+        const value = trigger.getAttribute(attribute);
+
+        return !allowEmpty && value.trim() === "" ? fallback : value;
+    }
+
+    #setOptionalAttribute(element, name, value) {
+        if (value === null || value === undefined) {
+            element.removeAttribute(name);
+        } else {
+            element.setAttribute(name, value);
+        }
+    }
+
+    #queueSharedTargetRefresh(name, element) {
+        if (!this.connected || !this.sharedValue) return;
+
+        this.sharedTargetsChanged.set(name, element);
+        if (this.sharedRefreshQueued) return;
+
+        this.sharedRefreshQueued = true;
+        queueMicrotask(() => {
+            this.sharedRefreshQueued = false;
+            if (!this.connected) return;
+
+            for (const [targetName, target] of this.sharedTargetsChanged) {
+                if (target.isConnected) this.#captureSharedTarget(targetName, target);
+            }
+            this.sharedTargetsChanged.clear();
+
+            const trigger = this.#currentSharedTrigger();
+            if (trigger) this.#applySharedPresentation(trigger);
+        });
+    }
+
+    #refreshSharedMorphPresentation(event) {
+        if (!this.connected || !this.sharedValue) return;
+
+        const name = this.#sharedTargetName(event.target);
+        if (name === null) return;
+
+        const attributes = this.sharedPendingMorphAttributes.get(event.target) ?? [];
+        this.sharedPendingMorphAttributes.delete(event.target);
+        this.sharedMorphOperations.push({
+            name,
+            snapshot: event.target.cloneNode(true),
+            attributes,
+        });
+        if (this.sharedMorphRefreshQueued) return;
+
+        this.sharedMorphRefreshQueued = true;
+        queueMicrotask(() => {
+            queueMicrotask(() => {
+                this.sharedMorphRefreshQueued = false;
+                if (!this.connected) return;
+
+                for (const operation of this.sharedMorphOperations) {
+                    const canceled = new Set(
+                        operation.attributes
+                            .filter(({ event: attributeEvent }) => attributeEvent.defaultPrevented)
+                            .map(({ attributeName }) => attributeName),
+                    );
+                    this.#captureSharedTarget(operation.name, operation.snapshot, canceled);
+                }
+                this.sharedMorphOperations = [];
+
+                const trigger = this.#currentSharedTrigger();
+                if (trigger) this.#applySharedPresentation(trigger);
+            });
+        });
+    }
+
+    #trackCanceledSharedMorphAttribute(event) {
+        if (!this.connected || !this.sharedValue || this.#sharedTargetName(event.target) === null) return;
+
+        const attributeName = event.detail?.attributeName;
+        if (typeof attributeName !== "string") return;
+
+        const attributes = this.sharedPendingMorphAttributes.get(event.target) ?? [];
+        attributes.push({ event, attributeName });
+        this.sharedPendingMorphAttributes.set(event.target, attributes);
+    }
+
+    #sharedTargetName(element) {
+        if (!(element instanceof Element)) return null;
+
+        const owner = element.closest('[data-controller~="alert-dialog"][data-alert-dialog-shared-value="true"]');
+        if (owner !== this.element) return null;
+
+        if (this.hasModalTarget && element === this.modalTarget) return "modal";
+        if (this.hasTitleTarget && element === this.titleTarget) return "title";
+        if (this.hasDescriptionTarget && element === this.descriptionTarget) return "description";
+        if (this.hasCancelTarget && element === this.cancelTarget) return "cancel";
+        if (this.hasConfirmTarget && element === this.confirmTarget) return "confirm";
+
+        return null;
+    }
+
+    #currentSharedTrigger() {
+        const actionElement = this.pendingAction ? resolveActionElement(this.pendingAction, this.element) : null;
+        const trigger = actionElement?.closest("[data-alert-dialog-trigger]") ?? null;
+        const owner = trigger?.closest('[data-controller~="alert-dialog"][data-alert-dialog-shared-value="true"]');
+
+        return owner === this.element ? trigger : null;
+    }
+
     #refreshTriggerElement() {
-        const trigger = this.pendingAction ? resolveActionElement(this.pendingAction, this.element) : null;
+        const trigger = this.sharedValue
+            ? this.#currentSharedTrigger()
+            : this.pendingAction ? resolveActionElement(this.pendingAction, this.element) : null;
         this.overlay?.setTriggerElement(trigger);
     }
 

@@ -10,7 +10,7 @@ use Illuminate\View\Component;
 
 class AlertDialog extends Component
 {
-    private OverlayLabelContext $overlayLabelContext;
+    protected OverlayLabelContext $overlayLabelContext;
 
     public function __construct(
         public string $title = '',

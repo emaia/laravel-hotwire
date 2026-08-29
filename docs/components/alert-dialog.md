@@ -62,6 +62,43 @@ When `description` isn't enough — lists of consequences, multiple paragraphs, 
 
 The `content` slot renders below `description` and above the action buttons.
 
+## Shared Host
+
+Rendering one inline dialog per row is unnecessary when every action uses the same visual shell. Put one
+`<hw:alert-dialog.host>` around the collection and mark each action with `<hw:alert-dialog.trigger>`:
+
+```blade
+<hw:alert-dialog.host
+    title="Delete item?"
+    description="This action cannot be undone."
+    confirm-label="Delete"
+    confirm-variant="destructive"
+>
+    @foreach ($items as $item)
+        <article>
+            <span>{{ $item->name }}</span>
+
+            <hw:alert-dialog.trigger
+                as-child
+                :title="'Delete '.$item->name.'?'"
+                :description="'This permanently deletes '.$item->name.'.'"
+            >
+                <button id="delete-item-{{ $item->id }}" type="button">Delete</button>
+            </hw:alert-dialog.trigger>
+        </article>
+    @endforeach
+</hw:alert-dialog.host>
+```
+
+The host renders one overlay and delegates clicks from all of its marked triggers. Trigger overrides are plain text and
+are reset to the host defaults after each decision. Use `as-child` when the slot is already one `<button>` or `<a>`;
+without it, the trigger renders its own button. A nested host owns its own triggers, so the nearest host always wins.
+
+While a decision is pending, later trigger clicks are swallowed without replacing the first action. If a Turbo morph
+may replace a trigger while the dialog is open, give the action element a stable, unique `id`, just as for the inline
+component. Moving a pending trigger into another host makes confirmation fail closed and dispatches
+`alert-dialog:dropped`.
+
 ## Automatic Behavior
 
 The default slot is wrapped in a click-intercept zone. When the user clicks any element inside, the click is swallowed
@@ -138,6 +175,24 @@ Regular `data-controller` / `data-action` attributes and the `stimulus` prop are
 internal `alert-dialog` controller. Component-owned `data-alert-dialog-*` attributes are protected; configure supported
 dialog behavior with props instead of overriding those attributes directly.
 
+`<hw:alert-dialog.host>` accepts the same props, but defaults `title` to `Confirm action` so every trigger has an
+accessible fallback. Its default slot contains the collection and its shared triggers rather than one implicit trigger.
+
+### Trigger Props
+
+| Prop              | Type           | Default | Description                                                   |
+|-------------------|----------------|---------|---------------------------------------------------------------|
+| `as-child`        | `bool`         | `false` | Merge trigger metadata into one button or anchor root element |
+| `title`           | `string\|null` | `null`  | Plain-text title override for this action                     |
+| `description`     | `string\|null` | `null`  | Plain-text description override; `''` removes the description |
+| `confirm-label`   | `string\|null` | `null`  | Confirm button label override                                 |
+| `cancel-label`    | `string\|null` | `null`  | Cancel button label override                                  |
+| `confirm-variant` | `string\|null` | `null`  | Confirm button variant override                               |
+| `cancel-variant`  | `string\|null` | `null`  | Cancel button variant override                                |
+
+`<hw:alert-dialog.trigger>` must be rendered inside a host. In `as-child` mode, its slot must contain exactly one
+button or anchor root element.
+
 ## Slots
 
 | Slot             | Description                                                              |
@@ -145,8 +200,9 @@ dialog behavior with props instead of overriding those attributes directly.
 | `slot` (default) | Trigger element whose click is intercepted to open the dialog            |
 | `content`        | Optional rich content rendered below `description` and above the buttons |
 
-The `content` slot may use `alert-dialog.title` and `alert-dialog.description` when rich markup is required instead of
-the string props. These subcomponents automatically name and describe the alert dialog.
+For the inline component, the `content` slot may use `alert-dialog.title` and `alert-dialog.description` when rich markup
+is required instead of the string props. These subcomponents automatically name and describe the alert dialog. Shared
+hosts require `title` and `description` text props on the host or trigger so dynamic content remains safe and resettable.
 
 ## Need more control?
 

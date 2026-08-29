@@ -240,6 +240,113 @@ test("a generic button action runs once only after confirmation", async ({ page 
     await expect.poll(() => page.evaluate(() => window.executions)).toEqual([{ trusted: false }]);
 });
 
+test("a shared host keeps its pending presentation and action across DOM replacement", async ({ page }) => {
+    await page.setContent(`
+        <div id="confirmation"
+             data-controller="alert-dialog"
+             data-alert-dialog-shared-value="true"
+             data-alert-dialog-lock-scroll-class="overflow-hidden">
+            <div data-slot="alert-dialog-trigger"
+                 data-action="click->alert-dialog#interceptCapture:capture click->alert-dialog#intercept">
+            <button id="trigger"
+                    type="button"
+                    data-controller="probe"
+                    data-action="click->probe#execute"
+                    data-alert-dialog-trigger
+                    data-alert-dialog-title="Delete item?"
+                    data-alert-dialog-description="This item cannot be recovered."
+                    data-alert-dialog-confirm-label="Delete"
+                    data-alert-dialog-cancel-label="Keep"
+                    data-alert-dialog-confirm-variant="destructive">Delete</button>
+            </div>
+
+            <div data-alert-dialog-target="modal" data-state="closed" data-motion="none"
+                 aria-labelledby="title" aria-describedby="description" hidden inert>
+                <div data-alert-dialog-target="backdrop"></div>
+                <div data-alert-dialog-target="dialog">
+                    <h2 id="title" data-alert-dialog-target="title">Confirm action</h2>
+                    <p id="description" data-alert-dialog-target="description">This action cannot be undone.</p>
+                    <button id="cancel" type="button" data-alert-dialog-target="cancel" data-action="alert-dialog#cancel">Cancel</button>
+                    <button id="confirm" type="button" data-variant="default" data-alert-dialog-target="confirm" data-action="alert-dialog#confirm">Confirm</button>
+                </div>
+            </div>
+        </div>
+    `);
+
+    await page.addScriptTag({ path: "node_modules/@hotwired/turbo/dist/turbo.es2017-umd.js" });
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ content: await browserControllerScript() });
+    await page.evaluate(() => {
+        window.executions = [];
+        window.StimulusApplication = window.Stimulus.Application.start();
+        window.StimulusApplication.register("alert-dialog", window.AlertDialogController);
+        window.StimulusApplication.register("probe", window.ProbeController);
+    });
+
+    await page.locator("#trigger").click();
+    await expect(page.locator("#title")).toHaveText("Delete item?");
+    await page.evaluate(() => {
+        const trigger = document.getElementById("trigger");
+        trigger.replaceWith(trigger.cloneNode(true));
+
+        const defaults = {
+            title: "Review action",
+            description: "Review the updated consequences.",
+            cancel: "Go back",
+            confirm: "Proceed",
+        };
+        for (const [id, text] of Object.entries(defaults)) {
+            const current = document.getElementById(id);
+            const replacement = current.cloneNode(false);
+            replacement.textContent = text;
+            if (id === "confirm") replacement.dataset.variant = "default";
+            window.Turbo.morphElements(current, replacement);
+        }
+    });
+
+    await expect(page.locator("#title")).toHaveText("Delete item?");
+    await expect(page.locator("#description")).toHaveText("This item cannot be recovered.");
+    await expect(page.locator("#confirm")).toHaveText("Delete");
+    await expect(page.locator("#confirm")).toHaveAttribute("data-variant", "destructive");
+    await page.locator("#confirm").click();
+
+    await expect.poll(() => page.evaluate(() => window.executions)).toEqual([{ trusted: false }]);
+    await expect(page.locator("#title")).toHaveText("Review action");
+    await expect(page.locator("#description")).toHaveText("Review the updated consequences.");
+    await expect(page.locator("#cancel")).toHaveText("Go back");
+    await expect(page.locator("#confirm")).toHaveText("Proceed");
+    await expect(page.locator("#confirm")).toHaveAttribute("data-variant", "default");
+
+    await page.locator("#trigger").click();
+    await page.evaluate(() => {
+        const current = document.getElementById("title");
+        const rejected = current.cloneNode(false);
+        rejected.textContent = "Rejected default";
+        current.addEventListener("turbo:before-morph-element", (event) => event.preventDefault(), { once: true });
+        window.Turbo.morphElements(current, rejected);
+
+        const confirm = document.getElementById("confirm");
+        const acceptedConfirm = confirm.cloneNode(false);
+        acceptedConfirm.dataset.variant = "outline";
+        window.Turbo.morphElements(confirm, acceptedConfirm);
+
+        const rejectedConfirm = confirm.cloneNode(false);
+        rejectedConfirm.dataset.variant = "primary";
+        const keepVariant = (event) => {
+            if (event.detail.attributeName !== "data-variant") return;
+
+            event.preventDefault();
+            confirm.removeEventListener("turbo:before-morph-attribute", keepVariant);
+        };
+        confirm.addEventListener("turbo:before-morph-attribute", keepVariant);
+        window.Turbo.morphElements(confirm, rejectedConfirm);
+    });
+    await page.locator("#cancel").click();
+
+    await expect(page.locator("#title")).toHaveText("Review action");
+    await expect(page.locator("#confirm")).toHaveAttribute("data-variant", "outline");
+});
+
 test("moving an open dialog preserves its pending action across reconnect", async ({ page }) => {
     await page.setContent(`
         <div id="first">

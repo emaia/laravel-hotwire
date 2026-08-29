@@ -3,6 +3,7 @@
 use Emaia\LaravelHotwire\Components\AlertDialog;
 use Emaia\LaravelHotwire\LaravelHotwireServiceProvider;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\View\ViewException;
 
 it('renders with default props', function () {
     $view = $this->blade('<x-hw::alert-dialog title="Continue?"><button>x</button></x-hw::alert-dialog>');
@@ -231,4 +232,133 @@ it('merges inline stimulus attributes with the internal alert-dialog controller'
 
     $view->assertSee('data-controller="alert-dialog analytics"', false);
     $view->assertSee('turbo:before-cache@window->alert-dialog#closeForCache modal:opened->analytics#track', false);
+});
+
+// --- Shared host ---
+
+it('renders one shared overlay for multiple marked triggers', function () {
+    $view = $this->blade('
+        <x-hw::alert-dialog.host title="Delete item?" description="This cannot be undone.">
+            <x-hw::alert-dialog.trigger>Delete first</x-hw::alert-dialog.trigger>
+            <x-hw::alert-dialog.trigger title="Delete second?">Delete second</x-hw::alert-dialog.trigger>
+        </x-hw::alert-dialog.host>
+    ');
+    $html = (string) $view;
+    $xpath = new DOMXPath(dom($html));
+
+    expect($xpath->query('//*[@data-controller="alert-dialog"]'))->toHaveCount(1)
+        ->and($xpath->query('//*[@data-slot="alert-dialog-overlay"]'))->toHaveCount(1)
+        ->and($xpath->query('//*[@data-alert-dialog-trigger]'))->toHaveCount(2);
+
+    $view->assertSee('data-alert-dialog-shared-value="true"', false);
+});
+
+it('gives a shared host an accessible default title', function () {
+    $html = (string) Blade::render('
+        <x-hw::alert-dialog.host>
+            <x-hw::alert-dialog.trigger>Continue</x-hw::alert-dialog.trigger>
+        </x-hw::alert-dialog.host>
+    ');
+    $xpath = new DOMXPath(dom($html));
+    $dialog = $xpath->query('//*[@role="alertdialog"]')->item(0);
+    $titleId = $dialog->getAttribute('aria-labelledby');
+
+    expect($titleId)->not->toBe('')
+        ->and(trim($xpath->query("//*[@id='{$titleId}']")->item(0)->textContent))->toBe('Confirm action');
+});
+
+it('merges shared trigger metadata into an as-child button without replacing its visual slot', function () {
+    $view = $this->blade('
+        <x-hw::alert-dialog.host title="Delete item?">
+            <x-hw::alert-dialog.trigger
+                as-child
+                title="Delete Roadmap?"
+                description=""
+                confirm-label="Delete"
+                confirm-variant="destructive"
+            >
+                <x-hw::button type="submit" form="delete-form" data-controller="analytics" data-action="analytics#track">
+                    Delete
+                </x-hw::button>
+            </x-hw::alert-dialog.trigger>
+        </x-hw::alert-dialog.host>
+    ');
+    $xpath = new DOMXPath(dom((string) $view));
+    $trigger = $xpath->query('//*[@data-alert-dialog-trigger]')->item(0);
+
+    expect($trigger)->toBeInstanceOf(DOMElement::class)
+        ->and($trigger->tagName)->toBe('button')
+        ->and($trigger->getAttribute('data-slot'))->toBe('button')
+        ->and($trigger->getAttribute('type'))->toBe('submit')
+        ->and($trigger->getAttribute('form'))->toBe('delete-form')
+        ->and($trigger->getAttribute('data-controller'))->toBe('analytics')
+        ->and($trigger->getAttribute('data-action'))->toBe('analytics#track')
+        ->and($trigger->getAttribute('data-alert-dialog-title'))->toBe('Delete Roadmap?')
+        ->and($trigger->hasAttribute('data-alert-dialog-description'))->toBeTrue()
+        ->and($trigger->getAttribute('data-alert-dialog-description'))->toBe('')
+        ->and($trigger->getAttribute('data-alert-dialog-confirm-label'))->toBe('Delete')
+        ->and($trigger->getAttribute('data-alert-dialog-confirm-variant'))->toBe('destructive');
+});
+
+it('escapes dynamic shared trigger messages as attributes', function () {
+    $view = $this->blade('
+        <x-hw::alert-dialog.host title="Delete item?">
+            <x-hw::alert-dialog.trigger title="Delete &quot;&gt;&lt;script&gt;alert(1)&lt;/script&gt;?">
+                Delete
+            </x-hw::alert-dialog.trigger>
+        </x-hw::alert-dialog.host>
+    ');
+    $html = (string) $view;
+
+    expect($html)->not->toContain('<script>')
+        ->and((new DOMXPath(dom($html)))->query('//*[@data-alert-dialog-trigger]')->item(0)->getAttribute('data-alert-dialog-title'))
+        ->toBe('Delete "><script>alert(1)</script>?');
+});
+
+it('ignores empty accessible labels while preserving an empty description override', function () {
+    $html = (string) Blade::render('
+        <x-hw::alert-dialog.host title="Confirm action">
+            <x-hw::alert-dialog.trigger
+                title=""
+                description=""
+                confirm-label=""
+                cancel-label=""
+            >Delete</x-hw::alert-dialog.trigger>
+        </x-hw::alert-dialog.host>
+    ');
+    $trigger = (new DOMXPath(dom($html)))->query('//*[@data-alert-dialog-trigger]')->item(0);
+
+    expect($trigger->hasAttribute('data-alert-dialog-title'))->toBeFalse()
+        ->and($trigger->getAttribute('data-alert-dialog-description'))->toBe('')
+        ->and($trigger->hasAttribute('data-alert-dialog-confirm-label'))->toBeFalse()
+        ->and($trigger->hasAttribute('data-alert-dialog-cancel-label'))->toBeFalse();
+});
+
+it('rejects rich label subcomponents in a shared alert dialog host', function () {
+    $this->blade('
+        <x-hw::alert-dialog.host>
+            <x-hw::alert-dialog.trigger>Delete</x-hw::alert-dialog.trigger>
+            <x-slot:content>
+                <x-hw::alert-dialog.title>Rich title</x-hw::alert-dialog.title>
+            </x-slot:content>
+        </x-hw::alert-dialog.host>
+    ');
+})->throws(ViewException::class, 'Shared Alert Dialog labels must use the host or trigger text props.');
+
+it('requires shared triggers to render inside an alert dialog host', function () {
+    $this->blade('<x-hw::alert-dialog.trigger>Delete</x-hw::alert-dialog.trigger>');
+})->throws(ViewException::class, 'Alert Dialog trigger must be rendered inside an Alert Dialog Host.');
+
+it('rejects invalid alert dialog as-child trigger composition', function () {
+    $this->blade('
+        <x-hw::alert-dialog.host title="Delete item?">
+            <x-hw::alert-dialog.trigger as-child><span>Delete</span></x-hw::alert-dialog.trigger>
+        </x-hw::alert-dialog.host>
+    ');
+})->throws(ViewException::class, 'as-child requires exactly one button or anchor root element.');
+
+it('registers shared alert dialog subcomponent aliases', function () {
+    expect(Blade::getClassComponentAliases())
+        ->toHaveKey('hw::alert-dialog.host')
+        ->toHaveKey('hw::alert-dialog.trigger');
 });

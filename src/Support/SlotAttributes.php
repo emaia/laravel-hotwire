@@ -37,16 +37,16 @@ final class SlotAttributes
         if ($tag === 'button' && ! array_key_exists('type', $existing)) {
             $existing['type'] = 'button';
         }
-        if (self::isDisabled($existing)) {
-            unset($existing['data-action']);
-            $attributes = $attributes->except('data-action');
+        $mergedAttributes = StimulusAttributes::merge($existing, $attributes)->getAttributes();
+        if (self::isDisabled($mergedAttributes)) {
+            unset($mergedAttributes['data-action']);
 
             if ($tag === 'a') {
-                unset($existing['href']);
-                $existing['tabindex'] = '-1';
+                unset($mergedAttributes['href']);
+                $mergedAttributes['tabindex'] = '-1';
             }
         }
-        $merged = StimulusAttributes::merge($existing, $attributes)->toHtml();
+        $merged = (new ComponentAttributeBag($mergedAttributes))->toHtml();
         $opening = '<'.$tag.($merged !== '' ? ' '.$merged : '').'>';
 
         return new HtmlString($opening.substr($contents, $openingEnd + 1));
