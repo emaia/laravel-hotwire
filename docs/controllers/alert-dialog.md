@@ -48,17 +48,19 @@ Escape cancellation and focus trapping are suspended during IME composition.
 </div>
 ```
 
-The controller captures the link or submit action without retaining the clicked DOM node, opens the dialog, and resumes
-that action through a transient unwired element after `alert-dialog#confirm`. This lets a Turbo morph replace the trigger
-or an external form while the dialog is open. Canceling or closing for Turbo cache clears the pending action.
+The controller captures a description of the action without retaining the clicked DOM node, opens the dialog, and
+resumes the action after `alert-dialog#confirm` by clicking the element again. Because the element is found afresh at
+that point, a Turbo morph may replace the trigger while the dialog is open.
 
-For link and submit triggers, other click listeners observe the user's original click exactly once. The resumed element
-deliberately omits `data-action` and `data-controller`, so confirming does not invoke those controllers a second time.
+The capture-phase `interceptCapture` action swallows the original click before it reaches the trigger, so click
+listeners run exactly once — on the confirmed click, not on the one that opened the dialog. Cancelling, or closing for
+Turbo cache, clears the pending action and nothing is dispatched at all.
 
-The capture-phase `interceptCapture` action prevents every default before trigger listeners run. Link and submit
-listeners still receive that original event; generic `type="button"` handlers are deferred and run once after
-confirmation. If Turbo can replace a generic button while the dialog is open, give it a stable `id` so the controller
-can resolve the replacement without risking a click on a different element.
+The trigger is identified by its `id`, or by its position when it has none, and is only replayed when its tag and
+behavioural attributes (`href`, `formaction`, `data-turbo-*`, `data-action`, `name`, `value`, …) still match what was
+captured. If they changed, or the element is gone, confirming closes the dialog without acting — the controller fails
+closed rather than clicking something the user did not confirm. Give a trigger a stable `id` when a morph may replace
+it, so the replacement is resolved by identity instead of position.
 
 ## Targets
 

@@ -1,7 +1,7 @@
 // @hotwire-package
 import { Controller } from "@hotwired/stimulus";
 
-import { captureAction, releaseAction, replayAction, resolveActionElement } from "./_action_replay.js";
+import { captureAction, replayAction, resolveActionElement } from "./_action_replay.js";
 import { createOverlay } from "./_overlay.js";
 
 export default class AlertDialogController extends Controller {
@@ -16,7 +16,6 @@ export default class AlertDialogController extends Controller {
 
     pendingAction = null;
     replayingAction = false;
-    capturedEvents = new WeakSet();
     overlay = null;
     overlayTargets = null;
     connected = false;
@@ -56,9 +55,7 @@ export default class AlertDialogController extends Controller {
             this.disconnectTimer = null;
             if (this.connected) return;
 
-            const action = this.pendingAction;
             this.pendingAction = null;
-            if (action) releaseAction(action, this.element);
             this.replayingAction = false;
             this.overlay?.cleanup();
             this.overlay = null;
@@ -121,13 +118,6 @@ export default class AlertDialogController extends Controller {
     }
 
     intercept(event) {
-        if (this.capturedEvents.has(event)) {
-            this.capturedEvents.delete(event);
-            event.stopPropagation();
-
-            return;
-        }
-
         if (!this.#shouldIntercept(event)) return;
 
         const action = captureAction(event, this.element);
@@ -143,11 +133,9 @@ export default class AlertDialogController extends Controller {
         if (!action) return;
 
         event.preventDefault();
-        this.capturedEvents.add(event);
-        this.#setPendingAction(action);
+        event.stopPropagation();
+        this.pendingAction = action;
         this.overlay?.open();
-
-        if (action.kind === "click") event.stopPropagation();
     }
 
     #shouldIntercept(event) {
@@ -162,7 +150,7 @@ export default class AlertDialogController extends Controller {
         event.preventDefault();
         event.stopPropagation();
 
-        this.#setPendingAction(action);
+        this.pendingAction = action;
         this.overlay?.open();
     }
 
@@ -188,30 +176,20 @@ export default class AlertDialogController extends Controller {
             if (action) replayAction(action, this.element);
         } finally {
             this.replayingAction = false;
-            if (action) releaseAction(action, this.element);
         }
     }
 
     cancel() {
-        const action = this.pendingAction;
         this.#refreshTriggerElement();
         const closing = this.overlay?.close();
         this.pendingAction = null;
-        if (action) releaseAction(action, this.element);
 
         return closing;
     }
 
     closeForCache() {
-        const action = this.pendingAction;
         this.pendingAction = null;
-        if (action) releaseAction(action, this.element);
         this.overlay?.closeNow({ restoreFocus: false });
-    }
-
-    #setPendingAction(action) {
-        if (this.pendingAction) releaseAction(this.pendingAction, this.element);
-        this.pendingAction = action;
     }
 
     #refreshTriggerElement() {

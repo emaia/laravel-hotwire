@@ -64,16 +64,15 @@ The `content` slot renders below `description` and above the action buttons.
 
 ## Automatic Behavior
 
-The default slot is wrapped in a click-intercept zone. When the user clicks any element inside, the click is canceled
-and the alert dialog opens. If the user clicks **Confirm**, a captured link or submit action resumes through a transient
-unwired element after the actual exit motion settles. Listeners on those triggers therefore observe the user's original
-click only once, and replacing the trigger or its external form while the dialog is open does not discard the action. If
-the user clicks **Cancel** or presses `Escape`, the dialog closes and nothing happens. Rapid reopen cancels stale close
-completion.
+The default slot is wrapped in a click-intercept zone. When the user clicks any element inside, the click is swallowed
+and the alert dialog opens. If the user clicks **Confirm**, the captured action resumes after the actual exit motion
+settles, by clicking the trigger again. Listeners therefore observe exactly one click — the confirmed one — and
+replacing the trigger while the dialog is open does not discard the action. If the user clicks **Cancel** or presses
+`Escape`, the dialog closes and nothing is dispatched. Rapid reopen cancels stale close completion.
 
-Generic `type="button"` actions are deferred in capture phase and run once after confirmation. Give these buttons a
-stable `id` when a Turbo morph may replace them while the dialog is open; unlike links and submits, an arbitrary
-JavaScript action cannot be reconstructed safely from attributes alone.
+Every trigger action — link, submit or generic `type="button"` — is deferred in capture phase and runs once after
+confirmation. Give the trigger a stable `id` when a Turbo morph may replace it while the dialog is open; without one the
+element is resolved by position, and a morph that reorders the markup makes the action fail closed instead of firing.
 
 The trigger element needs no special attributes — place it as the default slot.
 

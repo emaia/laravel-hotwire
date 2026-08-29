@@ -82,17 +82,15 @@ test.serial("intercept ignores click with modifier keys", async () => {
     expect(mounted.controller.isOpen).toBe(false);
 });
 
-test.serial("capture interception prevents the default before trigger listeners run", async () => {
+test.serial("capture interception keeps the original click from reaching trigger listeners", async () => {
     await mount();
     const trigger = document.getElementById("trigger");
-    let triggerSawPrevented = false;
-    trigger.addEventListener("click", (event) => {
-        triggerSawPrevented = event.defaultPrevented;
-    });
+    let triggerClicks = 0;
+    trigger.addEventListener("click", () => triggerClicks++);
 
     clickWith(trigger);
 
-    expect(triggerSawPrevented).toBe(true);
+    expect(triggerClicks).toBe(0);
     expect(mounted.controller.isOpen).toBe(true);
 });
 
@@ -165,21 +163,23 @@ test.serial("lock-scroll keeps compensation until the last overlay unlocks", asy
 
 // --- confirm() executes the captured action ---
 
-test.serial("intercept lets other listeners observe the original click", async () => {
+test.serial("listeners observe the confirmed click rather than the intercepted one", async () => {
     await mount();
     const trigger = document.getElementById("trigger");
     const triggerZone = document.getElementById("trigger-zone");
-    const originalClick = new MouseEvent("click", { bubbles: true, cancelable: true });
-    let observedClick = null;
+    const observed = [];
 
-    triggerZone.addEventListener("click", (event) => {
-        observedClick = event;
-    });
+    triggerZone.addEventListener("click", (event) => observed.push(event));
 
-    trigger.dispatchEvent(originalClick);
-
-    expect(observedClick).toBe(originalClick);
+    clickWith(trigger);
+    expect(observed).toEqual([]);
     expect(mounted.controller.isOpen).toBe(true);
+
+    mounted.controller.confirm();
+    await wait(20);
+
+    expect(observed.length).toBe(1);
+    expect(observed[0].target).toBe(trigger);
 });
 
 test.serial("confirm executes the link without firing trigger listeners twice", async () => {
@@ -235,13 +235,11 @@ test.serial("href-less anchor listeners run only after confirmation", async () =
 
     expect(clicks).toBe(0);
     expect(mounted.controller.isOpen).toBe(true);
-    expect(anchor.hasAttribute("data-hotwire-action-key")).toBe(true);
 
     await mounted.controller.confirm();
 
     expect(clicks).toBe(1);
     expect(mounted.controller.isOpen).toBe(false);
-    expect(anchor.hasAttribute("data-hotwire-action-key")).toBe(false);
 });
 
 test.serial("confirm waits for the actual exit motion before re-issuing the click", async () => {
@@ -282,15 +280,11 @@ test.serial("cancel closes the dialog and clears the pending action", async () =
     zone.removeAttribute("id");
 
     clickWith(trigger);
-    expect(trigger.hasAttribute("data-hotwire-action-key")).toBe(true);
-    expect(zone.hasAttribute("data-hotwire-action-key")).toBe(true);
     mounted.controller.cancel();
 
     expect(mounted.controller.isOpen).toBe(false);
     expect(document.querySelector('[data-alert-dialog-target="modal"]').dataset.state).toBe("closed");
     expect(mounted.controller.pendingAction).toBeNull();
-    expect(trigger.hasAttribute("data-hotwire-action-key")).toBe(false);
-    expect(zone.hasAttribute("data-hotwire-action-key")).toBe(false);
 });
 
 test.serial("closeForCache clears pending action keys before snapshot", async () => {
@@ -304,8 +298,6 @@ test.serial("closeForCache clears pending action keys before snapshot", async ()
     mounted.controller.closeForCache();
 
     expect(mounted.controller.pendingAction).toBeNull();
-    expect(trigger.hasAttribute("data-hotwire-action-key")).toBe(false);
-    expect(zone.hasAttribute("data-hotwire-action-key")).toBe(false);
 });
 
 // --- click outside ---
@@ -365,9 +357,7 @@ test.serial("confirm re-click bubbles past the dialog so ancestors can react", a
     await mount();
 
     let ancestorClicks = 0;
-    const spy = (event) => {
-        if (event.target.hasAttribute("data-hotwire-action-replay")) ancestorClicks++;
-    };
+    const spy = () => ancestorClicks++;
     document.body.addEventListener("click", spy);
 
     const trigger = document.getElementById("trigger");
@@ -444,15 +434,12 @@ test.serial("permanent disconnect releases the pending action and closes the dia
 
     clickWith(trigger);
     expect(mounted.controller.isOpen).toBe(true);
-    expect(trigger.hasAttribute("data-hotwire-action-key")).toBe(true);
 
     mounted.controller.disconnect();
     await wait(0);
 
     expect(mounted.controller.isOpen).toBe(false);
     expect(mounted.controller.pendingAction).toBeNull();
-    expect(trigger.hasAttribute("data-hotwire-action-key")).toBe(false);
-    expect(zone.hasAttribute("data-hotwire-action-key")).toBe(false);
 
     // Subsequent Escape no longer reaches the (disconnected) controller.
     // Just verify no throw.

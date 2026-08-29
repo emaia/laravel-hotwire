@@ -51,7 +51,6 @@ test("a replaced external-form trigger submits once with its captured action", a
         document.querySelector("#delete-item").addEventListener("click", () => window.triggerClicks++);
         document.querySelector("#ancestor").addEventListener("click", (event) => {
             window.ancestorClicks.push({
-                replay: event.target.hasAttribute("data-hotwire-action-replay"),
                 target: event.target.id,
                 trusted: event.isTrusted,
             });
@@ -88,9 +87,12 @@ test("a replaced external-form trigger submits once with its captured action", a
         method: "post",
         frame: "items",
     }]);
-    expect(await page.evaluate(() => window.triggerClicks)).toBe(1);
-    expect(await page.evaluate(() => window.zoneClicks)).toEqual([{ trusted: true }]);
-    expect(await page.evaluate(() => window.ancestorClicks)).toEqual([{ replay: true, target: "", trusted: false }]);
+    // The intercepted click is swallowed in the capture phase, so the only click
+    // anyone observes is the replayed one, dispatched on the replacement trigger.
+    // triggerClicks stays 0 because its listener was bound to the replaced node.
+    expect(await page.evaluate(() => window.triggerClicks)).toBe(0);
+    expect(await page.evaluate(() => window.zoneClicks)).toEqual([{ trusted: false }]);
+    expect(await page.evaluate(() => window.ancestorClicks)).toEqual([{ target: "delete-item", trusted: false }]);
     await expect(page.locator("#delete-item")).toBeFocused();
 });
 
