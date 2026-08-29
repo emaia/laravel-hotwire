@@ -64,11 +64,14 @@ export function createTopLayer(element, { enabled = true } = {}) {
     }
 
     function restore() {
-        if (!supported || !shown) return;
+        // A raise that failed while the element was detached keeps the entry but
+        // clears `shown`, so retention — not `shown` — decides what to restore.
+        if (!supported || topLayers.indexOf(entry) < 0) return;
 
         try {
             if (!element.matches(":popover-open")) {
                 element.showPopover();
+                shown = true;
                 notifyShown();
             }
         } catch (_error) {

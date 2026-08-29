@@ -176,3 +176,38 @@ test("cleanup is idempotent and unsupported elements remain unchanged", () => {
     expect(fallback.isSupported).toBe(false);
     expect(unsupported.hasAttribute("popover")).toBe(false);
 });
+
+test("restores an entry retained after a raise failed while it was detached", () => {
+    const lowerElement = document.createElement("div");
+    lowerElement.showPopover = mock(() => {});
+    lowerElement.hidePopover = mock(() => {});
+    lowerElement.matches = mock(() => false);
+
+    const upperElement = document.createElement("div");
+    let detached = false;
+    upperElement.showPopover = mock(() => {
+        if (detached) throw new Error("not connected");
+    });
+    upperElement.hidePopover = mock(() => {});
+    upperElement.matches = mock(() => false);
+    Object.defineProperty(upperElement, "isConnected", { get: () => !detached });
+
+    const lower = createTopLayer(lowerElement);
+    const upper = createTopLayer(upperElement);
+    lower.show();
+    upper.show();
+
+    // A morph detaches the upper dialog; re-showing the lower one cascades a
+    // raise onto it, which fails and leaves the entry retained but not shown.
+    detached = true;
+    lower.restore();
+    expect(upper.isShown).toBe(false);
+    expect(upper.position).toBeGreaterThanOrEqual(0);
+
+    // Once it reconnects, restoring has to put it back in the top layer.
+    detached = false;
+    upper.restore();
+
+    expect(upper.isShown).toBe(true);
+    expect(upper.position).toBeGreaterThanOrEqual(0);
+});
