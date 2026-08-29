@@ -41,9 +41,9 @@ const FORM_SIGNATURE_ATTRIBUTES = new Set([
 ]);
 
 export function captureAction(event, root) {
-    const target = event.target instanceof Element
-        ? event.target.closest("a, button") ?? event.target
-        : null;
+    const eventTarget = event.target instanceof Element ? event.target : null;
+    const closestAction = eventTarget?.closest("a, button");
+    const target = closestAction && root.contains(closestAction) ? closestAction : eventTarget;
     if (!(target instanceof Element) || !root.contains(target)) return null;
 
     const kind = actionKind(target);
@@ -232,7 +232,7 @@ function turboContextOf(element) {
 function frameContextOf(element, form, kind) {
     const frame = kind === "submit" ? form?.closest("turbo-frame") : element.closest("turbo-frame");
     const explicit = kind === "submit"
-        ? firstAttribute("data-turbo-frame", element, form)
+        ? element.getAttribute("data-turbo-frame") || form?.getAttribute("data-turbo-frame")
         : element.getAttribute("data-turbo-frame");
     const target = explicit ||
         frame?.getAttribute("target") ||

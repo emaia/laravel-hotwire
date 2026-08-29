@@ -446,7 +446,7 @@ test("fails closed when a requested Turbo Frame id is ambiguous", () => {
     expect(resolveActionElement(action, root)).toBeNull();
 });
 
-test("an empty submitter frame target masks the form target", () => {
+test("an empty submitter frame target falls through to the form target", () => {
     document.body.innerHTML = `
         <turbo-frame id="current">
             <div id="root">
@@ -464,7 +464,7 @@ test("an empty submitter frame target masks the form target", () => {
 
     document.getElementById("preview").setAttribute("disabled", "");
 
-    expect(resolveActionElement(action, root)).toBe(trigger);
+    expect(resolveActionElement(action, root)).toBeNull();
 });
 
 test("ignores visual class changes when resolving an action", () => {

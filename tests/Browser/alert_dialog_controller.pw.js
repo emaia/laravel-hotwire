@@ -1,6 +1,41 @@
 import { expect, test } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 
+test("an action ancestor outside the Alert Dialog waits for confirmation", async ({ page }) => {
+    await page.setContent(`
+        <a href="#deleted">
+            <div id="confirmation" data-controller="alert-dialog" data-alert-dialog-lock-scroll-class="overflow-hidden">
+                <div data-action="click->alert-dialog#interceptCapture:capture click->alert-dialog#intercept">
+                    <span id="nested-trigger">Delete</span>
+                </div>
+
+                <div data-alert-dialog-target="modal" data-state="closed" data-motion="none" hidden inert>
+                    <div data-alert-dialog-target="backdrop"></div>
+                    <div data-alert-dialog-target="dialog">
+                        <button type="button" data-action="alert-dialog#cancel">Cancel</button>
+                        <button id="confirm" type="button" data-action="alert-dialog#confirm">Confirm</button>
+                    </div>
+                </div>
+            </div>
+        </a>
+    `);
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ content: await browserControllerScript() });
+    await page.evaluate(() => {
+        window.StimulusApplication = window.Stimulus.Application.start();
+        window.StimulusApplication.register("alert-dialog", window.AlertDialogController);
+    });
+
+    await page.locator("#nested-trigger").click();
+
+    await expect(page).not.toHaveURL(/#deleted$/);
+    await expect(page.locator('[data-alert-dialog-target="modal"]')).toHaveAttribute("data-state", "open");
+
+    await page.locator("#confirm").click();
+
+    await expect(page).toHaveURL(/#deleted$/);
+});
+
 test("a replaced external-form trigger submits once with its captured action", async ({ page }) => {
     await page.setContent(`
         <form id="item-form" action="/items" method="get">

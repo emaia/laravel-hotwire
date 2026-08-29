@@ -106,6 +106,32 @@ test.serial("capture interception survives trigger stopPropagation", async () =>
     expect(mounted.controller.pendingAction?.kind).toBe("link");
 });
 
+test.serial("capture interception fails closed inside an ancestor link", async () => {
+    mounted = await mountController("alert-dialog", AlertDialogController, `
+        <a href="/items/1">
+            <div data-controller="alert-dialog" data-alert-dialog-lock-scroll-class="overflow-hidden">
+                <div data-action="click->alert-dialog#interceptCapture:capture click->alert-dialog#intercept">
+                    <span id="nested-trigger">Delete</span>
+                </div>
+
+                <div data-alert-dialog-target="modal" data-state="closed" data-motion="none" hidden inert>
+                    <div data-alert-dialog-target="backdrop"></div>
+                    <div data-alert-dialog-target="dialog">
+                        <button data-action="click->alert-dialog#cancel">Cancel</button>
+                        <button data-action="click->alert-dialog#confirm">Confirm</button>
+                    </div>
+                </div>
+            </div>
+        </a>
+    `);
+
+    const defaultPrevented = !clickWith(document.getElementById("nested-trigger"));
+
+    expect(defaultPrevented).toBe(true);
+    expect(mounted.controller.isOpen).toBe(true);
+    expect(mounted.controller.pendingAction?.kind).toBe("click");
+});
+
 // --- semantic presence state ---
 
 test.serial("after open, modal becomes interactive and lock-scroll is applied to body", async () => {
