@@ -173,7 +173,8 @@ function formPayloadSignatureOf(form) {
         }
     }
 
-    return payload;
+    return payload.sort(([leftName, leftValue], [rightName, rightValue]) =>
+        leftName.localeCompare(rightName) || leftValue.localeCompare(rightValue));
 }
 
 function matchesForm(form, captured) {

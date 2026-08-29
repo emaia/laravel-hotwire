@@ -283,6 +283,27 @@ test("fails closed when the owner form payload changes", () => {
     expect(resolveActionElement(action, root)).toBeNull();
 });
 
+test("accepts an equivalent form payload after controls are reordered", () => {
+    document.body.innerHTML = `
+        <div id="root">
+            <form id="item-form" action="/items/1" method="post">
+                <input type="hidden" name="_method" value="delete">
+                <input type="hidden" name="item" value="1">
+                <div id="zone"><button id="trigger" type="submit">Delete</button></div>
+            </form>
+        </div>
+    `;
+    const root = document.getElementById("root");
+    const zone = document.getElementById("zone");
+    const trigger = document.getElementById("trigger");
+    const action = capture(trigger, zone, root);
+    const form = document.getElementById("item-form");
+
+    form.prepend(form.querySelector(`[name="item"]`));
+
+    expect(resolveActionElement(action, root)).toBe(trigger);
+});
+
 test("fails closed when an empty file control is removed from the payload", () => {
     document.body.innerHTML = `
         <div id="root">

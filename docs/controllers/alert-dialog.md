@@ -60,8 +60,8 @@ the dialog. Cancelling, or closing for Turbo cache, clears the pending action an
 The trigger is only replayed when its tag, behavioural attributes (`href`, `formaction`, `data-*`, `onclick`, `name`,
 `value`, …), resolved destination, native command/popover target, owner form controls, and effective Turbo/Frame context
 still match what was captured. If any of them changed, or an ID became ambiguous, confirming closes the dialog without
-acting. Give a trigger a stable `id` when a morph may replace it; an id-less replacement deliberately fails closed rather
-than relying on DOM position.
+acting and dispatches `alert-dialog:dropped`. Give a trigger a stable `id` when a morph may replace it; an id-less
+replacement deliberately fails closed rather than relying on DOM position.
 
 ## Targets
 
@@ -94,6 +94,12 @@ than relying on DOM position.
 | `alert-dialog#cancel`       | Cancels the pending action and closes the dialog                            |
 | `alert-dialog#clickOutside` | Cancels when clicking outside the dialog panel                              |
 | `alert-dialog#closeForCache` | Clears the pending action and closes synchronously for Turbo cache          |
+
+## Events
+
+| Event                    | Detail                | Description                                                   |
+|--------------------------|-----------------------|---------------------------------------------------------------|
+| `alert-dialog:dropped`   | `{ kind, triggerId }` | Confirmation closed, but the guarded action was not replayed |
 
 ## Copyable Minimal Markup
 

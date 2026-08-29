@@ -268,6 +268,23 @@ test.serial("href-less anchor listeners run only after confirmation", async () =
     expect(mounted.controller.isOpen).toBe(false);
 });
 
+test.serial("confirm dispatches dropped when the captured action no longer matches", async () => {
+    await mount();
+    const trigger = document.getElementById("trigger");
+    const dropped = [];
+    mounted.root.addEventListener("alert-dialog:dropped", (event) => dropped.push(event));
+
+    clickWith(trigger);
+    trigger.href = "/items/2";
+
+    await mounted.controller.confirm();
+
+    expect(dropped).toHaveLength(1);
+    expect(dropped[0].target).toBe(mounted.root);
+    expect(dropped[0].detail).toEqual({ kind: "link", triggerId: "trigger" });
+    expect(mounted.controller.isOpen).toBe(false);
+});
+
 test.serial("confirm waits for the actual exit motion before re-issuing the click", async () => {
     await mount();
     const trigger = document.getElementById("trigger");

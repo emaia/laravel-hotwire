@@ -75,7 +75,9 @@ Every trigger action — link, submit or generic `type="button"` — is deferred
 confirmation. Give the trigger a stable `id` when a Turbo morph may replace it while the dialog is open. Without one,
 only the exact original node can be resumed; an id-less replacement fails closed instead of risking another action.
 Changes to the resolved destination, native command/popover target, submitted non-file values, file selection metadata,
-or effective Turbo/Frame context also fail closed.
+or effective Turbo/Frame context also fail closed. When that happens, the component dispatches a bubbling
+`alert-dialog:dropped` event with `{ kind, triggerId }` in `event.detail`, so the application can report or log the
+discarded confirmation.
 
 The trigger element needs no special attributes — place it as the default slot.
 

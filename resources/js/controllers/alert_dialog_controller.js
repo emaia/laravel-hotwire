@@ -171,11 +171,18 @@ export default class AlertDialogController extends Controller {
         if (!closed || this.pendingAction !== action) return;
 
         this.pendingAction = null;
+        let replayed = true;
         this.replayingAction = true;
         try {
-            if (action) replayAction(action, this.element);
+            if (action) replayed = replayAction(action, this.element);
         } finally {
             this.replayingAction = false;
+        }
+
+        if (action && !replayed) {
+            this.dispatch("dropped", {
+                detail: { kind: action.kind, triggerId: action.targetId || null },
+            });
         }
     }
 
