@@ -287,7 +287,7 @@ test.serial("cancel closes the dialog and clears the pending action", async () =
     expect(mounted.controller.pendingAction).toBeNull();
 });
 
-test.serial("closeForCache clears pending action keys before snapshot", async () => {
+test.serial("closeForCache clears the pending action before snapshot", async () => {
     await mount();
     const trigger = document.getElementById("trigger");
     const zone = document.getElementById("trigger-zone");

@@ -342,6 +342,39 @@ test("moving multiple open dialogs preserves their overlay order", async ({ page
     await expect(page.locator("#third-modal")).toBeVisible();
 });
 
+test("a retained top layer restores its managed popover after reconnect", async ({ page }) => {
+    await page.setContent(`<div id="lower"></div><div id="upper"></div>`);
+    const source = (await readFile("resources/js/controllers/_top_layer.js", "utf8"))
+        .replace(/^export /gm, "");
+    await page.addScriptTag({ content: `${source}\nwindow.createTopLayer = createTopLayer;` });
+
+    const restored = await page.evaluate(() => {
+        const lowerElement = document.getElementById("lower");
+        const upperElement = document.getElementById("upper");
+        const lower = window.createTopLayer(lowerElement);
+        const upper = window.createTopLayer(upperElement);
+        lower.show();
+        upper.show();
+
+        upperElement.remove();
+        lower.restore();
+        document.body.append(upperElement);
+        upper.restore();
+
+        const result = {
+            managed: upperElement.hasAttribute("data-hotwire-top-layer"),
+            mode: upperElement.getAttribute("popover"),
+            open: upperElement.matches(":popover-open"),
+        };
+        lower.cleanup();
+        upper.cleanup();
+
+        return result;
+    });
+
+    expect(restored).toEqual({ managed: true, mode: "manual", open: true });
+});
+
 test("a replaced submitter retains Turbo busy state", async ({ page }) => {
     await page.route("https://example.test/**", async (route) => {
         if (route.request().url().endsWith("/current")) {

@@ -56,6 +56,8 @@ test("bringToFront re-enters an already shown element", () => {
     expect(element.showPopover).toHaveBeenCalledTimes(2);
     expect(element.hidePopover).toHaveBeenCalledTimes(1);
     expect(topLayer.isShown).toBe(true);
+
+    topLayer.cleanup();
 });
 
 test("restores a shown popover after a DOM move closes its native top layer", () => {
@@ -74,6 +76,8 @@ test("restores a shown popover after a DOM move closes its native top layer", ()
     expect(showPopover).toHaveBeenCalledTimes(2);
     expect(shown).toHaveBeenCalledTimes(2);
     expect(topLayer.isShown).toBe(true);
+
+    topLayer.cleanup();
 });
 
 test("cleanup removes a detached entry retained after a failed raise", () => {
@@ -154,6 +158,8 @@ test("preserves the original popover mode when managed content is cloned", () =>
 
     expect(clone.getAttribute("popover")).toBe("auto");
     expect(clone.hasAttribute("data-hotwire-top-layer")).toBe(false);
+
+    topLayer.cleanup();
 });
 
 test("cleanup is idempotent and unsupported elements remain unchanged", () => {
@@ -187,6 +193,7 @@ test("restores an entry retained after a raise failed while it was detached", ()
     let detached = false;
     upperElement.showPopover = mock(() => {
         if (detached) throw new Error("not connected");
+        if (upperElement.getAttribute("popover") !== "manual") throw new Error("not a managed popover");
     });
     upperElement.hidePopover = mock(() => {});
     upperElement.matches = mock(() => false);
@@ -210,4 +217,9 @@ test("restores an entry retained after a raise failed while it was detached", ()
 
     expect(upper.isShown).toBe(true);
     expect(upper.position).toBeGreaterThanOrEqual(0);
+    expect(upperElement.getAttribute("popover")).toBe("manual");
+    expect(upperElement.hasAttribute("data-hotwire-top-layer")).toBe(true);
+
+    lower.cleanup();
+    upper.cleanup();
 });

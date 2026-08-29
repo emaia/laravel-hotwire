@@ -48,19 +48,20 @@ Escape cancellation and focus trapping are suspended during IME composition.
 </div>
 ```
 
-The controller captures a description of the action without retaining the clicked DOM node, opens the dialog, and
-resumes the action after `alert-dialog#confirm` by clicking the element again. Because the element is found afresh at
-that point, a Turbo morph may replace the trigger while the dialog is open.
+The controller captures a description of the action, opens the dialog, and resumes it after `alert-dialog#confirm` by
+clicking the trigger again. A trigger with a stable `id` is found afresh, so a Turbo morph may replace it while the
+dialog is open. For a trigger without an `id`, the controller temporarily retains that exact node and only resumes it
+when the same node remains inside the Alert Dialog.
 
-The capture-phase `interceptCapture` action swallows the original click before it reaches the trigger, so click
-listeners run exactly once — on the confirmed click, not on the one that opened the dialog. Cancelling, or closing for
-Turbo cache, clears the pending action and nothing is dispatched at all.
+The capture-phase `interceptCapture` action swallows the original click before it reaches the trigger. Listeners on the
+resolved replay node and bubbling ancestors reached by it run once — on the confirmed click, not on the one that opened
+the dialog. Cancelling, or closing for Turbo cache, clears the pending action and nothing is dispatched downstream.
 
-The trigger is identified by its `id`, or by its position when it has none, and is only replayed when its tag and
-behavioural attributes (`href`, `formaction`, `data-turbo-*`, `data-action`, `name`, `value`, …) still match what was
-captured. If they changed, or the element is gone, confirming closes the dialog without acting — the controller fails
-closed rather than clicking something the user did not confirm. Give a trigger a stable `id` when a morph may replace
-it, so the replacement is resolved by identity instead of position.
+The trigger is only replayed when its tag, behavioural attributes (`href`, `formaction`, `data-*`, `onclick`, `name`,
+`value`, …), resolved destination, native command/popover target, owner form controls, and effective Turbo/Frame context
+still match what was captured. If any of them changed, or an ID became ambiguous, confirming closes the dialog without
+acting. Give a trigger a stable `id` when a morph may replace it; an id-less replacement deliberately fails closed rather
+than relying on DOM position.
 
 ## Targets
 
@@ -138,7 +139,7 @@ custom integration even if the trigger is replaced while the dialog is open:
 ```html
 <div data-controller="alert-dialog" ...>
     <div data-action="click->alert-dialog#interceptCapture:capture click->alert-dialog#intercept">
-        <a href="/posts/1" data-turbo-method="delete">Delete post</a>
+        <a id="delete-post" href="/posts/1" data-turbo-method="delete">Delete post</a>
     </div>
 
     <!-- modal markup -->
@@ -161,8 +162,10 @@ custom integration even if the trigger is replaced while the dialog is open:
 </div>
 ```
 
-Submitter attributes such as `name`, `value`, `formaction`, `formmethod`, and `data-turbo-frame` are preserved. The form
-is resolved again by its `id` at confirmation time, so an external form replaced during a Turbo morph still submits.
+Submitter attributes such as `name`, `value`, `formaction`, `formmethod`, and `data-turbo-frame` are preserved. A form
+with a stable `id` is resolved again at confirmation time, so an equivalent external form replaced during a Turbo morph
+still submits. Changing the owner form, resolved action URL, non-file control values, file selection metadata, or Turbo
+context while the dialog is open makes confirmation fail closed.
 
 ## Accessibility
 

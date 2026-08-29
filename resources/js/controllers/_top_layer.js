@@ -68,16 +68,19 @@ export function createTopLayer(element, { enabled = true } = {}) {
         // clears `shown`, so retention — not `shown` — decides what to restore.
         if (!supported || topLayers.indexOf(entry) < 0) return;
 
-        try {
-            if (!element.matches(":popover-open")) {
-                element.showPopover();
-                shown = true;
-                notifyShown();
-            }
-        } catch (_error) {
-            // The element may not have reconnected yet.
+        if (!shown) {
+            if (!showNative()) return;
+        } else {
+            try {
+                if (!element.matches(":popover-open")) {
+                    element.showPopover();
+                    notifyShown();
+                }
+            } catch (_error) {
+                // The element may not have reconnected yet.
 
-            return;
+                return;
+            }
         }
 
         const index = topLayers.indexOf(entry);

@@ -24,7 +24,7 @@ function capture(target, zone, root) {
 
 // --- capture ---
 
-test("captures an action without retaining DOM nodes or writing to the document", () => {
+test("captures an action without writing identity markers to the document", () => {
     document.body.innerHTML = `
         <form id="item-form"></form>
         <div id="root">
@@ -40,9 +40,10 @@ test("captures an action without retaining DOM nodes or writing to the document"
     const action = capture(button, zone, root);
 
     expect(action.kind).toBe("submit");
+    expect(action.targetElement).toBe(button);
+    expect(action.signature).toContainEqual(["form", "item-form"]);
     expect(action.signature).toContainEqual(["name", "intent"]);
     expect(action.signature).toContainEqual(["value", "destroy"]);
-    expect(JSON.parse(JSON.stringify(action))).toEqual(action);
     expect(root.innerHTML).not.toContain("data-hotwire");
 });
 
@@ -73,7 +74,7 @@ test("resolves a replacement trigger by id", () => {
     expect(resolveActionElement(action, root)).toBe(replacement);
 });
 
-test("resolves an id-less replacement trigger by its position", () => {
+test("resolves the same id-less trigger after it moves", () => {
     document.body.innerHTML = `
         <div id="root"><div id="zone"><button type="button" name="archive">Archive</button></div></div>
     `;
@@ -81,14 +82,41 @@ test("resolves an id-less replacement trigger by its position", () => {
     const zone = document.getElementById("zone");
     const original = zone.querySelector("button");
     const action = capture(original, zone, root);
-    const replacement = original.cloneNode(true);
 
-    original.replaceWith(replacement);
+    root.append(original);
 
-    expect(resolveActionElement(action, root)).toBe(replacement);
+    expect(resolveActionElement(action, root)).toBe(original);
 });
 
-test("fails closed when the replacement at the same position changed intent", () => {
+test("fails closed when an id-less trigger is replaced at the same position", () => {
+    document.body.innerHTML = `
+        <div id="root"><div id="zone"><button type="button" name="archive">Archive</button></div></div>
+    `;
+    const root = document.getElementById("root");
+    const zone = document.getElementById("zone");
+    const original = zone.querySelector("button");
+    const action = capture(original, zone, root);
+
+    original.replaceWith(original.cloneNode(true));
+
+    expect(resolveActionElement(action, root)).toBeNull();
+});
+
+test("does not confuse indistinguishable id-less triggers after a reorder", () => {
+    document.body.innerHTML = `
+        <div id="root"><div id="zone"><button type="button">Delete</button><button type="button">Delete</button></div></div>
+    `;
+    const root = document.getElementById("root");
+    const zone = document.getElementById("zone");
+    const original = zone.firstElementChild;
+    const action = capture(original, zone, root);
+
+    original.remove();
+
+    expect(resolveActionElement(action, root)).toBeNull();
+});
+
+test("fails closed when the same id-less trigger changes intent", () => {
     document.body.innerHTML = `
         <div id="root"><div id="zone"><button type="button" name="archive">Archive</button></div></div>
     `;
@@ -116,7 +144,397 @@ test("fails closed when a stable-id trigger changes intent", () => {
     expect(resolveActionElement(action, root)).toBeNull();
 });
 
-test("fails closed when the captured position no longer exists", () => {
+test("fails closed when a relative link resolves to a different destination", () => {
+    document.head.innerHTML = `<base href="http://localhost/archive/">`;
+    document.body.innerHTML = `
+        <div id="root"><div id="zone"><a id="trigger" href="items/1">Delete</a></div></div>
+    `;
+    const root = document.getElementById("root");
+    const zone = document.getElementById("zone");
+    const trigger = document.getElementById("trigger");
+    const action = capture(trigger, zone, root);
+
+    document.querySelector("base").href = "http://localhost/published/";
+
+    expect(resolveActionElement(action, root)).toBeNull();
+});
+
+test("fails closed when a stable submitter changes owner form", () => {
+    document.body.innerHTML = `
+        <form id="item-one"></form>
+        <form id="item-two"></form>
+        <div id="root"><div id="zone"><button id="trigger" type="submit" form="item-one">Delete</button></div></div>
+    `;
+    const root = document.getElementById("root");
+    const zone = document.getElementById("zone");
+    const trigger = document.getElementById("trigger");
+    const action = capture(trigger, zone, root);
+
+    trigger.setAttribute("form", "item-two");
+
+    expect(resolveActionElement(action, root)).toBeNull();
+});
+
+test("fails closed when the owner form changes its submission context", () => {
+    document.body.innerHTML = `
+        <div id="root">
+            <form id="item-form" action="/items/1" method="post">
+                <div id="zone"><button id="trigger" type="submit">Delete</button></div>
+            </form>
+        </div>
+    `;
+    const root = document.getElementById("root");
+    const zone = document.getElementById("zone");
+    const trigger = document.getElementById("trigger");
+    const action = capture(trigger, zone, root);
+
+    document.getElementById("item-form").setAttribute("action", "/items/2");
+
+    expect(resolveActionElement(action, root)).toBeNull();
+});
+
+test("fails closed when a relative form action resolves to a different destination", () => {
+    document.head.innerHTML = `<base href="http://localhost/archive/">`;
+    document.body.innerHTML = `
+        <div id="root">
+            <form id="item-form" action="items/1" method="post">
+                <div id="zone"><button id="trigger" type="submit">Delete</button></div>
+            </form>
+        </div>
+    `;
+    const root = document.getElementById("root");
+    const zone = document.getElementById("zone");
+    const trigger = document.getElementById("trigger");
+    const action = capture(trigger, zone, root);
+
+    document.querySelector("base").href = "http://localhost/published/";
+
+    expect(resolveActionElement(action, root)).toBeNull();
+});
+
+test("an empty form action ignores base URL changes", () => {
+    document.head.innerHTML = `<base href="http://localhost/archive/">`;
+    document.body.innerHTML = `
+        <div id="root">
+            <form id="item-form" action=""><div id="zone"><button id="trigger" type="submit">Save</button></div></form>
+        </div>
+    `;
+    const root = document.getElementById("root");
+    const zone = document.getElementById("zone");
+    const trigger = document.getElementById("trigger");
+    const action = capture(trigger, zone, root);
+
+    document.querySelector("base").href = "http://localhost/published/";
+
+    expect(resolveActionElement(action, root)).toBe(trigger);
+});
+
+test("fails closed when the document URL changes for an empty form action", () => {
+    document.body.innerHTML = `
+        <div id="root">
+            <form id="item-form"><div id="zone"><button id="trigger" type="submit">Save</button></div></form>
+        </div>
+    `;
+    const root = document.getElementById("root");
+    const zone = document.getElementById("zone");
+    const trigger = document.getElementById("trigger");
+    const action = capture(trigger, zone, root);
+
+    window.history.pushState({}, "", "/other");
+
+    expect(resolveActionElement(action, root)).toBeNull();
+});
+
+test("fails closed when the owner form changes its framework behavior", () => {
+    document.body.innerHTML = `
+        <div id="root">
+            <form id="item-form" data-action="submit->items#archive">
+                <div id="zone"><button id="trigger" type="submit">Archive</button></div>
+            </form>
+        </div>
+    `;
+    const root = document.getElementById("root");
+    const zone = document.getElementById("zone");
+    const trigger = document.getElementById("trigger");
+    const action = capture(trigger, zone, root);
+
+    document.getElementById("item-form").setAttribute("data-action", "submit->items#destroy");
+
+    expect(resolveActionElement(action, root)).toBeNull();
+});
+
+test("fails closed when the owner form payload changes", () => {
+    document.body.innerHTML = `
+        <div id="root">
+            <form id="item-form" action="/items/1" method="post">
+                <input type="hidden" name="_method" value="delete">
+                <input type="hidden" name="item" value="1">
+                <div id="zone"><button id="trigger" type="submit">Delete</button></div>
+            </form>
+        </div>
+    `;
+    const root = document.getElementById("root");
+    const zone = document.getElementById("zone");
+    const trigger = document.getElementById("trigger");
+    const action = capture(trigger, zone, root);
+
+    document.querySelector(`[name="item"]`).value = "2";
+
+    expect(resolveActionElement(action, root)).toBeNull();
+});
+
+test("fails closed when an empty file control is removed from the payload", () => {
+    document.body.innerHTML = `
+        <div id="root">
+            <form id="item-form">
+                <input type="file" name="attachment">
+                <div id="zone"><button id="trigger" type="submit">Upload</button></div>
+            </form>
+        </div>
+    `;
+    const root = document.getElementById("root");
+    const zone = document.getElementById("zone");
+    const trigger = document.getElementById("trigger");
+    const action = capture(trigger, zone, root);
+
+    document.querySelector(`[name="attachment"]`).remove();
+
+    expect(resolveActionElement(action, root)).toBeNull();
+});
+
+test("fails closed when inherited Turbo enablement changes", () => {
+    document.body.innerHTML = `
+        <div id="root"><div id="zone" data-turbo="false"><a id="trigger" href="/items/1">Delete</a></div></div>
+    `;
+    const root = document.getElementById("root");
+    const zone = document.getElementById("zone");
+    const trigger = document.getElementById("trigger");
+    const action = capture(trigger, zone, root);
+
+    zone.setAttribute("data-turbo", "true");
+
+    expect(resolveActionElement(action, root)).toBeNull();
+});
+
+test("treats enabled Turbo attribute values as equivalent", () => {
+    document.body.innerHTML = `
+        <div id="root"><div id="zone" data-turbo=""><a id="trigger" href="/items/1">Delete</a></div></div>
+    `;
+    const root = document.getElementById("root");
+    const zone = document.getElementById("zone");
+    const trigger = document.getElementById("trigger");
+    const action = capture(trigger, zone, root);
+
+    zone.setAttribute("data-turbo", "true");
+
+    expect(resolveActionElement(action, root)).toBe(trigger);
+});
+
+test("fails closed when Turbo enablement changes above the Alert Dialog", () => {
+    document.body.innerHTML = `
+        <main id="context" data-turbo="false">
+            <div id="root"><div id="zone"><a id="trigger" href="/items/1">Delete</a></div></div>
+        </main>
+    `;
+    const root = document.getElementById("root");
+    const zone = document.getElementById("zone");
+    const trigger = document.getElementById("trigger");
+    const action = capture(trigger, zone, root);
+
+    document.getElementById("context").setAttribute("data-turbo", "true");
+
+    expect(resolveActionElement(action, root)).toBeNull();
+});
+
+test("fails closed when the effective Turbo Frame target changes", () => {
+    document.body.innerHTML = `
+        <div id="root">
+            <turbo-frame id="items"><div id="zone"><a id="trigger" href="/items/1">Edit</a></div></turbo-frame>
+        </div>
+    `;
+    const root = document.getElementById("root");
+    const zone = document.getElementById("zone");
+    const trigger = document.getElementById("trigger");
+    const action = capture(trigger, zone, root);
+
+    trigger.closest("turbo-frame").id = "archive";
+
+    expect(resolveActionElement(action, root)).toBeNull();
+});
+
+test("fails closed when a requested Turbo Frame appears before replay", () => {
+    document.body.innerHTML = `
+        <div id="root">
+            <div id="zone"><a id="trigger" href="/items/1" data-turbo-frame="preview">Preview</a></div>
+        </div>
+    `;
+    const root = document.getElementById("root");
+    const zone = document.getElementById("zone");
+    const trigger = document.getElementById("trigger");
+    const action = capture(trigger, zone, root);
+
+    document.body.insertAdjacentHTML("beforeend", `<turbo-frame id="preview"></turbo-frame>`);
+
+    expect(resolveActionElement(action, root)).toBeNull();
+});
+
+test("fails closed when the requested Turbo Frame becomes disabled", () => {
+    document.body.innerHTML = `
+        <div id="root">
+            <div id="zone"><a id="trigger" href="/items/1" data-turbo-frame="preview">Preview</a></div>
+        </div>
+        <turbo-frame id="preview"></turbo-frame>
+    `;
+    const root = document.getElementById("root");
+    const zone = document.getElementById("zone");
+    const trigger = document.getElementById("trigger");
+    const action = capture(trigger, zone, root);
+
+    document.getElementById("preview").setAttribute("disabled", "");
+
+    expect(resolveActionElement(action, root)).toBeNull();
+});
+
+test("ignores Turbo Frame attributes that do not change routing", () => {
+    document.body.innerHTML = `
+        <div id="root">
+            <div id="zone"><a id="trigger" href="/items/1" data-turbo-frame="preview">Preview</a></div>
+        </div>
+        <turbo-frame id="preview" src="/old" data-state="idle"></turbo-frame>
+    `;
+    const root = document.getElementById("root");
+    const zone = document.getElementById("zone");
+    const trigger = document.getElementById("trigger");
+    const action = capture(trigger, zone, root);
+    const frame = document.getElementById("preview");
+
+    frame.setAttribute("src", "/new");
+    frame.setAttribute("data-state", "loaded");
+
+    expect(resolveActionElement(action, root)).toBe(trigger);
+});
+
+test("fails closed when an underscore-prefixed Turbo Frame appears before replay", () => {
+    document.body.innerHTML = `
+        <div id="root">
+            <div id="zone"><a id="trigger" href="/items/1" data-turbo-frame="_preview">Preview</a></div>
+        </div>
+    `;
+    const root = document.getElementById("root");
+    const zone = document.getElementById("zone");
+    const trigger = document.getElementById("trigger");
+    const action = capture(trigger, zone, root);
+
+    document.body.insertAdjacentHTML("beforeend", `<turbo-frame id="_preview"></turbo-frame>`);
+
+    expect(resolveActionElement(action, root)).toBeNull();
+});
+
+test("fails closed when a requested Turbo Frame id is ambiguous", () => {
+    document.body.innerHTML = `
+        <div id="root">
+            <div id="zone"><a id="trigger" href="/items/1" data-turbo-frame="preview">Preview</a></div>
+        </div>
+        <turbo-frame id="preview" data-version="one"></turbo-frame>
+        <turbo-frame id="preview" data-version="two"></turbo-frame>
+    `;
+    const root = document.getElementById("root");
+    const zone = document.getElementById("zone");
+    const trigger = document.getElementById("trigger");
+    const action = capture(trigger, zone, root);
+
+    expect(resolveActionElement(action, root)).toBeNull();
+});
+
+test("an empty submitter frame target masks the form target", () => {
+    document.body.innerHTML = `
+        <turbo-frame id="current">
+            <div id="root">
+                <form id="item-form" data-turbo-frame="preview">
+                    <div id="zone"><button id="trigger" type="submit" data-turbo-frame="">Save</button></div>
+                </form>
+            </div>
+        </turbo-frame>
+        <turbo-frame id="preview"></turbo-frame>
+    `;
+    const root = document.getElementById("root");
+    const zone = document.getElementById("zone");
+    const trigger = document.getElementById("trigger");
+    const action = capture(trigger, zone, root);
+
+    document.getElementById("preview").setAttribute("disabled", "");
+
+    expect(resolveActionElement(action, root)).toBe(trigger);
+});
+
+test("ignores visual class changes when resolving an action", () => {
+    document.body.innerHTML = `
+        <div id="root">
+            <form id="item-form" class="idle">
+                <div id="zone"><button id="trigger" class="primary" type="submit">Save</button></div>
+            </form>
+        </div>
+    `;
+    const root = document.getElementById("root");
+    const zone = document.getElementById("zone");
+    const trigger = document.getElementById("trigger");
+    const action = capture(trigger, zone, root);
+
+    trigger.className = "loading";
+    document.getElementById("item-form").className = "validated";
+
+    expect(resolveActionElement(action, root)).toBe(trigger);
+});
+
+test("fails closed when a native popover target changes identity", () => {
+    document.body.innerHTML = `
+        <div id="root">
+            <div id="zone"><button id="trigger" type="button" popovertarget="details">Toggle</button></div>
+            <div id="details" popover="manual"></div>
+        </div>
+    `;
+    const root = document.getElementById("root");
+    const zone = document.getElementById("zone");
+    const trigger = document.getElementById("trigger");
+    const action = capture(trigger, zone, root);
+
+    document.getElementById("details").outerHTML = `<aside id="details" popover="manual"></aside>`;
+
+    expect(resolveActionElement(action, root)).toBeNull();
+});
+
+test("fails closed when a native popover target changes mode", () => {
+    document.body.innerHTML = `
+        <div id="root">
+            <div id="zone"><button id="trigger" type="button" popovertarget="details">Toggle</button></div>
+            <div id="details" popover="manual"></div>
+        </div>
+    `;
+    const root = document.getElementById("root");
+    const zone = document.getElementById("zone");
+    const trigger = document.getElementById("trigger");
+    const action = capture(trigger, zone, root);
+
+    document.getElementById("details").setAttribute("popover", "auto");
+
+    expect(resolveActionElement(action, root)).toBeNull();
+});
+
+test("fails closed when a native click handler changes", () => {
+    document.body.innerHTML = `
+        <div id="root"><div id="zone"><button id="trigger" type="button" onclick="archive()">Archive</button></div></div>
+    `;
+    const root = document.getElementById("root");
+    const zone = document.getElementById("zone");
+    const trigger = document.getElementById("trigger");
+    const action = capture(trigger, zone, root);
+
+    trigger.setAttribute("onclick", "destroy()");
+
+    expect(resolveActionElement(action, root)).toBeNull();
+});
+
+test("fails closed when the captured id-less trigger leaves the root", () => {
     document.body.innerHTML = `
         <div id="root"><div id="zone"><button type="button">Delete</button></div></div>
     `;

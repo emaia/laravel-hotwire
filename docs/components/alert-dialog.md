@@ -66,13 +66,16 @@ The `content` slot renders below `description` and above the action buttons.
 
 The default slot is wrapped in a click-intercept zone. When the user clicks any element inside, the click is swallowed
 and the alert dialog opens. If the user clicks **Confirm**, the captured action resumes after the actual exit motion
-settles, by clicking the trigger again. Listeners therefore observe exactly one click — the confirmed one — and
-replacing the trigger while the dialog is open does not discard the action. If the user clicks **Cancel** or presses
-`Escape`, the dialog closes and nothing is dispatched. Rapid reopen cancels stale close completion.
+settles, by clicking the trigger again. Listeners on the resolved replay node and bubbling ancestors reached by it
+observe the confirmed click once. Replacing a trigger with a stable `id` while the dialog is open does not discard the
+action. If the user clicks **Cancel** or presses `Escape`, the dialog closes and nothing is dispatched downstream. Rapid
+reopen cancels stale close completion.
 
 Every trigger action — link, submit or generic `type="button"` — is deferred in capture phase and runs once after
-confirmation. Give the trigger a stable `id` when a Turbo morph may replace it while the dialog is open; without one the
-element is resolved by position, and a morph that reorders the markup makes the action fail closed instead of firing.
+confirmation. Give the trigger a stable `id` when a Turbo morph may replace it while the dialog is open. Without one,
+only the exact original node can be resumed; an id-less replacement fails closed instead of risking another action.
+Changes to the resolved destination, native command/popover target, submitted non-file values, file selection metadata,
+or effective Turbo/Frame context also fail closed.
 
 The trigger element needs no special attributes — place it as the default slot.
 
