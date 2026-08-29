@@ -432,7 +432,7 @@ test.serial("AlertDialog opened inside a modal handles Escape without closing th
     await wait(10);
 
     expect(alertDialog.isOpen).toBe(false);
-    expect(alertDialog.pendingElement).toBeNull();
+    expect(alertDialog.pendingAction).toBeNull();
     expect(modal.isOpen).toBe(true);
     expect(document.body.classList.contains("overflow-hidden")).toBe(true);
 });

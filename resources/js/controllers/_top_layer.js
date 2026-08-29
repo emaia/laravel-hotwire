@@ -48,9 +48,7 @@ export function createTopLayer(element, { enabled = true } = {}) {
         try {
             element.showPopover();
             shown = true;
-            document.dispatchEvent(new CustomEvent("hotwire:top-layer:show", {
-                detail: { element },
-            }));
+            notifyShown();
 
             return true;
         } catch (_error) {
@@ -61,10 +59,32 @@ export function createTopLayer(element, { enabled = true } = {}) {
     }
 
     function hide() {
-        if (!shown) return;
-
-        hideNative();
+        if (shown) hideNative();
         removeEntry();
+    }
+
+    function restore() {
+        // A raise that failed while the element was detached keeps the entry but
+        // clears `shown`, so retention — not `shown` — decides what to restore.
+        if (!supported || topLayers.indexOf(entry) < 0) return;
+
+        if (!shown) {
+            if (!showNative()) return;
+        } else {
+            try {
+                if (!element.matches(":popover-open")) {
+                    element.showPopover();
+                    notifyShown();
+                }
+            } catch (_error) {
+                // The element may not have reconnected yet.
+
+                return;
+            }
+        }
+
+        const index = topLayers.indexOf(entry);
+        if (index >= 0) topLayers.slice(index + 1).forEach((topLayer) => topLayer.raise());
     }
 
     function hideNative() {
@@ -97,7 +117,7 @@ export function createTopLayer(element, { enabled = true } = {}) {
         if (!shown) return;
 
         hideNative();
-        if (!showNative()) removeEntry();
+        if (!showNative() && element.isConnected) removeEntry();
     }
 
     function removeEntry() {
@@ -118,12 +138,19 @@ export function createTopLayer(element, { enabled = true } = {}) {
         previousPopover = null;
     }
 
+    function notifyShown() {
+        document.dispatchEvent(new CustomEvent("hotwire:top-layer:show", {
+            detail: { element },
+        }));
+    }
+
     return {
         get isShown() { return shown; },
         get isSupported() { return supported; },
         get position() { return topLayers.indexOf(entry); },
         show,
         hide,
+        restore,
         bringToFront,
         cleanup,
     };

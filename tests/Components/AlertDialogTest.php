@@ -51,7 +51,7 @@ it('uses the default slot as the trigger', function () {
         </x-hw::alert-dialog>
     ');
 
-    $view->assertSee('data-action="click->alert-dialog#intercept"', false);
+    $view->assertSee('data-action="click->alert-dialog#interceptCapture:capture click->alert-dialog#intercept"', false);
     $view->assertSee('Continue');
 });
 

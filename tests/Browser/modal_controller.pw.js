@@ -1014,8 +1014,11 @@ async function browserControllerScript(path) {
 
 async function browserOverlayControllerScript() {
     const base = await browserControllerScript("resources/js/controllers/modal_controller.js");
+    const actionReplay = (await readFile("resources/js/controllers/_action_replay.js", "utf8"))
+        .replace(/^export /gm, "");
     const alertDialog = (await readFile("resources/js/controllers/alert_dialog_controller.js", "utf8"))
         .replace('import { Controller } from "@hotwired/stimulus";', "")
+        .replace(/import \{[^}]*\} from "\.\/_action_replay\.js";\s*/, "")
         .replace(/import \{[^}]*\} from "\.\/_overlay\.js";\s*/, "")
         .replace("export default class AlertDialogController extends Controller", "class AlertDialogController extends Controller");
     const drawer = (await readFile("resources/js/controllers/drawer_controller.js", "utf8"))
@@ -1029,6 +1032,7 @@ async function browserOverlayControllerScript() {
 
     return `
         ${base.replace("window.ModalController = ModalController;", "")}
+        ${actionReplay}
         ${alertDialog}
         ${drawer}
         ${sheet}

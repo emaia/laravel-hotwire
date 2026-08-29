@@ -1,0 +1,498 @@
+import { expect, test } from "@playwright/test";
+import { readFile } from "node:fs/promises";
+
+test("an action ancestor outside the Alert Dialog waits for confirmation", async ({ page }) => {
+    await page.setContent(`
+        <a href="#deleted">
+            <div id="confirmation" data-controller="alert-dialog" data-alert-dialog-lock-scroll-class="overflow-hidden">
+                <div data-action="click->alert-dialog#interceptCapture:capture click->alert-dialog#intercept">
+                    <span id="nested-trigger">Delete</span>
+                </div>
+
+                <div data-alert-dialog-target="modal" data-state="closed" data-motion="none" hidden inert>
+                    <div data-alert-dialog-target="backdrop"></div>
+                    <div data-alert-dialog-target="dialog">
+                        <button type="button" data-action="alert-dialog#cancel">Cancel</button>
+                        <button id="confirm" type="button" data-action="alert-dialog#confirm">Confirm</button>
+                    </div>
+                </div>
+            </div>
+        </a>
+    `);
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ content: await browserControllerScript() });
+    await page.evaluate(() => {
+        window.StimulusApplication = window.Stimulus.Application.start();
+        window.StimulusApplication.register("alert-dialog", window.AlertDialogController);
+    });
+
+    await page.locator("#nested-trigger").click();
+
+    await expect(page).not.toHaveURL(/#deleted$/);
+    await expect(page.locator('[data-alert-dialog-target="modal"]')).toHaveAttribute("data-state", "open");
+
+    await page.locator("#confirm").click();
+
+    await expect(page).toHaveURL(/#deleted$/);
+});
+
+test("a replaced external-form trigger submits once with its captured action", async ({ page }) => {
+    await page.setContent(`
+        <form id="item-form" action="/items" method="get">
+            <input name="query" value="current">
+        </form>
+
+        <div id="ancestor">
+        <div id="confirmation" data-controller="alert-dialog" data-alert-dialog-lock-scroll-class="overflow-hidden">
+            <div
+                id="trigger-zone"
+                data-controller="probe"
+                data-action="click->alert-dialog#interceptCapture:capture click->alert-dialog#intercept click->probe#track"
+            >
+                <button
+                    id="delete-item"
+                    type="submit"
+                    form="item-form"
+                    formaction="/items/42"
+                    formmethod="post"
+                    name="intent"
+                    value="destroy"
+                    data-turbo-frame="items"
+                >Delete</button>
+            </div>
+
+            <div data-alert-dialog-target="modal" data-state="closed" data-motion="none" data-action="click->alert-dialog#clickOutside" hidden inert>
+                <div data-alert-dialog-target="backdrop"></div>
+                <div data-alert-dialog-target="dialog">
+                    <button id="cancel" type="button" data-action="alert-dialog#cancel">Cancel</button>
+                    <button id="confirm" type="button" data-action="alert-dialog#confirm">Confirm</button>
+                </div>
+            </div>
+        </div>
+        </div>
+    `);
+
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ content: await browserControllerScript() });
+    await page.evaluate(() => {
+        window.triggerClicks = 0;
+        window.zoneClicks = [];
+        window.ancestorClicks = [];
+        window.submissions = [];
+        window.StimulusApplication = window.Stimulus.Application.start();
+        window.StimulusApplication.register("alert-dialog", window.AlertDialogController);
+        window.StimulusApplication.register("probe", window.ProbeController);
+
+        document.querySelector("#delete-item").addEventListener("click", () => window.triggerClicks++);
+        document.querySelector("#ancestor").addEventListener("click", (event) => {
+            window.ancestorClicks.push({
+                target: event.target.id,
+                trusted: event.isTrusted,
+            });
+        });
+        document.addEventListener("submit", (event) => {
+            event.preventDefault();
+            window.submissions.push({
+                form: event.target.id,
+                name: event.submitter?.name,
+                value: event.submitter?.value,
+                action: event.submitter?.getAttribute("formaction"),
+                method: event.submitter?.getAttribute("formmethod"),
+                frame: event.submitter?.getAttribute("data-turbo-frame"),
+            });
+        });
+    });
+
+    await page.locator("#delete-item").click();
+    expect(await page.evaluate(() => window.ancestorClicks)).toEqual([]);
+    await page.evaluate(() => {
+        const form = document.querySelector("#item-form");
+        const trigger = document.querySelector("#delete-item");
+
+        form.replaceWith(form.cloneNode(true));
+        trigger.replaceWith(trigger.cloneNode(true));
+    });
+    await page.locator("#confirm").click();
+
+    await expect.poll(() => page.evaluate(() => window.submissions)).toEqual([{
+        form: "item-form",
+        name: "intent",
+        value: "destroy",
+        action: "/items/42",
+        method: "post",
+        frame: "items",
+    }]);
+    // The intercepted click is swallowed in the capture phase, so the only click
+    // anyone observes is the replayed one, dispatched on the replacement trigger.
+    // triggerClicks stays 0 because its listener was bound to the replaced node.
+    expect(await page.evaluate(() => window.triggerClicks)).toBe(0);
+    expect(await page.evaluate(() => window.zoneClicks)).toEqual([{ trusted: false }]);
+    expect(await page.evaluate(() => window.ancestorClicks)).toEqual([{ target: "delete-item", trusted: false }]);
+    await expect(page.locator("#delete-item")).toBeFocused();
+});
+
+test("a replayed link keeps inherited Turbo opt-out context", async ({ page }) => {
+    await page.setContent(`
+        <div id="confirmation" data-controller="alert-dialog" data-alert-dialog-lock-scroll-class="overflow-hidden">
+            <div data-turbo="false" data-action="click->alert-dialog#interceptCapture:capture click->alert-dialog#intercept">
+                <a id="trigger" href="#confirmed">Continue</a>
+            </div>
+
+            <div data-alert-dialog-target="modal" data-state="closed" data-motion="none" hidden inert>
+                <div data-alert-dialog-target="backdrop"></div>
+                <div data-alert-dialog-target="dialog">
+                    <button type="button" data-action="alert-dialog#cancel">Cancel</button>
+                    <button id="confirm" type="button" data-action="alert-dialog#confirm">Confirm</button>
+                </div>
+            </div>
+        </div>
+    `);
+
+    await page.addScriptTag({ path: "node_modules/@hotwired/turbo/dist/turbo.es2017-umd.js" });
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ content: await browserControllerScript() });
+    await page.evaluate(() => {
+        window.turboClicks = 0;
+        document.addEventListener("turbo:click", () => window.turboClicks++);
+        window.StimulusApplication = window.Stimulus.Application.start();
+        window.StimulusApplication.register("alert-dialog", window.AlertDialogController);
+    });
+
+    await page.locator("#trigger").click();
+    await page.locator("#confirm").click();
+
+    await expect.poll(() => page.evaluate(() => window.location.hash)).toBe("#confirmed");
+    expect(await page.evaluate(() => window.turboClicks)).toBe(0);
+});
+
+test("a replayed Turbo method link keeps its request method", async ({ page }) => {
+    await page.route("https://example.test/**", async (route) => {
+        if (route.request().url().endsWith("/current")) {
+            await route.fulfill({ contentType: "text/html", body: "<!doctype html><html><body></body></html>" });
+        } else {
+            await route.fulfill({ status: 204 });
+        }
+    });
+    await page.goto("https://example.test/current");
+    await page.setContent(`
+        <div id="confirmation" data-controller="alert-dialog" data-alert-dialog-lock-scroll-class="overflow-hidden">
+            <div data-action="click->alert-dialog#interceptCapture:capture click->alert-dialog#intercept">
+                <a id="trigger" href="/items/42" data-turbo-method="delete">Delete</a>
+            </div>
+
+            <div data-alert-dialog-target="modal" data-state="closed" data-motion="none" hidden inert>
+                <div data-alert-dialog-target="backdrop"></div>
+                <div data-alert-dialog-target="dialog">
+                    <button type="button" data-action="alert-dialog#cancel">Cancel</button>
+                    <button id="confirm" type="button" data-action="alert-dialog#confirm">Confirm</button>
+                </div>
+            </div>
+        </div>
+    `);
+
+    await page.addScriptTag({ path: "node_modules/@hotwired/turbo/dist/turbo.es2017-umd.js" });
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ content: await browserControllerScript() });
+    await page.evaluate(() => {
+        window.StimulusApplication = window.Stimulus.Application.start();
+        window.StimulusApplication.register("alert-dialog", window.AlertDialogController);
+    });
+
+    await page.locator("#trigger").click();
+    const requestPromise = page.waitForRequest((request) => request.url().endsWith("/items/42"));
+    await page.locator("#confirm").click();
+    const request = await requestPromise;
+
+    expect(request.method()).toBe("DELETE");
+});
+
+test("a generic button action runs once only after confirmation", async ({ page }) => {
+    await page.setContent(`
+        <div id="confirmation" data-controller="alert-dialog" data-alert-dialog-lock-scroll-class="overflow-hidden">
+            <div data-action="click->alert-dialog#interceptCapture:capture click->alert-dialog#intercept">
+                <button id="trigger" type="button" data-controller="probe" data-action="click->probe#execute">Archive</button>
+            </div>
+
+            <div data-alert-dialog-target="modal" data-state="closed" data-motion="none" hidden inert>
+                <div data-alert-dialog-target="backdrop"></div>
+                <div data-alert-dialog-target="dialog">
+                    <button type="button" data-action="alert-dialog#cancel">Cancel</button>
+                    <button id="confirm" type="button" data-action="alert-dialog#confirm">Confirm</button>
+                </div>
+            </div>
+        </div>
+    `);
+
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ content: await browserControllerScript() });
+    await page.evaluate(() => {
+        window.executions = [];
+        window.StimulusApplication = window.Stimulus.Application.start();
+        window.StimulusApplication.register("alert-dialog", window.AlertDialogController);
+        window.StimulusApplication.register("probe", window.ProbeController);
+    });
+
+    await page.locator("#trigger").click();
+    expect(await page.evaluate(() => window.executions)).toEqual([]);
+
+    await page.locator("#confirm").click();
+
+    await expect.poll(() => page.evaluate(() => window.executions)).toEqual([{ trusted: false }]);
+});
+
+test("moving an open dialog preserves its pending action across reconnect", async ({ page }) => {
+    await page.setContent(`
+        <div id="first">
+            <div id="confirmation" data-controller="alert-dialog" data-alert-dialog-lock-scroll-class="overflow-hidden">
+                <div data-action="click->alert-dialog#interceptCapture:capture click->alert-dialog#intercept">
+                    <button id="trigger" type="button" data-controller="probe" data-action="click->probe#execute">Archive</button>
+                </div>
+
+                <div data-alert-dialog-target="modal" data-state="closed" data-motion="none" hidden inert>
+                    <div data-alert-dialog-target="backdrop"></div>
+                    <div data-alert-dialog-target="dialog">
+                        <button type="button" data-action="alert-dialog#cancel">Cancel</button>
+                        <button id="confirm" type="button" data-action="alert-dialog#confirm">Confirm</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="second"></div>
+    `);
+
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ content: await browserControllerScript() });
+    await page.evaluate(() => {
+        window.executions = [];
+        window.StimulusApplication = window.Stimulus.Application.start();
+        window.StimulusApplication.register("alert-dialog", window.AlertDialogController);
+        window.StimulusApplication.register("probe", window.ProbeController);
+    });
+
+    await page.locator("#trigger").click();
+    await page.evaluate(() => document.querySelector("#second").append(document.querySelector("#confirmation")));
+    await expect(page.locator("#confirm")).toBeVisible();
+    await page.locator("#confirm").click();
+
+    await expect.poll(() => page.evaluate(() => window.executions)).toEqual([{ trusted: false }]);
+});
+
+test("moving a dialog with replaced targets during its close transition still replays the action", async ({ page }) => {
+    await page.setContent(`
+        <style>
+            [data-alert-dialog-target="dialog"] { opacity: 1; transition: opacity 200ms linear; }
+            [data-alert-dialog-target="modal"][data-state="closed"] [data-alert-dialog-target="dialog"] { opacity: 0; }
+        </style>
+        <div id="first">
+            <div id="confirmation" data-controller="alert-dialog" data-alert-dialog-lock-scroll-class="overflow-hidden">
+                <div data-action="click->alert-dialog#interceptCapture:capture click->alert-dialog#intercept">
+                    <button id="trigger" type="button" data-controller="probe" data-action="click->probe#execute">Archive</button>
+                </div>
+
+                <div data-alert-dialog-target="modal" data-state="closed" data-motion="default" hidden inert>
+                    <div data-alert-dialog-target="backdrop"></div>
+                    <div data-alert-dialog-target="dialog">
+                        <button type="button" data-action="alert-dialog#cancel">Cancel</button>
+                        <button id="confirm" type="button" data-action="alert-dialog#confirm">Confirm</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="second"></div>
+    `);
+
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ content: await browserControllerScript() });
+    await page.evaluate(() => {
+        window.executions = [];
+        window.StimulusApplication = window.Stimulus.Application.start();
+        window.StimulusApplication.register("alert-dialog", window.AlertDialogController);
+        window.StimulusApplication.register("probe", window.ProbeController);
+    });
+
+    await page.locator("#trigger").click();
+    await page.locator("#confirm").click();
+    await page.evaluate(() => {
+        const confirmation = document.querySelector("#confirmation");
+        const modal = confirmation.querySelector('[data-alert-dialog-target="modal"]');
+        modal.replaceWith(modal.cloneNode(true));
+        document.querySelector("#second").append(confirmation);
+    });
+
+    await expect.poll(() => page.evaluate(() => window.executions)).toEqual([{ trusted: false }]);
+    await expect(page.locator("#confirm")).toBeHidden();
+});
+
+test("moving multiple open dialogs preserves their overlay order", async ({ page }) => {
+    const dialog = (id) => `
+        <div id="${id}" data-controller="alert-dialog" data-alert-dialog-lock-scroll-class="overflow-hidden">
+            <div data-action="click->alert-dialog#interceptCapture:capture click->alert-dialog#intercept">
+                <button id="${id}-trigger" type="button">Open ${id}</button>
+            </div>
+
+            <div id="${id}-modal" data-alert-dialog-target="modal" data-state="closed" data-motion="none" hidden inert>
+                <div data-alert-dialog-target="backdrop"></div>
+                <div data-alert-dialog-target="dialog">
+                    <button type="button" data-action="alert-dialog#cancel">Cancel</button>
+                    <button type="button" data-action="alert-dialog#confirm">Confirm</button>
+                </div>
+            </div>
+        </div>
+    `;
+    await page.setContent(`
+        <style>
+            [id$="-modal"] { position: fixed; inset: 0; width: 100vw; height: 100vh; margin: 0; }
+        </style>
+        <div id="first"><div id="dialogs">${dialog("first")}${dialog("second")}${dialog("third")}</div></div>
+        <div id="destination"></div>
+    `);
+
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ content: await browserControllerScript() });
+    await page.evaluate(() => {
+        window.StimulusApplication = window.Stimulus.Application.start();
+        window.StimulusApplication.register("alert-dialog", window.AlertDialogController);
+    });
+
+    await page.locator("#first-trigger").click();
+    await page.locator("#third-trigger").evaluate((trigger) => trigger.click());
+    await page.locator("#second-trigger").evaluate((trigger) => trigger.click());
+    await expect(page.locator("#second-modal")).toBeVisible();
+    await page.evaluate(() => {
+        for (const id of ["second-modal", "third-modal"]) {
+            const modal = document.getElementById(id);
+            modal.replaceWith(modal.cloneNode(true));
+        }
+        document.querySelector("#destination").append(document.querySelector("#dialogs"));
+    });
+
+    expect(await page.evaluate(() =>
+        document.elementFromPoint(window.innerWidth / 2, window.innerHeight / 2)
+            ?.closest('[id$="-modal"]')?.id,
+    )).toBe("second-modal");
+
+    await page.keyboard.press("Escape");
+
+    await expect(page.locator("#second-modal")).toBeHidden();
+    await expect(page.locator("#third-modal")).toBeVisible();
+});
+
+test("a retained top layer restores its managed popover after reconnect", async ({ page }) => {
+    await page.setContent(`<div id="lower"></div><div id="upper"></div>`);
+    const source = (await readFile("resources/js/controllers/_top_layer.js", "utf8"))
+        .replace(/^export /gm, "");
+    await page.addScriptTag({ content: `${source}\nwindow.createTopLayer = createTopLayer;` });
+
+    const restored = await page.evaluate(() => {
+        const lowerElement = document.getElementById("lower");
+        const upperElement = document.getElementById("upper");
+        const lower = window.createTopLayer(lowerElement);
+        const upper = window.createTopLayer(upperElement);
+        lower.show();
+        upper.show();
+
+        upperElement.remove();
+        lower.restore();
+        document.body.append(upperElement);
+        upper.restore();
+
+        const result = {
+            managed: upperElement.hasAttribute("data-hotwire-top-layer"),
+            mode: upperElement.getAttribute("popover"),
+            open: upperElement.matches(":popover-open"),
+        };
+        lower.cleanup();
+        upper.cleanup();
+
+        return result;
+    });
+
+    expect(restored).toEqual({ managed: true, mode: "manual", open: true });
+});
+
+test("a replaced submitter retains Turbo busy state", async ({ page }) => {
+    await page.route("https://example.test/**", async (route) => {
+        if (route.request().url().endsWith("/current")) {
+            await route.fulfill({ contentType: "text/html", body: "<!doctype html><html><body></body></html>" });
+        } else {
+            await new Promise((resolve) => setTimeout(resolve, 500));
+            await route.fulfill({ contentType: "text/html", body: "<!doctype html><html><body>Saved</body></html>" });
+        }
+    });
+    await page.goto("https://example.test/current");
+    await page.setContent(`
+        <form id="item-form" action="/items/42" method="post"></form>
+        <div id="confirmation" data-controller="alert-dialog" data-alert-dialog-lock-scroll-class="overflow-hidden">
+            <div data-action="click->alert-dialog#interceptCapture:capture click->alert-dialog#intercept">
+                <button
+                    id="trigger"
+                    type="submit"
+                    form="item-form"
+                    data-turbo-submits-with="Deleting..."
+                >Delete</button>
+            </div>
+
+            <div data-alert-dialog-target="modal" data-state="closed" data-motion="none" hidden inert>
+                <div data-alert-dialog-target="backdrop"></div>
+                <div data-alert-dialog-target="dialog">
+                    <button type="button" data-action="alert-dialog#cancel">Cancel</button>
+                    <button id="confirm" type="button" data-action="alert-dialog#confirm">Confirm</button>
+                </div>
+            </div>
+        </div>
+    `);
+
+    await page.addScriptTag({ path: "node_modules/@hotwired/turbo/dist/turbo.es2017-umd.js" });
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ content: await browserControllerScript() });
+    await page.evaluate(() => {
+        window.StimulusApplication = window.Stimulus.Application.start();
+        window.StimulusApplication.register("alert-dialog", window.AlertDialogController);
+    });
+
+    await page.locator("#trigger").click();
+    await page.locator("#trigger").evaluate((trigger) => trigger.replaceWith(trigger.cloneNode(true)));
+    await page.locator("#confirm").click();
+
+    await expect(page.locator("#trigger")).toBeDisabled();
+    await expect(page.locator("#trigger")).toHaveText("Deleting...");
+});
+
+async function browserControllerScript() {
+    const files = [
+        "_composition.js",
+        "_focus_trap.js",
+        "_overlay_stack.js",
+        "_top_layer.js",
+        "_presence.js",
+        "_overlay.js",
+        "_action_replay.js",
+    ];
+    const sources = await Promise.all(files.map(async (file) => {
+        const source = await readFile(`resources/js/controllers/${file}`, "utf8");
+
+        return source
+            .replace(/^import .*;\s*$/gm, "")
+            .replace(/^export /gm, "");
+    }));
+    const controller = (await readFile("resources/js/controllers/alert_dialog_controller.js", "utf8"))
+        .replace(/^import .*;\s*$/gm, "")
+        .replace("export default class AlertDialogController extends Controller", "class AlertDialogController extends Controller");
+
+    return `
+        const { Controller } = window.Stimulus;
+        ${sources.join("\n")}
+        ${controller}
+        class ProbeController extends Controller {
+            track(event) {
+                window.zoneClicks.push({ trusted: event.isTrusted });
+            }
+
+            execute(event) {
+                window.executions.push({ trusted: event.isTrusted });
+            }
+        }
+        window.AlertDialogController = AlertDialogController;
+        window.ProbeController = ProbeController;
+    `;
+}

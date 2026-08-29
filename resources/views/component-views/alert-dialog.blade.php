@@ -26,7 +26,7 @@
 <div
     {{ $alertDialogAttributes }}
 >
-    <div data-slot="alert-dialog-trigger" data-action="click->alert-dialog#intercept">
+    <div data-slot="alert-dialog-trigger" data-action="click->alert-dialog#interceptCapture:capture click->alert-dialog#intercept">
         {{ $slot }}
     </div>
 

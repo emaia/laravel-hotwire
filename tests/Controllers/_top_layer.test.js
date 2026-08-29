@@ -56,6 +56,61 @@ test("bringToFront re-enters an already shown element", () => {
     expect(element.showPopover).toHaveBeenCalledTimes(2);
     expect(element.hidePopover).toHaveBeenCalledTimes(1);
     expect(topLayer.isShown).toBe(true);
+
+    topLayer.cleanup();
+});
+
+test("restores a shown popover after a DOM move closes its native top layer", () => {
+    const element = document.createElement("div");
+    const showPopover = mock(() => {});
+    const shown = mock(() => {});
+    element.showPopover = showPopover;
+    element.hidePopover = mock(() => {});
+    element.matches = mock(() => false);
+    document.addEventListener("hotwire:top-layer:show", shown);
+    const topLayer = createTopLayer(element);
+    topLayer.show();
+
+    topLayer.restore();
+
+    expect(showPopover).toHaveBeenCalledTimes(2);
+    expect(shown).toHaveBeenCalledTimes(2);
+    expect(topLayer.isShown).toBe(true);
+
+    topLayer.cleanup();
+});
+
+test("cleanup removes a detached entry retained after a failed raise", () => {
+    const lowerElement = document.createElement("div");
+    lowerElement.showPopover = mock(() => {});
+    lowerElement.hidePopover = mock(() => {});
+    lowerElement.matches = mock(() => false);
+    const upperElement = document.createElement("div");
+    let upperShows = 0;
+    upperElement.showPopover = mock(() => {
+        upperShows++;
+        if (upperShows > 1) throw new Error("detached");
+    });
+    upperElement.hidePopover = mock(() => {});
+    const lower = createTopLayer(lowerElement);
+    const upper = createTopLayer(upperElement);
+    lower.show();
+    upper.show();
+    const releasedPosition = upper.position;
+
+    lower.restore();
+    upper.cleanup();
+
+    const replacementElement = document.createElement("div");
+    replacementElement.showPopover = mock(() => {});
+    replacementElement.hidePopover = mock(() => {});
+    const replacement = createTopLayer(replacementElement);
+    replacement.show();
+
+    expect(replacement.position).toBe(releasedPosition);
+
+    lower.cleanup();
+    replacement.cleanup();
 });
 
 test("does not preserve package-owned popover attributes cloned from an open element", () => {
@@ -103,6 +158,8 @@ test("preserves the original popover mode when managed content is cloned", () =>
 
     expect(clone.getAttribute("popover")).toBe("auto");
     expect(clone.hasAttribute("data-hotwire-top-layer")).toBe(false);
+
+    topLayer.cleanup();
 });
 
 test("cleanup is idempotent and unsupported elements remain unchanged", () => {
@@ -124,4 +181,45 @@ test("cleanup is idempotent and unsupported elements remain unchanged", () => {
 
     expect(fallback.isSupported).toBe(false);
     expect(unsupported.hasAttribute("popover")).toBe(false);
+});
+
+test("restores an entry retained after a raise failed while it was detached", () => {
+    const lowerElement = document.createElement("div");
+    lowerElement.showPopover = mock(() => {});
+    lowerElement.hidePopover = mock(() => {});
+    lowerElement.matches = mock(() => false);
+
+    const upperElement = document.createElement("div");
+    let detached = false;
+    upperElement.showPopover = mock(() => {
+        if (detached) throw new Error("not connected");
+        if (upperElement.getAttribute("popover") !== "manual") throw new Error("not a managed popover");
+    });
+    upperElement.hidePopover = mock(() => {});
+    upperElement.matches = mock(() => false);
+    Object.defineProperty(upperElement, "isConnected", { get: () => !detached });
+
+    const lower = createTopLayer(lowerElement);
+    const upper = createTopLayer(upperElement);
+    lower.show();
+    upper.show();
+
+    // A morph detaches the upper dialog; re-showing the lower one cascades a
+    // raise onto it, which fails and leaves the entry retained but not shown.
+    detached = true;
+    lower.restore();
+    expect(upper.isShown).toBe(false);
+    expect(upper.position).toBeGreaterThanOrEqual(0);
+
+    // Once it reconnects, restoring has to put it back in the top layer.
+    detached = false;
+    upper.restore();
+
+    expect(upper.isShown).toBe(true);
+    expect(upper.position).toBeGreaterThanOrEqual(0);
+    expect(upperElement.getAttribute("popover")).toBe("manual");
+    expect(upperElement.hasAttribute("data-hotwire-top-layer")).toBe(true);
+
+    lower.cleanup();
+    upper.cleanup();
 });
