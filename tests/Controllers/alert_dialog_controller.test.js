@@ -169,6 +169,47 @@ test.serial("shared host reveals a trigger title when its default title is empty
     expect(title.textContent).toBe("");
 });
 
+test.serial("shared host supplies an accessible title when its default and trigger titles are empty", async () => {
+    mounted = await mountController(
+        "alert-dialog",
+        AlertDialogController,
+        SHARED_HTML.replace(
+            'id="shared-title" data-alert-dialog-target="title">Confirm action',
+            'id="shared-title" data-alert-dialog-target="title" hidden>',
+        ),
+    );
+    const modal = document.querySelector('[data-alert-dialog-target="modal"]');
+    const title = document.getElementById("shared-title");
+
+    clickWith(document.getElementById("second-trigger"));
+
+    expect(title.hidden).toBe(false);
+    expect(title.textContent).toBe("Confirm action");
+    expect(modal.getAttribute("aria-labelledby")).toBe("shared-title");
+});
+
+test.serial("shared host uses an authored aria-label when its resolved title is empty", async () => {
+    mounted = await mountController(
+        "alert-dialog",
+        AlertDialogController,
+        SHARED_HTML
+            .replace(
+                'id="shared-title" data-alert-dialog-target="title">Confirm action',
+                'id="shared-title" data-alert-dialog-target="title" hidden>',
+            )
+            .replace('aria-labelledby="shared-title"', 'aria-label="Confirm deletion" aria-labelledby="shared-title"'),
+    );
+    const modal = document.querySelector('[data-alert-dialog-target="modal"]');
+    const title = document.getElementById("shared-title");
+
+    clickWith(document.getElementById("second-trigger"));
+
+    expect(title.hidden).toBe(true);
+    expect(title.textContent).toBe("");
+    expect(modal.getAttribute("aria-label")).toBe("Confirm deletion");
+    expect(modal.hasAttribute("aria-labelledby")).toBe(false);
+});
+
 test.serial("shared host keeps the first pending action while open", async () => {
     await mountShared();
     const first = document.getElementById("first-trigger");

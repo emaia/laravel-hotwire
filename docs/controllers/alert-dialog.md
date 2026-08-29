@@ -83,6 +83,10 @@ Add the `title`, `description`, `confirm`, and `cancel` targets to the correspon
 hides its target and removes `aria-describedby` until the host defaults are restored. The Blade
 `<hw:alert-dialog.host>` and `<hw:alert-dialog.trigger>` components wire this mode automatically.
 
+If both the host title and a trigger title are empty, shared mode uses `Confirm action` as the visible accessible
+fallback. An authored non-empty `aria-label` on the modal takes precedence instead; the empty title stays hidden and
+`aria-labelledby` is removed while that action is pending.
+
 ## Targets
 
 | Target        | Description                                                            |

@@ -307,6 +307,9 @@ export default class AlertDialogController extends Controller {
         if (this.sharedDefaults === null) this.sharedDefaults = {};
 
         if (name === "modal") {
+            if (!canceledAttributes.has("aria-labelledby")) {
+                this.sharedDefaults.labelledBy = element.getAttribute("aria-labelledby");
+            }
             if (!canceledAttributes.has("aria-describedby")) {
                 this.sharedDefaults.describedBy = element.getAttribute("aria-describedby");
             }
@@ -333,9 +336,19 @@ export default class AlertDialogController extends Controller {
         if (!this.sharedValue || this.sharedDefaults === null) return;
 
         if (this.hasTitleTarget) {
-            const title = this.#triggerOverride(trigger, "data-alert-dialog-title", this.sharedDefaults.title);
+            let title = this.#triggerOverride(trigger, "data-alert-dialog-title", this.sharedDefaults.title);
+            const hasAuthoredLabel = this.hasModalTarget
+                && (this.modalTarget.getAttribute("aria-label")?.trim() ?? "") !== "";
+            if (title === "" && !hasAuthoredLabel) title = "Confirm action";
+
             this.titleTarget.textContent = title;
             this.titleTarget.hidden = title === "";
+            if (this.hasModalTarget) {
+                const labelledBy = title === ""
+                    ? null
+                    : this.sharedDefaults.labelledBy || this.titleTarget.id || null;
+                this.#setOptionalAttribute(this.modalTarget, "aria-labelledby", labelledBy);
+            }
         }
         if (this.hasDescriptionTarget) {
             const description = this.#triggerOverride(
@@ -391,6 +404,7 @@ export default class AlertDialogController extends Controller {
             this.descriptionTarget.hidden = this.sharedDefaults.descriptionHidden;
         }
         if (this.hasModalTarget) {
+            this.#setOptionalAttribute(this.modalTarget, "aria-labelledby", this.sharedDefaults.labelledBy);
             this.#setOptionalAttribute(this.modalTarget, "aria-describedby", this.sharedDefaults.describedBy);
         }
         if (this.hasCancelTarget) {
