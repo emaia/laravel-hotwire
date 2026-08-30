@@ -53,6 +53,7 @@ class AlertDialog extends Component
         $data = array_replace($data, OverlayLabelContext::boundaryData());
         $data['alertDialogOverlayLabelContext'] = $this->overlayLabelContext;
         $data['overlayLabelOwnerContext'] = $this->overlayLabelContext;
+        $data['alertDialogHost'] = false;
         $data = array_replace($data, FieldContext::boundaryData());
 
         return $data;

@@ -300,6 +300,22 @@ it('merges shared trigger metadata into an as-child button without replacing its
         ->and($trigger->getAttribute('data-alert-dialog-confirm-variant'))->toBe('destructive');
 });
 
+it('makes a disabled as-child alert dialog anchor inert after merging trigger attributes', function () {
+    $html = (string) Blade::render('
+        <x-hw::alert-dialog.host>
+            <x-hw::alert-dialog.trigger as-child aria-disabled="true">
+                <a href="/items/1" data-action="items#destroy">Delete</a>
+            </x-hw::alert-dialog.trigger>
+        </x-hw::alert-dialog.host>
+    ');
+    $trigger = (new DOMXPath(dom($html)))->query('//*[@data-alert-dialog-trigger]')->item(0);
+
+    expect($trigger->getAttribute('aria-disabled'))->toBe('true')
+        ->and($trigger->getAttribute('tabindex'))->toBe('-1')
+        ->and($trigger->hasAttribute('href'))->toBeFalse()
+        ->and($trigger->hasAttribute('data-action'))->toBeFalse();
+});
+
 it('escapes dynamic shared trigger messages as attributes', function () {
     $view = $this->blade('
         <x-hw::alert-dialog.host title="Delete item?">
@@ -347,6 +363,16 @@ it('rejects rich label subcomponents in a shared alert dialog host', function ()
 
 it('requires shared triggers to render inside an alert dialog host', function () {
     $this->blade('<x-hw::alert-dialog.trigger>Delete</x-hw::alert-dialog.trigger>');
+})->throws(ViewException::class, 'Alert Dialog trigger must be rendered inside an Alert Dialog Host.');
+
+it('does not inherit an alert dialog host through a nested inline alert dialog', function () {
+    $this->blade('
+        <x-hw::alert-dialog.host>
+            <x-hw::alert-dialog title="Inner dialog">
+                <x-hw::alert-dialog.trigger>Delete</x-hw::alert-dialog.trigger>
+            </x-hw::alert-dialog>
+        </x-hw::alert-dialog.host>
+    ');
 })->throws(ViewException::class, 'Alert Dialog trigger must be rendered inside an Alert Dialog Host.');
 
 it('rejects invalid alert dialog as-child trigger composition', function () {

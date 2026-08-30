@@ -13,9 +13,13 @@ final class SlotAttributes
      * Merge attributes into the single interactive root of an as-child slot.
      *
      * @param  array<string, mixed>|ComponentAttributeBag  $attributes
+     * @param  bool  $disableWhenMerged  Make a root disabled by attributes supplied during this merge inert.
      */
-    public static function mergeIntoFirstElement(Htmlable|string $html, array|ComponentAttributeBag $attributes): HtmlString
-    {
+    public static function mergeIntoFirstElement(
+        Htmlable|string $html,
+        array|ComponentAttributeBag $attributes,
+        bool $disableWhenMerged = false,
+    ): HtmlString {
         $contents = $html instanceof Htmlable ? $html->toHtml() : (string) $html;
         $attributes = $attributes instanceof ComponentAttributeBag ? $attributes : new ComponentAttributeBag($attributes);
         $contents = trim($contents);
@@ -37,8 +41,17 @@ final class SlotAttributes
         if ($tag === 'button' && ! array_key_exists('type', $existing)) {
             $existing['type'] = 'button';
         }
+        if (self::isDisabled($existing)) {
+            unset($existing['data-action']);
+            $attributes = $attributes->except('data-action');
+
+            if ($tag === 'a') {
+                unset($existing['href']);
+                $existing['tabindex'] = '-1';
+            }
+        }
         $mergedAttributes = StimulusAttributes::merge($existing, $attributes)->getAttributes();
-        if (self::isDisabled($mergedAttributes)) {
+        if ($disableWhenMerged && self::isDisabled($mergedAttributes)) {
             unset($mergedAttributes['data-action']);
 
             if ($tag === 'a') {

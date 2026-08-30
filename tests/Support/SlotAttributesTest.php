@@ -23,6 +23,7 @@ it('removes actions and href when merged attributes disable an as-child anchor',
     $merged = SlotAttributes::mergeIntoFirstElement(
         '<a href="/items/1" data-action="items#destroy">Delete</a>',
         ['aria-disabled' => 'true', 'data-action' => 'alert-dialog#open'],
+        disableWhenMerged: true,
     )->toHtml();
 
     expect($merged)
@@ -30,6 +31,19 @@ it('removes actions and href when merged attributes disable an as-child anchor',
         ->toContain('tabindex="-1"')
         ->not->toContain('href=')
         ->not->toContain('data-action=');
+});
+
+it('preserves merged disabled anchor behavior unless explicitly disabled by the caller', function () {
+    $merged = SlotAttributes::mergeIntoFirstElement(
+        '<a href="/items/1" data-action="items#destroy">Delete</a>',
+        ['aria-disabled' => 'true', 'tabindex' => '0'],
+    )->toHtml();
+
+    expect($merged)
+        ->toContain('href="/items/1"')
+        ->toContain('data-action="items#destroy"')
+        ->toContain('aria-disabled="true"')
+        ->toContain('tabindex="0"');
 });
 
 it('rejects invalid as-child slot roots', function (string $html) {

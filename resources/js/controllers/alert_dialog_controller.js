@@ -167,7 +167,7 @@ export default class AlertDialogController extends Controller {
 
             return;
         }
-        if (this.sharedValue && this.pendingAction) {
+        if (this.sharedValue && this.pendingAction && this.isOpen) {
             this.#preventAction(event);
 
             return;
@@ -180,25 +180,7 @@ export default class AlertDialogController extends Controller {
     }
 
     interceptCapture(event) {
-        if (!this.#shouldIntercept(event)) return;
-
-        const trigger = this.#sharedTriggerFor(event);
-        if (this.sharedValue && !trigger) return;
-        if (this.#sharedTriggerDisabled(trigger)) {
-            this.#preventAction(event);
-
-            return;
-        }
-        if (this.sharedValue && this.pendingAction) {
-            this.#preventAction(event);
-
-            return;
-        }
-
-        const action = captureAction(event, this.element);
-        if (!action) return;
-
-        this.#intercept(event, action, trigger);
+        this.intercept(event);
     }
 
     #shouldIntercept(event) {

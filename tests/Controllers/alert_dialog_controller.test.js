@@ -227,6 +227,34 @@ test.serial("shared host keeps the first pending action while open", async () =>
     expect(clicked).toEqual(["first"]);
 });
 
+test.serial("shared host replaces a stale pending action after a failed close leaves it closed", async () => {
+    await mountShared();
+    const first = document.getElementById("first-trigger");
+    const second = document.getElementById("second-trigger");
+    const clicked = [];
+    first.addEventListener("click", () => clicked.push("first"));
+    second.addEventListener("click", () => clicked.push("second"));
+
+    clickWith(first);
+    const overlay = mounted.controller.overlay;
+    const close = overlay.close;
+    overlay.close = async () => {
+        overlay.closeNow({ restoreFocus: false });
+
+        return false;
+    };
+    await mounted.controller.confirm();
+    overlay.close = close;
+
+    expect(mounted.controller.isOpen).toBe(false);
+    expect(mounted.controller.pendingAction).not.toBeNull();
+
+    clickWith(second);
+    await mounted.controller.confirm();
+
+    expect(clicked).toEqual(["second"]);
+});
+
 test.serial("a nested shared host owns its marked triggers", async () => {
     mounted = await mountControllers("alert-dialog", AlertDialogController, `
         <div id="outer-host" data-controller="alert-dialog" data-alert-dialog-shared-value="true"
