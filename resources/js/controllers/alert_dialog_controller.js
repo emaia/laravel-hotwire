@@ -285,7 +285,7 @@ export default class AlertDialogController extends Controller {
         if (this.hasConfirmTarget) this.#captureSharedTarget("confirm", this.confirmTarget);
     }
 
-    #captureSharedTarget(name, element, canceledAttributes = new Set()) {
+    #captureSharedTarget(name, element, canceledAttributes = new Set(), contentNodes = null) {
         if (this.sharedDefaults === null) this.sharedDefaults = {};
 
         if (name === "modal") {
@@ -301,6 +301,7 @@ export default class AlertDialogController extends Controller {
 
         if (name === "title" || name === "description") {
             this.sharedDefaults[name] = element.textContent;
+            this.sharedDefaults[`${name}Nodes`] = contentNodes ?? [...element.childNodes];
             if (!canceledAttributes.has("hidden")) {
                 this.sharedDefaults[`${name}Hidden`] = element.hidden;
             }
@@ -309,6 +310,7 @@ export default class AlertDialogController extends Controller {
         }
 
         this.sharedDefaults[`${name}Label`] = element.textContent;
+        this.sharedDefaults[`${name}Nodes`] = contentNodes ?? [...element.childNodes];
         if (!canceledAttributes.has("data-variant")) {
             this.sharedDefaults[`${name}Variant`] = element.getAttribute("data-variant");
         }
@@ -319,11 +321,16 @@ export default class AlertDialogController extends Controller {
 
         if (this.hasTitleTarget) {
             let title = this.#triggerOverride(trigger, "data-alert-dialog-title", this.sharedDefaults.title);
+            const overridesTitle = this.#hasTriggerOverride(trigger, "data-alert-dialog-title");
             const hasAuthoredLabel = this.hasModalTarget
                 && (this.modalTarget.getAttribute("aria-label")?.trim() ?? "") !== "";
             if (title === "" && !hasAuthoredLabel) title = "Confirm action";
 
-            this.titleTarget.textContent = title;
+            if (overridesTitle || title !== this.sharedDefaults.title) {
+                this.titleTarget.textContent = title;
+            } else {
+                this.#restoreSharedContent("title", this.titleTarget);
+            }
             this.titleTarget.hidden = title === "";
             if (this.hasModalTarget) {
                 const labelledBy = title === ""
@@ -339,7 +346,11 @@ export default class AlertDialogController extends Controller {
                 this.sharedDefaults.description,
                 true,
             );
-            this.descriptionTarget.textContent = description;
+            if (this.#hasTriggerOverride(trigger, "data-alert-dialog-description", true)) {
+                this.descriptionTarget.textContent = description;
+            } else {
+                this.#restoreSharedContent("description", this.descriptionTarget);
+            }
             this.descriptionTarget.hidden = description === "";
             if (this.hasModalTarget) {
                 const describedBy = description === ""
@@ -349,11 +360,15 @@ export default class AlertDialogController extends Controller {
             }
         }
         if (this.hasCancelTarget) {
-            this.cancelTarget.textContent = this.#triggerOverride(
-                trigger,
-                "data-alert-dialog-cancel-label",
-                this.sharedDefaults.cancelLabel,
-            );
+            if (this.#hasTriggerOverride(trigger, "data-alert-dialog-cancel-label")) {
+                this.cancelTarget.textContent = this.#triggerOverride(
+                    trigger,
+                    "data-alert-dialog-cancel-label",
+                    this.sharedDefaults.cancelLabel,
+                );
+            } else {
+                this.#restoreSharedContent("cancel", this.cancelTarget);
+            }
             this.#setOptionalAttribute(
                 this.cancelTarget,
                 "data-variant",
@@ -361,11 +376,15 @@ export default class AlertDialogController extends Controller {
             );
         }
         if (this.hasConfirmTarget) {
-            this.confirmTarget.textContent = this.#triggerOverride(
-                trigger,
-                "data-alert-dialog-confirm-label",
-                this.sharedDefaults.confirmLabel,
-            );
+            if (this.#hasTriggerOverride(trigger, "data-alert-dialog-confirm-label")) {
+                this.confirmTarget.textContent = this.#triggerOverride(
+                    trigger,
+                    "data-alert-dialog-confirm-label",
+                    this.sharedDefaults.confirmLabel,
+                );
+            } else {
+                this.#restoreSharedContent("confirm", this.confirmTarget);
+            }
             this.#setOptionalAttribute(
                 this.confirmTarget,
                 "data-variant",
@@ -378,11 +397,11 @@ export default class AlertDialogController extends Controller {
         if (!this.sharedValue || this.sharedDefaults === null) return;
 
         if (this.hasTitleTarget) {
-            this.titleTarget.textContent = this.sharedDefaults.title;
+            this.#restoreSharedContent("title", this.titleTarget);
             this.titleTarget.hidden = this.sharedDefaults.titleHidden;
         }
         if (this.hasDescriptionTarget) {
-            this.descriptionTarget.textContent = this.sharedDefaults.description;
+            this.#restoreSharedContent("description", this.descriptionTarget);
             this.descriptionTarget.hidden = this.sharedDefaults.descriptionHidden;
         }
         if (this.hasModalTarget) {
@@ -390,11 +409,11 @@ export default class AlertDialogController extends Controller {
             this.#setOptionalAttribute(this.modalTarget, "aria-describedby", this.sharedDefaults.describedBy);
         }
         if (this.hasCancelTarget) {
-            this.cancelTarget.textContent = this.sharedDefaults.cancelLabel;
+            this.#restoreSharedContent("cancel", this.cancelTarget);
             this.#setOptionalAttribute(this.cancelTarget, "data-variant", this.sharedDefaults.cancelVariant);
         }
         if (this.hasConfirmTarget) {
-            this.confirmTarget.textContent = this.sharedDefaults.confirmLabel;
+            this.#restoreSharedContent("confirm", this.confirmTarget);
             this.#setOptionalAttribute(this.confirmTarget, "data-variant", this.sharedDefaults.confirmVariant);
         }
     }
@@ -405,6 +424,22 @@ export default class AlertDialogController extends Controller {
         const value = trigger.getAttribute(attribute);
 
         return !allowEmpty && value.trim() === "" ? fallback : value;
+    }
+
+    #hasTriggerOverride(trigger, attribute, allowEmpty = false) {
+        if (!trigger.hasAttribute(attribute)) return false;
+
+        return allowEmpty || trigger.getAttribute(attribute).trim() !== "";
+    }
+
+    #restoreSharedContent(name, element) {
+        const nodes = this.sharedDefaults?.[`${name}Nodes`];
+        if (!nodes) return;
+
+        const current = [...element.childNodes];
+        if (current.length === nodes.length && current.every((node, index) => node === nodes[index])) return;
+
+        element.replaceChildren(...nodes);
     }
 
     #setOptionalAttribute(element, name, value) {
@@ -447,6 +482,7 @@ export default class AlertDialogController extends Controller {
         this.sharedMorphOperations.push({
             name,
             snapshot: event.target.cloneNode(true),
+            contentNodes: [...event.target.childNodes],
             attributes,
         });
         if (this.sharedMorphRefreshQueued) return;
@@ -463,7 +499,12 @@ export default class AlertDialogController extends Controller {
                             .filter(({ event: attributeEvent }) => attributeEvent.defaultPrevented)
                             .map(({ attributeName }) => attributeName),
                     );
-                    this.#captureSharedTarget(operation.name, operation.snapshot, canceled);
+                    this.#captureSharedTarget(
+                        operation.name,
+                        operation.snapshot,
+                        canceled,
+                        operation.contentNodes,
+                    );
                 }
                 this.sharedMorphOperations = [];
 
@@ -499,17 +540,21 @@ export default class AlertDialogController extends Controller {
         return null;
     }
 
-    #currentSharedTrigger() {
+    #currentSharedActionElement() {
         const actionElement = this.pendingAction ? resolveActionElement(this.pendingAction, this.element) : null;
         const trigger = actionElement?.closest("[data-alert-dialog-trigger]") ?? null;
         const owner = trigger?.closest('[data-controller~="alert-dialog"][data-alert-dialog-shared-value="true"]');
 
-        return owner === this.element ? trigger : null;
+        return owner === this.element ? actionElement : null;
+    }
+
+    #currentSharedTrigger() {
+        return this.#currentSharedActionElement()?.closest("[data-alert-dialog-trigger]") ?? null;
     }
 
     #refreshTriggerElement() {
         const trigger = this.sharedValue
-            ? this.#currentSharedTrigger()
+            ? this.#currentSharedActionElement()
             : this.pendingAction ? resolveActionElement(this.pendingAction, this.element) : null;
         this.overlay?.setTriggerElement(trigger);
     }

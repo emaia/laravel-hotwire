@@ -248,7 +248,8 @@ it('renders one shared overlay for multiple marked triggers', function () {
 
     expect($xpath->query('//*[@data-controller="alert-dialog"]'))->toHaveCount(1)
         ->and($xpath->query('//*[@data-slot="alert-dialog-overlay"]'))->toHaveCount(1)
-        ->and($xpath->query('//*[@data-alert-dialog-trigger]'))->toHaveCount(2);
+        ->and($xpath->query('//*[@data-alert-dialog-trigger]'))->toHaveCount(2)
+        ->and($xpath->query('//*[@data-slot="alert-dialog-trigger"]'))->toHaveCount(1);
 
     $view->assertSee('data-alert-dialog-shared-value="true"', false);
 });

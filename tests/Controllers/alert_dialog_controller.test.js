@@ -125,6 +125,42 @@ test.serial("shared host applies trigger content and restores its defaults after
     expect(document.getElementById("confirm").dataset.variant).toBe("destructive");
 });
 
+test.serial("shared host preserves authored target markup without text overrides", async () => {
+    mounted = await mountController(
+        "alert-dialog",
+        AlertDialogController,
+        SHARED_HTML
+            .replace("Confirm action</h2>", '<span id="title-markup">Confirm <strong>action</strong></span></h2>')
+            .replace(
+                "This action cannot be undone.</p>",
+                '<span id="description-markup">This <strong>cannot</strong> be undone.</span></p>',
+            )
+            .replace(">Cancel</button>", '><svg id="cancel-icon"></svg><span>Cancel</span></button>')
+            .replace(">Confirm</button>", '><svg id="confirm-icon"></svg><span>Confirm</span></button>'),
+    );
+    const titleMarkup = document.getElementById("title-markup");
+    const descriptionMarkup = document.getElementById("description-markup");
+    const cancelIcon = document.getElementById("cancel-icon");
+    const confirmIcon = document.getElementById("confirm-icon");
+
+    clickWith(document.getElementById("second-trigger"));
+
+    expect(document.getElementById("title-markup")).toBe(titleMarkup);
+    expect(document.getElementById("description-markup")).toBe(descriptionMarkup);
+    expect(document.getElementById("cancel-icon")).toBe(cancelIcon);
+    expect(document.getElementById("confirm-icon")).toBe(confirmIcon);
+
+    await mounted.controller.cancel();
+    clickWith(document.getElementById("first-trigger"));
+    expect(document.getElementById("confirm-icon")).toBeNull();
+    await mounted.controller.cancel();
+
+    expect(document.getElementById("title-markup")).toBe(titleMarkup);
+    expect(document.getElementById("description-markup")).toBe(descriptionMarkup);
+    expect(document.getElementById("cancel-icon")).toBe(cancelIcon);
+    expect(document.getElementById("confirm-icon")).toBe(confirmIcon);
+});
+
 test.serial("shared host removes an empty dynamic description from the accessible description", async () => {
     await mountShared();
     const trigger = document.getElementById("first-trigger");

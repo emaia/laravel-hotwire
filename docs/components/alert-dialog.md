@@ -93,6 +93,7 @@ Rendering one inline dialog per row is unnecessary when every action uses the sa
 The host renders one overlay and delegates clicks from all of its marked triggers. Trigger overrides are plain text and
 are reset to the host defaults after each decision. Use `as-child` when the slot is already one `<button>` or `<a>`;
 without it, the trigger renders its own button. A nested host owns its own triggers, so the nearest host always wins.
+Targets without a per-trigger text override retain their authored child markup, including icons and emphasized text.
 
 While a decision is pending, later trigger clicks are swallowed without replacing the first action. If a Turbo morph
 may replace a trigger while the dialog is open, give the action element a stable, unique `id`, just as for the inline
@@ -225,3 +226,6 @@ The component exposes stable `data-slot` hooks for preset and application CSS:
 - `data-slot="alert-dialog-action"`
 - `data-slot="alert-dialog"`
 - `data-slot="alert-dialog-trigger"`
+
+`alert-dialog-trigger` is the interception wrapper around the inline trigger or shared collection. Individual shared
+markers use `data-alert-dialog-trigger` instead, so styling the wrapper does not alter every action button.

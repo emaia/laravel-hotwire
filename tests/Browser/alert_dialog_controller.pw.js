@@ -347,6 +347,40 @@ test("a shared host keeps its pending presentation and action across DOM replace
     await expect(page.locator("#confirm")).toHaveAttribute("data-variant", "outline");
 });
 
+test("a shared marker wrapper restores focus to its action element", async ({ page }) => {
+    await page.setContent(`
+        <div data-controller="alert-dialog" data-alert-dialog-shared-value="true"
+             data-alert-dialog-lock-scroll-class="overflow-hidden">
+            <div data-action="click->alert-dialog#interceptCapture:capture click->alert-dialog#intercept">
+                <div data-alert-dialog-trigger>
+                    <a id="wrapped-trigger" href="#deleted">Delete</a>
+                </div>
+            </div>
+
+            <div data-alert-dialog-target="modal" data-state="closed" data-motion="none" hidden inert>
+                <div data-alert-dialog-target="backdrop"></div>
+                <div data-alert-dialog-target="dialog">
+                    <h2 data-alert-dialog-target="title">Delete item?</h2>
+                    <p data-alert-dialog-target="description">This cannot be undone.</p>
+                    <button id="cancel" type="button" data-alert-dialog-target="cancel" data-action="alert-dialog#cancel">Cancel</button>
+                    <button type="button" data-alert-dialog-target="confirm" data-action="alert-dialog#confirm">Confirm</button>
+                </div>
+            </div>
+        </div>
+    `);
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ content: await browserControllerScript() });
+    await page.evaluate(() => {
+        window.StimulusApplication = window.Stimulus.Application.start();
+        window.StimulusApplication.register("alert-dialog", window.AlertDialogController);
+    });
+
+    await page.locator("#wrapped-trigger").click();
+    await page.locator("#cancel").click();
+
+    await expect(page.locator("#wrapped-trigger")).toBeFocused();
+});
+
 test("moving an open dialog preserves its pending action across reconnect", async ({ page }) => {
     await page.setContent(`
         <div id="first">

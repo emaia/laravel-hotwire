@@ -19,5 +19,5 @@
 @if ($alertDialogTriggerAsChild)
     {!! \Emaia\LaravelHotwire\Support\SlotAttributes::mergeIntoFirstElement($slot, $triggerAttributes, disableWhenMerged: true) !!}
 @else
-    <button {{ $triggerAttributes->merge(['type' => 'button', 'data-slot' => 'alert-dialog-trigger']) }}>{{ $slot }}</button>
+    <button {{ $triggerAttributes->merge(['type' => 'button']) }}>{{ $slot }}</button>
 @endif

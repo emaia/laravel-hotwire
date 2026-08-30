@@ -79,6 +79,9 @@ Shared triggers may override the rendered plain text and button variants with:
 - `data-alert-dialog-confirm-variant`
 - `data-alert-dialog-cancel-variant`
 
+Text is replaced only for attributes present on the active trigger. Without an override, authored child markup inside
+the target is preserved and restored after later overridden actions.
+
 Add the `title`, `description`, `confirm`, and `cancel` targets to the corresponding shared elements. An empty description
 hides its target and removes `aria-describedby` until the host defaults are restored. The Blade
 `<hw:alert-dialog.host>` and `<hw:alert-dialog.trigger>` components wire this mode automatically.
