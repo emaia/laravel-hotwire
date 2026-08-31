@@ -95,6 +95,12 @@ are reset to the host defaults after each decision. Use `as-child` when the slot
 without it, the trigger renders its own button. A nested host owns its own triggers, so the nearest host always wins.
 Targets without a per-trigger text override retain their authored child markup, including icons and emphasized text.
 
+The trigger component must render in the same Blade component tree as its host. A row partial rendered independently for
+a Turbo Stream `append`, `prepend`, or `replace` cannot contain `<hw:alert-dialog.trigger>`, even when its eventual stream
+target is inside a host, because Blade validates the host before the response reaches the browser. Render the host and
+collection together, including inside a Turbo Frame, when using this scoped mode. Referencing a separately rendered host
+by id is not part of this API.
+
 While a decision is pending, later trigger clicks are swallowed without replacing the first action. If a Turbo morph
 may replace a trigger while the dialog is open, give the action element a stable, unique `id`, just as for the inline
 component. Moving a pending trigger into another host makes confirmation fail closed and dispatches
@@ -191,8 +197,8 @@ accessible fallback. Its default slot contains the collection and its shared tri
 | `confirm-variant` | `string\|null` | `null`  | Confirm button variant override                               |
 | `cancel-variant`  | `string\|null` | `null`  | Cancel button variant override                                |
 
-`<hw:alert-dialog.trigger>` must be rendered inside a host. In `as-child` mode, its slot must contain exactly one
-button or anchor root element.
+`<hw:alert-dialog.trigger>` must be rendered inside a host in the same Blade component tree. In `as-child` mode, its
+slot must contain exactly one button or anchor root element.
 
 ## Slots
 
