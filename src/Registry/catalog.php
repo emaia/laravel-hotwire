@@ -126,7 +126,7 @@ return [
             'view' => 'hotwire::component-views.alert-dialog',
             'docs' => 'docs/components/alert-dialog.md',
             'category' => 'overlay',
-            'description' => 'Accessible alert dialog with state-driven motion that intercepts clicks before proceeding',
+            'description' => 'Accessible inline or shared alert dialog that intercepts clicks before proceeding',
             'controllers' => ['alert-dialog'],
             'styling' => [
                 'slots' => $slots(

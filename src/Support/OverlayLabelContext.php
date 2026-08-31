@@ -198,12 +198,7 @@ final class OverlayLabelContext
             return $this->inspectionCache[$html];
         }
 
-        if (
-            $this->titleIds === []
-            && $this->descriptionIds === []
-            && ! str_contains($html, "{$this->slotPrefix}-title")
-            && ! str_contains($html, "{$this->slotPrefix}-description")
-        ) {
+        if (! $this->containsInspectableContent($html)) {
             return $this->inspectionCache[$html] = [];
         }
 
@@ -240,6 +235,28 @@ final class OverlayLabelContext
         }
 
         return $this->inspectionCache[$html] = $elements;
+    }
+
+    private function containsInspectableContent(string $html): bool
+    {
+        if (
+            str_contains($html, "{$this->slotPrefix}-title")
+            || str_contains($html, "{$this->slotPrefix}-description")
+        ) {
+            return true;
+        }
+
+        $decoded = str_contains($html, '&')
+            ? html_entity_decode($html, ENT_QUOTES | ENT_HTML5, 'UTF-8')
+            : $html;
+
+        foreach (array_keys($this->usedIds) as $id) {
+            if ($id !== '' && str_contains($decoded, $id)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

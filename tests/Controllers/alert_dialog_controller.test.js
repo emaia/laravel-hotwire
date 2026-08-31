@@ -34,9 +34,366 @@ const HTML = `
     </div>
 `;
 
+const SHARED_HTML = `
+    <div data-controller="alert-dialog"
+         data-alert-dialog-shared-value="true"
+         data-alert-dialog-lock-scroll-class="overflow-hidden">
+        <div data-slot="alert-dialog-trigger"
+             data-action="click->alert-dialog#interceptCapture:capture click->alert-dialog#intercept">
+            <button id="first-trigger"
+                    type="button"
+                    data-alert-dialog-trigger
+                    data-alert-dialog-title="Delete item?"
+                    data-alert-dialog-description="This item cannot be recovered."
+                    data-alert-dialog-confirm-label="Delete"
+                    data-alert-dialog-cancel-label="Keep"
+                    data-alert-dialog-confirm-variant="danger"
+                    data-alert-dialog-cancel-variant="ghost">Delete first</button>
+            <button id="second-trigger" type="button" data-alert-dialog-trigger>Delete second</button>
+            <button id="unmarked-trigger" type="button">Leave alone</button>
+        </div>
+
+        <div data-alert-dialog-target="modal"
+             data-state="closed"
+             data-motion="none"
+             data-action="click->alert-dialog#clickOutside"
+             aria-labelledby="shared-title"
+             aria-describedby="shared-description"
+             hidden inert>
+            <div data-alert-dialog-target="backdrop"></div>
+            <div data-alert-dialog-target="dialog">
+                <h2 id="shared-title" data-alert-dialog-target="title">Confirm action</h2>
+                <p id="shared-description" data-alert-dialog-target="description">This action cannot be undone.</p>
+                <button id="cancel" type="button" data-variant="secondary"
+                        data-alert-dialog-target="cancel" data-action="click->alert-dialog#cancel">Cancel</button>
+                <button id="confirm" type="button" data-variant="destructive"
+                        data-alert-dialog-target="confirm" data-action="click->alert-dialog#confirm">Confirm</button>
+            </div>
+        </div>
+    </div>
+`;
+
 function clickWith(element, init = {}) {
     return element.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, ...init }));
 }
+
+// --- shared host ---
+
+test.serial("shared host intercepts only marked triggers", async () => {
+    await mountShared();
+    const unmarked = document.getElementById("unmarked-trigger");
+    let clicks = 0;
+    unmarked.addEventListener("click", () => clicks++);
+
+    const defaultPrevented = !clickWith(unmarked);
+
+    expect(defaultPrevented).toBe(false);
+    expect(clicks).toBe(1);
+    expect(mounted.controller.isOpen).toBe(false);
+});
+
+test.serial("shared host ignores disabled marked triggers", async () => {
+    await mountShared();
+    const trigger = document.getElementById("first-trigger");
+    trigger.setAttribute("aria-disabled", "true");
+
+    const defaultPrevented = !clickWith(trigger);
+
+    expect(defaultPrevented).toBe(true);
+    expect(mounted.controller.isOpen).toBe(false);
+});
+
+test.serial("shared host applies trigger content and restores its defaults after cancel", async () => {
+    await mountShared();
+
+    clickWith(document.getElementById("first-trigger"));
+
+    expect(document.getElementById("shared-title").textContent).toBe("Delete item?");
+    expect(document.getElementById("shared-description").textContent).toBe("This item cannot be recovered.");
+    expect(document.getElementById("cancel").textContent).toBe("Keep");
+    expect(document.getElementById("cancel").dataset.variant).toBe("ghost");
+    expect(document.getElementById("confirm").textContent).toBe("Delete");
+    expect(document.getElementById("confirm").dataset.variant).toBe("danger");
+
+    await mounted.controller.cancel();
+
+    expect(document.getElementById("shared-title").textContent).toBe("Confirm action");
+    expect(document.getElementById("shared-description").textContent).toBe("This action cannot be undone.");
+    expect(document.getElementById("cancel").textContent).toBe("Cancel");
+    expect(document.getElementById("cancel").dataset.variant).toBe("secondary");
+    expect(document.getElementById("confirm").textContent).toBe("Confirm");
+    expect(document.getElementById("confirm").dataset.variant).toBe("destructive");
+});
+
+test.serial("shared host preserves authored target markup without text overrides", async () => {
+    mounted = await mountController(
+        "alert-dialog",
+        AlertDialogController,
+        SHARED_HTML
+            .replace("Confirm action</h2>", '<span id="title-markup">Confirm <strong>action</strong></span></h2>')
+            .replace(
+                "This action cannot be undone.</p>",
+                '<span id="description-markup">This <strong>cannot</strong> be undone.</span></p>',
+            )
+            .replace(">Cancel</button>", '><svg id="cancel-icon"></svg><span>Cancel</span></button>')
+            .replace(">Confirm</button>", '><svg id="confirm-icon"></svg><span>Confirm</span></button>'),
+    );
+    const titleMarkup = document.getElementById("title-markup");
+    const descriptionMarkup = document.getElementById("description-markup");
+    const cancelIcon = document.getElementById("cancel-icon");
+    const confirmIcon = document.getElementById("confirm-icon");
+
+    clickWith(document.getElementById("second-trigger"));
+
+    expect(document.getElementById("title-markup")).toBe(titleMarkup);
+    expect(document.getElementById("description-markup")).toBe(descriptionMarkup);
+    expect(document.getElementById("cancel-icon")).toBe(cancelIcon);
+    expect(document.getElementById("confirm-icon")).toBe(confirmIcon);
+
+    await mounted.controller.cancel();
+    clickWith(document.getElementById("first-trigger"));
+    expect(document.getElementById("confirm-icon")).toBeNull();
+    await mounted.controller.cancel();
+
+    expect(document.getElementById("title-markup")).toBe(titleMarkup);
+    expect(document.getElementById("description-markup")).toBe(descriptionMarkup);
+    expect(document.getElementById("cancel-icon")).toBe(cancelIcon);
+    expect(document.getElementById("confirm-icon")).toBe(confirmIcon);
+});
+
+test.serial("shared host removes an empty dynamic description from the accessible description", async () => {
+    await mountShared();
+    const trigger = document.getElementById("first-trigger");
+    const modal = document.querySelector('[data-alert-dialog-target="modal"]');
+    const description = document.getElementById("shared-description");
+    trigger.dataset.alertDialogTitle = "";
+    trigger.dataset.alertDialogDescription = "";
+    trigger.dataset.alertDialogConfirmLabel = "";
+
+    clickWith(trigger);
+
+    expect(document.getElementById("shared-title").textContent).toBe("Confirm action");
+    expect(description.hidden).toBe(true);
+    expect(modal.hasAttribute("aria-describedby")).toBe(false);
+    expect(document.getElementById("confirm").textContent).toBe("Confirm");
+
+    await mounted.controller.cancel();
+
+    expect(description.hidden).toBe(false);
+    expect(modal.getAttribute("aria-describedby")).toBe("shared-description");
+});
+
+test.serial("shared host reveals a trigger title when its default title is empty", async () => {
+    mounted = await mountController(
+        "alert-dialog",
+        AlertDialogController,
+        SHARED_HTML.replace(
+            'id="shared-title" data-alert-dialog-target="title">Confirm action',
+            'id="shared-title" data-alert-dialog-target="title" hidden>',
+        ),
+    );
+    const title = document.getElementById("shared-title");
+
+    clickWith(document.getElementById("first-trigger"));
+
+    expect(title.hidden).toBe(false);
+    expect(title.textContent).toBe("Delete item?");
+
+    await mounted.controller.cancel();
+
+    expect(title.hidden).toBe(true);
+    expect(title.textContent).toBe("");
+});
+
+test.serial("shared host supplies an accessible title when its default and trigger titles are empty", async () => {
+    mounted = await mountController(
+        "alert-dialog",
+        AlertDialogController,
+        SHARED_HTML.replace(
+            'id="shared-title" data-alert-dialog-target="title">Confirm action',
+            'id="shared-title" data-alert-dialog-target="title" hidden>',
+        ),
+    );
+    const modal = document.querySelector('[data-alert-dialog-target="modal"]');
+    const title = document.getElementById("shared-title");
+
+    clickWith(document.getElementById("second-trigger"));
+
+    expect(title.hidden).toBe(false);
+    expect(title.textContent).toBe("Confirm action");
+    expect(modal.getAttribute("aria-labelledby")).toBe("shared-title");
+});
+
+test.serial("shared host uses an authored aria-label when its resolved title is empty", async () => {
+    mounted = await mountController(
+        "alert-dialog",
+        AlertDialogController,
+        SHARED_HTML
+            .replace(
+                'id="shared-title" data-alert-dialog-target="title">Confirm action',
+                'id="shared-title" data-alert-dialog-target="title" hidden>',
+            )
+            .replace('aria-labelledby="shared-title"', 'aria-label="Confirm deletion" aria-labelledby="shared-title"'),
+    );
+    const modal = document.querySelector('[data-alert-dialog-target="modal"]');
+    const title = document.getElementById("shared-title");
+
+    clickWith(document.getElementById("second-trigger"));
+
+    expect(title.hidden).toBe(true);
+    expect(title.textContent).toBe("");
+    expect(modal.getAttribute("aria-label")).toBe("Confirm deletion");
+    expect(modal.hasAttribute("aria-labelledby")).toBe(false);
+});
+
+test.serial("shared host keeps the first pending action while open", async () => {
+    await mountShared();
+    const first = document.getElementById("first-trigger");
+    const second = document.getElementById("second-trigger");
+    const clicked = [];
+    first.addEventListener("click", () => clicked.push("first"));
+    second.addEventListener("click", () => clicked.push("second"));
+
+    clickWith(first);
+    const secondPrevented = !clickWith(second);
+    expect(document.getElementById("shared-title").textContent).toBe("Delete item?");
+    await mounted.controller.confirm();
+
+    expect(secondPrevented).toBe(true);
+    expect(clicked).toEqual(["first"]);
+});
+
+test.serial("shared host keeps the first pending action while confirmation closes", async () => {
+    await mountShared();
+    const first = document.getElementById("first-trigger");
+    const second = document.getElementById("second-trigger");
+    const clicked = [];
+    first.addEventListener("click", () => clicked.push("first"));
+    second.addEventListener("click", () => clicked.push("second"));
+
+    clickWith(first);
+    const overlay = mounted.controller.overlay;
+    const close = overlay.close;
+    let finishClose;
+    overlay.close = () => {
+        overlay.closeNow({ restoreFocus: false });
+
+        return new Promise((resolve) => {
+            finishClose = resolve;
+        });
+    };
+
+    const confirmation = mounted.controller.confirm();
+    expect(mounted.controller.isOpen).toBe(false);
+    const secondPrevented = !clickWith(second);
+    expect(document.getElementById("shared-title").textContent).toBe("Delete item?");
+
+    finishClose(true);
+    await confirmation;
+    overlay.close = close;
+
+    expect(secondPrevented).toBe(true);
+    expect(clicked).toEqual(["first"]);
+});
+
+test.serial("shared host replaces a stale pending action after a failed close leaves it closed", async () => {
+    await mountShared();
+    const first = document.getElementById("first-trigger");
+    const second = document.getElementById("second-trigger");
+    const clicked = [];
+    first.addEventListener("click", () => clicked.push("first"));
+    second.addEventListener("click", () => clicked.push("second"));
+
+    clickWith(first);
+    const overlay = mounted.controller.overlay;
+    const close = overlay.close;
+    overlay.close = async () => {
+        overlay.closeNow({ restoreFocus: false });
+
+        return false;
+    };
+    await mounted.controller.confirm();
+    overlay.close = close;
+
+    expect(mounted.controller.isOpen).toBe(false);
+    expect(mounted.controller.pendingAction).not.toBeNull();
+
+    clickWith(second);
+    await mounted.controller.confirm();
+
+    expect(clicked).toEqual(["second"]);
+});
+
+test.serial("a nested shared host owns its marked triggers", async () => {
+    mounted = await mountControllers("alert-dialog", AlertDialogController, `
+        <div id="outer-host" data-controller="alert-dialog" data-alert-dialog-shared-value="true"
+             data-alert-dialog-lock-scroll-class="overflow-hidden">
+            <div data-action="click->alert-dialog#interceptCapture:capture click->alert-dialog#intercept">
+            <div id="inner-host" data-controller="alert-dialog" data-alert-dialog-shared-value="true"
+                 data-alert-dialog-lock-scroll-class="overflow-hidden">
+                <div data-action="click->alert-dialog#interceptCapture:capture click->alert-dialog#intercept">
+                    <button id="nested-trigger" type="button" data-alert-dialog-trigger>Delete</button>
+                </div>
+                ${sharedOverlay("inner")}
+            </div>
+            </div>
+            ${sharedOverlay("outer")}
+        </div>
+    `);
+    const [outer, inner] = mounted.controllers;
+
+    clickWith(document.getElementById("nested-trigger"));
+
+    expect(outer.isOpen).toBe(false);
+    expect(inner.isOpen).toBe(true);
+    expect(document.getElementById("outer-modal").hidden).toBe(true);
+    expect(document.getElementById("inner-modal").hidden).toBe(false);
+});
+
+test.serial("shared host drops an action moved under another host before confirmation", async () => {
+    mounted = await mountControllers("alert-dialog", AlertDialogController, `
+        <div id="first-host" data-controller="alert-dialog" data-alert-dialog-shared-value="true"
+             data-alert-dialog-lock-scroll-class="overflow-hidden">
+            <div data-action="click->alert-dialog#interceptCapture:capture click->alert-dialog#intercept">
+                <button id="moving-trigger" type="button" data-alert-dialog-trigger>Delete</button>
+            </div>
+            ${sharedOverlay("first")}
+        </div>
+        <div id="second-host" data-controller="alert-dialog" data-alert-dialog-shared-value="true"
+             data-alert-dialog-lock-scroll-class="overflow-hidden">
+            <div data-action="click->alert-dialog#interceptCapture:capture click->alert-dialog#intercept"></div>
+            ${sharedOverlay("second")}
+        </div>
+    `);
+    const [first] = mounted.controllers;
+    const trigger = document.getElementById("moving-trigger");
+    let clicks = 0;
+    let dropped = 0;
+    trigger.addEventListener("click", () => clicks++);
+    mounted.roots[0].addEventListener("alert-dialog:dropped", () => dropped++);
+
+    clickWith(trigger);
+    mounted.roots[1].querySelector('[data-action*="interceptCapture"]').append(trigger);
+    await first.confirm();
+
+    expect(clicks).toBe(0);
+    expect(dropped).toBe(1);
+});
+
+test.serial("shared host recaptures defaults after a permanent disconnect", async () => {
+    await mountShared();
+    const title = document.getElementById("shared-title");
+
+    clickWith(document.getElementById("first-trigger"));
+    mounted.controller.disconnect();
+    await wait(0);
+    title.textContent = "Server default";
+    mounted.controller.connect();
+
+    clickWith(document.getElementById("second-trigger"));
+
+    expect(title.textContent).toBe("Server default");
+});
 
 // --- intercept opens the dialog ---
 
@@ -493,6 +850,24 @@ test.serial("permanent disconnect releases the pending action and closes the dia
 
 async function mount() {
     mounted = await mountController("alert-dialog", AlertDialogController, HTML);
+}
+
+async function mountShared() {
+    mounted = await mountController("alert-dialog", AlertDialogController, SHARED_HTML);
+}
+
+function sharedOverlay(id) {
+    return `
+        <div id="${id}-modal" data-alert-dialog-target="modal" data-state="closed" data-motion="none" hidden inert>
+            <div data-alert-dialog-target="backdrop"></div>
+            <div data-alert-dialog-target="dialog">
+                <h2 data-alert-dialog-target="title">Confirm action</h2>
+                <p data-alert-dialog-target="description">This action cannot be undone.</p>
+                <button type="button" data-alert-dialog-target="cancel" data-action="alert-dialog#cancel">Cancel</button>
+                <button type="button" data-alert-dialog-target="confirm" data-action="alert-dialog#confirm">Confirm</button>
+            </div>
+        </div>
+    `;
 }
 
 function setViewportWidth(innerWidth, clientWidth) {

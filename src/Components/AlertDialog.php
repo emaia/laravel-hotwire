@@ -10,7 +10,7 @@ use Illuminate\View\Component;
 
 class AlertDialog extends Component
 {
-    private OverlayLabelContext $overlayLabelContext;
+    protected OverlayLabelContext $overlayLabelContext;
 
     public function __construct(
         public string $title = '',
@@ -53,6 +53,7 @@ class AlertDialog extends Component
         $data = array_replace($data, OverlayLabelContext::boundaryData());
         $data['alertDialogOverlayLabelContext'] = $this->overlayLabelContext;
         $data['overlayLabelOwnerContext'] = $this->overlayLabelContext;
+        $data['alertDialogHost'] = false;
         $data = array_replace($data, FieldContext::boundaryData());
 
         return $data;

@@ -33,6 +33,8 @@ final class ComponentAliases
             'alert-dialog.description' => Components\AlertDialog\Description::class,
             'alert-dialog.content' => Components\AlertDialog\Content::class,
             'alert-dialog.footer' => Components\AlertDialog\Footer::class,
+            'alert-dialog.host' => Components\AlertDialog\Host::class,
+            'alert-dialog.trigger' => Components\AlertDialog\Trigger::class,
             'alert.action' => Components\Alert\Action::class,
             'alert.description' => Components\Alert\Description::class,
             'alert.title' => Components\Alert\Title::class,

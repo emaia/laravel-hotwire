@@ -63,13 +63,44 @@ still match what was captured. If any of them changed, or an ID became ambiguous
 acting and dispatches `alert-dialog:dropped`. Give a trigger a stable `id` when a morph may replace it; an id-less
 replacement deliberately fails closed rather than relying on DOM position.
 
+## Shared Mode
+
+Set `data-alert-dialog-shared-value="true"` and place the capture and bubble actions on an element wrapping the collection
+inside the controller root to reuse one dialog. Only descendants marked with `data-alert-dialog-trigger` are
+intercepted. The nearest shared Alert Dialog ancestor owns a marker, and the first pending action wins until it is
+confirmed or cancelled.
+
+Shared triggers may override the rendered plain text and button variants with:
+
+- `data-alert-dialog-title`
+- `data-alert-dialog-description`
+- `data-alert-dialog-confirm-label`
+- `data-alert-dialog-cancel-label`
+- `data-alert-dialog-confirm-variant`
+- `data-alert-dialog-cancel-variant`
+
+Text is replaced only for attributes present on the active trigger. Without an override, authored child markup inside
+the target is preserved and restored after later overridden actions.
+
+Add the `title`, `description`, `confirm`, and `cancel` targets to the corresponding shared elements. An empty description
+hides its target and removes `aria-describedby` until the host defaults are restored. The Blade
+`<hw:alert-dialog.host>` and `<hw:alert-dialog.trigger>` components wire this mode automatically.
+
+If both the host title and a trigger title are empty, shared mode uses `Confirm action` as the visible accessible
+fallback. An authored non-empty `aria-label` on the modal takes precedence instead; the empty title stays hidden and
+`aria-labelledby` is removed while that action is pending.
+
 ## Targets
 
-| Target     | Description                                                      |
-|------------|------------------------------------------------------------------|
-| `modal`    | Overlay element shown and hidden by the controller               |
-| `backdrop` | Background layer animated separately from the dialog             |
-| `dialog`   | Visible dialog panel used for click-outside and focus trap logic |
+| Target        | Description                                                            |
+|---------------|------------------------------------------------------------------------|
+| `modal`       | Semantic overlay shown/hidden by the controller and updated for ARIA    |
+| `backdrop`    | Background layer animated separately from the dialog                   |
+| `dialog`      | Visible dialog panel used for click-outside and focus trap logic         |
+| `title`       | Shared-mode heading whose text can vary by trigger                      |
+| `description` | Shared-mode description whose text can vary by trigger                  |
+| `cancel`      | Shared-mode cancel button whose label and variant can vary              |
+| `confirm`     | Shared-mode confirm button whose label and variant can vary             |
 
 ## Values
 
@@ -77,6 +108,7 @@ replacement deliberately fails closed rather than relying on DOM position.
 |--------------------------|-----------|---------|-----------------------------------------------------------|
 | `lock-scroll`            | `Boolean` | `true`  | Adds and removes the configured body scroll-lock class    |
 | `close-on-click-outside` | `Boolean` | `true`  | Cancels the dialog when the user clicks outside the panel |
+| `shared`                 | `Boolean` | `false` | Intercepts only marked descendants and applies overrides  |
 
 ## Stimulus Classes
 

@@ -1,10 +1,12 @@
 @php
+    $alertDialogShared ??= false;
     $alertDialogAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
         'id' => $id,
         'data-slot' => 'alert-dialog',
         'data-controller' => 'alert-dialog',
         'data-alert-dialog-lock-scroll-value' => $lockScroll ? 'true' : 'false',
         'data-alert-dialog-close-on-click-outside-value' => $closeOnClickOutside ? 'true' : 'false',
+        'data-alert-dialog-shared-value' => $alertDialogShared ? 'true' : null,
         'data-alert-dialog-lock-scroll-class' => 'overflow-hidden',
         'data-action' => 'turbo:before-cache@window->alert-dialog#closeForCache',
     ], $attributes, $stimulus, protectedPrefixes: ['data-alert-dialog-']);
@@ -15,12 +17,19 @@
     $contentLabelReferences = isset($content)
         ? $alertDialogOverlayLabelContext->resolveReferences($content)
         : ['title' => null, 'description' => null];
-    $alertDialogTitleId = $title !== ''
+    if ($alertDialogShared && ($contentLabelReferences['title'] !== null || $contentLabelReferences['description'] !== null)) {
+        throw new InvalidArgumentException('Shared Alert Dialog labels must use the host or trigger text props.');
+    }
+    $alertDialogTitleId = $alertDialogShared
         ? $alertDialogOverlayLabelContext->titleId()
-        : $contentLabelReferences['title'];
-    $alertDialogDescriptionId = $description !== ''
+        : ($title !== ''
+        ? $alertDialogOverlayLabelContext->titleId()
+        : $contentLabelReferences['title']);
+    $alertDialogDescriptionId = $alertDialogShared
         ? $alertDialogOverlayLabelContext->descriptionId()
-        : $contentLabelReferences['description'];
+        : ($description !== ''
+        ? $alertDialogOverlayLabelContext->descriptionId()
+        : $contentLabelReferences['description']);
 @endphp
 
 <div
@@ -53,12 +62,23 @@
             data-alert-dialog-target="dialog"
         >
             <div data-slot="alert-dialog-header">
-                @if ($title !== '')
-                    <h2 id="{{ $alertDialogOverlayLabelContext->titleId() }}" data-slot="alert-dialog-title">{{ $title }}</h2>
+                @if ($alertDialogShared || $title !== '')
+                    <h2
+                        id="{{ $alertDialogOverlayLabelContext->titleId() }}"
+                        data-slot="alert-dialog-title"
+                        @if ($alertDialogShared) data-alert-dialog-target="title" @endif
+                        @if ($alertDialogShared && $title === '') hidden @endif
+                    >{{ $title }}</h2>
                 @endif
 
-                @if ($description !== '')
-                    <p id="{{ $alertDialogOverlayLabelContext->descriptionId() }}" data-slot="alert-dialog-description" style="text-wrap-mode: wrap">{{ $description }}</p>
+                @if ($alertDialogShared || $description !== '')
+                    <p
+                        id="{{ $alertDialogOverlayLabelContext->descriptionId() }}"
+                        data-slot="alert-dialog-description"
+                        @if ($alertDialogShared) data-alert-dialog-target="description" @endif
+                        @if ($alertDialogShared && $description === '') hidden @endif
+                        style="text-wrap-mode: wrap"
+                    >{{ $description }}</p>
                 @endif
 
                 @isset($content)
@@ -71,6 +91,7 @@
                     slot-name="alert-dialog-cancel"
                     type="button"
                     data-action="alert-dialog#cancel"
+                    data-alert-dialog-target="cancel"
                     variant="{{ $cancelVariant }}"
                     class="{{ $cancelClass }}"
                 >
@@ -80,6 +101,7 @@
                     slot-name="alert-dialog-action"
                     type="button"
                     data-action="alert-dialog#confirm"
+                    data-alert-dialog-target="confirm"
                     variant="{{ $confirmVariant }}"
                     class="{{ $confirmClass }}"
                 >
