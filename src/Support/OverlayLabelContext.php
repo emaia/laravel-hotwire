@@ -199,7 +199,7 @@ final class OverlayLabelContext
         }
 
         if (! $this->containsInspectableContent($html)) {
-            return [];
+            return $this->inspectionCache[$html] = [];
         }
 
         $document = new DOMDocument;

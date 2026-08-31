@@ -17,6 +17,7 @@ export default class AlertDialogController extends Controller {
 
     pendingAction = null;
     replayingAction = false;
+    confirmationInProgress = false;
     overlay = null;
     overlayTargets = null;
     connected = false;
@@ -78,6 +79,7 @@ export default class AlertDialogController extends Controller {
 
             this.pendingAction = null;
             this.replayingAction = false;
+            this.confirmationInProgress = false;
             this.#resetSharedPresentation();
             this.overlay?.cleanup();
             this.overlay = null;
@@ -167,7 +169,10 @@ export default class AlertDialogController extends Controller {
 
             return;
         }
-        if (this.sharedValue && this.pendingAction && this.isOpen) {
+        if (
+            this.sharedValue
+            && (this.confirmationInProgress || (this.pendingAction && this.isOpen))
+        ) {
             this.#preventAction(event);
 
             return;
@@ -205,36 +210,43 @@ export default class AlertDialogController extends Controller {
     }
 
     async confirm() {
+        if (this.confirmationInProgress) return;
+
         const action = this.pendingAction;
-        this.#refreshTriggerElement();
-        const closingOverlay = this.overlay;
-        let closed = await closingOverlay?.close();
-        if (
-            !closed &&
-            this.connected &&
-            this.pendingAction === action &&
-            this.overlay &&
-            this.overlay !== closingOverlay
-        ) {
-            closed = await this.overlay.close();
-        }
-        if (!closed || this.pendingAction !== action) return;
-
-        const sharedTrigger = this.sharedValue ? this.#currentSharedTrigger() : null;
-        this.pendingAction = null;
-        this.#resetSharedPresentation();
-        let replayed = true;
-        this.replayingAction = true;
+        this.confirmationInProgress = this.sharedValue && action !== null;
         try {
-            if (action) replayed = (!this.sharedValue || sharedTrigger !== null) && replayAction(action, this.element);
-        } finally {
-            this.replayingAction = false;
-        }
+            this.#refreshTriggerElement();
+            const closingOverlay = this.overlay;
+            let closed = await closingOverlay?.close();
+            if (
+                !closed &&
+                this.connected &&
+                this.pendingAction === action &&
+                this.overlay &&
+                this.overlay !== closingOverlay
+            ) {
+                closed = await this.overlay.close();
+            }
+            if (!closed || this.pendingAction !== action) return;
 
-        if (action && !replayed) {
-            this.dispatch("dropped", {
-                detail: { kind: action.kind, triggerId: action.targetId || null },
-            });
+            const sharedTrigger = this.sharedValue ? this.#currentSharedTrigger() : null;
+            this.pendingAction = null;
+            this.#resetSharedPresentation();
+            let replayed = true;
+            this.replayingAction = true;
+            try {
+                if (action) replayed = (!this.sharedValue || sharedTrigger !== null) && replayAction(action, this.element);
+            } finally {
+                this.replayingAction = false;
+            }
+
+            if (action && !replayed) {
+                this.dispatch("dropped", {
+                    detail: { kind: action.kind, triggerId: action.targetId || null },
+                });
+            }
+        } finally {
+            this.confirmationInProgress = false;
         }
     }
 
@@ -479,6 +491,7 @@ export default class AlertDialogController extends Controller {
 
         const attributes = this.sharedPendingMorphAttributes.get(event.target) ?? [];
         this.sharedPendingMorphAttributes.delete(event.target);
+        // Turbo emits this after child updates, so retain the new authored nodes before overrides are reapplied.
         this.sharedMorphOperations.push({
             name,
             snapshot: event.target.cloneNode(true),

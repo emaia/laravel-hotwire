@@ -64,6 +64,19 @@ it('invalidates inspected fragments when a label registers later', function () {
     );
 });
 
+it('memoizes fragments with no inspectable overlay content', function () {
+    $context = new OverlayLabelContext('dialog', 'modal');
+    $context->register('modal-title');
+    $contents = new HtmlString('<button title="Delete &amp; archive">Delete</button>');
+
+    $context->assertNoIdCollisions($contents);
+
+    $cache = (new ReflectionProperty($context, 'inspectionCache'))->getValue($context);
+
+    expect($cache)->toHaveKey($contents->toHtml())
+        ->and($cache[$contents->toHtml()])->toBe([]);
+});
+
 it('ignores semantic labels inside inert templates during root validation', function () {
     $context = new OverlayLabelContext('dialog', 'modal');
 

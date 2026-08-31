@@ -263,6 +263,39 @@ test.serial("shared host keeps the first pending action while open", async () =>
     expect(clicked).toEqual(["first"]);
 });
 
+test.serial("shared host keeps the first pending action while confirmation closes", async () => {
+    await mountShared();
+    const first = document.getElementById("first-trigger");
+    const second = document.getElementById("second-trigger");
+    const clicked = [];
+    first.addEventListener("click", () => clicked.push("first"));
+    second.addEventListener("click", () => clicked.push("second"));
+
+    clickWith(first);
+    const overlay = mounted.controller.overlay;
+    const close = overlay.close;
+    let finishClose;
+    overlay.close = () => {
+        overlay.closeNow({ restoreFocus: false });
+
+        return new Promise((resolve) => {
+            finishClose = resolve;
+        });
+    };
+
+    const confirmation = mounted.controller.confirm();
+    expect(mounted.controller.isOpen).toBe(false);
+    const secondPrevented = !clickWith(second);
+    expect(document.getElementById("shared-title").textContent).toBe("Delete item?");
+
+    finishClose(true);
+    await confirmation;
+    overlay.close = close;
+
+    expect(secondPrevented).toBe(true);
+    expect(clicked).toEqual(["first"]);
+});
+
 test.serial("shared host replaces a stale pending action after a failed close leaves it closed", async () => {
     await mountShared();
     const first = document.getElementById("first-trigger");
