@@ -114,6 +114,19 @@ describe("public CSS presets", () => {
         expect(css).toContain(".overflow-hidden{overflow:hidden}");
     });
 
+    test("can compile an installed-app fixture without production minification", async () => {
+        const css = await compileCssFixture(
+            `
+                @import "tailwindcss" source(none);
+                .unminified-probe { color: red; }
+            `,
+            { minify: false },
+        );
+
+        expect(css).toContain(".unminified-probe {");
+        expect(css).toContain("  color: red;");
+    });
+
     test("requires every explicit package source to discover its vendor candidates", async () => {
         const fixture = packageSourceEntrypoint();
 

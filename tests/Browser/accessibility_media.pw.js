@@ -7,7 +7,8 @@ const compiler = `
     import { readFile } from "node:fs/promises";
     import { compileCssFixture } from "./scripts/css_build_contract.js";
 
-    process.stdout.write(await compileCssFixture(await readFile("stubs/resources/css/app.css", "utf8")));
+    const source = await readFile("stubs/resources/css/app.css", "utf8");
+    process.stdout.write(await compileCssFixture(source, { minify: false }));
 `;
 
 let novaCss;
@@ -47,6 +48,12 @@ test("restores native checkable states and preserves custom state marks in force
     expect(await stateGlyph(page, "#selected-indicator")).toContain("2713");
     expect(await stateGlyph(page, "#mixed-indicator")).toContain("2212");
     await expect(page.locator("#progress-track")).toHaveCSS("border-style", "solid");
+
+    const sliderSelectors = (await forcedColorSliderSelectors(page)).join(", ");
+    expect(sliderSelectors).toContain(
+        ':where([data-slot="slider"])[data-orientation="horizontal"]::-webkit-slider-runnable-track',
+    );
+    expect(sliderSelectors).toContain(':where([data-slot="slider"])::-webkit-slider-thumb');
 });
 
 test("keeps persistent control states observable when backgrounds are not printed", async ({ page }) => {
@@ -80,6 +87,10 @@ test("keeps persistent control states observable when backgrounds are not printe
 
     expect(await stateGlyph(page, "#selected-indicator")).toContain("2713");
     expect(await stateGlyph(page, "#mixed-indicator")).toContain("2212");
+    await expect(page.locator("#selected-indicator")).toHaveCSS(
+        "color",
+        await page.locator("#canvas-text").evaluate((element) => getComputedStyle(element).color),
+    );
     await expect(page.locator("#progress-track")).toHaveCSS("border-style", "solid");
     await expect(page.locator("#progress-indicator")).toHaveCSS("outline-style", "solid");
 });
@@ -109,6 +120,30 @@ async function stateGlyph(page, selector) {
     });
 }
 
+async function forcedColorSliderSelectors(page) {
+    return page.evaluate(() => {
+        const selectors = [];
+
+        function visit(rules, insideForcedColors = false) {
+            for (const rule of rules) {
+                const forcedColors =
+                    insideForcedColors ||
+                    (rule instanceof CSSMediaRule && rule.conditionText.includes("forced-colors"));
+
+                if (forcedColors && rule instanceof CSSStyleRule && rule.selectorText.includes("slider")) {
+                    selectors.push(rule.selectorText);
+                }
+
+                if (rule.cssRules) visit(rule.cssRules, forcedColors);
+            }
+        }
+
+        for (const sheet of document.styleSheets) visit(sheet.cssRules);
+
+        return selectors;
+    });
+}
+
 async function expectStatesDiffer(page, first, second) {
     const [firstImage, secondImage] = await Promise.all([
         page.locator(first).screenshot(),
@@ -121,6 +156,7 @@ async function expectStatesDiffer(page, first, second) {
 function fixture(extraCss = "") {
     return `
         <style>${novaCss}${extraCss}</style>
+        <span id="canvas-text" style="color: CanvasText"></span>
         <input id="checkbox-off" data-slot="checkbox" data-checkable="true" type="checkbox">
         <input id="checkbox-on" data-slot="checkbox" data-checkable="true" type="checkbox" checked>
         <input id="indeterminate" data-slot="checkbox" data-checkable="true" type="checkbox">

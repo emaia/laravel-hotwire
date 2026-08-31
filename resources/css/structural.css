@@ -766,18 +766,24 @@ html[data-color-scheme-transitioning]::view-transition-new(root) {
             [data-slot="multi-select-select-all"]
         ):focus-visible {
             outline: 2px solid Highlight;
-            outline-color: Highlight;
             outline-offset: 2px;
         }
 
         :where([data-slot="slider"])[data-orientation="horizontal"]::-webkit-slider-runnable-track,
-        :where([data-slot="slider"])[data-orientation="vertical"]::-webkit-slider-runnable-track,
+        :where([data-slot="slider"])[data-orientation="vertical"]::-webkit-slider-runnable-track {
+            background: CanvasText;
+        }
+
         :where([data-slot="slider"])::-moz-range-track,
         :where([data-slot="slider"])::-moz-range-progress {
             background: CanvasText;
         }
 
-        :where([data-slot="slider"])::-webkit-slider-thumb,
+        :where([data-slot="slider"])::-webkit-slider-thumb {
+            border-color: ButtonText;
+            background: Canvas;
+        }
+
         :where([data-slot="slider"])::-moz-range-thumb {
             border-color: ButtonText;
             background: Canvas;
@@ -809,6 +815,14 @@ html[data-color-scheme-transitioning]::view-transition-new(root) {
     @media print {
         :where([data-slot="slider"]) {
             appearance: auto;
+        }
+
+        :where(
+            [data-slot="multi-select-option"][data-selected="true"],
+            [data-slot="multi-select-select-all"][data-selected="true"],
+            [data-slot="multi-select-select-all"][data-indeterminate="true"]
+        ) [data-slot="multi-select-indicator"] {
+            color: CanvasText;
         }
 
         :where([data-slot="progress-track"]) {

@@ -250,7 +250,6 @@ it('keeps alternate-media control states in an overridable shared layer', functi
         ->toContain('[data-slot="progress-indicator"]')
         ->toContain('appearance: auto')
         ->toContain('forced-color-adjust: none')
-        ->toContain('outline-color: Highlight')
         ->and($slider)->not->toContain('@media (forced-colors: active)');
 });
 
