@@ -235,6 +235,24 @@ it('keeps the Accordion collapse in the structural stylesheet', function () {
         ->toContain('block-size: calc-size(auto, size)');
 });
 
+it('keeps alternate-media control states in an overridable shared layer', function () {
+    $structural = file_get_contents(dirname(__DIR__, 2).'/resources/css/structural.css');
+    $slider = file_get_contents(dirname(__DIR__, 2).'/resources/css/presets/nova/slider.css');
+
+    expect($structural)
+        ->toContain('@layer hotwire-accessibility')
+        ->toContain('@media (forced-colors: active)')
+        ->toContain('@media print')
+        ->toContain('[data-checkable="true"]')
+        ->toContain('[data-slot="switch"]')
+        ->toContain('[data-slot="slider"]')
+        ->toContain('[data-slot="multi-select-indicator"]')
+        ->toContain('[data-slot="progress-indicator"]')
+        ->toContain('appearance: auto')
+        ->toContain('forced-color-adjust: none')
+        ->and($slider)->not->toContain('@media (forced-colors: active)');
+});
+
 it('leaves the runtime safelist to the structural stylesheet', function (string $preset) {
     // A preset restating it snapshots the list, and goes stale the next time a controller applies one.
     expect(file_get_contents(app(CssPresetFiles::class)->path($preset)))

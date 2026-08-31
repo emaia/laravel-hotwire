@@ -16,11 +16,4 @@
     [data-slot="slider"][aria-invalid="true"]::-webkit-slider-thumb { @apply border-destructive ring-3 ring-destructive/20; }
     [data-slot="slider"][aria-invalid="true"]::-moz-range-thumb { @apply border-destructive ring-3 ring-destructive/20; }
 
-    @media (forced-colors: active) {
-        [data-slot="slider"][data-orientation="horizontal"]::-webkit-slider-runnable-track, [data-slot="slider"][data-orientation="vertical"]::-webkit-slider-runnable-track { background: CanvasText; }
-        [data-slot="slider"]::-moz-range-track, [data-slot="slider"]::-moz-range-progress { background: CanvasText; }
-        [data-slot="slider"]::-webkit-slider-thumb { border-color: ButtonText; background: Canvas; }
-        [data-slot="slider"]::-moz-range-thumb { border-color: ButtonText; background: Canvas; }
-        [data-slot="slider"]:focus-visible { outline: 2px solid Highlight; }
-    }
 }

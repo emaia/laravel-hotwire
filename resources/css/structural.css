@@ -706,3 +706,134 @@ html[data-color-scheme-transitioning]::view-transition-new(root) {
     animation-duration: var(--color-scheme-duration, 320ms);
     animation-timing-function: var(--color-scheme-easing, ease);
 }
+
+/*
+ * --- Alternate-media control states ---
+ *
+ * Custom-painted controls must not lose persistent state when forced colors replace backgrounds or
+ * printing omits them. This separate layer follows Tailwind's layers, while low-specificity
+ * selectors let a preset refine the baseline by writing later rules in the same layer.
+ */
+
+@layer hotwire-accessibility {
+    @media (forced-colors: active), print {
+        :where(input[data-checkable="true"], [data-slot="switch"]) {
+            appearance: auto;
+        }
+
+        :where(input[data-checkable="true"], [data-slot="switch"])::before {
+            content: none;
+        }
+
+        :where([data-slot="switch"]) {
+            width: auto;
+            height: auto;
+        }
+
+        :where(
+            [data-slot="multi-select-option"][data-selected="true"],
+            [data-slot="multi-select-select-all"][data-selected="true"],
+            [data-slot="multi-select-select-all"][data-indeterminate="true"]
+        ) [data-slot="multi-select-indicator"]::before {
+            width: auto;
+            height: auto;
+            background: none;
+            mask: none;
+            opacity: 1;
+            transform: none;
+            line-height: 1;
+        }
+
+        :where(
+            [data-slot="multi-select-option"][data-selected="true"],
+            [data-slot="multi-select-select-all"][data-selected="true"]
+        ) [data-slot="multi-select-indicator"]::before {
+            content: "\2713";
+        }
+
+        :where([data-slot="multi-select-select-all"][data-indeterminate="true"])
+        [data-slot="multi-select-indicator"]::before {
+            content: "\2212";
+        }
+    }
+
+    @media (forced-colors: active) {
+        :where(
+            input[data-checkable="true"],
+            [data-slot="switch"],
+            [data-slot="slider"],
+            [data-slot="multi-select-option"],
+            [data-slot="multi-select-select-all"]
+        ):focus-visible {
+            outline: 2px solid Highlight;
+            outline-offset: 2px;
+        }
+
+        :where([data-slot="slider"])[data-orientation="horizontal"]::-webkit-slider-runnable-track,
+        :where([data-slot="slider"])[data-orientation="vertical"]::-webkit-slider-runnable-track {
+            background: CanvasText;
+        }
+
+        :where([data-slot="slider"])::-moz-range-track,
+        :where([data-slot="slider"])::-moz-range-progress {
+            background: CanvasText;
+        }
+
+        :where([data-slot="slider"])::-webkit-slider-thumb {
+            border-color: ButtonText;
+            background: Canvas;
+        }
+
+        :where([data-slot="slider"])::-moz-range-thumb {
+            border-color: ButtonText;
+            background: Canvas;
+        }
+
+        :where(
+            [data-slot="multi-select-option"][data-selected="true"],
+            [data-slot="multi-select-select-all"][data-selected="true"],
+            [data-slot="multi-select-select-all"][data-indeterminate="true"]
+        ) [data-slot="multi-select-indicator"] {
+            border-color: CanvasText;
+            background: Canvas;
+            color: CanvasText;
+            forced-color-adjust: none;
+        }
+
+        :where([data-slot="progress-track"]) {
+            border: 1px solid CanvasText;
+            background: Canvas;
+            forced-color-adjust: none;
+        }
+
+        :where([data-slot="progress-indicator"]) {
+            background: Highlight;
+            forced-color-adjust: none;
+        }
+    }
+
+    @media print {
+        :where([data-slot="slider"]) {
+            appearance: auto;
+        }
+
+        :where(
+            [data-slot="multi-select-option"][data-selected="true"],
+            [data-slot="multi-select-select-all"][data-selected="true"],
+            [data-slot="multi-select-select-all"][data-indeterminate="true"]
+        ) [data-slot="multi-select-indicator"] {
+            color: CanvasText;
+        }
+
+        :where([data-slot="progress-track"]) {
+            border: 1px solid currentColor;
+            background: transparent;
+        }
+
+        :where([data-slot="progress-indicator"]) {
+            background: transparent;
+            outline: 1px solid currentColor;
+            outline-offset: -1px;
+        }
+    }
+}

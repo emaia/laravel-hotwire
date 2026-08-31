@@ -51,16 +51,17 @@ async function createInstalledAppFixture() {
     return directory;
 }
 
-async function runTailwind(directory) {
-    const process = Bun.spawn(
-        [tailwindBinary, "--input", "resources/css/app.css", "--output", "dist/app.css", "--minify"],
-        {
-            cwd: directory,
-            env: processEnv(),
-            stdout: "pipe",
-            stderr: "pipe",
-        },
-    );
+async function runTailwind(directory, options = {}) {
+    const command = [tailwindBinary, "--input", "resources/css/app.css", "--output", "dist/app.css"];
+
+    if (options.minify !== false) command.push("--minify");
+
+    const process = Bun.spawn(command, {
+        cwd: directory,
+        env: processEnv(),
+        stdout: "pipe",
+        stderr: "pipe",
+    });
     const [exitCode, stdout, stderr] = await Promise.all([
         process.exited,
         new Response(process.stdout).text(),
@@ -182,7 +183,7 @@ export async function compileCssFixture(entrypoint, options = {}) {
         // Keep the fixture deterministic and make explicit package sources observable.
         await writeFile(join(directory, "resources/css/app.css"), disableAutomaticSources(entrypoint));
 
-        return await runTailwind(directory);
+        return await runTailwind(directory, options);
     } finally {
         await rm(directory, { recursive: true, force: true });
     }

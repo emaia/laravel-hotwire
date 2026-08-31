@@ -6,6 +6,18 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 
 ## Unreleased
 
+### Custom controls preserve state in forced colors and print
+
+Checkbox, Radio and Switch now restore their native browser appearance in forced-colors mode and print, preserving
+checked, indeterminate, focus and disabled states when custom backgrounds and masks are unavailable. A Switch therefore
+appears as a native checkbox in those alternate media instead of retaining its preset track and thumb. Slider keeps its
+system-color treatment in forced colors and returns to native print rendering; Multi Select and Progress gain
+background-independent state marks.
+
+Custom presets inherit this baseline from `structural.css`. To refine it, add later rules to
+`@layer hotwire-accessibility`; no `!important` declaration is required. The package does not impose page-level print
+layout decisions such as hiding navigation or expanding disclosures.
+
 ### Automatic component ids are stable across morphs
 
 Components no longer use `uniqid()` for automatic DOM ids. Anonymous ids now use a deterministic sequence scoped to
