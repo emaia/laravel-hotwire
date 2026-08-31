@@ -89,6 +89,17 @@ Override CSS variables anywhere after the preset import in `resources/css/app.cs
 
 Override only the tokens you change — the rest fall back to the package defaults.
 
+## Forced colors and print
+
+Forced-colors mode intentionally uses browser system colors instead of design tokens. The shared structural stylesheet
+also restores native rendering for custom-painted checkable controls, so changing palette tokens cannot remove checked,
+indeterminate, focus or disabled states in Windows High Contrast. Printing uses the same principle and preserves
+selection/progress without relying on printed backgrounds.
+
+These are control-level fallbacks, not an application print layout. Laravel Hotwire does not hide navigation, expand
+disclosures or append link destinations. See [Structural and visual CSS](presets.md#structural-and-visual-css) when a
+custom preset needs to refine the shared baseline.
+
 For broader changes, generate a local preset and replace the Nova import:
 
 ```bash

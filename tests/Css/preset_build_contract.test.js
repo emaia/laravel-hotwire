@@ -75,6 +75,18 @@ describe("public CSS presets", () => {
         expect(css).not.toMatch(slotSelector("badge"));
     });
 
+    test("compiles shared forced-colors and print control fallbacks into every bundle", () => {
+        for (const css of [...Object.values(contract.outputs.presets), contract.outputs.selective]) {
+            expect(css).toContain("@media (forced-colors:active)");
+            expect(css).toContain("@media print");
+            expect(css).toMatch(slotSelector("switch"));
+            expect(css).toMatch(slotSelector("slider"));
+            expect(css).toMatch(slotSelector("multi-select-indicator"));
+            expect(css).toMatch(slotSelector("progress-indicator"));
+            expect(css).toContain("forced-color-adjust:none");
+        }
+    });
+
     test("reports raw and gzip sizes against non-blocking baselines", () => {
         expect(contract.measurements.toolchain.tailwindcss).toMatch(/^4\./);
         expect(contract.measurements.toolchain.cli).toMatch(/^4\./);

@@ -142,6 +142,25 @@ Every preset imports that file, so the behavior compiles into your stylesheet an
 for the bundle to run — and no preset has to rediscover it. Override the timing if you want (`transition-duration` on
 `::details-content`); you never restate the mechanism.
 
+The same foundation owns a minimum accessibility baseline for custom-painted controls. In forced-colors mode, native
+Checkbox, Radio and Switch rendering returns so the browser can preserve checked, indeterminate, focus and disabled
+states; Slider, Multi Select and Progress use system colors or non-background state marks. Print similarly restores
+native form controls and keeps selection/progress observable without requiring background graphics. These rules do not
+hide navigation, expand disclosure content or otherwise decide application print layout.
+
+The baseline lives in `@layer hotwire-accessibility` with low-specificity selectors. A preset can refine it without
+`!important` by writing a later rule in that same layer:
+
+```css
+@layer hotwire-accessibility {
+    @media (forced-colors: active) {
+        [data-slot="switch"] {
+            /* A preset-specific system-color treatment. */
+        }
+    }
+}
+```
+
 CSS that defines appearance belongs in a preset and targets `data-slot`. Carousel buttons, dots, progress and counter
 are visual, so presets own them. Controller CSS must not choose their colors, radius or spacing; preset CSS must not
 duplicate the controller's geometry. Slots that are presentation-free containers, assistive nodes or controller-owned
