@@ -3,6 +3,7 @@
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\CssPresetFiles;
 use Emaia\LaravelHotwire\Support\CssRules;
+use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\File;
 
 beforeEach(function () {
@@ -152,6 +153,8 @@ it('templates every token declared by the package, in both colour schemes', func
 
     expect($css)
         ->toContain('Uncomment and replace these values to override the shared theme tokens.')
+        ->toContain(':where(:root:not([data-theme="dark"])),')
+        ->toContain('[data-theme="light"] {')
         ->toContain('[data-theme="dark"] {')
         ->toContain('--radius: ...;');
 
@@ -159,7 +162,7 @@ it('templates every token declared by the package, in both colour schemes', func
 
     // Compare block by block: `--radius` lives only in `:root`, so a whole-file check would either
     // miss omissions or demand a token the package never declares for dark.
-    foreach (['/^:root \{(.*?)^\}/ms', '/^\[data-theme="dark"\] \{(.*?)^\}/ms'] as $block) {
+    foreach (['/^:root \{(.*?)^\}/ms', '/^\[data-theme="light"\] \{(.*?)^\}/ms', '/^\[data-theme="dark"\] \{(.*?)^\}/ms'] as $block) {
         $declared = blockTokens($block, $tokensCss);
         $generated = blockTokens($block, $css);
 
@@ -169,13 +172,132 @@ it('templates every token declared by the package, in both colour schemes', func
     }
 });
 
+it('fails visibly when package token sections cannot be extracted', function () {
+    $this->app->instance(Filesystem::class, tokenFilesystem(':root { --radius: 1rem; }'));
+
+    $this->artisan('hotwire:make-preset brand --no-interaction')
+        ->expectsOutputToContain('Could not extract root, light, and dark token sections')
+        ->assertFailed();
+
+    expect(File::exists($this->targetDir.'/brand.css'))->toBeFalse();
+});
+
+it('guards the generated light selector the way the package guards its own', function () {
+    $this->artisan('hotwire:make-preset brand --no-interaction')->assertSuccessful();
+
+    // Without `:where()` the generated block outranks the symmetric `[data-theme="light"]` override
+    // the theming docs show, so an application override would lose on the root element alone.
+    expect(File::get($this->targetDir.'/brand.css'))
+        ->toContain(":where(:root:not([data-theme=\"dark\"])),\n[data-theme=\"light\"] {");
+});
+
+it('files a dark rule that carries its own negation under dark', function () {
+    $this->app->instance(Filesystem::class, tokenFilesystem(<<<'CSS'
+        :root { --radius: 1rem; }
+
+        [data-theme="light"] { --background: oklch(1 0 0); }
+
+        [data-theme="dark"]:not([data-theme-flat]) { --background: oklch(0 0 0); }
+        CSS));
+
+    $this->artisan('hotwire:make-preset brand --no-interaction')->assertSuccessful();
+
+    expect(File::get($this->targetDir.'/brand.css'))
+        ->toContain("[data-theme=\"dark\"] {\n    --background: oklch(...);");
+});
+
+it('files a dark rule that excludes a light island under dark', function () {
+    $this->app->instance(Filesystem::class, tokenFilesystem(<<<'CSS'
+        :root { --radius: 1rem; }
+
+        [data-theme="light"] { --background: oklch(1 0 0); }
+
+        [data-theme="dark"]:not([data-theme="light"] *) { --background: oklch(0 0 0); }
+        CSS));
+
+    $this->artisan('hotwire:make-preset brand --no-interaction')->assertSuccessful();
+
+    expect(File::get($this->targetDir.'/brand.css'))
+        ->toContain("[data-theme=\"dark\"] {\n    --background: oklch(...);");
+});
+
+it('extracts token sections independently of selector formatting and order', function () {
+    $this->app->instance(Filesystem::class, tokenFilesystem(<<<'CSS'
+        :root { --radius: 1rem; }
+
+        [data-context="preview"], [data-theme = 'light'],
+        :where(:root:not([data-theme = "dark"])) { --background: oklch(1 0 0); }
+
+        [data-theme = dark] { --background: oklch(0 0 0); }
+        CSS));
+
+    $this->artisan('hotwire:make-preset brand --no-interaction')->assertSuccessful();
+
+    expect(File::get($this->targetDir.'/brand.css'))
+        ->toContain(":where(:root:not([data-theme=\"dark\"])),\n[data-theme=\"light\"]")
+        ->toContain('[data-theme="dark"]');
+});
+
+it('templates custom properties whose names carry digits or underscores', function () {
+    $this->app->instance(Filesystem::class, tokenFilesystem(<<<'CSS'
+        :root { --radius: 1rem; }
+
+        [data-theme="light"] { --background: oklch(1 0 0); --chart-1: oklch(0.6 0.2 40); --brand_2: oklch(0.5 0 0); }
+
+        [data-theme="dark"] { --background: oklch(0 0 0); --chart-1: oklch(0.7 0.2 40); --brand_2: oklch(0.8 0 0); }
+        CSS));
+
+    $this->artisan('hotwire:make-preset brand --no-interaction')->assertSuccessful();
+
+    expect(File::get($this->targetDir.'/brand.css'))
+        ->toContain('--chart-1: oklch(...);')
+        ->toContain('--brand_2: oklch(...);');
+});
+
+it('templates a declaration shared by the light and dark selectors into both', function () {
+    $this->app->instance(Filesystem::class, tokenFilesystem(<<<'CSS'
+        :root { --radius: 1rem; }
+
+        [data-theme="light"] { --background: oklch(1 0 0); }
+
+        [data-theme="dark"] { --background: oklch(0 0 0); }
+
+        [data-theme="light"], [data-theme="dark"] { --shared: oklch(0.5 0 0); }
+        CSS));
+
+    $this->artisan('hotwire:make-preset brand --no-interaction')->assertSuccessful();
+
+    $css = File::get($this->targetDir.'/brand.css');
+
+    expect(blockTokens('/^:where\(:root:not\(\[data-theme="dark"\]\)\),\n\[data-theme="light"\] \{(.*?)^\}/ms', $css))
+        ->toContain('--shared')
+        ->and(blockTokens('/^\[data-theme="dark"\] \{(.*?)^\}/ms', $css))
+        ->toContain('--shared');
+});
+
 /** @return string[] */
 function blockTokens(string $blockPattern, string $css): array
 {
     preg_match($blockPattern, $css, $match);
-    preg_match_all('/^\s*(--[a-z-]+):/m', $match[1] ?? '', $tokens);
+    preg_match_all('/^\s*(--[a-z0-9_-]+):/m', $match[1] ?? '', $tokens);
 
     return $tokens[1];
+}
+
+function tokenFilesystem(string $tokens): Filesystem
+{
+    return new class(dirname(__DIR__, 2).'/resources/css/tokens.css', $tokens) extends Filesystem
+    {
+        public function __construct(
+            private readonly string $tokensPath,
+            private readonly string $tokens,
+        ) {}
+
+        public function get($path, $lock = false)
+        {
+            return $path === $this->tokensPath ? $this->tokens : parent::get($path, $lock);
+        }
+    };
 }
 
 it('clones a shipped preset with package imports and flattened visual sources', function () {

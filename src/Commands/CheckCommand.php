@@ -39,7 +39,7 @@ class CheckCommand extends Command
                         {--fix   : Apply all fixes (publish controllers, regenerate loader stub, add missing npm deps) without prompting}
                         {--skip-install : Do not run the package manager (bun/npm/pnpm/yarn) install after --fix adds new deps}';
 
-    public $description = 'Check that Stimulus controllers used by your views (via components or directly) are published';
+    public $description = 'Check Stimulus controllers, dependencies, and generated CSS';
 
     /** @var array<int, array{key: string, line: string}> Buffered "needs attention" entries, printed at the end alphabetically so they sit right next to the prompt. */
     private array $problemLines = [];

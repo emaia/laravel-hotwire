@@ -4,6 +4,7 @@ namespace Emaia\LaravelHotwire\Commands;
 
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\CssPresetFiles;
+use Emaia\LaravelHotwire\Support\CssRules;
 use Emaia\LaravelHotwire\Support\PresetSkeleton;
 use Emaia\LaravelHotwire\Support\PresetSource;
 use Emaia\LaravelHotwire\Support\PresetSourceException;
@@ -33,6 +34,7 @@ class MakePresetCommand extends Command
         private readonly Filesystem $files,
         private readonly CssPresetFiles $presets,
         private readonly PresetSkeleton $skeleton,
+        private readonly CssRules $cssRules,
     ) {
         parent::__construct();
     }
@@ -61,9 +63,11 @@ class MakePresetCommand extends Command
             return self::FAILURE;
         }
 
-        $content = $source === null
-            ? $this->buildScaffold()
-            : $this->clonePreset($source);
+        $content = $source === null ? $this->buildScaffold() : $this->clonePreset($source);
+
+        if ($content === null) {
+            return self::FAILURE;
+        }
 
         $this->files->ensureDirectoryExists(dirname($target));
         $this->files->put($target, $content);
@@ -106,25 +110,55 @@ class MakePresetCommand extends Command
     /**
      * Mirror both color schemes from `tokens.css`; a hand-kept copy omits whatever the package adds later.
      *
-     * @return string[]
+     * @return string[]|null
      *
      * @throws FileNotFoundException
      */
-    private function tokenTemplate(): array
+    private function tokenTemplate(): ?array
     {
         $tokens = $this->files->get(dirname(__DIR__, 2).'/resources/css/tokens.css');
-        $blocks = [];
+        $sections = ['root' => [], 'light' => [], 'dark' => []];
 
-        foreach ([':root', '[data-theme="dark"]'] as $selector) {
-            if (preg_match('/^'.preg_quote($selector, '/').' \{(.*?)^\}/ms', $tokens, $block) !== 1) {
+        foreach ($this->cssRules->parse($this->cssRules->stripComments($tokens)) as $rule) {
+            if (count($rule['chain']) !== 1) {
                 continue;
             }
 
-            preg_match_all('/^\s*(--[a-z-]+):\s*([^;]+);/m', $block[1], $properties, PREG_SET_ORDER);
-            $rows = ["$selector {"];
+            $rowSections = $this->tokenSections($rule['chain'][0]);
+
+            if ($rowSections === []) {
+                continue;
+            }
+
+            preg_match_all('/(--[a-z0-9_-]+)\s*:\s*([^;]+?)(?:;|$)/i', $rule['declarations'], $properties, PREG_SET_ORDER);
 
             foreach ($properties as [, $property, $value]) {
-                $rows[] = "    $property: ".(str_starts_with(trim($value), 'oklch(') ? 'oklch(...)' : '...').';';
+                foreach ($sections as $name => $ignored) {
+                    if (in_array($name, $rowSections, true)) {
+                        $sections[$name][$property] = trim($value);
+                    }
+                }
+            }
+        }
+
+        if (array_filter($sections, fn (array $properties): bool => $properties === []) !== []) {
+            warning('Could not extract root, light, and dark token sections from package tokens.css.');
+
+            return null;
+        }
+
+        $selectors = [
+            'root' => ':root',
+            'light' => ":where(:root:not([data-theme=\"dark\"])),\n[data-theme=\"light\"]",
+            'dark' => '[data-theme="dark"]',
+        ];
+        $blocks = [];
+
+        foreach ($sections as $section => $properties) {
+            $rows = ["{$selectors[$section]} {"];
+
+            foreach ($properties as $property => $value) {
+                $rows[] = "    $property: ".(str_starts_with($value, 'oklch(') ? 'oklch(...)' : '...').';';
             }
 
             $blocks[] = implode("\n", [...$rows, '}']);
@@ -176,14 +210,20 @@ class MakePresetCommand extends Command
         return $groups;
     }
 
-    private function buildScaffold(): string
+    private function buildScaffold(): ?string
     {
+        $tokenTemplate = $this->tokenTemplate();
+
+        if ($tokenTemplate === null) {
+            return null;
+        }
+
         $lines = [
             self::TOKENS_IMPORT,
             self::VARIANTS_IMPORT,
             self::STRUCTURAL_IMPORT,
             '',
-            ...$this->tokenTemplate(),
+            ...$tokenTemplate,
             '',
             '@layer components {',
             ...$this->skeleton->render($this->stylesheets(), $this->groups()),
@@ -192,6 +232,73 @@ class MakePresetCommand extends Command
         ];
 
         return implode("\n", $lines);
+    }
+
+    private function containsThemeSelector(string $selector, string $theme): bool
+    {
+        return preg_match('/\[data-theme\s*=\s*(["\']?)'.preg_quote($theme, '/').'\1\]/i', $selector) === 1;
+    }
+
+    /**
+     * Classify a token rule by the themes it declares, ignoring themes it merely negates.
+     *
+     * A guard such as `:where(:root:not([data-theme="dark"]))` names dark only to exclude it, so the
+     * negations are dropped before probing. Each branch of the selector list is classified on its
+     * own, since one rule may legitimately declare a value for both themes at once.
+     *
+     * @return string[]
+     */
+    private function tokenSections(string $selector): array
+    {
+        $sections = [];
+
+        foreach ($this->selectorBranches($selector) as $branch) {
+            $declared = preg_replace('/:not(\((?:[^()]++|(?1))*\))/i', '', $branch) ?? $branch;
+            $section = match (true) {
+                $this->containsThemeSelector($declared, 'dark') => 'dark',
+                $this->containsThemeSelector($declared, 'light') => 'light',
+                trim($branch) === ':root' => 'root',
+                default => null,
+            };
+
+            if ($section !== null && ! in_array($section, $sections, true)) {
+                $sections[] = $section;
+            }
+        }
+
+        return $sections;
+    }
+
+    /**
+     * Split a selector list on its top-level commas, leaving those inside `:is()`, `:where()` and
+     * `:not()` with the branch they qualify.
+     *
+     * @return string[]
+     */
+    private function selectorBranches(string $selector): array
+    {
+        $branches = [];
+        $branch = '';
+        $depth = 0;
+
+        foreach (str_split($selector) as $character) {
+            match ($character) {
+                '(' => $depth++,
+                ')' => $depth--,
+                default => null,
+            };
+
+            if ($character === ',' && $depth === 0) {
+                $branches[] = $branch;
+                $branch = '';
+
+                continue;
+            }
+
+            $branch .= $character;
+        }
+
+        return array_filter([...$branches, $branch], fn (string $branch): bool => trim($branch) !== '');
     }
 
     private function clonePreset(PresetSource $source): string
