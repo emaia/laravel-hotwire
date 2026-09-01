@@ -1,0 +1,150 @@
+<?php
+
+use Emaia\LaravelHotwire\Registry\HotwireRegistry;
+use Emaia\LaravelHotwire\Support\ComponentAliases;
+use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\File;
+use Symfony\Component\Yaml\Yaml;
+
+function boostAssetsPath(string $path = ''): string
+{
+    return __DIR__.'/../../resources/boost'.($path === '' ? '' : '/'.$path);
+}
+
+function renderBoostAsset(string $path): string
+{
+    $placeholders = [
+        '`' => '___SINGLE_BACKTICK___',
+        '<?php' => '___OPEN_PHP_TAG___',
+        '@volt' => '___VOLT_DIRECTIVE___',
+        '@endvolt' => '___ENDVOLT_DIRECTIVE___',
+        '@can' => '___CAN_DIRECTIVE___',
+        '@include' => '___INCLUDE_DIRECTIVE___',
+        '@props' => '___PROPS_DIRECTIVE___',
+        '</x-' => '___BLADE_COMPONENT_CLOSE___',
+        '<x-' => '___BLADE_COMPONENT_OPEN___',
+    ];
+    $content = str_replace(array_keys($placeholders), array_values($placeholders), File::get($path));
+    $rendered = html_entity_decode(Blade::render($content), ENT_QUOTES | ENT_HTML5);
+
+    return str_replace(array_values($placeholders), array_keys($placeholders), $rendered);
+}
+
+/** @return array<string, mixed> */
+function parseBoostFrontmatter(string $content): array
+{
+    $content = preg_replace('/^(\s*<!--.*?-->\s*)+/s', '', $content);
+
+    if (! preg_match('/^\s*---\s*\n(.*?)\n---\s*\n/s', (string) $content, $matches)) {
+        return [];
+    }
+
+    try {
+        return Yaml::parse($matches[1]) ?? [];
+    } catch (Throwable) {
+        return [];
+    }
+}
+
+function isValidBoostSkillName(string $name): bool
+{
+    if (str_contains($name, '..') || str_contains($name, '/') || str_contains($name, '\\') || str_contains($name, "\0")) {
+        return false;
+    }
+
+    return trim($name, ". \t\n\r\0\x0B") !== '';
+}
+
+it('ships the Boost guideline and four focused skills', function () {
+    expect(boostAssetsPath('guidelines/core.blade.php'))->toBeFile();
+    expect(boostAssetsPath('skills/laravel-hotwire-forms/references/controls.md'))->toBeFile();
+    expect(boostAssetsPath('skills/laravel-hotwire-ui-development/references/styling.md'))->toBeFile();
+
+    $skillDirectories = collect(File::directories(boostAssetsPath('skills')))
+        ->map(fn (string $path): string => basename($path))
+        ->sort()
+        ->values()
+        ->all();
+
+    expect($skillDirectories)->toBe([
+        'laravel-hotwire-forms',
+        'laravel-hotwire-stimulus-controllers',
+        'laravel-hotwire-turbo-workflows',
+        'laravel-hotwire-ui-development',
+    ]);
+
+    foreach ($skillDirectories as $skill) {
+        $directory = boostAssetsPath("skills/{$skill}");
+
+        expect(
+            File::exists("{$directory}/SKILL.blade.php") || File::exists("{$directory}/SKILL.md")
+        )->toBeTrue("Skill [{$skill}] has no SKILL.blade.php or SKILL.md file.");
+    }
+});
+
+it('uses frontmatter that Boost can parse and install safely', function () {
+    foreach (File::directories(boostAssetsPath('skills')) as $directory) {
+        $path = File::exists("{$directory}/SKILL.blade.php")
+            ? "{$directory}/SKILL.blade.php"
+            : "{$directory}/SKILL.md";
+        $content = str_ends_with($path, '.blade.php') ? renderBoostAsset($path) : File::get($path);
+        $frontmatter = parseBoostFrontmatter($content);
+        $directoryName = basename($directory);
+
+        expect($frontmatter)
+            ->toHaveKeys(['name', 'description'])
+            ->and($frontmatter['name'])->toBe($directoryName)
+            ->and($frontmatter['description'])->toBeString()->not->toBeEmpty()
+            ->and(isValidBoostSkillName($frontmatter['name']))->toBeTrue();
+    }
+});
+
+it('renders every Boost Blade asset with the configured component prefix', function () {
+    config()->set('hotwire.prefix', 'hot');
+
+    foreach (File::allFiles(boostAssetsPath()) as $file) {
+        if (! str_ends_with($file->getFilename(), '.blade.php')) {
+            continue;
+        }
+
+        expect(fn () => renderBoostAsset($file->getPathname()))
+            ->not->toThrow(Throwable::class);
+    }
+
+    expect(renderBoostAsset(boostAssetsPath('guidelines/core.blade.php')))
+        ->toContain('<hot:form>')
+        ->not->toContain('<hw:form>');
+});
+
+it('only cites registered components and Artisan commands', function () {
+    config()->set('hotwire.prefix', 'hw');
+
+    $content = collect(File::allFiles(boostAssetsPath()))
+        ->map(function ($file): string {
+            return str_ends_with($file->getFilename(), '.blade.php')
+                ? renderBoostAsset($file->getPathname())
+                : File::get($file->getPathname());
+        })
+        ->implode("\n");
+
+    preg_match_all('/<hw:([a-z0-9.-]+)/', $content, $componentMatches);
+    preg_match_all('/php artisan (hotwire:[a-z-]+)/', $content, $commandMatches);
+
+    $components = array_merge(
+        array_keys(HotwireRegistry::make()->components()),
+        array_keys(ComponentAliases::subComponents()),
+    );
+    $commands = array_keys(app(Kernel::class)->all());
+    $unknownComponents = array_values(array_diff(array_unique($componentMatches[1]), $components));
+    $unknownCommands = array_values(array_diff(array_unique($commandMatches[1]), $commands));
+
+    expect($unknownComponents)->toBe([], 'Boost assets cite components missing from the Hotwire registry.')
+        ->and($unknownCommands)->toBe([], 'Boost assets cite Artisan commands the package does not register.');
+});
+
+it('keeps the upfront guideline within its context budget', function () {
+    $guideline = renderBoostAsset(boostAssetsPath('guidelines/core.blade.php'));
+
+    expect(str_word_count(strip_tags($guideline)))->toBeLessThanOrEqual(900);
+});
