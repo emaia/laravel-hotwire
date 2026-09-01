@@ -57,6 +57,8 @@ function isValidBoostSkillName(string $name): bool
 }
 
 it('ships the Boost guideline and four focused skills', function () {
+    expect(__DIR__.'/../../docs/boost.md')->toBeFile();
+    expect(File::get(__DIR__.'/../../README.md'))->toContain('[**Laravel Boost**](docs/boost.md)');
     expect(boostAssetsPath('guidelines/core.blade.php'))->toBeFile();
     expect(boostAssetsPath('skills/laravel-hotwire-forms/references/controls.md'))->toBeFile();
     expect(boostAssetsPath('skills/laravel-hotwire-ui-development/references/styling.md'))->toBeFile();
@@ -115,6 +117,43 @@ it('renders every Boost Blade asset with the configured component prefix', funct
     expect(renderBoostAsset(boostAssetsPath('guidelines/core.blade.php')))
         ->toContain('<hot:form>')
         ->not->toContain('<hw:form>');
+
+    $rawFormsSkill = Blade::render(File::get(boostAssetsPath('skills/laravel-hotwire-forms/SKILL.blade.php')));
+    $rawFrontmatter = parseBoostFrontmatter($rawFormsSkill);
+
+    expect($rawFrontmatter['description'])
+        ->toContain('<hot:form>')
+        ->toContain('<hot:field>')
+        ->not->toContain('&lt;');
+});
+
+it('keeps the copyable Stimulus example aligned with its controllers', function () {
+    $skill = renderBoostAsset(boostAssetsPath('skills/laravel-hotwire-stimulus-controllers/SKILL.blade.php'));
+    $clipboard = File::get(__DIR__.'/../../resources/js/controllers/copy_to_clipboard_controller.js');
+    $autoResize = File::get(__DIR__.'/../../resources/js/controllers/auto_resize_controller.js');
+
+    expect($skill)
+        ->toContain("->controller('copy-to-clipboard', ['successContent' => 'Copied'])")
+        ->toContain("->controller('auto-resize', ['resizeDebounceDelay' => 0])")
+        ->toContain("->target('copy-to-clipboard', 'source')")
+        ->toContain("->target('copy-to-clipboard', 'button')")
+        ->toContain("->action('copy-to-clipboard', 'copy', 'click')")
+        ->and($clipboard)
+        ->toContain('static targets = ["button", "source"]')
+        ->toContain('successContent: String')
+        ->toContain('copy(event)')
+        ->and($autoResize)
+        ->toContain('resizeDebounceDelay:')
+        ->toContain('this.element.addEventListener("input", this.autogrow)');
+});
+
+it('documents the generated controller filename and identifier exactly', function () {
+    $skill = renderBoostAsset(boostAssetsPath('skills/laravel-hotwire-stimulus-controllers/SKILL.blade.php'));
+
+    expect($skill)
+        ->toContain('php artisan hotwire:make-controller form/auto-save')
+        ->toContain('form/auto_save_controller.js')
+        ->toContain('form--auto-save');
 });
 
 it('only cites registered components and Artisan commands', function () {
@@ -146,5 +185,5 @@ it('only cites registered components and Artisan commands', function () {
 it('keeps the upfront guideline within its context budget', function () {
     $guideline = renderBoostAsset(boostAssetsPath('guidelines/core.blade.php'));
 
-    expect(str_word_count(strip_tags($guideline)))->toBeLessThanOrEqual(900);
+    expect(str_word_count($guideline))->toBeLessThanOrEqual(900);
 });

@@ -53,7 +53,7 @@ For lean installs, CI flags and loader details, see [Advanced installation](docs
 | [**Extending controllers**](docs/extending-controllers.md)          | Subclass package controllers or publish their source for customization            |
 | [**Recipes**](docs/recipes/readme.md)                               | Practical patterns for Turbo, overlays, forms, streams and component composition  |
 | [**Registry**](docs/registry.md)                                    | Catalog metadata, categories, dependencies, docs paths and styling hooks          |
-| [**Laravel Boost**](https://laravel.com/docs/boost)                 | Bundled guidelines and focused skills installed through Boost                     |
+| [**Laravel Boost**](docs/boost.md)                                  | Bundled guidelines and focused skills installed through Boost                     |
 | [**Advanced installation**](docs/installation.md)                   | Lean installs, critical controller loading, CI flags and loader details           |
 | [**Upgrade guide**](docs/upgrade.md)                                | Version-specific migration notes and compatibility changes                        |
 

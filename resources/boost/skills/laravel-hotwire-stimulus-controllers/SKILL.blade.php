@@ -28,11 +28,11 @@ Package files are flat by intent (`auto_submit_controller.js` -> `auto-submit`) 
 The application generator currently requires a namespace/name:
 
 ```bash
-php artisan hotwire:make-controller forms/autosave
-php artisan hotwire:make-controller forms/autosave --ts
+php artisan hotwire:make-controller form/auto-save
+php artisan hotwire:make-controller form/auto-save --ts
 ```
 
-This creates `forms/auto_save_controller.js` or `.ts` with identifier `forms--auto-save`.
+This creates `form/auto_save_controller.js` or `.ts` with identifier `form--auto-save`.
 
 ## Shared-element safety
 
@@ -85,16 +85,31 @@ kebab-case; null configuration is omitted; booleans/arrays/objects are JSON enco
 Names are not sanitized, so user-controlled data belongs in values or params, never attribute names.
 
 ```blade
-<textarea
+<div
     {!! '{' !!}{!! '{' !!}
         stimulus()
-            ->controller('char-counter', ['max' => 280])
-            ->controller('auto-resize', ['maxRows' => 12])
-            ->target('char-counter', 'field')
-            ->action('char-counter', 'count', 'input')
-            ->action('auto-resize', 'grow', 'input')
+            ->controller('copy-to-clipboard', ['successContent' => 'Copied'])
     {!! '}' !!}{!! '}' !!}
-></textarea>
+>
+    <textarea
+        {!! '{' !!}{!! '{' !!}
+            stimulus()
+                ->controller('auto-resize', ['resizeDebounceDelay' => 0])
+                ->target('copy-to-clipboard', 'source')
+        {!! '}' !!}{!! '}' !!}
+    ></textarea>
+
+    <button
+        type="button"
+        {!! '{' !!}{!! '{' !!}
+            stimulus()
+                ->target('copy-to-clipboard', 'button')
+                ->action('copy-to-clipboard', 'copy', 'click')
+        {!! '}' !!}{!! '}' !!}
+    >
+        Copy
+    </button>
+</div>
 ```
 
 Pass the builder through a documented component `stimulus` prop when available; otherwise use normal attributes. Do not

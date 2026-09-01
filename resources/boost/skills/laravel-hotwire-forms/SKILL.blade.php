@@ -1,8 +1,8 @@
 ---
 name: laravel-hotwire-forms
 description: >-
-  Build forms with Laravel Hotwire using {{ '<'.config('hotwire.prefix', 'hw').':form>' }},
-  {{ '<'.config('hotwire.prefix', 'hw').':field>' }} and form controls, validation error wiring, auto-submit filters,
+  Build forms with Laravel Hotwire using {!! '<'.config('hotwire.prefix', 'hw').':form>' !!},
+  {!! '<'.config('hotwire.prefix', 'hw').':field>' !!} and form controls, validation error wiring, auto-submit filters,
   conditional fields, file uploads, and forms inside Turbo Frames and modals.
 ---
 @php
