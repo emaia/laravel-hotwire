@@ -91,13 +91,14 @@ Names are not sanitized, so user-controlled data belongs in values or params, ne
             ->controller('copy-to-clipboard', ['successContent' => 'Copied'])
     {!! '}' !!}{!! '}' !!}
 >
-    <textarea
+    <input
+        type="text"
+        value="Text to copy"
         {!! '{' !!}{!! '{' !!}
             stimulus()
-                ->controller('auto-resize', ['resizeDebounceDelay' => 0])
                 ->target('copy-to-clipboard', 'source')
         {!! '}' !!}{!! '}' !!}
-    ></textarea>
+    >
 
     <button
         type="button"

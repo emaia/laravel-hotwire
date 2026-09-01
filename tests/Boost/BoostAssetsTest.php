@@ -14,21 +14,7 @@ function boostAssetsPath(string $path = ''): string
 
 function renderBoostAsset(string $path): string
 {
-    $placeholders = [
-        '`' => '___SINGLE_BACKTICK___',
-        '<?php' => '___OPEN_PHP_TAG___',
-        '@volt' => '___VOLT_DIRECTIVE___',
-        '@endvolt' => '___ENDVOLT_DIRECTIVE___',
-        '@can' => '___CAN_DIRECTIVE___',
-        '@include' => '___INCLUDE_DIRECTIVE___',
-        '@props' => '___PROPS_DIRECTIVE___',
-        '</x-' => '___BLADE_COMPONENT_CLOSE___',
-        '<x-' => '___BLADE_COMPONENT_OPEN___',
-    ];
-    $content = str_replace(array_keys($placeholders), array_values($placeholders), File::get($path));
-    $rendered = html_entity_decode(Blade::render($content), ENT_QUOTES | ENT_HTML5);
-
-    return str_replace(array_values($placeholders), array_keys($placeholders), $rendered);
+    return Blade::render(File::get($path));
 }
 
 /** @return array<string, mixed> */
@@ -130,21 +116,18 @@ it('renders every Boost Blade asset with the configured component prefix', funct
 it('keeps the copyable Stimulus example aligned with its controllers', function () {
     $skill = renderBoostAsset(boostAssetsPath('skills/laravel-hotwire-stimulus-controllers/SKILL.blade.php'));
     $clipboard = File::get(__DIR__.'/../../resources/js/controllers/copy_to_clipboard_controller.js');
-    $autoResize = File::get(__DIR__.'/../../resources/js/controllers/auto_resize_controller.js');
 
     expect($skill)
         ->toContain("->controller('copy-to-clipboard', ['successContent' => 'Copied'])")
-        ->toContain("->controller('auto-resize', ['resizeDebounceDelay' => 0])")
         ->toContain("->target('copy-to-clipboard', 'source')")
         ->toContain("->target('copy-to-clipboard', 'button')")
         ->toContain("->action('copy-to-clipboard', 'copy', 'click')")
+        ->toContain('value="Text to copy"')
+        ->not->toContain('auto-resize')
         ->and($clipboard)
         ->toContain('static targets = ["button", "source"]')
         ->toContain('successContent: String')
-        ->toContain('copy(event)')
-        ->and($autoResize)
-        ->toContain('resizeDebounceDelay:')
-        ->toContain('this.element.addEventListener("input", this.autogrow)');
+        ->toContain('copy(event)');
 });
 
 it('documents the generated controller filename and identifier exactly', function () {
