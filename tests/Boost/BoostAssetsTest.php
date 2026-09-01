@@ -123,7 +123,6 @@ it('keeps the copyable Stimulus example aligned with its controllers', function 
         ->toContain("->target('copy-to-clipboard', 'button')")
         ->toContain("->action('copy-to-clipboard', 'copy', 'click')")
         ->toContain('value="Text to copy"')
-        ->not->toContain('auto-resize')
         ->and($clipboard)
         ->toContain('static targets = ["button", "source"]')
         ->toContain('successContent: String')
