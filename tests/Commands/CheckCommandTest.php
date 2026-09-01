@@ -125,6 +125,69 @@ it('reports all ok when no hotwire components used', function () {
         ->assertSuccessful();
 });
 
+// --- Semantic token contrast ---
+
+// Application CSS is deliberately outside hotwire:check. These regressions prevent a future
+// contrast implementation from inferring ownership merely from token names or resources/css paths.
+
+it('does not treat unrelated stylesheets as Hotwire token contracts', function () {
+    File::ensureDirectoryExists(resource_path('css/widgets'));
+    File::put(resource_path('css/widgets/filament.css'), ':root { --primary: #6366f1 }');
+
+    $this->artisan('hotwire:check --no-interaction')
+        ->doesntExpectOutputToContain('semantic token contrast')
+        ->assertSuccessful();
+});
+
+it('does not claim to audit application token overrides', function () {
+    File::ensureDirectoryExists(resource_path('css/presets'));
+    File::put(resource_path('css/presets/brand.css'), <<<'CSS'
+[data-theme="dark"] {
+    --primary: oklch(0.8 0 0);
+}
+CSS);
+    File::put(resource_path('css/app.css'), <<<'CSS'
+@import "./presets/brand.css";
+[data-theme="dark"] {
+    --primary-foreground: oklch(0.75 0 0);
+}
+CSS);
+
+    $this->artisan('hotwire:check --no-interaction')
+        ->doesntExpectOutputToContain('semantic token contrast')
+        ->assertSuccessful();
+});
+
+it('accepts application color syntax and indirection without interpreting it', function () {
+    File::ensureDirectoryExists(resource_path('css'));
+    File::put(resource_path('css/app.css'), <<<'CSS'
+@layer base {
+    :root[data-theme='dark'] {
+        --background: #fff;
+        --foreground: rgb(17 17 17);
+        --primary: hsl(239 84% 67%);
+        --primary-foreground: var(--brand-on-primary)
+    }
+}
+CSS);
+
+    $this->artisan('hotwire:check --no-interaction')
+        ->doesntExpectOutputToContain('ratio unavailable')
+        ->assertSuccessful();
+});
+
+it('does not rewrite application token values with fix', function () {
+    File::ensureDirectoryExists(resource_path('css'));
+    $path = resource_path('css/app.css');
+    $css = ':root { --foreground: oklch(0.9 0 0); }';
+    File::put($path, $css);
+
+    $exit = Artisan::call('hotwire:check --fix --no-interaction');
+
+    expect($exit)->toBe(0)
+        ->and(File::get($path))->toBe($css);
+});
+
 // --- Selective CSS drift ---
 
 it('reports a visual component not covered by any generated CSS bundle', function () {

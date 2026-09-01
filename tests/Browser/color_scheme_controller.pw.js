@@ -2,6 +2,58 @@ import { expect, test } from "@playwright/test";
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 
+test("token scopes expose the nearest browser color scheme", async ({ page }) => {
+    const tokens = await readFile("resources/css/tokens.css", "utf8");
+    await page.emulateMedia({ colorScheme: "dark" });
+
+    await page.setContent(`
+        <style>${tokens}</style>
+        <main id="default">
+            <input id="default-date" type="date">
+            <section id="dark" data-theme="dark">
+                <input id="dark-date" type="date">
+                <div id="light-inside-dark" data-theme="light"></div>
+            </section>
+            <section id="light" data-theme="light">
+                <div id="dark-inside-light" data-theme="dark"></div>
+            </section>
+        </main>
+    `);
+
+    await expect(page.locator("html")).toHaveCSS("color-scheme", "light");
+    await expect(page.locator("#default")).toHaveCSS("color-scheme", "light");
+    await expect(page.locator("#default-date")).toHaveCSS("color-scheme", "light");
+    await expect(page.locator("#dark")).toHaveCSS("color-scheme", "dark");
+    await expect(page.locator("#dark-date")).toHaveCSS("color-scheme", "dark");
+    await expect(page.locator("#light-inside-dark")).toHaveCSS("color-scheme", "light");
+    await expect(page.locator("#light")).toHaveCSS("color-scheme", "light");
+    await expect(page.locator("#dark-inside-light")).toHaveCSS("color-scheme", "dark");
+
+    expect(
+        await page.locator("#light-inside-dark").evaluate((element) =>
+            getComputedStyle(element).getPropertyValue("--background").trim(),
+        ),
+    ).toBe("oklch(1 0 0)");
+    expect(
+        await page.locator("#dark-inside-light").evaluate((element) =>
+            getComputedStyle(element).getPropertyValue("--background").trim(),
+        ),
+    ).toBe("oklch(0.145 0 0)");
+});
+
+test("the CSS root scheme remains authoritative over standalone metadata", async ({ page }) => {
+    const tokens = await readFile("resources/css/tokens.css", "utf8");
+    await page.emulateMedia({ colorScheme: "light" });
+    await page.setContent(`
+        <meta name="color-scheme" content="dark">
+        <style>${tokens}</style>
+        <input id="date" type="date">
+    `);
+
+    await expect(page.locator("html")).toHaveCSS("color-scheme", "light");
+    await expect(page.locator("#date")).toHaveCSS("color-scheme", "light");
+});
+
 test("color scheme transitions respect the reduced motion preference", async ({ page }) => {
     const server = createServer((_request, response) => {
         response.writeHead(200, {

@@ -70,8 +70,13 @@ Each one renders on its own, with the same default the umbrella uses:
 <hw:meta.root path="/app" />
 <hw:meta.view-transition />
 <hw:meta.csrf />
-<hw:meta.color-scheme schemes="dark" />
+<hw:meta.color-scheme />
 ```
+
+The granular `meta.color-scheme` component only advertises the schemes the document supports. When a Hotwire preset is
+loaded, its root `color-scheme` CSS property owns the active native-control scheme and takes precedence over this meta.
+To select dark mode, set `data-theme="dark"` on `<html>` or use `<hw:color-scheme.script>`; use the umbrella
+`<hw:meta color-scheme />` when both the early script and metadata are wanted.
 
 ## Validation
 
@@ -98,9 +103,9 @@ and `prefetch="false"` all behave as you would expect.
 ## Why these metas
 
 - **`csrf-token`** is read by the [File Upload](file-upload.md) controller for its requests.
-- **`color-scheme`** makes native form controls and scrollbars follow the active theme, alongside the `data-theme`
-  attribute the [Color Scheme](color-scheme.md) component manages. On the umbrella `<hw:meta>`, this also renders
-  `<hw:color-scheme.script />` so the theme is applied before CSS paints.
+- **`color-scheme`** metadata advertises supported schemes before or without application CSS. The preset's
+  `color-scheme` property makes native controls and scrollbars follow its active `data-theme`. On the umbrella
+  `<hw:meta>`, the prop also renders `<hw:color-scheme.script />` so the theme is applied before CSS paints.
 - **`turbo-refresh-method`** set to `morph` is what lets [Optimistic](optimistic.md) updates and the morph-aware
   controllers survive a page refresh; `turbo-refresh-scroll` set to `preserve` keeps the viewport where it was.
 - **`turbo-cache-control`** opts a page out of Turbo's cache, or only out of its preview.
@@ -110,4 +115,5 @@ and `prefetch="false"` all behave as you would expect.
 `emaia/laravel-hotwire-turbo` also ships Blade directives for these tags (`@turboPrefetch('false')`,
 `@turboRefreshMethod('morph')` and friends). They keep working. The components add defaults, validation and a single
 umbrella tag, and read consistently beside the rest of the package. When the umbrella includes `color-scheme`, it also
-renders the colour-scheme script; granular meta components stay single-purpose and only render their own tag.
+renders the colour-scheme script; granular meta components stay single-purpose, render only their own tag and do not
+select the active scheme when preset CSS is present.

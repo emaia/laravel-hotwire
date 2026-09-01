@@ -35,7 +35,6 @@ $novaModules = [
     'control-wrappers',
     'clearable-input-layout',
     'text-controls',
-    'input-date-theme',
     'checkable-controls',
     'clear-input-button',
     'input-group',
@@ -129,7 +128,6 @@ return [
         'control-wrappers' => $module(['input', 'textarea', 'file']),
         'clearable-input-layout' => $module(['input', 'multi-select']),
         'text-controls' => $module(['input', 'select']),
-        'input-date-theme' => $module(['input']),
         'checkable-controls' => $module([
             'input',
             'checkbox',

@@ -614,7 +614,7 @@ return [
             'view' => 'hotwire::component-views.meta-tag',
             'docs' => 'docs/components/meta.md',
             'category' => 'turbo',
-            'description' => 'Declares color-scheme so form controls and scrollbars follow the active theme',
+            'description' => 'Advertises supported color schemes before application CSS loads',
             'controllers' => [],
             'styling' => [
                 'slots' => $slots(),

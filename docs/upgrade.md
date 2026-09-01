@@ -6,6 +6,34 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 
 ## Unreleased
 
+### Semantic tokens enforce readable contrast and nested color schemes
+
+The default light `--muted-foreground` is now `oklch(0.54 0 0)`. The light and dark
+`--destructive-foreground` values are now `oklch(0.985 0 0)` and `oklch(0.205 0 0)`. These foreground-only changes
+bring every packaged semantic text/background pair to at least `4.50:1` while preserving the existing surfaces.
+
+`tokens.css` now advertises `color-scheme: light` at the unthemed `:root` and applies the matching browser scheme in
+explicit `[data-theme="light"]` and `[data-theme="dark"]` scopes. This keeps native controls aligned with the default
+light palette even when the operating system prefers dark, while still letting nested theme islands own their native
+chrome. If a cloned preset still imports `input-date-theme.css`, remove that import and file; its Date-specific dark
+scheme override is now redundant.
+
+Generated preset scaffolds now use `:where(:root:not([data-theme="dark"])), [data-theme="light"]` for light colour
+overrides, matching the package's own guard so an application override still outranks the scaffold. Adopt the guard in
+existing application overrides too — write `:root:not([data-theme="dark"])` there, without `:where()`, since a bare
+`:root` rule after the preset also matches `<html data-theme="dark">` and can override dark values through source order.
+Bare `:root` remains appropriate for theme-independent values such as `--radius`.
+
+The package light token block is guarded as well, without increasing its specificity. Semantic tokens and
+`color-scheme` now follow the nearest explicit theme scope, so a nested `[data-theme="light"]` island inside a dark page
+paints light surfaces and light native controls. Preset rules written with the `dark:` variant remain matched by any
+dark ancestor, so dark-tuned Nova surfaces still reach into such an island; see
+[Theming](theming.md#color-schemes) for the boundary.
+
+The 11 packaged semantic foreground/background pairs are verified from rendered browser colours at `4.50:1` or higher.
+`hotwire:check` does not parse or restrict application colour syntax; contrast after custom overrides remains an
+application-level browser testing concern. See [Theming](theming.md#semantic-contrast) for the complete contract.
+
 ### Custom controls preserve state in forced colors and print
 
 Checkbox, Radio and Switch now restore their native browser appearance in forced-colors mode and print, preserving

@@ -89,6 +89,18 @@ it('contains light and dark OKLCH token values', function () use ($tokensPath) {
     }
 });
 
+it('advertises the active browser color scheme on default and explicit theme scopes', function () use ($tokensPath) {
+    expect(file_get_contents($tokensPath))
+        ->toMatch('/:root\s*\{[^}]*color-scheme:\s*light;/s')
+        ->toMatch('/\[data-theme="light"\]\s*\{[^}]*color-scheme:\s*light;/s')
+        ->toMatch('/\[data-theme="dark"\]\s*\{[^}]*color-scheme:\s*dark;/s');
+});
+
+it('guards package light tokens from explicit dark roots', function () use ($tokensPath) {
+    expect(file_get_contents($tokensPath))
+        ->toMatch('/:where\(:root:not\(\[data-theme="dark"\]\)\)\s*,\s*\[data-theme="light"\]\s*\{/s');
+});
+
 it('contains the base layer border and outline contract', function () use ($tokensPath) {
     expect(file_get_contents($tokensPath))
         ->toContain('@layer base')

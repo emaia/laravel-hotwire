@@ -25,6 +25,12 @@ it('renders both refresh metas from one component', function () {
         ->toContain('<meta name="turbo-refresh-scroll" content="preserve">');
 });
 
+it('keeps granular color scheme metadata single purpose', function () {
+    expect((string) $this->blade('<x-hw::meta.color-scheme schemes="dark" />'))
+        ->toContain('<meta name="color-scheme" content="dark">')
+        ->not->toContain('document.documentElement.style.colorScheme');
+});
+
 it('renders the csrf token from the session', function () {
     expect((string) $this->blade('<x-hw::meta.csrf />'))
         ->toContain('<meta name="csrf-token" content="'.csrf_token().'">');
