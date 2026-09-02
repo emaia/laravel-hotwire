@@ -12,19 +12,37 @@ test.beforeAll(async () => {
     );
 });
 
-test("RTL slider fill survives production minification independent of language", async ({ page }) => {
+test("RTL slider fill renders on the right after production minification regardless of language", async ({ page }) => {
     await page.setContent(`
         <style>${presetCss}</style>
-        <div id="scope" lang="pt-br" dir="rtl" style="width: 200px">
+        <div id="scope" lang="pt-br" dir="rtl" style="width: 200px; --primary: #ff0000; --input: #0000ff">
             <input id="slider" type="range" value="25" data-slot="slider" data-orientation="horizontal" style="--slider-value: 25%">
         </div>
     `);
 
     const slider = page.locator("#slider");
     const portuguese = await slider.screenshot();
+    const trackColors = await page.evaluate(async (screenshot) => {
+        const blob = await (await fetch(`data:image/png;base64,${screenshot}`)).blob();
+        const image = await createImageBitmap(blob);
+        const canvas = document.createElement("canvas");
+        canvas.width = image.width;
+        canvas.height = image.height;
+
+        const context = canvas.getContext("2d");
+        context.drawImage(image, 0, 0);
+        const y = Math.floor(image.height / 2);
+
+        return {
+            left: [...context.getImageData(10, y, 1, 1).data].slice(0, 3),
+            right: [...context.getImageData(image.width - 10, y, 1, 1).data].slice(0, 3),
+        };
+    }, portuguese.toString("base64"));
+
     await page.locator("#scope").evaluate((scope) => scope.setAttribute("lang", "ar"));
     const arabic = await slider.screenshot();
 
+    expect(trackColors).toEqual({ left: [0, 0, 255], right: [255, 0, 0] });
     expect(Buffer.compare(portuguese, arabic)).toBe(0);
 });
 
