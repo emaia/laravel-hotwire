@@ -123,6 +123,18 @@ test.serial("horizontal arrow navigation follows the tablist's computed RTL dire
     expect(tabs[0].getAttribute("aria-selected")).toBe("true");
 });
 
+test("direction falls back to LTR when the tabs element has no window", () => {
+    const tablist = {};
+    const direction = Object.getOwnPropertyDescriptor(TabsController.prototype, "direction").get.call({
+        element: {
+            querySelector: () => tablist,
+            ownerDocument: { defaultView: null },
+        },
+    });
+
+    expect(direction).toBe("ltr");
+});
+
 test.serial("Home and End jump to the first and last tabs", async () => {
     await mount({ selectedIndexValue: 1 });
     const tabs = tabEls();

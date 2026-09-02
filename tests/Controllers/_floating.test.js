@@ -136,6 +136,16 @@ test("resolves inline transform origins from the floating element direction", as
     expect(floating.style.getPropertyValue("--transform-origin")).toBe("bottom left");
 });
 
+test("falls back to LTR when the floating element has no window", async () => {
+    const floating = document.createElement("div");
+    Object.defineProperty(floating, "ownerDocument", { value: { defaultView: null } });
+    computeState.placement = "top-start";
+
+    await createFloating(document.createElement("button"), floating).update();
+
+    expect(floating.style.getPropertyValue("--transform-origin")).toBe("bottom left");
+});
+
 test("omits flip and shift middleware when disabled", async () => {
     const instance = createFloating(document.createElement("button"), document.createElement("div"), {
         flip: false,

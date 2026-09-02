@@ -299,11 +299,8 @@ function lockBodyScroll(classes) {
         const clientWidth = document.documentElement.clientWidth;
         const scrollbarWidth = clientWidth > 0 ? Math.max(0, window.innerWidth - clientWidth) : 0;
         if (scrollbarWidth > 0) {
-            const currentPadding = getComputedStyle(document.body).paddingInlineEnd.trim();
-            const paddingInlineEnd = currentPadding === ""
-                ? `${scrollbarWidth}px`
-                : `calc(${currentPadding} + ${scrollbarWidth}px)`;
-            document.body.style.setProperty("padding-inline-end", paddingInlineEnd, "important");
+            const currentPadding = getComputedStyle(document.body).paddingInlineEnd.trim() || "0px";
+            document.body.style.setProperty("padding-inline-end", `calc(${currentPadding} + ${scrollbarWidth}px)`, "important");
         }
     }
 

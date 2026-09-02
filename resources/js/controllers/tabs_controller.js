@@ -116,6 +116,6 @@ export default class extends Controller {
     get direction() {
         const tablist = this.element.querySelector('[role="tablist"]') ?? this.element;
 
-        return this.element.ownerDocument.defaultView.getComputedStyle(tablist).direction;
+        return this.element.ownerDocument.defaultView?.getComputedStyle(tablist).direction ?? "ltr";
     }
 }

@@ -43,7 +43,7 @@ export function createFloating(anchor, floating, options = {}) {
 
         floating.dataset.side = resolved.side;
         floating.dataset.align = resolved.align;
-        const direction = floating.ownerDocument.defaultView.getComputedStyle(floating).direction;
+        const direction = floating.ownerDocument.defaultView?.getComputedStyle(floating).direction ?? "ltr";
         floating.style.setProperty("--transform-origin", transformOrigin(resolved.side, resolved.align, direction));
 
         positionArrow(config.arrowElement, resolved.side, middlewareData.arrow);

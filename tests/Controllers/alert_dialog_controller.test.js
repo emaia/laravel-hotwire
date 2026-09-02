@@ -511,7 +511,7 @@ test.serial("lock-scroll compensates for the removed scrollbar gutter", async ()
     clickWith(document.getElementById("trigger"));
 
     expect(document.body.classList.contains("overflow-hidden")).toBe(true);
-    expect(document.body.style.paddingInlineEnd).toBe("20px");
+    expect(document.body.style.paddingInlineEnd).toBe("calc(0px + 20px)");
 
     mounted.controller.cancel();
 
@@ -530,14 +530,14 @@ test.serial("lock-scroll keeps compensation until the last overlay unlocks", asy
     const [first, second] = mounted.controllers;
 
     clickWith(document.getElementById("trigger"));
-    expect(document.body.style.paddingInlineEnd).toBe("20px");
+    expect(document.body.style.paddingInlineEnd).toBe("calc(0px + 20px)");
 
     clickWith(document.getElementById("trigger-two"));
-    expect(document.body.style.paddingInlineEnd).toBe("20px");
+    expect(document.body.style.paddingInlineEnd).toBe("calc(0px + 20px)");
 
     first.cancel();
     expect(document.body.classList.contains("overflow-hidden")).toBe(true);
-    expect(document.body.style.paddingInlineEnd).toBe("20px");
+    expect(document.body.style.paddingInlineEnd).toBe("calc(0px + 20px)");
 
     second.cancel();
     expect(document.body.classList.contains("overflow-hidden")).toBe(false);

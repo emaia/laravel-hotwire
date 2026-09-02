@@ -513,7 +513,7 @@ it('keeps input-group focus and addon layout owned by the group', function (stri
         ->not->toContain('[data-slot="input-group-control"] { @apply pr-8');
 })->with('design presets');
 
-it('uses physical inline utilities only for documented physical contracts', function (string $preset) {
+it('uses physical inline CSS only for documented physical contracts', function (string $preset) {
     $css = presetVisualCss($preset);
     $structural = File::get(__DIR__.'/../../resources/css/structural.css');
     $allowed = [
@@ -578,6 +578,15 @@ it('uses physical inline utilities only for documented physical contracts', func
                 md:[padding-right:1rem];
         }
         CSS);
+    $raw = physicalInlineDeclarations($css);
+    $rawProbe = physicalInlineDeclarations(<<<'CSS'
+        [data-slot="probe"] {
+            left: 0;
+            padding-right: 1rem;
+            transform: translateX(1rem);
+            color: red;
+        }
+        CSS);
 
     expect($unexpected)->toBe([])
         ->and($missingAllowed)->toBe([])
@@ -588,6 +597,17 @@ it('uses physical inline utilities only for documented physical contracts', func
             ['selector' => '[data-slot="probe"]', 'utility' => 'bg-left-top'],
             ['selector' => '[data-slot="probe"]', 'utility' => 'object-right'],
             ['selector' => '[data-slot="probe"]', 'utility' => '[padding-right:1rem]'],
+        ])
+        ->and($raw)->toHaveCount(5)
+        ->toContain(['selector' => '[data-slot="switch"]::before', 'declaration' => 'transform: translateX(0)'])
+        ->toContain(['selector' => '[data-slot="switch"]:checked::before', 'declaration' => 'transform: translateX(calc(100% - 2px))'])
+        ->toContain(['selector' => '[data-slot="switch"]:dir(rtl):checked::before', 'declaration' => 'transform: translateX(calc(-100% + 2px))'])
+        ->toContain(['selector' => '[data-slot="slider"][data-orientation="horizontal"]::-webkit-slider-runnable-track', 'declaration' => 'background: linear-gradient(to right, var(--primary) 0 var(--slider-value), var(--input) var(--slider-value) 100%)'])
+        ->toContain(['selector' => '[data-slot="slider"][data-orientation="horizontal"]:dir(rtl)::-webkit-slider-runnable-track', 'declaration' => 'background: linear-gradient(to left, var(--primary) 0 var(--slider-value), var(--input) var(--slider-value) 100%)'])
+        ->and($rawProbe)->toBe([
+            ['selector' => '[data-slot="probe"]', 'declaration' => 'left: 0'],
+            ['selector' => '[data-slot="probe"]', 'declaration' => 'padding-right: 1rem'],
+            ['selector' => '[data-slot="probe"]', 'declaration' => 'transform: translateX(1rem)'],
         ])
         ->and($structural)
         ->toContain('margin-inline-start: calc(var(--carousel-slide-spacing, 0px) * -1)')
@@ -626,6 +646,45 @@ function physicalInlineUtilities(string $css): array
 
                 $occurrences[] = ['selector' => trim($rule[1]), 'utility' => $utility];
             }
+        }
+    }
+
+    return $occurrences;
+}
+
+/**
+ * @return array<int, array{selector: string, declaration: string}>
+ */
+function physicalInlineDeclarations(string $css): array
+{
+    $occurrences = [];
+    $css = preg_replace('/\/\*.*?\*\//s', '', $css) ?? $css;
+
+    preg_match_all('/([^{}]+)\{([^{}]*)\}/s', $css, $rules, PREG_SET_ORDER);
+    foreach ($rules as $rule) {
+        $declarations = preg_replace('/@apply\s+[^;}]+;?/s', '', $rule[2]) ?? $rule[2];
+        preg_match_all('/(?:^|;)\s*([a-z-]+)\s*:\s*([^;]+)/', $declarations, $properties, PREG_SET_ORDER);
+
+        foreach ($properties as $property) {
+            $name = trim($property[1]);
+            $value = trim($property[2]);
+            $physicalProperty = preg_match('/^(?:left|right|margin-(?:left|right)|padding-(?:left|right)|border-(?:left|right)(?:-(?:width|style|color))?|border-(?:top|bottom)-(?:left|right)-radius)$/', $name);
+            $physicalValue = match ($name) {
+                'transform' => preg_match('/\btranslate(?:X)?\(/i', $value) === 1,
+                'translate' => true,
+                'background', 'background-image' => preg_match('/\blinear-gradient\(\s*to\s+(?:left|right)\b/i', $value) === 1,
+                'transform-origin', 'background-position', 'object-position', 'text-align', 'float', 'clear' => preg_match('/\b(?:left|right)\b/', $value) === 1,
+                default => false,
+            };
+
+            if (! $physicalProperty && ! $physicalValue) {
+                continue;
+            }
+
+            $occurrences[] = [
+                'selector' => trim($rule[1]),
+                'declaration' => "$name: $value",
+            ];
         }
     }
 
