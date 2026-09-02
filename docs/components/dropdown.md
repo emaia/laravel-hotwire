@@ -282,8 +282,8 @@ closed.
 | `dropdown` | `open` | `false` | Start open without an enter animation. |
 | `dropdown` | `close-on-select` | `true` | Close when an `<a>` or `<button>` inside the content is clicked. |
 | `dropdown.trigger` | `as-child` | `false` | Merge trigger behavior into one button or anchor root instead of rendering a button. |
-| `dropdown.content` | `side` | `bottom` | Preferred side: `top`, `right`, `bottom` or `left`. |
-| `dropdown.content` | `align` | `start` | Content alignment: `start`, `center` or `end`. |
+| `dropdown.content` | `side` | `bottom` | Preferred physical side: `top`, `right`, `bottom` or `left`. |
+| `dropdown.content` | `align` | `start` | Logical content alignment: `start`, `center` or `end`; start/end mirror in RTL. |
 | `dropdown.content` | `mobile-side` | `null` | Side override while the mobile media query matches. |
 | `dropdown.content` | `mobile-align` | `null` | Align override while the mobile media query matches. |
 | `dropdown.content` | `mobile-media` | `(max-width: 767px)` | Media query used by mobile side/align overrides. |

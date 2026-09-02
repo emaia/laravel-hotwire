@@ -24,7 +24,7 @@ export default class extends Controller {
 
     scrollToTop() {
         const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false;
-        window.scrollTo({ top: 0, left: 0, behavior: reduce ? "auto" : "smooth" });
+        window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
     }
 
     onScroll() {

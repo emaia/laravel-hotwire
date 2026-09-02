@@ -112,6 +112,29 @@ test.serial("ArrowLeft moves to the previous tab and wraps", async () => {
     expect(tabs[2].getAttribute("aria-selected")).toBe("true");
 });
 
+test.serial("horizontal arrow navigation follows the tablist's computed RTL direction", async () => {
+    await mount({ direction: "rtl" });
+    const tabs = tabEls();
+
+    press(tabs[0], "ArrowLeft");
+    expect(tabs[1].getAttribute("aria-selected")).toBe("true");
+
+    press(tabs[1], "ArrowRight");
+    expect(tabs[0].getAttribute("aria-selected")).toBe("true");
+});
+
+test("direction falls back to LTR when the tabs element has no window", () => {
+    const tablist = {};
+    const direction = Object.getOwnPropertyDescriptor(TabsController.prototype, "direction").get.call({
+        element: {
+            querySelector: () => tablist,
+            ownerDocument: { defaultView: null },
+        },
+    });
+
+    expect(direction).toBe("ltr");
+});
+
 test.serial("Home and End jump to the first and last tabs", async () => {
     await mount({ selectedIndexValue: 1 });
     const tabs = tabEls();
@@ -195,7 +218,7 @@ function press(tab, key) {
     tab.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));
 }
 
-async function mount({ selectedAttr = null, selectedIndexValue = null, vertical = false, disabled = null } = {}) {
+async function mount({ selectedAttr = null, selectedIndexValue = null, vertical = false, disabled = null, direction = "ltr" } = {}) {
     const selected = (i) => (selectedAttr === i ? 'aria-selected="true"' : "");
     const disabledAttr = (i) => (disabled === i ? 'disabled aria-disabled="true"' : "");
     const valueAttr = selectedIndexValue === null ? "" : `data-tabs-selected-index-value="${selectedIndexValue}"`;
@@ -205,8 +228,9 @@ async function mount({ selectedAttr = null, selectedIndexValue = null, vertical 
         "tabs",
         TabsController,
         `
+        <section dir="ltr">
         <div data-controller="tabs" ${valueAttr}>
-            <div role="tablist" ${orientation}
+            <div role="tablist" ${orientation} style="direction: ${direction}"
                  data-action="click->tabs#select keydown->tabs#navigate">
                 <button role="tab" id="t1" aria-controls="p1" data-tabs-target="tab" ${selected(0)} ${disabledAttr(0)}>One</button>
                 <button role="tab" id="t2" aria-controls="p2" data-tabs-target="tab" ${selected(1)} ${disabledAttr(1)}>Two</button>
@@ -215,6 +239,7 @@ async function mount({ selectedAttr = null, selectedIndexValue = null, vertical 
             <div role="tabpanel" id="p1" data-tabs-target="panel" tabindex="0">P1</div>
             <div role="tabpanel" id="p2" data-tabs-target="panel" tabindex="0">P2</div>
             <div role="tabpanel" id="p3" data-tabs-target="panel" tabindex="0">P3</div>
-        </div>`,
+        </div>
+        </section>`,
     );
 }

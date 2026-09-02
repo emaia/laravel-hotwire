@@ -242,7 +242,16 @@ the open visual state to a nested Modal or Alert Dialog before that child opens:
 }
 ```
 
-Side-aware styles should use `data-side` and `data-align`; these attributes reflect Floating UI's resolved placement
+Use logical properties for inline semantics: `start`/`end`, `ps`/`pe`, `ms`/`me`, `border-s`/`border-e`,
+`rounded-s`/`rounded-e`, and `text-start`/`text-end`. Attributes named `inline-start`, `inline-end`, `align=start`, or
+`align=end` follow the document direction. Horizontal transforms have no logical equivalent, so provide an explicit
+`:where(:dir(rtl), [dir="rtl"], [dir="rtl"] *)` inversion, or Tailwind's equivalent `rtl:` variant, when they
+represent inline movement. The attribute-backed branches survive production CSS compatibility transforms that may
+lower bare `:dir(rtl)` to language selectors. Test custom presets in both inherited `dir="ltr"` and `dir="rtl"` scopes.
+
+Physical side APIs are the exception. `side=left|right` and `direction=left|right` on Sidebar, Sheet, Drawer, Side
+Panel, and floating surfaces continue to mean the viewport's physical edge in either document direction. Side-aware
+floating styles should use `data-side` and `data-align`; these attributes reflect Floating UI's resolved placement
 after any flip. The preset also resets native Popover margins and removes the browser border only from borderless
 floating slots, preserving component borders and overflow while a surface participates in the top layer.
 

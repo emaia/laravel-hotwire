@@ -140,7 +140,7 @@ The tooltip controller uses the package's Floating UI dependency and only appear
 
 | Prop          | Default     | Description                                              |
 |---------------|-------------|----------------------------------------------------------|
-| `side`        | `left`      | `left` or `right`.                                       |
+| `side`        | `left`      | Physical `left` or `right`; the side does not mirror in RTL. |
 | `variant`     | `sidebar`   | `sidebar`, `floating`, or `inset`.                       |
 | `collapsible` | `offcanvas` | `offcanvas`, `icon`, or `none`.                          |
 | `motion`      | `default`   | `default` follows mobile CSS motion; `none` disables it. |

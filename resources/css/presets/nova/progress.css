@@ -4,5 +4,5 @@
     [data-slot="progress-track"] { @apply relative flex h-1 w-full items-center overflow-x-hidden rounded-full bg-muted; }
     [data-slot="progress-indicator"] { @apply h-full bg-primary transition-all; width: var(--progress-value); }
     [data-slot="progress-label"] { @apply text-sm font-medium; }
-    [data-slot="progress-value"] { @apply ml-auto text-sm text-muted-foreground tabular-nums; }
+    [data-slot="progress-value"] { @apply ms-auto text-sm text-muted-foreground tabular-nums; }
 }

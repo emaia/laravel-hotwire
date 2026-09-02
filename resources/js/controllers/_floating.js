@@ -43,7 +43,8 @@ export function createFloating(anchor, floating, options = {}) {
 
         floating.dataset.side = resolved.side;
         floating.dataset.align = resolved.align;
-        floating.style.setProperty("--transform-origin", transformOrigin(resolved.side, resolved.align));
+        const direction = floating.ownerDocument.defaultView?.getComputedStyle(floating).direction ?? "ltr";
+        floating.style.setProperty("--transform-origin", transformOrigin(resolved.side, resolved.align, direction));
 
         positionArrow(config.arrowElement, resolved.side, middlewareData.arrow);
         syncAnchorVisibility(floating, config.hideWhenDetached, middlewareData.hide);
@@ -201,9 +202,9 @@ function parsePlacement(placement) {
     };
 }
 
-function transformOrigin(side, align) {
-    if (side === "top") return `bottom ${inlineOrigin(align)}`;
-    if (side === "bottom") return `top ${inlineOrigin(align)}`;
+function transformOrigin(side, align, direction) {
+    if (side === "top") return `bottom ${inlineOrigin(align, direction)}`;
+    if (side === "bottom") return `top ${inlineOrigin(align, direction)}`;
     if (side === "left") return `right ${blockOrigin(align)}`;
 
     return `left ${blockOrigin(align)}`;
@@ -236,9 +237,9 @@ function syncAnchorVisibility(floating, enabled, data = {}) {
     floating.toggleAttribute("data-anchor-hidden", data.referenceHidden === true || data.escaped === true);
 }
 
-function inlineOrigin(align) {
-    if (align === "start") return "left";
-    if (align === "end") return "right";
+function inlineOrigin(align, direction) {
+    if (align === "start") return direction === "rtl" ? "right" : "left";
+    if (align === "end") return direction === "rtl" ? "left" : "right";
 
     return "center";
 }

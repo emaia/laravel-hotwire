@@ -1,8 +1,10 @@
 import { cp, mkdir, mkdtemp, readFile, readdir, rm, symlink, writeFile } from "node:fs/promises";
+import { spawn } from "node:child_process";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { gzipSync } from "node:zlib";
+import { build as viteBuild } from "vite";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const baselinePath = join(root, "tests/Css/preset_build_baselines.json");
@@ -56,17 +58,7 @@ async function runTailwind(directory, options = {}) {
 
     if (options.minify !== false) command.push("--minify");
 
-    const process = Bun.spawn(command, {
-        cwd: directory,
-        env: processEnv(),
-        stdout: "pipe",
-        stderr: "pipe",
-    });
-    const [exitCode, stdout, stderr] = await Promise.all([
-        process.exited,
-        new Response(process.stdout).text(),
-        new Response(process.stderr).text(),
-    ]);
+    const { exitCode, stdout, stderr } = await spawnCommand(command, directory);
 
     if (exitCode !== 0) {
         throw new Error(`Tailwind CSS build failed (exit ${exitCode}).\n${stderr || stdout}`);
@@ -82,32 +74,38 @@ async function runTailwind(directory, options = {}) {
 }
 
 async function generateSelectiveBundle(directory, output) {
-    const process = Bun.spawn(
-        [
-            globalThis.process.env.PHP_BINARY ?? "php",
-            stylesFixtureScript,
-            directory,
-            "nova",
-            output,
-            "button,card",
-            "tooltip",
-        ],
-        {
-            cwd: root,
-            env: processEnv(),
-            stdout: "pipe",
-            stderr: "pipe",
-        },
-    );
-    const [exitCode, stdout, stderr] = await Promise.all([
-        process.exited,
-        new Response(process.stdout).text(),
-        new Response(process.stderr).text(),
-    ]);
+    const { exitCode, stdout, stderr } = await spawnCommand([
+        globalThis.process.env.PHP_BINARY ?? "php",
+        stylesFixtureScript,
+        directory,
+        "nova",
+        output,
+        "button,card",
+        "tooltip",
+    ], root);
 
     if (exitCode !== 0) {
         throw new Error(`Selective CSS generation failed (exit ${exitCode}).\n${stderr || stdout}`);
     }
+}
+
+function spawnCommand(command, cwd) {
+    return new Promise((resolve, reject) => {
+        const child = spawn(command[0], command.slice(1), {
+            cwd,
+            env: processEnv(),
+            stdio: ["ignore", "pipe", "pipe"],
+        });
+        let stdout = "";
+        let stderr = "";
+
+        child.stdout.setEncoding("utf8");
+        child.stderr.setEncoding("utf8");
+        child.stdout.on("data", (chunk) => (stdout += chunk));
+        child.stderr.on("data", (chunk) => (stderr += chunk));
+        child.once("error", reject);
+        child.once("close", (exitCode) => resolve({ exitCode, stdout, stderr }));
+    });
 }
 
 function processEnv() {
@@ -184,6 +182,32 @@ export async function compileCssFixture(entrypoint, options = {}) {
         await writeFile(join(directory, "resources/css/app.css"), disableAutomaticSources(entrypoint));
 
         return await runTailwind(directory, options);
+    } finally {
+        await rm(directory, { recursive: true, force: true });
+    }
+}
+
+export async function minifyCssWithVite(css) {
+    const directory = await mkdtemp(join(tmpdir(), "hotwire-vite-css-"));
+
+    try {
+        await writeFile(join(directory, "index.html"), '<link rel="stylesheet" href="/app.css">');
+        await writeFile(join(directory, "app.css"), css);
+        await viteBuild({
+            root: directory,
+            configFile: false,
+            logLevel: "silent",
+            build: {
+                cssMinify: "lightningcss",
+                outDir: "dist",
+            },
+        });
+
+        const assets = await readdir(join(directory, "dist/assets"));
+        const stylesheet = assets.find((asset) => asset.endsWith(".css"));
+        if (!stylesheet) throw new Error("Vite CSS build did not emit a stylesheet.");
+
+        return await readFile(join(directory, "dist/assets", stylesheet), "utf8");
     } finally {
         await rm(directory, { recursive: true, force: true });
     }

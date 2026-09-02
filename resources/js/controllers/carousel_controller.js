@@ -40,10 +40,7 @@ export default class extends Controller {
 
         // Structural hooks let subclasses reuse the markup and CSS under a different Stimulus identifier.
         const node = this.element.querySelector("[data-carousel-viewport]") ?? this.element;
-        const options =
-            selectedIndex === null || selectedIndex === undefined
-                ? this.optionsValue
-                : { ...this.optionsValue, startIndex: selectedIndex };
+        const options = this.emblaOptions(selectedIndex);
 
         this.syncAxis();
         this.embla = EmblaCarousel(node, options, this.emblaPlugins());
@@ -132,7 +129,7 @@ export default class extends Controller {
     optionsValueChanged() {
         this.syncAxis();
         if (!this.embla) return;
-        this.embla.reInit(this.optionsValue, this.emblaPlugins());
+        this.embla.reInit(this.emblaOptions(), this.emblaPlugins());
     }
 
     /**
@@ -141,6 +138,16 @@ export default class extends Controller {
      */
     emblaPlugins() {
         return [];
+    }
+
+    emblaOptions(selectedIndex = null) {
+        const options = { ...this.optionsValue };
+        if (options.direction === undefined && getComputedStyle(this.element).direction === "rtl") {
+            options.direction = "rtl";
+        }
+        if (selectedIndex !== null && selectedIndex !== undefined) options.startIndex = selectedIndex;
+
+        return options;
     }
 
     onSelect() {

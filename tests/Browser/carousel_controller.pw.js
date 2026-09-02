@@ -82,6 +82,40 @@ test("--carousel-slide-size is overridable by an app class (no default rule to f
     expect(await slideWidth("half")).toBeLessThan(700); // class wins → ~50%
 });
 
+test("inherits RTL from computed CSS for both layout and Embla", async ({ page }) => {
+    const css = await readFile("resources/css/structural.css", "utf8");
+    await page.setContent(`
+        <style>${css}</style>
+        <main dir="ltr" style="direction: rtl">
+            ${carouselMarkup()}
+        </main>
+    `);
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ path: "node_modules/embla-carousel/embla-carousel.umd.js" });
+    await page.evaluate(() => {
+        const createEmbla = window.EmblaCarousel;
+        window.emblaOptions = [];
+        window.EmblaCarousel = (node, options, plugins) => {
+            window.emblaOptions.push(options);
+
+            return createEmbla(node, options, plugins);
+        };
+    });
+    await page.addScriptTag({ content: await browserCarouselScript() });
+    await page.evaluate(() => {
+        window.app = window.Stimulus.Application.start();
+        window.app.register("carousel", window.CarouselController);
+    });
+    await page.waitForFunction(() => window.emblaOptions.length > 0);
+
+    const result = await page.locator("#carousel").evaluate((root) => ({
+        cssDirection: getComputedStyle(root).direction,
+        emblaDirection: window.emblaOptions[0].direction,
+    }));
+
+    expect(result).toEqual({ cssDirection: "rtl", emblaDirection: "rtl" });
+});
+
 test("Turbo morph restores Embla at the selected snap when its managed transform resets", async ({ page }) => {
     const css = await readFile("resources/css/structural.css", "utf8");
 

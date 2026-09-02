@@ -36,6 +36,53 @@ test("an action ancestor outside the Alert Dialog waits for confirmation", async
     await expect(page).toHaveURL(/#deleted$/);
 });
 
+test("scroll lock preserves physical inline padding while adding the scrollbar gutter", async ({ page }) => {
+    await page.setViewportSize({ width: 1000, height: 600 });
+    await page.setContent(`
+        <style>body { padding-right: 20px !important; }</style>
+        <div data-controller="alert-dialog" data-alert-dialog-lock-scroll-class="overflow-hidden">
+            <button id="trigger" data-action="click->alert-dialog#interceptCapture:capture click->alert-dialog#intercept">Open</button>
+            <div data-alert-dialog-target="modal" data-state="closed" data-motion="none" hidden inert>
+                <div data-alert-dialog-target="backdrop"></div>
+                <div data-alert-dialog-target="dialog">
+                    <button id="cancel" type="button" data-action="alert-dialog#cancel">Cancel</button>
+                </div>
+            </div>
+        </div>
+    `);
+    await page.evaluate(() => {
+        Object.defineProperty(document.documentElement, "clientWidth", { configurable: true, value: 990 });
+    });
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ content: await browserControllerScript() });
+    await page.evaluate(() => {
+        window.StimulusApplication = window.Stimulus.Application.start();
+        window.StimulusApplication.register("alert-dialog", window.AlertDialogController);
+    });
+
+    await page.locator("#trigger").click();
+
+    await expect(page.locator("body")).toHaveCSS("padding-right", "30px");
+
+    await page.locator("#cancel").click();
+
+    expect(await page.locator("body").evaluate((body) => body.style.paddingInlineEnd)).toBe("");
+    await expect(page.locator("body")).toHaveCSS("padding-right", "20px");
+
+    await page.locator("body").evaluate((body) => {
+        body.style.setProperty("padding-inline-end", "5px", "important");
+        body.style.setProperty("padding-right", "20px", "important");
+    });
+    await page.locator("#trigger").click();
+    await expect(page.locator("body")).toHaveCSS("padding-right", "30px");
+
+    await page.locator("#cancel").click();
+
+    expect(await page.locator("body").evaluate((body) => body.style.paddingInlineEnd)).toBe("5px");
+    expect(await page.locator("body").evaluate((body) => body.style.getPropertyPriority("padding-inline-end"))).toBe("important");
+    await expect(page.locator("body")).toHaveCSS("padding-right", "20px");
+});
+
 test("a replaced external-form trigger submits once with its captured action", async ({ page }) => {
     await page.setContent(`
         <form id="item-form" action="/items" method="get">

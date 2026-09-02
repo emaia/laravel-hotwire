@@ -102,10 +102,20 @@ export default class extends Controller {
     }
 
     get nextKey() {
-        return this.vertical ? "ArrowDown" : "ArrowRight";
+        if (this.vertical) return "ArrowDown";
+
+        return this.direction === "rtl" ? "ArrowLeft" : "ArrowRight";
     }
 
     get prevKey() {
-        return this.vertical ? "ArrowUp" : "ArrowLeft";
+        if (this.vertical) return "ArrowUp";
+
+        return this.direction === "rtl" ? "ArrowRight" : "ArrowLeft";
+    }
+
+    get direction() {
+        const tablist = this.element.querySelector('[role="tablist"]') ?? this.element;
+
+        return this.element.ownerDocument.defaultView?.getComputedStyle(tablist).direction ?? "ltr";
     }
 }

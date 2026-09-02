@@ -2,7 +2,7 @@
     /* Accordion */
     [data-slot="accordion"] { @apply flex w-full flex-col; }
     [data-slot="accordion-item"] { @apply border-b border-border last:border-b-0; }
-    [data-slot="accordion-trigger"] { @apply flex w-full cursor-pointer list-none items-start justify-between gap-4 py-4 text-left text-sm font-medium transition-all outline-none hover:underline focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&::-webkit-details-marker]:hidden; }
+    [data-slot="accordion-trigger"] { @apply flex w-full cursor-pointer list-none items-start justify-between gap-4 py-4 text-start text-sm font-medium transition-all outline-none hover:underline focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&::-webkit-details-marker]:hidden; }
     [data-slot="accordion-item"][aria-disabled="true"] > [data-slot="accordion-trigger"] { @apply pointer-events-none opacity-50; }
     [data-slot="accordion-trigger-icon"] { @apply pointer-events-none size-4 shrink-0 translate-y-0.5 text-muted-foreground transition-transform; }
     [data-slot="accordion-item"][open] > [data-slot="accordion-trigger"] [data-slot="accordion-trigger-icon"] { @apply rotate-180; }

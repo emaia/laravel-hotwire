@@ -5,8 +5,8 @@
     :where([data-slot="file-upload-dropzone"][data-file-upload-dropzone-variant="bare"]) { @apply w-fit max-w-full cursor-pointer; }
     [data-slot="file-upload-actions"] { @apply flex justify-end; }
     [data-slot="file-upload"][data-density="compact"] { @apply gap-2; }
-    :where([data-slot="file-upload"][data-density="compact"] [data-slot="file-upload-dropzone"]:not([data-file-upload-dropzone-variant="bare"])) { @apply min-h-14 justify-start p-3 text-left; }
-    :where([data-slot="file-upload"][data-density="compact"] [data-slot="file-upload-dropzone"]:not([data-file-upload-dropzone-variant="bare"]) [data-slot="empty-state"]) { @apply flex-row justify-start gap-3 p-0 text-left; }
+    :where([data-slot="file-upload"][data-density="compact"] [data-slot="file-upload-dropzone"]:not([data-file-upload-dropzone-variant="bare"])) { @apply min-h-14 justify-start p-3 text-start; }
+    :where([data-slot="file-upload"][data-density="compact"] [data-slot="file-upload-dropzone"]:not([data-file-upload-dropzone-variant="bare"]) [data-slot="empty-state"]) { @apply flex-row justify-start gap-3 p-0 text-start; }
     :where([data-slot="file-upload"][data-density="compact"] [data-slot="file-upload-dropzone"]:not([data-file-upload-dropzone-variant="bare"]) [data-slot="empty-state-header"]) { @apply max-w-none flex-row items-center gap-3; }
     :where([data-slot="file-upload"][data-density="compact"] [data-slot="file-upload-dropzone"]:not([data-file-upload-dropzone-variant="bare"]) [data-slot="empty-state-media"]) { @apply mb-0; }
     :where([data-slot="file-upload"][data-density="compact"] [data-slot="file-upload-dropzone"]:not([data-file-upload-dropzone-variant="bare"]) [data-slot="empty-state-description"]) { @apply text-xs leading-normal; }

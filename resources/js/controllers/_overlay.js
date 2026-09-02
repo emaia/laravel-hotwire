@@ -13,7 +13,9 @@ const handledEscapeEvents = new WeakSet();
 const bodyScrollLock = {
     count: 0,
     classes: new Map(),
-    paddingRight: null,
+    paddingInlineEnd: null,
+    paddingInlineEndPriority: null,
+    trailingPaddingProperties: [],
 };
 
 export function createOverlay(_controller, {
@@ -285,15 +287,20 @@ function isNestedEscapeScopeEvent(event, dialogTarget) {
 
 function lockBodyScroll(classes) {
     if (bodyScrollLock.count === 0) {
-        bodyScrollLock.paddingRight = document.body.style.paddingRight;
+        const style = document.body.style;
+        bodyScrollLock.paddingInlineEnd = style.paddingInlineEnd;
+        bodyScrollLock.paddingInlineEndPriority = style.getPropertyPriority("padding-inline-end");
+        const properties = Array.from({ length: style.length }, (_, index) => style.item(index));
+        const paddingInlineEndIndex = properties.indexOf("padding-inline-end");
+        bodyScrollLock.trailingPaddingProperties = paddingInlineEndIndex === -1
+            ? []
+            : properties.slice(paddingInlineEndIndex + 1).filter((property) => property === "padding" || property.startsWith("padding-"));
 
         const clientWidth = document.documentElement.clientWidth;
         const scrollbarWidth = clientWidth > 0 ? Math.max(0, window.innerWidth - clientWidth) : 0;
         if (scrollbarWidth > 0) {
-            const currentPadding = bodyScrollLock.paddingRight.trim();
-            document.body.style.paddingRight = currentPadding === ""
-                ? `${scrollbarWidth}px`
-                : `calc(${currentPadding} + ${scrollbarWidth}px)`;
+            const currentPadding = getComputedStyle(document.body).paddingInlineEnd.trim() || "0px";
+            document.body.style.setProperty("padding-inline-end", `calc(${currentPadding} + ${scrollbarWidth}px)`, "important");
         }
     }
 
@@ -326,6 +333,22 @@ function unlockBodyScroll(classes) {
     }
     if (bodyScrollLock.count > 0) return;
 
-    document.body.style.paddingRight = bodyScrollLock.paddingRight ?? "";
-    bodyScrollLock.paddingRight = null;
+    const style = document.body.style;
+    if (bodyScrollLock.paddingInlineEnd) {
+        style.setProperty("padding-inline-end", bodyScrollLock.paddingInlineEnd, bodyScrollLock.paddingInlineEndPriority ?? "");
+    } else {
+        style.removeProperty("padding-inline-end");
+    }
+    // CSSOM moves the restored logical declaration last, so replay padding declarations that originally followed it.
+    for (const property of bodyScrollLock.trailingPaddingProperties) {
+        const value = style.getPropertyValue(property);
+        if (value === "") continue;
+
+        const priority = style.getPropertyPriority(property);
+        style.removeProperty(property);
+        style.setProperty(property, value, priority);
+    }
+    bodyScrollLock.paddingInlineEnd = null;
+    bodyScrollLock.paddingInlineEndPriority = null;
+    bodyScrollLock.trailingPaddingProperties = [];
 }

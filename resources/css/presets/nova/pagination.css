@@ -9,8 +9,9 @@
     :is([data-slot="pagination-link"], [data-slot="pagination-previous"], [data-slot="pagination-next"])[data-size="icon"] { @apply size-8; }
     :is([data-slot="pagination-link"], [data-slot="pagination-previous"], [data-slot="pagination-next"])[data-size="default"] { @apply h-8 gap-1.5 px-2.5; }
     [data-slot="pagination-link"][data-active="true"] { @apply border-border bg-background hover:bg-muted hover:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50; }
-    [data-slot="pagination-previous"][data-size="default"] { @apply pl-1.5; }
-    [data-slot="pagination-next"][data-size="default"] { @apply pr-1.5; }
+    [data-slot="pagination-previous"][data-size="default"] { @apply ps-1.5; }
+    [data-slot="pagination-next"][data-size="default"] { @apply pe-1.5; }
+    [data-slot="pagination-previous"] > [data-icon="inline-start"], [data-slot="pagination-next-icon"] { @apply rtl:rotate-180; }
     [data-slot="pagination-next-content"], [data-slot="pagination-next-loading-content"] { @apply inline-flex items-center gap-1.5; }
     [data-slot="pagination-previous-label"], [data-slot="pagination-next-label"], [data-slot="pagination-next-loading-label"] { @apply hidden sm:block; }
     [data-slot="pagination-next-icon"] { @apply shrink-0; }

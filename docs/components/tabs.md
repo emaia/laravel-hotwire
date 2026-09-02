@@ -137,6 +137,7 @@ Disabled triggers render `disabled` and `aria-disabled="true"` and are skipped b
 ```
 
 Vertical tab lists use Arrow Up/Down through the underlying controller.
+Horizontal tab lists follow the computed writing direction, reversing Arrow Left/Right navigation in RTL.
 
 ## Custom ids
 
