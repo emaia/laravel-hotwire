@@ -8,6 +8,7 @@ import {
     compileCssFixture,
     disableAutomaticSources,
     measurementRows,
+    minifyCssWithVite,
     packageSourceEntrypoint,
     replacePresetImport,
     resolveBaselines,
@@ -32,9 +33,11 @@ const packageSources = [
 ];
 
 let contract;
+let productionNovaCss;
 
 beforeAll(async () => {
     contract = await buildCssContract();
+    productionNovaCss = await minifyCssWithVite(contract.outputs.presets.nova);
 });
 
 describe("public CSS presets", () => {
@@ -85,6 +88,13 @@ describe("public CSS presets", () => {
             expect(css).toMatch(slotSelector("progress-indicator"));
             expect(css).toContain("forced-color-adjust:none");
         }
+    });
+
+    test("preserves attribute-backed RTL selectors through Vite production minification", () => {
+        expect(productionNovaCss).toMatch(/\[data-slot=switch\][^{]*\[dir=rtl\][^{]*:checked:before\{/);
+        expect(productionNovaCss).toMatch(/\[data-slot=slider\]\[data-orientation=horizontal\][^{]*\[dir=rtl\][^{]*::-webkit-slider-runnable-track\{[^}]*linear-gradient\(to left/);
+        expect(productionNovaCss).toMatch(/\[data-slot=side-panel\]\[data-side=left\][^{]*\[dir=rtl\][^{]*\{flex-direction:row-reverse\}/);
+        expect(productionNovaCss).toMatch(/\[data-slot=side-panel\]\[data-side=right\][^{]*\[dir=rtl\][^{]*\{flex-direction:row\}/);
     });
 
     test("reports raw and gzip sizes against non-blocking baselines", () => {

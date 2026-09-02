@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { gzipSync } from "node:zlib";
+import { build as viteBuild } from "vite";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const baselinePath = join(root, "tests/Css/preset_build_baselines.json");
@@ -181,6 +182,32 @@ export async function compileCssFixture(entrypoint, options = {}) {
         await writeFile(join(directory, "resources/css/app.css"), disableAutomaticSources(entrypoint));
 
         return await runTailwind(directory, options);
+    } finally {
+        await rm(directory, { recursive: true, force: true });
+    }
+}
+
+export async function minifyCssWithVite(css) {
+    const directory = await mkdtemp(join(tmpdir(), "hotwire-vite-css-"));
+
+    try {
+        await writeFile(join(directory, "index.html"), '<link rel="stylesheet" href="/app.css">');
+        await writeFile(join(directory, "app.css"), css);
+        await viteBuild({
+            root: directory,
+            configFile: false,
+            logLevel: "silent",
+            build: {
+                cssMinify: "lightningcss",
+                outDir: "dist",
+            },
+        });
+
+        const assets = await readdir(join(directory, "dist/assets"));
+        const stylesheet = assets.find((asset) => asset.endsWith(".css"));
+        if (!stylesheet) throw new Error("Vite CSS build did not emit a stylesheet.");
+
+        return await readFile(join(directory, "dist/assets", stylesheet), "utf8");
     } finally {
         await rm(directory, { recursive: true, force: true });
     }

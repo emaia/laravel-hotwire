@@ -8,5 +8,5 @@
     [data-slot="switch"][data-size="default"]::before { width: 1rem; height: 1rem; }
     [data-slot="switch"][data-size="sm"]::before { width: 0.75rem; height: 0.75rem; }
     [data-slot="switch"]:checked::before { transform: translateX(calc(100% - 2px)); }
-    [data-slot="switch"]:dir(rtl):checked::before { transform: translateX(calc(-100% + 2px)); }
+    [data-slot="switch"]:where(:dir(rtl), [dir="rtl"], [dir="rtl"] *):checked::before { transform: translateX(calc(-100% + 2px)); }
 }

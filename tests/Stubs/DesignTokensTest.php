@@ -357,7 +357,8 @@ it('drives native slider tracks from the controller value', function (string $pr
 
     expect($css)
         ->toContain('[data-orientation="horizontal"]::-webkit-slider-runnable-track')
-        ->toContain('[data-orientation="horizontal"]:dir(rtl)::-webkit-slider-runnable-track')
+        ->toContain('[data-orientation="horizontal"]:where(:dir(rtl), [dir="rtl"], [dir="rtl"] *)::-webkit-slider-runnable-track')
+        ->not->toContain('[data-orientation="horizontal"]:dir(rtl)::-webkit-slider-runnable-track')
         ->toContain('[data-orientation="vertical"]::-webkit-slider-runnable-track')
         ->toContain('var(--slider-value)')
         ->not->toContain('::-webkit-slider-thumb { margin-top:')
@@ -601,9 +602,9 @@ it('uses physical inline CSS only for documented physical contracts', function (
         ->and($raw)->toHaveCount(5)
         ->toContain(['selector' => '[data-slot="switch"]::before', 'declaration' => 'transform: translateX(0)'])
         ->toContain(['selector' => '[data-slot="switch"]:checked::before', 'declaration' => 'transform: translateX(calc(100% - 2px))'])
-        ->toContain(['selector' => '[data-slot="switch"]:dir(rtl):checked::before', 'declaration' => 'transform: translateX(calc(-100% + 2px))'])
+        ->toContain(['selector' => '[data-slot="switch"]:where(:dir(rtl), [dir="rtl"], [dir="rtl"] *):checked::before', 'declaration' => 'transform: translateX(calc(-100% + 2px))'])
         ->toContain(['selector' => '[data-slot="slider"][data-orientation="horizontal"]::-webkit-slider-runnable-track', 'declaration' => 'background: linear-gradient(to right, var(--primary) 0 var(--slider-value), var(--input) var(--slider-value) 100%)'])
-        ->toContain(['selector' => '[data-slot="slider"][data-orientation="horizontal"]:dir(rtl)::-webkit-slider-runnable-track', 'declaration' => 'background: linear-gradient(to left, var(--primary) 0 var(--slider-value), var(--input) var(--slider-value) 100%)'])
+        ->toContain(['selector' => '[data-slot="slider"][data-orientation="horizontal"]:where(:dir(rtl), [dir="rtl"], [dir="rtl"] *)::-webkit-slider-runnable-track', 'declaration' => 'background: linear-gradient(to left, var(--primary) 0 var(--slider-value), var(--input) var(--slider-value) 100%)'])
         ->and($rawProbe)->toBe([
             ['selector' => '[data-slot="probe"]', 'declaration' => 'left: 0'],
             ['selector' => '[data-slot="probe"]', 'declaration' => 'padding-right: 1rem'],

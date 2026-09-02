@@ -85,11 +85,11 @@
     flex-direction: row-reverse;
 }
 
-[data-slot="side-panel"][data-side="left"]:dir(rtl) {
+[data-slot="side-panel"][data-side="left"]:where(:dir(rtl), [dir="rtl"], [dir="rtl"] *) {
     flex-direction: row-reverse;
 }
 
-[data-slot="side-panel"][data-side="right"]:dir(rtl) {
+[data-slot="side-panel"][data-side="right"]:where(:dir(rtl), [dir="rtl"], [dir="rtl"] *) {
     flex-direction: row;
 }
 

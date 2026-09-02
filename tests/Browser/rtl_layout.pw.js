@@ -1,13 +1,31 @@
 import { expect, test } from "@playwright/test";
 import { readFile } from "node:fs/promises";
-import { compileCssFixture } from "../../scripts/css_build_contract.js";
+import { compileCssFixture, minifyCssWithVite } from "../../scripts/css_build_contract.js";
 
 let presetCss;
 
 test.describe.configure({ mode: "serial" });
 
 test.beforeAll(async () => {
-    presetCss = await compileCssFixture(await readFile("stubs/resources/css/app.css", "utf8"));
+    presetCss = await minifyCssWithVite(
+        await compileCssFixture(await readFile("stubs/resources/css/app.css", "utf8")),
+    );
+});
+
+test("RTL slider fill survives production minification independent of language", async ({ page }) => {
+    await page.setContent(`
+        <style>${presetCss}</style>
+        <div id="scope" lang="pt-br" dir="rtl" style="width: 200px">
+            <input id="slider" type="range" value="25" data-slot="slider" data-orientation="horizontal" style="--slider-value: 25%">
+        </div>
+    `);
+
+    const slider = page.locator("#slider");
+    const portuguese = await slider.screenshot();
+    await page.locator("#scope").evaluate((scope) => scope.setAttribute("lang", "ar"));
+    const arabic = await slider.screenshot();
+
+    expect(Buffer.compare(portuguese, arabic)).toBe(0);
 });
 
 for (const direction of ["ltr", "rtl"]) {
@@ -48,6 +66,7 @@ for (const direction of ["ltr", "rtl"]) {
 
     test(`input addons and switch thumbs follow inline direction in ${direction.toUpperCase()}`, async ({ page }) => {
         await page.setContent(`
+            <html lang="pt-br"><body>
             <style>${presetCss}</style>
             <div dir="${direction}">
                 <label data-slot="input-group">
@@ -56,6 +75,7 @@ for (const direction of ["ltr", "rtl"]) {
                 </label>
                 <input id="switch" type="checkbox" checked data-slot="switch" data-size="default">
             </div>
+            </body></html>
         `);
 
         const layout = await page.locator('[data-slot="input-group"]').evaluate((group) => {
@@ -103,6 +123,24 @@ for (const direction of ["ltr", "rtl"]) {
 
         expect(box.x + box.width).toBeCloseTo(clientWidth, 5);
         expect(box.width).toBeCloseTo(200, 5);
+    });
+
+    test(`physical side panels preserve inline layout in ${direction.toUpperCase()}`, async ({ page }) => {
+        await page.setContent(`
+            <html lang="pt-br"><body>
+            <style>${presetCss}</style>
+            <div dir="${direction}">
+                <div id="left" data-slot="side-panel" data-side="left"></div>
+                <div id="right" data-slot="side-panel" data-side="right"></div>
+            </div>
+            </body></html>
+        `);
+
+        const flexDirections = await page.locator("#left, #right").evaluateAll((panels) => {
+            return panels.map((panel) => getComputedStyle(panel).flexDirection);
+        });
+
+        expect(flexDirections).toEqual(direction === "ltr" ? ["row", "row-reverse"] : ["row-reverse", "row"]);
     });
 
     test(`sidebar actions and submenus follow inline direction in ${direction.toUpperCase()}`, async ({ page }) => {
