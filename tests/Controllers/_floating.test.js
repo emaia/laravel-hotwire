@@ -120,8 +120,10 @@ test("resolves inline transform origins from the floating element direction", as
     const anchor = document.createElement("button");
     const floating = document.createElement("div");
     const directionScope = document.createElement("div");
-    directionScope.dir = "rtl";
+    document.documentElement.dir = "ltr";
+    directionScope.style.direction = "rtl";
     directionScope.append(floating);
+    document.body.append(directionScope);
     computeState.placement = "top-start";
 
     await createFloating(anchor, floating).update();

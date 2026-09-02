@@ -203,6 +203,11 @@ Prefer the custom properties over putting `flex-[…]` utilities on the slides �
 matching `touch-action` (`pan-y` horizontal / `pan-x` vertical) and gap/flex direction. Vertical (`axis: 'y'`) needs a
 height on the viewport — set it via `viewportClass`/your own CSS.
 
+**Direction:** when `options.direction` is omitted, the controller passes the root's computed writing direction to
+Embla whenever it is RTL. This keeps inherited `dir="rtl"` and CSS `direction: rtl` aligned with the logical structural
+spacing. Pass an explicit `direction` option only to override that inherited direction; Embla requires the option and
+the rendered CSS direction to agree.
+
 If you omit the `data-carousel-viewport` hook, the controller element itself is used as the viewport — fine for the
 simplest case, but an explicit viewport lets you place navigation/dots outside the clipped area.
 

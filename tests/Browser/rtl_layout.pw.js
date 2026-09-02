@@ -99,8 +99,10 @@ for (const direction of ["ltr", "rtl"]) {
 
         const box = await page.locator('[data-slot="sheet-content"]').boundingBox();
 
-        expect(box.x + box.width).toBe(await page.evaluate(() => window.innerWidth));
-        expect(box.width).toBe(200);
+        const clientWidth = await page.evaluate(() => document.documentElement.clientWidth);
+
+        expect(box.x + box.width).toBeCloseTo(clientWidth, 5);
+        expect(box.width).toBeCloseTo(200, 5);
     });
 
     test(`sidebar actions and submenus follow inline direction in ${direction.toUpperCase()}`, async ({ page }) => {

@@ -117,6 +117,18 @@ test.serial("forwards optionsValue to Embla", async () => {
     expect(emblaState.calls[0].options).toEqual({ loop: true, align: "center" });
 });
 
+test.serial("derives Embla direction from computed CSS unless options override it", async () => {
+    document.documentElement.dir = "ltr";
+    await mount({ direction: "rtl" });
+
+    expect(emblaState.calls[0].options.direction).toBe("rtl");
+
+    await mounted.cleanup();
+    await mount({ direction: "rtl", options: { direction: "ltr" } });
+
+    expect(emblaState.calls.at(-1).options.direction).toBe("ltr");
+});
+
 // --- Actions ---
 
 test.serial("next() and prev() call Embla scrollNext/scrollPrev", async () => {
@@ -708,13 +720,14 @@ test.serial("disconnect detaches the morph recovery listener", async () => {
     expect(emblaState.calls.length).toBe(callsBefore);
 });
 
-async function mount({ options = {} } = {}) {
+async function mount({ options = {}, direction = "ltr" } = {}) {
     const optsAttr = `data-carousel-options-value='${JSON.stringify(options)}'`;
 
     mounted = await mountController(
         "carousel",
         CarouselController,
         `
+        <section style="direction: ${direction}">
         <div data-controller="carousel"
              ${optsAttr}
              data-action="turbo:before-cache@window->carousel#teardownForCache">
@@ -734,6 +747,7 @@ async function mount({ options = {} } = {}) {
             <template data-carousel-target="dotTemplate">
                 <button type="button" data-action="carousel#scrollTo"></button>
             </template>
-        </div>`,
+        </div>
+        </section>`,
     );
 }

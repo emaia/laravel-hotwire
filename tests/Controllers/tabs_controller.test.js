@@ -112,7 +112,7 @@ test.serial("ArrowLeft moves to the previous tab and wraps", async () => {
     expect(tabs[2].getAttribute("aria-selected")).toBe("true");
 });
 
-test.serial("horizontal arrow navigation follows the inherited RTL direction", async () => {
+test.serial("horizontal arrow navigation follows the tablist's computed RTL direction", async () => {
     await mount({ direction: "rtl" });
     const tabs = tabEls();
 
@@ -216,9 +216,9 @@ async function mount({ selectedAttr = null, selectedIndexValue = null, vertical 
         "tabs",
         TabsController,
         `
-        <section dir="${direction}">
+        <section dir="ltr">
         <div data-controller="tabs" ${valueAttr}>
-            <div role="tablist" ${orientation}
+            <div role="tablist" ${orientation} style="direction: ${direction}"
                  data-action="click->tabs#select keydown->tabs#navigate">
                 <button role="tab" id="t1" aria-controls="p1" data-tabs-target="tab" ${selected(0)} ${disabledAttr(0)}>One</button>
                 <button role="tab" id="t2" aria-controls="p2" data-tabs-target="tab" ${selected(1)} ${disabledAttr(1)}>Two</button>

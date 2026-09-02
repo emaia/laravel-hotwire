@@ -21,5 +21,5 @@
     [data-slot="multi-select-select-all"][data-indeterminate="true"] [data-slot="multi-select-indicator"]::before { width: 0.5rem; height: 0.125rem; opacity: 1; transform: scale(1); border-radius: 9999px; mask: none; }
     [data-slot="multi-select-option-text"] { @apply flex-1 truncate; }
     [data-slot="multi-select-empty"] { @apply px-1.5 py-2 text-sm text-muted-foreground; }
-    [data-slot="multi-select-validation"] { @apply pointer-events-none absolute bottom-0 left-0 h-px w-full opacity-0; }
+    [data-slot="multi-select-validation"] { @apply pointer-events-none absolute bottom-0 start-0 h-px w-full opacity-0; }
 }

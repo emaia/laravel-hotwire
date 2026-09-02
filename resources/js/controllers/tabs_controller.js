@@ -114,10 +114,8 @@ export default class extends Controller {
     }
 
     get direction() {
-        const declared = this.element.closest("[dir]")?.getAttribute("dir")?.toLowerCase();
+        const tablist = this.element.querySelector('[role="tablist"]') ?? this.element;
 
-        return ["ltr", "rtl"].includes(declared)
-            ? declared
-            : this.element.ownerDocument.defaultView?.getComputedStyle(this.element).direction;
+        return this.element.ownerDocument.defaultView.getComputedStyle(tablist).direction;
     }
 }

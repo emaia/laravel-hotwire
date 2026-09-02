@@ -513,22 +513,82 @@ it('keeps input-group focus and addon layout owned by the group', function (stri
         ->not->toContain('[data-slot="input-group-control"] { @apply pr-8');
 })->with('design presets');
 
-it('uses logical properties for inline preset semantics', function (string $preset) {
+it('uses physical inline utilities only for documented physical contracts', function (string $preset) {
     $css = presetVisualCss($preset);
-    $inputGroup = File::get(__DIR__."/../../resources/css/presets/$preset/input-group.css");
     $structural = File::get(__DIR__.'/../../resources/css/structural.css');
+    $allowed = [
+        '[data-slot="carousel"][data-carousel-axis="y"] > :is([data-slot="carousel-prev-button"], [data-slot="carousel-next-button"])' => ['left-1/2', '-translate-x-1/2'],
+        '[data-slot="sheet-overlay"][data-state="closed"] > [data-slot="sheet-content"][data-side="right"]' => ['translate-x-10'],
+        '[data-slot="sheet-overlay"][data-state="closed"] > [data-slot="sheet-content"][data-side="left"]' => ['-translate-x-10'],
+        '[data-slot="sheet-overlay"][data-state="open"] > [data-slot="sheet-content"]' => ['translate-x-0'],
+        '[data-slot="sheet-content"][data-side="right"]' => ['right-0', 'border-l'],
+        '[data-slot="sheet-content"][data-side="left"]' => ['left-0', 'border-r'],
+        '[data-slot="drawer-overlay"][data-state="closed"] > [data-slot="drawer-popup"][data-direction="right"]' => ['translate-x-full'],
+        '[data-slot="drawer-overlay"][data-state="closed"] > [data-slot="drawer-popup"][data-direction="left"]' => ['-translate-x-full'],
+        '[data-slot="drawer-overlay"][data-state="open"] > [data-slot="drawer-popup"]' => ['translate-x-0'],
+        '[data-slot="drawer-popup"][data-direction="right"]' => ['right-0', 'rounded-l-xl', 'border-l'],
+        '[data-slot="drawer-popup"][data-direction="left"]' => ['left-0', 'rounded-r-xl', 'border-r'],
+        '[data-slot="sidebar-container"]' => ['left-0', 'right-0'],
+        '[data-slot="sidebar"][data-collapsible="offcanvas"] [data-slot="sidebar-container"][data-side="left"]' => ['left-[calc(var(--sidebar-width)*-1)]'],
+        '[data-slot="sidebar"][data-collapsible="offcanvas"] [data-slot="sidebar-container"][data-side="right"]' => ['right-[calc(var(--sidebar-width)*-1)]'],
+        '[data-slot="sidebar"][data-variant="sidebar"][data-side="left"] [data-slot="sidebar-container"]' => ['border-r'],
+        '[data-slot="sidebar"][data-variant="sidebar"][data-side="right"] [data-slot="sidebar-container"]' => ['border-l'],
+        '[data-slot="sidebar"][data-variant="inset"][data-side="left"] ~ [data-slot="sidebar-inset"]' => ['ml-0'],
+        '[data-slot="sidebar"][data-variant="inset"][data-side="right"] ~ [data-slot="sidebar-inset"]' => ['mr-0'],
+        '[data-slot="sidebar-rail"]' => ['left-1/2', '-translate-x-1/2'],
+        '[data-slot="sidebar"][data-side="left"] [data-slot="sidebar-rail"]' => ['-right-4'],
+        '[data-slot="sidebar"][data-side="right"] [data-slot="sidebar-rail"]' => ['left-0'],
+        '[data-slot="sidebar"][data-collapsible="offcanvas"] [data-slot="sidebar-rail"]' => ['left-full', 'translate-x-0'],
+        '[data-slot="sidebar-menu-sub"]' => ['translate-x-px', '-translate-x-px'],
+        '[data-slot="sidebar-menu-sub-button"]' => ['-translate-x-px', 'translate-x-px'],
+        '[data-slot="sidebar"][data-mobile-state] > [data-slot="sidebar-container"][data-side="left"]' => ['left-0'],
+        '[data-slot="sidebar"][data-mobile-state] > [data-slot="sidebar-container"][data-side="right"]' => ['right-0'],
+        '[data-slot="sidebar"][data-mobile-state="closed"] > [data-slot="sidebar-container"][data-side="left"]' => ['-translate-x-full'],
+        '[data-slot="sidebar"][data-mobile-state="closed"] > [data-slot="sidebar-container"][data-side="right"]' => ['translate-x-full'],
+        '[data-slot="sidebar"][data-mobile-state="open"] > [data-slot="sidebar-container"]' => ['translate-x-0'],
+        ':is([data-slot="dropdown-menu"], [data-slot="tooltip"], [data-slot="hover-card-content"], [data-slot="popover-content"], [data-slot="multi-select-content"])[data-state="closed"][data-side="left"]' => ['translate-x-1'],
+        ':is([data-slot="dropdown-menu"], [data-slot="tooltip"], [data-slot="hover-card-content"], [data-slot="popover-content"], [data-slot="multi-select-content"])[data-state="closed"][data-side="right"]' => ['-translate-x-1'],
+        ':is([data-slot="dropdown-menu"], [data-slot="tooltip"], [data-slot="hover-card-content"], [data-slot="popover-content"], [data-slot="multi-select-content"])[data-state="open"]' => ['translate-x-0'],
+    ];
+    $physical = physicalInlineUtilities($css);
+    $unexpected = collect($physical)
+        ->reject(fn (array $occurrence): bool => in_array(
+            $occurrence['utility'],
+            $allowed[$occurrence['selector']] ?? [],
+            true,
+        ))
+        ->map(fn (array $occurrence): string => "{$occurrence['selector']} uses {$occurrence['utility']}")
+        ->values()
+        ->all();
+    $missingAllowed = collect($allowed)
+        ->flatMap(fn (array $utilities, string $selector): array => array_map(
+            fn (string $utility): array => ['selector' => $selector, 'utility' => $utility],
+            $utilities,
+        ))
+        ->reject(fn (array $occurrence): bool => in_array($occurrence, $physical, true))
+        ->values()
+        ->all();
+    $probe = physicalInlineUtilities(<<<'CSS'
+        [data-slot="probe"] {
+            @apply md:pr-2
+                rtl:-translate-x-1
+                rounded-tr-lg
+                bg-left-top
+                object-right
+                md:[padding-right:1rem];
+        }
+        CSS);
 
-    expect($css)
-        ->toContain('rounded-e-none')
-        ->toContain('rounded-s-none border-s-0')
-        ->toContain('has-data-[icon=inline-end]:pe-')
-        ->toContain('has-data-[icon=inline-start]:ps-')
-        ->toContain('[data-slot="switch"]:dir(rtl):checked::before')
-        ->not->toContain('text-left')
-        ->and($inputGroup)
-        ->toContain('@apply ps-1')
-        ->toContain('@apply pe-1')
-        ->not->toMatch('/@apply[^;}]*\b(?:pl|pr)-/')
+    expect($unexpected)->toBe([])
+        ->and($missingAllowed)->toBe([])
+        ->and($probe)->toBe([
+            ['selector' => '[data-slot="probe"]', 'utility' => 'pr-2'],
+            ['selector' => '[data-slot="probe"]', 'utility' => '-translate-x-1'],
+            ['selector' => '[data-slot="probe"]', 'utility' => 'rounded-tr-lg'],
+            ['selector' => '[data-slot="probe"]', 'utility' => 'bg-left-top'],
+            ['selector' => '[data-slot="probe"]', 'utility' => 'object-right'],
+            ['selector' => '[data-slot="probe"]', 'utility' => '[padding-right:1rem]'],
+        ])
         ->and($structural)
         ->toContain('margin-inline-start: calc(var(--carousel-slide-spacing, 0px) * -1)')
         ->toContain('padding-inline-start: var(--carousel-slide-spacing, 0px)')
@@ -541,4 +601,53 @@ function presetDeclaration(string $css, string $selector): string
     preg_match('/'.preg_quote($selector, '/').'\s*\{([^}]*)\}/s', $css, $matches);
 
     return $matches[1] ?? '';
+}
+
+/**
+ * @return array<int, array{selector: string, utility: string}>
+ */
+function physicalInlineUtilities(string $css): array
+{
+    $occurrences = [];
+    $css = preg_replace('/\/\*.*?\*\//s', '', $css) ?? $css;
+
+    preg_match_all('/([^{}]+)\{([^{}]*)\}/s', $css, $rules, PREG_SET_ORDER);
+    foreach ($rules as $rule) {
+        preg_match_all('/@apply\s+([^;}]+)/s', $rule[2], $declarations);
+
+        foreach ($declarations[1] as $declaration) {
+            foreach (preg_split('/\s+/', trim($declaration)) ?: [] as $token) {
+                $utility = tailwindBaseUtility($token);
+                $candidate = ltrim($utility, '-');
+
+                if (! preg_match('/^(?:(?:left|right|ml|mr|pl|pr|scroll-ml|scroll-mr|scroll-pl|scroll-pr|translate-x)-|border-(?:l|r)(?:-|$)|rounded-(?:l|r|tl|tr|bl|br)(?:-|$)|origin-(?:left|right)$|(?:text|float|clear)-(?:left|right)$|(?:bg|object)-(?!\[)[a-z0-9-]*(?:left|right)[a-z0-9-]*$|\[(?:left|right|margin-(?:left|right)|padding-(?:left|right)|border-(?:left|right)(?:-(?:width|style|color))?|border-(?:top|bottom)-(?:left|right)-radius|transform-origin|background-position|object-position):)/', $candidate)) {
+                    continue;
+                }
+
+                $occurrences[] = ['selector' => trim($rule[1]), 'utility' => $utility];
+            }
+        }
+    }
+
+    return $occurrences;
+}
+
+function tailwindBaseUtility(string $token): string
+{
+    $squareDepth = 0;
+    $roundDepth = 0;
+    $separator = -1;
+
+    for ($index = 0, $length = strlen($token); $index < $length; $index++) {
+        match ($token[$index]) {
+            '[' => $squareDepth++,
+            ']' => $squareDepth--,
+            '(' => $roundDepth++,
+            ')' => $roundDepth--,
+            ':' => $squareDepth === 0 && $roundDepth === 0 ? $separator = $index : null,
+            default => null,
+        };
+    }
+
+    return substr($token, $separator + 1);
 }

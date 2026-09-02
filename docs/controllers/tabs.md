@@ -94,6 +94,8 @@ initial render or on Turbo morph reconnects, so listeners like analytics aren't 
 | `End`                        | Move to the last tab                |
 
 \* Up/Down keys apply when the tablist has `aria-orientation="vertical"`.
+Horizontal arrows follow the tablist's computed writing direction: in RTL, Arrow Left moves to the next tab and Arrow
+Right moves to the previous tab.
 
 ## Selecting a tab on the server
 
