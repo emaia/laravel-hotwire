@@ -16,6 +16,7 @@
     --color-destructive: var(--destructive);
     --color-destructive-foreground: var(--destructive-foreground);
     --color-border: var(--border);
+    --color-backdrop: var(--backdrop);
     --color-input: var(--input);
     --color-ring: var(--ring);
     --color-sidebar: var(--sidebar);
@@ -51,6 +52,7 @@
 :root {
     color-scheme: light;
     --radius: 0.625rem;
+    --backdrop: oklch(0 0 0 / 10%);
 }
 
 :where(:root:not([data-theme="dark"])),

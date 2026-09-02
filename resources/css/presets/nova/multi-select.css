@@ -6,7 +6,7 @@
     [data-slot="multi-select-trigger-icon"] { @apply size-4 shrink-0 opacity-50 transition-transform; }
     [data-slot="multi-select-trigger"][aria-expanded="true"] [data-slot="multi-select-trigger-icon"] { @apply rotate-180; }
     [data-slot="multi-select-value"] { @apply min-w-0 flex-1 truncate; }
-    [data-slot="multi-select-content"] { @apply z-50 max-h-(--available-height) w-(--anchor-width) min-w-52 origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10 duration-150 ease-out; }
+    [data-slot="multi-select-content"] { @apply z-50 max-h-(--available-height) w-(--anchor-width) min-w-52 origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10 duration-100 ease-out; }
     [data-slot="multi-select-content"] [data-slot="input-wrapper"][data-clearable="true"] { @apply block; }
     [data-slot="multi-select-content"] [data-slot="input-group"] { @apply mb-1 min-h-8; }
     [data-slot="multi-select-content"] [data-slot="clear-input-button"] { @apply top-1/2 -translate-y-1/2; }

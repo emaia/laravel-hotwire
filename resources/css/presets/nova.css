@@ -5,7 +5,6 @@
 @import "./nova/accordion.css";
 @import "./nova/alert.css";
 @import "./nova/alert-dialog.css";
-@import "./nova/aspect-ratio.css";
 @import "./nova/text-shimmer.css";
 @import "./nova/attachment.css";
 @import "./nova/avatar.css";
@@ -36,7 +35,6 @@
 @import "./nova/item.css";
 @import "./nova/kbd.css";
 @import "./nova/marker.css";
-@import "./nova/overlay-foundation.css";
 @import "./nova/modal-overlay-layout.css";
 @import "./nova/dialog-backdrops.css";
 @import "./nova/modal.css";
@@ -49,7 +47,6 @@
 @import "./nova/progress.css";
 @import "./nova/read-more.css";
 @import "./nova/reveal-surfaces.css";
-@import "./nova/reveal.css";
 @import "./nova/read-more-reduced-motion.css";
 @import "./nova/rich-text.css";
 @import "./nova/scroll-progress.css";

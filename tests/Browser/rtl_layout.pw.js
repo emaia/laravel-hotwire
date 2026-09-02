@@ -15,7 +15,7 @@ test.beforeAll(async () => {
 test("RTL slider fill renders on the right after production minification regardless of language", async ({ page }) => {
     await page.setContent(`
         <style>${presetCss}</style>
-        <div id="scope" lang="pt-br" dir="rtl" style="width: 200px; --primary: #ff0000; --input: #0000ff">
+        <div id="scope" lang="pt-br" dir="rtl" style="width: 200px; --primary: #ff0000; --muted: #0000ff">
             <input id="slider" type="range" value="25" data-slot="slider" data-orientation="horizontal" style="--slider-value: 25%">
         </div>
     `);

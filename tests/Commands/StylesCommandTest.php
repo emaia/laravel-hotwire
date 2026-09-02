@@ -71,7 +71,8 @@ it('records a canonical regeneration plan with effective modules and controllers
         ->and($plan['preset'])->toBe('nova')
         ->and($plan['components'])->toBe(['modal'])
         ->and($plan['controllers'])->toContain('modal', 'turbo--progress')
-        ->and($plan['modules'])->toContain('modal', 'button-surfaces', 'overlay-foundation');
+        ->and($plan['modules'])->toContain('modal', 'button-surfaces')
+        ->not->toContain('overlay-foundation');
 });
 
 it('treats equivalent selection order as an idempotent generation', function () {

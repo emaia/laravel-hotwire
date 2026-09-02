@@ -33,6 +33,13 @@ async function mount(page) {
             ${button("dark")}
             ${probe("dark-border", "--border")}
             ${probe("dark-input", "--input")}
+            ${probe("dark-popover", "--popover")}
+            ${probe("dark-popover-foreground", "--popover-foreground")}
+            <select id="dark-select" data-slot="select">
+                <optgroup id="dark-optgroup" label="Plans">
+                    <option id="dark-option">Pro</option>
+                </optgroup>
+            </select>
             <div data-theme="light">${button("light-inside-dark")}</div>
         </div>
         <div data-theme="light">
@@ -84,6 +91,19 @@ test("applies the dark variant inside a dark island nested in a light scope", as
 test("still reaches a light island nested in a dark scope", async ({ page }) => {
     await mount(page);
 
-    expect(await style(page, "#light-inside-dark", "backgroundColor"))
-        .not.toBe(await style(page, "#light", "backgroundColor"));
+    expect(await style(page, "#light-inside-dark", "backgroundColor")).not.toBe(
+        await style(page, "#light", "backgroundColor"),
+    );
+});
+
+test("keeps native Select options readable in the dark theme", async ({ page }) => {
+    await mount(page);
+
+    const background = await style(page, "#dark-popover", "color");
+    const foreground = await style(page, "#dark-popover-foreground", "color");
+
+    expect(await style(page, "#dark-option", "backgroundColor")).toBe(background);
+    expect(await style(page, "#dark-option", "color")).toBe(foreground);
+    expect(await style(page, "#dark-optgroup", "backgroundColor")).toBe(background);
+    expect(await style(page, "#dark-optgroup", "color")).toBe(foreground);
 });

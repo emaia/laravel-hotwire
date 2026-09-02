@@ -1,6 +1,7 @@
 @layer components {
     /* Select */
     [data-slot="select"] { @apply appearance-none pe-8; }
+    [data-slot="select"] :is(option, optgroup) { @apply bg-popover text-popover-foreground; }
     [data-slot="select-wrapper"] { @apply relative; }
-    [data-slot="select-icon"] { @apply pointer-events-none absolute end-2 top-1/2 size-4 -translate-y-1/2 opacity-50; }
+    [data-slot="select-icon"] { @apply pointer-events-none absolute end-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground; }
 }

@@ -1,4 +1,0 @@
-@layer components {
-    /* Aspect Ratio */
-    [data-slot="aspect-ratio"] { @apply relative aspect-(--ratio); }
-}

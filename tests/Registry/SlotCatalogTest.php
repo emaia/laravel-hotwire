@@ -106,6 +106,7 @@ it('classifies presentation-free and controller-owned slots as structural', func
     expect($structural)->toEqualCanonicalizing([
         'alert-dialog',
         'alert-dialog-trigger',
+        'aspect-ratio',
         'carousel-viewport',
         'carousel-container',
         'carousel-nav-wrapper',
@@ -120,6 +121,7 @@ it('classifies presentation-free and controller-owned slots as structural', func
         'optimistic',
         'pagination-status',
         'read-more-viewport',
+        'reveal-item',
         'rich-text-input',
         'sheet',
         'side-panel-panel',

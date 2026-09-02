@@ -5,12 +5,12 @@
     },
     "presets": {
         "nova": {
-            "rawBytes": 288963,
-            "gzipBytes": 28375
+            "rawBytes": 298730,
+            "gzipBytes": 28943
         }
     },
     "selective": {
-        "rawBytes": 65279,
-        "gzipBytes": 8486
+        "rawBytes": 66856,
+        "gzipBytes": 8783
     }
 }
