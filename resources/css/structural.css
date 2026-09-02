@@ -763,6 +763,10 @@ html[data-reveal="off"] [data-reveal-armed] {
     translate: -50% 0;
 }
 
+[data-slot="toast"][data-position$="-center"]:where(:dir(rtl), [dir="rtl"], [dir="rtl"] *) {
+    translate: 50% 0;
+}
+
 [data-slot="toast"][data-limited] {
     opacity: 0;
 }

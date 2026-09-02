@@ -46,6 +46,20 @@ test("RTL slider fill renders on the right after production minification regardl
     expect(Buffer.compare(portuguese, arabic)).toBe(0);
 });
 
+test("centered toasts remain centered in RTL", async ({ page }) => {
+    await page.setViewportSize({ width: 1000, height: 720 });
+    await page.setContent(`
+        <style>${presetCss}</style>
+        <div dir="rtl">
+            <div id="toast" data-slot="toast" data-position="top-center">Toast</div>
+        </div>
+    `);
+
+    const box = await page.locator("#toast").boundingBox();
+
+    expect(box.x + box.width / 2).toBe(500);
+});
+
 for (const direction of ["ltr", "rtl"]) {
     test(`connected controls follow inline order in ${direction.toUpperCase()}`, async ({ page }) => {
         await page.setContent(`

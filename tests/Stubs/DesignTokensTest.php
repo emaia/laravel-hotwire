@@ -102,6 +102,12 @@ it('guards package light tokens from explicit dark roots', function () use ($tok
         ->toMatch('/:where\(:root:not\(\[data-theme="dark"\]\)\)\s*,\s*\[data-theme="light"\]\s*\{/s');
 });
 
+it('scopes backdrop defaults with the active color theme', function () use ($tokensPath) {
+    expect(file_get_contents($tokensPath))
+        ->toMatch('/:where\(:root:not\(\[data-theme="dark"\]\)\)\s*,\s*\[data-theme="light"\]\s*\{[^}]*--backdrop:/s')
+        ->toMatch('/\[data-theme="dark"\]\s*\{[^}]*--backdrop:/s');
+});
+
 it('contains the base layer border and outline contract', function () use ($tokensPath) {
     expect(file_get_contents($tokensPath))
         ->toContain('@layer base')

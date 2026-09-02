@@ -91,6 +91,42 @@ test("Accordion mechanics yield to later preset timing", async ({ page }) => {
         .evaluate((element) => getComputedStyle(element, "::details-content").transitionDuration);
 
     expect(duration).toBe("2s");
+
+    await page.emulateMedia({ reducedMotion: "reduce" });
+
+    const reducedDuration = await page
+        .locator("#item")
+        .evaluate((element) => getComputedStyle(element, "::details-content").transitionDuration);
+
+    expect(reducedDuration).toBe("0s");
+});
+
+test("native Select options do not mark a Field card as selected", async ({ page }) => {
+    await page.setContent(`
+        <style>${presetCss}</style>
+        <label id="select-card" data-slot="field-label">
+            <span data-slot="field">
+                <select data-slot="select"><option selected>Pro</option></select>
+            </span>
+        </label>
+        <label id="text-card" data-slot="field-label">
+            <span data-slot="field"><input data-slot="input"></span>
+        </label>
+        <label id="checked-card" data-slot="field-label">
+            <span data-slot="field"><input type="checkbox" checked></span>
+        </label>
+    `);
+
+    const colors = await page.locator("#select-card, #text-card, #checked-card").evaluateAll((cards) =>
+        cards.map((card) => {
+            const style = getComputedStyle(card);
+
+            return [style.backgroundColor, style.borderColor];
+        }),
+    );
+
+    expect(colors[0]).toEqual(colors[1]);
+    expect(colors[2]).not.toEqual(colors[1]);
 });
 
 test("Reveal fallback keyframes yield to later preset definitions", async ({ page }) => {

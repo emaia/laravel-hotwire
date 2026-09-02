@@ -20,7 +20,7 @@
     [data-slot="field-label"] { @apply text-sm leading-snug font-medium text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-50; }
     [data-slot="field-label"]:has(> [data-slot="field"]) { @apply flex w-full flex-col gap-2 rounded-lg border has-[:focus-visible]:border-ring has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50 not-has-[:disabled,[data-disabled]]:hover:bg-muted/50; }
     [data-slot="field-label"]:has(> [data-slot="field"]) > [data-slot="field"] { @apply p-2.5; }
-    [data-slot="field-label"]:has(> [data-slot="field"] :checked), [data-slot="field-label"]:has(> [data-slot="field"] [data-selected="true"]) { @apply border-primary/30 bg-primary/5 dark:border-primary/20 dark:bg-primary/10; }
+    [data-slot="field-label"]:has(> [data-slot="field"] input:checked), [data-slot="field-label"]:has(> [data-slot="field"] [data-selected="true"]) { @apply border-primary/30 bg-primary/5 dark:border-primary/20 dark:bg-primary/10; }
     [data-slot="field-label"]:has(> [data-slot="field"][data-disabled="true"]), [data-slot="field-label"]:has(> [data-slot="field"] [data-disabled="true"]), [data-slot="field-label"]:has(> [data-slot="field"] :disabled) { @apply opacity-50; }
     [data-slot="field-label"]:has(> [data-slot="field"][data-invalid="true"]), [data-slot="field-label"]:has(> [data-slot="field"] [aria-invalid="true"]) { @apply border-destructive; }
     [data-slot="field-label"]:has(> :is([data-slot="input"], [data-slot="checkbox"], [data-slot="checkbox-group-input"], [data-slot="radio-group-input"], [data-slot="switch"])[data-checkable="true"]) { @apply flex items-center gap-2 font-normal; }
