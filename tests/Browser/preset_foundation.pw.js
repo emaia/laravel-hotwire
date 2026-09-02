@@ -91,14 +91,28 @@ test("Accordion mechanics yield to later preset timing", async ({ page }) => {
         .evaluate((element) => getComputedStyle(element, "::details-content").transitionDuration);
 
     expect(duration).toBe("2s");
+});
 
+test("Accordion reduced motion overrides layered preset timing", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.setContent(`
+        <style>${presetCss}</style>
+        <style>
+            @layer components {
+                [data-slot="accordion-item"]::details-content { transition-duration: 2s; }
+            }
+        </style>
+        <details id="item" data-slot="accordion-item">
+            <summary>Question</summary>
+            Answer
+        </details>
+    `);
 
-    const reducedDuration = await page
+    const duration = await page
         .locator("#item")
         .evaluate((element) => getComputedStyle(element, "::details-content").transitionDuration);
 
-    expect(reducedDuration).toBe("0s");
+    expect(duration).toBe("0s");
 });
 
 test("native Select options do not mark a Field card as selected", async ({ page }) => {
