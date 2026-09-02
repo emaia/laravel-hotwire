@@ -112,6 +112,17 @@ test.serial("ArrowLeft moves to the previous tab and wraps", async () => {
     expect(tabs[2].getAttribute("aria-selected")).toBe("true");
 });
 
+test.serial("horizontal arrow navigation follows the inherited RTL direction", async () => {
+    await mount({ direction: "rtl" });
+    const tabs = tabEls();
+
+    press(tabs[0], "ArrowLeft");
+    expect(tabs[1].getAttribute("aria-selected")).toBe("true");
+
+    press(tabs[1], "ArrowRight");
+    expect(tabs[0].getAttribute("aria-selected")).toBe("true");
+});
+
 test.serial("Home and End jump to the first and last tabs", async () => {
     await mount({ selectedIndexValue: 1 });
     const tabs = tabEls();
@@ -195,7 +206,7 @@ function press(tab, key) {
     tab.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));
 }
 
-async function mount({ selectedAttr = null, selectedIndexValue = null, vertical = false, disabled = null } = {}) {
+async function mount({ selectedAttr = null, selectedIndexValue = null, vertical = false, disabled = null, direction = "ltr" } = {}) {
     const selected = (i) => (selectedAttr === i ? 'aria-selected="true"' : "");
     const disabledAttr = (i) => (disabled === i ? 'disabled aria-disabled="true"' : "");
     const valueAttr = selectedIndexValue === null ? "" : `data-tabs-selected-index-value="${selectedIndexValue}"`;
@@ -205,6 +216,7 @@ async function mount({ selectedAttr = null, selectedIndexValue = null, vertical 
         "tabs",
         TabsController,
         `
+        <section dir="${direction}">
         <div data-controller="tabs" ${valueAttr}>
             <div role="tablist" ${orientation}
                  data-action="click->tabs#select keydown->tabs#navigate">
@@ -215,6 +227,7 @@ async function mount({ selectedAttr = null, selectedIndexValue = null, vertical 
             <div role="tabpanel" id="p1" data-tabs-target="panel" tabindex="0">P1</div>
             <div role="tabpanel" id="p2" data-tabs-target="panel" tabindex="0">P2</div>
             <div role="tabpanel" id="p3" data-tabs-target="panel" tabindex="0">P3</div>
-        </div>`,
+        </div>
+        </section>`,
     );
 }

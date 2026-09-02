@@ -97,7 +97,7 @@ test.serial("scrollToTop scrolls to (0, 0) with smooth behavior by default", asy
 
     mounted.root.click();
 
-    expect(scrollTo).toHaveBeenCalledWith({ top: 0, left: 0, behavior: "smooth" });
+    expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: "smooth" });
 });
 
 test.serial("scrollToTop uses auto behavior when prefers-reduced-motion is set", async () => {
@@ -109,7 +109,7 @@ test.serial("scrollToTop uses auto behavior when prefers-reduced-motion is set",
 
     mounted.root.click();
 
-    expect(scrollTo).toHaveBeenCalledWith({ top: 0, left: 0, behavior: "auto" });
+    expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: "auto" });
 });
 
 // --- throttle ---

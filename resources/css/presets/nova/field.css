@@ -24,13 +24,13 @@
     [data-slot="field-label"]:has(> [data-slot="field"][data-disabled="true"]), [data-slot="field-label"]:has(> [data-slot="field"] [data-disabled="true"]), [data-slot="field-label"]:has(> [data-slot="field"] :disabled) { @apply opacity-50; }
     [data-slot="field-label"]:has(> [data-slot="field"][data-invalid="true"]), [data-slot="field-label"]:has(> [data-slot="field"] [aria-invalid="true"]) { @apply border-destructive; }
     [data-slot="field-label"]:has(> :is([data-slot="input"], [data-slot="checkbox"], [data-slot="checkbox-group-input"], [data-slot="radio-group-input"], [data-slot="switch"])[data-checkable="true"]) { @apply flex items-center gap-2 font-normal; }
-    [data-slot="field-description"] { @apply text-left text-sm leading-normal font-normal text-muted-foreground; }
+    [data-slot="field-description"] { @apply text-start text-sm leading-normal font-normal text-muted-foreground; }
     [data-slot="field"][data-orientation="horizontal"] [data-slot="field-description"], [data-slot="field"][data-orientation="responsive"] [data-slot="field-description"] { @apply md:text-balance; }
     [data-slot="field-legend"] + [data-slot="field-description"] { @apply -mt-1.5; }
     [data-slot="field-description"]:nth-last-child(2) { @apply -mt-1; }
     [data-slot="field-description"] > a { @apply underline underline-offset-4; }
     [data-slot="field-description"] > a:hover { @apply text-primary; }
     [data-slot="field-error"] { @apply text-sm font-normal text-destructive; }
-    [data-slot="field-error"] > ul { @apply ml-4 flex list-disc flex-col gap-1; }
+    [data-slot="field-error"] > ul { @apply ms-4 flex list-disc flex-col gap-1; }
     [data-slot="field-error"][data-empty="true"] { @apply hidden; }
 }

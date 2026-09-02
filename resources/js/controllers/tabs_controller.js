@@ -102,10 +102,22 @@ export default class extends Controller {
     }
 
     get nextKey() {
-        return this.vertical ? "ArrowDown" : "ArrowRight";
+        if (this.vertical) return "ArrowDown";
+
+        return this.direction === "rtl" ? "ArrowLeft" : "ArrowRight";
     }
 
     get prevKey() {
-        return this.vertical ? "ArrowUp" : "ArrowLeft";
+        if (this.vertical) return "ArrowUp";
+
+        return this.direction === "rtl" ? "ArrowRight" : "ArrowLeft";
+    }
+
+    get direction() {
+        const declared = this.element.closest("[dir]")?.getAttribute("dir")?.toLowerCase();
+
+        return ["ltr", "rtl"].includes(declared)
+            ? declared
+            : this.element.ownerDocument.defaultView?.getComputedStyle(this.element).direction;
     }
 }

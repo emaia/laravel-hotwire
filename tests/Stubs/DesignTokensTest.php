@@ -513,6 +513,29 @@ it('keeps input-group focus and addon layout owned by the group', function (stri
         ->not->toContain('[data-slot="input-group-control"] { @apply pr-8');
 })->with('design presets');
 
+it('uses logical properties for inline preset semantics', function (string $preset) {
+    $css = presetVisualCss($preset);
+    $inputGroup = File::get(__DIR__."/../../resources/css/presets/$preset/input-group.css");
+    $structural = File::get(__DIR__.'/../../resources/css/structural.css');
+
+    expect($css)
+        ->toContain('rounded-e-none')
+        ->toContain('rounded-s-none border-s-0')
+        ->toContain('has-data-[icon=inline-end]:pe-')
+        ->toContain('has-data-[icon=inline-start]:ps-')
+        ->toContain('[data-slot="switch"]:dir(rtl):checked::before')
+        ->not->toContain('text-left')
+        ->and($inputGroup)
+        ->toContain('@apply ps-1')
+        ->toContain('@apply pe-1')
+        ->not->toMatch('/@apply[^;}]*\b(?:pl|pr)-/')
+        ->and($structural)
+        ->toContain('margin-inline-start: calc(var(--carousel-slide-spacing, 0px) * -1)')
+        ->toContain('padding-inline-start: var(--carousel-slide-spacing, 0px)')
+        ->not->toContain('margin-left: calc(var(--carousel-slide-spacing, 0px) * -1)')
+        ->not->toContain('padding-left: var(--carousel-slide-spacing, 0px)');
+})->with('design presets');
+
 function presetDeclaration(string $css, string $selector): string
 {
     preg_match('/'.preg_quote($selector, '/').'\s*\{([^}]*)\}/s', $css, $matches);

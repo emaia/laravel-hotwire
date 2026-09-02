@@ -13,7 +13,7 @@ const handledEscapeEvents = new WeakSet();
 const bodyScrollLock = {
     count: 0,
     classes: new Map(),
-    paddingRight: null,
+    paddingInlineEnd: null,
 };
 
 export function createOverlay(_controller, {
@@ -285,13 +285,13 @@ function isNestedEscapeScopeEvent(event, dialogTarget) {
 
 function lockBodyScroll(classes) {
     if (bodyScrollLock.count === 0) {
-        bodyScrollLock.paddingRight = document.body.style.paddingRight;
+        bodyScrollLock.paddingInlineEnd = document.body.style.paddingInlineEnd;
 
         const clientWidth = document.documentElement.clientWidth;
         const scrollbarWidth = clientWidth > 0 ? Math.max(0, window.innerWidth - clientWidth) : 0;
         if (scrollbarWidth > 0) {
-            const currentPadding = bodyScrollLock.paddingRight.trim();
-            document.body.style.paddingRight = currentPadding === ""
+            const currentPadding = bodyScrollLock.paddingInlineEnd.trim();
+            document.body.style.paddingInlineEnd = currentPadding === ""
                 ? `${scrollbarWidth}px`
                 : `calc(${currentPadding} + ${scrollbarWidth}px)`;
         }
@@ -326,6 +326,6 @@ function unlockBodyScroll(classes) {
     }
     if (bodyScrollLock.count > 0) return;
 
-    document.body.style.paddingRight = bodyScrollLock.paddingRight ?? "";
-    bodyScrollLock.paddingRight = null;
+    document.body.style.paddingInlineEnd = bodyScrollLock.paddingInlineEnd ?? "";
+    bodyScrollLock.paddingInlineEnd = null;
 }

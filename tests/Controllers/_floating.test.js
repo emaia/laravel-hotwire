@@ -116,6 +116,24 @@ test("starts auto-update and positions the floating element", async () => {
     expect(floating.style.getPropertyValue("--transform-origin")).toBe("bottom right");
 });
 
+test("resolves inline transform origins from the floating element direction", async () => {
+    const anchor = document.createElement("button");
+    const floating = document.createElement("div");
+    const directionScope = document.createElement("div");
+    directionScope.dir = "rtl";
+    directionScope.append(floating);
+    computeState.placement = "top-start";
+
+    await createFloating(anchor, floating).update();
+
+    expect(floating.style.getPropertyValue("--transform-origin")).toBe("bottom right");
+
+    computeState.placement = "top-end";
+    await createFloating(anchor, floating).update();
+
+    expect(floating.style.getPropertyValue("--transform-origin")).toBe("bottom left");
+});
+
 test("omits flip and shift middleware when disabled", async () => {
     const instance = createFloating(document.createElement("button"), document.createElement("div"), {
         flip: false,

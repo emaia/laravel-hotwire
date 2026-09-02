@@ -511,12 +511,12 @@ test.serial("lock-scroll compensates for the removed scrollbar gutter", async ()
     clickWith(document.getElementById("trigger"));
 
     expect(document.body.classList.contains("overflow-hidden")).toBe(true);
-    expect(document.body.style.paddingRight).toBe("20px");
+    expect(document.body.style.paddingInlineEnd).toBe("20px");
 
     mounted.controller.cancel();
 
     expect(document.body.classList.contains("overflow-hidden")).toBe(false);
-    expect(document.body.style.paddingRight).toBe("");
+    expect(document.body.style.paddingInlineEnd).toBe("");
 });
 
 test.serial("lock-scroll keeps compensation until the last overlay unlocks", async () => {
@@ -530,18 +530,18 @@ test.serial("lock-scroll keeps compensation until the last overlay unlocks", asy
     const [first, second] = mounted.controllers;
 
     clickWith(document.getElementById("trigger"));
-    expect(document.body.style.paddingRight).toBe("20px");
+    expect(document.body.style.paddingInlineEnd).toBe("20px");
 
     clickWith(document.getElementById("trigger-two"));
-    expect(document.body.style.paddingRight).toBe("20px");
+    expect(document.body.style.paddingInlineEnd).toBe("20px");
 
     first.cancel();
     expect(document.body.classList.contains("overflow-hidden")).toBe(true);
-    expect(document.body.style.paddingRight).toBe("20px");
+    expect(document.body.style.paddingInlineEnd).toBe("20px");
 
     second.cancel();
     expect(document.body.classList.contains("overflow-hidden")).toBe(false);
-    expect(document.body.style.paddingRight).toBe("");
+    expect(document.body.style.paddingInlineEnd).toBe("");
 });
 
 // --- confirm() executes the captured action ---

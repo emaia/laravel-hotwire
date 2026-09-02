@@ -16,5 +16,5 @@
     [data-slot="modal-title"] { @apply text-base font-medium text-foreground; }
     [data-slot="modal-description"] { @apply text-sm text-muted-foreground; }
     [data-slot="modal-footer"] { @apply flex flex-col-reverse gap-2 sm:flex-row sm:justify-end; }
-    [data-slot="modal-close-icon"] { @apply absolute top-3 right-3 z-10 inline-flex size-7 shrink-0 appearance-none items-center justify-center rounded-md border-0 bg-transparent text-popover-foreground opacity-70 outline-none transition-all hover:bg-muted hover:text-foreground hover:opacity-100 focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0; }
+    [data-slot="modal-close-icon"] { @apply absolute top-3 end-3 z-10 inline-flex size-7 shrink-0 appearance-none items-center justify-center rounded-md border-0 bg-transparent text-popover-foreground opacity-70 outline-none transition-all hover:bg-muted hover:text-foreground hover:opacity-100 focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0; }
 }

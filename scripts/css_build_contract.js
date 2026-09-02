@@ -1,4 +1,5 @@
 import { cp, mkdir, mkdtemp, readFile, readdir, rm, symlink, writeFile } from "node:fs/promises";
+import { spawn } from "node:child_process";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -56,17 +57,7 @@ async function runTailwind(directory, options = {}) {
 
     if (options.minify !== false) command.push("--minify");
 
-    const process = Bun.spawn(command, {
-        cwd: directory,
-        env: processEnv(),
-        stdout: "pipe",
-        stderr: "pipe",
-    });
-    const [exitCode, stdout, stderr] = await Promise.all([
-        process.exited,
-        new Response(process.stdout).text(),
-        new Response(process.stderr).text(),
-    ]);
+    const { exitCode, stdout, stderr } = await spawnCommand(command, directory);
 
     if (exitCode !== 0) {
         throw new Error(`Tailwind CSS build failed (exit ${exitCode}).\n${stderr || stdout}`);
@@ -82,32 +73,38 @@ async function runTailwind(directory, options = {}) {
 }
 
 async function generateSelectiveBundle(directory, output) {
-    const process = Bun.spawn(
-        [
-            globalThis.process.env.PHP_BINARY ?? "php",
-            stylesFixtureScript,
-            directory,
-            "nova",
-            output,
-            "button,card",
-            "tooltip",
-        ],
-        {
-            cwd: root,
-            env: processEnv(),
-            stdout: "pipe",
-            stderr: "pipe",
-        },
-    );
-    const [exitCode, stdout, stderr] = await Promise.all([
-        process.exited,
-        new Response(process.stdout).text(),
-        new Response(process.stderr).text(),
-    ]);
+    const { exitCode, stdout, stderr } = await spawnCommand([
+        globalThis.process.env.PHP_BINARY ?? "php",
+        stylesFixtureScript,
+        directory,
+        "nova",
+        output,
+        "button,card",
+        "tooltip",
+    ], root);
 
     if (exitCode !== 0) {
         throw new Error(`Selective CSS generation failed (exit ${exitCode}).\n${stderr || stdout}`);
     }
+}
+
+function spawnCommand(command, cwd) {
+    return new Promise((resolve, reject) => {
+        const child = spawn(command[0], command.slice(1), {
+            cwd,
+            env: processEnv(),
+            stdio: ["ignore", "pipe", "pipe"],
+        });
+        let stdout = "";
+        let stderr = "";
+
+        child.stdout.setEncoding("utf8");
+        child.stderr.setEncoding("utf8");
+        child.stdout.on("data", (chunk) => (stdout += chunk));
+        child.stderr.on("data", (chunk) => (stderr += chunk));
+        child.once("error", reject);
+        child.once("close", (exitCode) => resolve({ exitCode, stdout, stderr }));
+    });
 }
 
 function processEnv() {

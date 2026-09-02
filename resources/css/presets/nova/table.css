@@ -7,8 +7,8 @@
     [data-slot="table-footer"] { @apply border-t bg-muted/50 font-medium; }
     [data-slot="table-footer"] > tr:last-child { @apply border-b-0; }
     [data-slot="table-row"] { @apply border-b transition-colors hover:bg-muted/50 aria-expanded:bg-muted/50 data-[state=selected]:bg-muted; }
-    [data-slot="table-head"] { @apply h-10 px-2 text-left align-middle font-medium whitespace-nowrap text-foreground; }
+    [data-slot="table-head"] { @apply h-10 px-2 text-start align-middle font-medium whitespace-nowrap text-foreground; }
     [data-slot="table-cell"] { @apply p-2 align-middle whitespace-nowrap; }
-    :is([data-slot="table-head"], [data-slot="table-cell"]):has([role="checkbox"]) { @apply pr-0; }
+    :is([data-slot="table-head"], [data-slot="table-cell"]):has([role="checkbox"]) { @apply pe-0; }
     [data-slot="table-caption"] { @apply mt-4 text-sm text-muted-foreground; }
 }
