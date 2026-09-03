@@ -45,10 +45,16 @@ the nested markup:
 </hw:reveal>
 ```
 
-The first explicit item switches the root out of direct-child mode. Raw `data-reveal-item` markup is also supported as
-an escape hatch. The controller assigns missing indexes in document order, but that happens only after it connects. Set
-`--reveal-index` server-side when the visual order differs or when the stagger must be correct on the first paint rather
-than progressively corrected after controller loading.
+The first explicit item switches the root out of direct-child mode. Raw `data-reveal-item` is a low-level escape hatch
+for explicit items inside a Reveal root, not a root-scoped annotation. Structural CSS matches `data-reveal-item` globally,
+so putting it in a reusable partial animates that partial wherever it renders; a stream insertion outside a Reveal root
+replays the entrance. Add the marker at the Reveal composition site instead. For an intentionally standalone item, add
+`data-reveal-skip` to the stream payload when its entrance should not replay.
+
+For a list of reusable partials, let `<hw:reveal>` own direct-child mode. It emits `data-reveal-children` automatically
+and keeps the partial markup neutral. The controller assigns missing indexes in document order, but that happens only
+after it connects. Set `--reveal-index` server-side when the visual order differs or when the stagger must be correct on
+the first paint rather than progressively corrected after controller loading.
 
 When a component must own the Reveal root without an extra wrapper, prefer that component's explicit integration when
 available. [`<hw:sidebar reveal>`](sidebar.md#reveal-integration), for example, mounts Reveal directly on its existing
@@ -119,9 +125,11 @@ Turbo previews can otherwise paint stale visible content before replaying its en
 View Transition, pair it with `<hw:meta cache="no-preview" />`. The umbrella `<hw:meta view-transition />` implies
 `cache="no-preview"` automatically unless an explicit `cache` value, including `false`, is supplied.
 
-Turbo Stream `replace`, `update`, and `morph` content that belongs to a Reveal is marked before insertion so updating an
-already visible item does not make it disappear and enter again. Transient armed and completed state is removed before
-Turbo caches the page.
+While any Reveal controller is connected, a Turbo Stream `replace`, `update`, or `morph` with at least one target inside
+Reveal markup marks its shared template before insertion. Split mixed Reveal and non-Reveal destinations into separate
+stream elements when they need different animation behavior. See the controller's
+[Turbo lifecycle](../controllers/reveal.md#turbo-lifecycle) for the exact target and payload rules. Transient armed and
+completed state is removed before Turbo caches the page.
 
 ## Integration
 

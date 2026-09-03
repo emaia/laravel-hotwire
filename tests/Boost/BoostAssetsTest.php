@@ -188,6 +188,35 @@ it('documents slots required by custom composed elements', function () {
         ->and($item)->toContain('- `data-slot="icon"`');
 });
 
+it('documents Reveal stream target and shared-template boundaries', function () {
+    $documentation = File::get(__DIR__.'/../../docs/controllers/reveal.md');
+
+    expect($documentation)
+        ->toContain('at least one Reveal controller is connected')
+        ->toContain('`[data-controller~="reveal"]` root or its descendant')
+        ->toContain('shared template')
+        ->toContain('separate stream elements')
+        ->toContain('targets all sit outside Reveal markup')
+        ->toContain('include `data-reveal-skip` in that payload');
+});
+
+it('keeps reusable Reveal partials free of presentation state', function () {
+    $skill = renderBoostAsset(boostAssetsPath('skills/laravel-hotwire-ui-development/SKILL.blade.php'));
+    $documentation = File::get(__DIR__.'/../../docs/components/reveal.md');
+
+    expect($skill)
+        ->toContain('wrap them in `<hw:reveal>`')
+        ->toContain('emits `data-reveal-children` automatically')
+        ->toContain('`data-reveal-item` globally')
+        ->toContain('Reveal composition site')
+        ->and($documentation)
+        ->toContain('let `<hw:reveal>` own direct-child mode')
+        ->toContain('emits `data-reveal-children` automatically')
+        ->toContain('`data-reveal-item` globally')
+        ->toContain('`data-reveal-skip` to the stream payload')
+        ->toContain('when its entrance should not replay');
+});
+
 it('keeps the copyable Stimulus example aligned with its controllers', function () {
     $skill = renderBoostAsset(boostAssetsPath('skills/laravel-hotwire-stimulus-controllers/SKILL.blade.php'));
     $clipboard = File::get(__DIR__.'/../../resources/js/controllers/copy_to_clipboard_controller.js');

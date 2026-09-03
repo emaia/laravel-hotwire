@@ -395,7 +395,7 @@ test("replacement streams leave unrelated incoming elements untouched", async ()
     const target = document.body.appendChild(document.createElement("div"));
     target.id = "unrelated";
     const template = document.createElement("template");
-    template.innerHTML = `<article id="replacement"></article>`;
+    template.innerHTML = `<article id="replacement" data-reveal-item></article>`;
     const stream = document.createElement("turbo-stream");
     stream.setAttribute("action", "replace");
     stream.setAttribute("target", "unrelated");
@@ -408,6 +408,55 @@ test("replacement streams leave unrelated incoming elements untouched", async ()
     );
 
     expect(template.content.querySelector("#replacement").hasAttribute("data-reveal-skip")).toBeFalse();
+    target.remove();
+});
+
+test("replacement stream target matching uses Reveal markup rather than controller connection", async () => {
+    mounted = await mount(`<section data-controller="reveal"><article data-reveal-item></article></section>`);
+    const unconnectedRoot = document.body.appendChild(document.createElement("section"));
+    unconnectedRoot.innerHTML = `<div id="pending-reveal-target"></div>`;
+    unconnectedRoot.setAttribute("data-controller", "reveal");
+    const template = document.createElement("template");
+    template.innerHTML = `<article id="replacement" data-reveal-item></article>`;
+    const stream = document.createElement("turbo-stream");
+    stream.setAttribute("action", "replace");
+    stream.setAttribute("target", "pending-reveal-target");
+    Object.defineProperty(stream, "templateElement", { value: template });
+
+    expect(mounted.application.getControllerForElementAndIdentifier(unconnectedRoot, "reveal")).toBeNull();
+    document.dispatchEvent(
+        new CustomEvent("turbo:before-stream-render", {
+            detail: { newStream: stream },
+        }),
+    );
+
+    expect(template.content.querySelector("#replacement").hasAttribute("data-reveal-skip")).toBeTrue();
+    unconnectedRoot.remove();
+});
+
+test("one related stream target stamps the template shared with unrelated targets", async () => {
+    mounted = await mount(`
+        <section data-controller="reveal">
+            <article class="stream-destination" data-reveal-item></article>
+        </section>
+    `);
+    const unrelatedTarget = document.body.appendChild(document.createElement("div"));
+    unrelatedTarget.className = "stream-destination";
+    const template = document.createElement("template");
+    template.innerHTML = `<article id="replacement" data-reveal-item></article>`;
+    const stream = document.createElement("turbo-stream");
+    stream.setAttribute("action", "update");
+    stream.setAttribute("targets", ".stream-destination");
+    Object.defineProperty(stream, "templateElement", { value: template });
+
+    document.dispatchEvent(
+        new CustomEvent("turbo:before-stream-render", {
+            detail: { newStream: stream },
+        }),
+    );
+
+    expect(template.content.querySelector("#replacement").hasAttribute("data-reveal-skip")).toBeTrue();
+    unrelatedTarget.remove();
 });
 
 test("replacement streams stamp unmarked children replacing direct-child items", async () => {
