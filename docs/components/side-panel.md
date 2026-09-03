@@ -95,7 +95,8 @@ needs one.
 
 ## Styling hooks
 
-Collapse geometry lives in `resources/css/structural.css` and is included by every preset. Visual styling uses:
+Collapse geometry lives in `resources/css/structural.css` and is included by every preset. Rail thickness and optional
+motion remain visual so a preset can refine them without fighting the shared mechanics. Visual styling uses:
 
 - `data-slot="side-panel"`
 - `data-slot="side-panel-panel"`

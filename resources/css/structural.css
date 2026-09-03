@@ -19,6 +19,32 @@
 @source inline("hidden overflow-hidden");
 
 /*
+ * --- Shared primitives ---
+ *
+ * These slots have no preset-specific appearance. Their geometry is part of the component contract,
+ * so a generated custom preset must inherit it without having to fill an empty scaffold rule.
+ */
+
+@layer components {
+    [data-slot="aspect-ratio"] {
+        position: relative;
+        aspect-ratio: var(--ratio);
+    }
+
+    [data-slot="sticky"] {
+        position: sticky;
+    }
+
+    [data-slot="sticky"][data-side="top"] {
+        inset-block-start: var(--sticky-offset);
+    }
+
+    [data-slot="sticky"][data-side="bottom"] {
+        inset-block-end: var(--sticky-offset);
+    }
+}
+
+/*
  * --- Sidebar content scroll ---
  *
  * The content column has to yield within the full-height sidebar before it can scroll. Icon mode
@@ -71,10 +97,7 @@
     position: absolute;
     inset-block: 0;
     z-index: 1;
-    inline-size: 1px;
     pointer-events: none;
-    transition-property: left, right;
-    transition-duration: 200ms;
 }
 
 [data-slot="side-panel"][data-side="right"] {
@@ -140,8 +163,6 @@
     inline-size: var(--side-panel-trigger-size, 1.75rem);
     block-size: var(--side-panel-trigger-size, 1.75rem);
     transform: translateX(var(--side-panel-trigger-shift));
-    transition-property: left, right;
-    transition-duration: 200ms;
 }
 
 [data-slot="side-panel-trigger-icon"] {
@@ -177,6 +198,29 @@
  * CSS owns first-paint visibility and timing. JavaScript only arms items that are outside the
  * viewport and releases them later, so a missing lazy controller can never strand content hidden.
  */
+
+[data-slot="reveal-item"] {
+    min-width: 0;
+}
+
+/* The named shapes are a layer-safe fallback: a preset can redefine any of them later without
+   replacing the visibility and scheduling machinery below. */
+@layer components {
+    @keyframes hotwire-reveal-rise {
+        0% { opacity: 0; filter: blur(var(--reveal-blur, 6px)); transform: translateY(var(--reveal-shift, 0.75rem)); }
+        100% { opacity: 1; filter: blur(0); transform: translateY(0); }
+    }
+
+    @keyframes hotwire-reveal-flat {
+        0% { opacity: 0; transform: translateY(var(--reveal-shift, 0.75rem)); }
+        100% { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes hotwire-reveal-fade {
+        0% { opacity: 0; }
+        100% { opacity: 1; }
+    }
+}
 
 [data-reveal-item],
 [data-reveal-children] > * {
@@ -419,10 +463,49 @@ html[data-reveal="off"] [data-reveal-armed] {
     display: none;
 }
 
-/* The UA stylesheet centres a `[popover]` with `margin: auto`, offsetting every overlay that opts
-   into the top layer. */
-:where([data-hotwire-top-layer][popover]) {
-    margin: 0;
+@layer components {
+    /* The UA stylesheet centres a `[popover]` with `margin: auto`, offsetting every overlay that opts
+       into the top layer. Keeping resets layered lets later preset rules refine their appearance. */
+    :where([data-hotwire-top-layer][popover]) {
+        margin: 0;
+    }
+
+    :is([data-slot="modal-overlay"], [data-slot="alert-dialog-overlay"], [data-slot="drawer-overlay"], [data-slot="sheet-overlay"]) {
+        position: fixed;
+        inset: 0;
+        z-index: 50;
+        pointer-events: none;
+    }
+
+    :is([data-slot="modal-overlay"], [data-slot="alert-dialog-overlay"]) {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    :is([data-slot="modal-overlay"], [data-slot="alert-dialog-overlay"], [data-slot="drawer-overlay"], [data-slot="sheet-overlay"])[data-state="open"] {
+        pointer-events: auto;
+    }
+
+    :where([data-hotwire-top-layer][popover]:is([data-slot="modal-overlay"], [data-slot="alert-dialog-overlay"], [data-slot="drawer-overlay"], [data-slot="sheet-overlay"], [data-slot="sidebar"])) {
+        width: 100vw;
+        height: 100dvh;
+        max-width: none;
+        max-height: none;
+        overflow: visible;
+        border: 0;
+        padding: 0;
+        background: transparent;
+        color: inherit;
+    }
+
+    :where([data-hotwire-top-layer][popover]:is([data-slot="dropdown-menu"], [data-slot="tooltip"], [data-slot="hover-card-content"], [data-slot="popover-content"], [data-slot="multi-select-content"])) {
+        inset: auto;
+    }
+
+    :where([data-hotwire-top-layer][popover]:is([data-slot="dropdown-menu"], [data-slot="tooltip"], [data-slot="multi-select-content"])) {
+        border: 0;
+    }
 }
 
 /*
@@ -438,22 +521,34 @@ html[data-reveal="off"] [data-reveal-armed] {
     [data-slot="accordion-item"]::details-content {
         block-size: 0;
         display: block;
-        opacity: 0;
         overflow: hidden;
-        /* `allow-discrete` rides inside the shorthand on purpose. Declared separately as
-           `transition-behavior`, it is reset by whichever `transition` the minifier emits after
-           it — Lightning CSS reorders these, and the collapse then snaps shut. */
-        transition: block-size 180ms ease-out, opacity 150ms ease-out, content-visibility 180ms ease-out allow-discrete;
     }
 
     [data-slot="accordion-item"][open]::details-content {
         block-size: auto;
         block-size: calc-size(auto, size);
-        opacity: 1;
     }
 
     @media (prefers-reduced-motion: reduce) {
         [data-slot="accordion-item"]::details-content { transition: none; }
+    }
+}
+
+/* Timing and opacity are visual defaults. Keeping them in the preset layer lets generated presets
+   change the motion without having to restate the collapse mechanics above. */
+@layer components {
+    @supports selector(::details-content) {
+        [data-slot="accordion-item"]::details-content {
+            opacity: 0;
+            /* `allow-discrete` rides inside the shorthand on purpose. Declared separately as
+               `transition-behavior`, it is reset by whichever `transition` the minifier emits after
+               it — Lightning CSS reorders these, and the collapse then snaps shut. */
+            transition: block-size 180ms ease-out, opacity 150ms ease-out, content-visibility 180ms ease-out allow-discrete;
+        }
+
+        [data-slot="accordion-item"][open]::details-content {
+            opacity: 1;
+        }
     }
 }
 
@@ -665,7 +760,11 @@ html[data-reveal="off"] [data-reveal-armed] {
 
 [data-slot="toast"][data-position$="-center"] {
     inset-inline-start: 50%;
-    margin-inline-start: calc(var(--toast-width, 22rem) / -2);
+    translate: -50% 0;
+}
+
+[data-slot="toast"][data-position$="-center"]:where(:dir(rtl), [dir="rtl"], [dir="rtl"] *) {
+    translate: 50% 0;
 }
 
 [data-slot="toast"][data-limited] {

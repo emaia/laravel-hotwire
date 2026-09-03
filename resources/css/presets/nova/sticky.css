@@ -1,8 +1,6 @@
 @layer components {
     /* Navbar */
-    [data-slot="sticky"] { @apply sticky z-20; }
-    [data-slot="sticky"][data-side="top"] { @apply top-(--sticky-offset); }
-    [data-slot="sticky"][data-side="bottom"] { @apply bottom-(--sticky-offset); }
+    [data-slot="sticky"] { @apply z-20; }
     [data-slot="sticky"][data-surface="true"] { @apply border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80; }
     [data-slot="sticky"][data-surface="true"][data-side="top"] { @apply border-b; }
     [data-slot="sticky"][data-surface="true"][data-side="bottom"] { @apply border-t; }

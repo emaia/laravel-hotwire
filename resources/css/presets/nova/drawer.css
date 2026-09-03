@@ -1,7 +1,6 @@
 @layer components {
     /* Drawer */
-    [data-slot="drawer-overlay"] { @apply pointer-events-none fixed inset-0 z-50; }
-    [data-slot="drawer-backdrop"] { @apply fixed inset-0 bg-black/10 opacity-0 backdrop-blur-xs transition-opacity duration-[450ms] ease-[cubic-bezier(0.32,0.72,0,1)]; }
+    [data-slot="drawer-backdrop"] { @apply fixed inset-0 bg-backdrop opacity-0 backdrop-blur-xs transition-opacity duration-[450ms] ease-[cubic-bezier(0.32,0.72,0,1)]; }
     [data-slot="drawer-popup"] { @apply fixed z-50 flex min-h-0 bg-popover text-sm text-popover-foreground shadow-lg transition-transform duration-[450ms] ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform; }
     [data-slot="drawer-overlay"][data-state="open"] > [data-slot="drawer-backdrop"] { @apply opacity-100; }
     [data-slot="drawer-overlay"][data-state="closed"] > [data-slot="drawer-popup"][data-direction="right"] { @apply translate-x-full; }

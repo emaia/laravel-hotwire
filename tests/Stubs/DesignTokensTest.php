@@ -41,6 +41,7 @@ it('declares all semantic color tokens', function () use ($tokensPath) {
         '--color-destructive',
         '--color-destructive-foreground',
         '--color-border',
+        '--color-backdrop',
         '--color-input',
         '--color-ring',
         '--color-sidebar',
@@ -99,6 +100,12 @@ it('advertises the active browser color scheme on default and explicit theme sco
 it('guards package light tokens from explicit dark roots', function () use ($tokensPath) {
     expect(file_get_contents($tokensPath))
         ->toMatch('/:where\(:root:not\(\[data-theme="dark"\]\)\)\s*,\s*\[data-theme="light"\]\s*\{/s');
+});
+
+it('scopes backdrop defaults with the active color theme', function () use ($tokensPath) {
+    expect(file_get_contents($tokensPath))
+        ->toMatch('/:where\(:root:not\(\[data-theme="dark"\]\)\)\s*,\s*\[data-theme="light"\]\s*\{[^}]*--backdrop:/s')
+        ->toMatch('/\[data-theme="dark"\]\s*\{[^}]*--backdrop:/s');
 });
 
 it('contains the base layer border and outline contract', function () use ($tokensPath) {
@@ -246,6 +253,46 @@ it('keeps the Accordion collapse in the structural stylesheet', function () {
         ->toContain('content-visibility 180ms ease-out allow-discrete')
         ->toContain('block-size: calc-size(auto, size)');
 });
+
+it('keeps preset-independent component mechanics in the structural stylesheet', function () {
+    $structural = file_get_contents(dirname(__DIR__, 2).'/resources/css/structural.css');
+    $visual = presetVisualCss('nova');
+
+    expect($structural)
+        ->toContain('[data-slot="aspect-ratio"]')
+        ->toContain('aspect-ratio: var(--ratio)')
+        ->toContain('[data-slot="sticky"][data-side="top"]')
+        ->toContain('inset-block-start: var(--sticky-offset)')
+        ->toContain('@keyframes hotwire-reveal-rise')
+        ->toContain('@keyframes hotwire-reveal-flat')
+        ->toContain('@keyframes hotwire-reveal-fade')
+        ->toContain('[data-hotwire-top-layer][popover]:is([data-slot="modal-overlay"]')
+        ->toContain('[data-hotwire-top-layer][popover]:is([data-slot="dropdown-menu"]')
+        ->and($visual)
+        ->not->toContain('[data-slot="aspect-ratio"]')
+        ->not->toContain('@keyframes hotwire-reveal-')
+        ->not->toContain('[data-hotwire-top-layer]');
+});
+
+it('uses a semantic backdrop token instead of a raw utility color', function (string $preset) use ($tokensPath) {
+    $visual = presetVisualCss($preset);
+    $selectors = [
+        '[data-slot="modal-backdrop"], [data-slot="alert-dialog-backdrop"]',
+        '[data-slot="drawer-backdrop"]',
+        '[data-slot="sheet-backdrop"]',
+        '[data-slot="sidebar-backdrop"]',
+    ];
+
+    expect(file_get_contents($tokensPath))
+        ->toContain('--color-backdrop: var(--backdrop)')
+        ->toContain('--backdrop: oklch(0 0 0 / 10%)');
+
+    foreach ($selectors as $selector) {
+        expect(presetDeclaration($visual, $selector))
+            ->toContain('bg-backdrop')
+            ->not->toContain('bg-black/10');
+    }
+})->with('design presets');
 
 it('keeps alternate-media control states in an overridable shared layer', function () {
     $structural = file_get_contents(dirname(__DIR__, 2).'/resources/css/structural.css');
@@ -472,15 +519,51 @@ it('keeps multi-select state selectors aligned with controller output', function
 
 it('preserves component custom-property contracts', function (string $preset) {
     $css = presetVisualCss($preset);
+    $structural = File::get(__DIR__.'/../../resources/css/structural.css');
 
     expect($css)
-        ->toContain('[data-slot="aspect-ratio"]')
-        ->toContain('aspect-(--ratio)')
-        ->toContain('[data-slot="sticky"][data-side="top"]')
-        ->toContain('--sticky-offset')
         ->toContain('[data-slot="progress-indicator"]')
-        ->toContain('width: var(--progress-value)');
+        ->toContain('width: var(--progress-value)')
+        ->and($structural)
+        ->toContain('[data-slot="aspect-ratio"]')
+        ->toContain('aspect-ratio: var(--ratio)')
+        ->toContain('[data-slot="sticky"][data-side="top"]')
+        ->toContain('var(--sticky-offset)');
 })->with('design presets');
+
+it('matches the pinned Nova density and surface contract', function () {
+    $css = presetVisualCss('nova');
+    $accordionTrigger = presetDeclaration($css, '[data-slot="accordion-trigger"]');
+    $accordionContent = presetDeclaration($css, '[data-slot="accordion-content"]');
+    $input = presetDeclaration($css, '[data-slot="input"], [data-slot="select"]');
+    $fieldCard = presetDeclaration($css, '[data-slot="field-label"]:has(> [data-slot="field"])');
+    $fieldCardContent = presetDeclaration($css, '[data-slot="field-label"]:has(> [data-slot="field"]) > [data-slot="field"]');
+    $toggle = presetDeclaration($css, ':is([data-slot="toggle"], [data-slot="toggle-group-item"])[data-size="default"]');
+    $tabsList = presetDeclaration($css, '[data-slot="tabs"][data-orientation="horizontal"] [data-slot="tabs-list"]');
+    $tabsTrigger = presetDeclaration($css, '[data-slot="tabs-trigger"]');
+    $hoverCard = presetDeclaration($css, '[data-slot="hover-card-content"]');
+    $popover = presetDeclaration($css, '[data-slot="popover-content"]');
+    $sidebarInner = presetDeclaration($css, '[data-slot="sidebar"][data-variant="floating"] [data-slot="sidebar-inner"]');
+    $sidebarContent = presetDeclaration($css, '[data-slot="sidebar-content"]');
+    $sidebarMenu = presetDeclaration($css, '[data-slot="sidebar-menu"]');
+    $sliderThumb = presetDeclaration($css, '[data-slot="slider"]::-webkit-slider-thumb');
+
+    expect($accordionTrigger)->toContain('rounded-lg', 'py-2.5')
+        ->and($accordionContent)->toContain('pb-2.5')
+        ->and($input)->toContain('rounded-lg', 'bg-transparent', 'px-2.5', 'disabled:bg-input/50')
+        ->not->toContain('shadow-xs')
+        ->and($fieldCard)->toContain('rounded-lg', 'not-has-[:disabled,[data-disabled]]:hover:bg-muted/50', 'has-[:focus-visible]:border-ring', 'has-[:focus-visible]:ring-3')
+        ->and($fieldCardContent)->toContain('p-2.5')
+        ->and($toggle)->toContain('h-8', 'min-w-8', 'px-2.5')
+        ->and($tabsList)->toContain('h-8')
+        ->and($tabsTrigger)->toContain('px-1.5', 'py-0.5')
+        ->and($hoverCard)->toContain('rounded-lg', 'p-2.5', 'ring-1', 'duration-100')
+        ->and($popover)->toContain('gap-2.5', 'p-2.5', 'ring-1', 'duration-100')
+        ->and($sidebarInner)->toContain('ring-1')->not->toContain('border ')
+        ->and($sidebarContent)->toContain('gap-0')
+        ->and($sidebarMenu)->toContain('gap-0')
+        ->and($sliderThumb)->toContain('border-ring');
+});
 
 // --- Known bug guards ---
 
@@ -547,8 +630,8 @@ it('uses physical inline CSS only for documented physical contracts', function (
         '[data-slot="sidebar"][data-mobile-state="closed"] > [data-slot="sidebar-container"][data-side="left"]' => ['-translate-x-full'],
         '[data-slot="sidebar"][data-mobile-state="closed"] > [data-slot="sidebar-container"][data-side="right"]' => ['translate-x-full'],
         '[data-slot="sidebar"][data-mobile-state="open"] > [data-slot="sidebar-container"]' => ['translate-x-0'],
-        ':is([data-slot="dropdown-menu"], [data-slot="tooltip"], [data-slot="hover-card-content"], [data-slot="popover-content"], [data-slot="multi-select-content"])[data-state="closed"][data-side="left"]' => ['translate-x-1'],
-        ':is([data-slot="dropdown-menu"], [data-slot="tooltip"], [data-slot="hover-card-content"], [data-slot="popover-content"], [data-slot="multi-select-content"])[data-state="closed"][data-side="right"]' => ['-translate-x-1'],
+        ':is([data-slot="dropdown-menu"], [data-slot="tooltip"], [data-slot="hover-card-content"], [data-slot="popover-content"], [data-slot="multi-select-content"])[data-state="closed"][data-side="left"]' => ['translate-x-2'],
+        ':is([data-slot="dropdown-menu"], [data-slot="tooltip"], [data-slot="hover-card-content"], [data-slot="popover-content"], [data-slot="multi-select-content"])[data-state="closed"][data-side="right"]' => ['-translate-x-2'],
         ':is([data-slot="dropdown-menu"], [data-slot="tooltip"], [data-slot="hover-card-content"], [data-slot="popover-content"], [data-slot="multi-select-content"])[data-state="open"]' => ['translate-x-0'],
     ];
     $physical = physicalInlineUtilities($css);
@@ -603,8 +686,8 @@ it('uses physical inline CSS only for documented physical contracts', function (
         ->toContain(['selector' => '[data-slot="switch"]::before', 'declaration' => 'transform: translateX(0)'])
         ->toContain(['selector' => '[data-slot="switch"]:checked::before', 'declaration' => 'transform: translateX(calc(100% - 2px))'])
         ->toContain(['selector' => '[data-slot="switch"]:where(:dir(rtl), [dir="rtl"], [dir="rtl"] *):checked::before', 'declaration' => 'transform: translateX(calc(-100% + 2px))'])
-        ->toContain(['selector' => '[data-slot="slider"][data-orientation="horizontal"]::-webkit-slider-runnable-track', 'declaration' => 'background: linear-gradient(to right, var(--primary) 0 var(--slider-value), var(--input) var(--slider-value) 100%)'])
-        ->toContain(['selector' => '[data-slot="slider"][data-orientation="horizontal"]:where(:dir(rtl), [dir="rtl"], [dir="rtl"] *)::-webkit-slider-runnable-track', 'declaration' => 'background: linear-gradient(to left, var(--primary) 0 var(--slider-value), var(--input) var(--slider-value) 100%)'])
+        ->toContain(['selector' => '[data-slot="slider"][data-orientation="horizontal"]::-webkit-slider-runnable-track', 'declaration' => 'background: linear-gradient(to right, var(--primary) 0 var(--slider-value), var(--muted) var(--slider-value) 100%)'])
+        ->toContain(['selector' => '[data-slot="slider"][data-orientation="horizontal"]:where(:dir(rtl), [dir="rtl"], [dir="rtl"] *)::-webkit-slider-runnable-track', 'declaration' => 'background: linear-gradient(to left, var(--primary) 0 var(--slider-value), var(--muted) var(--slider-value) 100%)'])
         ->and($rawProbe)->toBe([
             ['selector' => '[data-slot="probe"]', 'declaration' => 'left: 0'],
             ['selector' => '[data-slot="probe"]', 'declaration' => 'padding-right: 1rem'],

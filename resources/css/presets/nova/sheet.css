@@ -1,7 +1,6 @@
 @layer components {
     /* Sheet */
-    [data-slot="sheet-overlay"] { @apply pointer-events-none fixed inset-0 z-50; }
-    [data-slot="sheet-backdrop"] { @apply fixed inset-0 bg-black/10 opacity-0 backdrop-blur-xs transition-opacity duration-150 ease-out; }
+    [data-slot="sheet-backdrop"] { @apply fixed inset-0 bg-backdrop opacity-0 backdrop-blur-xs transition-opacity duration-150 ease-out; }
     [data-slot="sheet-content"] { @apply fixed z-50 flex flex-col gap-4 bg-popover bg-clip-padding text-sm text-popover-foreground shadow-lg transition duration-200 ease-in-out; }
     [data-slot="sheet-overlay"][data-state="open"] > [data-slot="sheet-backdrop"] { @apply opacity-100; }
     [data-slot="sheet-overlay"][data-state="closed"] > [data-slot="sheet-content"][data-side="right"] { @apply translate-x-10 opacity-0; }

@@ -162,10 +162,11 @@ Root tags support `div`, `section`, `main`, `header`, `footer`, `aside`, `nav`, 
 
 ## Progressive enhancement
 
-Structural CSS contains the visibility, delay formula, armed state, Turbo safeguards, and reduced-motion fallback. Nova
-only supplies motion keyframes and visual defaults. This split means the initial cascade starts before the lazy
-controller chunk connects. If JavaScript is disabled or fails, content still completes its CSS animation and remains
-visible; `trigger="scroll"` simply degrades to the load cascade.
+Structural CSS contains the visibility, delay formula, armed state, layer-safe fallback keyframes, Turbo safeguards, and
+reduced-motion fallback. Nova supplies visual motion variables and the `flat`/`fade` selection. A preset may redefine the
+named fallback keyframes in its own `components` layer without replacing the scheduling machinery. This split means the
+initial cascade starts before the lazy controller chunk connects. If JavaScript is disabled or fails, content still
+completes its CSS animation and remains visible; `trigger="scroll"` simply degrades to the load cascade.
 
 With `prefers-reduced-motion: reduce`, animations are disabled, armed opacity is released, and the controller does not
 observe or restart animated numbers.

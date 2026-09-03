@@ -34,7 +34,7 @@
         :where(:scope)[data-slot="sidebar"][data-variant="floating"][data-collapsible="icon"] [data-slot="sidebar-container"], :where(:scope)[data-slot="sidebar"][data-variant="inset"][data-collapsible="icon"] [data-slot="sidebar-container"] { @apply md:w-[calc(var(--sidebar-width-icon)+1rem+2px)]; }
     }
     [data-slot="sidebar-inner"] { @apply flex h-full w-full flex-col bg-sidebar; }
-    [data-slot="sidebar"][data-variant="floating"] [data-slot="sidebar-inner"] { @apply rounded-lg border border-sidebar-border shadow-sm; }
+    [data-slot="sidebar"][data-variant="floating"] [data-slot="sidebar-inner"] { @apply rounded-lg shadow-sm ring-1 ring-sidebar-border; }
     [data-slot="sidebar-inset"] { @apply relative flex min-h-svh max-w-full w-full flex-1 flex-col bg-background; }
     [data-slot="sidebar"][data-variant="inset"] ~ [data-slot="sidebar-inset"] { @apply md:m-2 md:min-h-[calc(100svh-1rem)] md:rounded-xl md:shadow-sm; }
     [data-slot="sidebar"][data-variant="inset"][data-side="left"] ~ [data-slot="sidebar-inset"] { @apply md:ml-0; }
@@ -57,7 +57,7 @@
         :where(:scope)[data-slot="sidebar"][data-collapsible="icon"] [data-slot="sidebar-brand"]:has([data-slot="sidebar-brand-icon"]) [data-slot="sidebar-brand-logo"] { @apply md:pointer-events-none md:absolute md:inset-0 md:scale-95 md:opacity-0; }
         :where(:scope)[data-slot="sidebar"][data-collapsible="icon"] [data-slot="sidebar-brand-icon"] { @apply md:scale-100 md:opacity-100; }
     }
-    [data-slot="sidebar-content"] { @apply gap-2; }
+    [data-slot="sidebar-content"] { @apply gap-0; }
     [data-slot="sidebar-input"] { @apply h-8 w-full rounded-md border border-input bg-background px-2 text-sm shadow-none outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-sidebar-ring focus-visible:ring-2 focus-visible:ring-sidebar-ring/50; }
     [data-slot="sidebar-separator"] { @apply mx-2 h-px w-auto shrink-0 bg-sidebar-border; }
     [data-slot="sidebar-group"] { @apply relative flex w-full min-w-0 flex-col p-2; }
@@ -70,7 +70,7 @@
         :where(:scope)[data-slot="sidebar"][data-collapsible="icon"] [data-slot="sidebar-group-action"] { @apply md:hidden; }
     }
     [data-slot="sidebar-group-content"] { @apply w-full text-sm; }
-    [data-slot="sidebar-menu"] { @apply flex w-full min-w-0 flex-col gap-1; }
+    [data-slot="sidebar-menu"] { @apply flex w-full min-w-0 flex-col gap-0; }
     [data-slot="sidebar-menu-item"] { @apply relative; }
     [data-slot="sidebar-menu-button"] { @apply flex w-full appearance-none items-center gap-2 overflow-hidden rounded-md border-0 bg-transparent p-2 text-start text-sm whitespace-nowrap outline-none transition-[width,height,padding] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground [&>svg]:size-4 [&>svg]:shrink-0; }
     [data-slot="sidebar-menu-button"] > span:not([data-slot="avatar"]) { @apply min-w-0 truncate; }
@@ -120,7 +120,7 @@
         [data-slot="sidebar"][data-mobile-state="open"], [data-slot="sidebar"][data-presence="preparing"], [data-slot="sidebar"][data-presence="entering"], [data-slot="sidebar"][data-presence="leaving"] { @apply fixed inset-0 z-50 block; }
         [data-slot="sidebar"][data-mobile-state="closed"] { @apply pointer-events-none; }
         [data-slot="sidebar"][data-mobile-state="open"] { @apply pointer-events-auto; }
-        [data-slot="sidebar-backdrop"] { @apply pointer-events-none fixed inset-0 bg-black/10 opacity-0 backdrop-blur-xs transition-opacity duration-150 ease-out; }
+        [data-slot="sidebar-backdrop"] { @apply pointer-events-none fixed inset-0 bg-backdrop opacity-0 backdrop-blur-xs transition-opacity duration-150 ease-out; }
         [data-slot="sidebar"][data-mobile-state="open"] > [data-slot="sidebar-backdrop"] { @apply pointer-events-auto opacity-100; }
         [data-slot="sidebar"][data-mobile-state] > [data-slot="sidebar-gap"] { @apply hidden; }
         [data-slot="sidebar"][data-mobile-state] > [data-slot="sidebar-container"] { @apply fixed inset-y-0 z-50 flex h-svh w-(--sidebar-width-mobile) max-w-full border-sidebar-border bg-sidebar text-sidebar-foreground transition-transform duration-200 ease-in-out; }

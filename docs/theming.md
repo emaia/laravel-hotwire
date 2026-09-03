@@ -35,6 +35,7 @@ preset.
 | `--destructive`                | `oklch(0.577 0.245 27.325)` | `oklch(0.704 0.191 22.216)` | Destructive action              |
 | `--destructive-foreground`     | `oklch(0.985 0 0)`          | `oklch(0.205 0 0)`          | Text on destructive             |
 | `--border`                     | `oklch(0.922 0 0)`          | `oklch(1 0 0 / 10%)`        | Borders                         |
+| `--backdrop`                   | `oklch(0 0 0 / 10%)`        | `oklch(0 0 0 / 10%)`        | Overlay backdrops               |
 | `--input`                      | `oklch(0.922 0 0)`          | `oklch(1 0 0 / 15%)`        | Input backgrounds               |
 | `--ring`                       | `oklch(0.708 0 0)`          | `oklch(0.556 0 0)`          | Focus rings                     |
 | `--sidebar`                    | `oklch(0.985 0 0)`          | `oklch(0.205 0 0)`          | Sidebar background              |

@@ -96,6 +96,8 @@ ancestor, which no summary of a slot's own attributes can express:
 ```
 
 At-rules that qualify a rule (`@supports`, `@media`) come along, since the rule inside them means nothing on its own.
+Named keyframes are not scaffolded; Reveal inherits layer-safe fallback definitions from `structural.css`, and a preset
+can redefine those names in its own `components` layer.
 Rules for structural slots do not, nor does anything `structural.css` owns — presets are not expected to restate the
 mechanics, which is why the Accordion's `::details-content` block is absent above. Deleting a selector you have no use
 for is part of writing the preset; what the scaffold guarantees is that nothing the shipped presets style is missing.
@@ -139,8 +141,8 @@ overflow, flex track, axis and slide sizing through `data-carousel-*` hooks, and
 collapse, which needs `allow-discrete` and `calc-size(auto, size)` or the panel snaps shut instead of animating.
 
 Every preset imports that file, so the behavior compiles into your stylesheet and holds on the first paint — no waiting
-for the bundle to run — and no preset has to rediscover it. Override the timing if you want (`transition-duration` on
-`::details-content`); you never restate the mechanism.
+for the bundle to run — and no preset has to rediscover it. Its Accordion motion fallback lives in the `components`
+layer: override the timing if you want (`transition-duration` on `::details-content`); you never restate the mechanism.
 
 The same foundation owns a minimum accessibility baseline for custom-painted controls. In forced-colors mode, native
 Checkbox, Radio and Switch rendering returns so the browser can preserve checked, indeterminate, focus and disabled

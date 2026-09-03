@@ -143,7 +143,7 @@ return [
             'description' => 'Static media wrapper that preserves a configurable aspect ratio',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(['aspect-ratio']),
+                'slots' => $slots([], ['aspect-ratio']),
             ],
         ],
         'attachment' => [
@@ -821,7 +821,7 @@ return [
             'description' => 'Progressively enhanced staggered entrance cascade for direct children or explicit items',
             'controllers' => ['reveal'],
             'styling' => [
-                'slots' => $slots(['reveal', 'reveal-item']),
+                'slots' => $slots(['reveal'], ['reveal-item']),
             ],
         ],
         'reveal.item' => [
@@ -832,7 +832,7 @@ return [
             'description' => 'Explicit nested item with an automatically shared cascade index',
             'controllers' => ['reveal'],
             'styling' => [
-                'slots' => $slots(['reveal-item']),
+                'slots' => $slots([], ['reveal-item']),
             ],
         ],
         'rich-text' => [

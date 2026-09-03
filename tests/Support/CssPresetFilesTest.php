@@ -45,7 +45,6 @@ it('uses responsibility-oriented Nova modules instead of mechanical source chunk
             'accordion.css',
             'button-surfaces.css',
             'floating-presence.css',
-            'overlay-foundation.css',
             'checkable-controls.css',
             'sidebar.css',
             'tooltip.css',
