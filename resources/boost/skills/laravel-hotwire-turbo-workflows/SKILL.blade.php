@@ -90,6 +90,10 @@ Provide exactly one of `frame` or `frames`; multiple frames require a layout.
 {!! $close('frame-or-page') !!}
 ```
 
+When a Frame is the page's main content and the layout does not already host it, such as a wizard or paginated panel,
+render `{!! $component('frame') !!}` in the full-page response. Turbo extracts the matching Frame during scoped
+navigation, while a direct visit still receives the complete page.
+
 A frame-backed overlay root already owns its frame. Do not render another frame with the same id.
 
 ## Frame-aware validation

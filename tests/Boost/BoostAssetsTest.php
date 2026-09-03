@@ -147,6 +147,16 @@ it('warns that frame redirects need a toast inside the requested frame', functio
         ->toMatch('/Flash is claimed only once per request,\s+so this does not duplicate the toast\./');
 });
 
+it('documents self-hosted frames when the layout has no frame host', function () {
+    config()->set('hotwire.prefix', 'hot');
+    $skill = renderBoostAsset(boostAssetsPath('skills/laravel-hotwire-turbo-workflows/SKILL.blade.php'));
+
+    expect($skill)
+        ->toContain("When a Frame is the page's main content and the layout does not already host it")
+        ->toContain('render `<hot:frame>` in the full-page response')
+        ->toMatch('/Turbo extracts the matching Frame during scoped\s+navigation/');
+});
+
 it('keeps the copyable Stimulus example aligned with its controllers', function () {
     $skill = renderBoostAsset(boostAssetsPath('skills/laravel-hotwire-stimulus-controllers/SKILL.blade.php'));
     $clipboard = File::get(__DIR__.'/../../resources/js/controllers/copy_to_clipboard_controller.js');
