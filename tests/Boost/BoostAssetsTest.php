@@ -137,6 +137,16 @@ it('maps form controls to their initial value props', function () {
         ->toMatch('/Native file\s+inputs cannot be repopulated/');
 });
 
+it('warns that frame redirects need a toast inside the requested frame', function () {
+    config()->set('hotwire.prefix', 'hot');
+    $skill = renderBoostAsset(boostAssetsPath('skills/laravel-hotwire-turbo-workflows/SKILL.blade.php'));
+
+    expect($skill)
+        ->toContain('A redirect with `->toast()` loses its message when navigation stays inside a Frame')
+        ->toContain('Render `<hot:toast />` inside the requested frame content')
+        ->toMatch('/Flash is claimed only once per request,\s+so this does not duplicate the toast\./');
+});
+
 it('keeps the copyable Stimulus example aligned with its controllers', function () {
     $skill = renderBoostAsset(boostAssetsPath('skills/laravel-hotwire-stimulus-controllers/SKILL.blade.php'));
     $clipboard = File::get(__DIR__.'/../../resources/js/controllers/copy_to_clipboard_controller.js');

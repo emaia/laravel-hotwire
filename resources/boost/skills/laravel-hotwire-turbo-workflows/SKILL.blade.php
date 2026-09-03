@@ -26,6 +26,11 @@ field/control contract and detailed validation markup.
 4. Use an optimistic template only when immediate provisional feedback materially improves the interaction; always
    reconcile it with server-authoritative HTML.
 
+A redirect with `->toast()` loses its message when navigation stays inside a Frame: the layout toaster claims the flash
+from response content that Turbo discards. Render `{!! "<{$prefix}:toast />" !!}` inside the requested frame content so
+it claims the flash there and draws in the toaster already mounted on the page. Flash is claimed only once per request,
+so this does not duplicate the toast.
+
 ## Request and DOM helpers
 
 ```php
