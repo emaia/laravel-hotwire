@@ -43,7 +43,7 @@ it('shows blade tags respecting custom prefix', function () {
     config()->set('hotwire.prefix', 'h');
 
     $this->artisan('hotwire:components')
-        ->expectsOutputToContain('<x-h::modal>')
+        ->expectsOutputToContain('<x-h::modal>, <x-hw::modal>')
         ->assertSuccessful();
 });
 

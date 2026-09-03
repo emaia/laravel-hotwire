@@ -4,6 +4,7 @@ namespace Emaia\LaravelHotwire\Commands;
 
 use Emaia\LaravelHotwire\Registry\ControllerDefinition;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
+use Emaia\LaravelHotwire\Support\ComponentAliases;
 use Emaia\LaravelHotwire\Support\ControllerImports;
 use Emaia\LaravelHotwire\Support\ControllerLoadConfiguration;
 use Emaia\LaravelHotwire\Support\ControllerLoadPlan;
@@ -110,7 +111,7 @@ class CheckCommand extends Command
         }
 
         try {
-            ['issues' => $issues, 'controllers' => $controllers, 'reported' => $reportedControllers] = $this->reportStatus($usedComponentKeys, $prefix, $targetBase, $registry);
+            ['issues' => $issues, 'controllers' => $controllers, 'reported' => $reportedControllers] = $this->reportStatus($usedComponentKeys, $targetBase, $registry);
 
             // A controller already reported via its component must not be reported
             // (or published, or counted) again as a standalone usage.
@@ -478,7 +479,7 @@ class CheckCommand extends Command
      */
     private function scanViews(array $paths, string $prefix, HotwireRegistry $registry, int &$totalFiles): array
     {
-        $prefixes = $this->componentPrefixes($prefix);
+        $prefixes = ComponentAliases::prefixes($prefix);
         $alt = implode('|', array_map(fn (string $p) => preg_quote($p, '/'), $prefixes));
         $componentPattern = '/<x-('.$alt.')::([a-z][a-z0-9.-]*)[\s\/>]/';
         $shortComponentPattern = '/<('.$alt.'):([a-z][a-z0-9.-]*)[\s\/>]/';
@@ -959,12 +960,6 @@ REGEX;
         return false;
     }
 
-    /** @return string[] */
-    private function componentPrefixes(string $prefix): array
-    {
-        return array_values(array_unique([$prefix, 'hw']));
-    }
-
     /**
      * Strip Blade comments and script/style blocks to avoid false positives
      * when scanning for data-controller attributes and stimulus_*() calls.
@@ -1081,7 +1076,7 @@ REGEX;
      *
      * @throws FileNotFoundException
      */
-    private function reportStatus(array $usedKeys, string $prefix, string $targetBase, HotwireRegistry $registry): array
+    private function reportStatus(array $usedKeys, string $targetBase, HotwireRegistry $registry): array
     {
         $issues = [];
         $controllers = [];

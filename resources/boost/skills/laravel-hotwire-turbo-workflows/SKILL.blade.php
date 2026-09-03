@@ -26,6 +26,11 @@ field/control contract and detailed validation markup.
 4. Use an optimistic template only when immediate provisional feedback materially improves the interaction; always
    reconcile it with server-authoritative HTML.
 
+A redirect with `->toast()` loses its message when navigation stays inside a Frame: the layout toaster claims the flash
+from response content that Turbo discards. Render `{!! "<{$prefix}:toast />" !!}` inside the requested frame content so
+it claims the flash there and draws in the toaster already mounted on the page. Flash is claimed only once per request,
+so this does not duplicate the toast.
+
 ## Request and DOM helpers
 
 ```php
@@ -84,6 +89,10 @@ Provide exactly one of `frame` or `frames`; multiple frames require a layout.
     ...
 {!! $close('frame-or-page') !!}
 ```
+
+When a Frame is the page's main content and the layout does not already host it, such as a wizard or paginated panel,
+render `{!! $component('frame') !!}` in the full-page response. Turbo extracts the matching Frame during scoped
+navigation, while a direct visit still receives the complete page.
 
 A frame-backed overlay root already owns its frame. Do not render another frame with the same id.
 

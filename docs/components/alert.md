@@ -48,6 +48,7 @@ Inline feedback block for status messages, warnings and contextual notices.
 
 - `data-slot="alert"`
 - `data-variant="default|destructive"`
+- `data-slot="icon"` for a direct child icon, including application-provided icons
 - `data-slot="alert-title"`
 - `data-slot="alert-description"`
 - `data-slot="alert-action"`

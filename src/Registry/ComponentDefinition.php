@@ -23,6 +23,17 @@ final readonly class ComponentDefinition
         return "<x-{$prefix}::{$this->key}>";
     }
 
+    /**
+     * Build the Blade tags for the provided prefixes.
+     *
+     * @param  list<string>  $prefixes
+     * @return list<string>
+     */
+    public function tags(array $prefixes): array
+    {
+        return array_map(fn (string $prefix): string => $this->tag($prefix), $prefixes);
+    }
+
     public function displayName(): string
     {
         return collect(preg_split('/[-.]/', $this->key) ?: [])

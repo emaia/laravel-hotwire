@@ -99,8 +99,14 @@ from content inserted later. A generation token prevents asynchronous settlement
 ## Turbo lifecycle
 
 - The first `turbo:visit` marks `<html data-reveal-booted>` so `scope="document"` CSS does not replay persistent chrome.
-- Before `replace`, `update`, or `morph` streams render, incoming Reveal items receive `data-reveal-skip`. Unrelated
-  stream content is unchanged.
+- While at least one Reveal controller is connected, Reveal checks the resolved live targets of each `replace`, `update`,
+  or `morph` stream. If any target is a `[data-controller~="reveal"]` root or its descendant, every
+  `[data-reveal-item]` in the shared template receives `data-reveal-skip`; replacing a direct-child item also stamps
+  every top-level template child. Target matching uses live markup rather than controller connection state, and the
+  result applies to the whole template. Split mixed Reveal and non-Reveal destinations into separate stream elements
+  when they require different animation behavior. Streams whose targets all sit outside Reveal markup are unchanged;
+  because structural CSS matches standalone `data-reveal-item` globally, include `data-reveal-skip` in that payload when
+  its entrance should not replay.
 - Before Turbo caches the document, `data-reveal-state` and every armed item are cleared so a restored snapshot cannot
   remain invisible.
 - Global visit and stream listeners are shared across instances and removed after the last Reveal disconnects.

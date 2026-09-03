@@ -28,6 +28,11 @@ before using an unfamiliar component or prop.
 - Use stable unique ids for controls, overlays, frame hosts and morph targets.
 - Preserve semantic labels, descriptions, roles and keyboard behavior when composing subcomponents manually.
 
+For a list of reusable partials, wrap them in `{!! $component('reveal') !!}` and let the parent own direct-child mode;
+it emits `data-reveal-children` automatically and keeps the partial markup neutral. Structural CSS matches
+`data-reveal-item` globally, so add that marker only at the Reveal composition site. For an intentionally standalone
+item updated by Streams, add `data-reveal-skip` to the payload when its entrance should not replay.
+
 Use `php artisan hotwire:components` to see dependencies. The catalog is broad; do not substitute an invented component
 name for a documented one.
 

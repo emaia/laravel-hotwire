@@ -26,6 +26,10 @@
  */
 
 @layer components {
+    turbo-frame {
+        display: block;
+    }
+
     [data-slot="aspect-ratio"] {
         position: relative;
         aspect-ratio: var(--ratio);

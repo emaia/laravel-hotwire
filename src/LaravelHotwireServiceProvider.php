@@ -73,7 +73,7 @@ class LaravelHotwireServiceProvider extends ServiceProvider
         $prefix = config('hotwire.prefix', 'hw');
         $registry = HotwireRegistry::make();
 
-        foreach ($this->componentPrefixes($prefix) as $componentPrefix) {
+        foreach (ComponentAliases::prefixes($prefix) as $componentPrefix) {
             Blade::anonymousComponentNamespace('hotwire::components', $componentPrefix);
 
             foreach ($registry->bladeComponentAliases($componentPrefix) as $alias => $class) {
@@ -267,19 +267,13 @@ class LaravelHotwireServiceProvider extends ServiceProvider
         }, $vite, $vite)();
     }
 
-    /** @return string[] */
-    private function componentPrefixes(string $prefix): array
-    {
-        return array_values(array_unique([$prefix, 'hw']));
-    }
-
     private function registerTagCompiler(string $prefix): void
     {
         $compiler = new HotwireTagCompiler(
             app('blade.compiler')->getClassComponentAliases(),
             app('blade.compiler')->getClassComponentNamespaces(),
             app('blade.compiler'),
-            $this->componentPrefixes($prefix),
+            ComponentAliases::prefixes($prefix),
         );
 
         app()->bind('hotwire.compiler', fn () => $compiler);

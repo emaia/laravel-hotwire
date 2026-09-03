@@ -10,13 +10,13 @@ function docsListRows(bool $includeControllers, bool $includeComponents): array
     $categoryOrder = array_flip(array_map(fn (Category $category) => $category->value, Category::cases()));
 
     usort($entries, function (array $a, array $b) use ($categoryOrder): int {
-        return [$categoryOrder[$a['category']], $a['type'], $a['type'] === 'component' ? $a['tag'] : $a['key']]
-            <=> [$categoryOrder[$b['category']], $b['type'], $b['type'] === 'component' ? $b['tag'] : $b['key']];
+        return [$categoryOrder[$a['category']], $a['type'], $a['type'] === 'component' ? $a['tags'][0] : $a['key']]
+            <=> [$categoryOrder[$b['category']], $b['type'], $b['type'] === 'component' ? $b['tags'][0] : $b['key']];
     });
 
     return array_map(fn (array $entry) => [
         ucfirst($entry['type']),
-        $entry['type'] === 'component' ? $entry['tag'] : $entry['key'],
+        $entry['type'] === 'component' ? implode(', ', $entry['tags']) : $entry['key'],
         $entry['category'],
         $entry['description'],
     ], $entries);
@@ -43,8 +43,17 @@ it('displays docs for a component', function () {
     $this->artisan('hotwire:docs toast --component')
         ->expectsOutputToContain('Type: component')
         ->expectsOutputToContain('Blade: <x-hw::toast>')
+        ->doesntExpectOutputToContain('Blade: <x-hw::toast>, <x-hw::toast>')
         ->expectsOutputToContain('Controllers: toast')
         ->expectsOutputToContain('Toast')
+        ->assertSuccessful();
+});
+
+it('displays the permanent hw alias with a configured component prefix', function () {
+    config()->set('hotwire.prefix', 'ui');
+
+    $this->artisan('hotwire:docs toast --component')
+        ->expectsOutputToContain('Blade: <x-ui::toast>, <x-hw::toast>')
         ->assertSuccessful();
 });
 
@@ -134,6 +143,14 @@ it('lists only components with --list --component', function () {
         ->assertSuccessful();
 });
 
+it('lists configured and permanent component aliases', function () {
+    config()->set('hotwire.prefix', 'ui');
+
+    $this->artisan('hotwire:docs --list --component')
+        ->expectsOutputToContain('<x-ui::modal>, <x-hw::modal>')
+        ->assertSuccessful();
+});
+
 it('fails when name is combined with --list', function () {
     $this->artisan('hotwire:docs modal --list')
         ->expectsOutputToContain('cannot be used together with --list')
@@ -171,13 +188,32 @@ it('excludes controllers when includeControllers is false', function () {
         ->and($labels)->not->toMatch('/^modal\s/m');
 });
 
-it('uses the given prefix in component labels', function () {
+it('keeps picker labels aligned to the configured component prefix', function () {
+    $entries = (new DocSearchIndex)->build(HotwireRegistry::make(), true, true, 'ui');
+    $alertDialog = collect($entries)->first(
+        fn (array $entry): bool => $entry['type'] === 'component' && $entry['key'] === 'alert-dialog'
+    );
+    $categoryOffsets = collect($entries)
+        ->map(fn (array $entry): int|false => strpos($entry['label'], "[{$entry['category']}]"))
+        ->unique()
+        ->values()
+        ->all();
+
+    expect($alertDialog['label'])->toContain('<x-ui::alert-dialog>')
+        ->not->toContain('<x-hw::alert-dialog>')
+        ->and($alertDialog['tags'])->toBe(['<x-ui::alert-dialog>', '<x-hw::alert-dialog>'])
+        ->and($categoryOffsets)->toHaveCount(1);
+});
+
+it('keeps component aliases out of search metadata', function () {
     $entries = (new DocSearchIndex)->build(HotwireRegistry::make(), false, true, 'ui');
+    $modal = collect($entries)->firstWhere('key', 'modal');
+    $searchTerms = explode(' ', $modal['search']);
 
-    $labels = implode("\n", array_column($entries, 'label'));
-
-    expect($labels)->toContain('<x-ui::modal>');
-    expect($labels)->not->toContain('<x-hw::');
+    expect($searchTerms)->not->toContain('ui')
+        ->not->toContain('hw')
+        ->and($modal['search'])->not->toContain('<x-')
+        ->and($modal['search'])->not->toContain('::');
 });
 
 it('includes category and description in the search index', function () {
