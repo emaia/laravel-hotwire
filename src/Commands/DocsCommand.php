@@ -104,7 +104,7 @@ class DocsCommand extends Command
      *     docs: string,
      *     category: string,
      *     description: string,
-     *     tag?: string,
+     *     tags?: list<string>,
      *     npm?: array<string, string>,
      *     controllers?: string[]
      * }|null
@@ -146,7 +146,7 @@ class DocsCommand extends Command
      *     docs: string,
      *     category: string,
      *     description: string,
-     *     tag?: string,
+     *     tags?: list<string>,
      *     npm?: array<string, string>,
      *     controllers?: string[]
      * }|null
@@ -214,7 +214,7 @@ class DocsCommand extends Command
      *     docs: string,
      *     category: string,
      *     description: string,
-     *     tag?: string,
+     *     tags?: list<string>,
      *     npm?: array<string, string>,
      *     controllers?: string[]
      * }|null
@@ -259,7 +259,7 @@ class DocsCommand extends Command
         $rows = array_map(function (array $entry): array {
             return [
                 ucfirst($entry['type']),
-                $entry['type'] === 'component' ? $entry['tag'] : $entry['key'],
+                $entry['type'] === 'component' ? implode(', ', $entry['tags']) : $entry['key'],
                 $entry['category'],
                 $entry['description'],
             ];
@@ -271,8 +271,8 @@ class DocsCommand extends Command
     }
 
     /**
-     * @param  array<int, array{type: 'controller'|'component', key: string, title: string, label: string, search: string, docs: string, category: string, description: string, tag?: string, npm?: array<string, string>, controllers?: string[]}>  $entries
-     * @return array<int, array{type: 'controller'|'component', key: string, title: string, label: string, search: string, docs: string, category: string, description: string, tag?: string, npm?: array<string, string>, controllers?: string[]}>
+     * @param  array<int, array{type: 'controller'|'component', key: string, title: string, label: string, search: string, docs: string, category: string, description: string, tags?: list<string>, npm?: array<string, string>, controllers?: string[]}>  $entries
+     * @return array<int, array{type: 'controller'|'component', key: string, title: string, label: string, search: string, docs: string, category: string, description: string, tags?: list<string>, npm?: array<string, string>, controllers?: string[]}>
      */
     private function sortListEntries(array $entries): array
     {
@@ -282,11 +282,11 @@ class DocsCommand extends Command
             return [
                 $categoryOrder[$a['category']],
                 $a['type'],
-                $a['type'] === 'component' ? $a['tag'] : $a['key'],
+                $a['type'] === 'component' ? $a['tags'][0] : $a['key'],
             ] <=> [
                 $categoryOrder[$b['category']],
                 $b['type'],
-                $b['type'] === 'component' ? $b['tag'] : $b['key'],
+                $b['type'] === 'component' ? $b['tags'][0] : $b['key'],
             ];
         });
 
@@ -303,7 +303,7 @@ class DocsCommand extends Command
      *     docs: string,
      *     category: string,
      *     description: string,
-     *     tag?: string,
+     *     tags?: list<string>,
      *     npm?: array<string, string>,
      *     controllers?: string[]
      * }  $entry
@@ -328,7 +328,7 @@ class DocsCommand extends Command
         }
 
         if ($entry['type'] === 'component') {
-            $lines[] = sprintf('Blade: <fg=yellow>%s</>', $entry['tag']);
+            $lines[] = sprintf('Blade: <fg=yellow>%s</>', implode(', ', $entry['tags']));
 
             $controllers = Arr::get($entry, 'controllers', []);
 

@@ -113,6 +113,15 @@ it('renders every Boost Blade asset with the configured component prefix', funct
         ->not->toContain('&lt;');
 });
 
+it('documents the permanent hw alias alongside a configured component prefix', function () {
+    config()->set('hotwire.prefix', 'hot');
+
+    expect(renderBoostAsset(boostAssetsPath('guidelines/core.blade.php')))
+        ->toContain('The configured component prefix is `hot`.')
+        ->toContain('The `hw` prefix remains registered as an alias')
+        ->toContain('follow the convention already used by the application.');
+});
+
 it('keeps the copyable Stimulus example aligned with its controllers', function () {
     $skill = renderBoostAsset(boostAssetsPath('skills/laravel-hotwire-stimulus-controllers/SKILL.blade.php'));
     $clipboard = File::get(__DIR__.'/../../resources/js/controllers/copy_to_clipboard_controller.js');

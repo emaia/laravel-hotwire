@@ -6,6 +6,18 @@ use Emaia\LaravelHotwire\Components;
 
 final class ComponentAliases
 {
+    private const string PERMANENT_PREFIX = 'hw';
+
+    /**
+     * Return the configured component prefix followed by permanent aliases.
+     *
+     * @return list<string>
+     */
+    public static function prefixes(string $configuredPrefix): array
+    {
+        return array_values(array_unique([$configuredPrefix, self::PERMANENT_PREFIX]));
+    }
+
     /** @return array<string, class-string> */
     public static function subComponents(): array
     {

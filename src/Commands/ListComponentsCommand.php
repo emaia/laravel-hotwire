@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Commands;
 
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
+use Emaia\LaravelHotwire\Support\ComponentAliases;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
 
@@ -26,7 +27,7 @@ class ListComponentsCommand extends Command
         $rows = [];
 
         foreach ($registry->components() as $component) {
-            $bladeTag = $component->tag($prefix);
+            $bladeTag = implode(', ', $component->tags(ComponentAliases::prefixes($prefix)));
             $controllers = $registry->controllersForComponent($component);
 
             if ($controllers === []) {

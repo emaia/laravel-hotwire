@@ -15,7 +15,8 @@
 # Laravel Hotwire
 
 Laravel Hotwire is a server-driven UI toolkit combining Turbo Drive, Frames and Streams with Stimulus controllers and
-Blade components. The configured component prefix in this application is `{{ $prefix }}`.
+Blade components. The configured component prefix is `{{ $prefix }}`. The `hw` prefix remains registered as an alias
+and is used by the package documentation; follow the convention already used by the application.
 
 ## Working rules
 
