@@ -274,6 +274,12 @@ it('keeps preset-independent component mechanics in the structural stylesheet', 
         ->not->toContain('[data-hotwire-top-layer]');
 });
 
+it('renders Turbo Frames as block-level containers from the structural stylesheet', function () {
+    $structural = file_get_contents(dirname(__DIR__, 2).'/resources/css/structural.css');
+
+    expect(presetDeclaration($structural, 'turbo-frame'))->toContain('display: block');
+});
+
 it('uses a semantic backdrop token instead of a raw utility color', function (string $preset) use ($tokensPath) {
     $visual = presetVisualCss($preset);
     $selectors = [
