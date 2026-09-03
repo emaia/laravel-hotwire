@@ -122,6 +122,21 @@ it('documents the permanent hw alias alongside a configured component prefix', f
         ->toContain('follow the convention already used by the application.');
 });
 
+it('maps form controls to their initial value props', function () {
+    $reference = File::get(boostAssetsPath('skills/laravel-hotwire-forms/references/controls.md'));
+
+    expect($reference)
+        ->toContain('| Submitted value or interaction | Prefer | Avoid confusing it with | Initial value prop |')
+        ->toContain('| One native boolean/value pair | `<hw:checkbox>` | `<hw:toggle>` is pressed UI state; `<hw:switch>` is an on/off widget | `checked` |')
+        ->toContain('| Several checkboxes sharing a name | `<hw:checkbox-group>` | Repeating standalone checkboxes loses group semantics and select-all support | `selected` |')
+        ->toContain('| One choice from a visible list | `<hw:radio-group>` | `<hw:select>` is better for a long or compact list | `selected` |')
+        ->toContain('| One compact native choice | `<hw:select>` | Native `multiple` requires an explicit `name="ids[]"` | `selected` |')
+        ->toContain('| Searchable multiple selection | `<hw:multi-select>` | `<hw:select multiple>` has native behavior and a smaller API | `selected` |')
+        ->toContain('| Plain multiline text | `<hw:textarea>` | `<hw:rich-text>` stores editor-generated rich content | `value` |')
+        ->toContain('fallback beneath `old($errorKey, ...)`')
+        ->toMatch('/Native file\s+inputs cannot be repopulated/');
+});
+
 it('keeps the copyable Stimulus example aligned with its controllers', function () {
     $skill = renderBoostAsset(boostAssetsPath('skills/laravel-hotwire-stimulus-controllers/SKILL.blade.php'));
     $clipboard = File::get(__DIR__.'/../../resources/js/controllers/copy_to_clipboard_controller.js');
