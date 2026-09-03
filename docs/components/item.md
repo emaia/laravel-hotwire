@@ -65,6 +65,7 @@ trimmed, lowercased, and restricted to `div`, `a`, or `button`; unsupported valu
 - `data-size="default|sm|xs"`
 - `data-slot="item-media"`
 - `data-variant="default|icon|image"`
+- `data-slot="icon"` for a direct child of icon-variant media, including application-provided icons
 - `data-slot="item-content"`
 - `data-slot="item-title"`
 - `data-slot="item-description"`

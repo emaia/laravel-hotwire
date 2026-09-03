@@ -176,6 +176,18 @@ it('documents validation and prefill for multistep forms', function () {
         ->toContain('TurboFormRequest');
 });
 
+it('documents slots required by custom composed elements', function () {
+    $guideline = renderBoostAsset(boostAssetsPath('guidelines/core.blade.php'));
+    $alert = File::get(__DIR__.'/../../docs/components/alert.md');
+    $item = File::get(__DIR__.'/../../docs/components/item.md');
+
+    expect($guideline)
+        ->toContain('carry the documented `data-slot`')
+        ->toContain('<x-lucide-check data-slot="icon" />')
+        ->and($alert)->toContain('- `data-slot="icon"`')
+        ->and($item)->toContain('- `data-slot="icon"`');
+});
+
 it('keeps the copyable Stimulus example aligned with its controllers', function () {
     $skill = renderBoostAsset(boostAssetsPath('skills/laravel-hotwire-stimulus-controllers/SKILL.blade.php'));
     $clipboard = File::get(__DIR__.'/../../resources/js/controllers/copy_to_clipboard_controller.js');
