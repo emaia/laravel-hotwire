@@ -6,21 +6,19 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 
 ## Unreleased
 
-### Nova uses the normalized compact surface contract
+### Nova has a more compact visual treatment
 
-Nova now follows the compact density and surface treatment from its pinned shadcn reference for Accordion, Breadcrumb,
-text controls, Input Group, Field cards, Toggle, Tabs, floating panels, Modal, Alert Dialog, Slider and Sidebar. These are
-visual changes: controls generally use `rounded-lg`, tighter spacing and transparent light surfaces; floating panels use
-compact ring surfaces; Modal gains an inset muted footer; Alert Dialog no longer expands to `lg:max-w-lg`; and Slider's
-unfilled track uses `--muted`.
+Nova now uses a more compact density and surface treatment for Accordion, Breadcrumb, text controls, Input Group, Field
+cards, Toggle, Tabs, floating panels, Modal, Alert Dialog, Slider and Sidebar. Controls generally use `rounded-lg`,
+tighter spacing and transparent light surfaces; floating panels use compact ring surfaces; Modal gains an inset muted
+footer; Alert Dialog no longer expands to `lg:max-w-lg`; and Slider's unfilled track uses `--muted`.
 
 Overlay backdrops now consume the semantic `--backdrop` token, which defaults to `oklch(0 0 0 / 10%)` in both themes.
 Override it after the preset import to change backdrop color or opacity without replacing component selectors.
 
-Aspect Ratio, Sticky positioning, layer-safe Reveal fallback keyframes and top-layer resets moved from Nova into
-`structural.css`. Custom presets therefore inherit those mechanics automatically, can redefine the Reveal keyframe names
-inside their own `components` layer, and selective Nova bundles no longer include private visual modules whose only
-declarations were structural.
+Aspect Ratio, Sticky positioning, Reveal fallback keyframes and top-layer resets moved from Nova into `structural.css`.
+Custom presets therefore inherit those mechanics automatically and can redefine the Reveal keyframe names inside their
+own `components` layer.
 
 ### Semantic tokens enforce readable contrast and nested color schemes
 

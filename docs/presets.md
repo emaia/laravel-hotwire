@@ -19,35 +19,6 @@ The installer writes a thin `resources/css/app.css` that imports Tailwind and en
 That public entrypoint aggregates Nova's ordered visual sources. Their internal paths are an implementation detail;
 applications should keep importing `presets/nova.css` rather than individual package files.
 
-## Nova's reference boundary
-
-Nova was normalized against the shadcn `ui` repository at commit
-[`71e5095`](https://github.com/shadcn-ui/ui/commit/71e50952fbb7eda2c992660d36cd58671a2edf42). This is a one-time design
-reference, not a promise of continuous synchronization or pixel parity. Nova is package-owned after that comparison and
-evolves with Laravel Hotwire's own component contracts.
-
-The reference supplies the compact neutral density, radii and surface vocabulary. Laravel Hotwire deliberately keeps
-native Checkbox, Radio, Switch, Select and Slider elements; Blade-rendered content; real links and buttons in Dropdown;
-server-rendered overlay trees; and its ECharts, Leaflet, Tiptap, Turbo, File Upload, Reveal and Toast integrations. Those
-differences are adaptations or package features, not missing shadcn behavior.
-
-Accessibility and runtime behavior take precedence over visual parity. The package keeps contrast-adjusted foreground
-tokens, a neutral sidebar primary, forced-colors and print fallbacks, Presence-driven `hidden`/`inert` settlement,
-top-layer resets, focus management, Floating UI placement and Turbo morph protection. Physical `left`/`right` overlay
-APIs also remain physical in RTL; inline `start`/`end` semantics continue to mirror.
-
-The normalized ownership boundary is:
-
-- `tokens.css`: semantic palette, including the shared translucent `--backdrop` color.
-- `structural.css`: required geometry, top-layer resets, progressive enhancement, accessibility mechanics and layer-safe
-  fallbacks needed when no preset supplies them.
-- Preset modules: visual surfaces, spacing, typography, radii, state treatment and motion choices or overrides.
-- Component-specific modules: package-only features and selectors that cannot be shared without coupling unrelated APIs.
-
-Shared control, floating-panel, backdrop and native-indicator surfaces may be consolidated further without exposing the
-module topology as public API. Such extraction must preserve selector specificity, cascade order and the public
-`presets/nova.css` entrypoint.
-
 ## Generate a selective bundle
 
 The complete preset is the safe default. For a layout that uses a known subset of components, generate an
