@@ -5,6 +5,7 @@ use Emaia\LaravelHotwire\Support\ComponentAliases;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 use Symfony\Component\Yaml\Yaml;
 
 function boostAssetsPath(string $path = ''): string
@@ -155,6 +156,24 @@ it('documents self-hosted frames when the layout has no frame host', function ()
         ->toContain("When a Frame is the page's main content and the layout does not already host it")
         ->toContain('render `<hot:frame>` in the full-page response')
         ->toMatch('/Turbo extracts the matching Frame during scoped\s+navigation/');
+});
+
+it('documents validation and prefill for multistep forms', function () {
+    config()->set('hotwire.prefix', 'hot');
+    $skill = renderBoostAsset(boostAssetsPath('skills/laravel-hotwire-forms/SKILL.blade.php'));
+    $multistep = Str::between($skill, '## Multistep forms', '## Frames and modals');
+
+    expect($multistep)
+        ->toContain('->withErrors($validator)')
+        ->toContain('->withInput();')
+        ->toContain("session()->put('registration.contact'")
+        ->toContain('return redirect()->route(\'registration.address\');')
+        ->toContain('<hot:frame id="registration" advance>')
+        ->toContain(':value="session(\'registration.contact.email\')"')
+        ->toContain('`old($errorKey, $value)` automatically wins')
+        ->toContain("session()->forget('registration');")
+        ->toContain('track-frame-src')
+        ->toContain('TurboFormRequest');
 });
 
 it('keeps the copyable Stimulus example aligned with its controllers', function () {
