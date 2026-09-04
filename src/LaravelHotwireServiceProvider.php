@@ -19,6 +19,7 @@ use Emaia\LaravelHotwire\Support\CssModuleManifest;
 use Emaia\LaravelHotwire\Support\HotwireTagCompiler;
 use Emaia\LaravelHotwire\Support\SessionToast;
 use Emaia\LaravelHotwire\Support\ViteControllerAssetResolver;
+use Emaia\LaravelHotwire\Support\ViteControllerCandidateCache;
 use Emaia\LaravelHotwireTurbo\TurboStreamBuilder;
 use Illuminate\Foundation\Vite;
 use Illuminate\Foundation\ViteException;
@@ -54,6 +55,7 @@ class LaravelHotwireServiceProvider extends ServiceProvider
         $this->app->singleton(CssModuleManifest::class, fn (): CssModuleManifest => CssModuleManifest::load());
         $this->app->scopedIf(ComponentId::class);
         $this->app->scopedIf(SessionToast::class);
+        $this->app->scopedIf(ViteControllerCandidateCache::class);
     }
 
     public function boot(): void
@@ -191,6 +193,8 @@ class LaravelHotwireServiceProvider extends ServiceProvider
                     $resolver = new ViteControllerAssetResolver(
                         $manifest,
                         fn (string $_manifestKey, string $file): string => $this->assetPath($buildDirectory.'/'.$file),
+                        buildDirectory: $buildDirectory,
+                        candidateCache: app(ViteControllerCandidateCache::class),
                     );
 
                     $assets = [];

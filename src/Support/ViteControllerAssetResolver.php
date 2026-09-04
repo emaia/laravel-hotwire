@@ -18,6 +18,8 @@ final class ViteControllerAssetResolver
     /** @var array<string, array{local: list<string>, package: list<string>}>|null */
     private ?array $controllers = null;
 
+    private readonly string $buildDirectory;
+
     /**
      * Build a resolver from a decoded manifest or a manifest JSON path.
      *
@@ -28,10 +30,12 @@ final class ViteControllerAssetResolver
         array|string $manifest,
         ?callable $assetUrlResolver = null,
         string $buildDirectory = 'build',
+        private readonly ?ViteControllerCandidateCache $candidateCache = null,
     ) {
         $this->manifest = is_array($manifest) ? $manifest : $this->readManifest($manifest);
+        $this->buildDirectory = trim($buildDirectory, '/');
         $this->assetUrlResolver = $assetUrlResolver === null
-            ? fn (string $_manifestKey, string $file): string => asset(trim($buildDirectory, '/').'/'.$file)
+            ? fn (string $_manifestKey, string $file): string => asset($this->buildDirectory.'/'.$file)
             : Closure::fromCallable($assetUrlResolver);
     }
 
@@ -44,6 +48,7 @@ final class ViteControllerAssetResolver
         array|string $manifest,
         Vite $vite,
         string $buildDirectory = 'build',
+        ?ViteControllerCandidateCache $candidateCache = null,
     ): self {
         $assetPath = Closure::bind(
             fn (string $path): string => $this->assetPath($path),
@@ -54,7 +59,8 @@ final class ViteControllerAssetResolver
         return new self(
             $manifest,
             fn (string $_manifestKey, string $file): string => $assetPath(trim($buildDirectory, '/').'/'.$file),
-            $buildDirectory,
+            buildDirectory: $buildDirectory,
+            candidateCache: $candidateCache,
         );
     }
 
@@ -103,6 +109,16 @@ final class ViteControllerAssetResolver
             return $this->controllers;
         }
 
+        $discover = fn (): array => $this->discoverControllerCandidates();
+
+        return $this->controllers = $this->candidateCache === null
+            ? $discover()
+            : $this->candidateCache->remember($this->buildDirectory, $discover);
+    }
+
+    /** @return array<string, array{local: list<string>, package: list<string>}> */
+    private function discoverControllerCandidates(): array
+    {
         $controllers = [];
 
         foreach ($this->manifest as $manifestKey => $entry) {
@@ -124,7 +140,7 @@ final class ViteControllerAssetResolver
             $controllers[$identifier][$scope][] = $manifestKey;
         }
 
-        return $this->controllers = $controllers;
+        return $controllers;
     }
 
     /** @return array{string, 'local'|'package'}|null */

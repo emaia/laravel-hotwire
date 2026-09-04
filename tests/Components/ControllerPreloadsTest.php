@@ -1,6 +1,7 @@
 <?php
 
 use Emaia\LaravelHotwire\LaravelHotwireServiceProvider;
+use Emaia\LaravelHotwire\Support\ViteControllerCandidateCache;
 use Illuminate\Container\Container;
 use Illuminate\Foundation\Vite;
 use Illuminate\Support\Facades\File;
@@ -23,6 +24,7 @@ beforeEach(function () {
 
 afterEach(function () {
     app(Vite::class)->flush();
+    app(ViteControllerCandidateCache::class)->flush();
     releaseIsolatedAppPaths($this->appBase);
 });
 
@@ -305,7 +307,8 @@ it('does not reuse a parent JavaScript integrity hash for attached CSS', functio
 it('renders nothing while Vite is running hot', function () {
     File::put(public_path('hot'), 'http://localhost:5173');
 
-    expect(trim((string) $this->blade('<x-hw::controller-preloads controllers="missing" />')))->toBe('');
+    expect(trim((string) $this->blade('<x-hw::controller-preloads controllers="missing" />')))->toBe('')
+        ->and(app()->resolved(ViteControllerCandidateCache::class))->toBeFalse();
 });
 
 it('renders nothing when no controllers are selected', function () {
