@@ -18,6 +18,9 @@ final class ViteControllerAssetResolver
     /** @var array<string, array{local: list<string>, package: list<string>}>|null */
     private ?array $controllers = null;
 
+    /** @var array<string, string|null> */
+    private array $manifestFiles = [];
+
     private readonly string $buildDirectory;
 
     /**
@@ -30,7 +33,7 @@ final class ViteControllerAssetResolver
         array|string $manifest,
         ?callable $assetUrlResolver = null,
         string $buildDirectory = 'build',
-        private readonly ?ViteControllerCandidateCache $candidateCache = null,
+        private readonly ?ViteManifestCache $manifestCache = null,
     ) {
         $this->manifest = is_array($manifest) ? $manifest : $this->readManifest($manifest);
         $this->buildDirectory = trim($buildDirectory, '/');
@@ -48,7 +51,7 @@ final class ViteControllerAssetResolver
         array|string $manifest,
         Vite $vite,
         string $buildDirectory = 'build',
-        ?ViteControllerCandidateCache $candidateCache = null,
+        ?ViteManifestCache $manifestCache = null,
     ): self {
         $assetPath = Closure::bind(
             fn (string $path): string => $this->assetPath($path),
@@ -60,7 +63,7 @@ final class ViteControllerAssetResolver
             $manifest,
             fn (string $_manifestKey, string $file): string => $assetPath(trim($buildDirectory, '/').'/'.$file),
             buildDirectory: $buildDirectory,
-            candidateCache: $candidateCache,
+            manifestCache: $manifestCache,
         );
     }
 
@@ -111,9 +114,9 @@ final class ViteControllerAssetResolver
 
         $discover = fn (): array => $this->discoverControllerCandidates();
 
-        return $this->controllers = $this->candidateCache === null
+        return $this->controllers = $this->manifestCache === null
             ? $discover()
-            : $this->candidateCache->remember($this->buildDirectory, $discover);
+            : $this->manifestCache->rememberControllerCandidates($this->buildDirectory, $discover);
     }
 
     /** @return array<string, array{local: list<string>, package: list<string>}> */
@@ -266,6 +269,19 @@ final class ViteControllerAssetResolver
     }
 
     private function manifestKeyForFile(string $file): ?string
+    {
+        if (array_key_exists($file, $this->manifestFiles)) {
+            return $this->manifestFiles[$file];
+        }
+
+        $discover = fn (): ?string => $this->scanManifestForFile($file);
+
+        return $this->manifestFiles[$file] = $this->manifestCache === null
+            ? $discover()
+            : $this->manifestCache->rememberManifestFile($this->buildDirectory, $file, $discover);
+    }
+
+    private function scanManifestForFile(string $file): ?string
     {
         foreach ($this->manifest as $key => $entry) {
             if (is_string($key)

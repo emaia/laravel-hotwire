@@ -2,7 +2,7 @@
 
 use Emaia\LaravelHotwire\Support\ViteControllerAsset;
 use Emaia\LaravelHotwire\Support\ViteControllerAssetResolver;
-use Emaia\LaravelHotwire\Support\ViteControllerCandidateCache;
+use Emaia\LaravelHotwire\Support\ViteManifestCache;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Foundation\Vite;
 
@@ -174,10 +174,10 @@ it('shares cached controller candidates across resolver instances', function () 
             'file' => 'assets/search.js',
         ],
     ];
-    $cache = new ViteControllerCandidateCache;
+    $cache = new ViteManifestCache;
     $resolver = new ViteControllerAssetResolver(
         $manifest,
-        candidateCache: $cache,
+        manifestCache: $cache,
     );
     $resolver->resolve(['search']);
 
@@ -186,10 +186,37 @@ it('shares cached controller candidates across resolver instances', function () 
     ];
     $resolver = new ViteControllerAssetResolver(
         $manifest,
-        candidateCache: $cache,
+        manifestCache: $cache,
     );
 
     expect($resolver->resolve(['search']))->toHaveCount(1);
+});
+
+it('shares the manifest file index across resolver instances', function () {
+    $controller = [
+        'resources/js/controllers/reveal_controller.js' => [
+            'file' => 'assets/reveal.js',
+            'css' => ['assets/reveal.css'],
+        ],
+    ];
+    $first = ['file' => 'assets/reveal.css', 'src' => 'resources/css/first.css'];
+    $second = ['file' => 'assets/reveal.css', 'src' => 'resources/css/second.css'];
+    $cache = new ViteManifestCache;
+
+    $assets = (new ViteControllerAssetResolver(
+        $controller + ['resources/css/first.css' => $first, 'resources/css/second.css' => $second],
+        manifestCache: $cache,
+    ))->resolve(['reveal']);
+
+    expect($assets[1]->source)->toBe('resources/css/first.css');
+
+    // Reversing the same manifest entries proves the shared index avoids a second scan.
+    $assets = (new ViteControllerAssetResolver(
+        $controller + ['resources/css/second.css' => $second, 'resources/css/first.css' => $first],
+        manifestCache: $cache,
+    ))->resolve(['reveal']);
+
+    expect($assets[1]->source)->toBe('resources/css/first.css');
 });
 
 it('shares cached controller candidates across resolvers built with Vite', function () {
@@ -198,11 +225,11 @@ it('shares cached controller candidates across resolvers built with Vite', funct
             'file' => 'assets/search.js',
         ],
     ];
-    $cache = new ViteControllerCandidateCache;
+    $cache = new ViteManifestCache;
     ViteControllerAssetResolver::usingVite(
         $manifest,
         new Vite,
-        candidateCache: $cache,
+        manifestCache: $cache,
     )->resolve(['search']);
 
     $manifest['resources/js/controllers/search_controller.ts'] = [
@@ -212,7 +239,7 @@ it('shares cached controller candidates across resolvers built with Vite', funct
     expect(ViteControllerAssetResolver::usingVite(
         $manifest,
         new Vite,
-        candidateCache: $cache,
+        manifestCache: $cache,
     )->resolve(['search']))->toHaveCount(1);
 });
 
