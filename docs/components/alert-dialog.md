@@ -140,6 +140,11 @@ Motion, scroll lock, and click-outside behavior are exposed as Blade props — n
 </hw:alert-dialog>
 ```
 
+`initial-focus="auto"` honors an eligible `[autofocus]` element and otherwise focuses Cancel, keeping the safer action
+as the default. Use `dialog` to focus the `alertdialog` surface, `first-focusable` to select the first eligible control,
+or `none` to leave focus where it is. With `none`, the first `Tab` or `Shift+Tab` still enters the trap. Initial focus runs
+once per opening and is not repeated by morph reconnects or nested-overlay resume.
+
 ## Turbo Integration
 
 The dialog closes synchronously on `turbo:before-cache`, preventing ghost dialogs when navigating with Turbo Drive.
@@ -148,7 +153,7 @@ The dialog closes synchronously on `turbo:before-cache`, preventing ghost dialog
 
 - `role="alertdialog"` and `aria-modal="true"` on the overlay
 - `title` and `description` receive stable ids and automatically name and describe the alert dialog
-- Focus trap: Tab/Shift+Tab cycle through focusable elements inside the dialog
+- Focus follows `initial-focus`; Tab/Shift+Tab cycle through focusable elements inside the dialog
 - Focus returns to the trigger element on close
 - Closes on `Escape` key
 - Closes on backdrop click (configurable via `close-on-click-outside`)
@@ -174,6 +179,7 @@ The dialog closes synchronously on `turbo:before-cache`, preventing ghost dialog
 | `confirm-class`          | `string`         | `''`               | Extra CSS classes for the action button                      |
 | `cancel-class`           | `string`         | `''`               | Extra CSS classes for the cancel button                      |
 | `motion`                 | `string`         | `'default'`        | `default` follows CSS motion; `none` disables it             |
+| `initial-focus`          | `string`         | `'auto'`           | `auto`, `dialog`, `first-focusable`, or `none`; invalid values use `auto` |
 | `lock-scroll`            | `bool`           | `true`             | Locks body scroll when the dialog is open                    |
 | `close-on-click-outside` | `bool`           | `true`             | Closes when clicking the backdrop                            |
 | `stimulus`               | `Htmlable\|null` | `null`             | Optional extra Stimulus binding merged into the root element |

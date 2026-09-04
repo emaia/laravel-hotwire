@@ -256,6 +256,104 @@ test("focus return can reopen without leaving desired state and DOM out of sync"
     expect(document.body.classList.contains("overflow-hidden")).toBe(true);
 });
 
+test("applies initial focus once for each logical open", async () => {
+    const { modal, backdrop, dialog, trigger } = elements();
+    modal.setAttribute("role", "dialog");
+    modal.tabIndex = -1;
+    const focus = modal.focus.bind(modal);
+    const focusSpy = mock((focusOptions) => focus(focusOptions));
+    modal.focus = focusSpy;
+    overlay = createOverlay(
+        null,
+        options({
+            modal,
+            backdrop,
+            dialog,
+            initialFocus: "auto",
+            initialFocusFallback: () => modal,
+            getTriggerElement: () => trigger,
+        }),
+    );
+
+    await overlay.open();
+    expect(focusSpy).toHaveBeenCalledTimes(1);
+
+    await overlay.close();
+    await overlay.open();
+
+    expect(focusSpy).toHaveBeenCalledTimes(2);
+});
+
+test("resuming a parent trap does not reapply its initial focus", async () => {
+    const parent = elements();
+    parent.modal.setAttribute("role", "dialog");
+    parent.modal.tabIndex = -1;
+    const focus = parent.modal.focus.bind(parent.modal);
+    const focusSpy = mock((focusOptions) => focus(focusOptions));
+    parent.modal.focus = focusSpy;
+    const childTrigger = document.createElement("button");
+    parent.dialog.appendChild(childTrigger);
+    overlay = createOverlay(
+        null,
+        options({
+            modal: parent.modal,
+            backdrop: parent.backdrop,
+            dialog: parent.dialog,
+            initialFocus: "auto",
+            initialFocusFallback: () => parent.modal,
+            getTriggerElement: () => parent.trigger,
+        }),
+    );
+    const child = elements();
+    child.modal.setAttribute("role", "dialog");
+    child.modal.tabIndex = -1;
+    const childOverlay = createOverlay(
+        null,
+        options({
+            modal: child.modal,
+            backdrop: child.backdrop,
+            dialog: child.dialog,
+            initialFocus: "dialog",
+            getTriggerElement: () => childTrigger,
+        }),
+    );
+
+    await overlay.open();
+    childTrigger.focus();
+    await childOverlay.open();
+    await childOverlay.close();
+
+    expect(focusSpy).toHaveBeenCalledTimes(1);
+    expect(document.activeElement).toBe(childTrigger);
+
+    childOverlay.cleanup();
+});
+
+test("adopting open state moves focus only when explicitly requested", () => {
+    const { modal, backdrop, dialog, trigger } = elements();
+    modal.setAttribute("role", "dialog");
+    modal.tabIndex = -1;
+    overlay = createOverlay(
+        null,
+        options({
+            modal,
+            backdrop,
+            dialog,
+            initialFocus: "dialog",
+        }),
+    );
+
+    overlay.setOpen();
+
+    expect(document.activeElement).toBe(trigger);
+
+    overlay.closeNow();
+    trigger.focus();
+    overlay.setOpen({ focus: true });
+
+    expect(document.activeElement).toBe(modal);
+});
+
 function elements() {
     const trigger = document.createElement("button");
     const modal = document.createElement("div");

@@ -6,6 +6,7 @@
         'data-controller' => 'alert-dialog',
         'data-alert-dialog-lock-scroll-value' => $lockScroll ? 'true' : 'false',
         'data-alert-dialog-close-on-click-outside-value' => $closeOnClickOutside ? 'true' : 'false',
+        'data-alert-dialog-initial-focus-value' => $initialFocus,
         'data-alert-dialog-shared-value' => $alertDialogShared ? 'true' : null,
         'data-alert-dialog-lock-scroll-class' => 'overflow-hidden',
         'data-action' => 'turbo:before-cache@window->alert-dialog#closeForCache',
@@ -47,6 +48,7 @@
         data-action="click->alert-dialog#clickOutside"
         role="alertdialog"
         aria-modal="true"
+        tabindex="-1"
         @if ($alertDialogTitleId !== null) aria-labelledby="{{ $alertDialogTitleId }}" @endif
         @if ($alertDialogDescriptionId !== null) aria-describedby="{{ $alertDialogDescriptionId }}" @endif
         hidden

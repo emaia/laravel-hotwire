@@ -13,6 +13,7 @@ export default class AlertDialogController extends Controller {
         lockScroll: { type: Boolean, default: true },
         closeOnClickOutside: { type: Boolean, default: true },
         shared: { type: Boolean, default: false },
+        initialFocus: { type: String, default: "auto" },
     };
 
     pendingAction = null;
@@ -21,6 +22,7 @@ export default class AlertDialogController extends Controller {
     overlay = null;
     overlayTargets = null;
     connected = false;
+    hasConnected = false;
     overlayRefreshQueued = false;
     disconnectTimer = null;
     sharedDefaults = null;
@@ -59,7 +61,8 @@ export default class AlertDialogController extends Controller {
         this.overlay?.cleanup();
         this.overlay = null;
         this.overlayTargets = null;
-        this.#setupOverlay(reopen, stackPosition, topLayerPosition);
+        this.#setupOverlay(reopen, stackPosition, topLayerPosition, !this.hasConnected);
+        this.hasConnected = true;
     }
 
     disconnect() {
@@ -129,7 +132,7 @@ export default class AlertDialogController extends Controller {
         this.#queueSharedTargetRefresh("confirm", element);
     }
 
-    #setupOverlay(forceOpen = false, stackPosition = null, topLayerPosition = null) {
+    #setupOverlay(forceOpen = false, stackPosition = null, topLayerPosition = null, focusExisting = false) {
         this.overlayTargets = {
             modal: this.modalTarget,
             backdrop: this.backdropTarget,
@@ -144,16 +147,17 @@ export default class AlertDialogController extends Controller {
             closeOnEscape: true,
             escapeCapture: true,
             stopEscapePropagation: true,
+            initialFocus: () => this.initialFocusValue,
+            initialFocusFallback: () => (this.hasCancelTarget ? this.cancelTarget : this.modalTarget),
             onEscape: () => this.cancel(),
-            getTriggerElement: () => this.pendingAction
-                ? resolveActionElement(this.pendingAction, this.element)
-                : null,
+            getTriggerElement: () =>
+                this.pendingAction ? resolveActionElement(this.pendingAction, this.element) : null,
         });
 
         if (forceOpen) {
             this.overlay.setOpen({ notify: false, stackPosition, topLayerPosition });
         } else if (this.modalTarget.dataset.state === "open" && !this.modalTarget.hidden) {
-            this.overlay.setOpen();
+            this.overlay.setOpen({ focus: focusExisting });
         } else {
             this.overlay.closeNow({ restoreFocus: false });
         }

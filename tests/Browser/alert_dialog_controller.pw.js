@@ -1,6 +1,32 @@
 import { expect, test } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 
+test("default initial focus selects Cancel", async ({ page }) => {
+    await page.setContent(`
+        <div data-controller="alert-dialog" data-alert-dialog-lock-scroll-class="overflow-hidden">
+            <button id="trigger" data-action="click->alert-dialog#interceptCapture:capture click->alert-dialog#intercept">Delete</button>
+            <div data-alert-dialog-target="modal" data-state="closed" data-motion="none" role="alertdialog" tabindex="-1" hidden inert>
+                <div data-alert-dialog-target="backdrop"></div>
+                <div data-alert-dialog-target="dialog">
+                    <button id="earlier">Earlier action</button>
+                    <button id="cancel" data-alert-dialog-target="cancel" data-action="alert-dialog#cancel">Cancel</button>
+                    <button data-alert-dialog-target="confirm" data-action="alert-dialog#confirm">Confirm</button>
+                </div>
+            </div>
+        </div>
+    `);
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ content: await browserControllerScript() });
+    await page.evaluate(() => {
+        window.StimulusApplication = window.Stimulus.Application.start();
+        window.StimulusApplication.register("alert-dialog", window.AlertDialogController);
+    });
+
+    await page.locator("#trigger").click();
+
+    await expect(page.locator("#cancel")).toBeFocused();
+});
+
 test("an action ancestor outside the Alert Dialog waits for confirmation", async ({ page }) => {
     await page.setContent(`
         <a href="#deleted">
@@ -9,10 +35,10 @@ test("an action ancestor outside the Alert Dialog waits for confirmation", async
                     <span id="nested-trigger">Delete</span>
                 </div>
 
-                <div data-alert-dialog-target="modal" data-state="closed" data-motion="none" hidden inert>
+                <div data-alert-dialog-target="modal" data-state="closed" data-motion="none" role="alertdialog" tabindex="-1" hidden inert>
                     <div data-alert-dialog-target="backdrop"></div>
                     <div data-alert-dialog-target="dialog">
-                        <button type="button" data-action="alert-dialog#cancel">Cancel</button>
+                        <button id="cancel" type="button" data-alert-dialog-target="cancel" data-action="alert-dialog#cancel">Cancel</button>
                         <button id="confirm" type="button" data-action="alert-dialog#confirm">Confirm</button>
                     </div>
                 </div>
@@ -436,10 +462,10 @@ test("moving an open dialog preserves its pending action across reconnect", asyn
                     <button id="trigger" type="button" data-controller="probe" data-action="click->probe#execute">Archive</button>
                 </div>
 
-                <div data-alert-dialog-target="modal" data-state="closed" data-motion="none" hidden inert>
+                <div data-alert-dialog-target="modal" data-state="closed" data-motion="none" role="alertdialog" tabindex="-1" hidden inert>
                     <div data-alert-dialog-target="backdrop"></div>
                     <div data-alert-dialog-target="dialog">
-                        <button type="button" data-action="alert-dialog#cancel">Cancel</button>
+                        <button id="cancel" type="button" data-alert-dialog-target="cancel" data-action="alert-dialog#cancel">Cancel</button>
                         <button id="confirm" type="button" data-action="alert-dialog#confirm">Confirm</button>
                     </div>
                 </div>
@@ -452,14 +478,18 @@ test("moving an open dialog preserves its pending action across reconnect", asyn
     await page.addScriptTag({ content: await browserControllerScript() });
     await page.evaluate(() => {
         window.executions = [];
+        window.cancelFocuses = 0;
         window.StimulusApplication = window.Stimulus.Application.start();
         window.StimulusApplication.register("alert-dialog", window.AlertDialogController);
         window.StimulusApplication.register("probe", window.ProbeController);
+        document.querySelector("#cancel").addEventListener("focus", () => window.cancelFocuses++);
     });
 
     await page.locator("#trigger").click();
+    await expect.poll(() => page.evaluate(() => window.cancelFocuses)).toBe(1);
     await page.evaluate(() => document.querySelector("#second").append(document.querySelector("#confirmation")));
     await expect(page.locator("#confirm")).toBeVisible();
+    await expect.poll(() => page.evaluate(() => window.cancelFocuses)).toBe(1);
     await page.locator("#confirm").click();
 
     await expect.poll(() => page.evaluate(() => window.executions)).toEqual([{ trusted: false }]);

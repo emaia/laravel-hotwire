@@ -36,6 +36,8 @@ it('renders modal content as the dialog surface', function () {
 
     $view->assertSee('role="dialog"', false);
     $view->assertSee('aria-modal="true"', false);
+    $view->assertSee('tabindex="-1"', false);
+    $view->assertSee('data-modal-initial-focus-value="auto"', false);
     $view->assertSee('data-slot="modal-overlay"', false);
     $view->assertSee('data-slot="modal-content"', false);
     $view->assertSee('data-slot="modal-header"', false);
@@ -58,6 +60,19 @@ it('normalizes modal motion', function () {
     $none->assertSee('data-motion="none"', false);
     $invalid->assertSee('data-motion="default"', false);
 });
+
+it('normalizes and protects modal initial focus', function (string $initialFocus, string $expected) {
+    $view = $this->blade("<x-hw::modal initial-focus=\"{$initialFocus}\" data-modal-initial-focus-value=\"dialog\"><x-hw::modal.content>Content</x-hw::modal.content></x-hw::modal>");
+    $root = (new DOMXPath(dom((string) $view)))->query('//*[@data-slot="modal"]')->item(0);
+
+    expect($root->getAttribute('data-modal-initial-focus-value'))->toBe($expected);
+})->with([
+    'auto' => ['auto', 'auto'],
+    'dialog' => ['dialog', 'dialog'],
+    'first focusable' => ['first-focusable', 'first-focusable'],
+    'none' => ['none', 'none'],
+    'invalid' => ['field', 'auto'],
+]);
 
 it('renders a semantic trigger with button variants', function () {
     $view = $this->blade('
@@ -352,6 +367,7 @@ it('does not expose modal root props as generic component data', function () {
             'modalStimulus',
             'modalMotion',
             'modalViewTransition',
+            'modalInitialFocus',
         ])
         ->and($data)->toHaveKey('fieldContext', null)
         ->toHaveKey('fieldControlContext', null);

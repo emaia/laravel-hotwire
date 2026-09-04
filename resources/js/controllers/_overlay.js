@@ -18,27 +18,35 @@ const bodyScrollLock = {
     trailingPaddingProperties: [],
 };
 
-export function createOverlay(_controller, {
-    modalTarget,
-    backdropTarget,
-    dialogTarget,
-    lockScrollClasses = [],
-    lockScroll = true,
-    closeOnEscape = true,
-    escapeCapture = false,
-    stopEscapePropagation = false,
-    topLayer = true,
-    onEscape,
-    onOpen,
-    onClose,
-    getTriggerElement,
-    stateAttribute = "state",
-}) {
+export function createOverlay(
+    _controller,
+    {
+        modalTarget,
+        backdropTarget,
+        dialogTarget,
+        lockScrollClasses = [],
+        lockScroll = true,
+        closeOnEscape = true,
+        escapeCapture = false,
+        stopEscapePropagation = false,
+        topLayer = true,
+        onEscape,
+        onOpen,
+        onClose,
+        getTriggerElement,
+        initialFocus = "first-focusable",
+        initialFocusFallback = null,
+        stateAttribute = "state",
+    },
+) {
     const presence = createPresence(modalTarget, {
         motionElements: [backdropTarget, dialogTarget],
         stateAttribute,
     });
-    const focusTrap = new FocusTrap(modalTarget);
+    const focusTrap = new FocusTrap(modalTarget, {
+        initialFocus,
+        fallback: initialFocusFallback,
+    });
     const topLayerHandle = createTopLayer(modalTarget, { enabled: topLayer, suppressAutofocus: true });
     let desiredOpen = false;
     let destroyed = false;
@@ -46,6 +54,7 @@ export function createOverlay(_controller, {
     let stackEntry = null;
     let unregisterStackEntry = null;
     let focusTrapReady = false;
+    let initialFocusPending = false;
     let scrollLocked = false;
     let opening = null;
     let closing = null;
@@ -101,9 +110,8 @@ export function createOverlay(_controller, {
         if (desiredOpen && presence.phase !== "closing") return opening ?? true;
 
         desiredOpen = true;
-        triggerElement = typeof getTriggerElement === "function"
-            ? getTriggerElement()
-            : document.activeElement;
+        initialFocusPending = true;
+        triggerElement = typeof getTriggerElement === "function" ? getTriggerElement() : document.activeElement;
 
         const operation = presence.open({
             beforeEnter: () => desiredOpen,
@@ -150,6 +158,7 @@ export function createOverlay(_controller, {
         opening = null;
         desiredOpen = false;
         focusTrapReady = false;
+        initialFocusPending = false;
         const operation = presence.close();
         closing = operation;
         unregisterStack();
@@ -176,6 +185,7 @@ export function createOverlay(_controller, {
         modalTarget.removeEventListener("turbo:before-morph-attribute", preserveManagedAttributesDuringMorph);
         desiredOpen = false;
         focusTrapReady = false;
+        initialFocusPending = false;
         presence.cleanup();
         unregisterStack();
         unlockScrollIfNeeded();
@@ -191,6 +201,7 @@ export function createOverlay(_controller, {
         opening = null;
         desiredOpen = false;
         focusTrapReady = false;
+        initialFocusPending = false;
         presence.sync(false);
         unregisterStack();
         unlockScrollIfNeeded();
@@ -201,13 +212,12 @@ export function createOverlay(_controller, {
         return true;
     }
 
-    function setOpen({ notify = true, stackPosition = null, topLayerPosition = null } = {}) {
+    function setOpen({ notify = true, focus = false, stackPosition = null, topLayerPosition = null } = {}) {
         if (destroyed || desiredOpen) return false;
 
         desiredOpen = true;
-        triggerElement = typeof getTriggerElement === "function"
-            ? getTriggerElement()
-            : document.activeElement;
+        initialFocusPending = focus;
+        triggerElement = typeof getTriggerElement === "function" ? getTriggerElement() : document.activeElement;
         presence.sync(true);
         focusTrapReady = true;
         topLayerHandle.show(topLayerPosition);
@@ -225,7 +235,9 @@ export function createOverlay(_controller, {
             activateFocusTrap: () => {
                 if (!focusTrapReady) return false;
 
-                focusTrap.activate();
+                const moveFocus = initialFocusPending;
+                initialFocusPending = false;
+                focusTrap.activate({ moveFocus });
 
                 return true;
             },
@@ -253,6 +265,7 @@ export function createOverlay(_controller, {
     function resetFailedOpen() {
         desiredOpen = false;
         focusTrapReady = false;
+        initialFocusPending = false;
         unregisterStack();
         unlockScrollIfNeeded();
         topLayerHandle.hide();
@@ -275,7 +288,11 @@ export function createOverlay(_controller, {
     function restoreTriggerFocus() {
         if (!triggerElement || triggerElement.disabled || typeof triggerElement.focus !== "function") return;
 
-        triggerElement.focus();
+        try {
+            triggerElement.focus({ preventScroll: true });
+        } catch (_error) {
+            triggerElement.focus();
+        }
     }
 
     function setTriggerElement(element) {

@@ -24,10 +24,13 @@ const HTML = `
              data-state="closed"
              data-motion="none"
              data-action="click->alert-dialog#clickOutside"
+             role="alertdialog"
+             tabindex="-1"
              hidden inert>
             <div data-alert-dialog-target="backdrop"></div>
             <div data-alert-dialog-target="dialog">
-                <button id="cancel" data-action="click->alert-dialog#cancel">Cancel</button>
+                <button id="early-action">Earlier action</button>
+                <button id="cancel" data-alert-dialog-target="cancel" data-action="click->alert-dialog#cancel">Cancel</button>
                 <button id="confirm" data-action="click->alert-dialog#confirm">OK</button>
             </div>
         </div>
@@ -396,6 +399,15 @@ test.serial("shared host recaptures defaults after a permanent disconnect", asyn
 });
 
 // --- intercept opens the dialog ---
+
+test.serial("default initial focus selects Cancel over earlier actions", async () => {
+    await mount();
+
+    clickWith(document.getElementById("trigger"));
+    await wait(0);
+
+    expect(document.activeElement.id).toBe("cancel");
+});
 
 test.serial("intercept prevents the click and opens the dialog", async () => {
     await mount();

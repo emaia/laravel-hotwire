@@ -13,11 +13,13 @@ export default class ModalController extends Controller {
         lockScroll: { type: Boolean, default: true },
         closeOnEscape: { type: Boolean, default: true },
         closeOnClickOutside: { type: Boolean, default: true },
+        initialFocus: { type: String, default: "auto" },
     };
 
     frameOverlay = null;
     overlay = null;
     connected = false;
+    hasConnected = false;
     overlayRefreshQueued = false;
 
     get isOpen() {
@@ -26,7 +28,8 @@ export default class ModalController extends Controller {
 
     connect() {
         this.connected = true;
-        this.#setupOverlay();
+        this.#setupOverlay(false, null, null, !this.hasConnected);
+        this.hasConnected = true;
     }
 
     disconnect() {
@@ -63,7 +66,7 @@ export default class ModalController extends Controller {
         this.#queueOverlayRefresh();
     }
 
-    #setupOverlay(forceOpen = false, stackPosition = null, topLayerPosition = null) {
+    #setupOverlay(forceOpen = false, stackPosition = null, topLayerPosition = null, focusExisting = false) {
         this.overlay = createOverlay(this, {
             modalTarget: this.modalTarget,
             backdropTarget: this.backdropTarget,
@@ -71,6 +74,8 @@ export default class ModalController extends Controller {
             lockScrollClasses: this.lockScrollClasses,
             lockScroll: this.lockScrollValue,
             closeOnEscape: this.closeOnEscapeValue,
+            initialFocus: () => this.initialFocusValue,
+            initialFocusFallback: () => this.modalTarget,
             onOpen: () => {
                 this.#dispatchEvent("modal:opened");
             },
@@ -86,7 +91,7 @@ export default class ModalController extends Controller {
         if (forceOpen) {
             this.overlay.setOpen({ notify: false, stackPosition, topLayerPosition });
         } else if (this.modalTarget.dataset.state === "open" && !this.modalTarget.hidden) {
-            this.overlay.setOpen();
+            this.overlay.setOpen({ focus: focusExisting });
         }
     }
 

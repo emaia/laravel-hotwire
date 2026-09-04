@@ -86,6 +86,33 @@ test("connect applies visible state when the sheet is pre-rendered open", async 
     expect(document.body.classList.contains("overflow-hidden")).toBe(true);
 });
 
+test("none preserves opener focus while keeping the inherited trap active", async () => {
+    await mount(`
+        <div data-controller="sheet"
+             data-sheet-initial-focus-value="none"
+             data-sheet-lock-scroll-class="overflow-hidden">
+            <button id="trigger" data-action="sheet#toggle">Open</button>
+            <div data-sheet-target="modal" data-state="closed" data-motion="none" role="dialog" tabindex="-1" hidden inert>
+                <div data-sheet-target="backdrop"></div>
+                <div data-sheet-target="dialog"><button id="inside">Inside</button></div>
+            </div>
+        </div>
+    `);
+    const trigger = document.getElementById("trigger");
+    trigger.focus();
+
+    click(trigger);
+    await wait(10);
+
+    expect(document.activeElement).toBe(trigger);
+
+    const tab = new KeyboardEvent("keydown", { key: "Tab", bubbles: true, cancelable: true });
+    document.dispatchEvent(tab);
+
+    expect(tab.defaultPrevented).toBe(true);
+    expect(document.activeElement.id).toBe("inside");
+});
+
 test("frame content opens the sheet and loading templates are injected", async () => {
     await mountFrame();
     const frame = document.getElementById("settings-panel");

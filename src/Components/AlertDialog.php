@@ -26,6 +26,7 @@ class AlertDialog extends Component
         public bool $lockScroll = true,
         public bool $closeOnClickOutside = true,
         public ?Htmlable $stimulus = null,
+        public string $initialFocus = 'auto',
     ) {
         $this->id = app(ComponentId::class)->resolve($this->id, 'hw-alert', 'alert');
         $this->overlayLabelContext = new OverlayLabelContext($this->id, 'alert-dialog');
@@ -39,6 +40,9 @@ class AlertDialog extends Component
         }
 
         $this->motion = in_array($this->motion, ['default', 'none'], true) ? $this->motion : 'default';
+        $this->initialFocus = in_array($this->initialFocus, ['auto', 'dialog', 'first-focusable', 'none'], true)
+            ? $this->initialFocus
+            : 'auto';
     }
 
     public function render()

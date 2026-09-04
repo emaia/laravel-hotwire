@@ -24,6 +24,7 @@ Escape dismissal and focus trapping are suspended during IME composition.
 <div
     data-controller="sheet"
     data-sheet-lock-scroll-class="overflow-hidden"
+    data-sheet-initial-focus-value="auto"
     data-action="turbo:before-cache@window->sheet#closeForCache"
 >
     <button type="button" data-sheet-target="trigger" data-action="sheet#open">
@@ -36,7 +37,7 @@ Escape dismissal and focus trapping are suspended during IME composition.
             data-action="click->sheet#clickOutside"
         ></div>
 
-        <aside data-sheet-target="dialog" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+        <aside data-sheet-target="dialog" role="dialog" aria-modal="true" aria-labelledby="sheet-title" tabindex="-1">
             <h2 id="sheet-title">Details</h2>
             <button type="button" data-action="sheet#close">Close</button>
         </aside>
@@ -50,7 +51,15 @@ immediately before Turbo caches the page.
 ## Targets And Values
 
 Sheet uses the Drawer targets and values with the `sheet` identifier: `trigger`, `modal`, `backdrop`, `dialog`,
-`dynamicContent`, `loadingTemplate`, `lockScroll`, `closeOnEscape`, and `closeOnClickOutside`.
+`dynamicContent`, `loadingTemplate`, `lockScroll`, `closeOnEscape`, `closeOnClickOutside`, and `initialFocus`.
+
+`initialFocus` defaults to `auto`, which focuses an eligible `[autofocus]` element and otherwise the semantic dialog
+surface. `dialog` skips `[autofocus]`; `first-focusable` selects the first eligible control; `none` leaves focus where it
+is until Tab enters the trap. Invalid values behave as `auto`. Keep the dialog surface programmatically focusable with
+`tabindex="-1"`. Initial focus runs once per opening and is not repeated by frame updates, reconnects, or nested-overlay
+resume.
+If `autofocus` is also mounted inside the overlay, whichever controller focuses last wins: `initialFocus` runs when the
+sheet opens, while `autofocus` runs on connect and affected `turbo:frame-load` events.
 
 ## Actions
 

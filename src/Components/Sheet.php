@@ -33,6 +33,7 @@ class Sheet extends Component
         public ?string $ariaLabelledby = null,
         public ?string $ariaDescription = null,
         public ?string $ariaDescribedby = null,
+        public string $initialFocus = 'auto',
     ) {
         $this->id = app(ComponentId::class)->resolve($this->id, 'hw-sheet', 'sheet');
         $this->frame = FrameTarget::normalize($this->frame);
@@ -52,6 +53,9 @@ class Sheet extends Component
         }
 
         $this->motion = in_array($this->motion, ['default', 'none'], true) ? $this->motion : 'default';
+        $this->initialFocus = in_array($this->initialFocus, ['auto', 'dialog', 'first-focusable', 'none'], true)
+            ? $this->initialFocus
+            : 'auto';
     }
 
     public function render()
@@ -70,6 +74,7 @@ class Sheet extends Component
         $data['sheetFrame'] = $this->frame;
         $data['sheetMotion'] = $this->motion;
         $data['sheetViewTransition'] = $this->viewTransition;
+        $data['sheetInitialFocus'] = $this->initialFocus;
         $data = array_replace($data, OverlayLabelContext::boundaryData());
         $data['sheetOverlayLabelContext'] = $this->overlayLabelContext;
         $data['sheetAriaLabel'] = $this->ariaLabel;
@@ -94,6 +99,7 @@ class Sheet extends Component
             $data['ariaLabelledby'],
             $data['ariaDescription'],
             $data['ariaDescribedby'],
+            $data['initialFocus'],
         );
 
         return $data;
@@ -110,6 +116,7 @@ class Sheet extends Component
                 'data-sheet-lock-scroll-value' => $this->lockScroll ? 'true' : 'false',
                 'data-sheet-close-on-escape-value' => $this->closeOnEscape ? 'true' : 'false',
                 'data-sheet-close-on-click-outside-value' => $this->closeOnClickOutside ? 'true' : 'false',
+                'data-sheet-initial-focus-value' => $this->initialFocus,
                 'data-sheet-lock-scroll-class' => 'overflow-hidden',
                 'data-action' => 'turbo:before-cache@window->sheet#closeForCache',
                 'style' => $this->style(),

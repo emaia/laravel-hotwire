@@ -12,6 +12,8 @@ it('renders with default props', function () {
     $view->assertSee('Continue?');
     $view->assertSee('role="alertdialog"', false);
     $view->assertSee('aria-modal="true"', false);
+    $view->assertSee('tabindex="-1"', false);
+    $view->assertSee('data-alert-dialog-initial-focus-value="auto"', false);
     $view->assertSee('data-slot="alert-dialog-overlay"', false);
     $view->assertSee('data-state="closed"', false);
     $view->assertSee('data-motion="default"', false);
@@ -160,6 +162,19 @@ it('normalizes invalid alert dialog motion', function () {
 
     $view->assertSee('data-motion="default"', false);
 });
+
+it('normalizes and protects alert dialog initial focus', function (string $initialFocus, string $expected) {
+    $view = $this->blade("<x-hw::alert-dialog title=\"Continue?\" initial-focus=\"{$initialFocus}\" data-alert-dialog-initial-focus-value=\"dialog\"><button>x</button></x-hw::alert-dialog>");
+    $root = (new DOMXPath(dom((string) $view)))->query('//*[@data-slot="alert-dialog"]')->item(0);
+
+    expect($root->getAttribute('data-alert-dialog-initial-focus-value'))->toBe($expected);
+})->with([
+    'auto' => ['auto', 'auto'],
+    'dialog' => ['dialog', 'dialog'],
+    'first focusable' => ['first-focusable', 'first-focusable'],
+    'none' => ['none', 'none'],
+    'invalid' => ['field', 'auto'],
+]);
 
 it('sets custom id', function () {
     $view = $this->blade('<x-hw::alert-dialog id="my-alert" title="Continue?"><button>x</button></x-hw::alert-dialog>');

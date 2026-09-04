@@ -34,6 +34,7 @@
     @if ($sheetManagedDescription !== null) data-hotwire-overlay-describedby="{{ $sheetManagedDescription }}" @endif
     role="dialog"
     aria-modal="true"
+    tabindex="-1"
     @if ($sheetAriaLabel !== null) aria-label="{{ $sheetAriaLabel }}" @endif
     @if ($sheetLabelledby !== null) aria-labelledby="{{ $sheetLabelledby }}" @endif
     @if ($sheetAriaDescription !== null) aria-description="{{ $sheetAriaDescription }}" @endif

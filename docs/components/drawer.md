@@ -39,6 +39,11 @@ The drawer traps focus while open, restores focus to the trigger on close, locks
 synchronously before Turbo caches the page. Its overlay uses `data-state="open|closed"`; Presence waits for actual
 finite CSS motion and cancels stale teardown when the drawer rapidly reopens. Customize transition duration in CSS.
 
+`initial-focus="auto"` honors an eligible `[autofocus]` element and otherwise focuses the dialog surface. Use `dialog`
+to skip `[autofocus]`, `first-focusable` to select the first eligible control, or `none` to leave focus where it is. With
+`none`, the first `Tab` or `Shift+Tab` still enters the trap. Initial focus runs once per opening and is not repeated by
+Turbo Frame updates, morph reconnects, or nested-overlay resume.
+
 `drawer.title` and `drawer.description` automatically name and describe the dialog overlay. The frame integration assigns
 missing ids and refreshes the references when frame content changes.
 
@@ -116,6 +121,7 @@ stream, to close it after a successful action. Stream rendering waits for the ac
 | `frame`               | `null`                                                       | String/object Turbo Frame id for layout-shared, server-loaded content.      |
 | `backdrop`            | `true`                                                       | Render the backdrop and click-outside target.                              |
 | `motion`              | `default`                                                    | `default` follows CSS motion; `none` disables it.                          |
+| `initial-focus`       | `auto`                                                       | `auto`, `dialog`, `first-focusable`, or `none`; invalid values use `auto`. |
 | `lockScroll`          | `true`                                                       | Lock body scroll while open.                                               |
 | `closeOnEscape`       | `true`                                                       | Close when Escape is pressed.                                              |
 | `closeOnClickOutside` | `true`                                                       | Close when the backdrop is clicked.                                        |

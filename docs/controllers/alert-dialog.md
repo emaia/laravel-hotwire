@@ -19,6 +19,7 @@ Escape cancellation and focus trapping are suspended during IME composition.
 <div
     data-controller="alert-dialog"
     data-alert-dialog-lock-scroll-class="overflow-hidden"
+    data-alert-dialog-initial-focus-value="auto"
     data-action="turbo:before-cache@window->alert-dialog#closeForCache"
 >
     <div data-action="click->alert-dialog#interceptCapture:capture click->alert-dialog#intercept">
@@ -35,13 +36,14 @@ Escape cancellation and focus trapping are suspended during IME composition.
         role="alertdialog"
         aria-modal="true"
         aria-labelledby="confirmation-title"
+        tabindex="-1"
     >
         <div data-alert-dialog-target="backdrop"></div>
 
         <div data-alert-dialog-target="dialog">
             <h2 id="confirmation-title">Are you sure?</h2>
 
-            <button type="button" data-action="alert-dialog#cancel">Cancel</button>
+            <button type="button" data-alert-dialog-target="cancel" data-action="alert-dialog#cancel">Cancel</button>
             <button type="button" data-action="alert-dialog#confirm">Confirm</button>
         </div>
     </div>
@@ -99,7 +101,7 @@ fallback. An authored non-empty `aria-label` on the modal takes precedence inste
 | `dialog`      | Visible dialog panel used for click-outside and focus trap logic         |
 | `title`       | Shared-mode heading whose text can vary by trigger                      |
 | `description` | Shared-mode description whose text can vary by trigger                  |
-| `cancel`      | Shared-mode cancel button whose label and variant can vary              |
+| `cancel`      | Cancel button used by `auto` focus and varied by shared-mode triggers   |
 | `confirm`     | Shared-mode confirm button whose label and variant can vary             |
 
 ## Values
@@ -109,6 +111,14 @@ fallback. An authored non-empty `aria-label` on the modal takes precedence inste
 | `lock-scroll`            | `Boolean` | `true`  | Adds and removes the configured body scroll-lock class    |
 | `close-on-click-outside` | `Boolean` | `true`  | Cancels the dialog when the user clicks outside the panel |
 | `shared`                 | `Boolean` | `false` | Intercepts only marked descendants and applies overrides  |
+| `initial-focus`          | `String`  | `auto`  | `auto`, `dialog`, `first-focusable`, or `none`            |
+
+`auto` focuses an eligible `[autofocus]` element and otherwise the `cancel` target. `dialog` focuses the semantic
+`alertdialog` surface; `first-focusable` selects the first eligible control; `none` leaves focus where it is until Tab
+enters the trap. Invalid values behave as `auto`. Keep the modal target programmatically focusable with `tabindex="-1"`.
+Initial focus runs once per opening and is not repeated by reconnects or nested-overlay resume.
+If `autofocus` is also mounted inside the overlay, whichever controller focuses last wins: `initial-focus` runs when
+the dialog opens, while `autofocus` runs on connect and affected `turbo:frame-load` events.
 
 ## Stimulus Classes
 
@@ -160,7 +170,7 @@ fallback. An authored non-empty `aria-label` on the modal takes precedence inste
         <div data-alert-dialog-target="dialog">
             <h2 id="confirmation-title">Are you sure?</h2>
 
-            <button type="button" data-action="alert-dialog#cancel">Cancel</button>
+            <button type="button" data-alert-dialog-target="cancel" data-action="alert-dialog#cancel">Cancel</button>
             <button type="button" data-action="alert-dialog#confirm">Confirm</button>
         </div>
     </div>
@@ -207,6 +217,7 @@ context while the dialog is open makes confirmation fail closed.
 
 ## Accessibility
 
+- Initial focus follows `initial-focus` once per opening.
 - Focus is trapped within the dialog while it is open.
 - Focus returns to the intercepted trigger element when the dialog closes.
 - Pressing `Escape` cancels the dialog.
