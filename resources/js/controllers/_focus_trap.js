@@ -21,13 +21,10 @@ export class FocusTrap {
 
         if (!this.container.hidden) {
             const active = document.activeElement;
-            const alreadyInside =
-                active &&
-                this.container.contains(active) &&
-                active.matches(FOCUSABLE_SELECTOR);
+            const focusable = getFocusableElements(this.container);
+            const alreadyInside = active && focusable.includes(active);
 
             if (!alreadyInside) {
-                const focusable = this.container.querySelectorAll(FOCUSABLE_SELECTOR);
                 focusWithVisibleRing(focusable[0]);
             }
         }
@@ -48,7 +45,7 @@ export class FocusTrap {
         if (!this.active) return;
         if (this.container.hidden) return;
 
-        const focusable = this.container.querySelectorAll(FOCUSABLE_SELECTOR);
+        const focusable = getFocusableElements(this.container);
         if (focusable.length === 0) return;
 
         const first = focusable[0];
@@ -66,6 +63,12 @@ export class FocusTrap {
             focusWithVisibleRing(last);
         }
     }
+}
+
+function getFocusableElements(container) {
+    return [...container.querySelectorAll(FOCUSABLE_SELECTOR)].filter(
+        (element) => !element.closest("[hidden], [inert]"),
+    );
 }
 
 function focusWithVisibleRing(element) {

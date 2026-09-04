@@ -100,6 +100,20 @@ test.serial("activate leaves focus untouched when an element inside is already f
     expect(document.activeElement.id).toBe("b");
 });
 
+test.serial("activate ignores focusable elements inside hidden or inert subtrees", () => {
+    const { trap } = mountTrap(`
+        <div data-trap>
+            <div hidden><button id="hidden">Hidden</button></div>
+            <div inert><button id="inert">Inert</button></div>
+            <button id="visible">Visible</button>
+        </div>
+    `);
+
+    trap.activate();
+
+    expect(document.activeElement.id).toBe("visible");
+});
+
 test.serial("Tab from a middle element does not get intercepted", () => {
     const { trap } = mountTrap(`
         <div data-trap>
@@ -147,6 +161,28 @@ test.serial("Shift+Tab on the first focusable cycles to the last", () => {
     dispatchTab({ shift: true });
 
     expect(document.activeElement.id).toBe("c");
+});
+
+test.serial("cycling ignores focusable elements inside hidden or inert subtrees", () => {
+    const { trap } = mountTrap(`
+        <div data-trap>
+            <div hidden><button id="hidden-first">Hidden first</button></div>
+            <button id="first">First</button>
+            <button id="last">Last</button>
+            <div inert><button id="inert-last">Inert last</button></div>
+        </div>
+    `);
+
+    trap.activate();
+    const backward = dispatchTab({ shift: true });
+
+    expect(backward.defaultPrevented).toBe(true);
+    expect(document.activeElement.id).toBe("last");
+
+    const forward = dispatchTab();
+
+    expect(forward.defaultPrevented).toBe(true);
+    expect(document.activeElement.id).toBe("first");
 });
 
 test.serial("Tab from outside an active trap moves into the first focusable", () => {

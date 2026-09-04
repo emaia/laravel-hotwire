@@ -718,6 +718,7 @@ for (const identifier of ["drawer", "sheet"]) {
                 <div data-slot="${identifier}-overlay" data-${identifier}-target="modal" data-state="closed" data-motion="none" hidden inert>
                     <div data-slot="${identifier}-backdrop" data-${identifier}-target="backdrop" data-action="click->${identifier}#clickOutside"></div>
                     <div data-slot="${identifier}-popup" data-${identifier}-target="dialog">
+                        <button id="parent-first">First</button>
                         <div id="confirm" data-controller="alert-dialog" data-alert-dialog-lock-scroll-class="overflow-hidden">
                             <button id="delete" data-action="click->alert-dialog#intercept">Delete</button>
                             <div data-slot="alert-dialog-overlay" data-alert-dialog-target="modal" data-state="closed" data-motion="none" data-action="click->alert-dialog#clickOutside" hidden inert>
@@ -757,6 +758,10 @@ for (const identifier of ["drawer", "sheet"]) {
         await expect(page.locator("#delete")).toBeFocused();
         await expect(parentOverlay).not.toHaveAttribute("hidden", "");
         await expect(page.locator("body")).toHaveClass(/overflow-hidden/);
+
+        await page.locator("#parent-first").focus();
+        await page.keyboard.press("Shift+Tab");
+        await expect(page.locator("#delete")).toBeFocused();
 
         await page.keyboard.press("Escape");
         await expect(parentOverlay).toHaveAttribute("hidden", "");
@@ -834,7 +839,7 @@ test("Escape during nested overlay entry closes the entering overlay", async ({ 
         return tab.defaultPrevented;
     });
 
-    expect(exitTabPrevented).toBe(false);
+    expect(exitTabPrevented).toBe(true);
     await expect(alertOverlay).toHaveAttribute("data-state", "closed");
     await expect(alertOverlay).toHaveAttribute("hidden", "");
 });
