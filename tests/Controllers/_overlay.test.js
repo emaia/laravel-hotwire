@@ -111,6 +111,13 @@ test("composing Escape does not close the overlay", async () => {
     expect(overlay.isOpen).toBe(true);
 });
 
+test("an overlay that has never opened is not the top overlay", () => {
+    const { modal, backdrop, dialog } = elements();
+    overlay = createOverlay(null, options({ modal, backdrop, dialog }));
+
+    expect(overlay.isTop).toBe(false);
+});
+
 test("reduced motion closes immediately without inspecting descendant animations", async () => {
     const { modal, backdrop, dialog } = elements();
     let inspected = false;

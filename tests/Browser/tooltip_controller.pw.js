@@ -276,6 +276,7 @@ async function browserControllersScript() {
     const overlayStack = (await readFile("resources/js/controllers/_overlay_stack.js", "utf8"))
         .replace("export function registerOverlay", "function registerOverlay")
         .replace("export function unregisterOverlay", "function unregisterOverlay")
+        .replace("export function activateTopOverlay", "function activateTopOverlay")
         .replace("export function isTopOverlay", "function isTopOverlay")
         .replace("export function overlayPosition", "function overlayPosition");
 
