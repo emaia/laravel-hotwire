@@ -2,7 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components\EmptyState;
 
-use Illuminate\View\Component;
+use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 
 class Header extends Component
 {

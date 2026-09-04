@@ -2,8 +2,8 @@
 
 namespace Emaia\LaravelHotwire\Components\Pagination;
 
+use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 use Emaia\LaravelHotwire\Support\FrameTarget;
-use Illuminate\View\Component;
 
 class Link extends Component
 {

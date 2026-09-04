@@ -2,7 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components\Meta;
 
-use Illuminate\View\Component;
+use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 
 class Csrf extends Component
 {

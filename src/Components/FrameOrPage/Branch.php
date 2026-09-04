@@ -2,8 +2,8 @@
 
 namespace Emaia\LaravelHotwire\Components\FrameOrPage;
 
+use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 use Emaia\LaravelHotwire\Components\FrameOrPage;
-use Illuminate\View\Component;
 use InvalidArgumentException;
 
 abstract class Branch extends Component

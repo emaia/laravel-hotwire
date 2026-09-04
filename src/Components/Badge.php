@@ -2,8 +2,8 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 use Emaia\LaravelHotwire\Support\PolymorphicTag;
-use Illuminate\View\Component;
 
 class Badge extends Component
 {

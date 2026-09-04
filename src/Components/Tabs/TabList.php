@@ -2,10 +2,10 @@
 
 namespace Emaia\LaravelHotwire\Components\Tabs;
 
+use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 use Emaia\LaravelHotwire\Support\StimulusAttributes;
 use Emaia\LaravelHotwire\Support\StimulusIdentifier;
 use Illuminate\Contracts\Support\Htmlable;
-use Illuminate\View\Component;
 use Illuminate\View\ComponentAttributeBag;
 
 class TabList extends Component

@@ -2,7 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components\AlertDialog;
 
-use Illuminate\View\Component;
+use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 
 class Description extends Component
 {

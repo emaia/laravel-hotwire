@@ -6,6 +6,17 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 
 ## Unreleased
 
+### Package components resolve without the container
+
+Package component classes are now instantiated directly during Blade rendering whenever every required constructor
+parameter is present in the component data. PHP applies omitted constructor defaults normally. Application resolvers
+installed through `Component::resolveComponentsUsing()` are still honored, while variadic components and components
+with missing required data continue through Laravel's normal resolution path.
+
+Container and contextual bindings targeting package component classes therefore participate only when required
+constructor data must be resolved by the container. Pass supported Blade props or compose an application component
+when customization is needed.
+
 ### Nova has a more compact visual treatment
 
 Nova now uses a more compact density and surface treatment for Accordion, Breadcrumb, text controls, Input Group, Field

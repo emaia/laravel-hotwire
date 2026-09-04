@@ -2,7 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components\Field;
 
-use Illuminate\View\Component;
+use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 
 class Group extends Component
 {

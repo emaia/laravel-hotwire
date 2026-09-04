@@ -2,9 +2,9 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 use Emaia\LaravelHotwire\Support\SessionToast;
 use Illuminate\Contracts\Support\Htmlable;
-use Illuminate\View\Component;
 
 class Toast extends Component
 {

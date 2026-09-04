@@ -2,7 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
-use Illuminate\View\Component;
+use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 
 /**
  * Umbrella over the granular meta components. A prop left out renders no tag, so the head states

@@ -2,7 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components\Marker;
 
-use Illuminate\View\Component;
+use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 
 class Icon extends Component
 {

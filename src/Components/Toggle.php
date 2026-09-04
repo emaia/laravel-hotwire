@@ -2,10 +2,10 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 use Emaia\LaravelHotwire\Components\Concerns\StripsNullProps;
 use Emaia\LaravelHotwire\Support\AutoSubmit;
 use Illuminate\Contracts\Support\Htmlable;
-use Illuminate\View\Component;
 use Illuminate\View\ComponentAttributeBag;
 
 class Toggle extends Component

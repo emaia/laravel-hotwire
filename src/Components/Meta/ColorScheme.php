@@ -2,8 +2,8 @@
 
 namespace Emaia\LaravelHotwire\Components\Meta;
 
+use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 use Emaia\LaravelHotwire\Support\MetaValue;
-use Illuminate\View\Component;
 
 class ColorScheme extends Component
 {

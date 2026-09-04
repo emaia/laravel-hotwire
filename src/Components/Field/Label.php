@@ -2,11 +2,11 @@
 
 namespace Emaia\LaravelHotwire\Components\Field;
 
+use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 use Emaia\LaravelHotwire\Components\Concerns\StripsNullProps;
 use Emaia\LaravelHotwire\Support\FieldKey;
 use Emaia\LaravelHotwire\Support\FieldLabel;
 use Emaia\LaravelHotwire\Support\FieldOwnerContext;
-use Illuminate\View\Component;
 
 class Label extends Component
 {

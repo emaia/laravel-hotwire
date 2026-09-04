@@ -2,7 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components\Sidebar;
 
-use Illuminate\View\Component;
+use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 
 class MenuAction extends Component
 {

@@ -2,7 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components\ColorScheme;
 
-use Illuminate\View\Component;
+use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 
 class Script extends Component
 {

@@ -2,11 +2,11 @@
 
 namespace Emaia\LaravelHotwire\Components\Field;
 
+use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 use Emaia\LaravelHotwire\Components\Concerns\StripsNullProps;
 use Emaia\LaravelHotwire\Support\ComponentId;
 use Emaia\LaravelHotwire\Support\FieldKey;
 use Illuminate\Support\ViewErrorBag;
-use Illuminate\View\Component;
 
 class Error extends Component
 {

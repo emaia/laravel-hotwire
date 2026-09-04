@@ -2,8 +2,8 @@
 
 namespace Emaia\LaravelHotwire\Components\SidePanel;
 
+use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 use Emaia\LaravelHotwire\Support\StimulusAttributes;
-use Illuminate\View\Component;
 use Illuminate\View\ComponentAttributeBag;
 
 class Inset extends Component

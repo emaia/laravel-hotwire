@@ -2,9 +2,9 @@
 
 namespace Emaia\LaravelHotwire\Components\Sidebar;
 
+use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 use Emaia\LaravelHotwire\Support\FrameTarget;
 use Emaia\LaravelHotwire\Support\PolymorphicTag;
-use Illuminate\View\Component;
 
 class MenuSubButton extends Component
 {

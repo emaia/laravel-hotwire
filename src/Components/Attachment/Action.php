@@ -2,8 +2,8 @@
 
 namespace Emaia\LaravelHotwire\Components\Attachment;
 
+use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 use Emaia\LaravelHotwire\Support\FrameTarget;
-use Illuminate\View\Component;
 
 class Action extends Component
 {

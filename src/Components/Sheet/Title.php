@@ -2,7 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components\Sheet;
 
-use Illuminate\View\Component;
+use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 
 class Title extends Component
 {

@@ -2,7 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components\Table;
 
-use Illuminate\View\Component;
+use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 
 class Cell extends Component
 {
