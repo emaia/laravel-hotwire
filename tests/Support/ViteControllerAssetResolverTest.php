@@ -2,6 +2,7 @@
 
 use Emaia\LaravelHotwire\Support\ViteControllerAsset;
 use Emaia\LaravelHotwire\Support\ViteControllerAssetResolver;
+use Emaia\LaravelHotwire\Support\ViteControllerCandidateCache;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Foundation\Vite;
 
@@ -165,6 +166,54 @@ it('caches controller candidates across separate resolve calls', function () {
     ]);
 
     expect($resolver->resolve(['search']))->toHaveCount(1);
+});
+
+it('shares cached controller candidates across resolver instances', function () {
+    $manifest = [
+        'resources/js/controllers/search_controller.js' => [
+            'file' => 'assets/search.js',
+        ],
+    ];
+    $cache = new ViteControllerCandidateCache;
+    $resolver = new ViteControllerAssetResolver(
+        $manifest,
+        candidateCache: $cache,
+    );
+    $resolver->resolve(['search']);
+
+    $manifest['resources/js/controllers/search_controller.ts'] = [
+        'file' => 'assets/search-ts.js',
+    ];
+    $resolver = new ViteControllerAssetResolver(
+        $manifest,
+        candidateCache: $cache,
+    );
+
+    expect($resolver->resolve(['search']))->toHaveCount(1);
+});
+
+it('shares cached controller candidates across resolvers built with Vite', function () {
+    $manifest = [
+        'resources/js/controllers/search_controller.js' => [
+            'file' => 'assets/search.js',
+        ],
+    ];
+    $cache = new ViteControllerCandidateCache;
+    ViteControllerAssetResolver::usingVite(
+        $manifest,
+        new Vite,
+        candidateCache: $cache,
+    )->resolve(['search']);
+
+    $manifest['resources/js/controllers/search_controller.ts'] = [
+        'file' => 'assets/search-ts.js',
+    ];
+
+    expect(ViteControllerAssetResolver::usingVite(
+        $manifest,
+        new Vite,
+        candidateCache: $cache,
+    )->resolve(['search']))->toHaveCount(1);
 });
 
 it('loads a manifest from a JSON file', function () {
