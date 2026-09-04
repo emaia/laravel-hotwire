@@ -2,6 +2,45 @@
 
 All notable changes to `laravel-hotwire` will be documented in this file.
 
+## 0.76.0 - 2026-09-04
+
+### Accessible presets, Laravel Boost guidance and Hotwire workflows
+
+Improves preset accessibility and bidirectional layouts, aligns Nova with the shared styling contract, and adds first-party guidance for Laravel Boost and common Hotwire workflows.
+
+#### Accessible and bidirectional presets
+
+- Add preset-neutral forced-colors and print fallbacks for custom-painted controls.
+- Raise semantic foreground contrast and align native controls with light, dark and nested theme scopes.
+- Make presets, overlays, Tabs, Floating UI and Carousel honor computed LTR and RTL direction.
+
+See [Theming](https://github.com/emaia/laravel-hotwire/blob/0.76.0/docs/theming.md) and [Presets](https://github.com/emaia/laravel-hotwire/blob/0.76.0/docs/presets.md).
+
+#### Nova and shared foundations
+
+- Normalize Nova density, surfaces, controls and overlays against the shared preset contract.
+- Move shared geometry, top-layer and Reveal mechanics into preset-independent structural foundations.
+- Fix dark native Select contrast, RTL Toast centering, selected Field matching and layered motion overrides.
+
+See [Structural and visual CSS](https://github.com/emaia/laravel-hotwire/blob/0.76.0/docs/presets.md#structural-and-visual-css).
+
+#### Laravel Boost integration
+
+- Add registry-backed Laravel Boost guidelines for Laravel Hotwire.
+- Ship focused Boost skills for forms, Turbo workflows, UI development and Stimulus controllers.
+
+See [Laravel Boost](https://github.com/emaia/laravel-hotwire/blob/0.76.0/docs/boost.md).
+
+#### Hotwire workflows and composition
+
+- Render Turbo Frames as block containers while keeping application display utilities authoritative.
+- Surface the permanent `hw` component alias alongside configured prefixes in package commands and guidance.
+- Document multistep forms, frame-safe redirect toasts, self-hosted frames, composed content slots and Reveal stream boundaries.
+
+See [Turbo Frames](https://github.com/emaia/laravel-hotwire/blob/0.76.0/docs/components/frame.md) and [Reveal](https://github.com/emaia/laravel-hotwire/blob/0.76.0/docs/components/reveal.md).
+
+**Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/0.75.0...0.76.0
+
 ## 0.75.0 - 2026-08-31
 
 ### Shared Alert Dialog hosts
@@ -1116,6 +1155,7 @@ Laravel Hotwire now defaults to the `hw` prefix and supports the preferred short
 
 
 
+
 ```
 The configured `hotwire.prefix` remains customizable for apps that want another prefix.
 
@@ -1127,6 +1167,7 @@ Apps can also generate project-specific Stimulus helper metadata with:
 
 ```bash
 php artisan hotwire:ide-json
+
 
 
 
@@ -1365,6 +1406,7 @@ export default class extends CarouselController {
 
 
 
+
 ```
 Brace-aware injection respects an existing `resolve:` block. See [`docs/extending-controllers.md`](docs/extending-controllers.md).
 
@@ -1374,6 +1416,7 @@ Single canonical command for the greenfield case:
 
 ```bash
 php artisan hotwire:install
+
 
 
 
@@ -1570,6 +1613,7 @@ New `<x-hwc::map>` Blade component and `map` Stimulus controller — a Leaflet w
 
 
 
+
 ```
 - Default OpenStreetMap tiles with the required attribution automatically set
 - Inline markers with optional popups, or a `url` returning a GeoJSON `FeatureCollection`
@@ -1593,6 +1637,7 @@ The `chart` controller now supports a `poll` value (milliseconds) — when set w
 
 ```blade
 <x-hwc::chart url="/api/charts/sales" :poll="30_000" height="320px" />
+
 
 
 
@@ -1781,6 +1826,7 @@ Apache ECharts ^6.1.0 wrapper with server-rendered or URL-fetched options, Resiz
 
 
 
+
 ```
 #### Controller features
 
@@ -1847,6 +1893,7 @@ New `conditional-fields` Stimulus controller shows or hides dependent blocks bas
         ...
     </fieldset>
 </form>
+
 
 
 
@@ -1993,6 +2040,7 @@ Recommended path — encodes the rule once on the server, renders `hidden disabl
 
 
 
+
 ```
 #### Edit forms — the `:model` prop
 
@@ -2002,6 +2050,7 @@ Pass the same model your `<x-hwc::input>` / `<x-hwc::select>` / `<x-hwc::textare
 <x-hwc::conditional-field :model="$message" :when="['reason' => 'other']">
     <x-hwc::input name="other_reason" :value="$message->other_reason" />
 </x-hwc::conditional-field>
+
 
 
 
@@ -2145,6 +2194,7 @@ New `disclosure` Stimulus controller — collapsible inline content with proper 
 
 
 
+
 ```
 Two-way `open` value (default `false`), idempotent `toggle` / `open` / `close` actions, and a `disclosure:change` event with `{ open: bool }` for hooking analytics, icon swaps, or chained UI off transitions. The `content` target is required; the `trigger` target is optional and receives `aria-expanded` sync when present.
 
@@ -2158,6 +2208,7 @@ static outlets = ["disclosure"];
 revealHelp() {
     this.disclosureOutlet.open();
 }
+
 
 
 
@@ -2309,6 +2360,7 @@ New `password-visibility` Stimulus controller toggles a password input between h
 
 
 
+
 ```
 `aria-label` is driven by the `show-label` / `hide-label` values (defaults `Show password` / `Hide password`). A `password-visibility:change` event with `{ visible: bool }` fires on every transition so a small companion controller — or another listener — can swap icons. `connect()` always forces `type="password"`: visibility is never persisted across Turbo morphs or Drive navigations.
 
@@ -2321,6 +2373,7 @@ New `autofocus` Stimulus controller focuses the first matching field on `connect
 <form data-controller="autofocus" action="/messages" method="POST">
     <input type="text" name="title" autofocus/>
 </form>
+
 
 
 
@@ -2400,6 +2453,7 @@ New `back-to-top` Stimulus controller toggles `data-visible="true|false"` on its
            data-[visible=true]:opacity-100"
     aria-label="Back to top"
 >↑</button>
+
 
 
 
@@ -2557,6 +2611,7 @@ Single `size` prop replaces the previous `allow-small-width` and `allow-full-wid
 
 
 
+
 ```
 `allow-small-width` and `allow-full-width` are removed. Use `size="auto"` to keep the old "no width constraints" behavior, or `size="50vw"` to keep the old "half viewport" default. The migration table in `docs/components/modal.md` maps every previous combination to the new prop.
 
@@ -2642,6 +2697,7 @@ New `<x-hwc::frame-or-page>` component renders a view as a Turbo Frame payload o
 
 
 
+
 ```
 #### Model-aware frame ids
 
@@ -2651,6 +2707,7 @@ Pass a Model instead of a string; the component calls `dom_id()` to derive the f
 <x-hwc::frame-or-page :frame="$message" layout="layouts.dashboard">
     ...
 </x-hwc::frame-or-page>
+
 
 
 
@@ -2802,12 +2859,14 @@ The `<x-hwc::carousel>` component now supports an opt-in progress bar and slide 
 
 
 
+
 ```
 #### Slide counter
 
 ```blade
 <x-hwc::carousel :counter="true"
                  counter-class="text-sm">
+
 
 
 
@@ -2962,12 +3021,14 @@ export default class extends CarouselController {
 
 
 
+
 ```
 ```blade
 <x-hwc::carousel controller="gallery">
     <div>slide 1</div>
     <div>slide 2</div>
 </x-hwc::carousel>
+
 
 
 
