@@ -44,6 +44,24 @@ test("shows in the top layer and restores existing popover attributes on hide", 
     expect(element.hasAttribute("data-hotwire-top-layer")).toBe(false);
 });
 
+test("can suppress native popover autofocus without removing authored attributes", () => {
+    const element = document.createElement("div");
+    const autofocus = document.createElement("button");
+    autofocus.setAttribute("autofocus", "autofocus");
+    element.appendChild(autofocus);
+    element.showPopover = mock(() => {
+        expect(autofocus.hasAttribute("autofocus")).toBe(false);
+    });
+    element.hidePopover = mock(() => {});
+    const topLayer = createTopLayer(element, { suppressAutofocus: true });
+
+    topLayer.show();
+
+    expect(autofocus.getAttribute("autofocus")).toBe("autofocus");
+
+    topLayer.cleanup();
+});
+
 test("bringToFront re-enters an already shown element", () => {
     const element = document.createElement("div");
     element.showPopover = mock(() => {});
@@ -76,6 +94,29 @@ test("restores a shown popover after a DOM move closes its native top layer", ()
     expect(showPopover).toHaveBeenCalledTimes(2);
     expect(shown).toHaveBeenCalledTimes(2);
     expect(topLayer.isShown).toBe(true);
+
+    topLayer.cleanup();
+});
+
+test("suppresses native autofocus while restoring a retained top layer", () => {
+    const element = document.createElement("div");
+    const autofocus = document.createElement("button");
+    const autofocusStates = [];
+    autofocus.setAttribute("autofocus", "");
+    element.appendChild(autofocus);
+    element.showPopover = mock(() => {
+        autofocusStates.push(autofocus.hasAttribute("autofocus"));
+    });
+    element.hidePopover = mock(() => {});
+    element.matches = mock(() => false);
+    const topLayer = createTopLayer(element, { suppressAutofocus: true });
+
+    topLayer.show();
+    topLayer.restore();
+
+    expect(element.showPopover).toHaveBeenCalledTimes(2);
+    expect(autofocusStates).toEqual([false, false]);
+    expect(autofocus.hasAttribute("autofocus")).toBe(true);
 
     topLayer.cleanup();
 });

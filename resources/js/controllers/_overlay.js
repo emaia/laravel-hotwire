@@ -39,7 +39,7 @@ export function createOverlay(_controller, {
         stateAttribute,
     });
     const focusTrap = new FocusTrap(modalTarget);
-    const topLayerHandle = createTopLayer(modalTarget, { enabled: topLayer });
+    const topLayerHandle = createTopLayer(modalTarget, { enabled: topLayer, suppressAutofocus: true });
     let desiredOpen = false;
     let destroyed = false;
     let triggerElement = null;
