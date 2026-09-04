@@ -1,7 +1,7 @@
 <?php
 
 use Emaia\LaravelHotwire\LaravelHotwireServiceProvider;
-use Emaia\LaravelHotwire\Support\ViteControllerCandidateCache;
+use Emaia\LaravelHotwire\Support\ViteManifestCache;
 use Illuminate\Container\Container;
 use Illuminate\Foundation\Vite;
 use Illuminate\Support\Facades\File;
@@ -24,7 +24,7 @@ beforeEach(function () {
 
 afterEach(function () {
     app(Vite::class)->flush();
-    app(ViteControllerCandidateCache::class)->flush();
+    app(ViteManifestCache::class)->flush();
     releaseIsolatedAppPaths($this->appBase);
 });
 
@@ -308,7 +308,7 @@ it('renders nothing while Vite is running hot', function () {
     File::put(public_path('hot'), 'http://localhost:5173');
 
     expect(trim((string) $this->blade('<x-hw::controller-preloads controllers="missing" />')))->toBe('')
-        ->and(app()->resolved(ViteControllerCandidateCache::class))->toBeFalse();
+        ->and(app()->resolved(ViteManifestCache::class))->toBeFalse();
 });
 
 it('renders nothing when no controllers are selected', function () {
