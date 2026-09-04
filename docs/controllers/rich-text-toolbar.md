@@ -266,7 +266,8 @@ the matching key (`table`, `tableRow`, `tableCell`, `tableHeader`).
 extension still picks up the configured text — same pattern as the
 [Extensions hook](rich-text.md#extensions-hook-subclass) on the editor controller.
 
-> **npm dep:** `@tiptap/extension-table` (any 2.10+ build that ships `TableKit`). Add it to the
+> **npm dep:** `@tiptap/extension-table 3.31.3`. Keep it on the same exact Tiptap release as the
+> editor dependencies. Add it to the
 > app's `package.json` manually — the catalog only declares core Tiptap deps.
 
 Wire both in the Blade markup with a custom toolbar slot. The `editor` value points at the editor

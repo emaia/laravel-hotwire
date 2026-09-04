@@ -8,12 +8,21 @@
 
 import { Editor } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
-import Placeholder from "@tiptap/extension-placeholder";
+import { Placeholder } from "@tiptap/extensions";
 import Link from "@tiptap/extension-link";
 import Underline from "@tiptap/extension-underline";
 
 export function defaultExtensions({ placeholder = null } = {}) {
-    const list = [StarterKit, Link.configure({ openOnClick: false }), Underline];
+    const list = [
+        StarterKit.configure({
+            link: false,
+            underline: false,
+            listKeymap: false,
+            trailingNode: false,
+        }),
+        Link.configure({ openOnClick: false }),
+        Underline,
+    ];
     if (placeholder) {
         list.push(Placeholder.configure({ placeholder }));
     }
@@ -43,8 +52,6 @@ export class RichTextEditor {
             editorProps.handlePaste = (_view, event) => this.handleImage(event, onImageDrop);
             editorProps.handleDrop = (_view, event) => this.handleImage(event, onImageDrop);
         }
-        const editorPropsOption = Object.keys(editorProps).length > 0 ? editorProps : undefined;
-
         this.editor = new Editor({
             element,
             content,
@@ -55,7 +62,7 @@ export class RichTextEditor {
             onFocus: ({ editor }) => onFocus?.({ editor }),
             onBlur: ({ editor }) => onBlur?.({ editor }),
             onSelectionUpdate: ({ editor }) => onSelectionUpdate?.({ editor }),
-            editorProps: editorPropsOption,
+            editorProps,
         });
     }
 
@@ -79,7 +86,7 @@ export class RichTextEditor {
     }
 
     setContent(content) {
-        this.editor.commands.setContent(content, true);
+        this.editor.commands.setContent(content, { emitUpdate: true });
     }
 
     clear() {

@@ -6,6 +6,26 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 
 ## Unreleased
 
+### Rich Text requires Tiptap 3
+
+The Rich Text controller now uses Tiptap `3.31.3`. Update every `@tiptap/*` dependency in the
+application to the same exact release; Tiptap v3 packages declare exact peer versions and must not
+be mixed with v2 packages. The package defaults now require `@tiptap/pm` directly and import
+`Placeholder` from `@tiptap/extensions`, replacing the deprecated
+`@tiptap/extension-placeholder` package.
+
+```bash
+bun remove @tiptap/extension-placeholder
+bun add @tiptap/core@3.31.3 @tiptap/pm@3.31.3 @tiptap/starter-kit@3.31.3 \
+    @tiptap/extensions@3.31.3 @tiptap/extension-link@3.31.3 @tiptap/extension-underline@3.31.3
+```
+
+Custom Rich Text controllers must migrate their extensions to compatible v3 releases. Import
+`Placeholder` from `@tiptap/extensions`; use consolidated v3 kits such as `TableKit` from
+`@tiptap/extension-table`; and keep optional extensions such as Image on the same exact release. The
+default package stack disables StarterKit's bundled Link and Underline plus the new ListKeymap and
+TrailingNode extensions, preserving the previous editing and serialization behavior.
+
 ### Package components resolve without the container
 
 Package component classes are now instantiated directly during Blade rendering whenever every required constructor
