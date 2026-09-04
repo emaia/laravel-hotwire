@@ -34,7 +34,7 @@
         "@types/bun": "^1.4.0",
         "happy-dom": "^20.12.0",
         "prettier": "^3.9.6",
-        "prettier-plugin-blade": "^2.1.21",
+        "prettier-plugin-blade": "^3.3.0",
         "prettier-plugin-tailwindcss": "^0.7.4",
         "tailwindcss": "^4",
         "vite": "^8.2.2"
