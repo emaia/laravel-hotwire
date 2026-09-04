@@ -1,18 +1,16 @@
 // @hotwire-package
 
 const stack = [];
+let activeEntry = null;
 
 export function registerOverlay(entry, position = null) {
     unregisterOverlay(entry);
-
-    const current = topOverlay();
-    current?.deactivateFocusTrap?.();
 
     const index = Number.isInteger(position) && position >= 0
         ? Math.min(position, stack.length)
         : stack.length;
     stack.splice(index, 0, entry);
-    topOverlay()?.activateFocusTrap?.();
+    activateTopOverlay(entry);
 
     return () => unregisterOverlay(entry);
 }
@@ -21,13 +19,24 @@ export function unregisterOverlay(entry) {
     const index = stack.indexOf(entry);
     if (index === -1) return;
 
-    const wasTop = index === stack.length - 1;
     stack.splice(index, 1);
-    entry.deactivateFocusTrap?.();
+    if (activeEntry !== entry) return;
 
-    if (wasTop) {
-        topOverlay()?.activateFocusTrap?.();
-    }
+    activeEntry = null;
+    activateTopOverlay(topOverlay());
+    entry.deactivateFocusTrap?.();
+}
+
+export function activateTopOverlay(entry) {
+    if (!entry || topOverlay() !== entry) return false;
+    if (activeEntry === entry) return true;
+    if (entry.activateFocusTrap?.() !== true) return false;
+
+    const previous = activeEntry;
+    activeEntry = entry;
+    previous?.deactivateFocusTrap?.();
+
+    return true;
 }
 
 export function isTopOverlay(entry) {

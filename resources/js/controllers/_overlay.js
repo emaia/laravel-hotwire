@@ -3,7 +3,7 @@
 
 import { FocusTrap } from "./_focus_trap.js";
 import { isComposing } from "./_composition.js";
-import { registerOverlay, unregisterOverlay, isTopOverlay, overlayPosition } from "./_overlay_stack.js";
+import { activateTopOverlay, registerOverlay, unregisterOverlay, isTopOverlay, overlayPosition } from "./_overlay_stack.js";
 import { createPresence } from "./_presence.js";
 import { createTopLayer } from "./_top_layer.js";
 
@@ -45,6 +45,7 @@ export function createOverlay(_controller, {
     let triggerElement = null;
     let stackEntry = null;
     let unregisterStackEntry = null;
+    let focusTrapReady = false;
     let scrollLocked = false;
     let opening = null;
     let closing = null;
@@ -106,27 +107,35 @@ export function createOverlay(_controller, {
 
         const operation = presence.open({
             beforeEnter: () => desiredOpen,
-            onEnter: () => registerStack(),
+            onEnter: () => {
+                focusTrapReady = true;
+                activateTopOverlay(stackEntry);
+            },
         });
         topLayerHandle.show();
+        registerStack();
         lockScrollIfNeeded();
         opening = operation;
         let completed;
         try {
             completed = await operation;
         } catch (error) {
-            if (desiredOpen) {
-                desiredOpen = false;
-                unregisterStack();
-                unlockScrollIfNeeded();
-                topLayerHandle.hide();
+            if (opening === operation) {
+                opening = null;
+                resetFailedOpen();
             }
 
             throw error;
         }
-        if (opening === operation) opening = null;
+        if (opening !== operation) return false;
 
-        if (!completed || !desiredOpen || destroyed) return false;
+        opening = null;
+
+        if (!completed || !desiredOpen || destroyed) {
+            if (!destroyed) resetFailedOpen();
+
+            return false;
+        }
 
         onOpen?.();
 
@@ -138,7 +147,9 @@ export function createOverlay(_controller, {
         if (!desiredOpen && presence.phase === "closing") return closing;
         if (!desiredOpen && presence.phase === "closed") return true;
 
+        opening = null;
         desiredOpen = false;
+        focusTrapReady = false;
         const operation = presence.close();
         closing = operation;
         unregisterStack();
@@ -160,9 +171,11 @@ export function createOverlay(_controller, {
         if (destroyed) return;
 
         destroyed = true;
+        opening = null;
         document.removeEventListener("keydown", handleEscapeKey, escapeCapture);
         modalTarget.removeEventListener("turbo:before-morph-attribute", preserveManagedAttributesDuringMorph);
         desiredOpen = false;
+        focusTrapReady = false;
         presence.cleanup();
         unregisterStack();
         unlockScrollIfNeeded();
@@ -175,7 +188,9 @@ export function createOverlay(_controller, {
         if (destroyed) return false;
 
         const wasOpen = desiredOpen || presence.phase !== "closed";
+        opening = null;
         desiredOpen = false;
+        focusTrapReady = false;
         presence.sync(false);
         unregisterStack();
         unlockScrollIfNeeded();
@@ -194,6 +209,7 @@ export function createOverlay(_controller, {
             ? getTriggerElement()
             : document.activeElement;
         presence.sync(true);
+        focusTrapReady = true;
         topLayerHandle.show(topLayerPosition);
         lockScrollIfNeeded();
         registerStack(stackPosition);
@@ -206,7 +222,13 @@ export function createOverlay(_controller, {
         if (unregisterStackEntry) return;
 
         stackEntry ??= {
-            activateFocusTrap: () => focusTrap.activate(),
+            activateFocusTrap: () => {
+                if (!focusTrapReady) return false;
+
+                focusTrap.activate();
+
+                return true;
+            },
             deactivateFocusTrap: () => focusTrap.deactivate(),
         };
 
@@ -225,7 +247,15 @@ export function createOverlay(_controller, {
     }
 
     function isTop() {
-        return !stackEntry || isTopOverlay(stackEntry);
+        return stackEntry !== null && isTopOverlay(stackEntry);
+    }
+
+    function resetFailedOpen() {
+        desiredOpen = false;
+        focusTrapReady = false;
+        unregisterStack();
+        unlockScrollIfNeeded();
+        topLayerHandle.hide();
     }
 
     function lockScrollIfNeeded() {

@@ -765,6 +765,80 @@ for (const identifier of ["drawer", "sheet"]) {
     });
 }
 
+test("Escape during nested overlay entry closes the entering overlay", async ({ page }) => {
+    await page.setContent(`
+        <style>
+            [hidden] { display: none !important; }
+            #confirm [data-alert-dialog-target="dialog"] { opacity: 0; transition: opacity 100ms linear; }
+            #confirm [data-alert-dialog-target="modal"][data-state="open"] [data-alert-dialog-target="dialog"] { opacity: 1; }
+        </style>
+        <div id="parent" data-controller="sheet" data-sheet-lock-scroll-class="overflow-hidden">
+            <button id="open-parent" data-action="sheet#open">Open sheet</button>
+            <div data-sheet-target="modal" data-state="closed" data-motion="none" hidden inert>
+                <div data-sheet-target="backdrop"></div>
+                <div data-sheet-target="dialog">
+                    <div id="confirm" data-controller="alert-dialog" data-alert-dialog-lock-scroll-class="overflow-hidden">
+                        <button id="delete" data-action="click->alert-dialog#intercept">Delete</button>
+                        <div data-alert-dialog-target="modal" data-state="closed" data-motion="default" hidden inert>
+                            <div data-alert-dialog-target="backdrop"></div>
+                            <div data-alert-dialog-target="dialog">
+                                <button data-action="alert-dialog#cancel">Cancel</button>
+                                <button data-action="alert-dialog#confirm">Confirm</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `);
+
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ content: await browserOverlayControllerScript() });
+    await page.evaluate(() => {
+        window.StimulusApplication = window.Stimulus.Application.start();
+        window.StimulusApplication.register("sheet", window.SheetController);
+        window.StimulusApplication.register("alert-dialog", window.AlertDialogController);
+    });
+
+    const parentOverlay = page.locator('#parent > [data-sheet-target="modal"]');
+    const alertOverlay = page.locator('#confirm [data-alert-dialog-target="modal"]');
+
+    await page.locator("#open-parent").click();
+    await expect(parentOverlay).toHaveAttribute("data-state", "open");
+
+    const tabPrevented = await page.locator("#delete").evaluate((trigger) => {
+        trigger.click();
+        const tab = new KeyboardEvent("keydown", { key: "Tab", shiftKey: true, bubbles: true, cancelable: true });
+        trigger.dispatchEvent(tab);
+        trigger.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+
+        return tab.defaultPrevented;
+    });
+
+    expect(tabPrevented).toBe(true);
+    await expect(alertOverlay).toHaveAttribute("data-state", "closed");
+    await expect(alertOverlay).toHaveAttribute("hidden", "");
+    await expect(parentOverlay).toHaveAttribute("data-state", "open");
+    await expect(parentOverlay).not.toHaveAttribute("hidden", "");
+
+    await page.locator("#delete").click();
+    await expect(alertOverlay).toHaveAttribute("data-state", "open");
+    await expect(alertOverlay).not.toHaveAttribute("data-presence", "entering");
+
+    const exitTabPrevented = await page.evaluate(() => {
+        document.activeElement.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+        const trigger = document.querySelector("#delete");
+        const tab = new KeyboardEvent("keydown", { key: "Tab", bubbles: true, cancelable: true });
+        trigger.dispatchEvent(tab);
+
+        return tab.defaultPrevented;
+    });
+
+    expect(exitTabPrevented).toBe(false);
+    await expect(alertOverlay).toHaveAttribute("data-state", "closed");
+    await expect(alertOverlay).toHaveAttribute("hidden", "");
+});
+
 test("a modal nested in another modal animates after entering the top layer", async ({ page }) => {
     await page.setContent(`
         <style>
@@ -971,6 +1045,7 @@ async function browserControllerScript(path) {
     const overlayStack = (await readFile("resources/js/controllers/_overlay_stack.js", "utf8"))
         .replace("export function registerOverlay", "function registerOverlay")
         .replace("export function unregisterOverlay", "function unregisterOverlay")
+        .replace("export function activateTopOverlay", "function activateTopOverlay")
         .replace("export function isTopOverlay", "function isTopOverlay")
         .replace("export function overlayPosition", "function overlayPosition");
 
