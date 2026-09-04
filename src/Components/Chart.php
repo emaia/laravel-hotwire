@@ -2,10 +2,10 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 use Emaia\LaravelHotwire\Support\StimulusIdentifier;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Facades\Log;
-use Illuminate\View\Component;
 use InvalidArgumentException;
 
 class Chart extends Component

@@ -2,10 +2,10 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 use Emaia\LaravelHotwire\Support\FrameTarget;
 use Emaia\LaravelHotwire\Support\PolymorphicTag;
 use Illuminate\Contracts\Support\Htmlable;
-use Illuminate\View\Component;
 
 class Button extends Component
 {

@@ -2,7 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components\Drawer;
 
-use Illuminate\View\Component;
+use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 
 class Footer extends Component
 {

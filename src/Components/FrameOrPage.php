@@ -2,10 +2,10 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\View\Compilers\BladeCompiler;
 use Illuminate\View\Compilers\ComponentTagCompiler;
-use Illuminate\View\Component;
 use InvalidArgumentException;
 
 class FrameOrPage extends Component

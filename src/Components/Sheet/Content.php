@@ -2,8 +2,8 @@
 
 namespace Emaia\LaravelHotwire\Components\Sheet;
 
+use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 use Emaia\LaravelHotwire\Support\OverlayLabelContext;
-use Illuminate\View\Component;
 
 class Content extends Component
 {

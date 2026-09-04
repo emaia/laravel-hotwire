@@ -2,12 +2,12 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 use Emaia\LaravelHotwire\Support\ComponentId;
 use Emaia\LaravelHotwire\Support\FieldContext;
 use Emaia\LaravelHotwire\Support\FrameTarget;
 use Emaia\LaravelHotwire\Support\OverlayLabelContext;
 use Illuminate\Contracts\Support\Htmlable;
-use Illuminate\View\Component;
 
 class Modal extends Component
 {

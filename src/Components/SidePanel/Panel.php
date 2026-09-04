@@ -2,9 +2,9 @@
 
 namespace Emaia\LaravelHotwire\Components\SidePanel;
 
+use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 use Emaia\LaravelHotwire\Support\StimulusAttributes;
 use Emaia\LaravelHotwire\Support\StimulusIdentifier;
-use Illuminate\View\Component;
 use Illuminate\View\ComponentAttributeBag;
 use InvalidArgumentException;
 

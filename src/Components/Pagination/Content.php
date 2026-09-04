@@ -2,7 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components\Pagination;
 
-use Illuminate\View\Component;
+use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 
 class Content extends Component
 {

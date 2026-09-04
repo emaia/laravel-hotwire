@@ -2,8 +2,8 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 use Emaia\LaravelHotwire\Support\StimulusAttributes;
-use Illuminate\View\Component;
 use Illuminate\View\ComponentAttributeBag;
 use InvalidArgumentException;
 

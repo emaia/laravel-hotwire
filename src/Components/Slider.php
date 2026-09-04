@@ -2,13 +2,13 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 use Emaia\LaravelHotwire\Components\Concerns\StripsNullProps;
 use Emaia\LaravelHotwire\Support\AutoSubmit;
 use Emaia\LaravelHotwire\Support\ComponentId;
 use Emaia\LaravelHotwire\Support\FieldKey;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\ViewErrorBag;
-use Illuminate\View\Component;
 
 class Slider extends Component
 {

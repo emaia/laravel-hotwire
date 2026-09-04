@@ -2,9 +2,9 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 use Emaia\LaravelHotwire\Support\FieldContext;
 use Emaia\LaravelHotwire\Support\FieldOwnerContext;
-use Illuminate\View\Component;
 use InvalidArgumentException;
 
 class Field extends Component

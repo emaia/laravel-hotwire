@@ -2,8 +2,8 @@
 
 namespace Emaia\LaravelHotwire\Components\ColorScheme;
 
+use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 use Illuminate\Contracts\Support\Htmlable;
-use Illuminate\View\Component;
 
 class Toggle extends Component
 {

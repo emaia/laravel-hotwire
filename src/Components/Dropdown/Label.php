@@ -2,7 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components\Dropdown;
 
-use Illuminate\View\Component;
+use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 
 class Label extends Component
 {

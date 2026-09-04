@@ -2,7 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components\Breadcrumb;
 
-use Illuminate\View\Component;
+use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 
 class Separator extends Component
 {

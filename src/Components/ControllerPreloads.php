@@ -2,9 +2,9 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 use Emaia\LaravelHotwire\Support\ControllerLoadConfiguration;
 use Illuminate\Foundation\Vite;
-use Illuminate\View\Component;
 use InvalidArgumentException;
 
 class ControllerPreloads extends Component

@@ -2,7 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components\Modal;
 
-use Illuminate\View\Component;
+use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 
 class Title extends Component
 {

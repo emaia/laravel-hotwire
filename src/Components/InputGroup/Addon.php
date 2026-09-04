@@ -2,7 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components\InputGroup;
 
-use Illuminate\View\Component;
+use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 
 class Addon extends Component
 {

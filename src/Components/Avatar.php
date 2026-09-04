@@ -2,8 +2,8 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 use Emaia\LaravelHotwire\Support\AvatarFallbackText;
-use Illuminate\View\Component;
 
 class Avatar extends Component
 {
