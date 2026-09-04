@@ -1381,11 +1381,12 @@ return [
             'category' => 'forms',
             'description' => 'Tiptap-backed rich text editor — syncs a hidden textarea, dispatches change/state/focus/blur and an optional image-upload event for app-side handling',
             'npm' => [
-                '@tiptap/core' => '^2.0',
-                '@tiptap/starter-kit' => '^2.0',
-                '@tiptap/extension-placeholder' => '^2.0',
-                '@tiptap/extension-link' => '^2.0',
-                '@tiptap/extension-underline' => '^2.0',
+                '@tiptap/core' => '3.31.3',
+                '@tiptap/starter-kit' => '3.31.3',
+                '@tiptap/extensions' => '3.31.3',
+                '@tiptap/extension-link' => '3.31.3',
+                '@tiptap/extension-underline' => '3.31.3',
+                '@tiptap/pm' => '3.31.3',
             ],
         ],
         'rich-text-toolbar' => [

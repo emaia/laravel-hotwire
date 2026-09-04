@@ -10,12 +10,12 @@ instance.
 **Identifier:** `rich-text`
 **Loaded by:** auto-loaded after `php artisan hotwire:install`; publish only to customize with
 `php artisan hotwire:controllers rich-text`.
-**npm deps:** `@tiptap/core ^2.0`, `@tiptap/starter-kit ^2.0`, `@tiptap/extension-placeholder ^2.0`,
-`@tiptap/extension-link ^2.0`, `@tiptap/extension-underline ^2.0`
+**npm deps:** `@tiptap/core 3.31.3`, `@tiptap/pm 3.31.3`, `@tiptap/starter-kit 3.31.3`,
+`@tiptap/extensions 3.31.3`, `@tiptap/extension-link 3.31.3`, `@tiptap/extension-underline 3.31.3`
 
 ## Requirements
 
-- The five Tiptap packages listed above. `hotwire:check` reports them as required when the
+- The six Tiptap packages listed above. `hotwire:check` reports them as required when the
   controller is in use.
 - A hidden `<textarea data-rich-text-target="input">` is the source of truth for content. It
   receives the editor's HTML (or JSON) on every change so the form submission carries the value.
@@ -35,7 +35,7 @@ instance.
 | Value         | Type    | Default | Description                                                                                  |
 |---------------|---------|---------|----------------------------------------------------------------------------------------------|
 | `id`          | String  | `""`    | Stable identifier used by toolbar outlet selectors. Required when pairing with a toolbar.    |
-| `placeholder` | String  | `""`    | Text shown when the editor is empty. Adds the `@tiptap/extension-placeholder` to the stack.  |
+| `placeholder` | String  | `""`    | Text shown when the editor is empty. Adds `Placeholder` from `@tiptap/extensions` to the stack. |
 | `editable`    | Boolean | `true`  | When `false`, the editor renders in read-only mode.                                          |
 | `output`      | String  | `html`  | Serialization for the synced field: `html` (default) writes the rendered HTML; `json` writes Tiptap's ProseMirror JSON via `JSON.stringify`. |
 | `editorClass` | String  | `""`    | CSS class applied to the `.ProseMirror` contenteditable, via Tiptap's `editorProps.attributes.class`. Typical pick on Tailwind: `prose prose-sm focus:outline-none`. |
@@ -136,26 +136,25 @@ controller `JSON.parse`s when the document looks like JSON, falling back to HTML
 ## Extensions hook (subclass)
 
 The default extension stack is StarterKit + Link + Underline (plus Placeholder when the
-`placeholder` value is set). Link is configured with `openOnClick: false`, so clicking links while
-editing keeps focus in the editor instead of navigating away. To add or swap extensions without
-forking, subclass the controller and override `extensions(options)`:
+`placeholder` value is set). StarterKit's bundled Link and Underline are disabled in favor of the
+explicitly configured extensions. Its v3 ListKeymap and TrailingNode additions are also disabled so
+existing keyboard behavior and persisted documents remain unchanged. Link is configured with
+`openOnClick: false`, so clicking links while editing keeps focus in the editor instead of navigating
+away. To add or swap extensions without forking, subclass the controller and override
+`extensions(options)`:
 
 ```js
 import RichTextController from "@hotwire/rich_text_controller.js";
 import { defaultExtensions } from "@hotwire/_rich_text_editor.js";
-import { Table } from "@tiptap/extension-table";
-import { TableRow } from "@tiptap/extension-table-row";
-import { TableCell } from "@tiptap/extension-table-cell";
-import { TableHeader } from "@tiptap/extension-table-header";
+import { TableKit } from "@tiptap/extension-table";
 
 export default class extends RichTextController {
     extensions(options) {
         return [
             ...defaultExtensions(options),
-            Table.configure({ resizable: true }),
-            TableRow,
-            TableCell,
-            TableHeader,
+            TableKit.configure({
+                table: { resizable: true },
+            }),
         ];
     }
 }

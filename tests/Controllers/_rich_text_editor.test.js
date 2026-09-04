@@ -2,8 +2,8 @@ import { afterEach, beforeEach, expect, mock, test } from "bun:test";
 import { Window } from "happy-dom";
 
 // --- Tiptap mocks ---
-// The wrapper imports Editor from @tiptap/core plus the StarterKit, Placeholder,
-// Link and Underline default exports. Replace them with controllable fakes so
+// The wrapper imports Editor from @tiptap/core plus StarterKit, Placeholder,
+// Link and Underline. Replace them with controllable fakes so
 // we can inspect the constructor options and trigger the callbacks Tiptap would
 // normally fire from ProseMirror.
 
@@ -30,11 +30,11 @@ function createInstance(options) {
             return instance._json;
         }),
         commands: {
-            setContent: mock((content, emitUpdate) => {
+            setContent: mock((content, options) => {
                 if (typeof content === "string") instance._html = content;
                 if (content && typeof content === "object") instance._json = content;
-                editorState.setContentCalls.push({ instance, content, emitUpdate });
-                if (emitUpdate) options.onUpdate?.({ editor: instance });
+                editorState.setContentCalls.push({ instance, content, options });
+                if (options?.emitUpdate) instance._options.onUpdate?.({ editor: instance });
                 return true;
             }),
             clearContent: mock((emitUpdate) => {
@@ -74,9 +74,13 @@ class EditorMock {
 }
 
 mock.module("@tiptap/core", () => ({ Editor: EditorMock }));
-mock.module("@tiptap/starter-kit", () => ({ default: "StarterKit" }));
-mock.module("@tiptap/extension-placeholder", () => ({
+mock.module("@tiptap/starter-kit", () => ({
     default: {
+        configure: mock((opts) => ({ name: "StarterKit", options: opts })),
+    },
+}));
+mock.module("@tiptap/extensions", () => ({
+    Placeholder: {
         configure: mock((opts) => ({ name: "Placeholder", options: opts })),
     },
 }));
@@ -145,9 +149,21 @@ test("default extension list includes StarterKit, Link and Underline", () => {
     new RichTextEditor(elem());
 
     const exts = editorState.lastOptions.extensions;
-    expect(exts).toContain("StarterKit");
+    expect(exts.some((e) => e?.name === "StarterKit")).toBe(true);
     expect(exts.some((e) => e?.name === "Link")).toBe(true);
     expect(exts).toContain("Underline");
+});
+
+test("StarterKit disables bundled and behavior-changing v3 extensions", () => {
+    new RichTextEditor(elem());
+
+    const starterKit = editorState.lastOptions.extensions.find((e) => e?.name === "StarterKit");
+    expect(starterKit.options).toEqual({
+        link: false,
+        underline: false,
+        listKeymap: false,
+        trailingNode: false,
+    });
 });
 
 test("Link is configured not to open links on click while editing", () => {
@@ -182,7 +198,15 @@ test("explicit `extensions` option replaces the default list", () => {
 
 test("defaultExtensions() returns the unmodified default list", () => {
     expect(defaultExtensions()).toEqual([
-        "StarterKit",
+        {
+            name: "StarterKit",
+            options: {
+                link: false,
+                underline: false,
+                listKeymap: false,
+                trailingNode: false,
+            },
+        },
         { name: "Link", options: { openOnClick: false } },
         "Underline",
     ]);
@@ -191,7 +215,7 @@ test("defaultExtensions() returns the unmodified default list", () => {
 test("defaultExtensions({ placeholder }) appends configured Placeholder", () => {
     const exts = defaultExtensions({ placeholder: "Hello" });
 
-    expect(exts).toContain("StarterKit");
+    expect(exts.some((e) => e?.name === "StarterKit")).toBe(true);
     const placeholder = exts.find((e) => e?.name === "Placeholder");
     expect(placeholder).toBeDefined();
     expect(placeholder.options).toEqual({ placeholder: "Hello" });
@@ -255,7 +279,7 @@ test("setContent forwards to editor.commands.setContent with emitUpdate=true", (
 
     expect(editorState.setContentCalls).toHaveLength(1);
     expect(editorState.setContentCalls[0].content).toBe("<p>New</p>");
-    expect(editorState.setContentCalls[0].emitUpdate).toBe(true);
+    expect(editorState.setContentCalls[0].options).toEqual({ emitUpdate: true });
 });
 
 test("clear forwards to editor.commands.clearContent with emitUpdate=true", () => {
@@ -294,10 +318,10 @@ test("destroy forwards to editor.destroy", () => {
 
 // --- image drop / paste ---
 
-test("editorProps is undefined when onImageDrop is not provided", () => {
+test("editorProps is empty when onImageDrop is not provided", () => {
     new RichTextEditor(elem());
 
-    expect(editorState.lastOptions.editorProps).toBeUndefined();
+    expect(editorState.lastOptions.editorProps).toEqual({});
 });
 
 test("handlePaste delegates an image file to onImageDrop and returns true", () => {
@@ -373,8 +397,8 @@ test("editorClass coexists with onImageDrop in the same editorProps", () => {
     expect(typeof editorState.lastOptions.editorProps.handleDrop).toBe("function");
 });
 
-test("empty editorClass leaves editorProps undefined when there's no onImageDrop", () => {
+test("empty editorClass leaves editorProps empty when there's no onImageDrop", () => {
     new RichTextEditor(elem(), { editorClass: "" });
 
-    expect(editorState.lastOptions.editorProps).toBeUndefined();
+    expect(editorState.lastOptions.editorProps).toEqual({});
 });

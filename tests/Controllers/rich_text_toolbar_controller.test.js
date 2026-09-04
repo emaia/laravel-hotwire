@@ -77,9 +77,11 @@ class EditorMock {
 }
 
 mock.module("@tiptap/core", () => ({ Editor: EditorMock }));
-mock.module("@tiptap/starter-kit", () => ({ default: "StarterKit" }));
-mock.module("@tiptap/extension-placeholder", () => ({
-    default: { configure: mock((opts) => ({ name: "Placeholder", options: opts })) },
+mock.module("@tiptap/starter-kit", () => ({
+    default: { configure: mock((opts) => ({ name: "StarterKit", options: opts })) },
+}));
+mock.module("@tiptap/extensions", () => ({
+    Placeholder: { configure: mock((opts) => ({ name: "Placeholder", options: opts })) },
 }));
 mock.module("@tiptap/extension-link", () => ({
     default: {

@@ -27,11 +27,11 @@ function createInstance(options) {
         getHTML: mock(() => instance._html),
         getJSON: mock(() => instance._json),
         commands: {
-            setContent: mock((content, emitUpdate) => {
+            setContent: mock((content, commandOptions) => {
                 if (typeof content === "string") instance._html = content;
                 if (content && typeof content === "object") instance._json = content;
-                editorState.setContentCalls.push({ instance, content, emitUpdate });
-                if (emitUpdate) options.onUpdate?.({ editor: instance });
+                editorState.setContentCalls.push({ instance, content, commandOptions });
+                if (commandOptions?.emitUpdate) options.onUpdate?.({ editor: instance });
                 return true;
             }),
             clearContent: mock((emitUpdate) => {
@@ -68,9 +68,11 @@ class EditorMock {
 }
 
 mock.module("@tiptap/core", () => ({ Editor: EditorMock }));
-mock.module("@tiptap/starter-kit", () => ({ default: "StarterKit" }));
-mock.module("@tiptap/extension-placeholder", () => ({
-    default: { configure: mock((opts) => ({ name: "Placeholder", options: opts })) },
+mock.module("@tiptap/starter-kit", () => ({
+    default: { configure: mock((opts) => ({ name: "StarterKit", options: opts })) },
+}));
+mock.module("@tiptap/extensions", () => ({
+    Placeholder: { configure: mock((opts) => ({ name: "Placeholder", options: opts })) },
 }));
 mock.module("@tiptap/extension-link", () => ({
     default: {
@@ -403,7 +405,7 @@ test("extensions() hook lets a subclass replace the extension list", async () =>
 test("default extensions() returns null and the wrapper builds defaults", async () => {
     await mount(tmpl());
 
-    expect(editorState.lastOptions.extensions).toContain("StarterKit");
+    expect(editorState.lastOptions.extensions.some((extension) => extension?.name === "StarterKit")).toBe(true);
 });
 
 // --- image upload ---
@@ -430,10 +432,10 @@ test("imageUploadValue=true dispatches image-upload with the file detail", async
     expect(upload.detail.editor).toBe(editorState.lastInstance);
 });
 
-test("imageUploadValue=false leaves editorProps undefined (no interception)", async () => {
+test("imageUploadValue=false leaves editorProps empty (no interception)", async () => {
     await mount(tmpl({ imageUpload: false }));
 
-    expect(editorState.lastOptions.editorProps).toBeUndefined();
+    expect(editorState.lastOptions.editorProps).toEqual({});
 });
 
 // --- editorClass ---
@@ -449,7 +451,7 @@ test("editorClassValue forwards to editorProps.attributes.class", async () => {
 test("editorClass is omitted from editorProps when value is empty", async () => {
     await mount(tmpl());
 
-    expect(editorState.lastOptions.editorProps).toBeUndefined();
+    expect(editorState.lastOptions.editorProps).toEqual({});
 });
 
 // --- morph recovery ---

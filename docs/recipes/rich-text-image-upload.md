@@ -24,7 +24,7 @@ under a different identifier. Importing the parent through `@hotwire` keeps the 
 available as `rich-text` and lets the subclass inherit package fixes.
 
 ```bash
-bun add @tiptap/extension-image@^2.0
+bun add @tiptap/extension-image@3.31.3
 ```
 
 ```js

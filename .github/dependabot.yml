@@ -18,9 +18,13 @@ updates:
     labels:
       - "dependencies"
 
-  - package-ecosystem: "npm"
+  - package-ecosystem: "bun"
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      tiptap:
+        patterns:
+          - "@tiptap/*"
     labels:
       - "dependencies"
