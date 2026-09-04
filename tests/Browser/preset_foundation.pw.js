@@ -197,6 +197,55 @@ test("Nova composite text controls share input surfaces across themes and contai
     }
 });
 
+test("Nova Multi Select separates its bulk action and uses the indicator for persistent selection", async ({
+    page,
+}) => {
+    await page.setContent(`
+        <style>${presetCss}</style>
+        <div data-slot="multi-select-content" style="--anchor-width: 16rem">
+            <button data-slot="multi-select-select-all" data-selected="true">
+                <span data-slot="multi-select-indicator"></span>
+                <span data-slot="multi-select-option-text">Clear all</span>
+            </button>
+            <div data-slot="multi-select-list">
+                <div id="selected" data-slot="multi-select-option" data-selected="true">
+                    <span data-slot="multi-select-indicator"></span>
+                    <span data-slot="multi-select-option-text">Selected</span>
+                </div>
+                <div id="unselected" data-slot="multi-select-option" data-selected="false">
+                    <span data-slot="multi-select-indicator"></span>
+                    <span data-slot="multi-select-option-text">Unselected</span>
+                </div>
+            </div>
+        </div>
+    `);
+
+    const result = await page.locator('[data-slot="multi-select-content"]').evaluate((content) => {
+        const selectAll = content.querySelector('[data-slot="multi-select-select-all"]');
+        const selected = content.querySelector("#selected");
+        const unselected = content.querySelector("#unselected");
+        const selectAllBox = selectAll.getBoundingClientRect();
+        const selectedBox = selected.getBoundingClientRect();
+        const unselectedBox = unselected.getBoundingClientRect();
+
+        return {
+            bulkActionGap: selectedBox.top - selectAllBox.bottom,
+            optionGap: unselectedBox.top - selectedBox.bottom,
+            selectedBackground: getComputedStyle(selected).backgroundColor,
+            unselectedBackground: getComputedStyle(unselected).backgroundColor,
+            selectedIndicatorBackground: getComputedStyle(selected.firstElementChild).backgroundColor,
+            unselectedIndicatorBackground: getComputedStyle(unselected.firstElementChild).backgroundColor,
+        };
+    });
+
+    expect(result.bulkActionGap).toBe(result.optionGap);
+    expect(result.selectedBackground).toBe(result.unselectedBackground);
+    expect(result.selectedIndicatorBackground).not.toBe(result.unselectedIndicatorBackground);
+
+    await page.locator("#selected").hover();
+    await expect(page.locator("#selected")).not.toHaveCSS("background-color", result.unselectedBackground);
+});
+
 test("Reveal fallback keyframes yield to later preset definitions", async ({ page }) => {
     await page.setContent(`
         <style>${presetCss}</style>
