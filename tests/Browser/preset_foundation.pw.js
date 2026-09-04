@@ -143,6 +143,60 @@ test("native Select options do not mark a Field card as selected", async ({ page
     expect(colors[2]).not.toEqual(colors[1]);
 });
 
+test("Nova composite text controls share input surfaces across themes and containers", async ({ page }) => {
+    const probes = ["light", "dark"].flatMap((theme) =>
+        ["background", "card", "muted"].map((surface) => `
+            <section data-probe data-theme="${theme}" data-surface="${surface}" style="background: var(--${surface}); padding: 16px">
+                <textarea data-slot="textarea"></textarea>
+                <div data-slot="rich-text">
+                    <div data-slot="rich-text-toolbar">Toolbar</div>
+                    <div data-slot="rich-text-editor"><div class="ProseMirror">Editor</div></div>
+                </div>
+                <button data-slot="multi-select-trigger">Select</button>
+                <div data-slot="multi-select-content">
+                    <div data-slot="input-group"><input data-slot="multi-select-search"></div>
+                </div>
+            </section>
+        `).join(""),
+    ).join("");
+    await page.setContent(`<style>${presetCss}</style>${probes}`);
+
+    const results = await page.locator("[data-probe]").evaluateAll((elements) =>
+        elements.map((element) => {
+            const styles = (selector) => getComputedStyle(element.querySelector(selector));
+            const textarea = styles('[data-slot="textarea"]');
+            const richText = styles('[data-slot="rich-text"]');
+            const editor = styles(".ProseMirror");
+            const trigger = styles('[data-slot="multi-select-trigger"]');
+            const searchGroup = styles('[data-slot="input-group"]');
+            const search = styles('[data-slot="multi-select-search"]');
+            const toolbar = styles('[data-slot="rich-text-toolbar"]');
+
+            return {
+                scope: `${element.dataset.theme}/${element.dataset.surface}`,
+                backgrounds: [
+                    textarea.backgroundColor,
+                    richText.backgroundColor,
+                    trigger.backgroundColor,
+                    searchGroup.backgroundColor,
+                ],
+                radii: [textarea.borderRadius, richText.borderRadius, trigger.borderRadius, searchGroup.borderRadius],
+                padding: [textarea.paddingInlineStart, editor.paddingInlineStart, trigger.paddingInlineStart],
+                searchBackground: search.backgroundColor,
+                toolbarBorder: toolbar.borderBottomWidth,
+            };
+        }),
+    );
+
+    for (const result of results) {
+        expect(new Set(result.backgrounds), `${result.scope}: backgrounds`).toHaveProperty("size", 1);
+        expect(new Set(result.radii), `${result.scope}: radii`).toHaveProperty("size", 1);
+        expect(new Set(result.padding), `${result.scope}: inline padding`).toHaveProperty("size", 1);
+        expect(result.searchBackground, `${result.scope}: nested search background`).toBe("rgba(0, 0, 0, 0)");
+        expect(result.toolbarBorder, `${result.scope}: toolbar divider`).toBe("1px");
+    }
+});
+
 test("Reveal fallback keyframes yield to later preset definitions", async ({ page }) => {
     await page.setContent(`
         <style>${presetCss}</style>

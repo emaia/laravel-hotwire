@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, test } from "bun:test";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import baselines from "./preset_build_baselines.json";
@@ -34,9 +34,22 @@ const packageSources = [
 
 let contract;
 let productionNovaCss;
+let richTextSource;
+let multiSelectSource;
+
+function appliedUtilities(source, selector) {
+    const line = source.split("\n").find((candidate) => candidate.trimStart().startsWith(`${selector} { @apply `));
+    if (!line) throw new Error(`Missing @apply rule for ${selector}`);
+
+    return line.slice(line.indexOf("@apply ") + 7, line.indexOf("; }")).split(" ");
+}
 
 beforeAll(async () => {
-    contract = await buildCssContract();
+    [contract, richTextSource, multiSelectSource] = await Promise.all([
+        buildCssContract(),
+        readFile(join(import.meta.dir, "../../resources/css/presets/nova/rich-text.css"), "utf8"),
+        readFile(join(import.meta.dir, "../../resources/css/presets/nova/multi-select.css"), "utf8"),
+    ]);
     productionNovaCss = await minifyCssWithVite(contract.outputs.presets.nova);
 });
 
@@ -95,6 +108,45 @@ describe("public CSS presets", () => {
         expect(productionNovaCss).toMatch(/\[data-slot=slider\]\[data-orientation=horizontal\][^{]*\[dir=rtl\][^{]*::-webkit-slider-runnable-track\{[^}]*linear-gradient\(to left/);
         expect(productionNovaCss).toMatch(/\[data-slot=side-panel\]\[data-side=left\][^{]*\[dir=rtl\][^{]*\{flex-direction:row-reverse\}/);
         expect(productionNovaCss).toMatch(/\[data-slot=side-panel\]\[data-side=right\][^{]*\[dir=rtl\][^{]*\{flex-direction:row\}/);
+    });
+
+    test("keeps composite text controls aligned with the Nova input contract", () => {
+        const richText = appliedUtilities(richTextSource, '[data-slot="rich-text"]');
+        const editor = appliedUtilities(richTextSource, '[data-slot="rich-text-editor"] .ProseMirror');
+        const trigger = appliedUtilities(multiSelectSource, '[data-slot="multi-select-trigger"]');
+        const search = appliedUtilities(multiSelectSource, '[data-slot="multi-select-search"]');
+
+        expect(richText).toEqual(
+            expect.arrayContaining([
+                "rounded-lg",
+                "bg-transparent",
+                "aria-invalid:ring-[3px]",
+                "dark:bg-input/30",
+                "dark:aria-invalid:border-destructive/50",
+                "dark:aria-invalid:ring-destructive/40",
+            ]),
+        );
+        expect(richText).not.toEqual(expect.arrayContaining(["rounded-md", "bg-background", "shadow-xs"]));
+        expect(editor).toContain("px-2.5");
+        expect(editor).not.toContain("px-3");
+
+        expect(trigger).toEqual(
+            expect.arrayContaining([
+                "rounded-lg",
+                "bg-transparent",
+                "px-2.5",
+                "disabled:bg-input/50",
+                "aria-invalid:ring-[3px]",
+                "dark:bg-input/30",
+                "dark:disabled:bg-input/80",
+                "dark:aria-invalid:border-destructive/50",
+                "dark:aria-invalid:ring-destructive/40",
+            ]),
+        );
+        expect(trigger).not.toEqual(expect.arrayContaining(["rounded-md", "bg-background", "px-3", "shadow-xs"]));
+
+        expect(search).toEqual(expect.arrayContaining(["rounded-lg", "bg-transparent", "dark:bg-input/30"]));
+        expect(search).not.toEqual(expect.arrayContaining(["rounded-md", "bg-background"]));
     });
 
     test("reports raw and gzip sizes against non-blocking baselines", () => {
