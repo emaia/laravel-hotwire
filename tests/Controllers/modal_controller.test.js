@@ -122,7 +122,7 @@ test.serial("connect applies visible state when the overlay is pre-rendered open
                 data-controller="modal"
                 data-modal-lock-scroll-class="overflow-hidden"
             >
-                <div data-modal-target="modal" data-state="open" data-motion="none">
+                <div data-modal-target="modal" data-state="open" data-motion="none" role="dialog" tabindex="-1">
                     <div data-modal-target="backdrop" class="backdrop-hidden"></div>
                     <div data-modal-target="dialog" class="dialog-hidden">
                         <p>Modal content</p>
@@ -141,25 +141,54 @@ test.serial("connect applies visible state when the overlay is pre-rendered open
     expect(modal.dataset.state).toBe("open");
     expect(modal.hasAttribute("inert")).toBe(false);
     expect(document.body.classList.contains("overflow-hidden")).toBe(true);
+    expect(document.activeElement).toBe(modal);
 });
 
-test.serial("injects the default loading template when turbo:before-fetch-request fires on the dynamic content", async () => {
-    mounted = await mountController("modal", ModalController, LOADING_TEMPLATE_HTML);
+test.serial("default initial focus uses the dialog surface instead of the first field", async () => {
+    mounted = await mountController(
+        "modal",
+        ModalController,
+        `
+        <div data-controller="modal" data-modal-lock-scroll-class="overflow-hidden">
+            <button id="trigger">Open</button>
+            <div data-modal-target="modal" data-state="closed" data-motion="none" role="dialog" tabindex="-1" hidden inert>
+                <div data-modal-target="backdrop"></div>
+                <div data-modal-target="dialog"><input id="first-field" /></div>
+            </div>
+        </div>
+    `,
+    );
+    const trigger = document.getElementById("trigger");
+    trigger.focus();
 
-    const editLink = document.querySelector('a[href="/items/1/edit"]');
-    const frame = document.querySelector('#modal-frame');
+    await mounted.controller.open({ currentTarget: trigger });
 
-    dispatchEvent(editLink, "click");
-    expect(mounted.controller.isOpen).toBe(false);
-
-    frame.dispatchEvent(new CustomEvent("turbo:before-fetch-request", { bubbles: true }));
-
-    expect(frame.innerHTML).toContain("Loading...");
-    expect(mounted.controller.triggerElement).toBe(editLink);
+    expect(document.activeElement).toBe(mounted.controller.modalTarget);
 });
+
+test.serial(
+    "injects the default loading template when turbo:before-fetch-request fires on the dynamic content",
+    async () => {
+        mounted = await mountController("modal", ModalController, LOADING_TEMPLATE_HTML);
+
+        const editLink = document.querySelector('a[href="/items/1/edit"]');
+        const frame = document.querySelector("#modal-frame");
+
+        dispatchEvent(editLink, "click");
+        expect(mounted.controller.isOpen).toBe(false);
+
+        frame.dispatchEvent(new CustomEvent("turbo:before-fetch-request", { bubbles: true }));
+
+        expect(frame.innerHTML).toContain("Loading...");
+        expect(mounted.controller.triggerElement).toBe(editLink);
+    },
+);
 
 test.serial("frame links inside an open modal preserve its original opener", async () => {
-    mounted = await mountController("modal", ModalController, `
+    mounted = await mountController(
+        "modal",
+        ModalController,
+        `
         <div data-controller="modal" data-modal-lock-scroll-class="overflow-hidden">
             <button id="opener">Open</button>
             <a id="inside-link" href="/next" data-turbo-frame="modal-frame">Next</a>
@@ -508,10 +537,13 @@ test.serial("Turbo cache synchronously cancels a pending exit", async () => {
 });
 
 test.serial("Turbo morph rebuilds an open overlay around replacement targets", async () => {
-    mounted = await mountController("modal", ModalController, `
+    mounted = await mountController(
+        "modal",
+        ModalController,
+        `
         <div data-controller="modal" data-modal-lock-scroll-class="overflow-hidden">
             <button id="trigger">Open</button>
-            <div data-modal-target="modal" data-state="closed" data-motion="none" hidden inert>
+            <div data-modal-target="modal" data-state="closed" data-motion="none" role="dialog" tabindex="-1" hidden inert>
                 <div data-modal-target="backdrop"></div>
                 <div data-modal-target="dialog"><button>Close</button></div>
             </div>
@@ -527,12 +559,16 @@ test.serial("Turbo morph rebuilds an open overlay around replacement targets", a
     replacement.setAttribute("data-modal-target", "modal");
     replacement.dataset.state = "closed";
     replacement.dataset.motion = "none";
+    replacement.setAttribute("role", "dialog");
+    replacement.tabIndex = -1;
     replacement.hidden = true;
     replacement.setAttribute("inert", "");
     replacement.innerHTML = `
         <div data-modal-target="backdrop"></div>
         <div data-modal-target="dialog"><button>Replacement</button></div>
     `;
+    let replacementFocuses = 0;
+    replacement.addEventListener("focus", () => replacementFocuses++);
 
     previous.replaceWith(replacement);
     mounted.controller.modalTargetDisconnected(previous);
@@ -546,6 +582,7 @@ test.serial("Turbo morph rebuilds an open overlay around replacement targets", a
     expect(replacement.hasAttribute("inert")).toBe(false);
     expect(document.body.classList.contains("overflow-hidden")).toBe(true);
     expect(openedEvents).toBe(1);
+    expect(replacementFocuses).toBe(0);
     expect(previous.dispatchEvent(morphAttributeEvent("hidden"))).toBe(true);
     expect(replacement.dispatchEvent(morphAttributeEvent("hidden"))).toBe(false);
 

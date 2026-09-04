@@ -35,7 +35,7 @@ function frameHtml(identifier = "drawer") {
             <a href="/items/1/edit" data-turbo-frame="${identifier}-frame">Edit</a>
             <a href="/items/1/comments" data-turbo-frame="${identifier}-frame" data-loading-template="#${identifier}-comments-skeleton">Comments</a>
             <template id="${identifier}-comments-skeleton"><div class="comments-skeleton">Loading comments...</div></template>
-            <div data-${identifier}-target="modal" data-state="closed" data-motion="none" hidden inert>
+            <div data-${identifier}-target="modal" data-state="closed" data-motion="none" role="dialog" tabindex="-1" hidden inert>
                 <div data-${identifier}-target="backdrop" data-action="click->${identifier}#clickOutside"></div>
                 <div data-${identifier}-target="dialog">
                     <turbo-frame id="${identifier}-frame" data-${identifier}-target="dynamicContent"></turbo-frame>
@@ -207,7 +207,7 @@ test.serial("Tab enters a dynamically loaded form after the drawer opened with l
     await wait(10);
 
     expect(mounted.controller.isOpen).toBe(true);
-    expect(document.activeElement).toBe(link);
+    expect(document.activeElement).toBe(modal());
 
     frame.innerHTML = `
         <form>
@@ -217,6 +217,8 @@ test.serial("Tab enters a dynamically loaded form after the drawer opened with l
     `;
     frame.dispatchEvent(new CustomEvent("turbo:frame-load", { bubbles: true }));
     await wait(0);
+
+    expect(document.activeElement).toBe(modal());
 
     const event = new KeyboardEvent("keydown", { key: "Tab", bubbles: true, cancelable: true });
     document.dispatchEvent(event);

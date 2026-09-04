@@ -20,6 +20,7 @@ modal or move focus.
 <div
     data-controller="modal"
     data-modal-lock-scroll-class="overflow-hidden"
+    data-modal-initial-focus-value="auto"
     data-action="turbo:before-cache@window->modal#closeForCache"
 >
     <button type="button" data-action="modal#open">Open modal</button>
@@ -30,7 +31,7 @@ modal or move focus.
             data-action="click->modal#clickOutside"
         ></div>
 
-        <div data-modal-target="dialog" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <div data-modal-target="dialog" role="dialog" aria-modal="true" aria-labelledby="modal-title" tabindex="-1">
             <h2 id="modal-title">Title</h2>
             <p>Modal content.</p>
 
@@ -61,6 +62,13 @@ closes synchronously before Turbo caches the page.
 | `lock-scroll`            | `Boolean` | `true`  | Locks body scroll when open                     |
 | `close-on-escape`        | `Boolean` | `true`  | Closes on Escape key                            |
 | `close-on-click-outside` | `Boolean` | `true`  | Closes when clicking outside the modal          |
+| `initial-focus`          | `String`  | `auto`  | `auto`, `dialog`, `first-focusable`, or `none` |
+
+`auto` focuses an eligible `[autofocus]` element and otherwise the semantic dialog surface. `dialog` skips
+`[autofocus]`; `first-focusable` selects the first eligible control; `none` leaves focus where it is until Tab enters the
+trap. Invalid values behave as `auto`. Keep the dialog surface programmatically focusable with `tabindex="-1"`.
+If `autofocus` is also mounted inside the overlay, whichever controller focuses last wins: `initial-focus` runs when
+the modal opens, while `autofocus` runs on connect and affected `turbo:frame-load` events.
 
 ## Stimulus Classes
 
@@ -230,6 +238,7 @@ The selector is passed verbatim to `document.querySelector` — any valid CSS se
 
 ## Accessibility
 
+- Initial focus follows `initial-focus` once per opening; reconnects and nested-overlay resume do not repeat it.
 - Focus trap: Tab/Shift+Tab cycle through focusable elements inside the modal.
 - Focus returns to the element that opened the modal on close.
 - Closes on Escape (configurable via `close-on-escape`).

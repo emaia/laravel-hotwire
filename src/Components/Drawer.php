@@ -36,6 +36,7 @@ class Drawer extends Component
         public ?string $ariaLabelledby = null,
         public ?string $ariaDescription = null,
         public ?string $ariaDescribedby = null,
+        public string $initialFocus = 'auto',
     ) {
         $this->id = app(ComponentId::class)->resolve($this->id, 'hw-drawer', 'drawer');
         $this->frame = FrameTarget::normalize($this->frame);
@@ -58,6 +59,9 @@ class Drawer extends Component
         }
 
         $this->motion = in_array($this->motion, ['default', 'none'], true) ? $this->motion : 'default';
+        $this->initialFocus = in_array($this->initialFocus, ['auto', 'dialog', 'first-focusable', 'none'], true)
+            ? $this->initialFocus
+            : 'auto';
     }
 
     public function render()
@@ -77,6 +81,7 @@ class Drawer extends Component
         $data['drawerFrame'] = $this->frame;
         $data['drawerMotion'] = $this->motion;
         $data['drawerViewTransition'] = $this->viewTransition;
+        $data['drawerInitialFocus'] = $this->initialFocus;
         $data = array_replace($data, OverlayLabelContext::boundaryData());
         $data['drawerOverlayLabelContext'] = $this->overlayLabelContext;
         $data['drawerAriaLabel'] = $this->ariaLabel;
@@ -103,6 +108,7 @@ class Drawer extends Component
             $data['ariaLabelledby'],
             $data['ariaDescription'],
             $data['ariaDescribedby'],
+            $data['initialFocus'],
         );
 
         return $data;
@@ -119,6 +125,7 @@ class Drawer extends Component
                 'data-drawer-lock-scroll-value' => $this->lockScroll ? 'true' : 'false',
                 'data-drawer-close-on-escape-value' => $this->closeOnEscape ? 'true' : 'false',
                 'data-drawer-close-on-click-outside-value' => $this->closeOnClickOutside ? 'true' : 'false',
+                'data-drawer-initial-focus-value' => $this->initialFocus,
                 'data-drawer-lock-scroll-class' => 'overflow-hidden',
                 'data-action' => 'turbo:before-cache@window->drawer#closeForCache',
                 'style' => $this->style(),

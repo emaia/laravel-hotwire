@@ -27,6 +27,7 @@ class Modal extends Component
         public ?string $ariaLabelledby = null,
         public ?string $ariaDescription = null,
         public ?string $ariaDescribedby = null,
+        public string $initialFocus = 'auto',
     ) {
         $this->id = app(ComponentId::class)->resolve($this->id, 'hw-modal', 'modal');
         $this->frame = FrameTarget::normalize($this->frame);
@@ -42,6 +43,9 @@ class Modal extends Component
         );
 
         $this->motion = in_array($this->motion, ['default', 'none'], true) ? $this->motion : 'default';
+        $this->initialFocus = in_array($this->initialFocus, ['auto', 'dialog', 'first-focusable', 'none'], true)
+            ? $this->initialFocus
+            : 'auto';
     }
 
     public function render()
@@ -63,6 +67,7 @@ class Modal extends Component
         $data['modalStimulus'] = $this->stimulus;
         $data['modalMotion'] = $this->motion;
         $data['modalViewTransition'] = $this->viewTransition;
+        $data['modalInitialFocus'] = $this->initialFocus;
         $data = array_replace($data, OverlayLabelContext::boundaryData());
         $data['modalOverlayLabelContext'] = $this->overlayLabelContext;
         $data['modalAriaLabel'] = $this->ariaLabel;
@@ -85,6 +90,7 @@ class Modal extends Component
             $data['ariaLabelledby'],
             $data['ariaDescription'],
             $data['ariaDescribedby'],
+            $data['initialFocus'],
         );
 
         return $data;

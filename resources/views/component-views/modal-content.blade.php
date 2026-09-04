@@ -39,6 +39,7 @@
     @if ($modalManagedDescription !== null) data-hotwire-overlay-describedby="{{ $modalManagedDescription }}" @endif
     role="dialog"
     aria-modal="true"
+    tabindex="-1"
     @if ($modalAriaLabel !== null) aria-label="{{ $modalAriaLabel }}" @endif
     @if ($modalLabelledby !== null) aria-labelledby="{{ $modalLabelledby }}" @endif
     @if ($modalAriaDescription !== null) aria-description="{{ $modalAriaDescription }}" @endif

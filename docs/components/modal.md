@@ -249,6 +249,16 @@ actual finite CSS motion on the backdrop and dialog, so custom timing belongs in
 exit the overlay becomes closed and inert immediately, remains rendered until motion settles, and can be reopened without
 stale teardown. Reduced-motion preference skips the wait.
 
+Use `initial-focus` to choose where focus moves when the modal opens:
+
+- `auto` honors an eligible `[autofocus]` element, then focuses the dialog surface.
+- `dialog` focuses the dialog surface, falling back to the first focusable element.
+- `first-focusable` focuses the first eligible control, falling back to the dialog surface.
+- `none` leaves focus where it is; the first `Tab` or `Shift+Tab` still enters the focus trap.
+
+Initial focus runs once per opening. Turbo Frame updates, morph reconnects, and resuming a parent modal after a nested
+overlay closes do not move it again.
+
 ## Props
 
 | Prop              | Type                         | Default            | Description                                                                         |
@@ -260,6 +270,7 @@ stale teardown. Reduced-motion preference skips the wait.
 | `fixed-top`       | `bool`                       | `false`            | Pins the modal to the top with a margin (ignored when `size="full"`)              |
 | `frame`           | `string\|object\|false\|null` | `null`             | Enables dynamic modal content using a Turbo Frame. Objects are resolved with `dom_id()` |
 | `motion`          | `string`                     | `'default'`        | `default` follows CSS motion; `none` disables it                                    |
+| `initial-focus`   | `string`                     | `'auto'`           | `auto`, `dialog`, `first-focusable`, or `none`; invalid values use `auto`           |
 | `stimulus`        | `Htmlable\|null`            | `null`             | Additional Stimulus attributes to merge onto the root element                       |
 | `view-transition` | `bool`                       | `false`            | Animates successive renders inside the frame host with the View Transitions API     |
 | `aria-label`      | `string\|null`               | `null`             | Authored accessible name routed to the dialog overlay                               |
@@ -309,6 +320,7 @@ Pass an arbitrary size to set an inline max width on the dialog positioner:
 | `lock-scroll`            | `Boolean` | `true`  | Locks body scroll when open            |
 | `close-on-escape`        | `Boolean` | `true`  | Closes on Escape key                   |
 | `close-on-click-outside` | `Boolean` | `true`  | Closes when clicking outside the modal |
+| `initial-focus`          | `String`  | `auto`  | Selects the initial focus strategy     |
 
 ### Actions
 
@@ -331,7 +343,7 @@ Pass an arbitrary size to set an inline max width on the dialog positioner:
 - `modal.title` and `modal.description` automatically name and describe the overlay.
 - Frame-loaded labels are reconciled before the modal opens, and explicit unique label ids are preserved.
 - Root `aria-label`, `aria-labelledby`, `aria-description`, and `aria-describedby` values override generated references.
-- Focus is trapped inside the modal while it is open.
+- Focus is moved according to `initial-focus` and trapped inside the modal while it is open.
 - Focus returns to the element that triggered the modal on close.
 - Escape closes the modal by default and may be configured through the controller value.
 

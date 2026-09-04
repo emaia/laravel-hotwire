@@ -35,6 +35,7 @@
     @if ($drawerManagedDescription !== null) data-hotwire-overlay-describedby="{{ $drawerManagedDescription }}" @endif
     role="dialog"
     aria-modal="true"
+    tabindex="-1"
     @if ($drawerAriaLabel !== null) aria-label="{{ $drawerAriaLabel }}" @endif
     @if ($drawerLabelledby !== null) aria-labelledby="{{ $drawerLabelledby }}" @endif
     @if ($drawerAriaDescription !== null) aria-description="{{ $drawerAriaDescription }}" @endif

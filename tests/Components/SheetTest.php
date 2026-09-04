@@ -21,6 +21,8 @@ it('renders sheet markup and controller hooks', function () {
         ->assertSee('aria-label="Close sheet"', false)
         ->assertSee('role="dialog"', false)
         ->assertSee('aria-modal="true"', false)
+        ->assertSee('tabindex="-1"', false)
+        ->assertSee('data-sheet-initial-focus-value="auto"', false)
         ->assertSee('data-state="closed"', false)
         ->assertSee('data-motion="default"', false)
         ->assertSee('inert', false)
@@ -74,6 +76,19 @@ it('normalizes sheet motion', function () {
     $none->assertSee('data-motion="none"', false);
     $invalid->assertSee('data-motion="default"', false);
 });
+
+it('normalizes and protects sheet initial focus', function (string $initialFocus, string $expected) {
+    $view = $this->blade("<x-hw::sheet initial-focus=\"{$initialFocus}\" data-sheet-initial-focus-value=\"dialog\"><x-hw::sheet.content /></x-hw::sheet>");
+    $root = (new DOMXPath(dom((string) $view)))->query('//*[@data-slot="sheet"]')->item(0);
+
+    expect($root->getAttribute('data-sheet-initial-focus-value'))->toBe($expected);
+})->with([
+    'auto' => ['auto', 'auto'],
+    'dialog' => ['dialog', 'dialog'],
+    'first focusable' => ['first-focusable', 'first-focusable'],
+    'none' => ['none', 'none'],
+    'invalid' => ['field', 'auto'],
+]);
 
 it('renders frame content and loading template when frame is configured', function () {
     $view = $this->blade(<<<'BLADE'
@@ -240,6 +255,7 @@ it('does not expose sheet root props as generic component data', function () {
             'sheetFrame',
             'sheetMotion',
             'sheetViewTransition',
+            'sheetInitialFocus',
         ])
         ->and($data)->toHaveKey('fieldContext', null)
         ->toHaveKey('fieldControlContext', null);

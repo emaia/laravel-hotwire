@@ -77,6 +77,376 @@ for (const family of ["modal", "sheet", "drawer"]) {
     });
 }
 
+for (const family of ["modal", "sheet", "drawer"]) {
+    test(`${family} applies each initial focus strategy`, async ({ page }) => {
+        const strategies = ["auto", "dialog", "first-focusable", "none"];
+        await page.setContent(
+            strategies
+                .map(
+                    (strategy) => `
+            <div
+                id="${family}-${strategy}"
+                data-controller="${family}"
+                data-${family}-initial-focus-value="${strategy}"
+                data-${family}-lock-scroll-class="overflow-hidden"
+            >
+                <button id="${family}-${strategy}-trigger" data-action="${family}#open">Open</button>
+                <div
+                    id="${family}-${strategy}-overlay"
+                    data-${family}-target="modal"
+                    data-state="closed"
+                    data-motion="none"
+                    role="dialog"
+                    tabindex="-1"
+                    hidden inert
+                >
+                    <div data-${family}-target="backdrop"></div>
+                    <div data-${family}-target="dialog">
+                        <input id="${family}-${strategy}-first" />
+                        <button id="${family}-${strategy}-autofocus" autofocus>Explicit</button>
+                    </div>
+                </div>
+            </div>
+        `,
+                )
+                .join(""),
+        );
+        await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+        await page.addScriptTag({ content: await browserOverlayControllerScript() });
+        await page.evaluate(() => {
+            window.StimulusApplication = window.Stimulus.Application.start();
+            window.StimulusApplication.register("modal", window.ModalController);
+            window.StimulusApplication.register("sheet", window.SheetController);
+            window.StimulusApplication.register("drawer", window.DrawerController);
+        });
+
+        const expected = {
+            auto: `#${family}-auto-autofocus`,
+            dialog: `#${family}-dialog-overlay`,
+            "first-focusable": `#${family}-first-focusable-first`,
+            none: `#${family}-none-trigger`,
+        };
+
+        for (const strategy of strategies) {
+            await page.locator(`#${family}-${strategy}-trigger`).click();
+            await expect(page.locator(expected[strategy])).toBeFocused();
+
+            if (strategy === "none") {
+                await page.keyboard.press("Tab");
+                await expect(page.locator(`#${family}-none-first`)).toBeFocused();
+            }
+
+            await page.evaluate(
+                ({ family: identifier, strategy: value }) => {
+                    const root = document.querySelector(`#${identifier}-${value}`);
+                    const controller = window.StimulusApplication.getControllerForElementAndIdentifier(
+                        root,
+                        identifier,
+                    );
+                    controller.close();
+                },
+                { family, strategy },
+            );
+        }
+    });
+}
+
+test("initial focus skips hidden candidates and follows value changes", async ({ page }) => {
+    await page.setContent(`
+        <div
+            id="modal-root"
+            data-controller="modal"
+            data-modal-initial-focus-value="first-focusable"
+            data-modal-lock-scroll-class="overflow-hidden"
+        >
+            <button id="trigger" data-action="modal#open">Open</button>
+            <div
+                data-modal-target="modal"
+                data-state="closed"
+                data-motion="none"
+                role="dialog"
+                tabindex="-1"
+                hidden inert
+            >
+                <div data-modal-target="backdrop"></div>
+                <div data-modal-target="dialog">
+                    <details><button id="collapsed">Collapsed</button></details>
+                    <button id="hidden" style="display: none">Hidden</button>
+                    <button id="visible">Visible</button>
+                </div>
+            </div>
+        </div>
+    `);
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ content: await browserOverlayControllerScript() });
+    await page.evaluate(() => {
+        window.StimulusApplication = window.Stimulus.Application.start();
+        window.StimulusApplication.register("modal", window.ModalController);
+    });
+
+    await page.locator("#trigger").click();
+    await expect(page.locator("#visible")).toBeFocused();
+
+    await page.evaluate(async () => {
+        const root = document.querySelector("#modal-root");
+        const controller = window.StimulusApplication.getControllerForElementAndIdentifier(root, "modal");
+        await controller.close();
+        root.dataset.modalInitialFocusValue = "dialog";
+    });
+    await page.locator("#trigger").click();
+
+    await expect(page.locator('[data-modal-target="modal"]')).toBeFocused();
+});
+
+test("the focus trap ignores invalid contenteditable candidates", async ({ page }) => {
+    await page.setContent(`
+        <div
+            data-controller="modal"
+            data-modal-initial-focus-value="first-focusable"
+            data-modal-lock-scroll-class="overflow-hidden"
+        >
+            <button id="trigger" data-action="modal#open">Open</button>
+            <div
+                data-modal-target="modal"
+                data-state="closed"
+                data-motion="none"
+                role="dialog"
+                tabindex="-1"
+                hidden inert
+            >
+                <div data-modal-target="backdrop"></div>
+                <div data-modal-target="dialog">
+                    <button id="first">First</button>
+                    <button id="last">Last</button>
+                    <div contenteditable="inherit">Not an editing host</div>
+                </div>
+            </div>
+        </div>
+    `);
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ content: await browserOverlayControllerScript() });
+    await page.evaluate(() => {
+        window.StimulusApplication = window.Stimulus.Application.start();
+        window.StimulusApplication.register("modal", window.ModalController);
+    });
+
+    await page.locator("#trigger").click();
+    await page.locator("#last").focus();
+    await page.keyboard.press("Tab");
+
+    await expect(page.locator("#first")).toBeFocused();
+});
+
+test("wrapping focus scrolls the destination control into view", async ({ page }) => {
+    await page.setContent(`
+        <div
+            data-controller="modal"
+            data-modal-initial-focus-value="first-focusable"
+            data-modal-lock-scroll-class="overflow-hidden"
+        >
+            <button id="trigger" data-action="modal#open">Open</button>
+            <div
+                data-modal-target="modal"
+                data-state="closed"
+                data-motion="none"
+                role="dialog"
+                tabindex="-1"
+                hidden inert
+            >
+                <div data-modal-target="backdrop"></div>
+                <div id="scroller" data-modal-target="dialog" style="height: 200px; overflow: auto">
+                    <button id="first">First</button>
+                    <div style="height: 2000px"></div>
+                    <button id="last">Last</button>
+                </div>
+            </div>
+        </div>
+    `);
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ content: await browserOverlayControllerScript() });
+    await page.evaluate(() => {
+        window.StimulusApplication = window.Stimulus.Application.start();
+        window.StimulusApplication.register("modal", window.ModalController);
+    });
+
+    await page.locator("#trigger").click();
+    await page.keyboard.press("Shift+Tab");
+
+    await expect(page.locator("#last")).toBeFocused();
+    await expect.poll(() => page.locator("#scroller").evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+});
+
+test("content-visibility auto does not remove controls from the focus trap", async ({ page }) => {
+    await page.setContent(`
+        <div
+            data-controller="modal"
+            data-modal-initial-focus-value="first-focusable"
+            data-modal-lock-scroll-class="overflow-hidden"
+        >
+            <button id="trigger" data-action="modal#open">Open</button>
+            <div
+                data-modal-target="modal"
+                data-state="closed"
+                data-motion="none"
+                role="dialog"
+                tabindex="-1"
+                hidden inert
+            >
+                <div data-modal-target="backdrop"></div>
+                <div data-modal-target="dialog" style="position: relative; height: 2400px">
+                    <div style="position: absolute; top: 1600px; content-visibility: auto; contain-intrinsic-size: 100px">
+                        <button id="deferred">Deferred</button>
+                    </div>
+                    <button id="fallback">Fallback</button>
+                </div>
+            </div>
+        </div>
+    `);
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ content: await browserOverlayControllerScript() });
+    await page.evaluate(() => {
+        window.StimulusApplication = window.Stimulus.Application.start();
+        window.StimulusApplication.register("modal", window.ModalController);
+    });
+
+    await page.locator("#trigger").click();
+
+    await expect(page.locator("#deferred")).toBeFocused();
+});
+
+test("Tab from a programmatically focused descendant follows native order", async ({ page }) => {
+    await page.setContent(`
+        <div
+            data-controller="modal"
+            data-modal-initial-focus-value="dialog"
+            data-modal-lock-scroll-class="overflow-hidden"
+        >
+            <button id="trigger" data-action="modal#open">Open</button>
+            <div
+                data-modal-target="modal"
+                data-state="closed"
+                data-motion="none"
+                role="dialog"
+                tabindex="-1"
+                hidden inert
+            >
+                <div data-modal-target="backdrop"></div>
+                <div data-modal-target="dialog">
+                    <button id="first">First</button>
+                    <div id="programmatic" tabindex="-1">Programmatic</div>
+                    <button id="next">Next</button>
+                </div>
+            </div>
+        </div>
+    `);
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ content: await browserOverlayControllerScript() });
+    await page.evaluate(() => {
+        window.StimulusApplication = window.Stimulus.Application.start();
+        window.StimulusApplication.register("modal", window.ModalController);
+    });
+
+    await page.locator("#trigger").click();
+    await page.locator("#programmatic").focus();
+    await page.keyboard.press("Tab");
+
+    await expect(page.locator("#next")).toBeFocused();
+});
+
+test("Tab from a negative-tabindex autofocus target stays inside the modal", async ({ page }) => {
+    await page.setContent(`
+        <div data-controller="modal" data-modal-lock-scroll-class="overflow-hidden">
+            <button id="trigger" data-action="modal#open">Open</button>
+            <div data-modal-target="modal" data-state="closed" data-motion="none" role="dialog" tabindex="-1" hidden inert>
+                <div data-modal-target="backdrop"></div>
+                <div data-modal-target="dialog">
+                    <button id="first">First</button>
+                    <button id="last">Last</button>
+                    <button id="autofocus" tabindex="-1" autofocus>Autofocus</button>
+                </div>
+            </div>
+        </div>
+        <button id="outside">Outside</button>
+    `);
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ content: await browserOverlayControllerScript() });
+    await page.evaluate(() => {
+        window.StimulusApplication = window.Stimulus.Application.start();
+        window.StimulusApplication.register("modal", window.ModalController);
+    });
+
+    await page.locator("#trigger").click();
+    await expect(page.locator("#autofocus")).toBeFocused();
+    await page.keyboard.press("Tab");
+
+    await expect(page.locator("#first")).toBeFocused();
+});
+
+test("a pre-rendered open modal with none does not honor native autofocus", async ({ page }) => {
+    await page.setContent(`
+        <button id="outside">Outside</button>
+        <div
+            data-controller="modal"
+            data-modal-initial-focus-value="none"
+            data-modal-lock-scroll-class="overflow-hidden"
+        >
+            <div
+                data-modal-target="modal"
+                data-state="open"
+                data-motion="none"
+                role="dialog"
+                tabindex="-1"
+            >
+                <div data-modal-target="backdrop"></div>
+                <div data-modal-target="dialog">
+                    <button id="autofocus" autofocus>Autofocus</button>
+                </div>
+            </div>
+        </div>
+    `);
+    await page.locator("#outside").focus();
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ content: await browserOverlayControllerScript() });
+    await page.evaluate(() => {
+        window.StimulusApplication = window.Stimulus.Application.start();
+        window.StimulusApplication.register("modal", window.ModalController);
+    });
+
+    await expect(page.locator("#outside")).toBeFocused();
+});
+
+test("a pre-rendered open modal applies an explicit strategy over existing focus", async ({ page }) => {
+    await page.setContent(`
+        <div
+            data-controller="modal"
+            data-modal-initial-focus-value="dialog"
+            data-modal-lock-scroll-class="overflow-hidden"
+        >
+            <div
+                data-modal-target="modal"
+                data-state="open"
+                data-motion="none"
+                role="dialog"
+                tabindex="-1"
+            >
+                <div data-modal-target="backdrop"></div>
+                <div data-modal-target="dialog">
+                    <button id="focused">Focused before connect</button>
+                </div>
+            </div>
+        </div>
+    `);
+    await page.locator("#focused").focus();
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ content: await browserOverlayControllerScript() });
+    await page.evaluate(() => {
+        window.StimulusApplication = window.Stimulus.Application.start();
+        window.StimulusApplication.register("modal", window.ModalController);
+    });
+
+    await expect(page.locator('[data-modal-target="modal"]')).toBeFocused();
+});
+
 test("frame labels replace ambiguous authored ids with collision-free ids", async ({ page }) => {
     await mountFrameOverlay(page, "modal", {
         beforeOverlay: '<span id="page-title">Layout title</span>',
@@ -480,7 +850,7 @@ test("Turbo Frame morph preserves an open drawer while updating its content", as
 test("tabs from the modal close button into native accordion summaries", async ({ page }) => {
     await page.setContent(`
         <style>.hidden { display: none; }</style>
-        <div data-controller="modal">
+        <div data-controller="modal" data-modal-initial-focus-value="first-focusable">
             <button id="open-modal" data-action="modal#open">Open modal</button>
             <div
                 data-modal-target="modal"
@@ -718,6 +1088,7 @@ for (const identifier of ["drawer", "sheet"]) {
                 <div data-slot="${identifier}-overlay" data-${identifier}-target="modal" data-state="closed" data-motion="none" hidden inert>
                     <div data-slot="${identifier}-backdrop" data-${identifier}-target="backdrop" data-action="click->${identifier}#clickOutside"></div>
                     <div data-slot="${identifier}-popup" data-${identifier}-target="dialog">
+                        <button id="parent-first">First</button>
                         <div id="confirm" data-controller="alert-dialog" data-alert-dialog-lock-scroll-class="overflow-hidden">
                             <button id="delete" data-action="click->alert-dialog#intercept">Delete</button>
                             <div data-slot="alert-dialog-overlay" data-alert-dialog-target="modal" data-state="closed" data-motion="none" data-action="click->alert-dialog#clickOutside" hidden inert>
@@ -757,6 +1128,10 @@ for (const identifier of ["drawer", "sheet"]) {
         await expect(page.locator("#delete")).toBeFocused();
         await expect(parentOverlay).not.toHaveAttribute("hidden", "");
         await expect(page.locator("body")).toHaveClass(/overflow-hidden/);
+
+        await page.locator("#parent-first").focus();
+        await page.keyboard.press("Shift+Tab");
+        await expect(page.locator("#delete")).toBeFocused();
 
         await page.keyboard.press("Escape");
         await expect(parentOverlay).toHaveAttribute("hidden", "");
@@ -834,7 +1209,7 @@ test("Escape during nested overlay entry closes the entering overlay", async ({ 
         return tab.defaultPrevented;
     });
 
-    expect(exitTabPrevented).toBe(false);
+    expect(exitTabPrevented).toBe(true);
     await expect(alertOverlay).toHaveAttribute("data-state", "closed");
     await expect(alertOverlay).toHaveAttribute("hidden", "");
 });

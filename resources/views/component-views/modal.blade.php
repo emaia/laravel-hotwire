@@ -3,6 +3,7 @@
         'id' => $modalId,
         'data-slot' => 'modal',
         'data-controller' => 'modal',
+        'data-modal-initial-focus-value' => $modalInitialFocus,
         'data-modal-lock-scroll-class' => 'overflow-hidden',
         'data-action' => 'turbo:before-cache@window->modal#closeForCache',
     ], $attributes, $modalStimulus, protectedPrefixes: ['data-modal-']);

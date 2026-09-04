@@ -40,6 +40,11 @@ The sheet traps focus while open, restores focus to the trigger on close, locks 
 synchronously before Turbo caches the page. Presence derives completion from actual finite CSS motion and supports rapid
 reopen, `motion="none"`, and reduced motion without duration timers.
 
+`initial-focus="auto"` honors an eligible `[autofocus]` element and otherwise focuses the dialog surface. Use `dialog`
+to skip `[autofocus]`, `first-focusable` to select the first eligible control, or `none` to leave focus where it is. With
+`none`, the first `Tab` or `Shift+Tab` still enters the trap. Initial focus runs once per opening and is not repeated by
+Turbo Frame updates, morph reconnects, or nested-overlay resume.
+
 `sheet.title` and `sheet.description` automatically name and describe the dialog overlay. The frame integration assigns
 missing ids and refreshes the references when frame content changes.
 
@@ -127,6 +132,7 @@ return turbo_stream()
 | `frame`               | `null`                                            | String/object Turbo Frame id for layout-shared, server-loaded content. |
 | `backdrop`            | `true`                                            | Render the backdrop and click-outside target.                  |
 | `motion`              | `default`                                         | `default` follows CSS motion; `none` disables it.              |
+| `initial-focus`       | `auto`                                            | `auto`, `dialog`, `first-focusable`, or `none`; invalid values use `auto`. |
 | `lockScroll`          | `true`                                            | Lock body scroll while open.                                   |
 | `closeOnEscape`       | `true`                                            | Close when Escape is pressed.                                  |
 | `closeOnClickOutside` | `true`                                            | Close when the backdrop is clicked.                            |

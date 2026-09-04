@@ -20,6 +20,7 @@ Escape dismissal and focus trapping are suspended during IME composition.
 <div
     data-controller="drawer"
     data-drawer-lock-scroll-class="overflow-hidden"
+    data-drawer-initial-focus-value="auto"
     data-action="turbo:before-cache@window->drawer#closeForCache"
 >
     <button type="button" data-drawer-target="trigger" data-action="drawer#open">
@@ -32,7 +33,7 @@ Escape dismissal and focus trapping are suspended during IME composition.
             data-action="click->drawer#clickOutside"
         ></div>
 
-        <aside data-drawer-target="dialog" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
+        <aside data-drawer-target="dialog" role="dialog" aria-modal="true" aria-labelledby="drawer-title" tabindex="-1">
             <h2 id="drawer-title">Navigation</h2>
             <button type="button" data-action="drawer#close">Close</button>
         </aside>
@@ -69,6 +70,14 @@ finishes.
 | `lockScroll` | `boolean` | `true` | Lock body scroll while open. |
 | `closeOnEscape` | `boolean` | `true` | Close on Escape. |
 | `closeOnClickOutside` | `boolean` | `true` | Close on backdrop click. |
+| `initialFocus` | `string` | `auto` | `auto`, `dialog`, `first-focusable`, or `none`. |
+
+`auto` focuses an eligible `[autofocus]` element and otherwise the semantic dialog surface. `dialog` skips
+`[autofocus]`; `first-focusable` selects the first eligible control; `none` leaves focus where it is until Tab enters the
+trap. Invalid values behave as `auto`. Keep the dialog surface programmatically focusable with `tabindex="-1"`. Initial
+focus runs once per opening and is not repeated by frame updates, reconnects, or nested-overlay resume.
+If `autofocus` is also mounted inside the overlay, whichever controller focuses last wins: `initialFocus` runs when the
+drawer opens, while `autofocus` runs on connect and affected `turbo:frame-load` events.
 
 ## Actions
 

@@ -27,6 +27,8 @@ it('renders drawer markup and controller hooks', function () {
         ->assertDontSee('data-drawer-open-duration-value', false)
         ->assertSee('role="dialog"', false)
         ->assertSee('aria-modal="true"', false)
+        ->assertSee('tabindex="-1"', false)
+        ->assertSee('data-drawer-initial-focus-value="auto"', false)
         ->assertSeeText('Body');
 });
 
@@ -76,6 +78,19 @@ it('normalizes drawer motion', function () {
     $none->assertSee('data-motion="none"', false);
     $invalid->assertSee('data-motion="default"', false);
 });
+
+it('normalizes and protects drawer initial focus', function (string $initialFocus, string $expected) {
+    $view = $this->blade("<x-hw::drawer initial-focus=\"{$initialFocus}\" data-drawer-initial-focus-value=\"dialog\"><x-hw::drawer.content /></x-hw::drawer>");
+    $root = (new DOMXPath(dom((string) $view)))->query('//*[@data-slot="drawer"]')->item(0);
+
+    expect($root->getAttribute('data-drawer-initial-focus-value'))->toBe($expected);
+})->with([
+    'auto' => ['auto', 'auto'],
+    'dialog' => ['dialog', 'dialog'],
+    'first focusable' => ['first-focusable', 'first-focusable'],
+    'none' => ['none', 'none'],
+    'invalid' => ['field', 'auto'],
+]);
 
 it('renders frame content and loading template when frame is configured', function () {
     $view = $this->blade(<<<'BLADE'
@@ -246,6 +261,7 @@ it('does not expose drawer root props as generic component data', function () {
             'drawerFrame',
             'drawerMotion',
             'drawerViewTransition',
+            'drawerInitialFocus',
         ])
         ->and($data)->toHaveKey('fieldContext', null)
         ->toHaveKey('fieldControlContext', null);

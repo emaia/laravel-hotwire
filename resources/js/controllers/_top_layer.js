@@ -4,7 +4,7 @@ const ORIGINAL_POPOVER_ATTRIBUTE = "data-hotwire-top-layer-popover";
 const ABSENT_POPOVER = "__hotwire_absent__";
 const topLayers = [];
 
-export function createTopLayer(element, { enabled = true } = {}) {
+export function createTopLayer(element, { enabled = true, suppressAutofocus = false } = {}) {
     if (element?.hasAttribute("data-hotwire-top-layer") && element.getAttribute("popover") === "manual") {
         const originalPopover = element.getAttribute(ORIGINAL_POPOVER_ATTRIBUTE);
         element.removeAttribute("data-hotwire-top-layer");
@@ -46,16 +46,17 @@ export function createTopLayer(element, { enabled = true } = {}) {
         element.setAttribute("data-hotwire-top-layer", "");
 
         try {
-            element.showPopover();
+            showPopover();
             shown = true;
-            notifyShown();
-
-            return true;
         } catch (_error) {
             restoreAttributes();
 
             return false;
         }
+
+        notifyShown();
+
+        return true;
     }
 
     function hide() {
@@ -71,16 +72,20 @@ export function createTopLayer(element, { enabled = true } = {}) {
         if (!shown) {
             if (!showNative()) return;
         } else {
+            let restored = false;
+
             try {
                 if (!element.matches(":popover-open")) {
-                    element.showPopover();
-                    notifyShown();
+                    showPopover();
+                    restored = true;
                 }
             } catch (_error) {
                 // The element may not have reconnected yet.
 
                 return;
             }
+
+            if (restored) notifyShown();
         }
 
         const index = topLayers.indexOf(entry);
@@ -98,6 +103,24 @@ export function createTopLayer(element, { enabled = true } = {}) {
 
         shown = false;
         restoreAttributes();
+    }
+
+    function showPopover() {
+        const autofocusElements = suppressAutofocus
+            ? [element, ...element.querySelectorAll("[autofocus]")].filter((candidate) =>
+                  candidate.hasAttribute("autofocus"),
+              )
+            : [];
+        const autofocusValues = autofocusElements.map((candidate) => candidate.getAttribute("autofocus"));
+        autofocusElements.forEach((candidate) => candidate.removeAttribute("autofocus"));
+
+        try {
+            element.showPopover();
+        } finally {
+            autofocusElements.forEach((candidate, index) => {
+                candidate.setAttribute("autofocus", autofocusValues[index]);
+            });
+        }
     }
 
     function cleanup() {

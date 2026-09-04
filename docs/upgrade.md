@@ -129,6 +129,18 @@ Update CSS selectors, browser queries, and tests that expected these attributes 
 The equivalent semantic surfaces are `sheet-overlay` and `drawer-overlay`. Prefer selecting the dialog role or these
 overlay slots when inspecting accessible-name attributes.
 
+### Overlay initial focus is explicit
+
+Modal, Drawer, Sheet, and Alert Dialog now accept `initial-focus="auto|dialog|first-focusable|none"`. Their default
+`auto` strategy honors an eligible `[autofocus]` element first. Modal, Drawer, and Sheet then focus their semantic dialog
+surface; Alert Dialog focuses Cancel so the safer action remains selected. Focus is applied once per opening and is not
+reapplied by Turbo Frame updates, morph reconnects, or resuming a parent overlay after a nested overlay closes.
+
+Previously these overlays focused the first focusable element by default. Set `initial-focus="first-focusable"` to retain
+that behavior. Use `dialog` to focus the semantic surface without honoring `[autofocus]`, or `none` to avoid moving focus
+when the overlay opens; focus trapping still moves the first subsequent `Tab` or `Shift+Tab` into the overlay. Invalid
+values fall back to `auto`.
+
 ### Alert Dialog uses the alertdialog role
 
 `<hw:alert-dialog>` now renders `role="alertdialog"` instead of `role="dialog"`, matching its interruptive confirmation
