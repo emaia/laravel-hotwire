@@ -6,6 +6,27 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 
 ## Unreleased
 
+### Breadcrumb validates its item descriptors
+
+`<hw:breadcrumb>` now validates the `items` descriptors it is given, instead of coercing them and rendering an
+incomplete trail. Input that previously produced silently wrong markup raises an `InvalidArgumentException`:
+
+- a missing `label` on a non-ellipsis item, which used to render an anchor with no accessible name;
+- an `href` that is not a string, `Stringable` or `null`. A non-string value used to be discarded, turning the link into
+  a second current page;
+- a `type` other than `item` or `ellipsis`, which used to fall through and render as a regular item;
+- a non-boolean `current`;
+- more than one item resolving to the current page. An item resolves to the current page when it sets `current` or has
+  no `href`, and a trail has only one. Give the intermediate items an `href` or compose the trail manually.
+
+`label` and `href` now accept `Stringable` in addition to their previous types, matching manual composition.
+
+Passing `items` together with slot composition now raises an exception as well; it previously discarded the composed
+trail without warning. Use one or the other.
+
+The `items` prop is no longer nullable — it defaults to `[]`. Replace `:items="null"` with `:items="[]"` or omit the
+prop. The `hasItems()` method was removed from the component class.
+
 ### Rich Text requires Tiptap 3
 
 The Rich Text controller now uses Tiptap `3.31.3`. Update every `@tiptap/*` dependency in the

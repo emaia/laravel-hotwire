@@ -1,22 +1,26 @@
+@php
+    $guardComposition($slot);
+@endphp
+
 <nav data-slot="breadcrumb" aria-label="{{ $label }}" {{ $attributes->except('frame') }}>
-    @if ($hasItems())
-        <ol data-slot="breadcrumb-list">
+    @if ($items !== [])
+        <x-hw::breadcrumb.list>
             @foreach ($normalizedItems() as $item)
-                <li data-slot="breadcrumb-item">
+                <x-hw::breadcrumb.item>
                     @if ($item['type'] === 'ellipsis')
                         <x-hw::breadcrumb.ellipsis :label="$item['label']" />
                     @elseif ($item['current'] || $item['href'] === null)
-                        <span data-slot="breadcrumb-page" aria-current="page">{{ $item['label'] }}</span>
+                        <x-hw::breadcrumb.page>{{ $item['label'] }}</x-hw::breadcrumb.page>
                     @else
-                        <a data-slot="breadcrumb-link" href="{{ $item['href'] }}" @if ($item['frame'] !== null) data-turbo-frame="{{ $item['frame'] }}" @endif>{{ $item['label'] }}</a>
+                        <x-hw::breadcrumb.link :href="$item['href']" :frame="$item['frame']">{{ $item['label'] }}</x-hw::breadcrumb.link>
                     @endif
-                </li>
+                </x-hw::breadcrumb.item>
 
                 @unless ($loop->last)
                     <x-hw::breadcrumb.separator />
                 @endunless
             @endforeach
-        </ol>
+        </x-hw::breadcrumb.list>
     @else
         {{ $slot }}
     @endif
