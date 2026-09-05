@@ -6,40 +6,37 @@ test.use({ reducedMotion: "no-preference" });
 test("server-rendered collapsed state applies before the controller installs", async ({ page }) => {
     await page.setContent(await fixture(false, false));
 
-    const content = page.locator("#project-panel-content");
-    await expect
-        .poll(() => page.locator("#project-panel").evaluate((element) => element.getBoundingClientRect().width))
-        .toBe(28);
-    await expect(content).toHaveCSS("opacity", "0");
+    const geometry = await layoutGeometry(page);
+
+    expect(geometry.panelWidth).toBeLessThan(geometry.expandedPanelWidth);
+    expect(geometry.panelWidth + geometry.insetWidth).toBe(geometry.rootWidth);
     await expect(page.locator("#project-panel")).toHaveAttribute("inert", "");
 });
 
-test("structural CSS collapses the panel and grows the inset", async ({ page }) => {
+test("structural CSS collapses the panel and transfers its space to the inset", async ({ page }) => {
     await page.setContent(await fixture());
     await installController(page);
 
     const root = page.locator("#layout");
     const panel = page.locator("#project-panel");
-    const inset = page.locator("#project-inset");
     const trigger = page.locator("#project-trigger");
-    const content = page.locator("#project-panel-content");
+    const expanded = await layoutGeometry(page);
 
-    await expect.poll(() => panel.evaluate((element) => element.getBoundingClientRect().width)).toBe(240);
-    await expect.poll(() => inset.evaluate((element) => element.getBoundingClientRect().width)).toBe(560);
-    await expect(content).toHaveCSS("opacity", "1");
+    expect(expanded.panelWidth).toBe(expanded.expandedPanelWidth);
+    expect(expanded.panelWidth + expanded.insetWidth).toBe(expanded.rootWidth);
 
     await trigger.click();
 
     await expect(root).toHaveAttribute("data-state", "collapsed");
     await expect(panel).toHaveAttribute("inert", "");
     await expect(trigger).toHaveAttribute("aria-expanded", "false");
-    await page.waitForTimeout(80);
-    const movingWidth = await panel.evaluate((element) => element.getBoundingClientRect().width);
-    expect(movingWidth).toBeGreaterThan(0);
-    expect(movingWidth).toBeLessThan(240);
-    await expect.poll(() => panel.evaluate((element) => element.getBoundingClientRect().width)).toBe(28);
-    await expect.poll(() => inset.evaluate((element) => element.getBoundingClientRect().width)).toBe(772);
-    await expect(content).toHaveCSS("opacity", "0");
+    await finishAnimations(panel);
+
+    const collapsed = await layoutGeometry(page);
+    expect(collapsed.panelWidth).toBeLessThan(expanded.panelWidth);
+    expect(collapsed.insetWidth).toBeGreaterThan(expanded.insetWidth);
+    expect(collapsed.panelWidth + collapsed.insetWidth).toBe(collapsed.rootWidth);
+
     const collapsedBounds = await page.locator("#layout").evaluate((root) => {
         const rootBox = root.getBoundingClientRect();
         const panelBox = root.querySelector("#project-panel").getBoundingClientRect();
@@ -110,18 +107,22 @@ test("right side keeps the panel on the inline end and collapses without overlay
     await installController(page);
 
     const panel = page.locator("#project-panel");
-    const inset = page.locator("#project-inset");
-    const initial = await page.locator("#layout").evaluate((root) => {
+    const initialPosition = await page.locator("#layout").evaluate((root) => {
         const panel = root.querySelector("#project-panel").getBoundingClientRect();
         const inset = root.querySelector("#project-inset").getBoundingClientRect();
         return { panelLeft: panel.left, insetRight: inset.right };
     });
+    const initial = await layoutGeometry(page);
 
-    expect(initial.panelLeft).toBe(initial.insetRight);
+    expect(initialPosition.panelLeft).toBe(initialPosition.insetRight);
     await page.locator("#project-trigger").click();
 
-    await expect.poll(() => panel.evaluate((element) => element.getBoundingClientRect().width)).toBe(28);
-    await expect.poll(() => inset.evaluate((element) => element.getBoundingClientRect().width)).toBe(772);
+    await finishAnimations(panel);
+    const resized = await layoutGeometry(page);
+    expect(resized.panelWidth).toBeLessThan(initial.panelWidth);
+    expect(resized.insetWidth).toBeGreaterThan(initial.insetWidth);
+    expect(resized.panelWidth + resized.insetWidth).toBe(resized.rootWidth);
+
     const collapsed = await page.locator("#layout").evaluate((root) => {
         const rootBox = root.getBoundingClientRect();
         const panelBox = root.querySelector("#project-panel").getBoundingClientRect();
@@ -145,7 +146,7 @@ test("right side keeps the panel on the inline end and collapses without overlay
     await expect(page.locator("#layout")).not.toHaveAttribute("data-mobile-state", /.+/);
 });
 
-test("nested opposite-side panels keep trigger position and icon rotation scoped", async ({ page }) => {
+test("nested opposite-side panels keep custom width and trigger position scoped", async ({ page }) => {
     const structural = await readFile("resources/css/structural.css", "utf8");
     await page.setContent(`
         <style>
@@ -163,7 +164,7 @@ test("nested opposite-side panels keep trigger position and icon rotation scoped
                     </aside>
                     <main data-slot="side-panel-inset">
                         <button id="inner-trigger" data-slot="side-panel-trigger">
-                            <span id="inner-icon" data-slot="side-panel-trigger-icon"></span>
+                            Toggle
                         </button>
                     </main>
                 </div>
@@ -181,6 +182,7 @@ test("nested opposite-side panels keep trigger position and icon rotation scoped
             left: style.left,
             leftVariable: getComputedStyle(root).getPropertyValue("--side-panel-trigger-left").trim(),
             panelLeft: panel.left,
+            panelWidth: panel.width,
             right: style.right,
             rightVariable: getComputedStyle(root).getPropertyValue("--side-panel-trigger-right").trim(),
             triggerCenter: triggerBox.left + triggerBox.width / 2,
@@ -188,10 +190,10 @@ test("nested opposite-side panels keep trigger position and icon rotation scoped
     });
 
     expect(geometry.leftVariable).toBe("auto");
+    expect(geometry.panelWidth).toBe(150);
     expect(geometry.rightVariable).toBe("150px");
     expect(geometry.right).toBe("150px");
     expect(geometry.triggerCenter).toBe(geometry.panelLeft);
-    await expect(page.locator("#inner-icon")).toHaveCSS("transform", "matrix(-1, 0, 0, -1, 0, 0)");
 });
 
 for (const [direction, side] of [
@@ -227,25 +229,6 @@ for (const [direction, side] of [
     });
 }
 
-for (const [side, state, rotation] of [
-    ["left", "expanded", "matrix(1, 0, 0, 1, 0, 0)"],
-    ["left", "collapsed", "matrix(-1, 0, 0, -1, 0, 0)"],
-    ["right", "expanded", "matrix(-1, 0, 0, -1, 0, 0)"],
-    ["right", "collapsed", "matrix(1, 0, 0, 1, 0, 0)"],
-]) {
-    test(`${side} ${state} exposes the expected trigger rotation`, async ({ page }) => {
-        const structural = await readFile("resources/css/structural.css", "utf8");
-        await page.setContent(`
-            <style>${structural}</style>
-            <div data-slot="side-panel" data-side="${side}" data-state="${state}">
-                <span id="rotation-icon" data-slot="side-panel-trigger-icon"></span>
-            </div>
-        `);
-
-        await expect(page.locator("#rotation-icon")).toHaveCSS("transform", rotation);
-    });
-}
-
 test("programmatic collapse returns focus from panel content to the trigger", async ({ page }) => {
     await page.setContent(await fixture());
     await installController(page);
@@ -275,7 +258,7 @@ test("an external open value change returns focus to the trigger before the pane
 test.describe("reduced motion", () => {
     test.use({ reducedMotion: "reduce" });
 
-    test("disables panel, trigger and icon transitions", async ({ page }) => {
+    test("disables panel, trigger and content transitions", async ({ page }) => {
         await page.emulateMedia({ reducedMotion: "reduce" });
         await page.setContent(await fixture());
 
@@ -317,6 +300,26 @@ async function fixture(withSidebar = false, open = true, side = "left", directio
         </div>
         ${withSidebar ? "</div>" : ""}
     `;
+}
+
+async function layoutGeometry(page) {
+    return page.locator("#layout").evaluate((root) => {
+        const panel = root.querySelector("#project-panel").getBoundingClientRect();
+        const inset = root.querySelector("#project-inset").getBoundingClientRect();
+
+        return {
+            expandedPanelWidth: Number.parseFloat(getComputedStyle(root).getPropertyValue("--side-panel-width")),
+            insetWidth: inset.width,
+            panelWidth: panel.width,
+            rootWidth: root.getBoundingClientRect().width,
+        };
+    });
+}
+
+async function finishAnimations(locator) {
+    await locator.evaluate((element) =>
+        Promise.all(element.getAnimations({ subtree: true }).map((animation) => animation.finished.catch(() => {}))),
+    );
 }
 
 async function installController(page) {

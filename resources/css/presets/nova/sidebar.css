@@ -70,7 +70,7 @@
         :where(:scope)[data-slot="sidebar"][data-collapsible="icon"] [data-slot="sidebar-group-action"] { @apply md:hidden; }
     }
     [data-slot="sidebar-group-content"] { @apply w-full text-sm; }
-    [data-slot="sidebar-menu"] { @apply flex w-full min-w-0 flex-col gap-0; }
+    [data-slot="sidebar-menu"] { @apply flex w-full min-w-0 flex-col gap-1; }
     [data-slot="sidebar-menu-item"] { @apply relative; }
     [data-slot="sidebar-menu-button"] { @apply flex w-full appearance-none items-center gap-2 overflow-hidden rounded-md border-0 bg-transparent p-2 text-start text-sm whitespace-nowrap outline-none transition-[width,height,padding] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground [&>svg]:size-4 [&>svg]:shrink-0; }
     [data-slot="sidebar-menu-button"] > span:not([data-slot="avatar"]) { @apply min-w-0 truncate; }

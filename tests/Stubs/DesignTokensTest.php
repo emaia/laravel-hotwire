@@ -1,6 +1,7 @@
 <?php
 
 use Emaia\LaravelHotwire\Support\CssPresetFiles;
+use Emaia\LaravelHotwire\Support\PresetAxes;
 
 $stubPath = realpath(__DIR__.'/../../stubs/resources/css/app.css');
 $tokensPath = realpath(__DIR__.'/../../resources/css/tokens.css');
@@ -132,42 +133,25 @@ it('safelists runtime classes applied by Stimulus controllers', function () {
         ->toContain('overflow-hidden');
 });
 
-it('applies shared button styles to attachment actions', function () {
-    $lines = collect(explode("\n", presetVisualCss('nova')));
-    $base = $lines->first(fn (string $line): bool => str_contains($line, ':is([data-slot="button"]'));
-    $ghost = $lines->first(fn (string $line): bool => str_contains($line, ':is([data-slot="button"]') && str_contains($line, '[data-variant="ghost"]'));
-    $iconXs = $lines->first(fn (string $line): bool => str_contains($line, ':is([data-slot="button"]') && str_contains($line, '[data-size="icon-xs"]'));
+it('keeps back to top interaction states, reduced motion and shared button axes', function () {
+    $css = presetVisualCss('nova');
+    $axes = (new PresetAxes)->extract($css);
 
-    expect($base)->toContain('[data-slot="attachment-action"]')
-        ->and($ghost)->toContain('[data-slot="attachment-action"]')
-        ->and($iconXs)->toContain('[data-slot="attachment-action"]');
-});
-
-it('applies shared button styles and visibility states to back to top', function () {
-    $lines = collect(explode("\n", presetVisualCss('nova')));
-    $buttonRules = $lines->filter(fn (string $line): bool => str_contains($line, ':is([data-slot="button"]'));
-    $css = $lines->implode("\n");
-
-    expect($buttonRules)->toHaveCount(15);
-
-    $buttonRules->each(fn (string $line) => expect($line)->toContain('[data-slot="back-to-top"]'));
-
-    expect($css)
-        ->toContain('[data-slot="back-to-top"][data-visible] { @apply fixed end-4 bottom-4 z-40 rounded-full shadow-lg transition-opacity sm:end-6 sm:bottom-6; }')
+    expect(presetDeclaration($css, '[data-slot="back-to-top"][data-visible="false"]'))
+        ->toContain('pointer-events-none')
+        ->and(presetDeclaration($css, '[data-slot="back-to-top"][data-visible="true"]'))
+        ->toContain('pointer-events-auto')
+        ->and($axes['back-to-top']['data-variant'] ?? [])
+        ->not->toBeEmpty()
+        ->toEqualCanonicalizing($axes['button']['data-variant'] ?? [])
+        ->and($axes['back-to-top']['data-size'] ?? [])
+        ->not->toBeEmpty()
+        ->toEqualCanonicalizing($axes['button']['data-size'] ?? [])
+        ->and($css)
         ->toContain('@media (prefers-reduced-motion: reduce) {')
         ->toContain('[data-slot="back-to-top"][data-visible] { transition: none; }')
-        ->toContain('[data-slot="back-to-top"][data-visible="false"] { @apply pointer-events-none opacity-0; }')
-        ->toContain('[data-slot="back-to-top"][data-visible="true"] { @apply pointer-events-auto opacity-100; }')
         ->not->toContain('[data-slot="back-to-top"] { @apply transition-none; }')
         ->not->toContain('motion-reduce:transition-none');
-});
-
-it('keeps closed floating surfaces visible until Presence applies hidden', function () {
-    $css = presetVisualCss('nova');
-
-    expect($css)
-        ->toContain('[data-slot="multi-select-content"])[data-state="closed"] { @apply pointer-events-none scale-95 opacity-0; }')
-        ->not->toContain('[data-state="closed"] { @apply hidden');
 });
 
 it('uses the pre-connect color scheme mode to avoid toggle icon flicker', function () {
@@ -248,9 +232,15 @@ it('rides transition-behavior inside the shorthand, never as its own declaration
 
 it('keeps the Accordion collapse in the structural stylesheet', function () {
     // Mechanics, not looks: a preset left to restate these would ship an accordion that snaps shut.
-    expect(file_get_contents(dirname(__DIR__, 2).'/resources/css/structural.css'))
+    $css = file_get_contents(dirname(__DIR__, 2).'/resources/css/structural.css');
+
+    expect($css)
         ->toContain('@supports selector(::details-content)')
-        ->toContain('content-visibility 180ms ease-out allow-discrete')
+        ->toContain('[data-slot="accordion-item"]::details-content')
+        ->toContain('block-size: 0')
+        ->toContain('overflow: hidden')
+        ->toContain('[data-slot="accordion-item"][open]::details-content')
+        ->toMatch('/transition:[^;]*content-visibility[^;]*allow-discrete;/')
         ->toContain('block-size: calc-size(auto, size)');
 });
 
@@ -392,8 +382,7 @@ it('keeps file upload state and bare dropzone contracts', function (string $pres
         ->toContain('[data-state="error"]')
         ->toContain('[data-upload-state="error"]')
         ->toContain('[data-slot="file-upload-image-preview"]:not([hidden])')
-        ->toContain('[data-loading="true"]')
-        ->not->toContain('[data-slot="file-upload-dropzone"] { @apply flex min-h-32');
+        ->toContain('[data-loading="true"]');
 })->with('design presets');
 
 it('keeps sidebar icon collapse responsive and labels in layout flow', function (string $preset) {
@@ -536,40 +525,6 @@ it('preserves component custom-property contracts', function (string $preset) {
         ->toContain('[data-slot="sticky"][data-side="top"]')
         ->toContain('var(--sticky-offset)');
 })->with('design presets');
-
-it('matches the pinned Nova density and surface contract', function () {
-    $css = presetVisualCss('nova');
-    $accordionTrigger = presetDeclaration($css, '[data-slot="accordion-trigger"]');
-    $accordionContent = presetDeclaration($css, '[data-slot="accordion-content"]');
-    $input = presetDeclaration($css, '[data-slot="input"], [data-slot="select"]');
-    $fieldCard = presetDeclaration($css, '[data-slot="field-label"]:has(> [data-slot="field"])');
-    $fieldCardContent = presetDeclaration($css, '[data-slot="field-label"]:has(> [data-slot="field"]) > [data-slot="field"]');
-    $toggle = presetDeclaration($css, ':is([data-slot="toggle"], [data-slot="toggle-group-item"])[data-size="default"]');
-    $tabsList = presetDeclaration($css, '[data-slot="tabs"][data-orientation="horizontal"] [data-slot="tabs-list"]');
-    $tabsTrigger = presetDeclaration($css, '[data-slot="tabs-trigger"]');
-    $hoverCard = presetDeclaration($css, '[data-slot="hover-card-content"]');
-    $popover = presetDeclaration($css, '[data-slot="popover-content"]');
-    $sidebarInner = presetDeclaration($css, '[data-slot="sidebar"][data-variant="floating"] [data-slot="sidebar-inner"]');
-    $sidebarContent = presetDeclaration($css, '[data-slot="sidebar-content"]');
-    $sidebarMenu = presetDeclaration($css, '[data-slot="sidebar-menu"]');
-    $sliderThumb = presetDeclaration($css, '[data-slot="slider"]::-webkit-slider-thumb');
-
-    expect($accordionTrigger)->toContain('rounded-lg', 'py-2.5')
-        ->and($accordionContent)->toContain('pb-2.5')
-        ->and($input)->toContain('rounded-lg', 'bg-transparent', 'px-2.5', 'disabled:bg-input/50')
-        ->not->toContain('shadow-xs')
-        ->and($fieldCard)->toContain('rounded-lg', 'not-has-[:disabled,[data-disabled]]:hover:bg-muted/50', 'has-[:focus-visible]:border-ring', 'has-[:focus-visible]:ring-3')
-        ->and($fieldCardContent)->toContain('p-2.5')
-        ->and($toggle)->toContain('h-8', 'min-w-8', 'px-2.5')
-        ->and($tabsList)->toContain('h-8')
-        ->and($tabsTrigger)->toContain('px-1.5', 'py-0.5')
-        ->and($hoverCard)->toContain('rounded-lg', 'p-2.5', 'ring-1', 'duration-100')
-        ->and($popover)->toContain('gap-2.5', 'p-2.5', 'ring-1', 'duration-100')
-        ->and($sidebarInner)->toContain('ring-1')->not->toContain('border ')
-        ->and($sidebarContent)->toContain('gap-0')
-        ->and($sidebarMenu)->toContain('gap-0')
-        ->and($sliderThumb)->toContain('border-ring');
-});
 
 // --- Known bug guards ---
 

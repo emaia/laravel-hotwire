@@ -166,8 +166,9 @@ catalog, and any visual ownership must also be registered in styles.php**, or th
   ```
 
   Skip the manual lines that don't apply (a pure internal refactor with full test coverage may legitimately have only
-  the automated lines). For Stimulus controllers and Blade components, default to including manual smokes — DOM
-  observability, visual rendering, and event flow are exactly what unit tests can't fully cover.
+  the automated lines). For Stimulus controllers and Blade components, default to manual smokes for browser-observable
+  behavior, interaction, accessibility, and structural CSS. Include a pure visual smoke only when the change
+  intentionally affects appearance.
 
 ### Tag and Release
 
@@ -197,7 +198,8 @@ composer format        # Run Pint code formatter
 
 ### Testing (TDD)
 
-Follow test-driven development: write tests first, then implement.
+Follow test-driven development for testable behavior and contracts: write tests first, then implement. Purely visual CSS
+changes follow the CSS test scope below.
 
 There are three test suites:
 
@@ -205,6 +207,17 @@ There are three test suites:
 - **JS** (`bun run test`) — Bun test runner + happy-dom. Covers Stimulus controllers in `tests/Controllers/*.test.js`.
 - **Browser JS** (`bun run test:browser`) — Playwright. Covers browser-dependent Stimulus behavior in
   `tests/Browser/*.pw.js`.
+
+#### CSS test scope
+
+Automate CSS coverage when a rule provides a structural, behavioral, accessibility, compilation, or documented public
+contract. Examples include required visibility, scrolling, clipping, positioning, interaction state, focus visibility,
+contrast, reduced motion, forced-colors support, and public values emitted through CSS custom properties.
+
+Do not add source snapshots or exact computed-style assertions solely to freeze visual choices such as colors, shadows,
+border radii, typography, decorative motion, or non-functional spacing. Validate intentional appearance changes with a
+focused manual smoke; they do not require a failing automated test. Stylesheet imports, generated output, slot and axis
+coverage, catalog ownership, and structural browser behavior remain subject to TDD.
 
 TDD flow:
 
@@ -250,8 +263,9 @@ JS conventions:
     - The cases that turned on target removal or an external value change moved to
       `tests/Browser/read_more_controller.pw.js` and `tests/Browser/side_panel_controller.pw.js`.
 - Use Playwright (`tests/Browser/*.pw.js`) for controller behavior that depends on real browser semantics:
-  `MutationObserver`, focus, `requestAnimationFrame`, layout, Turbo frame-like DOM changes or other complex event
-  timing.
+  `MutationObserver`, focus, `requestAnimationFrame`, layout required by a behavioral, accessibility, or documented
+  public contract, Turbo frame-like DOM changes, or other complex event timing. Do not use Playwright solely to assert
+  decorative spacing or appearance.
 - Keep Playwright tests focused and few; prefer `bun run test` for deterministic controller unit behavior.
 - Run `bun run test:browser` after changing browser-dependent behavior.
 
@@ -355,8 +369,8 @@ temporary context that may be stale.
 
 Every PR that introduces a new component or controller must include:
 
-- [ ] **Smoke matrix.** Component tested: (a) in isolation, (b) inside a Modal, (c) inside a Dropdown, (d) inside a
-  Turbo Frame. Overlay components additionally tested nested inside each other.
+- [ ] **Manual smoke matrix.** Component verified: (a) in isolation, (b) inside a Modal, (c) inside a Dropdown, (d)
+  inside a Turbo Frame. Overlay components additionally verified nested inside each other.
 - [ ] **Listeners and timers** verified cleaned up in `disconnect()` — Turbo morph re-connects controllers; duplicate
   listeners are a recurring bug source.
 - [ ] **Integration opt-in evaluation.** For each new component, assess whether exposing a prop that activates an

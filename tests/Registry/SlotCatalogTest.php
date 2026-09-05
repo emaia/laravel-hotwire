@@ -152,8 +152,11 @@ it('keeps Read More first-paint geometry in the structural stylesheet', function
         ->toContain('[data-slot="read-more-trigger"][hidden]')
         ->toContain('[data-slot="read-more-fade"][hidden]')
         ->toContain('@media (scripting: enabled)')
-        ->toContain('transition: max-block-size 500ms ease-in-out')
+        ->toContain('[data-slot="read-more"]:not([data-ready])[data-state="collapsed"]')
+        ->toContain('[data-slot="read-more"][data-ready][data-state="collapsed"]')
         ->toContain('[data-state="expanded"]:not([data-transitioning])')
+        ->toContain('overflow: hidden')
+        ->toContain('overflow: visible')
         ->toContain('var(--read-more-collapsed-height, 20rem)');
 });
 
@@ -167,15 +170,12 @@ it('keeps Side Panel collapse mechanics in the structural stylesheet', function 
         ->toContain('[data-state="collapsed"] > [data-slot="side-panel-panel"]')
         ->toContain('inline-size: var(--side-panel-collapsed-width, 1.75rem)')
         ->toContain('[data-slot="side-panel-panel-content"]')
-        ->toContain('transition: opacity 150ms ease-in-out')
-        ->toContain('opacity: 0')
+        ->toContain('overflow: auto')
         ->toContain('inline-size: var(--side-panel-trigger-size, 1.75rem)')
         ->toContain('--side-panel-rail-position: var(--side-panel-width, 16rem)')
         ->toContain('--side-panel-rail-position: var(--side-panel-collapsed-width, 1.75rem)')
         ->toContain('--side-panel-trigger-left: var(--side-panel-rail-position)')
         ->toContain('--side-panel-trigger-right: auto')
-        ->toContain('--side-panel-trigger-rotation: 180deg')
-        ->toContain('transform: rotate(var(--side-panel-trigger-rotation, 0deg))')
         ->toContain('overflow: hidden');
 });
 
