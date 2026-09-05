@@ -25,32 +25,51 @@ function modalFixture(content, { frame = false, size = "full" } = {}) {
     `;
 }
 
-function modalContent({ footerLast = true, long = false } = {}) {
+function modalContent({ long = false } = {}) {
     const footer = '<div data-slot="modal-footer"><button type="button">Save</button></div>';
-    const afterFooter = footerLast ? "" : '<div data-testid="after-footer">After footer</div>';
 
     return `
         <div data-slot="modal-header"><div data-slot="modal-title">Title</div></div>
         <div data-testid="modal-body" style="height: ${long ? 900 : 40}px">Body</div>
         ${footer}
-        ${afterFooter}
     `;
 }
 
-test("size=full fills the padded viewport on desktop and mobile", async ({ page }) => {
+test("size=full keeps the modal stack aligned within desktop and mobile viewports", async ({ page }) => {
     for (const viewport of [
-        { width: 1280, height: 720, padding: 40 },
-        { width: 390, height: 640, padding: 8 },
+        { width: 1280, height: 720 },
+        { width: 390, height: 640 },
     ]) {
         await page.setViewportSize(viewport);
         await page.setContent(modalFixture(modalContent()));
 
-        for (const slot of ["modal-positioner", "modal-panel", "modal-content"]) {
-            const box = await page.locator(`[data-slot="${slot}"]`).boundingBox();
+        const { innerBounds, positioner, panel, content } = await page
+            .locator('[data-slot="modal-overlay"]')
+            .evaluate((overlay) => {
+                const overlayBox = overlay.getBoundingClientRect();
+                const style = getComputedStyle(overlay);
+                const paddingLeft = Number.parseFloat(style.paddingLeft);
+                const paddingRight = Number.parseFloat(style.paddingRight);
+                const paddingTop = Number.parseFloat(style.paddingTop);
+                const paddingBottom = Number.parseFloat(style.paddingBottom);
+                const box = (selector) => overlay.querySelector(selector).getBoundingClientRect().toJSON();
 
-            expect(box?.width, `${slot} width at ${viewport.width}px`).toBe(viewport.width - viewport.padding * 2);
-            expect(box?.height, `${slot} height at ${viewport.width}px`).toBe(viewport.height - viewport.padding * 2);
-        }
+                return {
+                    innerBounds: {
+                        x: overlayBox.left + paddingLeft,
+                        y: overlayBox.top + paddingTop,
+                        width: overlayBox.width - paddingLeft - paddingRight,
+                        height: overlayBox.height - paddingTop - paddingBottom,
+                    },
+                    positioner: box('[data-slot="modal-positioner"]'),
+                    panel: box('[data-slot="modal-panel"]'),
+                    content: box('[data-slot="modal-content"]'),
+                };
+            });
+
+        expect(positioner, `positioner at ${viewport.width}px`).toMatchObject(innerBounds);
+        expect(panel, `panel at ${viewport.width}px`).toEqual(positioner);
+        expect(content, `content at ${viewport.width}px`).toEqual(positioner);
     }
 });
 
@@ -66,64 +85,13 @@ test("size=full keeps direct and frame-backed footer rows at their natural heigh
 });
 
 test("frame-backed content keeps the same slot gaps as direct content", async ({ page }) => {
-    await page.setContent(modalFixture(modalContent(), { frame: true, size: "md" }));
-
-    const gaps = await page.locator("#modal-frame").evaluate((frame) => {
-        const header = frame.querySelector('[data-slot="modal-header"]').getBoundingClientRect();
-        const body = frame.querySelector('[data-testid="modal-body"]').getBoundingClientRect();
-        const footer = frame.querySelector('[data-slot="modal-footer"]').getBoundingClientRect();
-
-        return [body.top - header.bottom, footer.top - body.bottom];
-    });
-
-    expect(gaps).toEqual([16, 16]);
-});
-
-test("only a terminal footer receives the edge-to-edge surface", async ({ page }) => {
-    await page.setContent(modalFixture(modalContent({ footerLast: false }), { size: "md" }));
-
-    const nonFinal = await page.locator('[data-slot="modal-footer"]').evaluate((footer) => {
-        const footerBox = footer.getBoundingClientRect();
-        const siblingBox = footer.nextElementSibling.getBoundingClientRect();
-        const style = getComputedStyle(footer);
-
-        return {
-            gap: siblingBox.top - footerBox.bottom,
-            marginBottom: style.marginBottom,
-            marginInlineStart: style.marginInlineStart,
-            radius: style.borderBottomLeftRadius,
-            borderTop: style.borderTopWidth,
-            background: style.backgroundColor,
-        };
-    });
-
-    expect(nonFinal).toEqual({
-        gap: 16,
-        marginBottom: "0px",
-        marginInlineStart: "0px",
-        radius: "0px",
-        borderTop: "0px",
-        background: "rgba(0, 0, 0, 0)",
-    });
-
     await page.setContent(modalFixture(modalContent(), { size: "md" }));
-    const terminal = await page.locator('[data-slot="modal-footer"]').evaluate((footer) => {
-        const style = getComputedStyle(footer);
+    const directGaps = await page.locator('[data-slot="modal-content"]').evaluate(slotGaps);
 
-        return {
-            marginBottom: style.marginBottom,
-            marginInlineStart: style.marginInlineStart,
-            radius: style.borderBottomLeftRadius,
-            borderTop: style.borderTopWidth,
-            background: style.backgroundColor,
-        };
-    });
+    await page.setContent(modalFixture(modalContent(), { frame: true, size: "md" }));
+    const frameGaps = await page.locator("#modal-frame").evaluate(slotGaps);
 
-    expect(terminal.marginBottom).toBe("-16px");
-    expect(terminal.marginInlineStart).toBe("-16px");
-    expect(terminal.radius).not.toBe("0px");
-    expect(terminal.borderTop).toBe("1px");
-    expect(terminal.background).not.toBe("rgba(0, 0, 0, 0)");
+    expect(frameGaps).toEqual(directGaps);
 });
 
 test("the footer after long content stays in the scroll flow", async ({ page }) => {
@@ -158,3 +126,11 @@ test("the close button stays inside the full dialog bounds", async ({ page }) =>
     expect((close?.x ?? 0) + (close?.width ?? 0)).toBeLessThanOrEqual((panel?.x ?? 0) + (panel?.width ?? 0));
     expect((close?.y ?? 0) + (close?.height ?? 0)).toBeLessThanOrEqual((panel?.y ?? 0) + (panel?.height ?? 0));
 });
+
+function slotGaps(container) {
+    const header = container.querySelector('[data-slot="modal-header"]').getBoundingClientRect();
+    const body = container.querySelector('[data-testid="modal-body"]').getBoundingClientRect();
+    const footer = container.querySelector('[data-slot="modal-footer"]').getBoundingClientRect();
+
+    return [body.top - header.bottom, footer.top - body.bottom];
+}

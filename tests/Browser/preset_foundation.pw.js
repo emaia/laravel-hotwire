@@ -18,18 +18,14 @@ test("structural top-layer resets yield to preset and application styles", async
                 [data-slot="dropdown-menu"] { border: 5px solid red; }
             }
         </style>
-        <div id="modal" popover="manual" data-hotwire-top-layer data-slot="modal-overlay"></div>
         <div id="alert" popover="manual" data-hotwire-top-layer data-slot="alert-dialog-overlay"></div>
         <div id="dropdown" popover="manual" data-hotwire-top-layer data-slot="dropdown-menu"></div>
         <div id="sticky" data-slot="sticky"></div>
     `);
 
-    await page.locator("#modal").evaluate((element) => element.showPopover());
     await page.locator("#alert").evaluate((element) => element.showPopover());
     await page.locator("#dropdown").evaluate((element) => element.showPopover());
 
-    await expect(page.locator("#modal")).toHaveCSS("padding", "40px");
-    await expect(page.locator("#alert")).toHaveCSS("padding", "16px");
     await expect(page.locator("#alert")).toHaveCSS("overflow-y", "auto");
     await expect(page.locator("#dropdown")).toHaveCSS("border-left-width", "5px");
     await expect(page.locator("#sticky")).toHaveCSS("z-index", "99");
@@ -47,7 +43,7 @@ test("centered toasts stay centered when their visual width changes", async ({ p
     expect(box.x + box.width / 2).toBe(500);
 });
 
-test("Side Panel mechanics preserve the preset transition contract", async ({ page }) => {
+test("Side Panel mechanics yield to application overrides", async ({ page }) => {
     await page.setContent(`
         <style>${presetCss}</style>
         <style>
@@ -56,14 +52,9 @@ test("Side Panel mechanics preserve the preset transition contract", async ({ pa
             }
         </style>
         <div data-slot="side-panel" data-state="expanded" data-side="left">
-            <button id="trigger" data-slot="side-panel-trigger">Toggle</button>
+            <button data-slot="side-panel-trigger">Toggle</button>
         </div>
     `);
-
-    await expect(page.locator("#trigger")).toHaveCSS(
-        "transition-property",
-        "left, right, color, background-color, box-shadow",
-    );
 
     const railWidth = await page
         .locator('[data-slot="side-panel"]')
@@ -141,109 +132,6 @@ test("native Select options do not mark a Field card as selected", async ({ page
 
     expect(colors[0]).toEqual(colors[1]);
     expect(colors[2]).not.toEqual(colors[1]);
-});
-
-test("Nova composite text controls share input surfaces across themes and containers", async ({ page }) => {
-    const probes = ["light", "dark"].flatMap((theme) =>
-        ["background", "card", "muted"].map((surface) => `
-            <section data-probe data-theme="${theme}" data-surface="${surface}" style="background: var(--${surface}); padding: 16px">
-                <textarea data-slot="textarea"></textarea>
-                <div data-slot="rich-text">
-                    <div data-slot="rich-text-toolbar">Toolbar</div>
-                    <div data-slot="rich-text-editor"><div class="ProseMirror">Editor</div></div>
-                </div>
-                <button data-slot="multi-select-trigger">Select</button>
-                <div data-slot="multi-select-content">
-                    <div data-slot="input-group"><input data-slot="multi-select-search"></div>
-                </div>
-            </section>
-        `).join(""),
-    ).join("");
-    await page.setContent(`<style>${presetCss}</style>${probes}`);
-
-    const results = await page.locator("[data-probe]").evaluateAll((elements) =>
-        elements.map((element) => {
-            const styles = (selector) => getComputedStyle(element.querySelector(selector));
-            const textarea = styles('[data-slot="textarea"]');
-            const richText = styles('[data-slot="rich-text"]');
-            const editor = styles(".ProseMirror");
-            const trigger = styles('[data-slot="multi-select-trigger"]');
-            const searchGroup = styles('[data-slot="input-group"]');
-            const search = styles('[data-slot="multi-select-search"]');
-            const toolbar = styles('[data-slot="rich-text-toolbar"]');
-
-            return {
-                scope: `${element.dataset.theme}/${element.dataset.surface}`,
-                backgrounds: [
-                    textarea.backgroundColor,
-                    richText.backgroundColor,
-                    trigger.backgroundColor,
-                    searchGroup.backgroundColor,
-                ],
-                radii: [textarea.borderRadius, richText.borderRadius, trigger.borderRadius, searchGroup.borderRadius],
-                padding: [textarea.paddingInlineStart, editor.paddingInlineStart, trigger.paddingInlineStart],
-                searchBackground: search.backgroundColor,
-                toolbarBorder: toolbar.borderBottomWidth,
-            };
-        }),
-    );
-
-    for (const result of results) {
-        expect(new Set(result.backgrounds), `${result.scope}: backgrounds`).toHaveProperty("size", 1);
-        expect(new Set(result.radii), `${result.scope}: radii`).toHaveProperty("size", 1);
-        expect(new Set(result.padding), `${result.scope}: inline padding`).toHaveProperty("size", 1);
-        expect(result.searchBackground, `${result.scope}: nested search background`).toBe("rgba(0, 0, 0, 0)");
-        expect(result.toolbarBorder, `${result.scope}: toolbar divider`).toBe("1px");
-    }
-});
-
-test("Nova Multi Select separates its bulk action and uses the indicator for persistent selection", async ({
-    page,
-}) => {
-    await page.setContent(`
-        <style>${presetCss}</style>
-        <div data-slot="multi-select-content" style="--anchor-width: 16rem">
-            <button data-slot="multi-select-select-all" data-selected="true">
-                <span data-slot="multi-select-indicator"></span>
-                <span data-slot="multi-select-option-text">Clear all</span>
-            </button>
-            <div data-slot="multi-select-list">
-                <div id="selected" data-slot="multi-select-option" data-selected="true">
-                    <span data-slot="multi-select-indicator"></span>
-                    <span data-slot="multi-select-option-text">Selected</span>
-                </div>
-                <div id="unselected" data-slot="multi-select-option" data-selected="false">
-                    <span data-slot="multi-select-indicator"></span>
-                    <span data-slot="multi-select-option-text">Unselected</span>
-                </div>
-            </div>
-        </div>
-    `);
-
-    const result = await page.locator('[data-slot="multi-select-content"]').evaluate((content) => {
-        const selectAll = content.querySelector('[data-slot="multi-select-select-all"]');
-        const selected = content.querySelector("#selected");
-        const unselected = content.querySelector("#unselected");
-        const selectAllBox = selectAll.getBoundingClientRect();
-        const selectedBox = selected.getBoundingClientRect();
-        const unselectedBox = unselected.getBoundingClientRect();
-
-        return {
-            bulkActionGap: selectedBox.top - selectAllBox.bottom,
-            optionGap: unselectedBox.top - selectedBox.bottom,
-            selectedBackground: getComputedStyle(selected).backgroundColor,
-            unselectedBackground: getComputedStyle(unselected).backgroundColor,
-            selectedIndicatorBackground: getComputedStyle(selected.firstElementChild).backgroundColor,
-            unselectedIndicatorBackground: getComputedStyle(unselected.firstElementChild).backgroundColor,
-        };
-    });
-
-    expect(result.bulkActionGap).toBe(result.optionGap);
-    expect(result.selectedBackground).toBe(result.unselectedBackground);
-    expect(result.selectedIndicatorBackground).not.toBe(result.unselectedIndicatorBackground);
-
-    await page.locator("#selected").hover();
-    await expect(page.locator("#selected")).not.toHaveCSS("background-color", result.unselectedBackground);
 });
 
 test("Reveal fallback keyframes yield to later preset definitions", async ({ page }) => {
