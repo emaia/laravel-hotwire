@@ -37,6 +37,38 @@ test("coordinates native details toggles in the browser", async ({ page }) => {
     await expect(enterprise).toHaveJSProperty("open", false);
 });
 
+test("applies explicit open precedence without dispatching change on connect", async ({ page }) => {
+    await page.setContent(`
+        <section data-controller="accordion"
+                 data-accordion-type-value="single"
+                 data-accordion-value-value="shipping">
+            <details data-accordion-target="item" data-value="shipping" open>
+                <summary>Shipping</summary>
+            </details>
+            <details data-accordion-target="item"
+                     data-accordion-open-override="true"
+                     data-value="photos"
+                     open>
+                <summary>Photos</summary>
+            </details>
+        </section>
+    `);
+
+    await page.evaluate(() => {
+        window.accordionChanges = [];
+        document.querySelector("section").addEventListener("accordion:change", (event) => {
+            window.accordionChanges.push(event.detail.value);
+        });
+    });
+
+    await installController(page);
+    await page.waitForTimeout(50);
+
+    await expect(page.locator('details[data-value="shipping"]')).toHaveJSProperty("open", false);
+    await expect(page.locator('details[data-value="photos"]')).toHaveJSProperty("open", true);
+    expect(await page.evaluate(() => window.accordionChanges)).toEqual([]);
+});
+
 async function installController(page) {
     await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
     await page.addScriptTag({ content: await bundle() });

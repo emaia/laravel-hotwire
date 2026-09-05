@@ -52,11 +52,15 @@ class Item extends Component
             'itemAttributes' => StimulusAttributes::merge([
                 'data-slot' => 'accordion-item',
                 "data-{$identifier}-target" => 'item',
+                "data-{$identifier}-open-override" => $this->open === null ? null : ($this->open ? 'true' : 'false'),
                 'data-value' => $this->value,
                 'open' => $open,
                 'aria-disabled' => $this->disabled ? 'true' : null,
                 'data-disabled' => $this->disabled ? 'true' : null,
-            ], $attributes, $this->stimulus, protectedPrefixes: ["data-{$identifier}-target"]),
+            ], $attributes, $this->stimulus, protectedPrefixes: [
+                "data-{$identifier}-target",
+                "data-{$identifier}-open-override",
+            ]),
         ];
     }
 }

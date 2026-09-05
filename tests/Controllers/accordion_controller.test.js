@@ -81,13 +81,29 @@ test.serial("initial value opens matching items on connect", async () => {
     expect(items()[1].open).toBe(true);
 });
 
+test.serial("explicit open items take precedence over the root value on connect", async () => {
+    await mount({ value: ["shipping"], openOverride: true });
+
+    expect(items()[0].open).toBe(false);
+    expect(items()[1].open).toBe(true);
+});
+
+test.serial("explicitly closed items ignore a matching root value on connect", async () => {
+    await mount({ value: ["billing"], openOverride: false });
+
+    expect(items()[0].open).toBe(false);
+    expect(items()[1].open).toBe(false);
+});
+
 function items() {
     return [...document.querySelectorAll("details")];
 }
 
-async function mount({ type = "single", value = null, disabled = false } = {}) {
+async function mount({ type = "single", value = null, disabled = false, openOverride = null } = {}) {
     const valueAttr = value === null ? "" : `data-accordion-value-value='${JSON.stringify(value)}'`;
     const disabledAttr = disabled ? 'aria-disabled="true"' : "";
+    const openAttr = openOverride === true ? "open" : "";
+    const openOverrideAttr = openOverride === null ? "" : `data-accordion-open-override="${openOverride}"`;
 
     mounted = await mountController(
         "accordion",
@@ -100,7 +116,7 @@ async function mount({ type = "single", value = null, disabled = false } = {}) {
                 <summary>Shipping</summary>
                 <section>Shipping answers.</section>
             </details>
-            <details data-accordion-target="item" data-value="billing" ${disabledAttr}>
+            <details data-accordion-target="item" data-value="billing" ${disabledAttr} ${openAttr} ${openOverrideAttr}>
                 <summary>Billing</summary>
                 <section>Billing answers.</section>
             </details>

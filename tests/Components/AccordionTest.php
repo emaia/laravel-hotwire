@@ -70,6 +70,19 @@ it('renders disabled accordion items without opening them', function () {
         ->assertDontSee('open', false);
 });
 
+it('marks explicit accordion item open overrides for the controller', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::accordion value="shipping">
+            <x-hw::accordion.item value="shipping" :open="false">Shipping</x-hw::accordion.item>
+            <x-hw::accordion.item value="photos" :open="true">Photos</x-hw::accordion.item>
+        </x-hw::accordion>
+    BLADE);
+
+    expect((string) $view)
+        ->toMatch('/<details(?=[^>]*data-value="shipping")(?=[^>]*data-accordion-open-override="false")[^>]*>/')
+        ->toMatch('/<details(?=[^>]*data-value="photos")(?=[^>]*data-accordion-open-override="true")(?=[^>]*open)[^>]*>/');
+});
+
 it('renders generated accordion items before rich slot items', function () {
     $items = [
         [
@@ -170,7 +183,7 @@ it('keeps the accordion identifier through intermediate tabs', function () {
         <x-hw::accordion id="faq" controller="faq-accordion" value="shipping">
             <x-hw::tabs id="nested-tabs">
                 <x-hw::tabs.panel value="details">
-                    <x-hw::accordion.item value="shipping">
+                    <x-hw::accordion.item value="shipping" :open="true">
                         <x-hw::accordion.trigger>Shipping</x-hw::accordion.trigger>
                         <x-hw::accordion.content>Shipping answers.</x-hw::accordion.content>
                     </x-hw::accordion.item>
@@ -182,6 +195,8 @@ it('keeps the accordion identifier through intermediate tabs', function () {
     $view->assertSee('data-controller="faq-accordion"', false)
         ->assertSee('data-faq-accordion-value-value="shipping"', false)
         ->assertSee('data-faq-accordion-target="item"', false)
+        ->assertSee('data-faq-accordion-open-override="true"', false)
+        ->assertDontSee('data-accordion-open-override', false)
         ->assertDontSee('data-tabs-target="item"', false);
     expect((string) $view)->toMatch('/<details[^>]*data-value="shipping"[^>]*open/');
 

@@ -12,6 +12,7 @@ export default class extends Controller {
     initialize() {
         this.toggleItem = this.toggleItem.bind(this);
         this.preventDisabledToggle = this.preventDisabledToggle.bind(this);
+        this.pendingInitialToggles = new Map();
     }
 
     connect() {
@@ -23,6 +24,7 @@ export default class extends Controller {
     disconnect() {
         this.element.removeEventListener("click", this.preventDisabledToggle);
         this.element.removeEventListener("keydown", this.preventDisabledToggle);
+        this.pendingInitialToggles.clear();
     }
 
     itemTargetConnected(item) {
@@ -31,11 +33,19 @@ export default class extends Controller {
 
     itemTargetDisconnected(item) {
         item.removeEventListener("toggle", this.toggleItem);
+        this.pendingInitialToggles.delete(item);
     }
 
     toggleItem(event) {
         const item = event.target;
         if (!this.itemTargets.includes(item)) return;
+
+        if (this.pendingInitialToggles.has(item)) {
+            const open = this.pendingInitialToggles.get(item);
+            this.pendingInitialToggles.delete(item);
+
+            if (item.open === open) return;
+        }
 
         if (this.isDisabled(item)) {
             item.open = false;
@@ -72,13 +82,32 @@ export default class extends Controller {
         if (values.length === 0) return;
 
         this.itemTargets.forEach((item) => {
-            item.open = !this.isDisabled(item) && values.includes(item.dataset.value);
+            const override = this.openOverride(item);
+            const open = override ?? values.includes(item.dataset.value);
+
+            this.setInitialOpen(item, !this.isDisabled(item) && open);
         });
 
         if (this.single) {
             const open = this.itemTargets.filter((item) => item.open);
-            open.slice(1).forEach((item) => (item.open = false));
+            const explicit = open.find((item) => this.openOverride(item) === true);
+            const active = explicit ?? open[0];
+
+            open.filter((item) => item !== active).forEach((item) => this.setInitialOpen(item, false));
         }
+    }
+
+    setInitialOpen(item, open) {
+        if (item.open === open) return;
+
+        this.pendingInitialToggles.set(item, open);
+        item.open = open;
+    }
+
+    openOverride(item) {
+        const value = item.getAttribute(`data-${this.identifier}-open-override`);
+
+        return value === null ? null : value === "true";
     }
 
     isDisabled(item) {
