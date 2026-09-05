@@ -14,6 +14,7 @@ modal content from the server, you may use the frame-backed modal pattern descri
 - [Dynamic Content with Turbo Frames](#dynamic-content-with-turbo-frames)
 - [Loading Templates](#loading-templates)
 - [Behavior](#behavior)
+- [Footer and Scrolling](#footer-and-scrolling)
 - [Props](#props)
 - [Subcomponents](#subcomponents)
 - [Size Presets](#size-presets)
@@ -258,6 +259,17 @@ Use `initial-focus` to choose where focus moves when the modal opens:
 
 Initial focus runs once per opening. Turbo Frame updates, morph reconnects, and resuming a parent modal after a nested
 overlay closes do not move it again.
+
+## Footer and Scrolling
+
+`modal.content` is the dialog's scroll container. The footer stays in that normal flow and scrolls with the header and
+body; it is not sticky by default. For persistent actions, build an application layout with a dedicated body scrollport
+rather than applying `position: sticky` to `modal.footer`.
+
+The Nova preset gives a footer its edge-to-edge background, border, and rounded lower corners only when it is the last
+direct child of `modal.content` or of the component-owned Turbo Frame. A footer followed by other content remains a plain
+action row without negative margins or lower-corner styling. Frame-backed content receives the same spacing as direct
+content, and `size="full"` keeps each row at its natural height while the combined content remains scrollable.
 
 ## Props
 
