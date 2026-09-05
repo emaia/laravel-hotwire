@@ -7,6 +7,7 @@ use Emaia\LaravelHotwire\Support\AutoSubmit;
 use Emaia\LaravelHotwire\Support\FieldContext;
 use Emaia\LaravelHotwire\Support\FieldKey;
 use Emaia\LaravelHotwire\Support\FieldOwnerContext;
+use Emaia\LaravelHotwire\Support\OptionPairs;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\ViewErrorBag;
 use Illuminate\View\ComponentAttributeBag;
@@ -34,9 +35,7 @@ class RadioGroup extends Component
     ) {
         $this->ownerContext = new FieldOwnerContext;
 
-        if ($options !== [] && array_keys($options) === range(0, count($options) - 1)) {
-            $this->options = array_combine($options, $options);
-        }
+        $this->options = OptionPairs::normalize($options);
 
         $this->orientation = in_array($this->orientation, ['horizontal', 'vertical'], true)
             ? $this->orientation

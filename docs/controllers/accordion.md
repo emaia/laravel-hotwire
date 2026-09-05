@@ -32,6 +32,9 @@ Coordinates native `<details>` / `<summary>` accordion items without replacing b
 
 - `single` closes sibling items when a new item opens.
 - `multiple` leaves sibling items open.
+- An item with `data-accordion-open-override="true|false"` keeps that explicit initial state when the root `value` is
+  applied. In `single` mode, an explicitly open item takes precedence over root-value matches.
+- Initial state reconciliation is silent; `accordion:change` is dispatched only for subsequent toggles.
 - Items with `aria-disabled="true"` or `data-disabled="true"` cannot be opened.
 - The controller dispatches `accordion:change` after an item toggles.
 

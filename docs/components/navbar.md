@@ -8,36 +8,50 @@ tabs. Use `<hw:tabs>` only when the control switches tab panels in the same docu
 ## Quick example
 
 ```blade
-<hw:navbar aria-label="Sections">
-    <hw:navbar.item href="/parks/1/basic-information">
-        Basic information
-    </hw:navbar.item>
-
-    <hw:navbar.item href="/parks/1/content" current>
-        Content
-    </hw:navbar.item>
-</hw:navbar>
+<hw:navbar aria-label="Sections" :items="[
+    ['label' => 'Basic information', 'href' => '/parks/1/basic-information'],
+    ['label' => 'Content', 'href' => '/parks/1/content', 'current' => true],
+]" />
 ```
+
+Use `<hw:navbar.item>` directly when an item needs custom markup or HTML attributes.
 
 ## Props
 
-| Component     | Prop            | Type                   | Default      | Description                                                     |
-|---------------|-----------------|------------------------|--------------|-----------------------------------------------------------------|
-| `navbar`      | `variant`       | `line\|pills`          | `line`       | Visual style in the selected preset.                                |
-| `navbar`      | `orientation`   | `horizontal\|vertical` | `horizontal` | Layout direction. Invalid values use horizontal.                |
-| `navbar`      | `overflow`      | `scroll\|visible`      | `scroll`     | Mobile overflow hook for horizontal navigation.                 |
-| `navbar`      | `sticky`        | `bool`                 | `false`      | Wraps the navbar in an internal sticky surface.                 |
-| `navbar`      | `sticky-side`   | `top\|bottom`          | `top`        | Sticky side when `sticky` is enabled.                           |
-| `navbar`      | `sticky-offset` | `string\|int\|float`   | `0`          | Sticky offset when `sticky` is enabled.                         |
-| `navbar.item` | `href`          | `string\|null`         | `null`       | URL. Items render as anchors when present.                      |
-| `navbar.item` | `current`       | `bool`                 | `false`      | Marks the item as the current page/section.                     |
-| `navbar.item` | `disabled`      | `bool`                 | `false`      | Disables buttons or makes links inert with ARIA-disabled state. |
-| `navbar.item` | `as`            | `a\|button\|span\|null` | derived    | Override the rendered tag with a validated allowed value.       |
-| `navbar.item` | `type`          | `button\|submit\|reset` | `button`   | Native type when rendering a button.                            |
-| `navbar.item` | `frame`         | `string\|object\|false\|null` | `null` | Turbo Frame target when rendering an enabled anchor.           |
+| Component     | Prop            | Type                          | Default      | Description                                                     |
+|---------------|-----------------|-------------------------------|--------------|-----------------------------------------------------------------|
+| `navbar`      | `variant`       | `line\|pills`                 | `line`       | Visual style in the selected preset.                            |
+| `navbar`      | `orientation`   | `horizontal\|vertical`        | `horizontal` | Layout direction. Invalid values use horizontal.                |
+| `navbar`      | `overflow`      | `scroll\|visible`             | `scroll`     | Mobile overflow hook for horizontal navigation.                 |
+| `navbar`      | `sticky`        | `bool`                        | `false`      | Wraps the navbar in an internal sticky surface.                 |
+| `navbar`      | `sticky-side`   | `top\|bottom`                 | `top`        | Sticky side when `sticky` is enabled.                           |
+| `navbar`      | `sticky-offset` | `string\|int\|float`          | `0`          | Sticky offset when `sticky` is enabled.                         |
+| `navbar`      | `items`         | `array`                       | `[]`         | Plain item descriptors rendered before composed slot items.     |
+| `navbar.item` | `href`          | `string\|null`                | `null`       | URL. Items render as anchors when present.                      |
+| `navbar.item` | `current`       | `bool`                        | `false`      | Marks the item as the current page/section.                     |
+| `navbar.item` | `disabled`      | `bool`                        | `false`      | Disables buttons or makes links inert with ARIA-disabled state. |
+| `navbar.item` | `as`            | `a\|button\|span\|null`       | derived      | Override the rendered tag with a validated allowed value.       |
+| `navbar.item` | `type`          | `button\|submit\|reset`       | `button`     | Native type when rendering a button.                            |
+| `navbar.item` | `frame`         | `string\|object\|false\|null` | `null`       | Turbo Frame target when rendering an enabled anchor.            |
 
 Any other HTML attribute on `<hw:navbar>` passes through to `<nav>`. Attributes on `<hw:navbar.item>` pass through to
 the item element.
+
+## Items API
+
+| Key        | Required | Description                                          |
+|------------|----------|------------------------------------------------------|
+| `label`    | yes      | Escaped string, integer or `Stringable`; trusted `Htmlable` also renders directly. |
+| `href`     | no       | URL as a string or `Stringable`; its presence derives an anchor by default. |
+| `current`  | no       | Marks the item as the current page or section.       |
+| `disabled` | no       | Applies the existing disabled link/button semantics. |
+| `as`       | no       | Explicit `a`, `button` or `span` tag.                |
+| `type`     | no       | Native button type. Defaults to `button`.            |
+| `frame`    | no       | Turbo Frame target for an enabled anchor.            |
+
+Generated items use `<hw:navbar.item>` and render before the root slot. Current state is never inferred from the URL or
+item position. Filter the source array for authorization and use manual composition for per-item attributes, classes,
+Stimulus bindings or conditional Blade content.
 
 ## Sticky navbar
 

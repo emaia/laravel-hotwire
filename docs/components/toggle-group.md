@@ -8,11 +8,13 @@ mutually exclusive form choices that must submit one value, and `<hw:checkbox-gr
 ## Quick example
 
 ```blade
-<hw:toggle-group type="single" name="alignment" :value="request('alignment')" aria-label="Text alignment">
-    <hw:toggle-group.item value="left">Left</hw:toggle-group.item>
-    <hw:toggle-group.item value="center">Center</hw:toggle-group.item>
-    <hw:toggle-group.item value="right">Right</hw:toggle-group.item>
-</hw:toggle-group>
+<hw:toggle-group
+    type="single"
+    name="alignment"
+    :options="['left' => 'Left', 'center' => 'Center', 'right' => 'Right']"
+    :value="request('alignment')"
+    aria-label="Text alignment"
+/>
 ```
 
 ## Props
@@ -22,9 +24,10 @@ mutually exclusive form choices that must submit one value, and `<hw:checkbox-gr
 | `toggle-group`      | `type`              | `single\|multiple`     | `multiple`   | Selection mode. `single` keeps at most one item pressed.                         |
 | `toggle-group`      | `name`              | `string\|null`         | —            | Hidden input name for form submission. Multiple groups append `[]` when missing. |
 | `toggle-group`      | `value`             | `mixed`                | `null`       | Selected value or selected value array.                                          |
+| `toggle-group`      | `options`           | `array`                | `[]`         | `[value => label]` pairs; flat arrays use each value as its label.               |
 | `toggle-group`      | `orientation`       | `horizontal\|vertical` | `horizontal` | Layout and ARIA orientation.                                                     |
-| `toggle-group`      | `variant`           | `string`               | `default`    | `default` or `outline` in the selected preset.                                       |
-| `toggle-group`      | `size`              | `string`               | `default`    | `default`, `sm` or `lg` in the selected preset.                                      |
+| `toggle-group`      | `variant`           | `string`               | `default`    | `default` or `outline` in the selected preset.                                   |
+| `toggle-group`      | `size`              | `string`               | `default`    | `default`, `sm` or `lg` in the selected preset.                                  |
 | `toggle-group`      | `disabled`          | `bool\|string`         | `false`      | Disables every item and hidden input.                                            |
 | `toggle-group`      | `connected`         | `bool\|string`         | `false`      | Removes spacing and connects item borders.                                       |
 | `toggle-group`      | `old`               | `bool`                 | `true`       | Restores selected values from `old()` input.                                     |
@@ -38,6 +41,26 @@ mutually exclusive form choices that must submit one value, and `<hw:checkbox-gr
 
 Any other HTML attribute passes through. Internal `data-toggle-group-*` and `data-toggle-*` attributes are protected; use
 props instead.
+
+## Options
+
+Use associative options for distinct submitted values and labels:
+
+```blade
+<hw:toggle-group name="density" type="single" :options="[
+    'compact' => 'Compact',
+    'comfortable' => 'Comfortable',
+]" />
+```
+
+Flat arrays use each string as both value and label:
+
+```blade
+<hw:toggle-group name="formats" :options="['bold', 'italic', 'underline']" />
+```
+
+Generated string labels are escaped and render before composed slot items. Use `<hw:toggle-group.item>` for rich content
+or when an item needs `disabled`, `pressed`, identity, attributes or Stimulus bindings.
 
 ## Items and ownership
 

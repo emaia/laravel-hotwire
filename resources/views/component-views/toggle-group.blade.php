@@ -39,4 +39,10 @@
     ], $attributes, $toggleGroupStimulus, except: ['type', 'value', 'variant', 'size', 'orientation', 'disabled', 'connected', 'old', 'name', 'id', 'error-key', 'auto-submit', 'auto-submit-delay'], protectedPrefixes: $internalPrefixes);
 @endphp
 
-<div {{ $groupAttributes }}>{{ $slot }}</div>
+<div {{ $groupAttributes }}>
+    @foreach ($toggleGroupOptions as $value => $label)
+        <x-hw::toggle-group.item :value="$value">{{ $label }}</x-hw::toggle-group.item>
+    @endforeach
+
+    {{ $slot }}
+</div>

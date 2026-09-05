@@ -69,6 +69,30 @@ it('renders a multiple-selection group and normalizes the form name to an array'
         ->and(substr_count($html, 'data-toggle-pressed-value="false"'))->toBe(1);
 });
 
+it('renders generated options before rich items and normalizes flat option lists', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::toggle-group name="formats" :options="['bold', 'italic']" :value="['bold']">
+            <x-hw::toggle-group.item value="underline">Underline</x-hw::toggle-group.item>
+        </x-hw::toggle-group>
+    BLADE);
+
+    expect(substr_count($html, 'data-slot="toggle-group-item"'))->toBe(3)
+        ->and(substr_count($html, 'type="hidden"'))->toBe(3)
+        ->and($html)->toContain('value="bold"')
+        ->and($html)->toContain('value="italic"')
+        ->and($html)->not->toContain('value="0"')
+        ->and($html)->not->toContain('value="1"')
+        ->and(substr_count($html, 'data-toggle-pressed-value="true"'))->toBe(1)
+        ->and(strpos($html, '>bold</button>'))->toBeLessThan(strpos($html, '>Underline</button>'));
+});
+
+it('renders escaped labels from associative toggle group options', function () {
+    $view = $this->blade('<x-hw::toggle-group :options="[\'bold\' => \'<Bold>\']" />');
+
+    $view->assertSee('&lt;Bold&gt;', false)
+        ->assertDontSee('<Bold>', false);
+});
+
 it('inherits name from a field wrapper and keeps single names scalar', function () {
     $view = $this->blade(<<<'BLADE'
         <x-hw::field name="alignment">
@@ -86,7 +110,7 @@ it('inherits name from a field wrapper and keeps single names scalar', function 
 // --- Value + old() ---
 
 it('publishes only toggle-group-scoped component data', function () {
-    $groupData = (new ToggleGroup(name: 'formats', value: ['bold'], disabled: true))->data();
+    $groupData = (new ToggleGroup(name: 'formats', value: ['bold'], disabled: true, options: ['bold']))->data();
     $itemData = (new ToggleGroupItem(value: 'bold', name: 'item-formats', disabled: false))->data();
     $frameworkKeys = ['componentName', 'attributes', 'ignoredParameterNames', 'internalPrefixes', 'compute'];
 
@@ -101,7 +125,7 @@ it('publishes only toggle-group-scoped component data', function () {
 
     expect($groupGenericKeys)->toBe([])
         ->and($itemGenericKeys)->toBe([])
-        ->and($groupData)->toHaveKeys(['toggleGroupContext', 'toggleGroupName', 'toggleGroupSelected', 'toggleGroupDisabled'])
+        ->and($groupData)->toHaveKeys(['toggleGroupContext', 'toggleGroupName', 'toggleGroupOptions', 'toggleGroupSelected', 'toggleGroupDisabled'])
         ->and($groupData)->toHaveKey('fieldContext', null)
         ->and($groupData)->toHaveKey('fieldControlContext', null)
         ->and($groupData)->not->toHaveKey('groupDisabled')
