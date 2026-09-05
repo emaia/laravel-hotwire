@@ -3,6 +3,8 @@
 use Emaia\LaravelHotwire\Components\Accordion;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
+use Illuminate\Support\HtmlString;
+use Illuminate\Support\Str;
 use Illuminate\View\ViewException;
 
 it('renders an accordion root with controller and native details items', function () {
@@ -66,6 +68,95 @@ it('renders disabled accordion items without opening them', function () {
 
     $view->assertSee('aria-disabled="true"', false)
         ->assertDontSee('open', false);
+});
+
+it('renders generated accordion items before rich slot items', function () {
+    $items = [
+        [
+            'value' => 'shipping',
+            'trigger' => '<Shipping>',
+            'content' => new HtmlString('<p>Trusted shipping answer.</p>'),
+        ],
+        [
+            'value' => 'billing',
+            'trigger' => new HtmlString('<strong>Billing</strong>'),
+            'content' => 'Billing <answer>',
+            'disabled' => true,
+            'open' => true,
+            'icon' => false,
+        ],
+    ];
+
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::accordion value="shipping" :items="$items">
+            <x-hw::accordion.item value="manual">
+                <x-hw::accordion.trigger>Manual item</x-hw::accordion.trigger>
+                <x-hw::accordion.content>Manual answer.</x-hw::accordion.content>
+            </x-hw::accordion.item>
+        </x-hw::accordion>
+    BLADE, ['items' => $items]);
+
+    expect(substr_count($html, 'data-slot="accordion-item"'))->toBe(3)
+        ->and($html)->toMatch('/<details[^>]*data-value="shipping"[^>]*\sopen(?:\s|>|=)/')
+        ->and($html)->not->toMatch('/<details[^>]*data-value="billing"[^>]*\sopen(?:\s|>|=)/')
+        ->and($html)->toContain('aria-disabled="true"')
+        ->and($html)->toContain('&lt;Shipping&gt;')
+        ->and($html)->toContain('<p>Trusted shipping answer.</p>')
+        ->and($html)->toContain('<strong>Billing</strong>')
+        ->and($html)->toContain('Billing &lt;answer&gt;')
+        ->and(substr_count($html, 'data-slot="accordion-trigger-icon"'))->toBe(2)
+        ->and(strpos($html, 'data-value="shipping"'))->toBeLessThan(strpos($html, 'data-value="manual"'));
+
+    expect((new Accordion(items: $items))->data())
+        ->toHaveKey('accordionItems', $items)
+        ->not->toHaveKey('items');
+});
+
+it('rejects invalid generated accordion item descriptors', function (array $items, string $message) {
+    expect(fn () => new Accordion(items: $items))->toThrow(InvalidArgumentException::class, $message);
+})->with([
+    'missing content' => [
+        [['value' => 'shipping', 'trigger' => 'Shipping']],
+        'must define [value], [trigger], and [content]',
+    ],
+    'duplicate value' => [
+        [
+            ['value' => 'shipping', 'trigger' => 'Shipping', 'content' => 'Answer'],
+            ['value' => 'shipping', 'trigger' => 'Shipping again', 'content' => 'Another answer'],
+        ],
+        'must use a unique [value]',
+    ],
+    'invalid trigger' => [
+        [['value' => 'shipping', 'trigger' => null, 'content' => 'Answer']],
+        '[trigger] and [content] must be strings, integers, Stringable or Htmlable',
+    ],
+    'invalid item state' => [
+        [['value' => 'shipping', 'trigger' => 'Shipping', 'content' => 'Answer', 'disabled' => 'yes']],
+        '[disabled] and [icon] must be booleans',
+    ],
+]);
+
+it('accepts integer values and Stringable content in generated accordion items', function () {
+    $items = [
+        [
+            'value' => 7,
+            'trigger' => Str::of('shipping')->title(),
+            'content' => Str::of('<answer>'),
+        ],
+        [
+            'value' => Str::of('faq')->append('-8'),
+            'trigger' => 8,
+            'content' => 'Another answer',
+        ],
+    ];
+
+    $view = $this->blade('<x-hw::accordion :items="$items" />', ['items' => $items]);
+
+    $view->assertSee('data-value="7"', false)
+        ->assertSee('data-value="faq-8"', false)
+        ->assertSeeText('Shipping')
+        ->assertSeeText('8')
+        ->assertSee('&lt;answer&gt;', false);
 });
 
 it('merges user controllers on the accordion root', function () {

@@ -7,6 +7,7 @@ use Emaia\LaravelHotwire\Components\Concerns\StripsNullProps;
 use Emaia\LaravelHotwire\Support\ComponentId;
 use Emaia\LaravelHotwire\Support\FieldContext;
 use Emaia\LaravelHotwire\Support\FieldKey;
+use Emaia\LaravelHotwire\Support\OptionPairs;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\ViewErrorBag;
 use Illuminate\View\ComponentAttributeBag;
@@ -53,9 +54,7 @@ class MultiSelect extends Component
             $this->id = app(ComponentId::class)->resolve($this->id, 'hw-multi-select', 'multi-select');
         }
 
-        if ($options !== [] && array_keys($options) === range(0, count($options) - 1)) {
-            $this->options = array_combine($options, $options);
-        }
+        $this->options = OptionPairs::normalize($options);
 
         $this->side = $this->oneOf($this->side, ['top', 'right', 'bottom', 'left'], 'bottom');
         $this->align = $this->oneOf($this->align, ['start', 'center', 'end'], 'start');

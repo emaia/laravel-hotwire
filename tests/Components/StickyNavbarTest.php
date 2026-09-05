@@ -1,7 +1,10 @@
 <?php
 
+use Emaia\LaravelHotwire\Components\Navbar;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
+use Illuminate\Support\HtmlString;
+use Illuminate\Support\Str;
 
 it('targets only enabled navbar links with frame', function () {
     $enabled = $this->blade('<x-hw::navbar.item href="/tasks" frame="content">Tasks</x-hw::navbar.item>');
@@ -137,6 +140,83 @@ it('passes attributes through to navbar items', function () {
 
     $view->assertSee('class="font-bold"', false)
         ->assertSee('data-test="docs"', false);
+});
+
+it('renders generated navbar items before rich slot items', function () {
+    $items = [
+        ['label' => '<Basic>', 'href' => '/basic'],
+        [
+            'label' => new HtmlString('<strong>Content</strong>'),
+            'href' => '/content',
+            'current' => true,
+            'frame' => 'content',
+        ],
+        ['label' => 'Coming soon', 'disabled' => true],
+        ['label' => 'Plain label', 'as' => 'span'],
+    ];
+
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::navbar aria-label="Sections" :items="$items">
+            <x-hw::navbar.item href="/manual">Manual item</x-hw::navbar.item>
+        </x-hw::navbar>
+    BLADE, ['items' => $items]);
+
+    expect(substr_count($html, 'data-slot="navbar-item"'))->toBe(5)
+        ->and($html)->toContain('href="/basic"')
+        ->and($html)->toContain('&lt;Basic&gt;')
+        ->and($html)->toContain('<strong>Content</strong>')
+        ->and($html)->toContain('aria-current="page"')
+        ->and($html)->toContain('data-turbo-frame="content"')
+        ->and($html)->toMatch('/<button[^>]*disabled[^>]*>Coming soon<\/button>/')
+        ->and($html)->toMatch('/<span[^>]*data-slot="navbar-item"[^>]*>Plain label<\/span>/')
+        ->and(strpos($html, 'href="/basic"'))->toBeLessThan(strpos($html, 'href="/manual"'));
+
+    expect((new Navbar(items: $items))->data())
+        ->toHaveKey('navbarItems', $items)
+        ->not->toHaveKey('items');
+});
+
+it('rejects invalid generated navbar item descriptors', function (array $items, string $message) {
+    expect(fn () => new Navbar(items: $items))->toThrow(InvalidArgumentException::class, $message);
+})->with([
+    'missing label' => [
+        [['href' => '/missing-label']],
+        'must define [label]',
+    ],
+    'invalid label' => [
+        [['label' => null]],
+        '[label] must be a string, integer, Stringable or Htmlable',
+    ],
+    'invalid current state' => [
+        [['label' => 'Content', 'current' => 'yes']],
+        '[current] and [disabled] must be booleans',
+    ],
+    'invalid href' => [
+        [['label' => 'Content', 'href' => 7]],
+        '[href] must be a string, Stringable or null',
+    ],
+]);
+
+it('accepts a Stringable navbar item href', function () {
+    $items = [['label' => 'Docs', 'href' => Str::of('/docs')]];
+
+    $this->blade('<x-hw::navbar :items="$items" />', ['items' => $items])
+        ->assertSee('href="/docs"', false);
+});
+
+it('renders sticky navbar items with Stringable and integer labels', function () {
+    $items = [
+        ['label' => Str::of('docs')->title(), 'href' => '/docs'],
+        ['label' => 7, 'as' => 'span'],
+    ];
+
+    $view = $this->blade('<x-hw::navbar sticky sticky-offset="4rem" :items="$items" aria-label="Docs" />', ['items' => $items]);
+
+    $view->assertSee('data-slot="sticky"', false)
+        ->assertSee('style="--sticky-offset: 4rem;"', false)
+        ->assertSee('href="/docs"', false)
+        ->assertSeeText('Docs')
+        ->assertSeeText('7');
 });
 
 // --- Registry ---

@@ -104,7 +104,7 @@ return [
             'view' => 'hotwire::component-views.accordion',
             'docs' => 'docs/components/accordion.md',
             'category' => 'display',
-            'description' => 'Native details/summary accordion primitives with single or multiple item coordination',
+            'description' => 'Native details/summary accordion with an items shortcut and single or multiple item coordination',
             'controllers' => ['accordion'],
             'styling' => [
                 'slots' => $slots(['accordion', 'accordion-item', 'accordion-trigger', 'accordion-trigger-icon', 'accordion-content']),
@@ -716,7 +716,7 @@ return [
             'view' => 'hotwire::component-views.navbar',
             'docs' => 'docs/components/navbar.md',
             'category' => 'navigation',
-            'description' => 'Horizontal or vertical navigation bar for real links with current-page state and optional sticky sugar',
+            'description' => 'Horizontal or vertical navigation bar with an items shortcut, current-page state and optional sticky sugar',
             'controllers' => [],
             'styling' => [
                 'slots' => $slots(['navbar', 'navbar-item', 'sticky']),
@@ -1057,7 +1057,7 @@ return [
             'view' => 'hotwire::component-views.toggle-group',
             'docs' => 'docs/components/toggle-group.md',
             'category' => 'forms',
-            'description' => 'Single or multiple pressed-button group with hidden-input form submission',
+            'description' => 'Single or multiple pressed-button group with options and hidden-input form submission',
             'controllers' => ['toggle-group', 'toggle', 'auto-submit'],
             'styling' => [
                 'slots' => $slots(['toggle-group', 'toggle-group-item']),

@@ -7,6 +7,7 @@ use Emaia\LaravelHotwire\Support\AutoSubmit;
 use Emaia\LaravelHotwire\Support\FieldContext;
 use Emaia\LaravelHotwire\Support\FieldKey;
 use Emaia\LaravelHotwire\Support\FieldOwnerContext;
+use Emaia\LaravelHotwire\Support\OptionPairs;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\ComponentAttributeBag;
 
@@ -17,6 +18,7 @@ class ToggleGroup extends Component
     /** @var string[] */
     public array $selected;
 
+    /** @param  array<int|string, string>  $options */
     public function __construct(
         public ?string $name = null,
         public mixed $value = null,
@@ -32,8 +34,11 @@ class ToggleGroup extends Component
         public bool|string $autoSubmit = false,
         public int|string|null $autoSubmitDelay = null,
         public ?Htmlable $stimulus = null,
+        public array $options = [],
     ) {
         $this->ownerContext = new FieldOwnerContext;
+
+        $this->options = OptionPairs::normalize($options);
 
         $this->type = in_array($type, ['single', 'multiple'], true) ? $type : 'multiple';
         $this->selected = $this->normalizeSelected($value, $this->type);
@@ -49,6 +54,7 @@ class ToggleGroup extends Component
         $data = parent::data();
         $data['toggleGroupContext'] = true;
         $data['toggleGroupName'] = $this->name;
+        $data['toggleGroupOptions'] = $this->options;
         $data['toggleGroupValue'] = $this->value;
         $data['toggleGroupType'] = $this->type;
         $data['toggleGroupOrientation'] = $this->orientation;
@@ -102,6 +108,7 @@ class ToggleGroup extends Component
 
         unset(
             $data['name'],
+            $data['options'],
             $data['value'],
             $data['type'],
             $data['orientation'],

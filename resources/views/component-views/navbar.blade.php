@@ -14,12 +14,25 @@
         data-surface="true"
         style="--sticky-offset: {{ $stickyOffset }};"
     >
-        <nav
-            {{ $navbarAttributes }}
-        >{{ $slot }}</nav>
+@endif
+
+<nav
+    {{ $navbarAttributes }}
+>
+    @foreach ($navbarItems as $item)
+        <x-hw::navbar.item
+            :href="$item['href'] ?? null"
+            :current="$item['current'] ?? false"
+            :disabled="$item['disabled'] ?? false"
+            :as="$item['as'] ?? null"
+            :type="$item['type'] ?? 'button'"
+            :frame="$item['frame'] ?? null"
+        >{{ $item['label'] }}</x-hw::navbar.item>
+    @endforeach
+
+    {{ $slot }}
+</nav>
+
+@if ($sticky)
     </div>
-@else
-    <nav
-        {{ $navbarAttributes }}
-    >{{ $slot }}</nav>
 @endif

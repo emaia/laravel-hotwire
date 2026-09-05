@@ -8,6 +8,8 @@ use Emaia\LaravelHotwire\Support\StimulusAttributes;
 use Emaia\LaravelHotwire\Support\StimulusIdentifier;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\ComponentAttributeBag;
+use InvalidArgumentException;
+use Stringable;
 
 class Accordion extends Component
 {
@@ -20,6 +22,9 @@ class Accordion extends Component
 
     public ?string $accordionValueAttribute;
 
+    /**
+     * @param  array<int, array{value: string|int|Stringable, trigger: string|int|Stringable|Htmlable, content: string|int|Stringable|Htmlable, disabled?: bool, open?: bool|null, icon?: bool}>  $items
+     */
     public function __construct(
         public string|object|null $id = null,
         public string $type = 'single',
@@ -27,8 +32,10 @@ class Accordion extends Component
         public string $controller = 'accordion',
         public string $class = '',
         public ?Htmlable $stimulus = null,
+        public array $items = [],
     ) {
         StimulusIdentifier::guard($controller, 'accordion');
+        $this->guardItems($items);
 
         $this->accordionId = app(ComponentId::class)->resolve($id, 'hw-accordion', 'accordion');
         $this->accordionIdentifier = $controller;
@@ -44,7 +51,9 @@ class Accordion extends Component
     public function data(): array
     {
         $data = parent::data();
+        $data['accordionItems'] = $this->items;
         $data['compute'] = $this->computeResolved(...);
+        unset($data['items']);
 
         return $data;
     }
@@ -90,5 +99,53 @@ class Accordion extends Component
         }
 
         return $value;
+    }
+
+    /** @param  array<int, mixed>  $items */
+    private function guardItems(array $items): void
+    {
+        $values = [];
+
+        foreach ($items as $item) {
+            if (! is_array($item)
+                || ! array_key_exists('value', $item)
+                || ! array_key_exists('trigger', $item)
+                || ! array_key_exists('content', $item)) {
+                throw new InvalidArgumentException('Accordion items must define [value], [trigger], and [content].');
+            }
+
+            if (! is_string($item['value']) && ! is_int($item['value']) && ! $item['value'] instanceof Stringable) {
+                throw new InvalidArgumentException('Accordion item [value] must be a string, integer or Stringable.');
+            }
+
+            if (! $this->isItemContent($item['trigger']) || ! $this->isItemContent($item['content'])) {
+                throw new InvalidArgumentException('Accordion item [trigger] and [content] must be strings, integers, Stringable or Htmlable.');
+            }
+
+            if ((array_key_exists('disabled', $item) && ! is_bool($item['disabled']))
+                || (array_key_exists('icon', $item) && ! is_bool($item['icon']))) {
+                throw new InvalidArgumentException('Accordion item [disabled] and [icon] must be booleans.');
+            }
+
+            if (array_key_exists('open', $item) && ! is_bool($item['open']) && $item['open'] !== null) {
+                throw new InvalidArgumentException('Accordion item [open] must be a boolean or null.');
+            }
+
+            $value = (string) $item['value'];
+
+            if (in_array($value, $values, true)) {
+                throw new InvalidArgumentException('Accordion items must use a unique [value].');
+            }
+
+            $values[] = $value;
+        }
+    }
+
+    private function isItemContent(mixed $content): bool
+    {
+        return is_string($content)
+            || is_int($content)
+            || $content instanceof Stringable
+            || $content instanceof Htmlable;
     }
 }
