@@ -575,7 +575,9 @@ return [
             'description' => 'Keyboard input hint with optional grouped shortcut rendering',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(['kbd', 'kbd-group']),
+                'slots' => [
+                    ['class' => Kbd::class],
+                ],
             ],
         ],
         'map' => [

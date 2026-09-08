@@ -5,6 +5,7 @@ use Emaia\LaravelHotwire\Components\Card;
 use Emaia\LaravelHotwire\Components\Field;
 use Emaia\LaravelHotwire\Components\InputGroup;
 use Emaia\LaravelHotwire\Components\Item;
+use Emaia\LaravelHotwire\Components\Kbd;
 use Emaia\LaravelHotwire\Components\Toaster;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\SessionToast;
@@ -152,6 +153,20 @@ it('projects the Input Group family slot contract from its component class', fun
         'input-group' => 'visual',
         'input-group-addon' => 'visual',
         'input-group-control' => 'visual',
+    ]);
+});
+
+it('projects the Kbd family slot contract from its component class', function () {
+    $catalog = require __DIR__.'/../../src/Registry/catalog.php';
+
+    expect(Kbd::SLOTS)->toBe([
+        'root' => ['name' => 'kbd', 'kind' => 'visual'],
+        'group' => ['name' => 'kbd-group', 'kind' => 'visual'],
+    ])->and($catalog['components']['kbd']['styling']['slots'])->toBe([
+        ['class' => Kbd::class],
+    ])->and(HotwireRegistry::make()->component('kbd')->styling->slots)->toBe([
+        'kbd' => 'visual',
+        'kbd-group' => 'visual',
     ]);
 });
 
