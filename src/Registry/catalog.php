@@ -348,10 +348,9 @@ return [
             'description' => 'Off-canvas drawer with state-driven motion, focus trap and Escape/click-outside dismissal',
             'controllers' => ['drawer', 'turbo--view-transition'],
             'styling' => [
-                'slots' => $slots(
-                    ['drawer-overlay', 'drawer-trigger', 'drawer-backdrop', 'drawer-popup', 'drawer-content', 'drawer-header', 'drawer-title', 'drawer-description', 'drawer-footer', 'drawer-close'],
-                    ['drawer'],
-                ),
+                'slots' => [
+                    ['class' => Drawer::class],
+                ],
             ],
         ],
         'dropdown' => [

@@ -13,6 +13,20 @@ use Illuminate\View\ComponentAttributeBag;
 
 class Drawer extends Component
 {
+    public const array SLOTS = [
+        'overlay' => ['name' => 'drawer-overlay', 'kind' => 'visual'],
+        'trigger' => ['name' => 'drawer-trigger', 'kind' => 'visual'],
+        'backdrop' => ['name' => 'drawer-backdrop', 'kind' => 'visual'],
+        'popup' => ['name' => 'drawer-popup', 'kind' => 'visual'],
+        'content' => ['name' => 'drawer-content', 'kind' => 'visual'],
+        'header' => ['name' => 'drawer-header', 'kind' => 'visual'],
+        'title' => ['name' => 'drawer-title', 'kind' => 'visual'],
+        'description' => ['name' => 'drawer-description', 'kind' => 'visual'],
+        'footer' => ['name' => 'drawer-footer', 'kind' => 'visual'],
+        'close' => ['name' => 'drawer-close', 'kind' => 'visual'],
+        'root' => ['name' => 'drawer', 'kind' => 'structural'],
+    ];
+
     private const DIRECTIONS = ['up', 'right', 'down', 'left'];
 
     private OverlayLabelContext $overlayLabelContext;
@@ -120,7 +134,7 @@ class Drawer extends Component
         return [
             'drawerAttributes' => StimulusAttributes::merge([
                 'id' => $this->id,
-                'data-slot' => 'drawer',
+                'data-slot' => self::SLOTS['root']['name'],
                 'data-controller' => 'drawer',
                 'data-drawer-lock-scroll-value' => $this->lockScroll ? 'true' : 'false',
                 'data-drawer-close-on-escape-value' => $this->closeOnEscape ? 'true' : 'false',

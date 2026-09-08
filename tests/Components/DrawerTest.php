@@ -60,6 +60,39 @@ it('renders trigger close and semantic content subcomponents', function () {
         ->assertSee('data-action="drawer#close"', false);
 });
 
+it('renders Drawer family anatomy with semantic slots', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::drawer>
+            <x-hw::drawer.trigger>Open</x-hw::drawer.trigger>
+            <x-hw::drawer.content>
+                <x-hw::drawer.header>
+                    <x-hw::drawer.title>Title</x-hw::drawer.title>
+                    <x-hw::drawer.description>Description</x-hw::drawer.description>
+                </x-hw::drawer.header>
+                <x-hw::drawer.footer>
+                    <x-hw::drawer.close>Close</x-hw::drawer.close>
+                </x-hw::drawer.footer>
+            </x-hw::drawer.content>
+        </x-hw::drawer>
+    BLADE);
+
+    preg_match_all('/data-slot="(drawer(?:-[a-z0-9]+)*)"/', $html, $matches);
+
+    expect($matches[1])->toBe([
+        'drawer',
+        'drawer-trigger',
+        'drawer-overlay',
+        'drawer-backdrop',
+        'drawer-popup',
+        'drawer-content',
+        'drawer-header',
+        'drawer-title',
+        'drawer-description',
+        'drawer-footer',
+        'drawer-close',
+    ]);
+});
+
 it('maps side to semantic direction and size axis', function () {
     $right = $this->blade('<x-hw::drawer direction="right" size="24rem"><x-hw::drawer.content /></x-hw::drawer>');
     $right->assertSee('data-direction="right"', false)

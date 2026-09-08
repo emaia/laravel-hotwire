@@ -2,6 +2,7 @@
 
 use Emaia\LaravelHotwire\Components\Alert;
 use Emaia\LaravelHotwire\Components\Card;
+use Emaia\LaravelHotwire\Components\Drawer;
 use Emaia\LaravelHotwire\Components\Field;
 use Emaia\LaravelHotwire\Components\InputGroup;
 use Emaia\LaravelHotwire\Components\Item;
@@ -61,6 +62,38 @@ it('projects the Card family slot contract from its component class', function (
         'card-action' => 'visual',
         'card-content' => 'visual',
         'card-footer' => 'visual',
+    ]);
+});
+
+it('projects the Drawer family slot contract from its component class', function () {
+    $catalog = require __DIR__.'/../../src/Registry/catalog.php';
+
+    expect(Drawer::SLOTS)->toBe([
+        'overlay' => ['name' => 'drawer-overlay', 'kind' => 'visual'],
+        'trigger' => ['name' => 'drawer-trigger', 'kind' => 'visual'],
+        'backdrop' => ['name' => 'drawer-backdrop', 'kind' => 'visual'],
+        'popup' => ['name' => 'drawer-popup', 'kind' => 'visual'],
+        'content' => ['name' => 'drawer-content', 'kind' => 'visual'],
+        'header' => ['name' => 'drawer-header', 'kind' => 'visual'],
+        'title' => ['name' => 'drawer-title', 'kind' => 'visual'],
+        'description' => ['name' => 'drawer-description', 'kind' => 'visual'],
+        'footer' => ['name' => 'drawer-footer', 'kind' => 'visual'],
+        'close' => ['name' => 'drawer-close', 'kind' => 'visual'],
+        'root' => ['name' => 'drawer', 'kind' => 'structural'],
+    ])->and($catalog['components']['drawer']['styling']['slots'])->toBe([
+        ['class' => Drawer::class],
+    ])->and(HotwireRegistry::make()->component('drawer')->styling->slots)->toBe([
+        'drawer-overlay' => 'visual',
+        'drawer-trigger' => 'visual',
+        'drawer-backdrop' => 'visual',
+        'drawer-popup' => 'visual',
+        'drawer-content' => 'visual',
+        'drawer-header' => 'visual',
+        'drawer-title' => 'visual',
+        'drawer-description' => 'visual',
+        'drawer-footer' => 'visual',
+        'drawer-close' => 'visual',
+        'drawer' => 'structural',
     ]);
 });
 
