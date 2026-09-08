@@ -13,7 +13,7 @@
 @endphp
 
 <div
-    data-slot="field-error"
+    data-slot="{{ $slotName }}"
     data-empty="{{ $isEmpty ? 'true' : 'false' }}"
     id="{{ $resolvedId }}"
     role="alert"

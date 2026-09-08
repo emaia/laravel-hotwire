@@ -4,6 +4,7 @@ namespace Emaia\LaravelHotwire\Components\Field;
 
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 use Emaia\LaravelHotwire\Components\Concerns\StripsNullProps;
+use Emaia\LaravelHotwire\Components\Field;
 use Emaia\LaravelHotwire\Support\FieldKey;
 use Emaia\LaravelHotwire\Support\FieldLabel;
 use Emaia\LaravelHotwire\Support\FieldOwnerContext;
@@ -25,7 +26,10 @@ class Label extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.field-label');
+        return view('hotwire::component-views.field-label', [
+            'slotName' => Field::SLOTS['label']['name'],
+            'requiredSlotName' => Field::SLOTS['label-required']['name'],
+        ]);
     }
 
     public function data(): array

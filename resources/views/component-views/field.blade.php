@@ -10,10 +10,10 @@
     ])->class($fieldClass ?: null);
 @endphp
 
-<div data-slot="field" data-orientation="{{ $fieldOrientation }}" {{ $fieldAttributes }}>
+<div data-slot="{{ $slotName }}" data-orientation="{{ $fieldOrientation }}" {{ $fieldAttributes }}>
     @if ($resolvedContext['renderLabel'])
         @if ($resolvedContext['labelFor'] === '' && ! $resolvedContext['labelSet'])
-            <span data-slot="field-label" @if ($resolvedContext['labelId']) id="{{ $resolvedContext['labelId'] }}" @endif>{{ $fieldLabel }}@if ($resolvedContext['labelRequired'])<span data-slot="field-label-required" aria-hidden="true">{{ $fieldRequiredLabel }}</span>@endif</span>
+            <span data-slot="{{ $labelSlotName }}" @if ($resolvedContext['labelId']) id="{{ $resolvedContext['labelId'] }}" @endif>{{ $fieldLabel }}@if ($resolvedContext['labelRequired'])<span data-slot="{{ $requiredSlotName }}" aria-hidden="true">{{ $fieldRequiredLabel }}</span>@endif</span>
         @else
             <x-hw::field.label
                 :id="$resolvedContext['labelId']"

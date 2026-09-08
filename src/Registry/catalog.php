@@ -384,10 +384,9 @@ return [
             'description' => 'Wraps label, input, description and error — propagates scoped name/id/errorKey/required context',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(
-                    ['field-set', 'field-legend', 'field-group', 'field', 'field-label', 'field-content', 'field-title', 'field-description', 'field-error', 'field-separator', 'field-separator-line', 'field-separator-content'],
-                    ['field-label-required'],
-                ),
+                'slots' => [
+                    ['class' => Field::class],
+                ],
             ],
         ],
         'field.error' => [
@@ -398,7 +397,9 @@ return [
             'description' => 'Always-present error container bound to a form field via name/errorKey',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(['field-error']),
+                'slots' => [
+                    ['class' => Field::class, 'only' => ['error']],
+                ],
             ],
         ],
         'field.group' => [
@@ -409,7 +410,9 @@ return [
             'description' => 'Groups form fields and enables responsive field orientation layout',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(['field-group']),
+                'slots' => [
+                    ['class' => Field::class, 'only' => ['group']],
+                ],
             ],
         ],
         'field.label' => [
@@ -420,7 +423,9 @@ return [
             'description' => 'Form label with auto-derived for/id and optional required marker',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(['field-label'], ['field-label-required']),
+                'slots' => [
+                    ['class' => Field::class, 'only' => ['label', 'label-required']],
+                ],
             ],
         ],
         'file' => [

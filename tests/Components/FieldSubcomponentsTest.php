@@ -2,25 +2,46 @@
 
 use Emaia\LaravelHotwire\LaravelHotwireServiceProvider;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\ViewErrorBag;
 
 it('renders field layout subcomponents with semantic slots', function () {
-    $view = $this->blade('
+    view()->share('errors', new ViewErrorBag);
+
+    $html = (string) $this->blade('
         <x-hw::field.set class="space-y-4">
             <x-hw::field.legend variant="label">Preferences</x-hw::field.legend>
-            <x-hw::field.content>Content</x-hw::field.content>
-            <x-hw::field.title>Marketing emails</x-hw::field.title>
-            <x-hw::field.separator>Or</x-hw::field.separator>
+            <x-hw::field.group>
+                <x-hw::field name="email" label="Email" description="Updates" required>
+                    <x-hw::field.content>
+                        <x-hw::field.title>Marketing emails</x-hw::field.title>
+                    </x-hw::field.content>
+                </x-hw::field>
+                <x-hw::field.separator>Or</x-hw::field.separator>
+            </x-hw::field.group>
         </x-hw::field.set>
     ');
 
-    $view->assertSee('data-slot="field-set"', false)
-        ->assertSee('class="space-y-4"', false)
-        ->assertSee('data-slot="field-legend"', false)
-        ->assertSee('data-variant="label"', false)
-        ->assertSee('data-slot="field-content"', false)
-        ->assertSee('data-slot="field-title"', false)
-        ->assertSee('data-slot="field-separator"', false)
-        ->assertSee('data-slot="field-separator-content"', false);
+    preg_match_all('/data-slot="(field(?:-[a-z0-9]+)*)"/', $html, $matches);
+
+    expect($matches[1])->toBe([
+        'field-set',
+        'field-legend',
+        'field-group',
+        'field',
+        'field-label',
+        'field-label-required',
+        'field-content',
+        'field-title',
+        'field-description',
+        'field-error',
+        'field-separator',
+        'field-separator-line',
+        'field-separator-content',
+    ])->and($html)
+        ->toContain('class="space-y-4"')
+        ->toContain('data-variant="label"')
+        ->toContain('Marketing emails')
+        ->toContain('Updates');
 });
 
 it('renders a field separator without content', function () {

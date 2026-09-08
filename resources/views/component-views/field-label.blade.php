@@ -10,7 +10,7 @@
 @endphp
 
 <label
-    data-slot="field-label"
+    data-slot="{{ $slotName }}"
     @if ($resolvedId) id="{{ $resolvedId }}" @endif
     @if ($resolvedFor) for="{{ $resolvedFor }}" @endif
     {{ trim($class) !== '' ? $attributes->merge(['class' => $class]) : $attributes->except('class') }}
@@ -18,6 +18,6 @@
     {{ trim($slotHtml) !== '' ? $slot : $value }}
 
     @if ($resolvedRequired)
-        <span data-slot="field-label-required" aria-hidden="true">{{ $requiredLabel }}</span>
+        <span data-slot="{{ $requiredSlotName }}" aria-hidden="true">{{ $requiredLabel }}</span>
     @endif
 </label>

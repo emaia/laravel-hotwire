@@ -9,6 +9,22 @@ use InvalidArgumentException;
 
 class Field extends Component
 {
+    public const array SLOTS = [
+        'set' => ['name' => 'field-set', 'kind' => 'visual'],
+        'legend' => ['name' => 'field-legend', 'kind' => 'visual'],
+        'group' => ['name' => 'field-group', 'kind' => 'visual'],
+        'root' => ['name' => 'field', 'kind' => 'visual'],
+        'label' => ['name' => 'field-label', 'kind' => 'visual'],
+        'content' => ['name' => 'field-content', 'kind' => 'visual'],
+        'title' => ['name' => 'field-title', 'kind' => 'visual'],
+        'description' => ['name' => 'field-description', 'kind' => 'visual'],
+        'error' => ['name' => 'field-error', 'kind' => 'visual'],
+        'separator' => ['name' => 'field-separator', 'kind' => 'visual'],
+        'separator-line' => ['name' => 'field-separator-line', 'kind' => 'visual'],
+        'separator-content' => ['name' => 'field-separator-content', 'kind' => 'visual'],
+        'label-required' => ['name' => 'field-label-required', 'kind' => 'structural'],
+    ];
+
     private FieldContext $context;
 
     private FieldOwnerContext $ownerContext;
@@ -48,7 +64,11 @@ class Field extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.field');
+        return view('hotwire::component-views.field', [
+            'slotName' => self::SLOTS['root']['name'],
+            'labelSlotName' => self::SLOTS['label']['name'],
+            'requiredSlotName' => self::SLOTS['label-required']['name'],
+        ]);
     }
 
     public function data(): array

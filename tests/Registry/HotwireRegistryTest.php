@@ -2,6 +2,7 @@
 
 use Emaia\LaravelHotwire\Components\Alert;
 use Emaia\LaravelHotwire\Components\Card;
+use Emaia\LaravelHotwire\Components\Field;
 use Emaia\LaravelHotwire\Components\Item;
 use Emaia\LaravelHotwire\Components\Toaster;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
@@ -84,6 +85,56 @@ it('projects the Item family slot contract from its component class', function (
         'item-header' => 'visual',
         'item-footer' => 'visual',
         'item-separator' => 'visual',
+    ]);
+});
+
+it('projects the Field family slot contract from its component class', function () {
+    $catalog = require __DIR__.'/../../src/Registry/catalog.php';
+    $registry = HotwireRegistry::make();
+
+    expect(Field::SLOTS)->toBe([
+        'set' => ['name' => 'field-set', 'kind' => 'visual'],
+        'legend' => ['name' => 'field-legend', 'kind' => 'visual'],
+        'group' => ['name' => 'field-group', 'kind' => 'visual'],
+        'root' => ['name' => 'field', 'kind' => 'visual'],
+        'label' => ['name' => 'field-label', 'kind' => 'visual'],
+        'content' => ['name' => 'field-content', 'kind' => 'visual'],
+        'title' => ['name' => 'field-title', 'kind' => 'visual'],
+        'description' => ['name' => 'field-description', 'kind' => 'visual'],
+        'error' => ['name' => 'field-error', 'kind' => 'visual'],
+        'separator' => ['name' => 'field-separator', 'kind' => 'visual'],
+        'separator-line' => ['name' => 'field-separator-line', 'kind' => 'visual'],
+        'separator-content' => ['name' => 'field-separator-content', 'kind' => 'visual'],
+        'label-required' => ['name' => 'field-label-required', 'kind' => 'structural'],
+    ])->and($catalog['components']['field']['styling']['slots'])->toBe([
+        ['class' => Field::class],
+    ])->and($catalog['components']['field.error']['styling']['slots'])->toBe([
+        ['class' => Field::class, 'only' => ['error']],
+    ])->and($catalog['components']['field.group']['styling']['slots'])->toBe([
+        ['class' => Field::class, 'only' => ['group']],
+    ])->and($catalog['components']['field.label']['styling']['slots'])->toBe([
+        ['class' => Field::class, 'only' => ['label', 'label-required']],
+    ])->and($registry->component('field')->styling->slots)->toBe([
+        'field-set' => 'visual',
+        'field-legend' => 'visual',
+        'field-group' => 'visual',
+        'field' => 'visual',
+        'field-label' => 'visual',
+        'field-content' => 'visual',
+        'field-title' => 'visual',
+        'field-description' => 'visual',
+        'field-error' => 'visual',
+        'field-separator' => 'visual',
+        'field-separator-line' => 'visual',
+        'field-separator-content' => 'visual',
+        'field-label-required' => 'structural',
+    ])->and($registry->component('field.error')->styling->slots)->toBe([
+        'field-error' => 'visual',
+    ])->and($registry->component('field.group')->styling->slots)->toBe([
+        'field-group' => 'visual',
+    ])->and($registry->component('field.label')->styling->slots)->toBe([
+        'field-label' => 'visual',
+        'field-label-required' => 'structural',
     ]);
 });
 
