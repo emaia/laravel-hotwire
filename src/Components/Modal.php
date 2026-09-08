@@ -11,6 +11,22 @@ use Illuminate\Contracts\Support\Htmlable;
 
 class Modal extends Component
 {
+    public const array SLOTS = [
+        'overlay' => ['name' => 'modal-overlay', 'kind' => 'visual'],
+        'trigger' => ['name' => 'modal-trigger', 'kind' => 'visual'],
+        'backdrop' => ['name' => 'modal-backdrop', 'kind' => 'visual'],
+        'positioner' => ['name' => 'modal-positioner', 'kind' => 'visual'],
+        'panel' => ['name' => 'modal-panel', 'kind' => 'visual'],
+        'content' => ['name' => 'modal-content', 'kind' => 'visual'],
+        'header' => ['name' => 'modal-header', 'kind' => 'visual'],
+        'title' => ['name' => 'modal-title', 'kind' => 'visual'],
+        'description' => ['name' => 'modal-description', 'kind' => 'visual'],
+        'footer' => ['name' => 'modal-footer', 'kind' => 'visual'],
+        'close' => ['name' => 'modal-close', 'kind' => 'visual'],
+        'close-icon' => ['name' => 'modal-close-icon', 'kind' => 'visual'],
+        'root' => ['name' => 'modal', 'kind' => 'structural'],
+    ];
+
     private OverlayLabelContext $overlayLabelContext;
 
     public function __construct(
@@ -50,7 +66,9 @@ class Modal extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.modal');
+        return view('hotwire::component-views.modal', [
+            'slotName' => self::SLOTS['root']['name'],
+        ]);
     }
 
     /** @return array<string, mixed> */

@@ -6,6 +6,7 @@ use Emaia\LaravelHotwire\Components\Field;
 use Emaia\LaravelHotwire\Components\InputGroup;
 use Emaia\LaravelHotwire\Components\Item;
 use Emaia\LaravelHotwire\Components\Kbd;
+use Emaia\LaravelHotwire\Components\Modal;
 use Emaia\LaravelHotwire\Components\MultiSelect;
 use Emaia\LaravelHotwire\Components\Pagination;
 use Emaia\LaravelHotwire\Components\Sidebar;
@@ -170,6 +171,42 @@ it('projects the Kbd family slot contract from its component class', function ()
     ])->and(HotwireRegistry::make()->component('kbd')->styling->slots)->toBe([
         'kbd' => 'visual',
         'kbd-group' => 'visual',
+    ]);
+});
+
+it('projects the Modal family slot contract from its component class', function () {
+    $catalog = require __DIR__.'/../../src/Registry/catalog.php';
+
+    expect(Modal::SLOTS)->toBe([
+        'overlay' => ['name' => 'modal-overlay', 'kind' => 'visual'],
+        'trigger' => ['name' => 'modal-trigger', 'kind' => 'visual'],
+        'backdrop' => ['name' => 'modal-backdrop', 'kind' => 'visual'],
+        'positioner' => ['name' => 'modal-positioner', 'kind' => 'visual'],
+        'panel' => ['name' => 'modal-panel', 'kind' => 'visual'],
+        'content' => ['name' => 'modal-content', 'kind' => 'visual'],
+        'header' => ['name' => 'modal-header', 'kind' => 'visual'],
+        'title' => ['name' => 'modal-title', 'kind' => 'visual'],
+        'description' => ['name' => 'modal-description', 'kind' => 'visual'],
+        'footer' => ['name' => 'modal-footer', 'kind' => 'visual'],
+        'close' => ['name' => 'modal-close', 'kind' => 'visual'],
+        'close-icon' => ['name' => 'modal-close-icon', 'kind' => 'visual'],
+        'root' => ['name' => 'modal', 'kind' => 'structural'],
+    ])->and($catalog['components']['modal']['styling']['slots'])->toBe([
+        ['class' => Modal::class],
+    ])->and(HotwireRegistry::make()->component('modal')->styling->slots)->toBe([
+        'modal-overlay' => 'visual',
+        'modal-trigger' => 'visual',
+        'modal-backdrop' => 'visual',
+        'modal-positioner' => 'visual',
+        'modal-panel' => 'visual',
+        'modal-content' => 'visual',
+        'modal-header' => 'visual',
+        'modal-title' => 'visual',
+        'modal-description' => 'visual',
+        'modal-footer' => 'visual',
+        'modal-close' => 'visual',
+        'modal-close-icon' => 'visual',
+        'modal' => 'structural',
     ]);
 });
 

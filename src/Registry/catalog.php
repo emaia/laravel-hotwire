@@ -709,10 +709,9 @@ return [
             'description' => 'Accessible modal with state-driven motion, focus trap and Turbo integration',
             'controllers' => ['modal', 'turbo--view-transition'],
             'styling' => [
-                'slots' => $slots(
-                    ['modal-overlay', 'modal-trigger', 'modal-backdrop', 'modal-positioner', 'modal-panel', 'modal-content', 'modal-header', 'modal-title', 'modal-description', 'modal-footer', 'modal-close', 'modal-close-icon'],
-                    ['modal'],
-                ),
+                'slots' => [
+                    ['class' => Modal::class],
+                ],
             ],
         ],
         'multi-select' => [

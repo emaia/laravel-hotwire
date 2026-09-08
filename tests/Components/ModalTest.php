@@ -53,6 +53,41 @@ it('renders modal content as the dialog surface', function () {
     $view->assertDontSee('data-modal-open-duration-value', false);
 });
 
+it('renders Modal family anatomy with semantic slots', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::modal>
+            <x-hw::modal.trigger>Open</x-hw::modal.trigger>
+            <x-hw::modal.content>
+                <x-hw::modal.header>
+                    <x-hw::modal.title>Title</x-hw::modal.title>
+                    <x-hw::modal.description>Description</x-hw::modal.description>
+                </x-hw::modal.header>
+                <x-hw::modal.footer>
+                    <x-hw::modal.close>Close</x-hw::modal.close>
+                </x-hw::modal.footer>
+            </x-hw::modal.content>
+        </x-hw::modal>
+    BLADE);
+
+    preg_match_all('/data-slot="(modal(?:-[a-z0-9]+)*)"/', $html, $matches);
+
+    expect($matches[1])->toBe([
+        'modal',
+        'modal-trigger',
+        'modal-overlay',
+        'modal-backdrop',
+        'modal-positioner',
+        'modal-panel',
+        'modal-content',
+        'modal-header',
+        'modal-title',
+        'modal-description',
+        'modal-footer',
+        'modal-close',
+        'modal-close-icon',
+    ]);
+});
+
 it('normalizes modal motion', function () {
     $none = $this->blade('<x-hw::modal motion="none"><x-hw::modal.content>Content</x-hw::modal.content></x-hw::modal>');
     $invalid = $this->blade('<x-hw::modal motion="spin"><x-hw::modal.content>Content</x-hw::modal.content></x-hw::modal>');
