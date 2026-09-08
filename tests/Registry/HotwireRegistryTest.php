@@ -2,6 +2,7 @@
 
 use Emaia\LaravelHotwire\Components\Alert;
 use Emaia\LaravelHotwire\Components\Card;
+use Emaia\LaravelHotwire\Components\Item;
 use Emaia\LaravelHotwire\Components\Toaster;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\SessionToast;
@@ -53,6 +54,36 @@ it('projects the Card family slot contract from its component class', function (
         'card-action' => 'visual',
         'card-content' => 'visual',
         'card-footer' => 'visual',
+    ]);
+});
+
+it('projects the Item family slot contract from its component class', function () {
+    $catalog = require __DIR__.'/../../src/Registry/catalog.php';
+
+    expect(Item::SLOTS)->toBe([
+        'group' => ['name' => 'item-group', 'kind' => 'visual'],
+        'root' => ['name' => 'item', 'kind' => 'visual'],
+        'media' => ['name' => 'item-media', 'kind' => 'visual'],
+        'content' => ['name' => 'item-content', 'kind' => 'visual'],
+        'title' => ['name' => 'item-title', 'kind' => 'visual'],
+        'description' => ['name' => 'item-description', 'kind' => 'visual'],
+        'actions' => ['name' => 'item-actions', 'kind' => 'visual'],
+        'header' => ['name' => 'item-header', 'kind' => 'visual'],
+        'footer' => ['name' => 'item-footer', 'kind' => 'visual'],
+        'separator' => ['name' => 'item-separator', 'kind' => 'visual'],
+    ])->and($catalog['components']['item']['styling']['slots'])->toBe([
+        ['class' => Item::class],
+    ])->and(HotwireRegistry::make()->component('item')->styling->slots)->toBe([
+        'item-group' => 'visual',
+        'item' => 'visual',
+        'item-media' => 'visual',
+        'item-content' => 'visual',
+        'item-title' => 'visual',
+        'item-description' => 'visual',
+        'item-actions' => 'visual',
+        'item-header' => 'visual',
+        'item-footer' => 'visual',
+        'item-separator' => 'visual',
     ]);
 });
 

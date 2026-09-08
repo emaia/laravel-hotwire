@@ -42,37 +42,51 @@ it('treats a null disabled binding on item links as enabled', function () {
 });
 
 it('renders item subcomponents with semantic slots', function () {
-    $view = $this->blade(<<<'BLADE'
+    $html = (string) $this->blade(<<<'BLADE'
         <x-hw::item.group>
             <x-hw::item variant="muted" size="xs">
                 <x-hw::item.header>
                     <x-hw::item.title>Deploy</x-hw::item.title>
-                    <x-hw::badge>Live</x-hw::badge>
+                    <span>Live</span>
                 </x-hw::item.header>
-                <x-hw::item.media variant="icon"><x-hw::icon name="check" /></x-hw::item.media>
+                <x-hw::item.media variant="icon"><svg aria-hidden="true"></svg></x-hw::item.media>
                 <x-hw::item.content>
                     <x-hw::item.description>Production deploy finished.</x-hw::item.description>
                 </x-hw::item.content>
-                <x-hw::item.actions><x-hw::button size="sm">Open</x-hw::button></x-hw::item.actions>
+                <x-hw::item.actions>Open</x-hw::item.actions>
                 <x-hw::item.footer>Just now</x-hw::item.footer>
             </x-hw::item>
             <x-hw::item.separator />
         </x-hw::item.group>
     BLADE);
 
-    $view->assertSee('role="list"', false)
-        ->assertSee('data-slot="item-group"', false)
-        ->assertSee('data-slot="item-header"', false)
-        ->assertSee('data-slot="item-title"', false)
-        ->assertSee('data-slot="item-media"', false)
-        ->assertSee('data-variant="icon"', false)
-        ->assertSee('data-slot="item-content"', false)
-        ->assertSee('data-slot="item-description"', false)
-        ->assertSee('data-slot="item-actions"', false)
-        ->assertSee('data-slot="item-footer"', false)
-        ->assertSee('data-slot="item-separator"', false)
-        ->assertSeeText('Deploy')
-        ->assertSeeText('Just now');
+    preg_match_all('/data-slot="([a-z][a-z0-9-]*)"/', $html, $matches);
+
+    expect($matches[1])->toBe([
+        'item-group',
+        'item',
+        'item-header',
+        'item-title',
+        'item-media',
+        'item-content',
+        'item-description',
+        'item-actions',
+        'item-footer',
+        'item-separator',
+    ])->and($html)
+        ->toContain('role="list"')
+        ->toContain('data-variant="icon"')
+        ->toContain('Deploy')
+        ->toContain('Just now');
+});
+
+it('preserves separator orientation semantics', function () {
+    $view = $this->blade('<x-hw::item.separator orientation="vertical" />');
+
+    $view->assertSee('data-slot="item-separator"', false)
+        ->assertSee('data-orientation="vertical"', false)
+        ->assertSee('role="separator"', false)
+        ->assertSee('aria-orientation="vertical"', false);
 });
 
 it('passes through attributes', function () {

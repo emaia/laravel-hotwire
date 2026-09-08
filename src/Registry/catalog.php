@@ -555,7 +555,9 @@ return [
             'description' => 'Composable list item primitive with media, content, actions, header, footer and separator slots',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(['item-group', 'item', 'item-media', 'item-content', 'item-title', 'item-description', 'item-actions', 'item-header', 'item-footer', 'item-separator']),
+                'slots' => [
+                    ['class' => Item::class],
+                ],
             ],
         ],
         'kbd' => [
