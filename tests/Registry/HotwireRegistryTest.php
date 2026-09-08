@@ -6,6 +6,7 @@ use Emaia\LaravelHotwire\Components\Field;
 use Emaia\LaravelHotwire\Components\InputGroup;
 use Emaia\LaravelHotwire\Components\Item;
 use Emaia\LaravelHotwire\Components\Kbd;
+use Emaia\LaravelHotwire\Components\MultiSelect;
 use Emaia\LaravelHotwire\Components\Sidebar;
 use Emaia\LaravelHotwire\Components\Toaster;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
@@ -168,6 +169,46 @@ it('projects the Kbd family slot contract from its component class', function ()
     ])->and(HotwireRegistry::make()->component('kbd')->styling->slots)->toBe([
         'kbd' => 'visual',
         'kbd-group' => 'visual',
+    ]);
+});
+
+it('projects the Multi Select family slot contract from its component class', function () {
+    $catalog = require __DIR__.'/../../src/Registry/catalog.php';
+
+    expect(MultiSelect::SLOTS)->toBe([
+        'root' => ['name' => 'multi-select', 'kind' => 'visual'],
+        'native' => ['name' => 'multi-select-native', 'kind' => 'visual'],
+        'validation' => ['name' => 'multi-select-validation', 'kind' => 'visual'],
+        'trigger' => ['name' => 'multi-select-trigger', 'kind' => 'visual'],
+        'value' => ['name' => 'multi-select-value', 'kind' => 'visual'],
+        'trigger-icon' => ['name' => 'multi-select-trigger-icon', 'kind' => 'visual'],
+        'content' => ['name' => 'multi-select-content', 'kind' => 'visual'],
+        'search' => ['name' => 'multi-select-search', 'kind' => 'visual'],
+        'search-icon' => ['name' => 'multi-select-search-icon', 'kind' => 'visual'],
+        'select-all' => ['name' => 'multi-select-select-all', 'kind' => 'visual'],
+        'indicator' => ['name' => 'multi-select-indicator', 'kind' => 'visual'],
+        'option-text' => ['name' => 'multi-select-option-text', 'kind' => 'visual'],
+        'list' => ['name' => 'multi-select-list', 'kind' => 'visual'],
+        'option' => ['name' => 'multi-select-option', 'kind' => 'visual'],
+        'empty' => ['name' => 'multi-select-empty', 'kind' => 'visual'],
+    ])->and($catalog['components']['multi-select']['styling']['slots'])->toBe([
+        ['class' => MultiSelect::class],
+    ])->and(HotwireRegistry::make()->component('multi-select')->styling->slots)->toBe([
+        'multi-select' => 'visual',
+        'multi-select-native' => 'visual',
+        'multi-select-validation' => 'visual',
+        'multi-select-trigger' => 'visual',
+        'multi-select-value' => 'visual',
+        'multi-select-trigger-icon' => 'visual',
+        'multi-select-content' => 'visual',
+        'multi-select-search' => 'visual',
+        'multi-select-search-icon' => 'visual',
+        'multi-select-select-all' => 'visual',
+        'multi-select-indicator' => 'visual',
+        'multi-select-option-text' => 'visual',
+        'multi-select-list' => 'visual',
+        'multi-select-option' => 'visual',
+        'multi-select-empty' => 'visual',
     ]);
 });
 

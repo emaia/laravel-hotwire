@@ -723,7 +723,9 @@ return [
             'description' => 'Searchable multi-value select with state-driven floating presence and native form submission',
             'controllers' => ['multi-select', 'clear-input'],
             'styling' => [
-                'slots' => $slots(['multi-select', 'multi-select-native', 'multi-select-validation', 'multi-select-trigger', 'multi-select-value', 'multi-select-trigger-icon', 'multi-select-content', 'multi-select-search', 'multi-select-search-icon', 'multi-select-select-all', 'multi-select-indicator', 'multi-select-option-text', 'multi-select-list', 'multi-select-option', 'multi-select-empty']),
+                'slots' => [
+                    ['class' => MultiSelect::class],
+                ],
             ],
         ],
         'navbar' => [

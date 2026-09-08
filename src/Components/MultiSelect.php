@@ -16,6 +16,24 @@ class MultiSelect extends Component
 {
     use StripsNullProps;
 
+    public const array SLOTS = [
+        'root' => ['name' => 'multi-select', 'kind' => 'visual'],
+        'native' => ['name' => 'multi-select-native', 'kind' => 'visual'],
+        'validation' => ['name' => 'multi-select-validation', 'kind' => 'visual'],
+        'trigger' => ['name' => 'multi-select-trigger', 'kind' => 'visual'],
+        'value' => ['name' => 'multi-select-value', 'kind' => 'visual'],
+        'trigger-icon' => ['name' => 'multi-select-trigger-icon', 'kind' => 'visual'],
+        'content' => ['name' => 'multi-select-content', 'kind' => 'visual'],
+        'search' => ['name' => 'multi-select-search', 'kind' => 'visual'],
+        'search-icon' => ['name' => 'multi-select-search-icon', 'kind' => 'visual'],
+        'select-all' => ['name' => 'multi-select-select-all', 'kind' => 'visual'],
+        'indicator' => ['name' => 'multi-select-indicator', 'kind' => 'visual'],
+        'option-text' => ['name' => 'multi-select-option-text', 'kind' => 'visual'],
+        'list' => ['name' => 'multi-select-list', 'kind' => 'visual'],
+        'option' => ['name' => 'multi-select-option', 'kind' => 'visual'],
+        'empty' => ['name' => 'multi-select-empty', 'kind' => 'visual'],
+    ];
+
     /** @param array<int|string, string> $options */
     public function __construct(
         public ?string $name = null,
@@ -67,7 +85,23 @@ class MultiSelect extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.multi-select');
+        return view('hotwire::component-views.multi-select', [
+            'slotName' => self::SLOTS['root']['name'],
+            'nativeSlotName' => self::SLOTS['native']['name'],
+            'validationSlotName' => self::SLOTS['validation']['name'],
+            'triggerSlotName' => self::SLOTS['trigger']['name'],
+            'valueSlotName' => self::SLOTS['value']['name'],
+            'triggerIconSlotName' => self::SLOTS['trigger-icon']['name'],
+            'contentSlotName' => self::SLOTS['content']['name'],
+            'searchSlotName' => self::SLOTS['search']['name'],
+            'searchIconSlotName' => self::SLOTS['search-icon']['name'],
+            'selectAllSlotName' => self::SLOTS['select-all']['name'],
+            'indicatorSlotName' => self::SLOTS['indicator']['name'],
+            'optionTextSlotName' => self::SLOTS['option-text']['name'],
+            'listSlotName' => self::SLOTS['list']['name'],
+            'optionSlotName' => self::SLOTS['option']['name'],
+            'emptySlotName' => self::SLOTS['empty']['name'],
+        ]);
     }
 
     public function data(): array

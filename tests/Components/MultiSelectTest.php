@@ -44,6 +44,39 @@ it('renders the multi-select controller, trigger, content and native select', fu
         ->toContain('inert');
 });
 
+it('renders Multi Select anatomy with semantic slots', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::multi-select
+            name="status[]"
+            :options="['active' => 'Active']"
+            select-all
+            required
+        />
+    BLADE);
+
+    preg_match_all('/data-slot="(multi-select(?:-[a-z0-9]+)*)"/', $html, $matches);
+
+    expect($matches[1])->toBe([
+        'multi-select',
+        'multi-select-native',
+        'multi-select-trigger',
+        'multi-select-value',
+        'multi-select-trigger-icon',
+        'multi-select-content',
+        'multi-select-search',
+        'multi-select-search-icon',
+        'multi-select-select-all',
+        'multi-select-indicator',
+        'multi-select-option-text',
+        'multi-select-list',
+        'multi-select-option',
+        'multi-select-indicator',
+        'multi-select-option-text',
+        'multi-select-empty',
+        'multi-select-validation',
+    ]);
+});
+
 it('allows custom empty text', function () {
     $view = $this->blade('<x-hw::multi-select name="status[]" empty-text="Nothing matches." :options="[\'active\' => \'Active\']" />');
 
