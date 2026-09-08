@@ -10,27 +10,29 @@ it('renders a card root with semantic size state', function () {
 });
 
 it('renders card subcomponents with semantic slots', function () {
-    $view = $this->blade(<<<'BLADE'
+    $html = (string) $this->blade(<<<'BLADE'
         <x-hw::card>
             <x-hw::card.header>
                 <x-hw::card.title>Revenue</x-hw::card.title>
                 <x-hw::card.description>Last 30 days</x-hw::card.description>
-                <x-hw::card.action><x-hw::button size="sm">Export</x-hw::button></x-hw::card.action>
+                <x-hw::card.action>Export</x-hw::card.action>
             </x-hw::card.header>
             <x-hw::card.content>$12,400</x-hw::card.content>
             <x-hw::card.footer>Updated now</x-hw::card.footer>
         </x-hw::card>
     BLADE);
 
-    $view->assertSee('data-slot="card-header"', false)
-        ->assertSee('data-slot="card-title"', false)
-        ->assertSee('data-slot="card-description"', false)
-        ->assertSee('data-slot="card-action"', false)
-        ->assertSee('data-slot="card-content"', false)
-        ->assertSee('data-slot="card-footer"', false)
-        ->assertSeeText('Revenue')
-        ->assertSeeText('Export')
-        ->assertSeeText('Updated now');
+    preg_match_all('/data-slot="([a-z][a-z0-9-]*)"/', $html, $matches);
+
+    expect(array_values(array_unique($matches[1])))->toBe([
+        'card',
+        'card-header',
+        'card-title',
+        'card-description',
+        'card-action',
+        'card-content',
+        'card-footer',
+    ])->and($html)->toContain('Revenue')->toContain('Export')->toContain('Updated now');
 });
 
 it('passes through attributes', function () {

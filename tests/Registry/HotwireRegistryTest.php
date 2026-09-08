@@ -1,6 +1,7 @@
 <?php
 
 use Emaia\LaravelHotwire\Components\Alert;
+use Emaia\LaravelHotwire\Components\Card;
 use Emaia\LaravelHotwire\Components\Toaster;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\SessionToast;
@@ -28,6 +29,30 @@ it('projects the Alert family slot contract from its component class', function 
         'alert-title' => 'visual',
         'alert-description' => 'visual',
         'alert-action' => 'visual',
+    ]);
+});
+
+it('projects the Card family slot contract from its component class', function () {
+    $catalog = require __DIR__.'/../../src/Registry/catalog.php';
+
+    expect(Card::SLOTS)->toBe([
+        'root' => ['name' => 'card', 'kind' => 'visual'],
+        'header' => ['name' => 'card-header', 'kind' => 'visual'],
+        'title' => ['name' => 'card-title', 'kind' => 'visual'],
+        'description' => ['name' => 'card-description', 'kind' => 'visual'],
+        'action' => ['name' => 'card-action', 'kind' => 'visual'],
+        'content' => ['name' => 'card-content', 'kind' => 'visual'],
+        'footer' => ['name' => 'card-footer', 'kind' => 'visual'],
+    ])->and($catalog['components']['card']['styling']['slots'])->toBe([
+        ['class' => Card::class],
+    ])->and(HotwireRegistry::make()->component('card')->styling->slots)->toBe([
+        'card' => 'visual',
+        'card-header' => 'visual',
+        'card-title' => 'visual',
+        'card-description' => 'visual',
+        'card-action' => 'visual',
+        'card-content' => 'visual',
+        'card-footer' => 'visual',
     ]);
 });
 

@@ -233,7 +233,9 @@ return [
             'description' => 'Composable content container with header, action, content and footer slots',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(['card', 'card-header', 'card-title', 'card-description', 'card-action', 'card-content', 'card-footer']),
+                'slots' => [
+                    ['class' => Card::class],
+                ],
             ],
         ],
         'carousel' => [
