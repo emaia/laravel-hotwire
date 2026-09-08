@@ -7,6 +7,7 @@ use Emaia\LaravelHotwire\Components\InputGroup;
 use Emaia\LaravelHotwire\Components\Item;
 use Emaia\LaravelHotwire\Components\Kbd;
 use Emaia\LaravelHotwire\Components\MultiSelect;
+use Emaia\LaravelHotwire\Components\Pagination;
 use Emaia\LaravelHotwire\Components\Sidebar;
 use Emaia\LaravelHotwire\Components\Toaster;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
@@ -209,6 +210,46 @@ it('projects the Multi Select family slot contract from its component class', fu
         'multi-select-list' => 'visual',
         'multi-select-option' => 'visual',
         'multi-select-empty' => 'visual',
+    ]);
+});
+
+it('projects the Pagination family slot contract from its component class', function () {
+    $catalog = require __DIR__.'/../../src/Registry/catalog.php';
+
+    expect(Pagination::SLOTS)->toBe([
+        'root' => ['name' => 'pagination', 'kind' => 'visual'],
+        'content' => ['name' => 'pagination-content', 'kind' => 'visual'],
+        'item' => ['name' => 'pagination-item', 'kind' => 'visual'],
+        'link' => ['name' => 'pagination-link', 'kind' => 'visual'],
+        'previous' => ['name' => 'pagination-previous', 'kind' => 'visual'],
+        'previous-label' => ['name' => 'pagination-previous-label', 'kind' => 'visual'],
+        'next' => ['name' => 'pagination-next', 'kind' => 'visual'],
+        'next-content' => ['name' => 'pagination-next-content', 'kind' => 'visual'],
+        'next-label' => ['name' => 'pagination-next-label', 'kind' => 'visual'],
+        'next-loading-content' => ['name' => 'pagination-next-loading-content', 'kind' => 'visual'],
+        'next-loading-label' => ['name' => 'pagination-next-loading-label', 'kind' => 'visual'],
+        'next-spinner' => ['name' => 'pagination-next-spinner', 'kind' => 'visual'],
+        'next-icon' => ['name' => 'pagination-next-icon', 'kind' => 'visual'],
+        'ellipsis' => ['name' => 'pagination-ellipsis', 'kind' => 'visual'],
+        'status' => ['name' => 'pagination-status', 'kind' => 'structural'],
+    ])->and($catalog['components']['pagination']['styling']['slots'])->toBe([
+        ['class' => Pagination::class],
+    ])->and(HotwireRegistry::make()->component('pagination')->styling->slots)->toBe([
+        'pagination' => 'visual',
+        'pagination-content' => 'visual',
+        'pagination-item' => 'visual',
+        'pagination-link' => 'visual',
+        'pagination-previous' => 'visual',
+        'pagination-previous-label' => 'visual',
+        'pagination-next' => 'visual',
+        'pagination-next-content' => 'visual',
+        'pagination-next-label' => 'visual',
+        'pagination-next-loading-content' => 'visual',
+        'pagination-next-loading-label' => 'visual',
+        'pagination-next-spinner' => 'visual',
+        'pagination-next-icon' => 'visual',
+        'pagination-ellipsis' => 'visual',
+        'pagination-status' => 'structural',
     ]);
 });
 

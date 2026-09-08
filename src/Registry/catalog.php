@@ -769,7 +769,9 @@ return [
             'description' => 'Pagination navigation primitives with Laravel paginator display modes and Turbo Frame support',
             'controllers' => ['pagination'],
             'styling' => [
-                'slots' => $slots(['pagination', 'pagination-content', 'pagination-item', 'pagination-link', 'pagination-previous', 'pagination-previous-label', 'pagination-next', 'pagination-next-content', 'pagination-next-label', 'pagination-next-loading-content', 'pagination-next-loading-label', 'pagination-next-spinner', 'pagination-next-icon', 'pagination-ellipsis'], structural: ['pagination-status']),
+                'slots' => [
+                    ['class' => Pagination::class],
+                ],
             ],
         ],
         'popover' => [

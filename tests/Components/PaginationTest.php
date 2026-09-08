@@ -52,6 +52,41 @@ it('renders composed pagination subcomponents', function () {
         ->assertDontSee('mx-auto', false);
 });
 
+it('renders Pagination family anatomy with semantic slots', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::pagination>
+            <x-hw::pagination.content>
+                <x-hw::pagination.item><x-hw::pagination.previous href="/users?page=1" /></x-hw::pagination.item>
+                <x-hw::pagination.item><x-hw::pagination.link href="/users?page=2">2</x-hw::pagination.link></x-hw::pagination.item>
+                <x-hw::pagination.item><x-hw::pagination.ellipsis /></x-hw::pagination.item>
+                <x-hw::pagination.item><x-hw::pagination.next href="/users?page=3" loading-label="Loading" /></x-hw::pagination.item>
+            </x-hw::pagination.content>
+        </x-hw::pagination>
+    BLADE);
+
+    preg_match_all('/data-slot="(pagination(?:-[a-z0-9]+)*)"/', $html, $matches);
+
+    expect($matches[1])->toBe([
+        'pagination',
+        'pagination-content',
+        'pagination-item',
+        'pagination-previous',
+        'pagination-previous-label',
+        'pagination-item',
+        'pagination-link',
+        'pagination-item',
+        'pagination-ellipsis',
+        'pagination-item',
+        'pagination-next',
+        'pagination-next-content',
+        'pagination-next-label',
+        'pagination-next-icon',
+        'pagination-next-loading-content',
+        'pagination-next-loading-label',
+        'pagination-next-spinner',
+    ]);
+});
+
 it('renders links from a length-aware paginator', function () {
     $paginator = new LengthAwarePaginator(range(1, 10), 200, 10, 10, ['path' => '/users']);
 

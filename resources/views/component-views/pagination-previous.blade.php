@@ -15,13 +15,13 @@
         'role' => $isDisabled ? 'link' : null,
         'aria-label' => $ariaLabel,
         'aria-disabled' => $isDisabled ? 'true' : null,
-        'data-slot' => 'pagination-previous',
+        'data-slot' => $slotName,
         'data-size' => $controlSize,
         'data-disabled' => $isDisabled ? 'true' : null,
     ]) }}
 >
     <x-hw::icon name="chevron-left" data-icon="inline-start" aria-hidden="true" />
     @if ($hasLabel)
-        <span data-slot="pagination-previous-label">{{ $label }}</span>
+        <span data-slot="{{ $labelSlotName }}">{{ $label }}</span>
     @endif
 </{{ $tag }}>

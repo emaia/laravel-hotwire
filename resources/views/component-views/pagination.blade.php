@@ -4,7 +4,7 @@
     $paginationAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
         'role' => 'navigation',
         'aria-label' => $label,
-        'data-slot' => 'pagination',
+        'data-slot' => $slotName,
         'data-controller' => $usesIncrementalPagination ? 'pagination' : null,
         'data-pagination-append-to-value' => $usesIncrementalPagination ? $appendTo : null,
         'data-pagination-infinite-value' => $usesIncrementalPagination && $infinite ? 'true' : null,
@@ -20,7 +20,7 @@
 <nav {{ $paginationAttributes }}>
     @if ($paginator !== null)
         @if ($usesIncrementalPagination)
-            <span data-slot="pagination-status" data-pagination-target="status" role="status" aria-live="polite" aria-atomic="true"></span>
+            <span data-slot="{{ $statusSlotName }}" data-pagination-target="status" role="status" aria-live="polite" aria-atomic="true"></span>
         @endif
 
         <x-hw::pagination.content>
