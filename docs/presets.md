@@ -172,6 +172,11 @@ The generated file is an inventory, not a complete design. State relationships, 
 selectors cannot be inferred from slot names alone. Use Nova and the component docs as references when implementing
 those behaviors in a new design.
 
+See the [preset expressiveness study](preset-expressiveness.md) for the recommended preset-neutral conformance policy,
+contrasting style matrix and reusable fixture. The current scaffold still mirrors shipped selectors; the study records
+why future multi-preset validation must allow base rules and visually equivalent values without treating Nova's exact
+selector decomposition as the semantic contract.
+
 Each slot is scaffolded once, under the first catalog entry that declares it, with one selector per slot and the
 attribute values Nova differentiates it by commented directly above it. Slots that share an appearance are better
 written as a single grouped rule — Nova styles every button-like slot through one

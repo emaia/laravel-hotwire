@@ -1,0 +1,144 @@
+[data-preset-fixture] {
+    --fixture-control-size: 2.25rem;
+    --fixture-radius: var(--radius-lg);
+    --fixture-space: 1rem;
+    --fixture-type-size: 0.875rem;
+    --fixture-heading-font: inherit;
+    --fixture-surface-shadow: 0 1px 2px color-mix(in oklch, var(--foreground) 10%, transparent);
+
+    display: grid;
+    gap: var(--fixture-space);
+    padding: var(--fixture-space);
+    color: var(--foreground);
+    background: var(--background);
+    font-size: var(--fixture-type-size);
+}
+
+[data-preset-fixture="vega"] {
+    --fixture-control-size: 2.25rem;
+    --fixture-radius: var(--radius-lg);
+    --fixture-space: 1rem;
+}
+
+[data-preset-fixture="mira"] {
+    --fixture-control-size: 1.75rem;
+    --fixture-radius: var(--radius-md);
+    --fixture-space: 0.75rem;
+    --fixture-type-size: 0.75rem;
+    --fixture-surface-shadow: none;
+}
+
+[data-preset-fixture="sera"] {
+    --fixture-control-size: 2.5rem;
+    --fixture-radius: 0;
+    --fixture-space: 2rem;
+    --fixture-type-size: 0.75rem;
+    --fixture-heading-font: var(--font-heading, serif);
+    --fixture-surface-shadow: none;
+}
+
+[data-preset-fixture="luma"] {
+    --fixture-control-size: 2.25rem;
+    --fixture-radius: var(--radius-4xl);
+    --fixture-space: 1.5rem;
+    --fixture-type-size: 1rem;
+    --fixture-surface-shadow: 0 1rem 2rem color-mix(in oklch, var(--foreground) 14%, transparent);
+}
+
+[data-preset-fixture] :is([data-slot="button"], [data-slot="modal-trigger"], [data-slot="input"], [data-slot="select"]) {
+    min-block-size: var(--fixture-control-size);
+    border: 1px solid var(--border);
+    border-radius: var(--fixture-radius);
+    padding-inline: calc(var(--fixture-space) * 0.75);
+    color: var(--foreground);
+    background: var(--background);
+    transition:
+        border-color 150ms ease,
+        box-shadow 150ms ease,
+        opacity 150ms ease;
+}
+
+[data-preset-fixture]
+    :is([data-slot="button"], [data-slot="modal-trigger"], [data-slot="input"], [data-slot="select"]):focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+}
+
+[data-preset-fixture]
+    :is([data-slot="button"], [data-slot="modal-trigger"], [data-slot="input"], [data-slot="select"])[aria-invalid="true"] {
+    border-color: var(--destructive);
+}
+
+[data-preset-fixture]
+    :is([data-slot="button"], [data-slot="modal-trigger"], [data-slot="input"], [data-slot="select"]):disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+[data-preset-fixture] [data-slot="button"][data-variant="default"] {
+    color: var(--primary-foreground);
+    background: var(--primary);
+}
+
+[data-preset-fixture] [data-slot="button"][data-variant="outline"] {
+    background: transparent;
+}
+
+[data-preset-fixture] :is([data-slot="card"], [data-slot="alert"], [data-slot="modal-panel"]) {
+    border: 1px solid var(--border);
+    border-radius: var(--fixture-radius);
+    padding: var(--fixture-space);
+    color: var(--card-foreground);
+    background: var(--card);
+    box-shadow: var(--fixture-surface-shadow);
+}
+
+[data-preset-fixture]
+    :is([data-slot="card"], [data-slot="card-header"], [data-slot="card-content"], [data-slot="modal-content"]) {
+    display: grid;
+    gap: calc(var(--fixture-space) * 0.5);
+}
+
+[data-preset-fixture] :is([data-slot="card-title"], [data-slot="alert-title"], [data-slot="modal-title"]) {
+    font-family: var(--fixture-heading-font);
+    font-weight: 600;
+}
+
+[data-preset-fixture]
+    :is([data-slot="card-description"], [data-slot="alert-description"], [data-slot="modal-description"]) {
+    color: var(--muted-foreground);
+}
+
+[data-preset-fixture] [data-slot="alert"][data-variant="destructive"] {
+    color: var(--destructive);
+}
+
+[data-preset-fixture="sera"] [data-slot="alert"] {
+    border-inline-start-width: 0.25rem;
+}
+
+[data-preset-fixture="sera"] [data-slot="button"] {
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+[data-preset-fixture="luma"] :is([data-slot="input"], [data-slot="select"]) {
+    border-color: transparent;
+    background: color-mix(in oklch, var(--muted) 70%, transparent);
+}
+
+[data-preset-fixture] [data-slot="modal-overlay"] {
+    position: relative;
+    display: grid;
+}
+
+[data-preset-fixture] [data-slot="modal-positioner"] {
+    position: relative;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    [data-preset-fixture]
+        :is([data-slot="button"], [data-slot="modal-trigger"], [data-slot="input"], [data-slot="select"]) {
+        transition: none;
+    }
+}
