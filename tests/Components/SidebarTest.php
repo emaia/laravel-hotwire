@@ -51,6 +51,86 @@ it('renders a sidebar provider with controller state and layout hooks', function
         ->assertDontSee('min-h-svh', false);
 });
 
+it('renders Sidebar family anatomy with semantic slots', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::sidebar.provider>
+            <x-hw::sidebar>
+                <x-hw::sidebar.header>
+                    <x-hw::sidebar.brand>
+                        Brand
+                        <x-slot:icon>B</x-slot:icon>
+                    </x-hw::sidebar.brand>
+                    <x-hw::sidebar.input />
+                </x-hw::sidebar.header>
+                <x-hw::sidebar.separator />
+                <x-hw::sidebar.content>
+                    <x-hw::sidebar.group>
+                        <x-hw::sidebar.group-label>Projects</x-hw::sidebar.group-label>
+                        <x-hw::sidebar.group-action>+</x-hw::sidebar.group-action>
+                        <x-hw::sidebar.group-content>
+                            <x-hw::sidebar.menu>
+                                <x-hw::sidebar.menu-item>
+                                    <x-hw::sidebar.menu-button>Dashboard</x-hw::sidebar.menu-button>
+                                    <x-hw::sidebar.menu-action>More</x-hw::sidebar.menu-action>
+                                    <x-hw::sidebar.menu-badge>2</x-hw::sidebar.menu-badge>
+                                    <x-hw::sidebar.menu-skeleton show-icon />
+                                    <x-hw::sidebar.menu-sub>
+                                        <x-hw::sidebar.menu-sub-item>
+                                            <x-hw::sidebar.menu-sub-button>Reports</x-hw::sidebar.menu-sub-button>
+                                        </x-hw::sidebar.menu-sub-item>
+                                    </x-hw::sidebar.menu-sub>
+                                </x-hw::sidebar.menu-item>
+                            </x-hw::sidebar.menu>
+                        </x-hw::sidebar.group-content>
+                    </x-hw::sidebar.group>
+                </x-hw::sidebar.content>
+                <x-hw::sidebar.footer>Account</x-hw::sidebar.footer>
+                <x-hw::sidebar.rail />
+            </x-hw::sidebar>
+            <x-hw::sidebar.inset>
+                <x-hw::sidebar.trigger />
+            </x-hw::sidebar.inset>
+        </x-hw::sidebar.provider>
+    BLADE);
+
+    preg_match_all('/data-slot="(sidebar(?:-[a-z0-9]+)*)"/', $html, $matches);
+
+    expect($matches[1])->toBe([
+        'sidebar-wrapper',
+        'sidebar',
+        'sidebar-backdrop',
+        'sidebar-gap',
+        'sidebar-container',
+        'sidebar-inner',
+        'sidebar-header',
+        'sidebar-brand',
+        'sidebar-brand-logo',
+        'sidebar-brand-icon',
+        'sidebar-input',
+        'sidebar-separator',
+        'sidebar-content',
+        'sidebar-group',
+        'sidebar-group-label',
+        'sidebar-group-action',
+        'sidebar-group-content',
+        'sidebar-menu',
+        'sidebar-menu-item',
+        'sidebar-menu-button',
+        'sidebar-menu-action',
+        'sidebar-menu-badge',
+        'sidebar-menu-skeleton',
+        'sidebar-menu-skeleton-icon',
+        'sidebar-menu-skeleton-text',
+        'sidebar-menu-sub',
+        'sidebar-menu-sub-item',
+        'sidebar-menu-sub-button',
+        'sidebar-footer',
+        'sidebar-rail',
+        'sidebar-inset',
+        'sidebar-trigger',
+    ]);
+});
+
 it('server-renders icon collapsible sidebars without offcanvas collapse', function () {
     $view = $this->blade(<<<'BLADE'
         <x-hw::sidebar.provider :default-open="false">

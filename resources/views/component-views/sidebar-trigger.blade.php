@@ -3,7 +3,7 @@
 <button
     {{ $attributes->merge([
         'type' => 'button',
-        'data-slot' => 'sidebar-trigger',
+        'data-slot' => $slotName,
         'data-sidebar' => 'trigger',
         'data-action' => "click->{$sidebarIdentifier}#toggle",
         'aria-label' => $label,

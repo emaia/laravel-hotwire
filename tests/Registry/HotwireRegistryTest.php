@@ -6,6 +6,7 @@ use Emaia\LaravelHotwire\Components\Field;
 use Emaia\LaravelHotwire\Components\InputGroup;
 use Emaia\LaravelHotwire\Components\Item;
 use Emaia\LaravelHotwire\Components\Kbd;
+use Emaia\LaravelHotwire\Components\Sidebar;
 use Emaia\LaravelHotwire\Components\Toaster;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\SessionToast;
@@ -167,6 +168,80 @@ it('projects the Kbd family slot contract from its component class', function ()
     ])->and(HotwireRegistry::make()->component('kbd')->styling->slots)->toBe([
         'kbd' => 'visual',
         'kbd-group' => 'visual',
+    ]);
+});
+
+it('projects the Sidebar family slot contract from its component class', function () {
+    $catalog = require __DIR__.'/../../src/Registry/catalog.php';
+
+    expect(Sidebar::SLOTS)->toBe([
+        'wrapper' => ['name' => 'sidebar-wrapper', 'kind' => 'visual'],
+        'root' => ['name' => 'sidebar', 'kind' => 'visual'],
+        'backdrop' => ['name' => 'sidebar-backdrop', 'kind' => 'visual'],
+        'trigger' => ['name' => 'sidebar-trigger', 'kind' => 'visual'],
+        'rail' => ['name' => 'sidebar-rail', 'kind' => 'visual'],
+        'inset' => ['name' => 'sidebar-inset', 'kind' => 'visual'],
+        'header' => ['name' => 'sidebar-header', 'kind' => 'visual'],
+        'brand' => ['name' => 'sidebar-brand', 'kind' => 'visual'],
+        'brand-logo' => ['name' => 'sidebar-brand-logo', 'kind' => 'visual'],
+        'brand-icon' => ['name' => 'sidebar-brand-icon', 'kind' => 'visual'],
+        'footer' => ['name' => 'sidebar-footer', 'kind' => 'visual'],
+        'content' => ['name' => 'sidebar-content', 'kind' => 'visual'],
+        'input' => ['name' => 'sidebar-input', 'kind' => 'visual'],
+        'separator' => ['name' => 'sidebar-separator', 'kind' => 'visual'],
+        'group' => ['name' => 'sidebar-group', 'kind' => 'visual'],
+        'group-label' => ['name' => 'sidebar-group-label', 'kind' => 'visual'],
+        'group-action' => ['name' => 'sidebar-group-action', 'kind' => 'visual'],
+        'group-content' => ['name' => 'sidebar-group-content', 'kind' => 'visual'],
+        'menu' => ['name' => 'sidebar-menu', 'kind' => 'visual'],
+        'menu-item' => ['name' => 'sidebar-menu-item', 'kind' => 'visual'],
+        'menu-button' => ['name' => 'sidebar-menu-button', 'kind' => 'visual'],
+        'menu-action' => ['name' => 'sidebar-menu-action', 'kind' => 'visual'],
+        'menu-badge' => ['name' => 'sidebar-menu-badge', 'kind' => 'visual'],
+        'menu-skeleton' => ['name' => 'sidebar-menu-skeleton', 'kind' => 'visual'],
+        'menu-skeleton-icon' => ['name' => 'sidebar-menu-skeleton-icon', 'kind' => 'visual'],
+        'menu-skeleton-text' => ['name' => 'sidebar-menu-skeleton-text', 'kind' => 'visual'],
+        'menu-sub' => ['name' => 'sidebar-menu-sub', 'kind' => 'visual'],
+        'menu-sub-item' => ['name' => 'sidebar-menu-sub-item', 'kind' => 'visual'],
+        'menu-sub-button' => ['name' => 'sidebar-menu-sub-button', 'kind' => 'visual'],
+        'gap' => ['name' => 'sidebar-gap', 'kind' => 'visual'],
+        'container' => ['name' => 'sidebar-container', 'kind' => 'visual'],
+        'inner' => ['name' => 'sidebar-inner', 'kind' => 'visual'],
+    ])->and($catalog['components']['sidebar']['styling']['slots'])->toBe([
+        ['class' => Sidebar::class],
+    ])->and(HotwireRegistry::make()->component('sidebar')->styling->slots)->toBe([
+        'sidebar-wrapper' => 'visual',
+        'sidebar' => 'visual',
+        'sidebar-backdrop' => 'visual',
+        'sidebar-trigger' => 'visual',
+        'sidebar-rail' => 'visual',
+        'sidebar-inset' => 'visual',
+        'sidebar-header' => 'visual',
+        'sidebar-brand' => 'visual',
+        'sidebar-brand-logo' => 'visual',
+        'sidebar-brand-icon' => 'visual',
+        'sidebar-footer' => 'visual',
+        'sidebar-content' => 'visual',
+        'sidebar-input' => 'visual',
+        'sidebar-separator' => 'visual',
+        'sidebar-group' => 'visual',
+        'sidebar-group-label' => 'visual',
+        'sidebar-group-action' => 'visual',
+        'sidebar-group-content' => 'visual',
+        'sidebar-menu' => 'visual',
+        'sidebar-menu-item' => 'visual',
+        'sidebar-menu-button' => 'visual',
+        'sidebar-menu-action' => 'visual',
+        'sidebar-menu-badge' => 'visual',
+        'sidebar-menu-skeleton' => 'visual',
+        'sidebar-menu-skeleton-icon' => 'visual',
+        'sidebar-menu-skeleton-text' => 'visual',
+        'sidebar-menu-sub' => 'visual',
+        'sidebar-menu-sub-item' => 'visual',
+        'sidebar-menu-sub-button' => 'visual',
+        'sidebar-gap' => 'visual',
+        'sidebar-container' => 'visual',
+        'sidebar-inner' => 'visual',
     ]);
 });
 

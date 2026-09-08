@@ -1,7 +1,7 @@
 <input
     {{ $attributes->merge([
         'type' => $type,
-        'data-slot' => 'sidebar-input',
+        'data-slot' => $slotName,
         'data-sidebar' => 'input',
     ]) }}
 />

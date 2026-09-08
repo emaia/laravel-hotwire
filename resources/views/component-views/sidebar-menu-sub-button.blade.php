@@ -9,7 +9,7 @@
         'href' => $tag === 'a' ? $href : null,
         'data-turbo-frame' => $resolvedFrame,
         'type' => $tag === 'button' ? $type : null,
-        'data-slot' => 'sidebar-menu-sub-button',
+        'data-slot' => $slotName,
         'data-sidebar' => 'menu-sub-button',
         'data-size' => $size,
         'data-active' => $active ? 'true' : 'false',

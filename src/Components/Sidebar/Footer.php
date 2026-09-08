@@ -2,10 +2,12 @@
 
 namespace Emaia\LaravelHotwire\Components\Sidebar;
 
+use Emaia\LaravelHotwire\Components\Sidebar;
+
 class Footer extends Part
 {
     public function __construct()
     {
-        parent::__construct('div', 'sidebar-footer', 'footer');
+        parent::__construct('div', Sidebar::SLOTS['footer']['name'], 'footer');
     }
 }
