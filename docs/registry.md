@@ -1,6 +1,6 @@
 # Registry
 
-The registry is the single source of truth for everything the package exposes publicly:
+The registry is the public query surface for everything the package exposes:
 
 - Blade components
 - Stimulus controllers
@@ -10,26 +10,41 @@ The registry is the single source of truth for everything the package exposes pu
 - documentation paths
 - categories
 
-Public component and controller metadata lives in [`src/Registry/catalog.php`](../src/Registry/catalog.php). Visual CSS
-ownership and dependency closure live separately in [`src/Registry/styles.php`](../src/Registry/styles.php), where each
-official preset maps those logical modules to its private sources in canonical cascade order.
+Public component and controller metadata lives in [`src/Registry/catalog.php`](../src/Registry/catalog.php). Component
+families own their slot anatomy in their root class, and catalog entries project those declarations into the registry.
+Visual CSS ownership and dependency closure live separately in [`src/Registry/styles.php`](../src/Registry/styles.php),
+where each official preset maps those logical modules to its private sources in canonical cascade order.
 
 ## Catalog entries
 
 ### Component
 
+The root class names each part with a local key and classifies its public `data-slot` hook:
+
 ```php
-'modal' => [
-    'class'       => \Emaia\LaravelHotwire\Components\Modal::class,
-    'view'        => 'hotwire::component-views.modal',
-    'docs'        => 'docs/components/modal.md',
-    'category'    => 'overlay',
-    'controllers' => ['modal'],
+class Alert extends Component
+{
+    public const array SLOTS = [
+        'root'        => ['name' => 'alert', 'kind' => 'visual'],
+        'title'       => ['name' => 'alert-title', 'kind' => 'visual'],
+        'description' => ['name' => 'alert-description', 'kind' => 'visual'],
+        'action'      => ['name' => 'alert-action', 'kind' => 'visual'],
+    ];
+}
+```
+
+The family entry references that declaration instead of copying its names:
+
+```php
+'alert' => [
+    'class'       => \Emaia\LaravelHotwire\Components\Alert::class,
+    'view'        => 'hotwire::component-views.alert',
+    'docs'        => 'docs/components/alert.md',
+    'category'    => 'feedback',
+    'controllers' => [],
     'styling'     => [
         'slots' => [
-            'modal'         => 'structural',
-            'modal-overlay' => 'visual',
-            'modal-panel'   => 'visual',
+            ['class' => \Emaia\LaravelHotwire\Components\Alert::class],
         ],
     ],
 ],
@@ -42,16 +57,30 @@ official preset maps those logical modules to its private sources in canonical c
 | `docs`        | Relative path to the component's doc file                 |
 | `category`    | Public category (see [Categories](#categories))           |
 | `controllers` | Controller keys required by this component                |
-| `styling`     | The styling surface this entry contributes (see below)    |
+| `styling`     | References to the styling surface this entry contributes  |
 
 ### Styling
 
-`styling` groups everything a preset needs to know about an entry. It hydrates into
-[`Registry\Styling`](../src/Registry/Styling.php), which exposes `visualSlots()` and `structuralSlots()`.
+`styling` groups everything a preset needs to know about an entry. Its family references hydrate into
+[`Registry\Styling`](../src/Registry/Styling.php), preserving the existing `visualSlots()` and `structuralSlots()` query
+API.
 
-| Key     | Description                                                   |
-|---------|---------------------------------------------------------------|
-| `slots` | Package-emitted slot names mapped to `visual` or `structural` |
+| Key     | Description                                                                      |
+|---------|----------------------------------------------------------------------------------|
+| `slots` | Ordered family references, each with `class` and optional local-key list `only` |
+
+References can combine declarations from multiple families. Use `only` when an entry owns a defined subset:
+
+```php
+'slots' => [
+    ['class' => Alert::class, 'only' => ['action']],
+]
+```
+
+The resolver reads class constants through reflection and never constructs a component, renders a view or resolves the
+container. Missing local keys and conflicting `visual`/`structural` classifications are rejected. During the pre-1.0
+migration, catalog entries not yet moved to family declarations retain their literal slot maps; new and migrated
+families must use class declarations.
 
 Structural slots are containers, assistive nodes or geometry a controller stylesheet already owns; presets are not
 expected to style them, and `hotwire:make-preset` leaves them out of the scaffold.
@@ -108,14 +137,16 @@ The identifier is derived automatically: `/` → `--`, `_` → `-`.
 ## Adding a new component
 
 1. Create the PHP class in `src/Components/` and the Blade view in `resources/views/component-views/`.
-2. Add the component entry to `catalog.php`. Reference every required Stimulus controller and declare every emitted
-   slot under `styling`. Include slots from package subcomponents that belong to the component family.
-3. If it has visual slots, register its module ownership and every official preset source in `styles.php`.
-4. If new controllers are needed, add their entries too (see [Adding a new controller](#adding-a-new-controller)).
-5. Create `tests/Components/<Name>Test.php` covering rendering and props (follow `tests/Components/ModalTest.php` as
+2. Declare every family slot once in the root component's `SLOTS` constant. Reference those local keys from child
+   classes and shared views rather than copying public names.
+3. Add the component entry to `catalog.php`. Reference its slot declaration and every required Stimulus controller.
+   Use `only` or another explicit family reference for composed slots; do not infer ownership from aliases or CSS.
+4. If it has visual slots, register its module ownership and every official preset source in `styles.php`.
+5. If new controllers are needed, add their entries too (see [Adding a new controller](#adding-a-new-controller)).
+6. Create `tests/Components/<Name>Test.php` covering rendering and props (follow `tests/Components/ModalTest.php` as
    reference).
-6. Create `docs/components/<name>.md`.
-7. Run `composer test`.
+7. Create `docs/components/<name>.md`.
+8. Run `composer test`.
 
 ## Adding a new controller
 

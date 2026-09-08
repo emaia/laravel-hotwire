@@ -1,6 +1,9 @@
 <?php
 
+use Emaia\LaravelHotwire\Components\Alert;
+use Emaia\LaravelHotwire\Components\Toaster;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
+use Emaia\LaravelHotwire\Support\SessionToast;
 
 it('loads the component catalog', function () {
     $registry = HotwireRegistry::make();
@@ -8,6 +11,40 @@ it('loads the component catalog', function () {
     expect($registry->component('modal'))->not->toBeNull()
         ->and($registry->component('toast'))->not->toBeNull()
         ->and($registry->component('spinner'))->not->toBeNull();
+});
+
+it('projects the Alert family slot contract from its component class', function () {
+    $catalog = require __DIR__.'/../../src/Registry/catalog.php';
+
+    expect(Alert::SLOTS)->toBe([
+        'root' => ['name' => 'alert', 'kind' => 'visual'],
+        'title' => ['name' => 'alert-title', 'kind' => 'visual'],
+        'description' => ['name' => 'alert-description', 'kind' => 'visual'],
+        'action' => ['name' => 'alert-action', 'kind' => 'visual'],
+    ])->and($catalog['components']['alert']['styling']['slots'])->toBe([
+        ['class' => Alert::class],
+    ])->and(HotwireRegistry::make()->component('alert')->styling->slots)->toBe([
+        'alert' => 'visual',
+        'alert-title' => 'visual',
+        'alert-description' => 'visual',
+        'alert-action' => 'visual',
+    ]);
+});
+
+it('does not instantiate context-sensitive components while loading slot metadata', function () {
+    $sessionToast = Mockery::mock(SessionToast::class);
+    $sessionToast->shouldNotReceive('consume');
+    app()->instance(SessionToast::class, $sessionToast);
+
+    $catalog = require __DIR__.'/../../src/Registry/catalog.php';
+    $catalog['components']['toaster']['class'] = RegistryContextSensitiveToasterFixture::class;
+    $catalog['components']['toaster']['styling']['slots'] = [
+        ['class' => RegistryContextSensitiveToasterFixture::class],
+    ];
+
+    expect(HotwireRegistry::fromCatalog($catalog, '/tmp')->component('toaster')->styling->slots)->toBe([
+        'toaster-fixture' => 'structural',
+    ]);
 });
 
 it('loads the controller catalog', function () {
@@ -110,3 +147,10 @@ it('keeps catalog entries alphabetized by key', function () {
         expect($keys)->toBe($sorted, "Catalog section [{$section}] is not alphabetized.");
     }
 });
+
+final class RegistryContextSensitiveToasterFixture extends Toaster
+{
+    public const array SLOTS = [
+        'root' => ['name' => 'toaster-fixture', 'kind' => 'structural'],
+    ];
+}

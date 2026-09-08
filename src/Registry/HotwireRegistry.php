@@ -52,7 +52,7 @@ final class HotwireRegistry
     /** @param  array<string, mixed>  $styling */
     private static function styling(array $styling): Styling
     {
-        return new Styling(slots: $styling['slots'] ?? []);
+        return new Styling(slots: ComponentSlotResolver::resolve($styling['slots'] ?? []));
     }
 
     /** @param  array{components: array<string, array<string, mixed>>, controllers: array<string, array<string, mixed>>}  $catalog */

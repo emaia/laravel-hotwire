@@ -118,7 +118,9 @@ return [
             'description' => 'Inline alert with title, description, action and semantic variants',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(['alert', 'alert-title', 'alert-description', 'alert-action']),
+                'slots' => [
+                    ['class' => Alert::class],
+                ],
             ],
         ],
         'alert-dialog' => [

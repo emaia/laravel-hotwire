@@ -98,14 +98,15 @@ catalog, and any visual ownership must also be registered in styles.php**, or th
 
 - `components` entries: `class`, `view`, `docs`, `category`, `description`, and `controllers` (the list of Stimulus
   identifiers the component depends on — keep it in sync with what the Blade view actually mounts, since
-  `hotwire:check` verifies these are published). Every component entry also declares `slots` as a
-  `slot => visual|structural`
-  map. The values a slot varies by are not declared here — `hotwire:make-preset` reads them from the presets.
+  `hotwire:check` verifies these are published). A family's root component declares its slots once in a public `SLOTS`
+  constant as local key => public name + `visual|structural`; child classes and views reference those local keys. The
+  catalog projects the declaration through `styling.slots` class references, optionally narrowed with `only`.
 - `controllers` entries: `source` (path to the `.js`/`.ts` file), `docs`, `category`, `description`, and optional
   `npm` (a `package => version` map for third-party deps like `@floating-ui/dom`, `maska`, `echarts`). Controllers that
   create `data-slot` values in JavaScript declare them in `slots` too.
-- Add every new package-emitted `data-slot` to the owning catalog entry. Do not recover this metadata by parsing Blade,
-  PHP or CSS at runtime; the catalog is the contract used by preset generation and coverage tests.
+- Add every new package-emitted `data-slot` to the owning family declaration and reference that declaration from the
+  catalog. Do not recover this metadata by parsing Blade, PHP or CSS at runtime; the projected registry is the contract
+  used by preset generation and coverage tests.
 - Identifiers follow the Stimulus naming rules above — substrate-folder controllers use the `--` separator
   (`turbo--progress`, `optimistic--form`, `dev--log`).
 - Every registered component/controller should ship a matching doc file under `docs/` at the path given in the entry.

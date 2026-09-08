@@ -11,20 +11,22 @@ it('renders an alert root with semantic variant state', function () {
 });
 
 it('renders alert subcomponents with semantic slots', function () {
-    $view = $this->blade(<<<'BLADE'
+    $html = (string) $this->blade(<<<'BLADE'
         <x-hw::alert>
-            <x-hw::icon name="info" />
             <x-hw::alert.title>Heads up</x-hw::alert.title>
             <x-hw::alert.description>Review the details.</x-hw::alert.description>
-            <x-hw::alert.action><x-hw::button size="sm">Undo</x-hw::button></x-hw::alert.action>
+            <x-hw::alert.action>Undo</x-hw::alert.action>
         </x-hw::alert>
     BLADE);
 
-    $view->assertSee('data-slot="alert-title"', false)
-        ->assertSee('data-slot="alert-description"', false)
-        ->assertSee('data-slot="alert-action"', false)
-        ->assertSeeText('Heads up')
-        ->assertSeeText('Undo');
+    preg_match_all('/data-slot="([a-z][a-z0-9-]*)"/', $html, $matches);
+
+    expect(array_values(array_unique($matches[1])))->toEqualCanonicalizing([
+        'alert',
+        'alert-title',
+        'alert-description',
+        'alert-action',
+    ])->and($html)->toContain('Heads up')->toContain('Undo');
 });
 
 it('passes through attributes', function () {

@@ -14,19 +14,15 @@ dataset('slot catalog presets', fn () => collect(glob(__DIR__.'/../../resources/
     ->all());
 
 it('declares slots on every component catalog entry', function () {
-    $catalog = require __DIR__.'/../../src/Registry/catalog.php';
-
-    foreach ($catalog['components'] as $key => $component) {
-        expect($component['styling']['slots'] ?? null)
-            ->toBeArray("Component [{$key}] must declare its slots under the styling key.");
+    foreach (HotwireRegistry::make()->components() as $key => $component) {
+        expect($component->styling->slots)
+            ->toBeArray("Component [{$key}] must declare its slots through its family contract or catalog entry.");
     }
 });
 
 it('only leaves infrastructure components without styling slots', function () {
-    $catalog = require __DIR__.'/../../src/Registry/catalog.php';
-
-    $slotless = collect($catalog['components'])
-        ->filter(fn (array $component): bool => ($component['styling']['slots'] ?? []) === [])
+    $slotless = collect(HotwireRegistry::make()->components())
+        ->filter(fn ($component): bool => $component->styling->slots === [])
         ->keys()
         ->values()
         ->all();
@@ -51,17 +47,16 @@ it('only leaves infrastructure components without styling slots', function () {
 });
 
 it('documents component styling hooks from the catalog', function () {
-    $catalog = require __DIR__.'/../../src/Registry/catalog.php';
     $slotsByDoc = [];
 
-    foreach ($catalog['components'] as $component) {
-        $doc = $component['docs'] ?? null;
+    foreach (HotwireRegistry::make()->components() as $component) {
+        $doc = $component->docs;
 
-        if ($doc === null || ! File::exists(__DIR__.'/../../'.$doc)) {
+        if (! File::exists(__DIR__.'/../../'.$doc)) {
             continue;
         }
 
-        $slots = array_keys($component['styling']['slots'] ?? []);
+        $slots = array_keys($component->styling->slots);
 
         if ($slots === []) {
             continue;
