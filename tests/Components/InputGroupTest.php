@@ -4,21 +4,25 @@ use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 
 // --- Rendering ---
 
-it('renders an input group around existing input components', function () {
-    $view = $this->blade(<<<'BLADE'
+it('renders Input Group family anatomy with semantic slots', function () {
+    $html = (string) $this->blade(<<<'BLADE'
         <x-hw::input-group>
-            <x-hw::input name="search" placeholder="Search" />
-            <x-hw::input-group.addon align="inline-start">
-                <svg data-testid="search-icon"></svg>
+            <input data-slot="input-group-control" name="amount" />
+            <x-hw::input-group.addon align="inline-end">
+                USD
             </x-hw::input-group.addon>
         </x-hw::input-group>
     BLADE);
 
-    $view->assertSee('data-slot="input-group"', false);
-    $view->assertSee('data-slot="input"', false);
-    $view->assertSee('data-slot="input-group-addon"', false);
-    $view->assertSee('data-align="inline-start"', false);
-    $view->assertSee('data-testid="search-icon"', false);
+    preg_match_all('/data-slot="([a-z][a-z0-9-]*)"/', $html, $matches);
+
+    expect($matches[1])->toBe([
+        'input-group',
+        'input-group-control',
+        'input-group-addon',
+    ])->and($html)
+        ->toContain('data-align="inline-end"')
+        ->toContain('USD');
 });
 
 it('keeps addons after the input in DOM order', function () {
@@ -58,18 +62,6 @@ it('composes with textarea and buttons', function () {
     $view->assertSee('data-slot="textarea"', false);
     $view->assertSee('data-align="block-end"', false);
     $view->assertSee('data-slot="button"', false);
-});
-
-it('supports custom controls using input-group-control slot', function () {
-    $view = $this->blade(<<<'BLADE'
-        <x-hw::input-group>
-            <input data-slot="input-group-control" name="custom" />
-            <x-hw::input-group.addon>USD</x-hw::input-group.addon>
-        </x-hw::input-group>
-    BLADE);
-
-    $view->assertSee('data-slot="input-group-control"', false);
-    $view->assertSee('USD', false);
 });
 
 // --- Defaults and attributes ---

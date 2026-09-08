@@ -549,7 +549,9 @@ return [
             'description' => 'Composable input shell for addons, actions, shortcuts and helper content',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(['input-group', 'input-group-addon']),
+                'slots' => [
+                    ['class' => InputGroup::class],
+                ],
             ],
         ],
         'item' => [

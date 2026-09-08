@@ -3,6 +3,7 @@
 use Emaia\LaravelHotwire\Components\Alert;
 use Emaia\LaravelHotwire\Components\Card;
 use Emaia\LaravelHotwire\Components\Field;
+use Emaia\LaravelHotwire\Components\InputGroup;
 use Emaia\LaravelHotwire\Components\Item;
 use Emaia\LaravelHotwire\Components\Toaster;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
@@ -135,6 +136,22 @@ it('projects the Field family slot contract from its component class', function 
     ])->and($registry->component('field.label')->styling->slots)->toBe([
         'field-label' => 'visual',
         'field-label-required' => 'structural',
+    ]);
+});
+
+it('projects the Input Group family slot contract from its component class', function () {
+    $catalog = require __DIR__.'/../../src/Registry/catalog.php';
+
+    expect(InputGroup::SLOTS)->toBe([
+        'root' => ['name' => 'input-group', 'kind' => 'visual'],
+        'addon' => ['name' => 'input-group-addon', 'kind' => 'visual'],
+        'control' => ['name' => 'input-group-control', 'kind' => 'visual'],
+    ])->and($catalog['components']['input-group']['styling']['slots'])->toBe([
+        ['class' => InputGroup::class],
+    ])->and(HotwireRegistry::make()->component('input-group')->styling->slots)->toBe([
+        'input-group' => 'visual',
+        'input-group-addon' => 'visual',
+        'input-group-control' => 'visual',
     ]);
 });
 
