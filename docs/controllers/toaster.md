@@ -1,8 +1,8 @@
 # Toaster
 
-Clones and manages the component-authored toast stack. Add `<hw:toaster>` once to the global layout so the `toast`
-controller has somewhere to emit into. It owns the queue, timers, presence and cleanup; there is no third-party
-dependency.
+Displays accessible toast notifications in a persistent stack. Add `<hw:toaster>` once to the global layout so the
+`toast` controller has somewhere to emit into. Notifications support timed dismissal, manual close and Turbo Drive
+persistence; there is no third-party dependency.
 
 **Identifier:** `toaster`
 
