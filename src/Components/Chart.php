@@ -10,6 +10,10 @@ use InvalidArgumentException;
 
 class Chart extends Component
 {
+    public const array SLOTS = [
+        'root' => ['name' => 'chart', 'kind' => 'structural'],
+    ];
+
     public ?string $encodedOption;
 
     /**
@@ -43,7 +47,9 @@ class Chart extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.chart');
+        return view('hotwire::component-views.chart', [
+            'slotName' => self::SLOTS['root']['name'],
+        ]);
     }
 
     public function style(): string

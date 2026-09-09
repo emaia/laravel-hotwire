@@ -4,6 +4,7 @@ use Emaia\LaravelHotwire\Components\Accordion;
 use Emaia\LaravelHotwire\Components\Alert;
 use Emaia\LaravelHotwire\Components\AlertDialog;
 use Emaia\LaravelHotwire\Components\AspectRatio;
+use Emaia\LaravelHotwire\Components\Attachment;
 use Emaia\LaravelHotwire\Components\Avatar;
 use Emaia\LaravelHotwire\Components\BackToTop;
 use Emaia\LaravelHotwire\Components\Badge;
@@ -11,6 +12,8 @@ use Emaia\LaravelHotwire\Components\Breadcrumb;
 use Emaia\LaravelHotwire\Components\Button;
 use Emaia\LaravelHotwire\Components\ButtonGroup;
 use Emaia\LaravelHotwire\Components\Card;
+use Emaia\LaravelHotwire\Components\Carousel;
+use Emaia\LaravelHotwire\Components\Chart;
 use Emaia\LaravelHotwire\Components\Checkbox;
 use Emaia\LaravelHotwire\Components\CheckboxGroup;
 use Emaia\LaravelHotwire\Components\ColorScheme\Toggle as ColorSchemeToggle;
@@ -20,6 +23,7 @@ use Emaia\LaravelHotwire\Components\Dropdown;
 use Emaia\LaravelHotwire\Components\EmptyState;
 use Emaia\LaravelHotwire\Components\Field;
 use Emaia\LaravelHotwire\Components\File;
+use Emaia\LaravelHotwire\Components\FileUpload;
 use Emaia\LaravelHotwire\Components\Form;
 use Emaia\LaravelHotwire\Components\HoverCard;
 use Emaia\LaravelHotwire\Components\Icon;
@@ -27,15 +31,19 @@ use Emaia\LaravelHotwire\Components\Input;
 use Emaia\LaravelHotwire\Components\InputGroup;
 use Emaia\LaravelHotwire\Components\Item;
 use Emaia\LaravelHotwire\Components\Kbd;
+use Emaia\LaravelHotwire\Components\Map;
+use Emaia\LaravelHotwire\Components\Marker;
 use Emaia\LaravelHotwire\Components\Modal;
 use Emaia\LaravelHotwire\Components\MultiSelect;
 use Emaia\LaravelHotwire\Components\Navbar;
+use Emaia\LaravelHotwire\Components\Optimistic;
 use Emaia\LaravelHotwire\Components\Pagination;
 use Emaia\LaravelHotwire\Components\Popover;
 use Emaia\LaravelHotwire\Components\Progress;
 use Emaia\LaravelHotwire\Components\RadioGroup;
 use Emaia\LaravelHotwire\Components\ReadMore;
 use Emaia\LaravelHotwire\Components\Reveal;
+use Emaia\LaravelHotwire\Components\RichText;
 use Emaia\LaravelHotwire\Components\ScrollProgress;
 use Emaia\LaravelHotwire\Components\Select;
 use Emaia\LaravelHotwire\Components\Separator;
@@ -51,6 +59,7 @@ use Emaia\LaravelHotwire\Components\Table;
 use Emaia\LaravelHotwire\Components\Tabs;
 use Emaia\LaravelHotwire\Components\Textarea;
 use Emaia\LaravelHotwire\Components\Timeago;
+use Emaia\LaravelHotwire\Components\Toast;
 use Emaia\LaravelHotwire\Components\Toaster;
 use Emaia\LaravelHotwire\Components\Toggle;
 use Emaia\LaravelHotwire\Components\ToggleGroup;
@@ -63,6 +72,20 @@ it('loads the component catalog', function () {
     expect($registry->component('modal'))->not->toBeNull()
         ->and($registry->component('toast'))->not->toBeNull()
         ->and($registry->component('spinner'))->not->toBeNull();
+});
+
+it('uses family references instead of manual slot inventories for components', function () {
+    $catalog = require __DIR__.'/../../src/Registry/catalog.php';
+
+    foreach ($catalog['components'] as $key => $component) {
+        $references = $component['styling']['slots'];
+
+        expect(array_is_list($references))->toBeTrue("Component [{$key}] still has a manual slot inventory.");
+
+        foreach ($references as $reference) {
+            expect($reference)->toHaveKey('class');
+        }
+    }
 });
 
 it('projects the Alert family slot contract from its component class', function () {
@@ -144,6 +167,125 @@ it('projects singleton primitive slot contracts from their component classes', f
     'timeago' => ['timeago', Timeago::class, 'timeago', 'visual'],
     'toggle' => ['toggle', Toggle::class, 'toggle', 'visual'],
 ]);
+
+it('projects singleton structural host slot contracts without instantiating their component classes', function (string $key, string $class, string $name) {
+    $catalog = require __DIR__.'/../../src/Registry/catalog.php';
+
+    expect($class::SLOTS)->toBe([
+        'root' => ['name' => $name, 'kind' => 'structural'],
+    ])->and($catalog['components'][$key]['styling']['slots'])->toBe([
+        ['class' => $class],
+    ])->and(HotwireRegistry::make()->component($key)->styling->slots)->toBe([
+        $name => 'structural',
+    ]);
+})->with([
+    'chart' => ['chart', Chart::class, 'chart'],
+    'map' => ['map', Map::class, 'map'],
+    'optimistic' => ['optimistic', Optimistic::class, 'optimistic'],
+]);
+
+it('projects small display family slot contracts from their root classes', function (string $key, string $class) {
+    $catalog = require __DIR__.'/../../src/Registry/catalog.php';
+    $slots = match ($class) {
+        Attachment::class => [
+            'root' => ['name' => 'attachment', 'kind' => 'visual'],
+            'group' => ['name' => 'attachment-group', 'kind' => 'visual'],
+            'media' => ['name' => 'attachment-media', 'kind' => 'visual'],
+            'content' => ['name' => 'attachment-content', 'kind' => 'visual'],
+            'title' => ['name' => 'attachment-title', 'kind' => 'visual'],
+            'description' => ['name' => 'attachment-description', 'kind' => 'visual'],
+            'actions' => ['name' => 'attachment-actions', 'kind' => 'visual'],
+            'trigger' => ['name' => 'attachment-trigger', 'kind' => 'visual'],
+            'action' => ['name' => 'attachment-action', 'kind' => 'visual'],
+        ],
+        Marker::class => [
+            'root' => ['name' => 'marker', 'kind' => 'visual'],
+            'icon' => ['name' => 'marker-icon', 'kind' => 'visual'],
+            'content' => ['name' => 'marker-content', 'kind' => 'visual'],
+        ],
+    };
+    $resolved = [];
+
+    foreach ($slots as $slot) {
+        $resolved[$slot['name']] = $slot['kind'];
+    }
+
+    expect($class::SLOTS)->toBe($slots)
+        ->and($catalog['components'][$key]['styling']['slots'])->toBe([
+            ['class' => $class],
+        ])->and(HotwireRegistry::make()->component($key)->styling->slots)->toBe($resolved);
+})->with([
+    'attachment' => ['attachment', Attachment::class],
+    'marker' => ['marker', Marker::class],
+]);
+
+it('projects complex interactive markup slot contracts from their component classes', function (string $key, string $class) {
+    $catalog = require __DIR__.'/../../src/Registry/catalog.php';
+    $slots = match ($class) {
+        Carousel::class => [
+            'root' => ['name' => 'carousel', 'kind' => 'visual'],
+            'progress' => ['name' => 'carousel-progress', 'kind' => 'visual'],
+            'counter' => ['name' => 'carousel-counter', 'kind' => 'visual'],
+            'previous-button' => ['name' => 'carousel-prev-button', 'kind' => 'visual'],
+            'next-button' => ['name' => 'carousel-next-button', 'kind' => 'visual'],
+            'dot-button' => ['name' => 'carousel-dot-button', 'kind' => 'visual'],
+            'dot-list' => ['name' => 'carousel-dot-list', 'kind' => 'visual'],
+            'progress-wrapper' => ['name' => 'carousel-progress-wrapper', 'kind' => 'visual'],
+            'viewport' => ['name' => 'carousel-viewport', 'kind' => 'structural'],
+            'container' => ['name' => 'carousel-container', 'kind' => 'structural'],
+            'navigation-wrapper' => ['name' => 'carousel-nav-wrapper', 'kind' => 'structural'],
+        ],
+        RichText::class => [
+            'root' => ['name' => 'rich-text', 'kind' => 'visual'],
+            'toolbar' => ['name' => 'rich-text-toolbar', 'kind' => 'visual'],
+            'toolbar-button' => ['name' => 'rich-text-toolbar-button', 'kind' => 'visual'],
+            'editor' => ['name' => 'rich-text-editor', 'kind' => 'visual'],
+            'input' => ['name' => 'rich-text-input', 'kind' => 'structural'],
+        ],
+    };
+    $resolved = [];
+
+    foreach ($slots as $slot) {
+        $resolved[$slot['name']] = $slot['kind'];
+    }
+
+    expect($class::SLOTS)->toBe($slots)
+        ->and($catalog['components'][$key]['styling']['slots'])->toBe([
+            ['class' => $class],
+        ])->and(HotwireRegistry::make()->component($key)->styling->slots)->toBe($resolved);
+})->with([
+    'carousel' => ['carousel', Carousel::class],
+    'rich text' => ['rich-text', RichText::class],
+]);
+
+it('projects File Upload ownership and composed family slots through explicit references', function () {
+    $catalog = require __DIR__.'/../../src/Registry/catalog.php';
+
+    expect(FileUpload::SLOTS)->toBe([
+        'root' => ['name' => 'file-upload', 'kind' => 'visual'],
+        'dropzone' => ['name' => 'file-upload-dropzone', 'kind' => 'visual'],
+        'image-base' => ['name' => 'file-upload-image-base', 'kind' => 'visual'],
+        'image-preview' => ['name' => 'file-upload-image-preview', 'kind' => 'visual'],
+        'feedback' => ['name' => 'file-upload-feedback', 'kind' => 'visual'],
+        'actions' => ['name' => 'file-upload-actions', 'kind' => 'visual'],
+        'announcer' => ['name' => 'file-upload-announcer', 'kind' => 'structural'],
+    ])->and($catalog['components']['file-upload']['styling']['slots'])->toBe([
+        ['class' => FileUpload::class, 'only' => ['root', 'dropzone', 'image-base', 'image-preview', 'feedback', 'actions']],
+        ['class' => Attachment::class, 'only' => ['group']],
+        ['class' => EmptyState::class, 'only' => ['description']],
+        ['class' => FileUpload::class, 'only' => ['announcer']],
+    ])->and(HotwireRegistry::make()->component('file-upload')->styling->slots)->toBe([
+        'file-upload' => 'visual',
+        'file-upload-dropzone' => 'visual',
+        'file-upload-image-base' => 'visual',
+        'file-upload-image-preview' => 'visual',
+        'file-upload-feedback' => 'visual',
+        'file-upload-actions' => 'visual',
+        'attachment-group' => 'visual',
+        'empty-state-description' => 'visual',
+        'file-upload-announcer' => 'structural',
+    ]);
+});
 
 it('projects the Textarea family slot contract from its component class', function () {
     $catalog = require __DIR__.'/../../src/Registry/catalog.php';
@@ -821,6 +963,26 @@ it('projects the Sidebar family slot contract from its component class', functio
         'sidebar-gap' => 'visual',
         'sidebar-container' => 'visual',
         'sidebar-inner' => 'visual',
+    ]);
+});
+
+it('projects Toast and Toaster host slots while leaving runtime toast slots controller-owned', function () {
+    $catalog = require __DIR__.'/../../src/Registry/catalog.php';
+
+    expect(Toast::SLOTS)->toBe([
+        'trigger' => ['name' => 'toast-trigger', 'kind' => 'structural'],
+    ])->and(Toaster::SLOTS)->toBe([
+        'root' => ['name' => 'toaster', 'kind' => 'structural'],
+    ])->and($catalog['components']['toast']['styling']['slots'])->toBe([
+        ['class' => Toast::class],
+    ])->and($catalog['components']['toaster']['styling']['slots'])->toBe([
+        ['class' => Toaster::class],
+        ['class' => Toast::class],
+    ])->and(HotwireRegistry::make()->component('toast')->styling->slots)->toBe([
+        'toast-trigger' => 'structural',
+    ])->and(HotwireRegistry::make()->component('toaster')->styling->slots)->toBe([
+        'toaster' => 'structural',
+        'toast-trigger' => 'structural',
     ]);
 });
 

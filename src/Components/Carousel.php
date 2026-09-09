@@ -9,6 +9,20 @@ use Illuminate\Contracts\Support\Htmlable;
 
 class Carousel extends Component
 {
+    public const array SLOTS = [
+        'root' => ['name' => 'carousel', 'kind' => 'visual'],
+        'progress' => ['name' => 'carousel-progress', 'kind' => 'visual'],
+        'counter' => ['name' => 'carousel-counter', 'kind' => 'visual'],
+        'previous-button' => ['name' => 'carousel-prev-button', 'kind' => 'visual'],
+        'next-button' => ['name' => 'carousel-next-button', 'kind' => 'visual'],
+        'dot-button' => ['name' => 'carousel-dot-button', 'kind' => 'visual'],
+        'dot-list' => ['name' => 'carousel-dot-list', 'kind' => 'visual'],
+        'progress-wrapper' => ['name' => 'carousel-progress-wrapper', 'kind' => 'visual'],
+        'viewport' => ['name' => 'carousel-viewport', 'kind' => 'structural'],
+        'container' => ['name' => 'carousel-container', 'kind' => 'structural'],
+        'navigation-wrapper' => ['name' => 'carousel-nav-wrapper', 'kind' => 'structural'],
+    ];
+
     /**
      * @param  array<string, mixed>|null  $breakpoints  media-query => Embla options override
      * @param  array<string, mixed>  $options  catch-all merged into the Embla options (overrides)
@@ -55,7 +69,19 @@ class Carousel extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.carousel');
+        return view('hotwire::component-views.carousel', [
+            'slotName' => self::SLOTS['root']['name'],
+            'progressSlotName' => self::SLOTS['progress']['name'],
+            'counterSlotName' => self::SLOTS['counter']['name'],
+            'previousButtonSlotName' => self::SLOTS['previous-button']['name'],
+            'nextButtonSlotName' => self::SLOTS['next-button']['name'],
+            'dotButtonSlotName' => self::SLOTS['dot-button']['name'],
+            'dotListSlotName' => self::SLOTS['dot-list']['name'],
+            'progressWrapperSlotName' => self::SLOTS['progress-wrapper']['name'],
+            'viewportSlotName' => self::SLOTS['viewport']['name'],
+            'containerSlotName' => self::SLOTS['container']['name'],
+            'navigationWrapperSlotName' => self::SLOTS['navigation-wrapper']['name'],
+        ]);
     }
 
     public function data(): array

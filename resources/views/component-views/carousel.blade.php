@@ -13,7 +13,7 @@
     ])->filter()->implode('; ');
 
     $carouselAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
-        'data-slot' => 'carousel',
+        'data-slot' => $slotName,
         'data-controller' => $controller,
         "data-{$controller}-options-value" => e($optionsJson()),
         'data-carousel-axis' => $axis,
@@ -29,32 +29,32 @@
 <div
     {{ $carouselAttributes }}
 >
-    <div data-slot="carousel-viewport" data-carousel-viewport class="{{ $viewportClass }}">
-        <div data-slot="carousel-container" data-carousel-container class="{{ $containerClass }}">
+    <div data-slot="{{ $viewportSlotName }}" data-carousel-viewport class="{{ $viewportClass }}">
+        <div data-slot="{{ $containerSlotName }}" data-carousel-container class="{{ $containerClass }}">
             {{ $slot }}
         </div>
     </div>
 
     @if ($progress)
-        <div data-slot="carousel-progress-wrapper" class="{{ $progressWrapperClass }}">
-            <div data-slot="carousel-progress" data-{{ $controller }}-target="progress" class="{{ $progressClass }}" style="width: 0"></div>
+        <div data-slot="{{ $progressWrapperSlotName }}" class="{{ $progressWrapperClass }}">
+            <div data-slot="{{ $progressSlotName }}" data-{{ $controller }}-target="progress" class="{{ $progressClass }}" style="width: 0"></div>
         </div>
     @endif
 
     @if ($counter)
-        <div data-slot="carousel-counter" class="{{ $counterClass }}">
+        <div data-slot="{{ $counterSlotName }}" class="{{ $counterClass }}">
             <span data-{{ $controller }}-target="indexLabel"></span>/<span data-{{ $controller }}-target="totalLabel"></span>
         </div>
     @endif
 
     @if ($navigation)
         @if ($navWrapperClass !== '')
-            <div data-slot="carousel-nav-wrapper" data-carousel-nav-wrapper class="{{ $navWrapperClass }}">
+            <div data-slot="{{ $navigationWrapperSlotName }}" data-carousel-nav-wrapper class="{{ $navWrapperClass }}">
         @endif
         @php
             $prevButtonAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
                 'type' => 'button',
-                'data-slot' => 'carousel-prev-button',
+                'data-slot' => $previousButtonSlotName,
                 "data-{$controller}-target" => 'prevButton',
                 'data-action' => "{$controller}#prev",
                 'aria-label' => 'Previous',
@@ -63,7 +63,7 @@
 
             $nextButtonAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
                 'type' => 'button',
-                'data-slot' => 'carousel-next-button',
+                'data-slot' => $nextButtonSlotName,
                 "data-{$controller}-target" => 'nextButton',
                 'data-action' => "{$controller}#next",
                 'aria-label' => 'Next',
@@ -87,7 +87,7 @@
 
     @if ($dots)
         <div
-            data-slot="carousel-dot-list"
+            data-slot="{{ $dotListSlotName }}"
             data-{{ $controller }}-target="dotList"
             class="{{ $dotListClass }}"
             role="group"
@@ -98,7 +98,7 @@
             @php
                 $dotButtonAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
                     'type' => 'button',
-                    'data-slot' => 'carousel-dot-button',
+                    'data-slot' => $dotButtonSlotName,
                     'data-action' => "{$controller}#scrollTo",
                     'class' => $dotClass,
                 ], ($dot_template ?? new ComponentSlot)->attributes);

@@ -1,6 +1,6 @@
 <div
     {{ $attributes->merge([
-        'data-slot' => 'marker',
+        'data-slot' => $slotName,
         'data-variant' => $variant,
     ]) }}
 >{{ $slot }}</div>

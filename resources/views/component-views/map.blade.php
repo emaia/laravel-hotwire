@@ -2,7 +2,7 @@
     $controller = \Emaia\LaravelHotwire\Support\StimulusIdentifier::guard((string) $controller, 'map');
 
     $mapAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
-        'data-slot' => 'map',
+        'data-slot' => $slotName,
         'data-controller' => $controller,
         "data-{$controller}-center-value" => $center !== null ? e(json_encode($center)) : null,
         "data-{$controller}-zoom-value" => $zoom,

@@ -12,7 +12,7 @@
     $outletSelector = '[data-'.$controller."-id-value='".$escapedId."']";
 
     $richTextAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
-        'data-slot' => 'rich-text',
+        'data-slot' => $slotName,
         'class' => $class ?: null,
         'data-controller' => $controller,
         "data-{$controller}-id-value" => $resolvedId,
@@ -43,7 +43,7 @@
          server-side (Laravel `required`), and `[data-invalid]` on the wrapper handles the visual.
          See "Required + client-side validation" in the component docs for a JS opt-in. --}}
     <textarea
-        data-slot="rich-text-input"
+        data-slot="{{ $inputSlotName }}"
         @if ($name) name="{{ $name }}" @endif
         data-{{ $controller }}-target="input"
         @if ($isRequired) aria-required="true" @endif
@@ -53,7 +53,7 @@
 
     @if ($toolbar !== false)
         <div
-            data-slot="rich-text-toolbar"
+            data-slot="{{ $toolbarSlotName }}"
             role="toolbar"
             aria-label="Formatting"
             data-controller="rich-text-toolbar"
@@ -61,7 +61,7 @@
         >
             @foreach ($toolbarButtons() as $button)
                 <button
-                    data-slot="rich-text-toolbar-button"
+                    data-slot="{{ $toolbarButtonSlotName }}"
                     type="button"
                     data-action="click->rich-text-toolbar#{{ $button['action'] }}"
                     @if ($button['target']) data-rich-text-toolbar-target="{{ $button['target'] }}" @endif
@@ -76,5 +76,5 @@
         {{ $slot ?? '' }}
     @endif
 
-    <div data-slot="rich-text-editor" data-{{ $controller }}-target="editor"></div>
+    <div data-slot="{{ $editorSlotName }}" data-{{ $controller }}-target="editor"></div>
 </div>

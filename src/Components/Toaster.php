@@ -8,6 +8,10 @@ use Illuminate\Contracts\Support\Htmlable;
 
 class Toaster extends Component
 {
+    public const array SLOTS = [
+        'root' => ['name' => 'toaster', 'kind' => 'structural'],
+    ];
+
     public ?string $flashMessage = null;
 
     public ?string $flashType = null;
@@ -46,6 +50,8 @@ class Toaster extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.toaster');
+        return view('hotwire::component-views.toaster', [
+            'slotName' => self::SLOTS['root']['name'],
+        ]);
     }
 }

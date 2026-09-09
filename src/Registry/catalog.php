@@ -159,7 +159,9 @@ return [
             'description' => 'Composable file attachment primitive with media, metadata, state and actions',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(['attachment', 'attachment-group', 'attachment-media', 'attachment-content', 'attachment-title', 'attachment-description', 'attachment-actions', 'attachment-trigger', 'attachment-action']),
+                'slots' => [
+                    ['class' => Attachment::class],
+                ],
             ],
         ],
         'avatar' => [
@@ -261,10 +263,9 @@ return [
             'description' => 'Carousel/slider (Embla) with navigation, dots, responsive options and CSS-variable sizing',
             'controllers' => ['carousel'],
             'styling' => [
-                'slots' => $slots(
-                    ['carousel', 'carousel-progress', 'carousel-counter', 'carousel-prev-button', 'carousel-next-button', 'carousel-dot-button', 'carousel-dot-list', 'carousel-progress-wrapper'],
-                    ['carousel-viewport', 'carousel-container', 'carousel-nav-wrapper'],
-                ),
+                'slots' => [
+                    ['class' => Carousel::class],
+                ],
             ],
         ],
         'chart' => [
@@ -275,7 +276,9 @@ return [
             'description' => 'Apache ECharts wrapper — inline option or URL-fetched, theme + sizing props, controller swap for subclass extensibility',
             'controllers' => ['chart'],
             'styling' => [
-                'slots' => $slots(structural: ['chart']),
+                'slots' => [
+                    ['class' => Chart::class],
+                ],
             ],
         ],
         'checkbox' => [
@@ -477,10 +480,12 @@ return [
             'description' => 'Attachment-backed native upload protocol with managed JSON and server-owned Turbo Stream modes',
             'controllers' => ['file-upload'],
             'styling' => [
-                'slots' => $slots(
-                    ['file-upload', 'file-upload-dropzone', 'file-upload-image-base', 'file-upload-image-preview', 'file-upload-feedback', 'file-upload-actions', 'attachment-group', 'empty-state-description'],
-                    ['file-upload-announcer'],
-                ),
+                'slots' => [
+                    ['class' => FileUpload::class, 'only' => ['root', 'dropzone', 'image-base', 'image-preview', 'feedback', 'actions']],
+                    ['class' => Attachment::class, 'only' => ['group']],
+                    ['class' => EmptyState::class, 'only' => ['description']],
+                    ['class' => FileUpload::class, 'only' => ['announcer']],
+                ],
             ],
         ],
         'form' => [
@@ -626,7 +631,9 @@ return [
             'description' => 'Leaflet wrapper — inline center/markers or GeoJSON URL, OSM tiles by default, subclass-friendly tile/handler hooks',
             'controllers' => ['map'],
             'styling' => [
-                'slots' => $slots(structural: ['map']),
+                'slots' => [
+                    ['class' => Map::class],
+                ],
             ],
         ],
         'marker' => [
@@ -637,7 +644,9 @@ return [
             'description' => 'Lightweight visual primitive for timelines, activity feeds and lists',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(['marker', 'marker-icon', 'marker-content']),
+                'slots' => [
+                    ['class' => Marker::class],
+                ],
             ],
         ],
         'meta' => [
@@ -800,7 +809,9 @@ return [
             'description' => 'Declares an inline optimistic Turbo Stream action for any Turbo trigger',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(structural: ['optimistic']),
+                'slots' => [
+                    ['class' => Optimistic::class],
+                ],
             ],
         ],
         'pagination' => [
@@ -915,10 +926,9 @@ return [
             'description' => 'Tiptap-backed rich text editor with optional default toolbar, output as HTML or JSON, and image-upload event hook',
             'controllers' => ['rich-text', 'rich-text-toolbar'],
             'styling' => [
-                'slots' => $slots(
-                    ['rich-text', 'rich-text-toolbar', 'rich-text-toolbar-button', 'rich-text-editor'],
-                    ['rich-text-input'],
-                ),
+                'slots' => [
+                    ['class' => RichText::class],
+                ],
             ],
         ],
         'scroll-progress' => [
@@ -1126,7 +1136,9 @@ return [
             'styling' => [
                 // The trigger only carries the payload and removes itself on connect; the visible
                 // toast is built by the manager under its own slots.
-                'slots' => $slots(structural: ['toast-trigger']),
+                'slots' => [
+                    ['class' => Toast::class],
+                ],
             ],
         ],
         'toaster' => [
@@ -1137,7 +1149,10 @@ return [
             'description' => 'Hosts the toast stack, reads the session flash and persists across Turbo Drive navigations',
             'controllers' => ['toaster', 'toast'],
             'styling' => [
-                'slots' => $slots(structural: ['toaster', 'toast-trigger']),
+                'slots' => [
+                    ['class' => Toaster::class],
+                    ['class' => Toast::class],
+                ],
             ],
         ],
         'toggle' => [

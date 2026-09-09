@@ -16,6 +16,16 @@ class FileUpload extends Component
 {
     use StripsNullProps;
 
+    public const array SLOTS = [
+        'root' => ['name' => 'file-upload', 'kind' => 'visual'],
+        'dropzone' => ['name' => 'file-upload-dropzone', 'kind' => 'visual'],
+        'image-base' => ['name' => 'file-upload-image-base', 'kind' => 'visual'],
+        'image-preview' => ['name' => 'file-upload-image-preview', 'kind' => 'visual'],
+        'feedback' => ['name' => 'file-upload-feedback', 'kind' => 'visual'],
+        'actions' => ['name' => 'file-upload-actions', 'kind' => 'visual'],
+        'announcer' => ['name' => 'file-upload-announcer', 'kind' => 'structural'],
+    ];
+
     private const MESSAGE_KEYS = [
         'idle',
         'idleMultiple',
@@ -137,7 +147,17 @@ class FileUpload extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.file-upload');
+        return view('hotwire::component-views.file-upload', [
+            'slotName' => self::SLOTS['root']['name'],
+            'dropzoneSlotName' => self::SLOTS['dropzone']['name'],
+            'imageBaseSlotName' => self::SLOTS['image-base']['name'],
+            'imagePreviewSlotName' => self::SLOTS['image-preview']['name'],
+            'feedbackSlotName' => self::SLOTS['feedback']['name'],
+            'actionsSlotName' => self::SLOTS['actions']['name'],
+            'announcerSlotName' => self::SLOTS['announcer']['name'],
+            'attachmentGroupSlotName' => Attachment::SLOTS['group']['name'],
+            'emptyStateDescriptionSlotName' => EmptyState::SLOTS['description']['name'],
+        ]);
     }
 
     public function data(): array
