@@ -1,6 +1,7 @@
 <?php
 
 use Emaia\LaravelHotwire\Components\Alert;
+use Emaia\LaravelHotwire\Components\AlertDialog;
 use Emaia\LaravelHotwire\Components\Card;
 use Emaia\LaravelHotwire\Components\Drawer;
 use Emaia\LaravelHotwire\Components\Field;
@@ -39,6 +40,40 @@ it('projects the Alert family slot contract from its component class', function 
         'alert-title' => 'visual',
         'alert-description' => 'visual',
         'alert-action' => 'visual',
+    ]);
+});
+
+it('projects the Alert Dialog family slot contract from its component class', function () {
+    $catalog = require __DIR__.'/../../src/Registry/catalog.php';
+
+    expect(AlertDialog::SLOTS)->toBe([
+        'overlay' => ['name' => 'alert-dialog-overlay', 'kind' => 'visual'],
+        'backdrop' => ['name' => 'alert-dialog-backdrop', 'kind' => 'visual'],
+        'panel' => ['name' => 'alert-dialog-panel', 'kind' => 'visual'],
+        'header' => ['name' => 'alert-dialog-header', 'kind' => 'visual'],
+        'title' => ['name' => 'alert-dialog-title', 'kind' => 'visual'],
+        'description' => ['name' => 'alert-dialog-description', 'kind' => 'visual'],
+        'body' => ['name' => 'alert-dialog-body', 'kind' => 'visual'],
+        'footer' => ['name' => 'alert-dialog-footer', 'kind' => 'visual'],
+        'cancel' => ['name' => 'alert-dialog-cancel', 'kind' => 'visual'],
+        'action' => ['name' => 'alert-dialog-action', 'kind' => 'visual'],
+        'root' => ['name' => 'alert-dialog', 'kind' => 'structural'],
+        'trigger' => ['name' => 'alert-dialog-trigger', 'kind' => 'structural'],
+    ])->and($catalog['components']['alert-dialog']['styling']['slots'])->toBe([
+        ['class' => AlertDialog::class],
+    ])->and(HotwireRegistry::make()->component('alert-dialog')->styling->slots)->toBe([
+        'alert-dialog-overlay' => 'visual',
+        'alert-dialog-backdrop' => 'visual',
+        'alert-dialog-panel' => 'visual',
+        'alert-dialog-header' => 'visual',
+        'alert-dialog-title' => 'visual',
+        'alert-dialog-description' => 'visual',
+        'alert-dialog-body' => 'visual',
+        'alert-dialog-footer' => 'visual',
+        'alert-dialog-cancel' => 'visual',
+        'alert-dialog-action' => 'visual',
+        'alert-dialog' => 'structural',
+        'alert-dialog-trigger' => 'structural',
     ]);
 });
 

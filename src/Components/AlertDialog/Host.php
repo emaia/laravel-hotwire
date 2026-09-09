@@ -14,11 +14,11 @@ class Host extends AlertDialog
         }
 
         if ($this->overlayLabelContext->titleId() === null) {
-            $this->overlayLabelContext->register('alert-dialog-title');
+            $this->overlayLabelContext->register(AlertDialog::SLOTS['title']['name']);
         }
 
         if ($this->overlayLabelContext->descriptionId() === null) {
-            $this->overlayLabelContext->register('alert-dialog-description');
+            $this->overlayLabelContext->register(AlertDialog::SLOTS['description']['name']);
         }
 
         return [

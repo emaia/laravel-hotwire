@@ -131,10 +131,9 @@ return [
             'description' => 'Accessible inline or shared alert dialog that intercepts clicks before proceeding',
             'controllers' => ['alert-dialog'],
             'styling' => [
-                'slots' => $slots(
-                    ['alert-dialog-overlay', 'alert-dialog-backdrop', 'alert-dialog-panel', 'alert-dialog-header', 'alert-dialog-title', 'alert-dialog-description', 'alert-dialog-body', 'alert-dialog-footer', 'alert-dialog-cancel', 'alert-dialog-action'],
-                    ['alert-dialog', 'alert-dialog-trigger'],
-                ),
+                'slots' => [
+                    ['class' => AlertDialog::class],
+                ],
             ],
         ],
         'aspect-ratio' => [

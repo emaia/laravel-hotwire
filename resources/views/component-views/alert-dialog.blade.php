@@ -2,7 +2,7 @@
     $alertDialogShared ??= false;
     $alertDialogAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
         'id' => $id,
-        'data-slot' => 'alert-dialog',
+        'data-slot' => $slotName,
         'data-controller' => 'alert-dialog',
         'data-alert-dialog-lock-scroll-value' => $lockScroll ? 'true' : 'false',
         'data-alert-dialog-close-on-click-outside-value' => $closeOnClickOutside ? 'true' : 'false',
@@ -36,12 +36,12 @@
 <div
     {{ $alertDialogAttributes }}
 >
-    <div data-slot="alert-dialog-trigger" data-action="click->alert-dialog#interceptCapture:capture click->alert-dialog#intercept">
+    <div data-slot="{{ $triggerSlotName }}" data-action="click->alert-dialog#interceptCapture:capture click->alert-dialog#intercept">
         {{ $slot }}
     </div>
 
     <div
-        data-slot="alert-dialog-overlay"
+        data-slot="{{ $overlaySlotName }}"
         data-state="closed"
         data-motion="{{ $motion }}"
         data-alert-dialog-target="modal"
@@ -55,19 +55,19 @@
         inert
     >
         <div
-            data-slot="alert-dialog-backdrop"
+            data-slot="{{ $backdropSlotName }}"
             data-alert-dialog-target="backdrop"
         ></div>
 
         <div
-            data-slot="alert-dialog-panel"
+            data-slot="{{ $panelSlotName }}"
             data-alert-dialog-target="dialog"
         >
-            <div data-slot="alert-dialog-header">
+            <div data-slot="{{ $headerSlotName }}">
                 @if ($alertDialogShared || $title !== '')
                     <h2
                         id="{{ $alertDialogOverlayLabelContext->titleId() }}"
-                        data-slot="alert-dialog-title"
+                        data-slot="{{ $titleSlotName }}"
                         @if ($alertDialogShared) data-alert-dialog-target="title" @endif
                         @if ($alertDialogShared && $title === '') hidden @endif
                     >{{ $title }}</h2>
@@ -76,7 +76,7 @@
                 @if ($alertDialogShared || $description !== '')
                     <p
                         id="{{ $alertDialogOverlayLabelContext->descriptionId() }}"
-                        data-slot="alert-dialog-description"
+                        data-slot="{{ $descriptionSlotName }}"
                         @if ($alertDialogShared) data-alert-dialog-target="description" @endif
                         @if ($alertDialogShared && $description === '') hidden @endif
                         style="text-wrap-mode: wrap"
@@ -88,9 +88,9 @@
                 @endisset
             </div>
 
-            <div data-slot="alert-dialog-footer">
+            <div data-slot="{{ $footerSlotName }}">
                 <x-hw::button
-                    slot-name="alert-dialog-cancel"
+                    :slot-name="$cancelSlotName"
                     type="button"
                     data-action="alert-dialog#cancel"
                     data-alert-dialog-target="cancel"
@@ -100,7 +100,7 @@
                     {{ $cancelLabel }}
                 </x-hw::button>
                 <x-hw::button
-                    slot-name="alert-dialog-action"
+                    :slot-name="$actionSlotName"
                     type="button"
                     data-action="alert-dialog#confirm"
                     data-alert-dialog-target="confirm"
