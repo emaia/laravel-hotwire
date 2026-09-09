@@ -66,15 +66,148 @@ afterEach(async () => {
 
 // --- open / positioning ---
 
-test.serial("opens a tooltip on pointerenter and positions it with Floating UI", async () => {
+test.serial("clones its Blade-authored source and leaves the template intact", async () => {
     await mount(`
-        <button
-            data-controller="tooltip"
-            data-tooltip-content-value="Hello <strong>tooltip</strong>"
-            data-tooltip-side-value="bottom"
-            data-tooltip-align-value="end"
-        >Hover me</button>
+        <button data-controller="tooltip">
+            Hover me
+            ${tooltipTemplate('Hello <strong>tooltip</strong>', 'class="source-class" data-theme="dark" dir="rtl"')}
+        </button>
     `);
+
+    const source = mounted.root.querySelector("template");
+    const sourceSurface = source.content.querySelector("[data-tooltip-surface]");
+
+    dispatchPointer(mounted.root, "pointerenter");
+    await wait(FRAME_WAIT);
+
+    expect(tooltip()).not.toBe(sourceSurface);
+    expect(tooltip()?.innerHTML).toContain("Hello <strong>tooltip</strong>");
+    expect(tooltip()?.classList.contains("source-class")).toBe(true);
+    expect(tooltip()?.dataset.theme).toBe("dark");
+    expect(tooltip()?.dir).toBe("rtl");
+    expect(sourceSurface.dataset.state).toBe("closed");
+    expect(sourceSurface.hidden).toBe(true);
+
+    const firstClone = tooltip();
+
+    mounted.controller.hide({ immediate: true });
+
+    expect(tooltip()).toBeNull();
+    expect(source.content.querySelector("[data-tooltip-surface]")).toBe(sourceSurface);
+
+    dispatchPointer(mounted.root, "pointerenter");
+    await wait(FRAME_WAIT);
+
+    expect(tooltip()).not.toBe(firstClone);
+    expect(tooltip()?.innerHTML).toContain("Hello <strong>tooltip</strong>");
+});
+
+test.serial("clones a standalone custom template without package slots or an arrow", async () => {
+    await mount(`
+        <button data-controller="tooltip">
+            Help
+            <template data-tooltip-target="template">
+                <aside class="custom-help" data-theme="forest">Custom help</aside>
+            </template>
+        </button>
+    `);
+
+    dispatchPointer(mounted.root, "pointerenter");
+    await wait(FRAME_WAIT);
+
+    const customTooltip = document.body.querySelector(".custom-help");
+
+    expect(customTooltip?.tagName).toBe("ASIDE");
+    expect(customTooltip?.dataset.theme).toBe("forest");
+    expect(customTooltip?.dataset.slot).toBeUndefined();
+    expect(customTooltip?.getAttribute("role")).toBe("tooltip");
+    expect(customTooltip?.querySelector("[data-tooltip-arrow]")).toBeNull();
+});
+
+test.serial("fails closed when the source template is missing", async () => {
+    await mount(`<button data-controller="tooltip">Hover me</button>`);
+    const handleError = mock(() => {});
+    mounted.application.handleError = handleError;
+
+    dispatchPointer(mounted.root, "pointerenter");
+    await wait(0);
+
+    expect(mounted.controller.isOpen).toBe(false);
+    expect(tooltip()).toBeNull();
+    expect(mounted.root.hasAttribute("aria-describedby")).toBe(false);
+    expect(handleError).toHaveBeenCalledTimes(1);
+    expect(handleError.mock.calls[0][1]).toBe("Error opening tooltip");
+});
+
+test.serial("fails closed when the source anatomy is invalid", async () => {
+    await mount(`
+        <button data-controller="tooltip">
+            Hover me
+            <template data-tooltip-target="template"><div>One</div><div>Two</div></template>
+        </button>
+    `);
+    const handleError = mock(() => {});
+    mounted.application.handleError = handleError;
+
+    dispatchPointer(mounted.root, "pointerenter");
+    await wait(0);
+
+    expect(mounted.controller.isOpen).toBe(false);
+    expect(tooltip()).toBeNull();
+    expect(handleError).toHaveBeenCalledTimes(1);
+
+    dispatchPointer(mounted.root, "pointerleave");
+    dispatchPointer(mounted.root, "pointerenter");
+    await wait(0);
+
+    expect(handleError).toHaveBeenCalledTimes(1);
+});
+
+test.serial("fails closed when a custom source has more than one arrow", async () => {
+    await mount(`
+        <button data-controller="tooltip">
+            Hover me
+            <template data-tooltip-target="template">
+                <div><span data-tooltip-arrow></span><span data-tooltip-arrow></span></div>
+            </template>
+        </button>
+    `);
+    const handleError = mock(() => {});
+    mounted.application.handleError = handleError;
+
+    dispatchPointer(mounted.root, "pointerenter");
+    await wait(0);
+
+    expect(mounted.controller.isOpen).toBe(false);
+    expect(document.body.querySelector('[role="tooltip"]')).toBeNull();
+    expect(handleError).toHaveBeenCalledTimes(1);
+});
+
+test.serial("removes partial anatomy when opening fails", async () => {
+    await mount(tooltipTrigger());
+    const handleError = mock(() => {});
+    const partial = document.createElement("div");
+    mounted.application.handleError = handleError;
+    mounted.controller.createTooltip = () => {
+        mounted.controller.tooltip = partial;
+        document.body.append(partial);
+        throw new Error("creation failed");
+    };
+
+    dispatchPointer(mounted.root, "pointerenter");
+    await wait(0);
+
+    expect(mounted.controller.isOpen).toBe(false);
+    expect(partial.isConnected).toBe(false);
+    expect(mounted.controller.tooltip).toBeNull();
+    expect(handleError).toHaveBeenCalledTimes(1);
+});
+
+test.serial("opens a tooltip on pointerenter and positions it with Floating UI", async () => {
+    await mount(tooltipTrigger(
+        'data-tooltip-side-value="bottom" data-tooltip-align-value="end"',
+        "Hello <strong>tooltip</strong>",
+    ));
 
     dispatchPointer(mounted.root, "pointerenter");
     await wait(FRAME_WAIT);
@@ -100,7 +233,7 @@ test.serial("opens a tooltip on pointerenter and positions it with Floating UI",
 });
 
 test.serial("opens a tooltip on focusin", async () => {
-    await mount(`<button data-controller="tooltip" data-tooltip-content-value="Focused">Focus me</button>`);
+    await mount(tooltipTrigger("", "Focused", "Focus me"));
 
     mounted.root.dispatchEvent(new Event("focusin", { bubbles: true }));
     await wait(FRAME_WAIT);
@@ -110,7 +243,7 @@ test.serial("opens a tooltip on focusin", async () => {
 
 test.serial("removes a tooltip and its ARIA reference when first placement fails", async () => {
     computePosition.mockRejectedValueOnce(new Error("positioning failed"));
-    await mount(`<button data-controller="tooltip">Hover me</button>`);
+    await mount(tooltipTrigger());
     const handleError = mock(() => {});
     mounted.application.handleError = handleError;
 
@@ -125,7 +258,7 @@ test.serial("removes a tooltip and its ARIA reference when first placement fails
 });
 
 test.serial("ignores touch pointer hover", async () => {
-    await mount(`<button data-controller="tooltip">Hover me</button>`);
+    await mount(tooltipTrigger());
 
     dispatchPointer(mounted.root, "pointerenter", "touch");
     await wait(0);
@@ -137,7 +270,7 @@ test.serial("ignores touch pointer hover", async () => {
 // --- close behavior ---
 
 test.serial("closes after pointerleave and close delay", async () => {
-    await openWithPointer(`<button data-controller="tooltip" data-tooltip-close-delay-value="1">Hover me</button>`);
+    await openWithPointer(tooltipTrigger('data-tooltip-close-delay-value="1"'));
 
     dispatchPointer(mounted.root, "pointerleave");
     await wait(5);
@@ -147,7 +280,7 @@ test.serial("closes after pointerleave and close delay", async () => {
 });
 
 test.serial("reentering during exit keeps the tooltip and cancels stale teardown", async () => {
-    await openWithPointer(`<button data-controller="tooltip" data-tooltip-close-delay-value="0">Hover me</button>`);
+    await openWithPointer(tooltipTrigger('data-tooltip-close-delay-value="0"'));
     const element = tooltip();
     const exitMotion = fakeAnimation();
     element.getAnimations = () => element.dataset.state === "closed" ? [exitMotion.animation] : [];
@@ -170,7 +303,7 @@ test.serial("reentering during exit keeps the tooltip and cancels stale teardown
 });
 
 test.serial("motion none removes the tooltip immediately", async () => {
-    await openWithPointer(`<button data-controller="tooltip" data-tooltip-motion-value="none">Hover me</button>`);
+    await openWithPointer(tooltipTrigger('data-tooltip-motion-value="none"'));
     const element = tooltip();
     element.getAnimations = () => [fakeAnimation().animation];
 
@@ -179,8 +312,21 @@ test.serial("motion none removes the tooltip immediately", async () => {
     expect(tooltip()).toBeNull();
 });
 
+test.serial("immediate removal clears tooltip hover state before reopening", async () => {
+    await openWithPointer(tooltipTrigger('data-tooltip-motion-value="none"'));
+    dispatchPointer(tooltip(), "pointerenter");
+
+    mounted.controller.hide({ immediate: true });
+    dispatchPointer(mounted.root, "pointerenter");
+    await wait(FRAME_WAIT);
+    dispatchPointer(mounted.root, "pointerleave");
+    await wait(120);
+
+    expect(tooltip()).toBeNull();
+});
+
 test.serial("stays open while the tooltip itself is hovered", async () => {
-    await openWithPointer(`<button data-controller="tooltip" data-tooltip-close-delay-value="1">Hover me</button>`);
+    await openWithPointer(tooltipTrigger('data-tooltip-close-delay-value="1"'));
     const element = tooltip();
 
     dispatchPointer(mounted.root, "pointerleave");
@@ -196,7 +342,7 @@ test.serial("stays open while the tooltip itself is hovered", async () => {
 });
 
 test.serial("closes on focusout when the tooltip is not hovered", async () => {
-    await mount(`<button data-controller="tooltip" data-tooltip-close-delay-value="1">Focus me</button>`);
+    await mount(tooltipTrigger('data-tooltip-close-delay-value="1"', "Tooltip", "Focus me"));
 
     mounted.root.dispatchEvent(new Event("focusin", { bubbles: true }));
     await wait(FRAME_WAIT);
@@ -207,8 +353,10 @@ test.serial("closes on focusout when the tooltip is not hovered", async () => {
 });
 
 test.serial("closes on Escape without moving focus", async () => {
-    await openWithPointer(`<button data-controller="tooltip">Hover me</button>`);
+    await openWithPointer(tooltipTrigger());
     mounted.root.focus();
+
+    expect(mounted.root.hasAttribute("data-hotwire-escape-scope")).toBe(true);
 
     const event = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true });
     document.dispatchEvent(event);
@@ -216,10 +364,24 @@ test.serial("closes on Escape without moving focus", async () => {
     expect(event.defaultPrevented).toBe(true);
     expect(document.activeElement).toBe(mounted.root);
     expect(tooltip()).toBeNull();
+    expect(mounted.root.hasAttribute("data-hotwire-escape-scope")).toBe(false);
+});
+
+test.serial("composing Escape leaves the tooltip open", async () => {
+    await openWithPointer(tooltipTrigger("", "Help", "Input"));
+    mounted.root.focus();
+
+    const event = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true });
+    Object.defineProperty(event, "isComposing", { value: true });
+    mounted.root.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(document.activeElement).toBe(mounted.root);
+    expect(tooltip()).not.toBeNull();
 });
 
 test.serial("legacy composing Escape leaves the tooltip open", async () => {
-    await openWithPointer(`<input data-controller="tooltip" data-tooltip-content-value="Help">`);
+    await openWithPointer(tooltipTrigger("", "Help", "Input"));
     mounted.root.focus();
 
     const event = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true });
@@ -232,7 +394,7 @@ test.serial("legacy composing Escape leaves the tooltip open", async () => {
 });
 
 test.serial("closes when the trigger is activated", async () => {
-    await openWithPointer(`<button data-controller="tooltip">Hover me</button>`);
+    await openWithPointer(tooltipTrigger());
 
     mounted.root.click();
 
@@ -240,7 +402,7 @@ test.serial("closes when the trigger is activated", async () => {
 });
 
 test.serial("cleans up on disconnect", async () => {
-    await openWithPointer(`<button data-controller="tooltip">Hover me</button>`);
+    await openWithPointer(tooltipTrigger());
 
     mounted.controller.disconnect();
 
@@ -249,8 +411,16 @@ test.serial("cleans up on disconnect", async () => {
     expect(floatingCleanup).toHaveBeenCalledTimes(1);
 });
 
+test.serial("preserves an escape scope owned by another controller", async () => {
+    await openWithPointer(tooltipTrigger('data-hotwire-escape-scope'));
+
+    mounted.controller.hide({ immediate: true });
+
+    expect(mounted.root.hasAttribute("data-hotwire-escape-scope")).toBe(true);
+});
+
 test.serial("cleans up before Turbo caches the page", async () => {
-    await openWithPointer(`<button data-controller="tooltip">Hover me</button>`);
+    await openWithPointer(tooltipTrigger());
 
     document.dispatchEvent(new CustomEvent("turbo:before-cache", { bubbles: true }));
 
@@ -261,7 +431,7 @@ test.serial("cleans up before Turbo caches the page", async () => {
 // --- aria ---
 
 test.serial("preserves existing aria-describedby tokens", async () => {
-    await openWithPointer(`<button data-controller="tooltip" aria-describedby="existing help">Hover me</button>`);
+    await openWithPointer(tooltipTrigger('aria-describedby="existing help"'));
     const id = tooltip().id;
 
     expect(mounted.root.getAttribute("aria-describedby")).toBe(`existing help ${id}`);
@@ -272,18 +442,15 @@ test.serial("preserves existing aria-describedby tokens", async () => {
 });
 
 test.serial("passes positioning values through to Floating UI", async () => {
-    await openWithPointer(`
-        <button
-            data-controller="tooltip"
-            data-tooltip-side-value="right"
-            data-tooltip-align-value="end"
-            data-tooltip-side-offset-value="12"
-            data-tooltip-align-offset-value="-4"
-            data-tooltip-strategy-value="absolute"
-            data-tooltip-flip-value="false"
-            data-tooltip-shift-value="false"
-        >Hover me</button>
-    `);
+    await openWithPointer(tooltipTrigger(`
+        data-tooltip-side-value="right"
+        data-tooltip-align-value="end"
+        data-tooltip-side-offset-value="12"
+        data-tooltip-align-offset-value="-4"
+        data-tooltip-strategy-value="absolute"
+        data-tooltip-flip-value="false"
+        data-tooltip-shift-value="false"
+    `));
 
     expect(computePosition.mock.calls[0][2].placement).toBe("right-end");
     expect(computePosition.mock.calls[0][2].strategy).toBe("absolute");
@@ -300,7 +467,7 @@ test.serial("does not open when enabledWhen does not match", async () => {
             <button
                 data-controller="tooltip"
                 data-tooltip-enabled-when-value="[data-slot=sidebar][data-collapsible=icon]"
-            >Map</button>
+            >Map ${tooltipTemplate("Map")}</button>
         </div>
     `);
 
@@ -316,7 +483,7 @@ test.serial("opens when enabledWhen matches an ancestor", async () => {
             <button
                 data-controller="tooltip"
                 data-tooltip-enabled-when-value="[data-slot=sidebar][data-collapsible=icon]"
-            >Map</button>
+            >Map ${tooltipTemplate("Map")}</button>
         </div>
     `);
 
@@ -329,7 +496,7 @@ test.serial("hides the tooltip when enabledWhen stops matching", async () => {
             <button
                 data-controller="tooltip"
                 data-tooltip-enabled-when-value="[data-slot=sidebar][data-collapsible=icon]"
-            >Map</button>
+            >Map ${tooltipTemplate("Map")}</button>
         </div>
     `);
 
@@ -340,7 +507,7 @@ test.serial("hides the tooltip when enabledWhen stops matching", async () => {
 });
 
 test.serial("invalid enabledWhen selectors fail closed", async () => {
-    await mount(`<button data-controller="tooltip" data-tooltip-enabled-when-value="[">Hover me</button>`);
+    await mount(tooltipTrigger('data-tooltip-enabled-when-value="["'));
 
     dispatchPointer(mounted.root, "pointerenter");
     await wait(0);
@@ -362,12 +529,12 @@ test.serial("enables sidebar icon rail tooltips after the sidebar collapses", as
                     href="/components/map"
                     data-slot="sidebar-menu-button"
                     data-controller="tooltip"
-                    data-tooltip-content-value="Map"
                     data-tooltip-side-value="right"
                     data-tooltip-enabled-when-value="[data-slot=sidebar][data-collapsible=icon]"
                 >
                     <svg></svg>
                     <span>Map</span>
+                    ${tooltipTemplate("Map")}
                 </a>
             </div>
         </div>
@@ -406,6 +573,35 @@ function tooltip() {
 
 function tooltipArrow() {
     return tooltip()?.querySelector('[data-slot="tooltip-arrow"]');
+}
+
+function tooltipTemplate(content = "Tooltip", attributes = "") {
+    return `
+        <template data-tooltip-target="template">
+            <div
+                data-tooltip-surface
+                data-slot="tooltip"
+                data-state="closed"
+                data-motion="default"
+                role="tooltip"
+                hidden
+                inert
+                ${attributes}
+            >
+                ${content}
+                <div data-tooltip-arrow data-slot="tooltip-arrow"></div>
+            </div>
+        </template>
+    `;
+}
+
+function tooltipTrigger(attributes = "", content = "Tooltip", label = "Hover me") {
+    return `
+        <button data-controller="tooltip" ${attributes}>
+            ${label}
+            ${tooltipTemplate(content)}
+        </button>
+    `;
 }
 
 function dispatchPointer(element, type, pointerType = "mouse") {

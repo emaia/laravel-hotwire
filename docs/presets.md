@@ -236,7 +236,7 @@ Override motion after importing the preset:
 ```
 
 The same state hooks can drive custom CSS animations. `motion="none"` on supported Blade APIs, or
-`data-tooltip-motion-value="none"` for the standalone Tooltip controller, skips motion. The shared Presence helper
+`data-tooltip-motion-value="none"` on an application-styled standalone Tooltip, skips motion. The shared Presence helper
 temporarily suppresses custom CSS transition and animation in this mode, does the same for
 `prefers-reduced-motion: reduce`, and cancels stale exit cleanup when a surface rapidly reopens.
 

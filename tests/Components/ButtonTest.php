@@ -165,11 +165,15 @@ it('merges hotkey actions with raw and fluent stimulus attributes', function () 
         ->and(substr_count($html, 'keydown.meta+s@window->hotkey#click'))->toBe(1);
 });
 
-it('renders tooltip values from props', function () {
+it('renders escaped tooltip content from props through the shared template', function () {
     $view = $this->blade('<x-hw::button tooltip="Save changes" tooltip-side="bottom" tooltip-align="end" tooltip-motion="none" tooltip-enabled-when="[data-ready=true]">Save</x-hw::button>');
 
     $view->assertSee('data-controller="tooltip"', false)
-        ->assertSee('data-tooltip-content-value="Save changes"', false)
+        ->assertSee('data-tooltip-target="template"', false)
+        ->assertSee('data-tooltip-surface', false)
+        ->assertSee('data-slot="tooltip-arrow"', false)
+        ->assertSee('Save changes')
+        ->assertDontSee('data-tooltip-content-value', false)
         ->assertSee('data-tooltip-side-value="bottom"', false)
         ->assertSee('data-tooltip-align-value="end"', false)
         ->assertSee('data-tooltip-motion-value="none"', false)
@@ -181,13 +185,22 @@ it('renders tooltip values from props', function () {
         ->assertDontSee(' tooltip-enabled-when="[data-ready=true]"', false);
 });
 
-it('lets tooltip props own data-tooltip values when tooltip is active', function () {
+it('escapes tooltip prop content instead of interpreting HTML', function () {
+    $view = $this->blade('<x-hw::button :tooltip="$tooltip">Save</x-hw::button>', [
+        'tooltip' => '<strong>Unsafe</strong>',
+    ]);
+
+    $view->assertSee('&lt;strong&gt;Unsafe&lt;/strong&gt;', false)
+        ->assertDontSee('<strong>Unsafe</strong>', false);
+});
+
+it('lets tooltip props own trigger configuration when tooltip is active', function () {
     $view = $this->blade('<x-hw::button tooltip="Save changes" tooltip-side="bottom" tooltip-align="end" data-tooltip-content-value="Override" data-tooltip-side-value="right" data-tooltip-align-value="start">Save</x-hw::button>');
 
-    $view->assertSee('data-tooltip-content-value="Save changes"', false)
+    $view->assertSee('Save changes')
         ->assertSee('data-tooltip-side-value="bottom"', false)
         ->assertSee('data-tooltip-align-value="end"', false)
-        ->assertDontSee('data-tooltip-content-value="Override"', false)
+        ->assertDontSee('data-tooltip-content-value', false)
         ->assertDontSee('data-tooltip-side-value="right"', false)
         ->assertDontSee('data-tooltip-align-value="start"', false);
 });
@@ -197,7 +210,8 @@ it('merges hotkey and tooltip controllers together', function () {
 
     $view->assertSee('data-controller="hotkey tooltip"', false)
         ->assertSee('data-action="keydown.ctrl+s@window->hotkey#click"', false)
-        ->assertSee('data-tooltip-content-value="Save changes"', false);
+        ->assertSee('data-tooltip-target="template"', false)
+        ->assertSee('Save changes');
 });
 
 it('uses semantic variant attributes regardless of the rendered tag', function () {

@@ -40,7 +40,7 @@ toggle show the correct icon before Stimulus connects.
 | `modes` | `string` | `light dark system` | Space-separated cycle order. |
 | `storage-key` | `string` | `hotwire.colorScheme` | Must match the script storage key. |
 | `default` | `light\|dark\|system` | `system` | Fallback mode. |
-| `tooltip` | `string\|null` | `null` | Mounts the `tooltip` controller with this content. |
+| `tooltip` | `string\|null` | `null` | Mounts the `tooltip` controller and renders this escaped text through its source template. |
 | `tooltip-side` | `string\|null` | `null` | Tooltip side when `tooltip` is set. |
 | `tooltip-align` | `string\|null` | `null` | Tooltip alignment when `tooltip` is set. |
 | `tooltip-motion` | `string\|null` | `null` | Tooltip motion: `default` or `none`. |
@@ -95,4 +95,4 @@ attributes.
 ## Controller integrations
 
 `<hw:color-scheme.toggle>` mounts the `color-scheme` controller. The `tooltip` controller is also mounted when the
-`tooltip` prop is set.
+`tooltip` prop is set, and the same Blade-authored source used by `<hw:tooltip>` is rendered inside the toggle.

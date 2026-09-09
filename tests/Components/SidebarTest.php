@@ -464,11 +464,70 @@ it('renders sidebar input and skeleton helpers', function () {
         ->assertSee('data-slot="sidebar-menu-skeleton-text"', false);
 });
 
+it('renders menu button tooltips only for the collapsed desktop icon rail', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::sidebar.menu-button
+            href="/dashboard"
+            tooltip="Dashboard"
+            tooltip-side="left"
+            tooltip-motion="none"
+            data-controller="analytics"
+        >
+            <svg></svg>
+            <span>Dashboard</span>
+        </x-hw::sidebar.menu-button>
+        BLADE);
+
+    $view->assertSee('data-controller="tooltip analytics"', false)
+        ->assertSee('data-tooltip-side-value="left"', false)
+        ->assertSee('data-tooltip-motion-value="none"', false)
+        ->assertSee('data-tooltip-enabled-when-value="[data-slot=sidebar][data-collapsible=icon][data-mobile-state=closed]"', false)
+        ->assertSee('data-tooltip-target="template"', false)
+        ->assertSee('Dashboard')
+        ->assertDontSee('data-tooltip-content-value', false)
+        ->assertDontSee(' tooltip="Dashboard"', false);
+});
+
+it('lets menu buttons override the tooltip condition', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::sidebar.menu-button tooltip="Dashboard" tooltip-enabled-when="[data-always]">
+            Dashboard
+        </x-hw::sidebar.menu-button>
+        <x-hw::sidebar.menu-button tooltip="Settings" tooltip-enabled-when="">
+            Settings
+        </x-hw::sidebar.menu-button>
+        BLADE);
+
+    $view->assertSee('data-tooltip-enabled-when-value="[data-always]"', false)
+        ->assertSee('data-tooltip-enabled-when-value=""', false)
+        ->assertDontSee('tooltip-enabled-when="[data-always]"', false);
+});
+
+it('preserves application overrides for menu button presentation attributes', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::sidebar.menu-button
+            data-slot="application-slot"
+            data-sidebar="application-sidebar"
+            data-variant="application-variant"
+            data-size="application-size"
+            data-active="application-active"
+        >
+            Dashboard
+        </x-hw::sidebar.menu-button>
+        BLADE);
+
+    $view->assertSee('data-slot="application-slot"', false)
+        ->assertSee('data-sidebar="application-sidebar"', false)
+        ->assertSee('data-variant="application-variant"', false)
+        ->assertSee('data-size="application-size"', false)
+        ->assertSee('data-active="application-active"', false);
+});
+
 it('registers sidebar in the component catalog and subcomponent aliases', function () {
     $sidebar = HotwireRegistry::make()->component('sidebar');
 
     expect($sidebar->key)->toBe('sidebar')
-        ->and($sidebar->controllers)->toBe(['sidebar', 'reveal'])
+        ->and($sidebar->controllers)->toBe(['sidebar', 'reveal', 'tooltip'])
         ->and($sidebar->docs)->toBe('docs/components/sidebar.md');
 
     expect(ComponentAliases::subComponents())

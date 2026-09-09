@@ -92,7 +92,7 @@ Laravel Hotwire ships composable Blade components for common server-rendered UI 
 | [Skeleton](docs/components/skeleton.md)                       | [Slider](docs/components/slider.md)                     | [Spinner](docs/components/spinner.md)                  | [Sticky](docs/components/sticky.md)                       |
 | [Switch](docs/components/switch.md)                           | [Table](docs/components/table.md)                       | [Tabs](docs/components/tabs.md)                        | [Textarea](docs/components/textarea.md)                   |
 | [Timeago](docs/components/timeago.md)                         | [Toast](docs/components/toast.md)                       | [Toaster](docs/components/toaster.md)                  | [Toggle](docs/components/toggle.md)                       |
-| [Toggle Group](docs/components/toggle-group.md)               | [Toggle Group Item](docs/components/toggle-group.md)    |                                                        |                                                           |
+| [Toggle Group](docs/components/toggle-group.md)               | [Toggle Group Item](docs/components/toggle-group.md)    | [Tooltip](docs/components/tooltip.md)                  |                                                           |
 
 List everything available in your installed version:
 

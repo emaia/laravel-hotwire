@@ -94,11 +94,11 @@ Additional controllers and actions merge through HTML attributes or `stimulus`:
 
 ```blade
 <hw:read-more
-    data-controller="analytics"
+    data-controller="analytics tooltip"
     data-action="read-more:change->analytics#track"
-    :stimulus="stimulus()->controller('tooltip')->action('tooltip', 'show', 'mouseenter')"
 >
     ...
+    <hw:tooltip>Article preview</hw:tooltip>
 </hw:read-more>
 ```
 

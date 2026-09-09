@@ -6,6 +6,38 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 
 ## Unreleased
 
+### Tooltip content moves to an authored source template
+
+The Tooltip controller no longer accepts `data-tooltip-content-value` or generates its surface and arrow in JavaScript.
+Raw controller usage must place one root inside a local template target. This standalone form is application-styled and
+does not select the package Tooltip visual module:
+
+```blade
+<button data-controller="tooltip">
+    Save
+    <template data-tooltip-target="template">
+        <div class="app-tooltip">Save changes</div>
+    </template>
+</button>
+```
+
+Use `<hw:tooltip>Save changes</hw:tooltip>` instead of the manual template when package component slots and preset styles
+are wanted. An application-owned arrow is optional and can be marked with `data-tooltip-arrow`.
+
+Content passed to Button and Color Scheme Toggle through their `tooltip` prop remains supported and is now escaped text
+rendered through that source. Use explicit Blade composition for rich content instead of placing HTML in an attribute.
+
+For collapsed Sidebar rails, replace the manual controller, content value, side and condition attributes with the Menu
+Button integration:
+
+```blade
+<hw:sidebar.menu-button tooltip="Dashboard">...</hw:sidebar.menu-button>
+```
+
+It defaults to the right side and only enables the Tooltip while the desktop icon rail is collapsed and the mobile
+Sidebar is closed. Set `tooltip-side="left"` for a right-hand Sidebar. Set `tooltip-enabled-when` to a custom selector,
+or to an empty string when the Tooltip should remain enabled while the Sidebar is expanded.
+
 ### Alert, Item and Dropdown own their icon roles
 
 Alert icon layout now uses the explicit `alert.icon` part. Wrap packaged or third-party icons instead of placing an

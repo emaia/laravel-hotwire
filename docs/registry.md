@@ -110,14 +110,8 @@ every preset must differentiate a given slot by the same axes as the others.
 'tooltip' => [
     'source'   => 'resources/js/controllers/tooltip_controller.js',
     'docs'     => 'docs/controllers/tooltip.md',
-    'category' => 'utility',
+    'category' => 'overlay',
     'npm'      => ['@floating-ui/dom' => '^1.8.0'],
-    'styling'  => [
-        'slots' => [
-            'tooltip'       => 'visual',
-            'tooltip-arrow' => 'visual',
-        ],
-    ],
 ],
 ```
 
@@ -127,10 +121,11 @@ every preset must differentiate a given slot by the same axes as the others.
 | `docs`     | Relative path to the controller's doc file                               |
 | `category` | Public category                                                          |
 | `npm`      | External npm packages required at runtime (package → version constraint) |
-| `styling`  | Same shape as a component's, for controllers that build their own DOM    |
+| `styling`  | Same shape as a component's, only when JavaScript itself creates visual anatomy |
 
-A controller declares `styling` only when it creates elements itself — `tooltip` builds its tooltip and arrow in
-JavaScript, so no Blade view emits those slots and nothing else would put them in the inventory.
+A controller declares `styling` only when JavaScript itself creates visual anatomy. Tooltip accepts an
+application-owned standalone template and declares no slots; `<hw:tooltip>` separately owns `Tooltip::SLOTS` and the
+package visual module used by it and component integrations.
 
 Controllers inside substrate folders use `/` in the key: `'turbo/progress'`.  
 The identifier is derived automatically: `/` → `--`, `_` → `-`.

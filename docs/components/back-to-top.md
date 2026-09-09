@@ -69,10 +69,12 @@ Compose additional controllers and actions with regular attributes or the `stimu
 
 ```blade
 <hw:back-to-top
-    data-controller="analytics"
+    data-controller="analytics tooltip"
     data-action="click->analytics#track"
-    :stimulus="stimulus()->controller('tooltip')->action('tooltip', 'show', 'mouseenter')"
-/>
+>
+    <hw:icon name="chevron-up" aria-hidden="true" />
+    <hw:tooltip>Back to top</hw:tooltip>
+</hw:back-to-top>
 ```
 
 The required `back-to-top` controller and action remain in place. Internal `data-back-to-top-*`, `data-visible`, and
