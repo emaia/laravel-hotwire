@@ -8,6 +8,10 @@ use Illuminate\Contracts\Support\Htmlable;
 
 class Toast extends Component
 {
+    public const array SLOTS = [
+        'trigger' => ['name' => 'toast-trigger', 'kind' => 'structural'],
+    ];
+
     public string $finalType;
 
     public ?string $finalMessage;
@@ -44,6 +48,8 @@ class Toast extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.toast');
+        return view('hotwire::component-views.toast', [
+            'slotName' => self::SLOTS['trigger']['name'],
+        ]);
     }
 }

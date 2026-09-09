@@ -2,6 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components\Avatar;
 
+use Emaia\LaravelHotwire\Components\Avatar;
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 
 class Image extends Component
@@ -13,6 +14,8 @@ class Image extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.avatar-image');
+        return view('hotwire::component-views.avatar-image', [
+            'slotName' => Avatar::SLOTS['image']['name'],
+        ]);
     }
 }

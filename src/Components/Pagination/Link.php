@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Components\Pagination;
 
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
+use Emaia\LaravelHotwire\Components\Pagination;
 use Emaia\LaravelHotwire\Support\FrameTarget;
 
 class Link extends Component
@@ -20,6 +21,8 @@ class Link extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.pagination-link');
+        return view('hotwire::component-views.pagination-link', [
+            'slotName' => Pagination::SLOTS['link']['name'],
+        ]);
     }
 }

@@ -1,1 +1,1 @@
-<div data-slot="card" data-size="{{ $size }}" {{ $attributes }}>{{ $slot }}</div>
+<div data-slot="{{ $slotName }}" data-size="{{ $size }}" {{ $attributes }}>{{ $slot }}</div>

@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Components\Dropdown;
 
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
+use Emaia\LaravelHotwire\Components\Dropdown;
 
 class Trigger extends Component
 {
@@ -12,7 +13,9 @@ class Trigger extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.dropdown-trigger');
+        return view('hotwire::component-views.dropdown-trigger', [
+            'slotName' => Dropdown::SLOTS['trigger']['name'],
+        ]);
     }
 
     /** @return array<string, mixed> */

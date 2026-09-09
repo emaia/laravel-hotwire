@@ -5,7 +5,7 @@
     $itemAttributes = $attributes->except(['frame', 'data-turbo-frame'])->merge([
         'href' => $tag === 'a' && ! $disabled ? $href : null,
         'type' => $tag === 'button' ? $type : null,
-        'data-slot' => 'navbar-item',
+        'data-slot' => $slotName,
         'data-active' => $current ? 'true' : 'false',
         'data-disabled' => $disabled ? 'true' : null,
         'aria-current' => $tag === 'a' && $current ? 'page' : null,

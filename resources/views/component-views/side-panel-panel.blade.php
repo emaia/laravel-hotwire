@@ -5,5 +5,5 @@
 @endphp
 
 <aside {{ $panelAttributes }}>
-    <div data-slot="side-panel-panel-content">{{ $slot }}</div>
+    <div data-slot="{{ $panelContentSlotName }}">{{ $slot }}</div>
 </aside>

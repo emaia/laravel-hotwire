@@ -269,6 +269,40 @@ it('renders one shared overlay for multiple marked triggers', function () {
     $view->assertSee('data-alert-dialog-shared-value="true"', false);
 });
 
+it('renders shared Alert Dialog family anatomy with Button slot overrides', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::alert-dialog.host title="Delete item?" description="This cannot be undone.">
+            <x-hw::alert-dialog.trigger>Delete</x-hw::alert-dialog.trigger>
+            <x-slot:content>
+                <x-hw::alert-dialog.content>Review the affected records.</x-hw::alert-dialog.content>
+            </x-slot:content>
+        </x-hw::alert-dialog.host>
+    BLADE);
+
+    preg_match_all('/data-slot="(alert-dialog(?:-[a-z0-9]+)*)"/', $html, $matches);
+
+    expect($matches[1])->toBe([
+        'alert-dialog',
+        'alert-dialog-trigger',
+        'alert-dialog-overlay',
+        'alert-dialog-backdrop',
+        'alert-dialog-panel',
+        'alert-dialog-header',
+        'alert-dialog-title',
+        'alert-dialog-description',
+        'alert-dialog-body',
+        'alert-dialog-footer',
+        'alert-dialog-cancel',
+        'alert-dialog-action',
+    ]);
+
+    $xpath = new DOMXPath(dom($html));
+
+    expect($xpath->query('//button[@data-slot="alert-dialog-cancel" and @data-variant="outline"]'))->toHaveCount(1)
+        ->and($xpath->query('//button[@data-slot="alert-dialog-action" and @data-variant="default"]'))->toHaveCount(1)
+        ->and($xpath->query('//*[@data-alert-dialog-trigger and @data-slot]'))->toHaveCount(0);
+});
+
 it('gives a shared host an accessible default title', function () {
     $html = (string) Blade::render('
         <x-hw::alert-dialog.host>

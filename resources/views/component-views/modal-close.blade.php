@@ -9,7 +9,7 @@
         'disabled' => $isButton && $disabled ? true : null,
         'aria-disabled' => $isAnchor && $disabled ? 'true' : $attributes->get('aria-disabled'),
         'tabindex' => $isAnchor && $disabled ? '-1' : $attributes->get('tabindex'),
-        'data-slot' => 'modal-close',
+        'data-slot' => $slotName,
         'data-variant' => $variant,
         'data-size' => $size,
         'data-action' => $disabled ? null : 'click->modal#close',

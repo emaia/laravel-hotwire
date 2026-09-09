@@ -10,6 +10,11 @@ use stdClass;
 
 class Reveal extends Component
 {
+    public const array SLOTS = [
+        'root' => ['name' => 'reveal', 'kind' => 'visual'],
+        'item' => ['name' => 'reveal-item', 'kind' => 'structural'],
+    ];
+
     public stdClass $revealCounter;
 
     public function __construct(
@@ -39,7 +44,9 @@ class Reveal extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.reveal');
+        return view('hotwire::component-views.reveal', [
+            'slotName' => self::SLOTS['root']['name'],
+        ]);
     }
 
     /** @param string[] $allowed */

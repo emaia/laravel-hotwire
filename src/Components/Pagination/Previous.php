@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Components\Pagination;
 
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
+use Emaia\LaravelHotwire\Components\Pagination;
 use Emaia\LaravelHotwire\Support\FrameTarget;
 
 class Previous extends Component
@@ -21,6 +22,9 @@ class Previous extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.pagination-previous');
+        return view('hotwire::component-views.pagination-previous', [
+            'slotName' => Pagination::SLOTS['previous']['name'],
+            'labelSlotName' => Pagination::SLOTS['previous-label']['name'],
+        ]);
     }
 }

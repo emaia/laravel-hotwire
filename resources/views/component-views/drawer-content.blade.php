@@ -26,7 +26,7 @@
 @endphp
 
 <div
-    data-slot="drawer-overlay"
+    data-slot="{{ $overlaySlotName }}"
     data-drawer-target="modal"
     data-state="closed"
     data-motion="{{ $drawerMotion }}"
@@ -45,20 +45,20 @@
 >
     @if ($drawerBackdrop)
         <div
-            data-slot="drawer-backdrop"
+            data-slot="{{ $backdropSlotName }}"
             data-drawer-target="backdrop"
             data-action="click->drawer#clickOutside"
         ></div>
     @endif
 
     <div
-        data-slot="drawer-popup"
+        data-slot="{{ $popupSlotName }}"
         data-direction="{{ $drawerDirection }}"
         data-axis="{{ $drawerAxis }}"
         data-drawer-target="dialog"
         {{ $attributes }}
     >
-        <div data-slot="drawer-content">
+        <div data-slot="{{ $slotName }}">
             @if ($drawerFrame !== null)
                 <x-hw::frame
                     :id="$drawerFrame"

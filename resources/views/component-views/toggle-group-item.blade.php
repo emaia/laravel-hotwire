@@ -55,7 +55,7 @@
 
     $itemAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
         'type' => 'button',
-        'data-slot' => 'toggle-group-item',
+        'data-slot' => $slotName,
         'data-controller' => 'toggle',
         'data-action' => 'click->toggle#toggle',
         'data-toggle-group-target' => 'item',

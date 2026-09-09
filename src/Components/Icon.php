@@ -6,6 +6,10 @@ use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 
 class Icon extends Component
 {
+    public const array SLOTS = [
+        'root' => ['name' => 'icon', 'kind' => 'visual'],
+    ];
+
     public function __construct(
         public string $name,
     ) {}
@@ -20,6 +24,7 @@ class Icon extends Component
 
         return view('hotwire::component-views.icon', [
             'iconView' => $iconView,
+            'slotName' => self::SLOTS['root']['name'],
         ]);
     }
 }

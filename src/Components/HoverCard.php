@@ -9,6 +9,12 @@ use Illuminate\Contracts\Support\Htmlable;
 
 class HoverCard extends Component
 {
+    public const array SLOTS = [
+        'root' => ['name' => 'hover-card', 'kind' => 'visual'],
+        'trigger' => ['name' => 'hover-card-trigger', 'kind' => 'visual'],
+        'content' => ['name' => 'hover-card-content', 'kind' => 'visual'],
+    ];
+
     public function __construct(
         public string|object $id = '',
         public string $align = 'start',
@@ -36,7 +42,9 @@ class HoverCard extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.hover-card');
+        return view('hotwire::component-views.hover-card', [
+            'slotName' => self::SLOTS['root']['name'],
+        ]);
     }
 
     /** @return array<string, mixed> */

@@ -14,7 +14,7 @@
     }
 
     $selectAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
-        'data-slot' => 'select',
+        'data-slot' => $slotName,
         'id' => $resolvedId,
         'name' => $name ?: null,
         'aria-describedby' => $errorReference,
@@ -28,7 +28,7 @@
     ], $attributes, null, except: ['required', 'auto-submit', 'auto-submit-delay'], protectedPrefixes: $internalPrefixes);
 @endphp
 
-<span data-slot="select-wrapper">
+<span data-slot="{{ $wrapperSlotName }}">
 <select
     {{ $selectAttributes }}
 >
@@ -46,5 +46,5 @@
     @endforeach
 </select>
 
-<x-hw::icon name="chevron-down" aria-hidden="true" data-slot="select-icon" />
+<x-hw::icon name="chevron-down" aria-hidden="true" data-slot="{{ $iconSlotName }}" />
 </span>

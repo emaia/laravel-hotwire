@@ -107,7 +107,9 @@ return [
             'description' => 'Native details/summary accordion with an items shortcut and single or multiple item coordination',
             'controllers' => ['accordion'],
             'styling' => [
-                'slots' => $slots(['accordion', 'accordion-item', 'accordion-trigger', 'accordion-trigger-icon', 'accordion-content']),
+                'slots' => [
+                    ['class' => Accordion::class],
+                ],
             ],
         ],
         'alert' => [
@@ -118,7 +120,9 @@ return [
             'description' => 'Inline alert with title, description, action and semantic variants',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(['alert', 'alert-title', 'alert-description', 'alert-action']),
+                'slots' => [
+                    ['class' => Alert::class],
+                ],
             ],
         ],
         'alert-dialog' => [
@@ -129,10 +133,9 @@ return [
             'description' => 'Accessible inline or shared alert dialog that intercepts clicks before proceeding',
             'controllers' => ['alert-dialog'],
             'styling' => [
-                'slots' => $slots(
-                    ['alert-dialog-overlay', 'alert-dialog-backdrop', 'alert-dialog-panel', 'alert-dialog-header', 'alert-dialog-title', 'alert-dialog-description', 'alert-dialog-body', 'alert-dialog-footer', 'alert-dialog-cancel', 'alert-dialog-action'],
-                    ['alert-dialog', 'alert-dialog-trigger'],
-                ),
+                'slots' => [
+                    ['class' => AlertDialog::class],
+                ],
             ],
         ],
         'aspect-ratio' => [
@@ -143,7 +146,9 @@ return [
             'description' => 'Static media wrapper that preserves a configurable aspect ratio',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots([], ['aspect-ratio']),
+                'slots' => [
+                    ['class' => AspectRatio::class],
+                ],
             ],
         ],
         'attachment' => [
@@ -154,7 +159,9 @@ return [
             'description' => 'Composable file attachment primitive with media, metadata, state and actions',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(['attachment', 'attachment-group', 'attachment-media', 'attachment-content', 'attachment-title', 'attachment-description', 'attachment-actions', 'attachment-trigger', 'attachment-action']),
+                'slots' => [
+                    ['class' => Attachment::class],
+                ],
             ],
         ],
         'avatar' => [
@@ -165,7 +172,9 @@ return [
             'description' => 'User avatar with image, generated initials fallback, badge and grouped display primitives',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(['avatar', 'avatar-image', 'avatar-fallback', 'avatar-badge', 'avatar-group', 'avatar-group-count']),
+                'slots' => [
+                    ['class' => Avatar::class],
+                ],
             ],
         ],
         'back-to-top' => [
@@ -176,7 +185,9 @@ return [
             'description' => 'Fixed accessible button that appears after scrolling and returns the page to the top',
             'controllers' => ['back-to-top'],
             'styling' => [
-                'slots' => $slots(['back-to-top']),
+                'slots' => [
+                    ['class' => BackToTop::class],
+                ],
             ],
         ],
         'badge' => [
@@ -187,7 +198,9 @@ return [
             'description' => 'Compact status label with semantic variants and optional link rendering',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(['badge']),
+                'slots' => [
+                    ['class' => Badge::class],
+                ],
             ],
         ],
         'breadcrumb' => [
@@ -198,7 +211,9 @@ return [
             'description' => 'Semantic navigation trail with composed subcomponents and an items shortcut',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(['breadcrumb', 'breadcrumb-list', 'breadcrumb-item', 'breadcrumb-link', 'breadcrumb-page', 'breadcrumb-separator', 'breadcrumb-ellipsis']),
+                'slots' => [
+                    ['class' => Breadcrumb::class],
+                ],
             ],
         ],
         'button' => [
@@ -209,7 +224,9 @@ return [
             'description' => 'Displays a button or a component that looks like a button.',
             'controllers' => ['hotkey', 'tooltip'],
             'styling' => [
-                'slots' => $slots(['button']),
+                'slots' => [
+                    ['class' => Button::class],
+                ],
             ],
         ],
         'button-group' => [
@@ -220,7 +237,9 @@ return [
             'description' => 'Groups related buttons and button-like controls with shared borders and orientation state',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(['button-group', 'button-group-separator', 'button-group-text']),
+                'slots' => [
+                    ['class' => ButtonGroup::class],
+                ],
             ],
         ],
         'card' => [
@@ -231,7 +250,9 @@ return [
             'description' => 'Composable content container with header, action, content and footer slots',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(['card', 'card-header', 'card-title', 'card-description', 'card-action', 'card-content', 'card-footer']),
+                'slots' => [
+                    ['class' => Card::class],
+                ],
             ],
         ],
         'carousel' => [
@@ -242,10 +263,9 @@ return [
             'description' => 'Carousel/slider (Embla) with navigation, dots, responsive options and CSS-variable sizing',
             'controllers' => ['carousel'],
             'styling' => [
-                'slots' => $slots(
-                    ['carousel', 'carousel-progress', 'carousel-counter', 'carousel-prev-button', 'carousel-next-button', 'carousel-dot-button', 'carousel-dot-list', 'carousel-progress-wrapper'],
-                    ['carousel-viewport', 'carousel-container', 'carousel-nav-wrapper'],
-                ),
+                'slots' => [
+                    ['class' => Carousel::class],
+                ],
             ],
         ],
         'chart' => [
@@ -256,7 +276,9 @@ return [
             'description' => 'Apache ECharts wrapper — inline option or URL-fetched, theme + sizing props, controller swap for subclass extensibility',
             'controllers' => ['chart'],
             'styling' => [
-                'slots' => $slots(structural: ['chart']),
+                'slots' => [
+                    ['class' => Chart::class],
+                ],
             ],
         ],
         'checkbox' => [
@@ -267,7 +289,9 @@ return [
             'description' => 'Standalone native checkbox with old input restore, unchecked hidden value and optional indeterminate state',
             'controllers' => ['checkbox', 'auto-submit'],
             'styling' => [
-                'slots' => $slots(['checkbox']),
+                'slots' => [
+                    ['class' => Checkbox::class],
+                ],
             ],
         ],
         'checkbox-group' => [
@@ -278,7 +302,9 @@ return [
             'description' => 'Checkbox group with options, rich item composition and optional select-all master checkbox',
             'controllers' => ['checkbox-select-all', 'auto-submit'],
             'styling' => [
-                'slots' => $slots(['checkbox-group', 'checkbox-group-item', 'checkbox-group-input', 'checkbox-group-item-content']),
+                'slots' => [
+                    ['class' => CheckboxGroup::class],
+                ],
             ],
         ],
         'checkbox-group.item' => [
@@ -289,7 +315,9 @@ return [
             'description' => 'Rich checkbox-group item that inherits name, selected state, validation and select-all wiring',
             'controllers' => ['checkbox-select-all', 'auto-submit'],
             'styling' => [
-                'slots' => $slots(['checkbox-group-item', 'checkbox-group-input', 'checkbox-group-item-content']),
+                'slots' => [
+                    ['class' => CheckboxGroup::class, 'only' => ['item', 'input', 'item-content']],
+                ],
             ],
         ],
         'color-scheme.script' => [
@@ -311,7 +339,9 @@ return [
             'description' => 'Button that cycles persisted light, dark and system color scheme modes',
             'controllers' => ['color-scheme', 'tooltip'],
             'styling' => [
-                'slots' => $slots(['color-scheme-toggle', 'color-scheme-icon']),
+                'slots' => [
+                    ['class' => ColorSchemeToggle::class],
+                ],
             ],
         ],
         'conditional-field' => [
@@ -322,7 +352,9 @@ return [
             'description' => 'Renders a dependent block for the conditional-fields controller — single source of truth for the show/hide rule on both client and server',
             'controllers' => ['conditional-fields'],
             'styling' => [
-                'slots' => $slots(structural: ['conditional-field']),
+                'slots' => [
+                    ['class' => ConditionalField::class],
+                ],
             ],
         ],
         'controller-preloads' => [
@@ -344,10 +376,9 @@ return [
             'description' => 'Off-canvas drawer with state-driven motion, focus trap and Escape/click-outside dismissal',
             'controllers' => ['drawer', 'turbo--view-transition'],
             'styling' => [
-                'slots' => $slots(
-                    ['drawer-overlay', 'drawer-trigger', 'drawer-backdrop', 'drawer-popup', 'drawer-content', 'drawer-header', 'drawer-title', 'drawer-description', 'drawer-footer', 'drawer-close'],
-                    ['drawer'],
-                ),
+                'slots' => [
+                    ['class' => Drawer::class],
+                ],
             ],
         ],
         'dropdown' => [
@@ -358,7 +389,9 @@ return [
             'description' => 'Accessible disclosure dropdown with state-driven presence, responsive positioning and outside-click/Escape dismissal',
             'controllers' => ['dropdown'],
             'styling' => [
-                'slots' => $slots(['dropdown', 'dropdown-trigger', 'dropdown-trigger-icon', 'dropdown-menu', 'dropdown-group', 'dropdown-label', 'dropdown-item', 'dropdown-separator', 'dropdown-shortcut']),
+                'slots' => [
+                    ['class' => Dropdown::class],
+                ],
             ],
         ],
         'empty-state' => [
@@ -369,7 +402,9 @@ return [
             'description' => 'Composable empty state with media, title, description and action content slots',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(['empty-state', 'empty-state-header', 'empty-state-media', 'empty-state-title', 'empty-state-description', 'empty-state-content']),
+                'slots' => [
+                    ['class' => EmptyState::class],
+                ],
             ],
         ],
         'field' => [
@@ -380,10 +415,9 @@ return [
             'description' => 'Wraps label, input, description and error — propagates scoped name/id/errorKey/required context',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(
-                    ['field-set', 'field-legend', 'field-group', 'field', 'field-label', 'field-content', 'field-title', 'field-description', 'field-error', 'field-separator', 'field-separator-line', 'field-separator-content'],
-                    ['field-label-required'],
-                ),
+                'slots' => [
+                    ['class' => Field::class],
+                ],
             ],
         ],
         'field.error' => [
@@ -394,7 +428,9 @@ return [
             'description' => 'Always-present error container bound to a form field via name/errorKey',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(['field-error']),
+                'slots' => [
+                    ['class' => Field::class, 'only' => ['error']],
+                ],
             ],
         ],
         'field.group' => [
@@ -405,7 +441,9 @@ return [
             'description' => 'Groups form fields and enables responsive field orientation layout',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(['field-group']),
+                'slots' => [
+                    ['class' => Field::class, 'only' => ['group']],
+                ],
             ],
         ],
         'field.label' => [
@@ -416,7 +454,9 @@ return [
             'description' => 'Form label with auto-derived for/id and optional required marker',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(['field-label'], ['field-label-required']),
+                'slots' => [
+                    ['class' => Field::class, 'only' => ['label', 'label-required']],
+                ],
             ],
         ],
         'file' => [
@@ -427,7 +467,9 @@ return [
             'description' => 'File input with auto id/errorKey, ARIA, optional current file display and Turbo morph reset',
             'controllers' => ['file-preserve', 'reset-files'],
             'styling' => [
-                'slots' => $slots(['file-wrapper', 'file-input']),
+                'slots' => [
+                    ['class' => File::class],
+                ],
             ],
         ],
         'file-upload' => [
@@ -438,10 +480,12 @@ return [
             'description' => 'Attachment-backed native upload protocol with managed JSON and server-owned Turbo Stream modes',
             'controllers' => ['file-upload'],
             'styling' => [
-                'slots' => $slots(
-                    ['file-upload', 'file-upload-dropzone', 'file-upload-image-base', 'file-upload-image-preview', 'file-upload-feedback', 'file-upload-actions', 'attachment-group', 'empty-state-description'],
-                    ['file-upload-announcer'],
-                ),
+                'slots' => [
+                    ['class' => FileUpload::class, 'only' => ['root', 'dropzone', 'image-base', 'image-preview', 'feedback', 'actions']],
+                    ['class' => Attachment::class, 'only' => ['group']],
+                    ['class' => EmptyState::class, 'only' => ['description']],
+                    ['class' => FileUpload::class, 'only' => ['announcer']],
+                ],
             ],
         ],
         'form' => [
@@ -452,7 +496,9 @@ return [
             'description' => 'Form wrapper with optional Stimulus behaviors, CSRF, and Turbo Frame redirect support',
             'controllers' => ['auto-submit', 'unsaved-changes', 'error-scroll', 'clean-query-params', 'conditional-fields'],
             'styling' => [
-                'slots' => $slots(structural: ['form']),
+                'slots' => [
+                    ['class' => Form::class],
+                ],
             ],
         ],
         'frame' => [
@@ -507,7 +553,9 @@ return [
             'description' => 'Anchored hover/focus preview card with delayed Floating UI positioning and state-driven presence',
             'controllers' => ['hover-card'],
             'styling' => [
-                'slots' => $slots(['hover-card', 'hover-card-trigger', 'hover-card-content']),
+                'slots' => [
+                    ['class' => HoverCard::class],
+                ],
             ],
         ],
         'icon' => [
@@ -518,7 +566,9 @@ return [
             'description' => 'Inline SVG icon from the embedded Lucide subset (~21 icons)',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(['icon']),
+                'slots' => [
+                    ['class' => Icon::class],
+                ],
             ],
         ],
         'input' => [
@@ -529,7 +579,9 @@ return [
             'description' => 'Form input with auto id/errorKey, ARIA, optional mask/clear/auto-select',
             'controllers' => ['auto-select', 'clear-input', 'input-mask', 'auto-submit'],
             'styling' => [
-                'slots' => $slots(['input-wrapper', 'input', 'clear-input-button']),
+                'slots' => [
+                    ['class' => Input::class],
+                ],
             ],
         ],
         'input-group' => [
@@ -540,7 +592,9 @@ return [
             'description' => 'Composable input shell for addons, actions, shortcuts and helper content',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(['input-group', 'input-group-addon']),
+                'slots' => [
+                    ['class' => InputGroup::class],
+                ],
             ],
         ],
         'item' => [
@@ -551,7 +605,9 @@ return [
             'description' => 'Composable list item primitive with media, content, actions, header, footer and separator slots',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(['item-group', 'item', 'item-media', 'item-content', 'item-title', 'item-description', 'item-actions', 'item-header', 'item-footer', 'item-separator']),
+                'slots' => [
+                    ['class' => Item::class],
+                ],
             ],
         ],
         'kbd' => [
@@ -562,7 +618,9 @@ return [
             'description' => 'Keyboard input hint with optional grouped shortcut rendering',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(['kbd', 'kbd-group']),
+                'slots' => [
+                    ['class' => Kbd::class],
+                ],
             ],
         ],
         'map' => [
@@ -573,7 +631,9 @@ return [
             'description' => 'Leaflet wrapper — inline center/markers or GeoJSON URL, OSM tiles by default, subclass-friendly tile/handler hooks',
             'controllers' => ['map'],
             'styling' => [
-                'slots' => $slots(structural: ['map']),
+                'slots' => [
+                    ['class' => Map::class],
+                ],
             ],
         ],
         'marker' => [
@@ -584,7 +644,9 @@ return [
             'description' => 'Lightweight visual primitive for timelines, activity feeds and lists',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(['marker', 'marker-icon', 'marker-content']),
+                'slots' => [
+                    ['class' => Marker::class],
+                ],
             ],
         ],
         'meta' => [
@@ -694,10 +756,9 @@ return [
             'description' => 'Accessible modal with state-driven motion, focus trap and Turbo integration',
             'controllers' => ['modal', 'turbo--view-transition'],
             'styling' => [
-                'slots' => $slots(
-                    ['modal-overlay', 'modal-trigger', 'modal-backdrop', 'modal-positioner', 'modal-panel', 'modal-content', 'modal-header', 'modal-title', 'modal-description', 'modal-footer', 'modal-close', 'modal-close-icon'],
-                    ['modal'],
-                ),
+                'slots' => [
+                    ['class' => Modal::class],
+                ],
             ],
         ],
         'multi-select' => [
@@ -708,7 +769,9 @@ return [
             'description' => 'Searchable multi-value select with state-driven floating presence and native form submission',
             'controllers' => ['multi-select', 'clear-input'],
             'styling' => [
-                'slots' => $slots(['multi-select', 'multi-select-native', 'multi-select-validation', 'multi-select-trigger', 'multi-select-value', 'multi-select-trigger-icon', 'multi-select-content', 'multi-select-search', 'multi-select-search-icon', 'multi-select-select-all', 'multi-select-indicator', 'multi-select-option-text', 'multi-select-list', 'multi-select-option', 'multi-select-empty']),
+                'slots' => [
+                    ['class' => MultiSelect::class],
+                ],
             ],
         ],
         'navbar' => [
@@ -719,7 +782,10 @@ return [
             'description' => 'Horizontal or vertical navigation bar with an items shortcut, current-page state and optional sticky sugar',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(['navbar', 'navbar-item', 'sticky']),
+                'slots' => [
+                    ['class' => Navbar::class],
+                    ['class' => Sticky::class, 'only' => ['root']],
+                ],
             ],
         ],
         'navbar.item' => [
@@ -730,7 +796,9 @@ return [
             'description' => 'Navbar item that renders as a link or button with current and disabled semantics',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(['navbar-item']),
+                'slots' => [
+                    ['class' => Navbar::class, 'only' => ['item']],
+                ],
             ],
         ],
         'optimistic' => [
@@ -741,7 +809,9 @@ return [
             'description' => 'Declares an inline optimistic Turbo Stream action for any Turbo trigger',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(structural: ['optimistic']),
+                'slots' => [
+                    ['class' => Optimistic::class],
+                ],
             ],
         ],
         'pagination' => [
@@ -752,7 +822,9 @@ return [
             'description' => 'Pagination navigation primitives with Laravel paginator display modes and Turbo Frame support',
             'controllers' => ['pagination'],
             'styling' => [
-                'slots' => $slots(['pagination', 'pagination-content', 'pagination-item', 'pagination-link', 'pagination-previous', 'pagination-previous-label', 'pagination-next', 'pagination-next-content', 'pagination-next-label', 'pagination-next-loading-content', 'pagination-next-loading-label', 'pagination-next-spinner', 'pagination-next-icon', 'pagination-ellipsis'], structural: ['pagination-status']),
+                'slots' => [
+                    ['class' => Pagination::class],
+                ],
             ],
         ],
         'popover' => [
@@ -763,7 +835,9 @@ return [
             'description' => 'Anchored click-triggered popover with state-driven presence for rich arbitrary content',
             'controllers' => ['popover'],
             'styling' => [
-                'slots' => $slots(['popover', 'popover-trigger', 'popover-content', 'popover-header', 'popover-title', 'popover-description']),
+                'slots' => [
+                    ['class' => Popover::class],
+                ],
             ],
         ],
         'progress' => [
@@ -774,7 +848,9 @@ return [
             'description' => 'Server-rendered progress primitive with label, value, track and indicator slots',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(['progress', 'progress-track', 'progress-indicator', 'progress-label', 'progress-value']),
+                'slots' => [
+                    ['class' => Progress::class],
+                ],
             ],
         ],
         'radio-group' => [
@@ -785,7 +861,9 @@ return [
             'description' => 'Native radio group with options, rich item composition, old input restore and validation wiring',
             'controllers' => ['auto-submit'],
             'styling' => [
-                'slots' => $slots(['radio-group', 'radio-group-item', 'radio-group-input', 'radio-group-item-content']),
+                'slots' => [
+                    ['class' => RadioGroup::class],
+                ],
             ],
         ],
         'radio-group.item' => [
@@ -796,7 +874,9 @@ return [
             'description' => 'Rich radio-group item that inherits name, selected state and validation wiring',
             'controllers' => ['auto-submit'],
             'styling' => [
-                'slots' => $slots(['radio-group-item', 'radio-group-input', 'radio-group-item-content']),
+                'slots' => [
+                    ['class' => RadioGroup::class, 'only' => ['item', 'input', 'item-content']],
+                ],
             ],
         ],
         'read-more' => [
@@ -807,10 +887,9 @@ return [
             'description' => 'Overflow-aware content preview with accessible expansion and first-paint clamping',
             'controllers' => ['read-more'],
             'styling' => [
-                'slots' => $slots(
-                    ['read-more', 'read-more-content', 'read-more-fade', 'read-more-trigger', 'read-more-trigger-icon'],
-                    ['read-more-viewport'],
-                ),
+                'slots' => [
+                    ['class' => ReadMore::class],
+                ],
             ],
         ],
         'reveal' => [
@@ -821,7 +900,9 @@ return [
             'description' => 'Progressively enhanced staggered entrance cascade for direct children or explicit items',
             'controllers' => ['reveal'],
             'styling' => [
-                'slots' => $slots(['reveal'], ['reveal-item']),
+                'slots' => [
+                    ['class' => Reveal::class],
+                ],
             ],
         ],
         'reveal.item' => [
@@ -832,7 +913,9 @@ return [
             'description' => 'Explicit nested item with an automatically shared cascade index',
             'controllers' => ['reveal'],
             'styling' => [
-                'slots' => $slots([], ['reveal-item']),
+                'slots' => [
+                    ['class' => Reveal::class, 'only' => ['item']],
+                ],
             ],
         ],
         'rich-text' => [
@@ -843,10 +926,9 @@ return [
             'description' => 'Tiptap-backed rich text editor with optional default toolbar, output as HTML or JSON, and image-upload event hook',
             'controllers' => ['rich-text', 'rich-text-toolbar'],
             'styling' => [
-                'slots' => $slots(
-                    ['rich-text', 'rich-text-toolbar', 'rich-text-toolbar-button', 'rich-text-editor'],
-                    ['rich-text-input'],
-                ),
+                'slots' => [
+                    ['class' => RichText::class],
+                ],
             ],
         ],
         'scroll-progress' => [
@@ -857,7 +939,9 @@ return [
             'description' => 'Fixed scroll progress bar that fills as the page scrolls',
             'controllers' => ['scroll-progress'],
             'styling' => [
-                'slots' => $slots(['scroll-progress']),
+                'slots' => [
+                    ['class' => ScrollProgress::class],
+                ],
             ],
         ],
         'select' => [
@@ -868,7 +952,9 @@ return [
             'description' => 'Select dropdown with auto id/errorKey, ARIA, old() merge and placeholder support',
             'controllers' => ['auto-submit'],
             'styling' => [
-                'slots' => $slots(['select-wrapper', 'select', 'select-icon']),
+                'slots' => [
+                    ['class' => Select::class],
+                ],
             ],
         ],
         'separator' => [
@@ -879,7 +965,9 @@ return [
             'description' => 'Horizontal or vertical visual separator with semantic orientation hooks',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(['separator']),
+                'slots' => [
+                    ['class' => Separator::class],
+                ],
             ],
         ],
         'sheet' => [
@@ -890,10 +978,9 @@ return [
             'description' => 'Off-canvas sheet with state-driven motion, focus trap and side-aware slide transitions',
             'controllers' => ['sheet', 'turbo--view-transition'],
             'styling' => [
-                'slots' => $slots(
-                    ['sheet-overlay', 'sheet-trigger', 'sheet-backdrop', 'sheet-content', 'sheet-close-icon', 'sheet-header', 'sheet-title', 'sheet-description', 'sheet-footer', 'sheet-close'],
-                    ['sheet'],
-                ),
+                'slots' => [
+                    ['class' => Sheet::class],
+                ],
             ],
         ],
         'side-panel' => [
@@ -904,7 +991,9 @@ return [
             'description' => 'Composable collapsible panel for secondary navigation and workspace tools',
             'controllers' => ['side-panel'],
             'styling' => [
-                'slots' => $slots(['side-panel', 'side-panel-panel-content', 'side-panel-trigger', 'side-panel-trigger-icon', 'side-panel-inset'], ['side-panel-panel']),
+                'slots' => [
+                    ['class' => SidePanel::class],
+                ],
             ],
         ],
         'sidebar' => [
@@ -915,7 +1004,9 @@ return [
             'description' => 'Composable app sidebar with provider state, mobile Presence and navigation primitives',
             'controllers' => ['sidebar', 'reveal'],
             'styling' => [
-                'slots' => $slots(['sidebar-wrapper', 'sidebar', 'sidebar-backdrop', 'sidebar-trigger', 'sidebar-rail', 'sidebar-inset', 'sidebar-header', 'sidebar-brand', 'sidebar-brand-logo', 'sidebar-brand-icon', 'sidebar-footer', 'sidebar-content', 'sidebar-input', 'sidebar-separator', 'sidebar-group', 'sidebar-group-label', 'sidebar-group-action', 'sidebar-group-content', 'sidebar-menu', 'sidebar-menu-item', 'sidebar-menu-button', 'sidebar-menu-action', 'sidebar-menu-badge', 'sidebar-menu-skeleton', 'sidebar-menu-skeleton-icon', 'sidebar-menu-skeleton-text', 'sidebar-menu-sub', 'sidebar-menu-sub-item', 'sidebar-menu-sub-button', 'sidebar-gap', 'sidebar-container', 'sidebar-inner']),
+                'slots' => [
+                    ['class' => Sidebar::class],
+                ],
             ],
         ],
         'skeleton' => [
@@ -926,7 +1017,9 @@ return [
             'description' => 'Animated placeholder block for loading states',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(['skeleton']),
+                'slots' => [
+                    ['class' => Skeleton::class],
+                ],
             ],
         ],
         'slider' => [
@@ -937,7 +1030,9 @@ return [
             'description' => 'Native scalar range input with Laravel field integration and progressive visual fill',
             'controllers' => ['slider', 'auto-submit'],
             'styling' => [
-                'slots' => $slots(['slider']),
+                'slots' => [
+                    ['class' => Slider::class],
+                ],
             ],
         ],
         'spinner' => [
@@ -948,7 +1043,9 @@ return [
             'description' => 'Animated SVG spinner — no JavaScript required',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(['spinner']),
+                'slots' => [
+                    ['class' => Spinner::class],
+                ],
             ],
         ],
         'sticky' => [
@@ -959,7 +1056,9 @@ return [
             'description' => 'Generic top or bottom sticky surface primitive with configurable offset and tag',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(['sticky']),
+                'slots' => [
+                    ['class' => Sticky::class],
+                ],
             ],
         ],
         'switch' => [
@@ -970,7 +1069,9 @@ return [
             'description' => 'Native checkbox rendered as an accessible switch with old input restore and unchecked hidden value',
             'controllers' => ['auto-submit'],
             'styling' => [
-                'slots' => $slots(['switch']),
+                'slots' => [
+                    ['class' => SwitchInput::class],
+                ],
             ],
         ],
         'table' => [
@@ -981,7 +1082,9 @@ return [
             'description' => 'Responsive table wrapper with semantic row, cell, header, footer and caption primitives',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(['table-container', 'table', 'table-header', 'table-body', 'table-footer', 'table-row', 'table-head', 'table-cell', 'table-caption']),
+                'slots' => [
+                    ['class' => Table::class],
+                ],
             ],
         ],
         'tabs' => [
@@ -992,7 +1095,9 @@ return [
             'description' => 'Accessible tab primitives backed by the tabs controller, with server-rendered active state',
             'controllers' => ['tabs'],
             'styling' => [
-                'slots' => $slots(['tabs', 'tabs-list', 'tabs-trigger', 'tabs-panel']),
+                'slots' => [
+                    ['class' => Tabs::class],
+                ],
             ],
         ],
         'textarea' => [
@@ -1003,7 +1108,9 @@ return [
             'description' => 'Textarea with auto-resize and optional char counter',
             'controllers' => ['auto-resize', 'char-counter', 'auto-submit'],
             'styling' => [
-                'slots' => $slots(['textarea-wrapper', 'textarea']),
+                'slots' => [
+                    ['class' => Textarea::class],
+                ],
             ],
         ],
         'timeago' => [
@@ -1014,7 +1121,9 @@ return [
             'description' => 'Self-refreshing relative timestamp element wrapping the timeago controller',
             'controllers' => ['timeago'],
             'styling' => [
-                'slots' => $slots(['timeago']),
+                'slots' => [
+                    ['class' => Timeago::class],
+                ],
             ],
         ],
         'toast' => [
@@ -1027,7 +1136,9 @@ return [
             'styling' => [
                 // The trigger only carries the payload and removes itself on connect; the visible
                 // toast is built by the manager under its own slots.
-                'slots' => $slots(structural: ['toast-trigger']),
+                'slots' => [
+                    ['class' => Toast::class],
+                ],
             ],
         ],
         'toaster' => [
@@ -1038,7 +1149,10 @@ return [
             'description' => 'Hosts the toast stack, reads the session flash and persists across Turbo Drive navigations',
             'controllers' => ['toaster', 'toast'],
             'styling' => [
-                'slots' => $slots(structural: ['toaster', 'toast-trigger']),
+                'slots' => [
+                    ['class' => Toaster::class],
+                    ['class' => Toast::class],
+                ],
             ],
         ],
         'toggle' => [
@@ -1049,7 +1163,9 @@ return [
             'description' => 'Accessible two-state button with optional hidden input and auto-submit integration',
             'controllers' => ['toggle', 'auto-submit'],
             'styling' => [
-                'slots' => $slots(['toggle']),
+                'slots' => [
+                    ['class' => Toggle::class],
+                ],
             ],
         ],
         'toggle-group' => [
@@ -1060,7 +1176,9 @@ return [
             'description' => 'Single or multiple pressed-button group with options and hidden-input form submission',
             'controllers' => ['toggle-group', 'toggle', 'auto-submit'],
             'styling' => [
-                'slots' => $slots(['toggle-group', 'toggle-group-item']),
+                'slots' => [
+                    ['class' => ToggleGroup::class],
+                ],
             ],
         ],
         'toggle-group.item' => [
@@ -1071,7 +1189,9 @@ return [
             'description' => 'Button item for toggle groups with aria-pressed and hidden-input synchronization',
             'controllers' => ['toggle-group', 'toggle', 'auto-submit'],
             'styling' => [
-                'slots' => $slots(['toggle-group-item']),
+                'slots' => [
+                    ['class' => ToggleGroup::class, 'only' => ['item']],
+                ],
             ],
         ],
     ],

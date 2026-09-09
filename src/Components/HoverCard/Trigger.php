@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Components\HoverCard;
 
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
+use Emaia\LaravelHotwire\Components\HoverCard;
 use Emaia\LaravelHotwire\Support\PolymorphicTag;
 
 class Trigger extends Component
@@ -19,7 +20,9 @@ class Trigger extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.hover-card-trigger');
+        return view('hotwire::component-views.hover-card-trigger', [
+            'slotName' => HoverCard::SLOTS['trigger']['name'],
+        ]);
     }
 
     /** @return array<string, mixed> */

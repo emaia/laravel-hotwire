@@ -47,11 +47,11 @@
 @endphp
 
 <label
-    data-slot="checkbox-group-item"
+    data-slot="{{ $itemSlotName }}"
     {{ trim($checkboxGroupItemLabelClass) !== '' ? $attributes->merge(['class' => $checkboxGroupItemLabelClass]) : $attributes->except('class') }}
 >
     <input
-        data-slot="checkbox-group-input"
+        data-slot="{{ $inputSlotName }}"
         data-checkable="true"
         type="checkbox"
         @if (filled($checkboxGroupItemClass)) class="{{ $checkboxGroupItemClass }}" @endif
@@ -67,5 +67,5 @@
         @if ($isChecked) checked @endif
     />
 
-    <span data-slot="checkbox-group-item-content">{{ $slot }}</span>
+    <span data-slot="{{ $itemContentSlotName }}">{{ $slot }}</span>
 </label>

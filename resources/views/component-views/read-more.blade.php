@@ -10,7 +10,7 @@
 
     $readMoreAttributes = StimulusAttributes::merge([
         'id' => $readMoreId,
-        'data-slot' => 'read-more',
+        'data-slot' => $slotName,
         'data-controller' => $controller,
         'data-state' => $expanded ? 'expanded' : 'collapsed',
         "data-{$controller}-collapsed-height-value" => $collapsedHeight,
@@ -26,22 +26,22 @@
 @endphp
 
 <div {{ $readMoreAttributes }}>
-    <div data-slot="read-more-viewport" data-{{ $controller }}-target="viewport">
+    <div data-slot="{{ $viewportSlotName }}" data-{{ $controller }}-target="viewport">
         <div
             id="{{ $contentId }}"
-            data-slot="read-more-content"
+            data-slot="{{ $contentSlotName }}"
             data-{{ $controller }}-target="content"
             tabindex="-1"
         >
             {{ $slot }}
         </div>
 
-        <div data-slot="read-more-fade" data-{{ $controller }}-target="fade" aria-hidden="true" hidden></div>
+        <div data-slot="{{ $fadeSlotName }}" data-{{ $controller }}-target="fade" aria-hidden="true" hidden></div>
     </div>
 
     <button
         type="button"
-        data-slot="read-more-trigger"
+        data-slot="{{ $triggerSlotName }}"
         data-variant="{{ $variant }}"
         data-size="{{ $size }}"
         data-{{ $controller }}-target="trigger"
@@ -59,7 +59,7 @@
 
         @if (isset($trigger_icon))
             <span
-                data-slot="read-more-trigger-icon"
+                data-slot="{{ $triggerIconSlotName }}"
                 data-{{ $controller }}-target="icon"
                 data-state="{{ $expanded ? 'expanded' : 'collapsed' }}"
                 aria-hidden="true"
@@ -68,7 +68,7 @@
             </span>
         @elseif ($icon !== '')
             <span
-                data-slot="read-more-trigger-icon"
+                data-slot="{{ $triggerIconSlotName }}"
                 data-{{ $controller }}-target="icon"
                 data-state="{{ $expanded ? 'expanded' : 'collapsed' }}"
                 aria-hidden="true"

@@ -6,6 +6,14 @@ use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 
 class Progress extends Component
 {
+    public const array SLOTS = [
+        'root' => ['name' => 'progress', 'kind' => 'visual'],
+        'track' => ['name' => 'progress-track', 'kind' => 'visual'],
+        'indicator' => ['name' => 'progress-indicator', 'kind' => 'visual'],
+        'label' => ['name' => 'progress-label', 'kind' => 'visual'],
+        'value' => ['name' => 'progress-value', 'kind' => 'visual'],
+    ];
+
     protected $except = [
         'value',
         'max',
@@ -37,7 +45,9 @@ class Progress extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.progress');
+        return view('hotwire::component-views.progress', [
+            'slotName' => self::SLOTS['root']['name'],
+        ]);
     }
 
     /** @return array<string, mixed> */

@@ -12,6 +12,10 @@ class Toggle extends Component
 {
     use StripsNullProps;
 
+    public const array SLOTS = [
+        'root' => ['name' => 'toggle', 'kind' => 'visual'],
+    ];
+
     public function __construct(
         public ?string $name = null,
         public mixed $value = null,
@@ -26,7 +30,9 @@ class Toggle extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.toggle');
+        return view('hotwire::component-views.toggle', [
+            'slotName' => self::SLOTS['root']['name'],
+        ]);
     }
 
     public function data(): array

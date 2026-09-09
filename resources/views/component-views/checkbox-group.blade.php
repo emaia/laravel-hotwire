@@ -25,7 +25,7 @@
     }
 
     $checkboxGroupAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
-        'data-slot' => 'checkbox-group',
+        'data-slot' => $slotName,
         'role' => $fieldOwnsSet ? null : 'group',
         'aria-labelledby' => $fieldOwnsSet || $hasExplicitAccessibleName ? null : $labelId,
         'data-orientation' => $checkboxGroupOrientation,
@@ -42,9 +42,9 @@
         @php
             $selectAllId = $baseId ? $baseId.'-all' : null;
         @endphp
-        <label data-slot="checkbox-group-item" @if (filled($checkboxGroupLabelClass)) class="{{ $checkboxGroupLabelClass }}" @endif>
+        <label data-slot="{{ $itemSlotName }}" @if (filled($checkboxGroupLabelClass)) class="{{ $checkboxGroupLabelClass }}" @endif>
             <input
-                data-slot="checkbox-group-input"
+                data-slot="{{ $inputSlotName }}"
                 data-checkable="true"
                 type="checkbox"
                 @if (filled($checkboxGroupClass)) class="{{ $checkboxGroupClass }}" @endif
@@ -56,7 +56,7 @@
                 @if ($elementAction) data-action="{!! $elementAction !!}" @endif
                 @if ($autoSubmitDelayParam !== null) data-auto-submit-delay-param="{{ $autoSubmitDelayParam }}" @endif
             />
-            <span data-slot="checkbox-group-item-content">{{ $checkboxGroupSelectAllLabel ?: 'Select all' }}</span>
+            <span data-slot="{{ $itemContentSlotName }}">{{ $checkboxGroupSelectAllLabel ?: 'Select all' }}</span>
         </label>
     @endif
 
@@ -64,9 +64,9 @@
         @php
             $resolvedId = $baseId ? $baseId.'-'.\Illuminate\Support\Str::slug((string) $value) : null;
         @endphp
-        <label data-slot="checkbox-group-item" @if (filled($checkboxGroupLabelClass)) class="{{ $checkboxGroupLabelClass }}" @endif>
+        <label data-slot="{{ $itemSlotName }}" @if (filled($checkboxGroupLabelClass)) class="{{ $checkboxGroupLabelClass }}" @endif>
             <input
-                data-slot="checkbox-group-input"
+                data-slot="{{ $inputSlotName }}"
                 data-checkable="true"
                 type="checkbox"
                 @if (filled($checkboxGroupClass)) class="{{ $checkboxGroupClass }}" @endif
@@ -81,7 +81,7 @@
                 @if ($autoSubmitDelayParam !== null) data-auto-submit-delay-param="{{ $autoSubmitDelayParam }}" @endif
                 @if (in_array($value, $resolvedSelected)) checked @endif
             />
-            <span data-slot="checkbox-group-item-content">{{ $label }}</span>
+            <span data-slot="{{ $itemContentSlotName }}">{{ $label }}</span>
         </label>
     @endforeach
 

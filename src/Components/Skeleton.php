@@ -6,9 +6,13 @@ use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 
 class Skeleton extends Component
 {
+    public const array SLOTS = [
+        'root' => ['name' => 'skeleton', 'kind' => 'visual'],
+    ];
+
     public string $tag = 'div';
 
-    public string $slotName = 'skeleton';
+    public string $slotName = self::SLOTS['root']['name'];
 
     public function render()
     {

@@ -15,6 +15,10 @@ class SwitchInput extends Component
 {
     use StripsNullProps;
 
+    public const array SLOTS = [
+        'root' => ['name' => 'switch', 'kind' => 'visual'],
+    ];
+
     public function __construct(
         public ?string $name = null,
         public ?string $id = null,
@@ -32,7 +36,9 @@ class SwitchInput extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.switch');
+        return view('hotwire::component-views.switch', [
+            'slotName' => self::SLOTS['root']['name'],
+        ]);
     }
 
     public function data(): array

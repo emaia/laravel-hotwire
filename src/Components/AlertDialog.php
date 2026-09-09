@@ -10,6 +10,21 @@ use Illuminate\Contracts\Support\Htmlable;
 
 class AlertDialog extends Component
 {
+    public const array SLOTS = [
+        'overlay' => ['name' => 'alert-dialog-overlay', 'kind' => 'visual'],
+        'backdrop' => ['name' => 'alert-dialog-backdrop', 'kind' => 'visual'],
+        'panel' => ['name' => 'alert-dialog-panel', 'kind' => 'visual'],
+        'header' => ['name' => 'alert-dialog-header', 'kind' => 'visual'],
+        'title' => ['name' => 'alert-dialog-title', 'kind' => 'visual'],
+        'description' => ['name' => 'alert-dialog-description', 'kind' => 'visual'],
+        'body' => ['name' => 'alert-dialog-body', 'kind' => 'visual'],
+        'footer' => ['name' => 'alert-dialog-footer', 'kind' => 'visual'],
+        'cancel' => ['name' => 'alert-dialog-cancel', 'kind' => 'visual'],
+        'action' => ['name' => 'alert-dialog-action', 'kind' => 'visual'],
+        'root' => ['name' => 'alert-dialog', 'kind' => 'structural'],
+        'trigger' => ['name' => 'alert-dialog-trigger', 'kind' => 'structural'],
+    ];
+
     protected OverlayLabelContext $overlayLabelContext;
 
     public function __construct(
@@ -29,14 +44,14 @@ class AlertDialog extends Component
         public string $initialFocus = 'auto',
     ) {
         $this->id = app(ComponentId::class)->resolve($this->id, 'hw-alert', 'alert');
-        $this->overlayLabelContext = new OverlayLabelContext($this->id, 'alert-dialog');
+        $this->overlayLabelContext = new OverlayLabelContext($this->id, self::SLOTS['root']['name']);
 
         if ($this->title !== '') {
-            $this->overlayLabelContext->register('alert-dialog-title');
+            $this->overlayLabelContext->register(self::SLOTS['title']['name']);
         }
 
         if ($this->description !== '') {
-            $this->overlayLabelContext->register('alert-dialog-description');
+            $this->overlayLabelContext->register(self::SLOTS['description']['name']);
         }
 
         $this->motion = in_array($this->motion, ['default', 'none'], true) ? $this->motion : 'default';
@@ -47,7 +62,19 @@ class AlertDialog extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.alert-dialog');
+        return view('hotwire::component-views.alert-dialog', [
+            'slotName' => self::SLOTS['root']['name'],
+            'triggerSlotName' => self::SLOTS['trigger']['name'],
+            'overlaySlotName' => self::SLOTS['overlay']['name'],
+            'backdropSlotName' => self::SLOTS['backdrop']['name'],
+            'panelSlotName' => self::SLOTS['panel']['name'],
+            'headerSlotName' => self::SLOTS['header']['name'],
+            'titleSlotName' => self::SLOTS['title']['name'],
+            'descriptionSlotName' => self::SLOTS['description']['name'],
+            'footerSlotName' => self::SLOTS['footer']['name'],
+            'cancelSlotName' => self::SLOTS['cancel']['name'],
+            'actionSlotName' => self::SLOTS['action']['name'],
+        ]);
     }
 
     /** @return array<string, mixed> */

@@ -5,13 +5,14 @@ namespace Emaia\LaravelHotwire\Support;
 use DOMDocument;
 use DOMElement;
 use DOMXPath;
+use Emaia\LaravelHotwire\Components\Progress;
 
 final class ProgressTracks
 {
     /** Report whether a slot declares a track owned by the current Progress root. */
     public static function declaresTrack(string $html): bool
     {
-        if (! str_contains($html, 'progress-track')) {
+        if (! str_contains($html, Progress::SLOTS['track']['name'])) {
             return false;
         }
 
@@ -33,7 +34,9 @@ final class ProgressTracks
             return false;
         }
 
-        $tracks = (new DOMXPath($document))->query('//*[@data-slot="progress-track"]');
+        $tracks = (new DOMXPath($document))->query(
+            '//*[@data-slot="'.Progress::SLOTS['track']['name'].'"]'
+        );
 
         if ($tracks === false) {
             return false;
@@ -55,7 +58,7 @@ final class ProgressTracks
     private static function insideNestedProgress(DOMElement $track): bool
     {
         for ($node = $track->parentNode; $node instanceof DOMElement; $node = $node->parentNode) {
-            if ($node->getAttribute('data-slot') === 'progress') {
+            if ($node->getAttribute('data-slot') === Progress::SLOTS['root']['name']) {
                 return true;
             }
         }

@@ -1,7 +1,7 @@
 @php
     $disabled = $attributes->has('disabled') && ! in_array($attributes->get('disabled'), [false, null], true);
     $itemAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
-        'data-slot' => 'item',
+        'data-slot' => $slotName,
         'data-variant' => $variant,
         'data-size' => $size,
         'type' => $as === 'button' ? $type : null,

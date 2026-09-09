@@ -43,7 +43,7 @@
         preg_split('/\s+/', trim(($describedBy ?? '').' '.$slotDescribedBy.' '.$feedbackId)) ?: [],
     )));
     $dropzoneAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
-        'data-slot' => 'file-upload-dropzone',
+        'data-slot' => $dropzoneSlotName,
         'data-file-upload-dropzone-variant' => $resolvedDropzoneVariant,
         "data-{$controller}-target" => 'dropzone',
         'data-action' => $dropzoneActions,
@@ -62,7 +62,7 @@
     ]), protectedPrefixes: ['data-slot', 'data-file-upload-dropzone-variant', "data-{$controller}-target"]);
 
     $fileUploadAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
-        'data-slot' => 'file-upload',
+        'data-slot' => $slotName,
         'id' => $resolvedId,
         'data-controller' => $controller,
         'data-density' => $density,
@@ -107,11 +107,11 @@
     @if ($view === 'image')
         @if ($hasCustomDropzone)
             <div {{ $dropzoneAttributes }}>
-                <div data-slot="file-upload-image-base">
+                <div data-slot="{{ $imageBaseSlotName }}">
                     {{ $dropzoneSlot }}
                 </div>
                 <img
-                    data-slot="file-upload-image-preview"
+                    data-slot="{{ $imagePreviewSlotName }}"
                     data-{{ $controller }}-target="imagePreview"
                     alt=""
                     hidden
@@ -119,7 +119,7 @@
             </div>
         @else
             <div
-                data-slot="file-upload-dropzone"
+                data-slot="{{ $dropzoneSlotName }}"
                 data-file-upload-dropzone-variant="{{ $resolvedDropzoneVariant }}"
                 data-{{ $controller }}-target="dropzone"
                 data-action="{{ $dropzoneActions }}"
@@ -131,11 +131,11 @@
                 @if ($hasErrors) aria-invalid="true" @endif
                 @if ($isRequired) aria-required="true" @endif
             >
-                <div data-slot="file-upload-image-base">
+                <div data-slot="{{ $imageBaseSlotName }}">
                     <x-hw::icon name="file-up" />
                 </div>
                 <img
-                    data-slot="file-upload-image-preview"
+                    data-slot="{{ $imagePreviewSlotName }}"
                     data-{{ $controller }}-target="imagePreview"
                     alt=""
                     hidden
@@ -145,7 +145,7 @@
 
         <p
             id="{{ $feedbackId }}"
-            data-slot="file-upload-feedback"
+            data-slot="{{ $feedbackSlotName }}"
             data-{{ $controller }}-target="feedback"
             data-file-upload-default-feedback=""
             hidden
@@ -157,14 +157,14 @@
 
         <p
             id="{{ $feedbackId }}"
-            data-slot="file-upload-feedback"
+            data-slot="{{ $feedbackSlotName }}"
             data-{{ $controller }}-target="feedback"
             data-file-upload-default-feedback=""
             hidden
         ></p>
     @else
         <div
-            data-slot="file-upload-dropzone"
+            data-slot="{{ $dropzoneSlotName }}"
             data-file-upload-dropzone-variant="{{ $resolvedDropzoneVariant }}"
             data-{{ $controller }}-target="dropzone"
             data-action="{{ $dropzoneActions }}"
@@ -183,7 +183,7 @@
                     <x-hw::empty-state.title>{{ $dropzoneTitle }}</x-hw::empty-state.title>
                     <div
                         id="{{ $feedbackId }}"
-                        data-slot="empty-state-description"
+                        data-slot="{{ $emptyStateDescriptionSlotName }}"
                         data-{{ $controller }}-target="feedback"
                         data-file-upload-default-feedback="{{ $dropzoneDescription }}"
                     >{{ $dropzoneDescription }}</div>
@@ -193,7 +193,7 @@
     @endif
 
     @if ($isClearable)
-        <div data-slot="file-upload-actions">
+        <div data-slot="{{ $actionsSlotName }}">
             <x-hw::button type="button" variant="ghost" size="sm" hidden data-file-upload-clear data-action="{{ $controller }}#clear">
                 {{ $clearAllLabel }}
             </x-hw::button>
@@ -201,7 +201,7 @@
     @endif
 
     @if ($view !== 'image' && $rendersPreview)
-        <div data-slot="attachment-group" role="list" data-{{ $controller }}-target="list"></div>
+        <div data-slot="{{ $attachmentGroupSlotName }}" role="list" data-{{ $controller }}-target="list"></div>
 
         <template data-{{ $controller }}-target="template">
             <x-hw::attachment state="idle" :orientation="$attachmentOrientation" role="listitem" data-file-upload-attachment>
@@ -228,7 +228,7 @@
     @endif
 
     <div
-        data-slot="file-upload-announcer"
+        data-slot="{{ $announcerSlotName }}"
         role="status"
         aria-live="polite"
         data-{{ $controller }}-target="announcer"

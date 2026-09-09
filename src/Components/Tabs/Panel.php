@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Components\Tabs;
 
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
+use Emaia\LaravelHotwire\Components\Tabs;
 use Emaia\LaravelHotwire\Support\StimulusAttributes;
 use Emaia\LaravelHotwire\Support\StimulusIdentifier;
 use Illuminate\Contracts\Support\Htmlable;
@@ -54,7 +55,7 @@ class Panel extends Component
             'selected' => $selected,
             'panelAttributes' => StimulusAttributes::merge([
                 'id' => $resolvedId,
-                'data-slot' => 'tabs-panel',
+                'data-slot' => Tabs::SLOTS['panel']['name'],
                 'role' => 'tabpanel',
                 "data-{$identifier}-target" => 'panel',
                 'data-state' => $active !== null ? ($selected ? 'active' : 'inactive') : null,

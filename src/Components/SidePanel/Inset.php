@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Components\SidePanel;
 
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
+use Emaia\LaravelHotwire\Components\SidePanel;
 use Emaia\LaravelHotwire\Support\StimulusAttributes;
 use Illuminate\View\ComponentAttributeBag;
 
@@ -26,7 +27,7 @@ class Inset extends Component
     {
         return [
             'insetAttributes' => StimulusAttributes::merge([
-                'data-slot' => 'side-panel-inset',
+                'data-slot' => SidePanel::SLOTS['inset']['name'],
             ], $attributes, except: ['data-slot']),
         ];
     }

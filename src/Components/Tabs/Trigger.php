@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Components\Tabs;
 
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
+use Emaia\LaravelHotwire\Components\Tabs;
 use Emaia\LaravelHotwire\Support\StimulusAttributes;
 use Emaia\LaravelHotwire\Support\StimulusIdentifier;
 use Illuminate\Contracts\Support\Htmlable;
@@ -56,7 +57,7 @@ class Trigger extends Component
             'triggerAttributes' => StimulusAttributes::merge([
                 'id' => $resolvedId,
                 'type' => 'button',
-                'data-slot' => 'tabs-trigger',
+                'data-slot' => Tabs::SLOTS['trigger']['name'],
                 'role' => 'tab',
                 "data-{$identifier}-target" => 'tab',
                 'data-state' => $active !== null ? ($selected ? 'active' : 'inactive') : null,

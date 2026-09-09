@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Components\Dropdown;
 
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
+use Emaia\LaravelHotwire\Components\Dropdown;
 
 class Label extends Component
 {
@@ -12,7 +13,9 @@ class Label extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.dropdown-label');
+        return view('hotwire::component-views.dropdown-label', [
+            'slotName' => Dropdown::SLOTS['label']['name'],
+        ]);
     }
 
     /** @return array<string, mixed> */

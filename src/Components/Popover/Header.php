@@ -3,12 +3,13 @@
 namespace Emaia\LaravelHotwire\Components\Popover;
 
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
+use Emaia\LaravelHotwire\Components\Popover;
 
 class Header extends Component
 {
     public string $tag = 'div';
 
-    public string $slotName = 'popover-header';
+    public string $slotName = Popover::SLOTS['header']['name'];
 
     public function render()
     {

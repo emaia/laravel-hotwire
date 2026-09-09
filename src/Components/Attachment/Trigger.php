@@ -2,6 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components\Attachment;
 
+use Emaia\LaravelHotwire\Components\Attachment;
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 use Emaia\LaravelHotwire\Support\FrameTarget;
 use Emaia\LaravelHotwire\Support\PolymorphicTag;
@@ -22,6 +23,8 @@ class Trigger extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.attachment-trigger');
+        return view('hotwire::component-views.attachment-trigger', [
+            'slotName' => Attachment::SLOTS['trigger']['name'],
+        ]);
     }
 }

@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Components\Reveal;
 
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
+use Emaia\LaravelHotwire\Components\Reveal;
 use Emaia\LaravelHotwire\Support\PolymorphicTag;
 
 class Item extends Component
@@ -18,6 +19,8 @@ class Item extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.reveal-item');
+        return view('hotwire::component-views.reveal-item', [
+            'slotName' => Reveal::SLOTS['item']['name'],
+        ]);
     }
 }

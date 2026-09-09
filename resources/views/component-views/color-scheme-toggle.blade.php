@@ -1,7 +1,7 @@
 @php
     $toggleAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
         'type' => 'button',
-        'data-slot' => 'color-scheme-toggle',
+        'data-slot' => $slotName,
         'data-variant' => $variant,
         'data-size' => $size,
         'data-controller' => $toggleController,
@@ -21,8 +21,8 @@
 @endphp
 
 <button {{ $toggleAttributes }}>
-    <x-hw::icon name="sun" data-slot="color-scheme-icon" data-scheme-icon="light" />
-    <x-hw::icon name="moon" data-slot="color-scheme-icon" data-scheme-icon="dark" />
-    <x-hw::icon name="monitor" data-slot="color-scheme-icon" data-mode-icon="system" />
+    <x-hw::icon name="sun" :data-slot="$iconSlotName" data-scheme-icon="light" />
+    <x-hw::icon name="moon" :data-slot="$iconSlotName" data-scheme-icon="dark" />
+    <x-hw::icon name="monitor" :data-slot="$iconSlotName" data-mode-icon="system" />
     {{ $slot }}
 </button>

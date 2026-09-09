@@ -12,6 +12,24 @@ use Illuminate\Pagination\UrlWindow;
 
 class Pagination extends Component
 {
+    public const array SLOTS = [
+        'root' => ['name' => 'pagination', 'kind' => 'visual'],
+        'content' => ['name' => 'pagination-content', 'kind' => 'visual'],
+        'item' => ['name' => 'pagination-item', 'kind' => 'visual'],
+        'link' => ['name' => 'pagination-link', 'kind' => 'visual'],
+        'previous' => ['name' => 'pagination-previous', 'kind' => 'visual'],
+        'previous-label' => ['name' => 'pagination-previous-label', 'kind' => 'visual'],
+        'next' => ['name' => 'pagination-next', 'kind' => 'visual'],
+        'next-content' => ['name' => 'pagination-next-content', 'kind' => 'visual'],
+        'next-label' => ['name' => 'pagination-next-label', 'kind' => 'visual'],
+        'next-loading-content' => ['name' => 'pagination-next-loading-content', 'kind' => 'visual'],
+        'next-loading-label' => ['name' => 'pagination-next-loading-label', 'kind' => 'visual'],
+        'next-spinner' => ['name' => 'pagination-next-spinner', 'kind' => 'visual'],
+        'next-icon' => ['name' => 'pagination-next-icon', 'kind' => 'visual'],
+        'ellipsis' => ['name' => 'pagination-ellipsis', 'kind' => 'visual'],
+        'status' => ['name' => 'pagination-status', 'kind' => 'structural'],
+    ];
+
     public const string DEFAULT_ROOT_MARGIN = '300px';
 
     public const float DEFAULT_THRESHOLD = 1.0;
@@ -54,6 +72,8 @@ class Pagination extends Component
     {
         return view('hotwire::component-views.pagination', [
             'links' => $this->normalizedLinks(),
+            'slotName' => self::SLOTS['root']['name'],
+            'statusSlotName' => self::SLOTS['status']['name'],
         ]);
     }
 

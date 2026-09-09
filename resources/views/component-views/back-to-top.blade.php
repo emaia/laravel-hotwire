@@ -1,7 +1,7 @@
 @php
     $backToTopAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
         'type' => 'button',
-        'data-slot' => 'back-to-top',
+        'data-slot' => $slotName,
         'data-variant' => $variant,
         'data-size' => $size,
         'data-controller' => 'back-to-top',

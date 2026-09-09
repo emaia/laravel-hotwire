@@ -1,6 +1,6 @@
 <div
     {{ $attributes->merge([
-        'data-slot' => 'sidebar-separator',
+        'data-slot' => $slotName,
         'data-sidebar' => 'separator',
         'data-orientation' => 'horizontal',
         'role' => 'separator',

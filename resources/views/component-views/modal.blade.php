@@ -1,7 +1,7 @@
 @php
     $modalAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
         'id' => $modalId,
-        'data-slot' => 'modal',
+        'data-slot' => $slotName,
         'data-controller' => 'modal',
         'data-modal-initial-focus-value' => $modalInitialFocus,
         'data-modal-lock-scroll-class' => 'overflow-hidden',

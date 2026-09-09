@@ -7,7 +7,7 @@
 
     $contentAttributes = [
         'id' => $dropdownId,
-        'data-slot' => 'dropdown-menu',
+        'data-slot' => $slotName,
         'data-state' => 'closed',
         'data-motion' => $dropdownContentMotion,
         'data-side' => $dropdownContentSide,

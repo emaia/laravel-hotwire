@@ -25,4 +25,5 @@
     [data-slot="item"][data-size="xs"] [data-slot="item-description"] { @apply text-xs; }
     [data-slot="item-actions"] { @apply flex items-center gap-2; }
     [data-slot="item-header"], [data-slot="item-footer"] { @apply flex basis-full items-center justify-between gap-2; }
+    [data-slot="item-separator"] { @apply my-2; }
 }

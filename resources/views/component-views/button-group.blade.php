@@ -1,1 +1,1 @@
-<div role="group" data-slot="button-group" data-orientation="{{ $orientation }}" {{ $attributes }}>{{ $slot }}</div>
+<div role="group" data-slot="{{ $slotName }}" data-orientation="{{ $orientation }}" {{ $attributes }}>{{ $slot }}</div>

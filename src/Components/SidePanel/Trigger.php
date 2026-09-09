@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Components\SidePanel;
 
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
+use Emaia\LaravelHotwire\Components\SidePanel;
 use Emaia\LaravelHotwire\Support\StimulusAttributes;
 use Emaia\LaravelHotwire\Support\StimulusIdentifier;
 use Illuminate\View\ComponentAttributeBag;
@@ -16,7 +17,9 @@ class Trigger extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.side-panel-trigger');
+        return view('hotwire::component-views.side-panel-trigger', [
+            'triggerIconSlotName' => SidePanel::SLOTS['trigger-icon']['name'],
+        ]);
     }
 
     public function data(): array
@@ -43,7 +46,7 @@ class Trigger extends Component
         return [
             'triggerAttributes' => StimulusAttributes::merge([
                 'type' => 'button',
-                'data-slot' => 'side-panel-trigger',
+                'data-slot' => SidePanel::SLOTS['trigger']['name'],
                 "data-{$identifier}-target" => 'trigger',
                 'data-action' => "click->{$identifier}#toggle",
                 'aria-label' => $this->label,

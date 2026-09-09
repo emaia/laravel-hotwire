@@ -15,6 +15,14 @@ class RichText extends Component
 {
     use StripsNullProps;
 
+    public const array SLOTS = [
+        'root' => ['name' => 'rich-text', 'kind' => 'visual'],
+        'toolbar' => ['name' => 'rich-text-toolbar', 'kind' => 'visual'],
+        'toolbar-button' => ['name' => 'rich-text-toolbar-button', 'kind' => 'visual'],
+        'editor' => ['name' => 'rich-text-editor', 'kind' => 'visual'],
+        'input' => ['name' => 'rich-text-input', 'kind' => 'structural'],
+    ];
+
     private const BASIC_TOOLBAR = [
         'bold',
         'italic',
@@ -87,7 +95,13 @@ class RichText extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.rich-text');
+        return view('hotwire::component-views.rich-text', [
+            'slotName' => self::SLOTS['root']['name'],
+            'toolbarSlotName' => self::SLOTS['toolbar']['name'],
+            'toolbarButtonSlotName' => self::SLOTS['toolbar-button']['name'],
+            'editorSlotName' => self::SLOTS['editor']['name'],
+            'inputSlotName' => self::SLOTS['input']['name'],
+        ]);
     }
 
     /**

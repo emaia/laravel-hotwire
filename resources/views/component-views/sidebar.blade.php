@@ -35,7 +35,7 @@
 @if ($collapsible === 'none')
     <aside
         {{ $surfaceAttributes([
-            'data-slot' => 'sidebar',
+            'data-slot' => $slotName,
             'data-sidebar' => 'sidebar',
             'data-side' => $side,
             'data-variant' => $variant,
@@ -44,7 +44,7 @@
     >{{ $slot }}</aside>
 @else
     <div
-        data-slot="sidebar"
+        data-slot="{{ $slotName }}"
         data-{{ $sidebarIdentifier }}-target="modal"
         data-state="{{ $sidebarState }}"
         data-mobile-state="closed"
@@ -55,19 +55,19 @@
         data-sidebar-collapsible="{{ $collapsible }}"
     >
         <div
-            data-slot="sidebar-backdrop"
+            data-slot="{{ $backdropSlotName }}"
             data-{{ $sidebarIdentifier }}-target="backdrop"
             data-action="click->{{ $sidebarIdentifier }}#clickOutside"
         ></div>
-        <div data-slot="sidebar-gap"></div>
+        <div data-slot="{{ $gapSlotName }}"></div>
         <div
             {{ $surfaceAttributes([
-                'data-slot' => 'sidebar-container',
+                'data-slot' => $containerSlotName,
                 'data-side' => $side,
                 "data-{$sidebarIdentifier}-target" => 'dialog',
             ]) }}
         >
-            <aside data-slot="sidebar-inner" data-sidebar="sidebar">
+            <aside data-slot="{{ $innerSlotName }}" data-sidebar="sidebar">
                 {{ $slot }}
             </aside>
         </div>

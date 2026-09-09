@@ -9,12 +9,16 @@ use Illuminate\Contracts\Support\Htmlable;
 
 class Button extends Component
 {
+    public const array SLOTS = [
+        'root' => ['name' => 'button', 'kind' => 'visual'],
+    ];
+
     public function __construct(
         public string $variant = 'default',
         public string $size = 'default',
         public string $type = 'button',
         public string $as = 'button',
-        public string $slotName = 'button',
+        public string $slotName = self::SLOTS['root']['name'],
         public string|object|bool|null $frame = null,
         public ?string $hotkey = null,
         public ?string $tooltip = null,

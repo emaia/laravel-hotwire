@@ -13,6 +13,11 @@ use Illuminate\View\ComponentAttributeBag;
 
 class ToggleGroup extends Component
 {
+    public const array SLOTS = [
+        'root' => ['name' => 'toggle-group', 'kind' => 'visual'],
+        'item' => ['name' => 'toggle-group-item', 'kind' => 'visual'],
+    ];
+
     private FieldOwnerContext $ownerContext;
 
     /** @var string[] */
@@ -46,7 +51,9 @@ class ToggleGroup extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.toggle-group');
+        return view('hotwire::component-views.toggle-group', [
+            'slotName' => self::SLOTS['root']['name'],
+        ]);
     }
 
     public function data(): array

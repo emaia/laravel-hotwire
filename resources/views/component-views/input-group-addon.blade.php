@@ -1,1 +1,1 @@
-<div data-slot="input-group-addon" data-align="{{ $align }}" {{ $attributes }}>{{ $slot }}</div>
+<div data-slot="{{ $slotName }}" data-align="{{ $align }}" {{ $attributes }}>{{ $slot }}</div>

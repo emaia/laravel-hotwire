@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Components\HoverCard;
 
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
+use Emaia\LaravelHotwire\Components\HoverCard;
 
 class Content extends Component
 {
@@ -14,7 +15,9 @@ class Content extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.hover-card-content');
+        return view('hotwire::component-views.hover-card-content', [
+            'slotName' => HoverCard::SLOTS['content']['name'],
+        ]);
     }
 
     /** @return array<string, mixed> */

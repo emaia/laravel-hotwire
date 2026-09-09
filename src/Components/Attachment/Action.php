@@ -2,6 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components\Attachment;
 
+use Emaia\LaravelHotwire\Components\Attachment;
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 use Emaia\LaravelHotwire\Support\FrameTarget;
 
@@ -18,6 +19,8 @@ class Action extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.attachment-action');
+        return view('hotwire::component-views.attachment-action', [
+            'slotName' => Attachment::SLOTS['action']['name'],
+        ]);
     }
 }

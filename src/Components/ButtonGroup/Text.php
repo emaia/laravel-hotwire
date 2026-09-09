@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Components\ButtonGroup;
 
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
+use Emaia\LaravelHotwire\Components\ButtonGroup;
 use Emaia\LaravelHotwire\Support\PolymorphicTag;
 
 class Text extends Component
@@ -15,6 +16,8 @@ class Text extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.button-group-text');
+        return view('hotwire::component-views.button-group-text', [
+            'slotName' => ButtonGroup::SLOTS['text']['name'],
+        ]);
     }
 }

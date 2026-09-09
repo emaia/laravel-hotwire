@@ -1,1 +1,1 @@
-<div data-slot="attachment" data-state="{{ $state }}" data-size="{{ $size }}" data-orientation="{{ $orientation }}" {{ $attributes }}>{{ $slot }}</div>
+<div data-slot="{{ $slotName }}" data-state="{{ $state }}" data-size="{{ $size }}" data-orientation="{{ $orientation }}" {{ $attributes }}>{{ $slot }}</div>

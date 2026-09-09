@@ -12,7 +12,7 @@
         'data-turbo-stream' => $tag === 'a' && $turboStream ? true : null,
         'aria-current' => $active ? 'page' : null,
         'aria-disabled' => $isDisabled ? 'true' : null,
-        'data-slot' => 'pagination-link',
+        'data-slot' => $slotName,
         'data-size' => $size,
         'data-active' => $active ? 'true' : 'false',
         'data-disabled' => $isDisabled ? 'true' : null,

@@ -1,6 +1,6 @@
 <span
     {{ $attributes->merge([
-        'data-slot' => 'avatar',
+        'data-slot' => $slotName,
         'data-size' => $size,
         'data-shape' => $shape,
     ]) }}

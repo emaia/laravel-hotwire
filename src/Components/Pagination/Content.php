@@ -3,12 +3,13 @@
 namespace Emaia\LaravelHotwire\Components\Pagination;
 
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
+use Emaia\LaravelHotwire\Components\Pagination;
 
 class Content extends Component
 {
     public string $tag = 'ul';
 
-    public string $slotName = 'pagination-content';
+    public string $slotName = Pagination::SLOTS['content']['name'];
 
     public function render()
     {

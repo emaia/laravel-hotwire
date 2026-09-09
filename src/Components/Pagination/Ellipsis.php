@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Components\Pagination;
 
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
+use Emaia\LaravelHotwire\Components\Pagination;
 
 class Ellipsis extends Component
 {
@@ -12,6 +13,8 @@ class Ellipsis extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.pagination-ellipsis');
+        return view('hotwire::component-views.pagination-ellipsis', [
+            'slotName' => Pagination::SLOTS['ellipsis']['name'],
+        ]);
     }
 }

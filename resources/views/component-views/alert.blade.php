@@ -1,1 +1,1 @@
-<div data-slot="alert" data-variant="{{ $variant }}" role="alert" {{ $attributes }}>{{ $slot }}</div>
+<div data-slot="{{ $slotName }}" data-variant="{{ $variant }}" role="alert" {{ $attributes }}>{{ $slot }}</div>

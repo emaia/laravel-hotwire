@@ -14,6 +14,11 @@ class File extends Component
 {
     use StripsNullProps;
 
+    public const array SLOTS = [
+        'wrapper' => ['name' => 'file-wrapper', 'kind' => 'visual'],
+        'input' => ['name' => 'file-input', 'kind' => 'visual'],
+    ];
+
     public function __construct(
         public ?string $name = null,
         public ?string $id = null,
@@ -29,7 +34,10 @@ class File extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.file');
+        return view('hotwire::component-views.file', [
+            'wrapperSlotName' => self::SLOTS['wrapper']['name'],
+            'inputSlotName' => self::SLOTS['input']['name'],
+        ]);
     }
 
     public function data(): array

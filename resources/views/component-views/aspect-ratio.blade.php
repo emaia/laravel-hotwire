@@ -5,7 +5,7 @@
 
 <div
     {{ $attributes->except('style')->merge([
-        'data-slot' => 'aspect-ratio',
+        'data-slot' => $slotName,
         'style' => $style,
     ]) }}
 >{{ $slot }}</div>

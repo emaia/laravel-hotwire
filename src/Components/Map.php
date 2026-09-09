@@ -9,6 +9,10 @@ use InvalidArgumentException;
 
 class Map extends Component
 {
+    public const array SLOTS = [
+        'root' => ['name' => 'map', 'kind' => 'structural'],
+    ];
+
     public ?string $encodedMarkers;
 
     public bool $resolvedFit;
@@ -52,7 +56,9 @@ class Map extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.map');
+        return view('hotwire::component-views.map', [
+            'slotName' => self::SLOTS['root']['name'],
+        ]);
     }
 
     public function style(): string

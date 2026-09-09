@@ -15,29 +15,29 @@
         'role' => $isDisabled ? 'link' : null,
         'aria-label' => $ariaLabel,
         'aria-disabled' => $isDisabled ? 'true' : null,
-        'data-slot' => 'pagination-next',
+        'data-slot' => $slotName,
         'data-size' => $controlSize,
         'data-disabled' => $isDisabled ? 'true' : null,
     ]) }}
 >
     @if ($hasLabel || $icon !== null || $iconName !== '')
-        <span data-slot="pagination-next-content">
+        <span data-slot="{{ $contentSlotName }}">
             @if ($hasLabel)
-                <span data-slot="pagination-next-label">{{ $label }}</span>
+                <span data-slot="{{ $labelSlotName }}">{{ $label }}</span>
             @endif
             @if ($icon !== null)
                 {{ $icon }}
             @else
-                <x-hw::icon :name="$iconName" data-slot="pagination-next-icon" data-icon="inline-end" aria-hidden="true" />
+                <x-hw::icon :name="$iconName" :data-slot="$iconSlotName" data-icon="inline-end" aria-hidden="true" />
             @endif
         </span>
     @endif
     @if ($loadingLabel !== null)
-        <span data-slot="pagination-next-loading-content">
+        <span data-slot="{{ $loadingContentSlotName }}">
             @if ($hasLabel && $loadingLabel !== '')
-                <span data-slot="pagination-next-loading-label">{{ $loadingLabel }}</span>
+                <span data-slot="{{ $loadingLabelSlotName }}">{{ $loadingLabel }}</span>
             @endif
-            <x-hw::spinner data-slot="pagination-next-spinner" role="presentation" aria-label="" aria-hidden="true" />
+            <x-hw::spinner :data-slot="$spinnerSlotName" role="presentation" aria-label="" aria-hidden="true" />
         </span>
     @endif
 </{{ $tag }}>

@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Components\Sidebar;
 
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
+use Emaia\LaravelHotwire\Components\Sidebar;
 
 class Trigger extends Component
 {
@@ -12,6 +13,8 @@ class Trigger extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.sidebar-trigger');
+        return view('hotwire::component-views.sidebar-trigger', [
+            'slotName' => Sidebar::SLOTS['trigger']['name'],
+        ]);
     }
 }

@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Components\Sidebar;
 
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
+use Emaia\LaravelHotwire\Components\Sidebar;
 use Emaia\LaravelHotwire\Support\StimulusAttributes;
 use Emaia\LaravelHotwire\Support\StimulusIdentifier;
 use Illuminate\Contracts\Support\Htmlable;
@@ -52,7 +53,7 @@ class Provider extends Component
     {
         return [
             'providerAttributes' => StimulusAttributes::merge([
-                'data-slot' => 'sidebar-wrapper',
+                'data-slot' => Sidebar::SLOTS['wrapper']['name'],
                 'data-controller' => $this->sidebarIdentifier,
                 'data-state' => $this->sidebarState,
                 "data-{$this->sidebarIdentifier}-open-value" => $this->resolvedOpen ? 'true' : 'false',

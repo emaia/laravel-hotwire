@@ -1,6 +1,6 @@
 @php
     $timeagoAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
-        'data-slot' => 'timeago',
+        'data-slot' => $slotName,
         'data-controller' => 'timeago',
         'data-timeago-datetime-value' => $iso,
         'data-timeago-add-suffix-value' => $addSuffix ? 'true' : 'false',

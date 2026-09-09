@@ -1,6 +1,6 @@
 <span
     {{ $attributes->merge([
-        'data-slot' => 'avatar-badge',
+        'data-slot' => $slotName,
         'data-position' => $position,
     ]) }}
 >{{ $slot }}</span>

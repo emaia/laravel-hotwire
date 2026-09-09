@@ -1,6 +1,6 @@
 @php
     $dropdownAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
-        'data-slot' => 'dropdown',
+        'data-slot' => $slotName,
         'data-controller' => 'dropdown',
         'data-dropdown-open-value' => $dropdownOpen ? 'true' : null,
         'data-dropdown-close-on-select-value' => $dropdownCloseOnSelect ? null : 'false',

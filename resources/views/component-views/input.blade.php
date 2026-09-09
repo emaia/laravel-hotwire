@@ -21,7 +21,7 @@
     }
 
     $inputAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
-        'data-slot' => 'input',
+        'data-slot' => $slotName,
         'data-checkable' => $isCheckable ? 'true' : 'false',
         'type' => $type,
         'id' => $resolvedId,
@@ -46,7 +46,7 @@
 
 @if ($hasWrapper)
 <span
-    data-slot="input-wrapper"
+    data-slot="{{ $wrapperSlotName }}"
     data-clearable="{{ $clearable ? 'true' : 'false' }}"
     @if ($wrapperClass !== '') class="{{ $wrapperClass }}" @endif
     @if ($clearable) data-controller="clear-input" @endif
@@ -62,7 +62,7 @@
     <button
         type="button"
         class="hidden"
-        data-slot="clear-input-button"
+        data-slot="{{ $clearButtonSlotName }}"
         data-clear-input-target="clearButton"
         tabindex="0"
         aria-label="Clear"

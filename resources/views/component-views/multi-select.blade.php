@@ -14,7 +14,7 @@
     }
 
     $multiSelectAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
-        'data-slot' => 'multi-select',
+        'data-slot' => $slotName,
         'data-controller' => 'multi-select',
         'data-multi-select-placeholder-value' => $placeholder,
         'data-multi-select-search-value' => $search ? 'true' : 'false',
@@ -42,7 +42,7 @@
 
 <div {{ $multiSelectAttributes }}>
     <select
-        data-slot="multi-select-native"
+        data-slot="{{ $nativeSlotName }}"
         data-multi-select-target="select"
         @if ($submissionName) name="{{ $submissionName }}" @endif
         multiple
@@ -58,7 +58,7 @@
     <button
         type="button"
         id="{{ $resolvedId }}"
-        data-slot="multi-select-trigger"
+        data-slot="{{ $triggerSlotName }}"
         data-multi-select-target="trigger"
         data-action="multi-select#toggle keydown->multi-select#onTriggerKeydown"
         aria-haspopup="listbox"
@@ -71,16 +71,16 @@
         @if ($triggerClass !== '') class="{{ $triggerClass }}" @endif
     >
         <span
-            data-slot="multi-select-value"
+            data-slot="{{ $valueSlotName }}"
             data-multi-select-target="value"
             @if ($selectedSummary !== $selectedFullSummary) title="{{ $selectedFullSummary }}" @endif
         >{{ $selectedSummary }}</span>
-        <x-hw::icon name="chevron-down" data-slot="multi-select-trigger-icon" aria-hidden="true" />
+        <x-hw::icon name="chevron-down" data-slot="{{ $triggerIconSlotName }}" aria-hidden="true" />
     </button>
 
     <div
         id="{{ $contentId }}"
-        data-slot="multi-select-content"
+        data-slot="{{ $contentSlotName }}"
         data-multi-select-target="content"
         data-state="closed"
         data-motion="{{ $motion }}"
@@ -99,7 +99,7 @@
                     :old="false"
                     type="text"
                     clearable
-                    data-slot="multi-select-search"
+                    data-slot="{{ $searchSlotName }}"
                     data-multi-select-target="search"
                     placeholder="{{ $searchPlaceholder }}"
                     aria-label="{{ $searchPlaceholder }}"
@@ -118,7 +118,7 @@
                             stroke-width="2"
                             stroke-linecap="round"
                             stroke-linejoin="round"
-                            data-slot="multi-select-search-icon"
+                            data-slot="{{ $searchIconSlotName }}"
                             aria-hidden="true"
                         >
                             <circle cx="11" cy="11" r="8" />
@@ -132,23 +132,23 @@
         @if ($selectAll)
             <button
                 type="button"
-                data-slot="multi-select-select-all"
+                data-slot="{{ $selectAllSlotName }}"
                 data-multi-select-target="selectAll"
                 aria-pressed="false"
                 data-selected="false"
                 data-indeterminate="false"
                 tabindex="-1"
             >
-                <span data-slot="multi-select-indicator" aria-hidden="true"></span>
-                <span data-slot="multi-select-option-text">{{ $selectAllText }}</span>
+                <span data-slot="{{ $indicatorSlotName }}" aria-hidden="true"></span>
+                <span data-slot="{{ $optionTextSlotName }}">{{ $selectAllText }}</span>
             </button>
         @endif
 
-        <div data-slot="multi-select-list" data-multi-select-target="list" role="listbox" aria-multiselectable="true">
+        <div data-slot="{{ $listSlotName }}" data-multi-select-target="list" role="listbox" aria-multiselectable="true">
             @foreach ($options as $value => $label)
                 @php $selected = in_array((string) $value, $selectedSet, true); @endphp
                 <div
-                    data-slot="multi-select-option"
+                    data-slot="{{ $optionSlotName }}"
                     data-multi-select-target="option"
                     data-value="{{ $value }}"
                     data-selected="{{ $selected ? 'true' : 'false' }}"
@@ -157,19 +157,19 @@
                     aria-disabled="false"
                     tabindex="-1"
                 >
-                    <span data-slot="multi-select-indicator" aria-hidden="true"></span>
-                    <span data-slot="multi-select-option-text">{{ $label }}</span>
+                    <span data-slot="{{ $indicatorSlotName }}" aria-hidden="true"></span>
+                    <span data-slot="{{ $optionTextSlotName }}">{{ $label }}</span>
                 </div>
             @endforeach
         </div>
 
-        <div data-slot="multi-select-empty" data-multi-select-target="empty" @if (count($options) > 0) hidden @endif>{{ $emptyText }}</div>
+        <div data-slot="{{ $emptySlotName }}" data-multi-select-target="empty" @if (count($options) > 0) hidden @endif>{{ $emptyText }}</div>
     </div>
 
     @if ($isRequired)
         <input
             type="text"
-            data-slot="multi-select-validation"
+            data-slot="{{ $validationSlotName }}"
             data-multi-select-target="validation"
             value="{{ count($selectedSet) > 0 ? '1' : '' }}"
             required

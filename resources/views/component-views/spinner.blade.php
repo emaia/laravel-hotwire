@@ -1,6 +1,6 @@
 <x-hw::icon
     name="loader-circle"
-    data-slot="spinner"
+    data-slot="{{ $slotName }}"
     role="status"
     aria-label="Loading"
     {{ $attributes }}

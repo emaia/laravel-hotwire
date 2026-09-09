@@ -4,7 +4,7 @@
     $bool = fn (bool $v) => $v ? 'true' : 'false';
 
     $toasterAttributes = StimulusAttributes::merge([
-        'data-slot' => 'toaster',
+        'data-slot' => $slotName,
         'id' => $id,
         'data-turbo-permanent' => $turboPermanent ? true : null,
         'class' => $class !== '' ? $class : null,

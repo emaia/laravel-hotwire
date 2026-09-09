@@ -1,6 +1,6 @@
 @php
     $hoverCardAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
-        'data-slot' => 'hover-card',
+        'data-slot' => $slotName,
         'data-controller' => 'hover-card',
         'data-hover-card-open-value' => $hoverCardOpen ? 'true' : null,
         'data-hover-card-open-delay-value' => $hoverCardOpenDelay,

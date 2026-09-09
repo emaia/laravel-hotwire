@@ -2,7 +2,7 @@
     $controller = \Emaia\LaravelHotwire\Support\StimulusIdentifier::guard((string) $controller, 'chart');
 
     $chartAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
-        'data-slot' => 'chart',
+        'data-slot' => $slotName,
         'data-controller' => $controller,
         "data-{$controller}-option-value" => $encodedOption !== null ? e($encodedOption) : null,
         "data-{$controller}-url-value" => $url !== '' ? $url : null,

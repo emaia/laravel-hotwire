@@ -1,6 +1,6 @@
 @php
     $navbarAttributes = $attributes->except(['sticky', 'sticky-side', 'sticky-offset'])->merge([
-        'data-slot' => 'navbar',
+        'data-slot' => $slotName,
         'data-variant' => $variant,
         'data-orientation' => $orientation,
         'data-overflow' => $overflow,
@@ -9,7 +9,7 @@
 
 @if ($sticky)
     <div
-        data-slot="sticky"
+        data-slot="{{ $stickySlotName }}"
         data-side="{{ $stickySide }}"
         data-surface="true"
         style="--sticky-offset: {{ $stickyOffset }};"

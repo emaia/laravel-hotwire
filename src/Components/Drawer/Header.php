@@ -3,11 +3,12 @@
 namespace Emaia\LaravelHotwire\Components\Drawer;
 
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
+use Emaia\LaravelHotwire\Components\Drawer;
 
 class Header extends Component
 {
     public function render()
     {
-        return view('hotwire::component-views.slot', ['tag' => 'div', 'slotName' => 'drawer-header']);
+        return view('hotwire::component-views.slot', ['tag' => 'div', 'slotName' => Drawer::SLOTS['header']['name']]);
     }
 }

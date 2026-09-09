@@ -4,7 +4,7 @@
     $resolvedFrame = \Emaia\LaravelHotwire\Support\FrameTarget::resolve($form->frame, $attributes);
 
     $formAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
-        'data-slot' => 'form',
+        'data-slot' => $slotName,
         'data-controller' => $controller ?: null,
         'data-auto-submit-delay-value' => $form->autoSubmit ? $form->autoSubmitDelay : null,
         'data-turbo-frame' => $resolvedFrame,

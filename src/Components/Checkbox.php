@@ -16,6 +16,10 @@ class Checkbox extends Component
 {
     use StripsNullProps;
 
+    public const array SLOTS = [
+        'root' => ['name' => 'checkbox', 'kind' => 'visual'],
+    ];
+
     public function __construct(
         public ?string $name = null,
         public ?string $id = null,
@@ -33,7 +37,9 @@ class Checkbox extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.checkbox');
+        return view('hotwire::component-views.checkbox', [
+            'slotName' => self::SLOTS['root']['name'],
+        ]);
     }
 
     public function data(): array

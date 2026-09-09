@@ -186,6 +186,17 @@ it('renders wrapper with char-counter controller when counter is set', function 
     $view->assertSee('data-char-counter-target="counter"', false);
 });
 
+it('renders Textarea family anatomy with conditional wrapper', function () {
+    $html = (string) $this->blade('<x-hw::textarea name="bio" :counter="160" />');
+
+    preg_match_all('/data-slot="(textarea(?:-[a-z0-9]+)*)"/', $html, $matches);
+
+    expect($matches[1])->toBe([
+        'textarea-wrapper',
+        'textarea',
+    ]);
+});
+
 it('sets maxlength when counter is set', function () {
     $view = $this->blade('<x-hw::textarea name="bio" :counter="160" />');
 
@@ -206,9 +217,14 @@ it('counter container has aria-live polite', function () {
 
 it('does not render wrapper when no counter', function () {
     $view = $this->blade('<x-hw::textarea name="bio" />');
+    $html = (string) $view;
+
+    preg_match_all('/data-slot="(textarea(?:-[a-z0-9]+)*)"/', $html, $matches);
 
     $view->assertDontSee('data-controller="char-counter"', false);
     $view->assertDontSee('data-char-counter-target="counter"', false);
+
+    expect($matches[1])->toBe(['textarea']);
 });
 
 it('renders custom counter slot content', function () {

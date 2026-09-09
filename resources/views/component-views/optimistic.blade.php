@@ -1,5 +1,5 @@
 <template
-    data-slot="optimistic"
+    data-slot="{{ $slotName }}"
     data-optimistic-stream
     data-optimistic-action="{{ $action }}"
     @if ($target !== '') data-optimistic-target-id="{{ $target }}" @endif

@@ -2,7 +2,7 @@
     $disabled = $attributes->has('disabled') && ! in_array($attributes->get('disabled'), [false, null], true);
     $resolvedFrame = $as === 'a' && ! $disabled ? \Emaia\LaravelHotwire\Support\FrameTarget::resolve($frame, $attributes) : null;
     $triggerAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
-        'data-slot' => 'attachment-trigger',
+        'data-slot' => $slotName,
         'type' => $as === 'button' ? $type : null,
         'href' => $as === 'a' && ! $disabled ? $attributes->get('href') : null,
         'disabled' => $as === 'button' && $disabled ? true : null,

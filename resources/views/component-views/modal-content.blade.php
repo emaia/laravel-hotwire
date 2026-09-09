@@ -29,7 +29,7 @@
 @endphp
 
 <div
-    data-slot="modal-overlay"
+    data-slot="{{ $overlaySlotName }}"
     data-state="closed"
     data-motion="{{ $modalMotion }}"
     data-modal-target="modal"
@@ -48,19 +48,19 @@
     inert
 >
     <div
-        data-slot="modal-backdrop"
+        data-slot="{{ $backdropSlotName }}"
         data-modal-target="backdrop"
     ></div>
 
     <div
-        data-slot="modal-positioner"
+        data-slot="{{ $positionerSlotName }}"
         data-size="{{ $modalSize }}"
         data-fixed-top="{{ $modalFixedTop ? 'true' : 'false' }}"
         data-modal-target="dialog"
         @if ($sizeStyle !== '') style="{{ $sizeStyle }}" @endif
     >
-        <div data-slot="modal-panel" data-size="{{ $modalSize }}" @if ($modalClass !== '') class="{{ $modalClass }}" @endif>
-            <div data-slot="modal-content" data-size="{{ $modalSize }}" {{ $attributes }}>
+        <div data-slot="{{ $panelSlotName }}" data-size="{{ $modalSize }}" @if ($modalClass !== '') class="{{ $modalClass }}" @endif>
+            <div data-slot="{{ $slotName }}" data-size="{{ $modalSize }}" {{ $attributes }}>
                 @if ($modalFrame !== null)
                     <x-hw::frame
                         :id="$modalFrame"
@@ -79,7 +79,7 @@
             @if ($modalCloseButton)
                 <button
                     type="button"
-                    data-slot="modal-close-icon"
+                    data-slot="{{ $closeIconSlotName }}"
                     data-modal-size="{{ $modalSize }}"
                     data-action="click->modal#close"
                     aria-label="Close modal"

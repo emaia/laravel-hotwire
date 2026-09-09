@@ -15,7 +15,7 @@
     ])->filter()->implode('; ');
     $style = $style !== '' ? $style.';' : null;
     $revealAttributes = StimulusAttributes::merge([
-        'data-slot' => 'reveal',
+        'data-slot' => $slotName,
         'data-controller' => 'reveal',
         'data-reveal-trigger-value' => $trigger,
         'data-reveal-threshold-value' => $threshold,

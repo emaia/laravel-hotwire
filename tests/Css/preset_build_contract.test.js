@@ -15,8 +15,10 @@ import {
 } from "../../scripts/css_build_contract.js";
 
 const slotSelector = (slot) => new RegExp(`\\[data-slot=(?:["'])?${slot}(?:["'])?\\]`);
+const attributeValueSelector = (attribute, value) => new RegExp(`\\[${attribute}=(?:["'])?${value}(?:["'])?\\]`);
 const carouselMechanic = /\[data-carousel-container\]/;
 const automaticSourceUtility = String.raw`.w-\[811px\]`;
+const expressivenessFixturePath = new URL("../Fixtures/css/preset_expressiveness.css", import.meta.url);
 const packageSources = [
     {
         directive: '@source "../../vendor/emaia/laravel-hotwire/resources/views/**/*.blade.php";',
@@ -135,6 +137,28 @@ describe("public CSS presets", () => {
 
         expect(css).toContain(".unminified-probe {");
         expect(css).toContain("  color: red;");
+    });
+
+    test("compiles the reusable preset expressiveness fixture", async () => {
+        const fixture = await readFile(expressivenessFixturePath, "utf8");
+        const css = await compileCssFixture(`
+            @import "tailwindcss";
+            @import "../../vendor/emaia/laravel-hotwire/resources/css/tokens.css";
+
+            ${fixture}
+        `);
+
+        for (const personality of ["vega", "mira", "sera", "luma"]) {
+            expect(css).toMatch(attributeValueSelector("data-preset-fixture", personality));
+        }
+
+        for (const slot of ["button", "card", "input", "select", "alert", "modal-panel"]) {
+            expect(css).toMatch(slotSelector(slot));
+        }
+
+        expect(css).toContain("@media (prefers-reduced-motion:reduce)");
+        expect(css).toMatch(attributeValueSelector("aria-invalid", "true"));
+        expect(css).toMatch(/:disabled/);
     });
 
     test("requires every explicit package source to discover its vendor candidates", async () => {

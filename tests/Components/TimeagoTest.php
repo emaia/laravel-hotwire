@@ -7,6 +7,7 @@ it('renders with default props', function () {
     $view = $this->blade('<x-hw::timeago datetime="2026-04-29 12:00:00">Apr 29</x-hw::timeago>');
 
     $view->assertSee('data-controller="timeago"', false);
+    $view->assertSee('data-slot="timeago"', false);
     $view->assertSee('data-timeago-datetime-value=', false);
     $view->assertSee('data-timeago-add-suffix-value="true"', false);
     $view->assertSee('data-timeago-include-seconds-value="false"', false);

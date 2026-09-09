@@ -1,1 +1,1 @@
-<div role="list" data-slot="item-group" {{ $attributes }}>{{ $slot }}</div>
+<div role="list" data-slot="{{ $slotName }}" {{ $attributes }}>{{ $slot }}</div>

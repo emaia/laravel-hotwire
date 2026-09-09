@@ -4,6 +4,7 @@ namespace Emaia\LaravelHotwire\Components\Field;
 
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 use Emaia\LaravelHotwire\Components\Concerns\StripsNullProps;
+use Emaia\LaravelHotwire\Components\Field;
 use Emaia\LaravelHotwire\Support\ComponentId;
 use Emaia\LaravelHotwire\Support\FieldKey;
 use Illuminate\Support\ViewErrorBag;
@@ -32,7 +33,9 @@ class Error extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.field-error');
+        return view('hotwire::component-views.field-error', [
+            'slotName' => Field::SLOTS['error']['name'],
+        ]);
     }
 
     public function data(): array

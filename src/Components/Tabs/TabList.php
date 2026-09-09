@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Components\Tabs;
 
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
+use Emaia\LaravelHotwire\Components\Tabs;
 use Emaia\LaravelHotwire\Support\StimulusAttributes;
 use Emaia\LaravelHotwire\Support\StimulusIdentifier;
 use Illuminate\Contracts\Support\Htmlable;
@@ -43,7 +44,7 @@ class TabList extends Component
 
         return [
             'listAttributes' => StimulusAttributes::merge([
-                'data-slot' => 'tabs-list',
+                'data-slot' => Tabs::SLOTS['list']['name'],
                 'data-variant' => $this->variant,
                 'role' => 'tablist',
                 'aria-orientation' => $resolvedOrientation === 'vertical' ? 'vertical' : null,

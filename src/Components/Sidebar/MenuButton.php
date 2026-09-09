@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Components\Sidebar;
 
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
+use Emaia\LaravelHotwire\Components\Sidebar;
 use Emaia\LaravelHotwire\Support\FrameTarget;
 use Emaia\LaravelHotwire\Support\PolymorphicTag;
 
@@ -22,6 +23,8 @@ class MenuButton extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.sidebar-menu-button');
+        return view('hotwire::component-views.sidebar-menu-button', [
+            'slotName' => Sidebar::SLOTS['menu-button']['name'],
+        ]);
     }
 }

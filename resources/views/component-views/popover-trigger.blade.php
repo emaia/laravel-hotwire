@@ -7,7 +7,7 @@
 
     $triggerAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
         'type' => 'button',
-        'data-slot' => 'popover-trigger',
+        'data-slot' => $slotName,
         'data-popover-target' => 'trigger',
         'data-action' => 'popover#toggle',
         'aria-haspopup' => 'dialog',

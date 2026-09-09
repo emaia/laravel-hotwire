@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Components\Progress;
 
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
+use Emaia\LaravelHotwire\Components\Progress;
 
 class Value extends Component
 {
@@ -10,7 +11,9 @@ class Value extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.progress-value');
+        return view('hotwire::component-views.progress-value', [
+            'slotName' => Progress::SLOTS['value']['name'],
+        ]);
     }
 
     /** @return array<string, mixed> */

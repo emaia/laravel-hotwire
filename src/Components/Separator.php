@@ -6,9 +6,13 @@ use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 
 class Separator extends Component
 {
+    public const array SLOTS = [
+        'root' => ['name' => 'separator', 'kind' => 'visual'],
+    ];
+
     public function __construct(
         public string $orientation = 'horizontal',
-        public string $slotName = 'separator',
+        public string $slotName = self::SLOTS['root']['name'],
     ) {}
 
     public function render()

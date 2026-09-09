@@ -10,6 +10,16 @@ use Stringable;
 
 class Breadcrumb extends Component
 {
+    public const array SLOTS = [
+        'root' => ['name' => 'breadcrumb', 'kind' => 'visual'],
+        'list' => ['name' => 'breadcrumb-list', 'kind' => 'visual'],
+        'item' => ['name' => 'breadcrumb-item', 'kind' => 'visual'],
+        'link' => ['name' => 'breadcrumb-link', 'kind' => 'visual'],
+        'page' => ['name' => 'breadcrumb-page', 'kind' => 'visual'],
+        'separator' => ['name' => 'breadcrumb-separator', 'kind' => 'visual'],
+        'ellipsis' => ['name' => 'breadcrumb-ellipsis', 'kind' => 'visual'],
+    ];
+
     /**
      * @param  array<int, array{label: string|int|Stringable|Htmlable, href?: string|Stringable|null, current?: bool, type?: 'item', frame?: string|object|bool|null}|array{type: 'ellipsis', label?: string|int|Stringable}>  $items
      */
@@ -26,7 +36,9 @@ class Breadcrumb extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.breadcrumb');
+        return view('hotwire::component-views.breadcrumb', [
+            'slotName' => self::SLOTS['root']['name'],
+        ]);
     }
 
     /** Reject the ambiguous combination of generated items and manual slot composition. */

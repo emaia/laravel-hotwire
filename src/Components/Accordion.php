@@ -13,6 +13,14 @@ use Stringable;
 
 class Accordion extends Component
 {
+    public const array SLOTS = [
+        'root' => ['name' => 'accordion', 'kind' => 'visual'],
+        'item' => ['name' => 'accordion-item', 'kind' => 'visual'],
+        'trigger' => ['name' => 'accordion-trigger', 'kind' => 'visual'],
+        'trigger-icon' => ['name' => 'accordion-trigger-icon', 'kind' => 'visual'],
+        'content' => ['name' => 'accordion-content', 'kind' => 'visual'],
+    ];
+
     public string $accordionId;
 
     public string $accordionIdentifier;
@@ -64,7 +72,7 @@ class Accordion extends Component
         return [
             'accordionAttributes' => StimulusAttributes::merge([
                 'id' => $this->accordionId,
-                'data-slot' => 'accordion',
+                'data-slot' => self::SLOTS['root']['name'],
                 'data-controller' => $this->accordionIdentifier,
                 "data-{$this->accordionIdentifier}-type-value" => $this->type,
                 "data-{$this->accordionIdentifier}-value-value" => $this->accordionValueAttribute,

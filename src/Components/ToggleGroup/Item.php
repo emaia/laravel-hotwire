@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Components\ToggleGroup;
 
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
+use Emaia\LaravelHotwire\Components\ToggleGroup;
 use Emaia\LaravelHotwire\Support\FieldKey;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Str;
@@ -23,7 +24,9 @@ class Item extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.toggle-group-item');
+        return view('hotwire::component-views.toggle-group-item', [
+            'slotName' => ToggleGroup::SLOTS['item']['name'],
+        ]);
     }
 
     public function data(): array

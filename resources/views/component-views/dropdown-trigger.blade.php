@@ -19,5 +19,5 @@
 @if ($dropdownTriggerAsChild)
     {!! \Emaia\LaravelHotwire\Support\SlotAttributes::mergeIntoFirstElement($slot, $triggerAttributes) !!}
 @else
-    <button {{ $triggerAttributes->merge(['type' => 'button', 'data-slot' => 'dropdown-trigger']) }}>{{ $slot }}</button>
+    <button {{ $triggerAttributes->merge(['type' => 'button', 'data-slot' => $slotName]) }}>{{ $slot }}</button>
 @endif

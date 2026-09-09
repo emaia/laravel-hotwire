@@ -7,6 +7,11 @@ use Illuminate\Contracts\Support\Htmlable;
 
 class Toggle extends Component
 {
+    public const array SLOTS = [
+        'root' => ['name' => 'color-scheme-toggle', 'kind' => 'visual'],
+        'icon' => ['name' => 'color-scheme-icon', 'kind' => 'visual'],
+    ];
+
     public function __construct(
         public string $variant = 'outline',
         public string $size = 'icon',
@@ -24,7 +29,10 @@ class Toggle extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.color-scheme-toggle');
+        return view('hotwire::component-views.color-scheme-toggle', [
+            'slotName' => self::SLOTS['root']['name'],
+            'iconSlotName' => self::SLOTS['icon']['name'],
+        ]);
     }
 
     public function data(): array
