@@ -10,6 +10,13 @@ class Toaster extends Component
 {
     public const array SLOTS = [
         'root' => ['name' => 'toaster', 'kind' => 'structural'],
+        'toast' => ['name' => 'toast', 'kind' => 'visual'],
+        'content' => ['name' => 'toast-content', 'kind' => 'visual'],
+        'icon' => ['name' => 'toast-icon', 'kind' => 'visual'],
+        'body' => ['name' => 'toast-body', 'kind' => 'visual'],
+        'title' => ['name' => 'toast-title', 'kind' => 'visual'],
+        'description' => ['name' => 'toast-description', 'kind' => 'visual'],
+        'close' => ['name' => 'toast-close', 'kind' => 'visual'],
     ];
 
     public ?string $flashMessage = null;
@@ -52,6 +59,13 @@ class Toaster extends Component
     {
         return view('hotwire::component-views.toaster', [
             'slotName' => self::SLOTS['root']['name'],
+            'toastSlotName' => self::SLOTS['toast']['name'],
+            'contentSlotName' => self::SLOTS['content']['name'],
+            'iconSlotName' => self::SLOTS['icon']['name'],
+            'bodySlotName' => self::SLOTS['body']['name'],
+            'titleSlotName' => self::SLOTS['title']['name'],
+            'descriptionSlotName' => self::SLOTS['description']['name'],
+            'closeSlotName' => self::SLOTS['close']['name'],
         ]);
     }
 }

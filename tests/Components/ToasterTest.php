@@ -1,6 +1,8 @@
 <?php
 
+use Emaia\LaravelHotwire\Components\Toaster;
 use Emaia\LaravelHotwire\LaravelHotwireServiceProvider;
+use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\MessageBag;
 use Illuminate\Support\ViewErrorBag;
@@ -13,6 +15,35 @@ it('renders with default props', function () {
     $view->assertSee('data-controller="toaster"', false);
     $view->assertSee('id="toaster"', false);
     $view->assertSee('data-turbo-permanent', false);
+});
+
+it('renders one internal source template with the complete card anatomy', function () {
+    $html = (string) $this->blade('<x-hw::toaster />');
+    $xpath = new DOMXPath(dom($html));
+
+    expect($xpath->query('//*[@id="toaster"]/template[@data-toaster-target="template"]')->count())->toBe(1)
+        ->and($xpath->query('//*[@id="toaster"]/template/*[@data-toaster-card and @data-slot="toast"]')->count())->toBe(1)
+        ->and($xpath->query('//*[@data-toaster-card]/*[@data-toaster-content and @data-slot="toast-content"]')->count())->toBe(1)
+        ->and($xpath->query('//*[@data-toaster-content]/*[@data-toaster-icon and @data-slot="toast-icon" and @aria-hidden="true"]')->count())->toBe(1)
+        ->and($xpath->query('//*[@data-toaster-content]/*[@data-toaster-body and @data-slot="toast-body"]')->count())->toBe(1)
+        ->and($xpath->query('//*[@data-toaster-body]/*[@data-toaster-title and @data-slot="toast-title"]')->count())->toBe(1)
+        ->and($xpath->query('//*[@data-toaster-body]/*[@data-toaster-description and @data-slot="toast-description"]')->count())->toBe(1)
+        ->and($xpath->query('//*[@data-toaster-content]/button[@data-toaster-close and @data-slot="toast-close" and @type="button" and @aria-label="Close toast"]')->count())->toBe(1)
+        ->and($xpath->query('//*[@data-toaster-card]//*[@id]')->count())->toBe(0)
+        ->and($xpath->query('//*[@data-toaster-card][@data-controller="toast"]')->count())->toBe(0);
+});
+
+it('projects the authored card slots from the Toaster component', function () {
+    expect(Toaster::SLOTS)->toBe([
+        'root' => ['name' => 'toaster', 'kind' => 'structural'],
+        'toast' => ['name' => 'toast', 'kind' => 'visual'],
+        'content' => ['name' => 'toast-content', 'kind' => 'visual'],
+        'icon' => ['name' => 'toast-icon', 'kind' => 'visual'],
+        'body' => ['name' => 'toast-body', 'kind' => 'visual'],
+        'title' => ['name' => 'toast-title', 'kind' => 'visual'],
+        'description' => ['name' => 'toast-description', 'kind' => 'visual'],
+        'close' => ['name' => 'toast-close', 'kind' => 'visual'],
+    ])->and(HotwireRegistry::make()->controller('toaster')->styling->slots)->toBe([]);
 });
 
 it('merges inline stimulus attributes with the toaster controller', function () {
@@ -139,13 +170,11 @@ it('keeps the trigger outside the permanent element', function () {
 
     $html = $this->blade('<x-hw::toaster />')->__toString();
 
-    expect($html)->toMatch('/<div[^>]*id="toaster"[^>]*>\s*<\/div>/');
+    $xpath = new DOMXPath(dom($html));
 
-    $viewport = strpos($html, 'id="toaster"');
-    $trigger = strpos($html, 'data-slot="toast-trigger"');
-
-    expect($trigger)->toBeGreaterThan($viewport)
-        ->and(substr($html, $viewport, $trigger - $viewport))->toContain('</div>');
+    expect($xpath->query('//*[@id="toaster"]//template[@data-toaster-target="template"]')->count())->toBe(1)
+        ->and($xpath->query('//*[@id="toaster"]//*[@data-slot="toast-trigger"]')->count())->toBe(0)
+        ->and($xpath->query('//*[@data-slot="toast-trigger" and preceding-sibling::*[@id="toaster"]]')->count())->toBe(1);
 });
 
 it('renders no trigger without a flashed message', function () {
@@ -160,7 +189,8 @@ it('renders no trigger when the flash is disabled', function () {
 
     $view = $this->blade('<x-hw::toaster :flash="false" />');
 
-    $view->assertDontSee('data-slot="toast-trigger"', false);
+    $view->assertDontSee('data-slot="toast-trigger"', false)
+        ->assertSee('data-toaster-target="template"', false);
 });
 
 it('maps each flash key to its toast type', function (string $key, string $type) {

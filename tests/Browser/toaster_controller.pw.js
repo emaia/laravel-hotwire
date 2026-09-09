@@ -9,6 +9,31 @@ test.use({ reducedMotion: "no-preference" });
 // stack is clipped, the entry animation is missing or the transform silently collapses to identity.
 // Everything here is about motion and geometry the browser actually computes.
 
+test("clones the authored card and preserves its source", async ({ page }) => {
+    await setup(page);
+
+    const result = await page.evaluate(() => {
+        const template = document.querySelector('template[data-toaster-target="template"]');
+        const source = template.content.querySelector("[data-toaster-card]");
+        window.toaster.success("Saved", { description: "From Blade", duration: 0 });
+        const live = document.querySelector('[data-slot="toast"]');
+
+        return {
+            distinct: live !== source,
+            liveTitle: live.querySelector("[data-toaster-title]").textContent,
+            sourceTitle: source.querySelector("[data-toaster-title]").textContent,
+            templateConnected: template.isConnected,
+        };
+    });
+
+    expect(result).toEqual({
+        distinct: true,
+        liveTitle: "Saved",
+        sourceTitle: "",
+        templateConnected: true,
+    });
+});
+
 test("enters from off screen, not from its resting position", async ({ page }) => {
     await setup(page);
 
@@ -121,6 +146,30 @@ test("F6 moves focus to the viewport when a toast is on screen", async ({ page }
     await page.keyboard.press("F6");
 
     await expect(page.locator('[data-slot="toaster"]')).toBeFocused();
+});
+
+test("tabs through newest visible close buttons and skips limited cards", async ({ page }) => {
+    await setup(page, { visibleToasts: 2 });
+    await page.evaluate(() => {
+        window.toaster.success("Oldest", { duration: 0 });
+        window.toaster.info("Middle", { duration: 0 });
+        window.toaster.warning("Newest", { duration: 0 });
+    });
+    await page.waitForTimeout(50);
+    await page.keyboard.press("F6");
+
+    const focusedTitles = [];
+    for (let index = 0; index < 3; index += 1) {
+        await page.keyboard.press("Tab");
+        focusedTitles.push(await page.evaluate(() => (
+            document.activeElement.closest('[data-slot="toast"]')
+                ?.querySelector('[data-slot="toast-title"]')
+                ?.textContent ?? null
+        )));
+    }
+
+    expect(focusedTitles.slice(0, 2)).toEqual(["Newest", "Middle"]);
+    expect(focusedTitles).not.toContain("Oldest");
 });
 
 // Nothing is on screen while a view transition runs: the browser paints its snapshot, not the live
@@ -281,6 +330,7 @@ async function sampleAcrossTransition(page, transition, release = () => {}) {
         const swap = () => {
             window.toaster = window.createToaster(
                 document.querySelector('[data-slot="toaster"]'),
+                document.querySelector('template[data-toaster-target="template"]'),
                 { position: "bottom-end" },
             );
         };
@@ -342,7 +392,7 @@ async function trackTransform(page, action, selector = '[data-slot="toast"]:not(
     return [...new Set(samples)];
 }
 
-async function setup(page, { createToaster = true } = {}) {
+async function setup(page, { createToaster = true, visibleToasts = 3 } = {}) {
     await page.setContent(`
         <style>${await readFile("resources/css/structural.css", "utf8")}</style>
         <style>
@@ -364,18 +414,21 @@ async function setup(page, { createToaster = true } = {}) {
             [data-slot="toast-icon"] { width: 16px; height: 16px; flex-shrink: 0; }
             [data-slot="toast-close"] { width: 32px; height: 32px; flex-shrink: 0; }
         </style>
-        <div data-slot="toaster"></div>
+        <div data-slot="toaster">${toasterTemplate()}</div>
     `);
 
     await page.addScriptTag({ content: await bundle() });
 
     if (!createToaster) return;
 
-    await page.evaluate(() => {
-        window.toaster = window.createToaster(document.querySelector('[data-slot="toaster"]'), {
-            position: "bottom-end",
-        });
-    });
+    await page.evaluate((visible) => {
+        const viewport = document.querySelector('[data-slot="toaster"]');
+        window.toaster = window.createToaster(
+            viewport,
+            viewport.querySelector('template[data-toaster-target="template"]'),
+            { position: "bottom-end", visibleToasts: visible },
+        );
+    }, visibleToasts);
 }
 
 async function bundle() {
@@ -388,4 +441,21 @@ async function bundle() {
         .replace(/export function /g, "function ");
 
     return `${presence}\n${toaster}\nwindow.createToaster = createToaster;\nwindow.emitToast = emitToast;`;
+}
+
+function toasterTemplate() {
+    return `
+        <template data-toaster-target="template">
+            <div data-toaster-card data-slot="toast">
+                <div data-toaster-content data-slot="toast-content">
+                    <span data-toaster-icon data-slot="toast-icon" aria-hidden="true"></span>
+                    <div data-toaster-body data-slot="toast-body">
+                        <div data-toaster-title data-slot="toast-title"></div>
+                        <div data-toaster-description data-slot="toast-description"></div>
+                    </div>
+                    <button data-toaster-close data-slot="toast-close" type="button" aria-label="Close toast"></button>
+                </div>
+            </div>
+        </template>
+    `;
 }

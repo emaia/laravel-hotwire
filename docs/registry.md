@@ -125,7 +125,9 @@ every preset must differentiate a given slot by the same axes as the others.
 
 A controller declares `styling` only when JavaScript itself creates visual anatomy. Tooltip accepts an
 application-owned standalone template and declares no slots; `<hw:tooltip>` separately owns `Tooltip::SLOTS` and the
-package visual module used by it and component integrations.
+package visual module used by it and component integrations. Toaster follows the same ownership rule with a private
+component-authored card template: `Toaster::SLOTS` owns the package visuals while the controller only clones and manages
+their lifecycle.
 
 Controllers inside substrate folders use `/` in the key: `'turbo/progress'`.  
 The identifier is derived automatically: `/` → `--`, `_` → `-`.

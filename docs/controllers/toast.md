@@ -42,10 +42,7 @@ Add the viewport once in the application layout:
 ```html
 <!-- resources/views/layouts/app.blade.php -->
 <body>
-    <div
-        data-controller="toaster"
-        data-toaster-position-value="top-end"
-    ></div>
+    <hw:toaster position="top-end" />
 
     @yield('content')
 </body>

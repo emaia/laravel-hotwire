@@ -82,6 +82,13 @@ it('selects Tooltip visuals through package components but not the standalone co
         ->and($manifest->modulesFor([], ['tooltip']))->toBe([]);
 });
 
+it('selects Toaster visuals through the package component but not the standalone controller', function () {
+    $manifest = app(CssModuleManifest::class);
+
+    expect($manifest->modulesFor(['toaster'], []))->toContain('toaster')
+        ->and($manifest->modulesFor([], ['toaster']))->toBe([]);
+});
+
 it('includes upload state styling with the file upload component', function () {
     expect(app(CssModuleManifest::class)->modulesFor(['file-upload'], []))
         ->toContain('file-upload', 'text-shimmer');

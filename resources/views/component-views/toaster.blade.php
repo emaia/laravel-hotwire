@@ -20,7 +20,20 @@
     ], $attributes, $stimulus, protectedPrefixes: ['data-toaster-']);
 @endphp
 
-<div {{ $toasterAttributes }}></div>
+<div {{ $toasterAttributes }}>
+    <template data-toaster-target="template">
+        <div data-toaster-card data-slot="{{ $toastSlotName }}">
+            <div data-toaster-content data-slot="{{ $contentSlotName }}">
+                <span data-toaster-icon data-slot="{{ $iconSlotName }}" aria-hidden="true"></span>
+                <div data-toaster-body data-slot="{{ $bodySlotName }}">
+                    <div data-toaster-title data-slot="{{ $titleSlotName }}"></div>
+                    <div data-toaster-description data-slot="{{ $descriptionSlotName }}"></div>
+                </div>
+                <button data-toaster-close data-slot="{{ $closeSlotName }}" type="button" aria-label="Close toast"></button>
+            </div>
+        </div>
+    </template>
+</div>
 @if ($flashMessage !== null)
     {{-- A sibling, never a child: Turbo swaps the new page's permanent element for the current one,
          so a trigger nested here is dropped on the Drive visit that follows a redirect. --}}

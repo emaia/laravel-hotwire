@@ -968,13 +968,20 @@ it('projects the Sidebar family slot contract from its component class', functio
     ]);
 });
 
-it('projects Toast and Toaster host slots while leaving runtime toast slots controller-owned', function () {
+it('projects Toast transport and Toaster authored card slots from their component owners', function () {
     $catalog = require __DIR__.'/../../src/Registry/catalog.php';
 
     expect(Toast::SLOTS)->toBe([
         'trigger' => ['name' => 'toast-trigger', 'kind' => 'structural'],
     ])->and(Toaster::SLOTS)->toBe([
         'root' => ['name' => 'toaster', 'kind' => 'structural'],
+        'toast' => ['name' => 'toast', 'kind' => 'visual'],
+        'content' => ['name' => 'toast-content', 'kind' => 'visual'],
+        'icon' => ['name' => 'toast-icon', 'kind' => 'visual'],
+        'body' => ['name' => 'toast-body', 'kind' => 'visual'],
+        'title' => ['name' => 'toast-title', 'kind' => 'visual'],
+        'description' => ['name' => 'toast-description', 'kind' => 'visual'],
+        'close' => ['name' => 'toast-close', 'kind' => 'visual'],
     ])->and($catalog['components']['toast']['styling']['slots'])->toBe([
         ['class' => Toast::class],
     ])->and($catalog['components']['toaster']['styling']['slots'])->toBe([
@@ -984,8 +991,15 @@ it('projects Toast and Toaster host slots while leaving runtime toast slots cont
         'toast-trigger' => 'structural',
     ])->and(HotwireRegistry::make()->component('toaster')->styling->slots)->toBe([
         'toaster' => 'structural',
+        'toast' => 'visual',
+        'toast-content' => 'visual',
+        'toast-icon' => 'visual',
+        'toast-body' => 'visual',
+        'toast-title' => 'visual',
+        'toast-description' => 'visual',
+        'toast-close' => 'visual',
         'toast-trigger' => 'structural',
-    ]);
+    ])->and(HotwireRegistry::make()->controller('toaster')->styling->slots)->toBe([]);
 });
 
 it('does not instantiate context-sensitive components while loading slot metadata', function () {

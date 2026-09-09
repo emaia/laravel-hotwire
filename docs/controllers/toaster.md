@@ -1,7 +1,8 @@
 # Toaster
 
-Renders and manages the toast stack. Add it once to the global layout so the `toast` controller has somewhere to
-emit into. It owns the DOM, the queue, timers, presence and cleanup; there is no third-party dependency.
+Displays accessible toast notifications in a persistent stack. Add `<hw:toaster>` once to the global layout so the
+`toast` controller has somewhere to emit into. Notifications support timed dismissal, manual close and Turbo Drive
+persistence; there is no third-party dependency.
 
 **Identifier:** `toaster`
 
@@ -24,19 +25,17 @@ emit into. It owns the DOM, the queue, timers, presence and cleanup; there is no
 <body>
     ...
 
-    <div data-controller="toaster"></div>
+    <hw:toaster />
 </body>
 ```
+
+The raw controller is not a standalone empty-element API. It requires the private source template emitted by the Blade
+component; use `<hw:toaster>` rather than duplicating that package anatomy.
 
 ## With custom configuration
 
 ```html
-<div
-    data-controller="toaster"
-    data-toaster-position-value="top-end"
-    data-toaster-duration-value="6000"
-    data-toaster-visible-toasts-value="5"
-></div>
+<hw:toaster position="top-end" :duration="6000" :visible-toasts="5" />
 ```
 
 ## Available positions
@@ -48,7 +47,8 @@ document's writing direction.
 
 ## How it works
 
-The controller creates the manager on connect and publishes it as `window.toaster` — see
+The controller validates the component's single card template before installing listeners or joining the top layer. It
+then creates the manager and publishes it as `window.toaster` — see
 [the component docs](../components/toaster.md#emitting-from-javascript) for that surface. If an instance already
 exists it is reused, so a second viewport on the page does not replace the first.
 
@@ -58,5 +58,8 @@ The guard checks for a real instance rather than merely a truthy `window.toaster
 Emissions that arrive before the controller connects are buffered by the manager module and drained on connect, so
 a trigger placed above the viewport in the document — or arriving over a Turbo Stream mid-navigation — is never
 dropped.
+
+`window.toaster` is available only after the component mounts. The `toast` trigger handles pre-connect buffering; app
+code should not assume the global already exists earlier in page startup.
 
 The viewport joins the top layer, so toasts stay above Modal, Drawer, Sheet and Sidebar.

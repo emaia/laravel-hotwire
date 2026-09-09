@@ -41,3 +41,5 @@
         </x-hw::modal.footer>
     </x-hw::modal.content>
 </x-hw::modal>
+
+<x-hw::toaster id="fixture-{{ $personality }}-toaster" :flash="false" :turbo-permanent="false" />

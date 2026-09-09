@@ -357,20 +357,14 @@ it('ignores commented complete preset imports', function () {
         ->and(Artisan::output())->toContain('<x-hw::badge>', 'not covered by any generated CSS bundle');
 });
 
-it('checks standalone visual controller coverage', function () {
+it('does not require preset coverage for the standalone Toaster controller', function () {
     writeView('page.blade.php', '<div data-controller="toaster"></div>');
     $this->artisan('hotwire:styles --components=badge --no-interaction')->assertSuccessful();
 
     $exit = Artisan::call('hotwire:check --no-interaction');
 
-    expect($exit)->toBe(1)
-        ->and(Artisan::output())->toContain('toaster', 'not covered by any generated CSS bundle');
-
-    $this->artisan('hotwire:styles --components=badge --include=toaster --force --no-interaction')->assertSuccessful();
-    $exit = Artisan::call('hotwire:check --no-interaction');
-
     expect($exit)->toBe(0)
-        ->and(Artisan::output())->not->toContain('not covered by any generated CSS bundle');
+        ->and(Artisan::output())->not->toContain('toaster  not covered by any generated CSS bundle');
 });
 
 it('does not require preset coverage for the application-styled Tooltip controller', function () {

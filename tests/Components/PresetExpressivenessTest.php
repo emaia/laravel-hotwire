@@ -20,7 +20,8 @@ it('renders contrast personalities over the same semantic component tree', funct
         expect($preview->getAttribute('data-preset-fixture'))->toBe($personalities[$index]);
         expect($xpath->query('.//*[@data-slot="button"][@disabled]', $preview))->toHaveCount(1)
             ->and($xpath->query('.//*[@data-slot="button"][@aria-invalid="true"]', $preview))->toHaveCount(1)
-            ->and($xpath->query('.//*[@data-slot="modal-trigger"]', $preview))->toHaveCount(1);
+            ->and($xpath->query('.//*[@data-slot="modal-trigger"]', $preview))->toHaveCount(1)
+            ->and($xpath->query('.//template[@data-toaster-target="template"]/*[@data-toaster-card and @data-slot="toast"]', $preview))->toHaveCount(1);
 
         $signature = [];
 
@@ -49,5 +50,11 @@ it('renders contrast personalities over the same semantic component tree', funct
         ->toContain('div:alert-description')
         ->toContain('div:alert-action')
         ->toContain('div:modal-overlay:closed')
-        ->toContain('div:modal-positioner:md');
+        ->toContain('div:modal-positioner:md')
+        ->toContain('div:toast')
+        ->toContain('div:toast-content')
+        ->toContain('div:toast-body')
+        ->toContain('div:toast-title')
+        ->toContain('div:toast-description')
+        ->toContain('button:toast-close');
 });

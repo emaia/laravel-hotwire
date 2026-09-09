@@ -50,8 +50,28 @@ test("renders a flash toast that arrives during a Drive navigation", async ({ pa
         await expect(page.locator("h1")).toHaveText("Done");
 
         await expect(viewport).toHaveAttribute("data-host-token", "original");
+        await expect(viewport).toHaveAttribute("data-hotwire-top-layer", "");
+        await expect.poll(async () => viewport.evaluate((element) => element.matches(":popover-open"))).toBe(true);
         // The quotes arrive encoded; a backslash-escaped value would have been cut at the first one.
         await expect(page.locator('[data-slot="toast-title"]')).toHaveText('Renamed to "Q3 report"');
+        await expect.poll(async () => viewport.evaluate((element) => {
+            const template = element.querySelector('template[data-toaster-target="template"]');
+
+            return template?.content.querySelector("[data-toaster-title]")?.textContent;
+        })).toBe("");
+
+        await page.evaluate(() => window.Turbo.renderStreamMessage(`
+            <turbo-stream action="append" target="toaster">
+                <template>
+                    <div data-controller="toast"
+                         data-toast-message-value="Streamed update"
+                         data-toast-type-value="info"></div>
+                </template>
+            </turbo-stream>
+        `));
+
+        await expect(page.locator('[data-slot="toast-title"]').first()).toHaveText("Streamed update");
+        await expect(viewport.locator('[data-controller="toast"]')).toHaveCount(0);
     } finally {
         await new Promise((resolve) => server.close(resolve));
     }
@@ -71,7 +91,9 @@ function layout(content) {
         <html>
             <body>
                 ${content}
-                <div id="toaster" data-slot="toaster" data-turbo-permanent data-controller="toaster"></div>
+                <div id="toaster" data-slot="toaster" data-turbo-permanent data-controller="toaster">
+                    ${toasterTemplate()}
+                </div>
             </body>
         </html>
     `;
@@ -101,4 +123,21 @@ async function controllerScript() {
         await controller("toast_controller.js", "ToastController"),
         await controller("toaster_controller.js", "ToasterController"),
     ].join("\n");
+}
+
+function toasterTemplate() {
+    return `
+        <template data-toaster-target="template">
+            <div data-toaster-card data-slot="toast">
+                <div data-toaster-content data-slot="toast-content">
+                    <span data-toaster-icon data-slot="toast-icon" aria-hidden="true"></span>
+                    <div data-toaster-body data-slot="toast-body">
+                        <div data-toaster-title data-slot="toast-title"></div>
+                        <div data-toaster-description data-slot="toast-description"></div>
+                    </div>
+                    <button data-toaster-close data-slot="toast-close" type="button" aria-label="Close toast"></button>
+                </div>
+            </div>
+        </template>
+    `;
 }
