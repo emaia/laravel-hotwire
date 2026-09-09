@@ -66,7 +66,8 @@ export function resetToaster() {
     renderInFlight = false;
 }
 
-export function createToaster(element, options = {}) {
+export function createToaster(element, template, options = {}) {
+    const source = validateTemplate(element, template);
     const config = {
         closeButton: options.closeButton ?? true,
         duration: options.duration ?? 4000,
@@ -142,8 +143,12 @@ export function createToaster(element, options = {}) {
 
     function build(id, payload) {
         const type = TYPES.includes(payload.type) ? payload.type : "default";
-        const node = document.createElement("div");
-        node.dataset.slot = "toast";
+        const node = source.cloneNode(true);
+        const body = node.querySelector("[data-toaster-body]");
+        const title = node.querySelector("[data-toaster-title]");
+        const description = node.querySelector("[data-toaster-description]");
+        const close = node.querySelector("[data-toaster-close]");
+
         node.dataset.toastId = id;
         node.dataset.type = type;
         node.dataset.position = payload.position || config.position;
@@ -155,24 +160,19 @@ export function createToaster(element, options = {}) {
         if (config.className) node.classList.add(...config.className.split(/\s+/).filter(Boolean));
         if (payload.className) node.classList.add(...String(payload.className).split(/\s+/).filter(Boolean));
 
-        const content = slot("div", "toast-content");
-        content.appendChild(slot("span", "toast-icon", { "aria-hidden": "true" }));
-
-        const body = slot("div", "toast-body");
-        if (payload.message) body.appendChild(text("div", "toast-title", payload.message));
-        if (payload.description) body.appendChild(text("div", "toast-description", payload.description));
-        content.appendChild(body);
+        if (payload.message) title.textContent = String(payload.message);
+        else title.remove();
+        if (payload.description) description.textContent = String(payload.description);
+        else description.remove();
 
         if (config.closeButton) {
-            const close = slot("button", "toast-close", { type: "button", "aria-label": "Close toast" });
             close.addEventListener("click", () => dismiss(id));
-            content.appendChild(close);
-        }
-
-        node.appendChild(content);
+        } else close.remove();
 
         return {
             element: node,
+            body,
+            close: config.closeButton ? close : null,
             presence: createPresence(node),
             duration: Number.isFinite(payload.duration) ? payload.duration : config.duration,
             height: 0,
@@ -202,7 +202,7 @@ export function createToaster(element, options = {}) {
     function observe(entry) {
         if (typeof ResizeObserver !== "function") return;
 
-        const body = entry.element.querySelector('[data-slot="toast-body"]');
+        const body = entry.body;
         entry.bodyHeight = body.offsetHeight ?? 0;
         entry.observer = new ResizeObserver(([record]) => {
             const height = record?.contentRect?.height ?? body.offsetHeight ?? 0;
@@ -350,9 +350,7 @@ export function createToaster(element, options = {}) {
             const limited = index >= config.visibleToasts;
             entry.element.toggleAttribute("data-limited", limited);
             entry.element.toggleAttribute("data-behind", index > 0);
-            entry.element.querySelectorAll("button").forEach((button) => {
-                button.tabIndex = limited ? -1 : 0;
-            });
+            if (entry.close) entry.close.tabIndex = limited ? -1 : 0;
 
             stacks.set(position, { index: index + 1, offset: offset + entry.height });
         });
@@ -463,17 +461,39 @@ function viewTransitionAnimations() {
     });
 }
 
-function slot(tag, name, attributes = {}) {
-    const node = document.createElement(tag);
-    node.dataset.slot = name;
-    Object.entries(attributes).forEach(([key, value]) => node.setAttribute(key, value));
+function validateTemplate(element, template) {
+    const templates = Array.from(element.children).filter((child) => (
+        child.matches('template[data-toaster-target="template"]')
+    ));
 
-    return node;
+    if (templates.length !== 1 || templates[0] !== template) {
+        throw new Error('Toaster requires exactly one direct child <template data-toaster-target="template">.');
+    }
+
+    const source = template.content.children.length === 1
+        ? template.content.firstElementChild
+        : null;
+    const content = directPart(source, source, "[data-toaster-content]");
+    const body = directPart(source, content, "[data-toaster-body]");
+    const complete = source?.matches("[data-toaster-card]")
+        && directPart(source, content, "[data-toaster-icon]")
+        && directPart(source, body, "[data-toaster-title]")
+        && directPart(source, body, "[data-toaster-description]")
+        && directPart(source, content, "[data-toaster-close]");
+
+    if (!complete) {
+        throw new Error(
+            "Toaster template requires one data-toaster-card root with direct content, icon, body, title, description, and close parts.",
+        );
+    }
+
+    return source;
 }
 
-function text(tag, name, value) {
-    const node = slot(tag, name);
-    node.textContent = String(value ?? "");
+function directPart(root, parent, selector) {
+    if (!root || !parent) return null;
 
-    return node;
+    const matches = Array.from(root.querySelectorAll(selector));
+
+    return matches.length === 1 && matches[0].parentElement === parent ? matches[0] : null;
 }

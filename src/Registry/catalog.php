@@ -1135,8 +1135,6 @@ return [
             'description' => 'Fires a toast notification from the Laravel session or from explicit props',
             'controllers' => ['toast'],
             'styling' => [
-                // The trigger only carries the payload and removes itself on connect; the visible
-                // toast is built by the manager under its own slots.
                 'slots' => [
                     ['class' => Toast::class],
                 ],
@@ -1587,18 +1585,7 @@ return [
             'source' => 'resources/js/controllers/toaster_controller.js',
             'docs' => 'docs/controllers/toaster.md',
             'category' => 'feedback',
-            'description' => 'Renders and manages the toast stack, persisting it across Turbo Drive navigations',
-            'styling' => [
-                'slots' => $slots([
-                    'toast',
-                    'toast-icon',
-                    'toast-content',
-                    'toast-body',
-                    'toast-title',
-                    'toast-description',
-                    'toast-close',
-                ]),
-            ],
+            'description' => 'Displays accessible toast notifications with stacking, timed dismissal and Turbo Drive persistence',
         ],
         'toggle' => [
             'source' => 'resources/js/controllers/toggle_controller.js',

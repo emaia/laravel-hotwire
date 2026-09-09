@@ -40,6 +40,7 @@ beforeEach(async () => {
 
     viewport = document.createElement("div");
     viewport.dataset.slot = "toaster";
+    installTemplate(viewport);
     document.body.appendChild(viewport);
 });
 
@@ -51,7 +52,7 @@ afterEach(() => {
 });
 
 function mount(options = {}) {
-    toaster = createToaster(viewport, options);
+    toaster = createToaster(viewport, viewport.querySelector("template"), options);
 
     return toaster;
 }
@@ -89,7 +90,7 @@ test("empties the buffer once drained so a second viewport does not replay it", 
     toaster.destroy();
     toaster = null;
 
-    const second = createToaster(viewport, {});
+    const second = createToaster(viewport, viewport.querySelector("template"), {});
 
     expect(viewport.querySelectorAll('[data-slot="toast"]')).toHaveLength(0);
 
@@ -98,17 +99,48 @@ test("empties the buffer once drained so a second viewport does not replay it", 
 
 // --- Anatomy ---
 
-test("renders the documented anatomy", () => {
+test("clones the authored source and leaves the template intact", () => {
     mount();
     toaster.toast("Saved", { description: "Everything went through" });
 
+    const template = viewport.querySelector("template");
+    const source = template.content.querySelector("[data-toaster-card]");
     const toast = toasts()[0];
 
+    expect(toast).not.toBe(source);
+    expect(toast.classList.contains("source-card")).toBe(true);
+    expect(toast.dataset.sourceAttribute).toBe("preserved");
     expect(toast.dataset.slot).toBe("toast");
     expect(toast.querySelector('[data-slot="toast-icon"]')).not.toBeNull();
     expect(toast.querySelector('[data-slot="toast-content"]')).not.toBeNull();
     expect(toast.querySelector('[data-slot="toast-title"]').textContent).toBe("Saved");
     expect(toast.querySelector('[data-slot="toast-description"]').textContent).toBe("Everything went through");
+    expect(source.querySelector("[data-toaster-title]").textContent).toBe("");
+    expect(source.querySelector("[data-toaster-description]").textContent).toBe("");
+});
+
+test("uses a fresh clone for every toast", () => {
+    mount();
+    toaster.toast("first");
+    const first = toasts()[0];
+    toaster.toast("second");
+
+    expect(toasts()[0]).not.toBe(first);
+    expect(toasts()[1]).toBe(first);
+});
+
+test("preserves source, manager, and per-toast classes", () => {
+    mount({ className: "manager-card shared-card" });
+    toaster.warning("Careful", { className: "request-card shared-card" });
+
+    const toast = toasts()[0];
+
+    expect([...toast.classList]).toEqual([
+        "source-card",
+        "manager-card",
+        "shared-card",
+        "request-card",
+    ]);
 });
 
 test("omits the description node when no description is given", () => {
@@ -116,6 +148,7 @@ test("omits the description node when no description is given", () => {
     toaster.toast("Saved");
 
     expect(toasts()[0].querySelector('[data-slot="toast-description"]')).toBeNull();
+    expect(viewport.querySelector("template").content.querySelector("[data-toaster-description]")).not.toBeNull();
 });
 
 test("renders message and description as text, never as markup", () => {
@@ -144,6 +177,7 @@ test("omits the title node when the message is empty", () => {
     expect(toast.querySelector('[data-slot="toast-title"]')).toBeNull();
     expect(toast.querySelector('[data-slot="toast-description"]').textContent)
         .toBe("The server restored the authoritative task state.");
+    expect(viewport.querySelector("template").content.querySelector("[data-toaster-title]")).not.toBeNull();
 });
 
 test("omits the description node when it is an empty string", () => {
@@ -169,6 +203,71 @@ test("omits the close button when it is disabled", () => {
     toaster.success("Saved");
 
     expect(toasts()[0].querySelector('[data-slot="toast-close"]')).toBeNull();
+    expect(viewport.querySelector("template").content.querySelector("[data-toaster-close]")).not.toBeNull();
+});
+
+test("keeps authored close configuration and dismisses through its local close button", async () => {
+    mount();
+    toaster.success("Saved");
+
+    const toast = toasts()[0];
+    const close = toast.querySelector("[data-toaster-close]");
+
+    expect(close.type).toBe("button");
+    expect(close.getAttribute("aria-label")).toBe("Close toast");
+    expect(toast.getAttribute("aria-atomic")).toBe("true");
+
+    close.click();
+    await wait(80);
+
+    expect(toasts()).toHaveLength(0);
+});
+
+test("rejects a missing source before publishing a manager and keeps buffered toasts", () => {
+    emitToast({ message: "Queued safely", type: "success" });
+    viewport.querySelector("template").remove();
+
+    expect(() => mount()).toThrow(
+        'Toaster requires exactly one direct child <template data-toaster-target="template">.',
+    );
+    expect(viewport.hasAttribute("role")).toBe(false);
+
+    installTemplate(viewport);
+    mount();
+
+    expect(toasts()).toHaveLength(1);
+    expect(toasts()[0].querySelector("[data-toaster-title]").textContent).toBe("Queued safely");
+});
+
+test("rejects incomplete source anatomy before mutating the viewport", () => {
+    viewport.querySelector("template").content.querySelector("[data-toaster-body]").remove();
+
+    expect(() => mount()).toThrow(
+        "Toaster template requires one data-toaster-card root with direct content, icon, body, title, description, and close parts.",
+    );
+    expect(viewport.hasAttribute("role")).toBe(false);
+    expect(viewport.dataset.expanded).toBeUndefined();
+});
+
+test("rejects multiple source templates", () => {
+    installTemplate(viewport);
+
+    expect(() => mount()).toThrow(
+        'Toaster requires exactly one direct child <template data-toaster-target="template">.',
+    );
+    expect(viewport.hasAttribute("role")).toBe(false);
+});
+
+test("explains that a nested source template must be a direct child", () => {
+    const template = viewport.querySelector("template");
+    const wrapper = document.createElement("div");
+    template.replaceWith(wrapper);
+    wrapper.append(template);
+
+    expect(() => mount()).toThrow(
+        'Toaster requires exactly one direct child <template data-toaster-target="template">.',
+    );
+    expect(viewport.hasAttribute("role")).toBe(false);
 });
 
 test("emits the icon slot for every type, default included", () => {
@@ -200,6 +299,14 @@ test("marks the toast with its type", () => {
     ]);
 });
 
+test("normalizes unknown types while preserving per-toast position", () => {
+    mount();
+    toaster.toast("Custom", { type: "custom", position: "top-end" });
+
+    expect(toasts()[0].dataset.type).toBe("default");
+    expect(toasts()[0].dataset.position).toBe("top-end");
+});
+
 // --- Public surface ---
 
 test("exposes the documented public surface", () => {
@@ -222,7 +329,7 @@ test("dismiss removes the toast it names and leaves the others", async () => {
         .toEqual(["second"]);
 });
 
-test("destroy empties the viewport", () => {
+test("destroy removes cards while preserving the source template", () => {
     mount();
     toaster.toast("gone");
 
@@ -230,6 +337,7 @@ test("destroy empties the viewport", () => {
     toaster = null;
 
     expect(viewport.querySelectorAll('[data-slot="toast"]')).toHaveLength(0);
+    expect(viewport.querySelectorAll('template[data-toaster-target="template"]')).toHaveLength(1);
 });
 
 test("destroy clears the global reference when it points at this toaster", () => {
@@ -650,6 +758,7 @@ test("buffers a toast emitted while the active viewport is detached", () => {
 
     const replacement = document.createElement("div");
     replacement.dataset.slot = "toaster";
+    installTemplate(replacement);
     document.body.appendChild(replacement);
 
     emitToast({ message: "Task updated", type: "success" });
@@ -657,7 +766,7 @@ test("buffers a toast emitted while the active viewport is detached", () => {
     expect(replacement.querySelectorAll('[data-slot="toast"]')).toHaveLength(0);
 
     toaster.destroy();
-    toaster = createToaster(replacement, {});
+    toaster = createToaster(replacement, replacement.querySelector("template"), {});
 
     expect([...replacement.querySelectorAll('[data-slot="toast-title"]')].map((n) => n.textContent)).toEqual([
         "Task updated",
@@ -692,3 +801,20 @@ test("leaves the buffer alone while the viewport is still detached", () => {
 
     expect(toasts()).toHaveLength(1);
 });
+
+function installTemplate(element) {
+    element.insertAdjacentHTML("beforeend", `
+        <template data-toaster-target="template">
+            <div class="source-card" data-source-attribute="preserved" data-toaster-card data-slot="toast">
+                <div data-toaster-content data-slot="toast-content">
+                    <span data-toaster-icon data-slot="toast-icon" aria-hidden="true"></span>
+                    <div data-toaster-body data-slot="toast-body">
+                        <div data-toaster-title data-slot="toast-title"></div>
+                        <div data-toaster-description data-slot="toast-description"></div>
+                    </div>
+                    <button data-toaster-close data-slot="toast-close" type="button" aria-label="Close toast"></button>
+                </div>
+            </div>
+        </template>
+    `);
+}

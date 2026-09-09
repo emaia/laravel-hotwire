@@ -68,11 +68,11 @@ $novaModules = [
     'tabs',
     'textarea',
     'timeago',
+    'toaster',
     'toggle-controls',
     'toggle-group',
     'tooltip',
     'oembed',
-    'toaster',
 ];
 
 return [
@@ -168,7 +168,7 @@ return [
         'toggle-group' => $module(['toggle-group', 'toggle-group.item']),
         'tooltip' => $module(['button', 'color-scheme.toggle', 'sidebar', 'tooltip'], dependencies: ['floating-presence', 'kbd']),
         'oembed' => $module(controllers: ['oembed']),
-        'toaster' => $module(controllers: ['toaster']),
+        'toaster' => $module(['toaster']),
     ],
     'presets' => [
         'nova' => [

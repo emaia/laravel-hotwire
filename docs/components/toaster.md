@@ -4,9 +4,9 @@ Hosts the toast stack once per page and persists it across Turbo Drive navigatio
 toast fired from a redirect's flash message, by appended Turbo Streams, by [`<hw:toast />`](./toast.md), or from your
 own JavaScript.
 
-The component maps to the `toaster` Stimulus controller, which creates the toast manager on connect and publishes it
-as `window.toaster`. Rendering, stacking and timers are owned by the package — there is no third-party
-dependency.
+The component renders a private card blueprint and maps to the `toaster` Stimulus controller. On connect, the
+controller validates and clones that blueprint, manages stacking and timers, and publishes the manager as
+`window.toaster`. There is no third-party dependency.
 
 ## Setup
 
@@ -134,7 +134,7 @@ Custom id, useful for a second Turbo Stream anchor:
 
 ## Emitting from JavaScript
 
-The manager is published as `window.toaster`. Nothing needs to be imported:
+The manager is published as `window.toaster` after `<hw:toaster>` mounts. Nothing needs to be imported:
 
 ```js
 window.toaster.success("Saved");
@@ -181,8 +181,13 @@ driven by custom properties you can override anywhere in your own CSS:
 }
 ```
 
-Slots: `toaster`, `toast`, `toast-icon`, `toast-content`, `toast-body`, `toast-title`, `toast-description`,
-`toast-close`.
+Slots: `data-slot="toaster"`, `data-slot="toast"`, `data-slot="toast-icon"`, `data-slot="toast-content"`,
+`data-slot="toast-body"`, `data-slot="toast-title"`, `data-slot="toast-description"`, and
+`data-slot="toast-close"`.
+
+The seven card slots come from one internal `<template>` inside the viewport. The manager clones it for each
+notification and fills title and description as text. The template is package infrastructure rather than a composition
+API; use `class-name`, the slots above and preset CSS to customize cards instead of replacing its parts.
 
 The flash message renders as an empty `data-slot="toast-trigger"` element next to the viewport. It carries the payload,
 hands it to the manager on connect and removes itself, so it is never visible and needs no styling.
@@ -203,7 +208,7 @@ hands it to the manager on connect and removes itself, so it is never visible an
 ## Turbo integration
 
 - The viewport uses `data-turbo-permanent` by default, so the stack stays alive across Turbo Drive navigations and
-  a toast fired before a visit keeps counting down after it.
+  a toast fired before a visit keeps counting down after it. Its source template is part of that permanent subtree.
 - Turbo Streams append rendered `<hw:toast />` markup to the viewport — see the
   [`toast()` macro](./toast.md#the-toast-stream-macro).
 - The flash trigger renders as a *sibling* of the viewport, never inside it. Turbo swaps the new page's
@@ -212,6 +217,8 @@ hands it to the manager on connect and removes itself, so it is never visible an
   `data-turbo-permanent` element of your own: that would discard the trigger along with it.
 - A response consumed as a Turbo Frame renders only the frame, so a flash message left in the layout never reaches the
   page. Use `turbo_stream()->toast(...)` for frame-driven flows.
+- Deployments that change the internal blueprint require a full page reload: Turbo preserves the already-mounted
+  permanent subtree rather than hot-replacing its template.
 
 ## See also
 

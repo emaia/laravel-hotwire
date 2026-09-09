@@ -62,8 +62,9 @@ Automated checks prove that the fixture:
 Visual review should compare density, geometry, typography, surface depth, focus, invalid/disabled states, light/dark,
 RTL and reduced motion. Exact colors, shadows, radii and spacing are intentionally not snapshot-tested.
 
-Toaster is excluded from this first executable fixture because its current controller still owns generated markup.
-Tooltip can now join the shared partial through its Blade-owned source; do not preserve a second generated anatomy.
+Toaster now joins the shared partial as structural proof of its Blade-owned source anatomy. Its card remains inside an
+inert `<template>`, so this fixture does not include it in the visual comparison above and defines no Toaster-specific
+fixture CSS. Tooltip is eligible for the same semantic tree but is not yet rendered by this fixture.
 
 ## Findings by family
 
@@ -82,7 +83,7 @@ Tooltip can now join the shared partial through its Blade-owned source; do not p
 | Modal, Sheet and floating surfaces   | CSS-only                   | Existing panel/content parts and state/side attributes cover appearance                               | Preset CSS                                 |
 | Drawer swipe/nesting                 | Runtime-specific           | Vaul swipe variables and nested drawer behavior are not visual preset requirements                    | Do not port without behavior               |
 | Tooltip component anatomy            | Semantic parts             | `Tooltip::SLOTS` owns package-styled surface and arrow slots while the trigger controller owns lifecycle | Tooltip family and final QA                |
-| Toaster anatomy                      | Semantic parts             | Its eventual Blade template must preserve current state/lifecycle contracts                            | Toaster template migration and final QA     |
+| Toaster anatomy                      | Semantic parts             | `Toaster::SLOTS` owns the internal card template while JavaScript preserves state/lifecycle contracts  | Toaster family and final QA                  |
 | Overlay strength and blur            | Preset-local CSS           | `--backdrop` already provides the color hook; blur and elevation can remain internal preset variables | Bloom/preset CSS                           |
 | Heading typography                   | Shared token candidate     | `--font-heading` is useful across Card, Alert, overlays and editorial recipes                         | Bloom/theming review                       |
 | Logical floating sides               | Possible behavior API      | Current resolved physical `data-side` output is sufficient for visual presets                         | Independent Floating UI API review         |
@@ -180,6 +181,7 @@ The family migration, preset tooling, Bloom, external validator and final QA sho
 - Equivalent selector spelling does not make a preset invalid.
 - An empty selector and an undeclared slot typo fail conformance.
 - The contrast fixture keeps one semantic tree across all personalities.
-- Tooltip joins through its final Blade-owned anatomy; Toaster follows after its template migration.
+- Toaster's Blade-owned source joins the shared tree as structural coverage; rendered Toaster and Tooltip states remain
+  final browser smoke cases.
 - Final browser smoke covers focus, disabled/invalid state, light/dark, RTL, reduced motion and nested overlays without
   asserting decorative pixel parity.

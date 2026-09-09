@@ -5,6 +5,8 @@ import { createToaster, flushPending, isDetached } from "./_toaster.js";
 import { createTopLayer } from "./_top_layer.js";
 
 export default class extends Controller {
+    static targets = ["template"];
+
     static values = {
         autoDisconnect: { type: Boolean, default: false },
         className: { type: String, default: "" },
@@ -19,10 +21,6 @@ export default class extends Controller {
     #topLayer;
 
     connect() {
-        this.#topLayer = createTopLayer(this.element);
-        this.#topLayer.show();
-        document.addEventListener("hotwire:top-layer:show", this.#handleTopLayerShow);
-
         if (isStale(window.toaster)) {
             window.toaster.destroy();
             window.toaster = null;
@@ -32,11 +30,17 @@ export default class extends Controller {
             window.toaster = this.createToaster(this.#buildOptions());
         }
 
+        if (window.toaster.element === this.element) {
+            this.#topLayer = createTopLayer(this.element);
+            this.#topLayer.show();
+            document.addEventListener("hotwire:top-layer:show", this.#handleTopLayerShow);
+        }
+
         flushPending();
     }
 
     createToaster(options) {
-        return createToaster(this.element, options);
+        return createToaster(this.element, this.templateTargets[0] ?? null, options);
     }
 
     disconnect() {
@@ -44,7 +48,7 @@ export default class extends Controller {
         this.#topLayer?.cleanup();
         this.#topLayer = null;
 
-        if (this.autoDisconnectValue && isToaster(window.toaster)) {
+        if (this.autoDisconnectValue && isToaster(window.toaster) && window.toaster.element === this.element) {
             window.toaster.destroy();
             window.toaster = null;
         }

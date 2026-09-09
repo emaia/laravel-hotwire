@@ -3,7 +3,7 @@ import { afterEach, beforeEach, expect, mock, test } from "bun:test";
 const createCalls = [];
 const destroyMock = mock(() => {});
 
-const { mountController } = await import("../../resources/js/helpers/test_stimulus.js");
+const { mountController, mountMultipleControllers } = await import("../../resources/js/helpers/test_stimulus.js");
 const { default: ToasterController } = await import(
     "../../resources/js/controllers/toaster_controller.js"
 );
@@ -28,6 +28,16 @@ class TestToasterController extends ToasterController {
         createCalls.push(options);
 
         return { destroy: destroyMock, element: this.element };
+    }
+}
+
+class CapturingToasterController extends ToasterController {
+    connect() {
+        try {
+            super.connect();
+        } catch (error) {
+            this.connectionError = error;
+        }
     }
 }
 
@@ -185,8 +195,73 @@ test.serial("disconnect with autoDisconnect=false (default) keeps toaster alive"
     expect(window.toaster).toBeDefined();
 });
 
+test.serial("disconnecting a non-owner host does not destroy the active manager", async () => {
+    mounted = await mountMultipleControllers({ toaster: TestToasterController }, `
+        <div id="owner" data-controller="toaster"></div>
+        <div id="non-owner" data-controller="toaster" data-toaster-auto-disconnect-value="true"></div>
+    `);
+    const active = window.toaster;
+    const nonOwner = mounted.getController("toaster", document.querySelector("#non-owner"));
+
+    nonOwner.disconnect();
+
+    expect(createCalls).toHaveLength(1);
+    expect(destroyMock).not.toHaveBeenCalled();
+    expect(window.toaster).toBe(active);
+});
+
+test.serial("integrates the controller with the authored template manager", async () => {
+    mounted = await mountController("toaster", ToasterController, `
+        <div data-controller="toaster">
+            ${toasterTemplate()}
+        </div>
+    `);
+
+    window.toaster.success("Saved", { duration: 0 });
+
+    const toast = mounted.root.querySelector('[data-slot="toast"]');
+
+    expect(toast?.querySelector("[data-toaster-title]").textContent).toBe("Saved");
+    expect(mounted.root.querySelector("template").content.querySelector("[data-toaster-title]").textContent).toBe("");
+
+    window.toaster.destroy();
+});
+
+test.serial("fails before publishing the manager or entering the top layer without a template", async () => {
+    mounted = await mountController(
+        "toaster",
+        CapturingToasterController,
+        '<div data-controller="toaster"></div>',
+    );
+
+    expect(mounted.controller.connectionError?.message).toBe(
+        'Toaster requires exactly one direct child <template data-toaster-target="template">.',
+    );
+    expect(window.toaster).toBeUndefined();
+    expect(mounted.root.hasAttribute("role")).toBe(false);
+    expect(mounted.root.hasAttribute("popover")).toBe(false);
+    expect(mounted.root.hasAttribute("data-hotwire-top-layer")).toBe(false);
+});
+
 async function mount(html) {
     mounted = await mountController("toaster", TestToasterController, html);
+}
+
+function toasterTemplate() {
+    return `
+        <template data-toaster-target="template">
+            <div data-toaster-card data-slot="toast">
+                <div data-toaster-content data-slot="toast-content">
+                    <span data-toaster-icon data-slot="toast-icon" aria-hidden="true"></span>
+                    <div data-toaster-body data-slot="toast-body">
+                        <div data-toaster-title data-slot="toast-title"></div>
+                        <div data-toaster-description data-slot="toast-description"></div>
+                    </div>
+                    <button data-toaster-close data-slot="toast-close" type="button" aria-label="Close toast"></button>
+                </div>
+            </div>
+        </template>
+    `;
 }
 
 test.serial("recreates the instance when its viewport left the document", async () => {

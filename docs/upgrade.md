@@ -6,6 +6,21 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 
 ## Unreleased
 
+### Toaster cards move to an internal Blade template
+
+`<hw:toaster>` now renders one internal card blueprint inside its viewport. The manager clones that source instead of
+generating card anatomy in JavaScript. Component props, flash keys, `<hw:toast>`, Turbo Stream and redirect macros, and
+the `window.toaster` methods remain unchanged.
+
+An empty `<div data-controller="toaster"></div>` is no longer valid raw-controller markup. Use `<hw:toaster>` so the
+required package template is present. If the Toaster view was published and customized, republish it or merge the new
+internal `<template data-toaster-target="template">` anatomy into the override; there is deliberately no generated
+fallback for an old or incomplete view.
+
+The template lives inside the `data-turbo-permanent` viewport, while a flash trigger remains its sibling. Turbo Drive
+therefore keeps the active blueprint during navigation. After deploying a package version that changes this internal
+template, perform a full page reload rather than expecting Turbo to replace the permanent subtree in place.
+
 ### Tooltip content moves to an authored source template
 
 The Tooltip controller no longer accepts `data-tooltip-content-value` or generates its surface and arrow in JavaScript.
