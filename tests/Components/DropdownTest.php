@@ -5,6 +5,7 @@ use Emaia\LaravelHotwire\Components\Dropdown\Content as DropdownContent;
 use Emaia\LaravelHotwire\Components\Dropdown\Item as DropdownItem;
 use Emaia\LaravelHotwire\Components\Dropdown\Label as DropdownLabel;
 use Emaia\LaravelHotwire\Components\Dropdown\Trigger as DropdownTrigger;
+use Emaia\LaravelHotwire\Components\Sidebar;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
 use Emaia\LaravelHotwire\Support\FieldContext;
@@ -366,6 +367,8 @@ it('emits dropdown positioning defaults from content', function () {
 });
 
 it('emits custom and adaptive dropdown positioning values from content', function () {
+    $sidebarSlot = Sidebar::SLOTS['root']['name'];
+    $sidebarWrapperSlot = Sidebar::SLOTS['wrapper']['name'];
     $view = $this->blade('
         <x-hw::dropdown>
             <x-hw::dropdown.trigger>M</x-hw::dropdown.trigger>
@@ -386,7 +389,7 @@ it('emits custom and adaptive dropdown positioning values from content', functio
     $view->assertSee('data-dropdown-mobile-align-value="center"', false);
     $view->assertSee('data-dropdown-collapsed-side-value="right"', false);
     $view->assertSee('data-dropdown-collapsed-align-value="start"', false);
-    $view->assertSee('data-dropdown-collapsed-when-value="[data-slot=sidebar][data-collapsible=icon], [data-slot=sidebar][data-state=collapsed]', false);
+    $view->assertSee('data-dropdown-collapsed-when-value="[data-slot='.$sidebarSlot.'][data-collapsible=icon], [data-slot='.$sidebarSlot.'][data-state=collapsed], [data-slot='.$sidebarWrapperSlot.'][data-state=collapsed]', false);
     $view->assertSee('data-side="right"', false);
     $view->assertSee('data-align="end"', false);
 });

@@ -3,12 +3,13 @@
 namespace Emaia\LaravelHotwire\Components\Popover;
 
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
+use Emaia\LaravelHotwire\Components\Popover;
 
 class Description extends Component
 {
     public string $tag = 'p';
 
-    public string $slotName = 'popover-description';
+    public string $slotName = Popover::SLOTS['description']['name'];
 
     public function render()
     {

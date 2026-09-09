@@ -11,7 +11,7 @@
         'href' => $tag === 'a' && ! $dropdownItemDisabled ? $dropdownItemHref : null,
         'type' => $tag === 'button' ? $dropdownItemType : null,
         'data-turbo-frame' => $resolvedFrame,
-        'data-slot' => 'dropdown-item',
+        'data-slot' => $slotName,
         'data-variant' => $dropdownItemVariant,
         'data-inset' => $dropdownItemInset ? 'true' : null,
         'data-disabled' => $dropdownItemDisabled ? 'true' : null,

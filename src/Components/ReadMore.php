@@ -9,6 +9,15 @@ use Illuminate\Contracts\Support\Htmlable;
 
 class ReadMore extends Component
 {
+    public const array SLOTS = [
+        'root' => ['name' => 'read-more', 'kind' => 'visual'],
+        'content' => ['name' => 'read-more-content', 'kind' => 'visual'],
+        'fade' => ['name' => 'read-more-fade', 'kind' => 'visual'],
+        'trigger' => ['name' => 'read-more-trigger', 'kind' => 'visual'],
+        'trigger-icon' => ['name' => 'read-more-trigger-icon', 'kind' => 'visual'],
+        'viewport' => ['name' => 'read-more-viewport', 'kind' => 'structural'],
+    ];
+
     public string $readMoreId;
 
     public string $contentId;
@@ -34,6 +43,13 @@ class ReadMore extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.read-more');
+        return view('hotwire::component-views.read-more', [
+            'slotName' => self::SLOTS['root']['name'],
+            'contentSlotName' => self::SLOTS['content']['name'],
+            'fadeSlotName' => self::SLOTS['fade']['name'],
+            'triggerSlotName' => self::SLOTS['trigger']['name'],
+            'triggerIconSlotName' => self::SLOTS['trigger-icon']['name'],
+            'viewportSlotName' => self::SLOTS['viewport']['name'],
+        ]);
     }
 }

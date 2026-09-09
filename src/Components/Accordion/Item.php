@@ -2,6 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components\Accordion;
 
+use Emaia\LaravelHotwire\Components\Accordion;
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 use Emaia\LaravelHotwire\Support\StimulusAttributes;
 use Emaia\LaravelHotwire\Support\StimulusIdentifier;
@@ -50,7 +51,7 @@ class Item extends Component
 
         return [
             'itemAttributes' => StimulusAttributes::merge([
-                'data-slot' => 'accordion-item',
+                'data-slot' => Accordion::SLOTS['item']['name'],
                 "data-{$identifier}-target" => 'item',
                 "data-{$identifier}-open-override" => $this->open === null ? null : ($this->open ? 'true' : 'false'),
                 'data-value' => $this->value,

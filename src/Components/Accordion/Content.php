@@ -2,6 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components\Accordion;
 
+use Emaia\LaravelHotwire\Components\Accordion;
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 use Illuminate\Contracts\Support\Htmlable;
 
@@ -13,6 +14,8 @@ class Content extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.accordion-content');
+        return view('hotwire::component-views.accordion-content', [
+            'slotName' => Accordion::SLOTS['content']['name'],
+        ]);
     }
 }

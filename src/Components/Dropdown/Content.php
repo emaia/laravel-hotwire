@@ -3,6 +3,8 @@
 namespace Emaia\LaravelHotwire\Components\Dropdown;
 
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
+use Emaia\LaravelHotwire\Components\Dropdown;
+use Emaia\LaravelHotwire\Components\Sidebar;
 
 class Content extends Component
 {
@@ -19,7 +21,7 @@ class Content extends Component
         public string $mobileMedia = '(max-width: 767px)',
         public ?string $collapsedSide = null,
         public ?string $collapsedAlign = null,
-        public string $collapsedWhen = '[data-slot=sidebar][data-collapsible=icon], [data-slot=sidebar][data-state=collapsed], [data-slot=sidebar-wrapper][data-state=collapsed], [data-sidebar-collapsible=icon][data-state=collapsed]',
+        public string $collapsedWhen = '[data-slot='.Sidebar::SLOTS['root']['name'].'][data-collapsible=icon], [data-slot='.Sidebar::SLOTS['root']['name'].'][data-state=collapsed], [data-slot='.Sidebar::SLOTS['wrapper']['name'].'][data-state=collapsed], [data-sidebar-collapsible=icon][data-state=collapsed]',
         public string $motion = 'default',
         public string $width = '',
         public string $menuClass = '',
@@ -38,7 +40,9 @@ class Content extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.dropdown-content');
+        return view('hotwire::component-views.dropdown-content', [
+            'slotName' => Dropdown::SLOTS['menu']['name'],
+        ]);
     }
 
     /** @return array<string, mixed> */

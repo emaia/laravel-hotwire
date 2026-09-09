@@ -7,7 +7,7 @@
 
     $contentAttributes = [
         'id' => $popoverId,
-        'data-slot' => 'popover-content',
+        'data-slot' => $slotName,
         'data-state' => 'closed',
         'data-motion' => $popoverContentMotion,
         'data-side' => $popoverSide,

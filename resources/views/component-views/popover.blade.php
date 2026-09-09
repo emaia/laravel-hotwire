@@ -1,6 +1,6 @@
 @php
     $popoverAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
-        'data-slot' => 'popover',
+        'data-slot' => $slotName,
         'data-controller' => 'popover',
         'data-popover-open-value' => $popoverOpen ? 'true' : null,
         'data-popover-side-value' => $popoverSide,

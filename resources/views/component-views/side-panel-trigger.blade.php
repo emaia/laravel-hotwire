@@ -5,6 +5,6 @@
 @endphp
 
 <button {{ $triggerAttributes }}>
-    <x-hw::icon name="chevron-left" data-slot="side-panel-trigger-icon" aria-hidden="true" />
+    <x-hw::icon name="chevron-left" :data-slot="$triggerIconSlotName" aria-hidden="true" />
     <span hidden>{{ $label }}</span>
 </button>

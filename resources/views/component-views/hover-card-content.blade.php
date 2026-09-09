@@ -7,7 +7,7 @@
 
     $contentAttributes = [
         'id' => $hoverCardId,
-        'data-slot' => 'hover-card-content',
+        'data-slot' => $slotName,
         'data-state' => 'closed',
         'data-motion' => $hoverCardContentMotion,
         'data-side' => $hoverCardSide,

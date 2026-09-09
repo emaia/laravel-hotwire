@@ -10,6 +10,15 @@ use Illuminate\View\ComponentAttributeBag;
 
 class SidePanel extends Component
 {
+    public const array SLOTS = [
+        'root' => ['name' => 'side-panel', 'kind' => 'visual'],
+        'panel-content' => ['name' => 'side-panel-panel-content', 'kind' => 'visual'],
+        'trigger' => ['name' => 'side-panel-trigger', 'kind' => 'visual'],
+        'trigger-icon' => ['name' => 'side-panel-trigger-icon', 'kind' => 'visual'],
+        'inset' => ['name' => 'side-panel-inset', 'kind' => 'visual'],
+        'panel' => ['name' => 'side-panel-panel', 'kind' => 'structural'],
+    ];
+
     private const SIDES = ['left', 'right'];
 
     public string $cookieName;
@@ -66,7 +75,7 @@ class SidePanel extends Component
 
         return [
             'sidePanelAttributes' => StimulusAttributes::merge([
-                'data-slot' => 'side-panel',
+                'data-slot' => self::SLOTS['root']['name'],
                 'data-controller' => $this->sidePanelIdentifier,
                 'data-state' => $this->sidePanelState,
                 'data-side' => $this->side,

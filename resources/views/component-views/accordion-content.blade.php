@@ -1,6 +1,6 @@
 @php
     $contentAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
-        'data-slot' => 'accordion-content',
+        'data-slot' => $slotName,
     ], $attributes, $stimulus);
 @endphp
 

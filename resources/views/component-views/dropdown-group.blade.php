@@ -1,1 +1,1 @@
-<div {{ $attributes->merge(['role' => 'group', 'data-slot' => 'dropdown-group']) }}>{{ $slot }}</div>
+<div {{ $attributes->merge(['role' => 'group', 'data-slot' => $slotName]) }}>{{ $slot }}</div>

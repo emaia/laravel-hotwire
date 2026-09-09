@@ -12,7 +12,7 @@
 
     $triggerAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
         'type' => $hoverCardTriggerAs === 'button' ? $hoverCardTriggerType : null,
-        'data-slot' => 'hover-card-trigger',
+        'data-slot' => $slotName,
         'data-variant' => $hoverCardTriggerVariant,
         'data-size' => $hoverCardTriggerSize,
         'href' => $hoverCardTriggerAs === 'a' && ! $disabled ? $attributes->get('href') : null,

@@ -9,6 +9,15 @@ use Illuminate\Contracts\Support\Htmlable;
 
 class Popover extends Component
 {
+    public const array SLOTS = [
+        'root' => ['name' => 'popover', 'kind' => 'visual'],
+        'trigger' => ['name' => 'popover-trigger', 'kind' => 'visual'],
+        'content' => ['name' => 'popover-content', 'kind' => 'visual'],
+        'header' => ['name' => 'popover-header', 'kind' => 'visual'],
+        'title' => ['name' => 'popover-title', 'kind' => 'visual'],
+        'description' => ['name' => 'popover-description', 'kind' => 'visual'],
+    ];
+
     public function __construct(
         public string|object $id = '',
         public string $align = 'start',
@@ -32,7 +41,9 @@ class Popover extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.popover');
+        return view('hotwire::component-views.popover', [
+            'slotName' => self::SLOTS['root']['name'],
+        ]);
     }
 
     /** @return array<string, mixed> */

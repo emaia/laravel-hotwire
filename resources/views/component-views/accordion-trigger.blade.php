@@ -1,6 +1,6 @@
 @php
     $triggerAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
-        'data-slot' => 'accordion-trigger',
+        'data-slot' => $slotName,
     ], $attributes, $stimulus);
 @endphp
 
@@ -10,6 +10,6 @@
     {{ $slot }}
 
     @if ($icon)
-        <x-hw::icon name="chevron-down" data-slot="accordion-trigger-icon" aria-hidden="true" />
+        <x-hw::icon name="chevron-down" data-slot="{{ $iconSlotName }}" aria-hidden="true" />
     @endif
 </summary>

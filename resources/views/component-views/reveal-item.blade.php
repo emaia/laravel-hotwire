@@ -14,7 +14,7 @@
 
 <{{ $as }}
     {{ $attributes->except(['as', 'style', 'data-slot', 'data-reveal-item', 'data-reveal-owner'])->merge([
-        'data-slot' => 'reveal-item',
+        'data-slot' => $slotName,
         'data-reveal-item' => true,
         'data-reveal-owner' => $revealOwner,
         'style' => $style,

@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Components\SidePanel;
 
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
+use Emaia\LaravelHotwire\Components\SidePanel;
 use Emaia\LaravelHotwire\Support\StimulusAttributes;
 use Emaia\LaravelHotwire\Support\StimulusIdentifier;
 use Illuminate\View\ComponentAttributeBag;
@@ -12,7 +13,9 @@ class Panel extends Component
 {
     public function render()
     {
-        return view('hotwire::component-views.side-panel-panel');
+        return view('hotwire::component-views.side-panel-panel', [
+            'panelContentSlotName' => SidePanel::SLOTS['panel-content']['name'],
+        ]);
     }
 
     public function data(): array
@@ -39,7 +42,7 @@ class Panel extends Component
         return [
             'panelAttributes' => StimulusAttributes::merge([
                 'id' => $panelId,
-                'data-slot' => 'side-panel-panel',
+                'data-slot' => SidePanel::SLOTS['panel']['name'],
                 "data-{$identifier}-target" => 'panel',
                 'inert' => $sidePanelState === 'collapsed',
             ], $attributes, except: [

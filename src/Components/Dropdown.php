@@ -9,6 +9,18 @@ use Illuminate\Contracts\Support\Htmlable;
 
 class Dropdown extends Component
 {
+    public const array SLOTS = [
+        'root' => ['name' => 'dropdown', 'kind' => 'visual'],
+        'trigger' => ['name' => 'dropdown-trigger', 'kind' => 'visual'],
+        'trigger-icon' => ['name' => 'dropdown-trigger-icon', 'kind' => 'visual'],
+        'menu' => ['name' => 'dropdown-menu', 'kind' => 'visual'],
+        'group' => ['name' => 'dropdown-group', 'kind' => 'visual'],
+        'label' => ['name' => 'dropdown-label', 'kind' => 'visual'],
+        'item' => ['name' => 'dropdown-item', 'kind' => 'visual'],
+        'separator' => ['name' => 'dropdown-separator', 'kind' => 'visual'],
+        'shortcut' => ['name' => 'dropdown-shortcut', 'kind' => 'visual'],
+    ];
+
     public function __construct(
         public string|object $id = '',
         public bool $open = false,
@@ -20,7 +32,9 @@ class Dropdown extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.dropdown');
+        return view('hotwire::component-views.dropdown', [
+            'slotName' => self::SLOTS['root']['name'],
+        ]);
     }
 
     /** @return array<string, mixed> */

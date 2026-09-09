@@ -107,7 +107,9 @@ return [
             'description' => 'Native details/summary accordion with an items shortcut and single or multiple item coordination',
             'controllers' => ['accordion'],
             'styling' => [
-                'slots' => $slots(['accordion', 'accordion-item', 'accordion-trigger', 'accordion-trigger-icon', 'accordion-content']),
+                'slots' => [
+                    ['class' => Accordion::class],
+                ],
             ],
         ],
         'alert' => [
@@ -334,7 +336,9 @@ return [
             'description' => 'Button that cycles persisted light, dark and system color scheme modes',
             'controllers' => ['color-scheme', 'tooltip'],
             'styling' => [
-                'slots' => $slots(['color-scheme-toggle', 'color-scheme-icon']),
+                'slots' => [
+                    ['class' => ColorSchemeToggle::class],
+                ],
             ],
         ],
         'conditional-field' => [
@@ -382,7 +386,9 @@ return [
             'description' => 'Accessible disclosure dropdown with state-driven presence, responsive positioning and outside-click/Escape dismissal',
             'controllers' => ['dropdown'],
             'styling' => [
-                'slots' => $slots(['dropdown', 'dropdown-trigger', 'dropdown-trigger-icon', 'dropdown-menu', 'dropdown-group', 'dropdown-label', 'dropdown-item', 'dropdown-separator', 'dropdown-shortcut']),
+                'slots' => [
+                    ['class' => Dropdown::class],
+                ],
             ],
         ],
         'empty-state' => [
@@ -542,7 +548,9 @@ return [
             'description' => 'Anchored hover/focus preview card with delayed Floating UI positioning and state-driven presence',
             'controllers' => ['hover-card'],
             'styling' => [
-                'slots' => $slots(['hover-card', 'hover-card-trigger', 'hover-card-content']),
+                'slots' => [
+                    ['class' => HoverCard::class],
+                ],
             ],
         ],
         'icon' => [
@@ -816,7 +824,9 @@ return [
             'description' => 'Anchored click-triggered popover with state-driven presence for rich arbitrary content',
             'controllers' => ['popover'],
             'styling' => [
-                'slots' => $slots(['popover', 'popover-trigger', 'popover-content', 'popover-header', 'popover-title', 'popover-description']),
+                'slots' => [
+                    ['class' => Popover::class],
+                ],
             ],
         ],
         'progress' => [
@@ -866,10 +876,9 @@ return [
             'description' => 'Overflow-aware content preview with accessible expansion and first-paint clamping',
             'controllers' => ['read-more'],
             'styling' => [
-                'slots' => $slots(
-                    ['read-more', 'read-more-content', 'read-more-fade', 'read-more-trigger', 'read-more-trigger-icon'],
-                    ['read-more-viewport'],
-                ),
+                'slots' => [
+                    ['class' => ReadMore::class],
+                ],
             ],
         ],
         'reveal' => [
@@ -880,7 +889,9 @@ return [
             'description' => 'Progressively enhanced staggered entrance cascade for direct children or explicit items',
             'controllers' => ['reveal'],
             'styling' => [
-                'slots' => $slots(['reveal'], ['reveal-item']),
+                'slots' => [
+                    ['class' => Reveal::class],
+                ],
             ],
         ],
         'reveal.item' => [
@@ -891,7 +902,9 @@ return [
             'description' => 'Explicit nested item with an automatically shared cascade index',
             'controllers' => ['reveal'],
             'styling' => [
-                'slots' => $slots([], ['reveal-item']),
+                'slots' => [
+                    ['class' => Reveal::class, 'only' => ['item']],
+                ],
             ],
         ],
         'rich-text' => [
@@ -968,7 +981,9 @@ return [
             'description' => 'Composable collapsible panel for secondary navigation and workspace tools',
             'controllers' => ['side-panel'],
             'styling' => [
-                'slots' => $slots(['side-panel', 'side-panel-panel-content', 'side-panel-trigger', 'side-panel-trigger-icon', 'side-panel-inset'], ['side-panel-panel']),
+                'slots' => [
+                    ['class' => SidePanel::class],
+                ],
             ],
         ],
         'sidebar' => [

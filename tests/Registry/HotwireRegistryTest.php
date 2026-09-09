@@ -1,5 +1,6 @@
 <?php
 
+use Emaia\LaravelHotwire\Components\Accordion;
 use Emaia\LaravelHotwire\Components\Alert;
 use Emaia\LaravelHotwire\Components\AlertDialog;
 use Emaia\LaravelHotwire\Components\AspectRatio;
@@ -12,12 +13,15 @@ use Emaia\LaravelHotwire\Components\ButtonGroup;
 use Emaia\LaravelHotwire\Components\Card;
 use Emaia\LaravelHotwire\Components\Checkbox;
 use Emaia\LaravelHotwire\Components\CheckboxGroup;
+use Emaia\LaravelHotwire\Components\ColorScheme\Toggle as ColorSchemeToggle;
 use Emaia\LaravelHotwire\Components\ConditionalField;
 use Emaia\LaravelHotwire\Components\Drawer;
+use Emaia\LaravelHotwire\Components\Dropdown;
 use Emaia\LaravelHotwire\Components\EmptyState;
 use Emaia\LaravelHotwire\Components\Field;
 use Emaia\LaravelHotwire\Components\File;
 use Emaia\LaravelHotwire\Components\Form;
+use Emaia\LaravelHotwire\Components\HoverCard;
 use Emaia\LaravelHotwire\Components\Icon;
 use Emaia\LaravelHotwire\Components\Input;
 use Emaia\LaravelHotwire\Components\InputGroup;
@@ -27,13 +31,17 @@ use Emaia\LaravelHotwire\Components\Modal;
 use Emaia\LaravelHotwire\Components\MultiSelect;
 use Emaia\LaravelHotwire\Components\Navbar;
 use Emaia\LaravelHotwire\Components\Pagination;
+use Emaia\LaravelHotwire\Components\Popover;
 use Emaia\LaravelHotwire\Components\Progress;
 use Emaia\LaravelHotwire\Components\RadioGroup;
+use Emaia\LaravelHotwire\Components\ReadMore;
+use Emaia\LaravelHotwire\Components\Reveal;
 use Emaia\LaravelHotwire\Components\ScrollProgress;
 use Emaia\LaravelHotwire\Components\Select;
 use Emaia\LaravelHotwire\Components\Separator;
 use Emaia\LaravelHotwire\Components\Sheet;
 use Emaia\LaravelHotwire\Components\Sidebar;
+use Emaia\LaravelHotwire\Components\SidePanel;
 use Emaia\LaravelHotwire\Components\Skeleton;
 use Emaia\LaravelHotwire\Components\Slider;
 use Emaia\LaravelHotwire\Components\Spinner;
@@ -239,6 +247,96 @@ it('projects Navbar slots and its Sticky reference without duplicate ownership',
         'sticky' => 'visual',
     ])->and(HotwireRegistry::make()->component('navbar.item')->styling->slots)->toBe([
         'navbar-item' => 'visual',
+    ]);
+});
+
+it('projects interactive surface slot contracts from their component classes', function (string $key, string $class) {
+    $catalog = require __DIR__.'/../../src/Registry/catalog.php';
+    $slots = match ($class) {
+        Accordion::class => [
+            'root' => ['name' => 'accordion', 'kind' => 'visual'],
+            'item' => ['name' => 'accordion-item', 'kind' => 'visual'],
+            'trigger' => ['name' => 'accordion-trigger', 'kind' => 'visual'],
+            'trigger-icon' => ['name' => 'accordion-trigger-icon', 'kind' => 'visual'],
+            'content' => ['name' => 'accordion-content', 'kind' => 'visual'],
+        ],
+        ColorSchemeToggle::class => [
+            'root' => ['name' => 'color-scheme-toggle', 'kind' => 'visual'],
+            'icon' => ['name' => 'color-scheme-icon', 'kind' => 'visual'],
+        ],
+        Dropdown::class => [
+            'root' => ['name' => 'dropdown', 'kind' => 'visual'],
+            'trigger' => ['name' => 'dropdown-trigger', 'kind' => 'visual'],
+            'trigger-icon' => ['name' => 'dropdown-trigger-icon', 'kind' => 'visual'],
+            'menu' => ['name' => 'dropdown-menu', 'kind' => 'visual'],
+            'group' => ['name' => 'dropdown-group', 'kind' => 'visual'],
+            'label' => ['name' => 'dropdown-label', 'kind' => 'visual'],
+            'item' => ['name' => 'dropdown-item', 'kind' => 'visual'],
+            'separator' => ['name' => 'dropdown-separator', 'kind' => 'visual'],
+            'shortcut' => ['name' => 'dropdown-shortcut', 'kind' => 'visual'],
+        ],
+        HoverCard::class => [
+            'root' => ['name' => 'hover-card', 'kind' => 'visual'],
+            'trigger' => ['name' => 'hover-card-trigger', 'kind' => 'visual'],
+            'content' => ['name' => 'hover-card-content', 'kind' => 'visual'],
+        ],
+        Popover::class => [
+            'root' => ['name' => 'popover', 'kind' => 'visual'],
+            'trigger' => ['name' => 'popover-trigger', 'kind' => 'visual'],
+            'content' => ['name' => 'popover-content', 'kind' => 'visual'],
+            'header' => ['name' => 'popover-header', 'kind' => 'visual'],
+            'title' => ['name' => 'popover-title', 'kind' => 'visual'],
+            'description' => ['name' => 'popover-description', 'kind' => 'visual'],
+        ],
+        ReadMore::class => [
+            'root' => ['name' => 'read-more', 'kind' => 'visual'],
+            'content' => ['name' => 'read-more-content', 'kind' => 'visual'],
+            'fade' => ['name' => 'read-more-fade', 'kind' => 'visual'],
+            'trigger' => ['name' => 'read-more-trigger', 'kind' => 'visual'],
+            'trigger-icon' => ['name' => 'read-more-trigger-icon', 'kind' => 'visual'],
+            'viewport' => ['name' => 'read-more-viewport', 'kind' => 'structural'],
+        ],
+        Reveal::class => [
+            'root' => ['name' => 'reveal', 'kind' => 'visual'],
+            'item' => ['name' => 'reveal-item', 'kind' => 'structural'],
+        ],
+        SidePanel::class => [
+            'root' => ['name' => 'side-panel', 'kind' => 'visual'],
+            'panel-content' => ['name' => 'side-panel-panel-content', 'kind' => 'visual'],
+            'trigger' => ['name' => 'side-panel-trigger', 'kind' => 'visual'],
+            'trigger-icon' => ['name' => 'side-panel-trigger-icon', 'kind' => 'visual'],
+            'inset' => ['name' => 'side-panel-inset', 'kind' => 'visual'],
+            'panel' => ['name' => 'side-panel-panel', 'kind' => 'structural'],
+        ],
+    };
+    $resolved = [];
+
+    foreach ($slots as $slot) {
+        $resolved[$slot['name']] = $slot['kind'];
+    }
+
+    expect($class::SLOTS)->toBe($slots)
+        ->and($catalog['components'][$key]['styling']['slots'])->toBe([
+            ['class' => $class],
+        ])->and(HotwireRegistry::make()->component($key)->styling->slots)->toBe($resolved);
+})->with([
+    'accordion' => ['accordion', Accordion::class],
+    'color scheme toggle' => ['color-scheme.toggle', ColorSchemeToggle::class],
+    'dropdown' => ['dropdown', Dropdown::class],
+    'hover card' => ['hover-card', HoverCard::class],
+    'popover' => ['popover', Popover::class],
+    'read more' => ['read-more', ReadMore::class],
+    'reveal' => ['reveal', Reveal::class],
+    'side panel' => ['side-panel', SidePanel::class],
+]);
+
+it('projects Reveal item styling from the family contract', function () {
+    $catalog = require __DIR__.'/../../src/Registry/catalog.php';
+
+    expect($catalog['components']['reveal.item']['styling']['slots'])->toBe([
+        ['class' => Reveal::class, 'only' => ['item']],
+    ])->and(HotwireRegistry::make()->component('reveal.item')->styling->slots)->toBe([
+        'reveal-item' => 'structural',
     ]);
 });
 

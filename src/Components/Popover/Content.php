@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Components\Popover;
 
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
+use Emaia\LaravelHotwire\Components\Popover;
 
 class Content extends Component
 {
@@ -14,7 +15,9 @@ class Content extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.popover-content');
+        return view('hotwire::component-views.popover-content', [
+            'slotName' => Popover::SLOTS['content']['name'],
+        ]);
     }
 
     /** @return array<string, mixed> */

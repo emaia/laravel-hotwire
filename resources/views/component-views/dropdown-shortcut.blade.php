@@ -1,1 +1,1 @@
-<span {{ $attributes->merge(['data-slot' => 'dropdown-shortcut']) }}>{{ $slot }}</span>
+<span {{ $attributes->merge(['data-slot' => $slotName]) }}>{{ $slot }}</span>

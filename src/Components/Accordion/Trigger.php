@@ -2,6 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components\Accordion;
 
+use Emaia\LaravelHotwire\Components\Accordion;
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 use Illuminate\Contracts\Support\Htmlable;
 
@@ -14,6 +15,9 @@ class Trigger extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.accordion-trigger');
+        return view('hotwire::component-views.accordion-trigger', [
+            'slotName' => Accordion::SLOTS['trigger']['name'],
+            'iconSlotName' => Accordion::SLOTS['trigger-icon']['name'],
+        ]);
     }
 }
