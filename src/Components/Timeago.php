@@ -8,6 +8,10 @@ use Illuminate\Contracts\Support\Htmlable;
 
 class Timeago extends Component
 {
+    public const array SLOTS = [
+        'root' => ['name' => 'timeago', 'kind' => 'visual'],
+    ];
+
     public string $iso;
 
     public string $formattedTitle;
@@ -31,6 +35,8 @@ class Timeago extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.timeago');
+        return view('hotwire::component-views.timeago', [
+            'slotName' => self::SLOTS['root']['name'],
+        ]);
     }
 }

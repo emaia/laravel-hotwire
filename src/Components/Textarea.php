@@ -15,6 +15,11 @@ class Textarea extends Component
 {
     use StripsNullProps;
 
+    public const array SLOTS = [
+        'wrapper' => ['name' => 'textarea-wrapper', 'kind' => 'visual'],
+        'root' => ['name' => 'textarea', 'kind' => 'visual'],
+    ];
+
     public function __construct(
         public ?string $name = null,
         public ?string $id = null,
@@ -33,7 +38,10 @@ class Textarea extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.textarea');
+        return view('hotwire::component-views.textarea', [
+            'wrapperSlotName' => self::SLOTS['wrapper']['name'],
+            'slotName' => self::SLOTS['root']['name'],
+        ]);
     }
 
     public function data(): array

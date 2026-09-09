@@ -9,6 +9,11 @@ use Stringable;
 
 class Navbar extends Component
 {
+    public const array SLOTS = [
+        'root' => ['name' => 'navbar', 'kind' => 'visual'],
+        'item' => ['name' => 'navbar-item', 'kind' => 'visual'],
+    ];
+
     /**
      * @param  array<int, array{label: string|int|Stringable|Htmlable, href?: string|Stringable|null, current?: bool, disabled?: bool, as?: string|null, type?: string, frame?: string|object|bool|null}>  $items
      */
@@ -28,7 +33,10 @@ class Navbar extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.navbar');
+        return view('hotwire::component-views.navbar', [
+            'slotName' => self::SLOTS['root']['name'],
+            'stickySlotName' => Sticky::SLOTS['root']['name'],
+        ]);
     }
 
     public function data(): array

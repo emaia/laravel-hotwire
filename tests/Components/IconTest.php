@@ -7,6 +7,7 @@ it('renders an SVG element for a known icon', function () {
 
     $view->assertSee('svg', false)
         ->assertSee('<svg', false)
+        ->assertSee('data-slot="icon"', false)
         ->assertSee('</svg>', false);
 });
 

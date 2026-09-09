@@ -8,7 +8,7 @@
     stroke-width="2"
     stroke-linecap="round"
     stroke-linejoin="round"
-    {{ $attributes->merge(['data-slot' => 'icon']) }}
+    {{ $attributes->merge(['data-slot' => $slotName]) }}
 >
     @include($iconView)
 </svg>

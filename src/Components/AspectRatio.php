@@ -6,6 +6,10 @@ use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 
 class AspectRatio extends Component
 {
+    public const array SLOTS = [
+        'root' => ['name' => 'aspect-ratio', 'kind' => 'structural'],
+    ];
+
     public string $resolvedRatio;
 
     public function __construct(
@@ -18,7 +22,9 @@ class AspectRatio extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.aspect-ratio');
+        return view('hotwire::component-views.aspect-ratio', [
+            'slotName' => self::SLOTS['root']['name'],
+        ]);
     }
 
     private function resolveRatio(): string

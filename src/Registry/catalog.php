@@ -144,7 +144,9 @@ return [
             'description' => 'Static media wrapper that preserves a configurable aspect ratio',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots([], ['aspect-ratio']),
+                'slots' => [
+                    ['class' => AspectRatio::class],
+                ],
             ],
         ],
         'attachment' => [
@@ -177,7 +179,9 @@ return [
             'description' => 'Fixed accessible button that appears after scrolling and returns the page to the top',
             'controllers' => ['back-to-top'],
             'styling' => [
-                'slots' => $slots(['back-to-top']),
+                'slots' => [
+                    ['class' => BackToTop::class],
+                ],
             ],
         ],
         'badge' => [
@@ -188,7 +192,9 @@ return [
             'description' => 'Compact status label with semantic variants and optional link rendering',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(['badge']),
+                'slots' => [
+                    ['class' => Badge::class],
+                ],
             ],
         ],
         'breadcrumb' => [
@@ -210,7 +216,9 @@ return [
             'description' => 'Displays a button or a component that looks like a button.',
             'controllers' => ['hotkey', 'tooltip'],
             'styling' => [
-                'slots' => $slots(['button']),
+                'slots' => [
+                    ['class' => Button::class],
+                ],
             ],
         ],
         'button-group' => [
@@ -270,7 +278,9 @@ return [
             'description' => 'Standalone native checkbox with old input restore, unchecked hidden value and optional indeterminate state',
             'controllers' => ['checkbox', 'auto-submit'],
             'styling' => [
-                'slots' => $slots(['checkbox']),
+                'slots' => [
+                    ['class' => Checkbox::class],
+                ],
             ],
         ],
         'checkbox-group' => [
@@ -525,7 +535,9 @@ return [
             'description' => 'Inline SVG icon from the embedded Lucide subset (~21 icons)',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(['icon']),
+                'slots' => [
+                    ['class' => Icon::class],
+                ],
             ],
         ],
         'input' => [
@@ -733,7 +745,10 @@ return [
             'description' => 'Horizontal or vertical navigation bar with an items shortcut, current-page state and optional sticky sugar',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(['navbar', 'navbar-item', 'sticky']),
+                'slots' => [
+                    ['class' => Navbar::class],
+                    ['class' => Sticky::class, 'only' => ['root']],
+                ],
             ],
         ],
         'navbar.item' => [
@@ -744,7 +759,9 @@ return [
             'description' => 'Navbar item that renders as a link or button with current and disabled semantics',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(['navbar-item']),
+                'slots' => [
+                    ['class' => Navbar::class, 'only' => ['item']],
+                ],
             ],
         ],
         'optimistic' => [
@@ -873,7 +890,9 @@ return [
             'description' => 'Fixed scroll progress bar that fills as the page scrolls',
             'controllers' => ['scroll-progress'],
             'styling' => [
-                'slots' => $slots(['scroll-progress']),
+                'slots' => [
+                    ['class' => ScrollProgress::class],
+                ],
             ],
         ],
         'select' => [
@@ -895,7 +914,9 @@ return [
             'description' => 'Horizontal or vertical visual separator with semantic orientation hooks',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(['separator']),
+                'slots' => [
+                    ['class' => Separator::class],
+                ],
             ],
         ],
         'sheet' => [
@@ -943,7 +964,9 @@ return [
             'description' => 'Animated placeholder block for loading states',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(['skeleton']),
+                'slots' => [
+                    ['class' => Skeleton::class],
+                ],
             ],
         ],
         'slider' => [
@@ -954,7 +977,9 @@ return [
             'description' => 'Native scalar range input with Laravel field integration and progressive visual fill',
             'controllers' => ['slider', 'auto-submit'],
             'styling' => [
-                'slots' => $slots(['slider']),
+                'slots' => [
+                    ['class' => Slider::class],
+                ],
             ],
         ],
         'spinner' => [
@@ -965,7 +990,9 @@ return [
             'description' => 'Animated SVG spinner — no JavaScript required',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(['spinner']),
+                'slots' => [
+                    ['class' => Spinner::class],
+                ],
             ],
         ],
         'sticky' => [
@@ -976,7 +1003,9 @@ return [
             'description' => 'Generic top or bottom sticky surface primitive with configurable offset and tag',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(['sticky']),
+                'slots' => [
+                    ['class' => Sticky::class],
+                ],
             ],
         ],
         'switch' => [
@@ -987,7 +1016,9 @@ return [
             'description' => 'Native checkbox rendered as an accessible switch with old input restore and unchecked hidden value',
             'controllers' => ['auto-submit'],
             'styling' => [
-                'slots' => $slots(['switch']),
+                'slots' => [
+                    ['class' => SwitchInput::class],
+                ],
             ],
         ],
         'table' => [
@@ -1020,7 +1051,9 @@ return [
             'description' => 'Textarea with auto-resize and optional char counter',
             'controllers' => ['auto-resize', 'char-counter', 'auto-submit'],
             'styling' => [
-                'slots' => $slots(['textarea-wrapper', 'textarea']),
+                'slots' => [
+                    ['class' => Textarea::class],
+                ],
             ],
         ],
         'timeago' => [
@@ -1031,7 +1064,9 @@ return [
             'description' => 'Self-refreshing relative timestamp element wrapping the timeago controller',
             'controllers' => ['timeago'],
             'styling' => [
-                'slots' => $slots(['timeago']),
+                'slots' => [
+                    ['class' => Timeago::class],
+                ],
             ],
         ],
         'toast' => [

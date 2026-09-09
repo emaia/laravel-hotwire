@@ -14,7 +14,7 @@
     }
 
     $textareaAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
-        'data-slot' => 'textarea',
+        'data-slot' => $slotName,
         'id' => $resolvedId,
         'name' => $name ?: null,
         'aria-describedby' => $errorReference,
@@ -32,7 +32,7 @@
 @endphp
 
 @if ($needsWrapper)
-<span data-slot="textarea-wrapper" @if ($wrapperClass !== '') class="{{ $wrapperClass }}" @endif data-controller="char-counter" @if ($countdown) data-char-counter-countdown-value="true" @endif>
+<span data-slot="{{ $wrapperSlotName }}" @if ($wrapperClass !== '') class="{{ $wrapperClass }}" @endif data-controller="char-counter" @if ($countdown) data-char-counter-countdown-value="true" @endif>
 @endif
 
 <textarea

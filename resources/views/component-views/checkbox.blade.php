@@ -14,7 +14,7 @@
     }
 
     $checkboxAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
-        'data-slot' => 'checkbox',
+        'data-slot' => $slotName,
         'data-checkable' => 'true',
         'type' => 'checkbox',
         'id' => $resolvedId,

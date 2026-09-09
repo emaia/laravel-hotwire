@@ -14,7 +14,7 @@
     }
 
     $switchAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
-        'data-slot' => 'switch',
+        'data-slot' => $slotName,
         'data-checkable' => 'true',
         'data-size' => $size,
         'type' => 'checkbox',

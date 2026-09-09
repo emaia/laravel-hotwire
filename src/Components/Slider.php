@@ -14,6 +14,10 @@ class Slider extends Component
 {
     use StripsNullProps;
 
+    public const array SLOTS = [
+        'root' => ['name' => 'slider', 'kind' => 'visual'],
+    ];
+
     public function __construct(
         public ?string $name = null,
         public ?string $id = null,
@@ -36,7 +40,9 @@ class Slider extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.slider');
+        return view('hotwire::component-views.slider', [
+            'slotName' => self::SLOTS['root']['name'],
+        ]);
     }
 
     public function data(): array

@@ -7,6 +7,10 @@ use Emaia\LaravelHotwire\Support\PolymorphicTag;
 
 class Sticky extends Component
 {
+    public const array SLOTS = [
+        'root' => ['name' => 'sticky', 'kind' => 'visual'],
+    ];
+
     public function __construct(
         public string $side = 'top',
         public string|int|float $offset = 0,
@@ -19,6 +23,8 @@ class Sticky extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.sticky');
+        return view('hotwire::component-views.sticky', [
+            'slotName' => self::SLOTS['root']['name'],
+        ]);
     }
 }

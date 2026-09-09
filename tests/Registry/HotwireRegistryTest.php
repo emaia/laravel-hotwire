@@ -2,17 +2,33 @@
 
 use Emaia\LaravelHotwire\Components\Alert;
 use Emaia\LaravelHotwire\Components\AlertDialog;
+use Emaia\LaravelHotwire\Components\AspectRatio;
+use Emaia\LaravelHotwire\Components\BackToTop;
+use Emaia\LaravelHotwire\Components\Badge;
+use Emaia\LaravelHotwire\Components\Button;
 use Emaia\LaravelHotwire\Components\Card;
+use Emaia\LaravelHotwire\Components\Checkbox;
 use Emaia\LaravelHotwire\Components\Drawer;
 use Emaia\LaravelHotwire\Components\Field;
+use Emaia\LaravelHotwire\Components\Icon;
 use Emaia\LaravelHotwire\Components\InputGroup;
 use Emaia\LaravelHotwire\Components\Item;
 use Emaia\LaravelHotwire\Components\Kbd;
 use Emaia\LaravelHotwire\Components\Modal;
 use Emaia\LaravelHotwire\Components\MultiSelect;
+use Emaia\LaravelHotwire\Components\Navbar;
 use Emaia\LaravelHotwire\Components\Pagination;
+use Emaia\LaravelHotwire\Components\ScrollProgress;
+use Emaia\LaravelHotwire\Components\Separator;
 use Emaia\LaravelHotwire\Components\Sheet;
 use Emaia\LaravelHotwire\Components\Sidebar;
+use Emaia\LaravelHotwire\Components\Skeleton;
+use Emaia\LaravelHotwire\Components\Slider;
+use Emaia\LaravelHotwire\Components\Spinner;
+use Emaia\LaravelHotwire\Components\Sticky;
+use Emaia\LaravelHotwire\Components\SwitchInput;
+use Emaia\LaravelHotwire\Components\Textarea;
+use Emaia\LaravelHotwire\Components\Timeago;
 use Emaia\LaravelHotwire\Components\Toaster;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\SessionToast;
@@ -74,6 +90,67 @@ it('projects the Alert Dialog family slot contract from its component class', fu
         'alert-dialog-action' => 'visual',
         'alert-dialog' => 'structural',
         'alert-dialog-trigger' => 'structural',
+    ]);
+});
+
+it('projects singleton primitive slot contracts from their component classes', function (string $key, string $class, string $name, string $kind) {
+    $catalog = require __DIR__.'/../../src/Registry/catalog.php';
+
+    expect($class::SLOTS)->toBe([
+        'root' => ['name' => $name, 'kind' => $kind],
+    ])->and($catalog['components'][$key]['styling']['slots'])->toBe([
+        ['class' => $class],
+    ])->and(HotwireRegistry::make()->component($key)->styling->slots)->toBe([
+        $name => $kind,
+    ]);
+})->with([
+    'aspect ratio' => ['aspect-ratio', AspectRatio::class, 'aspect-ratio', 'structural'],
+    'back to top' => ['back-to-top', BackToTop::class, 'back-to-top', 'visual'],
+    'badge' => ['badge', Badge::class, 'badge', 'visual'],
+    'button' => ['button', Button::class, 'button', 'visual'],
+    'checkbox' => ['checkbox', Checkbox::class, 'checkbox', 'visual'],
+    'icon' => ['icon', Icon::class, 'icon', 'visual'],
+    'scroll progress' => ['scroll-progress', ScrollProgress::class, 'scroll-progress', 'visual'],
+    'separator' => ['separator', Separator::class, 'separator', 'visual'],
+    'skeleton' => ['skeleton', Skeleton::class, 'skeleton', 'visual'],
+    'slider' => ['slider', Slider::class, 'slider', 'visual'],
+    'spinner' => ['spinner', Spinner::class, 'spinner', 'visual'],
+    'sticky' => ['sticky', Sticky::class, 'sticky', 'visual'],
+    'switch' => ['switch', SwitchInput::class, 'switch', 'visual'],
+    'timeago' => ['timeago', Timeago::class, 'timeago', 'visual'],
+]);
+
+it('projects the Textarea family slot contract from its component class', function () {
+    $catalog = require __DIR__.'/../../src/Registry/catalog.php';
+
+    expect(Textarea::SLOTS)->toBe([
+        'wrapper' => ['name' => 'textarea-wrapper', 'kind' => 'visual'],
+        'root' => ['name' => 'textarea', 'kind' => 'visual'],
+    ])->and($catalog['components']['textarea']['styling']['slots'])->toBe([
+        ['class' => Textarea::class],
+    ])->and(HotwireRegistry::make()->component('textarea')->styling->slots)->toBe([
+        'textarea-wrapper' => 'visual',
+        'textarea' => 'visual',
+    ]);
+});
+
+it('projects Navbar slots and its Sticky reference without duplicate ownership', function () {
+    $catalog = require __DIR__.'/../../src/Registry/catalog.php';
+
+    expect(Navbar::SLOTS)->toBe([
+        'root' => ['name' => 'navbar', 'kind' => 'visual'],
+        'item' => ['name' => 'navbar-item', 'kind' => 'visual'],
+    ])->and($catalog['components']['navbar']['styling']['slots'])->toBe([
+        ['class' => Navbar::class],
+        ['class' => Sticky::class, 'only' => ['root']],
+    ])->and($catalog['components']['navbar.item']['styling']['slots'])->toBe([
+        ['class' => Navbar::class, 'only' => ['item']],
+    ])->and(HotwireRegistry::make()->component('navbar')->styling->slots)->toBe([
+        'navbar' => 'visual',
+        'navbar-item' => 'visual',
+        'sticky' => 'visual',
+    ])->and(HotwireRegistry::make()->component('navbar.item')->styling->slots)->toBe([
+        'navbar-item' => 'visual',
     ]);
 });
 

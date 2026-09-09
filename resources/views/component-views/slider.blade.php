@@ -14,7 +14,7 @@
     }
 
     $sliderAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
-        'data-slot' => 'slider',
+        'data-slot' => $slotName,
         'data-orientation' => $orientation,
         'aria-orientation' => $orientation === 'vertical' ? 'vertical' : null,
         'type' => 'range',

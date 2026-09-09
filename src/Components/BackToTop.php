@@ -7,6 +7,10 @@ use Illuminate\Contracts\Support\Htmlable;
 
 class BackToTop extends Component
 {
+    public const array SLOTS = [
+        'root' => ['name' => 'back-to-top', 'kind' => 'visual'],
+    ];
+
     public function __construct(
         public int $threshold = 400,
         public string $label = 'Back to top',
@@ -18,6 +22,8 @@ class BackToTop extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.back-to-top');
+        return view('hotwire::component-views.back-to-top', [
+            'slotName' => self::SLOTS['root']['name'],
+        ]);
     }
 }

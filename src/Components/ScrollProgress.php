@@ -7,6 +7,10 @@ use Illuminate\Contracts\Support\Htmlable;
 
 class ScrollProgress extends Component
 {
+    public const array SLOTS = [
+        'root' => ['name' => 'scroll-progress', 'kind' => 'visual'],
+    ];
+
     public function __construct(
         public int $throttleDelay = 15,
         public ?Htmlable $stimulus = null,
@@ -14,6 +18,8 @@ class ScrollProgress extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.scroll-progress');
+        return view('hotwire::component-views.scroll-progress', [
+            'slotName' => self::SLOTS['root']['name'],
+        ]);
     }
 }
