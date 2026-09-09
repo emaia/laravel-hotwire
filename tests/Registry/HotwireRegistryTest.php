@@ -10,6 +10,7 @@ use Emaia\LaravelHotwire\Components\Kbd;
 use Emaia\LaravelHotwire\Components\Modal;
 use Emaia\LaravelHotwire\Components\MultiSelect;
 use Emaia\LaravelHotwire\Components\Pagination;
+use Emaia\LaravelHotwire\Components\Sheet;
 use Emaia\LaravelHotwire\Components\Sidebar;
 use Emaia\LaravelHotwire\Components\Toaster;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
@@ -320,6 +321,38 @@ it('projects the Pagination family slot contract from its component class', func
         'pagination-next-icon' => 'visual',
         'pagination-ellipsis' => 'visual',
         'pagination-status' => 'structural',
+    ]);
+});
+
+it('projects the Sheet family slot contract from its component class', function () {
+    $catalog = require __DIR__.'/../../src/Registry/catalog.php';
+
+    expect(Sheet::SLOTS)->toBe([
+        'overlay' => ['name' => 'sheet-overlay', 'kind' => 'visual'],
+        'trigger' => ['name' => 'sheet-trigger', 'kind' => 'visual'],
+        'backdrop' => ['name' => 'sheet-backdrop', 'kind' => 'visual'],
+        'content' => ['name' => 'sheet-content', 'kind' => 'visual'],
+        'header' => ['name' => 'sheet-header', 'kind' => 'visual'],
+        'title' => ['name' => 'sheet-title', 'kind' => 'visual'],
+        'description' => ['name' => 'sheet-description', 'kind' => 'visual'],
+        'footer' => ['name' => 'sheet-footer', 'kind' => 'visual'],
+        'close' => ['name' => 'sheet-close', 'kind' => 'visual'],
+        'close-icon' => ['name' => 'sheet-close-icon', 'kind' => 'visual'],
+        'root' => ['name' => 'sheet', 'kind' => 'structural'],
+    ])->and($catalog['components']['sheet']['styling']['slots'])->toBe([
+        ['class' => Sheet::class],
+    ])->and(HotwireRegistry::make()->component('sheet')->styling->slots)->toBe([
+        'sheet-overlay' => 'visual',
+        'sheet-trigger' => 'visual',
+        'sheet-backdrop' => 'visual',
+        'sheet-content' => 'visual',
+        'sheet-header' => 'visual',
+        'sheet-title' => 'visual',
+        'sheet-description' => 'visual',
+        'sheet-footer' => 'visual',
+        'sheet-close' => 'visual',
+        'sheet-close-icon' => 'visual',
+        'sheet' => 'structural',
     ]);
 });
 

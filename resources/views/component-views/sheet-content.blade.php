@@ -25,7 +25,7 @@
 @endphp
 
 <div
-    data-slot="sheet-overlay"
+    data-slot="{{ $overlaySlotName }}"
     data-sheet-target="modal"
     data-state="closed"
     data-motion="{{ $sheetMotion }}"
@@ -44,14 +44,14 @@
 >
     @if ($sheetBackdrop)
         <div
-            data-slot="sheet-backdrop"
+            data-slot="{{ $backdropSlotName }}"
             data-sheet-target="backdrop"
             data-action="click->sheet#clickOutside"
         ></div>
     @endif
 
     <div
-        data-slot="sheet-content"
+        data-slot="{{ $slotName }}"
         data-side="{{ $sheetSide }}"
         data-sheet-target="dialog"
         {{ $attributes }}
@@ -72,7 +72,7 @@
 
         <button
             type="button"
-            data-slot="sheet-close-icon"
+            data-slot="{{ $closeIconSlotName }}"
             data-action="sheet#close"
             aria-label="Close sheet"
         >

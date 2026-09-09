@@ -59,6 +59,39 @@ it('renders trigger close and semantic subcomponents', function () {
         ->assertSee('data-action="sheet#close"', false);
 });
 
+it('renders Sheet family anatomy with semantic slots', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::sheet>
+            <x-hw::sheet.trigger>Open</x-hw::sheet.trigger>
+            <x-hw::sheet.content>
+                <x-hw::sheet.header>
+                    <x-hw::sheet.title>Title</x-hw::sheet.title>
+                    <x-hw::sheet.description>Description</x-hw::sheet.description>
+                </x-hw::sheet.header>
+                <x-hw::sheet.footer>
+                    <x-hw::sheet.close>Close</x-hw::sheet.close>
+                </x-hw::sheet.footer>
+            </x-hw::sheet.content>
+        </x-hw::sheet>
+    BLADE);
+
+    preg_match_all('/data-slot="(sheet(?:-[a-z0-9]+)*)"/', $html, $matches);
+
+    expect($matches[1])->toBe([
+        'sheet',
+        'sheet-trigger',
+        'sheet-overlay',
+        'sheet-backdrop',
+        'sheet-content',
+        'sheet-header',
+        'sheet-title',
+        'sheet-description',
+        'sheet-footer',
+        'sheet-close',
+        'sheet-close-icon',
+    ]);
+});
+
 it('maps side to semantic state and size axis', function () {
     $right = $this->blade('<x-hw::sheet side="right" size="24rem"><x-hw::sheet.content /></x-hw::sheet>');
     $right->assertSee('data-side="right"', false)

@@ -13,6 +13,20 @@ use Illuminate\View\ComponentAttributeBag;
 
 class Sheet extends Component
 {
+    public const array SLOTS = [
+        'overlay' => ['name' => 'sheet-overlay', 'kind' => 'visual'],
+        'trigger' => ['name' => 'sheet-trigger', 'kind' => 'visual'],
+        'backdrop' => ['name' => 'sheet-backdrop', 'kind' => 'visual'],
+        'content' => ['name' => 'sheet-content', 'kind' => 'visual'],
+        'header' => ['name' => 'sheet-header', 'kind' => 'visual'],
+        'title' => ['name' => 'sheet-title', 'kind' => 'visual'],
+        'description' => ['name' => 'sheet-description', 'kind' => 'visual'],
+        'footer' => ['name' => 'sheet-footer', 'kind' => 'visual'],
+        'close' => ['name' => 'sheet-close', 'kind' => 'visual'],
+        'close-icon' => ['name' => 'sheet-close-icon', 'kind' => 'visual'],
+        'root' => ['name' => 'sheet', 'kind' => 'structural'],
+    ];
+
     private const SIDES = ['left', 'right', 'top', 'bottom'];
 
     private OverlayLabelContext $overlayLabelContext;
@@ -111,7 +125,7 @@ class Sheet extends Component
         return [
             'sheetAttributes' => StimulusAttributes::merge([
                 'id' => $this->id,
-                'data-slot' => 'sheet',
+                'data-slot' => self::SLOTS['root']['name'],
                 'data-controller' => 'sheet',
                 'data-sheet-lock-scroll-value' => $this->lockScroll ? 'true' : 'false',
                 'data-sheet-close-on-escape-value' => $this->closeOnEscape ? 'true' : 'false',

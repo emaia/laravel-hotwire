@@ -907,10 +907,9 @@ return [
             'description' => 'Off-canvas sheet with state-driven motion, focus trap and side-aware slide transitions',
             'controllers' => ['sheet', 'turbo--view-transition'],
             'styling' => [
-                'slots' => $slots(
-                    ['sheet-overlay', 'sheet-trigger', 'sheet-backdrop', 'sheet-content', 'sheet-close-icon', 'sheet-header', 'sheet-title', 'sheet-description', 'sheet-footer', 'sheet-close'],
-                    ['sheet'],
-                ),
+                'slots' => [
+                    ['class' => Sheet::class],
+                ],
             ],
         ],
         'side-panel' => [
