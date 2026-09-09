@@ -1,3 +1,3 @@
-<div data-slot="table-container">
-    <table data-slot="table" {{ $attributes }}>{{ $slot }}</table>
+<div data-slot="{{ $containerSlotName }}">
+    <table data-slot="{{ $slotName }}" {{ $attributes }}>{{ $slot }}</table>
 </div>

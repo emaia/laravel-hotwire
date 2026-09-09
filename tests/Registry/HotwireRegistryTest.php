@@ -3,12 +3,16 @@
 use Emaia\LaravelHotwire\Components\Alert;
 use Emaia\LaravelHotwire\Components\AlertDialog;
 use Emaia\LaravelHotwire\Components\AspectRatio;
+use Emaia\LaravelHotwire\Components\Avatar;
 use Emaia\LaravelHotwire\Components\BackToTop;
 use Emaia\LaravelHotwire\Components\Badge;
+use Emaia\LaravelHotwire\Components\Breadcrumb;
 use Emaia\LaravelHotwire\Components\Button;
+use Emaia\LaravelHotwire\Components\ButtonGroup;
 use Emaia\LaravelHotwire\Components\Card;
 use Emaia\LaravelHotwire\Components\Checkbox;
 use Emaia\LaravelHotwire\Components\Drawer;
+use Emaia\LaravelHotwire\Components\EmptyState;
 use Emaia\LaravelHotwire\Components\Field;
 use Emaia\LaravelHotwire\Components\Icon;
 use Emaia\LaravelHotwire\Components\InputGroup;
@@ -18,6 +22,7 @@ use Emaia\LaravelHotwire\Components\Modal;
 use Emaia\LaravelHotwire\Components\MultiSelect;
 use Emaia\LaravelHotwire\Components\Navbar;
 use Emaia\LaravelHotwire\Components\Pagination;
+use Emaia\LaravelHotwire\Components\Progress;
 use Emaia\LaravelHotwire\Components\ScrollProgress;
 use Emaia\LaravelHotwire\Components\Separator;
 use Emaia\LaravelHotwire\Components\Sheet;
@@ -27,9 +32,13 @@ use Emaia\LaravelHotwire\Components\Slider;
 use Emaia\LaravelHotwire\Components\Spinner;
 use Emaia\LaravelHotwire\Components\Sticky;
 use Emaia\LaravelHotwire\Components\SwitchInput;
+use Emaia\LaravelHotwire\Components\Table;
+use Emaia\LaravelHotwire\Components\Tabs;
 use Emaia\LaravelHotwire\Components\Textarea;
 use Emaia\LaravelHotwire\Components\Timeago;
 use Emaia\LaravelHotwire\Components\Toaster;
+use Emaia\LaravelHotwire\Components\Toggle;
+use Emaia\LaravelHotwire\Components\ToggleGroup;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\SessionToast;
 
@@ -118,6 +127,7 @@ it('projects singleton primitive slot contracts from their component classes', f
     'sticky' => ['sticky', Sticky::class, 'sticky', 'visual'],
     'switch' => ['switch', SwitchInput::class, 'switch', 'visual'],
     'timeago' => ['timeago', Timeago::class, 'timeago', 'visual'],
+    'toggle' => ['toggle', Toggle::class, 'toggle', 'visual'],
 ]);
 
 it('projects the Textarea family slot contract from its component class', function () {
@@ -151,6 +161,102 @@ it('projects Navbar slots and its Sticky reference without duplicate ownership',
         'sticky' => 'visual',
     ])->and(HotwireRegistry::make()->component('navbar.item')->styling->slots)->toBe([
         'navbar-item' => 'visual',
+    ]);
+});
+
+it('projects composed family slot contracts from their root classes', function (string $key, string $class) {
+    $catalog = require __DIR__.'/../../src/Registry/catalog.php';
+    $slots = match ($class) {
+        Avatar::class => [
+            'root' => ['name' => 'avatar', 'kind' => 'visual'],
+            'image' => ['name' => 'avatar-image', 'kind' => 'visual'],
+            'fallback' => ['name' => 'avatar-fallback', 'kind' => 'visual'],
+            'badge' => ['name' => 'avatar-badge', 'kind' => 'visual'],
+            'group' => ['name' => 'avatar-group', 'kind' => 'visual'],
+            'group-count' => ['name' => 'avatar-group-count', 'kind' => 'visual'],
+        ],
+        Breadcrumb::class => [
+            'root' => ['name' => 'breadcrumb', 'kind' => 'visual'],
+            'list' => ['name' => 'breadcrumb-list', 'kind' => 'visual'],
+            'item' => ['name' => 'breadcrumb-item', 'kind' => 'visual'],
+            'link' => ['name' => 'breadcrumb-link', 'kind' => 'visual'],
+            'page' => ['name' => 'breadcrumb-page', 'kind' => 'visual'],
+            'separator' => ['name' => 'breadcrumb-separator', 'kind' => 'visual'],
+            'ellipsis' => ['name' => 'breadcrumb-ellipsis', 'kind' => 'visual'],
+        ],
+        ButtonGroup::class => [
+            'root' => ['name' => 'button-group', 'kind' => 'visual'],
+            'separator' => ['name' => 'button-group-separator', 'kind' => 'visual'],
+            'text' => ['name' => 'button-group-text', 'kind' => 'visual'],
+        ],
+        EmptyState::class => [
+            'root' => ['name' => 'empty-state', 'kind' => 'visual'],
+            'header' => ['name' => 'empty-state-header', 'kind' => 'visual'],
+            'media' => ['name' => 'empty-state-media', 'kind' => 'visual'],
+            'title' => ['name' => 'empty-state-title', 'kind' => 'visual'],
+            'description' => ['name' => 'empty-state-description', 'kind' => 'visual'],
+            'content' => ['name' => 'empty-state-content', 'kind' => 'visual'],
+        ],
+        Progress::class => [
+            'root' => ['name' => 'progress', 'kind' => 'visual'],
+            'track' => ['name' => 'progress-track', 'kind' => 'visual'],
+            'indicator' => ['name' => 'progress-indicator', 'kind' => 'visual'],
+            'label' => ['name' => 'progress-label', 'kind' => 'visual'],
+            'value' => ['name' => 'progress-value', 'kind' => 'visual'],
+        ],
+        Table::class => [
+            'container' => ['name' => 'table-container', 'kind' => 'visual'],
+            'root' => ['name' => 'table', 'kind' => 'visual'],
+            'header' => ['name' => 'table-header', 'kind' => 'visual'],
+            'body' => ['name' => 'table-body', 'kind' => 'visual'],
+            'footer' => ['name' => 'table-footer', 'kind' => 'visual'],
+            'row' => ['name' => 'table-row', 'kind' => 'visual'],
+            'head' => ['name' => 'table-head', 'kind' => 'visual'],
+            'cell' => ['name' => 'table-cell', 'kind' => 'visual'],
+            'caption' => ['name' => 'table-caption', 'kind' => 'visual'],
+        ],
+        Tabs::class => [
+            'root' => ['name' => 'tabs', 'kind' => 'visual'],
+            'list' => ['name' => 'tabs-list', 'kind' => 'visual'],
+            'trigger' => ['name' => 'tabs-trigger', 'kind' => 'visual'],
+            'panel' => ['name' => 'tabs-panel', 'kind' => 'visual'],
+        ],
+    };
+    $resolved = [];
+
+    foreach ($slots as $slot) {
+        $resolved[$slot['name']] = $slot['kind'];
+    }
+
+    expect($class::SLOTS)->toBe($slots)
+        ->and($catalog['components'][$key]['styling']['slots'])->toBe([
+            ['class' => $class],
+        ])->and(HotwireRegistry::make()->component($key)->styling->slots)->toBe($resolved);
+})->with([
+    'avatar' => ['avatar', Avatar::class],
+    'breadcrumb' => ['breadcrumb', Breadcrumb::class],
+    'button group' => ['button-group', ButtonGroup::class],
+    'empty state' => ['empty-state', EmptyState::class],
+    'progress' => ['progress', Progress::class],
+    'table' => ['table', Table::class],
+    'tabs' => ['tabs', Tabs::class],
+]);
+
+it('projects Toggle Group slots from one family declaration', function () {
+    $catalog = require __DIR__.'/../../src/Registry/catalog.php';
+
+    expect(ToggleGroup::SLOTS)->toBe([
+        'root' => ['name' => 'toggle-group', 'kind' => 'visual'],
+        'item' => ['name' => 'toggle-group-item', 'kind' => 'visual'],
+    ])->and($catalog['components']['toggle-group']['styling']['slots'])->toBe([
+        ['class' => ToggleGroup::class],
+    ])->and($catalog['components']['toggle-group.item']['styling']['slots'])->toBe([
+        ['class' => ToggleGroup::class, 'only' => ['item']],
+    ])->and(HotwireRegistry::make()->component('toggle-group')->styling->slots)->toBe([
+        'toggle-group' => 'visual',
+        'toggle-group-item' => 'visual',
+    ])->and(HotwireRegistry::make()->component('toggle-group.item')->styling->slots)->toBe([
+        'toggle-group-item' => 'visual',
     ]);
 });
 

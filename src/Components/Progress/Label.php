@@ -3,11 +3,14 @@
 namespace Emaia\LaravelHotwire\Components\Progress;
 
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
+use Emaia\LaravelHotwire\Components\Progress;
 
 class Label extends Component
 {
     public function render()
     {
-        return view('hotwire::component-views.progress-label');
+        return view('hotwire::component-views.progress-label', [
+            'slotName' => Progress::SLOTS['label']['name'],
+        ]);
     }
 }

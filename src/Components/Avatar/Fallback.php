@@ -2,6 +2,7 @@
 
 namespace Emaia\LaravelHotwire\Components\Avatar;
 
+use Emaia\LaravelHotwire\Components\Avatar;
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 use Emaia\LaravelHotwire\Support\AvatarFallbackText;
 
@@ -16,6 +17,7 @@ class Fallback extends Component
     public function render()
     {
         return view('hotwire::component-views.avatar-fallback', [
+            'slotName' => Avatar::SLOTS['fallback']['name'],
             'fallbackText' => AvatarFallbackText::resolve(
                 name: $this->name,
                 initials: $this->initials,

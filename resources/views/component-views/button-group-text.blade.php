@@ -1,1 +1,1 @@
-<{{ $as }} data-slot="button-group-text" {{ $attributes }}>{{ $slot }}</{{ $as }}>
+<{{ $as }} data-slot="{{ $slotName }}" {{ $attributes }}>{{ $slot }}</{{ $as }}>

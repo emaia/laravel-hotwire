@@ -7,7 +7,7 @@
 
     $toggleAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
         'type' => $type,
-        'data-slot' => 'toggle',
+        'data-slot' => $slotName,
         'data-controller' => 'toggle',
         'data-action' => $elementAction,
         'data-variant' => $variant,

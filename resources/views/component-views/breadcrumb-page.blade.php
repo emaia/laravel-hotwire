@@ -1,1 +1,1 @@
-<span data-slot="breadcrumb-page" aria-current="page" {{ $attributes }}>{{ $slot }}</span>
+<span data-slot="{{ $slotName }}" aria-current="page" {{ $attributes }}>{{ $slot }}</span>

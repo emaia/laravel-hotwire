@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Components\Breadcrumb;
 
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
+use Emaia\LaravelHotwire\Components\Breadcrumb;
 use Emaia\LaravelHotwire\Support\FrameTarget;
 
 class Link extends Component
@@ -16,6 +17,8 @@ class Link extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.breadcrumb-link');
+        return view('hotwire::component-views.breadcrumb-link', [
+            'slotName' => Breadcrumb::SLOTS['link']['name'],
+        ]);
     }
 }

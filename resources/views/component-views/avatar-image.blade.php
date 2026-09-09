@@ -2,6 +2,6 @@
     {{ $attributes->merge([
         'src' => $src,
         'alt' => $alt ?? '',
-        'data-slot' => 'avatar-image',
+        'data-slot' => $slotName,
     ]) }}
 >

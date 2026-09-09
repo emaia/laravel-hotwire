@@ -10,4 +10,4 @@
     $content = $hasSlot || $progressValueStandalone ? $slot : "{$progressPercentage}%";
 @endphp
 
-<span {{ $attributes->except('data-slot')->merge(['data-slot' => 'progress-value']) }}>{{ $content }}</span>
+<span {{ $attributes->except('data-slot')->merge(['data-slot' => $slotName]) }}>{{ $content }}</span>

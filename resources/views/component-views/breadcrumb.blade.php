@@ -2,7 +2,7 @@
     $guardComposition($slot);
 @endphp
 
-<nav data-slot="breadcrumb" aria-label="{{ $label }}" {{ $attributes->except('frame') }}>
+<nav data-slot="{{ $slotName }}" aria-label="{{ $label }}" {{ $attributes->except('frame') }}>
     @if ($items !== [])
         <x-hw::breadcrumb.list>
             @foreach ($normalizedItems() as $item)

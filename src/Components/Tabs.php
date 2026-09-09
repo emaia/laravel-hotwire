@@ -11,6 +11,13 @@ use Illuminate\View\ComponentAttributeBag;
 
 class Tabs extends Component
 {
+    public const array SLOTS = [
+        'root' => ['name' => 'tabs', 'kind' => 'visual'],
+        'list' => ['name' => 'tabs-list', 'kind' => 'visual'],
+        'trigger' => ['name' => 'tabs-trigger', 'kind' => 'visual'],
+        'panel' => ['name' => 'tabs-panel', 'kind' => 'visual'],
+    ];
+
     public string $tabsId;
 
     public string $tabsIdentifier;
@@ -57,7 +64,7 @@ class Tabs extends Component
         return [
             'tabsAttributes' => StimulusAttributes::merge([
                 'id' => $this->tabsId,
-                'data-slot' => 'tabs',
+                'data-slot' => self::SLOTS['root']['name'],
                 'data-orientation' => $this->orientation,
                 'data-controller' => $this->tabsIdentifier,
                 "data-{$this->tabsIdentifier}-selected-index-value" => $this->selectedIndex,

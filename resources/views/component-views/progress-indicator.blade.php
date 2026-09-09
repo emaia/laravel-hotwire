@@ -1,1 +1,1 @@
-<div {{ $attributes->except('data-slot')->merge(['data-slot' => 'progress-indicator']) }}></div>
+<div {{ $attributes->except('data-slot')->merge(['data-slot' => $slotName]) }}></div>

@@ -1,1 +1,1 @@
-<div {{ $attributes->merge(['data-slot' => 'avatar-group']) }}>{{ $slot }}</div>
+<div {{ $attributes->merge(['data-slot' => $slotName]) }}>{{ $slot }}</div>

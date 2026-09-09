@@ -24,7 +24,7 @@
     $groupAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
         'role' => $fieldOwnsSet ? null : 'group',
         'aria-labelledby' => $fieldOwnsSet || $hasExplicitAccessibleName ? null : $labelId,
-        'data-slot' => 'toggle-group',
+        'data-slot' => $slotName,
         'data-controller' => $elementController,
         'data-action' => $elementAction,
         'data-toggle-group-type-value' => $toggleGroupType,

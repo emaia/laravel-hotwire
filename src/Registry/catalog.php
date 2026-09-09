@@ -168,7 +168,9 @@ return [
             'description' => 'User avatar with image, generated initials fallback, badge and grouped display primitives',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(['avatar', 'avatar-image', 'avatar-fallback', 'avatar-badge', 'avatar-group', 'avatar-group-count']),
+                'slots' => [
+                    ['class' => Avatar::class],
+                ],
             ],
         ],
         'back-to-top' => [
@@ -205,7 +207,9 @@ return [
             'description' => 'Semantic navigation trail with composed subcomponents and an items shortcut',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(['breadcrumb', 'breadcrumb-list', 'breadcrumb-item', 'breadcrumb-link', 'breadcrumb-page', 'breadcrumb-separator', 'breadcrumb-ellipsis']),
+                'slots' => [
+                    ['class' => Breadcrumb::class],
+                ],
             ],
         ],
         'button' => [
@@ -229,7 +233,9 @@ return [
             'description' => 'Groups related buttons and button-like controls with shared borders and orientation state',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(['button-group', 'button-group-separator', 'button-group-text']),
+                'slots' => [
+                    ['class' => ButtonGroup::class],
+                ],
             ],
         ],
         'card' => [
@@ -381,7 +387,9 @@ return [
             'description' => 'Composable empty state with media, title, description and action content slots',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(['empty-state', 'empty-state-header', 'empty-state-media', 'empty-state-title', 'empty-state-description', 'empty-state-content']),
+                'slots' => [
+                    ['class' => EmptyState::class],
+                ],
             ],
         ],
         'field' => [
@@ -807,7 +815,9 @@ return [
             'description' => 'Server-rendered progress primitive with label, value, track and indicator slots',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(['progress', 'progress-track', 'progress-indicator', 'progress-label', 'progress-value']),
+                'slots' => [
+                    ['class' => Progress::class],
+                ],
             ],
         ],
         'radio-group' => [
@@ -1029,7 +1039,9 @@ return [
             'description' => 'Responsive table wrapper with semantic row, cell, header, footer and caption primitives',
             'controllers' => [],
             'styling' => [
-                'slots' => $slots(['table-container', 'table', 'table-header', 'table-body', 'table-footer', 'table-row', 'table-head', 'table-cell', 'table-caption']),
+                'slots' => [
+                    ['class' => Table::class],
+                ],
             ],
         ],
         'tabs' => [
@@ -1040,7 +1052,9 @@ return [
             'description' => 'Accessible tab primitives backed by the tabs controller, with server-rendered active state',
             'controllers' => ['tabs'],
             'styling' => [
-                'slots' => $slots(['tabs', 'tabs-list', 'tabs-trigger', 'tabs-panel']),
+                'slots' => [
+                    ['class' => Tabs::class],
+                ],
             ],
         ],
         'textarea' => [
@@ -1101,7 +1115,9 @@ return [
             'description' => 'Accessible two-state button with optional hidden input and auto-submit integration',
             'controllers' => ['toggle', 'auto-submit'],
             'styling' => [
-                'slots' => $slots(['toggle']),
+                'slots' => [
+                    ['class' => Toggle::class],
+                ],
             ],
         ],
         'toggle-group' => [
@@ -1112,7 +1128,9 @@ return [
             'description' => 'Single or multiple pressed-button group with options and hidden-input form submission',
             'controllers' => ['toggle-group', 'toggle', 'auto-submit'],
             'styling' => [
-                'slots' => $slots(['toggle-group', 'toggle-group-item']),
+                'slots' => [
+                    ['class' => ToggleGroup::class],
+                ],
             ],
         ],
         'toggle-group.item' => [
@@ -1123,7 +1141,9 @@ return [
             'description' => 'Button item for toggle groups with aria-pressed and hidden-input synchronization',
             'controllers' => ['toggle-group', 'toggle', 'auto-submit'],
             'styling' => [
-                'slots' => $slots(['toggle-group-item']),
+                'slots' => [
+                    ['class' => ToggleGroup::class, 'only' => ['item']],
+                ],
             ],
         ],
     ],

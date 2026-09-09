@@ -10,7 +10,7 @@
 
 <div
     {{ $attributes->except(['style', 'data-slot'])->merge([
-        'data-slot' => 'progress',
+        'data-slot' => $slotName,
         'role' => 'progressbar',
         'aria-valuemin' => '0',
         'aria-valuemax' => $progress->formattedMax,
