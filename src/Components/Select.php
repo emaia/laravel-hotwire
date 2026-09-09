@@ -14,6 +14,12 @@ class Select extends Component
 {
     use StripsNullProps;
 
+    public const array SLOTS = [
+        'wrapper' => ['name' => 'select-wrapper', 'kind' => 'visual'],
+        'root' => ['name' => 'select', 'kind' => 'visual'],
+        'icon' => ['name' => 'select-icon', 'kind' => 'visual'],
+    ];
+
     /** @param  array<int|string, string>  $options */
     public function __construct(
         public ?string $name = null,
@@ -31,7 +37,11 @@ class Select extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.select');
+        return view('hotwire::component-views.select', [
+            'wrapperSlotName' => self::SLOTS['wrapper']['name'],
+            'slotName' => self::SLOTS['root']['name'],
+            'iconSlotName' => self::SLOTS['icon']['name'],
+        ]);
     }
 
     public function data(): array

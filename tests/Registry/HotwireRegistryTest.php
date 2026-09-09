@@ -11,10 +11,15 @@ use Emaia\LaravelHotwire\Components\Button;
 use Emaia\LaravelHotwire\Components\ButtonGroup;
 use Emaia\LaravelHotwire\Components\Card;
 use Emaia\LaravelHotwire\Components\Checkbox;
+use Emaia\LaravelHotwire\Components\CheckboxGroup;
+use Emaia\LaravelHotwire\Components\ConditionalField;
 use Emaia\LaravelHotwire\Components\Drawer;
 use Emaia\LaravelHotwire\Components\EmptyState;
 use Emaia\LaravelHotwire\Components\Field;
+use Emaia\LaravelHotwire\Components\File;
+use Emaia\LaravelHotwire\Components\Form;
 use Emaia\LaravelHotwire\Components\Icon;
+use Emaia\LaravelHotwire\Components\Input;
 use Emaia\LaravelHotwire\Components\InputGroup;
 use Emaia\LaravelHotwire\Components\Item;
 use Emaia\LaravelHotwire\Components\Kbd;
@@ -23,7 +28,9 @@ use Emaia\LaravelHotwire\Components\MultiSelect;
 use Emaia\LaravelHotwire\Components\Navbar;
 use Emaia\LaravelHotwire\Components\Pagination;
 use Emaia\LaravelHotwire\Components\Progress;
+use Emaia\LaravelHotwire\Components\RadioGroup;
 use Emaia\LaravelHotwire\Components\ScrollProgress;
+use Emaia\LaravelHotwire\Components\Select;
 use Emaia\LaravelHotwire\Components\Separator;
 use Emaia\LaravelHotwire\Components\Sheet;
 use Emaia\LaravelHotwire\Components\Sidebar;
@@ -143,6 +150,77 @@ it('projects the Textarea family slot contract from its component class', functi
         'textarea' => 'visual',
     ]);
 });
+
+it('projects form control slot contracts from their component classes', function (string $key, string $class) {
+    $catalog = require __DIR__.'/../../src/Registry/catalog.php';
+    $slots = match ($class) {
+        ConditionalField::class => [
+            'root' => ['name' => 'conditional-field', 'kind' => 'structural'],
+        ],
+        File::class => [
+            'wrapper' => ['name' => 'file-wrapper', 'kind' => 'visual'],
+            'input' => ['name' => 'file-input', 'kind' => 'visual'],
+        ],
+        Form::class => [
+            'root' => ['name' => 'form', 'kind' => 'structural'],
+        ],
+        Input::class => [
+            'wrapper' => ['name' => 'input-wrapper', 'kind' => 'visual'],
+            'root' => ['name' => 'input', 'kind' => 'visual'],
+            'clear-button' => ['name' => 'clear-input-button', 'kind' => 'visual'],
+        ],
+        Select::class => [
+            'wrapper' => ['name' => 'select-wrapper', 'kind' => 'visual'],
+            'root' => ['name' => 'select', 'kind' => 'visual'],
+            'icon' => ['name' => 'select-icon', 'kind' => 'visual'],
+        ],
+    };
+    $resolved = [];
+
+    foreach ($slots as $slot) {
+        $resolved[$slot['name']] = $slot['kind'];
+    }
+
+    expect($class::SLOTS)->toBe($slots)
+        ->and($catalog['components'][$key]['styling']['slots'])->toBe([
+            ['class' => $class],
+        ])->and(HotwireRegistry::make()->component($key)->styling->slots)->toBe($resolved);
+})->with([
+    'conditional field' => ['conditional-field', ConditionalField::class],
+    'file' => ['file', File::class],
+    'form' => ['form', Form::class],
+    'input' => ['input', Input::class],
+    'select' => ['select', Select::class],
+]);
+
+it('projects choice group slots from one declaration per family', function (string $key, string $class) {
+    $catalog = require __DIR__.'/../../src/Registry/catalog.php';
+    $slots = [
+        'root' => ['name' => $key, 'kind' => 'visual'],
+        'item' => ['name' => $key.'-item', 'kind' => 'visual'],
+        'input' => ['name' => $key.'-input', 'kind' => 'visual'],
+        'item-content' => ['name' => $key.'-item-content', 'kind' => 'visual'],
+    ];
+
+    expect($class::SLOTS)->toBe($slots)
+        ->and($catalog['components'][$key]['styling']['slots'])->toBe([
+            ['class' => $class],
+        ])->and($catalog['components'][$key.'.item']['styling']['slots'])->toBe([
+            ['class' => $class, 'only' => ['item', 'input', 'item-content']],
+        ])->and(HotwireRegistry::make()->component($key)->styling->slots)->toBe([
+            $key => 'visual',
+            $key.'-item' => 'visual',
+            $key.'-input' => 'visual',
+            $key.'-item-content' => 'visual',
+        ])->and(HotwireRegistry::make()->component($key.'.item')->styling->slots)->toBe([
+            $key.'-item' => 'visual',
+            $key.'-input' => 'visual',
+            $key.'-item-content' => 'visual',
+        ]);
+})->with([
+    'checkbox group' => ['checkbox-group', CheckboxGroup::class],
+    'radio group' => ['radio-group', RadioGroup::class],
+]);
 
 it('projects Navbar slots and its Sticky reference without duplicate ownership', function () {
     $catalog = require __DIR__.'/../../src/Registry/catalog.php';

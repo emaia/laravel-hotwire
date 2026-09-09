@@ -297,7 +297,9 @@ return [
             'description' => 'Checkbox group with options, rich item composition and optional select-all master checkbox',
             'controllers' => ['checkbox-select-all', 'auto-submit'],
             'styling' => [
-                'slots' => $slots(['checkbox-group', 'checkbox-group-item', 'checkbox-group-input', 'checkbox-group-item-content']),
+                'slots' => [
+                    ['class' => CheckboxGroup::class],
+                ],
             ],
         ],
         'checkbox-group.item' => [
@@ -308,7 +310,9 @@ return [
             'description' => 'Rich checkbox-group item that inherits name, selected state, validation and select-all wiring',
             'controllers' => ['checkbox-select-all', 'auto-submit'],
             'styling' => [
-                'slots' => $slots(['checkbox-group-item', 'checkbox-group-input', 'checkbox-group-item-content']),
+                'slots' => [
+                    ['class' => CheckboxGroup::class, 'only' => ['item', 'input', 'item-content']],
+                ],
             ],
         ],
         'color-scheme.script' => [
@@ -341,7 +345,9 @@ return [
             'description' => 'Renders a dependent block for the conditional-fields controller — single source of truth for the show/hide rule on both client and server',
             'controllers' => ['conditional-fields'],
             'styling' => [
-                'slots' => $slots(structural: ['conditional-field']),
+                'slots' => [
+                    ['class' => ConditionalField::class],
+                ],
             ],
         ],
         'controller-preloads' => [
@@ -452,7 +458,9 @@ return [
             'description' => 'File input with auto id/errorKey, ARIA, optional current file display and Turbo morph reset',
             'controllers' => ['file-preserve', 'reset-files'],
             'styling' => [
-                'slots' => $slots(['file-wrapper', 'file-input']),
+                'slots' => [
+                    ['class' => File::class],
+                ],
             ],
         ],
         'file-upload' => [
@@ -477,7 +485,9 @@ return [
             'description' => 'Form wrapper with optional Stimulus behaviors, CSRF, and Turbo Frame redirect support',
             'controllers' => ['auto-submit', 'unsaved-changes', 'error-scroll', 'clean-query-params', 'conditional-fields'],
             'styling' => [
-                'slots' => $slots(structural: ['form']),
+                'slots' => [
+                    ['class' => Form::class],
+                ],
             ],
         ],
         'frame' => [
@@ -556,7 +566,9 @@ return [
             'description' => 'Form input with auto id/errorKey, ARIA, optional mask/clear/auto-select',
             'controllers' => ['auto-select', 'clear-input', 'input-mask', 'auto-submit'],
             'styling' => [
-                'slots' => $slots(['input-wrapper', 'input', 'clear-input-button']),
+                'slots' => [
+                    ['class' => Input::class],
+                ],
             ],
         ],
         'input-group' => [
@@ -828,7 +840,9 @@ return [
             'description' => 'Native radio group with options, rich item composition, old input restore and validation wiring',
             'controllers' => ['auto-submit'],
             'styling' => [
-                'slots' => $slots(['radio-group', 'radio-group-item', 'radio-group-input', 'radio-group-item-content']),
+                'slots' => [
+                    ['class' => RadioGroup::class],
+                ],
             ],
         ],
         'radio-group.item' => [
@@ -839,7 +853,9 @@ return [
             'description' => 'Rich radio-group item that inherits name, selected state and validation wiring',
             'controllers' => ['auto-submit'],
             'styling' => [
-                'slots' => $slots(['radio-group-item', 'radio-group-input', 'radio-group-item-content']),
+                'slots' => [
+                    ['class' => RadioGroup::class, 'only' => ['item', 'input', 'item-content']],
+                ],
             ],
         ],
         'read-more' => [
@@ -913,7 +929,9 @@ return [
             'description' => 'Select dropdown with auto id/errorKey, ARIA, old() merge and placeholder support',
             'controllers' => ['auto-submit'],
             'styling' => [
-                'slots' => $slots(['select-wrapper', 'select', 'select-icon']),
+                'slots' => [
+                    ['class' => Select::class],
+                ],
             ],
         ],
         'separator' => [

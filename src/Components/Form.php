@@ -9,6 +9,10 @@ use Illuminate\View\ComponentAttributeBag;
 
 class Form extends Component
 {
+    public const array SLOTS = [
+        'root' => ['name' => 'form', 'kind' => 'structural'],
+    ];
+
     protected $except = [
         'autoSubmit',
         'unsavedChanges',
@@ -41,7 +45,9 @@ class Form extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.form');
+        return view('hotwire::component-views.form', [
+            'slotName' => self::SLOTS['root']['name'],
+        ]);
     }
 
     /** @return array<string, mixed> */

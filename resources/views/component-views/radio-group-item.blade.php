@@ -45,11 +45,11 @@
 @endphp
 
 <label
-    data-slot="radio-group-item"
+    data-slot="{{ $itemSlotName }}"
     {{ trim($radioGroupItemLabelClass) !== '' ? $attributes->merge(['class' => $radioGroupItemLabelClass]) : $attributes->except('class') }}
 >
     <input
-        data-slot="radio-group-input"
+        data-slot="{{ $inputSlotName }}"
         data-checkable="true"
         type="radio"
         @if (filled($radioGroupItemClass)) class="{{ $radioGroupItemClass }}" @endif
@@ -64,5 +64,5 @@
         @if ($isChecked) checked @endif
     />
 
-    <span data-slot="radio-group-item-content">{{ $slot }}</span>
+    <span data-slot="{{ $itemContentSlotName }}">{{ $slot }}</span>
 </label>

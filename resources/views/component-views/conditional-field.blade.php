@@ -4,7 +4,7 @@
     $resolvedMatches = $state !== null ? $matches : $matchesWith($conditionalFieldState);
 
     $conditionalFieldAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge(array_merge([
-        'data-slot' => 'conditional-field',
+        'data-slot' => $slotName,
         'data-conditional-fields-target' => 'dependent',
         'hidden' => $resolvedMatches ? null : true,
         'disabled' => $resolvedMatches ? null : true,

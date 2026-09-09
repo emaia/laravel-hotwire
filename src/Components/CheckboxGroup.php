@@ -14,6 +14,13 @@ use Illuminate\View\ComponentAttributeBag;
 
 class CheckboxGroup extends Component
 {
+    public const array SLOTS = [
+        'root' => ['name' => 'checkbox-group', 'kind' => 'visual'],
+        'item' => ['name' => 'checkbox-group-item', 'kind' => 'visual'],
+        'input' => ['name' => 'checkbox-group-input', 'kind' => 'visual'],
+        'item-content' => ['name' => 'checkbox-group-item-content', 'kind' => 'visual'],
+    ];
+
     private FieldOwnerContext $ownerContext;
 
     /** @param array<int|string, string> $options */
@@ -47,7 +54,12 @@ class CheckboxGroup extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.checkbox-group');
+        return view('hotwire::component-views.checkbox-group', [
+            'slotName' => self::SLOTS['root']['name'],
+            'itemSlotName' => self::SLOTS['item']['name'],
+            'inputSlotName' => self::SLOTS['input']['name'],
+            'itemContentSlotName' => self::SLOTS['item-content']['name'],
+        ]);
     }
 
     public function data(): array

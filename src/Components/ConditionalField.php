@@ -8,6 +8,10 @@ use Illuminate\Contracts\Support\Htmlable;
 
 class ConditionalField extends Component
 {
+    public const array SLOTS = [
+        'root' => ['name' => 'conditional-field', 'kind' => 'structural'],
+    ];
+
     public bool $matches;
 
     /** @var array<string, string|array<int, string>> */
@@ -52,7 +56,9 @@ class ConditionalField extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.conditional-field');
+        return view('hotwire::component-views.conditional-field', [
+            'slotName' => self::SLOTS['root']['name'],
+        ]);
     }
 
     public function matchesWith(mixed $state): bool

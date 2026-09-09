@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Components\CheckboxGroup;
 
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
+use Emaia\LaravelHotwire\Components\CheckboxGroup;
 use Emaia\LaravelHotwire\Support\AutoSubmit;
 use Emaia\LaravelHotwire\Support\FieldKey;
 use Illuminate\Support\Str;
@@ -24,7 +25,11 @@ class Item extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.checkbox-group-item');
+        return view('hotwire::component-views.checkbox-group-item', [
+            'itemSlotName' => CheckboxGroup::SLOTS['item']['name'],
+            'inputSlotName' => CheckboxGroup::SLOTS['input']['name'],
+            'itemContentSlotName' => CheckboxGroup::SLOTS['item-content']['name'],
+        ]);
     }
 
     public function data(): array

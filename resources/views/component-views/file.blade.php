@@ -14,7 +14,7 @@
     }
 
     $fileAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
-        'data-slot' => 'file-input',
+        'data-slot' => $inputSlotName,
         'type' => 'file',
         'id' => $resolvedId,
         'data-controller' => $inputController,
@@ -30,7 +30,7 @@
     ], $attributes, $stimulus, except: ['required'], protectedPrefixes: $internalPrefixes);
 @endphp
 
-@if ($needsWrapper)<div @if ($wrapperClass !== '') class="{{ $wrapperClass }}" @endif data-slot="file-wrapper">
+@if ($needsWrapper)<div @if ($wrapperClass !== '') class="{{ $wrapperClass }}" @endif data-slot="{{ $wrapperSlotName }}">
     @if ($currentUrl)
         <p>
             {{ $currentLabel ?? 'Current file' }}:

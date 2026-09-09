@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Components\RadioGroup;
 
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
+use Emaia\LaravelHotwire\Components\RadioGroup;
 use Emaia\LaravelHotwire\Support\AutoSubmit;
 use Emaia\LaravelHotwire\Support\FieldKey;
 use Illuminate\Support\Str;
@@ -24,7 +25,11 @@ class Item extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.radio-group-item');
+        return view('hotwire::component-views.radio-group-item', [
+            'itemSlotName' => RadioGroup::SLOTS['item']['name'],
+            'inputSlotName' => RadioGroup::SLOTS['input']['name'],
+            'itemContentSlotName' => RadioGroup::SLOTS['item-content']['name'],
+        ]);
     }
 
     public function data(): array

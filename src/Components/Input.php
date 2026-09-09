@@ -17,6 +17,12 @@ class Input extends Component
 {
     use StripsNullProps;
 
+    public const array SLOTS = [
+        'wrapper' => ['name' => 'input-wrapper', 'kind' => 'visual'],
+        'root' => ['name' => 'input', 'kind' => 'visual'],
+        'clear-button' => ['name' => 'clear-input-button', 'kind' => 'visual'],
+    ];
+
     public function __construct(
         public ?string $name = null,
         public ?string $id = null,
@@ -37,7 +43,11 @@ class Input extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.input');
+        return view('hotwire::component-views.input', [
+            'wrapperSlotName' => self::SLOTS['wrapper']['name'],
+            'slotName' => self::SLOTS['root']['name'],
+            'clearButtonSlotName' => self::SLOTS['clear-button']['name'],
+        ]);
     }
 
     public function data(): array

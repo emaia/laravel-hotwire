@@ -14,6 +14,13 @@ use Illuminate\View\ComponentAttributeBag;
 
 class RadioGroup extends Component
 {
+    public const array SLOTS = [
+        'root' => ['name' => 'radio-group', 'kind' => 'visual'],
+        'item' => ['name' => 'radio-group-item', 'kind' => 'visual'],
+        'input' => ['name' => 'radio-group-input', 'kind' => 'visual'],
+        'item-content' => ['name' => 'radio-group-item-content', 'kind' => 'visual'],
+    ];
+
     private FieldOwnerContext $ownerContext;
 
     /** @param array<int|string, string> $options */
@@ -44,7 +51,12 @@ class RadioGroup extends Component
 
     public function render()
     {
-        return view('hotwire::component-views.radio-group');
+        return view('hotwire::component-views.radio-group', [
+            'slotName' => self::SLOTS['root']['name'],
+            'itemSlotName' => self::SLOTS['item']['name'],
+            'inputSlotName' => self::SLOTS['input']['name'],
+            'itemContentSlotName' => self::SLOTS['item-content']['name'],
+        ]);
     }
 
     public function data(): array

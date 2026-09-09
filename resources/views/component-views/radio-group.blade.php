@@ -25,7 +25,7 @@
     }
 
     $radioGroupAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
-        'data-slot' => 'radio-group',
+        'data-slot' => $slotName,
         'role' => $fieldOwnsSet ? null : 'radiogroup',
         'aria-labelledby' => $fieldOwnsSet || $hasExplicitAccessibleName ? null : $labelId,
         'data-orientation' => $radioGroupOrientation,
@@ -40,9 +40,9 @@
         @php
             $resolvedId = $baseId ? $baseId.'-'.\Illuminate\Support\Str::slug((string) $value) : null;
         @endphp
-        <label data-slot="radio-group-item" @if (filled($radioGroupLabelClass)) class="{{ $radioGroupLabelClass }}" @endif>
+        <label data-slot="{{ $itemSlotName }}" @if (filled($radioGroupLabelClass)) class="{{ $radioGroupLabelClass }}" @endif>
             <input
-                data-slot="radio-group-input"
+                data-slot="{{ $inputSlotName }}"
                 data-checkable="true"
                 type="radio"
                 @if (filled($radioGroupClass)) class="{{ $radioGroupClass }}" @endif
@@ -56,7 +56,7 @@
                 @if ($autoSubmitDelayParam !== null) data-auto-submit-delay-param="{{ $autoSubmitDelayParam }}" @endif
                 @if ((string) $resolvedSelected === (string) $value) checked @endif
             />
-            <span data-slot="radio-group-item-content">{{ $label }}</span>
+            <span data-slot="{{ $itemContentSlotName }}">{{ $label }}</span>
         </label>
     @endforeach
 
