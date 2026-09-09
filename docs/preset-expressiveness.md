@@ -76,7 +76,7 @@ second anatomy for this study.
 | Select size                          | Possible public axis       | Personality-wide control size is CSS; add a size prop only for an application-level semantic need     | Deferred, not a blocker                    |
 | Field Group outline                  | Possible public axis       | One upstream composition does not justify a package axis                                              | Omit until a package use case exists       |
 | Alert                                | CSS-only                   | `alert`, title, description, action and variant cover all visual personalities                        | Keep the pilot contract                    |
-| Alert icon authorship                | Composition API            | Third-party icon ergonomics are independent of preset expressiveness                                  | Dedicated icon-composition work            |
+| Alert icon authorship                | Composition API            | `alert.icon` owns layout while packaged and third-party icons provide the graphic                      | Alert family                               |
 | Item                                 | CSS-only                   | Existing media, content and size/variant axes are sufficient                                          | Family migration; verify separator spacing |
 | Input Group button/text              | Possible semantic parts    | Add only if concrete package compositions cannot be expressed by addon plus existing controls         | Family migration decision                  |
 | Alert Dialog media/size              | Possible part and axis     | Useful upstream semantics, but not required to express current package behavior                       | Overlay-family review                      |
@@ -88,9 +88,9 @@ second anatomy for this study.
 | Logical floating sides               | Possible behavior API      | Current resolved physical `data-side` output is sufficient for visual presets                         | Independent Floating UI API review         |
 | Upstream questionnaire/custom Select | React/application-specific | Not part of the package semantic contract                                                             | Do not port                                |
 
-No blocker was found in `Alert::SLOTS`. Sera's accent is a pseudo-element, destructive treatment is a variant, and icon
-layout can select a composed Icon descendant. Whether the package should wrap third-party icons is an authoring decision,
-not a missing visual part discovered by this corpus.
+The corpus found no preset-expressiveness blocker in the Alert contract. Sera's accent remains a pseudo-element and
+destructive treatment remains a variant. The later authoring review added `alert.icon` so the family owns icon layout
+without requiring third-party graphics to emit the generic Icon slot.
 
 ## Recommended preset conformance policy
 

@@ -61,8 +61,9 @@ spacing from the shadcn reference.
 
 ## Custom Controls
 
-Use `data-slot="input-group-control"` when composing a custom control so the selected preset can apply the same group focus
-and layout styles.
+Use `data-slot="input-group-control"` on a custom control itself so the selected preset can apply the same group focus
+and layout styles. This remains an explicit low-level hook rather than a wrapper component: native focus, validation,
+name and form behavior must stay on the actual control.
 
 ```blade
 <hw:input-group>

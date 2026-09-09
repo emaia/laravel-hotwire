@@ -176,16 +176,18 @@ it('documents validation and prefill for multistep forms', function () {
         ->toContain('TurboFormRequest');
 });
 
-it('documents slots required by custom composed elements', function () {
+it('documents explicit parts and low-level slot escapes for custom composed elements', function () {
     $guideline = renderBoostAsset(boostAssetsPath('guidelines/core.blade.php'));
     $alert = File::get(__DIR__.'/../../docs/components/alert.md');
     $item = File::get(__DIR__.'/../../docs/components/item.md');
 
     expect($guideline)
-        ->toContain('carry the documented `data-slot`')
-        ->toContain('<x-lucide-check data-slot="icon" />')
-        ->and($alert)->toContain('- `data-slot="icon"`')
-        ->and($item)->toContain('- `data-slot="icon"`');
+        ->toContain('Prefer a documented part component')
+        ->toContain('`<hw:alert.icon>`')
+        ->toContain('documented low-level escape hatch')
+        ->not->toContain('<x-lucide-check data-slot="icon" />')
+        ->and($alert)->toContain('| `alert.icon` | `span` | `alert-icon` |')
+        ->and($item)->toContain('a direct SVG child of `item-media`');
 });
 
 it('documents Reveal stream target and shared-template boundaries', function () {

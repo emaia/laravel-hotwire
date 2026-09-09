@@ -32,8 +32,10 @@ and is used by the package documentation; follow the convention already used by 
   controller only when the application needs to customize or fork it.
 - Package components provide semantic `data-slot`, variant, size and state hooks. Presets provide the package styling;
   do not expect package-authored utility classes in rendered markup.
-- When composing your own element inside a package component, carry the documented `data-slot` (for example,
-  `{!! $tag('lucide-check', 'data-slot="icon"') !!}`). Presets target these attributes with child and `:has()` selectors.
+- Prefer a documented part component when composing a third-party element into package anatomy. For example, place an
+  icon inside {!! "`<{$prefix}:alert.icon>`" !!} instead of assigning the foreign graphic a generic package slot.
+- Emit `data-slot` manually only where the component docs identify a documented low-level escape hatch, such as
+  `{!! $tag('custom-input', 'data-slot="input-group-control"') !!}` for an Input Group control.
 - Configure component-owned controllers through documented component props. Additional application controllers may be
   composed on the same element without replacing the component's controller tokens.
 - Load `laravel-hotwire-forms` for forms, validation, fields, controls, uploads and frame-hosted forms.

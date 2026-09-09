@@ -46,6 +46,9 @@ attributes directly to those elements. Raw `data-slot="progress-track"` markup i
 Progress belong only to that nested root. The documented `data-slot` values on the root and all Progress subcomponents are
 reserved and cannot be overridden; use `class`, `id` or another `data-*` attribute for application hooks.
 
+Prefer the subcomponents for normal composition. The raw track hook remains a deliberate low-level escape hatch for
+application markup that cannot render a package component; it is not a general pattern for annotating foreign parts.
+
 ```blade
 <hw:progress value="25">
     <hw:progress.track aria-label="Upload track">
