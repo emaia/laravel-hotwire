@@ -167,9 +167,16 @@ Use `tooltip` to mount the `tooltip` controller and set concise string content:
 </hw:button>
 ```
 
-The `tooltip` prop is intentionally a lightweight Button convenience. Do not put Blade component markup in the
-attribute. For rich content such as `Save Changes <hw:kbd>S</hw:kbd>`, use an explicit tooltip composition instead of a
-Button prop.
+The `tooltip` prop is intentionally a lightweight Button convenience. Its string is escaped and rendered through the
+same `<hw:tooltip>` source used by explicit composition. For rich content, mount the controller and place the component
+inside the Button:
+
+```blade
+<hw:button data-controller="tooltip">
+    Save
+    <hw:tooltip>Save changes <hw:kbd>⌘S</hw:kbd></hw:tooltip>
+</hw:button>
+```
 
 For conditional display, pass `tooltip-enabled-when` with the selector expected by the tooltip controller:
 
@@ -212,7 +219,7 @@ button `type` is likewise restricted to `button`, `submit`, or `reset`.
 | `slotName`             | `string`         | `'button'`  | Internal escape hatch for shipped components that need a button element with a more specific `data-slot`. Most apps should not set this.                                      |
 | `frame`                | `string\|object\|false\|null` | `null` | Render `data-turbo-frame` for links/actions targeting a Turbo Frame. Objects use `dom_id()`; false/blank omit it; explicit `data-turbo-frame` wins.                        |
 | `hotkey`               | `string\|null`   | `null`      | Mount `hotkey` and click the button from one or more global keyboard shortcuts. `cmd` maps to `meta`.                                                                         |
-| `tooltip`              | `string\|null`   | `null`      | Mount `tooltip` and set `data-tooltip-content-value`.                                                                                                                         |
+| `tooltip`              | `string\|null`   | `null`      | Mount `tooltip` and render its escaped text through the shared Tooltip source.                                                                                                |
 | `tooltip-side`         | `string\|null`   | `null`      | Set `data-tooltip-side-value` when `tooltip` is active.                                                                                                                       |
 | `tooltip-align`        | `string\|null`   | `null`      | Set `data-tooltip-align-value` when `tooltip` is active.                                                                                                                      |
 | `tooltip-motion`       | `string\|null`   | `null`      | Set `data-tooltip-motion-value` to `default` or `none` when `tooltip` is active.                                                                                              |

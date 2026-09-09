@@ -12,12 +12,11 @@
         'data-color-scheme-view-transition-value' => $viewTransition ? 'true' : null,
         'data-mode' => $default,
         'data-scheme' => $default === 'dark' ? 'dark' : 'light',
-        'data-tooltip-content-value' => $hasTooltip ? $tooltip : null,
         'data-tooltip-side-value' => $hasTooltip ? $tooltipSide : null,
         'data-tooltip-align-value' => $hasTooltip ? $tooltipAlign : null,
         'data-tooltip-motion-value' => $hasTooltip ? $tooltipMotion : null,
         'data-tooltip-enabled-when-value' => $hasTooltip ? $tooltipEnabledWhen : null,
-    ], $attributes, $stimulus, except: ['modes', 'storage-key', 'default', 'tooltip', 'tooltip-side', 'tooltip-align', 'tooltip-motion', 'tooltip-enabled-when', 'view-transition'], protectedPrefixes: $protectedPrefixes);
+    ], $attributes, $stimulus, except: ['modes', 'storage-key', 'default', 'tooltip', 'tooltip-side', 'tooltip-align', 'tooltip-motion', 'tooltip-enabled-when', 'data-tooltip-content-value', 'view-transition'], protectedPrefixes: $protectedPrefixes);
 @endphp
 
 <button {{ $toggleAttributes }}>
@@ -25,4 +24,7 @@
     <x-hw::icon name="moon" :data-slot="$iconSlotName" data-scheme-icon="dark" />
     <x-hw::icon name="monitor" :data-slot="$iconSlotName" data-mode-icon="system" />
     {{ $slot }}
+    @if ($hasTooltip)
+        <x-hw::tooltip>{{ $tooltip }}</x-hw::tooltip>
+    @endif
 </button>

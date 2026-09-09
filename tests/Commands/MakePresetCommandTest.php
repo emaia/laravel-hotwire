@@ -29,7 +29,7 @@ it('mirrors every rule the shipped presets define, grouped by catalog entry', fu
         ->and($css)->toContain('@import "../../../vendor/emaia/laravel-hotwire/resources/css/custom-variants.css";')
         ->and($css)->toContain('@import "../../../vendor/emaia/laravel-hotwire/resources/css/structural.css";')
         ->and($css)->toContain('/* Accordion */')
-        ->and($css)->toContain('/* Tooltip controller */')
+        ->and($css)->toContain('/* Tooltip */')
         ->and($css)->toEndWith("\n");
 
     foreach ($structuralSlots as $slot) {

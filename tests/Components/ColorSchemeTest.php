@@ -72,11 +72,23 @@ it('accepts color scheme toggle configuration and tooltip integration', function
         ->assertSee('data-color-scheme-modes-value="dark light"', false)
         ->assertSee('data-color-scheme-storage-key-value="app.theme"', false)
         ->assertSee('data-color-scheme-default-value="dark"', false)
-        ->assertSee('data-tooltip-content-value="Theme"', false)
+        ->assertSee('data-tooltip-target="template"', false)
+        ->assertSee('data-tooltip-surface', false)
+        ->assertSee('Theme')
+        ->assertDontSee('data-tooltip-content-value', false)
         ->assertSee('data-tooltip-side-value="bottom"', false)
         ->assertSee('data-tooltip-motion-value="none"', false)
         ->assertDontSee(' tooltip-motion="none"', false)
         ->assertDontSee(' tooltip="Theme"', false);
+});
+
+it('escapes color scheme tooltip prop content', function () {
+    $view = $this->blade('<x-hw::color-scheme.toggle :tooltip="$tooltip" />', [
+        'tooltip' => '<strong>Unsafe</strong>',
+    ]);
+
+    $view->assertSee('&lt;strong&gt;Unsafe&lt;/strong&gt;', false)
+        ->assertDontSee('<strong>Unsafe</strong>', false);
 });
 
 it('lets color scheme toggle props own internal data attributes', function () {

@@ -86,6 +86,7 @@ use Emaia\LaravelHotwire\Components\Toaster;
 use Emaia\LaravelHotwire\Components\Toggle;
 use Emaia\LaravelHotwire\Components\ToggleGroup;
 use Emaia\LaravelHotwire\Components\ToggleGroup\Item as ToggleGroupItem;
+use Emaia\LaravelHotwire\Components\Tooltip;
 
 /**
  * @param  string[]  $visual
@@ -1002,7 +1003,7 @@ return [
             'docs' => 'docs/components/sidebar.md',
             'category' => 'navigation',
             'description' => 'Composable app sidebar with provider state, mobile Presence and navigation primitives',
-            'controllers' => ['sidebar', 'reveal'],
+            'controllers' => ['sidebar', 'reveal', 'tooltip'],
             'styling' => [
                 'slots' => [
                     ['class' => Sidebar::class],
@@ -1191,6 +1192,19 @@ return [
             'styling' => [
                 'slots' => [
                     ['class' => ToggleGroup::class, 'only' => ['item']],
+                ],
+            ],
+        ],
+        'tooltip' => [
+            'class' => Tooltip::class,
+            'view' => 'hotwire::component-views.tooltip',
+            'docs' => 'docs/components/tooltip.md',
+            'category' => 'overlay',
+            'description' => 'Provides the package-styled inert template cloned by the tooltip controller for accessible anchored help',
+            'controllers' => ['tooltip'],
+            'styling' => [
+                'slots' => [
+                    ['class' => Tooltip::class],
                 ],
             ],
         ],
@@ -1602,11 +1616,8 @@ return [
             'source' => 'resources/js/controllers/tooltip_controller.js',
             'docs' => 'docs/controllers/tooltip.md',
             'category' => 'overlay',
-            'description' => 'Adds accessible hover/focus tooltips with state-driven presence, Floating UI positioning and top-layer promotion',
+            'description' => 'Clones custom or component-authored templates into accessible hover/focus tooltips with Floating UI positioning',
             'npm' => ['@floating-ui/dom' => '^1.8.0'],
-            'styling' => [
-                'slots' => $slots(['tooltip', 'tooltip-arrow']),
-            ],
         ],
         'turbo--frame-src' => [
             'source' => 'resources/js/controllers/turbo/frame_src_controller.js',

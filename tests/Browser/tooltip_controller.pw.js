@@ -3,8 +3,9 @@ import { readFile } from "node:fs/promises";
 
 test("shows a basic tooltip on hover", async ({ page }) => {
     await page.setContent(`
-        <button data-controller="tooltip" data-tooltip-content-value="Hello tooltip">
+        <button data-controller="tooltip">
             Hover me
+            ${tooltipTemplate("Hello tooltip")}
         </button>
     `);
 
@@ -14,12 +15,37 @@ test("shows a basic tooltip on hover", async ({ page }) => {
 
     await expect(page.locator('[data-slot="tooltip"]')).toContainText("Hello tooltip");
     await expect(page.locator('[data-slot="tooltip"]')).toHaveAttribute("role", "tooltip");
+    await expect(page.locator('[data-slot="tooltip"]')).toHaveAttribute("data-hotwire-top-layer", "");
+    await expect(page.locator('template [data-tooltip-surface]')).toHaveCount(0);
+    expect(await page.locator("template").evaluate((template) => template.content.querySelector("[data-tooltip-surface]")?.textContent)).toContain("Hello tooltip");
+});
+
+test("supports an application-styled standalone template without package slots or an arrow", async ({ page }) => {
+    await page.setContent(`
+        <button data-controller="tooltip">
+            Hover me
+            <template data-tooltip-target="template">
+                <aside class="app-tooltip" data-theme="forest">Custom help</aside>
+            </template>
+        </button>
+    `);
+    await installControllers(page);
+
+    await page.locator("button").hover();
+
+    const tooltip = page.locator("body > .app-tooltip");
+    await expect(tooltip).toContainText("Custom help");
+    await expect(tooltip).toHaveAttribute("role", "tooltip");
+    await expect(tooltip).toHaveAttribute("data-theme", "forest");
+    await expect(tooltip).not.toHaveAttribute("data-slot", /.+/);
+    await expect(tooltip.locator("[data-tooltip-arrow]")).toHaveCount(0);
 });
 
 test("opens on focus and closes on Escape", async ({ page }) => {
     await page.setContent(`
-        <button data-controller="tooltip" data-tooltip-content-value="Focused tooltip">
+        <button data-controller="tooltip">
             Focus me
+            ${tooltipTemplate("Focused tooltip")}
         </button>
     `);
 
@@ -50,12 +76,12 @@ test("shows sidebar icon tooltips only after the sidebar collapses", async ({ pa
                     href="/components/map"
                     data-slot="sidebar-menu-button"
                     data-controller="tooltip"
-                    data-tooltip-content-value="Map"
                     data-tooltip-side-value="right"
                     data-tooltip-enabled-when-value="[data-slot=sidebar][data-collapsible=icon][data-mobile-state=closed]"
                 >
                     <svg></svg>
                     <span>Map</span>
+                    ${tooltipTemplate("Map")}
                 </a>
             </div>
         </div>
@@ -82,10 +108,10 @@ test("does not show an icon-rail tooltip while the mobile sidebar is open", asyn
         <div data-slot="sidebar" data-collapsible="icon" data-mobile-state="open">
             <button
                 data-controller="tooltip"
-                data-tooltip-content-value="Map"
                 data-tooltip-enabled-when-value="[data-slot=sidebar][data-collapsible=icon][data-mobile-state=closed]"
             >
                 Map
+                ${tooltipTemplate("Map")}
             </button>
         </div>
     `);
@@ -94,6 +120,139 @@ test("does not show an icon-rail tooltip while the mobile sidebar is open", asyn
     await page.locator('[data-controller="tooltip"]').hover();
 
     await expect(page.locator('[data-slot="tooltip"]')).toHaveCount(0);
+});
+
+test("Escape closes a tooltip before its mobile Sidebar", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.setContent(`
+        <div data-controller="sidebar" data-sidebar-open-value="true" data-sidebar-persist-value="false" data-state="expanded">
+            <button id="sidebar-trigger" data-slot="sidebar-trigger" data-action="sidebar#toggle">Toggle</button>
+            <div
+                data-slot="sidebar"
+                data-sidebar-target="modal"
+                data-sidebar-collapsible="offcanvas"
+                data-state="expanded"
+                data-mobile-state="closed"
+                data-motion="none"
+                hidden inert
+            >
+                <div data-slot="sidebar-backdrop" data-sidebar-target="backdrop"></div>
+                <div data-slot="sidebar-container" data-sidebar-target="dialog">
+                    <button id="help" data-controller="tooltip" data-tooltip-motion-value="none">
+                        Help
+                        ${tooltipTemplate("Sidebar help")}
+                    </button>
+                </div>
+            </div>
+        </div>
+    `);
+    await installControllers(page);
+
+    const sidebar = page.locator('[data-sidebar-target="modal"]');
+    const help = page.locator("#help");
+    await page.locator("#sidebar-trigger").click();
+    await help.focus();
+    await expect(page.locator('[data-slot="tooltip"]')).toContainText("Sidebar help");
+
+    await page.keyboard.press("Escape");
+
+    await expect(page.locator('[data-slot="tooltip"]')).toHaveCount(0);
+    await expect(sidebar).toHaveAttribute("data-mobile-state", "open");
+    await expect(help).toBeFocused();
+
+    await page.keyboard.press("Escape");
+    await expect(sidebar).toHaveAttribute("data-mobile-state", "closed");
+});
+
+test("a hover-opened tooltip consumes Escape before its mobile Sidebar", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.setContent(`
+        <div data-controller="sidebar" data-sidebar-open-value="true" data-sidebar-persist-value="false" data-state="expanded">
+            <button id="sidebar-trigger" data-slot="sidebar-trigger" data-action="sidebar#toggle">Toggle</button>
+            <div
+                data-slot="sidebar"
+                data-sidebar-target="modal"
+                data-sidebar-collapsible="offcanvas"
+                data-state="expanded"
+                data-mobile-state="closed"
+                data-motion="none"
+                hidden inert
+            >
+                <div data-slot="sidebar-backdrop" data-sidebar-target="backdrop"></div>
+                <div data-slot="sidebar-container" data-sidebar-target="dialog">
+                    <button id="focused">Focused control</button>
+                    <button id="help" data-controller="tooltip" data-tooltip-motion-value="none">
+                        Help
+                        ${tooltipTemplate("Sidebar help")}
+                    </button>
+                </div>
+            </div>
+        </div>
+    `);
+    await installControllers(page);
+
+    const sidebar = page.locator('[data-sidebar-target="modal"]');
+    await page.locator("#sidebar-trigger").click();
+    await page.locator("#focused").focus();
+    await page.locator("#help").hover();
+    await expect(page.locator('[data-slot="tooltip"]')).toContainText("Sidebar help");
+
+    await page.keyboard.press("Escape");
+
+    await expect(page.locator('[data-slot="tooltip"]')).toHaveCount(0);
+    await expect(sidebar).toHaveAttribute("data-mobile-state", "open");
+    await expect(page.locator("#focused")).toBeFocused();
+});
+
+test("replacing the source closes the clone and reopens from the current template", async ({ page }) => {
+    await page.setContent(`
+        <button data-controller="tooltip" data-tooltip-motion-value="none">
+            Help
+            ${tooltipTemplate("Current help")}
+        </button>
+    `);
+    await installControllers(page);
+
+    const trigger = page.locator('[data-controller="tooltip"]');
+    await trigger.focus();
+    await expect(page.locator('[data-slot="tooltip"]')).toContainText("Current help");
+
+    await trigger.locator("template").evaluate((template) => {
+        const replacement = document.createElement("template");
+        replacement.dataset.tooltipTarget = "template";
+        replacement.innerHTML = `
+            <div data-tooltip-surface data-slot="tooltip" data-state="closed" hidden inert>
+                Updated help
+                <div data-tooltip-arrow data-slot="tooltip-arrow"></div>
+            </div>
+        `;
+        template.replaceWith(replacement);
+    });
+
+    await expect(page.locator('[data-slot="tooltip"]')).toContainText("Updated help");
+    await expect(trigger).toHaveAttribute("aria-describedby", /hw-tooltip-/);
+});
+
+test("an inert parent closes the tooltip without disconnecting its trigger", async ({ page }) => {
+    await page.setContent(`
+        <div id="overlay-content">
+            <button data-controller="tooltip" data-tooltip-motion-value="none">
+                Help
+                ${tooltipTemplate("Overlay help")}
+            </button>
+        </div>
+    `);
+    await installControllers(page);
+
+    const trigger = page.locator('[data-controller="tooltip"]');
+    await trigger.hover();
+    await expect(page.locator('[data-slot="tooltip"]')).toContainText("Overlay help");
+
+    await page.locator("#overlay-content").evaluate((element) => { element.inert = true; });
+
+    await expect(page.locator('[data-slot="tooltip"]')).toHaveCount(0);
+    await expect(trigger).toHaveCount(1);
+    await expect(trigger).not.toHaveAttribute("aria-describedby", /hw-tooltip-/);
 });
 
 test("mobile sidebar preserves desktop state and closes synchronously for Turbo cache", async ({ page }) => {
@@ -318,5 +477,16 @@ async function browserControllersScript() {
         ${tooltip}
         window.SidebarController = SidebarController;
         window.TooltipController = TooltipController;
+    `;
+}
+
+function tooltipTemplate(content) {
+    return `
+        <template data-tooltip-target="template">
+            <div data-tooltip-surface data-slot="tooltip" data-state="closed" data-motion="default" role="tooltip" hidden inert>
+                ${content}
+                <div data-tooltip-arrow data-slot="tooltip-arrow"></div>
+            </div>
+        </template>
     `;
 }

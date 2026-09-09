@@ -70,9 +70,9 @@ $novaModules = [
     'timeago',
     'toggle-controls',
     'toggle-group',
+    'tooltip',
     'oembed',
     'toaster',
-    'tooltip',
 ];
 
 return [
@@ -108,8 +108,7 @@ return [
         'color-scheme-toggle' => $module(['color-scheme.toggle']),
         'drawer' => $module(['drawer']),
         'floating-presence' => $module(
-            ['dropdown', 'hover-card', 'popover', 'multi-select'],
-            ['tooltip'],
+            ['dropdown', 'hover-card', 'popover', 'multi-select', 'tooltip'],
         ),
         'dropdown' => $module(['dropdown']),
         'empty-state' => $module(['empty-state']),
@@ -167,9 +166,9 @@ return [
         'timeago' => $module(['timeago']),
         'toggle-controls' => $module(['toggle', 'toggle-group', 'toggle-group.item']),
         'toggle-group' => $module(['toggle-group', 'toggle-group.item']),
+        'tooltip' => $module(['button', 'color-scheme.toggle', 'sidebar', 'tooltip'], dependencies: ['floating-presence', 'kbd']),
         'oembed' => $module(controllers: ['oembed']),
         'toaster' => $module(controllers: ['toaster']),
-        'tooltip' => $module(controllers: ['tooltip'], dependencies: ['floating-presence', 'kbd']),
     ],
     'presets' => [
         'nova' => [

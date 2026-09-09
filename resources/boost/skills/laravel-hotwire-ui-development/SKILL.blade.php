@@ -47,9 +47,16 @@ name for a documented one.
 | Anchored action menu | `{!! $component('dropdown') !!}` |
 | Anchored non-modal content | `{!! $component('popover') !!}` |
 | Hover/focus preview | `{!! $component('hover-card') !!}` |
+| Concise non-interactive help | `{!! $component('tooltip') !!}` inside the trigger |
 
 Set an explicit accessible title/description or ARIA label. Do not remove focus management, Escape handling, inert state
 or focus return to obtain a visual effect.
+
+Tooltip content comes from a local template, not a Stimulus HTML value. Prefer the `tooltip` string prop on Button, Color
+Scheme Toggle and Sidebar Menu Button, or mount `tooltip` on the actual trigger and place one
+`{!! $component('tooltip') !!}` inside it for rich, non-interactive package styling. A standalone controller can instead
+target an application-owned `<template data-tooltip-target="template">` with one custom-styled root and an optional
+`data-tooltip-arrow`; it does not require package slots or select Tooltip preset CSS.
 
 ## Nested overlays
 

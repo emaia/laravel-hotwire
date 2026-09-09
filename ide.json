@@ -1167,6 +1167,11 @@
                     "name": "toggle-group.item",
                     "namespace": "hw",
                     "className": "\\Emaia\\LaravelHotwire\\Components\\ToggleGroup\\Item"
+                },
+                {
+                    "name": "tooltip",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Tooltip"
                 }
             ],
             "phpNamespaces": [

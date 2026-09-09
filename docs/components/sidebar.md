@@ -34,10 +34,7 @@ Composable app sidebar with collapsible navigation primitives.
                             <hw:sidebar.menu-button
                                 href="/dashboard"
                                 active
-                                data-controller="tooltip"
-                                data-tooltip-content-value="Dashboard"
-                                data-tooltip-side-value="right"
-                                data-tooltip-enabled-when-value="[data-slot=sidebar][data-collapsible=icon][data-mobile-state=closed]"
+                                tooltip="Dashboard"
                             >
                                 <hw:icon name="panel-left" />
                                 <span>Dashboard</span>
@@ -101,8 +98,8 @@ Composable app sidebar with collapsible navigation primitives.
 </hw:sidebar.provider>
 ```
 
-The tooltip controller uses the package's Floating UI dependency and only appears while the sidebar is collapsed when
-`data-tooltip-enabled-when-value` targets the icon rail state.
+The menu button mounts Tooltip only when `tooltip` is set. Its built-in condition displays the Tooltip while the desktop
+Sidebar is collapsed to icons and keeps it disabled while the label is visible or the mobile Sidebar is open.
 
 ## Components
 
@@ -181,8 +178,10 @@ mobile labels keep their normal Reveal entrance.
 
 ### Menu buttons
 
-`sidebar.menu-button` accepts `href`, `active`, `variant`, `size`, `type`, and `frame`. When `href` is present it renders
-an anchor; otherwise it renders a button. `type` defaults to `button` and accepts `button`, `submit`, or `reset`.
+`sidebar.menu-button` accepts `href`, `active`, `variant`, `size`, `type`, `frame`, `tooltip`, `tooltip-side`,
+`tooltip-motion`, and `tooltip-enabled-when`. When `href` is present it renders an anchor; otherwise it renders a button.
+`type` defaults to `button` and accepts `button`, `submit`, or `reset`. Tooltip side defaults to `right`; use `left` for a
+right-hand Sidebar.
 
 `sidebar.menu-sub-button` accepts `href`, `active`, `size`, `type`, and `frame`, with the same native button type allowlist.
 
@@ -230,8 +229,9 @@ after the icon so the NOVA preset can visually hide that text in collapsed mode:
 </hw:sidebar.provider>
 ```
 
-Pair icon-only rails with the `tooltip` controller when labels are hidden. This example keeps the tooltip disabled while
-the sidebar is expanded and the label is already visible:
+Set `tooltip` on icon-only rail actions. By default, the Menu Button uses the collapsed-desktop/mobile-closed condition,
+so the Tooltip is disabled whenever its visible label already provides the same information. Pass a custom selector to
+`tooltip-enabled-when`, or an empty string to keep the Tooltip enabled in every Sidebar state:
 
 ```blade
 <hw:sidebar.provider>
@@ -245,10 +245,7 @@ the sidebar is expanded and the label is already visible:
                 <hw:sidebar.menu-item>
                     <hw:sidebar.menu-button
                         href="/components/map"
-                        data-controller="tooltip"
-                        data-tooltip-content-value="Map"
-                        data-tooltip-side-value="right"
-                        data-tooltip-enabled-when-value="[data-slot=sidebar][data-collapsible=icon][data-mobile-state=closed]"
+                        tooltip="Map"
                     >
                         <x-lucide-map class="size-5" />
                         <span>Map</span>

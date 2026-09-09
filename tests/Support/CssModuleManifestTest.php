@@ -72,6 +72,16 @@ it('selects controller-owned visual modules and their dependencies', function ()
         ->toEqualCanonicalizing(['floating-presence', 'tooltip']);
 });
 
+it('selects Tooltip visuals through package components but not the standalone controller', function () {
+    $manifest = app(CssModuleManifest::class);
+
+    expect($manifest->modulesFor(['tooltip'], []))->toContain('floating-presence', 'kbd', 'tooltip')
+        ->and($manifest->modulesFor(['button'], ['tooltip']))->toContain('tooltip')
+        ->and($manifest->modulesFor(['color-scheme.toggle'], ['color-scheme', 'tooltip']))->toContain('tooltip')
+        ->and($manifest->modulesFor(['sidebar'], ['sidebar', 'reveal', 'tooltip']))->toContain('sidebar', 'tooltip')
+        ->and($manifest->modulesFor([], ['tooltip']))->toBe([]);
+});
+
 it('includes upload state styling with the file upload component', function () {
     expect(app(CssModuleManifest::class)->modulesFor(['file-upload'], []))
         ->toContain('file-upload', 'text-shimmer');

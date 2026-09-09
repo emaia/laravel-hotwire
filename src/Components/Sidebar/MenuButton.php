@@ -16,6 +16,10 @@ class MenuButton extends Component
         public string $size = 'default',
         public string $type = 'button',
         public string|object|bool|null $frame = null,
+        public ?string $tooltip = null,
+        public string $tooltipSide = 'right',
+        public ?string $tooltipMotion = null,
+        public ?string $tooltipEnabledWhen = '[data-slot=sidebar][data-collapsible=icon][data-mobile-state=closed]',
     ) {
         $this->frame = FrameTarget::normalize($this->frame);
         $this->type = PolymorphicTag::buttonType($this->type);
@@ -26,5 +30,13 @@ class MenuButton extends Component
         return view('hotwire::component-views.sidebar-menu-button', [
             'slotName' => Sidebar::SLOTS['menu-button']['name'],
         ]);
+    }
+
+    public function data(): array
+    {
+        return [
+            ...parent::data(),
+            'hasTooltip' => $this->tooltip !== null,
+        ];
     }
 }

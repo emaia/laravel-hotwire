@@ -9,8 +9,9 @@ import { createTopLayer } from "./_top_layer.js";
 let tooltipId = 0;
 
 export default class extends Controller {
+    static targets = ["template"];
+
     static values = {
-        content: { type: String, default: "Tooltip" },
         side: { type: String, default: "top" },
         align: { type: String, default: "center" },
         sideOffset: { type: Number, default: 8 },
@@ -32,7 +33,7 @@ export default class extends Controller {
         this.onFocusIn = this.onFocusIn.bind(this);
         this.onFocusOut = this.onFocusOut.bind(this);
         this.onClick = this.onClick.bind(this);
-        this.onDocumentKeydown = this.onDocumentKeydown.bind(this);
+        this.onWindowKeydown = this.onWindowKeydown.bind(this);
         this.closeForCache = this.closeForCache.bind(this);
 
         this.id = `hw-tooltip-${++tooltipId}`;
@@ -48,6 +49,9 @@ export default class extends Controller {
         this.presence = null;
         this.topLayer = null;
         this.observer = null;
+        this.containmentObserver = null;
+        this.ownsEscapeScope = false;
+        this.sourceErrorReported = false;
     }
 
     get isOpen() {
@@ -73,9 +77,14 @@ export default class extends Controller {
         this.element.removeEventListener("focusout", this.onFocusOut);
         this.element.removeEventListener("click", this.onClick);
         document.removeEventListener("turbo:before-cache", this.closeForCache);
-        document.removeEventListener("keydown", this.onDocumentKeydown, true);
+        window.removeEventListener("keydown", this.onWindowKeydown, true);
         this.observer?.disconnect();
         this.observer = null;
+        this.containmentObserver?.disconnect();
+        this.containmentObserver = null;
+        this.hoveredTrigger = false;
+        this.hoveredTooltip = false;
+        this.focused = false;
         this.hide({ immediate: true });
     }
 
@@ -118,7 +127,7 @@ export default class extends Controller {
         this.hide();
     }
 
-    onDocumentKeydown(event) {
+    onWindowKeydown(event) {
         if (isComposing(event)) return;
         if (!this.open || event.key !== "Escape") return;
 
@@ -162,10 +171,26 @@ export default class extends Controller {
         this.clearOpenTimer();
         if (this.open || !this.isEnabled()) return;
 
+        try {
+            this.createTooltip();
+        } catch (error) {
+            this.hide({ immediate: true });
+            if (!this.sourceErrorReported) {
+                this.sourceErrorReported = true;
+                this.application.handleError(error, "Error opening tooltip", {
+                    controller: this,
+                    element: this.element,
+                });
+            }
+
+            return;
+        }
+
         this.open = true;
-        this.createTooltip();
+        this.observeContainment();
+        this.setEscapeScope(true);
         this.addDescribedBy();
-        document.addEventListener("keydown", this.onDocumentKeydown, true);
+        window.addEventListener("keydown", this.onWindowKeydown, true);
 
         this.floating ??= createFloating(this.element, this.tooltip, {
             side: this.sideValue,
@@ -197,11 +222,14 @@ export default class extends Controller {
 
     hide({ immediate = false } = {}) {
         this.clearTimers();
+        this.containmentObserver?.disconnect();
+        this.containmentObserver = null;
 
         if (!this.open && !this.tooltip) return;
 
         this.open = false;
-        document.removeEventListener("keydown", this.onDocumentKeydown, true);
+        this.setEscapeScope(false);
+        window.removeEventListener("keydown", this.onWindowKeydown, true);
         this.removeDescribedBy();
 
         if (immediate) {
@@ -238,6 +266,7 @@ export default class extends Controller {
     }
 
     isEnabled() {
+        if (this.element.closest("[hidden], [inert]")) return false;
         if (!this.enabledWhenValue) return true;
 
         try {
@@ -266,6 +295,19 @@ export default class extends Controller {
         });
     }
 
+    observeContainment() {
+        this.containmentObserver?.disconnect();
+        this.containmentObserver = new MutationObserver(() => {
+            if (this.element.closest("[hidden], [inert]")) this.hide({ immediate: true });
+        });
+
+        this.containmentObserver.observe(this.observerRoot, {
+            attributes: true,
+            subtree: true,
+            attributeFilter: ["hidden", "inert"],
+        });
+    }
+
     syncEnabledState() {
         if (!this.isEnabled()) this.hide();
     }
@@ -273,26 +315,38 @@ export default class extends Controller {
     createTooltip() {
         if (this.tooltip) return;
 
-        this.tooltip = document.createElement("div");
+        if (this.templateTargets.length !== 1) {
+            throw new Error("Tooltip requires exactly one template target.");
+        }
+
+        const template = this.templateTarget;
+        const source = template.tagName === "TEMPLATE" && template.content.children.length === 1
+            ? template.content.firstElementChild
+            : null;
+        const sourceArrows = source
+            ? Array.from(source.querySelectorAll("[data-tooltip-arrow]"))
+            : [];
+
+        if (!source || sourceArrows.length > 1) {
+            throw new Error("Tooltip template requires one root and at most one arrow.");
+        }
+
+        this.tooltip = source.cloneNode(true);
+        this.arrow = this.tooltip.querySelector("[data-tooltip-arrow]");
         this.tooltip.id = this.id;
         this.tooltip.setAttribute("role", "tooltip");
-        this.tooltip.dataset.slot = "tooltip";
         this.tooltip.dataset.state = "closed";
         this.tooltip.dataset.motion = ["default", "none"].includes(this.motionValue) ? this.motionValue : "default";
         this.tooltip.hidden = true;
-        this.tooltip.setAttribute("inert", "");
-        this.tooltip.innerHTML = this.contentValue;
+        this.tooltip.inert = true;
         this.tooltip.addEventListener("pointerenter", this.onTooltipPointerEnter);
         this.tooltip.addEventListener("pointerleave", this.onTooltipPointerLeave);
-
-        this.arrow = document.createElement("div");
-        this.arrow.dataset.slot = "tooltip-arrow";
-        this.tooltip.append(this.arrow);
 
         document.body.append(this.tooltip);
         this.presence = createPresence(this.tooltip);
         this.presence.sync(false);
         this.topLayer = createTopLayer(this.tooltip);
+        this.sourceErrorReported = false;
     }
 
     destroyTooltip() {
@@ -303,10 +357,19 @@ export default class extends Controller {
         this.tooltip.removeEventListener("pointerenter", this.onTooltipPointerEnter);
         this.tooltip.removeEventListener("pointerleave", this.onTooltipPointerLeave);
         this.tooltip.remove();
+        this.hoveredTooltip = false;
         this.tooltip = null;
         this.arrow = null;
         this.presence = null;
         this.topLayer = null;
+    }
+
+    templateTargetConnected() {
+        if (!this.open && (this.hoveredTrigger || this.focused)) this.scheduleOpen();
+    }
+
+    templateTargetDisconnected() {
+        this.hide({ immediate: true });
     }
 
     addDescribedBy() {
@@ -353,7 +416,8 @@ export default class extends Controller {
         }
 
         this.open = false;
-        document.removeEventListener("keydown", this.onDocumentKeydown, true);
+        this.setEscapeScope(false);
+        window.removeEventListener("keydown", this.onWindowKeydown, true);
         this.removeDescribedBy();
         this.finishHide(presence);
     }
@@ -361,6 +425,20 @@ export default class extends Controller {
     clearTimers() {
         this.clearOpenTimer();
         this.clearCloseTimer();
+    }
+
+    setEscapeScope(active) {
+        if (active) {
+            if (!this.element.hasAttribute("data-hotwire-escape-scope")) {
+                this.element.setAttribute("data-hotwire-escape-scope", "");
+                this.ownsEscapeScope = true;
+            }
+
+            return;
+        }
+
+        if (this.ownsEscapeScope) this.element.removeAttribute("data-hotwire-escape-scope");
+        this.ownsEscapeScope = false;
     }
 
     clearOpenTimer() {
