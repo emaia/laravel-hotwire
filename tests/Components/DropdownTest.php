@@ -5,6 +5,7 @@ use Emaia\LaravelHotwire\Components\Dropdown\Content as DropdownContent;
 use Emaia\LaravelHotwire\Components\Dropdown\Item as DropdownItem;
 use Emaia\LaravelHotwire\Components\Dropdown\Label as DropdownLabel;
 use Emaia\LaravelHotwire\Components\Dropdown\Trigger as DropdownTrigger;
+use Emaia\LaravelHotwire\Components\Dropdown\TriggerIcon as DropdownTriggerIcon;
 use Emaia\LaravelHotwire\Components\Sidebar;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
@@ -69,6 +70,7 @@ it('uses an existing child component as the trigger when requested', function ()
             <x-hw::dropdown.trigger as-child data-action="analytics#track">
                 <x-hw::sidebar.menu-button size="lg" class="team-trigger">
                     <span>Acme</span>
+                    <x-hw::dropdown.trigger-icon><svg data-test="chevron"></svg></x-hw::dropdown.trigger-icon>
                 </x-hw::sidebar.menu-button>
             </x-hw::dropdown.trigger>
 
@@ -80,7 +82,8 @@ it('uses an existing child component as the trigger when requested', function ()
 
     $html = (string) $view;
 
-    expect(countElements($html, '//*[@data-slot="dropdown-trigger"]'))->toBe(0);
+    expect(countElements($html, '//*[@data-slot="dropdown-trigger"]'))->toBe(0)
+        ->and(countElements($html, '//*[@data-slot="dropdown-trigger-icon"]/*[@data-test="chevron"]'))->toBe(1);
 
     $view->assertSee('data-slot="sidebar-menu-button"', false)
         ->assertSee('<button type="button"', false)
@@ -553,6 +556,7 @@ it('renders dropdown items as links or buttons with state hooks', function () {
 it('registers dropdown subcomponent aliases', function () {
     expect(ComponentAliases::subComponents())
         ->toHaveKey('dropdown.trigger')
+        ->toHaveKey('dropdown.trigger-icon', DropdownTriggerIcon::class)
         ->toHaveKey('dropdown.content')
         ->toHaveKey('dropdown.item')
         ->toHaveKey('dropdown.label')

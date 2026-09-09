@@ -93,6 +93,7 @@ it('projects the Alert family slot contract from its component class', function 
 
     expect(Alert::SLOTS)->toBe([
         'root' => ['name' => 'alert', 'kind' => 'visual'],
+        'icon' => ['name' => 'alert-icon', 'kind' => 'visual'],
         'title' => ['name' => 'alert-title', 'kind' => 'visual'],
         'description' => ['name' => 'alert-description', 'kind' => 'visual'],
         'action' => ['name' => 'alert-action', 'kind' => 'visual'],
@@ -100,6 +101,7 @@ it('projects the Alert family slot contract from its component class', function 
         ['class' => Alert::class],
     ])->and(HotwireRegistry::make()->component('alert')->styling->slots)->toBe([
         'alert' => 'visual',
+        'alert-icon' => 'visual',
         'alert-title' => 'visual',
         'alert-description' => 'visual',
         'alert-action' => 'visual',

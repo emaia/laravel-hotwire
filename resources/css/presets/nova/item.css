@@ -10,9 +10,9 @@
     [data-slot="item"][data-size="default"], [data-slot="item"][data-size="sm"] { @apply gap-2.5 px-3 py-2.5; }
     [data-slot="item"][data-size="xs"] { @apply gap-2 px-2.5 py-2; }
     a[data-slot="item"], button[data-slot="item"] { @apply cursor-pointer hover:bg-muted hover:text-foreground; }
-    [data-slot="item-media"] { @apply flex shrink-0 items-center justify-center gap-2 [&_svg]:pointer-events-none; }
+    [data-slot="item-media"] { @apply flex shrink-0 items-center justify-center gap-2; }
     [data-slot="item-media"][data-variant="default"] { @apply bg-transparent; }
-    [data-slot="item-media"][data-variant="icon"] { @apply [&>[data-slot=icon]]:size-4; }
+    [data-slot="item-media"][data-variant="icon"] { @apply [&>svg]:pointer-events-none [&>svg]:size-4; }
     [data-slot="item-media"][data-variant="image"] { @apply size-10 overflow-hidden rounded-sm [&_img]:size-full [&_img]:object-cover; }
     [data-slot="item"][data-size="sm"] [data-slot="item-media"][data-variant="image"] { @apply size-8; }
     [data-slot="item"][data-size="xs"] [data-slot="item-media"][data-variant="image"] { @apply size-6; }

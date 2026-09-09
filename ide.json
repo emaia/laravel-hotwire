@@ -79,6 +79,11 @@
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Alert\\Description"
                 },
                 {
+                    "name": "alert.icon",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Alert\\Icon"
+                },
+                {
                     "name": "alert.title",
                     "namespace": "hw",
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Alert\\Title"
@@ -387,6 +392,11 @@
                     "name": "dropdown.trigger",
                     "namespace": "hw",
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Dropdown\\Trigger"
+                },
+                {
+                    "name": "dropdown.trigger-icon",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\Dropdown\\TriggerIcon"
                 },
                 {
                     "name": "empty-state",

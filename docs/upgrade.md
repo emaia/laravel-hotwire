@@ -6,6 +6,24 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 
 ## Unreleased
 
+### Alert, Item and Dropdown own their icon roles
+
+Alert icon layout now uses the explicit `alert.icon` part. Wrap packaged or third-party icons instead of placing an
+`icon` slot directly under the Alert:
+
+```blade
+<hw:alert.icon>
+    <x-lucide-info aria-hidden="true" />
+</hw:alert.icon>
+```
+
+`item.media variant="icon"` now sizes a direct SVG child without requiring `data-slot="icon"` or a size class. Remove
+that manual package hook; wrapped graphics remain application-owned compositions.
+
+Dropdown disclosure indicators can now use `dropdown.trigger-icon`. Replace a manual
+`data-slot="dropdown-trigger-icon"` on the graphic with the wrapper when using Blade composition. The low-level slot
+remains available for raw controller markup, and unrelated trigger icons do not rotate.
+
 ### Breadcrumb validates its item descriptors
 
 `<hw:breadcrumb>` now validates the `items` descriptors it is given, instead of coercing them and rendering an

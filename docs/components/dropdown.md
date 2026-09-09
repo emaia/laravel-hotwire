@@ -12,7 +12,9 @@ accessibility attributes for you.
 <hw:dropdown>
     <hw:dropdown.trigger>
         Options
-        <hw:icon name="chevron-down" data-slot="dropdown-trigger-icon" />
+        <hw:dropdown.trigger-icon>
+            <hw:icon name="chevron-down" aria-hidden="true" />
+        </hw:dropdown.trigger-icon>
     </hw:dropdown.trigger>
 
     <hw:dropdown.content>
@@ -36,8 +38,9 @@ root supplies the shared id and open state that keep ARIA and controller targets
 own has no controller to attach to. For Turbo Stream updates, replace the menu's inner content or render the owning
 Dropdown root rather than rendering a trigger or content subcomponent by itself.
 
-Add `data-slot="dropdown-trigger-icon"` to a chevron inside the trigger when you want it to rotate with the open state.
-The default preset CSS targets the trigger's `aria-expanded="true"` state, so no group class is required.
+Wrap the disclosure indicator in `dropdown.trigger-icon` when it should rotate with the open state. Other trigger icons
+remain unchanged. Low-level markup can emit `data-slot="dropdown-trigger-icon"` directly. The default preset CSS targets
+the trigger's `aria-expanded="true"` state, so no group class is required.
 
 ## Trigger As Child
 
@@ -53,7 +56,9 @@ single root element instead of rendering a nested button.
                 <span class="truncate font-medium">{{ $user->name }}</span>
                 <span class="truncate text-xs">{{ $user->email }}</span>
             </span>
-            <hw:icon name="chevron-down" class="ml-auto" />
+            <hw:dropdown.trigger-icon class="ml-auto">
+                <hw:icon name="chevron-down" aria-hidden="true" />
+            </hw:dropdown.trigger-icon>
         </hw:sidebar.menu-button>
     </hw:dropdown.trigger>
 
@@ -90,7 +95,9 @@ mobile opens below the trigger:
                         <span class="truncate font-medium">{{ $activeTeam->name }}</span>
                         <span class="truncate text-xs">{{ $activeTeam->plan }}</span>
                     </span>
-                    <hw:icon name="chevron-down" class="ml-auto" />
+                    <hw:dropdown.trigger-icon class="ml-auto">
+                        <hw:icon name="chevron-down" aria-hidden="true" />
+                    </hw:dropdown.trigger-icon>
                 </hw:sidebar.menu-button>
             </hw:dropdown.trigger>
 
@@ -243,7 +250,9 @@ where needed with `data-action="dropdown#close"`.
 <hw:dropdown :close-on-select="false">
     <hw:dropdown.trigger>
         Filters
-        <hw:icon name="chevron-down" data-slot="dropdown-trigger-icon" />
+        <hw:dropdown.trigger-icon>
+            <hw:icon name="chevron-down" aria-hidden="true" />
+        </hw:dropdown.trigger-icon>
     </hw:dropdown.trigger>
 
     <hw:dropdown.content width="w-64 max-w-[calc(100vw-2rem)]">
@@ -316,6 +325,7 @@ and disabled links omit frame metadata. Disabled links also omit `href` and rece
 | --- | --- | --- |
 | `dropdown` | `div` | `dropdown` |
 | `dropdown.trigger` | `button` or single child root with `as-child` | `dropdown-trigger` unless `as-child` |
+| `dropdown.trigger-icon` | `span` | `dropdown-trigger-icon` |
 | `dropdown.content` | `div` | `dropdown-menu` |
 | `dropdown.group` | `div` with `role="group"` | `dropdown-group` |
 | `dropdown.label` | `div` | `dropdown-label` |

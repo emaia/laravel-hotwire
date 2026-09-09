@@ -6,7 +6,9 @@ Inline feedback block for status messages, warnings and contextual notices.
 
 ```blade
 <hw:alert>
-    <hw:icon name="info" />
+    <hw:alert.icon>
+        <hw:icon name="info" aria-hidden="true" />
+    </hw:alert.icon>
     <hw:alert.title>Heads up</hw:alert.title>
     <hw:alert.description>
         You can add components to your app using the installer.
@@ -40,6 +42,7 @@ Inline feedback block for status messages, warnings and contextual notices.
 | Component | Element | Slot |
 | --- | --- | --- |
 | `alert` | `div` with `role="alert"` | `alert` |
+| `alert.icon` | `span` | `alert-icon` |
 | `alert.title` | `div` | `alert-title` |
 | `alert.description` | `div` | `alert-description` |
 | `alert.action` | `div` | `alert-action` |
@@ -48,7 +51,11 @@ Inline feedback block for status messages, warnings and contextual notices.
 
 - `data-slot="alert"`
 - `data-variant="default|destructive"`
-- `data-slot="icon"` for a direct child icon, including application-provided icons
+- `data-slot="alert-icon"`
 - `data-slot="alert-title"`
 - `data-slot="alert-description"`
 - `data-slot="alert-action"`
+
+`alert.icon` owns the Alert layout role, so packaged and third-party icons need no manual `data-slot`. The wrapper does
+not hide its contents from assistive technology; add `aria-hidden="true"` to a decorative icon, or give a meaningful
+graphic its own accessible name.

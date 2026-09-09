@@ -8,7 +8,7 @@ Composable list item primitive for menus, notifications, search results and sett
 <hw:item.group>
     <hw:item variant="outline">
         <hw:item.media variant="icon">
-            <x-lucide-bell class="size-4" />
+            <x-lucide-bell aria-hidden="true" />
         </hw:item.media>
         <hw:item.content>
             <hw:item.title>Notifications</hw:item.title>
@@ -31,6 +31,9 @@ Use `as="a"` or `as="button"` and pass attributes directly to the item when it n
 trimmed, lowercased, and restricted to `div`, `a`, or `button`; unsupported values are rejected. Button items default to
 `type="button"`, with `submit` and `reset` also accepted. Disabled anchors omit `href` and receive
 `aria-disabled="true"` and `tabindex="-1"`.
+
+Icon media styles a direct SVG child. Packaged and third-party SVG components therefore need no package `data-slot` or
+size class. Wrap the SVG only when the wrapper is intentional application markup, and style that composition yourself.
 
 ## Props
 
@@ -65,7 +68,7 @@ trimmed, lowercased, and restricted to `div`, `a`, or `button`; unsupported valu
 - `data-size="default|sm|xs"`
 - `data-slot="item-media"`
 - `data-variant="default|icon|image"`
-- `data-slot="icon"` for a direct child of icon-variant media, including application-provided icons
+- a direct SVG child of `item-media` when `data-variant="icon"`
 - `data-slot="item-content"`
 - `data-slot="item-title"`
 - `data-slot="item-description"`

@@ -512,6 +512,22 @@ it('keeps multi-select state selectors aligned with controller output', function
         ->toContain('[data-slot="multi-select-indicator"]');
 })->with('design presets');
 
+it('styles contextual icon roles without requiring the generic Icon slot', function (string $preset) {
+    $css = presetVisualCss($preset);
+    $alert = presetDeclaration($css, '[data-slot="alert"]');
+    $itemIcon = presetDeclaration($css, '[data-slot="item-media"][data-variant="icon"]');
+
+    expect($css)
+        ->toContain('[data-slot="alert-icon"]')
+        ->toContain('[data-slot="dropdown-trigger-icon"]')
+        ->and($alert)
+        ->toContain('data-slot=alert-icon')
+        ->not->toContain('data-slot=icon')
+        ->and($itemIcon)
+        ->toContain('[&>svg]')
+        ->not->toContain('data-slot=icon');
+})->with('design presets');
+
 it('preserves component custom-property contracts', function (string $preset) {
     $css = presetVisualCss($preset);
     $structural = File::get(__DIR__.'/../../resources/css/structural.css');
