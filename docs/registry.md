@@ -6,7 +6,6 @@ The registry is the public query surface for everything the package exposes:
 - Stimulus controllers
 - npm dependencies
 - visual and structural `data-slot` hooks
-- preset-supported variant and size values
 - documentation paths
 - categories
 
@@ -79,30 +78,35 @@ References can combine declarations from multiple families. Use `only` when an e
 ```
 
 The resolver reads class constants through reflection and never constructs a component, renders a view or resolves the
-container. Missing local keys and conflicting `visual`/`structural` classifications are rejected. During the pre-1.0
-migration, catalog entries not yet moved to family declarations retain their literal slot maps; new and migrated
-families must use class declarations.
+container. Missing local keys and conflicting `visual`/`structural` classifications are rejected. Component families
+use class declarations; literal maps remain available for controller-created anatomy that has no component family. The
+projection retains each slot's declaring family so scaffolds group shared slots under their owner rather than whichever
+consumer happens to appear first.
 
 Structural slots are containers, assistive nodes or geometry a controller stylesheet already owns; presets are not
 expected to style them, and `hotwire:make-preset` leaves them out of the scaffold.
 
-The values a slot varies by are deliberately **not** declared here. Only a stylesheet knows them, and it knows all of
-them: a slot varies by `data-orientation` because a rule says so. The preset source resolver gives
-`Support\PresetAxes` the complete ordered visual CSS, so `hotwire:make-preset` documents every axis without anything
-being kept in sync by hand.
+The values a slot varies by are deliberately **not** declared here. `Support\PresetAxes` can report the attributes one
+stylesheet happens to differentiate, but that output is lexical diagnostic metadata rather than the public value
+vocabulary or a conformance contract. A base rule may cover every value, and several values may intentionally share an
+appearance.
 
 It reads every attribute a rule matches on, not only the `data-` ones — `aria-expanded`, `aria-invalid`, `type` and the
 `open` an Accordion `<details>` carries are axes too, whether they are written in the selector or as a Tailwind variant
 inside the rule. Pseudo-class states (`hover:`, `disabled:`, `focus-visible:`) are not attributes and stay out.
 
 A value belongs to the slot in whose compound it is written, so `[data-slot="sidebar"][data-collapsible="icon"]
-[data-slot="sidebar-content"]` puts the attribute on `sidebar`, which is what the cross-preset check compares. The
-scaffold does not go through the axes at all: `Support\PresetSkeleton` mirrors the shipped selectors themselves, so a
-rule driven from an ancestor arrives written out rather than described.
+[data-slot="sidebar-content"]` reports the attribute on `sidebar`. This remains useful when inspecting a stylesheet,
+but official presets are not required to expose identical lexical axes.
+
+`Support\PresetSkeleton` does not use `PresetAxes` or parse an official preset. It emits one empty base rule for each
+visual slot projected by the registry. Ancestor state, equivalent selectors and Tailwind variants remain authoring
+decisions documented by the component contract and implementation examples.
 
 Slot declarations are verified against every shipped preset in
-[`tests/Registry/SlotCatalogTest.php`](../tests/Registry/SlotCatalogTest.php): every visual slot must be styled, and
-every preset must differentiate a given slot by the same axes as the others.
+[`tests/Registry/SlotCatalogTest.php`](../tests/Registry/SlotCatalogTest.php): every visual slot must participate in a
+rule with declarations. Focused structural, behavioral and accessibility tests cover contracts that lexical slot
+occurrence cannot prove.
 
 ### Controller
 

@@ -133,7 +133,7 @@ it('safelists runtime classes applied by Stimulus controllers', function () {
         ->toContain('overflow-hidden');
 });
 
-it('keeps back to top interaction states, reduced motion and shared button axes', function () {
+it('keeps back to top interaction states, reduced motion and shared Button axes', function () {
     $css = presetVisualCss('nova');
     $axes = (new PresetAxes)->extract($css);
 

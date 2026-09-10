@@ -2,6 +2,12 @@
 
 namespace Emaia\LaravelHotwire\Support;
 
+/**
+ * Report the attribute axes a stylesheet differentiates as lexical diagnostics.
+ *
+ * The result does not define semantic conformance: base rules and equivalent selectors may support
+ * values that are absent from the extracted vocabulary.
+ */
 final class PresetAxes
 {
     public function __construct(private readonly CssRules $rules = new CssRules) {}

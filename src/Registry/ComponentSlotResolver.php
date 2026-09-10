@@ -12,15 +12,18 @@ final class ComponentSlotResolver
      * Project literal slots or component family references into the registry styling shape.
      *
      * @param  array<mixed>  $metadata
-     * @return array<string, 'visual'|'structural'>
+     * @return array{slots: array<string, 'visual'|'structural'>, owners: array<string, class-string|null>}
      */
     public static function resolve(array $metadata): array
     {
         if (! array_is_list($metadata)) {
-            return self::validateSlots($metadata, 'Catalog');
+            $slots = self::validateSlots($metadata, 'Catalog');
+
+            return ['slots' => $slots, 'owners' => array_fill_keys(array_keys($slots), null)];
         }
 
         $slots = [];
+        $owners = [];
 
         foreach ($metadata as $reference) {
             if (! is_array($reference)
@@ -74,10 +77,11 @@ final class ComponentSlotResolver
                 }
 
                 $slots[$name] ??= $kind;
+                $owners[$name] ??= $class;
             }
         }
 
-        return $slots;
+        return ['slots' => $slots, 'owners' => $owners];
     }
 
     /**

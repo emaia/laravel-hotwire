@@ -19,6 +19,14 @@ The installer writes a thin `resources/css/app.css` that imports Tailwind and en
 That public entrypoint aggregates Nova's ordered visual sources. Their internal paths are an implementation detail;
 applications should keep importing `presets/nova.css` rather than individual package files.
 
+The available CSS artifacts have different ownership and upgrade behavior:
+
+| Artifact | Ownership and maintenance |
+|----------|---------------------------|
+| Official preset import | Package-maintained; updates with Composer and is checked as a complete preset in package CI |
+| `hotwire:make-preset` scaffold or clone | Application-owned snapshot; edit it and merge relevant package upgrade changes manually |
+| `hotwire:styles` bundle | Package-generated subset; do not edit it, and regenerate it when its recorded plan becomes stale |
+
 ## Generate a selective bundle
 
 The complete preset is the safe default. For a layout that uses a known subset of components, generate an
@@ -62,7 +70,8 @@ Generated bundles also record their canonical component, controller and module s
 scanned Blade views when none of those bundles covers them. With multiple layout bundles this is deliberately a global
 safety net, not layout inference: coverage in any generated bundle satisfies the check. If any CSS entrypoint under
 `resources/css` retains an official complete preset import, or imports an application preset from
-`resources/css/presets`, it acts as complete coverage for mixed-layout applications. The check also reconstructs each
+`resources/css/presets`, the application assumes responsibility for complete coverage and opts out of missing-module
+reports. This does not validate the local preset's visual completeness. The check also reconstructs each
 generated bundle from its recorded plan, so stale or truncated CSS fails even when its metadata remains intact. `--fix`
 never changes a CSS selection because it cannot know which layout should own the missing component; regenerate the
 appropriate bundle explicitly. Dynamic PHP, Turbo or JavaScript markup still requires `--include` because static view
@@ -78,9 +87,9 @@ php artisan hotwire:make-preset brand
 
 The command creates `resources/css/presets/brand.css`. It imports the package token, custom-variant and structural
 layers — the last carrying the runtime utility safelist, so your preset picks up new package mechanics on upgrade
-instead of freezing them — and mirrors every rule the shipped presets define with an empty body, grouped by the
-component that owns it. You get the full set of selectors to fill in — including the ones whose state lives on an
-ancestor, which no summary of a slot's own attributes can express:
+instead of freezing them — and emits one empty base rule for every visual slot projected by the registry. Component
+rules are grouped under the family that declares each slot; controller-authored anatomy is grouped under its controller.
+The scaffold does not copy selector decomposition from Nova or another shipped preset:
 
 ```css
 @layer components {
@@ -89,18 +98,15 @@ ancestor, which no summary of a slot's own attributes can express:
     [data-slot="accordion"] {}
     [data-slot="accordion-item"] {}
     [data-slot="accordion-trigger"] {}
-    [data-slot="accordion-item"][aria-disabled="true"] > [data-slot="accordion-trigger"] {}
     [data-slot="accordion-trigger-icon"] {}
-    [data-slot="accordion-item"][open] > [data-slot="accordion-trigger"] [data-slot="accordion-trigger-icon"] {}
+    [data-slot="accordion-content"] {}
 }
 ```
 
-At-rules that qualify a rule (`@supports`, `@media`) come along, since the rule inside them means nothing on its own.
-Named keyframes are not scaffolded; Reveal inherits layer-safe fallback definitions from `structural.css`, and a preset
-can redefine those names in its own `components` layer.
-Rules for structural slots do not, nor does anything `structural.css` owns — presets are not expected to restate the
-mechanics, which is why the Accordion's `::details-content` block is absent above. Deleting a selector you have no use
-for is part of writing the preset; what the scaffold guarantees is that nothing the shipped presets style is missing.
+Rules for structural slots do not appear, nor does anything `structural.css` owns: presets are not expected to restate
+mechanics such as the Accordion's `::details-content` collapse. The scaffold is an anatomy checklist, not a semantic
+state specification. Consult component docs and official presets for relationships, states, at-rules and grouped rules,
+then implement the selectors appropriate to the new visual language.
 
 Replace the vendor preset import in `resources/css/app.css` with the line printed by the command:
 
@@ -117,12 +123,14 @@ php artisan hotwire:make-preset brand --from=nova
 The clone is one application-owned file: package foundation imports are rewritten to their vendor paths and Nova's
 private visual sources are flattened in canonical order. It never leaves imports to package-internal module paths.
 
-Use `--force` to replace an existing generated file. The command never edits `resources/css/app.css`, so application
-styles and import ordering remain under your control.
+Both scaffold and clone are snapshots. The vendor files referenced by their existing foundation imports continue to
+update, but copied visual rules and newly introduced foundation imports do not. Review upgrade notes and merge relevant
+changes manually; generating under a temporary name is a safe comparison workflow. `--force` replaces any existing
+target file, including application customizations, so use it only when replacement is intentional. The command never
+edits `resources/css/app.css`, leaving application styles and import ordering under your control.
 
-The rules arrive in the order the source preset declares them, and that order is worth keeping. Between equal-specificity
-rules in the same layer, the later one wins. Reordering the scaffold as you fill it in can therefore change which rule
-applies without changing a single declaration.
+A `--from` clone preserves the source preset's rule order, which is worth keeping. Between equal-specificity rules in
+the same layer, the later one wins; reordering a clone can therefore change which declaration applies.
 
 ### A note on IDE warnings
 
@@ -168,19 +176,14 @@ are visual, so presets own them. Controller CSS must not choose their colors, ra
 duplicate the controller's geometry. Slots that are presentation-free containers, assistive nodes or controller-owned
 structure are marked `structural` in the catalog and are intentionally omitted from an empty scaffold.
 
-The generated file is an inventory, not a complete design. State relationships, motion, top-layer resets and compound
-selectors cannot be inferred from slot names alone. Use Nova and the component docs as references when implementing
-those behaviors in a new design.
+The scaffold is an inventory, not a complete design. State relationships, motion, top-layer resets and compound
+selectors cannot be inferred from slot names alone. Component docs and shared structural contracts are authoritative;
+Nova is one implementation example rather than the required selector vocabulary.
 
 See the [preset expressiveness study](preset-expressiveness.md) for the recommended preset-neutral conformance policy,
-contrasting style matrix and reusable fixture. The current scaffold still mirrors shipped selectors; the study records
-why future multi-preset validation must allow base rules and visually equivalent values without treating Nova's exact
-selector decomposition as the semantic contract.
-
-Each slot is scaffolded once, under the first catalog entry that declares it, with one selector per slot and the
-attribute values Nova differentiates it by commented directly above it. Slots that share an appearance are better
-written as a single grouped rule — Nova styles every button-like slot through one
-`:is([data-slot="button"], [data-slot="modal-trigger"], …)` selector rather than repeating the same declarations.
+contrasting style matrix and reusable fixture. Complete preset checks allow base rules, shared appearances and
+equivalent selector organizations without treating Nova's exact decomposition as the semantic contract. Slots that
+share an appearance may be combined into one grouped rule after using the scaffold as a checklist.
 
 ## Override a component
 

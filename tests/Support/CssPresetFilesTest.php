@@ -78,3 +78,40 @@ it('resolves complete and selective preset sources from catalog owners', functio
         ->toContain('[data-slot="drawer-overlay"]')
         ->not->toContain('[data-slot="carousel"]');
 });
+
+it('resolves migrated integrations to exact canonical visual sources', function (array $components, array $controllers, array $expected) {
+    expect(app(CssPresetFiles::class)->sourceForSelection('nova', $components, $controllers)?->visualStylesheetPaths())
+        ->toBe($expected);
+})->with([
+    'Button with Tooltip' => [
+        ['button'],
+        [],
+        [
+            'presets/nova/button-surfaces.css',
+            'presets/nova/floating-presence.css',
+            'presets/nova/kbd.css',
+            'presets/nova/tooltip.css',
+        ],
+    ],
+    'Color Scheme Toggle with Tooltip' => [
+        ['color-scheme.toggle'],
+        [],
+        [
+            'presets/nova/button-surfaces.css',
+            'presets/nova/color-scheme-toggle.css',
+            'presets/nova/floating-presence.css',
+            'presets/nova/kbd.css',
+            'presets/nova/tooltip.css',
+        ],
+    ],
+    'Toaster component anatomy' => [
+        ['toaster'],
+        [],
+        ['presets/nova/toaster.css'],
+    ],
+    'OEmbed controller anatomy' => [
+        [],
+        ['oembed'],
+        ['presets/nova/oembed.css'],
+    ],
+]);

@@ -6,9 +6,11 @@ final readonly class Styling
 {
     /**
      * @param  array<string, 'visual'|'structural'>  $slots
+     * @param  array<string, class-string|null>  $slotOwners
      */
     public function __construct(
         public array $slots = [],
+        private array $slotOwners = [],
     ) {}
 
     /**
@@ -25,6 +27,12 @@ final readonly class Styling
     public function structuralSlots(): array
     {
         return $this->slotsOfKind('structural');
+    }
+
+    /** Return the component family that declares a projected slot, if it came from a family reference. */
+    public function slotOwner(string $slot): ?string
+    {
+        return $this->slotOwners[$slot] ?? null;
     }
 
     /** @return string[] */

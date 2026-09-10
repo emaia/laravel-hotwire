@@ -134,8 +134,8 @@ php artisan hotwire:make-preset brand --from=nova
 @import './presets/brand.css';
 ```
 
-Keep application-level token overrides after the local preset import. A blank generated preset already imports the
-package token and custom-variant layers; do not duplicate those imports in `app.css`.
+Keep application-level token overrides after the local preset import. A local scaffold or clone already imports the
+package token, custom-variant and structural foundations; do not duplicate those imports in `app.css`.
 
 ## Color schemes
 

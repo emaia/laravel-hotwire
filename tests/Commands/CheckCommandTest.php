@@ -277,10 +277,11 @@ it('accepts complete preset imports after allowed CSS prelude rules', function (
         ->assertSuccessful();
 });
 
-it('accepts an imported application preset as complete coverage', function () {
+it('accepts an imported application preset as an application-owned coverage assertion', function () {
     writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
     $this->artisan('hotwire:styles --components=modal --no-interaction')->assertSuccessful();
-    $this->artisan('hotwire:make-preset brand --from=nova --no-interaction')->assertSuccessful();
+    File::ensureDirectoryExists(resource_path('css/presets'));
+    File::put(resource_path('css/presets/brand.css'), '[data-slot="modal-panel"] {}');
     File::put(resource_path('css/app.css'), '@import "./presets/brand.css";');
 
     $this->artisan('hotwire:check --no-interaction')

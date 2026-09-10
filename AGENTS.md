@@ -360,9 +360,9 @@ temporary context that may be stale.
 - **`Variants` helper is for application code, not for package components.** `Support\Variants` (CVA-equivalent in PHP)
   stays exported so apps can build their own variant matrices; the Tailwind scanner reaches it there because it scans
   the app's own PHP. Package components must not use it — they emit no classes at all, only `data-slot`,
-  `data-variant` and `data-size`, and the preset does the styling. `Support\PresetAxes` reads the values each slot
-  varies by out of the stylesheets — `data-*`, `aria-*` and native attributes alike — and
-  `tests/Registry/SlotCatalogTest.php` holds every preset to the same axes.
+  `data-variant` and `data-size`, and the preset does the styling. `Support\PresetAxes` reports the attributes a
+  stylesheet differentiates — `data-*`, `aria-*` and native attributes alike — as lexical diagnostics only. Presets
+  may cover values with base rules or equivalent selectors; conformance must not require identical extracted axes.
 - Theming docs for app developers: `docs/theming.md` — token reference, override instructions, colour space notes.
   Upgrade notes for existing apps: `docs/upgrade.md` (deliverable of `0.32.0`).
 

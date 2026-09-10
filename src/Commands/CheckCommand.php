@@ -522,9 +522,9 @@ class CheckCommand extends Command
     /**
      * Report visual owners used in views but absent from every generated selective bundle.
      *
-     * This deliberately checks global coverage only. A complete preset import satisfies that
-     * coverage, but mapping a view/layout to one of several selective bundles requires an
-     * explicit application contract.
+     * This deliberately checks global coverage only. An official preset import satisfies that
+     * coverage; importing a local preset is the application's assertion that it owns complete
+     * coverage. Mapping a view/layout to selective bundles requires an explicit application contract.
      *
      * @param  array<string, string>  $components
      * @param  array<string, ControllerDefinition>  $standaloneControllers

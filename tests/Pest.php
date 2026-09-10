@@ -3,7 +3,9 @@
 use Emaia\LaravelHotwire\Support\PackageInstaller;
 use Emaia\LaravelHotwire\Tests\Support\FakePackageInstaller;
 use Emaia\LaravelHotwire\Tests\TestCase;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\ViewErrorBag;
 
 uses(TestCase::class)->in(__DIR__);
 
@@ -67,4 +69,56 @@ function dom(string $html): DOMDocument
     libxml_use_internal_errors($previous);
 
     return $dom;
+}
+
+function componentRequiresRenderProps(string $key, ?ReflectionMethod $constructor): bool
+{
+    return in_array($key, ['chart', 'file-upload', 'frame-or-page', 'frame-or-page.frame', 'frame-or-page.page', 'map'], true)
+        || ($constructor !== null && $constructor->getNumberOfRequiredParameters() > 0);
+}
+
+function renderAxisComponent(string $key): string
+{
+    view()->share('errors', new ViewErrorBag);
+
+    $markup = match ($key) {
+        'drawer' => '<x-hw::drawer aria-label="Example"><x-hw::drawer.content /></x-hw::drawer>',
+        'hover-card.trigger' => '<x-hw::hover-card><x-hw::hover-card.trigger /></x-hw::hover-card>',
+        'modal' => '<x-hw::modal aria-label="Example"><x-hw::modal.content /></x-hw::modal>',
+        'sheet' => '<x-hw::sheet aria-label="Example"><x-hw::sheet.content /></x-hw::sheet>',
+        'toggle-group' => '<x-hw::toggle-group><x-hw::toggle-group.item value="one">One</x-hw::toggle-group.item></x-hw::toggle-group>',
+        default => "<x-hw::{$key} />",
+    };
+
+    return Blade::render($markup);
+}
+
+/** @return string[] */
+function renderedAxisSlots(string $html, string $axis, string $value): array
+{
+    $nodes = (new DOMXPath(dom($html)))->query("//*[@data-slot and @data-{$axis}]");
+    $slots = [];
+
+    foreach ($nodes ?: [] as $node) {
+        if ($node instanceof DOMElement && $node->getAttribute("data-{$axis}") === $value) {
+            $slots[] = $node->getAttribute('data-slot');
+        }
+    }
+
+    return array_values(array_unique($slots));
+}
+
+/** @return string[] */
+function renderedSlots(string $html): array
+{
+    $nodes = (new DOMXPath(dom($html)))->query('//*[@data-slot]');
+    $slots = [];
+
+    foreach ($nodes ?: [] as $node) {
+        if ($node instanceof DOMElement) {
+            $slots[] = $node->getAttribute('data-slot');
+        }
+    }
+
+    return array_values(array_unique($slots));
 }
