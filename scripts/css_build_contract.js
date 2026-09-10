@@ -10,6 +10,7 @@ const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const baselinePath = join(root, "tests/Css/preset_build_baselines.json");
 const presetDirectory = join(root, "resources/css/presets");
 const tailwindBinary = join(root, "node_modules/.bin/tailwindcss");
+const makePresetFixtureScript = join(root, "scripts/run_make_preset_fixture.php");
 const stylesFixtureScript = join(root, "scripts/run_styles_fixture.php");
 const packageSourceFixtures = [
     ["package_source.blade.php", "resources/views/css_build_contract.blade.php"],
@@ -86,6 +87,17 @@ async function generateSelectiveBundle(directory, output) {
 
     if (exitCode !== 0) {
         throw new Error(`Selective CSS generation failed (exit ${exitCode}).\n${stderr || stdout}`);
+    }
+}
+
+async function generatePresetClone(directory, name, source) {
+    const { exitCode, stdout, stderr } = await spawnCommand(
+        [globalThis.process.env.PHP_BINARY ?? "php", makePresetFixtureScript, directory, name, source],
+        root,
+    );
+
+    if (exitCode !== 0) {
+        throw new Error(`Preset clone generation failed (exit ${exitCode}).\n${stderr || stdout}`);
     }
 }
 
@@ -247,6 +259,15 @@ export async function buildCssContract() {
             selectiveSource = await readFile(join(directory, selectiveOutput), "utf8");
         },
     });
+    const cloneName = "brand";
+    const clonePath = `resources/css/presets/${cloneName}.css`;
+    let novaCloneSource = null;
+    const novaClone = await compileCssFixture(packageSourceEntrypoint(`./presets/${cloneName}.css`), {
+        setup: async (directory) => {
+            await generatePresetClone(directory, cloneName, "nova");
+            novaCloneSource = await readFile(join(directory, clonePath), "utf8");
+        },
+    });
     const [tailwindPackage, cliPackage] = await Promise.all([
         readPackage("tailwindcss"),
         readPackage("@tailwindcss/cli"),
@@ -256,9 +277,11 @@ export async function buildCssContract() {
         outputs: {
             presets: presetOutputs,
             selective,
+            novaClone,
         },
         sources: {
             selective: selectiveSource,
+            novaClone: novaCloneSource,
         },
         measurements: {
             toolchain: {

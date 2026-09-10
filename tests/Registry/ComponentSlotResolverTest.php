@@ -16,7 +16,11 @@ it('projects complete and partial family references without constructing compone
         'fixture' => 'structural',
         'fixture-title' => 'visual',
         'shared-action' => 'visual',
-    ])->and(RegistrySlotFamilyFixture::$instances)->toBe(0);
+    ])->and($registry->component('fixture')->styling->slotOwner('fixture-title'))
+        ->toBe(RegistrySlotFamilyFixture::class)
+        ->and($registry->component('fixture')->styling->slotOwner('shared-action'))
+        ->toBe(RegistrySharedSlotFamilyFixture::class)
+        ->and(RegistrySlotFamilyFixture::$instances)->toBe(0);
 });
 
 it('rejects malformed family slot declarations', function () {

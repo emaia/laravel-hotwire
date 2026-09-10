@@ -6,6 +6,18 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 
 ## Unreleased
 
+### Blank preset scaffolds are registry-derived
+
+`hotwire:make-preset brand` now emits one empty base rule per visual slot from the package registry. It no longer
+copies Nova's compound selectors, state rules or at-rules into a blank preset. This keeps the starting point neutral as
+additional official presets adopt different valid selector organizations.
+
+Use `hotwire:make-preset brand --from=nova` when Nova's complete current selector structure is the intended starting
+point. Existing application presets are unchanged. Scaffolds and clones are application-owned snapshots: only their
+already-imported package foundation files update automatically; new foundation imports and copied visual rules require
+manual adoption. Review upgrade notes and merge relevant changes manually. Running the command with `--force` replaces
+the target file and any customizations in it.
+
 ### Toaster cards move to an internal Blade template
 
 `<hw:toaster>` now renders one internal card blueprint inside its viewport. The manager clones that source instead of

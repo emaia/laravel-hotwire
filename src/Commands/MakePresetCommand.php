@@ -6,6 +6,7 @@ use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\CssPresetFiles;
 use Emaia\LaravelHotwire\Support\CssRules;
 use Emaia\LaravelHotwire\Support\PresetSkeleton;
+use Emaia\LaravelHotwire\Support\PresetSkeletonGroups;
 use Emaia\LaravelHotwire\Support\PresetSource;
 use Emaia\LaravelHotwire\Support\PresetSourceException;
 use Illuminate\Console\Command;
@@ -34,6 +35,7 @@ class MakePresetCommand extends Command
         private readonly Filesystem $files,
         private readonly CssPresetFiles $presets,
         private readonly PresetSkeleton $skeleton,
+        private readonly PresetSkeletonGroups $skeletonGroups,
         private readonly CssRules $cssRules,
     ) {
         parent::__construct();
@@ -171,45 +173,6 @@ class MakePresetCommand extends Command
         ];
     }
 
-    /**
-     * @return string[]
-     *
-     * @throws FileNotFoundException
-     */
-    private function stylesheets(): array
-    {
-        $stylesheets = [];
-
-        foreach ($this->presets->names() as $preset) {
-            $stylesheets = [...$stylesheets, ...$this->presets->source($preset)?->visualStylesheets() ?? []];
-        }
-
-        return $stylesheets;
-    }
-
-    /**
-     * Ordered label => visual slots, the grouping the scaffold is laid out by.
-     *
-     * @return array<string, string[]>
-     */
-    private function groups(): array
-    {
-        $registry = HotwireRegistry::make();
-        $groups = [];
-
-        foreach ($registry->components() as $component) {
-            $label = $component->displayName();
-            $groups[$label] = [...$groups[$label] ?? [], ...$component->styling->visualSlots()];
-        }
-
-        foreach ($registry->controllers() as $controller) {
-            $label = str($controller->identifier)->replace('--', ' ')->replace('-', ' ')->title().' controller';
-            $groups[$label] = [...$groups[$label] ?? [], ...$controller->styling->visualSlots()];
-        }
-
-        return $groups;
-    }
-
     private function buildScaffold(): ?string
     {
         $tokenTemplate = $this->tokenTemplate();
@@ -226,7 +189,7 @@ class MakePresetCommand extends Command
             ...$tokenTemplate,
             '',
             '@layer components {',
-            ...$this->skeleton->render($this->stylesheets(), $this->groups()),
+            ...$this->skeleton->render($this->skeletonGroups->project(HotwireRegistry::make())),
             '}',
             '',
         ];

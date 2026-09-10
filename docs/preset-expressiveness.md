@@ -95,9 +95,8 @@ without requiring third-party graphics to emit the generic Icon slot.
 
 ## Recommended preset conformance policy
 
-This section records the target policy for the preset tooling and external validator. The current package still uses
-Nova-derived scaffold selectors and a lexical cross-preset axis guard; those implementations must change before this
-policy becomes an enforced package contract.
+This section records the policy applied by package tooling and targeted by the future external validator. Blank
+scaffolds now come from registry visual slots, and official preset coverage no longer requires lexical axis equality.
 
 The catalog's visual slots should be the preset-neutral API. `PresetAxes` is a diagnostic description of attributes a
 particular stylesheet differentiates; it cannot prove semantic support by itself.
@@ -146,11 +145,10 @@ Invalid examples:
 }
 ```
 
-The current cross-preset axis-equality guard is vacuous while one preset ships and would reject legitimate base styling
-when a second preset arrives. The preset generation/cloning work should stop treating Nova's selector structure as the
-generic contract; an explicit `--from=nova` clone remains the correct path for authors who want Nova's complete
-structure. The external preset validator should combine catalog slot coverage with real compilation and focused state
-checks, and should distinguish proven errors from cases static analysis cannot decide.
+An explicit `--from=nova` clone remains the correct path for authors who want Nova's complete selector structure; a
+blank scaffold is intentionally only a registry-derived anatomy checklist. The external preset validator should combine
+catalog slot coverage with real compilation and focused state checks, and should distinguish proven errors from cases
+static analysis cannot decide.
 
 ## Pairings and support boundary
 

@@ -31,12 +31,44 @@ it('generates a marked selective bundle with shared foundation imports', functio
         ->toEndWith("\n");
 });
 
-it('includes visual controllers mounted by selected components', function () {
+it('includes every component-owned Toaster card slot', function () {
     $this->artisan('hotwire:styles --components=toaster --no-interaction')->assertSuccessful();
 
     expect(File::get($this->output))
         ->toContain('[data-slot="toast"]')
+        ->toContain('[data-slot="toast-content"]')
+        ->toContain('[data-slot="toast-icon"]')
+        ->toContain('[data-slot="toast-body"]')
+        ->toContain('[data-slot="toast-title"]')
+        ->toContain('[data-slot="toast-description"]')
+        ->toContain('[data-slot="toast-close"]')
         ->not->toContain('[data-slot="modal-panel"]');
+});
+
+it('includes Tooltip visuals and shared dependencies for component integrations', function (string $component) {
+    $this->artisan("hotwire:styles --components={$component} --no-interaction")->assertSuccessful();
+
+    $css = File::get($this->output);
+
+    expect($css)
+        ->toContain('[data-slot="tooltip"]')
+        ->toContain('[data-slot="tooltip-arrow"]')
+        ->toContain('[data-slot="kbd"]')
+        ->toContain('@media (prefers-reduced-motion: reduce)')
+        ->not->toContain('[data-slot="toast"]')
+        ->not->toContain('[data-slot="oembed"]');
+})->with(['button', 'color-scheme.toggle']);
+
+it('preserves controller-owned OEmbed visuals as an explicit inclusion', function () {
+    $this->artisan('hotwire:styles --components=badge --include=oembed --no-interaction')->assertSuccessful();
+
+    expect(File::get($this->output))
+        ->toContain('[data-slot="badge"]')
+        ->toContain('[data-slot="oembed"]')
+        ->toContain('[data-slot="oembed-frame"]')
+        ->toContain('[data-slot="oembed-link"]')
+        ->not->toContain('[data-slot="tooltip"]')
+        ->not->toContain('[data-slot="toast"]');
 });
 
 it('includes every visual dependency used while uploading files', function () {

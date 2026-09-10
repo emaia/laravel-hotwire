@@ -1,13 +1,11 @@
 <?php
 
+use Emaia\LaravelHotwire\Components\Button;
+use Emaia\LaravelHotwire\Components\Card;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
-use Emaia\LaravelHotwire\Support\ComponentAliases;
 use Emaia\LaravelHotwire\Support\CssPresetFiles;
 use Emaia\LaravelHotwire\Support\CssRules;
-use Emaia\LaravelHotwire\Support\PresetAxes;
-use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\ViewErrorBag;
 
 dataset('slot catalog presets', fn () => collect(glob(__DIR__.'/../../resources/css/presets/*.css') ?: [])
     ->mapWithKeys(fn (string $path): array => [pathinfo($path, PATHINFO_FILENAME) => [pathinfo($path, PATHINFO_FILENAME)]])
@@ -89,6 +87,39 @@ it('hydrates valid slot and preset attribute metadata', function () {
         expect($definition->styling->slots)->each->toBeIn(['visual', 'structural'])
             ->and(array_keys($definition->styling->slots))->each->toMatch('/^[a-z][a-z0-9-]*$/');
     }
+});
+
+it('keeps package registry styling claims unambiguous', function () {
+    expect(registryStylingClaimConflicts(HotwireRegistry::make()))->toBe([]);
+});
+
+it('detects ambiguous styling claims in mutated registry fixtures', function () {
+    $registries = [
+        HotwireRegistry::fromCatalog(registryAuditCatalog([
+            'alpha' => registryAuditComponent(Button::class, [
+                ['class' => Button::class, 'only' => ['root']],
+            ]),
+            'beta' => registryAuditComponent(Button::class, [
+                ['class' => Button::class, 'only' => ['root']],
+            ]),
+        ]), __DIR__),
+        HotwireRegistry::fromCatalog(registryAuditCatalog([
+            'alpha' => registryAuditComponent(Button::class, ['shared-slot' => 'visual']),
+            'beta' => registryAuditComponent(Card::class, ['shared-slot' => 'structural']),
+        ]), __DIR__),
+        HotwireRegistry::fromCatalog(registryAuditCatalog(
+            ['alpha' => registryAuditComponent(Button::class, ['shared-slot' => 'visual'])],
+            ['beta' => registryAuditController(['shared-slot' => 'visual'])],
+        ), __DIR__),
+    ];
+
+    expect(registryStylingClaimConflicts($registries[0]))->toBe([
+        'Component class ['.Button::class.'] owns multiple registry entries [alpha] and [beta].',
+    ])->and(registryStylingClaimConflicts($registries[1]))->toBe([
+        'Slot [shared-slot] is classified as both [visual] and [structural].',
+    ])->and(registryStylingClaimConflicts($registries[2]))->toBe([
+        'Visual slot [shared-slot] is claimed by both [component:alpha] and [controller:beta].',
+    ]);
 });
 
 it('classifies presentation-free and controller-owned slots as structural', function () {
@@ -174,9 +205,9 @@ it('keeps Side Panel collapse mechanics in the structural stylesheet', function 
         ->toContain('overflow: hidden');
 });
 
-it('keeps Sidebar content overflow mechanics in the structural stylesheet', function () {
+it('keeps Sidebar content overflow mechanics in the structural stylesheet', function (string $preset) {
     $structural = File::get(__DIR__.'/../../resources/css/structural.css');
-    $preset = app(CssPresetFiles::class)->source('nova')->visualCss();
+    $visual = app(CssPresetFiles::class)->source($preset)->visualCss();
 
     expect($structural)
         ->toContain('[data-slot="sidebar-content"]')
@@ -184,14 +215,14 @@ it('keeps Sidebar content overflow mechanics in the structural stylesheet', func
         ->toContain('[data-collapsible="icon"] [data-slot="sidebar-content"]')
         ->toContain('overflow-x: hidden')
         ->toContain('overflow-y: auto')
-        ->and($preset)
+        ->and($visual)
         ->not->toContain('md:overflow-hidden');
-});
+})->with('slot catalog presets');
 
-it('stops Sidebar icon mode rules at nested providers', function () {
+it('stops Sidebar icon mode rules at nested providers', function (string $preset) {
     $stylesheets = [
         File::get(__DIR__.'/../../resources/css/structural.css'),
-        app(CssPresetFiles::class)->source('nova')->visualCss(),
+        app(CssPresetFiles::class)->source($preset)->visualCss(),
     ];
     $matched = 0;
 
@@ -213,7 +244,7 @@ it('stops Sidebar icon mode rules at nested providers', function () {
     }
 
     expect($matched)->toBeGreaterThan(0);
-});
+})->with('slot catalog presets');
 
 it('keeps rules that name no slot out of the presets', function (string $preset) {
     // A preset groups by component; a rule keyed on a technical hook alone belongs to none of them.
@@ -250,19 +281,16 @@ it('declares every literal slot emitted by any component view', function () {
 });
 
 it('declares slots rendered by components with trivial constructors', function () {
-    $requiresSemanticProps = ['chart', 'file-upload', 'frame-or-page', 'frame-or-page.frame', 'frame-or-page.page', 'map'];
     $declared = declaredSlots();
-    view()->share('errors', new ViewErrorBag);
 
     foreach (HotwireRegistry::make()->components() as $component) {
         $constructor = (new ReflectionClass($component->class))->getConstructor();
 
-        if (in_array($component->key, $requiresSemanticProps, true)
-            || ($constructor !== null && $constructor->getNumberOfRequiredParameters() > 0)) {
+        if (componentRequiresRenderProps($component->key, $constructor)) {
             continue;
         }
 
-        $html = Blade::render("<x-hw::{$component->key} />");
+        $html = renderAxisComponent($component->key);
         $slots = renderedSlots($html);
 
         expect(array_diff($slots, $declared))
@@ -270,49 +298,11 @@ it('declares slots rendered by components with trivial constructors', function (
     }
 });
 
-// A component's default is the only value it is guaranteed to emit, so an unstyled default signals
-// a missing rule or typo. Non-default values have no validated allowlist to compare against.
-it('styles the default value of every variant and size prop', function (string $preset) {
-    // Defaults that carry no appearance of their own — the slot's base rule already is that look.
-    $baseIsEnough = ['icon', 'legend', 'auto', 'default'];
-    $styled = (new PresetAxes)->extract(app(CssPresetFiles::class)->source($preset)->visualCss());
-    $components = HotwireRegistry::make()->components();
-    $classes = collect($components)->map(fn ($definition): string => $definition->class)
-        ->merge(ComponentAliases::subComponents())
-        ->all();
-    $unstyled = [];
+it('reads axis slots from elements with Stimulus action descriptors', function () {
+    $html = '<button data-slot="toggle" data-action="click->toggle#toggle" data-variant="default"></button>';
 
-    foreach ($classes as $key => $class) {
-        $definition = $components[$key] ?? $components[explode('.', $key)[0]] ?? null;
-        $constructor = $definition === null ? null : (new ReflectionClass($class))->getConstructor();
-
-        foreach ($constructor?->getParameters() ?? [] as $parameter) {
-            $axis = $parameter->getName();
-
-            if (! in_array($axis, ['variant', 'size'], true) || ! $parameter->isDefaultValueAvailable()) {
-                continue;
-            }
-
-            $default = $parameter->getDefaultValue();
-
-            if (! is_string($default) || in_array($default, $baseIsEnough, true)) {
-                continue;
-            }
-
-            $values = collect(array_keys($definition->styling->slots))
-                ->flatMap(fn (string $slot): array => $styled[$slot]["data-$axis"] ?? [])
-                ->all();
-
-            if ($values !== [] && ! in_array($default, $values, true)) {
-                $unstyled[] = "{$key}: \${$axis} defaults to '{$default}'";
-            }
-        }
-    }
-
-    sort($unstyled);
-
-    expect($unstyled)->toBe([], "Preset [{$preset}] never styles a value a component defaults to.");
-})->with('slot catalog presets');
+    expect(renderedAxisSlots($html, 'variant', 'default'))->toBe(['toggle']);
+});
 
 it('declares every slot referenced or created by package JavaScript', function () {
     $declared = declaredSlots();
@@ -326,7 +316,7 @@ it('declares every slot referenced or created by package JavaScript', function (
     expect(array_diff($referenced, $declared))->toBe([]);
 });
 
-it('styles every visual catalog slot in each preset', function (string $preset) {
+it('gives every visual catalog slot declaration-bearing participation in each preset', function (string $preset) {
     $registry = HotwireRegistry::make();
     $required = collect([
         ...array_values($registry->components()),
@@ -337,37 +327,117 @@ it('styles every visual catalog slot in each preset', function (string $preset) 
         ->values()
         ->all();
     $css = app(CssPresetFiles::class)->source($preset)->visualCss();
-    preg_match_all('/\[data-slot=["\']([a-z0-9-]+)["\']\]/', $css, $matches);
+    $styled = [];
+    $rules = new CssRules;
+    $stripped = $rules->stripComments($css);
 
-    expect(array_values(array_diff($required, array_unique($matches[1]))))->toBe([]);
+    foreach ($rules->parse($stripped) as ['chain' => $chain, 'declarations' => $declarations]) {
+        if (trim($declarations) === '') {
+            continue;
+        }
+
+        $selectorChain = implode(' ', array_filter($chain, fn (string $block): bool => ! str_starts_with($block, '@')));
+        preg_match_all('/\[data-slot\s*=\s*["\']?([a-z0-9-]+)["\']?\s*\]/', $selectorChain, $matches);
+        $styled = [...$styled, ...$matches[1]];
+    }
+
+    expect(array_values(array_diff($required, array_unique($styled))))->toBe([]);
 })->with('slot catalog presets');
 
-// This is vacuously true while only one preset ships, but catches missing slot axes when another is added.
-it('differentiates each slot by the same axes in every preset', function () {
-    $axes = new PresetAxes;
-    $byPreset = collect(app(CssPresetFiles::class)->names())
-        ->mapWithKeys(fn (string $preset): array => [
-            $preset => $axes->extract(app(CssPresetFiles::class)->source($preset)->visualCss()),
-        ]);
-    $reference = $byPreset->first();
-    $referenceName = $byPreset->keys()->first();
-    $divergent = [];
+it('declares every slot referenced by each preset', function (string $preset) {
+    $css = app(CssPresetFiles::class)->source($preset)->visualCss();
+    $stripped = (new CssRules)->stripComments($css);
+    preg_match_all('/\[data-slot\s*=\s*["\']?([a-z0-9-]+)["\']?\s*\]/', $stripped, $referenced);
 
-    foreach ($byPreset->skip(1) as $name => $slots) {
-        foreach (array_unique([...array_keys($reference), ...array_keys($slots)]) as $slot) {
-            $missing = array_diff(array_keys($reference[$slot] ?? []), array_keys($slots[$slot] ?? []));
-            $extra = array_diff(array_keys($slots[$slot] ?? []), array_keys($reference[$slot] ?? []));
+    expect(array_values(array_diff(array_unique($referenced[1]), declaredSlots())))->toBe([]);
+})->with('slot catalog presets');
 
-            foreach ([...$missing, ...$extra] as $axis) {
-                $divergent[] = "{$slot}[data-{$axis}] differs between [{$referenceName}] and [{$name}]";
-            }
+/** @return string[] */
+function registryStylingClaimConflicts(HotwireRegistry $registry): array
+{
+    $components = $registry->components();
+    $componentKeysByClass = [];
+    $conflicts = [];
+
+    foreach ($components as $key => $component) {
+        if (isset($componentKeysByClass[$component->class])) {
+            $existing = $componentKeysByClass[$component->class];
+            $conflicts[] = "Component class [{$component->class}] owns multiple registry entries [{$existing}] and [{$key}].";
+        }
+
+        $componentKeysByClass[$component->class] ??= $key;
+    }
+
+    $claims = [];
+
+    foreach ($components as $key => $component) {
+        foreach ($component->styling->slots as $slot => $kind) {
+            $family = $component->styling->slotOwner($slot);
+            $owner = $family === null ? $key : $componentKeysByClass[$family] ?? $key;
+            registryStylingClaim($claims, $conflicts, $slot, $kind, "component:{$owner}");
         }
     }
 
-    sort($divergent);
+    foreach ($registry->controllers() as $identifier => $controller) {
+        foreach ($controller->styling->slots as $slot => $kind) {
+            registryStylingClaim($claims, $conflicts, $slot, $kind, "controller:{$identifier}");
+        }
+    }
 
-    expect($divergent)->toBe([]);
-});
+    $conflicts = array_values(array_unique($conflicts));
+    sort($conflicts);
+
+    return $conflicts;
+}
+
+/**
+ * @param  array<string, array{kind: string, owner: string}>  $claims
+ * @param  string[]  $conflicts
+ */
+function registryStylingClaim(array &$claims, array &$conflicts, string $slot, string $kind, string $owner): void
+{
+    if (isset($claims[$slot]) && $claims[$slot] !== ['kind' => $kind, 'owner' => $owner]) {
+        $claimed = $claims[$slot];
+        $conflicts[] = $claimed['kind'] !== $kind
+            ? "Slot [{$slot}] is classified as both [{$claimed['kind']}] and [{$kind}]."
+            : ucfirst($kind)." slot [{$slot}] is claimed by both [{$claimed['owner']}] and [{$owner}].";
+    }
+
+    $claims[$slot] ??= ['kind' => $kind, 'owner' => $owner];
+}
+
+/**
+ * @param  array<string, array<string, mixed>>  $components
+ * @param  array<string, array<string, mixed>>  $controllers
+ * @return array{components: array<string, array<string, mixed>>, controllers: array<string, array<string, mixed>>}
+ */
+function registryAuditCatalog(array $components, array $controllers = []): array
+{
+    return compact('components', 'controllers');
+}
+
+/** @param array<mixed> $slots */
+function registryAuditComponent(string $class, array $slots): array
+{
+    return [
+        'class' => $class,
+        'view' => 'fixture',
+        'docs' => 'fixture.md',
+        'category' => 'utility',
+        'styling' => ['slots' => $slots],
+    ];
+}
+
+/** @param array<string, 'visual'|'structural'> $slots */
+function registryAuditController(array $slots): array
+{
+    return [
+        'source' => 'resources/js/controllers/fixture_controller.js',
+        'docs' => 'fixture.md',
+        'category' => 'utility',
+        'styling' => ['slots' => $slots],
+    ];
+}
 
 /** @return string[] */
 function declaredSlots(): array
@@ -391,14 +461,6 @@ function literalSlots(string $contents): array
     );
 
     return array_values(array_unique(array_filter([...$matches[1], ...$matches[2]])));
-}
-
-/** @return string[] */
-function renderedSlots(string $html): array
-{
-    preg_match_all('/data-slot=["\']([a-z][a-z0-9-]*)["\']/', $html, $matches);
-
-    return array_values(array_unique($matches[1]));
 }
 
 /** @return string[] */
