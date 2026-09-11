@@ -25,7 +25,7 @@ The available CSS artifacts have different ownership and upgrade behavior:
 | Artifact | Ownership and maintenance |
 |----------|---------------------------|
 | Official preset import | Package-maintained; updates with Composer and is checked as a complete preset in package CI |
-| `hotwire:make-preset` scaffold or clone | Application-owned snapshot; edit it and merge relevant package upgrade changes manually |
+| `hotwire:make-preset` scaffold or clone | Application-owned snapshot; edit it, validate it and merge relevant package upgrade changes manually |
 | `hotwire:styles` bundle | Package-generated subset; do not edit it, and regenerate it when its recorded plan becomes stale |
 
 ## Generate a selective bundle
@@ -73,12 +73,13 @@ Generated bundles also record their canonical component, controller and module s
 scanned Blade views when none of those bundles covers them. With multiple layout bundles this is deliberately a global
 safety net, not layout inference: coverage in any generated bundle satisfies the check. If any CSS entrypoint under
 `resources/css` retains an official complete preset import, or imports an application preset from
-`resources/css/presets`, the application assumes responsibility for complete coverage and opts out of missing-module
-reports. This does not validate the local preset's visual completeness. The check also reconstructs each
-generated bundle from its recorded plan, so stale or truncated CSS fails even when its metadata remains intact. `--fix`
-never changes a CSS selection because it cannot know which layout should own the missing component; regenerate the
-appropriate bundle explicitly. Dynamic PHP, Turbo or JavaScript markup still requires `--include` because static view
-scanning cannot see it.
+`resources/css/presets`, that local preset must pass the complete application-preset contract before it suppresses
+missing-module reports. The check also reconstructs each generated bundle from its recorded plan, so stale or truncated
+CSS fails even when its metadata remains intact. Generated selective bundles are validated only against their recorded
+selection and dependency closure; intentionally omitted components are not completeness errors. `--fix` never changes a
+CSS selection or application preset because it cannot know which layout should own a missing component or how an
+application's visual language should implement it. Dynamic PHP, Turbo or JavaScript markup still requires `--include`
+because static view scanning cannot see it.
 
 ## Generate a custom preset
 
@@ -143,6 +144,48 @@ and behavior: the application must track package changes and preserve the docume
 accessibility relationships itself. Use that boundary only when the semantic component contract, rather than its visual
 treatment, must change.
 
+## Validate an application preset
+
+`hotwire:check` automatically validates top-level application presets imported from `resources/css/presets`. Validate an
+unimported preset explicitly by name (`brand` or `brand.css`) or by a path under `resources/css`; `--preset` is
+repeatable:
+
+```bash
+php artisan hotwire:check --preset=brand --no-interaction
+php artisan hotwire:check --preset=resources/css/presets/admin.css --no-interaction
+```
+
+For a complete application preset, static validation proves that:
+
+- local imports resolve without cycles, conditional imports or escapes from `resources/css`;
+- package foundations include `tokens.css`, `custom-variants.css` and `structural.css` once in canonical order;
+- every visual slot declared by the component/controller registry participates in a rule with declarations;
+- every `data-slot` reference, including Tailwind `data-[slot=...]` variants, is declared by the registry.
+
+A definite contract violation is an error and returns exit code 1. If the CSS scanner cannot account for a slot
+reference, it emits a `warning:` line and downgrades only that slot's unproven coverage; unrelated missing slots remain
+errors. The command does not compare the preset with Nova, require explicit selectors for every axis value or reject
+values that intentionally share one appearance. Base rules, grouped selectors, scoped roots, ancestor state and
+equivalent selector organization remain valid.
+
+When `--preset` points to a generated `hotwire:styles` bundle, complete-preset validation is skipped explicitly and the
+file remains governed by its recorded selective plan. Selecting an unimported complete preset never suppresses missing
+bundle coverage for the application's rendered components; only a complete preset imported by application CSS does.
+
+Static validation cannot prove that Tailwind recognizes every utility, that minification succeeds, or that interactive
+and accessibility states have the intended result in a browser. Run the application production build and focused tests
+as separate CI steps:
+
+```bash
+npm run build
+php artisan hotwire:check --preset=brand --no-interaction
+```
+
+Use the package-manager equivalent (`bun run build`, `pnpm run build` or `yarn build`) when appropriate. The build is the
+authority for unresolved `@import`/`@apply` directives; browser or component tests remain the authority for focus,
+Presence, reduced motion, forced colors, RTL, contrast and visual behavior. A valid static result is not a visual or
+pixel-parity certification.
+
 ### A note on IDE warnings
 
 PhpStorm reports hundreds of `'x' applies the same CSS properties as 'y'` warnings on a preset — for example
@@ -171,10 +214,11 @@ package upgrade that carries preset or markup notes:
 6. Verify keyboard and screen-reader behavior, light and dark themes, left-to-right and right-to-left direction, reduced
    motion, forced colors, floating surfaces and nested overlays where applicable.
 
-`hotwire:check` does not validate a local preset's visual completeness once the application imports that preset. It
-checks package dependencies, published controllers and generated-bundle plans; compatibility of application CSS remains
-an application test responsibility. Selective `hotwire:styles` bundles are different: regenerate them instead of merging
-changes because their recorded plan is their source of truth.
+Run `hotwire:check --preset=brand` after each package upgrade. It catches missing visual slots, stale foundation imports,
+unknown slot names and broken local import graphs. Then run `npm run build` and the focused browser/component checks from
+the maintenance list above. Static validation cannot prove state semantics, accessibility behavior, contrast or visual
+quality. Selective `hotwire:styles` bundles are different: regenerate them instead of merging changes because their
+recorded plan is their source of truth.
 
 ## Structural and visual CSS
 

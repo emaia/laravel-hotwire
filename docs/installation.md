@@ -264,7 +264,9 @@ exclusions, so there's no drift to detect). In interactive mode the user is prom
 `--no-interaction` mode the check reports but does not act unless `--fix` is also passed.
 
 The check also reports a lazy-loader v1 dependency and drift between the generated loader metadata and
-`controllers.preload` / `controllers.eager`. `--fix` upgrades the loader to v2 and regenerates the policy.
+`controllers.preload` / `controllers.eager`. `--fix` upgrades the loader to v2 and regenerates the policy. Imported
+application presets are validated automatically. Use repeatable `--preset=<name|path>` options to validate unimported
+presets in CI, followed by the application's production asset build.
 
 ---
 

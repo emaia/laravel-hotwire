@@ -202,7 +202,9 @@ it('keeps custom preset guidance neutral and explicit about application ownershi
         ->toContain('Start a visual system without inheriting Nova')
         ->toContain('empty base rules')
         ->toContain('does not merge')
-        ->toContain('does not validate a local preset');
+        ->toContain('hotwire:check --preset=brand')
+        ->toMatch('/run the application\s+production build/i')
+        ->toContain('Static validation');
 });
 
 it('documents Reveal stream target and shared-template boundaries', function () {

@@ -170,16 +170,19 @@ See [Presets](docs/presets.md) and [Theming](docs/theming.md).
 
 ## Check Your Setup
 
-Check the controller loader, npm dependencies, published customizations and selective CSS coverage:
+Check the controller loader, npm dependencies, published customizations and CSS contracts:
 
 ```bash
 php artisan hotwire:check
+php artisan hotwire:check --preset=brand --no-interaction
 php artisan hotwire:check --fix
 php artisan hotwire:check --fix --skip-install
 ```
 
-`hotwire:check --fix` regenerates the controller loader and adds missing npm dependencies. By default it also runs the
-detected package manager install command; use `--skip-install` when CI handles that separately.
+Imported application presets are validated automatically; `--preset` accepts a preset name or a path under
+`resources/css` for explicit CI checks. Run the application's production asset build separately to verify Tailwind
+utilities and imports. `hotwire:check --fix` regenerates the controller loader and adds missing npm dependencies. By
+default it also runs the detected package manager install command; use `--skip-install` when CI handles that separately.
 
 ## Development
 

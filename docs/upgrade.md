@@ -6,6 +6,18 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 
 ## Unreleased
 
+### Application presets have a public validation workflow
+
+`hotwire:check` now validates application presets imported from `resources/css/presets`. Use
+`hotwire:check --preset=brand --no-interaction` to validate an unimported preset explicitly. A complete preset fails when
+package foundations are missing, duplicated or reordered, when local imports are broken, or when registry visual slots
+are missing or misspelled. The check does not require Nova's selectors or lexical axis vocabulary.
+
+After upgrading, add newly declared visual slots and foundation imports before expecting a maintained application preset
+to pass. Run the application's production build separately because static validation does not compile Tailwind utilities
+or certify browser behavior. Generated `hotwire:styles` bundles continue to use their recorded selective plan and may
+omit unrelated components intentionally.
+
 ### Blank preset scaffolds are registry-derived
 
 `hotwire:make-preset brand` now emits one empty base rule per visual slot from the package registry. It no longer

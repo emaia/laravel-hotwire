@@ -4,12 +4,14 @@ namespace Emaia\LaravelHotwire\Commands;
 
 use Emaia\LaravelHotwire\Registry\ControllerDefinition;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
+use Emaia\LaravelHotwire\Support\ApplicationPresetValidator;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
 use Emaia\LaravelHotwire\Support\ControllerImports;
 use Emaia\LaravelHotwire\Support\ControllerLoadConfiguration;
 use Emaia\LaravelHotwire\Support\ControllerLoadPlan;
 use Emaia\LaravelHotwire\Support\ControllerOrigin;
 use Emaia\LaravelHotwire\Support\ControllerResolver;
+use Emaia\LaravelHotwire\Support\CssImports;
 use Emaia\LaravelHotwire\Support\CssModuleManifest;
 use Emaia\LaravelHotwire\Support\CssPresetFiles;
 use Emaia\LaravelHotwire\Support\GeneratedStyleBundle;
@@ -37,6 +39,7 @@ class CheckCommand extends Command
 
     public $signature = 'hotwire:check
                         {--path=* : Paths to scan for blade files (default: resources/views)}
+                        {--preset=* : Application preset names or paths to validate (repeatable)}
                         {--fix   : Apply all fixes (publish controllers, regenerate loader stub, add missing npm deps) without prompting}
                         {--skip-install : Do not run the package manager (bun/npm/pnpm/yarn) install after --fix adds new deps}';
 
@@ -57,6 +60,9 @@ class CheckCommand extends Command
     /** @var array<int, array{key: string, line: string}> OK status lines for shared dependencies (`_*.js`, `*.css`), sorted by basename before emission. */
     private array $okHelperLines = [];
 
+    /** @var string[] Valid application preset lines. */
+    private array $okStyleLines = [];
+
     private ?ControllerResolver $controllerResolver = null;
 
     public function __construct(
@@ -67,6 +73,8 @@ class CheckCommand extends Command
         private readonly CssModuleManifest $styleManifest,
         private readonly CssPresetFiles $presetFiles,
         private readonly GeneratedStyleBundle $styleBundle,
+        private readonly ApplicationPresetValidator $applicationPresets,
+        private readonly CssImports $cssImports,
     ) {
         parent::__construct();
     }
@@ -102,7 +110,8 @@ class CheckCommand extends Command
             return self::FAILURE;
         }
 
-        if (empty($usedComponentKeys) && empty($standaloneControllers) && $configuredControllers === [] && $styleIssues === 0) {
+        if (empty($usedComponentKeys) && empty($standaloneControllers) && $configuredControllers === [] && $styleIssues === 0
+            && $this->problemLines === [] && $this->okStyleLines === []) {
             info('No Hotwire components or controllers found in views.');
 
             if (! $loaderUpgrade && ! $policyDrift) {
@@ -156,7 +165,7 @@ class CheckCommand extends Command
         $this->printIssueSummary($issues, $missingDeps, $excludedFromStub, $policyDrift);
 
         if ($styleIssues > 0) {
-            $this->line("<comment>{$styleIssues} generated CSS issue(s) require manual regeneration.</comment>");
+            $this->line("<comment>{$styleIssues} CSS validation issue(s) require manual changes or regeneration.</comment>");
             $this->line('');
         }
 
@@ -216,6 +225,7 @@ class CheckCommand extends Command
         $this->okNoControllerLines = [];
         $this->okStandaloneLines = [];
         $this->okHelperLines = [];
+        $this->okStyleLines = [];
         $this->controllerResolver = null;
     }
 
@@ -533,20 +543,30 @@ class CheckCommand extends Command
     {
         $directory = resource_path('css');
 
-        if (! is_dir($directory)) {
+        if (! is_dir($directory) && $this->option('preset') === []) {
             return 0;
         }
 
         $plans = [];
         $issues = 0;
+        $bundleCoverageUnknowable = false;
         $hasCompletePreset = false;
+        $applicationPresets = [];
+        $importedApplicationPresets = [];
 
-        foreach (Finder::create()->files()->name('*.css')->in($directory) as $file) {
+        foreach ($this->explicitApplicationPresetPaths($directory, $issues) as $preset) {
+            $applicationPresets[$this->comparablePath($preset)] = $preset;
+        }
+
+        $stylesheets = is_dir($directory)
+            ? Finder::create()->files()->name('*.css')->in($directory)
+            : [];
+
+        foreach ($stylesheets as $file) {
             $content = $file->getContents();
             $plan = $this->styleBundle->planFromContent($content);
             $stylesheet = $file->getPathname();
             $path = 'resources/css/'.ltrim(str_replace('\\', '/', $file->getRelativePathname()), '/');
-            $hasCompletePreset = $hasCompletePreset || $this->importsCompletePreset($content, $stylesheet);
 
             if ($plan !== null) {
                 $source = $this->presetFiles->sourceForSelection($plan['preset'], $plan['components'], $plan['controllers']);
@@ -565,6 +585,7 @@ class CheckCommand extends Command
                         'line' => "  <error>✗</error>  {$path}  generated CSS content does not match its plan  <fg=gray>(regenerate with the recorded `hotwire:styles` selection and --force)</>",
                     ];
                     $issues++;
+                    $bundleCoverageUnknowable = true;
 
                     continue;
                 }
@@ -580,11 +601,50 @@ class CheckCommand extends Command
                     'line' => "  <error>✗</error>  {$path}  generated CSS metadata unavailable  <fg=gray>(regenerate with the original `hotwire:styles` selection and --force)</>",
                 ];
                 $issues++;
+                $bundleCoverageUnknowable = true;
+
+                continue;
+            }
+
+            $imports = $this->completePresetImports($content, $stylesheet);
+            $hasCompletePreset = $hasCompletePreset || $imports['official'];
+
+            foreach ($imports['application'] as $preset) {
+                $key = $this->comparablePath($preset);
+                $applicationPresets[$key] = $preset;
+                $importedApplicationPresets[$key] = true;
             }
         }
 
+        foreach ($applicationPresets as $key => $preset) {
+            $result = $this->applicationPresets->validate($preset, $registry, $directory);
+            $path = $this->applicationPath($preset);
+
+            foreach ($result['errors'] as $index => $error) {
+                $this->problemLines[] = [
+                    'key' => "preset-error-{$path}-{$index}",
+                    'line' => "  <error>✗</error>  {$path}  {$this->presetIssueDetail($error)}",
+                ];
+            }
+
+            foreach ($result['warnings'] as $index => $warning) {
+                $this->problemLines[] = [
+                    'key' => "preset-warning-{$path}-{$index}",
+                    'line' => "  <comment>!</comment>  {$path}  warning: {$this->presetIssueDetail($warning)}",
+                ];
+            }
+
+            if ($result['errors'] === []) {
+                $hasCompletePreset = $hasCompletePreset || isset($importedApplicationPresets[$key]);
+                $status = $result['warnings'] === [] ? 'valid application preset' : 'application preset checked with warnings';
+                $this->okStyleLines[] = "  <info>✓</info>  {$path}  {$status}";
+            }
+
+            $issues += count($result['errors']);
+        }
+
         // Coverage is unknowable while a discovered generated bundle has no readable plan.
-        if ($issues > 0 || $hasCompletePreset || $plans === []) {
+        if ($bundleCoverageUnknowable || $hasCompletePreset || $plans === []) {
             return $issues;
         }
 
@@ -628,15 +688,19 @@ class CheckCommand extends Command
         return $issues;
     }
 
-    private function importsCompletePreset(string $content, string $stylesheet): bool
+    /** @return array{official: bool, application: string[]} */
+    private function completePresetImports(string $content, string $stylesheet): array
     {
         $presetDirectory = realpath(resource_path('css/presets'));
 
         if ($presetDirectory !== false && $this->containsPath($presetDirectory, realpath($stylesheet) ?: $stylesheet)) {
-            return false;
+            return ['official' => false, 'application' => []];
         }
 
-        foreach ($this->cssImports($content) as $rule) {
+        $official = false;
+        $application = [];
+
+        foreach ($this->cssImports->parse($content) as $rule) {
             if (! $this->isUnconditionalImport($rule['conditions'])) {
                 continue;
             }
@@ -653,18 +717,106 @@ class CheckCommand extends Command
                 continue;
             }
 
-            foreach ($this->presetFiles->names() as $preset) {
-                if ($this->matchesShippedPreset($resolved, $preset)) {
-                    return true;
+            if ($presetDirectory !== false && is_file($resolved) && $this->samePath($presetDirectory, dirname($resolved))) {
+                if (! $this->styleBundle->looksGenerated($this->files->get($resolved))) {
+                    $application[] = $resolved;
                 }
+
+                continue;
             }
 
-            if ($presetDirectory !== false && is_file($resolved) && $this->samePath($presetDirectory, dirname($resolved))) {
-                return true;
+            foreach ($this->presetFiles->names() as $preset) {
+                if ($this->matchesShippedPreset($resolved, $preset)) {
+                    $official = true;
+
+                    continue 2;
+                }
             }
         }
 
-        return false;
+        return ['official' => $official, 'application' => array_values(array_unique($application))];
+    }
+
+    /** @return string[] */
+    private function explicitApplicationPresetPaths(string $cssRoot, int &$issues): array
+    {
+        $paths = [];
+
+        foreach ((array) $this->option('preset') as $preset) {
+            $preset = (string) $preset;
+            $isName = preg_match('/^(?<name>[a-z][a-z0-9-]*)(?:\.css)?$/', $preset, $matches) === 1;
+            $candidate = $isName
+                ? resource_path("css/presets/{$matches['name']}.css")
+                : ($this->isAbsolutePath($preset) ? $preset : base_path($preset));
+            $resolved = realpath($candidate);
+            $root = realpath($cssRoot);
+
+            if ($resolved === false || $root === false || pathinfo($resolved, PATHINFO_EXTENSION) !== 'css'
+                || ! $this->containsPath($root, $resolved)) {
+                $this->problemLines[] = [
+                    'key' => "preset-option-{$preset}",
+                    'line' => '  <error>✗</error>  application preset  Application preset must be a CSS file under resources/css.',
+                ];
+                $issues++;
+
+                continue;
+            }
+
+            if ($this->styleBundle->looksGenerated($this->files->get($resolved))) {
+                $path = $this->applicationPath($resolved);
+                $line = "  <comment>-</comment>  {$path}  complete-preset validation skipped: generated selective bundle";
+
+                if (! in_array($line, $this->okStyleLines, true)) {
+                    $this->okStyleLines[] = $line;
+                }
+
+                continue;
+            }
+
+            $paths[] = $resolved;
+        }
+
+        return array_values(array_unique($paths));
+    }
+
+    private function isAbsolutePath(string $path): bool
+    {
+        $normalized = str_replace('\\', '/', $path);
+
+        return str_starts_with($normalized, '/') || preg_match('/^[A-Za-z]:\//', $normalized) === 1;
+    }
+
+    private function comparablePath(string $path): string
+    {
+        $path = $this->resolvedPath($path);
+
+        return $this->pathForComparison($path);
+    }
+
+    private function applicationPath(string $path): string
+    {
+        $base = rtrim($this->resolvedPath(base_path()), '/');
+        $path = $this->resolvedPath($path);
+        $prefix = $base.'/';
+
+        return str_starts_with($this->pathForComparison($path), $this->pathForComparison($prefix))
+            ? substr($path, strlen($prefix))
+            : basename($path);
+    }
+
+    private function resolvedPath(string $path): string
+    {
+        return str_replace('\\', '/', realpath($path) ?: $path);
+    }
+
+    private function pathForComparison(string $path): string
+    {
+        return PHP_OS_FAMILY === 'Windows' ? strtolower($path) : $path;
+    }
+
+    private function presetIssueDetail(string $message): string
+    {
+        return (string) preg_replace('/^Preset \[[^]]+\] (?:is )?/', '', $message);
     }
 
     private function matchesShippedPreset(string $resolved, string $preset): bool
@@ -708,218 +860,6 @@ class CheckCommand extends Command
     private function isUnconditionalImport(string $conditions): bool
     {
         return $conditions === '';
-    }
-
-    /** @return array<int, array{path: string, conditions: string}> */
-    private function cssImports(string $content): array
-    {
-        $pattern = <<<'REGEX'
-~^@import\s+(?:
-        (?<quote>["'])(?<quoted_path>[^"']+)\k<quote>
-        |
-        url\(\s*(?:
-            (?<url_quote>["'])(?<url_quoted_path>[^"']+)\k<url_quote>
-            |
-            (?<url_path>[^)\s]+)
-        )\s*\)
-    )(?<conditions>[^;]*);
-~isx
-REGEX;
-        $imports = [];
-
-        foreach ($this->topLevelImportRules($content) as $rule) {
-            $rule = preg_replace('~/\*.*?\*/~s', ' ', $rule) ?? $rule;
-
-            if (preg_match($pattern, $rule, $match, PREG_UNMATCHED_AS_NULL) !== 1) {
-                continue;
-            }
-
-            $path = $match['quoted_path'] ?? $match['url_quoted_path'] ?? $match['url_path'];
-
-            if (! is_string($path)) {
-                continue;
-            }
-
-            $imports[] = [
-                'path' => $path,
-                'conditions' => trim((string) $match['conditions']),
-            ];
-        }
-
-        return $imports;
-    }
-
-    /** @return string[] */
-    private function topLevelImportRules(string $content): array
-    {
-        if (str_starts_with($content, "\xEF\xBB\xBF")) {
-            $content = substr($content, 3);
-        }
-
-        $rules = [];
-        $length = strlen($content);
-        $depth = 0;
-        $ruleStart = true;
-        $importsAllowed = true;
-
-        for ($offset = 0; $offset < $length; $offset++) {
-            if (substr($content, $offset, 2) === '/*') {
-                $offset = $this->skipCssComment($content, $offset);
-
-                continue;
-            }
-
-            if ($content[$offset] === '"' || $content[$offset] === "'") {
-                if ($depth === 0) {
-                    if ($ruleStart) {
-                        $importsAllowed = false;
-                    }
-
-                    $ruleStart = false;
-                }
-
-                $offset = $this->skipCssString($content, $offset);
-
-                continue;
-            }
-
-            if ($content[$offset] === '{') {
-                if ($depth === 0) {
-                    $importsAllowed = false;
-                    $ruleStart = false;
-                }
-
-                $depth++;
-
-                continue;
-            }
-
-            if ($content[$offset] === '}') {
-                $depth = max(0, $depth - 1);
-
-                if ($depth === 0) {
-                    $ruleStart = true;
-                }
-
-                continue;
-            }
-
-            if ($depth !== 0) {
-                continue;
-            }
-
-            if (ctype_space($content[$offset])) {
-                continue;
-            }
-
-            if ($content[$offset] === ';') {
-                $ruleStart = true;
-
-                continue;
-            }
-
-            if (! $ruleStart) {
-                continue;
-            }
-
-            if (strncasecmp(substr($content, $offset, 7), '@import', 7) !== 0) {
-                if (! $this->startsAllowedImportPrelude($content, $offset)) {
-                    $importsAllowed = false;
-                }
-
-                $ruleStart = false;
-
-                continue;
-            }
-
-            if (! $importsAllowed) {
-                $ruleStart = false;
-
-                continue;
-            }
-
-            $boundary = $content[$offset + 7] ?? '';
-
-            if ($boundary !== '' && ! ctype_space($boundary) && substr($content, $offset + 7, 2) !== '/*') {
-                $ruleStart = false;
-
-                continue;
-            }
-
-            $ruleStart = false;
-
-            for ($end = $offset + 7; $end < $length; $end++) {
-                if (substr($content, $end, 2) === '/*') {
-                    $end = $this->skipCssComment($content, $end);
-
-                    continue;
-                }
-
-                if ($content[$end] === '"' || $content[$end] === "'") {
-                    $end = $this->skipCssString($content, $end);
-
-                    continue;
-                }
-
-                if ($content[$end] === ';') {
-                    $rules[] = substr($content, $offset, $end - $offset + 1);
-                    $offset = $end;
-                    $ruleStart = true;
-
-                    break;
-                }
-
-                if ($content[$end] === '{') {
-                    break;
-                }
-            }
-        }
-
-        return $rules;
-    }
-
-    private function startsAllowedImportPrelude(string $content, int $offset): bool
-    {
-        foreach (['@charset', '@layer'] as $keyword) {
-            if (strncasecmp(substr($content, $offset, strlen($keyword)), $keyword, strlen($keyword)) !== 0) {
-                continue;
-            }
-
-            $boundary = $content[$offset + strlen($keyword)] ?? '';
-
-            if ($boundary === '' || ctype_space($boundary) || substr($content, $offset + strlen($keyword), 2) === '/*') {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private function skipCssComment(string $content, int $offset): int
-    {
-        $end = strpos($content, '*/', $offset + 2);
-
-        return $end === false ? strlen($content) - 1 : $end + 1;
-    }
-
-    private function skipCssString(string $content, int $offset): int
-    {
-        $quote = $content[$offset];
-        $length = strlen($content);
-
-        for ($end = $offset + 1; $end < $length; $end++) {
-            if ($content[$end] === '\\') {
-                $end++;
-
-                continue;
-            }
-
-            if ($content[$end] === $quote) {
-                return $end;
-            }
-        }
-
-        return $length - 1;
     }
 
     private function containsPath(string $parent, string $path): bool
@@ -1407,6 +1347,14 @@ REGEX;
 
     private function emitScanOutput(): void
     {
+        foreach ($this->okStyleLines as $line) {
+            $this->line($line);
+        }
+
+        if ($this->okStyleLines !== [] && ($this->okComponentControllerLines !== [] || $this->okNoControllerLines !== [])) {
+            $this->line('');
+        }
+
         foreach ($this->okComponentControllerLines as $line) {
             $this->line($line);
         }

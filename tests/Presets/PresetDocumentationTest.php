@@ -41,7 +41,10 @@ it('documents how application-owned presets are maintained across package upgrad
         ->toMatch('/reduced\s+motion/')
         ->toContain('forced colors')
         ->toContain('preset-expressiveness.md#executable-contrast-fixture')
-        ->toContain('`hotwire:check` does not validate');
+        ->toContain('hotwire:check --preset=brand')
+        ->toContain('npm run build')
+        ->toContain('Static validation cannot prove')
+        ->toContain('Generated selective bundles');
 });
 
 it('keeps visual preset ownership separate from component template ownership', function () {

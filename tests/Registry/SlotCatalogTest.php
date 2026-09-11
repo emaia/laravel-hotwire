@@ -5,6 +5,7 @@ use Emaia\LaravelHotwire\Components\Card;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\CssPresetFiles;
 use Emaia\LaravelHotwire\Support\CssRules;
+use Emaia\LaravelHotwire\Support\CssSlots;
 use Illuminate\Support\Facades\File;
 
 dataset('slot catalog presets', fn () => collect(glob(__DIR__.'/../../resources/css/presets/*.css') ?: [])
@@ -553,20 +554,7 @@ function stylingHooksSection(string $contents): ?string
 /** @return string[] */
 function visualSlotsWithDeclarations(string $css): array
 {
-    $styled = [];
-    $rules = new CssRules;
-
-    foreach ($rules->parse($rules->stripComments($css)) as ['chain' => $chain, 'declarations' => $declarations]) {
-        if (trim($declarations) === '') {
-            continue;
-        }
-
-        $selectorChain = implode(' ', array_filter($chain, fn (string $block): bool => ! str_starts_with($block, '@')));
-        preg_match_all('/\[data-slot\s*=\s*["\']?([a-z0-9-]+)["\']?\s*\]/', $selectorChain, $matches);
-        $styled = [...$styled, ...$matches[1]];
-    }
-
-    return array_values(array_unique($styled));
+    return app(CssSlots::class)->withDeclarations($css);
 }
 
 /**
@@ -578,11 +566,5 @@ function visualSlotsWithDeclarations(string $css): array
  */
 function referencedCssSlots(string $css): array
 {
-    preg_match_all(
-        '/\[data-slot\s*=\s*["\']?([a-z0-9-]+)["\']?\s*\]|data-\[slot\s*=\s*["\']?([a-z0-9-]+)["\']?\]/',
-        (new CssRules)->stripComments($css),
-        $referenced,
-    );
-
-    return array_values(array_unique(array_filter([...$referenced[1], ...$referenced[2]])));
+    return app(CssSlots::class)->referenced($css);
 }
