@@ -1,1 +1,1 @@
-import "./libs";
+import "./hotwire";

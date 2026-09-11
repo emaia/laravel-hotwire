@@ -113,7 +113,7 @@ export default class extends CarouselController {
 The alias points directly at the `controllers/` folder so the common case (`extends CarouselController`) reads short.
 Internal shared helpers that live in the same folder (`_overlay.js`, `_focus_trap.js`, `_turbo_morph_recovery.js`) are
 reachable via the same alias (`@hotwire/_overlay.js`). Package-internal modules outside `controllers/` (e.g.
-`helpers/test_stimulus.js`, `libs/stimulus.js`) aren't exposed via `@hotwire`; they aren't documented public API.
+`helpers/test_stimulus.js`, `hotwire/stimulus.js`) aren't exposed via `@hotwire`; they aren't documented public API.
 
 The injection respects an existing `resolve:` block — your aliases are preserved, and `@hotwire` is appended into the
 same `alias: { ... }` literal. Custom config shapes that don't match `export default defineConfig({ ... })` are left
@@ -314,7 +314,7 @@ manager.
 Files written (or modified) under your project root:
 
 - `resources/js/app.js`
-- `resources/js/libs/stimulus.js`
+- `resources/js/hotwire/{index,stimulus,turbo}.js`
 - `resources/js/controllers/index.js` ← auto-generated, has the marker
 - `resources/css/app.css`
 - `package.json` ← `devDependencies` updated

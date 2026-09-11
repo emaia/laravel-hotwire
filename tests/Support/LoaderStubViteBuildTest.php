@@ -17,7 +17,7 @@ it('keeps eager application and package controllers out of Vite dynamic entries'
     $controllers = $directory.'/resources/js/controllers';
     $vendorControllers = $directory.'/vendor/emaia/laravel-hotwire/resources/js/controllers';
     $files->ensureDirectoryExists($controllers);
-    $files->ensureDirectoryExists($directory.'/resources/js/libs');
+    $files->ensureDirectoryExists($directory.'/resources/js/hotwire');
     $files->ensureDirectoryExists($vendorControllers);
     $files->ensureDirectoryExists($directory.'/node_modules/@emaia/stimulus-lazy-loader');
 
@@ -25,7 +25,7 @@ it('keeps eager application and package controllers out of Vite dynamic entries'
     $files->put($controllers.'/eager_controller.js', 'export default class Eager {}');
     $files->put($vendorControllers.'/package_lazy_controller.js', 'export default class PackageLazy {}');
     $files->put($vendorControllers.'/package_eager_controller.js', 'export default class PackageEager {}');
-    $files->put($directory.'/resources/js/libs/stimulus.js', 'export const Stimulus = { register() {} };');
+    $files->put($directory.'/resources/js/hotwire/stimulus.js', 'export const Stimulus = { register() {} };');
     $files->put(
         $directory.'/node_modules/@emaia/stimulus-lazy-loader/package.json',
         json_encode(['type' => 'module', 'exports' => './index.js'], JSON_THROW_ON_ERROR),
