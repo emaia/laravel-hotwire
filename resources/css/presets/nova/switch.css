@@ -1,6 +1,6 @@
 @layer components {
     /* Switch */
-    [data-slot="switch"] { @apply inline-flex shrink-0 cursor-pointer appearance-none items-center rounded-full border border-transparent bg-input p-0 shadow-xs transition-all outline-none checked:bg-primary focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:bg-input/80 dark:checked:bg-primary dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40; }
+    [data-slot="switch"] { @apply inline-flex shrink-0 cursor-pointer appearance-none items-center rounded-full border border-transparent bg-input p-0 shadow-xs transition-all outline-none checked:bg-primary focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20; }
     [data-slot="switch"][data-disabled="true"] { @apply cursor-not-allowed opacity-50; }
     [data-slot="switch"][data-size="default"] { @apply h-[1.15rem] w-8; }
     [data-slot="switch"][data-size="sm"] { @apply h-3.5 w-6; }
@@ -9,4 +9,8 @@
     [data-slot="switch"][data-size="sm"]::before { width: 0.75rem; height: 0.75rem; }
     [data-slot="switch"]:checked::before { transform: translateX(calc(100% - 2px)); }
     [data-slot="switch"]:where(:dir(rtl), [dir="rtl"], [dir="rtl"] *):checked::before { transform: translateX(calc(-100% + 2px)); }
+
+    @scope ([data-theme="dark"]) to ([data-theme="light"]) {
+        :where(:scope, :scope *)[data-slot="switch"] { @apply bg-input/80 checked:bg-primary aria-invalid:border-destructive/50 aria-invalid:ring-destructive/40; }
+    }
 }
