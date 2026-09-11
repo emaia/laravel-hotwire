@@ -49,22 +49,31 @@ The textarea grows automatically as the user types and shrinks when text is dele
 
 ## Char counter
 
-When `:counter` is set, a wrapper `<span>` with `data-controller="char-counter"` is rendered around the textarea, and a
-`<small data-char-counter-target="counter">` shows the live count. Add `countdown` to show remaining characters:
+When `:counter` is set, a wrapper `<span>` with `data-controller="char-counter"` is rendered around the textarea. Its
+`<small data-slot="textarea-counter">` visual part contains the live counter target. Add `countdown` to show remaining
+characters:
 
 ```blade
 <hw:textarea name="tweet" :counter="280" countdown />
 ```
 
-Customize the counter markup with the `counter` slot:
+Customize the counter contents with the `counter-slot` named slot. The component keeps the visual wrapper and
+`aria-live="polite"`; custom content must expose `data-char-counter-target="counter"` where the live value belongs.
+Additional attributes on the named slot are merged onto the `<small>`, allowing per-instance styling. Because that
+package-owned root remains a `<small>`, slot content must be phrasing content:
 
 ```blade
 <hw:textarea name="bio" :counter="500">
-    <x-slot:counter>
-        <span class="text-xs text-gray-500" data-char-counter-target="counter"></span>
-    </x-slot:counter>
+    <x-slot:counter-slot class="text-start">
+        <span data-char-counter-target="counter"></span> of 500 characters
+    </x-slot:counter-slot>
 </hw:textarea>
 ```
+
+Omitting the counter target does not break input handling, but leaves custom content static and emits a console warning
+when the controller connects.
+The `counter-slot` named slot requires the `counter` prop; using the slot by itself raises an exception instead of
+discarding its content.
 
 ## Auto-submit
 
@@ -94,3 +103,4 @@ The component exposes stable `data-slot` hooks for preset and application CSS:
 
 - `data-slot="textarea-wrapper"`
 - `data-slot="textarea"`
+- `data-slot="textarea-counter"`

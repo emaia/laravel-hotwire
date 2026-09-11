@@ -5,6 +5,7 @@
     $id = \Emaia\LaravelHotwire\Support\FieldKey::resolveId($id ?? null, $explicitName, $fieldId, $fieldName);
     $errorKey = \Emaia\LaravelHotwire\Support\FieldKey::resolveErrorKey($errorKey ?? null, $explicitName, $fieldErrorKey, $fieldName);
     $name = $explicitName ?? $fieldName;
+    $counter = $guardCounter($counter, $counterSlot ?? null);
     extract($compute($name, $id, $errorKey, $fieldRequired ?? false, $errors ?? new \Illuminate\Support\ViewErrorBag, $attributes));
 
     $errorReference = null;
@@ -29,6 +30,11 @@
         'maxlength' => $counter,
         'class' => $class ?: null,
     ], $attributes, $stimulus, except: ['required', 'auto-submit', 'auto-submit-delay'], protectedPrefixes: $internalPrefixes);
+
+    $counterAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
+        'data-slot' => $counterSlotName,
+        'aria-live' => 'polite',
+    ], isset($counterSlot) ? $counterSlot->attributes : null, protectedPrefixes: ['data-slot', 'aria-live']);
 @endphp
 
 @if ($needsWrapper)
@@ -40,12 +46,12 @@
 >{{ $resolvedValue }}</textarea>
 
 @if ($needsWrapper)
-    @isset($counterSlot)
-        {{ $counterSlot }}
-    @else
-        <small aria-live="polite">
-            <span data-char-counter-target="counter">0</span>/{{$counter}}
-        </small>
-    @endisset
+    <small {{ $counterAttributes }}>
+        @isset($counterSlot)
+            {{ $counterSlot }}
+        @else
+            <span data-char-counter-target="counter">0</span>/{{ $counter }}
+        @endisset
+    </small>
 </span>
 @endif

@@ -1,11 +1,18 @@
-import { afterEach, expect, test } from "bun:test";
+import { afterEach, beforeEach, expect, mock, test } from "bun:test";
 
 import { dispatchEvent, mountController, wait } from "../../resources/js/helpers/test_stimulus.js";
 import CharCounterController from "../../resources/js/controllers/char_counter_controller.js";
 
 let mounted;
+let originalConsoleWarn;
+
+beforeEach(() => {
+    originalConsoleWarn = console.warn;
+    console.warn = mock(() => {});
+});
 
 afterEach(async () => {
+    console.warn = originalConsoleWarn;
     await mounted?.cleanup();
     mounted = null;
 });
@@ -18,6 +25,7 @@ test.serial("initializes counter from pre-filled textarea value on connect", asy
 
     const counter = document.querySelector('[data-char-counter-target="counter"]');
     expect(counter.innerHTML).toBe("11");
+    expect(console.warn).not.toHaveBeenCalled();
 });
 
 test.serial("updates counter as the user types", async () => {
@@ -32,6 +40,25 @@ test.serial("updates counter as the user types", async () => {
     await wait(0);
 
     const counter = document.querySelector('[data-char-counter-target="counter"]');
+    expect(counter.innerHTML).toBe("3");
+});
+
+test.serial("keeps input updates wired when the counter target is initially absent", async () => {
+    await mountWrapper('<textarea data-char-counter-target="input" maxlength="500"></textarea>');
+
+    expect(console.warn).toHaveBeenCalledTimes(1);
+    expect(console.warn.mock.calls[0][0]).toContain('data-char-counter-target="counter"');
+    expect(console.warn.mock.calls[0][1]).toBe(mounted.root);
+
+    const counter = document.createElement("span");
+    counter.setAttribute("data-char-counter-target", "counter");
+    mounted.root.append(counter);
+
+    const textarea = document.querySelector("textarea");
+    textarea.value = "abc";
+    dispatchEvent(textarea, "input");
+    await wait(0);
+
     expect(counter.innerHTML).toBe("3");
 });
 

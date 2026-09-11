@@ -65,6 +65,11 @@ In count-up mode, the counter displays the current input length. In countdown mo
 
 The controller re-syncs the counter on every `turbo:render` event. When the page is morphed, such as after a validation redirect with `<hw:meta refresh />` or `data-turbo-action="morph"`, idiomorph preserves the controller and its targets but rewrites the counter span's `innerHTML` back to the server-rendered initial value, typically `"0"`. The listener re-runs `update()` so the counter reflects the current input value after the morph completes.
 
+If the `counter` target is absent, updates are skipped without preventing the input and Turbo listeners from being
+registered. This keeps custom static output non-fatal and allows a counter target added later to receive subsequent
+updates. The controller emits a console warning when it connects without that target so the incomplete markup remains
+visible during development.
+
 ## Values
 
 | Value       | Type      | Default | Description                                                                         |
