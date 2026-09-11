@@ -21,16 +21,23 @@ test.beforeAll(async () => {
 });
 
 const button = (id) => `<button id="${id}" data-slot="button" data-variant="outline">b</button>`;
+const activeTab = (id, attributes = "") => `
+    <div data-slot="tabs-list" data-variant="default">
+        <button id="${id}" ${attributes} data-slot="tabs-trigger" data-state="active">t</button>
+    </div>
+`;
 const probe = (id, token) => `<span id="${id}" style="color: var(${token})"></span>`;
 
 async function mount(page) {
     await page.setContent(`
         <style>${novaCss}</style>
         ${button("light")}
+        ${activeTab("light-tab")}
         ${probe("light-background", "--background")}
         ${probe("light-input", "--input")}
         <div data-theme="dark">
             ${button("dark")}
+            ${activeTab("dark-tab")}
             ${probe("dark-border", "--border")}
             ${probe("dark-input", "--input")}
             ${probe("dark-popover", "--popover")}
@@ -40,22 +47,31 @@ async function mount(page) {
                     <option id="dark-option">Pro</option>
                 </optgroup>
             </select>
-            <div data-theme="light">${button("light-inside-dark")}</div>
+            <div data-theme="light">
+                ${button("light-inside-dark")}
+                ${activeTab("light-tab-inside-dark")}
+                <div data-theme="dark">
+                    ${button("dark-inside-light-inside-dark")}
+                    ${activeTab("dark-tab-inside-light-inside-dark")}
+                </div>
+            </div>
         </div>
         <div data-theme="light">
             <div data-theme="dark">${button("dark-inside-light")}</div>
         </div>
         <button id="dark-self" data-theme="dark" data-slot="button" data-variant="outline">b</button>
+        ${activeTab("dark-tab-self", 'data-theme="dark"')}
+        <div data-theme="dark">${activeTab("light-tab-self-inside-dark", 'data-theme="light"')}</div>
     `);
 }
 
 const style = (page, selector, property) =>
     page.locator(selector).evaluate((element, name) => getComputedStyle(element)[name], property);
 
-// The base rule paints `border-border`/`bg-background` and only the `dark:` variant reaches for
-// `border-input`/`bg-input/30`, so resolving those tokens is what separates an applied variant from
+// The base rule paints `border-border`/`bg-background` and only the scoped dark adjustment reaches for
+// `border-input`/`bg-input/30`, so resolving those tokens is what separates an applied adjustment from
 // a theme that merely swapped tokens underneath the same declarations.
-test("applies dark variant declarations, not just dark tokens", async ({ page }) => {
+test("applies dark adjustments, not just dark tokens", async ({ page }) => {
     await mount(page);
 
     const input = await style(page, "#dark-input", "color");
@@ -66,34 +82,51 @@ test("applies dark variant declarations, not just dark tokens", async ({ page })
 
 // Light `--border` and `--input` share a value, so the light side is pinned through the background:
 // `bg-background` and `bg-input/30` differ there even though the border tokens do not.
-test("leaves the light surface free of dark variant declarations", async ({ page }) => {
+test("leaves the light surface free of dark adjustments", async ({ page }) => {
     await mount(page);
 
     expect(await style(page, "#light", "backgroundColor")).toBe(await style(page, "#light-background", "color"));
 });
 
-test("applies the dark variant on the element carrying the theme", async ({ page }) => {
+test("applies dark adjustments on the element carrying the theme", async ({ page }) => {
     await mount(page);
 
     expect(await style(page, "#dark-self", "borderColor")).toBe(await style(page, "#dark-input", "color"));
 });
 
-test("applies the dark variant inside a dark island nested in a light scope", async ({ page }) => {
+test("applies dark adjustments inside a dark island nested in a light scope", async ({ page }) => {
     await mount(page);
 
     expect(await style(page, "#dark-inside-light", "borderColor")).toBe(await style(page, "#dark-input", "color"));
 });
 
-// Known limitation, documented under Theming: the variant matches any descendant of a dark ancestor,
-// so a light island below a dark scope keeps light tokens but still takes dark-tuned surfaces. This
-// pins the behaviour the docs promise; expressing nearest-theme needs top-level `@scope`, which
-// `@apply` cannot emit.
-test("still reaches a light island nested in a dark scope", async ({ page }) => {
+test("stops dark adjustments at a nested light theme", async ({ page }) => {
     await mount(page);
 
-    expect(await style(page, "#light-inside-dark", "backgroundColor")).not.toBe(
+    expect(await style(page, "#light-inside-dark", "backgroundColor")).toBe(
         await style(page, "#light", "backgroundColor"),
     );
+});
+
+test("reapplies dark adjustments below a light boundary nested in dark", async ({ page }) => {
+    await mount(page);
+
+    expect(await style(page, "#dark-inside-light-inside-dark", "borderColor")).toBe(
+        await style(page, "#dark-input", "color"),
+    );
+});
+
+test("scopes contextual dark adjustments when the themed subject is a later compound", async ({ page }) => {
+    await mount(page);
+
+    const darkInput = await style(page, "#dark-input", "color");
+    const lightBorder = await style(page, "#light-tab", "borderColor");
+
+    expect(await style(page, "#dark-tab", "borderColor")).toBe(darkInput);
+    expect(await style(page, "#light-tab-inside-dark", "borderColor")).toBe(lightBorder);
+    expect(await style(page, "#dark-tab-inside-light-inside-dark", "borderColor")).toBe(darkInput);
+    expect(await style(page, "#dark-tab-self", "borderColor")).toBe(darkInput);
+    expect(await style(page, "#light-tab-self-inside-dark", "borderColor")).toBe(lightBorder);
 });
 
 test("keeps native Select options readable in the dark theme", async ({ page }) => {

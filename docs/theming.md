@@ -146,13 +146,16 @@ Dark mode activates when `<html>` has `data-theme="dark"`:
 ```
 
 Without `data-theme`, the `:root` light defaults apply and advertise `color-scheme: light` to the browser. Explicit
-`[data-theme="light"]` and `[data-theme="dark"]` scopes set both their semantic palette and the matching `color-scheme`,
-so semantic tokens, native controls and scrollbars follow the nearest nested theme.
+`[data-theme="light"]` and `[data-theme="dark"]` scopes set both their semantic palette and the matching `color-scheme`.
+Semantic tokens, native controls, scrollbars and Nova's dark-tuned surfaces therefore follow the nearest nested theme. A
+light island inside a dark scope restores the complete Nova light treatment, and a nested dark island applies the dark
+treatment again.
 
-Preset rules written with the `dark:` variant do not. The variant matches any element under a dark ancestor, so a light
-island nested inside a dark scope keeps its light tokens but still receives dark-tuned preset surfaces. Place a light
-island below a dark one only where the component's `dark:` rules do not matter, or override the affected slots in the
-application stylesheet.
+Application-authored `dark:` utilities still use Tailwind's ancestor variant exported by the package. They match any
+descendant of a dark ancestor and do not stop at a nested `[data-theme="light"]` boundary. Prefer semantic tokens when
+both themes can share a declaration. When an application visual needs different dark declarations, move them into a
+top-level `@scope ([data-theme="dark"]) to ([data-theme="light"])` block as shown in
+[Upgrade](upgrade.md#semantic-tokens-enforce-readable-contrast-and-nested-color-schemes).
 
 The unthemed document stays fully light even when the operating system prefers dark. Use the Color Scheme script when
 the page should follow that preference; advertising both schemes while keeping an unconditional light palette would let
@@ -166,5 +169,9 @@ See [`docs/components/color-scheme.md`](components/color-scheme.md) for the pack
 ## Colour space
 
 All tokens use the **OKLCH** colour space for perceptually uniform lightness and predictable blending. Browsers that do
-not support OKLCH (Safari < 15.4, Chrome < 111) will not render themed components. The Nova Sidebar's icon-collapsed
-rules additionally use CSS `@scope`; include both features when defining the application's supported browser matrix.
+not support OKLCH (Safari < 15.4, Chrome and Edge < 111, Firefox < 113) will not render themed components. Nova's
+nearest-theme surfaces and Sidebar icon-collapsed rules use CSS `@scope`, raising the effective minimum to Safari and
+iOS 17.4, Chrome and Edge 118, Firefox 146, Opera 106 and Samsung Internet 25. Browsers below that floor ignore the
+scoped rules: semantic dark tokens still resolve when OKLCH is supported, but Nova loses its dark-specific surface and
+state adjustments across controls, while the Sidebar's scoped icon-collapse rules do not apply. Firefox ESR 140 does
+not meet this requirement; Firefox ESR 153 does.

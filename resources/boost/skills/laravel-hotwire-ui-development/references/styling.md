@@ -20,8 +20,18 @@ Application overrides belong after the preset import. Guard light-only overrides
 }
 ```
 
-Light is the default when no `data-theme` exists. Keep text/background contrast at least 4.5:1. A nested explicit light
-island inside a dark ancestor can still match Tailwind ancestor `dark:` variants, so prefer semantic tokens.
+Light is the default when no `data-theme` exists. Keep text/background contrast at least 4.5:1. Application-authored
+Tailwind `dark:` utilities match any descendant of a dark ancestor and cross nested light boundaries; Nova's packaged
+surfaces do not. Prefer semantic tokens. When application dark-only declarations must differ, put them in a top-level
+scope:
+
+```css
+@scope ([data-theme="dark"]) to ([data-theme="light"]) {
+    :where(:scope, :scope *)[data-slot="button"][data-variant="outline"] {
+        @apply border-input bg-input/30 hover:bg-input/50;
+    }
+}
+```
 
 ## Structural versus visual CSS
 

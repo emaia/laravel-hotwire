@@ -1,6 +1,6 @@
 @layer components {
     /* Rich Text */
-    [data-slot="rich-text"] { @apply overflow-hidden rounded-lg border border-input bg-transparent text-foreground transition-colors aria-invalid:border-destructive aria-invalid:ring-[3px] aria-invalid:ring-destructive/20 dark:bg-input/30 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40; }
+    [data-slot="rich-text"] { @apply overflow-hidden rounded-lg border border-input bg-transparent text-foreground transition-colors aria-invalid:border-destructive aria-invalid:ring-[3px] aria-invalid:ring-destructive/20; }
     [data-slot="rich-text"]:has(.ProseMirror:focus-visible) { @apply border-ring ring-[3px] ring-ring/50; }
     [data-slot="rich-text-toolbar"] { @apply flex flex-wrap items-center gap-1 border-b border-border bg-muted/30 p-1; }
     [data-slot="rich-text-toolbar-button"] { @apply inline-flex h-7 min-w-7 items-center justify-center rounded-md px-2 text-xs font-medium text-muted-foreground transition-colors outline-none hover:bg-muted hover:text-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50 aria-pressed:bg-muted aria-pressed:text-foreground data-[active=true]:bg-muted data-[active=true]:text-foreground disabled:pointer-events-none disabled:opacity-50; }
@@ -16,4 +16,8 @@
     [data-slot="rich-text-editor"] .ProseMirror code { @apply rounded bg-muted px-1 py-0.5 text-sm; }
     [data-slot="rich-text-editor"] .ProseMirror pre { @apply overflow-x-auto rounded-md bg-muted p-3 text-sm; }
     [data-slot="rich-text-editor"] .ProseMirror pre code { @apply bg-transparent p-0; }
+
+    @scope ([data-theme="dark"]) to ([data-theme="light"]) {
+        :where(:scope, :scope *)[data-slot="rich-text"] { @apply bg-input/30 aria-invalid:border-destructive/50 aria-invalid:ring-destructive/40; }
+    }
 }

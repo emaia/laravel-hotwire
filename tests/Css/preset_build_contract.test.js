@@ -17,6 +17,8 @@ import {
 const slotSelector = (slot) => new RegExp(`\\[data-slot=(?:["'])?${slot}(?:["'])?\\]`);
 const attributeValueSelector = (attribute, value) => new RegExp(`\\[${attribute}=(?:["'])?${value}(?:["'])?\\]`);
 const carouselMechanic = /\[data-carousel-container\]/;
+const nearestThemeScope =
+    /@scope\s*\(\[data-theme=(?:"dark"|dark)\]\)\s*to\s*\(\[data-theme=(?:"light"|light)\]\)/;
 const automaticSourceUtility = String.raw`.w-\[811px\]`;
 const expressivenessFixturePath = new URL("../Fixtures/css/preset_expressiveness.css", import.meta.url);
 const applicationPresetFixturePath = new URL(
@@ -152,6 +154,17 @@ describe("public CSS presets", () => {
         expect(productionNovaCss).toMatch(
             /\[data-slot=side-panel\]\[data-side=right\][^{]*\[dir=rtl\][^{]*\{flex-direction:row\}/,
         );
+    });
+
+    test("preserves nearest-theme dark scopes through generated and production bundles", () => {
+        for (const css of [
+            ...Object.values(contract.outputs.presets),
+            ...Object.values(contract.outputs.selectives),
+            ...Object.values(contract.outputs.clones),
+            productionNovaCss,
+        ]) {
+            expect(css).toMatch(nearestThemeScope);
+        }
     });
 
     test("preserves customizable structural motion timing in the compiled Nova preset", () => {

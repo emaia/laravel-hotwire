@@ -182,6 +182,14 @@ it('preserves existing @custom-variant rules', function () use ($variantsPath) {
     }
 });
 
+it('scopes Nova dark adjustments to the nearest explicit theme', function () {
+    $css = presetVisualCss('nova');
+
+    expect($css)
+        ->toContain('@scope ([data-theme="dark"]) to ([data-theme="light"])')
+        ->not->toMatch('/@apply[^;]*\bdark:/');
+});
+
 it('keeps the app css stub thin', function () use ($stubPath) {
     $css = file_get_contents($stubPath);
 

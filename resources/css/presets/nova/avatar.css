@@ -1,6 +1,6 @@
 @layer components {
     /* Avatar */
-    [data-slot="avatar"] { @apply relative isolate inline-flex size-8 shrink-0 items-center justify-center rounded-full align-middle select-none after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:border-border after:mix-blend-darken dark:after:mix-blend-lighten; }
+    [data-slot="avatar"] { @apply relative isolate inline-flex size-8 shrink-0 items-center justify-center rounded-full align-middle select-none after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:border-border after:mix-blend-darken; }
     [data-slot="avatar"][data-size="xs"] { @apply size-5 text-xs; }
     [data-slot="avatar"][data-size="sm"] { @apply size-6 text-xs; }
     [data-slot="avatar"][data-size="lg"] { @apply size-10; }
@@ -25,4 +25,8 @@
     [data-slot="avatar-group"]:has(> [data-slot="avatar"][data-size="sm"]) > [data-slot="avatar-group-count"] { @apply size-6 [&>svg]:size-3; }
     [data-slot="avatar-group"]:has(> [data-slot="avatar"][data-size="lg"]) > [data-slot="avatar-group-count"] { @apply size-10 [&>svg]:size-5; }
     [data-slot="avatar-group"]:has(> [data-slot="avatar"][data-size="xl"]) > [data-slot="avatar-group-count"] { @apply size-12 [&>svg]:size-5; }
+
+    @scope ([data-theme="dark"]) to ([data-theme="light"]) {
+        :where(:scope, :scope *)[data-slot="avatar"] { @apply after:mix-blend-lighten; }
+    }
 }

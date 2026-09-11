@@ -212,11 +212,25 @@ existing application overrides too — write `:root:not([data-theme="dark"])` th
 `:root` rule after the preset also matches `<html data-theme="dark">` and can override dark values through source order.
 Bare `:root` remains appropriate for theme-independent values such as `--radius`.
 
-The package light token block is guarded as well, without increasing its specificity. Semantic tokens and
-`color-scheme` now follow the nearest explicit theme scope, so a nested `[data-theme="light"]` island inside a dark page
-paints light surfaces and light native controls. Preset rules written with the `dark:` variant remain matched by any
-dark ancestor, so dark-tuned Nova surfaces still reach into such an island; see
-[Theming](theming.md#color-schemes) for the boundary.
+The package light token block is guarded as well, without increasing its specificity. Semantic tokens, `color-scheme`
+and Nova's dark-tuned surfaces now follow the nearest explicit theme scope. A nested `[data-theme="light"]` island
+inside a dark page therefore paints complete light surfaces and native controls, while another nested
+`[data-theme="dark"]` island restores the dark treatment.
+
+Application-authored `dark:` utilities, including those copied into an application-owned Nova clone, keep Tailwind's
+ancestor-matching behavior and cross nested light boundaries. To adopt nearest-theme behavior, move each dark adjustment
+out of its style rule and into a top-level scope inside the same layer:
+
+```css
+@scope ([data-theme="dark"]) to ([data-theme="light"]) {
+    :where(:scope, :scope *)[data-slot="button"][data-variant="outline"] {
+        @apply border-input bg-input/30 hover:bg-input/50;
+    }
+}
+```
+
+The `:scope` branch includes a component that carries `data-theme="dark"` itself; `:scope *` covers its descendants.
+Keep the `@scope` outside style rules because `@apply` cannot emit a working scoped at-rule from a variant.
 
 The 11 packaged semantic foreground/background pairs are verified from rendered browser colours at `4.50:1` or higher.
 `hotwire:check` does not parse or restrict application colour syntax; contrast after custom overrides remains an
