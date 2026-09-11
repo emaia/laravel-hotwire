@@ -95,8 +95,9 @@ needs one.
 
 ## Styling hooks
 
-Collapse geometry lives in `resources/css/structural.css` and is included by every preset. Rail thickness and optional
-motion remain visual so a preset can refine them without fighting the shared mechanics. Visual styling uses:
+Collapse geometry lives in `resources/css/structural.css` and is included by every preset. Rail thickness and motion
+timing remain visual, while structural CSS owns the animated properties, so a preset can refine appearance without
+fighting the shared mechanics. Visual styling uses:
 
 - `data-slot="side-panel"`
 - `data-slot="side-panel-panel"`
@@ -110,6 +111,18 @@ motion remain visual so a preset can refine them without fighting the shared mec
 Override `--side-panel-collapsed-width` to change the collapsed rail width and `--side-panel-trigger-size` to change the
 edge control size. Both default to `1.75rem`; keeping the rail at least as wide as the trigger prevents clipping under an
 ancestor with `overflow: hidden`.
+
+Motion properties are inherited from the visual root, while structural CSS keeps ownership of the `inline-size` and
+content-opacity transitions:
+
+| Property                               | Nova default  | Purpose                                            |
+| -------------------------------------- | ------------- | -------------------------------------------------- |
+| `--side-panel-motion-duration`         | `200ms`       | Panel, rail, trigger and trigger-icon transitions. |
+| `--side-panel-content-motion-duration` | `150ms`       | Panel-content opacity transition.                  |
+| `--side-panel-motion-easing`           | `ease-in-out` | Easing shared by the complete motion system.       |
+
+Declare these properties on `data-slot="side-panel"` after importing the preset. Shared reduced-motion CSS disables all
+of these transitions regardless of their configured values.
 
 `--side-panel-trigger-rotation` communicates the current physical side/state to the structural trigger icon rule, so
 nested panels remain independent. Presets can override the resulting `transform` when they use a different icon motion.

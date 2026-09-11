@@ -2,7 +2,9 @@
 import { Controller } from "@hotwired/stimulus";
 
 const transitionProperties = new Set(["max-block-size", "max-height"]);
-const transitionTimeout = 750;
+const transitionTimeoutMargin = 50;
+const transitionTimeoutFallback = 750;
+const maxTransitionTimeout = 30000;
 
 export default class extends Controller {
     static targets = ["viewport", "content", "trigger", "fade", "moreLabel", "lessLabel", "icon"];
@@ -19,7 +21,8 @@ export default class extends Controller {
         this.refreshRafId = null;
         this.transitionRafId = null;
         this.transitionTimeoutId = null;
-        this.transitionGeneration = 0;
+        this.transitionDeadline = null;
+        this.transitionGeneration ??= 0;
         this.transitionExpandedValue = this.expandedValue;
         this.resizeObserver =
             typeof ResizeObserver === "function" ? new ResizeObserver(() => this.scheduleRefresh()) : null;
@@ -157,6 +160,7 @@ export default class extends Controller {
             !expanded && this.hasViewportTarget ? this.viewportTarget.getBoundingClientRect().height : null;
 
         this.cancelTransition();
+        this.transitionDeadline = performance.now() + maxTransitionTimeout;
         this.transitionExpandedValue = expanded;
         this.element.setAttribute("data-transitioning", "");
 
@@ -198,7 +202,7 @@ export default class extends Controller {
                 this.transitionTimeoutId = setTimeout(() => {
                     this.transitionTimeoutId = null;
                     this.settleTransition(generation);
-                }, transitionTimeout);
+                }, transitionWatchdogDuration(animations, this.transitionDeadline));
 
                 Promise.allSettled(animations.map((animation) => animation.finished)).then(() => {
                     this.settleTransition(generation);
@@ -212,6 +216,7 @@ export default class extends Controller {
 
         this.transitionGeneration += 1;
         this.clearTransitionTimeout();
+        this.transitionDeadline = null;
         this.element.removeAttribute("data-transitioning");
         this.element.removeAttribute("data-pinning");
         this.element.style.removeProperty("--read-more-pinned-height");
@@ -219,6 +224,7 @@ export default class extends Controller {
 
     cancelTransition() {
         this.cancelTransitionWait();
+        this.transitionDeadline = null;
 
         this.element.removeAttribute("data-transitioning");
         this.element.removeAttribute("data-pinning");
@@ -262,4 +268,27 @@ export default class extends Controller {
         if (this.hasLessLabelTarget) this.lessLabelTarget.hidden = !expanded;
         if (this.hasIconTarget) this.iconTarget.dataset.state = expanded ? "expanded" : "collapsed";
     }
+}
+
+function transitionWatchdogDuration(animations, deadline) {
+    let hasCompleteTiming = true;
+    const remaining = animations.reduce((longest, animation) => {
+        const endTime = Number(animation.effect?.getComputedTiming?.().endTime);
+        const currentTime = Number(animation.currentTime);
+        const playbackRate = Math.abs(Number(animation.playbackRate)) || 1;
+
+        if (!Number.isFinite(endTime)) {
+            hasCompleteTiming = false;
+
+            return longest;
+        }
+
+        return Math.max(longest, Math.max(0, endTime - (Number.isFinite(currentTime) ? currentTime : 0)) / playbackRate);
+    }, 0);
+    const deadlineRemaining = Number.isFinite(deadline) ? Math.max(0, deadline - performance.now()) : maxTransitionTimeout;
+
+    return Math.min(
+        deadlineRemaining,
+        hasCompleteTiming ? remaining + transitionTimeoutMargin : transitionTimeoutFallback,
+    );
 }

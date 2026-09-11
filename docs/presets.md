@@ -230,6 +230,9 @@ collapse, which needs `allow-discrete` and `calc-size(auto, size)` or the panel 
 Every preset imports that file, so the behavior compiles into your stylesheet and holds on the first paint — no waiting
 for the bundle to run — and no preset has to rediscover it. Its Accordion motion fallback lives in the `components`
 layer: override the timing if you want (`transition-duration` on `::details-content`); you never restate the mechanism.
+Side Panel and Read More similarly keep their animated geometry in the foundation while reading duration and easing from
+custom properties declared on their visual roots. This lets a preset vary motion without overriding structural selectors
+or using `!important`; their component docs list the supported properties and defaults.
 
 The same foundation owns a minimum accessibility baseline for custom-painted controls. In forced-colors mode, native
 Checkbox, Radio and Switch rendering returns so the browser can preserve checked, indeterminate, focus and disabled

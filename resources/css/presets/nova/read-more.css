@@ -1,6 +1,6 @@
 @layer components {
     /* Read More */
-    [data-slot="read-more"] { @apply relative; }
+    [data-slot="read-more"] { --read-more-motion-duration: 500ms; --read-more-motion-easing: ease-in-out; @apply relative; }
     [data-slot="read-more-content"] { @apply min-w-0; }
     [data-slot="read-more-fade"] { @apply pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-linear-to-t from-background via-background/90 to-transparent; }
     [data-slot="read-more-trigger"] { @apply mt-2; }

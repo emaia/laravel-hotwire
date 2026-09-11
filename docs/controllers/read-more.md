@@ -114,9 +114,12 @@ height. Once motion settles, the controller removes that attribute; CSS releases
 and restores `overflow: visible`, so dropdowns and other positioned descendants are not clipped.
 Only the viewport's `max-block-size` transition is awaited; unrelated animations cannot hold the
 component in its clipped transition state. Browsers may expose that logical property as the physical
-`max-height`, so both names are recognized. A 750ms safety timeout releases the transition state if
-the matching animation is stalled. An interrupted expansion temporarily sets `data-pinning` and
-captures the current rendered height before reversing direction.
+`max-height`, so both names are recognized. A stalled transition is released after its computed
+remaining time plus a `50ms` margin, capped at `30s` for the complete transition. Custom durations
+above the former fixed `750ms` timeout and below that cap therefore complete normally. Zero-duration
+and reduced-motion transitions settle without waiting. If the browser exposes no usable animation
+timing, `750ms` remains the safety fallback. An interrupted expansion temporarily sets `data-pinning`
+and captures the current rendered height before reversing direction.
 
 The requested `expanded` value is preserved while content is short. If later content growth causes
 overflow, the previous requested state becomes effective again.
