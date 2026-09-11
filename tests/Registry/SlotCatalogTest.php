@@ -66,15 +66,55 @@ it('documents component styling hooks from the catalog', function () {
         ]));
     }
 
-    foreach ($slotsByDoc as $doc => $slots) {
-        $contents = File::get(__DIR__.'/../../'.$doc);
+    $offenders = [];
 
-        expect($contents)->toMatch('/^## Styling hooks\r?$/m');
+    foreach ($slotsByDoc as $doc => $slots) {
+        $section = stylingHooksSection(File::get(__DIR__.'/../../'.$doc));
+
+        if ($section === null) {
+            $offenders[] = "{$doc}: no ## Styling hooks section";
+
+            continue;
+        }
 
         foreach ($slots as $slot) {
-            expect($contents)->toContain("data-slot=\"{$slot}\"");
+            if (! str_contains($section, "data-slot=\"{$slot}\"")) {
+                $offenders[] = "{$doc}: {$slot}";
+            }
         }
     }
+
+    expect($offenders)->toBe([]);
+});
+
+it('rejects a styling hook documented outside its own section', function () {
+    $doc = <<<'MD'
+        # Widget
+
+        Low-level markup can emit `data-slot="widget-icon"` directly.
+
+        ## Styling hooks
+
+        - `data-slot="widget"`
+
+        ```md
+        ## Example
+        <span data-slot="example"></span>
+        ```
+
+        - `data-slot="widget-after-example"`
+
+        ## Accessibility
+
+        The trigger keeps `data-slot="widget-note"` announced.
+        MD;
+
+    expect(stylingHooksSection($doc))
+        ->toContain('data-slot="widget"')
+        ->toContain('data-slot="widget-after-example"')
+        ->not->toContain('data-slot="widget-icon"')
+        ->not->toContain('data-slot="widget-note"')
+        ->and(stylingHooksSection('# Widget'))->toBeNull();
 });
 
 it('hydrates valid slot and preset attribute metadata', function () {
@@ -327,30 +367,34 @@ it('gives every visual catalog slot declaration-bearing participation in each pr
         ->values()
         ->all();
     $css = app(CssPresetFiles::class)->source($preset)->visualCss();
-    $styled = [];
-    $rules = new CssRules;
-    $stripped = $rules->stripComments($css);
+    $styled = visualSlotsWithDeclarations($css);
 
-    foreach ($rules->parse($stripped) as ['chain' => $chain, 'declarations' => $declarations]) {
-        if (trim($declarations) === '') {
-            continue;
-        }
-
-        $selectorChain = implode(' ', array_filter($chain, fn (string $block): bool => ! str_starts_with($block, '@')));
-        preg_match_all('/\[data-slot\s*=\s*["\']?([a-z0-9-]+)["\']?\s*\]/', $selectorChain, $matches);
-        $styled = [...$styled, ...$matches[1]];
-    }
-
-    expect(array_values(array_diff($required, array_unique($styled))))->toBe([]);
+    expect(array_values(array_diff($required, $styled)))->toBe([]);
 })->with('slot catalog presets');
 
 it('declares every slot referenced by each preset', function (string $preset) {
     $css = app(CssPresetFiles::class)->source($preset)->visualCss();
-    $stripped = (new CssRules)->stripComments($css);
-    preg_match_all('/\[data-slot\s*=\s*["\']?([a-z0-9-]+)["\']?\s*\]/', $stripped, $referenced);
 
-    expect(array_values(array_diff(array_unique($referenced[1]), declaredSlots())))->toBe([]);
+    expect(array_values(array_diff(referencedCssSlots($css), declaredSlots())))->toBe([]);
 })->with('slot catalog presets');
+
+it('declares every slot referenced by the structural stylesheet', function () {
+    $css = File::get(__DIR__.'/../../resources/css/structural.css');
+
+    expect(array_values(array_diff(referencedCssSlots($css), declaredSlots())))->toBe([]);
+});
+
+it('detects empty visual rules and undeclared slot typos in conformance fixtures', function () {
+    $css = <<<'CSS'
+        [data-slot="button"] {}
+        [data-slot="badgge"] { color: red; }
+        [data-slot="card"] { @apply has-data-[slot=carrd-footer]:pb-0; }
+        CSS;
+
+    expect(array_values(array_diff(['button'], visualSlotsWithDeclarations($css))))->toBe(['button'])
+        ->and(array_values(array_diff(referencedCssSlots($css), ['button', 'card'])))
+        ->toBe(['badgge', 'carrd-footer']);
+});
 
 /** @return string[] */
 function registryStylingClaimConflicts(HotwireRegistry $registry): array
@@ -473,4 +517,72 @@ function javascriptSlots(string $contents): array
     );
 
     return array_values(array_unique(array_filter([...$matches[1], ...$matches[2], ...$matches[3]])));
+}
+
+/** Return the real `## Styling hooks` section while ignoring headings in fenced examples. */
+function stylingHooksSection(string $contents): ?string
+{
+    $lines = preg_split('/(?<=\n)/', $contents) ?: [];
+    $offset = 0;
+    $start = null;
+    $fence = null;
+
+    foreach ($lines as $line) {
+        $text = rtrim($line, "\r\n");
+
+        if ($fence !== null) {
+            if (preg_match('/^\s{0,3}(`{3,}|~{3,})\s*$/', $text, $closing) === 1
+                && $closing[1][0] === $fence[0]
+                && strlen($closing[1]) >= strlen($fence)) {
+                $fence = null;
+            }
+        } elseif (preg_match('/^\s{0,3}(`{3,}|~{3,})/', $text, $opening) === 1) {
+            $fence = $opening[1];
+        } elseif ($start === null && preg_match('/^\s{0,3}## Styling hooks\s*$/', $text) === 1) {
+            $start = $offset + strlen($line);
+        } elseif ($start !== null && preg_match('/^\s{0,3}#{1,2}(?:\s+|$)/', $text) === 1) {
+            return substr($contents, $start, $offset - $start);
+        }
+
+        $offset += strlen($line);
+    }
+
+    return $start === null ? null : substr($contents, $start);
+}
+
+/** @return string[] */
+function visualSlotsWithDeclarations(string $css): array
+{
+    $styled = [];
+    $rules = new CssRules;
+
+    foreach ($rules->parse($rules->stripComments($css)) as ['chain' => $chain, 'declarations' => $declarations]) {
+        if (trim($declarations) === '') {
+            continue;
+        }
+
+        $selectorChain = implode(' ', array_filter($chain, fn (string $block): bool => ! str_starts_with($block, '@')));
+        preg_match_all('/\[data-slot\s*=\s*["\']?([a-z0-9-]+)["\']?\s*\]/', $selectorChain, $matches);
+        $styled = [...$styled, ...$matches[1]];
+    }
+
+    return array_values(array_unique($styled));
+}
+
+/**
+ * Collect every slot a stylesheet names, in selectors and in Tailwind `data-[slot=…]` variants alike.
+ *
+ * The variant form appears only inside `@apply`, so a typo there is invisible to a selector-only scan.
+ *
+ * @return string[]
+ */
+function referencedCssSlots(string $css): array
+{
+    preg_match_all(
+        '/\[data-slot\s*=\s*["\']?([a-z0-9-]+)["\']?\s*\]|data-\[slot\s*=\s*["\']?([a-z0-9-]+)["\']?\]/',
+        (new CssRules)->stripComments($css),
+        $referenced,
+    );
+
+    return array_values(array_unique(array_filter([...$referenced[1], ...$referenced[2]])));
 }

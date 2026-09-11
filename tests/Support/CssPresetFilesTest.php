@@ -4,6 +4,10 @@ use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\CssModuleManifest;
 use Emaia\LaravelHotwire\Support\CssPresetFiles;
 
+dataset('shipped css preset names', fn () => collect(glob(__DIR__.'/../../resources/css/presets/*.css') ?: [])
+    ->mapWithKeys(fn (string $path): array => [pathinfo($path, PATHINFO_FILENAME) => [pathinfo($path, PATHINFO_FILENAME)]])
+    ->all());
+
 it('discovers shipped css presets in sorted order', function () {
     $presets = app(CssPresetFiles::class);
     $expected = collect(glob(__DIR__.'/../../resources/css/presets/*.css') ?: [])
@@ -18,10 +22,10 @@ it('discovers shipped css presets in sorted order', function () {
         ->and($presets->path('missing'))->toBeNull();
 });
 
-it('resolves every private Nova module exactly once without exposing it as a preset', function () {
+it('resolves every private module exactly once without exposing it as a preset', function (string $preset) {
     $presets = app(CssPresetFiles::class);
-    $source = $presets->source('nova');
-    $modules = glob(dirname($presets->path('nova')).'/nova/*.css') ?: [];
+    $source = $presets->source($preset);
+    $modules = glob(dirname($presets->path($preset))."/{$preset}/*.css") ?: [];
 
     expect($modules)->toHaveCount(count($source->visualStylesheets()))
         ->not->toBeEmpty()
@@ -30,10 +34,13 @@ it('resolves every private Nova module exactly once without exposing it as a pre
             'custom-variants.css',
             'structural.css',
         ])
-        ->and(file_get_contents($presets->path('nova')))
+        ->and(file_get_contents($presets->path($preset)))
         ->not->toContain('[data-slot=')
-        ->and($presets->names())->toBe(['nova']);
-});
+        ->and(array_intersect(
+            array_values($presets->all()),
+            array_map(fn (string $path): string => realpath($path) ?: $path, $modules),
+        ))->toBe([]);
+})->with('shipped css preset names');
 
 it('uses responsibility-oriented Nova modules instead of mechanical source chunks', function () {
     $modules = collect(glob(__DIR__.'/../../resources/css/presets/nova/*.css') ?: [])
@@ -52,7 +59,7 @@ it('uses responsibility-oriented Nova modules instead of mechanical source chunk
         ->each->not->toMatch('/^\d+-/');
 });
 
-it('resolves complete and selective preset sources from catalog owners', function () {
+it('resolves complete and selective preset sources from catalog owners', function (string $preset) {
     $presets = app(CssPresetFiles::class);
     $registry = HotwireRegistry::make();
     $components = array_keys(array_filter(
@@ -65,12 +72,14 @@ it('resolves complete and selective preset sources from catalog owners', functio
     ));
     $modules = app(CssModuleManifest::class)->modulesFor($components, $controllers);
 
-    expect(app(CssModuleManifest::class)->sourcesFor('nova', $modules))
-        ->toBe($presets->source('nova')->visualStylesheetPaths())
-        ->and($presets->sourceForSelection('nova', $components, $controllers)->visualStylesheets())
-        ->toBe($presets->source('nova')->visualStylesheets());
+    expect(app(CssModuleManifest::class)->sourcesFor($preset, $modules))
+        ->toBe($presets->source($preset)->visualStylesheetPaths())
+        ->and($presets->sourceForSelection($preset, $components, $controllers)->visualStylesheets())
+        ->toBe($presets->source($preset)->visualStylesheets());
+})->with('shipped css preset names');
 
-    $modal = $presets->sourceForSelection('nova', ['modal']);
+it('resolves Nova modal integrations without unrelated sources', function () {
+    $modal = app(CssPresetFiles::class)->sourceForSelection('nova', ['modal']);
 
     expect($modal->visualCss())
         ->toContain('[data-slot="modal-panel"]')

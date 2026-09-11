@@ -72,6 +72,28 @@ it('selects controller-owned visual modules and their dependencies', function ()
         ->toEqualCanonicalizing(['floating-presence', 'tooltip']);
 });
 
+it('resolves a synthetic preset without official name assumptions', function () {
+    $manifest = CssModuleManifest::fromArray([
+        'modules' => [
+            'surface' => [
+                'components' => ['card'],
+                'controllers' => [],
+                'dependencies' => [],
+            ],
+        ],
+        'presets' => [
+            'contrast-fixture' => [
+                'sources' => [
+                    ['path' => 'presets/contrast-fixture/surface.css', 'modules' => ['surface']],
+                ],
+            ],
+        ],
+    ]);
+
+    expect($manifest->sourcesFor('contrast-fixture', $manifest->modulesFor(['card'], [])))
+        ->toBe(['presets/contrast-fixture/surface.css']);
+});
+
 it('selects Tooltip visuals through package components but not the standalone controller', function () {
     $manifest = app(CssModuleManifest::class);
 
