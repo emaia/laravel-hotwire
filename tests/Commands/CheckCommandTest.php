@@ -1823,7 +1823,7 @@ it('does not report drift when stub is hand-written (no auto-generated marker)',
     writePackageJson(['name' => 'app', 'devDependencies' => ['echarts' => '^6.1.0']]);
 
     File::ensureDirectoryExists($this->targetDir);
-    File::put($this->targetDir.'/index.js', "// hand-written user file\nimport { Stimulus } from \"../libs/stimulus\";\n");
+    File::put($this->targetDir.'/index.js', "// hand-written user file\nimport { Stimulus } from \"../hotwire/stimulus\";\n");
 
     writeView('page.blade.php', '<x-hw::chart />');
 
