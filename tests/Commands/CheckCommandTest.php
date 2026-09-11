@@ -1,5 +1,6 @@
 <?php
 
+use Emaia\LaravelHotwire\Commands\CheckCommand;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ControllerImports;
 use Emaia\LaravelHotwire\Support\LoaderStub;
@@ -33,6 +34,34 @@ function shippedPresetImportPath(string $name = 'nova'): string
     File::copyDirectory($source, $target);
 
     return "../../vendor/emaia/laravel-hotwire/resources/css/presets/{$name}.css";
+}
+
+function writeCompleteApplicationPreset(string $name = 'brand'): string
+{
+    shippedPresetImportPath();
+    $registry = HotwireRegistry::make();
+    $slots = collect([...array_values($registry->components()), ...array_values($registry->controllers())])
+        ->flatMap(fn ($definition): array => $definition->styling->visualSlots())
+        ->unique()
+        ->sort()
+        ->values()
+        ->all();
+    $selectors = implode(",\n", array_map(
+        fn (string $slot): string => "[data-slot=\"{$slot}\"]",
+        $slots,
+    ));
+    $path = resource_path("css/presets/{$name}.css");
+    File::ensureDirectoryExists(dirname($path));
+    File::put($path, implode("\n", [
+        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/tokens.css";',
+        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/custom-variants.css";',
+        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/structural.css";',
+        '',
+        $selectors.' { color: var(--foreground); }',
+        '',
+    ]));
+
+    return $path;
 }
 
 function publishController(string $identifier, string $targetDir): void
@@ -140,14 +169,14 @@ it('does not treat unrelated stylesheets as Hotwire token contracts', function (
 });
 
 it('does not claim to audit application token overrides', function () {
-    File::ensureDirectoryExists(resource_path('css/presets'));
-    File::put(resource_path('css/presets/brand.css'), <<<'CSS'
+    File::ensureDirectoryExists(resource_path('css/themes'));
+    File::put(resource_path('css/themes/brand.css'), <<<'CSS'
 [data-theme="dark"] {
     --primary: oklch(0.8 0 0);
 }
 CSS);
     File::put(resource_path('css/app.css'), <<<'CSS'
-@import "./presets/brand.css";
+@import "./themes/brand.css";
 [data-theme="dark"] {
     --primary-foreground: oklch(0.75 0 0);
 }
@@ -277,16 +306,176 @@ it('accepts complete preset imports after allowed CSS prelude rules', function (
         ->assertSuccessful();
 });
 
-it('accepts an imported application preset as an application-owned coverage assertion', function () {
+it('validates an imported complete application preset against the public slot contract', function () {
     writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
     $this->artisan('hotwire:styles --components=modal --no-interaction')->assertSuccessful();
-    File::ensureDirectoryExists(resource_path('css/presets'));
-    File::put(resource_path('css/presets/brand.css'), '[data-slot="modal-panel"] {}');
+    writeCompleteApplicationPreset();
     File::put(resource_path('css/app.css'), '@import "./presets/brand.css";');
 
     $this->artisan('hotwire:check --no-interaction')
+        ->expectsOutputToContain('resources/css/presets/brand.css  valid application preset')
         ->doesntExpectOutputToContain('not covered by any generated CSS bundle')
         ->assertSuccessful();
+});
+
+it('fails when an imported application preset omits required visual slots', function () {
+    writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
+    shippedPresetImportPath();
+    File::ensureDirectoryExists(resource_path('css/presets'));
+    File::put(resource_path('css/presets/brand.css'), implode("\n", [
+        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/tokens.css";',
+        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/custom-variants.css";',
+        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/structural.css";',
+        '[data-slot="badge"] { color: red; }',
+    ]));
+    File::put(resource_path('css/app.css'), '@import "./presets/brand.css";');
+
+    $this->artisan('hotwire:check --no-interaction')
+        ->expectsOutputToContain('resources/css/presets/brand.css  missing visual slots')
+        ->assertFailed();
+});
+
+it('validates an unimported application preset explicitly by name or path', function (string $preset) {
+    $path = writeCompleteApplicationPreset();
+    $value = $preset === 'name' ? 'brand' : $path;
+
+    $this->artisan('hotwire:check', ['--preset' => [$value], '--no-interaction' => true])
+        ->expectsOutputToContain('resources/css/presets/brand.css  valid application preset')
+        ->assertSuccessful();
+})->with(['name', 'path']);
+
+it('accepts a preset filename as an explicit preset name', function () {
+    writeCompleteApplicationPreset();
+
+    $this->artisan('hotwire:check', ['--preset' => ['brand.css'], '--no-interaction' => true])
+        ->expectsOutputToContain('resources/css/presets/brand.css  valid application preset')
+        ->assertSuccessful();
+});
+
+it('does not let an explicit preset disable selective bundle coverage', function () {
+    writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
+    $this->artisan('hotwire:styles --components=modal --no-interaction')->assertSuccessful();
+    writeCompleteApplicationPreset();
+
+    $this->artisan('hotwire:check', ['--preset' => ['brand'], '--no-interaction' => true])
+        ->expectsOutputToContain('resources/css/presets/brand.css  valid application preset')
+        ->expectsOutputToContain('<x-hw::badge>  not covered by any generated CSS bundle')
+        ->assertFailed();
+});
+
+it('reports selective bundle coverage alongside an invalid explicit preset', function () {
+    writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
+    $this->artisan('hotwire:styles --components=modal --no-interaction')->assertSuccessful();
+    shippedPresetImportPath();
+    File::ensureDirectoryExists(resource_path('css/presets'));
+    File::put(resource_path('css/presets/brand.css'), '[data-slot="badge"] { color: red; }');
+
+    $this->artisan('hotwire:check', ['--preset' => ['brand'], '--no-interaction' => true])
+        ->expectsOutputToContain('must import package foundations once in this order')
+        ->expectsOutputToContain('<x-hw::badge>  not covered by any generated CSS bundle')
+        ->assertFailed();
+});
+
+it('validates multiple explicitly selected application presets', function () {
+    writeCompleteApplicationPreset('brand');
+    writeCompleteApplicationPreset('admin');
+
+    $this->artisan('hotwire:check', [
+        '--preset' => ['brand', 'admin'],
+        '--no-interaction' => true,
+    ])
+        ->expectsOutputToContain('resources/css/presets/brand.css  valid application preset')
+        ->expectsOutputToContain('resources/css/presets/admin.css  valid application preset')
+        ->assertSuccessful();
+});
+
+it('rejects an explicit preset path outside resources css', function () {
+    $path = base_path('private.css');
+    File::put($path, '[data-slot="badge"] { color: red; }');
+
+    $this->artisan('hotwire:check', ['--preset' => [$path], '--no-interaction' => true])
+        ->expectsOutputToContain('Application preset must be a CSS file under resources/css')
+        ->assertFailed();
+});
+
+it('reports static-analysis uncertainty as a warning without failing', function () {
+    $path = writeCompleteApplicationPreset();
+    File::append($path, '[data-slot="unclosed" { color: red; }');
+
+    $this->artisan('hotwire:check', ['--preset' => ['brand'], '--no-interaction' => true])
+        ->expectsOutputToContain('warning: CSS analysis is incomplete')
+        ->expectsOutputToContain('checked with warnings')
+        ->doesntExpectOutputToContain('valid application preset')
+        ->assertSuccessful();
+});
+
+it('does not reinterpret an explicitly selected generated bundle as a complete preset', function () {
+    $this->artisan('hotwire:styles --components=badge --output=resources/css/presets/layout.css --no-interaction')
+        ->assertSuccessful();
+
+    $this->artisan('hotwire:check', [
+        '--preset' => ['resources/css/presets/layout.css'],
+        '--no-interaction' => true,
+    ])
+        ->expectsOutputToContain('complete-preset validation skipped: generated selective bundle')
+        ->doesntExpectOutputToContain('missing visual slots')
+        ->assertSuccessful();
+});
+
+it('validates the recorded plan of a generated bundle selected as a preset', function () {
+    $this->artisan('hotwire:styles --components=badge --output=resources/css/presets/layout.css --no-interaction')
+        ->assertSuccessful();
+    $path = resource_path('css/presets/layout.css');
+    File::put($path, strstr(File::get($path), '[data-slot="badge"]', true));
+
+    $this->artisan('hotwire:check', [
+        '--preset' => ['resources/css/presets/layout.css'],
+        '--no-interaction' => true,
+    ])
+        ->expectsOutputToContain('complete-preset validation skipped: generated selective bundle')
+        ->expectsOutputToContain('generated CSS content does not match its plan')
+        ->assertFailed();
+});
+
+it('renders preset paths relative to a resolved symbolic base without prefix collisions', function () {
+    if (PHP_OS_FAMILY === 'Windows') {
+        $this->markTestSkipped('Symbolic-link path semantics are covered on Unix-like systems.');
+    }
+
+    $release = $this->appBase;
+    $current = $release.'-current';
+    $sibling = $release.'-shared';
+    $inside = $release.'/resources/css/presets/brand.css';
+    $outside = $sibling.'/resources/css/presets/brand.css';
+    File::ensureDirectoryExists(dirname($inside));
+    File::ensureDirectoryExists(dirname($outside));
+    File::put($inside, '');
+    File::put($outside, '');
+    symlink($release, $current);
+    app()->setBasePath($current);
+
+    try {
+        $command = app(CheckCommand::class);
+        $method = new ReflectionMethod($command, 'applicationPath');
+
+        expect($method->invoke($command, $inside))->toBe('resources/css/presets/brand.css')
+            ->and($method->invoke($command, $outside))->toBe('brand.css');
+    } finally {
+        app()->setBasePath($release);
+        @unlink($current);
+        File::deleteDirectory($sibling);
+    }
+});
+
+it('keeps a generated bundle under the presets directory in selective mode', function () {
+    writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
+    $this->artisan('hotwire:styles --components=modal --output=resources/css/presets/layout.css --no-interaction')
+        ->assertSuccessful();
+
+    $this->artisan('hotwire:check --no-interaction')
+        ->doesntExpectOutputToContain('missing visual slots')
+        ->expectsOutputToContain('<x-hw::badge>  not covered by any generated CSS bundle')
+        ->assertFailed();
 });
 
 it('does not treat conditional remote or quoted preset references as complete coverage', function (string $css) {

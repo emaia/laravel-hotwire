@@ -95,20 +95,23 @@ without requiring third-party graphics to emit the generic Icon slot.
 
 ## Recommended preset conformance policy
 
-This section records the policy applied by package tooling and intended for the future external validator. Blank
-scaffolds now come from registry visual slots, and official preset coverage no longer requires lexical axis equality.
+This section records the policy applied by package tooling and the application-preset validator. Blank scaffolds come
+from registry visual slots, and preset coverage does not require lexical axis equality.
 
 The catalog's visual slots should be the preset-neutral API. `PresetAxes` is a diagnostic description of attributes a
 particular stylesheet differentiates; it cannot prove semantic support by itself.
 
-Package CI applies this policy to official presets. An application preset can use the same acceptance criteria, though
-the package does not yet provide an external validator:
+Package CI applies this complete policy to official presets:
 
 1. Imports the shared token, custom-variant and structural foundations exactly as required.
 2. Compiles without unresolved Tailwind directives.
 3. Gives every catalog visual slot declaration-bearing participation in the compiled CSS.
 4. References only declared slots.
 5. Preserves focused structural, behavioral and accessibility contracts.
+
+For application presets, `hotwire:check --preset=<name|path>` statically checks the foundation imports, local import
+graph and source-level slot participation from items 1, 3 and 4. The application's production asset build proves item 2;
+focused browser and component tests prove item 5.
 
 A valid preset does **not** have to enumerate the same selectors, axes or values as Nova. A base rule may cover every
 value, multiple values may intentionally share appearance, and state may be expressed through an ancestor, equivalent
@@ -147,9 +150,9 @@ Invalid examples:
 ```
 
 An explicit `--from=nova` clone remains the correct path for authors who want Nova's complete selector structure; a
-blank scaffold is intentionally only a registry-derived anatomy checklist. The external preset validator should combine
-catalog slot coverage with real compilation and focused state checks, and should distinguish proven errors from cases
-static analysis cannot decide.
+blank scaffold is intentionally only a registry-derived anatomy checklist. The public validation workflow combines
+catalog slot coverage from `hotwire:check`, the application's real production build and focused state checks. Static
+uncertainty is reported separately from proven errors.
 
 ## Pairings and support boundary
 

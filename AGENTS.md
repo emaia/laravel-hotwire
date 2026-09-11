@@ -30,7 +30,7 @@ The complete Hotwire stack for Laravel — Turbo Drive, Turbo Streams, Stimulus 
 | `hotwire:styles`          | Generate a selective preset bundle from explicit component and controller selections                                  |
 | `hotwire:controllers`     | Publish package Stimulus controllers to the app for customization (`--outdated` to update only published+changed ones) |
 | `hotwire:components`      | List available Blade components and their controller dependencies                                                      |
-| `hotwire:check`           | Verify required npm dependencies are installed and report outdated/diverged published controllers (CI-friendly)        |
+| `hotwire:check`           | Verify npm/controller drift, generated CSS and complete application preset contracts (CI-friendly)                      |
 | `hotwire:docs`            | Browse and read controller/component docs in the terminal                                                              |
 | `hotwire:ide-json`        | Generate Laravel Idea metadata for package and application Stimulus controllers                                        |
 

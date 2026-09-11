@@ -1,0 +1,9 @@
+@layer components {
+    :where([data-slot="fixture-panel"], [data-slot="fixture-action"]) {
+        @apply border-border bg-background text-foreground border;
+    }
+
+    [data-slot="fixture-panel"][data-size="compact"] [data-slot="fixture-action"] {
+        @apply text-sm;
+    }
+}

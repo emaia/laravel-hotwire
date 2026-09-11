@@ -56,6 +56,14 @@ it('keeps a value on its own compound, not on a descendant', function () {
     expect($axes)->toBe(['sidebar' => ['data-variant' => ['floating']]]);
 });
 
+it('keeps a value on its own compound across a column combinator', function () {
+    $axes = (new PresetAxes)->extract(
+        '[data-slot="table-column"]||[data-slot="table-cell"] { @apply data-[state=selected]:font-bold; }'
+    );
+
+    expect($axes)->toBe(['table-cell' => ['data-state' => ['selected']]]);
+});
+
 it('collects every axis, not only variant and size', function () {
     $axes = (new PresetAxes)->extract(<<<'CSS'
         [data-slot="attachment"][data-orientation="vertical"] { flex-direction: column; }
@@ -293,9 +301,13 @@ it('reports how much of the stylesheet it managed to read', function () {
 
     expect($extractor->coverage('[data-slot="badge"] { @apply border; }'))
         ->toBe(['visited' => 1, 'total' => 1])
+        ->and($extractor->unvisitedSlots('[data-slot="badge"] { @apply border; }'))
+        ->toBe([])
         // An unterminated block is never emitted as a rule, so its slot goes unaccounted for.
         ->and($extractor->coverage('[data-slot="a"] { @apply border; } [data-slot="b"] { @apply border;'))
-        ->toBe(['visited' => 1, 'total' => 2]);
+        ->toBe(['visited' => 1, 'total' => 2])
+        ->and($extractor->unvisitedSlots('[data-slot="a"] { @apply border; } [data-slot="b"] { @apply border;'))
+        ->toBe(['b']);
 });
 
 it('reads every slot occurrence of every shipped preset', function () {

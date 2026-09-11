@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, test } from "bun:test";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import baselines from "./preset_build_baselines.json";
@@ -19,6 +19,10 @@ const attributeValueSelector = (attribute, value) => new RegExp(`\\[${attribute}
 const carouselMechanic = /\[data-carousel-container\]/;
 const automaticSourceUtility = String.raw`.w-\[811px\]`;
 const expressivenessFixturePath = new URL("../Fixtures/css/preset_expressiveness.css", import.meta.url);
+const applicationPresetFixturePath = new URL(
+    "../Fixtures/css/application-preset/resources/css/presets",
+    import.meta.url,
+);
 const packageSources = [
     {
         directive: '@source "../../vendor/emaia/laravel-hotwire/resources/views/**/*.blade.php";',
@@ -198,6 +202,28 @@ describe("public CSS presets", () => {
         expect(css).toContain("@media (prefers-reduced-motion:reduce)");
         expect(css).toMatch(attributeValueSelector("aria-invalid", "true"));
         expect(css).toMatch(/:disabled/);
+    });
+
+    test("compiles the synthetic application preset through its public entrypoint", async () => {
+        const css = await compileCssFixture(
+            `
+                @import "tailwindcss";
+                @import "./presets/constellation.css";
+            `,
+            {
+                setup: async (directory) => {
+                    await cp(applicationPresetFixturePath, join(directory, "resources/css/presets"), {
+                        recursive: true,
+                    });
+                },
+            },
+        );
+
+        for (const slot of ["fixture-panel", "fixture-action", "fixture-status"]) {
+            expect(css).toMatch(slotSelector(slot));
+        }
+
+        expect(css).not.toMatch(/@(import|apply)\b/);
     });
 
     test("requires every explicit package source to discover its vendor candidates", async () => {

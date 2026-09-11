@@ -47,65 +47,74 @@ final class PresetAxes
      */
     public function coverage(string $css): array
     {
+        $analysis = $this->coverageAnalysis($css);
+
+        return ['visited' => $analysis['visited'], 'total' => $analysis['total']];
+    }
+
+    /**
+     * Return identifiable slot references that the rule parser could not visit.
+     *
+     * @return string[]
+     */
+    public function unvisitedSlots(string $css): array
+    {
+        return $this->coverageAnalysis($css)['unvisitedSlots'];
+    }
+
+    /** @return array{visited: int, total: int, unvisitedSlots: string[]} */
+    private function coverageAnalysis(string $css): array
+    {
         $stripped = $this->rules->stripComments($css);
         $visited = 0;
+        $visitedSource = '';
 
         foreach ($this->rules->parse($stripped) as ['chain' => $chain, 'declarations' => $declarations]) {
-            $visited += preg_match_all('/\[data-slot\s*=/', end($chain).' '.$declarations);
+            $source = end($chain).' '.$declarations;
+            $visited += preg_match_all('/\[data-slot\s*=/', $source);
+            $visitedSource .= ' '.$source;
         }
 
         preg_match_all('/@scope\s+([^{}]+)\{/', $stripped, $scopes);
 
         foreach ($scopes[1] as $scope) {
             $visited += preg_match_all('/\[data-slot\s*=/', $scope);
+            $visitedSource .= ' '.$scope;
         }
 
-        return ['visited' => $visited, 'total' => (int) preg_match_all('/\[data-slot\s*=/', $stripped)];
+        $allSlots = $this->slotMentionCounts($stripped);
+        $visitedSlots = $this->slotMentionCounts($visitedSource);
+        $unvisitedSlots = [];
+
+        foreach ($allSlots as $slot => $count) {
+            if ($count > ($visitedSlots[$slot] ?? 0)) {
+                $unvisitedSlots[] = $slot;
+            }
+        }
+
+        return [
+            'visited' => $visited,
+            'total' => (int) preg_match_all('/\[data-slot\s*=/', $stripped),
+            'unvisitedSlots' => $unvisitedSlots,
+        ];
+    }
+
+    /** @return array<string, int> */
+    private function slotMentionCounts(string $css): array
+    {
+        preg_match_all('/\[data-slot\s*=\s*["\']?([a-z0-9-]+)/', $css, $matches);
+
+        return array_count_values($matches[1]);
     }
 
     /** Collect axes from a scope root without assigning its limit to the styled subject. */
     private function collectScope(array &$axes, string $ancestor): void
     {
-        if (! str_starts_with($ancestor, '@scope') || ($root = $this->scopeRoot($ancestor)) === null) {
+        if (($root = $this->rules->scopeRoot($ancestor)) === null) {
             return;
         }
 
         $this->collectSelector($axes, $root, $this->subjectSlots($root));
-    }
-
-    private function scopeRoot(string $scope): ?string
-    {
-        $prelude = trim(substr($scope, strlen('@scope')));
-        if (! str_starts_with($prelude, '(')) {
-            return null;
-        }
-
-        $depth = 0;
-        $quote = null;
-
-        foreach (str_split($prelude) as $index => $character) {
-            if ($quote !== null) {
-                if ($character === $quote && ($index === 0 || $prelude[$index - 1] !== '\\')) {
-                    $quote = null;
-                }
-
-                continue;
-            }
-
-            if ($character === '"' || $character === "'") {
-                $quote = $character;
-
-                continue;
-            }
-
-            $depth += (int) ($character === '(') - (int) ($character === ')');
-
-            if ($depth === 0) {
-                return substr($prelude, 1, $index - 1);
-            }
-        }
-
-        return null;
     }
 
     /**
@@ -141,8 +150,8 @@ final class PresetAxes
     {
         if (! str_contains($selector, '[data-slot')) {
             // A nested rule like `&[data-variant="ghost"]` names no slot: it refines the parent's.
-            foreach ($this->splitTopLevel($selector, ',') as $single) {
-                $compounds = $this->splitTopLevel($single, ' >+~');
+            foreach ($this->rules->splitTopLevel($selector, ',') as $single) {
+                $compounds = $this->rules->splitTopLevel($single, ' >+~|');
                 $this->collect($axes, $subject, (string) end($compounds));
             }
 
@@ -213,7 +222,7 @@ final class PresetAxes
         $slots = [];
 
         foreach ($this->singles($selector) as $single) {
-            $compounds = $this->splitTopLevel($single, ' >+~');
+            $compounds = $this->rules->splitTopLevel($single, ' >+~|');
             $slots = [...$slots, ...$this->subjectCompound((string) end($compounds))];
         }
 
@@ -231,7 +240,7 @@ final class PresetAxes
     {
         $singles = [];
 
-        foreach ($this->splitTopLevel($selector, ',') as $single) {
+        foreach ($this->rules->splitTopLevel($selector, ',') as $single) {
             $singles = preg_match('/^:(?:is|where)\((.*)\)$/s', trim($single), $inner) === 1
                 ? [...$singles, ...$this->singles($inner[1])]
                 : [...$singles, trim($single)];
@@ -258,27 +267,6 @@ final class PresetAxes
         preg_match_all('/\[data-slot\s*=\s*["\']?([^"\'\]\s]+)["\']?\]/', $compound, $matches);
 
         return array_values(array_unique($matches[1]));
-    }
-
-    /** @return string[] */
-    private function splitTopLevel(string $value, string $separators): array
-    {
-        $parts = [''];
-        $depth = 0;
-
-        foreach (str_split($value) as $character) {
-            $depth += (int) in_array($character, ['(', '['], true) - (int) in_array($character, [')', ']'], true);
-
-            if ($depth === 0 && str_contains($separators, $character)) {
-                $parts[] = '';
-
-                continue;
-            }
-
-            $parts[array_key_last($parts)] .= $character;
-        }
-
-        return array_values(array_filter($parts, fn (string $part): bool => trim($part) !== ''));
     }
 
     /**

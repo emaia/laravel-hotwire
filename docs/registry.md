@@ -128,6 +128,11 @@ Slot declarations are verified against every shipped preset in
 rule with declarations. Focused structural, behavioral and accessibility tests cover contracts that lexical slot
 occurrence cannot prove.
 
+`hotwire:check --preset=<name|path>` projects the same visual-slot inventory from the registry when validating a complete
+application preset. It does not use `styles.php`, Nova selectors or `PresetAxes` vocabulary as a completeness baseline.
+Generated selective bundles remain governed by `styles.php` module ownership and their recorded generation plan, so a
+deliberately omitted slot is valid in a bundle even though it would be an error in a complete preset.
+
 ### Controller
 
 ```php
