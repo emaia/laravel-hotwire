@@ -131,11 +131,12 @@ class LaravelHotwireServiceProvider extends ServiceProvider
             ?string $description = null,
             ?string $position = null,
             string $target = 'toaster',
+            ?int $duration = null,
         ) {
             /** @var TurboStreamBuilder $this */
             return $this->append($target, Blade::render(
-                '<x-hw::toast :type="$type" :message="$message" :description="$description" :position="$position" />',
-                compact('type', 'message', 'description', 'position'),
+                '<x-hw::toast :type="$type" :message="$message" :description="$description" :position="$position" :duration="$duration" />',
+                compact('type', 'message', 'description', 'position', 'duration'),
             ));
         });
     }
@@ -151,6 +152,7 @@ class LaravelHotwireServiceProvider extends ServiceProvider
             string $message,
             ?string $description = null,
             ?string $position = null,
+            ?int $duration = null,
         ) {
             /** @var RedirectResponse $this */
             return $this->with('toast', array_filter([
@@ -158,7 +160,8 @@ class LaravelHotwireServiceProvider extends ServiceProvider
                 'message' => $message,
                 'description' => $description,
                 'position' => $position,
-            ], fn (?string $value): bool => $value !== null));
+                'duration' => $duration,
+            ], fn (mixed $value): bool => $value !== null));
         });
     }
 

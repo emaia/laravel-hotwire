@@ -20,6 +20,8 @@ class Toast extends Component
 
     public ?string $finalPosition;
 
+    public ?int $finalDuration;
+
     public function __construct(
         public ?string $message = null,
         public ?string $description = null,
@@ -27,6 +29,7 @@ class Toast extends Component
         public ?string $position = null,
         public ?string $className = null,
         public ?Htmlable $stimulus = null,
+        public ?int $duration = null,
     ) {
         $message = $this->message !== null && trim($this->message) !== '' ? $this->message : null;
 
@@ -39,6 +42,7 @@ class Toast extends Component
         $this->finalMessage = $message ?? $flash['message'] ?? null;
         $this->finalDescription = $this->description ?? ($claims ? $flash['description'] ?? null : null);
         $this->finalPosition = $this->position ?? ($claims ? $flash['position'] ?? null : null);
+        $this->finalDuration = $this->duration ?? ($claims ? $flash['duration'] ?? null : null);
     }
 
     public function shouldRender(): bool

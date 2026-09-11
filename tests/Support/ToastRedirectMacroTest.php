@@ -42,6 +42,19 @@ it('forwards the optional description and position', function () {
     ]);
 });
 
+it('forwards a per-toast duration including zero', function () {
+    redirectResponse()->toast('error', 'Failed', duration: 0);
+
+    expect(session()->get('toast'))->toBe([
+        'type' => 'error',
+        'message' => 'Failed',
+        'duration' => 0,
+    ]);
+
+    $this->blade('<x-hw::toaster />')
+        ->assertSee('data-toast-duration-value="0"', false);
+});
+
 it('returns the redirect response so it stays chainable', function () {
     $response = redirectResponse();
 

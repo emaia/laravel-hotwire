@@ -18,6 +18,7 @@ behind `<hw:toast>`, and can be rendered directly when needed.
 | `description` | `String` | `null`      | Secondary text shown below the message                       |
 | `type`        | `String` | `"default"` | Toast type: `default`, `success`, `error`, `warning`, `info` |
 | `position`    | `String` | `""`        | Override the viewport position for this toast only           |
+| `duration`    | `Number` | —           | Override its duration in milliseconds; `0` keeps it visible  |
 | `class-name`  | `String` | `""`        | Extra classes applied to the rendered toast                  |
 
 Empty strings are treated as absent: `message` and `description` are omitted from the card rather than rendering a

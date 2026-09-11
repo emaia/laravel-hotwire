@@ -38,6 +38,14 @@ it('forwards the optional description and position', function () {
         ->toContain('data-toast-position-value="top-end"');
 });
 
+it('forwards a per-toast duration including zero', function () {
+    $html = turbo_stream()
+        ->toast('error', 'Failed', duration: 0)
+        ->toHtml();
+
+    expect($html)->toContain('data-toast-duration-value="0"');
+});
+
 it('omits the optional values when they are not given', function () {
     $html = turbo_stream()->toast('info', 'Heads up')->toHtml();
 

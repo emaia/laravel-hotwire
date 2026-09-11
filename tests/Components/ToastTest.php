@@ -43,6 +43,18 @@ it('does not render position attribute when not provided', function () {
     $view->assertDontSee('position-value', false);
 });
 
+it('renders a per-toast duration including zero', function () {
+    $view = $this->blade('<x-hw::toast message="Requires attention" type="error" :duration="0" />');
+
+    $view->assertSee('data-toast-duration-value="0"', false);
+});
+
+it('does not render duration when not provided', function () {
+    $view = $this->blade('<x-hw::toast message="Saved" type="success" />');
+
+    $view->assertDontSee('duration-value', false);
+});
+
 it('does not render when no message or session', function () {
     $component = new Toast;
 

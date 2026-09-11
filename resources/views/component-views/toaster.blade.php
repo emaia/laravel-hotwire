@@ -42,5 +42,6 @@
         :type="$flashType"
         :description="$flashDescription"
         :position="$flashPosition"
+        :duration="$flashDuration"
     />
 @endif

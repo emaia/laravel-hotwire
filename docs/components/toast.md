@@ -69,6 +69,7 @@ follow the document's writing direction, so a stack anchored to `-end` sits on t
 | `description` | `?string` | `null`  | Additional description shown below the message                                                 |
 | `type`        | `?string` | `null`  | Toast type: `success`, `error`, `warning`, `info`, `default`. If `null`, detected from session |
 | `position`    | `?string` | `null`  | Override the toaster position for this toast only: `top-start`, `top-center`, `top-end`, `bottom-start`, `bottom-center`, `bottom-end`. If `null`, uses the [`<hw:toaster />`](./toaster.md) default |
+| `duration`    | `?int`    | `null`  | Milliseconds before this toast dismisses itself; `0` keeps it until dismissed. If `null`, uses the toaster default |
 | `class-name`  | `?string` | `null`  | Extra classes applied to the rendered toast element |
 
 ### Supported session keys
@@ -111,6 +112,9 @@ return turbo_stream()->toast('warning', 'Session expires in 5 min', position: 't
 // append into a viewport with a custom id
 return turbo_stream()->toast('success', 'Saved!', target: 'my-toaster');
 
+// keep a destructive failure visible until it is dismissed
+return turbo_stream()->toast('error', 'Payment failed', duration: 0);
+
 // or chained with other streams
 return turbo_stream()
     ->refresh(method: 'morph')
@@ -125,6 +129,7 @@ return turbo_stream()
 | `$description`| `null`    | Secondary text                                                  |
 | `$position`   | `null`    | Overrides the viewport position for this toast                  |
 | `$target`     | `toaster` | Id of the viewport to append into — match your `<hw:toaster id>` |
+| `$duration`   | `null`    | Milliseconds before dismissal; `0` keeps the toast visible      |
 
 Empty strings are treated as absent, which matters when the values come straight from request input:
 
@@ -139,7 +144,7 @@ return turbo_stream()->toast(
 If your application already defines a `toast` macro, yours wins — the package only registers its own when the name
 is free.
 
-The same macro exists on `RedirectResponse`, with the same `type`, `message`, `description` and `position`, so a
+The same macro exists on `RedirectResponse`, with the same `type`, `message`, `description`, `position` and `duration`, so a
 controller that answers both a frame and a full redirect writes the call once per branch — see
 [Session flash](./toaster.md#session-flash).
 

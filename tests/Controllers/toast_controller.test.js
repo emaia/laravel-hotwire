@@ -160,6 +160,31 @@ test.serial("omits position when the value is an empty string", async () => {
     expect(calls[0].position).toBeUndefined();
 });
 
+test.serial("passes a per-toast duration including zero", async () => {
+    await mount(`
+        <div
+            data-controller="toast"
+            data-toast-message-value="Requires attention"
+            data-toast-type-value="error"
+            data-toast-duration-value="0"
+        ></div>
+    `);
+
+    expect(calls[0].duration).toBe(0);
+});
+
+test.serial("omits duration when not set", async () => {
+    await mount(`
+        <div
+            data-controller="toast"
+            data-toast-message-value="Saved"
+            data-toast-type-value="success"
+        ></div>
+    `);
+
+    expect(calls[0].duration).toBeUndefined();
+});
+
 test.serial("passes className when set", async () => {
     await mount(`
         <div

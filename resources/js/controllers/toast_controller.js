@@ -21,6 +21,7 @@ export default class extends Controller {
             type: String,
             default: "",
         },
+        duration: Number,
         className: {
             type: String,
             default: "",
@@ -39,6 +40,10 @@ export default class extends Controller {
 
         if (this.positionValue) {
             payload.position = this.positionValue;
+        }
+
+        if (this.hasDurationValue) {
+            payload.duration = this.durationValue;
         }
 
         if (this.hasClassNameValue && this.classNameValue) {

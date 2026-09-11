@@ -7,6 +7,7 @@
         'data-toast-type-value' => $finalType,
         'data-toast-description-value' => $finalDescription,
         'data-toast-position-value' => $finalPosition,
+        'data-toast-duration-value' => $finalDuration,
         'data-toast-class-name-value' => $className,
     ], $attributes, $stimulus, protectedPrefixes: ['data-toast-']);
 @endphp
