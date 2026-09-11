@@ -311,7 +311,9 @@ it('overwrites an existing preset with force', function () {
 
     $this->artisan('hotwire:make-preset brand --force --no-interaction')->assertSuccessful();
 
-    expect(File::get($this->targetDir.'/brand.css'))->toContain('@layer components');
+    expect(File::get($this->targetDir.'/brand.css'))
+        ->toContain('@layer components')
+        ->not->toContain('/* custom */');
 });
 
 it('validates the source before overwriting a preset', function () {

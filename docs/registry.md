@@ -86,18 +86,36 @@ consumer happens to appear first.
 Structural slots are containers, assistive nodes or geometry a controller stylesheet already owns; presets are not
 expected to style them, and `hotwire:make-preset` leaves them out of the scaffold.
 
+## Slots and controller targets
+
+`data-slot` names identifier-independent anatomy. Components, presets and registry queries use those names regardless of
+which Stimulus identifier controls an element. A `data-{identifier}-target` attribute is controller wiring: its name and
+scope belong to that specific controller instance. An element may carry both, but they are not interchangeable.
+
+Controllers should find and validate behavior through their targets or dedicated `data-{identifier}-*` markers. Presets
+should style declared slots and documented state rather than infer visual ownership from target names. Markers such
+as `data-tooltip-surface` and `data-toaster-card` identify runtime parts to JavaScript; they do not replace the
+corresponding family slots or make those parts controller-owned visual anatomy.
+
 The values a slot varies by are deliberately **not** declared here. `Support\PresetAxes` can report the attributes one
 stylesheet happens to differentiate, but that output is lexical diagnostic metadata rather than the public value
 vocabulary or a conformance contract. A base rule may cover every value, and several values may intentionally share an
 appearance.
 
-It reads every attribute a rule matches on, not only the `data-` ones — `aria-expanded`, `aria-invalid`, `type` and the
-`open` an Accordion `<details>` carries are axes too, whether they are written in the selector or as a Tailwind variant
-inside the rule. Pseudo-class states (`hover:`, `disabled:`, `focus-visible:`) are not attributes and stay out.
+The extractor recognizes literal equality and valueless attributes written after the slot selector in the same compound,
+including `aria-expanded`, `aria-invalid`, `type` and the `open` an Accordion `<details>` carries. Attribute order is
+therefore another lexical limit rather than a semantic rule. A nested rule that names no slot of its own, such as
+`&[data-variant="ghost"]`, is read against the slot it refines. It also recognizes selected unprefixed Tailwind
+`data-*` and `aria-*` variants inside a rule. It intentionally leaves out operator selectors such as `[class*="size-"]`,
+pseudo-class states (`hover:`, `disabled:`, `focus-visible:`), negated variants and relational variants such as
+`group-*`, `peer-*`, `has-*` or arbitrary descendant selectors.
 
 A value belongs to the slot in whose compound it is written, so `[data-slot="sidebar"][data-collapsible="icon"]
 [data-slot="sidebar-content"]` reports the attribute on `sidebar`. This remains useful when inspecting a stylesheet,
 but official presets are not required to expose identical lexical axes.
+
+`PresetAxes::coverage()` reports parser coverage: whether the scanner visited every `data-slot` occurrence it counted.
+It does not prove semantic coverage, state support, accessibility or compatibility with the component contract.
 
 `Support\PresetSkeleton` does not use `PresetAxes` or parse an official preset. It emits one empty base rule for each
 visual slot projected by the registry. Ancestor state, equivalent selectors and Tailwind variants remain authoring

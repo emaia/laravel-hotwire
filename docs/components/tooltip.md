@@ -31,8 +31,10 @@ Use Blade composition for rich text. Content is descriptive only; use Popover fo
 ```
 
 Button and Color Scheme Toggle expose a `tooltip` string prop that mounts this same template internally. Sidebar Menu
-Button also exposes `tooltip`; by default, it enables the clone only while an icon rail is collapsed on desktop and the
-mobile Sidebar is closed. Its `tooltip-enabled-when` prop can replace or remove that condition.
+Button also exposes `tooltip`. These convenience strings are escaped and rendered as text; use an explicit
+`<hw:tooltip>` child for rich Blade content rather than putting HTML in an attribute. By default, Sidebar enables the
+clone only while an icon rail is collapsed on desktop and the mobile Sidebar is closed. Its `tooltip-enabled-when` prop
+can replace or remove that condition.
 
 Attributes on `<hw:tooltip>` are copied to the portaled surface. This is useful for an application class, `dir`, or an
 explicit `data-theme`. A local theme or direction inherited only from the trigger's ancestors does not follow a clone

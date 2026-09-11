@@ -6,7 +6,7 @@ accessibility behavior. It does not propose shipping eight presets or reproducin
 
 ## References and method
 
-- Laravel Hotwire reference: `773f585114c08752531d482a3ba93641a11eff81`
+- Laravel Hotwire architecture baseline: `457be7607b431208eccbdcc5c77abb99cf5d2ffe`
 - shadcn/ui reference: [`3ba91b1cc83e1bbe4ab35a422ff2a694849c5048`](https://github.com/shadcn-ui/ui/tree/3ba91b1cc83e1bbe4ab35a422ff2a694849c5048)
 - Visual corpus: `apps/v4/registry/styles/style-{vega,nova,maia,lyra,mira,luma,sera,rhea}.css`
 - Curated descriptions: `apps/v4/registry/styles.tsx`
@@ -68,26 +68,26 @@ fixture CSS. Tooltip is eligible for the same semantic tree but is not yet rende
 
 ## Findings by family
 
-| Family or concern                    | Classification             | Decision                                                                                              | Destination                                |
-| ------------------------------------ | -------------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------ |
-| Button                               | CSS-only                   | Existing `button`, `data-variant` and `data-size` cover all eight styles                              | Preset CSS                                 |
-| Card                                 | CSS-only                   | Root/header/title/description/action/content/footer and size are sufficient                           | Family migration and preset CSS            |
-| Input and Textarea                   | CSS-only                   | Compact, underlined and soft-filled treatments need no DOM change                                     | Preset CSS                                 |
-| Select size                          | Possible public axis       | Personality-wide control size is CSS; add a size prop only for an application-level semantic need     | Deferred, not a blocker                    |
-| Field Group outline                  | Possible public axis       | One upstream composition does not justify a package axis                                              | Omit until a package use case exists       |
-| Alert                                | CSS-only                   | `alert`, title, description, action and variant cover all visual personalities                        | Keep the pilot contract                    |
-| Alert icon authorship                | Composition API            | `alert.icon` owns layout while packaged and third-party icons provide the graphic                      | Alert family                               |
-| Item                                 | CSS-only                   | Existing media, content and size/variant axes are sufficient                                          | Family migration; verify separator spacing |
-| Input Group button/text              | Possible semantic parts    | Add only if concrete package compositions cannot be expressed by addon plus existing controls         | Family migration decision                  |
-| Alert Dialog media/size              | Possible part and axis     | Useful upstream semantics, but not required to express current package behavior                       | Overlay-family review                      |
-| Modal, Sheet and floating surfaces   | CSS-only                   | Existing panel/content parts and state/side attributes cover appearance                               | Preset CSS                                 |
-| Drawer swipe/nesting                 | Runtime-specific           | Vaul swipe variables and nested drawer behavior are not visual preset requirements                    | Do not port without behavior               |
-| Tooltip component anatomy            | Semantic parts             | `Tooltip::SLOTS` owns package-styled surface and arrow slots while the trigger controller owns lifecycle | Tooltip family and final QA                |
-| Toaster anatomy                      | Semantic parts             | `Toaster::SLOTS` owns the internal card template while JavaScript preserves state/lifecycle contracts  | Toaster family and final QA                  |
-| Overlay strength and blur            | Preset-local CSS           | `--backdrop` already provides the color hook; blur and elevation can remain internal preset variables | Bloom/preset CSS                           |
-| Heading typography                   | Shared token candidate     | `--font-heading` is useful across Card, Alert, overlays and editorial recipes                         | Bloom/theming review                       |
-| Logical floating sides               | Possible behavior API      | Current resolved physical `data-side` output is sufficient for visual presets                         | Independent Floating UI API review         |
-| Upstream questionnaire/custom Select | React/application-specific | Not part of the package semantic contract                                                             | Do not port                                |
+| Family or concern                    | Classification             | Decision                                                                                                   | Destination                                |
+| ------------------------------------ | -------------------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| Button                               | CSS-only                   | Existing `button`, `data-variant` and `data-size` cover all eight styles                                   | Preset CSS                                 |
+| Card                                 | CSS-only                   | Root/header/title/description/action/content/footer and size are sufficient                                | Implemented family contract and preset CSS |
+| Input and Textarea                   | CSS-only                   | Compact, underlined and soft-filled treatments need no DOM change                                          | Preset CSS                                 |
+| Select size                          | Possible public axis       | Personality-wide control size is CSS; add a size prop only for an application-level semantic need          | Deferred, not a blocker                    |
+| Field Group outline                  | Possible public axis       | One upstream composition does not justify a package axis                                                   | Omit until a package use case exists       |
+| Alert                                | CSS-only                   | `alert`, title, description, action and variant cover all visual personalities                             | Implemented family contract                |
+| Alert icon authorship                | Composition API            | `alert.icon` owns layout while packaged and third-party icons provide the graphic                          | Implemented Alert part                     |
+| Item                                 | CSS-only                   | Existing media, content and size/variant axes are sufficient                                               | Implemented; retain in final QA            |
+| Input Group button/text              | Low-level composition      | Existing components cover package controls; custom controls retain the explicit `input-group-control` hook | Documented escape hatch                    |
+| Alert Dialog media/size              | Possible part and axis     | Useful upstream semantics, but not required to express current package behavior                            | Overlay-family review                      |
+| Modal, Sheet and floating surfaces   | CSS-only                   | Existing panel/content parts and state/side attributes cover appearance                                    | Preset CSS                                 |
+| Drawer swipe/nesting                 | Runtime-specific           | Vaul swipe variables and nested drawer behavior are not visual preset requirements                         | Do not port without behavior               |
+| Tooltip component anatomy            | Semantic parts             | `Tooltip::SLOTS` owns package-styled surface and arrow slots while the trigger controller owns lifecycle   | Implemented; retain in final QA            |
+| Toaster anatomy                      | Semantic parts             | `Toaster::SLOTS` owns the internal card template while JavaScript preserves state/lifecycle contracts      | Implemented; retain in final QA            |
+| Overlay strength and blur            | Preset-local CSS           | `--backdrop` already provides the color hook; blur and elevation can remain internal preset variables      | Bloom/preset CSS                           |
+| Heading typography                   | Shared token candidate     | `--font-heading` is useful across Card, Alert, overlays and editorial recipes                              | Bloom/theming review                       |
+| Logical floating sides               | Possible behavior API      | Current resolved physical `data-side` output is sufficient for visual presets                              | Independent Floating UI API review         |
+| Upstream questionnaire/custom Select | React/application-specific | Not part of the package semantic contract                                                                  | Do not port                                |
 
 The corpus found no preset-expressiveness blocker in the Alert contract. Sera's accent remains a pseudo-element and
 destructive treatment remains a variant. The later authoring review added `alert.icon` so the family owns icon layout
@@ -95,13 +95,14 @@ without requiring third-party graphics to emit the generic Icon slot.
 
 ## Recommended preset conformance policy
 
-This section records the policy applied by package tooling and targeted by the future external validator. Blank
+This section records the policy applied by package tooling and intended for the future external validator. Blank
 scaffolds now come from registry visual slots, and official preset coverage no longer requires lexical axis equality.
 
 The catalog's visual slots should be the preset-neutral API. `PresetAxes` is a diagnostic description of attributes a
 particular stylesheet differentiates; it cannot prove semantic support by itself.
 
-Under the target policy, a complete official or application preset is valid when it:
+Package CI applies this policy to official presets. An application preset can use the same acceptance criteria, though
+the package does not yet provide an external validator:
 
 1. Imports the shared token, custom-variant and structural foundations exactly as required.
 2. Compiles without unresolved Tailwind directives.

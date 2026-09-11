@@ -336,7 +336,9 @@ The preset styles all parts through semantic hooks:
 - `data-slot="sidebar-gap"`
 - `data-slot="sidebar-container"`
 - `data-slot="sidebar-inner"`
-- `data-state="expanded|collapsed"`
-- `data-collapsible="offcanvas|icon|none"`
+- `data-state="expanded|collapsed"` on the provider and collapsible Sidebar
+- `data-mobile-state="open|closed"` on the collapsible Sidebar
+- `data-sidebar-collapsible="offcanvas|icon"` for the configured collapsible mode
+- `data-collapsible=""` while expanded, `offcanvas|icon` while collapsed, or `none` on a static Sidebar
 - `data-side="left|right"`
 - `data-variant="sidebar|floating|inset"`

@@ -39,9 +39,16 @@ so an open nested overlay does not visually reopen its parent.
 ## Choosing the workflow
 
 - Override only colors/radius: change semantic tokens after the preset import.
-- Change the full component visual system: `php artisan hotwire:make-preset brand --from=nova`.
+- Start a visual system without inheriting Nova, with empty base rules as an anatomy checklist:
+  `php artisan hotwire:make-preset brand`.
+- Customize Nova's complete selector structure: `php artisan hotwire:make-preset brand --from=nova`.
 - Ship only selected modules: `php artisan hotwire:styles` and regenerate after changing the selection or upgrading.
 - Include Stream/JavaScript-only modules explicitly with `--include`.
+
+Scaffolds and clones are application-owned snapshots. Compare a fresh temporary output on package upgrades and merge
+relevant slot, foundation and contract changes manually. `--force` replaces the target; it does not merge. Keep package
+foundation imports and compile and smoke-test the result. `hotwire:check` does not validate a local preset once
+importing it opts the application out of missing-module diagnostics.
 
 Never edit generated selective bundles. Regenerate them from the command and keep custom rules in separate application
 stylesheets.

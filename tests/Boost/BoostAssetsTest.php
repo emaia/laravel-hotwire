@@ -190,6 +190,21 @@ it('documents explicit parts and low-level slot escapes for custom composed elem
         ->and($item)->toContain('a direct SVG child of `item-media`');
 });
 
+it('keeps custom preset guidance neutral and explicit about application ownership', function () {
+    $skill = renderBoostAsset(boostAssetsPath('skills/laravel-hotwire-ui-development/SKILL.blade.php'));
+    $styling = File::get(boostAssetsPath('skills/laravel-hotwire-ui-development/references/styling.md'));
+
+    expect($skill)
+        ->toMatch('/php artisan hotwire:make-preset brand\R```/')
+        ->toContain('empty base rules')
+        ->toContain('application-owned snapshot')
+        ->and($styling)
+        ->toContain('Start a visual system without inheriting Nova')
+        ->toContain('empty base rules')
+        ->toContain('does not merge')
+        ->toContain('does not validate a local preset');
+});
+
 it('documents Reveal stream target and shared-template boundaries', function () {
     $documentation = File::get(__DIR__.'/../../docs/controllers/reveal.md');
 

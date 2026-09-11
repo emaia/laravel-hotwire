@@ -126,11 +126,18 @@ private visual sources are flattened in canonical order. It never leaves imports
 Both scaffold and clone are snapshots. The vendor files referenced by their existing foundation imports continue to
 update, but copied visual rules and newly introduced foundation imports do not. Review upgrade notes and merge relevant
 changes manually; generating under a temporary name is a safe comparison workflow. `--force` replaces any existing
-target file, including application customizations, so use it only when replacement is intentional. The command never
-edits `resources/css/app.css`, leaving application styles and import ordering under your control.
+target file, including application customizations; it does not merge or patch the existing CSS. Use it only when
+replacement is intentional. The command never edits `resources/css/app.css`, leaving application styles and import
+ordering under your control.
 
 A `--from` clone preserves the source preset's rule order, which is worth keeping. Between equal-specificity rules in
 the same layer, the later one wins; reordering a clone can therefore change which declaration applies.
+
+A visual preset is CSS over the package's shared semantic tree. It does not require application PHP and does not require
+publishing package views. Publishing or overriding a component template is instead an application-owned fork of markup
+and behavior: the application must track package changes and preserve the documented slots, targets, lifecycle and
+accessibility relationships itself. Use that boundary only when the semantic component contract, rather than its visual
+treatment, must change.
 
 ### A note on IDE warnings
 
@@ -140,6 +147,30 @@ PhpStorm reports hundreds of `'x' applies the same CSS properties as 'y'` warnin
 reads a conditional utility as an unconditional declaration and sees a duplicate where there is none. Nova alone carries
 552 variant-prefixed utilities. Rewriting each state as its own rule to silence the inspection would multiply the file
 for no gain.
+
+## Maintain an application preset
+
+An application-owned scaffold or clone should record the Laravel Hotwire Composer versions it supports. On every
+package upgrade that carries preset or markup notes:
+
+1. Read the release's [upgrade notes](upgrade.md) and identify changed slots, DOM relationships, states, native/ARIA
+   attributes, public custom properties and structural rules.
+2. Generate a fresh scaffold or clone under a temporary name and compare it with the maintained preset. Adopt new visual
+   slots and new foundation imports deliberately; do not overwrite the maintained file to discover changes.
+3. Keep the package `tokens.css`, `custom-variants.css` and `structural.css` foundations in canonical order. Preserve
+   the clone's visual source order unless a cascade change is intentional.
+4. Implement the documented contract with selectors appropriate to the preset. Do not copy Nova's lexical axes merely
+   to obtain parity: base rules, grouped values and equivalent selector organizations are valid.
+5. Compile the complete preset and exercise its real components in default, interactive, invalid and disabled states.
+   The [contrast fixture](preset-expressiveness.md#executable-contrast-fixture) renders one semantic tree across
+   several personalities and is a reusable starting point for that pass.
+6. Verify keyboard and screen-reader behavior, light and dark themes, left-to-right and right-to-left direction, reduced
+   motion, forced colors, floating surfaces and nested overlays where applicable.
+
+`hotwire:check` does not validate a local preset's visual completeness once the application imports that preset. It
+checks package dependencies, published controllers and generated-bundle plans; compatibility of application CSS remains
+an application test responsibility. Selective `hotwire:styles` bundles are different: regenerate them instead of merging
+changes because their recorded plan is their source of truth.
 
 ## Structural and visual CSS
 

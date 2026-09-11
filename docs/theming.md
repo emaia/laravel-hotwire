@@ -8,9 +8,9 @@ Laravel Hotwire ships a Tailwind v4 token layer using semantic CSS custom proper
 `data-slot` attributes; presets consume tokens like `bg-background`, `text-foreground`, `border-border` to style those
 slots.
 
-Use [`presets.md`](presets.md) and `php artisan hotwire:make-preset` when you want to change component structure,
-spacing, radius or variants. Use this guide when you want to change colors/radius tokens while keeping the selected
-preset.
+Use [`presets.md`](presets.md) and `php artisan hotwire:make-preset` when you want to change the visual system's
+spacing, geometry, motion or variant treatment. Presets keep the component's Blade markup, behavior and accessibility
+contract; use this guide when you only want to change colors or radius tokens while keeping the selected preset.
 
 ## Token reference
 
