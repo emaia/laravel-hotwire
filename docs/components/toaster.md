@@ -45,8 +45,8 @@ return to_route('tasks.show', $task)
     ->toast('success', 'Task updated', 'Your changes are now live.');
 ```
 
-The `toast()` macro takes the same arguments as [its Turbo Stream twin](./toast.md#the-toast-stream-macro) —
-`type`, `message`, and the optional `description` and `position` — so both branches of a controller read alike:
+The `toast()` macro takes the same notification arguments as [its Turbo Stream twin](./toast.md#the-toast-stream-macro) —
+`type`, `message`, and the optional `description`, `position` and `duration` — so both branches of a controller read alike:
 
 ```php
 if ($request->wasFromTurboFrame('modal')) {
@@ -60,7 +60,7 @@ Laravel's conventional flash keys work too, and need no macro:
 
 | Session key | Toast type | Message                                     |
 |-------------|------------|---------------------------------------------|
-| `toast`     | from payload | `['type' => …, 'message' => …, 'description' => …, 'position' => …]`, or a bare string |
+| `toast`     | from payload | `['type' => …, 'message' => …, 'description' => …, 'position' => …, 'duration' => …]`, or a bare string |
 | `success`   | `success`  | The flashed string                          |
 | `error`     | `error`    | The flashed string                          |
 | `errors`    | `error`    | The first message in the `MessageBag`       |

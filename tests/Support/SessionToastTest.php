@@ -19,6 +19,7 @@ it('resolves the success key', function () {
         'message' => 'Item created',
         'description' => null,
         'position' => null,
+        'duration' => null,
     ]);
 });
 
@@ -83,6 +84,7 @@ it('resolves a structured payload', function () {
         'message' => 'Task updated',
         'description' => 'Your changes are now live.',
         'position' => 'top-center',
+        'duration' => 0,
     ]);
 
     expect(sessionToast()->resolve())->toBe([
@@ -90,6 +92,7 @@ it('resolves a structured payload', function () {
         'message' => 'Task updated',
         'description' => 'Your changes are now live.',
         'position' => 'top-center',
+        'duration' => 0,
     ]);
 });
 

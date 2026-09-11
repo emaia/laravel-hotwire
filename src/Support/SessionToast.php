@@ -21,7 +21,7 @@ class SessionToast
     /**
      * Read the flashed toast without claiming it.
      *
-     * @return array{type: string, message: string, description: ?string, position: ?string}|null
+     * @return array{type: string, message: string, description: ?string, position: ?string, duration: ?int}|null
      */
     public function resolve(): ?array
     {
@@ -31,7 +31,7 @@ class SessionToast
     /**
      * Claim the flashed toast; every later call returns null so it renders exactly once.
      *
-     * @return array{type: string, message: string, description: ?string, position: ?string}|null
+     * @return array{type: string, message: string, description: ?string, position: ?string, duration: ?int}|null
      */
     public function consume(): ?array
     {
@@ -44,7 +44,7 @@ class SessionToast
         return $toast;
     }
 
-    /** @return array{type: string, message: string, description: ?string, position: ?string}|null */
+    /** @return array{type: string, message: string, description: ?string, position: ?string, duration: ?int}|null */
     private function structured(): ?array
     {
         $payload = Session::get('toast');
@@ -62,10 +62,11 @@ class SessionToast
             'message' => $message,
             'description' => $this->text($payload['description'] ?? null),
             'position' => $this->text($payload['position'] ?? null),
+            'duration' => is_int($payload['duration'] ?? null) ? $payload['duration'] : null,
         ];
     }
 
-    /** @return array{type: string, message: string, description: ?string, position: ?string}|null */
+    /** @return array{type: string, message: string, description: ?string, position: ?string, duration: ?int}|null */
     private function simple(): ?array
     {
         foreach (self::KEYS as $key => $type) {
@@ -77,6 +78,7 @@ class SessionToast
                     'message' => $text,
                     'description' => null,
                     'position' => null,
+                    'duration' => null,
                 ];
             }
         }

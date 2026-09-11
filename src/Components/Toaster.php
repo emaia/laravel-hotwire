@@ -27,6 +27,8 @@ class Toaster extends Component
 
     public ?string $flashPosition = null;
 
+    public ?int $flashDuration = null;
+
     public function __construct(
         public string $id = 'toaster',
         public string $position = 'bottom-center',
@@ -53,6 +55,7 @@ class Toaster extends Component
         $this->flashType = $toast['type'] ?? null;
         $this->flashDescription = $toast['description'] ?? null;
         $this->flashPosition = $toast['position'] ?? null;
+        $this->flashDuration = $toast['duration'] ?? null;
     }
 
     public function render()
