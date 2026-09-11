@@ -112,6 +112,18 @@ describe("public CSS presets", () => {
         expect(css).toMatch(carouselMechanic);
     });
 
+    test("carries the Textarea counter slot through presets and application scaffolds", () => {
+        for (const css of Object.values(contract.outputs.presets)) {
+            expect(css).toMatch(slotSelector("textarea-counter"));
+        }
+
+        for (const source of Object.values(contract.sources.clones)) {
+            expect(source).toMatch(slotSelector("textarea-counter"));
+        }
+
+        expect(contract.sources.blankScaffold).toMatch(/\[data-slot="textarea-counter"\] \{\}/);
+    });
+
     test("compiles shared forced-colors and print control fallbacks into every bundle", () => {
         for (const css of [
             ...Object.values(contract.outputs.presets),

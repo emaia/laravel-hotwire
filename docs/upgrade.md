@@ -6,6 +6,19 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 
 ## Unreleased
 
+### Textarea counter uses a collision-free named slot
+
+The Textarea counter example now uses `<x-slot:counter-slot>` instead of `<x-slot:counter>`. The old name shadows the
+integer `counter` prop in Blade, which can serialize slot markup into `maxlength` and make the browser expose
+`maxLength === -1`. Replace the old named slot directly; this pre-1.0 correction deliberately has no compatibility
+alias. The internal Blade variable remains `$counterSlot`. The corrected named slot also requires the `counter` prop;
+omitting it now raises an exception instead of silently discarding the slot content.
+
+Default and customized counters now share the package-owned `data-slot="textarea-counter"` wrapper. Add that visual
+slot to maintained application presets; `hotwire:check` reports it when missing. Presets cloned or scaffolded after this
+change include the new hook automatically. The wrapper remains a `<small>`, so customized slot content must be phrasing
+content. Named-slot attributes are merged onto that element when per-instance classes or attributes are needed.
+
 ### Side Panel and Read More expose motion timing
 
 Side Panel and Read More now read transition duration and easing from public custom properties on their visual roots.

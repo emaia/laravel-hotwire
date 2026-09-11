@@ -49,6 +49,13 @@ it('displays docs for a component', function () {
         ->assertSuccessful();
 });
 
+it('documents the Textarea counter slot without colliding with its counter prop', function () {
+    $this->artisan('hotwire:docs textarea --component')
+        ->expectsOutputToContain('<x-slot:counter-slot')
+        ->doesntExpectOutputToContain('<x-slot:counter>')
+        ->assertSuccessful();
+});
+
 it('displays the permanent hw alias with a configured component prefix', function () {
     config()->set('hotwire.prefix', 'ui');
 

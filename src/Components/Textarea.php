@@ -10,6 +10,8 @@ use Emaia\LaravelHotwire\Support\FieldKey;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\ViewErrorBag;
 use Illuminate\View\ComponentAttributeBag;
+use Illuminate\View\ComponentSlot;
+use InvalidArgumentException;
 
 class Textarea extends Component
 {
@@ -18,6 +20,7 @@ class Textarea extends Component
     public const array SLOTS = [
         'wrapper' => ['name' => 'textarea-wrapper', 'kind' => 'visual'],
         'root' => ['name' => 'textarea', 'kind' => 'visual'],
+        'counter' => ['name' => 'textarea-counter', 'kind' => 'visual'],
     ];
 
     public function __construct(
@@ -41,6 +44,7 @@ class Textarea extends Component
         return view('hotwire::component-views.textarea', [
             'wrapperSlotName' => self::SLOTS['wrapper']['name'],
             'slotName' => self::SLOTS['root']['name'],
+            'counterSlotName' => self::SLOTS['counter']['name'],
         ]);
     }
 
@@ -54,8 +58,24 @@ class Textarea extends Component
             AutoSubmit::enabled($this->autoSubmit) ? 'data-auto-submit-' : null,
         ]));
         $data['compute'] = $this->computeResolved(...);
+        $data['guardCounter'] = $this->guardCounter(...);
 
         return $this->stripNullProps($data, ['name', 'id', 'errorKey']);
+    }
+
+    private function guardCounter(mixed $counter, ?ComponentSlot $counterSlot): ?int
+    {
+        if ($counter !== null && ! is_int($counter)) {
+            throw new InvalidArgumentException(
+                'Textarea [counter] must be an integer or null. Use <x-slot:counter-slot> to customize counter content.'
+            );
+        }
+
+        if ($counterSlot !== null && $counter === null) {
+            throw new InvalidArgumentException('Textarea [counter-slot] requires the [counter] prop.');
+        }
+
+        return $counter;
     }
 
     /**

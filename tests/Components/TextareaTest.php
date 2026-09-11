@@ -2,6 +2,7 @@
 
 use Illuminate\Support\MessageBag;
 use Illuminate\Support\ViewErrorBag;
+use Illuminate\View\ViewException;
 
 function shareTextareaErrors(array $errorsByKey): void
 {
@@ -194,6 +195,7 @@ it('renders Textarea family anatomy with conditional wrapper', function () {
     expect($matches[1])->toBe([
         'textarea-wrapper',
         'textarea',
+        'textarea-counter',
     ]);
 });
 
@@ -227,19 +229,47 @@ it('does not render wrapper when no counter', function () {
     expect($matches[1])->toBe(['textarea']);
 });
 
-it('renders custom counter slot content', function () {
+it('renders counter-slot content without replacing the counter prop', function () {
     $view = $this->blade('
         <x-hw::textarea name="bio" :counter="160">
-            <x-slot:counterSlot>
-                <span class="custom-counter">custom</span>
-            </x-slot:counterSlot>
+            <x-slot:counter-slot class="custom-counter" data-slot="hack" aria-live="off">
+                <span data-char-counter-target="counter">custom</span>
+            </x-slot:counter-slot>
         </x-hw::textarea>
     ');
+    $html = (string) $view;
 
     $view->assertSee('custom-counter', false);
     $view->assertSee('>custom</span>', false);
-    $view->assertDontSee('data-char-counter-target="counter"', false);
+    $view->assertSee('maxlength="160"', false);
+    $view->assertSee('data-slot="textarea-counter"', false);
+    $view->assertSee('data-char-counter-target="counter"', false);
+
+    expect($html)
+        ->toMatch('/<small\b(?=[^>]*data-slot="textarea-counter")(?=[^>]*aria-live="polite")(?=[^>]*class="custom-counter")[^>]*>/')
+        ->not->toContain('data-slot="hack"')
+        ->not->toContain('aria-live="off"');
 });
+
+it('rejects counter-slot when the counter prop is absent', function () {
+    $this->blade('
+        <x-hw::textarea name="bio">
+            <x-slot:counter-slot>
+                <span data-char-counter-target="counter">custom</span>
+            </x-slot:counter-slot>
+        </x-hw::textarea>
+    ');
+})->throws(ViewException::class, 'Textarea [counter-slot] requires the [counter] prop.');
+
+it('rejects the counter named slot before it can corrupt maxlength', function () {
+    $this->blade('
+        <x-hw::textarea name="bio" :counter="160">
+            <x-slot:counter>
+                <span data-char-counter-target="counter">custom</span>
+            </x-slot:counter>
+        </x-hw::textarea>
+    ');
+})->throws(ViewException::class, 'Use <x-slot:counter-slot> to customize counter content.');
 
 // --- Combination ---
 

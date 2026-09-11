@@ -45,6 +45,15 @@ it('includes every component-owned Toaster card slot', function () {
         ->not->toContain('[data-slot="modal-panel"]');
 });
 
+it('includes the complete Textarea visual contract', function () {
+    $this->artisan('hotwire:styles --components=textarea --no-interaction')->assertSuccessful();
+
+    expect(File::get($this->output))
+        ->toContain('[data-slot="textarea-wrapper"]')
+        ->toContain('[data-slot="textarea"]')
+        ->toContain('[data-slot="textarea-counter"]');
+});
+
 it('includes Tooltip visuals and shared dependencies for component integrations', function (string $component) {
     $this->artisan("hotwire:styles --components={$component} --no-interaction")->assertSuccessful();
 

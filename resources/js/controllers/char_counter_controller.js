@@ -10,6 +10,13 @@ export default class extends Controller {
     }
 
     connect() {
+        if (!this.hasCounterTarget) {
+            console.warn(
+                '[char-counter] Missing data-char-counter-target="counter"; counter output will remain static until the target is available.',
+                this.element,
+            );
+        }
+
         this.update();
         this.inputTarget.addEventListener("input", this.update);
         document.addEventListener("turbo:render", this.update);
@@ -21,6 +28,8 @@ export default class extends Controller {
     }
 
     update() {
+        if (!this.hasCounterTarget) return;
+
         this.counterTarget.innerHTML = this.count.toLocaleString();
     }
 

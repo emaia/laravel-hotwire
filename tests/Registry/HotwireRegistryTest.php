@@ -295,11 +295,13 @@ it('projects the Textarea family slot contract from its component class', functi
     expect(Textarea::SLOTS)->toBe([
         'wrapper' => ['name' => 'textarea-wrapper', 'kind' => 'visual'],
         'root' => ['name' => 'textarea', 'kind' => 'visual'],
+        'counter' => ['name' => 'textarea-counter', 'kind' => 'visual'],
     ])->and($catalog['components']['textarea']['styling']['slots'])->toBe([
         ['class' => Textarea::class],
     ])->and(HotwireRegistry::make()->component('textarea')->styling->slots)->toBe([
         'textarea-wrapper' => 'visual',
         'textarea' => 'visual',
+        'textarea-counter' => 'visual',
     ]);
 });
 
