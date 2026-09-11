@@ -8,8 +8,8 @@ use Illuminate\Foundation\Application;
 
 require dirname(__DIR__).'/vendor/autoload.php';
 
-if ($argc < 4) {
-    fwrite(STDERR, "Usage: php scripts/run_make_preset_fixture.php <app-base> <name> <source>\n");
+if ($argc < 3) {
+    fwrite(STDERR, "Usage: php scripts/run_make_preset_fixture.php <app-base> <name> [source]\n");
     exit(2);
 }
 
@@ -37,12 +37,17 @@ try {
     $app = $testCase->boot();
     $app->setBasePath($appBase);
     $kernel = $app->make(Kernel::class);
-    $status = $kernel->call('hotwire:make-preset', [
+    $arguments = [
         'name' => $argv[2],
-        '--from' => $argv[3],
         '--force' => true,
         '--no-interaction' => true,
-    ]);
+    ];
+
+    if (isset($argv[3])) {
+        $arguments['--from'] = $argv[3];
+    }
+
+    $status = $kernel->call('hotwire:make-preset', $arguments);
 
     fwrite($status === 0 ? STDOUT : STDERR, $kernel->output());
 } catch (Throwable $exception) {

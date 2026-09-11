@@ -90,14 +90,15 @@ async function generateSelectiveBundle(directory, output) {
     }
 }
 
-async function generatePresetClone(directory, name, source) {
-    const { exitCode, stdout, stderr } = await spawnCommand(
-        [globalThis.process.env.PHP_BINARY ?? "php", makePresetFixtureScript, directory, name, source],
-        root,
-    );
+async function generatePreset(directory, name, source = null) {
+    const command = [globalThis.process.env.PHP_BINARY ?? "php", makePresetFixtureScript, directory, name];
+
+    if (source !== null) command.push(source);
+
+    const { exitCode, stdout, stderr } = await spawnCommand(command, root);
 
     if (exitCode !== 0) {
-        throw new Error(`Preset clone generation failed (exit ${exitCode}).\n${stderr || stdout}`);
+        throw new Error(`Preset generation failed (exit ${exitCode}).\n${stderr || stdout}`);
     }
 }
 
@@ -264,8 +265,17 @@ export async function buildCssContract() {
     let novaCloneSource = null;
     const novaClone = await compileCssFixture(packageSourceEntrypoint(`./presets/${cloneName}.css`), {
         setup: async (directory) => {
-            await generatePresetClone(directory, cloneName, "nova");
+            await generatePreset(directory, cloneName, "nova");
             novaCloneSource = await readFile(join(directory, clonePath), "utf8");
+        },
+    });
+    const scaffoldName = "blank";
+    const scaffoldPath = `resources/css/presets/${scaffoldName}.css`;
+    let blankScaffoldSource = null;
+    const blankScaffold = await compileCssFixture(packageSourceEntrypoint(`./presets/${scaffoldName}.css`), {
+        setup: async (directory) => {
+            await generatePreset(directory, scaffoldName);
+            blankScaffoldSource = await readFile(join(directory, scaffoldPath), "utf8");
         },
     });
     const [tailwindPackage, cliPackage] = await Promise.all([
@@ -278,10 +288,12 @@ export async function buildCssContract() {
             presets: presetOutputs,
             selective,
             novaClone,
+            blankScaffold,
         },
         sources: {
             selective: selectiveSource,
             novaClone: novaCloneSource,
+            blankScaffold: blankScaffoldSource,
         },
         measurements: {
             toolchain: {
