@@ -212,6 +212,7 @@ it('keeps Carousel geometry in the structural stylesheet', function () {
 
 it('keeps Read More first-paint geometry in the structural stylesheet', function () {
     $css = File::get(__DIR__.'/../../resources/css/structural.css');
+    $visual = File::get(__DIR__.'/../../resources/css/presets/nova/read-more.css');
 
     expect($css)
         ->toContain('[data-slot="read-more-content"]')
@@ -224,11 +225,30 @@ it('keeps Read More first-paint geometry in the structural stylesheet', function
         ->toContain('[data-state="expanded"]:not([data-transitioning])')
         ->toContain('overflow: hidden')
         ->toContain('overflow: visible')
-        ->toContain('var(--read-more-collapsed-height, 20rem)');
+        ->toContain('var(--read-more-collapsed-height, 20rem)')
+        ->toContain('transition: max-block-size var(--read-more-motion-duration, 500ms) var(--read-more-motion-easing, ease-in-out)')
+        ->toContain(<<<'CSS'
+            [data-slot="read-more"][data-transitioning][data-pinning] > [data-slot="read-more-viewport"] {
+                max-block-size: var(--read-more-pinned-height);
+                overflow: hidden;
+                transition: none !important;
+            }
+            CSS)
+        ->toContain(<<<'CSS'
+            @media (prefers-reduced-motion: reduce) {
+                [data-slot="read-more-viewport"] {
+                    transition: none !important;
+                }
+            }
+            CSS)
+        ->and($visual)
+        ->toContain('--read-more-motion-duration: 500ms')
+        ->toContain('--read-more-motion-easing: ease-in-out');
 });
 
 it('keeps Side Panel collapse mechanics in the structural stylesheet', function () {
     $css = File::get(__DIR__.'/../../resources/css/structural.css');
+    $visual = File::get(__DIR__.'/../../resources/css/presets/nova/side-panel.css');
 
     expect($css)
         ->toContain('[data-slot="side-panel"]')
@@ -243,7 +263,15 @@ it('keeps Side Panel collapse mechanics in the structural stylesheet', function 
         ->toContain('--side-panel-rail-position: var(--side-panel-collapsed-width, 1.75rem)')
         ->toContain('--side-panel-trigger-left: var(--side-panel-rail-position)')
         ->toContain('--side-panel-trigger-right: auto')
-        ->toContain('overflow: hidden');
+        ->toContain('overflow: hidden')
+        ->toContain('transition: inline-size var(--side-panel-motion-duration, 200ms) var(--side-panel-motion-easing, ease-in-out)')
+        ->toContain('transition: opacity var(--side-panel-content-motion-duration, 150ms) var(--side-panel-motion-easing, ease-in-out)')
+        ->and($visual)
+        ->toContain('--side-panel-motion-duration: 200ms')
+        ->toContain('--side-panel-content-motion-duration: 150ms')
+        ->toContain('--side-panel-motion-easing: ease-in-out')
+        ->toContain('transition-duration: var(--side-panel-motion-duration)')
+        ->toContain('transition-timing-function: var(--side-panel-motion-easing)');
 });
 
 it('keeps Sidebar content overflow mechanics in the structural stylesheet', function (string $preset) {

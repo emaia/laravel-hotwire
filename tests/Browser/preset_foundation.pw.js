@@ -63,6 +63,83 @@ test("Side Panel mechanics yield to application overrides", async ({ page }) => 
     expect(railWidth).toBe("3px");
 });
 
+test("compiled structural motion inherits application timing from visual roots", async ({ page }) => {
+    await page.setContent(`
+        <style>${presetCss}</style>
+        <style>
+            @layer components {
+                [data-slot="side-panel"] {
+                    --side-panel-motion-duration: 900ms;
+                    --side-panel-content-motion-duration: 700ms;
+                    --side-panel-motion-easing: linear;
+                }
+                [data-slot="read-more"] {
+                    --read-more-motion-duration: 1200ms;
+                    --read-more-motion-easing: ease-in;
+                }
+            }
+        </style>
+        ${motionFixture()}
+    `);
+
+    const timing = await page.locator("body").evaluate(() => {
+        const sidePanel = document.querySelector('[data-slot="side-panel"]');
+        const styles = [
+            getComputedStyle(sidePanel, "::before"),
+            getComputedStyle(document.querySelector('[data-slot="side-panel-panel"]')),
+            getComputedStyle(document.querySelector('[data-slot="side-panel-panel-content"]')),
+            getComputedStyle(document.querySelector('[data-slot="side-panel-trigger"]')),
+            getComputedStyle(document.querySelector('[data-slot="side-panel-trigger-icon"]')),
+            getComputedStyle(document.querySelector('[data-slot="read-more-viewport"]')),
+        ];
+
+        return styles.map((style) => [style.transitionDuration, style.transitionTimingFunction]);
+    });
+
+    expect(timing).toEqual([
+        ["0.9s", "linear"],
+        ["0.9s", "linear"],
+        ["0.7s", "linear"],
+        ["0.9s", "linear"],
+        ["0.9s", "linear"],
+        ["1.2s", "ease-in"],
+    ]);
+});
+
+test("compiled reduced-motion rules disable the complete structural motion system", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.setContent(`
+        <style>${presetCss}</style>
+        <style>
+            [data-slot="side-panel"]::before,
+            [data-slot="side-panel-panel"],
+            [data-slot="side-panel-panel-content"],
+            [data-slot="side-panel-trigger"],
+            [data-slot="side-panel-trigger-icon"],
+            [data-slot="read-more-viewport"] {
+                transition-duration: 900ms;
+            }
+        </style>
+        ${motionFixture()}
+    `);
+
+    const durations = await page.locator("body").evaluate(() => {
+        const sidePanel = document.querySelector('[data-slot="side-panel"]');
+
+        return [
+            getComputedStyle(sidePanel, "::before"),
+            getComputedStyle(document.querySelector('[data-slot="side-panel-panel"]')),
+            getComputedStyle(document.querySelector('[data-slot="side-panel-panel-content"]')),
+            getComputedStyle(document.querySelector('[data-slot="side-panel-trigger"]')),
+            getComputedStyle(document.querySelector('[data-slot="side-panel-trigger-icon"]')),
+            getComputedStyle(document.querySelector('[data-slot="read-more-viewport"]')),
+            getComputedStyle(document.querySelector('[data-slot="read-more-trigger-icon"]')),
+        ].map((style) => style.transitionDuration);
+    });
+
+    expect(durations).toEqual(["0s", "0s", "0s", "0s", "0s", "0s", "0s"]);
+});
+
 test("Accordion mechanics yield to later preset timing", async ({ page }) => {
     await page.setContent(`
         <style>${presetCss}</style>
@@ -159,3 +236,20 @@ test("Reveal fallback keyframes yield to later preset definitions", async ({ pag
 
     expect(opacityKeyframes).toEqual(["0.4", "0.4"]);
 });
+
+function motionFixture() {
+    return `
+        <div data-slot="side-panel" data-state="expanded" data-side="left">
+            <aside data-slot="side-panel-panel">
+                <div data-slot="side-panel-panel-content">Panel</div>
+            </aside>
+            <button data-slot="side-panel-trigger">
+                <span data-slot="side-panel-trigger-icon"></span>
+            </button>
+        </div>
+        <section data-slot="read-more" data-state="collapsed">
+            <div data-slot="read-more-viewport"></div>
+            <span data-slot="read-more-trigger-icon"></span>
+        </section>
+    `;
+}

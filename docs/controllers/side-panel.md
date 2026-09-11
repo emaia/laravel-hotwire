@@ -41,6 +41,10 @@ The controller synchronizes root `data-state`, trigger `aria-expanded`, and pane
 `cookieName` is present, state changes write a cookie; `preserveStateForRender` copies the current state into Turbo's next
 body render.
 
+State and accessibility attributes update immediately; the controller does not wait for visual motion. Presets can tune
+the complete transition system through the custom properties documented by the
+[`side-panel`](../components/side-panel.md#styling-hooks) component without changing controller lifecycle.
+
 ## Values
 
 | Value        | Type      | Default | Description                                  |

@@ -6,6 +6,20 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 
 ## Unreleased
 
+### Side Panel and Read More expose motion timing
+
+Side Panel and Read More now read transition duration and easing from public custom properties on their visual roots.
+Nova keeps the existing `200ms`, `150ms`, and `500ms` durations and applies its shared `ease-in-out` curve. Application
+presets can set `--side-panel-motion-duration`,
+`--side-panel-content-motion-duration`, `--side-panel-motion-easing`, `--read-more-motion-duration`, and
+`--read-more-motion-easing` without overriding the structural transition rules or using `!important`.
+
+Read More also derives its stalled-transition watchdog from the browser's computed remaining transition time instead of a
+fixed `750ms`. Durations above that old limit no longer release clipping early, while zero-duration and reduced-motion
+transitions still settle immediately. The emergency watchdog remains capped at `30s`. Presets must continue animating the
+structural `max-block-size` property; changing the property itself prevents the controller from observing the intended
+clamp transition.
+
 ### Application presets have a public validation workflow
 
 `hotwire:check` now validates application presets imported from `resources/css/presets`. Use

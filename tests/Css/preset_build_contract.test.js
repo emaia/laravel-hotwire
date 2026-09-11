@@ -142,6 +142,31 @@ describe("public CSS presets", () => {
         );
     });
 
+    test("preserves customizable structural motion timing in the compiled Nova preset", () => {
+        expect(productionNovaCss).toContain("--read-more-motion-duration:.5s");
+        expect(productionNovaCss).toContain("--read-more-motion-easing:ease-in-out");
+        expect(productionNovaCss).toContain("--side-panel-motion-duration:.2s");
+        expect(productionNovaCss).toContain("--side-panel-content-motion-duration:.15s");
+        expect(productionNovaCss).toContain("--side-panel-motion-easing:ease-in-out");
+        expect(productionNovaCss).toContain(
+            "transition:max-block-size var(--read-more-motion-duration,.5s) var(--read-more-motion-easing,ease-in-out)",
+        );
+        expect(productionNovaCss).toContain(
+            "transition:inline-size var(--side-panel-motion-duration,.2s) var(--side-panel-motion-easing,ease-in-out)",
+        );
+        for (const selector of [
+            String.raw`\[data-slot=side-panel\]:before`,
+            String.raw`\[data-slot=side-panel-trigger\]`,
+            String.raw`\[data-slot=side-panel-trigger-icon\]`,
+        ]) {
+            expect(productionNovaCss).toMatch(
+                new RegExp(
+                    `${selector}\\{[^}]*transition-duration:var\\(--side-panel-motion-duration\\);transition-timing-function:var\\(--side-panel-motion-easing\\)\\}`,
+                ),
+            );
+        }
+    });
+
     test("reports raw and gzip sizes against non-blocking baselines", () => {
         expect(contract.measurements.toolchain.tailwindcss).toMatch(/^4\./);
         expect(contract.measurements.toolchain.cli).toMatch(/^4\./);

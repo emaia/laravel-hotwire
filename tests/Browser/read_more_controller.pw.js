@@ -199,11 +199,66 @@ test("applies an external expanded value change during motion", async ({ page })
     await expect(page.locator("#preview")).not.toHaveAttribute("data-transitioning", "");
 });
 
-test("settles a stalled max-height transition through the safety timeout", async ({ page }) => {
+test("does not let an old transition settle a new transition after reconnect", async ({ page }) => {
     await page.setContent(await fixture());
     await installController(page);
+
+    const result = await page.evaluate(async () => {
+        const nextTask = () => new Promise((resolve) => setTimeout(resolve, 0));
+        const twoFrames = () =>
+            new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        let resolveOld;
+        let resolveNew;
+        const oldFinished = new Promise((resolve) => (resolveOld = resolve));
+        const newFinished = new Promise((resolve) => (resolveNew = resolve));
+        const animation = (finished) => ({
+            transitionProperty: "max-height",
+            effect: { getComputedTiming: () => ({ endTime: 1000 }) },
+            finished,
+        });
+        const oldAnimation = animation(oldFinished);
+        const newAnimation = animation(newFinished);
+        const root = document.querySelector("#preview");
+        const viewport = document.querySelector("#preview-viewport");
+        const trigger = document.querySelector("#preview-trigger");
+        const original = window.app.getControllerForElementAndIdentifier(root, "read-more");
+        let currentAnimation = oldAnimation;
+        viewport.getAnimations = () => [currentAnimation];
+
+        trigger.click();
+        await twoFrames();
+        root.removeAttribute("data-controller");
+        await nextTask();
+        await nextTask();
+
+        currentAnimation = newAnimation;
+        root.setAttribute("data-controller", "read-more");
+        await nextTask();
+        await nextTask();
+        const reconnected = window.app.getControllerForElementAndIdentifier(root, "read-more");
+
+        trigger.click();
+        await twoFrames();
+        resolveOld();
+        await Promise.resolve();
+        await Promise.resolve();
+        const transitioning = root.hasAttribute("data-transitioning");
+        resolveNew();
+
+        return { sameController: original === reconnected, transitioning };
+    });
+
+    expect(result.sameController).toBe(true);
+    expect(result.transitioning).toBe(true);
+});
+
+test("settles a stalled max-height transition through the safety timeout", async ({ page }) => {
+    await page.setContent(
+        await fixture('[data-slot="read-more"] { --read-more-motion-duration: 120ms; }'),
+    );
+    await installController(page);
     await page.locator("#preview-trigger").click();
-    await page.waitForTimeout(80);
+    await page.waitForTimeout(40);
 
     const property = await page.locator("#preview-viewport").evaluate((element) => {
         const transition = element
@@ -215,8 +270,89 @@ test("settles a stalled max-height transition through the safety timeout", async
     });
 
     expect(["max-block-size", "max-height"]).toContain(property);
-    await expect(page.locator("#preview")).not.toHaveAttribute("data-transitioning", "", { timeout: 1200 });
+    await expect(page.locator("#preview")).not.toHaveAttribute("data-transitioning", "", { timeout: 500 });
     await expect(page.locator("#preview-viewport")).toHaveCSS("overflow", "visible");
+});
+
+test("bases a stalled watchdog on the remaining animation time", async ({ page }) => {
+    await page.setContent(await fixture());
+    await installController(page);
+    await page.locator("#preview-viewport").evaluate((viewport) => {
+        viewport.getAnimations = () => [
+            {
+                transitionProperty: "max-height",
+                currentTime: 900,
+                playbackRate: 1,
+                effect: { getComputedTiming: () => ({ endTime: 1000 }) },
+                finished: new Promise(() => {}),
+            },
+        ];
+    });
+
+    await page.locator("#preview-trigger").click();
+
+    await expect(page.locator("#preview")).not.toHaveAttribute("data-transitioning", "", { timeout: 300 });
+    await expect(page.locator("#preview-viewport")).toHaveCSS("overflow", "visible");
+});
+
+test("keeps waiting when a matching animation has no measurable timing", async ({ page }) => {
+    await page.setContent(await fixture());
+    await installController(page);
+    await page.locator("#preview-viewport").evaluate((viewport) => {
+        viewport.getAnimations = () => [
+            {
+                transitionProperty: "max-height",
+                effect: null,
+                finished: new Promise((resolve) => setTimeout(resolve, 250)),
+            },
+        ];
+    });
+
+    await page.locator("#preview-trigger").click();
+    await page.waitForTimeout(120);
+
+    await expect(page.locator("#preview")).toHaveAttribute("data-transitioning", "");
+    await expect(page.locator("#preview")).not.toHaveAttribute("data-transitioning", "", { timeout: 300 });
+    await expect(page.locator("#preview-viewport")).toHaveCSS("overflow", "visible");
+});
+
+test("does not settle before a custom max-height transition finishes", async ({ page }) => {
+    await page.setContent(
+        await fixture('[data-slot="read-more"] { --read-more-motion-duration: 1200ms; }'),
+    );
+    await installController(page);
+
+    await page.locator("#preview-trigger").click();
+    await page.waitForTimeout(850);
+
+    await expect(page.locator("#preview")).toHaveAttribute("data-transitioning", "");
+    await expect(page.locator("#preview")).not.toHaveAttribute("data-transitioning", "", { timeout: 800 });
+    await expect(page.locator("#preview-viewport")).toHaveCSS("overflow", "visible");
+});
+
+test("settles without waiting when custom motion duration is zero", async ({ page }) => {
+    await page.setContent(
+        await fixture('[data-slot="read-more"] { --read-more-motion-duration: 0ms; }'),
+    );
+    await installController(page);
+
+    await page.locator("#preview-trigger").click();
+
+    await expect(page.locator("#preview")).not.toHaveAttribute("data-transitioning", "", { timeout: 250 });
+    await expect(page.locator("#preview-viewport")).toHaveCSS("overflow", "visible");
+});
+
+test.describe("reduced motion", () => {
+    test.use({ reducedMotion: "reduce" });
+
+    test("overrides a later application viewport duration", async ({ page }) => {
+        await page.emulateMedia({ reducedMotion: "reduce" });
+        await page.setContent(
+            await fixture('[data-slot="read-more-viewport"] { transition-duration: 900ms; }'),
+        );
+
+        await expect(page.locator("#preview-viewport")).toHaveCSS("transition-duration", "0s");
+    });
 });
 
 test("continues expansion when intrinsic content resizes during motion", async ({ page }) => {
@@ -344,11 +480,11 @@ test.describe("without scripting", () => {
     });
 });
 
-async function fixture() {
+async function fixture(visual = "") {
     const structural = await readFile("resources/css/structural.css", "utf8");
 
     return `
-        <style>${structural}</style>
+        <style>${structural}\n${visual}</style>
         <section
             id="preview"
             data-slot="read-more"

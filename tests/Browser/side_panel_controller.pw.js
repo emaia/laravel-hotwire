@@ -62,6 +62,27 @@ test("structural CSS collapses the panel and transfers its space to the inset", 
     await expect(trigger).toBeFocused();
 });
 
+test("inherits panel and content motion timing from the visual root", async ({ page }) => {
+    await page.setContent(
+        await fixture(
+            false,
+            true,
+            "left",
+            "ltr",
+            `[data-slot="side-panel"] {
+                --side-panel-motion-duration: 900ms;
+                --side-panel-content-motion-duration: 700ms;
+                --side-panel-motion-easing: linear;
+            }`,
+        ),
+    );
+
+    await expect(page.locator("#project-panel")).toHaveCSS("transition-duration", "0.9s");
+    await expect(page.locator("#project-panel")).toHaveCSS("transition-timing-function", "linear");
+    await expect(page.locator("#project-panel-content")).toHaveCSS("transition-duration", "0.7s");
+    await expect(page.locator("#project-panel-content")).toHaveCSS("transition-timing-function", "linear");
+});
+
 for (const [context, wrap] of [
     [
         "Modal",
@@ -260,19 +281,38 @@ test.describe("reduced motion", () => {
 
     test("disables panel, trigger and content transitions", async ({ page }) => {
         await page.emulateMedia({ reducedMotion: "reduce" });
-        await page.setContent(await fixture());
+        await page.setContent(
+            await fixture(
+                false,
+                true,
+                "left",
+                "ltr",
+                `[data-slot="side-panel"]::before,
+                [data-slot="side-panel-panel"],
+                [data-slot="side-panel-panel-content"],
+                [data-slot="side-panel-trigger"],
+                [data-slot="side-panel-trigger-icon"] {
+                    transition-duration: 900ms;
+                }`,
+            ),
+        );
 
         await expect(page.locator("#project-panel")).toHaveCSS("transition-duration", "0s");
         await expect(page.locator("#project-trigger")).toHaveCSS("transition-duration", "0s");
+        await expect(page.locator("#project-trigger-icon")).toHaveCSS("transition-duration", "0s");
         await expect(page.locator("#project-panel-content")).toHaveCSS("transition-duration", "0s");
+        const railDuration = await page
+            .locator("#layout")
+            .evaluate((element) => getComputedStyle(element, "::before").transitionDuration);
+        expect(railDuration).toBe("0s");
     });
 });
 
-async function fixture(withSidebar = false, open = true, side = "left", direction = "ltr") {
+async function fixture(withSidebar = false, open = true, side = "left", direction = "ltr", visual = "") {
     const structural = await readFile("resources/css/structural.css", "utf8");
 
     return `
-        <style>${structural}</style>
+        <style>${structural}\n${visual}</style>
         ${withSidebar ? '<div id="app-sidebar" data-slot="sidebar-wrapper" data-state="expanded">' : ""}
         <button id="before-layout">Before</button>
         <div id="layout"
@@ -295,7 +335,10 @@ async function fixture(withSidebar = false, open = true, side = "left", directio
                         data-side-panel-target="trigger"
                         data-action="side-panel#toggle"
                         aria-controls="project-panel"
-                        aria-expanded="true">Toggle</button>
+                        aria-expanded="true">
+                    Toggle
+                    <span id="project-trigger-icon" data-slot="side-panel-trigger-icon"></span>
+                </button>
             </main>
         </div>
         ${withSidebar ? "</div>" : ""}

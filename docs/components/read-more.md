@@ -132,7 +132,7 @@ Regular HTML attributes, including `class`, pass through the component attribute
   loading or removing content.
 - Use the component for prose-oriented content. Links, form controls, and other focusable elements
   can remain keyboard-focusable even when they are below the visual cutoff.
-- The structural height transition is disabled when `prefers-reduced-motion: reduce` is active.
+- The height transition is disabled when `prefers-reduced-motion: reduce` is active.
 
 ## Styling hooks
 
@@ -146,6 +146,18 @@ Regular HTML attributes, including `class`, pass through the component attribute
 - `data-ready`
 - `data-transitioning` while height is moving between collapsed and expanded
 - `data-pinning` while an interrupted expansion captures its current rendered height
+
+The structural stylesheet owns the `max-block-size` transition property because the controller waits for that specific
+geometry change. Presets and applications own its timing through custom properties on `data-slot="read-more"`:
+
+| Property                      | Nova default  | Purpose                    |
+| ----------------------------- | ------------- | -------------------------- |
+| `--read-more-motion-duration` | `500ms`       | Viewport expansion timing. |
+| `--read-more-motion-easing`   | `ease-in-out` | Viewport easing curve.     |
+
+Set the duration to `0ms` to disable this motion without changing the structural transition property. The shared
+reduced-motion rule still disables it regardless of the configured values. The controller's emergency watchdog is capped
+at `30s`, so keep supported transition durations below that limit.
 
 ## Controller
 
