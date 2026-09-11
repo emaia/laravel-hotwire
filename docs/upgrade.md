@@ -16,7 +16,8 @@ Use `hotwire:make-preset brand --from=nova` when Nova's complete current selecto
 point. Existing application presets are unchanged. Scaffolds and clones are application-owned snapshots: only their
 already-imported package foundation files update automatically; new foundation imports and copied visual rules require
 manual adoption. Review upgrade notes and merge relevant changes manually. Running the command with `--force` replaces
-the target file and any customizations in it.
+the target file and any customizations in it; it does not merge package changes into the existing CSS. See
+[Maintain an application preset](presets.md#maintain-an-application-preset) for the compatibility checklist.
 
 ### Toaster cards move to an internal Blade template
 

@@ -185,6 +185,23 @@ Slots: `data-slot="toaster"`, `data-slot="toast"`, `data-slot="toast-icon"`, `da
 `data-slot="toast-body"`, `data-slot="toast-title"`, `data-slot="toast-description"`, and
 `data-slot="toast-close"`.
 
+The manager exposes these stable state hooks on each cloned card:
+
+- `data-type="default|success|error|warning|info"`
+- `data-position="top-start|top-center|top-end|bottom-start|bottom-center|bottom-end"`
+- `data-state="open|closed"`
+- `data-expanded="true|false"`
+
+Use `data-type` for semantic treatments and `data-state` for entry/exit appearance. Position is physical on the block
+axis and logical on the inline axis. Expanded state is mirrored on the viewport and every card so visual rules can
+coordinate with the structural stack.
+
+The controller-written `--toast-height`, `--toast-index`, `--toast-offset-y` and `--toast-frontmost-height` variables
+are reserved for the stack mechanics. The derived `--toast-scale`, `--toast-shrink`, `--toast-exit-y` and
+`--toast-stack-direction` variables, plus transient `data-behind`, `data-limited`, `data-measuring` and `data-presence`
+markers, are structural implementation details. A preset can change the public properties in the table above and style
+the stable hooks, but should not assign or reinterpret these reserved values.
+
 The seven card slots come from one internal `<template>` inside the viewport. The manager clones it for each
 notification and fills title and description as text. The template is package infrastructure rather than a composition
 API; use `class-name`, the slots above and preset CSS to customize cards instead of replacing its parts.

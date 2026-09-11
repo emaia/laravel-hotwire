@@ -98,11 +98,15 @@ Read [styling and preset rules](references/styling.md) before changing appearanc
 - Closed Presence states must remain measurable during exit motion; do not force `display: none` before Presence applies
   `hidden`.
 
-For a custom preset:
+For a registry-derived custom preset without Nova's selector choices:
 
 ```bash
-php artisan hotwire:make-preset brand --from=nova
+php artisan hotwire:make-preset brand
 ```
+
+This emits empty base rules for visual slots: it is an anatomy checklist, not a styled preset. Add `--from=nova` only
+when Nova's full current structure is the intended starting point. Either output is an application-owned snapshot:
+package upgrades do not merge copied visual rules or new foundation imports, and `--force` replaces the target file.
 
 For a selective bundle:
 

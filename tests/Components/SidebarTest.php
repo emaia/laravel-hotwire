@@ -3,6 +3,7 @@
 use Emaia\LaravelHotwire\Components\Sidebar\Provider;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
+use Illuminate\Support\Facades\File;
 use Illuminate\View\ViewException;
 
 it('targets sidebar navigation links with frame', function () {
@@ -559,4 +560,15 @@ it('keeps the internal reveal configuration when the prop is on', function () {
 
     $view->assertSee('data-reveal-trigger-value="load"', false)
         ->assertDontSee('data-reveal-trigger-value="scroll"', false);
+});
+
+// --- Documented styling contract ---
+
+it('documents where Sidebar desktop and mobile state is emitted', function () {
+    $sidebar = File::get(__DIR__.'/../../docs/components/sidebar.md');
+
+    expect($sidebar)
+        ->toContain('`data-sidebar-collapsible="offcanvas|icon"`')
+        ->toContain('`data-collapsible=""` while expanded')
+        ->toContain('`data-mobile-state="open|closed"`');
 });

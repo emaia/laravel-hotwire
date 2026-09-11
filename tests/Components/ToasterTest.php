@@ -4,6 +4,7 @@ use Emaia\LaravelHotwire\Components\Toaster;
 use Emaia\LaravelHotwire\LaravelHotwireServiceProvider;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\MessageBag;
 use Illuminate\Support\ViewErrorBag;
 
@@ -272,4 +273,18 @@ it('leaves the flash to the toaster when an explicit toast renders first', funct
 
     expect($html)->toContain('data-toast-message-value="Explicit"')
         ->and($html)->toContain('data-toast-message-value="Item created"');
+});
+
+// --- Documented styling contract ---
+
+it('documents the public and reserved toaster styling contracts', function () {
+    $toaster = File::get(__DIR__.'/../../docs/components/toaster.md');
+
+    expect($toaster)
+        ->toContain('`data-type="default|success|error|warning|info"`')
+        ->toContain('`data-position="top-start|top-center|top-end|bottom-start|bottom-center|bottom-end"`')
+        ->toContain('`data-state="open|closed"`')
+        ->toContain('`data-expanded="true|false"`')
+        ->toContain('`--toast-height`')
+        ->toContain('reserved for the stack mechanics');
 });
