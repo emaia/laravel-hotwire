@@ -198,7 +198,7 @@ final readonly class CssModuleManifest
             foreach ($definition['sources'] as $source) {
                 if (! is_array($source) || ! isset($source['path'], $source['modules'])
                     || ! is_string($source['path']) || ! is_array($source['modules'])
-                    || preg_match("~^presets/{$preset}/[a-z0-9-]+\\.css$~", $source['path']) !== 1) {
+                    || preg_match("~^presets/{$preset}/(?:[a-z0-9-]+/)*[a-z0-9-]+\\.css$~", $source['path']) !== 1) {
                     throw new PresetSourceException("CSS module preset [{$preset}] contains an invalid source.");
                 }
 

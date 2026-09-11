@@ -12,7 +12,9 @@ The registry is the public query surface for everything the package exposes:
 Public component and controller metadata lives in [`src/Registry/catalog.php`](../src/Registry/catalog.php). Component
 families own their slot anatomy in their root class, and catalog entries project those declarations into the registry.
 Visual CSS ownership and dependency closure live separately in [`src/Registry/styles.php`](../src/Registry/styles.php),
-where each official preset maps those logical modules to its private sources in canonical cascade order.
+where each official preset maps those logical modules to its private sources in canonical cascade order. A source may
+cover several modules and may be nested within the preset's private directory; neither its path nor its grouping is a
+cross-preset contract. Only the top-level `resources/css/presets/<name>.css` entrypoint is public and discoverable.
 
 ## Catalog entries
 

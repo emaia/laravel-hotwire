@@ -9,8 +9,10 @@
             "gzipBytes": 29187
         }
     },
-    "selective": {
-        "rawBytes": 66971,
-        "gzipBytes": 8841
+    "selectives": {
+        "nova": {
+            "rawBytes": 66971,
+            "gzipBytes": 8841
+        }
     }
 }

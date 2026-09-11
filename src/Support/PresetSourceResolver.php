@@ -16,6 +16,12 @@ final class PresetSourceResolver
         $this->cssRoot = rtrim($this->normalize(realpath($cssRoot) ?: $cssRoot), '/');
     }
 
+    /** Return the CSS root used to resolve preset entrypoints and imports. */
+    public function cssRoot(): string
+    {
+        return $this->cssRoot;
+    }
+
     /**
      * Resolve a preset entrypoint into ordered foundation imports and visual sources.
      *
@@ -124,15 +130,6 @@ final class PresetSourceResolver
         array &$stack,
         bool $entrypoint = false,
     ): void {
-        $cycleAt = array_search($path, $stack, true);
-
-        if ($cycleAt !== false) {
-            $cycle = [...array_slice($stack, $cycleAt), $path];
-            $chain = implode(' -> ', array_map($this->relative(...), $cycle));
-
-            throw new PresetSourceException("CSS import cycle in preset [{$preset}]: {$chain}.");
-        }
-
         if (isset($visited[$path])) {
             throw new PresetSourceException(
                 "Preset [{$preset}] includes visual stylesheet [{$this->relative($path)}] more than once."
@@ -178,7 +175,9 @@ final class PresetSourceResolver
                 );
             }
 
-            if ($this->isVisual($target)) {
+            $this->rejectImportCycle($target, $preset, $stack);
+
+            if ($this->isVisual($target, $preset)) {
                 $hasVisualImport = true;
                 $this->walk(
                     path: $target,
@@ -192,6 +191,12 @@ final class PresetSourceResolver
                 );
 
                 continue;
+            }
+
+            if ($this->insidePresetsRoot($target)) {
+                throw new PresetSourceException(
+                    "Preset [{$preset}] cannot import stylesheet [{$this->relative($target)}] outside [presets/{$preset}/]."
+                );
             }
 
             if (! $entrypoint) {
@@ -220,6 +225,21 @@ final class PresetSourceResolver
             $visualStylesheets[] = $visual;
             $visualPaths[] = $path;
         }
+    }
+
+    /** @param string[] $stack */
+    private function rejectImportCycle(string $path, string $preset, array $stack): void
+    {
+        $cycleAt = array_search($path, $stack, true);
+
+        if ($cycleAt === false) {
+            return;
+        }
+
+        $cycle = [...array_slice($stack, $cycleAt), $path];
+        $chain = implode(' -> ', array_map($this->relative(...), $cycle));
+
+        throw new PresetSourceException("CSS import cycle in preset [{$preset}]: {$chain}.");
     }
 
     /**
@@ -274,15 +294,28 @@ final class PresetSourceResolver
         return $css;
     }
 
-    private function isVisual(string $path): bool
+    private function isVisual(string $path, string $preset): bool
     {
-        return str_starts_with($this->comparable($path), $this->comparable($this->cssRoot.'/presets/'));
+        $root = $this->cssRoot."/presets/{$preset}";
+
+        return $this->comparable($path) !== $this->comparable($root)
+            && $this->inside($path, $root);
+    }
+
+    private function insidePresetsRoot(string $path): bool
+    {
+        return $this->inside($path, $this->cssRoot.'/presets');
     }
 
     private function insideCssRoot(string $path): bool
     {
+        return $this->inside($path, $this->cssRoot);
+    }
+
+    private function inside(string $path, string $root): bool
+    {
         $path = $this->comparable($path);
-        $root = $this->comparable($this->cssRoot);
+        $root = $this->comparable($root);
 
         return $path === $root || str_starts_with($path, $root.'/');
     }

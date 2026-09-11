@@ -74,16 +74,19 @@ async function runTailwind(directory, options = {}) {
     return css;
 }
 
-async function generateSelectiveBundle(directory, output) {
-    const { exitCode, stdout, stderr } = await spawnCommand([
-        globalThis.process.env.PHP_BINARY ?? "php",
-        stylesFixtureScript,
-        directory,
-        "nova",
-        output,
-        "button,card",
-        "tooltip",
-    ], root);
+async function generateSelectiveBundle(directory, preset, output) {
+    const { exitCode, stdout, stderr } = await spawnCommand(
+        [
+            globalThis.process.env.PHP_BINARY ?? "php",
+            stylesFixtureScript,
+            directory,
+            preset,
+            output,
+            "button,card",
+            "tooltip",
+        ],
+        root,
+    );
 
     if (exitCode !== 0) {
         throw new Error(`Selective CSS generation failed (exit ${exitCode}).\n${stderr || stdout}`);
@@ -252,23 +255,36 @@ export async function buildCssContract() {
         presetMeasurements[preset] = measure(css);
     }
 
-    const selectiveOutput = "resources/css/generated/hotwire.css";
-    let selectiveSource = null;
-    const selective = await compileCssFixture(packageSourceEntrypoint("./generated/hotwire.css"), {
-        setup: async (directory) => {
-            await generateSelectiveBundle(directory, selectiveOutput);
-            selectiveSource = await readFile(join(directory, selectiveOutput), "utf8");
-        },
-    });
-    const cloneName = "brand";
-    const clonePath = `resources/css/presets/${cloneName}.css`;
-    let novaCloneSource = null;
-    const novaClone = await compileCssFixture(packageSourceEntrypoint(`./presets/${cloneName}.css`), {
-        setup: async (directory) => {
-            await generatePreset(directory, cloneName, "nova");
-            novaCloneSource = await readFile(join(directory, clonePath), "utf8");
-        },
-    });
+    const selectiveOutputs = {};
+    const selectiveSources = {};
+    const selectiveMeasurements = {};
+
+    for (const preset of presets) {
+        const selectiveOutput = `resources/css/generated/hotwire-${preset}.css`;
+        selectiveOutputs[preset] = await compileCssFixture(
+            packageSourceEntrypoint(`./generated/hotwire-${preset}.css`),
+            {
+                setup: async (directory) => {
+                    await generateSelectiveBundle(directory, preset, selectiveOutput);
+                    selectiveSources[preset] = await readFile(join(directory, selectiveOutput), "utf8");
+                },
+            },
+        );
+        selectiveMeasurements[preset] = measure(selectiveOutputs[preset]);
+    }
+    const presetClones = {};
+    const presetCloneSources = {};
+
+    for (const preset of presets) {
+        const cloneName = `${preset}-clone`;
+        const clonePath = `resources/css/presets/${cloneName}.css`;
+        presetClones[preset] = await compileCssFixture(packageSourceEntrypoint(`./presets/${cloneName}.css`), {
+            setup: async (directory) => {
+                await generatePreset(directory, cloneName, preset);
+                presetCloneSources[preset] = await readFile(join(directory, clonePath), "utf8");
+            },
+        });
+    }
     const scaffoldName = "blank";
     const scaffoldPath = `resources/css/presets/${scaffoldName}.css`;
     let blankScaffoldSource = null;
@@ -286,13 +302,13 @@ export async function buildCssContract() {
     return {
         outputs: {
             presets: presetOutputs,
-            selective,
-            novaClone,
+            selectives: selectiveOutputs,
+            clones: presetClones,
             blankScaffold,
         },
         sources: {
-            selective: selectiveSource,
-            novaClone: novaCloneSource,
+            selectives: selectiveSources,
+            clones: presetCloneSources,
             blankScaffold: blankScaffoldSource,
         },
         measurements: {
@@ -301,7 +317,7 @@ export async function buildCssContract() {
                 cli: cliPackage.version,
             },
             presets: presetMeasurements,
-            selective: measure(selective),
+            selectives: selectiveMeasurements,
         },
     };
 }
@@ -336,7 +352,9 @@ export function measurementRows(measurements, baselines = {}) {
         ...Object.entries(measurements.presets).map(([name, measurement]) =>
             row(`preset:${name}`, measurement, baselines.presets?.[name]),
         ),
-        row("selective", measurements.selective, baselines.selective),
+        ...Object.entries(measurements.selectives).map(([name, measurement]) =>
+            row(`selective:${name}`, measurement, baselines.selectives?.[name]),
+        ),
     ];
 }
 

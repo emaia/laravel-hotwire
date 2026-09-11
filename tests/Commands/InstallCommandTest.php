@@ -1,9 +1,14 @@
 <?php
 
+use Emaia\LaravelHotwire\Support\CssPresetFiles;
 use Illuminate\Support\Facades\File;
 
 dataset('css presets', fn () => collect(glob(__DIR__.'/../../resources/css/presets/*.css') ?: [])
     ->mapWithKeys(fn (string $path): array => [pathinfo($path, PATHINFO_FILENAME) => [pathinfo($path, PATHINFO_FILENAME)]])
+    ->all());
+
+dataset('synthetic css presets', fn () => collect(syntheticCssPresetFiles()->names())
+    ->mapWithKeys(fn (string $preset): array => [$preset => [$preset]])
     ->all());
 
 beforeEach(function () {
@@ -372,6 +377,17 @@ it('selects every available css preset', function (string $preset) {
         ->toContain("@import '../../vendor/emaia/laravel-hotwire/resources/css/presets/{$preset}.css';")
         ->toContain('/* Preset: import one default design system. */');
 })->with('css presets');
+
+it('selects synthetic official presets without depending on Nova internals', function (string $preset) {
+    $this->app->instance(CssPresetFiles::class, syntheticCssPresetFiles());
+    File::put($this->packageJsonPath, json_encode(['name' => 'test'], JSON_PRETTY_PRINT));
+
+    $this->artisan("hotwire:install --only=css --preset={$preset} --no-interaction")
+        ->assertSuccessful();
+
+    expect(File::get(resource_path('css/app.css')))
+        ->toContain("@import '../../vendor/emaia/laravel-hotwire/resources/css/presets/{$preset}.css';");
+})->with('synthetic css presets');
 
 it('rejects invalid css presets', function () {
     File::put($this->packageJsonPath, json_encode(['name' => 'test'], JSON_PRETTY_PRINT));

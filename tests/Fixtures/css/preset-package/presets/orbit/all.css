@@ -1,0 +1,9 @@
+@layer components {
+    [data-slot="panel"] {
+        border: 1px solid currentColor;
+    }
+
+    :where([data-slot="action"], [data-slot="status"]) {
+        font: inherit;
+    }
+}

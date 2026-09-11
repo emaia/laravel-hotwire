@@ -292,7 +292,7 @@ it('uses a semantic backdrop token instead of a raw utility color', function (st
 
 it('keeps alternate-media control states in an overridable shared layer', function () {
     $structural = file_get_contents(dirname(__DIR__, 2).'/resources/css/structural.css');
-    $slider = file_get_contents(dirname(__DIR__, 2).'/resources/css/presets/nova/slider.css');
+    $slider = presetVisualCss('nova');
 
     expect($structural)
         ->toContain('@layer hotwire-accessibility')
