@@ -1,0 +1,9 @@
+@layer components {
+    :where([data-slot="panel"], [data-slot="action"]) {
+        color: var(--fixture-foreground);
+    }
+
+    [data-density="roomy"] [data-slot="panel"] {
+        padding: 2rem;
+    }
+}

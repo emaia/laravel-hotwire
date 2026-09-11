@@ -3,6 +3,7 @@
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\CssModuleManifest;
 use Emaia\LaravelHotwire\Support\CssPresetFiles;
+use Illuminate\Filesystem\Filesystem;
 
 dataset('shipped css preset names', fn () => collect(glob(__DIR__.'/../../resources/css/presets/*.css') ?: [])
     ->mapWithKeys(fn (string $path): array => [pathinfo($path, PATHINFO_FILENAME) => [pathinfo($path, PATHINFO_FILENAME)]])
@@ -22,14 +23,74 @@ it('discovers shipped css presets in sorted order', function () {
         ->and($presets->path('missing'))->toBeNull();
 });
 
-it('resolves every private module exactly once without exposing it as a preset', function (string $preset) {
+it('discovers and resolves public entrypoints from the configured css root', function () {
+    $presets = syntheticCssPresetFiles();
+    $source = $presets->source('constellation');
+
+    expect($presets->all())->toBe([
+        'constellation' => realpath(__DIR__.'/../Fixtures/css/preset-package/presets/constellation.css'),
+        'orbit' => realpath(__DIR__.'/../Fixtures/css/preset-package/presets/orbit.css'),
+    ])
+        ->and($presets->names())->toBe(['constellation', 'orbit'])
+        ->and($source?->foundationImports())->toBe([
+            'tokens.css',
+            'custom-variants.css',
+            'foundations/metrics.css',
+            'structural.css',
+        ])
+        ->and($source?->visualStylesheetPaths())->toBe([
+            'presets/constellation/layout/surfaces.css',
+            'presets/constellation/feedback.css',
+        ])
+        ->and($presets->source('orbit')?->visualStylesheetPaths())->toBe(['presets/orbit/all.css']);
+});
+
+it('selects synthetic sources independently of their grouping and nesting', function () {
+    $presets = syntheticCssPresetFiles();
+    $grouped = $presets->sourceForSelection('orbit', ['action']);
+
+    expect($presets->sourceForSelection('constellation', ['action'])?->visualStylesheetPaths())
+        ->toBe(['presets/constellation/layout/surfaces.css'])
+        ->and($presets->sourceForSelection('constellation', controllers: ['status'])?->visualStylesheetPaths())
+        ->toBe(['presets/constellation/feedback.css'])
+        ->and($presets->sourceForSelection('constellation', ['action'], ['status'])?->visualStylesheetPaths())
+        ->toBe([
+            'presets/constellation/layout/surfaces.css',
+            'presets/constellation/feedback.css',
+        ])
+        ->and($grouped?->visualStylesheetPaths())->toBe(['presets/orbit/all.css'])
+        ->and($grouped?->visualCss())->toContain('[data-slot="status"]');
+});
+
+it('resolves every private source once without exposing its organization as presets', function (string $preset) {
     $presets = app(CssPresetFiles::class);
     $source = $presets->source($preset);
-    $modules = glob(dirname($presets->path($preset))."/{$preset}/*.css") ?: [];
+    $cssRoot = dirname($presets->path($preset), 2);
+    $privateDirectory = dirname($presets->path($preset))."/{$preset}";
+    $sourcePaths = $source->visualStylesheetPaths();
+    $resolvedSources = array_map(
+        fn (string $path): string => realpath($cssRoot.'/'.$path) ?: $cssRoot.'/'.$path,
+        $sourcePaths,
+    );
+    $privateSources = array_map(
+        fn (SplFileInfo $file): string => $file->getRealPath() ?: $file->getPathname(),
+        (new Filesystem)->allFiles($privateDirectory),
+    );
+    $foundations = $source->foundationImports();
+    sort($resolvedSources);
+    sort($privateSources);
 
-    expect($modules)->toHaveCount(count($source->visualStylesheets()))
+    expect($resolvedSources)->toBe($privateSources)
+        ->and($sourcePaths)->toHaveCount(count(array_unique($sourcePaths)))
         ->not->toBeEmpty()
-        ->and($source->foundationImports())->toBe([
+        ->each->toStartWith("presets/{$preset}/")
+        ->and($resolvedSources)->each->toBeFile()
+        ->and($foundations)->toHaveCount(count(array_unique($foundations)))
+        ->and(array_values(array_intersect($foundations, [
+            'tokens.css',
+            'custom-variants.css',
+            'structural.css',
+        ])))->toBe([
             'tokens.css',
             'custom-variants.css',
             'structural.css',
@@ -38,13 +99,13 @@ it('resolves every private module exactly once without exposing it as a preset',
         ->not->toContain('[data-slot=')
         ->and(array_intersect(
             array_values($presets->all()),
-            array_map(fn (string $path): string => realpath($path) ?: $path, $modules),
+            $resolvedSources,
         ))->toBe([]);
 })->with('shipped css preset names');
 
 it('uses responsibility-oriented Nova modules instead of mechanical source chunks', function () {
-    $modules = collect(glob(__DIR__.'/../../resources/css/presets/nova/*.css') ?: [])
-        ->map(fn (string $path): string => basename($path))
+    $modules = collect((new Filesystem)->allFiles(__DIR__.'/../../resources/css/presets/nova'))
+        ->map(fn (SplFileInfo $file): string => $file->getFilename())
         ->values();
 
     expect($modules)

@@ -72,8 +72,38 @@ it('selects controller-owned visual modules and their dependencies', function ()
         ->toEqualCanonicalizing(['floating-presence', 'tooltip']);
 });
 
-it('resolves a synthetic preset without official name assumptions', function () {
+it('resolves a synthetic preset without official name or source organization assumptions', function () {
     $manifest = CssModuleManifest::fromArray([
+        'modules' => [
+            'surface' => [
+                'components' => ['card'],
+                'controllers' => [],
+                'dependencies' => [],
+            ],
+            'action' => [
+                'components' => ['button'],
+                'controllers' => [],
+                'dependencies' => ['surface'],
+            ],
+        ],
+        'presets' => [
+            'contrast-fixture' => [
+                'sources' => [
+                    [
+                        'path' => 'presets/contrast-fixture/layout/surfaces.css',
+                        'modules' => ['surface', 'action'],
+                    ],
+                ],
+            ],
+        ],
+    ]);
+
+    expect($manifest->sourcesFor('contrast-fixture', $manifest->modulesFor(['button'], [])))
+        ->toBe(['presets/contrast-fixture/layout/surfaces.css']);
+});
+
+it('rejects unsafe private source paths', function (string $path) {
+    CssModuleManifest::fromArray([
         'modules' => [
             'surface' => [
                 'components' => ['card'],
@@ -84,15 +114,17 @@ it('resolves a synthetic preset without official name assumptions', function () 
         'presets' => [
             'contrast-fixture' => [
                 'sources' => [
-                    ['path' => 'presets/contrast-fixture/surface.css', 'modules' => ['surface']],
+                    ['path' => $path, 'modules' => ['surface']],
                 ],
             ],
         ],
     ]);
-
-    expect($manifest->sourcesFor('contrast-fixture', $manifest->modulesFor(['card'], [])))
-        ->toBe(['presets/contrast-fixture/surface.css']);
-});
+})->with([
+    'parent traversal' => 'presets/contrast-fixture/layout/../surface.css',
+    'hidden segment' => 'presets/contrast-fixture/.private/surface.css',
+    'empty segment' => 'presets/contrast-fixture/layout//surface.css',
+    'backslash' => 'presets/contrast-fixture/layout\\surface.css',
+])->throws(PresetSourceException::class, 'CSS module preset [contrast-fixture] contains an invalid source.');
 
 it('selects Tooltip visuals through package components but not the standalone controller', function () {
     $manifest = app(CssModuleManifest::class);

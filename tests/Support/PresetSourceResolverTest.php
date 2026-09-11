@@ -115,6 +115,17 @@ it('rejects foundation imports from private visual sources', function () {
         ->toThrow(PresetSourceException::class, 'Preset [demo] visual source [presets/demo/forms.css] cannot import shared foundations.');
 });
 
+it('rejects stylesheets outside the preset private source directory', function () {
+    writePresetCss($this->root, 'presets/other.css', '[data-slot="other"] {}');
+    $entrypoint = writePresetCss($this->root, 'presets/demo.css', '@import "./other.css";');
+
+    expect(fn () => $this->resolver->resolve($entrypoint))
+        ->toThrow(
+            PresetSourceException::class,
+            'Preset [demo] cannot import stylesheet [presets/other.css] outside [presets/demo/].',
+        );
+});
+
 it('fails when a local import is missing', function () {
     $entrypoint = writePresetCss($this->root, 'presets/demo.css', '@import "./demo/missing.css";');
 
@@ -173,18 +184,28 @@ it('normalizes Windows-style separators for roots and entrypoints', function () 
         ->toContain('[data-slot="input"]');
 });
 
-it('compares Windows drive and UNC paths case-insensitively', function (string $root, string $source) {
+it('compares Windows drive and UNC paths case-insensitively', function (string $root, string $source, string $sibling) {
     $resolver = new PresetSourceResolver($this->files, $root);
     $insideCssRoot = new ReflectionMethod($resolver, 'insideCssRoot');
     $isVisual = new ReflectionMethod($resolver, 'isVisual');
     $relative = new ReflectionMethod($resolver, 'relative');
 
     expect($insideCssRoot->invoke($resolver, $source))->toBeTrue()
-        ->and($isVisual->invoke($resolver, $source))->toBeTrue()
+        ->and($isVisual->invoke($resolver, $source, 'nova'))->toBeTrue()
+        ->and($isVisual->invoke($resolver, dirname($source), 'nova'))->toBeFalse()
+        ->and($isVisual->invoke($resolver, $sibling, 'nova'))->toBeFalse()
         ->and($relative->invoke($resolver, $source))->toBe('presets/nova/button.css');
 })->with([
-    'drive' => ['C:\\Package\\Resources\\CSS', 'c:/package/resources/css/presets/nova/button.css'],
-    'UNC' => ['\\\\Server\\Share\\CSS', '//server/share/css/presets/nova/button.css'],
+    'drive' => [
+        'C:\\Package\\Resources\\CSS',
+        'c:/package/resources/css/presets/nova/button.css',
+        'C:/Package/Resources/CSS/presets/bloom/button.css',
+    ],
+    'UNC' => [
+        '\\\\Server\\Share\\CSS',
+        '//server/share/css/presets/nova/button.css',
+        '//SERVER/Share/CSS/presets/bloom/button.css',
+    ],
 ]);
 
 it('rejects conditions on local imports instead of changing their semantics', function () {

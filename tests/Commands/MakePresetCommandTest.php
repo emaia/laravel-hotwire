@@ -274,6 +274,34 @@ it('clones a shipped preset with package imports and flattened visual sources', 
     expect(File::get($this->targetDir.'/brand.css'))->toBe($expected);
 });
 
+it('clones a synthetic preset without preserving its private source organization', function () {
+    $presets = syntheticCssPresetFiles();
+    $this->app->instance(CssPresetFiles::class, $presets);
+
+    foreach ($presets->names() as $preset) {
+        $target = "brand-{$preset}";
+        $this->artisan("hotwire:make-preset {$target} --from={$preset} --no-interaction")
+            ->assertSuccessful();
+
+        expect(File::get($this->targetDir."/{$target}.css"))
+            ->toStartWith('@import "../../../vendor/emaia/laravel-hotwire/resources/css/tokens.css";')
+            ->toContain('@import "../../../vendor/emaia/laravel-hotwire/resources/css/structural.css";')
+            ->not->toContain("@import \"./{$preset}/");
+    }
+
+    $constellation = File::get($this->targetDir.'/brand-constellation.css');
+
+    expect($constellation)
+        ->toContain('@import "../../../vendor/emaia/laravel-hotwire/resources/css/foundations/metrics.css";')
+        ->toContain(':where([data-slot="panel"], [data-slot="action"])')
+        ->toContain('[data-state="busy"] [data-slot="status"]')
+        ->not->toContain('layout/surfaces.css')
+        ->and(strpos($constellation, '[data-slot="panel"]'))
+        ->toBeLessThan(strpos($constellation, '[data-state="busy"]'))
+        ->and(File::get($this->targetDir.'/brand-orbit.css'))
+        ->toContain(':where([data-slot="action"], [data-slot="status"])');
+});
+
 it('does not modify the application css entrypoint', function () {
     File::ensureDirectoryExists(resource_path('css'));
     File::put(resource_path('css/app.css'), '/* app-owned */');

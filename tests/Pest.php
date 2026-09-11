@@ -1,8 +1,12 @@
 <?php
 
+use Emaia\LaravelHotwire\Support\CssModuleManifest;
+use Emaia\LaravelHotwire\Support\CssPresetFiles;
 use Emaia\LaravelHotwire\Support\PackageInstaller;
+use Emaia\LaravelHotwire\Support\PresetSourceResolver;
 use Emaia\LaravelHotwire\Tests\Support\FakePackageInstaller;
 use Emaia\LaravelHotwire\Tests\TestCase;
+use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\ViewErrorBag;
@@ -58,6 +62,55 @@ function releaseIsolatedAppPaths(?string $base): void
     if ($base !== null && is_dir($base)) {
         File::deleteDirectory($base);
     }
+}
+
+function syntheticCssPresetFiles(): CssPresetFiles
+{
+    $files = new Filesystem;
+    $root = __DIR__.'/Fixtures/css/preset-package';
+    $manifest = CssModuleManifest::fromArray([
+        'modules' => [
+            'surfaces' => [
+                'components' => ['panel'],
+                'controllers' => [],
+                'dependencies' => [],
+            ],
+            'actions' => [
+                'components' => ['action'],
+                'controllers' => [],
+                'dependencies' => ['surfaces'],
+            ],
+            'feedback' => [
+                'components' => [],
+                'controllers' => ['status'],
+                'dependencies' => [],
+            ],
+        ],
+        'presets' => [
+            'constellation' => [
+                'sources' => [
+                    [
+                        'path' => 'presets/constellation/layout/surfaces.css',
+                        'modules' => ['surfaces', 'actions'],
+                    ],
+                    [
+                        'path' => 'presets/constellation/feedback.css',
+                        'modules' => ['feedback'],
+                    ],
+                ],
+            ],
+            'orbit' => [
+                'sources' => [
+                    [
+                        'path' => 'presets/orbit/all.css',
+                        'modules' => ['surfaces', 'actions', 'feedback'],
+                    ],
+                ],
+            ],
+        ],
+    ]);
+
+    return new CssPresetFiles($files, new PresetSourceResolver($files, $root), $manifest);
 }
 
 function dom(string $html): DOMDocument

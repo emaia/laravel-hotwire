@@ -17,7 +17,7 @@ final readonly class CssPresetFiles
     {
         $presets = [];
 
-        foreach ($this->files->glob(dirname(__DIR__, 2).'/resources/css/presets/*.css') ?: [] as $path) {
+        foreach ($this->files->glob($this->sources->cssRoot().'/presets/*.css') ?: [] as $path) {
             if (! $this->files->isFile($path)) {
                 continue;
             }

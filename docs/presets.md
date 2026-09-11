@@ -16,8 +16,9 @@ The installer writes a thin `resources/css/app.css` that imports Tailwind and en
 @import '../../vendor/emaia/laravel-hotwire/resources/css/presets/nova.css';
 ```
 
-That public entrypoint aggregates Nova's ordered visual sources. Their internal paths are an implementation detail;
-applications should keep importing `presets/nova.css` rather than individual package files.
+That public entrypoint aggregates the selected preset's ordered visual sources. Their grouping and internal paths are
+implementation details of that preset; applications should keep importing its public `presets/<name>.css` entrypoint
+rather than individual package files.
 
 The available CSS artifacts have different ownership and upgrade behavior:
 
@@ -29,8 +30,8 @@ The available CSS artifacts have different ownership and upgrade behavior:
 
 ## Generate a selective bundle
 
-The complete preset is the safe default. For a layout that uses a known subset of components, generate an
-application entrypoint without the omitted visual modules:
+The complete preset is the safe default. For a layout that uses a known subset of components, generate an application
+entrypoint without unrelated visual sources:
 
 ```bash
 php artisan hotwire:styles \
@@ -50,6 +51,8 @@ Replace the complete preset import in that layout's CSS entrypoint with the gene
 
 `--components` accepts catalog component keys and may be repeated or comma-separated. The command automatically
 includes controllers mounted by those components, shared visual modules and their transitive dependencies.
+When a preset groups several logical modules in one source, selecting any of them conservatively keeps that complete
+source; co-located styles may therefore remain in the bundle.
 `--include` accepts additional component keys or Stimulus controller identifiers; use it for UI rendered dynamically
 by PHP, Turbo Streams, vendor views or JavaScript when that UI is not represented by the layout's initial component
 list. Controller identifiers with `--` may also use their publish form, such as `turbo/progress`. The output must stay
@@ -120,8 +123,9 @@ To customize Nova instead of starting from empty selectors, clone it into the ap
 php artisan hotwire:make-preset brand --from=nova
 ```
 
-The clone is one application-owned file: package foundation imports are rewritten to their vendor paths and Nova's
-private visual sources are flattened in canonical order. It never leaves imports to package-internal module paths.
+The clone is one application-owned file: package foundation imports are rewritten to their vendor paths and the
+selected preset's private visual sources are flattened in its canonical order. It never leaves imports to
+package-internal module paths, regardless of how that preset groups or nests its sources.
 
 Both scaffold and clone are snapshots. The vendor files referenced by their existing foundation imports continue to
 update, but copied visual rules and newly introduced foundation imports do not. Review upgrade notes and merge relevant

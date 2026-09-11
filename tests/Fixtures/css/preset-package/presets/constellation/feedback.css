@@ -1,0 +1,5 @@
+@layer components {
+    [data-state="busy"] [data-slot="status"] {
+        opacity: 0.5;
+    }
+}
