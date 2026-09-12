@@ -177,9 +177,14 @@ Use `field.label` instead of `field.title` when a real label association is need
 The internal component-data keys are `fieldName`, `fieldId`, `fieldErrorKey`, and `fieldRequired`. Application
 subcomponents that intentionally consume Field context should use those scoped names. Explicit control props take
 precedence over inherited context; an explicit `:required="false"` also opts a control out of a required Field. A
-control that declares a different `name` derives its own id instead of reusing the Field id. Controls that inherit the
+control that declares a different `name` derives its own id — scoped to the enclosing form when present — instead of
+reusing the Field id. Controls that inherit the
 Field name, or explicitly repeat it, continue to inherit the Field id. `field.label` and `field.error` use the same
 resolution order, keeping explicit names, `for`, error ids, and `aria-describedby` aligned.
+
+Inside an `<hw:form>`, name-derived ids are prefixed with the form id, so the same `name` stays unique across forms in
+one document; duplicate names inside one form receive numeric suffixes. Outside a form, ids remain the bare name. An
+explicit Field `id` always wins and is never scoped.
 
 ### Field owners other than `<hw:field>`
 

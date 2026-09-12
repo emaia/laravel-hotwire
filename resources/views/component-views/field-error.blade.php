@@ -1,14 +1,19 @@
-@aware(['fieldName' => null, 'fieldId' => null, 'fieldErrorKey' => null, 'fieldOwner' => false, 'fieldOwnerName' => null, 'fieldOwnerId' => null, 'fieldOwnerErrorKey' => null])
+@aware(['fieldName' => null, 'fieldId' => null, 'fieldScope' => null, 'fieldErrorKey' => null, 'fieldOwner' => false, 'fieldOwnerName' => null, 'fieldOwnerId' => null, 'fieldOwnerErrorKey' => null])
 
 @php
     $ownerName = $fieldOwner ? $fieldOwnerName : $fieldName;
     $ownerId = $fieldOwner ? $fieldOwnerId : $fieldId;
     $ownerErrorKey = $fieldOwner ? $fieldOwnerErrorKey : $fieldErrorKey;
     $explicitName = $name ?? null;
+    $explicitId = $id ?? null;
     $resolvedName = $explicitName ?? $ownerName;
     $resolvedBaseId = \Emaia\LaravelHotwire\Support\FieldKey::resolveId(null, $explicitName, $ownerId, $ownerName);
     $resolvedErrorKey = \Emaia\LaravelHotwire\Support\FieldKey::resolveErrorKey($errorKey ?? null, $explicitName, $ownerErrorKey, $ownerName);
-    $resolvedContextId = $id ?? ($resolvedBaseId ? $resolvedBaseId.'-error' : null);
+    if ($explicitId === null && $explicitName !== null && $explicitName !== '' && $explicitName !== $ownerName) {
+        $resolvedContextId = \Emaia\LaravelHotwire\Support\FieldKey::scopedToErrorId($fieldScope, $explicitName);
+    } else {
+        $resolvedContextId = $explicitId ?? ($resolvedBaseId ? $resolvedBaseId.'-error' : null);
+    }
     extract($compute($resolvedName, $resolvedErrorKey, $resolvedContextId, $errors));
 @endphp
 

@@ -56,6 +56,25 @@ it('restarts the sequence in a fresh request scope', function () {
     expect(app(ComponentId::class)->next('modal'))->toBe('modal-page-1');
 });
 
+it('claims preferred ids per scope with numeric suffixes', function () {
+    $ids = app(ComponentId::class);
+
+    expect($ids->claim('search', 'search-title'))->toBe('search-title')
+        ->and($ids->claim('search', 'search-title'))->toBe('search-title-2')
+        ->and($ids->claim('other', 'search-title'))->toBe('search-title')
+        ->and($ids->claim('search', 'search-title-error'))->toBe('search-title-error')
+        ->and($ids->next('modal'))->toBe('modal-page-1');
+});
+
+it('skips already claimed ids when resolving suffixed candidates', function () {
+    $ids = app(ComponentId::class);
+
+    expect($ids->claim('s', 'title'))->toBe('title')
+        ->and($ids->claim('s', 'title'))->toBe('title-2')
+        ->and($ids->claim('s', 'title-2'))->toBe('title-2-2')
+        ->and($ids->claim('s', 'title'))->toBe('title-3');
+});
+
 it('preserves explicit ids and derives model ids with a component prefix', function () {
     $record = new ComponentIdRecord;
     $record->id = 42;

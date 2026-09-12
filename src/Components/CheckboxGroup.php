@@ -105,7 +105,7 @@ class CheckboxGroup extends Component
         $data['fieldOwnerName'] = $this->name;
         $fieldContext = FieldContext::consume();
         $data['fieldOwnerId'] = $fieldContext?->selectionId($this->id, $this->name)
-            ?? ($this->id ?: ($this->name ? FieldKey::toId($this->name) : null));
+            ?? ($this->id ?: ($this->name ? FieldKey::scopedToId(FieldKey::scope(), $this->name) : null));
         $data['checkboxGroupId'] = $data['fieldOwnerId'];
         $data['fieldOwnerErrorKey'] = $this->errorKey;
         $data['fieldOwnerContext'] = $this->ownerContext;

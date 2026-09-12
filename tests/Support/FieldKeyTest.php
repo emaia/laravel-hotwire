@@ -58,6 +58,28 @@ it('handles deeply nested arrays for ids', function () {
     expect(FieldKey::toId('a[b][c][d]'))->toBe('a-b-c-d');
 });
 
+// --- scopedToId / scopedToErrorId / scopedIdFor ---
+
+it('derives bare ids when no scope is present', function () {
+    expect(FieldKey::scopedToId(null, 'email'))->toBe('email')
+        ->and(FieldKey::scopedToId('', 'email'))->toBe('email')
+        ->and(FieldKey::scopedToErrorId(null, 'email'))->toBe('email-error')
+        ->and(FieldKey::scopedIdFor(null, 'email'))->toBe('email');
+});
+
+it('prefixes ids with the form scope', function () {
+    expect(FieldKey::scopedToId('search', 'variables[0][name]'))->toBe('search-variables-0-name')
+        ->and(FieldKey::scopedToErrorId('search', 'email'))->toBe('search-email-error')
+        ->and(FieldKey::scopedIdFor('search', 'email'))->toBe('search-email');
+});
+
+it('reserves unique scoped ids for repeated names', function () {
+    expect(FieldKey::scopedToId('search', 'title'))->toBe('search-title')
+        ->and(FieldKey::scopedToId('search', 'title'))->toBe('search-title-2')
+        ->and(FieldKey::scopedToErrorId('search', 'title'))->toBe('search-title-error')
+        ->and(FieldKey::scopedToErrorId('search', 'title'))->toBe('search-title-error-2');
+});
+
 // --- resolveId ---
 
 it('resolves one identity precedence for controls labels and errors', function (

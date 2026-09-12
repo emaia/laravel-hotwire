@@ -17,6 +17,7 @@ Form wrapper that composes optional Stimulus behaviors via boolean props. Render
 
 | Prop                 | Type                | Default | Description                                                                                                                                                      |
 |----------------------|---------------------|---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `id`                 | `string\|object`    | `''`    | Form identity and field id scope. Explicit strings pass through; objects resolve through `dom_id()`; omitted resolves to a deterministic `hw-form-<scope>-<n>` id |
 | `auto-submit`        | `bool`              | `false` | Adds the `auto-submit` controller for fields that opt into automatic submission                                                                                  |
 | `auto-submit-delay`  | `int\|string\|null` | `null`  | Global debounce delay for `auto-submit#debouncedSubmit`; the controller default is `300` ms when omitted                                                         |
 | `unsaved-changes`    | `bool`              | `false` | Warns before navigating away with unsaved changes                                                                                                                |
@@ -32,6 +33,20 @@ Any other HTML attribute (`action`, `method`, `class`, `data-*`, `aria-*`) passe
 Method defaults to `post` unless overridden.
 
 The component automatically includes `@csrf` for all non-GET methods and `@method` for PUT, PATCH, and DELETE forms.
+
+## Field id scope
+
+The form id doubles as the scope for ids derived from field names. `<hw:field name="title">` inside this form emits
+`hw-form-page-1-title` — or `{form-id}-title` with an explicit `id` — so the same `name` stays unique across forms in
+one document. Duplicate names within one form receive numeric suffixes (`...-title-2`). Inside a single `<hw:field>`,
+labels, `aria-describedby` and error nodes stay paired with their control; loose label/control/error components with a
+repeated name in one form get unique ids but should prefer a `<hw:field>` wrapper or explicit ids. Fields rendered
+outside an `<hw:form>` keep their plain name-derived ids.
+
+The automatic `hw-form-<scope>-<n>` id is positional, and the scope changes between a full-page render (`page`) and a
+standalone frame render (`frame-<id>`). Give the form an explicit or model `id` when it can be refreshed alone by a
+Turbo Frame or Stream, or when it lives in a reorderable collection — otherwise every field id moves along with it and
+Turbo morph persistence degrades.
 
 ## Controllers
 

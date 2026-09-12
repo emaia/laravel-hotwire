@@ -65,4 +65,44 @@ final class FieldKey
 
         return str_replace(['[', '.', ']'], ['-', '-', ''], $name);
     }
+
+    /** Resolve the id scope opened by an enclosing Form, when present. */
+    public static function scope(): ?string
+    {
+        $scope = app('view')->getConsumableComponentData('fieldScope');
+
+        return is_string($scope) && $scope !== '' ? $scope : null;
+    }
+
+    /** Derive a name id within a form scope, reserving a unique base id. */
+    public static function scopedToId(?string $scope, string $name): string
+    {
+        $base = self::toId($name);
+
+        if ($scope === null || $scope === '') {
+            return $base;
+        }
+
+        return app(ComponentId::class)->claim($scope, $scope.'-'.$base);
+    }
+
+    /** Derive a name error id within a form scope, reserving a unique id. */
+    public static function scopedToErrorId(?string $scope, string $name): string
+    {
+        $base = self::toId($name).'-error';
+
+        if ($scope === null || $scope === '') {
+            return $base;
+        }
+
+        return app(ComponentId::class)->claim($scope, $scope.'-'.$base);
+    }
+
+    /** Derive the id a same-named control will claim in a form scope, without reserving it. */
+    public static function scopedIdFor(?string $scope, string $name): string
+    {
+        $base = self::toId($name);
+
+        return $scope !== null && $scope !== '' ? $scope.'-'.$base : $base;
+    }
 }

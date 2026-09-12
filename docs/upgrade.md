@@ -6,6 +6,23 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 
 ## Unreleased
 
+### Form-scoped field ids
+
+`<hw:form>` now resolves a deterministic id — explicit string, model, or automatic `hw-form-<scope>-<n>` — and renders
+it on the `<form>` element. Field-aware controls, `field.label`, `field.error` and selection groups inside the form
+derive their ids from that scope: `<hw:field name="title">` inside a form now emits `hw-form-page-1-title` (or
+`{form-id}-title` with an explicit id) instead of the bare `title`. Duplicate names inside one form receive numeric
+suffixes (`...-title-2`), keeping every id unique across the document. Inside a single `<hw:field>`, labels,
+`aria-describedby` and error nodes stay paired with their control; loose label/control/error components with a repeated
+name in one form receive unique ids but should prefer a `<hw:field>` wrapper or explicit ids.
+
+Fields rendered outside an `<hw:form>` keep their name-derived ids unchanged. Update application CSS, JavaScript and
+browser tests that target name-derived ids inside package forms (`#title` becomes a scoped id). Give a form an explicit
+`id` when external code addresses it, when its fields appear in a collection whose order can change, or when the form is
+rendered standalone by a Turbo Frame or Stream — the automatic id is positional and its scope changes between page and
+frame renders, moving every field id along with it. See
+[Stable component ids](recipes/stable-component-ids.md).
+
 ### Textarea counter uses a collision-free named slot
 
 The Textarea counter example now uses `<x-slot:counter-slot>` instead of `<x-slot:counter>`. The old name shadows the
