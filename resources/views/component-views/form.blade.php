@@ -5,6 +5,7 @@
 
     $formAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
         'data-slot' => $slotName,
+        'id' => $form->id,
         'data-controller' => $controller ?: null,
         'data-auto-submit-delay-value' => $form->autoSubmit ? $form->autoSubmitDelay : null,
         'data-turbo-frame' => $resolvedFrame,

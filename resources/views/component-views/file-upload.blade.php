@@ -1,9 +1,13 @@
-@aware(['fieldName' => null, 'fieldId' => null, 'fieldErrorKey' => null, 'fieldRequired' => false, 'fieldControlContext' => null])
+@aware(['fieldName' => null, 'fieldId' => null, 'fieldScope' => null, 'fieldErrorKey' => null, 'fieldRequired' => false, 'fieldControlContext' => null])
 
 @php
     $controller = \Emaia\LaravelHotwire\Support\StimulusIdentifier::guard((string) $controller, 'file-upload');
     $explicitName = $name ?? null;
-    $id = \Emaia\LaravelHotwire\Support\FieldKey::resolveId($id ?? null, $explicitName, $fieldId, $fieldName);
+    $explicitId = $id ?? null;
+    $id = \Emaia\LaravelHotwire\Support\FieldKey::resolveId($explicitId, $explicitName, $fieldId, $fieldName);
+    if ($explicitId === null && $explicitName !== null && $explicitName !== '' && $explicitName !== $fieldName) {
+        $id = \Emaia\LaravelHotwire\Support\FieldKey::scopedToId($fieldScope, $explicitName);
+    }
     $errorKey = \Emaia\LaravelHotwire\Support\FieldKey::resolveErrorKey($errorKey ?? null, $explicitName, $fieldErrorKey, $fieldName);
     $name = $explicitName ?? $fieldName;
     extract($compute($name, $id, $errorKey, $fieldRequired ?? false, $errors, $attributes));
