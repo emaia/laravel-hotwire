@@ -2,6 +2,30 @@
 
 use Illuminate\Support\Facades\File;
 
+it('documents both official presets and their typography boundary', function () {
+    $presets = File::get(__DIR__.'/../../docs/presets.md');
+    $theming = File::get(__DIR__.'/../../docs/theming.md');
+
+    expect($presets)
+        ->toContain('Nova')
+        ->toContain('Bloom')
+        ->toContain('--preset=bloom')
+        ->toContain('--from=bloom')
+        ->and($theming)
+        ->toContain('Preset-owned tokens');
+});
+
+it('documents the tokens a preset owns and how an application still overrides them', function () {
+    $theming = File::get(__DIR__.'/../../docs/theming.md');
+
+    expect($theming)
+        ->toContain('Preset-owned tokens')
+        ->toContain('--radius-control')
+        ->toContain('keeps the same name and role')
+        ->and(File::get(__DIR__.'/../../docs/presets.md'))
+        ->toContain('preset-owned-tokens');
+});
+
 it('keeps preset authoring separate from component markup and controller wiring', function () {
     $theming = File::get(__DIR__.'/../../docs/theming.md');
     $registry = File::get(__DIR__.'/../../docs/registry.md');

@@ -171,7 +171,7 @@ first-paint cascade, keep the indexes server-rendered as shown above. Without th
 uses index `0`; a lazy controller may connect only after CSS has already started those items together. Configuring
 `reveal` under `hotwire.controllers.eager` narrows that window but is not the same guarantee as rendering the index.
 
-On a desktop sidebar initially collapsed with `collapsible="icon"`, Nova suppresses Reveal on group labels because that
+On a desktop sidebar initially collapsed with `collapsible="icon"`, shipped presets suppress Reveal on group labels because that
 state already hides the label with `opacity: 0`. The label still consumes its declared cascade index, leaving one timing
 step with no visible animation; reindexing by runtime visibility would add disproportionate complexity. Expanded and
 mobile labels keep their normal Reveal entrance.

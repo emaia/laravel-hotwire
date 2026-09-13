@@ -1,0 +1,4 @@
+@layer components {
+    /* Timeago */
+    [data-slot="timeago"] { @apply text-muted-foreground; }
+}

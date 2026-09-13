@@ -90,6 +90,28 @@ it('declares all radius tokens', function () use ($tokensPath) {
     }
 });
 
+it('lets Bloom own its palette and geometry scale without touching the shared defaults', function () use ($tokensPath) {
+    $tokens = file_get_contents($tokensPath);
+    $bloom = presetVisualCss('bloom');
+    $nova = presetVisualCss('nova');
+    $palette = ['--primary:', '--accent:', '--muted:', '--ring:', '--border:', '--sidebar:'];
+
+    expect($tokens)->toContain('--radius: 0.625rem')
+        ->and($bloom)->toContain('--radius:')
+        ->and($nova)->not->toContain('--radius:');
+
+    foreach ($palette as $token) {
+        expect(substr_count($bloom, $token))->toBeGreaterThanOrEqual(2, "Bloom must redefine {$token} for both themes.")
+            ->and($nova)->not->toContain($token);
+    }
+});
+
+it('caps the Bloom control radius so small controls never resolve to a circle', function () {
+    expect(presetVisualCss('bloom'))
+        ->toContain('--radius-control:')
+        ->toContain('min(');
+});
+
 it('uses proportional scaling for radius derivations', function () use ($tokensPath) {
     expect(file_get_contents($tokensPath))
         ->toContain('--radius-sm: calc(var(--radius) * 0.6)')
@@ -155,8 +177,8 @@ it('safelists runtime classes applied by Stimulus controllers', function () {
         ->toContain('overflow-hidden');
 });
 
-it('keeps back to top appearance in Nova and mechanics in the structural foundation', function () {
-    $css = presetVisualCss('nova');
+it('keeps back to top appearance in each preset and mechanics in the structural foundation', function (string $preset) {
+    $css = presetVisualCss($preset);
     $structural = File::get(__DIR__.'/../../resources/css/structural.css');
     $axes = (new PresetAxes)->extract($css);
 
@@ -170,7 +192,7 @@ it('keeps back to top appearance in Nova and mechanics in the structural foundat
         ->and($axes['back-to-top']['data-size'] ?? [])
         ->not->toBeEmpty()
         ->toEqualCanonicalizing($axes['button']['data-size'] ?? [])
-        ->and(File::get(__DIR__.'/../../resources/css/presets/nova/back-to-top.css'))
+        ->and(File::get(__DIR__.'/../../resources/css/presets/'.$preset.'/back-to-top.css'))
         ->not->toContain('@media (prefers-reduced-motion: reduce)')
         ->and($structural)
         ->toContain('@media (prefers-reduced-motion: reduce) {')
@@ -180,7 +202,7 @@ it('keeps back to top appearance in Nova and mechanics in the structural foundat
         ->toContain('transition: none !important')
         ->not->toContain('[data-slot="back-to-top"] { @apply transition-none; }')
         ->not->toContain('motion-reduce:transition-none');
-});
+})->with('design presets');
 
 it('uses the pre-connect color scheme mode to avoid toggle icon flicker', function () {
     $css = File::get(__DIR__.'/../../resources/css/structural.css');
@@ -201,6 +223,10 @@ it('uses resolved icons when system is outside a color scheme toggle cycle', fun
         ->toContain('html[data-color-scheme-mode="system"][data-theme="dark"] [data-slot="color-scheme-toggle"]:not([data-color-scheme-modes-value~="system"]) [data-scheme-icon="dark"]')
         ->toContain('html:not([data-color-scheme-mode]) [data-slot="color-scheme-toggle"][data-mode="system"]:not([data-color-scheme-modes-value~="system"])[data-scheme="light"] [data-scheme-icon="light"]');
 });
+
+it('uses valid color interpolation syntax', function (string $preset) {
+    expect(presetVisualCss($preset))->not->toMatch('/(?<!\[)color-mix\(in_oklch/');
+})->with('design presets');
 
 it('preserves existing @custom-variant rules', function () use ($variantsPath) {
     $css = file_get_contents($variantsPath);
@@ -769,6 +795,8 @@ it('keeps input-group focus and addon layout owned by the group', function (stri
 it('uses physical inline CSS only for documented physical contracts', function (string $preset) {
     $css = presetVisualCss($preset);
     $structural = File::get(__DIR__.'/../../resources/css/structural.css');
+    // The physical side is the shared contract; each preset chooses the radius step it rounds to.
+    $drawerRadius = $preset === 'bloom' ? '2xl' : 'xl';
     $allowed = [
         '[data-slot="carousel"][data-carousel-axis="y"] > :is([data-slot="carousel-prev-button"], [data-slot="carousel-next-button"])' => ['left-1/2', '-translate-x-1/2'],
         '[data-slot="sheet-overlay"][data-state="closed"] > [data-slot="sheet-content"][data-side="right"]' => ['translate-x-10'],
@@ -779,8 +807,8 @@ it('uses physical inline CSS only for documented physical contracts', function (
         '[data-slot="drawer-overlay"][data-state="closed"] > [data-slot="drawer-popup"][data-direction="right"]' => ['translate-x-full'],
         '[data-slot="drawer-overlay"][data-state="closed"] > [data-slot="drawer-popup"][data-direction="left"]' => ['-translate-x-full'],
         '[data-slot="drawer-overlay"][data-state="open"] > [data-slot="drawer-popup"]' => ['translate-x-0'],
-        '[data-slot="drawer-popup"][data-direction="right"]' => ['right-0', 'rounded-l-xl', 'border-l'],
-        '[data-slot="drawer-popup"][data-direction="left"]' => ['left-0', 'rounded-r-xl', 'border-r'],
+        '[data-slot="drawer-popup"][data-direction="right"]' => ['right-0', 'rounded-l-'.$drawerRadius, 'border-l'],
+        '[data-slot="drawer-popup"][data-direction="left"]' => ['left-0', 'rounded-r-'.$drawerRadius, 'border-r'],
         '[data-slot="sidebar-container"]' => ['left-0', 'right-0'],
         '[data-slot="sidebar"][data-collapsible="offcanvas"] [data-slot="sidebar-container"][data-side="left"]' => ['left-[calc(var(--sidebar-width)*-1)]'],
         '[data-slot="sidebar"][data-collapsible="offcanvas"] [data-slot="sidebar-container"][data-side="right"]' => ['right-[calc(var(--sidebar-width)*-1)]'],

@@ -1,0 +1,12 @@
+@layer components {
+    /* Tooltip */
+    [data-slot="tooltip"] { @apply pointer-events-auto z-50 w-fit max-w-72 origin-(--transform-origin) overflow-visible rounded-lg bg-foreground px-4 py-2 text-xs text-balance text-background shadow-lg duration-200 ease-out; }
+    [data-slot="tooltip"]:has(> [data-slot="kbd"]) { @apply inline-flex items-center gap-1.5; }
+    [data-slot="tooltip"][data-anchor-hidden] { @apply invisible; }
+    [data-slot="tooltip"] [data-slot="kbd"] { @apply bg-background/20 text-background; }
+    [data-slot="tooltip-arrow"] { @apply pointer-events-none absolute z-50 size-3 rotate-45 rounded-[3px] bg-foreground; }
+
+    @scope ([data-theme="dark"]) to ([data-theme="light"]) {
+        [data-slot="tooltip"] :where(:scope, :scope *)[data-slot="kbd"] { @apply bg-background/10; }
+    }
+}

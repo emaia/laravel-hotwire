@@ -1,0 +1,3 @@
+@layer components {
+    [data-slot="reveal"], [data-slot="sidebar-container"][data-controller~="reveal"], [data-slot="sidebar"][data-controller~="reveal"] { --reveal-blur: 6px; --reveal-shift: 0.75rem; }
+}

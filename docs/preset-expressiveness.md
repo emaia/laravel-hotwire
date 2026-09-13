@@ -26,7 +26,7 @@ emit. Component-library classes, portals and application-specific selectors are 
 | Lyra  | Compact                    | Square                              | Mono-oriented and often extra small    | Flat surfaces and 1px focus rings            | CSS plus font pairing               |
 | Mira  | Densest, 1.75rem controls  | Modest radius                       | Extra small                            | Compact menus and 2px focus rings            | CSS over existing parts             |
 | Luma  | Spacious                   | Pill/blob geometry                  | Calm sans                              | Translucent fills, blur and strong elevation | CSS plus preset-local metrics       |
-| Sera  | Spacious, 2.5rem controls  | Square                              | Editorial headings, uppercase controls | Rules, underlined controls and 2px rings     | CSS plus `--font-heading` candidate |
+| Sera  | Spacious, 2.5rem controls  | Square                              | Editorial headings, uppercase controls | Rules, underlined controls and 2px rings     | CSS plus `--font-heading`           |
 | Rhea  | Compact                    | Soft, capped radius                 | Neutral sans                           | Luma-like fills/elevation at Nova density    | CSS over existing parts             |
 
 The eight styles collapse into four useful stress dimensions:
@@ -85,7 +85,7 @@ fixture CSS. Tooltip is eligible for the same semantic tree but is not yet rende
 | Tooltip component anatomy            | Semantic parts             | `Tooltip::SLOTS` owns package-styled surface and arrow slots while the trigger controller owns lifecycle   | Implemented; retain in final QA            |
 | Toaster anatomy                      | Semantic parts             | `Toaster::SLOTS` owns the internal card template while JavaScript preserves state/lifecycle contracts      | Implemented; retain in final QA            |
 | Overlay strength and blur            | Preset-local CSS           | `--backdrop` already provides the color hook; blur and elevation can remain internal preset variables      | Bloom/preset CSS                           |
-| Heading typography                   | Shared token candidate     | `--font-heading` is useful across Card, Alert, overlays and editorial recipes                              | Bloom/theming review                       |
+| Heading typography                   | Application concern        | Bloom carries editorial hierarchy through scale and weight; font files stay an application choice          | Not adopted; revisit with an editorial preset |
 | Logical floating sides               | Possible behavior API      | Current resolved physical `data-side` output is sufficient for visual presets                              | Independent Floating UI API review         |
 | Upstream questionnaire/custom Select | React/application-specific | Not part of the package semantic contract                                                                  | Do not port                                |
 
@@ -161,13 +161,14 @@ radius, menu treatment, direction and pointer cursor as separate dimensions. Rec
 are curated defaults, not dependencies of the stylesheet. Laravel Hotwire should preserve the same separation:
 
 - presets own component appearance;
-- semantic tokens own palette;
+- semantic tokens own palette, and a preset may ship its own values or explicitly registered additional names;
 - application CSS owns font loading and font-token values;
 - Icon remains independent of the visual preset;
 - RTL and accessibility behavior remain shared contracts.
 
-Nova covers compact, neutral product UI. Bloom should cover the opposing spacious, rounded, elevated and expressive
-territory on the same semantic tree. That pair is sufficient for the core because the package's responsibility is to
+Nova covers compact, neutral product UI. Bloom now covers the opposing spacious, elevated and expressive territory on
+the same semantic tree, with modular visual sources, a chromatic palette, restrained surface radii, tinted
+notification surfaces and softer motion. That pair is sufficient for the core because the package's responsibility is to
 prove the architecture and provide authoring/tooling, not to maintain every visual genre. Square/mono, editorial,
 ultra-dense and glass-like treatments are better published as application or community recipes. If a future third core
 preset is justified by demand, the Sera-like editorial extreme adds more independent coverage than another neutral or

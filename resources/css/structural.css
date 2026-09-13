@@ -978,6 +978,23 @@ html[data-color-scheme-transitioning]::view-transition-new(root) {
  */
 
 @layer hotwire-accessibility {
+    @media (prefers-reduced-motion: reduce) {
+        :where(
+            [data-slot="skeleton"],
+            [data-slot="spinner"],
+            [data-slot="pagination-next-spinner"]
+        ) {
+            animation: none !important;
+        }
+
+        :where(
+            [data-slot="progress-indicator"],
+            [data-slot="carousel-progress"]
+        ) {
+            transition: none !important;
+        }
+    }
+
     @media (forced-colors: active), print {
         :where(input[data-checkable="true"], [data-slot="switch"]) {
             appearance: auto;
@@ -1075,6 +1092,16 @@ html[data-color-scheme-transitioning]::view-transition-new(root) {
     }
 
     @media print {
+        :where(
+            [data-shimmer="true"],
+            [data-slot="attachment"][data-state="processing"] [data-slot="attachment-title"],
+            [data-slot="attachment"][data-state="uploading"] [data-slot="attachment-title"]
+        ) {
+            color: inherit;
+            background-image: none;
+            animation: none;
+        }
+
         :where([data-slot="slider"]) {
             appearance: auto;
         }

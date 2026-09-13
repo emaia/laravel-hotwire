@@ -4,12 +4,20 @@
         "cli": "4.3.3"
     },
     "presets": {
+        "bloom": {
+            "rawBytes": 317856,
+            "gzipBytes": 31088
+        },
         "nova": {
             "rawBytes": 302334,
             "gzipBytes": 29302
         }
     },
     "selectives": {
+        "bloom": {
+            "rawBytes": 70117,
+            "gzipBytes": 9518
+        },
         "nova": {
             "rawBytes": 70535,
             "gzipBytes": 9356

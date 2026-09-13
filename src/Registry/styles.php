@@ -6,7 +6,7 @@ $module = static fn (
     array $dependencies = [],
 ): array => compact('components', 'controllers', 'dependencies');
 
-$novaModules = [
+$visualModules = [
     'accordion',
     'alert',
     'alert-dialog',
@@ -248,6 +248,39 @@ return [
         'toaster' => $module(['toaster']),
     ],
     'presets' => [
+        'bloom' => [
+            'base' => ['presets/bloom/theme.css'],
+            'properties' => [
+                '--success' => 'themed',
+                '--success-foreground' => 'themed',
+                '--warning' => 'themed',
+                '--warning-foreground' => 'themed',
+                '--info' => 'themed',
+                '--info-foreground' => 'themed',
+                '--radius-action' => 'global',
+                '--radius-control' => 'global',
+            ],
+            'aliases' => [
+                '--color-success' => '--success',
+                '--color-success-foreground' => '--success-foreground',
+                '--color-warning' => '--warning',
+                '--color-warning-foreground' => '--warning-foreground',
+                '--color-info' => '--info',
+                '--color-info-foreground' => '--info-foreground',
+            ],
+            'contrast_pairs' => [
+                'success' => ['foreground' => '--success-foreground', 'background' => '--success'],
+                'warning' => ['foreground' => '--warning-foreground', 'background' => '--warning'],
+                'info' => ['foreground' => '--info-foreground', 'background' => '--info'],
+            ],
+            'sources' => array_map(
+                static fn (string $name): array => [
+                    'path' => "presets/bloom/{$name}.css",
+                    'modules' => [$name],
+                ],
+                $visualModules,
+            ),
+        ],
         'nova' => [
             'base' => [],
             'properties' => [],
@@ -258,7 +291,7 @@ return [
                     'path' => "presets/nova/{$name}.css",
                     'modules' => [$name],
                 ],
-                $novaModules,
+                $visualModules,
             ),
         ],
     ],

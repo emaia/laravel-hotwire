@@ -17,8 +17,7 @@ import {
 const slotSelector = (slot) => new RegExp(`\\[data-slot=(?:["'])?${slot}(?:["'])?\\]`);
 const attributeValueSelector = (attribute, value) => new RegExp(`\\[${attribute}=(?:["'])?${value}(?:["'])?\\]`);
 const carouselMechanic = /\[data-carousel-container\]/;
-const nearestThemeScope =
-    /@scope\s*\(\[data-theme=(?:"dark"|dark)\]\)\s*to\s*\(\[data-theme=(?:"light"|light)\]\)/;
+const nearestThemeScope = /@scope\s*\(\[data-theme=(?:"dark"|dark)\]\)\s*to\s*\(\[data-theme=(?:"light"|light)\]\)/;
 const automaticSourceUtility = String.raw`.w-\[811px\]`;
 const expressivenessFixturePath = new URL("../Fixtures/css/preset_expressiveness.css", import.meta.url);
 const applicationPresetFixturePath = new URL(
@@ -50,7 +49,7 @@ beforeAll(async () => {
 
 describe("public CSS presets", () => {
     test("compile every discovered preset through an installed-app entrypoint", () => {
-        expect(Object.keys(contract.outputs.presets).length).toBeGreaterThan(0);
+        expect(Object.keys(contract.outputs.presets)).toEqual(["bloom", "nova"]);
 
         for (const css of Object.values(contract.outputs.presets)) {
             expect(css).toContain("--background:");

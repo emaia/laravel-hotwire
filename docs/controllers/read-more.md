@@ -4,7 +4,7 @@ Measure a viewport around an intrinsic content body, expose whether it is `stati
 `expanded`, and keep its optional trigger, fade, labels, and icon synchronized.
 
 Use [`<hw:read-more>`](../components/read-more.md) for accessible markup, first-paint structural CSS,
-and Nova preset styling.
+and selected-preset styling.
 
 **Identifier:** `read-more`
 

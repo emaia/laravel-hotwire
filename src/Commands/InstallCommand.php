@@ -25,7 +25,7 @@ class InstallCommand extends Command
                         {--only= : Install only "js" or "css"}
                         {--with-deps=* : Add npm deps only for these controllers (comma-separated or repeatable). Without this flag (and without --core-only), every catalog dep is added.}
                         {--core-only : Add only core npm deps (stimulus, turbo, dynamic-loader). Skip catalog deps entirely.}
-                        {--preset=nova : CSS preset to import in resources/css/app.css (nova).}
+                        {--preset=nova : CSS preset to import in resources/css/app.css (bloom or nova).}
                         {--skip-install : Do not run the package manager (bun/npm/pnpm/yarn) install after writing package.json. Leaves dep fetching to the caller.}
                         {--fix : Auto-apply hotwire:check --fix during the post-install verification (non-interactive friendly)}';
 

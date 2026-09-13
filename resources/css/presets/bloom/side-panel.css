@@ -1,0 +1,9 @@
+@layer components {
+    /* Side Panel */
+    [data-slot="side-panel"] { --side-panel-motion-duration: 280ms; --side-panel-content-motion-duration: 220ms; --side-panel-motion-easing: cubic-bezier(0.22, 1, 0.36, 1); @apply w-full bg-background text-foreground; }
+    [data-slot="side-panel"]::before { @apply w-px bg-border transition-[left,right]; transition-duration: var(--side-panel-motion-duration); transition-timing-function: var(--side-panel-motion-easing); }
+    [data-slot="side-panel-panel-content"] { @apply h-full bg-muted/40 text-foreground shadow-inner; }
+    [data-slot="side-panel-inset"] { @apply flex flex-col bg-background; }
+    [data-slot="side-panel-trigger"] { @apply top-3 z-10 inline-flex items-center justify-center rounded-[var(--radius-action)] border border-border bg-card text-muted-foreground shadow-md transition-[left,right,color,background-color,box-shadow] outline-none hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50; transition-duration: var(--side-panel-motion-duration); transition-timing-function: var(--side-panel-motion-easing); }
+    [data-slot="side-panel-trigger-icon"] { @apply size-4 transition-transform; transition-duration: var(--side-panel-motion-duration); transition-timing-function: var(--side-panel-motion-easing); }
+}

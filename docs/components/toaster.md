@@ -166,7 +166,7 @@ driven by custom properties you can override anywhere in your own CSS:
 
 | Property                 | Default   | Controls                                              |
 |--------------------------|-----------|-------------------------------------------------------|
-| `--toast-width`          | `24rem`   | Card width in Nova                                    |
+| `--toast-width`          | preset    | Card width (`24rem` in Nova; `26rem` in Bloom)        |
 | `--toast-offset`         | `1rem`    | Distance from the viewport edges                      |
 | `--toast-mobile-offset`  | `1rem`    | Same, below 600px                                     |
 | `--toast-gap`            | `0.75rem` | Space between cards when the stack is expanded        |

@@ -1,0 +1,3 @@
+@layer components {
+    [data-slot="input-wrapper"][data-clearable="true"] :is([data-slot="input"], [data-slot="multi-select-search"]) { @apply pe-8; }
+}

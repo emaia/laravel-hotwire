@@ -38,7 +38,7 @@ On connect and input, the controller writes a clamped percentage:
 --slider-value: 25%;
 ```
 
-Use the variable in a track gradient. The `<hw:slider>` component and Nova preset provide this wiring automatically.
+Use the variable in a track gradient. The `<hw:slider>` component and shipped presets provide this wiring automatically.
 
 ## Form Reset
 
