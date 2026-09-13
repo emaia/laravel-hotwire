@@ -9,7 +9,7 @@ final readonly class CssModuleManifest
 {
     /**
      * @param  array<string, array{components: string[], controllers: string[], dependencies: string[]}>  $modules
-     * @param  array<string, array{sources: list<array{path: string, modules: string[]}>}>  $presets
+     * @param  array<string, array{base: string[], sources: list<array{path: string, modules: string[]}>}>  $presets
      */
     private function __construct(
         private array $modules,
@@ -66,7 +66,7 @@ final readonly class CssModuleManifest
         self::validatePresets($presets, $modules);
 
         /** @var array<string, array{components: string[], controllers: string[], dependencies: string[]}> $modules */
-        /** @var array<string, array{sources: list<array{path: string, modules: string[]}>}> $presets */
+        /** @var array<string, array{base: string[], sources: list<array{path: string, modules: string[]}>}> $presets */
         return new self($modules, $presets);
     }
 
@@ -103,7 +103,7 @@ final readonly class CssModuleManifest
     }
 
     /**
-     * Return selected private sources in canonical preset order.
+     * Return preset base followed by selected module sources in canonical order.
      *
      * @param  string[]  $modules
      * @return string[]
@@ -120,13 +120,39 @@ final readonly class CssModuleManifest
             }
         }
 
-        return array_values(array_map(
+        $sources = array_values(array_map(
             fn (array $source): string => $source['path'],
             array_filter(
                 $this->presets[$preset]['sources'],
                 fn (array $source): bool => array_intersect($modules, $source['modules']) !== [],
             ),
         ));
+
+        return [...$this->presets[$preset]['base'], ...$sources];
+    }
+
+    /**
+     * Return ordered preset base sources.
+     *
+     * @return string[]
+     */
+    public function baseFor(string $preset): array
+    {
+        if (! isset($this->presets[$preset])) {
+            throw new PresetSourceException("Unknown CSS module preset [{$preset}].");
+        }
+
+        return $this->presets[$preset]['base'];
+    }
+
+    /**
+     * Return every private source in canonical preset order.
+     *
+     * @return string[]
+     */
+    public function allSourcesFor(string $preset): array
+    {
+        return $this->sourcesFor($preset, array_keys($this->modules));
     }
 
     /** @param mixed[] $values */
@@ -188,17 +214,32 @@ final readonly class CssModuleManifest
     {
         foreach ($presets as $preset => $definition) {
             if (preg_match('/^[a-z][a-z0-9-]*$/', $preset) !== 1
-                || ! is_array($definition) || ! isset($definition['sources']) || ! is_array($definition['sources'])) {
+                || ! is_array($definition)
+                || ! isset($definition['base'], $definition['sources'])
+                || ! is_array($definition['base'])
+                || ! is_array($definition['sources'])
+                || ! array_is_list($definition['base'])
+                || ! array_is_list($definition['sources'])) {
                 throw new PresetSourceException('CSS module manifest contains an invalid preset definition.');
             }
 
             $paths = [];
             $mappedModules = [];
 
+            self::validateStringList($definition['base'], "CSS module preset [{$preset}] base");
+
+            foreach ($definition['base'] as $path) {
+                if (! self::validSourcePath($path, $preset)) {
+                    throw new PresetSourceException("CSS module preset [{$preset}] contains an invalid base source.");
+                }
+
+                $paths[$path] = true;
+            }
+
             foreach ($definition['sources'] as $source) {
                 if (! is_array($source) || ! isset($source['path'], $source['modules'])
                     || ! is_string($source['path']) || ! is_array($source['modules'])
-                    || preg_match("~^presets/{$preset}/(?:[a-z0-9-]+/)*[a-z0-9-]+\\.css$~", $source['path']) !== 1) {
+                    || ! self::validSourcePath($source['path'], $preset)) {
                     throw new PresetSourceException("CSS module preset [{$preset}] contains an invalid source.");
                 }
 
@@ -208,6 +249,10 @@ final readonly class CssModuleManifest
 
                 $paths[$source['path']] = true;
                 self::validateStringList($source['modules'], "CSS source [{$source['path']}] modules");
+
+                if ($source['modules'] === []) {
+                    throw new PresetSourceException("CSS source [{$source['path']}] must map at least one module.");
+                }
 
                 foreach ($source['modules'] as $module) {
                     if (! isset($modules[$module])) {
@@ -226,6 +271,11 @@ final readonly class CssModuleManifest
                 );
             }
         }
+    }
+
+    private static function validSourcePath(string $path, string $preset): bool
+    {
+        return preg_match("~^presets/{$preset}/(?:[a-z0-9-]+/)*[a-z0-9-]+\\.css$~", $path) === 1;
     }
 
     private function validatePackageContract(): void
@@ -250,9 +300,15 @@ final readonly class CssModuleManifest
         }
 
         foreach ($this->presets as $preset => $definition) {
-            foreach ($definition['sources'] as $source) {
-                if (! is_file($cssRoot.$source['path'])) {
-                    throw new PresetSourceException("CSS module preset [{$preset}] source [{$source['path']}] does not exist.");
+            $entrypoint = "presets/{$preset}.css";
+
+            if (! is_file($cssRoot.$entrypoint)) {
+                throw new PresetSourceException("CSS preset [{$preset}] entrypoint [{$entrypoint}] does not exist.");
+            }
+
+            foreach ($this->allSourcesFor($preset) as $source) {
+                if (! is_file($cssRoot.$source)) {
+                    throw new PresetSourceException("CSS module preset [{$preset}] source [{$source}] does not exist.");
                 }
             }
         }

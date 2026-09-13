@@ -33,9 +33,10 @@ it('scaffolds every visual catalog slot once without structural slots', function
     preg_match_all('/^\s*\[data-slot="([a-z0-9-]+)"\] \{\}$/m', $css, $rules);
 
     expect(File::exists($path))->toBeTrue()
-        ->and($css)->toContain('@import "../../../vendor/emaia/laravel-hotwire/resources/css/tokens.css";')
-        ->and($css)->toContain('@import "../../../vendor/emaia/laravel-hotwire/resources/css/custom-variants.css";')
-        ->and($css)->toContain('@import "../../../vendor/emaia/laravel-hotwire/resources/css/structural.css";')
+        ->and($css)->toContain('@import "../../../vendor/emaia/laravel-hotwire/resources/css/foundation.css";')
+        ->and($css)->not->toContain('/resources/css/tokens.css')
+        ->and($css)->not->toContain('/resources/css/custom-variants.css')
+        ->and($css)->not->toContain('/resources/css/structural.css')
         ->and($css)->toContain('/* Accordion */')
         ->and($css)->toContain('/* Tooltip */')
         ->and($rules[1])->toEqualCanonicalizing($visualSlots)
@@ -78,7 +79,7 @@ it('inherits the runtime safelist rather than snapshotting it', function () {
     // Written into the scaffold, the list would freeze at whatever the package safelisted that day.
     expect(File::get($this->targetDir.'/brand.css'))
         ->not->toContain('@source inline(')
-        ->toContain('@import "../../../vendor/emaia/laravel-hotwire/resources/css/structural.css";');
+        ->toContain('@import "../../../vendor/emaia/laravel-hotwire/resources/css/foundation.css";');
 });
 
 it('does not copy selector decomposition from a shipped preset', function () {
@@ -263,9 +264,7 @@ it('clones a shipped preset with package imports and flattened visual sources', 
 
     $source = app(CssPresetFiles::class)->source('nova');
     $expected = implode("\n", [
-        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/tokens.css";',
-        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/custom-variants.css";',
-        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/structural.css";',
+        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/foundation.css";',
         '',
         $source->visualCss(),
         '',
@@ -284,15 +283,15 @@ it('clones a synthetic preset without preserving its private source organization
             ->assertSuccessful();
 
         expect(File::get($this->targetDir."/{$target}.css"))
-            ->toStartWith('@import "../../../vendor/emaia/laravel-hotwire/resources/css/tokens.css";')
-            ->toContain('@import "../../../vendor/emaia/laravel-hotwire/resources/css/structural.css";')
+            ->toStartWith('@import "../../../vendor/emaia/laravel-hotwire/resources/css/foundation.css";')
             ->not->toContain("@import \"./{$preset}/");
     }
 
     $constellation = File::get($this->targetDir.'/brand-constellation.css');
 
     expect($constellation)
-        ->toContain('@import "../../../vendor/emaia/laravel-hotwire/resources/css/foundations/metrics.css";')
+        ->toContain('--fixture-radius: 0.5rem;')
+        ->not->toContain('constellation/theme.css')
         ->toContain(':where([data-slot="panel"], [data-slot="action"])')
         ->toContain('[data-state="busy"] [data-slot="status"]')
         ->not->toContain('layout/surfaces.css')

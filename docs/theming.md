@@ -4,9 +4,10 @@ Override design tokens to customise the palette shared by every preset.
 
 ## How it works
 
-Laravel Hotwire ships a Tailwind v4 token layer using semantic CSS custom properties. Components render semantic
-`data-slot` attributes; presets consume tokens like `bg-background`, `text-foreground`, `border-border` to style those
-slots.
+Laravel Hotwire ships a Tailwind v4 token layer using semantic CSS custom properties. Public presets reach that layer
+through `resources/css/foundation.css`, which also imports package custom variants and structural CSS in canonical order.
+Components render semantic `data-slot` attributes; presets consume tokens like `bg-background`, `text-foreground`,
+`border-border` to style those slots.
 
 Use [`presets.md`](presets.md) and `php artisan hotwire:make-preset` when you want to change the visual system's
 spacing, geometry, motion or variant treatment. Presets keep the component's Blade markup, behavior and accessibility
@@ -135,7 +136,12 @@ php artisan hotwire:make-preset brand --from=nova
 ```
 
 Keep application-level token overrides after the local preset import. A local scaffold or clone already imports the
-package token, custom-variant and structural foundations; do not duplicate those imports in `app.css`.
+package `foundation.css` facade; do not duplicate it or its internal imports in `app.css`.
+
+Shared semantic tokens such as `--background`, `--primary` and `--ring` retain the same meaning across presets. A preset
+may additionally document system-wide knobs for its own geometry or visual language. Override those after the preset in
+the same way, but treat only documented knobs as public API; variables local to one component module may change with the
+preset implementation.
 
 ## Color schemes
 

@@ -25,11 +25,7 @@ class MakePresetCommand extends Command
 
     public $description = 'Create a new CSS preset';
 
-    private const string TOKENS_IMPORT = '@import "../../../vendor/emaia/laravel-hotwire/resources/css/tokens.css";';
-
-    private const string VARIANTS_IMPORT = '@import "../../../vendor/emaia/laravel-hotwire/resources/css/custom-variants.css";';
-
-    private const string STRUCTURAL_IMPORT = '@import "../../../vendor/emaia/laravel-hotwire/resources/css/structural.css";';
+    private const string FOUNDATION_IMPORT = '@import "../../../vendor/emaia/laravel-hotwire/resources/css/foundation.css";';
 
     public function __construct(
         private readonly Filesystem $files,
@@ -182,9 +178,7 @@ class MakePresetCommand extends Command
         }
 
         $lines = [
-            self::TOKENS_IMPORT,
-            self::VARIANTS_IMPORT,
-            self::STRUCTURAL_IMPORT,
+            self::FOUNDATION_IMPORT,
             '',
             ...$tokenTemplate,
             '',

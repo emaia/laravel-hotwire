@@ -20,6 +20,11 @@ beforeEach(function () {
         $this->files->put($path, "/* {$foundation} */\n");
     }
 
+    $this->files->put(
+        $this->root.'/vendor/emaia/laravel-hotwire/resources/css/foundation.css',
+        "@import \"./tokens.css\";\n@import \"./custom-variants.css\";\n@import \"./structural.css\";\n",
+    );
+
     $this->entrypoint = $this->root.'/resources/css/presets/constellation.css';
     $this->validator = app(ApplicationPresetValidator::class);
     $this->registry = applicationPresetRegistry();
@@ -180,45 +185,66 @@ it('ignores slot-like text in comments and declaration strings', function () {
         );
 });
 
-it('requires package foundations exactly once in canonical order', function (Closure $mutate) {
+it('requires the package foundation facade exactly once', function (Closure $mutate) {
     $this->files->put($this->entrypoint, $mutate($this->files->get($this->entrypoint)));
 
     $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
 
     expect($result['errors'])->toContain(
-        'Preset [constellation] must import package foundations once in this order: tokens.css, custom-variants.css, structural.css.'
+        'Preset [constellation] must import package foundation [foundation.css] exactly once.'
     );
 })->with([
     'missing' => fn (): Closure => fn (string $css): string => str_replace(
-        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/custom-variants.css";'."\n",
+        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/foundation.css";'."\n",
         '',
         $css,
     ),
     'duplicate' => fn (): Closure => fn (string $css): string => str_replace(
-        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/tokens.css";',
-        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/tokens.css";'."\n".
-            '@import "../../../vendor/emaia/laravel-hotwire/resources/css/tokens.css";',
-        $css,
-    ),
-    'reordered' => fn (): Closure => fn (string $css): string => str_replace(
-        [
-            '@import "../../../vendor/emaia/laravel-hotwire/resources/css/tokens.css";',
-            '@import "../../../vendor/emaia/laravel-hotwire/resources/css/custom-variants.css";',
-        ],
-        [
-            '@import "../../../vendor/emaia/laravel-hotwire/resources/css/custom-variants.css";',
-            '@import "../../../vendor/emaia/laravel-hotwire/resources/css/tokens.css";',
-        ],
+        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/foundation.css";',
+        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/foundation.css";'."\n".
+            '@import "../../../vendor/emaia/laravel-hotwire/resources/css/foundation.css";',
         $css,
     ),
 ]);
+
+it('applies the foundation facade contract without legacy topology detection', function () {
+    $this->files->put($this->entrypoint, str_replace(
+        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/foundation.css";',
+        implode("\n", [
+            '@import "../../../vendor/emaia/laravel-hotwire/resources/css/tokens.css";',
+            '@import "../../../vendor/emaia/laravel-hotwire/resources/css/custom-variants.css";',
+            '@import "../../../vendor/emaia/laravel-hotwire/resources/css/structural.css";',
+        ]),
+        $this->files->get($this->entrypoint),
+    ));
+
+    $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
+
+    expect($result['errors'])->toContain(
+        'Preset [constellation] must import package foundation [foundation.css] exactly once.'
+    );
+});
+
+it('validates the package-owned composition behind the foundation facade', function () {
+    $foundation = $this->root.'/vendor/emaia/laravel-hotwire/resources/css/foundation.css';
+    $this->files->put($foundation, <<<'CSS'
+        @import "./structural.css";
+        @import "./tokens.css";
+        CSS);
+
+    $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
+
+    expect($result['errors'])->toContain(
+        'foundation.css must import tokens.css, custom-variants.css, and structural.css in canonical order.'
+    );
+});
 
 it('rejects additional package stylesheets as foundations', function () {
     $extra = $this->root.'/vendor/emaia/laravel-hotwire/resources/css/extra.css';
     $this->files->put($extra, '/* extra */');
     $this->files->put($this->entrypoint, str_replace(
-        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/structural.css";',
-        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/structural.css";'."\n".
+        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/foundation.css";',
+        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/foundation.css";'."\n".
             '@import "../../../vendor/emaia/laravel-hotwire/resources/css/extra.css";',
         $this->files->get($this->entrypoint),
     ));
@@ -226,7 +252,7 @@ it('rejects additional package stylesheets as foundations', function () {
     $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
 
     expect($result['errors'])->toContain(
-        'Preset [constellation] must import package foundations once in this order: tokens.css, custom-variants.css, structural.css.'
+        'Preset [constellation] must import package foundation [foundation.css] exactly once.'
     );
 });
 
@@ -342,15 +368,6 @@ it('keeps unrelated missing slots as errors when one slot reference is unprovabl
     expect($result['errors'])->toContain('Preset [constellation] is missing visual slots: fixture-action.')
         ->and($result['warnings'])->toContain('Preset [constellation] could not prove visual coverage: fixture-status.');
 });
-
-it('normalizes Windows drive and UNC paths without losing their roots', function (string $path, string $expected) {
-    $canonical = new ReflectionMethod($this->validator, 'canonical');
-
-    expect($canonical->invoke($this->validator, $path))->toBe($expected);
-})->with([
-    'drive' => ['C:\\App\\resources\\css\\presets\\brand.css', 'C:/App/resources/css/presets/brand.css'],
-    'UNC' => ['\\\\Server\\Share\\resources\\css\\presets\\brand.css', '//Server/Share/resources/css/presets/brand.css'],
-]);
 
 function applicationPresetRegistry(): HotwireRegistry
 {

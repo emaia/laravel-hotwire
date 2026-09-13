@@ -3,7 +3,12 @@
 use Emaia\LaravelHotwire\Commands\CheckCommand;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ControllerImports;
+use Emaia\LaravelHotwire\Support\CssModuleManifest;
+use Emaia\LaravelHotwire\Support\CssPresetFiles;
 use Emaia\LaravelHotwire\Support\LoaderStub;
+use Emaia\LaravelHotwire\Support\PresetSourceResolver;
+use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\File;
 
 beforeEach(function () {
@@ -53,9 +58,7 @@ function writeCompleteApplicationPreset(string $name = 'brand'): string
     $path = resource_path("css/presets/{$name}.css");
     File::ensureDirectoryExists(dirname($path));
     File::put($path, implode("\n", [
-        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/tokens.css";',
-        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/custom-variants.css";',
-        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/structural.css";',
+        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/foundation.css";',
         '',
         $selectors.' { color: var(--foreground); }',
         '',
@@ -239,6 +242,42 @@ it('accepts visual coverage from any generated CSS bundle', function () {
         ->assertSuccessful();
 });
 
+it('reports generated bundle drift when its official preset entrypoint is invalid', function () {
+    $this->artisan('hotwire:styles --components=modal --no-interaction')->assertSuccessful();
+    $root = resource_path('css/package');
+    File::ensureDirectoryExists($root.'/presets/nova');
+    File::put($root.'/tokens.css', '');
+    File::put($root.'/custom-variants.css', '');
+    File::put($root.'/structural.css', '');
+    File::put($root.'/foundation.css', implode("\n", [
+        '@import "./tokens.css";',
+        '@import "./custom-variants.css";',
+        '@import "./structural.css";',
+    ]));
+    File::put($root.'/presets/nova/theme.css', '[data-slot="fixture"] {}');
+    File::put($root.'/presets/nova.css', implode("\n", [
+        '@import "./nova/theme.css";',
+        '@import "../foundation.css";',
+    ]));
+    $manifest = CssModuleManifest::fromArray([
+        'modules' => [],
+        'presets' => ['nova' => ['base' => ['presets/nova/theme.css'], 'sources' => []]],
+    ]);
+    $files = new Filesystem;
+    app()->instance(CssModuleManifest::class, $manifest);
+    app()->instance(
+        CssPresetFiles::class,
+        new CssPresetFiles($files, new PresetSourceResolver($files, $root), $manifest),
+    );
+    $kernel = app(Kernel::class);
+    $getArtisan = new ReflectionMethod($kernel, 'getArtisan');
+    $getArtisan->invoke($kernel)->add(app(CheckCommand::class));
+
+    $this->artisan('hotwire:check --no-interaction')
+        ->expectsOutputToContain('generated CSS content does not match its plan')
+        ->assertFailed();
+});
+
 it('accepts a complete preset fallback alongside generated CSS bundles', function () {
     writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
     $this->artisan('hotwire:styles --components=modal --no-interaction')->assertSuccessful();
@@ -247,6 +286,32 @@ it('accepts a complete preset fallback alongside generated CSS bundles', functio
     $this->artisan('hotwire:check --no-interaction')
         ->doesntExpectOutputToContain('not covered by any generated CSS bundle')
         ->assertSuccessful();
+});
+
+it('does not accept a copied shipped preset with drift inside the foundation facade', function () {
+    writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
+    $this->artisan('hotwire:styles --components=modal --no-interaction')->assertSuccessful();
+    $preset = shippedPresetImportPath();
+    File::append(base_path('vendor/emaia/laravel-hotwire/resources/css/tokens.css'), "\n:root { --drift: true; }");
+    File::put(resource_path('css/app.css'), '@import "'.$preset.'";');
+
+    $this->artisan('hotwire:check --no-interaction')
+        ->expectsOutputToContain('<x-hw::badge>  not covered by any generated CSS bundle')
+        ->assertFailed();
+});
+
+it('detects drift in local stylesheet dependencies imported with conditions', function () {
+    $actual = resource_path('css/actual');
+    $expected = resource_path('css/expected');
+    File::ensureDirectoryExists($actual);
+    File::ensureDirectoryExists($expected);
+    File::put($actual.'/root.css', '@import "./child.css" supports(display: grid);');
+    File::put($expected.'/root.css', '@import "./child.css" supports(display: grid);');
+    File::put($actual.'/child.css', '.actual {}');
+    File::put($expected.'/child.css', '.expected {}');
+    $matches = new ReflectionMethod(app(CheckCommand::class), 'stylesheetTreeMatches');
+
+    expect($matches->invoke(app(CheckCommand::class), $actual.'/root.css', $expected.'/root.css'))->toBeFalse();
 });
 
 it('accepts an unquoted url import of a complete shipped preset', function () {
@@ -323,9 +388,7 @@ it('fails when an imported application preset omits required visual slots', func
     shippedPresetImportPath();
     File::ensureDirectoryExists(resource_path('css/presets'));
     File::put(resource_path('css/presets/brand.css'), implode("\n", [
-        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/tokens.css";',
-        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/custom-variants.css";',
-        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/structural.css";',
+        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/foundation.css";',
         '[data-slot="badge"] { color: red; }',
     ]));
     File::put(resource_path('css/app.css'), '@import "./presets/brand.css";');
@@ -371,7 +434,7 @@ it('reports selective bundle coverage alongside an invalid explicit preset', fun
     File::put(resource_path('css/presets/brand.css'), '[data-slot="badge"] { color: red; }');
 
     $this->artisan('hotwire:check', ['--preset' => ['brand'], '--no-interaction' => true])
-        ->expectsOutputToContain('must import package foundations once in this order')
+        ->expectsOutputToContain('must import package foundation [foundation.css] exactly once')
         ->expectsOutputToContain('<x-hw::badge>  not covered by any generated CSS bundle')
         ->assertFailed();
 });

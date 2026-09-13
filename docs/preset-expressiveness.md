@@ -103,7 +103,7 @@ particular stylesheet differentiates; it cannot prove semantic support by itself
 
 Package CI applies this complete policy to official presets:
 
-1. Imports the shared token, custom-variant and structural foundations exactly as required.
+1. Imports the shared `foundation.css` facade exactly once before preset base and visual modules.
 2. Compiles without unresolved Tailwind directives.
 3. Gives every catalog visual slot declaration-bearing participation in the compiled CSS.
 4. References only declared slots.

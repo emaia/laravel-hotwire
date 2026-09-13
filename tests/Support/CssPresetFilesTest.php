@@ -3,6 +3,7 @@
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\CssModuleManifest;
 use Emaia\LaravelHotwire\Support\CssPresetFiles;
+use Emaia\LaravelHotwire\Support\PresetSourceException;
 use Illuminate\Filesystem\Filesystem;
 
 dataset('shipped css preset names', fn () => collect(glob(__DIR__.'/../../resources/css/presets/*.css') ?: [])
@@ -32,16 +33,19 @@ it('discovers and resolves public entrypoints from the configured css root', fun
         'orbit' => realpath(__DIR__.'/../Fixtures/css/preset-package/presets/orbit.css'),
     ])
         ->and($presets->names())->toBe(['constellation', 'orbit'])
-        ->and($source?->foundationImports())->toBe([
-            'tokens.css',
-            'custom-variants.css',
-            'foundations/metrics.css',
-            'structural.css',
-        ])
+        ->and($source?->foundationImports())->toBe(['foundation.css'])
         ->and($source?->visualStylesheetPaths())->toBe([
+            'presets/constellation/theme.css',
             'presets/constellation/layout/surfaces.css',
             'presets/constellation/feedback.css',
         ])
+        ->and($source?->baseStylesheetPaths())->toBe(['presets/constellation/theme.css'])
+        ->and($source?->moduleStylesheetPaths())->toBe([
+            'presets/constellation/layout/surfaces.css',
+            'presets/constellation/feedback.css',
+        ])
+        ->and($source?->baseCss())->toContain('--fixture-radius')
+        ->and($source?->moduleCss())->not->toContain('--fixture-radius')
         ->and($presets->source('orbit')?->visualStylesheetPaths())->toBe(['presets/orbit/all.css']);
 });
 
@@ -50,16 +54,155 @@ it('selects synthetic sources independently of their grouping and nesting', func
     $grouped = $presets->sourceForSelection('orbit', ['action']);
 
     expect($presets->sourceForSelection('constellation', ['action'])?->visualStylesheetPaths())
-        ->toBe(['presets/constellation/layout/surfaces.css'])
+        ->toBe([
+            'presets/constellation/theme.css',
+            'presets/constellation/layout/surfaces.css',
+        ])
         ->and($presets->sourceForSelection('constellation', controllers: ['status'])?->visualStylesheetPaths())
-        ->toBe(['presets/constellation/feedback.css'])
+        ->toBe([
+            'presets/constellation/theme.css',
+            'presets/constellation/feedback.css',
+        ])
         ->and($presets->sourceForSelection('constellation', ['action'], ['status'])?->visualStylesheetPaths())
         ->toBe([
+            'presets/constellation/theme.css',
             'presets/constellation/layout/surfaces.css',
             'presets/constellation/feedback.css',
         ])
+        ->and($presets->sourceForSelection('constellation')?->visualStylesheetPaths())
+        ->toBe(['presets/constellation/theme.css'])
         ->and($grouped?->visualStylesheetPaths())->toBe(['presets/orbit/all.css'])
         ->and($grouped?->visualCss())->toContain('[data-slot="status"]');
+});
+
+it('resolves a preset only once when selecting sources', function () {
+    $files = new class extends Filesystem
+    {
+        public int $reads = 0;
+
+        public function get($path, $lock = false)
+        {
+            $this->reads++;
+
+            return parent::get($path, $lock);
+        }
+    };
+    $presets = syntheticCssPresetFiles(files: $files);
+    $presets->source('constellation');
+    $fullResolutionReads = $files->reads;
+    $files->reads = 0;
+
+    $presets->sourceForSelection('constellation', ['action']);
+
+    expect($files->reads)->toBe($fullResolutionReads);
+});
+
+it('diagnoses foundation facade drift in shipped entrypoints', function (Closure $mutate, string $message) {
+    $files = new Filesystem;
+    $root = sys_get_temp_dir().'/hotwire-css-preset-files-'.uniqid();
+    $files->copyDirectory(__DIR__.'/../Fixtures/css/preset-package', $root);
+    $entrypoint = $root.'/presets/constellation.css';
+    $css = str_replace(["\r\n", "\r"], "\n", $files->get($entrypoint));
+    $files->put($entrypoint, $mutate($css));
+
+    try {
+        expect(fn () => syntheticCssPresetFiles($root)->source('constellation'))
+            ->toThrow(PresetSourceException::class, $message);
+    } finally {
+        $files->deleteDirectory($root);
+    }
+})->with([
+    'missing' => [
+        fn (string $css): string => str_replace('@import "../foundation.css";'."\n", '', $css),
+        'must import shared foundation [foundation.css] exactly once',
+    ],
+    'duplicate' => [
+        fn (string $css): string => str_replace(
+            '@import "../foundation.css";',
+            '@import "../foundation.css";'."\n".'@import "../foundation.css";',
+            $css,
+        ),
+        'imports shared foundation [foundation.css] more than once',
+    ],
+    'after preset base' => [
+        fn (string $css): string => str_replace(
+            '@import "../foundation.css";'."\n".'@import "./constellation/theme.css";',
+            '@import "./constellation/theme.css";'."\n".'@import "../foundation.css";',
+            $css,
+        ),
+        'must import shared foundations before visual sources',
+    ],
+    'additional foundation' => [
+        fn (string $css): string => str_replace(
+            '@import "../foundation.css";',
+            '@import "../foundation.css";'."\n".'@import "../foundations/metrics.css";',
+            $css,
+        ),
+        'must import shared foundation [foundation.css] exactly once before preset sources',
+    ],
+]);
+
+it('diagnoses missing, duplicate, and reordered preset sources', function (Closure $mutate, string $message) {
+    $files = new Filesystem;
+    $root = sys_get_temp_dir().'/hotwire-css-preset-base-'.uniqid();
+    $files->copyDirectory(__DIR__.'/../Fixtures/css/preset-package', $root);
+    $entrypoint = $root.'/presets/constellation.css';
+    $css = str_replace(["\r\n", "\r"], "\n", $files->get($entrypoint));
+    $files->put($entrypoint, $mutate($css));
+
+    try {
+        expect(fn () => syntheticCssPresetFiles($root)->source('constellation'))
+            ->toThrow(PresetSourceException::class, $message);
+    } finally {
+        $files->deleteDirectory($root);
+    }
+})->with([
+    'missing' => [
+        fn (string $css): string => str_replace('@import "./constellation/theme.css";'."\n", '', $css),
+        'does not import declared sources: presets/constellation/theme.css',
+    ],
+    'duplicate' => [
+        fn (string $css): string => str_replace(
+            '@import "./constellation/theme.css";',
+            '@import "./constellation/theme.css";'."\n".'@import "./constellation/theme.css";',
+            $css,
+        ),
+        'includes visual stylesheet [presets/constellation/theme.css] more than once',
+    ],
+    'after modules' => [
+        fn (string $css): string => str_replace(
+            '@import "./constellation/theme.css";'."\n".'@import "./constellation/layout/surfaces.css";',
+            '@import "./constellation/layout/surfaces.css";'."\n".'@import "./constellation/theme.css";',
+            $css,
+        ),
+        'must import preset base before modules in manifest order',
+    ],
+    'modules outside manifest order' => [
+        fn (string $css): string => str_replace(
+            '@import "./constellation/layout/surfaces.css";'."\n".'@import "./constellation/feedback.css";',
+            '@import "./constellation/feedback.css";'."\n".'@import "./constellation/layout/surfaces.css";',
+            $css,
+        ),
+        'must import module sources in manifest order',
+    ],
+]);
+
+it('rejects visual declarations in a shipped preset entrypoint', function () {
+    $files = new Filesystem;
+    $root = sys_get_temp_dir().'/hotwire-css-preset-entrypoint-'.uniqid();
+    $files->copyDirectory(__DIR__.'/../Fixtures/css/preset-package', $root);
+    $entrypoint = $root.'/presets/constellation.css';
+    $files->append($entrypoint, "\n[data-slot=\"entrypoint\"] {}\n");
+
+    try {
+        expect(fn () => syntheticCssPresetFiles($root)->source('constellation'))
+            ->toThrow(
+                PresetSourceException::class,
+                'entrypoint imports undeclared sources: presets/constellation.css',
+            );
+    } finally {
+        $files->deleteDirectory($root);
+    }
 });
 
 it('resolves every private source once without exposing its organization as presets', function (string $preset) {
@@ -86,15 +229,7 @@ it('resolves every private source once without exposing its organization as pres
         ->each->toStartWith("presets/{$preset}/")
         ->and($resolvedSources)->each->toBeFile()
         ->and($foundations)->toHaveCount(count(array_unique($foundations)))
-        ->and(array_values(array_intersect($foundations, [
-            'tokens.css',
-            'custom-variants.css',
-            'structural.css',
-        ])))->toBe([
-            'tokens.css',
-            'custom-variants.css',
-            'structural.css',
-        ])
+        ->and($foundations)->toBe(['foundation.css'])
         ->and(file_get_contents($presets->path($preset)))
         ->not->toContain('[data-slot=')
         ->and(array_intersect(

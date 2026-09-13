@@ -54,7 +54,7 @@ it('resolves visual stylesheets depth first in CSS import order', function () {
         ->not->toContain('@import');
 });
 
-it('deduplicates shared foundation imports at first inclusion', function () {
+it('rejects duplicate shared foundation imports', function () {
     writePresetCss($this->root, 'tokens.css', ':root {}');
     writePresetCss($this->root, 'custom-variants.css', '@custom-variant demo {}');
     writePresetCss($this->root, 'presets/demo/forms.css', '[data-slot="input"] {}');
@@ -65,11 +65,47 @@ it('deduplicates shared foundation imports at first inclusion', function () {
         @import "./demo/forms.css";
         CSS);
 
-    expect($this->resolver->resolve($entrypoint)->foundationImports())->toBe([
-        'tokens.css',
-        'custom-variants.css',
-    ]);
-});
+    $this->resolver->resolve($entrypoint);
+})->throws(PresetSourceException::class, 'Preset [demo] imports shared foundation [tokens.css] more than once.');
+
+it('requires the public foundation facade to preserve its canonical composition', function (string $foundation) {
+    foreach (['tokens.css', 'custom-variants.css', 'structural.css'] as $file) {
+        writePresetCss($this->root, $file, "/* {$file} */");
+    }
+
+    writePresetCss($this->root, 'foundation.css', $foundation);
+    $entrypoint = writePresetCss($this->root, 'presets/demo.css', '@import "../foundation.css";');
+
+    $this->resolver->resolve($entrypoint);
+})->with([
+    'old direct order' => <<<'CSS'
+        @import "./custom-variants.css";
+        @import "./tokens.css";
+        @import "./structural.css";
+        CSS,
+    'visual declarations' => <<<'CSS'
+        @import "./tokens.css";
+        @import "./custom-variants.css";
+        @import "./structural.css";
+        :root { --unexpected: true; }
+        CSS,
+])->throws(
+    PresetSourceException::class,
+    'foundation.css must import tokens.css, custom-variants.css, and structural.css in canonical order.',
+);
+
+it('requires every internal stylesheet imported by the foundation facade to exist', function () {
+    writePresetCss($this->root, 'tokens.css', '/* tokens */');
+    writePresetCss($this->root, 'custom-variants.css', '/* variants */');
+    writePresetCss($this->root, 'foundation.css', <<<'CSS'
+        @import "./tokens.css";
+        @import "./custom-variants.css";
+        @import "./structural.css";
+        CSS);
+    $entrypoint = writePresetCss($this->root, 'presets/demo.css', '@import "../foundation.css";');
+
+    $this->resolver->resolve($entrypoint);
+})->throws(PresetSourceException::class, 'foundation.css cannot resolve canonical import [./structural.css].');
 
 it('rejects imports that cannot be preserved when visual sources are flattened', function (string $import) {
     $entrypoint = writePresetCss($this->root, 'presets/demo.css', "@import {$import};");
@@ -216,32 +252,20 @@ it('rejects conditions on local imports instead of changing their semantics', fu
         ->toThrow(PresetSourceException::class, 'Preset [demo] local import [./demo/forms.css] uses unsupported import conditions.');
 });
 
-it('filters visual sources without changing their canonical import order', function () {
-    writePresetCss($this->root, 'tokens.css', ':root {}');
+it('delegates optional source selection to the resolved preset', function () {
     writePresetCss($this->root, 'presets/demo/modal.css', '[data-slot="modal"] {}');
     writePresetCss($this->root, 'presets/demo/button.css', '[data-slot="button"] {}');
-    writePresetCss($this->root, 'presets/demo/carousel.css', '[data-slot="carousel"] {}');
     $entrypoint = writePresetCss($this->root, 'presets/demo.css', <<<'CSS'
-        @import "../tokens.css";
         @import "./demo/modal.css";
         @import "./demo/button.css";
-        @import "./demo/carousel.css";
         CSS);
 
-    $source = $this->resolver->resolve($entrypoint, [
-        'presets/demo/modal.css',
-        'presets/demo/button.css',
-    ]);
+    $source = $this->resolver->resolve($entrypoint, ['presets/demo/button.css']);
 
-    expect($source->foundationImports())->toBe(['tokens.css'])
-        ->and($source->visualStylesheets())->toBe([
-            '[data-slot="modal"] {}',
-            '[data-slot="button"] {}',
-        ])
-        ->and($source->visualCss())->not->toContain('carousel');
+    expect($source->visualStylesheetPaths())->toBe(['presets/demo/button.css']);
 });
 
-it('rejects visual declarations in an entrypoint used for selective resolution', function () {
+it('preserves entrypoint validation for optional source selection', function () {
     writePresetCss($this->root, 'presets/demo/modal.css', '[data-slot="modal"] {}');
     $entrypoint = writePresetCss($this->root, 'presets/demo.css', <<<'CSS'
         @import "./demo/modal.css";
@@ -250,21 +274,4 @@ it('rejects visual declarations in an entrypoint used for selective resolution',
 
     expect(fn () => $this->resolver->resolve($entrypoint, ['presets/demo/modal.css']))
         ->toThrow(PresetSourceException::class, 'Selective preset [demo] entrypoint must contain only imports.');
-});
-
-it('rejects selected sources outside canonical import order', function () {
-    writePresetCss($this->root, 'presets/demo/a.css', '[data-slot="a"] {}');
-    writePresetCss($this->root, 'presets/demo/b.css', '[data-slot="b"] {}');
-    $entrypoint = writePresetCss($this->root, 'presets/demo.css', <<<'CSS'
-        @import "./demo/a.css";
-        @import "./demo/b.css";
-        CSS);
-
-    expect(fn () => $this->resolver->resolve($entrypoint, [
-        'presets/demo/b.css',
-        'presets/demo/a.css',
-    ]))->toThrow(
-        PresetSourceException::class,
-        'Selected visual sources for preset [demo] do not follow canonical import order.',
-    );
 });

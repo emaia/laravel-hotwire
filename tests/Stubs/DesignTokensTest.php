@@ -4,6 +4,7 @@ use Emaia\LaravelHotwire\Support\CssPresetFiles;
 use Emaia\LaravelHotwire\Support\PresetAxes;
 
 $stubPath = realpath(__DIR__.'/../../stubs/resources/css/app.css');
+$foundationPath = realpath(__DIR__.'/../../resources/css/foundation.css');
 $tokensPath = realpath(__DIR__.'/../../resources/css/tokens.css');
 $variantsPath = realpath(__DIR__.'/../../resources/css/custom-variants.css');
 
@@ -17,6 +18,25 @@ function presetVisualCss(string $preset): string
 }
 
 // --- Token system and install stub ---
+
+it('exposes shared foundations through one portable facade in canonical order', function () use ($foundationPath) {
+    expect(file_get_contents($foundationPath))->toBe(<<<'CSS'
+        @import "./tokens.css";
+        @import "./custom-variants.css";
+        @import "./structural.css";
+
+        CSS);
+});
+
+it('imports only the public foundation facade from shipped preset entrypoints', function (string $preset) {
+    $entrypoint = file_get_contents(app(CssPresetFiles::class)->path($preset));
+
+    expect($entrypoint)
+        ->toStartWith('@import "../foundation.css";')
+        ->not->toContain('@import "../tokens.css";')
+        ->not->toContain('@import "../custom-variants.css";')
+        ->not->toContain('@import "../structural.css";');
+})->with('design presets');
 
 it('contains @theme inline block', function () use ($tokensPath) {
     expect(file_get_contents($tokensPath))->toContain('@theme inline');
@@ -320,7 +340,7 @@ it('leaves the runtime safelist to the structural stylesheet', function (string 
     // A preset restating it snapshots the list, and goes stale the next time a controller applies one.
     expect(file_get_contents(app(CssPresetFiles::class)->path($preset)))
         ->not->toContain('@source inline(')
-        ->toContain('@import "../structural.css";');
+        ->toContain('@import "../foundation.css";');
 })->with('design presets');
 
 /**

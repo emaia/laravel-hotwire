@@ -8,17 +8,14 @@ use Illuminate\Filesystem\Filesystem;
 /** @internal */
 final readonly class ApplicationPresetValidator
 {
-    private const array REQUIRED_FOUNDATIONS = [
-        'tokens.css',
-        'custom-variants.css',
-        'structural.css',
-    ];
+    private const array REQUIRED_FOUNDATIONS = ['foundation.css'];
 
     public function __construct(
         private Filesystem $files,
         private CssImports $imports,
         private CssSlots $slots,
         private PresetAxes $axes,
+        private FoundationFacade $foundationFacade,
     ) {}
 
     /**
@@ -30,8 +27,8 @@ final readonly class ApplicationPresetValidator
     {
         $name = pathinfo($entrypoint, PATHINFO_FILENAME);
         $cssRootPath = $cssRoot ?? resource_path('css');
-        $cssRoot = $this->canonical(realpath($cssRootPath) ?: $cssRootPath);
-        $entrypoint = $this->canonical(realpath($entrypoint) ?: $entrypoint);
+        $cssRoot = CssPath::normalize(realpath($cssRootPath) ?: $cssRootPath);
+        $entrypoint = CssPath::normalize(realpath($entrypoint) ?: $entrypoint);
         $errors = [];
         $warnings = [];
         $visual = [];
@@ -43,7 +40,7 @@ final readonly class ApplicationPresetValidator
             return $this->failed(["Application preset [{$name}] does not exist."]);
         }
 
-        if (! $this->inside($entrypoint, $cssRoot)) {
+        if (! CssPath::contains($cssRoot, $entrypoint)) {
             return $this->failed(['Application preset must be a CSS file under resources/css.']);
         }
 
@@ -63,7 +60,7 @@ final readonly class ApplicationPresetValidator
         }
 
         if ($foundations !== self::REQUIRED_FOUNDATIONS) {
-            $errors[] = "Preset [{$name}] must import package foundations once in this order: ".implode(', ', self::REQUIRED_FOUNDATIONS).'.';
+            $errors[] = "Preset [{$name}] must import package foundation [foundation.css] exactly once.";
         }
 
         $css = implode("\n\n", $visual);
@@ -133,7 +130,7 @@ final readonly class ApplicationPresetValidator
                 );
             }
 
-            $target = $this->canonical(dirname($path).'/'.$importPath);
+            $target = CssPath::normalize(dirname($path).'/'.$importPath);
 
             if (! $this->files->isFile($target)) {
                 throw new PresetSourceException(
@@ -141,7 +138,7 @@ final readonly class ApplicationPresetValidator
                 );
             }
 
-            $target = $this->canonical(realpath($target) ?: $target);
+            $target = CssPath::normalize(realpath($target) ?: $target);
             $foundation = $this->foundation($target, $cssRoot);
 
             if ($foundation !== null) {
@@ -155,12 +152,16 @@ final readonly class ApplicationPresetValidator
                     );
                 }
 
+                if ($foundation === 'foundation.css') {
+                    $this->foundationFacade->validate($target, dirname($target), $preset);
+                }
+
                 $foundations[] = $foundation;
 
                 continue;
             }
 
-            if (! $this->inside($target, $cssRoot)) {
+            if (! CssPath::contains($cssRoot, $target)) {
                 throw new PresetSourceException(
                     "Preset [{$preset}] local import [{$import['path']}] leaves the application CSS directory."
                 );
@@ -188,9 +189,9 @@ final readonly class ApplicationPresetValidator
     {
         $applicationRoot = dirname($cssRoot, 2);
         $candidate = $applicationRoot.'/vendor/emaia/laravel-hotwire/resources/css';
-        $packageRoot = $this->canonical(realpath($candidate) ?: $candidate);
+        $packageRoot = CssPath::normalize(realpath($candidate) ?: $candidate);
 
-        if (! $this->inside($path, $packageRoot) || $this->inside($path, $packageRoot.'/presets')) {
+        if (! CssPath::contains($packageRoot, $path) || CssPath::contains($packageRoot.'/presets', $path)) {
             return null;
         }
 
@@ -272,55 +273,5 @@ final readonly class ApplicationPresetValidator
             'styledSlots' => $styled,
             'referencedSlots' => $referenced,
         ];
-    }
-
-    private function canonical(string $path): string
-    {
-        $path = str_replace('\\', '/', $path);
-        $prefix = '';
-
-        if (preg_match('/^([A-Za-z]:)(?:\/(.*))?$/', $path, $matches) === 1) {
-            $prefix = strtoupper($matches[1]).'/';
-            $path = $matches[2] ?? '';
-        } elseif (str_starts_with($path, '//')) {
-            $prefix = '//';
-            $path = ltrim($path, '/');
-        } elseif (str_starts_with($path, '/')) {
-            $prefix = '/';
-            $path = ltrim($path, '/');
-        }
-
-        $segments = [];
-
-        foreach (explode('/', $path) as $segment) {
-            if ($segment === '' || $segment === '.') {
-                continue;
-            }
-
-            if ($segment === '..') {
-                array_pop($segments);
-
-                continue;
-            }
-
-            $segments[] = $segment;
-        }
-
-        return $prefix.implode('/', $segments);
-    }
-
-    private function inside(string $path, string $root): bool
-    {
-        $path = $this->comparable($this->canonical($path));
-        $root = rtrim($this->comparable($this->canonical($root)), '/');
-
-        return $path === $root || str_starts_with($path, $root.'/');
-    }
-
-    private function comparable(string $path): string
-    {
-        return preg_match('/^[A-Za-z]:\//', $path) === 1 || str_starts_with($path, '//')
-            ? strtolower($path)
-            : $path;
     }
 }

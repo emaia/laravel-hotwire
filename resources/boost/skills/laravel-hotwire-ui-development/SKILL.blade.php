@@ -106,7 +106,8 @@ php artisan hotwire:make-preset brand
 
 This emits empty base rules for visual slots: it is an anatomy checklist, not a styled preset. Add `--from=nova` only
 when Nova's full current structure is the intended starting point. Either output is an application-owned snapshot:
-package upgrades do not merge copied visual rules or new foundation imports, and `--force` replaces the target file.
+package upgrades do not merge copied visual rules or preset-base changes, and `--force` replaces the target file. The
+live `foundation.css` facade carries shared foundation topology changes without modifying the snapshot.
 
 For a selective bundle:
 
