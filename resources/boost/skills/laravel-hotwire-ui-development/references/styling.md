@@ -56,10 +56,11 @@ so an open nested overlay does not visually reopen its parent.
 - Include Stream/JavaScript-only modules explicitly with `--include`.
 
 Scaffolds and clones are application-owned snapshots. Compare a fresh temporary output on package upgrades and merge
-relevant slot, foundation and contract changes manually. `--force` replaces the target; it does not merge. Keep package
-foundation imports and validate with `php artisan hotwire:check --preset=brand --no-interaction`. Then run the application
-production build and smoke-test the result. Static validation catches import, foundation and slot-contract errors; it
-does not compile Tailwind utilities or prove visual, state or accessibility behavior.
+relevant slot, preset-base and contract changes manually. `--force` replaces the target; it does not merge. Keep the live
+package `foundation.css` import so shared foundation topology changes flow through automatically, and validate with
+`php artisan hotwire:check --preset=brand --no-interaction`. Then run the application production build and smoke-test the
+result. Static validation catches import, foundation and slot-contract errors; it does not compile Tailwind utilities or
+prove visual, state or accessibility behavior.
 
 Never edit generated selective bundles. Regenerate them from the command and keep custom rules in separate application
 stylesheets.

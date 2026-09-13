@@ -172,6 +172,7 @@ return [
     ],
     'presets' => [
         'nova' => [
+            'base' => [],
             'sources' => array_map(
                 static fn (string $name): array => [
                     'path' => "presets/nova/{$name}.css",

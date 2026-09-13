@@ -1,0 +1,7 @@
+:root {
+    --fixture-radius: 0.5rem;
+}
+
+@theme inline {
+    --radius-fixture: var(--fixture-radius);
+}

@@ -64,10 +64,10 @@ function releaseIsolatedAppPaths(?string $base): void
     }
 }
 
-function syntheticCssPresetFiles(): CssPresetFiles
+function syntheticCssPresetFiles(?string $root = null, ?Filesystem $files = null): CssPresetFiles
 {
-    $files = new Filesystem;
-    $root = __DIR__.'/Fixtures/css/preset-package';
+    $files ??= new Filesystem;
+    $root ??= __DIR__.'/Fixtures/css/preset-package';
     $manifest = CssModuleManifest::fromArray([
         'modules' => [
             'surfaces' => [
@@ -88,6 +88,7 @@ function syntheticCssPresetFiles(): CssPresetFiles
         ],
         'presets' => [
             'constellation' => [
+                'base' => ['presets/constellation/theme.css'],
                 'sources' => [
                     [
                         'path' => 'presets/constellation/layout/surfaces.css',
@@ -100,6 +101,7 @@ function syntheticCssPresetFiles(): CssPresetFiles
                 ],
             ],
             'orbit' => [
+                'base' => [],
                 'sources' => [
                     [
                         'path' => 'presets/orbit/all.css',

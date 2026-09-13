@@ -62,6 +62,30 @@ describe("public CSS presets", () => {
         }
     });
 
+    test("keeps Nova byte-identical to the former direct foundation imports", async () => {
+        const stub = await readFile(new URL("../../stubs/resources/css/app.css", import.meta.url), "utf8");
+        const nova = await readFile(new URL("../../resources/css/presets/nova.css", import.meta.url), "utf8");
+        const direct = nova.replace(
+            '@import "../foundation.css";',
+            [
+                '@import "../tokens.css";',
+                '@import "../custom-variants.css";',
+                '@import "../structural.css";',
+            ].join("\n"),
+        );
+        const css = await compileCssFixture(stub.replace("nova.css", "nova-direct.css"), {
+            setup: async (directory) => {
+                await writeFile(
+                    join(directory, "vendor/emaia/laravel-hotwire/resources/css/presets/nova-direct.css"),
+                    direct,
+                );
+            },
+        });
+
+        expect(Buffer.byteLength(css)).toBe(Buffer.byteLength(contract.outputs.presets.nova));
+        expect(css).toBe(contract.outputs.presets.nova);
+    });
+
     test("compiles a generated selective bundle for every discovered preset", () => {
         expect(Object.keys(contract.outputs.selectives)).toEqual(Object.keys(contract.outputs.presets));
 
@@ -69,7 +93,7 @@ describe("public CSS presets", () => {
             const source = contract.sources.selectives[preset];
 
             expect(source).toStartWith("/* @hotwire-package */");
-            expect(source).toContain('@import "../../../vendor/emaia/laravel-hotwire/resources/css/tokens.css";');
+            expect(source).toContain('@import "../../../vendor/emaia/laravel-hotwire/resources/css/foundation.css";');
             expect(source).toMatch(slotSelector("button"));
             expect(source).toMatch(slotSelector("card"));
             expect(source).toMatch(slotSelector("tooltip"));
@@ -94,8 +118,7 @@ describe("public CSS presets", () => {
         for (const [preset, css] of Object.entries(contract.outputs.clones)) {
             const source = contract.sources.clones[preset];
 
-            expect(source).toContain('@import "../../../vendor/emaia/laravel-hotwire/resources/css/tokens.css";');
-            expect(source).toContain('@import "../../../vendor/emaia/laravel-hotwire/resources/css/structural.css";');
+            expect(source).toContain('@import "../../../vendor/emaia/laravel-hotwire/resources/css/foundation.css";');
             expect(source).not.toContain(`@import "./${preset}/`);
             expect(css).toContain("--background:");
             expect(css).toMatch(slotSelector("button"));
@@ -107,8 +130,7 @@ describe("public CSS presets", () => {
         const css = contract.outputs.blankScaffold;
         const source = contract.sources.blankScaffold;
 
-        expect(source).toContain('@import "../../../vendor/emaia/laravel-hotwire/resources/css/tokens.css";');
-        expect(source).toContain('@import "../../../vendor/emaia/laravel-hotwire/resources/css/structural.css";');
+        expect(source).toContain('@import "../../../vendor/emaia/laravel-hotwire/resources/css/foundation.css";');
         expect(source).toMatch(/\[data-slot="button"\] \{\}/);
         expect(css).toContain("--background:");
         expect(css).toMatch(carouselMechanic);
@@ -255,6 +277,7 @@ describe("public CSS presets", () => {
     });
 
     test("compiles the synthetic application preset through its public entrypoint", async () => {
+        const source = await readFile(new URL(`${applicationPresetFixturePath.href}/constellation.css`), "utf8");
         const css = await compileCssFixture(
             `
                 @import "tailwindcss";
@@ -273,7 +296,12 @@ describe("public CSS presets", () => {
             expect(css).toMatch(slotSelector(slot));
         }
 
-        expect(css).not.toMatch(/@(import|apply)\b/);
+        expect(source).toContain(
+            '@import "../../../vendor/emaia/laravel-hotwire/resources/css/foundation.css";',
+        );
+        expect(source).not.toContain("@hotwire");
+        expect(css).toContain("--background:");
+        expect(css).not.toMatch(/@(import|apply|theme)\b/);
     });
 
     test("requires every explicit package source to discover its vendor candidates", async () => {

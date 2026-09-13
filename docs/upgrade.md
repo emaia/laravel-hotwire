@@ -6,6 +6,26 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 
 ## Unreleased
 
+### Shared foundations use one public facade
+
+Official presets, generated selective bundles and application preset scaffolds now import
+`resources/css/foundation.css`. This facade keeps `tokens.css`, `custom-variants.css` and `structural.css` live and in
+canonical order without exposing that internal topology to application CSS.
+
+Maintained application presets must replace the old three imports with one import at the same cascade position:
+
+```css
+@import "../../../vendor/emaia/laravel-hotwire/resources/css/foundation.css";
+```
+
+Remove the direct imports of `tokens.css`, `custom-variants.css` and `structural.css`; the pre-1.0 contract does not keep
+both forms canonical. `hotwire:check --preset=brand` validates only the new facade contract. Keep the facade before all
+application-owned visual imports and rules.
+
+Official presets may now declare private preset-base sources before selectable modules. Clones copy and flatten those
+defaults as application-owned CSS, while their `foundation.css` import remains live. Review preset-base changes on future
+package upgrades just as you review copied module changes.
+
 ### Textarea counter uses a collision-free named slot
 
 The Textarea counter example now uses `<x-slot:counter-slot>` instead of `<x-slot:counter>`. The old name shadows the
@@ -36,14 +56,14 @@ clamp transition.
 ### Application presets have a public validation workflow
 
 `hotwire:check` now validates application presets imported from `resources/css/presets`. Use
-`hotwire:check --preset=brand --no-interaction` to validate an unimported preset explicitly. A complete preset fails when
-package foundations are missing, duplicated or reordered, when local imports are broken, or when registry visual slots
-are missing or misspelled. The check does not require Nova's selectors or lexical axis vocabulary.
+`hotwire:check --preset=brand --no-interaction` to validate an unimported preset explicitly. A complete preset fails
+when the package foundation facade is missing, duplicated or after visual CSS, when local imports are broken, or when
+registry visual slots are missing or misspelled. The check does not require Nova's selectors or lexical axis vocabulary.
 
-After upgrading, add newly declared visual slots and foundation imports before expecting a maintained application preset
-to pass. Run the application's production build separately because static validation does not compile Tailwind utilities
-or certify browser behavior. Generated `hotwire:styles` bundles continue to use their recorded selective plan and may
-omit unrelated components intentionally.
+After upgrading, add newly declared visual slots and adopt foundation facade changes before expecting a maintained
+application preset to pass. Run the application's production build separately because static validation does not compile
+Tailwind utilities or certify browser behavior. Generated `hotwire:styles` bundles continue to use their recorded
+selective plan and may omit unrelated components intentionally.
 
 ### Blank preset scaffolds are registry-derived
 
@@ -53,7 +73,7 @@ additional official presets adopt different valid selector organizations.
 
 Use `hotwire:make-preset brand --from=nova` when Nova's complete current selector structure is the intended starting
 point. Existing application presets are unchanged. Scaffolds and clones are application-owned snapshots: only their
-already-imported package foundation files update automatically; new foundation imports and copied visual rules require
+live package `foundation.css` import updates automatically; copied preset-base and visual rules require
 manual adoption. Review upgrade notes and merge relevant changes manually. Running the command with `--force` replaces
 the target file and any customizations in it; it does not merge package changes into the existing CSS. See
 [Maintain an application preset](presets.md#maintain-an-application-preset) for the compatibility checklist.

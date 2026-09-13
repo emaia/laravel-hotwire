@@ -315,9 +315,10 @@ it('stops Sidebar icon mode rules at nested providers', function (string $preset
     expect($matched)->toBeGreaterThan(0);
 })->with('slot catalog presets');
 
-it('keeps rules that name no slot out of the presets', function (string $preset) {
+it('keeps rules that name no slot out of preset modules', function (string $preset) {
     // A preset groups by component; a rule keyed on a technical hook alone belongs to none of them.
-    $css = app(CssPresetFiles::class)->source($preset)->visualCss();
+    $source = app(CssPresetFiles::class)->source($preset);
+    $css = $source->moduleCss();
     $slotless = [];
 
     foreach ((new CssRules)->parse((new CssRules)->stripComments($css)) as ['chain' => $chain]) {
@@ -332,8 +333,28 @@ it('keeps rules that name no slot out of the presets', function (string $preset)
         ->and(File::get(__DIR__.'/../../resources/css/structural.css'))
         ->toContain(':where([data-hotwire-top-layer][popover])')
         ->and(File::get(app(CssPresetFiles::class)->path($preset)))
-        ->toContain('@import "../structural.css";');
+        ->toContain('@import "../foundation.css";');
 })->with('slot catalog presets');
+
+it('restricts any declared preset base to custom properties in supported theme scopes', function (string $preset) {
+    $css = app(CssPresetFiles::class)->source($preset)->baseCss();
+
+    expect(presetBaseViolations($css))->toBe([]);
+})->with('slot catalog presets');
+
+it('rejects component selectors and global visual properties from preset base', function () {
+    $css = <<<'CSS'
+        @theme inline { --radius-action: var(--radius); }
+        :root { --radius-action: var(--radius); --font-family: "Fixture; Sans"; --escaped: fixture\;value; }
+        [data-slot="button"] { --button-radius: 1rem; }
+        [data-theme="dark"] { accent-color: red; }
+        CSS;
+
+    expect(presetBaseViolations($css))->toEqualCanonicalizing([
+        '[data-slot="button"]',
+        '[data-theme="dark"]',
+    ]);
+});
 
 it('declares every literal slot emitted by any component view', function () {
     // Every view, not only the ones a catalog entry points at. Most package views belong to
@@ -595,4 +616,92 @@ function visualSlotsWithDeclarations(string $css): array
 function referencedCssSlots(string $css): array
 {
     return app(CssSlots::class)->referenced($css);
+}
+
+/** @return string[] */
+function presetBaseViolations(string $css): array
+{
+    $rules = new CssRules;
+    $css = $rules->stripComments($css);
+    $violations = [];
+    $css = preg_replace_callback('/@theme\s+inline\s*\{([^{}]*)\}/s', function (array $match) use (&$violations): string {
+        if (! declarationsAreCustomProperties($match[1])) {
+            $violations[] = '@theme inline';
+        }
+
+        return '';
+    }, $css) ?? $css;
+
+    if (preg_match('/@theme\b/', $css) === 1) {
+        $violations[] = '@theme';
+    }
+
+    foreach ($rules->parse($css) as ['chain' => $chain, 'declarations' => $declarations]) {
+        $selector = (string) end($chain);
+        $branches = $rules->splitTopLevel($selector, ',');
+        $supported = $branches !== [] && collect($branches)->every(function (string $branch): bool {
+            $branch = preg_replace('/\s+/', '', $branch) ?? $branch;
+
+            return $branch === ':root'
+                || $branch === ':where(:root:not([data-theme="dark"]))'
+                || preg_match('/^\[data-theme=(["\']?)(?:light|dark)\1\]$/', $branch) === 1;
+        });
+
+        if (count($chain) !== 1 || ! $supported || ! declarationsAreCustomProperties($declarations)) {
+            $violations[] = $selector;
+        }
+    }
+
+    return array_values(array_unique($violations));
+}
+
+function declarationsAreCustomProperties(string $declarations): bool
+{
+    $parts = [];
+    $start = 0;
+    $quote = null;
+    $depth = 0;
+    $length = strlen($declarations);
+
+    for ($offset = 0; $offset < $length; $offset++) {
+        $character = $declarations[$offset];
+
+        if ($quote !== null) {
+            if ($character === '\\') {
+                $offset++;
+            } elseif ($character === $quote) {
+                $quote = null;
+            }
+
+            continue;
+        }
+
+        if ($character === '\\') {
+            $offset++;
+
+            continue;
+        }
+
+        if ($character === '"' || $character === "'") {
+            $quote = $character;
+
+            continue;
+        }
+
+        if ($character === '(' || $character === '[' || $character === '{') {
+            $depth++;
+        } elseif ($character === ')' || $character === ']' || $character === '}') {
+            $depth = max(0, $depth - 1);
+        } elseif ($character === ';' && $depth === 0) {
+            $parts[] = substr($declarations, $start, $offset - $start);
+            $start = $offset + 1;
+        }
+    }
+
+    $parts[] = substr($declarations, $start);
+    $declarations = array_values(array_filter(array_map('trim', $parts)));
+
+    return $declarations !== [] && collect($declarations)->every(
+        fn (string $declaration): bool => preg_match('/^--[a-z0-9_-]+\s*:/i', $declaration) === 1,
+    );
 }

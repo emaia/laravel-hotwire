@@ -46,7 +46,14 @@ final readonly class CssPresetFiles
     {
         $path = $this->path($name);
 
-        return $path === null ? null : $this->sources->resolve($path);
+        if ($path === null) {
+            return null;
+        }
+
+        $source = $this->sources->resolve($path, baseSources: $this->manifest->baseFor($name));
+        $this->validateSource($name, $source);
+
+        return $source;
     }
 
     /**
@@ -64,7 +71,50 @@ final readonly class CssPresetFiles
         }
 
         $modules = $this->manifest->modulesFor($components, $controllers);
+        $source = $this->sources->resolve($path, baseSources: $this->manifest->baseFor($name));
+        $this->validateSource($name, $source);
 
-        return $this->sources->resolve($path, $this->manifest->sourcesFor($name, $modules));
+        return $source->select($this->manifest->sourcesFor($name, $modules));
+    }
+
+    private function validateSource(string $name, PresetSource $source): void
+    {
+        $this->validateFoundations($name, $source);
+        $expected = $this->manifest->allSourcesFor($name);
+        $actual = $source->visualStylesheetPaths();
+
+        if ($actual === $expected) {
+            return;
+        }
+
+        $missing = array_values(array_diff($expected, $actual));
+        $unexpected = array_values(array_diff($actual, $expected));
+
+        if ($missing !== []) {
+            throw new PresetSourceException(
+                "Preset [{$name}] entrypoint does not import declared sources: ".implode(', ', $missing).'.'
+            );
+        }
+
+        if ($unexpected !== []) {
+            throw new PresetSourceException(
+                "Preset [{$name}] entrypoint imports undeclared sources: ".implode(', ', $unexpected).'.'
+            );
+        }
+
+        $base = $this->manifest->baseFor($name);
+
+        throw new PresetSourceException(array_slice($actual, 0, count($base)) !== $base
+            ? "Preset [{$name}] entrypoint must import preset base before modules in manifest order."
+            : "Preset [{$name}] entrypoint must import module sources in manifest order.");
+    }
+
+    private function validateFoundations(string $name, PresetSource $source): void
+    {
+        if ($source->foundationImports() !== ['foundation.css']) {
+            throw new PresetSourceException(
+                "Preset [{$name}] must import shared foundation [foundation.css] exactly once before preset sources."
+            );
+        }
     }
 }

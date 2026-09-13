@@ -1,6 +1,4 @@
-@import "../tokens.css";
-@import "../custom-variants.css";
-@import "../structural.css";
+@import "../foundation.css";
 
 @import "./nova/accordion.css";
 @import "./nova/alert.css";

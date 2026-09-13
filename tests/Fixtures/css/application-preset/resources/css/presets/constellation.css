@@ -1,6 +1,4 @@
-@import "../../../vendor/emaia/laravel-hotwire/resources/css/tokens.css";
-@import "../../../vendor/emaia/laravel-hotwire/resources/css/custom-variants.css";
-@import "../../../vendor/emaia/laravel-hotwire/resources/css/structural.css";
+@import "../../../vendor/emaia/laravel-hotwire/resources/css/foundation.css";
 
 @import "./constellation/surfaces.css";
 @import "./constellation/feedback.css";
