@@ -147,6 +147,16 @@ it('inherits foundation tokens while exposing explicit preset additions', functi
     $manifest = CssModuleManifest::fromArray(tokenManifestDefinition());
 
     expect($manifest->presetNames())->toBe(['contrast-fixture'])
+        ->and($manifest->foundationPropertyScopes())->toBe([
+            '--background' => 'themed',
+            '--foreground' => 'themed',
+            '--radius' => 'global',
+        ])
+        ->and($manifest->additionalPropertyScopesFor('contrast-fixture'))->toBe([
+            '--status' => 'themed',
+            '--status-foreground' => 'themed',
+            '--radius-action' => 'global',
+        ])
         ->and($manifest->additionalPropertiesFor('contrast-fixture'))->toBe([
             '--status',
             '--status-foreground',
@@ -222,25 +232,31 @@ it('rejects invalid or ambiguous token metadata', function (Closure $mutate, str
 })->with([
     'property without custom property prefix' => [
         function (array &$manifest): void {
-            $manifest['presets']['contrast-fixture']['properties'][] = 'status';
+            $manifest['presets']['contrast-fixture']['properties']['status'] = 'themed';
         },
         'CSS module preset [contrast-fixture] properties must contain CSS custom property names beginning with --.',
+    ],
+    'legacy property list' => [
+        function (array &$manifest): void {
+            $manifest['presets']['contrast-fixture']['properties'] = ['--status', '--status-foreground'];
+        },
+        'CSS module preset [contrast-fixture] properties must map each custom property name to global or themed.',
     ],
     'property with invalid identifier punctuation' => [
         function (array &$manifest): void {
-            $manifest['presets']['contrast-fixture']['properties'][] = '--status!';
+            $manifest['presets']['contrast-fixture']['properties']['--status!'] = 'themed';
         },
         'CSS module preset [contrast-fixture] properties must contain CSS custom property names beginning with --.',
     ],
-    'duplicate property' => [
+    'unsupported property scope' => [
         function (array &$manifest): void {
-            $manifest['presets']['contrast-fixture']['properties'][] = '--status';
+            $manifest['presets']['contrast-fixture']['properties']['--status'] = 'optional';
         },
-        'CSS module preset [contrast-fixture] properties must contain unique values.',
+        'CSS module preset [contrast-fixture] property [--status] must use scope global or themed.',
     ],
     'foundation property repeated by preset' => [
         function (array &$manifest): void {
-            $manifest['presets']['contrast-fixture']['properties'][] = '--radius';
+            $manifest['presets']['contrast-fixture']['properties']['--radius'] = 'global';
         },
         'CSS module preset [contrast-fixture] property [--radius] already belongs to the shared foundation.',
     ],
@@ -524,7 +540,11 @@ function tokenManifestDefinition(): array
 {
     return [
         'foundation' => [
-            'properties' => ['--background', '--foreground', '--radius'],
+            'properties' => [
+                '--background' => 'themed',
+                '--foreground' => 'themed',
+                '--radius' => 'global',
+            ],
             'aliases' => [
                 '--color-background' => '--background',
                 '--color-foreground' => '--foreground',
@@ -544,7 +564,11 @@ function tokenManifestDefinition(): array
                     'presets/contrast-fixture/theme.css',
                     'presets/contrast-fixture/aliases.css',
                 ],
-                'properties' => ['--status', '--status-foreground', '--radius-action'],
+                'properties' => [
+                    '--status' => 'themed',
+                    '--status-foreground' => 'themed',
+                    '--radius-action' => 'global',
+                ],
                 'aliases' => ['--color-status' => '--status'],
                 'contrast_pairs' => [
                     'status' => [

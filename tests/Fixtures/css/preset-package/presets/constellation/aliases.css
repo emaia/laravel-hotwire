@@ -5,4 +5,9 @@
 
 :root {
     --fixture-radius: 0.75rem;
+    --fixture-spacing: 2rem;
+}
+
+[data-theme="dark"] {
+    --fixture-border: gray;
 }

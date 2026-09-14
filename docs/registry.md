@@ -24,7 +24,11 @@ shared `resources/css/foundation.css` facade.
 
 ```php
 'foundation' => [
-    'properties' => ['--background', '--foreground'],
+    'properties' => [
+        '--background' => 'themed',
+        '--foreground' => 'themed',
+        '--radius' => 'global',
+    ],
     'aliases' => ['--color-background' => '--background'],
     'contrast_pairs' => [
         'background' => [
@@ -36,7 +40,11 @@ shared `resources/css/foundation.css` facade.
 'presets' => [
     'example' => [
         'base' => ['presets/example/theme.css'],
-        'properties' => ['--status', '--status-foreground'],
+        'properties' => [
+            '--status' => 'themed',
+            '--status-foreground' => 'themed',
+            '--panel-radius' => 'global',
+        ],
         'aliases' => ['--color-status' => '--status'],
         'contrast_pairs' => [
             'status' => [
@@ -49,10 +57,20 @@ shared `resources/css/foundation.css` facade.
 ],
 ```
 
-`properties` contains full CSS custom-property names introduced at that level. `aliases` maps each property emitted by
-Tailwind's `@theme inline` to the registered property it references; aliases are optional for preset knobs. Every alias
-value must resolve to exactly one distinct `var(--...)` target. Static values and expressions referencing different
-properties are not aliases in this contract.
+The `properties` map uses full CSS custom-property names as keys and assigns each name introduced at that level its
+declaration scope. A `global` property requires a top-level `:root` declaration. A `themed` property requires all three
+top-level theme selectors: the unthemed default `:where(:root:not([data-theme="dark"]))`, explicit
+`[data-theme="light"]` and explicit `[data-theme="dark"]`. CSS inheritance does not satisfy a missing default, light or
+dark declaration: a computed value inherited from `:root` or an ancestor can hide an incomplete theme from browser-only
+checks.
+
+These owner contracts are mutually exclusive. A `global` property must not also appear in a theme scope, and a `themed`
+property must not appear in `:root`. In the latter case, `:root` has greater specificity than the zero-specificity
+unthemed default and would make that default declaration dead even if every required selector were present.
+
+`aliases` maps each property emitted by Tailwind's `@theme inline` to the registered property it references; aliases are
+optional for preset knobs. Every alias value must resolve to exactly one distinct `var(--...)` target. Static values and
+expressions referencing different properties are not aliases in this contract.
 `contrast_pairs` names explicit foreground/background roles. The manifest does not infer aliases, foregrounds or pairs
 from stems because valid semantic relationships need not follow a naming convention.
 
@@ -60,8 +78,12 @@ Every official preset inherits the foundation properties, aliases and pairs even
 empty. A preset cannot redeclare a foundation-owned name or pair. Its additional properties must occur in its complete
 ordered `base`, and every additional alias must occur in `@theme inline` with the registered target. Base sources may
 override values in cascade order, including shared properties, but an unregistered additional name is an ownership
-error. Package validation reads CSS blocks structurally so formatting, multiple base files and nested function values do
-not weaken the contract.
+error. A foundation-owned property declared by a preset base is an optional override rather than a new property: it may
+target any subset allowed by its inherited classification. A themed override may use `default`, `light` and/or `dark`
+without providing all three; a global override may use only `root`. Both inherit the foundation value wherever they are
+not declared. Overrides do not require theme symmetry; do not register their names again under the preset. Package
+validation reads CSS blocks structurally so formatting, multiple base files and nested function values do not weaken the
+contract or create scope through name inference.
 
 This metadata describes shipped package presets. An application-owned scaffold or clone may declare its own properties
 after the import, and `hotwire:check --preset` does not claim to recover official provenance or diagnose arbitrary

@@ -55,6 +55,11 @@ it('discovers and resolves public entrypoints from the configured css root', fun
         ->and($presets->source('orbit')?->visualStylesheetPaths())->toBe(['presets/orbit/all.css']);
 });
 
+it('allows compatible foundation-owned overrides to inherit every other scope', function () {
+    expect(fn () => syntheticCssPresetFiles()->source('constellation'))
+        ->not->toThrow(PresetSourceException::class);
+});
+
 it('selects synthetic sources independently of their grouping and nesting', function () {
     $presets = syntheticCssPresetFiles();
     $grouped = $presets->sourceForSelection('orbit', ['action']);
@@ -112,6 +117,121 @@ it('validates additional properties and aliases across the complete ordered pres
         },
         'Preset [constellation] property [--fixture-surface-foreground] is not declared by its base sources.',
     ],
+    'foundation themed property missing dark scope despite nested inheritance' => [
+        function (Filesystem $files, string $root): void {
+            $path = $root.'/tokens.css';
+            $css = preg_replace('/^\h*--fixture-border:\h*black;\R?/m', '', $files->get($path));
+            $files->put($path, (string) $css);
+        },
+        'Shared foundation property [--fixture-border] is missing required scope [dark] ([data-theme="dark"]) in tokens.css.',
+    ],
+    'preset themed property missing default scope' => [
+        function (Filesystem $files, string $root): void {
+            $path = $root.'/presets/constellation/theme.css';
+            $css = preg_replace('/^\h*--fixture-surface:\h*white;\R?/m', '', $files->get($path));
+            $files->put($path, (string) $css);
+        },
+        'Preset [constellation] property [--fixture-surface] is missing required scope [default] (:where(:root:not([data-theme="dark"]))) in its base sources.',
+    ],
+    'preset themed property missing explicit light scope' => [
+        function (Filesystem $files, string $root): void {
+            $path = $root.'/presets/constellation/theme.css';
+            $css = str_replace(["\r\n", "\r"], "\n", $files->get($path));
+            $css = str_replace(
+                ":where(:root:not([data-theme=\"dark\"])),\n[data-theme=\"light\"] {",
+                ':where(:root:not([data-theme="dark"])) {',
+                $css,
+            );
+            $files->put($path, $css);
+        },
+        'Preset [constellation] property [--fixture-surface] is missing required scope [light] ([data-theme="light"]) in its base sources.',
+    ],
+    'foundation themed property missing unthemed default scope' => [
+        function (Filesystem $files, string $root): void {
+            $path = $root.'/tokens.css';
+            $css = str_replace(["\r\n", "\r"], "\n", $files->get($path));
+            $css = str_replace(
+                ":where(:root:not([data-theme=\"dark\"])),\n",
+                '',
+                $css,
+            );
+            $files->put($path, $css);
+        },
+        'Shared foundation property [--fixture-background] is missing required scope [default] (:where(:root:not([data-theme="dark"]))) in tokens.css.',
+    ],
+    'preset global property missing root scope' => [
+        function (Filesystem $files, string $root): void {
+            $theme = $root.'/presets/constellation/theme.css';
+            $aliases = $root.'/presets/constellation/aliases.css';
+            $css = preg_replace('/\R?:root\s*\{\s*--fixture-radius:\s*[^;]+;\s*\}\R?/', "\n", $files->get($theme));
+            $files->put($theme, (string) $css);
+            $css = preg_replace('/^\h*--fixture-radius:\h*[^;]+;\R?/m', '', $files->get($aliases));
+            $files->put($aliases, (string) $css);
+
+            $files->append($theme, "\n[data-theme=\"dark\"] { --fixture-radius: 1rem; }\n");
+        },
+        'Preset [constellation] property [--fixture-radius] is missing required scope [root] (:root) in its base sources.',
+    ],
+    'foundation themed property declared in root' => [
+        function (Filesystem $files, string $root): void {
+            $files->append($root.'/tokens.css', "\n:root { --fixture-background: red; }\n");
+        },
+        'Shared foundation themed property [--fixture-background] must not be declared in :root; its unthemed default would never apply.',
+    ],
+    'foundation global property declared in dark scope' => [
+        function (Filesystem $files, string $root): void {
+            $files->append($root.'/tokens.css', "\n[data-theme=\"dark\"] { --fixture-spacing: 3rem; }\n");
+        },
+        'Shared foundation global property [--fixture-spacing] must not be declared in theme scope [dark] ([data-theme="dark"]).',
+    ],
+    'foundation themed property declared outside supported scopes' => [
+        function (Filesystem $files, string $root): void {
+            $files->append($root.'/tokens.css', "\nhtml { --fixture-background: red; }\n");
+        },
+        'Shared foundation property [--fixture-background] must not be declared outside supported token scopes.',
+    ],
+    'foundation global property declared in a nested scope' => [
+        function (Filesystem $files, string $root): void {
+            $files->append($root.'/tokens.css', "\n@layer base { :root { --fixture-spacing: 3rem; } }\n");
+        },
+        'Shared foundation property [--fixture-spacing] must not be declared outside supported token scopes.',
+    ],
+    'foundation global property declared in a nested conditional' => [
+        function (Filesystem $files, string $root): void {
+            $files->append($root.'/tokens.css', "\n:root { @media (width > 0px) { --fixture-spacing: 3rem; } }\n");
+        },
+        'Shared foundation property [--fixture-spacing] must not be declared outside supported token scopes.',
+    ],
+    'foundation global property declared in a non-inline theme block' => [
+        function (Filesystem $files, string $root): void {
+            $files->append($root.'/tokens.css', "\n@theme static { --fixture-spacing: 3rem; }\n");
+        },
+        'Shared foundation property [--fixture-spacing] must not be declared outside supported token scopes.',
+    ],
+    'preset themed property declared in root' => [
+        function (Filesystem $files, string $root): void {
+            $files->append($root.'/presets/constellation/aliases.css', "\n:root { --fixture-surface: red; }\n");
+        },
+        'Preset [constellation] themed property [--fixture-surface] must not be declared in :root; its unthemed default would never apply.',
+    ],
+    'preset global property declared in dark scope' => [
+        function (Filesystem $files, string $root): void {
+            $files->append($root.'/presets/constellation/theme.css', "\n[data-theme=\"dark\"] { --fixture-radius: 1rem; }\n");
+        },
+        'Preset [constellation] global property [--fixture-radius] must not be declared in theme scope [dark] ([data-theme="dark"]).',
+    ],
+    'inherited themed property overridden in root' => [
+        function (Filesystem $files, string $root): void {
+            $files->append($root.'/presets/constellation/aliases.css', "\n:root { --fixture-border: red; }\n");
+        },
+        'Preset [constellation] override of shared foundation themed property [--fixture-border] must not be declared in :root; its unthemed default would never apply.',
+    ],
+    'inherited global property overridden in dark scope' => [
+        function (Filesystem $files, string $root): void {
+            $files->append($root.'/presets/constellation/aliases.css', "\n[data-theme=\"dark\"] { --fixture-spacing: 3rem; }\n");
+        },
+        'Preset [constellation] override of shared foundation global property [--fixture-spacing] must not be declared in theme scope [dark] ([data-theme="dark"]).',
+    ],
     'unregistered foundation alias' => [
         function (Filesystem $files, string $root): void {
             $files->append($root.'/tokens.css', "\n@theme inline { --color-fixture-extra: var(--fixture-background); }\n");
@@ -152,7 +272,7 @@ it('validates additional properties and aliases across the complete ordered pres
     ],
 ]);
 
-it('extracts foundation declarations outside preset-supported scopes without auditing those scopes', function () {
+it('does not count conditionally nested foundation declarations as global scope', function () {
     $files = new Filesystem;
     $root = sys_get_temp_dir().'/hotwire-css-foundation-tokens-'.uniqid();
     $files->copyDirectory(__DIR__.'/../Fixtures/css/preset-package', $root);
@@ -161,7 +281,11 @@ it('extracts foundation declarations outside preset-supported scopes without aud
     $files->put($tokens, $css."\n@media (prefers-color-scheme: dark) { :root { --fixture-background: black; } }\n");
 
     try {
-        expect(syntheticCssPresetFiles($root)->source('constellation'))->not->toBeNull();
+        expect(fn () => syntheticCssPresetFiles($root)->source('constellation'))
+            ->toThrow(
+                PresetSourceException::class,
+                'Shared foundation property [--fixture-background] is missing required scope [default] (:where(:root:not([data-theme="dark"]))) in tokens.css.',
+            );
     } finally {
         $files->deleteDirectory($root);
     }

@@ -44,11 +44,23 @@ defines defaults belonging to one visual language and is included before modules
 no visual module. It may declare custom properties in supported light/dark/root scopes and aliases in `@theme inline`;
 component selectors, structural rules and global visual properties remain outside it.
 
-For official presets, every registered additional property must be declared across all ordered preset-base sources.
-Registered Tailwind aliases must exist in `@theme inline` and reference their explicit targets. Multiple base sources may
-override an earlier property value intentionally; validation checks the combined declarations of all base sources rather
-than requiring one token file. Additional semantic foreground/background pairs are registered explicitly and join the
-shared foundation pairs in browser contrast checks. Property stems do not create aliases or contrast pairs implicitly.
+Official preset authors classify every registered additional property in `styles.php`: `global` requires a top-level
+`:root` declaration, while `themed` requires the top-level unthemed default, explicit light and explicit dark selectors
+across all ordered preset-base sources. A value inherited from another scope does not replace any declaration. Registered
+Tailwind aliases must exist in `@theme inline` and reference their explicit targets. Multiple base sources may override an
+earlier property value intentionally; validation checks the combined declarations of all base sources rather than
+requiring one token file.
+
+For properties owned by that metadata level, `global` and `themed` are exclusive: a global property cannot add theme
+declarations, and a themed property cannot add `:root`. The latter would outrank the zero-specificity unthemed default and
+silently leave that declaration unused.
+
+A shared foundation property used in preset base is an optional override. It may target any subset of the supported
+scopes allowed by its inherited classification: `default`, `light` and `dark` for a themed property, or only `root` for a
+global property. It then inherits the foundation value elsewhere. Overrides do not require theme symmetry; because
+ownership stays with the foundation, the preset must not register them as additions. Additional semantic
+foreground/background pairs are registered explicitly and join the shared foundation pairs in browser contrast checks.
+Scope, aliases and contrast pairs are declared independently; property stems do not create any of them implicitly.
 
 A common semantic value such as `--background` belongs to the shared token foundation. Promote a value to a documented
 preset knob only when it has stable preset-wide meaning, changes the language coherently and has at least two independent
