@@ -1,25 +1,23 @@
 import { expect, test } from "@playwright/test";
+import { execFileSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 
-const pairs = {
-    background: ["--foreground", "--background"],
-    card: ["--card-foreground", "--card"],
-    popover: ["--popover-foreground", "--popover"],
-    primary: ["--primary-foreground", "--primary"],
-    secondary: ["--secondary-foreground", "--secondary"],
-    muted: ["--muted-foreground", "--muted"],
-    accent: ["--accent-foreground", "--accent"],
-    destructive: ["--destructive-foreground", "--destructive"],
-    sidebar: ["--sidebar-foreground", "--sidebar"],
-    "sidebar-primary": ["--sidebar-primary-foreground", "--sidebar-primary"],
-    "sidebar-accent": ["--sidebar-accent-foreground", "--sidebar-accent"],
-};
+const contracts = [
+    ...loadContracts("package", "resources/css"),
+    ...loadContracts("fixture", "tests/Fixtures/css/preset-package", "tests/Fixtures/css/preset-package/styles.php"),
+];
 
-test("semantic token pairs retain normal-text contrast in every package scope", async ({ page }) => {
-    const tokens = await readFile("resources/css/tokens.css", "utf8");
+for (const contract of contracts) {
+    test(`${contract.suite} preset [${contract.name}] retains semantic token contrast in every scope`, async ({
+        page,
+    }) => {
+        const css = (
+            await Promise.all(contract.sources.map((source) => readFile(join(contract.cssRoot, source), "utf8")))
+        ).join("\n");
 
-    await page.setContent(`
-        <style>${tokens}</style>
+        await page.setContent(`
+        <style>${css}</style>
         <main id="default">
             <section id="light" data-theme="light">
                 <div id="dark-inside-light" data-theme="dark"></div>
@@ -30,70 +28,92 @@ test("semantic token pairs retain normal-text contrast in every package scope", 
         </main>
     `);
 
-    const results = await page.evaluate(({ pairs }) => {
-        const canvas = document.createElement("canvas");
-        canvas.width = 1;
-        canvas.height = 1;
-        const context = canvas.getContext("2d", { colorSpace: "srgb" });
+        const results = await page.evaluate(
+            ({ pairs }) => {
+                const canvas = document.createElement("canvas");
+                canvas.width = 1;
+                canvas.height = 1;
+                const context = canvas.getContext("2d", { colorSpace: "srgb" });
 
-        const rgba = (color) => {
-            context.clearRect(0, 0, 1, 1);
-            context.fillStyle = color;
-            context.fillRect(0, 0, 1, 1);
+                const rgba = (color) => {
+                    context.clearRect(0, 0, 1, 1);
+                    context.fillStyle = color;
+                    context.fillRect(0, 0, 1, 1);
 
-            return [...context.getImageData(0, 0, 1, 1).data];
-        };
-        const luminance = (color) => rgba(color)
-            .slice(0, 3)
-            .map((channel) => channel / 255)
-            .map((channel) => channel <= 0.04045
-                ? channel / 12.92
-                : ((channel + 0.055) / 1.055) ** 2.4)
-            .reduce((sum, channel, index) => sum + channel * [0.2126, 0.7152, 0.0722][index], 0);
-        const scopes = {
-            default: document.querySelector("#default"),
-            light: document.querySelector("#light"),
-            dark: document.querySelector("#dark"),
-            "dark inside light": document.querySelector("#dark-inside-light"),
-            "light inside dark": document.querySelector("#light-inside-dark"),
-        };
+                    return [...context.getImageData(0, 0, 1, 1).data];
+                };
+                const luminance = (color) =>
+                    rgba(color)
+                        .slice(0, 3)
+                        .map((channel) => channel / 255)
+                        .map((channel) => (channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4))
+                        .reduce((sum, channel, index) => sum + channel * [0.2126, 0.7152, 0.0722][index], 0);
+                const scopes = {
+                    default: document.querySelector("#default"),
+                    light: document.querySelector("#light"),
+                    dark: document.querySelector("#dark"),
+                    "dark inside light": document.querySelector("#dark-inside-light"),
+                    "light inside dark": document.querySelector("#light-inside-dark"),
+                };
 
-        return Object.entries(scopes).flatMap(([scope, element]) => Object.entries(pairs).map(([pair, tokens]) => {
-            const probe = document.createElement("span");
-            const scopeStyles = getComputedStyle(element);
-            const missing = tokens.filter((token) => scopeStyles.getPropertyValue(token).trim() === "");
-            probe.style.color = `var(${tokens[0]}, rgb(1 2 3))`;
-            probe.style.backgroundColor = `var(${tokens[1]}, rgb(1 2 3))`;
-            element.append(probe);
+                return Object.entries(scopes).flatMap(([scope, element]) =>
+                    Object.entries(pairs).map(([pair, properties]) => {
+                        const tokens = [properties.foreground, properties.background];
+                        const probe = document.createElement("span");
+                        const scopeStyles = getComputedStyle(element);
+                        const missing = tokens.filter((token) => scopeStyles.getPropertyValue(token).trim() === "");
+                        probe.style.color = `var(${tokens[0]}, rgb(1 2 3))`;
+                        probe.style.backgroundColor = `var(${tokens[1]}, rgb(1 2 3))`;
+                        element.append(probe);
 
-            const styles = getComputedStyle(probe);
-            const foreground = luminance(styles.color);
-            const background = luminance(styles.backgroundColor);
-            // A translucent channel is measured against a cleared canvas, so a fully transparent
-            // foreground would read as black and score against the surface it never covers.
-            const alpha = [styles.color, styles.backgroundColor].map((color) => rgba(color)[3]);
-            probe.remove();
+                        const styles = getComputedStyle(probe);
+                        const foreground = luminance(styles.color);
+                        const background = luminance(styles.backgroundColor);
+                        // A translucent channel is measured against a cleared canvas, so a fully transparent
+                        // foreground would read as black and score against the surface it never covers.
+                        const alpha = [styles.color, styles.backgroundColor].map((color) => rgba(color)[3]);
+                        probe.remove();
 
-            return {
-                scope,
-                pair,
-                missing,
-                alpha,
-                ratio: (Math.max(foreground, background) + 0.05)
-                    / (Math.min(foreground, background) + 0.05),
-            };
-        }));
-    }, { pairs });
+                        return {
+                            scope,
+                            pair,
+                            missing,
+                            alpha,
+                            ratio:
+                                (Math.max(foreground, background) + 0.05) / (Math.min(foreground, background) + 0.05),
+                        };
+                    }),
+                );
+            },
+            { pairs: contract.contrast_pairs },
+        );
 
-    for (const result of results) {
-        expect(result.missing, `${result.scope}: ${result.pair} has missing tokens`).toEqual([]);
-        expect(
-            result.alpha,
-            `${result.scope}: ${result.pair} is not opaque, so its measured ratio is not what renders`,
-        ).toEqual([255, 255]);
-        expect(
-            result.ratio,
-            `${result.scope}: ${result.pair} has ${result.ratio.toFixed(2)}:1 contrast`,
-        ).toBeGreaterThanOrEqual(4.5);
+        for (const result of results) {
+            expect(result.missing, `${result.scope}: ${result.pair} has missing tokens`).toEqual([]);
+            expect(
+                result.alpha,
+                `${result.scope}: ${result.pair} is not opaque, so its measured ratio is not what renders`,
+            ).toEqual([255, 255]);
+            expect(
+                result.ratio,
+                `${result.scope}: ${result.pair} has ${result.ratio.toFixed(2)}:1 contrast`,
+            ).toBeGreaterThanOrEqual(4.5);
+        }
+    });
+}
+
+function loadContracts(suite, cssRoot, manifest = null) {
+    const args = ["scripts/preset_contrast_manifest.php"];
+
+    if (manifest !== null) {
+        args.push(manifest, cssRoot);
     }
-});
+
+    const payload = JSON.parse(
+        execFileSync(process.env.PHP_BINARY ?? "php", args, {
+            encoding: "utf8",
+        }),
+    );
+
+    return payload.presets.map((preset) => ({ ...preset, suite, cssRoot }));
+}

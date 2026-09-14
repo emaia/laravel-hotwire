@@ -1,0 +1,8 @@
+@theme inline {
+    --color-fixture-surface: var(--fixture-surface);
+    --radius-fixture: calc(var(--fixture-radius) * 1);
+}
+
+:root {
+    --fixture-radius: 0.75rem;
+}

@@ -2,6 +2,8 @@
 
 namespace Emaia\LaravelHotwire\Support;
 
+use Closure;
+use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Filesystem\Filesystem;
 
 final readonly class CssPresetFiles
@@ -10,6 +12,7 @@ final readonly class CssPresetFiles
         private Filesystem $files,
         private PresetSourceResolver $sources,
         private CssModuleManifest $manifest,
+        private CssCustomProperties $customProperties = new CssCustomProperties,
     ) {}
 
     /** @return array<string, string> */
@@ -80,6 +83,12 @@ final readonly class CssPresetFiles
     private function validateSource(string $name, PresetSource $source): void
     {
         $this->validateFoundations($name, $source);
+        $this->validateSourceImports($name, $source);
+        $this->validateTokenContract($name, $source);
+    }
+
+    private function validateSourceImports(string $name, PresetSource $source): void
+    {
         $expected = $this->manifest->allSourcesFor($name);
         $actual = $source->visualStylesheetPaths();
 
@@ -115,6 +124,118 @@ final readonly class CssPresetFiles
             throw new PresetSourceException(
                 "Preset [{$name}] must import shared foundation [foundation.css] exactly once before preset sources."
             );
+        }
+    }
+
+    private function validateTokenContract(string $name, PresetSource $source): void
+    {
+        $tokenSource = FoundationFacade::TOKEN_SOURCE;
+
+        try {
+            $foundationCss = $this->files->get($this->sources->cssRoot().'/'.$tokenSource);
+        } catch (FileNotFoundException $exception) {
+            throw new PresetSourceException(
+                "Shared foundation token source [{$tokenSource}] cannot be read.",
+                previous: $exception,
+            );
+        }
+
+        $foundation = $this->customProperties->inspectStylesheet($foundationCss);
+
+        if (! $foundation['valid']) {
+            throw new PresetSourceException(
+                "Shared foundation token source [{$tokenSource}] has invalid CSS syntax."
+            );
+        }
+
+        $this->validateProperties(
+            $foundation['properties'],
+            $this->manifest->foundationProperties(),
+            fn (string $property): string => "Shared foundation property [{$property}] is not declared in {$tokenSource}.",
+            fn (string $property): string => "Shared foundation {$tokenSource} declares unregistered property [{$property}].",
+        );
+        $this->validateAliases('Shared foundation', $foundation['aliases'], $this->manifest->foundationAliases());
+
+        $base = $this->customProperties->inspectPresetBase($source->baseCss());
+
+        if ($base['violations'] !== []) {
+            throw new PresetSourceException(
+                "Preset [{$name}] base contains unsupported CSS scope [{$base['violations'][0]}]."
+            );
+        }
+
+        $expectedProperties = $this->manifest->additionalPropertiesFor($name);
+        $knownProperties = [...$this->manifest->foundationProperties(), ...$expectedProperties];
+        $this->validateProperties(
+            $base['properties'],
+            $expectedProperties,
+            fn (string $property): string => "Preset [{$name}] property [{$property}] is not declared by its base sources.",
+            fn (string $property): string => "Preset [{$name}] base declares unregistered property [{$property}].",
+            $knownProperties,
+        );
+
+        $this->validateAliases(
+            "Preset [{$name}]",
+            $base['aliases'],
+            $this->manifest->additionalAliasesFor($name),
+        );
+    }
+
+    /**
+     * @param  string[]  $actual
+     * @param  string[]  $required
+     * @param  Closure(string): string  $missingMessage
+     * @param  Closure(string): string  $unregisteredMessage
+     * @param  string[]|null  $permitted
+     */
+    private function validateProperties(
+        array $actual,
+        array $required,
+        Closure $missingMessage,
+        Closure $unregisteredMessage,
+        ?array $permitted = null,
+    ): void {
+        foreach ($required as $property) {
+            if (! in_array($property, $actual, true)) {
+                throw new PresetSourceException($missingMessage($property));
+            }
+        }
+
+        $permitted ??= $required;
+
+        foreach ($actual as $property) {
+            if (! in_array($property, $permitted, true)) {
+                throw new PresetSourceException($unregisteredMessage($property));
+            }
+        }
+    }
+
+    /**
+     * @param  array<string, string|null>  $actual
+     * @param  array<string, string>  $expected
+     */
+    private function validateAliases(string $owner, array $actual, array $expected): void
+    {
+        foreach ($expected as $alias => $target) {
+            if (! array_key_exists($alias, $actual)) {
+                throw new PresetSourceException("{$owner} alias [{$alias}] is not declared in @theme inline.");
+            }
+
+            if ($actual[$alias] !== $target) {
+                $found = $actual[$alias] ?? 'ambiguous or missing target';
+
+                throw new PresetSourceException(
+                    "{$owner} alias [{$alias}] must reference [{$target}], found [{$found}]."
+                );
+            }
+        }
+
+        foreach (array_keys($actual) as $alias) {
+            if (! array_key_exists($alias, $expected)) {
+                throw new PresetSourceException(
+                    "{$owner} @theme inline declares unregistered alias [{$alias}]."
+                );
+            }
         }
     }
 }

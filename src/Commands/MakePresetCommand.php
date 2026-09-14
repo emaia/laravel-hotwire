@@ -5,6 +5,7 @@ namespace Emaia\LaravelHotwire\Commands;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\CssPresetFiles;
 use Emaia\LaravelHotwire\Support\CssRules;
+use Emaia\LaravelHotwire\Support\FoundationFacade;
 use Emaia\LaravelHotwire\Support\PresetSkeleton;
 use Emaia\LaravelHotwire\Support\PresetSkeletonGroups;
 use Emaia\LaravelHotwire\Support\PresetSource;
@@ -114,7 +115,7 @@ class MakePresetCommand extends Command
      */
     private function tokenTemplate(): ?array
     {
-        $tokens = $this->files->get(dirname(__DIR__, 2).'/resources/css/tokens.css');
+        $tokens = $this->files->get(dirname(__DIR__, 2).'/resources/css/'.FoundationFacade::TOKEN_SOURCE);
         $sections = ['root' => [], 'light' => [], 'dark' => []];
 
         foreach ($this->cssRules->parse($this->cssRules->stripComments($tokens)) as $rule) {

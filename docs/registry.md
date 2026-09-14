@@ -18,6 +18,55 @@ cover several modules and may be nested within the preset's private directory; n
 cross-preset contract. The public CSS surfaces are the top-level `resources/css/presets/<name>.css` entrypoints and the
 shared `resources/css/foundation.css` facade.
 
+## Preset token contract
+
+`styles.php` declares the shared foundation token contract once and each official preset declares only what it adds:
+
+```php
+'foundation' => [
+    'properties' => ['--background', '--foreground'],
+    'aliases' => ['--color-background' => '--background'],
+    'contrast_pairs' => [
+        'background' => [
+            'foreground' => '--foreground',
+            'background' => '--background',
+        ],
+    ],
+],
+'presets' => [
+    'example' => [
+        'base' => ['presets/example/theme.css'],
+        'properties' => ['--status', '--status-foreground'],
+        'aliases' => ['--color-status' => '--status'],
+        'contrast_pairs' => [
+            'status' => [
+                'foreground' => '--status-foreground',
+                'background' => '--status',
+            ],
+        ],
+        'sources' => [/* ... */],
+    ],
+],
+```
+
+`properties` contains full CSS custom-property names introduced at that level. `aliases` maps each property emitted by
+Tailwind's `@theme inline` to the registered property it references; aliases are optional for preset knobs. Every alias
+value must resolve to exactly one distinct `var(--...)` target. Static values and expressions referencing different
+properties are not aliases in this contract.
+`contrast_pairs` names explicit foreground/background roles. The manifest does not infer aliases, foregrounds or pairs
+from stems because valid semantic relationships need not follow a naming convention.
+
+Every official preset inherits the foundation properties, aliases and pairs even when all three preset additions are
+empty. A preset cannot redeclare a foundation-owned name or pair. Its additional properties must occur in its complete
+ordered `base`, and every additional alias must occur in `@theme inline` with the registered target. Base sources may
+override values in cascade order, including shared properties, but an unregistered additional name is an ownership
+error. Package validation reads CSS blocks structurally so formatting, multiple base files and nested function values do
+not weaken the contract.
+
+This metadata describes shipped package presets. An application-owned scaffold or clone may declare its own properties
+after the import, and `hotwire:check --preset` does not claim to recover official provenance or diagnose arbitrary
+unresolved application tokens.
+
 ## Catalog entries
 
 ### Component

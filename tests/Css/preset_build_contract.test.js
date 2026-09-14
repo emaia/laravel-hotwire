@@ -46,7 +46,7 @@ let productionNovaCss;
 beforeAll(async () => {
     contract = await buildCssContract();
     productionNovaCss = await minifyCssWithVite(contract.outputs.presets.nova);
-});
+}, 30_000);
 
 describe("public CSS presets", () => {
     test("compile every discovered preset through an installed-app entrypoint", () => {

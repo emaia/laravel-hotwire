@@ -57,3 +57,23 @@ it('keeps visual preset ownership separate from component template ownership', f
         ->toMatch('/application-owned fork of markup\s+and behavior/')
         ->toMatch('/targets, lifecycle and\s+accessibility/');
 });
+
+it('documents the official preset token metadata contract without name inference', function () {
+    $registry = File::get(__DIR__.'/../../docs/registry.md');
+    $presets = File::get(__DIR__.'/../../docs/presets.md');
+    $theming = File::get(__DIR__.'/../../docs/theming.md');
+
+    expect($registry)
+        ->toContain('`properties`', '`aliases`', '`contrast_pairs`')
+        ->toContain('full CSS custom-property names')
+        ->toContain('does not infer')
+        ->toContain('exactly one distinct `var(--...)` target')
+        ->and($presets)
+        ->toContain('registered additional property')
+        ->toContain('all ordered preset-base sources')
+        ->toContain('combined declarations of all base sources')
+        ->not->toContain('validation evaluates their combined cascade order')
+        ->and($theming)
+        ->toContain('registered contrast pairs')
+        ->toContain('discovers every official preset');
+});
