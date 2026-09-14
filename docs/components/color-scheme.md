@@ -88,9 +88,9 @@ affecting the controller:
 - `data-scheme-icon="light|dark"`
 - `data-mode-icon="system"`
 
-The selected preset reads `html[data-color-scheme-mode]` when the script has run, so the initial icon matches the stored
-mode before Stimulus connects. Without the script, it falls back to the toggle's local `data-mode` and `data-scheme`
-attributes.
+The shared foundation reads `html[data-color-scheme-mode]` when the script has run, so the initial icon matches the
+stored mode before Stimulus connects. Without the script, it falls back to the toggle's local `data-mode` and
+`data-scheme` attributes. The selected preset remains responsible for the button and icon appearance.
 
 ## Controller integrations
 

@@ -408,7 +408,7 @@ it('projects interactive surface slot contracts from their component classes', f
         ],
         ColorSchemeToggle::class => [
             'root' => ['name' => 'color-scheme-toggle', 'kind' => 'visual'],
-            'icon' => ['name' => 'color-scheme-icon', 'kind' => 'visual'],
+            'icon' => ['name' => 'color-scheme-icon', 'kind' => 'structural'],
         ],
         Dropdown::class => [
             'root' => ['name' => 'dropdown', 'kind' => 'visual'],

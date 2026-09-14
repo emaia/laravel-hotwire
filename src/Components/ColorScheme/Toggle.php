@@ -9,7 +9,7 @@ class Toggle extends Component
 {
     public const array SLOTS = [
         'root' => ['name' => 'color-scheme-toggle', 'kind' => 'visual'],
-        'icon' => ['name' => 'color-scheme-icon', 'kind' => 'visual'],
+        'icon' => ['name' => 'color-scheme-icon', 'kind' => 'structural'],
     ];
 
     public function __construct(

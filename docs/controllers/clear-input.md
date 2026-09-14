@@ -81,18 +81,19 @@ If the input already has a value when the page loads, the button appears immedia
 
 ## Required CSS
 
-The controller automatically injects the styles that control button visibility:
+The package foundation supplies the visibility rule. Mark the adjacent button with either the package slot or the
+Stimulus target; the controller maintains `clear-input--touched` on the input:
 
 ```css
-/* Automatically injected by the controller */
-.clear-input--touched:focus + .clear-input-button,
-.clear-input--touched:hover + .clear-input-button,
-.clear-input--touched + .clear-input-button:hover {
-    display: block !important;
+.clear-input--touched:focus + :is([data-slot="clear-input-button"], [data-clear-input-target~="clearButton"]),
+.clear-input--touched:hover + :is([data-slot="clear-input-button"], [data-clear-input-target~="clearButton"]),
+.clear-input--touched + :is([data-slot="clear-input-button"], [data-clear-input-target~="clearButton"]):hover {
+    display: var(--clear-input-button-display, revert) !important;
 }
 ```
 
-The `clear-input--touched` class is added and removed automatically as the input receives or loses a value.
+Set `--clear-input-button-display` when the visible button needs a specific display mode. The Nova preset sets it to
+`inline-flex` and owns the button's position and appearance.
 
 ## Behavior
 

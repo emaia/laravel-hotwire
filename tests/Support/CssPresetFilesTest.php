@@ -280,7 +280,7 @@ it('resolves Nova modal integrations without unrelated sources', function () {
     expect($modal->visualCss())
         ->toContain('[data-slot="modal-panel"]')
         ->toContain('[data-slot="modal-trigger"]')
-        ->toContain('[data-slot="drawer-overlay"]')
+        ->not->toContain('[data-slot="drawer-overlay"]')
         ->not->toContain('[data-slot="carousel"]');
 });
 
@@ -303,7 +303,6 @@ it('resolves migrated integrations to exact canonical visual sources', function 
         [],
         [
             'presets/nova/button-surfaces.css',
-            'presets/nova/color-scheme-toggle.css',
             'presets/nova/floating-presence.css',
             'presets/nova/kbd.css',
             'presets/nova/tooltip.css',
