@@ -34,6 +34,17 @@ test.serial("does not add touched class when input is empty", async () => {
     expect(input.classList.contains("clear-input--touched")).toBe(false);
 });
 
+test.serial("leaves clear button visibility CSS to the shared foundation", async () => {
+    await mount(`
+        <span data-controller="clear-input">
+            <input data-clear-input-target="input" value="hello" />
+            <button data-clear-input-target="clearButton"></button>
+        </span>
+    `);
+
+    expect(document.head.querySelectorAll("style")).toHaveLength(0);
+});
+
 test.serial("re-applies touched class after turbo:render (morph scenario)", async () => {
     await mount(`
         <span data-controller="clear-input">

@@ -1,6 +1,7 @@
 <?php
 
 use Emaia\LaravelHotwire\Support\CssPresetFiles;
+use Emaia\LaravelHotwire\Support\CssRules;
 use Emaia\LaravelHotwire\Support\PresetAxes;
 
 $stubPath = realpath(__DIR__.'/../../stubs/resources/css/app.css');
@@ -153,8 +154,9 @@ it('safelists runtime classes applied by Stimulus controllers', function () {
         ->toContain('overflow-hidden');
 });
 
-it('keeps back to top interaction states, reduced motion and shared Button axes', function () {
+it('keeps back to top appearance in Nova and mechanics in the structural foundation', function () {
     $css = presetVisualCss('nova');
+    $structural = File::get(__DIR__.'/../../resources/css/structural.css');
     $axes = (new PresetAxes)->extract($css);
 
     expect(presetDeclaration($css, '[data-slot="back-to-top"][data-visible="false"]'))
@@ -167,15 +169,20 @@ it('keeps back to top interaction states, reduced motion and shared Button axes'
         ->and($axes['back-to-top']['data-size'] ?? [])
         ->not->toBeEmpty()
         ->toEqualCanonicalizing($axes['button']['data-size'] ?? [])
-        ->and($css)
+        ->and(File::get(__DIR__.'/../../resources/css/presets/nova/back-to-top.css'))
+        ->not->toContain('@media (prefers-reduced-motion: reduce)')
+        ->and($structural)
         ->toContain('@media (prefers-reduced-motion: reduce) {')
-        ->toContain('[data-slot="back-to-top"][data-visible] { transition: none; }')
+        ->toContain('[data-slot="back-to-top"][data-visible]')
+        ->toContain('position: fixed')
+        ->toContain('[data-slot="back-to-top"][data-visible="false"]')
+        ->toContain('transition: none !important')
         ->not->toContain('[data-slot="back-to-top"] { @apply transition-none; }')
         ->not->toContain('motion-reduce:transition-none');
 });
 
 it('uses the pre-connect color scheme mode to avoid toggle icon flicker', function () {
-    $css = presetVisualCss('nova');
+    $css = File::get(__DIR__.'/../../resources/css/structural.css');
 
     expect($css)
         ->toContain('html[data-color-scheme-mode="system"] [data-slot="color-scheme-toggle"][data-color-scheme-modes-value~="system"] [data-mode-icon="system"]')
@@ -185,7 +192,7 @@ it('uses the pre-connect color scheme mode to avoid toggle icon flicker', functi
 });
 
 it('uses resolved icons when system is outside a color scheme toggle cycle', function () {
-    $css = presetVisualCss('nova');
+    $css = File::get(__DIR__.'/../../resources/css/structural.css');
 
     expect($css)
         ->toContain('html[data-color-scheme-mode="system"] [data-slot="color-scheme-toggle"][data-color-scheme-modes-value~="system"] [data-mode-icon="system"]')
@@ -258,6 +265,62 @@ it('rides transition-behavior inside the shorthand, never as its own declaration
     }
 });
 
+it('keeps reduced motion suppression out of preset modules', function (string $preset) {
+    $violations = presetReducedMotionViolations(presetModuleRules($preset));
+
+    expect($violations)->toBe([], "Preset [{$preset}] modules suppress reduced motion instead of inheriting the structural foundation.");
+})->with('design presets');
+
+it('keeps Presence motion kill switches out of preset modules', function (string $preset) {
+    $violations = presetPresenceViolations(presetModuleRules($preset));
+
+    expect($violations)->toBe([], "Preset [{$preset}] modules implement Presence kill switches instead of inheriting the structural foundation.");
+})->with('design presets');
+
+it('detects preset-owned reduced motion declarations', function (string $css) {
+    expect(presetReducedMotionViolations(presetFixtureRules($css)))->not->toBeEmpty();
+})->with([
+    'Tailwind transition none' => ['@media (prefers-reduced-motion: reduce) { .fixture { @apply transition-none; } }'],
+    'Tailwind animation none' => ['@media (prefers-reduced-motion: reduce) { .fixture { @apply animate-none; } }'],
+    'native zero transition duration' => ['@media (prefers-reduced-motion: reduce) { .fixture { transition-duration: 0s; } }'],
+    'native zero animation duration' => ['@media (prefers-reduced-motion: reduce) { .fixture { animation-duration: 0ms; } }'],
+    'native nonzero reduced transition' => ['@media (prefers-reduced-motion: reduce) { .fixture { transition: opacity 150ms ease; } }'],
+    'Tailwind motion variant' => ['.fixture { @apply motion-reduce:transition-none; }'],
+    'nested Tailwind motion variant' => ['.fixture { @apply md:motion-reduce:animate-none; }'],
+    'Tailwind reduced variant block' => ['@variant motion-reduce { .fixture { @apply transition-opacity duration-150; } }'],
+]);
+
+it('allows non-motion reduced fallbacks and ordinary preset motion', function (string $css) {
+    expect(presetReducedMotionViolations(presetFixtureRules($css)))->toBe([]);
+})->with([
+    'legibility fallback' => ['@media (prefers-reduced-motion: reduce) { .fixture { color: inherit; background-image: none; } }'],
+    'no preference media' => ['@media (prefers-reduced-motion: no-preference) { .fixture { transition: opacity 150ms; } }'],
+    'ordinary transition' => ['.fixture { transition: opacity 150ms; }'],
+    'structural custom property' => ['.fixture { --reveal-animation: none; }'],
+    'non-motion reduced utility' => ['.fixture { @apply motion-reduce:opacity-100; }'],
+]);
+
+it('detects quoted, unquoted and Tailwind Presence kill switches', function (string $css) {
+    expect(presetPresenceViolations(presetFixtureRules($css)))->not->toBeEmpty();
+})->with([
+    'double quoted motion' => ['[data-motion="none"] { transition: none; }'],
+    'single quoted motion' => ["[data-motion='none'] { transition: none; }"],
+    'unquoted motion' => ['[data-motion=none] { transition: none; }'],
+    'spaced presence' => ['[data-presence = "instant"] { animation: none; }'],
+    'scoped presence' => ['@scope ([data-presence=instant]) { .fixture { opacity: 1; } }'],
+    'Tailwind motion attribute variant' => ['.fixture { @apply data-[motion=none]:transition-none; }'],
+    'Tailwind presence attribute variant' => ['.fixture { @apply data-[presence=instant]:animate-none; }'],
+]);
+
+it('allows ordinary Presence states and similar values', function (string $css) {
+    expect(presetPresenceViolations(presetFixtureRules($css)))->toBe([]);
+})->with([
+    'default motion' => ['[data-motion="default"] { transition: opacity 150ms; }'],
+    'leaving presence' => ['[data-presence="leaving"] { opacity: 0; }'],
+    'similar value' => ['[data-motion="nonetheless"] { opacity: 1; }'],
+    'quoted content' => ['.fixture::before { content: "[data-motion=none]"; }'],
+]);
+
 it('keeps the Accordion collapse in the structural stylesheet', function () {
     // Mechanics, not looks: a preset left to restate these would ship an accordion that snaps shut.
     $css = file_get_contents(dirname(__DIR__, 2).'/resources/css/structural.css');
@@ -284,8 +347,14 @@ it('keeps preset-independent component mechanics in the structural stylesheet', 
         ->toContain('@keyframes hotwire-reveal-rise')
         ->toContain('@keyframes hotwire-reveal-flat')
         ->toContain('@keyframes hotwire-reveal-fade')
+        ->toContain('[data-motion="flat"]')
+        ->toContain('[data-motion="fade"]')
         ->toContain('[data-hotwire-top-layer][popover]:is([data-slot="modal-overlay"]')
         ->toContain('[data-hotwire-top-layer][popover]:is([data-slot="dropdown-menu"]')
+        ->toContain('[data-slot="oembed"]')
+        ->toContain('aspect-ratio: var(--oembed-aspect-ratio, 16 / 9)')
+        ->toContain('[data-slot="oembed-frame"]')
+        ->toContain('[data-slot="input-wrapper"][data-clearable="true"]')
         ->and($visual)
         ->not->toContain('[data-slot="aspect-ratio"]')
         ->not->toContain('@keyframes hotwire-reveal-')
@@ -387,8 +456,8 @@ it('keeps closed floating surfaces renderable until Presence hides them', functi
         ->not->toMatch('/\[data-state="closed"\][^{]*\{[^}]*\b(?:display:\s*none|@apply[^;}]*\bhidden\b)/s');
 })->with('design presets');
 
-it('uses pre-connect and resolved color scheme hooks', function (string $preset) {
-    $css = presetVisualCss($preset);
+it('uses structural pre-connect and resolved color scheme hooks', function () {
+    $css = File::get(__DIR__.'/../../resources/css/structural.css');
 
     expect($css)
         ->toContain('html[data-color-scheme-mode="system"]')
@@ -398,7 +467,7 @@ it('uses pre-connect and resolved color scheme hooks', function (string $preset)
         ->toContain('[data-mode-icon="system"]')
         ->toContain('[data-scheme-icon="light"]')
         ->toContain('[data-scheme-icon="dark"]');
-})->with('design presets');
+});
 
 it('keeps file upload state and bare dropzone contracts', function (string $preset) {
     $css = presetVisualCss($preset);
@@ -473,10 +542,20 @@ it('keeps the toaster viewport eligible for top-layer stacking from the structur
         ->toContain('pointer-events: none');
 });
 
-it('keeps clear input visibility owned by its controller', function (string $preset) {
+it('keeps clear input visibility in the foundation without prescribing its visual geometry', function (string $preset) {
     $declaration = presetDeclaration(presetVisualCss($preset), '[data-slot="clear-input-button"]');
+    $structural = File::get(__DIR__.'/../../resources/css/structural.css');
+    $wrapper = presetDeclaration($structural, '[data-slot="input-wrapper"][data-clearable="true"]');
 
     expect($declaration)->not->toMatch('/\bhidden\b/');
+    expect($structural)
+        ->toContain('.clear-input--touched:focus + :is([data-slot="clear-input-button"], [data-clear-input-target~="clearButton"])')
+        ->toContain('.clear-input--touched:hover + :is([data-slot="clear-input-button"], [data-clear-input-target~="clearButton"])')
+        ->toContain('display: var(--clear-input-button-display, revert) !important');
+    expect($wrapper)
+        ->toContain('position: relative')
+        ->not->toContain('padding-inline-end')
+        ->not->toContain('inset-inline-end');
 })->with('design presets');
 
 it('styles generated rich text DOM through granular hooks', function (string $preset) {
@@ -505,14 +584,18 @@ it('uses Floating UI geometry tokens instead of css-only offsets', function (str
 })->with('design presets');
 
 it('drives floating presence from semantic state and motion hooks', function (string $preset) {
-    $css = presetVisualCss($preset);
+    $css = File::get(__DIR__.'/../../resources/css/presets/'.$preset.'/floating-presence.css');
+    $structural = File::get(__DIR__.'/../../resources/css/structural.css');
 
     expect($css)
         ->toContain('[data-state="closed"]')
         ->toContain('[data-state="open"]')
+        ->not->toContain('[data-motion="none"]')
+        ->not->toContain('[data-presence="instant"]')
+        ->not->toContain('@media (prefers-reduced-motion: reduce)')
+        ->and($structural)
         ->toContain('[data-motion="none"]')
-        ->toContain('[data-presence="instant"]')
-        ->toContain('@media (prefers-reduced-motion: reduce)');
+        ->toContain('[data-presence="instant"]');
 })->with('design presets');
 
 it('drives overlay motion from semantic presence state', function (string $preset) {
@@ -528,6 +611,73 @@ it('drives overlay motion from semantic presence state', function (string $prese
         ->not->toContain('data-modal-dialog-hidden-class')
         ->not->toContain('data-drawer-dialog-hidden-class');
 })->with('design presets');
+
+it('keeps overlay and component reduced motion suppression in the structural foundation', function () {
+    $structural = File::get(__DIR__.'/../../resources/css/structural.css');
+
+    expect($structural)
+        ->toContain('[data-slot="modal-overlay"]')
+        ->toContain('[data-slot="modal-positioner"]')
+        ->toContain('[data-slot="read-more-trigger-icon"]')
+        ->toContain('[data-slot="toast-content"]')
+        ->toContain('[data-shimmer="true"]')
+        ->toContain('transition: none !important')
+        ->toContain('animation: none !important');
+});
+
+it('keeps Reveal routing structural while Nova owns its offsets and blur', function () {
+    $structural = File::get(__DIR__.'/../../resources/css/structural.css');
+    $visual = File::get(__DIR__.'/../../resources/css/presets/nova/reveal-surfaces.css');
+
+    expect($structural)
+        ->toContain('[data-motion="flat"]')
+        ->toContain('--reveal-animation: hotwire-reveal-flat')
+        ->toContain('[data-motion="fade"]')
+        ->toContain('--reveal-animation: hotwire-reveal-fade')
+        ->and($visual)
+        ->toContain('--reveal-blur: 6px')
+        ->toContain('--reveal-shift: 0.75rem')
+        ->not->toContain('[data-motion="flat"]')
+        ->not->toContain('[data-motion="fade"]');
+});
+
+it('keeps responsive OEmbed geometry structural and its appearance in Nova', function () {
+    $structural = File::get(__DIR__.'/../../resources/css/structural.css');
+    $visual = File::get(__DIR__.'/../../resources/css/presets/nova/oembed.css');
+
+    expect(presetDeclaration($structural, '[data-slot="oembed"]'))
+        ->toContain('aspect-ratio: var(--oembed-aspect-ratio, 16 / 9)')
+        ->toContain('width: 100%')
+        ->toContain('overflow: hidden')
+        ->and(presetDeclaration($structural, '[data-slot="oembed-frame"]'))
+        ->toContain('width: 100%')
+        ->toContain('height: 100%')
+        ->and($visual)
+        ->toContain('my-5')
+        ->toContain('rounded-lg')
+        ->toContain('bg-muted')
+        ->toContain('border-0')
+        ->not->toContain('aspect-video')
+        ->not->toContain('size-full');
+});
+
+it('keeps Text Shimmer legible and gives Toaster a zero-motion fallback', function () {
+    $structural = File::get(__DIR__.'/../../resources/css/structural.css');
+    $shimmer = File::get(__DIR__.'/../../resources/css/presets/nova/text-shimmer.css');
+    $toaster = File::get(__DIR__.'/../../resources/css/presets/nova/toaster.css');
+
+    expect($structural)
+        ->toContain('[data-shimmer="true"]')
+        ->toContain('[data-slot="toast-content"]')
+        ->toContain('animation: none !important')
+        ->toContain('transition: none !important')
+        ->and($shimmer)
+        ->toContain('color: inherit')
+        ->toContain('background-image: none')
+        ->not->toContain('animation: none')
+        ->and($toaster)
+        ->not->toContain('@media (prefers-reduced-motion: reduce)');
+});
 
 it('keeps multi-select state selectors aligned with controller output', function (string $preset) {
     $css = presetVisualCss($preset);
@@ -710,6 +860,100 @@ function presetDeclaration(string $css, string $selector): string
     preg_match('/'.preg_quote($selector, '/').'\s*\{([^}]*)\}/s', $css, $matches);
 
     return $matches[1] ?? '';
+}
+
+/** @return list<array{path: string, chain: string[], declarations: string}> */
+function presetModuleRules(string $preset): array
+{
+    $source = app(CssPresetFiles::class)->source($preset);
+    $modulePaths = array_fill_keys($source->moduleStylesheetPaths(), true);
+    $rules = new CssRules;
+    $parsed = [];
+
+    foreach ($source->visualStylesheetPaths() as $index => $path) {
+        if (! isset($modulePaths[$path])) {
+            continue;
+        }
+
+        $css = $rules->stripComments($source->visualStylesheets()[$index]);
+
+        foreach ($rules->parse($css) as $rule) {
+            $parsed[] = ['path' => $path, ...$rule];
+        }
+    }
+
+    return $parsed;
+}
+
+/**
+ * @param  list<array{path: string, chain: string[], declarations: string}>  $rules
+ * @return string[]
+ */
+function presetReducedMotionViolations(array $rules): array
+{
+    $violations = [];
+
+    foreach ($rules as $rule) {
+        $reducedContext = collect($rule['chain'])->contains(
+            fn (string $block): bool => preg_match('/^@media\b.*\(\s*prefers-reduced-motion\s*:\s*reduce\s*\)/i', $block) === 1
+                || preg_match('/^@variant\s+motion-reduce\b/i', $block) === 1,
+        );
+        $nativeMotion = preg_match('/(?:^|;)\s*(?:animation|transition)(?:-[a-z-]+)?\s*:/i', $rule['declarations']) === 1;
+        $tailwindMotion = false;
+
+        preg_match_all('/@apply\s+([^;}]+)/i', $rule['declarations'], $applications);
+        foreach ($applications[1] as $application) {
+            foreach (preg_split('/\s+/', trim($application)) ?: [] as $utility) {
+                $base = substr($utility, (strrpos($utility, ':') ?: -1) + 1);
+                $isMotionUtility = preg_match('/^(?:animate|transition)(?:-|$)|^(?:duration|delay|ease)-/i', $base) === 1;
+
+                if ($isMotionUtility && ($reducedContext || str_contains($utility, 'motion-reduce:'))) {
+                    $tailwindMotion = true;
+                    break 2;
+                }
+            }
+        }
+
+        if (($reducedContext && $nativeMotion) || $tailwindMotion) {
+            $violations[] = $rule['path'].': '.end($rule['chain']);
+        }
+    }
+
+    return $violations;
+}
+
+/**
+ * @param  list<array{path: string, chain: string[], declarations: string}>  $rules
+ * @return string[]
+ */
+function presetPresenceViolations(array $rules): array
+{
+    $violations = [];
+
+    foreach ($rules as $rule) {
+        $selector = (string) end($rule['chain']);
+        $context = implode(' ', $rule['chain']);
+        $presenceAttribute = '/\[\s*data-(?:motion\s*=\s*(?:"none"|\'none\'|none)|presence\s*=\s*(?:"instant"|\'instant\'|instant))\s*\]/i';
+        $tailwindPresence = '/data-\[\s*(?:motion\s*=\s*(?:"none"|\'none\'|none)|presence\s*=\s*(?:"instant"|\'instant\'|instant))\s*\]:/i';
+
+        if (preg_match($presenceAttribute, $context) === 1
+            || preg_match($tailwindPresence, $rule['declarations']) === 1) {
+            $violations[] = $rule['path'].': '.$selector;
+        }
+    }
+
+    return $violations;
+}
+
+/** @return list<array{path: string, chain: string[], declarations: string}> */
+function presetFixtureRules(string $css): array
+{
+    $rules = new CssRules;
+
+    return array_map(
+        fn (array $rule): array => ['path' => 'fixture.css', ...$rule],
+        $rules->parse($rules->stripComments($css)),
+    );
 }
 
 /**

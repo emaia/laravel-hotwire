@@ -1,4 +1,4 @@
 @layer components {
-    [data-slot="clear-input-button"] { @apply absolute end-1.5 inline-flex items-center; }
+    [data-slot="clear-input-button"] { --clear-input-button-display: inline-flex; @apply absolute end-1.5 top-1/2 inline-flex -translate-y-1/2 items-center; }
     [data-slot="clear-input-button"] svg { @apply size-4 text-foreground/60; }
 }

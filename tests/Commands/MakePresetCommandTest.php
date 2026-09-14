@@ -101,7 +101,9 @@ it('scaffolds no rule the structural stylesheet owns', function () {
     // an invitation to reimplement them, and a preset that skipped it would ship a broken component.
     expect(File::get($this->targetDir.'/brand.css'))
         ->not->toContain('::details-content')
-        ->not->toContain('data-carousel-container');
+        ->not->toContain('data-carousel-container')
+        ->not->toContain('[data-slot="color-scheme-icon"]')
+        ->toContain('[data-slot="input-wrapper"]');
 });
 
 it('templates every token declared by the package, in both colour schemes', function () {

@@ -179,6 +179,7 @@ it('classifies presentation-free and controller-owned slots as structural', func
         'carousel-nav-wrapper',
         'chart',
         'conditional-field',
+        'color-scheme-icon',
         'drawer',
         'field-label-required',
         'file-upload-announcer',

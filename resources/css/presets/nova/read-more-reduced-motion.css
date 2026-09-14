@@ -1,5 +1,0 @@
-@layer components {
-    @media (prefers-reduced-motion: reduce) {
-        [data-slot="read-more-trigger-icon"] { transition: none; }
-    }
-}

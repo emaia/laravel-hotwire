@@ -53,9 +53,10 @@ and the `icon-lg` size.
 <hw:back-to-top variant="outline" size="icon" />
 ```
 
-The selected preset owns the fixed bottom-end position, rounded shape, stacking order, opacity transition, and visible
-states. The button uses `z-40`, below overlay surfaces at `z-50`. There are intentionally no position, offset, scroll
-behavior, or tooltip props.
+The shared foundation defaults to fixed positioning and hidden/visible opacity states; later preset or application
+rules can override both. The selected preset owns the bottom-end offsets, rounded shape, stacking order, and normal
+opacity transition. Nova uses `z-40`, below overlay surfaces at `z-50`. There are intentionally no position, offset,
+scroll behavior, or tooltip props.
 
 ## Custom attributes and Stimulus
 
@@ -98,7 +99,7 @@ The required `back-to-top` controller and action remain in place. Internal `data
   `data-visible`, so an invisible button cannot receive keyboard focus.
 - Scrolling back uses smooth behavior by default and automatically switches to `auto` when
   `prefers-reduced-motion: reduce` is active.
-- The Nova opacity transition is also disabled for reduced motion.
+- The shared foundation disables the preset's opacity transition for reduced motion.
 
 ## Styling hooks
 

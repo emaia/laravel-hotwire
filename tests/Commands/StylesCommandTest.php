@@ -76,7 +76,7 @@ it('includes Tooltip visuals and shared dependencies for component integrations'
         ->toContain('[data-slot="tooltip"]')
         ->toContain('[data-slot="tooltip-arrow"]')
         ->toContain('[data-slot="kbd"]')
-        ->toContain('@media (prefers-reduced-motion: reduce)')
+        ->not->toContain('@media (prefers-reduced-motion: reduce)')
         ->not->toContain('[data-slot="toast"]')
         ->not->toContain('[data-slot="oembed"]');
 })->with(['button', 'color-scheme.toggle']);
@@ -126,6 +126,7 @@ it('records a canonical regeneration plan with effective modules and controllers
         ->and($plan['components'])->toBe(['modal'])
         ->and($plan['controllers'])->toContain('modal', 'turbo--progress')
         ->and($plan['modules'])->toContain('modal', 'button-surfaces')
+        ->not->toContain('overlay-motion')
         ->not->toContain('overlay-foundation');
 });
 
