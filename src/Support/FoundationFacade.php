@@ -7,8 +7,10 @@ use Illuminate\Filesystem\Filesystem;
 /** @internal */
 final readonly class FoundationFacade
 {
+    public const string TOKEN_SOURCE = 'tokens.css';
+
     private const array IMPORTS = [
-        'tokens.css',
+        self::TOKEN_SOURCE,
         'custom-variants.css',
         'structural.css',
     ];

@@ -101,18 +101,20 @@ tokens such as `--radius` can remain on bare `:root`.
 
 ## Semantic contrast
 
-Every semantic text pair must meet a WCAG 2.x contrast ratio of at least `4.50:1` in both themes. The checked pairs are
-background, card, popover, primary, secondary, muted, accent, destructive, sidebar, sidebar primary and sidebar accent,
-each with its corresponding `*-foreground` token (`--foreground` for `--background`).
+Every semantic text pair must meet a WCAG 2.x contrast ratio of at least `4.50:1` in both themes. The shared registered
+contrast pairs are background, card, popover, primary, secondary, muted, accent, destructive, sidebar, sidebar primary
+and sidebar accent, each with its corresponding `*-foreground` token (`--foreground` for `--background`). An official
+preset may register additional explicit pairs for semantic surfaces introduced by its own token contract.
 
 WCAG permits `3:1` for large text and uses non-text criteria for graphical controls, but these shared pairs can render
 normal-size copy across many components, so their package contract does not relax by usage. Border, input and ring tokens
 are not text pairs and are outside this ratio check.
 
-The package verifies these pairs from their rendered browser colours, including CSS gamut mapping and nested theme
-scopes. Application overrides may use any valid CSS colour syntax, but become part of the application's accessibility
-contract: test the rendered result after overrides, opacity, images, gradients and blending. `hotwire:check` deliberately
-does not interpret application CSS or claim to validate its contrast.
+The package browser test discovers every official preset, its ordered base sources and all inherited and additional
+registered contrast pairs from the validated PHP manifest. It verifies rendered browser colours, including CSS gamut
+mapping and nested theme scopes. Application overrides may use any valid CSS colour syntax, but become part of the
+application's accessibility contract: test the rendered result after overrides, opacity, images, gradients and blending.
+`hotwire:check` deliberately does not interpret application CSS or claim to validate its contrast.
 
 ## Forced colors and print
 

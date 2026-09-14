@@ -1,3 +1,9 @@
+@theme inline {
+    --color-fixture-background: var(--fixture-background);
+    --color-fixture-foreground: var(--fixture-foreground);
+}
+
 :root {
+    --fixture-background: white;
     --fixture-foreground: black;
 }

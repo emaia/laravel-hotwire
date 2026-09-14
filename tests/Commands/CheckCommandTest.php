@@ -260,8 +260,21 @@ it('reports generated bundle drift when its official preset entrypoint is invali
         '@import "../foundation.css";',
     ]));
     $manifest = CssModuleManifest::fromArray([
+        'foundation' => [
+            'properties' => [],
+            'aliases' => [],
+            'contrast_pairs' => [],
+        ],
         'modules' => [],
-        'presets' => ['nova' => ['base' => ['presets/nova/theme.css'], 'sources' => []]],
+        'presets' => [
+            'nova' => [
+                'base' => ['presets/nova/theme.css'],
+                'properties' => [],
+                'aliases' => [],
+                'contrast_pairs' => [],
+                'sources' => [],
+            ],
+        ],
     ]);
     $files = new Filesystem;
     app()->instance(CssModuleManifest::class, $manifest);

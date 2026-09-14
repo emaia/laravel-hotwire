@@ -44,6 +44,12 @@ defines defaults belonging to one visual language and is included before modules
 no visual module. It may declare custom properties in supported light/dark/root scopes and aliases in `@theme inline`;
 component selectors, structural rules and global visual properties remain outside it.
 
+For official presets, every registered additional property must be declared across all ordered preset-base sources.
+Registered Tailwind aliases must exist in `@theme inline` and reference their explicit targets. Multiple base sources may
+override an earlier property value intentionally; validation checks the combined declarations of all base sources rather
+than requiring one token file. Additional semantic foreground/background pairs are registered explicitly and join the
+shared foundation pairs in browser contrast checks. Property stems do not create aliases or contrast pairs implicitly.
+
 A common semantic value such as `--background` belongs to the shared token foundation. Promote a value to a documented
 preset knob only when it has stable preset-wide meaning, changes the language coherently and has at least two independent
 consumers. Component-specific values stay in their visual module. This avoids turning preset base into a collection of

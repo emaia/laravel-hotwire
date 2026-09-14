@@ -3,6 +3,7 @@
 use Emaia\LaravelHotwire\Components\Button;
 use Emaia\LaravelHotwire\Components\Card;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
+use Emaia\LaravelHotwire\Support\CssCustomProperties;
 use Emaia\LaravelHotwire\Support\CssPresetFiles;
 use Emaia\LaravelHotwire\Support\CssRules;
 use Emaia\LaravelHotwire\Support\CssSlots;
@@ -622,87 +623,5 @@ function referencedCssSlots(string $css): array
 /** @return string[] */
 function presetBaseViolations(string $css): array
 {
-    $rules = new CssRules;
-    $css = $rules->stripComments($css);
-    $violations = [];
-    $css = preg_replace_callback('/@theme\s+inline\s*\{([^{}]*)\}/s', function (array $match) use (&$violations): string {
-        if (! declarationsAreCustomProperties($match[1])) {
-            $violations[] = '@theme inline';
-        }
-
-        return '';
-    }, $css) ?? $css;
-
-    if (preg_match('/@theme\b/', $css) === 1) {
-        $violations[] = '@theme';
-    }
-
-    foreach ($rules->parse($css) as ['chain' => $chain, 'declarations' => $declarations]) {
-        $selector = (string) end($chain);
-        $branches = $rules->splitTopLevel($selector, ',');
-        $supported = $branches !== [] && collect($branches)->every(function (string $branch): bool {
-            $branch = preg_replace('/\s+/', '', $branch) ?? $branch;
-
-            return $branch === ':root'
-                || $branch === ':where(:root:not([data-theme="dark"]))'
-                || preg_match('/^\[data-theme=(["\']?)(?:light|dark)\1\]$/', $branch) === 1;
-        });
-
-        if (count($chain) !== 1 || ! $supported || ! declarationsAreCustomProperties($declarations)) {
-            $violations[] = $selector;
-        }
-    }
-
-    return array_values(array_unique($violations));
-}
-
-function declarationsAreCustomProperties(string $declarations): bool
-{
-    $parts = [];
-    $start = 0;
-    $quote = null;
-    $depth = 0;
-    $length = strlen($declarations);
-
-    for ($offset = 0; $offset < $length; $offset++) {
-        $character = $declarations[$offset];
-
-        if ($quote !== null) {
-            if ($character === '\\') {
-                $offset++;
-            } elseif ($character === $quote) {
-                $quote = null;
-            }
-
-            continue;
-        }
-
-        if ($character === '\\') {
-            $offset++;
-
-            continue;
-        }
-
-        if ($character === '"' || $character === "'") {
-            $quote = $character;
-
-            continue;
-        }
-
-        if ($character === '(' || $character === '[' || $character === '{') {
-            $depth++;
-        } elseif ($character === ')' || $character === ']' || $character === '}') {
-            $depth = max(0, $depth - 1);
-        } elseif ($character === ';' && $depth === 0) {
-            $parts[] = substr($declarations, $start, $offset - $start);
-            $start = $offset + 1;
-        }
-    }
-
-    $parts[] = substr($declarations, $start);
-    $declarations = array_values(array_filter(array_map('trim', $parts)));
-
-    return $declarations !== [] && collect($declarations)->every(
-        fn (string $declaration): bool => preg_match('/^--[a-z0-9_-]+\s*:/i', $declaration) === 1,
-    );
+    return app(CssCustomProperties::class)->inspectPresetBase($css)['violations'];
 }

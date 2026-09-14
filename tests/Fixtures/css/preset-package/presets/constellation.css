@@ -1,4 +1,5 @@
 @import "../foundation.css";
 @import "./constellation/theme.css";
+@import "./constellation/aliases.css";
 @import "./constellation/layout/surfaces.css";
 @import "./constellation/feedback.css";

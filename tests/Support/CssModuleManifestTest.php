@@ -5,7 +5,7 @@ use Emaia\LaravelHotwire\Support\CssModuleManifest;
 use Emaia\LaravelHotwire\Support\PresetSourceException;
 
 it('closes dependencies while preserving canonical preset source order', function () {
-    $manifest = CssModuleManifest::fromArray([
+    $manifest = CssModuleManifest::fromArray(withEmptyTokenMetadata([
         'modules' => [
             'button-surfaces' => [
                 'components' => ['button'],
@@ -33,7 +33,7 @@ it('closes dependencies while preserving canonical preset source order', functio
                 ],
             ],
         ],
-    ]);
+    ]));
 
     $modules = $manifest->modulesFor(['modal'], []);
 
@@ -47,7 +47,7 @@ it('closes dependencies while preserving canonical preset source order', functio
 });
 
 it('selects controller-owned visual modules and their dependencies', function () {
-    $manifest = CssModuleManifest::fromArray([
+    $manifest = CssModuleManifest::fromArray(withEmptyTokenMetadata([
         'modules' => [
             'floating-presence' => [
                 'components' => [],
@@ -69,14 +69,14 @@ it('selects controller-owned visual modules and their dependencies', function ()
                 ],
             ],
         ],
-    ]);
+    ]));
 
     expect($manifest->modulesFor([], ['tooltip']))
         ->toEqualCanonicalizing(['floating-presence', 'tooltip']);
 });
 
 it('resolves a synthetic preset without official name or source organization assumptions', function () {
-    $manifest = CssModuleManifest::fromArray([
+    $manifest = CssModuleManifest::fromArray(withEmptyTokenMetadata([
         'modules' => [
             'surface' => [
                 'components' => ['card'],
@@ -100,14 +100,14 @@ it('resolves a synthetic preset without official name or source organization ass
                 ],
             ],
         ],
-    ]);
+    ]));
 
     expect($manifest->sourcesFor('contrast-fixture', $manifest->modulesFor(['button'], [])))
         ->toBe(['presets/contrast-fixture/layout/surfaces.css']);
 });
 
 it('includes preset base before modules even when the module closure is empty', function () {
-    $manifest = CssModuleManifest::fromArray([
+    $manifest = CssModuleManifest::fromArray(withEmptyTokenMetadata([
         'modules' => [
             'surface' => [
                 'components' => ['card'],
@@ -126,7 +126,7 @@ it('includes preset base before modules even when the module closure is empty', 
                 ],
             ],
         ],
-    ]);
+    ]));
 
     expect($manifest->baseFor('contrast-fixture'))->toBe([
         'presets/contrast-fixture/theme.css',
@@ -143,25 +143,180 @@ it('includes preset base before modules even when the module closure is empty', 
         ]);
 });
 
+it('inherits foundation tokens while exposing explicit preset additions', function () {
+    $manifest = CssModuleManifest::fromArray(tokenManifestDefinition());
+
+    expect($manifest->presetNames())->toBe(['contrast-fixture'])
+        ->and($manifest->additionalPropertiesFor('contrast-fixture'))->toBe([
+            '--status',
+            '--status-foreground',
+            '--radius-action',
+        ])
+        ->and($manifest->propertiesFor('contrast-fixture'))->toBe([
+            '--background',
+            '--foreground',
+            '--radius',
+            '--status',
+            '--status-foreground',
+            '--radius-action',
+        ])
+        ->and($manifest->aliasesFor('contrast-fixture'))->toBe([
+            '--color-background' => '--background',
+            '--color-foreground' => '--foreground',
+            '--radius-md' => '--radius',
+            '--color-status' => '--status',
+        ])
+        ->and($manifest->contrastPairsFor('contrast-fixture'))->toBe([
+            'background' => [
+                'foreground' => '--foreground',
+                'background' => '--background',
+            ],
+            'status' => [
+                'foreground' => '--status-foreground',
+                'background' => '--status',
+            ],
+        ]);
+});
+
+it('requires explicit token metadata for the foundation and every preset', function (array $manifest, string $message) {
+    expect(fn () => CssModuleManifest::fromArray($manifest))
+        ->toThrow(PresetSourceException::class, $message);
+})->with([
+    'missing foundation' => [
+        [
+            'modules' => [],
+            'presets' => [],
+        ],
+        'CSS foundation token metadata must define properties, aliases, and contrast_pairs.',
+    ],
+    'missing preset metadata' => [
+        [
+            'foundation' => emptyTokenMetadata(),
+            'modules' => [],
+            'presets' => ['nova' => ['base' => [], 'sources' => []]],
+        ],
+        'CSS module preset [nova] token metadata must define properties, aliases, and contrast_pairs.',
+    ],
+]);
+
+it('accepts contrast pair keys in either order and normalizes their shape', function () {
+    $definition = tokenManifestDefinition();
+    $definition['presets']['contrast-fixture']['contrast_pairs']['status'] = [
+        'background' => '--status',
+        'foreground' => '--status-foreground',
+    ];
+
+    expect(CssModuleManifest::fromArray($definition)->contrastPairsFor('contrast-fixture')['status'])
+        ->toBe([
+            'foreground' => '--status-foreground',
+            'background' => '--status',
+        ]);
+});
+
+it('rejects invalid or ambiguous token metadata', function (Closure $mutate, string $message) {
+    $manifest = tokenManifestDefinition();
+    $mutate($manifest);
+
+    expect(fn () => CssModuleManifest::fromArray($manifest))
+        ->toThrow(PresetSourceException::class, $message);
+})->with([
+    'property without custom property prefix' => [
+        function (array &$manifest): void {
+            $manifest['presets']['contrast-fixture']['properties'][] = 'status';
+        },
+        'CSS module preset [contrast-fixture] properties must contain CSS custom property names beginning with --.',
+    ],
+    'property with invalid identifier punctuation' => [
+        function (array &$manifest): void {
+            $manifest['presets']['contrast-fixture']['properties'][] = '--status!';
+        },
+        'CSS module preset [contrast-fixture] properties must contain CSS custom property names beginning with --.',
+    ],
+    'duplicate property' => [
+        function (array &$manifest): void {
+            $manifest['presets']['contrast-fixture']['properties'][] = '--status';
+        },
+        'CSS module preset [contrast-fixture] properties must contain unique values.',
+    ],
+    'foundation property repeated by preset' => [
+        function (array &$manifest): void {
+            $manifest['presets']['contrast-fixture']['properties'][] = '--radius';
+        },
+        'CSS module preset [contrast-fixture] property [--radius] already belongs to the shared foundation.',
+    ],
+    'invalid alias name' => [
+        function (array &$manifest): void {
+            $manifest['presets']['contrast-fixture']['aliases']['color-status'] = '--status';
+        },
+        'CSS module preset [contrast-fixture] alias [color-status] must be a CSS custom property name beginning with --.',
+    ],
+    'unknown alias target' => [
+        function (array &$manifest): void {
+            $manifest['presets']['contrast-fixture']['aliases']['--color-missing'] = '--missing';
+        },
+        'CSS module preset [contrast-fixture] alias [--color-missing] references unknown property [--missing].',
+    ],
+    'foundation alias repeated by preset' => [
+        function (array &$manifest): void {
+            $manifest['presets']['contrast-fixture']['aliases']['--radius-md'] = '--radius-action';
+        },
+        'CSS module preset [contrast-fixture] alias [--radius-md] already belongs to the shared foundation.',
+    ],
+    'contrast pair with invalid shape' => [
+        function (array &$manifest): void {
+            $manifest['presets']['contrast-fixture']['contrast_pairs']['notice'] = ['--status-foreground', '--status'];
+        },
+        'CSS module preset [contrast-fixture] contrast pair [notice] must define foreground and background.',
+    ],
+    'contrast pair with an extra key' => [
+        function (array &$manifest): void {
+            $manifest['presets']['contrast-fixture']['contrast_pairs']['notice'] = [
+                'background' => '--status',
+                'foreground' => '--status-foreground',
+                'border' => '--status',
+            ];
+        },
+        'CSS module preset [contrast-fixture] contrast pair [notice] must define foreground and background.',
+    ],
+    'contrast pair with unknown property' => [
+        function (array &$manifest): void {
+            $manifest['presets']['contrast-fixture']['contrast_pairs']['notice'] = [
+                'foreground' => '--missing',
+                'background' => '--status',
+            ];
+        },
+        'CSS module preset [contrast-fixture] contrast pair [notice] references unknown property [--missing].',
+    ],
+    'foundation pair repeated by preset' => [
+        function (array &$manifest): void {
+            $manifest['presets']['contrast-fixture']['contrast_pairs']['background'] = [
+                'foreground' => '--status-foreground',
+                'background' => '--status',
+            ];
+        },
+        'CSS module preset [contrast-fixture] contrast pair [background] already belongs to the shared foundation.',
+    ],
+]);
+
 it('requires every preset to declare its base explicitly', function () {
-    CssModuleManifest::fromArray([
+    CssModuleManifest::fromArray(withEmptyTokenMetadata([
         'modules' => [],
         'presets' => ['nova' => ['sources' => []]],
-    ]);
+    ]));
 })->throws(PresetSourceException::class, 'CSS module manifest contains an invalid preset definition.');
 
 it('requires preset base and module sources to be ordered lists', function (array $definition) {
-    CssModuleManifest::fromArray([
+    CssModuleManifest::fromArray(withEmptyTokenMetadata([
         'modules' => [],
         'presets' => ['nova' => $definition],
-    ]);
+    ]));
 })->with([
     'base map' => [['base' => ['theme' => 'presets/nova/theme.css'], 'sources' => []]],
     'sources map' => [['base' => [], 'sources' => ['theme' => ['path' => 'presets/nova/theme.css', 'modules' => []]]]],
 ])->throws(PresetSourceException::class, 'CSS module manifest contains an invalid preset definition.');
 
 it('requires every package preset to ship its public entrypoint', function () {
-    $manifest = CssModuleManifest::fromArray([
+    $manifest = CssModuleManifest::fromArray(withEmptyTokenMetadata([
         'modules' => [],
         'presets' => [
             'missing' => [
@@ -169,7 +324,7 @@ it('requires every package preset to ship its public entrypoint', function () {
                 'sources' => [],
             ],
         ],
-    ]);
+    ]));
     $validate = new ReflectionMethod($manifest, 'validatePackageContract');
 
     expect(fn () => $validate->invoke($manifest))
@@ -180,7 +335,7 @@ it('requires every package preset to ship its public entrypoint', function () {
 });
 
 it('rejects unsafe private source paths', function (string $path) {
-    CssModuleManifest::fromArray([
+    CssModuleManifest::fromArray(withEmptyTokenMetadata([
         'modules' => [
             'surface' => [
                 'components' => ['card'],
@@ -196,7 +351,7 @@ it('rejects unsafe private source paths', function (string $path) {
                 ],
             ],
         ],
-    ]);
+    ]));
 })->with([
     'parent traversal' => 'presets/contrast-fixture/layout/../surface.css',
     'hidden segment' => 'presets/contrast-fixture/.private/surface.css',
@@ -205,7 +360,7 @@ it('rejects unsafe private source paths', function (string $path) {
 ])->throws(PresetSourceException::class, 'CSS module preset [contrast-fixture] contains an invalid source.');
 
 it('rejects unsafe preset base paths', function (string $path) {
-    CssModuleManifest::fromArray([
+    CssModuleManifest::fromArray(withEmptyTokenMetadata([
         'modules' => [],
         'presets' => [
             'contrast-fixture' => [
@@ -213,7 +368,7 @@ it('rejects unsafe preset base paths', function (string $path) {
                 'sources' => [],
             ],
         ],
-    ]);
+    ]));
 })->with([
     'outside preset' => 'foundation.css',
     'other preset' => 'presets/nova/theme.css',
@@ -224,7 +379,7 @@ it('rejects unsafe preset base paths', function (string $path) {
 ])->throws(PresetSourceException::class, 'CSS module preset [contrast-fixture] contains an invalid base source.');
 
 it('rejects paths repeated between preset base and module sources', function () {
-    CssModuleManifest::fromArray([
+    CssModuleManifest::fromArray(withEmptyTokenMetadata([
         'modules' => [
             'surface' => ['components' => [], 'controllers' => [], 'dependencies' => []],
         ],
@@ -236,11 +391,11 @@ it('rejects paths repeated between preset base and module sources', function () 
                 ],
             ],
         ],
-    ]);
+    ]));
 })->throws(PresetSourceException::class, 'CSS module preset [nova] repeats source [presets/nova/theme.css].');
 
 it('rejects module sources without module ownership', function () {
-    CssModuleManifest::fromArray([
+    CssModuleManifest::fromArray(withEmptyTokenMetadata([
         'modules' => [],
         'presets' => [
             'nova' => [
@@ -250,13 +405,19 @@ it('rejects module sources without module ownership', function () {
                 ],
             ],
         ],
-    ]);
+    ]));
 })->throws(PresetSourceException::class, 'CSS source [presets/nova/theme.css] must map at least one module.');
 
 it('selects Tooltip visuals through package components but not the standalone controller', function () {
     $manifest = app(CssModuleManifest::class);
 
     expect($manifest->baseFor('nova'))->toBe([])
+        ->and($manifest->additionalPropertiesFor('nova'))->toBe([])
+        ->and($manifest->additionalAliasesFor('nova'))->toBe([])
+        ->and($manifest->additionalContrastPairsFor('nova'))->toBe([])
+        ->and($manifest->propertiesFor('nova'))->toBe($manifest->foundationProperties())
+        ->and($manifest->aliasesFor('nova'))->toBe($manifest->foundationAliases())
+        ->and($manifest->contrastPairsFor('nova'))->toBe($manifest->foundationContrastPairs())
         ->and($manifest->modulesFor(['tooltip'], []))->toContain('floating-presence', 'kbd', 'tooltip')
         ->and($manifest->modulesFor(['button'], ['tooltip']))->toContain('tooltip')
         ->and($manifest->modulesFor(['color-scheme.toggle'], ['color-scheme', 'tooltip']))->toContain('tooltip')
@@ -277,7 +438,7 @@ it('includes upload state styling with the file upload component', function () {
 });
 
 it('rejects dependencies on undefined modules', function () {
-    CssModuleManifest::fromArray([
+    CssModuleManifest::fromArray(withEmptyTokenMetadata([
         'modules' => [
             'modal' => [
                 'components' => ['modal'],
@@ -286,22 +447,22 @@ it('rejects dependencies on undefined modules', function () {
             ],
         ],
         'presets' => ['nova' => ['base' => [], 'sources' => []]],
-    ]);
+    ]));
 })->throws(PresetSourceException::class, 'CSS module [modal] depends on undefined module [missing].');
 
 it('reports the complete module dependency cycle', function () {
-    CssModuleManifest::fromArray([
+    CssModuleManifest::fromArray(withEmptyTokenMetadata([
         'modules' => [
             'modal' => ['components' => [], 'controllers' => [], 'dependencies' => ['overlay']],
             'overlay' => ['components' => [], 'controllers' => [], 'dependencies' => ['floating']],
             'floating' => ['components' => [], 'controllers' => [], 'dependencies' => ['modal']],
         ],
         'presets' => ['nova' => ['base' => [], 'sources' => []]],
-    ]);
+    ]));
 })->throws(PresetSourceException::class, 'CSS module dependency cycle: modal -> overlay -> floating -> modal.');
 
 it('rejects presets that omit a declared module source', function () {
-    CssModuleManifest::fromArray([
+    CssModuleManifest::fromArray(withEmptyTokenMetadata([
         'modules' => [
             'button-surfaces' => ['components' => [], 'controllers' => [], 'dependencies' => []],
             'modal' => ['components' => ['modal'], 'controllers' => [], 'dependencies' => ['button-surfaces']],
@@ -314,7 +475,7 @@ it('rejects presets that omit a declared module source', function () {
                 ],
             ],
         ],
-    ]);
+    ]));
 })->throws(PresetSourceException::class, 'CSS module preset [nova] does not map modules: button-surfaces.');
 
 it('covers every catalog owner with visual slots', function () {
@@ -333,3 +494,66 @@ it('covers every catalog owner with visual slots', function () {
         }
     }
 });
+
+/** @return array{properties: array<never>, aliases: array<never>, contrast_pairs: array<never>} */
+function emptyTokenMetadata(): array
+{
+    return [
+        'properties' => [],
+        'aliases' => [],
+        'contrast_pairs' => [],
+    ];
+}
+
+/** @param array<string, mixed> $manifest @return array<string, mixed> */
+function withEmptyTokenMetadata(array $manifest): array
+{
+    $manifest['foundation'] = emptyTokenMetadata();
+
+    foreach ($manifest['presets'] as &$preset) {
+        if (is_array($preset)) {
+            $preset += emptyTokenMetadata();
+        }
+    }
+
+    return $manifest;
+}
+
+/** @return array<string, mixed> */
+function tokenManifestDefinition(): array
+{
+    return [
+        'foundation' => [
+            'properties' => ['--background', '--foreground', '--radius'],
+            'aliases' => [
+                '--color-background' => '--background',
+                '--color-foreground' => '--foreground',
+                '--radius-md' => '--radius',
+            ],
+            'contrast_pairs' => [
+                'background' => [
+                    'foreground' => '--foreground',
+                    'background' => '--background',
+                ],
+            ],
+        ],
+        'modules' => [],
+        'presets' => [
+            'contrast-fixture' => [
+                'base' => [
+                    'presets/contrast-fixture/theme.css',
+                    'presets/contrast-fixture/aliases.css',
+                ],
+                'properties' => ['--status', '--status-foreground', '--radius-action'],
+                'aliases' => ['--color-status' => '--status'],
+                'contrast_pairs' => [
+                    'status' => [
+                        'foreground' => '--status-foreground',
+                        'background' => '--status',
+                    ],
+                ],
+                'sources' => [],
+            ],
+        ],
+    ];
+}
