@@ -86,12 +86,21 @@ final readonly class CssSlots
     private function containsScopeSubject(string $selector): bool
     {
         $ignoreThrough = -1;
-        $scan = $this->rules->tokenize($selector);
+        $events = [];
+        $scan = $this->rules->scan(
+            $selector,
+            function (array $event) use (&$events): void {
+                if ($event['type'] === 'character') {
+                    $events[] = $event;
+                }
+            },
+            collectPairs: true,
+        );
 
-        foreach ($scan['events'] as $event) {
+        foreach ($events as $event) {
             $index = $event['offset'];
 
-            if ($index <= $ignoreThrough || $event['type'] !== 'character') {
+            if ($index <= $ignoreThrough) {
                 continue;
             }
 

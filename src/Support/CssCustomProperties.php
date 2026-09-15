@@ -55,7 +55,7 @@ final class CssCustomProperties
      */
     private function inspect(string $css, bool $auditPresetScopes): array
     {
-        $validSource = $this->rules->tokenize($css)['valid'];
+        $validSource = $this->rules->scan($css)['valid'];
         $css = $this->rules->stripComments($css);
         $aliases = [];
         $violations = [];
@@ -267,32 +267,33 @@ final class CssCustomProperties
         $parts = [];
         $start = 0;
 
-        ['events' => $events, 'valid' => $valid] = $this->rules->tokenize($body);
+        $scan = $this->rules->scan($body, function (array $event) use ($body, &$parts, &$start): void {
+            ['offset' => $offset, 'character' => $character, 'depth' => $depth] = $event;
 
-        foreach ($events as ['offset' => $offset, 'character' => $character, 'depth' => $depth]) {
             if ($character === ';' && $depth === 0) {
                 $parts[] = substr($body, $start, $offset - $start);
                 $start = $offset + 1;
             }
-        }
+        });
 
         $parts[] = substr($body, $start);
 
-        return [array_values(array_filter(array_map('trim', $parts))), $valid];
+        return [array_values(array_filter(array_map('trim', $parts))), $scan['valid']];
     }
 
     /** @return array{int|null, bool} */
     private function topLevelColon(string $declaration): array
     {
-        ['events' => $events, 'valid' => $valid] = $this->rules->tokenize($declaration);
+        $colon = null;
+        $scan = $this->rules->scan($declaration, function (array $event) use (&$colon): void {
+            ['offset' => $offset, 'character' => $character, 'depth' => $depth] = $event;
 
-        foreach ($events as ['offset' => $offset, 'character' => $character, 'depth' => $depth]) {
-            if ($character === ':' && $depth === 0) {
-                return [$offset, $valid];
+            if ($colon === null && $character === ':' && $depth === 0) {
+                $colon = $offset;
             }
-        }
+        });
 
-        return [null, $valid];
+        return [$colon, $scan['valid']];
     }
 
     private function aliasTarget(string $value): ?string
@@ -312,12 +313,9 @@ final class CssCustomProperties
         $atRules = [];
         $start = 0;
         $block = null;
-        $scan = $this->rules->tokenize($css);
-        $events = $scan['events'];
-        $valid = $scan['valid'];
-        $invalidOffsets = $scan['invalidOffsets'];
+        $scan = $this->rules->scan($css, function (array $event) use ($css, &$atRules, &$start, &$block): void {
+            ['offset' => $offset, 'character' => $character, 'depth' => $depth] = $event;
 
-        foreach ($events as ['offset' => $offset, 'character' => $character, 'depth' => $depth]) {
             if ($character === ';' && $depth === 0 && $block === null) {
                 $start = $offset + 1;
             } elseif ($character === '{' && $depth === 0 && $block === null) {
@@ -341,8 +339,8 @@ final class CssCustomProperties
                 $start = $end;
                 $block = null;
             }
-        }
+        });
 
-        return [$atRules, $valid, $invalidOffsets];
+        return [$atRules, $scan['valid'], $scan['invalidOffsets']];
     }
 }

@@ -387,6 +387,28 @@ it('downgrades unprovable coverage to a warning when CSS parsing is incomplete',
         ->and($result['warnings'][1])->toContain('could not prove visual coverage: fixture-status');
 });
 
+it('does not accept declarations from a rule with mismatched delimiters as visual coverage', function () {
+    $path = $this->root.'/resources/css/presets/constellation/feedback.css';
+    $this->files->put($path, '[data-slot="fixture-status"] { ); }');
+
+    $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
+
+    expect($result['errors'])->toBe([])
+        ->and($result['warnings'][0])->toContain('CSS analysis is incomplete')
+        ->and($result['warnings'][1])->toContain('could not prove visual coverage: fixture-status');
+});
+
+it('does not accept visual coverage enclosed by a malformed ancestor', function () {
+    $path = $this->root.'/resources/css/presets/constellation/feedback.css';
+    $this->files->put($path, '.invalid] { [data-slot="fixture-status"] { color: red; } }');
+
+    $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
+
+    expect($result['errors'])->toBe([])
+        ->and($result['warnings'][0])->toContain('CSS analysis is incomplete')
+        ->and($result['warnings'][1])->toContain('could not prove visual coverage: fixture-status');
+});
+
 it('keeps unrelated missing slots as errors when one slot reference is unprovable', function () {
     $surfaces = $this->root.'/resources/css/presets/constellation/surfaces.css';
     $feedback = $this->root.'/resources/css/presets/constellation/feedback.css';

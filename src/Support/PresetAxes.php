@@ -68,18 +68,19 @@ final class PresetAxes
         $stripped = $this->rules->maskComments($css);
         $visited = 0;
         $visitedSource = '';
+        $analysis = $this->rules->analyze($css);
 
-        foreach ($this->rules->parse($css) as ['chain' => $chain, 'declarations' => $declarations]) {
+        foreach ($analysis['rules'] as ['chain' => $chain, 'declarations' => $declarations]) {
             $source = end($chain).' '.$declarations;
             $visited += preg_match_all('/\[data-slot\s*=/', $source);
             $visitedSource .= ' '.$source;
         }
 
-        preg_match_all('/@scope\s+([^{}]+)\{/', $stripped, $scopes);
-
-        foreach ($scopes[1] as $scope) {
-            $visited += preg_match_all('/\[data-slot\s*=/', $scope);
-            $visitedSource .= ' '.$scope;
+        foreach ($analysis['blocks'] as $block) {
+            if ($this->rules->scopeRoot($block) !== null) {
+                $visited += preg_match_all('/\[data-slot\s*=/', $block);
+                $visitedSource .= ' '.$block;
+            }
         }
 
         $allSlots = $this->slotMentionCounts($stripped);

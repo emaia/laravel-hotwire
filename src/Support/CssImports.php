@@ -81,9 +81,16 @@ final class CssImports
         $importsAllowed = true;
         $cursor = $bomLength;
 
-        foreach ($this->rules->tokenize($content)['events'] as $event) {
+        $scan = $this->rules->scan($content, function (array $event) use (
+            $content,
+            $bomLength,
+            &$rules,
+            &$start,
+            &$importsAllowed,
+            &$cursor,
+        ): void {
             if ($event['offset'] < $bomLength) {
-                continue;
+                return;
             }
 
             if ($start === null && $event['depth'] === 0) {
@@ -98,7 +105,7 @@ final class CssImports
             $cursor = $event['offset'] + $event['length'];
 
             if ($event['type'] === 'comment') {
-                continue;
+                return;
             }
 
             $characterEvent = $event['type'] === 'character';
@@ -108,7 +115,7 @@ final class CssImports
                     $start = null;
                 }
 
-                continue;
+                return;
             }
 
             $character = $event['character'];
@@ -117,13 +124,14 @@ final class CssImports
                 $importsAllowed = false;
                 $start = null;
 
-                continue;
+                return;
             }
 
             if ($characterEvent && $character === '}' && $event['depth'] === 0) {
+                $importsAllowed = false;
                 $start = null;
 
-                continue;
+                return;
             }
 
             if ($characterEvent && $character === ';' && $event['depth'] === 0) {
@@ -144,17 +152,26 @@ final class CssImports
 
                 $start = null;
 
-                continue;
+                return;
             }
 
             if ($start !== null) {
-                continue;
+                return;
             }
 
             $start = $event['offset'];
+        });
+
+        if ($scan['invalidOffsets'] === []) {
+            return $rules;
         }
 
-        return $rules;
+        $firstInvalid = min($scan['invalidOffsets']);
+
+        return array_values(array_filter(
+            $rules,
+            fn (array $rule): bool => $firstInvalid >= $rule['offset'] + $rule['length'],
+        ));
     }
 
     private function startsAllowedPrelude(string $content, int $offset): bool

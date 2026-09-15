@@ -322,6 +322,51 @@ it('reports how much of the stylesheet it managed to read', function () {
         ->toBe(['b']);
 });
 
+it('leaves slots in malformed rules unvisited while retaining later valid coverage', function () {
+    $extractor = new PresetAxes;
+    $css = <<<'CSS'
+        [data-slot="invalid"] { ); }
+        [data-slot="valid"] { color: red; }
+        CSS;
+
+    expect($extractor->coverage($css))->toBe(['visited' => 1, 'total' => 2])
+        ->and($extractor->unvisitedSlots($css))->toBe(['invalid']);
+});
+
+it('leaves slots in malformed scope preludes unvisited', function () {
+    $extractor = new PresetAxes;
+    $css = '@scope ([data-slot="ghost"]]) { color: red; }';
+
+    expect($extractor->coverage($css))->toBe(['visited' => 0, 'total' => 1])
+        ->and($extractor->unvisitedSlots($css))->toBe(['ghost']);
+});
+
+it('retains a valid scope prelude when a later nested rule is malformed', function () {
+    $extractor = new PresetAxes;
+    $css = <<<'CSS'
+        @scope ([data-slot="root"]) {
+            :scope { color: red; }
+            .invalid { ); }
+        }
+        CSS;
+
+    expect($extractor->coverage($css))->toBe(['visited' => 1, 'total' => 1])
+        ->and($extractor->unvisitedSlots($css))->toBe([]);
+});
+
+it('retains a valid scope prelude after a malformed declaration in its body', function () {
+    $extractor = new PresetAxes;
+    $css = <<<'CSS'
+        @scope ([data-slot="root"]) {
+            invalid: );
+            :scope { color: red; }
+        }
+        CSS;
+
+    expect($extractor->coverage($css))->toBe(['visited' => 1, 'total' => 1])
+        ->and($extractor->unvisitedSlots($css))->toBe([]);
+});
+
 it('reads every slot occurrence of every shipped preset', function () {
     $extractor = new PresetAxes;
 

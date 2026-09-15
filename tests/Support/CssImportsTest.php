@@ -42,3 +42,18 @@ it('does not expose imports after an unterminated string or comment', function (
     'string' => ['"unfinished @import "./ghost.css";'],
     'comment' => ['/* unfinished @import "./ghost.css";'],
 ]);
+
+it('does not let an unmatched top-level closer erase preceding content', function () {
+    expect((new CssImports)->parse('garbage } @import "./ghost.css";'))->toBe([]);
+});
+
+it('does not accept imports after a bare unmatched top-level closer', function () {
+    expect((new CssImports)->parse('} @import "./ghost.css";'))->toBe([]);
+});
+
+it('does not accept imports after malformed allowed preludes', function (string $css) {
+    expect((new CssImports)->parse($css))->toBe([]);
+})->with([
+    'layer with unmatched paren' => ['@layer base ); @import "./ghost.css";'],
+    'charset with unmatched bracket' => ['@charset "UTF-8"]; @import "./ghost.css";'],
+]);

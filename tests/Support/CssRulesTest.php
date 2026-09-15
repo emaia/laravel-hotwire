@@ -3,14 +3,17 @@
 use Emaia\LaravelHotwire\Support\CssRules;
 
 it('tokenizes syntax outside strings and comments with delimiter state', function () {
-    $scan = (new CssRules)->tokenize(<<<'CSS'
+    $events = [];
+    $scan = (new CssRules)->scan(<<<'CSS'
         a { content: "}"; /* ] */ value: fn([x]); }
-        CSS);
+        CSS, function (array $event) use (&$events): void {
+        $events[] = $event;
+    });
 
     $syntax = array_values(array_map(
         fn (array $event): array => array_intersect_key($event, array_flip(['character', 'depth', 'blockDepth'])),
         array_filter(
-            $scan['events'],
+            $events,
             fn (array $event): bool => str_contains('{}()[]:;', $event['character']),
         ),
     ));
@@ -32,12 +35,27 @@ it('tokenizes syntax outside strings and comments with delimiter state', functio
 
 it('emits sparse events instead of allocating one record per source byte', function () {
     $css = '.example { content: '.str_repeat('x', 10_000).'; color: red; }';
+    $events = 0;
 
-    expect((new CssRules)->tokenize($css)['events'])->toHaveCount(6);
+    (new CssRules)->scan($css, function () use (&$events): void {
+        $events++;
+    });
+
+    expect($events)->toBe(6);
+});
+
+it('streams dense token events without retaining an event collection', function () {
+    $count = 0;
+    $scan = (new CssRules)->scan(str_repeat('a:b;', 10_000), function () use (&$count): void {
+        $count++;
+    });
+
+    expect($count)->toBe(20_000)
+        ->and($scan)->not->toHaveKey('events');
 });
 
 it('reports lexical failures in encounter order', function (string $css, array $invalidOffsets) {
-    $scan = (new CssRules)->tokenize($css);
+    $scan = (new CssRules)->scan($css);
 
     expect($scan['valid'])->toBeFalse()
         ->and($scan['invalidOffsets'])->toBe($invalidOffsets);
@@ -45,7 +63,7 @@ it('reports lexical failures in encounter order', function (string $css, array $
     'unterminated string' => ['"unfinished', [0]],
     'open comment' => ['/* unfinished', [0]],
     'open delimiter' => ['(', [0]],
-    'mismatched delimiters' => ['([)]', [2, 1, 3, 0]],
+    'mismatched delimiters' => ['([)]', [2, 0]],
 ]);
 
 it('preserves nested rule order and parent declarations around children', function () {
@@ -69,6 +87,60 @@ it('preserves nested rule order and parent declarations around children', functi
     ]);
 });
 
+it('drops a malformed rule without losing later valid rules', function () {
+    expect((new CssRules)->parse(<<<'CSS'
+        [data-slot="invalid"] { ); }
+        [data-slot="valid"] { color: red; }
+        CSS))->toBe([
+        [
+            'chain' => ['[data-slot="valid"]'],
+            'declarations' => ' color: red; ',
+        ],
+    ]);
+});
+
+it('drops descendants enclosed by a malformed rule', function () {
+    expect((new CssRules)->parse(<<<'CSS'
+        .invalid] {
+            [data-slot="ghost"] { color: red; }
+        }
+        [data-slot="valid"] { color: green; }
+        CSS))->toBe([
+        [
+            'chain' => ['[data-slot="valid"]'],
+            'declarations' => ' color: green; ',
+        ],
+    ]);
+});
+
+it('retains valid nested rules after a malformed sibling', function () {
+    expect((new CssRules)->parse(<<<'CSS'
+        .parent {
+            .invalid { ); }
+            [data-slot="valid"] { color: green; }
+        }
+        CSS))->toBe([
+        [
+            'chain' => ['.parent', '[data-slot="valid"]'],
+            'declarations' => ' color: green; ',
+        ],
+    ]);
+});
+
+it('retains valid nested rules after a malformed ancestor declaration', function () {
+    expect((new CssRules)->parse(<<<'CSS'
+        .parent {
+            invalid: );
+            [data-slot="valid"] { color: green; }
+        }
+        CSS))->toBe([
+        [
+            'chain' => ['.parent', '[data-slot="valid"]'],
+            'declarations' => ' color: green; ',
+        ],
+    ]);
+});
+
 it('splits only on separators outside strings and delimiters', function () {
     expect((new CssRules)->splitTopLevel('content: "a;b"; color: rgb(0; 0; 0); display: block', ';'))->toBe([
         'content: "a;b"',
@@ -82,6 +154,22 @@ it('keeps top-level splitting limited to functional and attribute delimiters', f
 
     expect($rules->splitTopLevel('a{b,c}, d', ','))->toBe(['a{b', 'c}', ' d'])
         ->and($rules->splitTopLevel('a{(b},c),d', ','))->toBe(['a{(b},c)', 'd']);
+});
+
+it('keeps CSS hexadecimal escape terminators out of separator events', function () {
+    expect((new CssRules)->splitTopLevel('.a\\2c .b .c', ' '))->toBe(['.a\\2c .b', '.c']);
+});
+
+it('rejects malformed string and escape syntax', function (string $css) {
+    expect((new CssRules)->scan($css)['valid'])->toBeFalse();
+})->with([
+    'raw newline in string' => ["a { content: \"first\nsecond\"; }"],
+    'trailing escape' => ['a\\'],
+    'escaped newline outside string' => ["a\\\nb"],
+]);
+
+it('accepts an escaped newline inside a string', function () {
+    expect((new CssRules)->scan("a { content: \"first\\\nsecond\"; }")['valid'])->toBeTrue();
 });
 
 it('exposes tokenizer-backed literal helpers', function () {
