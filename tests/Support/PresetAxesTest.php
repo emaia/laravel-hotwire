@@ -268,6 +268,18 @@ it('never reads an axis out of a comment', function () {
     expect($axes)->toBe([]);
 });
 
+it('ignores the invalid tail of an open comment', function () {
+    $extractor = new PresetAxes;
+    $css = <<<'CSS'
+        [data-slot="badge"][data-variant="outline"] { @apply border; }
+        /* [data-slot="ghost"][data-variant="fake"] { @apply block; }
+        CSS;
+
+    expect($extractor->extract($css))->toBe(['badge' => ['data-variant' => ['outline']]])
+        ->and($extractor->coverage($css))->toBe(['visited' => 1, 'total' => 1])
+        ->and($extractor->unvisitedSlots($css))->toBe([]);
+});
+
 it('keeps arbitrary variants that describe another element out', function () {
     // In shipped presets, unquoted attributes occur only inside arbitrary variants that target descendants.
     $axes = (new PresetAxes)->extract(<<<'CSS'

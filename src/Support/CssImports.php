@@ -5,6 +5,8 @@ namespace Emaia\LaravelHotwire\Support;
 /** @internal */
 final class CssImports
 {
+    public function __construct(private readonly CssRules $rules = new CssRules) {}
+
     /**
      * Read legal top-level CSS imports in source order.
      *
@@ -75,124 +77,67 @@ final class CssImports
     {
         $bomLength = str_starts_with($content, "\xEF\xBB\xBF") ? 3 : 0;
         $rules = [];
-        $length = strlen($content);
-        $depth = 0;
-        $ruleStart = true;
+        $start = null;
         $importsAllowed = true;
 
-        for ($offset = $bomLength; $offset < $length; $offset++) {
-            if (substr($content, $offset, 2) === '/*') {
-                $offset = $this->skipComment($content, $offset);
+        foreach ($this->rules->tokenize($content)['events'] as $event) {
+            if ($event['offset'] < $bomLength || $event['type'] === 'comment') {
+                continue;
+            }
+
+            if ($event['blockDepth'] !== 0) {
+                if ($event['type'] === 'character' && $event['character'] === '}' && $event['blockDepth'] === 1) {
+                    $start = null;
+                }
 
                 continue;
             }
 
-            if ($content[$offset] === '"' || $content[$offset] === "'") {
-                if ($depth === 0) {
-                    if ($ruleStart) {
+            $character = $event['character'];
+
+            if ($event['type'] === 'character' && $event['length'] === 1 && $character === '{' && $event['depth'] === 0) {
+                $importsAllowed = false;
+                $start = null;
+
+                continue;
+            }
+
+            if ($event['type'] === 'character' && $event['length'] === 1 && $character === '}' && $event['depth'] === 0) {
+                $start = null;
+
+                continue;
+            }
+
+            if ($event['type'] === 'character' && $event['length'] === 1 && $character === ';' && $event['depth'] === 0) {
+                if ($start !== null) {
+                    $ruleLength = $event['offset'] - $start + 1;
+                    $statement = substr($content, $start, $ruleLength);
+                    $isImport = strncasecmp($statement, '@import', 7) === 0;
+                    $boundary = $statement[7] ?? '';
+                    $validImportBoundary = $boundary === '' || ctype_space($boundary)
+                        || $boundary === '"' || $boundary === "'" || substr($statement, 7, 2) === '/*';
+
+                    if ($isImport && $validImportBoundary && $importsAllowed) {
+                        $rules[] = ['content' => $statement, 'offset' => $start, 'length' => $ruleLength];
+                    } elseif (! $isImport && ! $this->startsAllowedPrelude($content, $start)) {
                         $importsAllowed = false;
                     }
-
-                    $ruleStart = false;
                 }
 
-                $offset = $this->skipString($content, $offset);
+                $start = null;
 
                 continue;
             }
 
-            if ($content[$offset] === '{') {
-                if ($depth === 0) {
-                    $importsAllowed = false;
-                    $ruleStart = false;
-                }
-
-                $depth++;
-
+            if ($start !== null) {
                 continue;
             }
 
-            if ($content[$offset] === '}') {
-                $depth = max(0, $depth - 1);
-
-                if ($depth === 0) {
-                    $ruleStart = true;
-                }
-
+            if ($event['type'] === 'character' && ctype_space($character)) {
                 continue;
             }
 
-            if ($depth !== 0 || ctype_space($content[$offset])) {
-                continue;
-            }
-
-            if ($content[$offset] === ';') {
-                $ruleStart = true;
-
-                continue;
-            }
-
-            if (! $ruleStart) {
-                continue;
-            }
-
-            if (strncasecmp(substr($content, $offset, 7), '@import', 7) !== 0) {
-                if (! $this->startsAllowedPrelude($content, $offset)) {
-                    $importsAllowed = false;
-                }
-
-                $ruleStart = false;
-
-                continue;
-            }
-
-            if (! $importsAllowed) {
-                $ruleStart = false;
-
-                continue;
-            }
-
-            $boundary = $content[$offset + 7] ?? '';
-
-            if ($boundary !== '' && ! ctype_space($boundary) && $boundary !== '"' && $boundary !== "'"
-                && substr($content, $offset + 7, 2) !== '/*') {
-                $ruleStart = false;
-
-                continue;
-            }
-
-            $ruleStart = false;
-
-            for ($end = $offset + 7; $end < $length; $end++) {
-                if (substr($content, $end, 2) === '/*') {
-                    $end = $this->skipComment($content, $end);
-
-                    continue;
-                }
-
-                if ($content[$end] === '"' || $content[$end] === "'") {
-                    $end = $this->skipString($content, $end);
-
-                    continue;
-                }
-
-                if ($content[$end] === ';') {
-                    $ruleLength = $end - $offset + 1;
-                    $rules[] = [
-                        'content' => substr($content, $offset, $ruleLength),
-                        'offset' => $offset,
-                        'length' => $ruleLength,
-                    ];
-                    $offset = $end;
-                    $ruleStart = true;
-
-                    break;
-                }
-
-                if ($content[$end] === '{') {
-                    break;
-                }
-            }
+            $start = $event['offset'];
         }
 
         return $rules;
@@ -213,32 +158,5 @@ final class CssImports
         }
 
         return false;
-    }
-
-    private function skipComment(string $content, int $offset): int
-    {
-        $end = strpos($content, '*/', $offset + 2);
-
-        return $end === false ? strlen($content) - 1 : $end + 1;
-    }
-
-    private function skipString(string $content, int $offset): int
-    {
-        $quote = $content[$offset];
-        $length = strlen($content);
-
-        for ($end = $offset + 1; $end < $length; $end++) {
-            if ($content[$end] === '\\') {
-                $end++;
-
-                continue;
-            }
-
-            if ($content[$end] === $quote) {
-                return $end;
-            }
-        }
-
-        return $length - 1;
     }
 }

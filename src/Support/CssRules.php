@@ -3,12 +3,165 @@
 namespace Emaia\LaravelHotwire\Support;
 
 /**
- * Walks a stylesheet into its style rules, each carrying the chain of blocks enclosing it — at-rule
- * preludes included, its own selector last. Reading by structure rather than line by line is what
- * keeps everything built on top independent of how the CSS is formatted.
+ * Tokenize CSS and walk its style rules without depending on how the source is formatted.
+ *
+ * This class owns the package's lexical CSS vocabulary. Consumers interpret its events for their
+ * own extraction policy rather than maintaining independent quote, comment, and delimiter state.
  */
 final class CssRules
 {
+    /**
+     * Expose source-ordered tokens with delimiter state before each token.
+     *
+     * Strings, comments, and escaped pairs each produce one event so their contents can never be
+     * mistaken for CSS syntax. Invalid offsets retain encounter order for diagnostic recovery.
+     *
+     * @return array{
+     *     events: list<array{offset: int, character: string, length: int, depth: int, blockDepth: int, type: string, closed?: bool}>,
+     *     pairs: array<int, int>,
+     *     valid: bool,
+     *     invalidOffsets: int[]
+     * }
+     */
+    public function tokenize(string $css): array
+    {
+        $events = [];
+        $pairs = [];
+        $stack = [];
+        $blockDepth = 0;
+        $valid = true;
+        $invalidOffsets = [];
+        $tailInvalidOffsets = [];
+        $length = strlen($css);
+        $closers = [')' => '(', ']' => '[', '}' => '{'];
+
+        for ($offset = 0; $offset < $length; $offset++) {
+            $character = $css[$offset];
+
+            if ($character === '/' && ($css[$offset + 1] ?? null) === '*') {
+                $end = strpos($css, '*/', $offset + 2);
+                $closed = $end !== false;
+                $tokenLength = $closed ? $end - $offset + 2 : $length - $offset;
+                $events[] = [
+                    'offset' => $offset,
+                    'character' => '/*',
+                    'length' => $tokenLength,
+                    'depth' => count($stack),
+                    'blockDepth' => $blockDepth,
+                    'type' => 'comment',
+                    'closed' => $closed,
+                ];
+
+                if (! $closed) {
+                    $valid = false;
+                    $tailInvalidOffsets[] = $offset;
+                }
+
+                $offset += $tokenLength - 1;
+
+                continue;
+            }
+
+            if ($character === '"' || $character === "'") {
+                $end = $offset + 1;
+
+                while ($end < $length) {
+                    if ($css[$end] === '\\') {
+                        $end += 2;
+
+                        continue;
+                    }
+
+                    if ($css[$end] === $character) {
+                        break;
+                    }
+
+                    $end++;
+                }
+
+                $closed = $end < $length;
+                $tokenLength = $closed ? $end - $offset + 1 : $length - $offset;
+                $events[] = [
+                    'offset' => $offset,
+                    'character' => $character,
+                    'length' => $tokenLength,
+                    'depth' => count($stack),
+                    'blockDepth' => $blockDepth,
+                    'type' => 'string',
+                    'closed' => $closed,
+                ];
+
+                if (! $closed) {
+                    $valid = false;
+                    $tailInvalidOffsets[] = $offset;
+                }
+
+                $offset += $tokenLength - 1;
+
+                continue;
+            }
+
+            $tokenLength = $character === '\\' && $offset + 1 < $length ? 2 : 1;
+            $events[] = [
+                'offset' => $offset,
+                'character' => $character,
+                'length' => $tokenLength,
+                'depth' => count($stack),
+                'blockDepth' => $blockDepth,
+                'type' => 'character',
+            ];
+
+            if ($tokenLength === 2) {
+                $offset++;
+
+                continue;
+            }
+
+            if (in_array($character, ['(', '[', '{'], true)) {
+                $stack[] = ['character' => $character, 'offset' => $offset];
+                $blockDepth += (int) ($character === '{');
+
+                continue;
+            }
+
+            if (! isset($closers[$character])) {
+                continue;
+            }
+
+            $opening = array_pop($stack);
+
+            if (($opening['character'] ?? null) !== $closers[$character]) {
+                $valid = false;
+                $invalidOffsets[] = $offset;
+
+                if ($opening !== null) {
+                    $invalidOffsets[] = $opening['offset'];
+                }
+            } elseif ($opening !== null) {
+                $pairs[$opening['offset']] = $offset;
+            }
+
+            if (($opening['character'] ?? null) === '{') {
+                $blockDepth--;
+            }
+        }
+
+        foreach ($stack as $opening) {
+            $tailInvalidOffsets[] = $opening['offset'];
+        }
+
+        if ($stack !== []) {
+            $valid = false;
+        }
+
+        return [
+            'events' => $events,
+            'pairs' => $pairs,
+            'valid' => $valid,
+            'invalidOffsets' => array_values(array_unique([...$invalidOffsets, ...$tailInvalidOffsets])),
+        ];
+    }
+
     /**
      * Parse style rules, optionally retaining declaration-bearing at-rule blocks.
      *
@@ -20,38 +173,19 @@ final class CssRules
         $chain = [];
         $declarations = [];
         $buffer = '';
-        $depth = 0;
-        $quote = null;
-        $length = strlen($css);
 
-        for ($index = 0; $index < $length; $index++) {
-            $character = $css[$index];
-
-            if ($quote !== null) {
-                $buffer .= $character;
-
-                if ($character === $quote && ($index === 0 || $css[$index - 1] !== '\\')) {
-                    $quote = null;
-                }
-
+        foreach ($this->tokenize($css)['events'] as $event) {
+            if ($event['type'] === 'comment') {
                 continue;
             }
 
-            if ($character === '"' || $character === "'") {
-                $quote = $character;
-                $buffer .= $character;
+            $character = $event['character'];
+            $structural = $event['type'] === 'character'
+                && $event['length'] === 1
+                && $event['depth'] === $event['blockDepth'];
 
-                continue;
-            }
-
-            if ($character === '(' || $character === '[') {
-                $depth++;
-            } elseif ($character === ')' || $character === ']') {
-                $depth--;
-            }
-
-            if ($depth !== 0) {
-                $buffer .= $character;
+            if (! $structural || ! str_contains(';{}', $character)) {
+                $buffer .= substr($css, $event['offset'], $event['length']);
 
                 continue;
             }
@@ -74,35 +208,68 @@ final class CssRules
                 continue;
             }
 
-            if ($character === '}') {
-                if ($chain === []) {
-                    $buffer = '';
-
-                    continue;
-                }
-
-                $body = array_pop($declarations).$buffer;
+            if ($chain === []) {
                 $buffer = '';
-
-                if ($includeAtRuleDeclarations || ! str_starts_with(end($chain) ?: '', '@')) {
-                    $rules[] = ['chain' => $chain, 'declarations' => $body];
-                }
-
-                array_pop($chain);
 
                 continue;
             }
 
-            $buffer .= $character;
+            $body = array_pop($declarations).$buffer;
+            $buffer = '';
+
+            if ($includeAtRuleDeclarations || ! str_starts_with(end($chain) ?: '', '@')) {
+                $rules[] = ['chain' => $chain, 'declarations' => $body];
+            }
+
+            array_pop($chain);
         }
 
         return $rules;
     }
 
-    /** Drop comments before scanning, leaving anything that merely looks like one inside a string. */
+    /** Drop comments while leaving anything that merely looks like one inside a string. */
     public function stripComments(string $css): string
     {
-        return (string) preg_replace('#("(?:[^"\\\\]|\\\\.)*"|\'(?:[^\'\\\\]|\\\\.)*\')|/\*.*?\*/#s', '$1', $css);
+        $comments = array_values(array_filter(
+            $this->tokenize($css)['events'],
+            fn (array $event): bool => $event['type'] === 'comment' && $event['closed'],
+        ));
+
+        foreach (array_reverse($comments) as $comment) {
+            $css = substr_replace($css, '', $comment['offset'], $comment['length']);
+        }
+
+        return $css;
+    }
+
+    /** Drop quoted strings while preserving any unterminated tail for existing diagnostics. */
+    public function withoutStrings(string $value): string
+    {
+        $strings = array_values(array_filter(
+            $this->tokenize($value)['events'],
+            fn (array $event): bool => $event['type'] === 'string' && $event['closed'],
+        ));
+
+        foreach (array_reverse($strings) as $string) {
+            $value = substr_replace($value, '', $string['offset'], $string['length']);
+        }
+
+        return $value;
+    }
+
+    /** Replace comments with spaces so lexical searches retain source offsets. */
+    public function maskComments(string $value): string
+    {
+        $comments = array_values(array_filter(
+            $this->tokenize($value)['events'],
+            fn (array $event): bool => $event['type'] === 'comment',
+        ));
+
+        foreach (array_reverse($comments) as $comment) {
+            $value = substr_replace($value, str_repeat(' ', $comment['length']), $comment['offset'], $comment['length']);
+        }
+
+        return $value;
     }
 
     /** Extract the root selector from an `@scope` prelude. */
@@ -118,54 +285,41 @@ final class CssRules
             return null;
         }
 
-        $depth = 0;
-        $quote = null;
+        $closing = $this->matchingDelimiter($prelude, 0);
 
-        foreach (str_split($prelude) as $index => $character) {
-            if ($quote !== null) {
-                if ($character === $quote && ($index === 0 || $prelude[$index - 1] !== '\\')) {
-                    $quote = null;
-                }
+        return $closing === null ? null : substr($prelude, 1, $closing - 1);
+    }
 
-                continue;
-            }
-
-            if ($character === '"' || $character === "'") {
-                $quote = $character;
-
-                continue;
-            }
-
-            $depth += (int) ($character === '(') - (int) ($character === ')');
-
-            if ($depth === 0) {
-                return substr($prelude, 1, $index - 1);
-            }
-        }
-
-        return null;
+    /** Return the matching closing delimiter for an opening source offset. */
+    public function matchingDelimiter(string $value, int $openingOffset): ?int
+    {
+        return $this->tokenize($value)['pairs'][$openingOffset] ?? null;
     }
 
     /**
-     * Split CSS syntax on top-level separators while preserving functional and attribute contents.
+     * Split CSS syntax on top-level separators while preserving strings and delimiter contents.
      *
      * @return string[]
      */
     public function splitTopLevel(string $value, string $separators): array
     {
         $parts = [''];
-        $depth = 0;
 
-        foreach (str_split($value) as $character) {
-            $depth += (int) in_array($character, ['(', '['], true) - (int) in_array($character, [')', ']'], true);
+        foreach ($this->tokenize($value)['events'] as $event) {
+            if ($event['type'] === 'comment') {
+                continue;
+            }
 
-            if ($depth === 0 && str_contains($separators, $character)) {
+            if ($event['type'] === 'character'
+                && $event['length'] === 1
+                && $event['depth'] === 0
+                && str_contains($separators, $event['character'])) {
                 $parts[] = '';
 
                 continue;
             }
 
-            $parts[array_key_last($parts)] .= $character;
+            $parts[array_key_last($parts)] .= substr($value, $event['offset'], $event['length']);
         }
 
         return array_values(array_filter($parts, fn (string $part): bool => trim($part) !== ''));

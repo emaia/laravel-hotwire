@@ -23,7 +23,7 @@ final class PresetAxes
     {
         $axes = [];
 
-        foreach ($this->rules->parse($this->rules->stripComments($css)) as ['chain' => $chain, 'declarations' => $declarations]) {
+        foreach ($this->rules->parse($css) as ['chain' => $chain, 'declarations' => $declarations]) {
             $selector = (string) end($chain);
             $subject = $this->subject($chain);
 
@@ -65,11 +65,11 @@ final class PresetAxes
     /** @return array{visited: int, total: int, unvisitedSlots: string[]} */
     private function coverageAnalysis(string $css): array
     {
-        $stripped = $this->rules->stripComments($css);
+        $stripped = $this->rules->maskComments($css);
         $visited = 0;
         $visitedSource = '';
 
-        foreach ($this->rules->parse($stripped) as ['chain' => $chain, 'declarations' => $declarations]) {
+        foreach ($this->rules->parse($css) as ['chain' => $chain, 'declarations' => $declarations]) {
             $source = end($chain).' '.$declarations;
             $visited += preg_match_all('/\[data-slot\s*=/', $source);
             $visitedSource .= ' '.$source;

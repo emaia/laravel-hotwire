@@ -120,7 +120,7 @@ class MakePresetCommand extends Command
         $tokens = $this->files->get(dirname(__DIR__, 2).'/resources/css/'.FoundationFacade::TOKEN_SOURCE);
         $sections = ['root' => [], 'light' => [], 'dark' => []];
 
-        foreach ($this->cssRules->parse($this->cssRules->stripComments($tokens)) as $rule) {
+        foreach ($this->cssRules->parse($tokens) as $rule) {
             if (count($rule['chain']) !== 1) {
                 continue;
             }
