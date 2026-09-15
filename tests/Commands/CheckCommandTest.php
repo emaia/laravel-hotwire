@@ -428,6 +428,15 @@ it('accepts a preset filename as an explicit preset name', function () {
         ->assertSuccessful();
 });
 
+it('fails an application preset that uses a Tailwind interpolation underscore in raw CSS', function () {
+    $path = writeCompleteApplicationPreset();
+    File::append($path, "\n[data-slot=\"badge\"] { background: linear-gradient(in_oklch, red, blue); }");
+
+    $this->artisan('hotwire:check', ['--preset' => ['brand'], '--no-interaction' => true])
+        ->expectsOutputToContain('resources/css/presets/brand.css  uses invalid interpolation method [in_oklch] in raw CSS declaration [background: linear-gradient(in_oklch, red, blue)] in [brand.css]')
+        ->assertFailed();
+});
+
 it('does not let an explicit preset disable selective bundle coverage', function () {
     writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
     $this->artisan('hotwire:styles --components=modal --no-interaction')->assertSuccessful();

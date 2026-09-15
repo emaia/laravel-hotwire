@@ -4,7 +4,7 @@
     [data-slot="switch"][data-disabled="true"] { @apply cursor-not-allowed opacity-50; }
     [data-slot="switch"][data-size="default"] { @apply h-[1.15rem] w-8; }
     [data-slot="switch"][data-size="sm"] { @apply h-3.5 w-6; }
-    [data-slot="switch"]::before { content: ""; transform: translateX(0); border-radius: 9999px; background: var(--background); box-shadow: 0 1px 2px 0 color-mix(in_oklch, var(--foreground), transparent 80%); transition: transform 120ms ease-out; }
+    [data-slot="switch"]::before { content: ""; transform: translateX(0); border-radius: 9999px; background: var(--background); box-shadow: 0 1px 2px 0 color-mix(in oklch, var(--foreground), transparent 80%); transition: transform 120ms ease-out; }
     [data-slot="switch"][data-size="default"]::before { width: 1rem; height: 1rem; }
     [data-slot="switch"][data-size="sm"]::before { width: 0.75rem; height: 0.75rem; }
     [data-slot="switch"]:checked::before { transform: translateX(calc(100% - 2px)); }
