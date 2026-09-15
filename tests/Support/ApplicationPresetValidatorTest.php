@@ -409,6 +409,59 @@ it('does not accept visual coverage enclosed by a malformed ancestor', function 
         ->and($result['warnings'][1])->toContain('could not prove visual coverage: fixture-status');
 });
 
+it('reports undeclared Tailwind slot variants from discarded rules', function () {
+    $path = $this->root.'/resources/css/presets/constellation/feedback.css';
+    $this->files->put($path, <<<'CSS'
+        .card { @apply data-[slot=ghost]:hidden; ); }
+        [data-slot="fixture-status"] { color: red; }
+        CSS);
+
+    $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
+
+    expect($result['errors'])->toContain('Preset [constellation] references undeclared slots: ghost.')
+        ->and($result['warnings'][0])->toContain('CSS analysis is incomplete');
+});
+
+it('does not promote incomplete slot syntax to an undeclared reference', function () {
+    $path = $this->root.'/resources/css/presets/constellation/feedback.css';
+    $this->files->append($path, '\n[data-slot="unclosed" { color: red; }');
+
+    $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
+
+    expect($result['errors'])->toBe([])
+        ->and($result['warnings'][0])->toContain('CSS analysis is incomplete')
+        ->and($result['referencedSlots'])->not->toContain('unclosed');
+});
+
+it('ignores slot-like strings when their rule is discarded', function () {
+    $path = $this->root.'/resources/css/presets/constellation/feedback.css';
+    $this->files->append($path, <<<'CSS'
+
+        .invalid { content: '[data-slot="static"] data-[slot=variant]'; ); }
+        CSS);
+
+    $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
+
+    expect($result['errors'])->toBe([])
+        ->and($result['warnings'][0])->toContain('CSS analysis is incomplete')
+        ->and($result['referencedSlots'])->not->toContain('static', 'variant');
+});
+
+it('reports invalid syntax when every slot mention remains accounted for', function () {
+    $path = $this->root.'/resources/css/presets/constellation/feedback.css';
+    $this->files->put($path, <<<'CSS'
+        .invalid { color: red; ); }
+        [data-slot="fixture-status"] { color: green; }
+        CSS);
+
+    $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
+
+    expect($result['errors'])->toBe([])
+        ->and($result['warnings'])->toBe([
+            'Preset [constellation] CSS analysis is incomplete because the stylesheet contains invalid syntax.',
+        ]);
+});
+
 it('keeps unrelated missing slots as errors when one slot reference is unprovable', function () {
     $surfaces = $this->root.'/resources/css/presets/constellation/surfaces.css';
     $feedback = $this->root.'/resources/css/presets/constellation/feedback.css';

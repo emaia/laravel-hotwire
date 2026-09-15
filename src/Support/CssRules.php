@@ -19,7 +19,8 @@ final class CssRules
      *
      * Strings and comments each produce one event. Escapes emit none at all, so a consumer only
      * sees escaped syntax by slicing the source between events. Invalid offsets retain encounter
-     * order for diagnostic recovery.
+     * order for diagnostic recovery. Encountered errors are reported immediately; open strings,
+     * comments, and delimiters that remain unresolved are appended after the scan reaches the end.
      *
      * @param  null|callable(array{offset: int, character: string, length: int, depth: int, blockDepth: int, groupDepth: int, type: string, closed?: bool}): void  $consume
      * @return array{pairs: array<int, int>, valid: bool, invalidOffsets: int[]}
@@ -224,7 +225,7 @@ final class CssRules
     /**
      * Analyze valid style rules and block preludes in one structural pass.
      *
-     * @return array{rules: list<array{chain: string[], declarations: string}>, blocks: string[]}
+     * @return array{rules: list<array{chain: string[], declarations: string}>, blocks: string[], valid: bool}
      */
     public function analyze(string $css, bool $includeAtRuleDeclarations = false): array
     {
@@ -232,7 +233,7 @@ final class CssRules
     }
 
     /**
-     * @return array{rules: list<array{chain: string[], declarations: string}>, blocks: string[]}
+     * @return array{rules: list<array{chain: string[], declarations: string}>, blocks: string[], valid: bool}
      */
     private function structuralAnalysis(string $css, bool $includeAtRuleDeclarations, bool $collectBlocks): array
     {
@@ -373,7 +374,11 @@ final class CssRules
 
         ksort($parsedBlocks, SORT_NUMERIC);
 
-        return ['rules' => $parsed, 'blocks' => array_values($parsedBlocks)];
+        return [
+            'rules' => $parsed,
+            'blocks' => array_values($parsedBlocks),
+            'valid' => $scan['valid'],
+        ];
     }
 
     /** Drop comments while leaving anything that merely looks like one inside a string. */

@@ -114,6 +114,8 @@ final class CssCustomProperties
             $css = substr_replace($css, str_repeat(' ', $end - $start), $start, $end - $start);
         }
 
+        // Token inspection preserves recoverable declarations for stable scope diagnostics; the
+        // structural consumers instead discard complete rules touched by these same offsets.
         foreach ($invalidOffsets as $offset) {
             $css[$offset] = ' ';
         }

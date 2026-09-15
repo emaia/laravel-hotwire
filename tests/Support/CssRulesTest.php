@@ -54,7 +54,7 @@ it('streams dense token events without retaining an event collection', function 
         ->and($scan)->not->toHaveKey('events');
 });
 
-it('reports lexical failures in encounter order', function (string $css, array $invalidOffsets) {
+it('reports lexical failure offsets', function (string $css, array $invalidOffsets) {
     $scan = (new CssRules)->scan($css);
 
     expect($scan['valid'])->toBeFalse()
@@ -63,8 +63,11 @@ it('reports lexical failures in encounter order', function (string $css, array $
     'unterminated string' => ['"unfinished', [0]],
     'open comment' => ['/* unfinished', [0]],
     'open delimiter' => ['(', [0]],
-    'mismatched delimiters' => ['([)]', [2, 0]],
 ]);
+
+it('orders encountered errors before opening delimiters left unresolved at the end', function () {
+    expect((new CssRules)->scan('([)]')['invalidOffsets'])->toBe([2, 0]);
+});
 
 it('preserves nested rule order and parent declarations around children', function () {
     $rules = (new CssRules)->parse(<<<'CSS'
@@ -97,6 +100,16 @@ it('drops a malformed rule without losing later valid rules', function () {
             'declarations' => ' color: red; ',
         ],
     ]);
+});
+
+it('reports structural validity alongside recovered rules', function () {
+    $analysis = (new CssRules)->analyze(<<<'CSS'
+        [data-slot="invalid"] { ); }
+        [data-slot="valid"] { color: red; }
+        CSS);
+
+    expect($analysis['valid'])->toBeFalse()
+        ->and($analysis['rules'])->toHaveCount(1);
 });
 
 it('drops descendants enclosed by a malformed rule', function () {

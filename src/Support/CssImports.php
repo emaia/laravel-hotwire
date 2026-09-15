@@ -166,6 +166,8 @@ final class CssImports
             return $rules;
         }
 
+        // Top-level placement is no longer trustworthy after lexical state breaks. Imports that
+        // completed before the first error remain safe and preserve their original source order.
         $firstInvalid = min($scan['invalidOffsets']);
 
         return array_values(array_filter(
