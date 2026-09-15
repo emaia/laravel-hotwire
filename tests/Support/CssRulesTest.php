@@ -84,15 +84,28 @@ it('keeps top-level splitting limited to functional and attribute delimiters', f
         ->and($rules->splitTopLevel('a{(b},c),d', ','))->toBe(['a{(b},c)', 'd']);
 });
 
-it('exposes tokenizer-backed literal and delimiter helpers', function () {
+it('exposes tokenizer-backed literal helpers', function () {
     $comment = '/* hidden */';
     $css = 'before'.$comment.'after "'.$comment.'"';
-    $delimited = '([data-label=")"]) tail';
     $rules = new CssRules;
 
     expect($rules->stripComments($css))->toBe('beforeafter "'.$comment.'"')
         ->and($rules->maskComments($css))->toBe('before'.str_repeat(' ', strlen($comment)).'after "'.$comment.'"')
-        ->and($rules->withoutStrings('var(--real) "var(--fake)" \'also fake\''))->toBe('var(--real)  ')
-        ->and($rules->matchingDelimiter($delimited, 0))->toBe(strrpos($delimited, ')'))
-        ->and($rules->matchingDelimiter('(unfinished', 0))->toBeNull();
+        ->and($rules->withoutStrings('var(--real) "var(--fake)" \'also fake\''))->toBe('var(--real)  ');
 });
+
+it('drops comments from the parts it splits', function () {
+    expect((new CssRules)->splitTopLevel('a/* x */, /* y */b', ','))->toBe(['a', ' b']);
+});
+
+it('closes an @scope prelude on the delimiter the tokenizer paired', function (string $scope, ?string $root) {
+    expect((new CssRules)->scopeRoot($scope))->toBe($root);
+})->with([
+    'plain root' => ['@scope ([data-slot="root"])', '[data-slot="root"]'],
+    'closing paren inside a string' => ['@scope ([data-label=")"] a)', '[data-label=")"] a'],
+    'escaped closing paren' => ['@scope (a\\))', 'a\\)'],
+    'nested parentheses' => ['@scope (:is(a, b) c)', ':is(a, b) c'],
+    'ignores the to-clause' => ['@scope (a) to (b)', 'a'],
+    'unbalanced prelude' => ['@scope (unfinished', null],
+    'not a scope prelude' => ['@media (width > 0)', null],
+]);

@@ -86,7 +86,7 @@ final class CssImports
                 continue;
             }
 
-            if ($start === null && $event['depth'] === 0 && $event['blockDepth'] === 0) {
+            if ($start === null && $event['depth'] === 0) {
                 $segment = substr($content, $cursor, $event['offset'] - $cursor);
                 $whitespace = strspn($segment, " \t\n\r\v\f");
 
@@ -96,11 +96,12 @@ final class CssImports
             }
 
             $cursor = $event['offset'] + $event['length'];
-            $characterEvent = $event['type'] === 'character';
 
             if ($event['type'] === 'comment') {
                 continue;
             }
+
+            $characterEvent = $event['type'] === 'character';
 
             if ($event['blockDepth'] !== 0) {
                 if ($characterEvent && $event['character'] === '}' && $event['blockDepth'] === 1) {

@@ -17,8 +17,9 @@ final class CssRules
     /**
      * Expose source-ordered tokens with delimiter state before each token.
      *
-     * Strings and comments each produce one event, while escapes suppress syntax events for the
-     * escaped pair. Invalid offsets retain encounter order for diagnostic recovery.
+     * Strings and comments each produce one event. Escapes emit none at all, so a consumer only
+     * sees an escaped character by slicing the source between events — never from the events
+     * themselves. Invalid offsets retain encounter order for diagnostic recovery.
      *
      * @return array{
      *     events: list<array{offset: int, character: string, length: int, depth: int, blockDepth: int, groupDepth: int, type: string, closed?: bool}>,
@@ -156,6 +157,8 @@ final class CssRules
                 $blockDepth--;
             }
 
+            // Keyed on the closing character, unlike blockDepth above: mismatched input must keep
+            // splitTopLevel counting the way a plain paren/bracket counter would.
             $groupDepth -= (int) ($character === ')' || $character === ']');
         }
 
@@ -307,13 +310,14 @@ final class CssRules
     }
 
     /** Return the matching closing delimiter for an opening source offset. */
-    public function matchingDelimiter(string $value, int $openingOffset): ?int
+    private function matchingDelimiter(string $value, int $openingOffset): ?int
     {
         return $this->tokenize($value)['pairs'][$openingOffset] ?? null;
     }
 
     /**
-     * Split CSS syntax outside parentheses and brackets while preserving strings and their contents.
+     * Split CSS syntax outside parentheses and brackets while preserving strings and their
+     * contents. Comments are dropped from every part.
      *
      * @return string[]
      */
