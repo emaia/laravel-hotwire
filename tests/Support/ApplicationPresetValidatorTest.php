@@ -178,11 +178,9 @@ it('ignores slot-like text in comments and declaration strings', function () {
     $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
 
     expect($result['errors'])->toBe([])
-        ->and($result['referencedSlots'])->not->toContain(
-            'fixture-comment',
-            'fixture-string',
-            'fixture-variant-string',
-        );
+        ->and($result['referencedSlots'])->not->toContain('fixture-comment')
+        ->and($result['referencedSlots'])->not->toContain('fixture-string')
+        ->and($result['referencedSlots'])->not->toContain('fixture-variant-string');
 });
 
 it('reports Tailwind arbitrary-value underscores in raw CSS with an actionable declaration', function () {
@@ -308,6 +306,19 @@ it('rejects malformed or misplaced imports instead of treating them as visual cs
     );
 });
 
+it('reports invalid entrypoint syntax instead of blaming later imports', function () {
+    $this->files->put(
+        $this->entrypoint,
+        ".typo { color: red; )\n".$this->files->get($this->entrypoint),
+    );
+
+    $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
+
+    expect($result['errors'])->toBe([
+        'Preset [constellation] contains invalid CSS syntax in [constellation.css].',
+    ])->and($result['warnings'])->toBe([]);
+});
+
 it('rejects escaped import paths instead of interpreting css escapes as separators', function () {
     $css = str_replace(
         './constellation/surfaces.css',
@@ -424,7 +435,7 @@ it('reports undeclared Tailwind slot variants from discarded rules', function ()
 
 it('does not promote incomplete slot syntax to an undeclared reference', function () {
     $path = $this->root.'/resources/css/presets/constellation/feedback.css';
-    $this->files->append($path, '\n[data-slot="unclosed" { color: red; }');
+    $this->files->append($path, "\n[data-slot=\"unclosed\" { color: red; }");
 
     $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
 
@@ -444,7 +455,8 @@ it('ignores slot-like strings when their rule is discarded', function () {
 
     expect($result['errors'])->toBe([])
         ->and($result['warnings'][0])->toContain('CSS analysis is incomplete')
-        ->and($result['referencedSlots'])->not->toContain('static', 'variant');
+        ->and($result['referencedSlots'])->not->toContain('static')
+        ->and($result['referencedSlots'])->not->toContain('variant');
 });
 
 it('reports invalid syntax when every slot mention remains accounted for', function () {

@@ -13,6 +13,7 @@ final readonly class ApplicationPresetValidator
     public function __construct(
         private Filesystem $files,
         private CssImports $imports,
+        private CssRules $rules,
         private CssInterpolationSyntax $interpolationSyntax,
         private CssSlots $slots,
         private PresetAxes $axes,
@@ -179,6 +180,12 @@ final readonly class ApplicationPresetValidator
         $stylesheet = trim($this->imports->remove($css, $imports));
 
         if ($this->containsImport($stylesheet)) {
+            if (! $this->rules->scan($css)['valid']) {
+                throw new PresetSourceException(
+                    "Preset [{$preset}] contains invalid CSS syntax in [".basename($path).'].'
+                );
+            }
+
             throw new PresetSourceException(
                 "Preset [{$preset}] contains a malformed or misplaced @import in [".basename($path).'].'
             );
