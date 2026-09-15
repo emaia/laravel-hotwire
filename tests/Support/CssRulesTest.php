@@ -70,13 +70,15 @@ it('orders encountered errors before opening delimiters left unresolved at the e
 });
 
 it('preserves nested rule order and parent declarations around children', function () {
-    $rules = (new CssRules)->parse(<<<'CSS'
+    $css = <<<'CSS'
         [data-slot="parent"] {
             color: red;
             & [data-slot="child"] { content: "}"; }
             background: blue;
         }
-        CSS);
+        CSS;
+    $newline = str_contains($css, "\r\n") ? "\r\n" : "\n";
+    $rules = (new CssRules)->parse($css);
 
     expect($rules)->toBe([
         [
@@ -85,7 +87,7 @@ it('preserves nested rule order and parent declarations around children', functi
         ],
         [
             'chain' => ['[data-slot="parent"]'],
-            'declarations' => "\n    color: red;\n    background: blue;\n",
+            'declarations' => "{$newline}    color: red;{$newline}    background: blue;{$newline}",
         ],
     ]);
 });
