@@ -189,8 +189,10 @@ A value belongs to the slot in whose compound it is written, so `[data-slot="sid
 [data-slot="sidebar-content"]` reports the attribute on `sidebar`. This remains useful when inspecting a stylesheet,
 but official presets are not required to expose identical lexical axes.
 
-`PresetAxes::coverage()` reports parser coverage: whether the scanner visited every `data-slot` occurrence it counted.
-It does not prove semantic coverage, state support, accessibility or compatibility with the component contract.
+`PresetAxes::coverage()` reports parser coverage: whether the scanner visited every `[data-slot=…]` selector and
+`data-[slot=…]` Tailwind variant it counted. It does not prove semantic coverage, state support, accessibility or
+compatibility with the component contract. `PresetAxes::inspectCoverage()` additionally reports structural validity
+and the identifiable slot names the parser could not visit, separating complete references from incomplete syntax.
 
 `Support\PresetSkeleton` does not use `PresetAxes` or parse an official preset. It emits one empty base rule for each
 visual slot projected by the registry. Ancestor state, equivalent selectors and Tailwind variants remain authoring

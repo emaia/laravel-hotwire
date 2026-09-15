@@ -16,7 +16,7 @@ final readonly class CssSlots
     {
         $styled = [];
 
-        foreach ($this->rules->parse($this->rules->stripComments($css)) as ['chain' => $chain, 'declarations' => $declarations]) {
+        foreach ($this->rules->parse($css) as ['chain' => $chain, 'declarations' => $declarations]) {
             if (trim($declarations) === '') {
                 continue;
             }
@@ -43,15 +43,15 @@ final readonly class CssSlots
     {
         $referenced = [];
 
-        foreach ($this->rules->parse($this->rules->stripComments($css)) as ['chain' => $chain, 'declarations' => $declarations]) {
+        foreach ($this->rules->parse($css) as ['chain' => $chain, 'declarations' => $declarations]) {
             foreach ($chain as $selector) {
                 preg_match_all('/\[data-slot\s*=\s*["\']?([a-z0-9-]+)["\']?\s*\]/', $selector, $matches);
                 $referenced = [...$referenced, ...$matches[1]];
             }
 
             preg_match_all(
-                '/(?:"(?:\\\\.|[^"\\\\])*"|\'(?:\\\\.|[^\'\\\\])*\')(*SKIP)(*F)|data-\[slot\s*=\s*["\']?([a-z0-9-]+)["\']?\]/',
-                $declarations,
+                '/data-\[slot\s*=\s*["\']?([a-z0-9-]+)["\']?\]/',
+                $this->rules->withoutStrings($declarations),
                 $variants,
             );
             $referenced = [...$referenced, ...$variants[1]];
@@ -85,26 +85,36 @@ final readonly class CssSlots
 
     private function containsScopeSubject(string $selector): bool
     {
-        $length = strlen($selector);
+        $ignoreThrough = -1;
+        $events = [];
+        $scan = $this->rules->scan(
+            $selector,
+            function (array $event) use (&$events): void {
+                if ($event['type'] === 'character') {
+                    $events[] = $event;
+                }
+            },
+            collectPairs: true,
+        );
 
-        for ($index = 0; $index < $length; $index++) {
-            $character = $selector[$index];
+        foreach ($events as $event) {
+            $index = $event['offset'];
 
-            if ($character === '"' || $character === "'") {
-                $index = $this->skipString($selector, $index);
-
+            if ($index <= $ignoreThrough) {
                 continue;
             }
 
+            $character = $event['character'];
+
             if ($character === '[') {
-                $index = $this->matchingDelimiter($selector, $index, '[', ']');
+                $ignoreThrough = $scan['pairs'][$index] ?? strlen($selector) - 1;
 
                 continue;
             }
 
             $previous = $index > 0 ? $selector[$index - 1] : '';
 
-            if ($character !== ':' || $previous === '\\' || $previous === ':') {
+            if ($character !== ':' || $previous === ':') {
                 continue;
             }
 
@@ -121,14 +131,14 @@ final readonly class CssSlots
             }
 
             $open = $index + strlen($function[0]) - 1;
-            $end = $this->matchingDelimiter($selector, $open, '(', ')');
+            $end = $scan['pairs'][$open] ?? strlen($selector) - 1;
 
             if (in_array(strtolower($function[1]), ['is', 'where'], true)
                 && $this->functionalArgumentsTargetScope(substr($selector, $open + 1, $end - $open - 1))) {
                 return true;
             }
 
-            $index = $end;
+            $ignoreThrough = $end;
         }
 
         return false;
@@ -145,47 +155,5 @@ final readonly class CssSlots
         }
 
         return false;
-    }
-
-    private function matchingDelimiter(string $value, int $offset, string $open, string $close): int
-    {
-        $depth = 0;
-        $length = strlen($value);
-
-        for ($index = $offset; $index < $length; $index++) {
-            if ($value[$index] === '"' || $value[$index] === "'") {
-                $index = $this->skipString($value, $index);
-
-                continue;
-            }
-
-            $depth += (int) ($value[$index] === $open) - (int) ($value[$index] === $close);
-
-            if ($depth === 0) {
-                return $index;
-            }
-        }
-
-        return $length - 1;
-    }
-
-    private function skipString(string $value, int $offset): int
-    {
-        $quote = $value[$offset];
-        $length = strlen($value);
-
-        for ($index = $offset + 1; $index < $length; $index++) {
-            if ($value[$index] === '\\') {
-                $index++;
-
-                continue;
-            }
-
-            if ($value[$index] === $quote) {
-                return $index;
-            }
-        }
-
-        return $length - 1;
     }
 }

@@ -19,8 +19,6 @@ final readonly class CssInterpolationSyntax
     public function invalidDeclarations(string $css): array
     {
         $violations = [];
-        $css = $this->rules->stripComments($css);
-
         foreach ($this->rules->parse($css, true) as $rule) {
             foreach ($this->rules->splitTopLevel($rule['declarations'], ';') as $declaration) {
                 $raw = preg_replace('/\[[^\]]*\]/s', '', $declaration) ?? $declaration;

@@ -13,6 +13,7 @@ final readonly class ApplicationPresetValidator
     public function __construct(
         private Filesystem $files,
         private CssImports $imports,
+        private CssRules $rules,
         private CssInterpolationSyntax $interpolationSyntax,
         private CssSlots $slots,
         private PresetAxes $axes,
@@ -65,10 +66,12 @@ final readonly class ApplicationPresetValidator
         }
 
         $css = implode("\n\n", $visual);
-        $coverage = $this->axes->coverage($css);
+        $coverage = $this->axes->inspectCoverage($css);
 
-        if ($coverage['visited'] !== $coverage['total']) {
-            $warnings[] = "Preset [{$name}] CSS analysis is incomplete ({$coverage['visited']} of {$coverage['total']} slot references parsed).";
+        if (! $coverage['complete']) {
+            $warnings[] = $coverage['visited'] === $coverage['total']
+                ? "Preset [{$name}] CSS analysis is incomplete because the stylesheet contains invalid syntax."
+                : "Preset [{$name}] CSS analysis is incomplete ({$coverage['visited']} of {$coverage['total']} slot references parsed).";
         }
 
         return $this->result(
@@ -77,7 +80,8 @@ final readonly class ApplicationPresetValidator
             $warnings,
             $css,
             $registry,
-            $coverage['visited'] === $coverage['total'] ? [] : $this->axes->unvisitedSlots($css),
+            $coverage['unvisitedSlots'],
+            $coverage['unvisitedReferences'],
         );
     }
 
@@ -176,6 +180,12 @@ final readonly class ApplicationPresetValidator
         $stylesheet = trim($this->imports->remove($css, $imports));
 
         if ($this->containsImport($stylesheet)) {
+            if (! $this->rules->scan($css)['valid']) {
+                throw new PresetSourceException(
+                    "Preset [{$preset}] contains invalid CSS syntax in [".basename($path).'].'
+                );
+            }
+
             throw new PresetSourceException(
                 "Preset [{$preset}] contains a malformed or misplaced @import in [".basename($path).'].'
             );
@@ -237,6 +247,7 @@ final readonly class ApplicationPresetValidator
      * @param  string[]  $errors
      * @param  string[]  $warnings
      * @param  string[]  $unvisitedSlots
+     * @param  string[]  $unvisitedReferences
      * @return array{errors: string[], warnings: string[], styledSlots: string[], referencedSlots: string[]}
      */
     private function result(
@@ -246,6 +257,7 @@ final readonly class ApplicationPresetValidator
         string $css,
         HotwireRegistry $registry,
         array $unvisitedSlots,
+        array $unvisitedReferences,
     ): array {
         $definitions = [...array_values($registry->components()), ...array_values($registry->controllers())];
         $required = [];
@@ -259,7 +271,7 @@ final readonly class ApplicationPresetValidator
         $required = array_values(array_unique($required));
         $declared = array_values(array_unique($declared));
         $styled = $this->slots->withDeclarations($css);
-        $referenced = $this->slots->referenced($css);
+        $referenced = array_values(array_unique([...$this->slots->referenced($css), ...$unvisitedReferences]));
         $missing = array_values(array_diff($required, $styled));
         $unprovenMissing = array_values(array_intersect($missing, $unvisitedSlots));
         $provenMissing = array_values(array_diff($missing, $unprovenMissing));

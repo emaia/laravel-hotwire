@@ -12,6 +12,8 @@ final class CssCustomProperties
         'dark' => '[data-theme="dark"]',
     ];
 
+    public function __construct(private readonly CssRules $rules = new CssRules) {}
+
     /**
      * Inspect custom properties and Tailwind aliases declared by a preset base.
      *
@@ -53,9 +55,8 @@ final class CssCustomProperties
      */
     private function inspect(string $css, bool $auditPresetScopes): array
     {
-        $rules = new CssRules;
-        [, $validSource] = $this->scan($css);
-        $css = $rules->stripComments($css);
+        $validSource = $this->rules->scan($css)['valid'];
+        $css = $this->rules->stripComments($css);
         $aliases = [];
         $violations = [];
         $ranges = [];
@@ -113,11 +114,13 @@ final class CssCustomProperties
             $css = substr_replace($css, str_repeat(' ', $end - $start), $start, $end - $start);
         }
 
+        // Token inspection preserves recoverable declarations for stable scope diagnostics; the
+        // structural consumers instead discard complete rules touched by these same offsets.
         foreach ($invalidOffsets as $offset) {
             $css[$offset] = ' ';
         }
 
-        if ($auditPresetScopes && preg_match('/@theme\b/', $this->withoutStrings($css)) === 1) {
+        if ($auditPresetScopes && preg_match('/@theme\b/', $this->rules->withoutStrings($css)) === 1) {
             $violations[] = '@theme';
         }
 
@@ -130,9 +133,9 @@ final class CssCustomProperties
             'unscoped' => $unscopedAtRuleProperties,
         ];
 
-        foreach ($rules->parse($css, includeAtRuleDeclarations: ! $auditPresetScopes) as ['chain' => $chain, 'declarations' => $body]) {
+        foreach ($this->rules->parse($css, includeAtRuleDeclarations: ! $auditPresetScopes) as ['chain' => $chain, 'declarations' => $body]) {
             $selector = (string) end($chain);
-            $branches = $rules->splitTopLevel($selector, ',');
+            $branches = $this->rules->splitTopLevel($selector, ',');
             $branchScopes = array_map($this->scopeFor(...), $branches);
             $supported = $branches !== [] && ! in_array(null, $branchScopes, true);
             [$declarations, $valid] = $this->customPropertyDeclarations($body);
@@ -266,46 +269,42 @@ final class CssCustomProperties
         $parts = [];
         $start = 0;
 
-        [$events, $valid] = $this->scan($body);
+        $scan = $this->rules->scan($body, function (array $event) use ($body, &$parts, &$start): void {
+            ['offset' => $offset, 'character' => $character, 'depth' => $depth] = $event;
 
-        foreach ($events as ['offset' => $offset, 'character' => $character, 'depth' => $depth]) {
             if ($character === ';' && $depth === 0) {
                 $parts[] = substr($body, $start, $offset - $start);
                 $start = $offset + 1;
             }
-        }
+        });
 
         $parts[] = substr($body, $start);
 
-        return [array_values(array_filter(array_map('trim', $parts))), $valid];
+        return [array_values(array_filter(array_map('trim', $parts))), $scan['valid']];
     }
 
     /** @return array{int|null, bool} */
     private function topLevelColon(string $declaration): array
     {
-        [$events, $valid] = $this->scan($declaration);
+        $colon = null;
+        $scan = $this->rules->scan($declaration, function (array $event) use (&$colon): void {
+            ['offset' => $offset, 'character' => $character, 'depth' => $depth] = $event;
 
-        foreach ($events as ['offset' => $offset, 'character' => $character, 'depth' => $depth]) {
-            if ($character === ':' && $depth === 0) {
-                return [$offset, $valid];
+            if ($colon === null && $character === ':' && $depth === 0) {
+                $colon = $offset;
             }
-        }
+        });
 
-        return [null, $valid];
+        return [$colon, $scan['valid']];
     }
 
     private function aliasTarget(string $value): ?string
     {
-        $unquoted = $this->withoutStrings($value);
+        $unquoted = $this->rules->withoutStrings($value);
         preg_match_all('/(?<![-_a-zA-Z0-9])var\(\s*(--[^\s,;)]+)/', $unquoted, $matches);
         $targets = array_values(array_unique($matches[1]));
 
         return count($targets) === 1 && CssCustomPropertyName::isValid($targets[0]) ? $targets[0] : null;
-    }
-
-    private function withoutStrings(string $value): string
-    {
-        return preg_replace('/"(?:[^"\\\\]|\\\\.)*"|\'(?:[^\'\\\\]|\\\\.)*\'/s', '', $value) ?? $value;
     }
 
     /**
@@ -316,9 +315,9 @@ final class CssCustomProperties
         $atRules = [];
         $start = 0;
         $block = null;
-        [$events, $valid, $invalidOffsets] = $this->scan($css);
+        $scan = $this->rules->scan($css, function (array $event) use ($css, &$atRules, &$start, &$block): void {
+            ['offset' => $offset, 'character' => $character, 'depth' => $depth] = $event;
 
-        foreach ($events as ['offset' => $offset, 'character' => $character, 'depth' => $depth]) {
             if ($character === ';' && $depth === 0 && $block === null) {
                 $start = $offset + 1;
             } elseif ($character === '{' && $depth === 0 && $block === null) {
@@ -342,91 +341,8 @@ final class CssCustomProperties
                 $start = $end;
                 $block = null;
             }
-        }
+        });
 
-        return [$atRules, $valid, $invalidOffsets];
-    }
-
-    /**
-     * @return array{list<array{offset: int, character: string, depth: int}>, bool, int[]}
-     */
-    private function scan(string $value): array
-    {
-        $events = [];
-        $stack = [];
-        $quote = null;
-        $quoteStart = null;
-        $commentStart = null;
-        $valid = true;
-        $invalidOffsets = [];
-        $length = strlen($value);
-        $closers = [')' => '(', ']' => '[', '}' => '{'];
-
-        for ($offset = 0; $offset < $length; $offset++) {
-            $character = $value[$offset];
-
-            if ($commentStart !== null) {
-                if ($character === '*' && ($value[$offset + 1] ?? null) === '/') {
-                    $commentStart = null;
-                    $offset++;
-                }
-
-                continue;
-            }
-
-            if ($quote !== null) {
-                if ($character === '\\') {
-                    $offset++;
-                } elseif ($character === $quote) {
-                    $quote = null;
-                    $quoteStart = null;
-                }
-
-                continue;
-            }
-
-            if ($character === '\\') {
-                $offset++;
-            } elseif ($character === '/' && ($value[$offset + 1] ?? null) === '*') {
-                $commentStart = $offset;
-                $offset++;
-            } elseif ($character === '"' || $character === "'") {
-                $quote = $character;
-                $quoteStart = $offset;
-            } elseif (in_array($character, ['(', '[', '{'], true)) {
-                $events[] = ['offset' => $offset, 'character' => $character, 'depth' => count($stack)];
-                $stack[] = ['character' => $character, 'offset' => $offset];
-            } elseif (isset($closers[$character])) {
-                $events[] = ['offset' => $offset, 'character' => $character, 'depth' => count($stack)];
-                $opening = array_pop($stack);
-
-                if (($opening['character'] ?? null) !== $closers[$character]) {
-                    $valid = false;
-                    $invalidOffsets[] = $offset;
-
-                    if ($opening !== null) {
-                        $invalidOffsets[] = $opening['offset'];
-                    }
-                }
-            } elseif ($character === ':' || $character === ';') {
-                $events[] = ['offset' => $offset, 'character' => $character, 'depth' => count($stack)];
-            }
-        }
-
-        if ($quoteStart !== null) {
-            $invalidOffsets[] = $quoteStart;
-        }
-
-        if ($commentStart !== null) {
-            $invalidOffsets[] = $commentStart;
-        }
-
-        foreach ($stack as $opening) {
-            $invalidOffsets[] = $opening['offset'];
-        }
-
-        $valid = $valid && $quote === null && $commentStart === null && $stack === [];
-
-        return [$events, $valid, array_values(array_unique($invalidOffsets))];
+        return [$atRules, $scan['valid'], $scan['invalidOffsets']];
     }
 }

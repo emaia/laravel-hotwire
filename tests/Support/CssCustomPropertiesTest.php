@@ -208,6 +208,27 @@ it('records declarations outside supported top-level token selectors', function 
     ]);
 });
 
+it('keeps nested non-inline theme declarations unscoped', function () {
+    $css = <<<'CSS'
+        @layer base {
+            @theme static { --theme-token: orange; }
+        }
+        CSS;
+
+    expect((new CssCustomProperties)->inspectStylesheet($css))->toBe([
+        'properties' => ['--theme-token'],
+        'scopes' => [
+            'root' => [],
+            'default' => [],
+            'light' => [],
+            'dark' => [],
+            'unscoped' => ['--theme-token'],
+        ],
+        'aliases' => [],
+        'valid' => true,
+    ]);
+});
+
 it('classifies supported scope selector quoting without relying on unmatched capture groups', function (string $selector, string $scope) {
     expect((new CssCustomProperties)->scopeFor($selector))->toBe($scope);
 })->with([
