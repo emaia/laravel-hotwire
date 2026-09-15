@@ -7,33 +7,39 @@ namespace Emaia\LaravelHotwire\Support;
  *
  * This class owns the package's lexical CSS vocabulary. Consumers interpret its events for their
  * own extraction policy rather than maintaining independent quote, comment, and delimiter state.
+ *
+ * @internal
  */
 final class CssRules
 {
+    private const string TOKEN_CHARACTERS = '()[]{}:;';
+
     /**
      * Expose source-ordered tokens with delimiter state before each token.
      *
-     * Strings, comments, and escaped pairs each produce one event so their contents can never be
-     * mistaken for CSS syntax. Invalid offsets retain encounter order for diagnostic recovery.
+     * Strings and comments each produce one event, while escapes suppress syntax events for the
+     * escaped pair. Invalid offsets retain encounter order for diagnostic recovery.
      *
      * @return array{
-     *     events: list<array{offset: int, character: string, length: int, depth: int, blockDepth: int, type: string, closed?: bool}>,
+     *     events: list<array{offset: int, character: string, length: int, depth: int, blockDepth: int, groupDepth: int, type: string, closed?: bool}>,
      *     pairs: array<int, int>,
      *     valid: bool,
      *     invalidOffsets: int[]
      * }
      */
-    public function tokenize(string $css): array
+    public function tokenize(string $css, string $additionalCharacters = ''): array
     {
         $events = [];
         $pairs = [];
         $stack = [];
         $blockDepth = 0;
+        $groupDepth = 0;
         $valid = true;
         $invalidOffsets = [];
         $tailInvalidOffsets = [];
         $length = strlen($css);
         $closers = [')' => '(', ']' => '[', '}' => '{'];
+        $eventCharacters = self::TOKEN_CHARACTERS.$additionalCharacters;
 
         for ($offset = 0; $offset < $length; $offset++) {
             $character = $css[$offset];
@@ -48,6 +54,7 @@ final class CssRules
                     'length' => $tokenLength,
                     'depth' => count($stack),
                     'blockDepth' => $blockDepth,
+                    'groupDepth' => $groupDepth,
                     'type' => 'comment',
                     'closed' => $closed,
                 ];
@@ -87,6 +94,7 @@ final class CssRules
                     'length' => $tokenLength,
                     'depth' => count($stack),
                     'blockDepth' => $blockDepth,
+                    'groupDepth' => $groupDepth,
                     'type' => 'string',
                     'closed' => $closed,
                 ];
@@ -101,25 +109,28 @@ final class CssRules
                 continue;
             }
 
-            $tokenLength = $character === '\\' && $offset + 1 < $length ? 2 : 1;
-            $events[] = [
-                'offset' => $offset,
-                'character' => $character,
-                'length' => $tokenLength,
-                'depth' => count($stack),
-                'blockDepth' => $blockDepth,
-                'type' => 'character',
-            ];
-
-            if ($tokenLength === 2) {
+            if ($character === '\\' && $offset + 1 < $length) {
                 $offset++;
 
                 continue;
             }
 
+            if (str_contains($eventCharacters, $character)) {
+                $events[] = [
+                    'offset' => $offset,
+                    'character' => $character,
+                    'length' => 1,
+                    'depth' => count($stack),
+                    'blockDepth' => $blockDepth,
+                    'groupDepth' => $groupDepth,
+                    'type' => 'character',
+                ];
+            }
+
             if (in_array($character, ['(', '[', '{'], true)) {
                 $stack[] = ['character' => $character, 'offset' => $offset];
                 $blockDepth += (int) ($character === '{');
+                $groupDepth += (int) ($character === '(' || $character === '[');
 
                 continue;
             }
@@ -144,6 +155,8 @@ final class CssRules
             if (($opening['character'] ?? null) === '{') {
                 $blockDepth--;
             }
+
+            $groupDepth -= (int) ($character === ')' || $character === ']');
         }
 
         foreach ($stack as $opening) {
@@ -173,15 +186,18 @@ final class CssRules
         $chain = [];
         $declarations = [];
         $buffer = '';
+        $cursor = 0;
 
         foreach ($this->tokenize($css)['events'] as $event) {
+            $buffer .= substr($css, $cursor, $event['offset'] - $cursor);
+            $cursor = $event['offset'] + $event['length'];
+
             if ($event['type'] === 'comment') {
                 continue;
             }
 
             $character = $event['character'];
             $structural = $event['type'] === 'character'
-                && $event['length'] === 1
                 && $event['depth'] === $event['blockDepth'];
 
             if (! $structural || ! str_contains(';{}', $character)) {
@@ -297,22 +313,25 @@ final class CssRules
     }
 
     /**
-     * Split CSS syntax on top-level separators while preserving strings and delimiter contents.
+     * Split CSS syntax outside parentheses and brackets while preserving strings and their contents.
      *
      * @return string[]
      */
     public function splitTopLevel(string $value, string $separators): array
     {
         $parts = [''];
+        $cursor = 0;
 
-        foreach ($this->tokenize($value)['events'] as $event) {
+        foreach ($this->tokenize($value, $separators)['events'] as $event) {
+            $parts[array_key_last($parts)] .= substr($value, $cursor, $event['offset'] - $cursor);
+            $cursor = $event['offset'] + $event['length'];
+
             if ($event['type'] === 'comment') {
                 continue;
             }
 
             if ($event['type'] === 'character'
-                && $event['length'] === 1
-                && $event['depth'] === 0
+                && $event['groupDepth'] === 0
                 && str_contains($separators, $event['character'])) {
                 $parts[] = '';
 
@@ -321,6 +340,8 @@ final class CssRules
 
             $parts[array_key_last($parts)] .= substr($value, $event['offset'], $event['length']);
         }
+
+        $parts[array_key_last($parts)] .= substr($value, $cursor);
 
         return array_values(array_filter($parts, fn (string $part): bool => trim($part) !== ''));
     }

@@ -86,25 +86,26 @@ final readonly class CssSlots
     private function containsScopeSubject(string $selector): bool
     {
         $ignoreThrough = -1;
+        $scan = $this->rules->tokenize($selector);
 
-        foreach ($this->rules->tokenize($selector)['events'] as $event) {
+        foreach ($scan['events'] as $event) {
             $index = $event['offset'];
 
-            if ($index <= $ignoreThrough || $event['type'] !== 'character' || $event['length'] !== 1) {
+            if ($index <= $ignoreThrough || $event['type'] !== 'character') {
                 continue;
             }
 
             $character = $event['character'];
 
             if ($character === '[') {
-                $ignoreThrough = $this->rules->matchingDelimiter($selector, $index) ?? strlen($selector) - 1;
+                $ignoreThrough = $scan['pairs'][$index] ?? strlen($selector) - 1;
 
                 continue;
             }
 
             $previous = $index > 0 ? $selector[$index - 1] : '';
 
-            if ($character !== ':' || $previous === '\\' || $previous === ':') {
+            if ($character !== ':' || $previous === ':') {
                 continue;
             }
 
@@ -121,7 +122,7 @@ final readonly class CssSlots
             }
 
             $open = $index + strlen($function[0]) - 1;
-            $end = $this->rules->matchingDelimiter($selector, $open) ?? strlen($selector) - 1;
+            $end = $scan['pairs'][$open] ?? strlen($selector) - 1;
 
             if (in_array(strtolower($function[1]), ['is', 'where'], true)
                 && $this->functionalArgumentsTargetScope(substr($selector, $open + 1, $end - $open - 1))) {

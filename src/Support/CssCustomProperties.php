@@ -118,7 +118,7 @@ final class CssCustomProperties
             $css[$offset] = ' ';
         }
 
-        if ($auditPresetScopes && preg_match('/@theme\b/', $this->withoutStrings($css)) === 1) {
+        if ($auditPresetScopes && preg_match('/@theme\b/', $this->rules->withoutStrings($css)) === 1) {
             $violations[] = '@theme';
         }
 
@@ -297,16 +297,11 @@ final class CssCustomProperties
 
     private function aliasTarget(string $value): ?string
     {
-        $unquoted = $this->withoutStrings($value);
+        $unquoted = $this->rules->withoutStrings($value);
         preg_match_all('/(?<![-_a-zA-Z0-9])var\(\s*(--[^\s,;)]+)/', $unquoted, $matches);
         $targets = array_values(array_unique($matches[1]));
 
         return count($targets) === 1 && CssCustomPropertyName::isValid($targets[0]) ? $targets[0] : null;
-    }
-
-    private function withoutStrings(string $value): string
-    {
-        return $this->rules->withoutStrings($value);
     }
 
     /**

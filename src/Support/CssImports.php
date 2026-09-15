@@ -79,14 +79,31 @@ final class CssImports
         $rules = [];
         $start = null;
         $importsAllowed = true;
+        $cursor = $bomLength;
 
         foreach ($this->rules->tokenize($content)['events'] as $event) {
-            if ($event['offset'] < $bomLength || $event['type'] === 'comment') {
+            if ($event['offset'] < $bomLength) {
+                continue;
+            }
+
+            if ($start === null && $event['depth'] === 0 && $event['blockDepth'] === 0) {
+                $segment = substr($content, $cursor, $event['offset'] - $cursor);
+                $whitespace = strspn($segment, " \t\n\r\v\f");
+
+                if ($whitespace < strlen($segment)) {
+                    $start = $cursor + $whitespace;
+                }
+            }
+
+            $cursor = $event['offset'] + $event['length'];
+            $characterEvent = $event['type'] === 'character';
+
+            if ($event['type'] === 'comment') {
                 continue;
             }
 
             if ($event['blockDepth'] !== 0) {
-                if ($event['type'] === 'character' && $event['character'] === '}' && $event['blockDepth'] === 1) {
+                if ($characterEvent && $event['character'] === '}' && $event['blockDepth'] === 1) {
                     $start = null;
                 }
 
@@ -95,20 +112,20 @@ final class CssImports
 
             $character = $event['character'];
 
-            if ($event['type'] === 'character' && $event['length'] === 1 && $character === '{' && $event['depth'] === 0) {
+            if ($characterEvent && $character === '{' && $event['depth'] === 0) {
                 $importsAllowed = false;
                 $start = null;
 
                 continue;
             }
 
-            if ($event['type'] === 'character' && $event['length'] === 1 && $character === '}' && $event['depth'] === 0) {
+            if ($characterEvent && $character === '}' && $event['depth'] === 0) {
                 $start = null;
 
                 continue;
             }
 
-            if ($event['type'] === 'character' && $event['length'] === 1 && $character === ';' && $event['depth'] === 0) {
+            if ($characterEvent && $character === ';' && $event['depth'] === 0) {
                 if ($start !== null) {
                     $ruleLength = $event['offset'] - $start + 1;
                     $statement = substr($content, $start, $ruleLength);
@@ -130,10 +147,6 @@ final class CssImports
             }
 
             if ($start !== null) {
-                continue;
-            }
-
-            if ($event['type'] === 'character' && ctype_space($character)) {
                 continue;
             }
 

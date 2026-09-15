@@ -30,6 +30,12 @@ it('tokenizes syntax outside strings and comments with delimiter state', functio
         ]);
 });
 
+it('emits sparse events instead of allocating one record per source byte', function () {
+    $css = '.example { content: '.str_repeat('x', 10_000).'; color: red; }';
+
+    expect((new CssRules)->tokenize($css)['events'])->toHaveCount(6);
+});
+
 it('reports lexical failures in encounter order', function (string $css, array $invalidOffsets) {
     $scan = (new CssRules)->tokenize($css);
 
@@ -69,4 +75,24 @@ it('splits only on separators outside strings and delimiters', function () {
         ' color: rgb(0; 0; 0)',
         ' display: block',
     ]);
+});
+
+it('keeps top-level splitting limited to functional and attribute delimiters', function () {
+    $rules = new CssRules;
+
+    expect($rules->splitTopLevel('a{b,c}, d', ','))->toBe(['a{b', 'c}', ' d'])
+        ->and($rules->splitTopLevel('a{(b},c),d', ','))->toBe(['a{(b},c)', 'd']);
+});
+
+it('exposes tokenizer-backed literal and delimiter helpers', function () {
+    $comment = '/* hidden */';
+    $css = 'before'.$comment.'after "'.$comment.'"';
+    $delimited = '([data-label=")"]) tail';
+    $rules = new CssRules;
+
+    expect($rules->stripComments($css))->toBe('beforeafter "'.$comment.'"')
+        ->and($rules->maskComments($css))->toBe('before'.str_repeat(' ', strlen($comment)).'after "'.$comment.'"')
+        ->and($rules->withoutStrings('var(--real) "var(--fake)" \'also fake\''))->toBe('var(--real)  ')
+        ->and($rules->matchingDelimiter($delimited, 0))->toBe(strrpos($delimited, ')'))
+        ->and($rules->matchingDelimiter('(unfinished', 0))->toBeNull();
 });
