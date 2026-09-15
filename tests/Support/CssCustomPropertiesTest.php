@@ -29,6 +29,13 @@ it('extracts preset properties and inline theme aliases without regex block assu
 
     expect((new CssCustomProperties)->inspectPresetBase($css))->toBe([
         'properties' => ['--status', '--font-family', '--escaped', '--status\:emphasis', '--status-foreground'],
+        'scopes' => [
+            'root' => ['--status', '--font-family', '--escaped', '--status\:emphasis'],
+            'default' => [],
+            'light' => [],
+            'dark' => ['--status', '--status-foreground'],
+            'unscoped' => [],
+        ],
         'aliases' => [
             '--color-status' => '--status-strong',
             '--radius-action' => '--radius',
@@ -52,6 +59,13 @@ it('reports unsupported selectors, declarations, theme blocks, and ambiguous ali
 
     expect((new CssCustomProperties)->inspectPresetBase($css))->toBe([
         'properties' => ['--status'],
+        'scopes' => [
+            'root' => ['--status'],
+            'default' => [],
+            'light' => [],
+            'dark' => [],
+            'unscoped' => [],
+        ],
         'aliases' => ['--color-notice' => null, '--color-fake' => null],
         'violations' => ['@theme', '@theme inline', '[data-slot="button"]', '[data-theme="dark"]'],
     ]);
@@ -70,6 +84,13 @@ it('extracts foundation properties without applying preset base scope restrictio
 
     expect((new CssCustomProperties)->inspectStylesheet($css))->toBe([
         'properties' => ['--conditional'],
+        'scopes' => [
+            'root' => [],
+            'default' => [],
+            'light' => [],
+            'dark' => [],
+            'unscoped' => ['--conditional'],
+        ],
         'aliases' => [],
         'valid' => true,
     ]);
@@ -102,6 +123,13 @@ it('audits scopes and nested theme tokens without rewriting quoted strings', fun
 
     expect((new CssCustomProperties)->inspectPresetBase($css))->toBe([
         'properties' => ['--label'],
+        'scopes' => [
+            'root' => ['--label'],
+            'default' => [],
+            'light' => [],
+            'dark' => [],
+            'unscoped' => [],
+        ],
         'aliases' => [],
         'violations' => ['[data-theme="d a r k"]'],
     ]);
@@ -116,7 +144,99 @@ it('reports malformed delimiters without losing later top-level theme blocks', f
 
     expect((new CssCustomProperties)->inspectPresetBase($css))->toBe([
         'properties' => ['--status'],
+        'scopes' => [
+            'root' => ['--status'],
+            'default' => [],
+            'light' => [],
+            'dark' => [],
+            'unscoped' => [],
+        ],
         'aliases' => ['--color-status' => '--status'],
         'violations' => ['invalid CSS syntax'],
     ]);
+});
+
+it('distinguishes the unthemed fallback from explicit light and dark scopes', function () {
+    $css = <<<'CSS'
+        :where(:root:not([data-theme="dark"])) {
+            --surface: white;
+            --default-only: silver;
+        }
+
+        [data-theme="light"] {
+            --surface: white;
+            --light-only: gray;
+        }
+
+        [data-theme="dark"] {
+            --surface: black;
+        }
+        CSS;
+
+    expect((new CssCustomProperties)->inspectPresetBase($css)['scopes'])->toBe([
+        'root' => [],
+        'default' => ['--surface', '--default-only'],
+        'light' => ['--surface', '--light-only'],
+        'dark' => ['--surface'],
+        'unscoped' => [],
+    ]);
+});
+
+it('records declarations outside supported top-level token selectors', function () {
+    $css = <<<'CSS'
+        html { --html-token: red; }
+
+        :root, body { --mixed-token: blue; }
+
+        @layer base {
+            :root { --nested-token: green; }
+        }
+
+        :root {
+            @media (width > 0px) { --conditional-token: purple; }
+        }
+
+        @theme static { --theme-token: orange; }
+        CSS;
+
+    expect((new CssCustomProperties)->inspectStylesheet($css)['scopes'])->toBe([
+        'root' => ['--mixed-token'],
+        'default' => [],
+        'light' => [],
+        'dark' => [],
+        'unscoped' => ['--theme-token', '--html-token', '--mixed-token', '--nested-token', '--conditional-token'],
+    ]);
+});
+
+it('classifies supported scope selector quoting without relying on unmatched capture groups', function (string $selector, string $scope) {
+    expect((new CssCustomProperties)->scopeFor($selector))->toBe($scope);
+})->with([
+    'root' => [':root', 'root'],
+    'default' => [':where(:root:not([data-theme="dark"]))', 'default'],
+    'double quoted light' => ['[data-theme="light"]', 'light'],
+    'single quoted dark' => ["[data-theme='dark']", 'dark'],
+    'unquoted light' => ['[data-theme=light]', 'light'],
+]);
+
+it('owns the canonical selector vocabulary', function (string $scope, string $selector) {
+    expect((new CssCustomProperties)->selectorFor($scope))->toBe($selector);
+})->with([
+    'root' => ['root', ':root'],
+    'default' => ['default', ':where(:root:not([data-theme="dark"]))'],
+    'light' => ['light', '[data-theme="light"]'],
+    'dark' => ['dark', '[data-theme="dark"]'],
+]);
+
+it('classifies extra conditions case-insensitively and gives dark precedence', function () {
+    $properties = new CssCustomProperties;
+
+    expect($properties->scopeFor('[data-theme="LIGHT"]:not([data-flat])', allowConditions: true))->toBe('light')
+        ->and($properties->scopeFor('[data-theme="light"][data-theme="dark"]', allowConditions: true))->toBe('dark');
+});
+
+it('ignores theme-like text inside quoted selector values', function () {
+    expect((new CssCustomProperties)->scopeFor(
+        '[data-theme="light"][data-example=\'[data-theme="dark"]\']',
+        allowConditions: true,
+    ))->toBe('light');
 });

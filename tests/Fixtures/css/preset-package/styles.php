@@ -2,7 +2,12 @@
 
 return [
     'foundation' => [
-        'properties' => ['--fixture-background', '--fixture-foreground'],
+        'properties' => [
+            '--fixture-background' => 'themed',
+            '--fixture-foreground' => 'themed',
+            '--fixture-border' => 'themed',
+            '--fixture-spacing' => 'global',
+        ],
         'aliases' => [
             '--color-fixture-background' => '--fixture-background',
             '--color-fixture-foreground' => '--fixture-foreground',
@@ -38,9 +43,9 @@ return [
                 'presets/constellation/aliases.css',
             ],
             'properties' => [
-                '--fixture-surface',
-                '--fixture-surface-foreground',
-                '--fixture-radius',
+                '--fixture-surface' => 'themed',
+                '--fixture-surface-foreground' => 'themed',
+                '--fixture-radius' => 'global',
             ],
             'aliases' => [
                 '--color-fixture-surface' => '--fixture-surface',

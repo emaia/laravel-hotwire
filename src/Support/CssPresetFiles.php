@@ -154,6 +154,12 @@ final readonly class CssPresetFiles
             fn (string $property): string => "Shared foundation property [{$property}] is not declared in {$tokenSource}.",
             fn (string $property): string => "Shared foundation {$tokenSource} declares unregistered property [{$property}].",
         );
+        $this->validatePropertyScopes(
+            'Shared foundation',
+            $foundation['scopes'],
+            $this->manifest->foundationPropertyScopes(),
+            "in {$tokenSource}",
+        );
         $this->validateAliases('Shared foundation', $foundation['aliases'], $this->manifest->foundationAliases());
 
         $base = $this->customProperties->inspectPresetBase($source->baseCss());
@@ -172,6 +178,19 @@ final readonly class CssPresetFiles
             fn (string $property): string => "Preset [{$name}] property [{$property}] is not declared by its base sources.",
             fn (string $property): string => "Preset [{$name}] base declares unregistered property [{$property}].",
             $knownProperties,
+        );
+        $this->validatePropertyScopes(
+            "Preset [{$name}] override of shared foundation",
+            $base['scopes'],
+            $this->manifest->foundationPropertyScopes(),
+            'in its base sources',
+            requireDeclarations: false,
+        );
+        $this->validatePropertyScopes(
+            "Preset [{$name}]",
+            $base['scopes'],
+            $this->manifest->additionalPropertyScopesFor($name),
+            'in its base sources',
         );
 
         $this->validateAliases(
@@ -234,6 +253,58 @@ final readonly class CssPresetFiles
             if (! array_key_exists($alias, $expected)) {
                 throw new PresetSourceException(
                     "{$owner} @theme inline declares unregistered alias [{$alias}]."
+                );
+            }
+        }
+    }
+
+    /**
+     * @param  array{root: string[], default: string[], light: string[], dark: string[], unscoped: string[]}  $actual
+     * @param  array<string, 'global'|'themed'>  $expected
+     */
+    private function validatePropertyScopes(
+        string $owner,
+        array $actual,
+        array $expected,
+        string $location,
+        bool $requireDeclarations = true,
+    ): void {
+        foreach ($expected as $property => $scope) {
+            if ($scope === 'themed' && in_array($property, $actual['root'], true)) {
+                throw new PresetSourceException(
+                    "{$owner} themed property [{$property}] must not be declared in :root; its unthemed default would never apply."
+                );
+            }
+
+            $required = $requireDeclarations
+                ? ($scope === 'global' ? ['root'] : ['default', 'light', 'dark'])
+                : [];
+
+            foreach ($required as $requiredScope) {
+                if (! in_array($property, $actual[$requiredScope], true)) {
+                    $selector = $this->customProperties->selectorFor($requiredScope);
+
+                    throw new PresetSourceException(
+                        "{$owner} property [{$property}] is missing required scope [{$requiredScope}] ({$selector}) {$location}."
+                    );
+                }
+            }
+
+            if ($scope === 'global') {
+                foreach (['default', 'light', 'dark'] as $themeScope) {
+                    if (in_array($property, $actual[$themeScope], true)) {
+                        $selector = $this->customProperties->selectorFor($themeScope);
+
+                        throw new PresetSourceException(
+                            "{$owner} global property [{$property}] must not be declared in theme scope [{$themeScope}] ({$selector})."
+                        );
+                    }
+                }
+            }
+
+            if (in_array($property, $actual['unscoped'], true)) {
+                throw new PresetSourceException(
+                    "{$owner} property [{$property}] must not be declared outside supported token scopes."
                 );
             }
         }

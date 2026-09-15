@@ -5,10 +5,17 @@ namespace Emaia\LaravelHotwire\Support;
 /** @internal */
 final class CssCustomProperties
 {
+    private const array SCOPE_SELECTORS = [
+        'root' => ':root',
+        'default' => ':where(:root:not([data-theme="dark"]))',
+        'light' => '[data-theme="light"]',
+        'dark' => '[data-theme="dark"]',
+    ];
+
     /**
      * Inspect custom properties and Tailwind aliases declared by a preset base.
      *
-     * @return array{properties: string[], aliases: array<string, string|null>, violations: string[]}
+     * @return array{properties: string[], scopes: array{root: string[], default: string[], light: string[], dark: string[], unscoped: string[]}, aliases: array<string, string|null>, violations: string[]}
      */
     public function inspectPresetBase(string $css): array
     {
@@ -16,6 +23,7 @@ final class CssCustomProperties
 
         return [
             'properties' => $inspection['properties'],
+            'scopes' => $inspection['scopes'],
             'aliases' => $inspection['aliases'],
             'violations' => $inspection['violations'],
         ];
@@ -24,8 +32,9 @@ final class CssCustomProperties
     /**
      * Extract custom properties and aliases without imposing preset scope policy.
      * Validity covers CSS delimiters and `@theme inline` declaration shape, not selector or at-rule scope.
+     * The scope inventory separates supported top-level token selectors from every other declaration context.
      *
-     * @return array{properties: string[], aliases: array<string, string|null>, valid: bool}
+     * @return array{properties: string[], scopes: array{root: string[], default: string[], light: string[], dark: string[], unscoped: string[]}, aliases: array<string, string|null>, valid: bool}
      */
     public function inspectStylesheet(string $css): array
     {
@@ -33,13 +42,14 @@ final class CssCustomProperties
 
         return [
             'properties' => $inspection['properties'],
+            'scopes' => $inspection['scopes'],
             'aliases' => $inspection['aliases'],
             'valid' => $inspection['valid'],
         ];
     }
 
     /**
-     * @return array{properties: string[], aliases: array<string, string|null>, violations: string[], valid: bool}
+     * @return array{properties: string[], scopes: array{root: string[], default: string[], light: string[], dark: string[], unscoped: string[]}, aliases: array<string, string|null>, violations: string[], valid: bool}
      */
     private function inspect(string $css, bool $auditPresetScopes): array
     {
@@ -49,6 +59,8 @@ final class CssCustomProperties
         $aliases = [];
         $violations = [];
         $ranges = [];
+        // Top-level @theme blocks are removed before CssRules collects every other nested declaration below.
+        $unscopedAtRuleProperties = [];
 
         [$atRules, $validSyntax, $invalidOffsets] = $this->topLevelAtRules($css);
         $validStylesheet = $validSource && $validSyntax;
@@ -71,6 +83,12 @@ final class CssCustomProperties
             if (preg_replace('/\s+/', ' ', $atRule['prelude']) !== '@theme inline') {
                 if ($auditPresetScopes) {
                     $violations[] = '@theme';
+                } else {
+                    [$declarations] = $this->customPropertyDeclarations($atRule['body']);
+
+                    foreach (array_keys($declarations) as $name) {
+                        $unscopedAtRuleProperties[$name] = true;
+                    }
                 }
 
                 continue;
@@ -103,44 +121,108 @@ final class CssCustomProperties
             $violations[] = '@theme';
         }
 
-        $properties = [];
+        $properties = $unscopedAtRuleProperties;
+        $scopes = [
+            'root' => [],
+            'default' => [],
+            'light' => [],
+            'dark' => [],
+            'unscoped' => $unscopedAtRuleProperties,
+        ];
 
-        foreach ($rules->parse($css) as ['chain' => $chain, 'declarations' => $body]) {
+        foreach ($rules->parse($css, includeAtRuleDeclarations: ! $auditPresetScopes) as ['chain' => $chain, 'declarations' => $body]) {
             $selector = (string) end($chain);
             $branches = $rules->splitTopLevel($selector, ',');
-            $supported = $branches !== [] && ! in_array(
-                false,
-                array_map(fn (string $branch): bool => $this->supportedScope($branch), $branches),
-                true,
-            );
+            $branchScopes = array_map($this->scopeFor(...), $branches);
+            $supported = $branches !== [] && ! in_array(null, $branchScopes, true);
             [$declarations, $valid] = $this->customPropertyDeclarations($body);
+            $recordProperties = ! $auditPresetScopes || (count($chain) === 1 && $supported);
 
             if ($auditPresetScopes && (count($chain) !== 1 || ! $supported || ! $valid)) {
                 $violations[] = $selector;
             }
 
-            if (! $auditPresetScopes || (count($chain) === 1 && $supported)) {
+            if ($recordProperties) {
                 foreach (array_keys($declarations) as $name) {
                     $properties[$name] = true;
+                }
+            }
+
+            if ($recordProperties && (count($chain) !== 1 || ! $supported)) {
+                foreach (array_keys($declarations) as $name) {
+                    $scopes['unscoped'][$name] = true;
+                }
+            }
+
+            if (count($chain) === 1 && (! $auditPresetScopes || $supported)) {
+                // Foundation inspection preserves recognized branches from mixed selector lists; preset
+                // inspection reaches this block only after every branch passes its stricter scope policy.
+                foreach (array_unique(array_filter($branchScopes)) as $scope) {
+                    foreach (array_keys($declarations) as $name) {
+                        $scopes[$scope][$name] = true;
+                    }
                 }
             }
         }
 
         return [
             'properties' => array_keys($properties),
+            'scopes' => array_map('array_keys', $scopes),
             'aliases' => $aliases,
             'violations' => array_values(array_unique($violations)),
             'valid' => $validStylesheet,
         ];
     }
 
-    private function supportedScope(string $selector): bool
+    /**
+     * Classify a token selector, optionally retaining extra conditions when scaffolding package tokens.
+     * Permissive matching is case-insensitive and gives dark precedence when conditions conflict.
+     */
+    public function scopeFor(string $selector, bool $allowConditions = false): ?string
     {
         $selector = trim($selector);
 
-        return $selector === ':root'
-            || preg_match('~^:where\(\s*:root\s*:not\(\s*\[\s*data-theme\s*=\s*(?:"dark"|\'dark\'|dark)\s*\]\s*\)\s*\)$~', $selector) === 1
-            || preg_match('~^\[\s*data-theme\s*=\s*(?:"(?:light|dark)"|\'(?:light|dark)\'|(?:light|dark))\s*\]$~', $selector) === 1;
+        if ($selector === ':root') {
+            return 'root';
+        }
+
+        if (preg_match('~^:where\(\s*:root\s*:not\(\s*\[\s*data-theme\s*=\s*(?:"dark"|\'dark\'|dark)\s*\]\s*\)\s*\)$~', $selector) === 1) {
+            return 'default';
+        }
+
+        if (preg_match('~^\[\s*data-theme\s*=\s*(?|"(light|dark)"|\'(light|dark)\'|(light|dark))\s*\]$~', $selector, $matches) === 1) {
+            return $matches[1];
+        }
+
+        if ($allowConditions) {
+            $declared = preg_replace('/:not(\((?:[^()]++|(?1))*\))/i', '', $selector) ?? $selector;
+
+            foreach (['dark', 'light'] as $scope) {
+                if ($this->hasThemeScope($declared, $scope)) {
+                    return $scope;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /** Return the canonical selector for a supported token scope. */
+    public function selectorFor(string $scope): string
+    {
+        return self::SCOPE_SELECTORS[$scope]
+            ?? throw new \InvalidArgumentException("Unknown CSS token scope [{$scope}].");
+    }
+
+    private function hasThemeScope(string $selector, string $scope): bool
+    {
+        $scope = preg_quote($scope, '~');
+        $quoted = '"(?:[^"\\\\]|\\\\.)*"|\'(?:[^\'\\\\]|\\\\.)*\'';
+
+        return preg_match(
+            '~(?:'.$quoted.')(*SKIP)(*F)|\[\s*data-theme\s*=\s*(?:"'.$scope.'"|\''.$scope.'\'|'.$scope.')\s*\]~i',
+            $selector,
+        ) === 1;
     }
 
     /**

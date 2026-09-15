@@ -10,9 +10,11 @@ namespace Emaia\LaravelHotwire\Support;
 final class CssRules
 {
     /**
+     * Parse style rules, optionally retaining declaration-bearing at-rule blocks.
+     *
      * @return list<array{chain: string[], declarations: string}>
      */
-    public function parse(string $css): array
+    public function parse(string $css, bool $includeAtRuleDeclarations = false): array
     {
         $rules = [];
         $chain = [];
@@ -82,7 +84,7 @@ final class CssRules
                 $body = array_pop($declarations).$buffer;
                 $buffer = '';
 
-                if (! str_starts_with(end($chain) ?: '', '@')) {
+                if ($includeAtRuleDeclarations || ! str_starts_with(end($chain) ?: '', '@')) {
                     $rules[] = ['chain' => $chain, 'declarations' => $body];
                 }
 

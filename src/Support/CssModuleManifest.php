@@ -7,10 +7,12 @@ use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 /** @internal */
 final readonly class CssModuleManifest
 {
+    private const array PROPERTY_SCOPES = ['global', 'themed'];
+
     /**
      * @param  array<string, array{components: string[], controllers: string[], dependencies: string[]}>  $modules
-     * @param  array{properties: string[], aliases: array<string, string>, contrast_pairs: array<string, array{foreground: string, background: string}>}  $foundation
-     * @param  array<string, array{base: string[], properties: string[], aliases: array<string, string>, contrast_pairs: array<string, array{foreground: string, background: string}>, sources: list<array{path: string, modules: string[]}>}>  $presets
+     * @param  array{properties: array<string, 'global'|'themed'>, aliases: array<string, string>, contrast_pairs: array<string, array{foreground: string, background: string}>}  $foundation
+     * @param  array<string, array{base: string[], properties: array<string, 'global'|'themed'>, aliases: array<string, string>, contrast_pairs: array<string, array{foreground: string, background: string}>, sources: list<array{path: string, modules: string[]}>}>  $presets
      */
     private function __construct(
         private array $modules,
@@ -44,7 +46,7 @@ final readonly class CssModuleManifest
         }
 
         $foundation = self::validateTokenMetadata($foundation, 'CSS foundation');
-        self::validateTokenReferences($foundation, 'CSS foundation', $foundation['properties']);
+        self::validateTokenReferences($foundation, 'CSS foundation', array_keys($foundation['properties']));
 
         foreach ($modules as $name => $module) {
             if (! is_string($name) || preg_match('/^[a-z][a-z0-9-]*$/', $name) !== 1 || ! is_array($module)) {
@@ -72,7 +74,7 @@ final readonly class CssModuleManifest
         $presets = self::validatePresets($presets, $modules, $foundation);
 
         /** @var array<string, array{components: string[], controllers: string[], dependencies: string[]}> $modules */
-        /** @var array<string, array{base: string[], properties: string[], aliases: array<string, string>, contrast_pairs: array<string, array{foreground: string, background: string}>, sources: list<array{path: string, modules: string[]}>}> $presets */
+        /** @var array<string, array{base: string[], properties: array<string, 'global'|'themed'>, aliases: array<string, string>, contrast_pairs: array<string, array{foreground: string, background: string}>, sources: list<array{path: string, modules: string[]}>}> $presets */
         return new self($modules, $foundation, $presets);
     }
 
@@ -92,6 +94,16 @@ final readonly class CssModuleManifest
      * @return string[]
      */
     public function foundationProperties(): array
+    {
+        return array_keys($this->foundation['properties']);
+    }
+
+    /**
+     * Return declaration scopes owned by the shared foundation.
+     *
+     * @return array<string, 'global'|'themed'>
+     */
+    public function foundationPropertyScopes(): array
     {
         return $this->foundation['properties'];
     }
@@ -123,7 +135,7 @@ final readonly class CssModuleManifest
      */
     public function propertiesFor(string $preset): array
     {
-        return [...$this->foundation['properties'], ...$this->additionalPropertiesFor($preset)];
+        return [...$this->foundationProperties(), ...$this->additionalPropertiesFor($preset)];
     }
 
     /**
@@ -132,6 +144,16 @@ final readonly class CssModuleManifest
      * @return string[]
      */
     public function additionalPropertiesFor(string $preset): array
+    {
+        return array_keys($this->preset($preset)['properties']);
+    }
+
+    /**
+     * Return declaration scopes for custom properties introduced by a preset.
+     *
+     * @return array<string, 'global'|'themed'>
+     */
+    public function additionalPropertyScopesFor(string $preset): array
     {
         return $this->preset($preset)['properties'];
     }
@@ -311,8 +333,8 @@ final readonly class CssModuleManifest
     /**
      * @param  array<string, mixed>  $presets
      * @param  array<string, array{components: string[], controllers: string[], dependencies: string[]}>  $modules
-     * @param  array{properties: string[], aliases: array<string, string>, contrast_pairs: array<string, array{foreground: string, background: string}>}  $foundation
-     * @return array<string, array{base: string[], properties: string[], aliases: array<string, string>, contrast_pairs: array<string, array{foreground: string, background: string}>, sources: list<array{path: string, modules: string[]}>}>
+     * @param  array{properties: array<string, 'global'|'themed'>, aliases: array<string, string>, contrast_pairs: array<string, array{foreground: string, background: string}>}  $foundation
+     * @return array<string, array{base: string[], properties: array<string, 'global'|'themed'>, aliases: array<string, string>, contrast_pairs: array<string, array{foreground: string, background: string}>, sources: list<array{path: string, modules: string[]}>}>
      */
     private static function validatePresets(array $presets, array $modules, array $foundation): array
     {
@@ -331,9 +353,9 @@ final readonly class CssModuleManifest
 
             $label = "CSS module preset [{$preset}]";
             $metadata = self::validateTokenMetadata($definition, $label);
-            $foundationNames = [...$foundation['properties'], ...array_keys($foundation['aliases'])];
+            $foundationNames = [...array_keys($foundation['properties']), ...array_keys($foundation['aliases'])];
 
-            foreach ($metadata['properties'] as $property) {
+            foreach (array_keys($metadata['properties']) as $property) {
                 if (in_array($property, $foundationNames, true)) {
                     throw new PresetSourceException("{$label} property [{$property}] already belongs to the shared foundation.");
                 }
@@ -354,7 +376,7 @@ final readonly class CssModuleManifest
             self::validateTokenReferences(
                 $metadata,
                 $label,
-                [...$foundation['properties'], ...$metadata['properties']],
+                [...array_keys($foundation['properties']), ...array_keys($metadata['properties'])],
             );
 
             $paths = [];
@@ -421,27 +443,35 @@ final readonly class CssModuleManifest
         return $validated;
     }
 
-    /** @return array{properties: string[], aliases: array<string, string>, contrast_pairs: array<string, array{foreground: string, background: string}>} */
+    /** @return array{properties: array<string, 'global'|'themed'>, aliases: array<string, string>, contrast_pairs: array<string, array{foreground: string, background: string}>} */
     private static function validateTokenMetadata(mixed $metadata, string $label): array
     {
         if (! is_array($metadata)
             || ! isset($metadata['properties'], $metadata['aliases'], $metadata['contrast_pairs'])
             || ! is_array($metadata['properties'])
             || ! is_array($metadata['aliases'])
-            || ! is_array($metadata['contrast_pairs'])
-            || ! array_is_list($metadata['properties'])) {
+            || ! is_array($metadata['contrast_pairs'])) {
             throw new PresetSourceException("{$label} token metadata must define properties, aliases, and contrast_pairs.");
         }
 
-        self::validateStringList($metadata['properties'], "{$label} properties");
+        if ($metadata['properties'] !== [] && array_is_list($metadata['properties'])) {
+            throw new PresetSourceException(
+                "{$label} properties must map each custom property name to global or themed."
+            );
+        }
+
         $properties = [];
 
-        foreach ($metadata['properties'] as $property) {
+        foreach ($metadata['properties'] as $property => $scope) {
             if (! is_string($property) || ! self::validCustomProperty($property)) {
                 throw new PresetSourceException("{$label} properties must contain CSS custom property names beginning with --.");
             }
 
-            $properties[] = $property;
+            if (! is_string($scope) || ! in_array($scope, self::PROPERTY_SCOPES, true)) {
+                throw new PresetSourceException("{$label} property [{$property}] must use scope global or themed.");
+            }
+
+            $properties[$property] = $scope;
         }
 
         $aliases = [];
@@ -455,7 +485,7 @@ final readonly class CssModuleManifest
                 throw new PresetSourceException("{$label} alias [{$alias}] must reference a CSS custom property name beginning with --.");
             }
 
-            if (in_array($alias, $properties, true)) {
+            if (array_key_exists($alias, $properties)) {
                 throw new PresetSourceException("{$label} custom property [{$alias}] cannot be both a property and an alias.");
             }
 
@@ -518,7 +548,7 @@ final readonly class CssModuleManifest
     /**
      * Return a validated preset definition.
      *
-     * @return array{base: string[], properties: string[], aliases: array<string, string>, contrast_pairs: array<string, array{foreground: string, background: string}>, sources: list<array{path: string, modules: string[]}>}
+     * @return array{base: string[], properties: array<string, 'global'|'themed'>, aliases: array<string, string>, contrast_pairs: array<string, array{foreground: string, background: string}>, sources: list<array{path: string, modules: string[]}>}
      */
     private function preset(string $preset): array
     {
