@@ -1,5 +1,6 @@
 <?php
 
+use Emaia\LaravelHotwire\Support\CssInterpolationSyntax;
 use Emaia\LaravelHotwire\Support\CssPresetFiles;
 use Emaia\LaravelHotwire\Support\CssRules;
 use Emaia\LaravelHotwire\Support\PresetAxes;
@@ -721,6 +722,19 @@ it('preserves component custom-property contracts', function (string $preset) {
 })->with('design presets');
 
 // --- Known bug guards ---
+
+it('keeps Tailwind arbitrary-value underscores out of raw preset CSS', function (string $preset) {
+    $source = app(CssPresetFiles::class)->source($preset);
+    $violations = [];
+
+    foreach ($source->visualStylesheets() as $index => $css) {
+        foreach (app(CssInterpolationSyntax::class)->invalidDeclarations($css) as $violation) {
+            $violations[] = $source->visualStylesheetPaths()[$index].': '.$violation['declaration'];
+        }
+    }
+
+    expect($violations)->toBe([], "Preset [{$preset}] uses Tailwind arbitrary-value underscores in raw CSS.");
+})->with('design presets');
 
 it('does not reintroduce known clipping, stacking, sizing or marker bugs', function (string $preset) {
     $css = presetVisualCss($preset);

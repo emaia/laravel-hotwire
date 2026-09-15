@@ -13,6 +13,7 @@ final readonly class ApplicationPresetValidator
     public function __construct(
         private Filesystem $files,
         private CssImports $imports,
+        private CssInterpolationSyntax $interpolationSyntax,
         private CssSlots $slots,
         private PresetAxes $axes,
         private FoundationFacade $foundationFacade,
@@ -181,6 +182,18 @@ final readonly class ApplicationPresetValidator
         }
 
         if ($stylesheet !== '') {
+            $violation = $this->interpolationSyntax->invalidDeclarations($stylesheet)[0] ?? null;
+
+            if ($violation !== null) {
+                $method = $violation['method'];
+                $declaration = $violation['declaration'];
+                $replacement = str_replace('_', ' ', $method);
+
+                throw new PresetSourceException(
+                    "Preset [{$preset}] uses invalid interpolation method [{$method}] in raw CSS declaration [{$declaration}] in [".basename($path)."]. Write [{$replacement}]; Tailwind underscores represent spaces only inside arbitrary values ([...])."
+                );
+            }
+
             $visual[] = $stylesheet;
         }
     }

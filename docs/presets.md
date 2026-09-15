@@ -183,6 +183,12 @@ and behavior: the application must track package changes and preserve the docume
 accessibility relationships itself. Use that boundary only when the semantic component contract, rather than its visual
 treatment, must change.
 
+Tailwind converts underscores to spaces only inside arbitrary values. Keep the underscore in a utility such as
+`bg-[color-mix(in_oklch,var(--background),transparent_20%)]`, but use a real space in raw CSS such as
+`background: color-mix(in oklch, var(--background), transparent 20%)`. Raw `in_oklch`, `in_srgb` and equivalent
+interpolation methods are invalid CSS and can silently discard the declaration in the browser; `hotwire:check --preset`
+reports the source file and declaration when it finds one.
+
 ## Validate an application preset
 
 `hotwire:check` automatically validates top-level application presets imported from `resources/css/presets`. Validate an
@@ -199,7 +205,8 @@ For a complete application preset, static validation proves that:
 - local imports resolve without cycles, conditional imports or escapes from `resources/css`;
 - the entrypoint imports package `foundation.css` exactly once before local visual CSS;
 - every visual slot declared by the component/controller registry participates in a rule with declarations;
-- every `data-slot` reference, including Tailwind `data-[slot=...]` variants, is declared by the registry.
+- every `data-slot` reference, including Tailwind `data-[slot=...]` variants, is declared by the registry;
+- Tailwind interpolation underscores remain inside arbitrary values instead of leaking into raw CSS declarations.
 
 A definite contract violation is an error and returns exit code 1. If the CSS scanner cannot account for a slot
 reference, it emits a `warning:` line and downgrades only that slot's unproven coverage; unrelated missing slots remain

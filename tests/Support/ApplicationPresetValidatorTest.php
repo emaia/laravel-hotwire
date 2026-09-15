@@ -185,6 +185,36 @@ it('ignores slot-like text in comments and declaration strings', function () {
         );
 });
 
+it('reports Tailwind arbitrary-value underscores in raw CSS with an actionable declaration', function () {
+    $path = $this->root.'/resources/css/presets/constellation/feedback.css';
+    $this->files->append($path, <<<'CSS'
+
+        [data-slot="fixture-status"] {
+            background: linear-gradient(in_oklch, red, blue);
+        }
+        CSS);
+
+    $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
+
+    expect($result['errors'])->toBe([
+        'Preset [constellation] uses invalid interpolation method [in_oklch] in raw CSS declaration [background: linear-gradient(in_oklch, red, blue)] in [feedback.css]. Write [in oklch]; Tailwind underscores represent spaces only inside arbitrary values ([...]).',
+    ]);
+});
+
+it('allows interpolation underscores inside application arbitrary values', function () {
+    $path = $this->root.'/resources/css/presets/constellation/feedback.css';
+    $this->files->append($path, <<<'CSS'
+
+        [data-slot="fixture-status"] {
+            @apply shadow-[0_1px_2px_0_color-mix(in_oklch,var(--foreground),transparent_80%)];
+        }
+        CSS);
+
+    $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
+
+    expect($result['errors'])->toBe([]);
+});
+
 it('requires the package foundation facade exactly once', function (Closure $mutate) {
     $this->files->put($this->entrypoint, $mutate($this->files->get($this->entrypoint)));
 
