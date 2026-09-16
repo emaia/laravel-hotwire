@@ -4,6 +4,7 @@
     :is([data-slot="toggle"], [data-slot="toggle-group-item"])[data-variant="default"] { @apply hover:bg-muted; }
     :is([data-slot="toggle"], [data-slot="toggle-group-item"])[data-variant="outline"] { @apply border border-input bg-transparent hover:bg-muted; }
     :is([data-slot="toggle"], [data-slot="toggle-group-item"])[data-state="on"] { @apply bg-muted text-foreground; }
+    :is([data-slot="toggle"], [data-slot="toggle-group-item"])[data-state="on"]:not(:focus-visible):not([aria-invalid="true"]) { @apply border-muted; }
     :is([data-slot="toggle"], [data-slot="toggle-group-item"])[data-size="default"] { @apply h-10 min-w-10 px-4; }
     :is([data-slot="toggle"], [data-slot="toggle-group-item"])[data-size="sm"] { @apply h-9 min-w-9 px-3 text-[0.8rem] [&_svg:not([class*='size-'])]:size-3.5; }
     :is([data-slot="toggle"], [data-slot="toggle-group-item"])[data-size="lg"] { @apply h-11 min-w-11 px-5; }
