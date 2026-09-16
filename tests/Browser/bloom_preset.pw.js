@@ -307,6 +307,70 @@ test("ships a chromatic palette instead of the neutral token defaults", async ({
     }
 });
 
+test("gives Reveal an authored Bloom motion profile", async ({ page }) => {
+    await page.setContent(`
+        <style>${bloomCss}</style>
+        <section id="reveal" data-slot="reveal"></section>
+        <aside id="sidebar" data-slot="sidebar" data-controller="reveal"></aside>
+    `);
+
+    const profile = (selector) =>
+        page.locator(selector).evaluate((element) => {
+            const style = getComputedStyle(element);
+            const duration = style.getPropertyValue("--reveal-duration").trim();
+
+            return {
+                blur: style.getPropertyValue("--reveal-blur").trim(),
+                shift: style.getPropertyValue("--reveal-shift").trim(),
+                durationMs: parseFloat(duration) * (duration.endsWith("ms") ? 1 : 1000),
+                stagger: style.getPropertyValue("--reveal-stagger").trim(),
+                easing: [...style.getPropertyValue("--reveal-easing").matchAll(/[\d.]+/g)].map(([value]) =>
+                    Number(value),
+                ),
+            };
+        });
+
+    const bloomProfile = {
+        blur: "12px",
+        shift: "1.25rem",
+        durationMs: 680,
+        stagger: "90ms",
+        easing: [0.22, 1, 0.36, 1],
+    };
+
+    expect(await profile("#reveal")).toEqual(bloomProfile);
+    expect(await profile("#sidebar")).toEqual(bloomProfile);
+});
+
+test("keeps incremental pagination available while surfacing its loading control", async ({ page }) => {
+    await page.setContent(`
+        <style>${bloomCss}</style>
+        <nav id="pagination" data-slot="pagination">
+            <a id="next" data-slot="pagination-next" data-size="default">
+                <span data-slot="pagination-next-content">Load more</span>
+                <span data-slot="pagination-next-loading-content">
+                    <span data-slot="pagination-next-spinner"></span>
+                    Loading more
+                </span>
+            </a>
+        </nav>
+    `);
+
+    const surface = () =>
+        page.locator("#next").evaluate((element) => {
+            const style = getComputedStyle(element);
+
+            return [style.backgroundColor, style.borderColor, style.color, style.boxShadow];
+        });
+
+    const idle = await surface();
+    await page.locator("#pagination").evaluate((element) => element.setAttribute("data-state", "loading"));
+
+    await expect(page.locator("#pagination")).toHaveCSS("opacity", "1");
+    expect(await surface()).not.toEqual(idle);
+    await expect(page.locator('[data-slot="pagination-next-spinner"]')).not.toHaveCSS("animation-name", "none");
+});
+
 test("keeps grouped controls on the preset's own outer geometry", async ({ page }) => {
     await page.setContent(`
         <style>${bloomCss}</style>
@@ -390,6 +454,40 @@ test("drops the surface treatment from tab lists that render no surface", async 
     expect(await surface("#line")).toEqual({ fill: false, shadow: false });
     expect(await surface("#surface")).toEqual({ fill: true, shadow: true });
     expect(await surface("#bare")).toEqual({ fill: false, shadow: false });
+});
+
+test("keeps high-variance selection and progress states observable", async ({ page }) => {
+    await page.setContent(`
+        <style>${bloomCss}</style>
+        <div data-slot="tabs" data-orientation="horizontal">
+            <div data-slot="tabs-list" data-variant="default">
+                <button id="tab-idle" data-slot="tabs-trigger" data-state="inactive">Idle</button>
+                <button id="tab-active" data-slot="tabs-trigger" data-state="active">Active</button>
+            </div>
+        </div>
+        <button id="dropdown-item" data-slot="dropdown-item">Focusable item</button>
+        <button id="dropdown-disabled" data-slot="dropdown-item" disabled>Disabled item</button>
+        <div id="progress-track" data-slot="progress-track" style="width: 200px">
+            <span id="progress-indicator" data-slot="progress-indicator" style="--progress-value: 37%"></span>
+        </div>
+    `);
+
+    const surface = (selector) =>
+        page.locator(selector).evaluate((element) => {
+            const style = getComputedStyle(element);
+
+            return [style.backgroundColor, style.color, style.boxShadow, style.opacity];
+        });
+
+    expect(await surface("#tab-active")).not.toEqual(await surface("#tab-idle"));
+
+    const dropdownIdle = await surface("#dropdown-item");
+    await page.locator("#dropdown-item").focus();
+    expect(await surface("#dropdown-item")).not.toEqual(dropdownIdle);
+    expect(await surface("#dropdown-disabled")).not.toEqual(dropdownIdle);
+
+    const progress = await page.locator("#progress-indicator").boundingBox();
+    expect(progress.width).toBeCloseTo(74, 1);
 });
 
 test("stops and reapplies dark surface adjustments at nearest theme boundaries", async ({ page }) => {

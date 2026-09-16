@@ -29,6 +29,9 @@ Any other HTML attribute passes through to the wrapper.
 
 `as` is trimmed, lowercased, and validated against its allowlist. Unsupported tags are rejected.
 
+Surface treatment belongs to the selected preset. Nova uses a compact neutral translucent edge; Bloom uses a more
+elevated chromatic glass surface. Both preserve the same sticky geometry and top/bottom border contract.
+
 ## Bottom action bar
 
 ```blade

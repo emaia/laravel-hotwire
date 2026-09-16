@@ -5,8 +5,8 @@
     },
     "presets": {
         "bloom": {
-            "rawBytes": 318070,
-            "gzipBytes": 31036
+            "rawBytes": 321499,
+            "gzipBytes": 31272
         },
         "nova": {
             "rawBytes": 302807,

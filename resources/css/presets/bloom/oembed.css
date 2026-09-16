@@ -1,6 +1,6 @@
 @layer components {
     /* Oembed controller */
-    [data-slot="oembed"] { @apply my-5 rounded-lg bg-muted; }
+    [data-slot="oembed"] { @apply my-7 rounded-2xl border border-primary/15 bg-card shadow-xl; }
     [data-slot="oembed-frame"] { @apply border-0; }
-    [data-slot="oembed-link"] { @apply break-all text-primary underline underline-offset-4 hover:no-underline; }
+    [data-slot="oembed-link"] { @apply inline-flex break-all rounded-[var(--radius-action)] border border-primary/20 bg-primary/10 px-3 py-2 font-medium text-primary no-underline shadow-sm transition-colors hover:bg-primary/15; }
 }

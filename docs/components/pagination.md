@@ -213,6 +213,10 @@ not run `scroll-to`, so observing the next link never pulls the user back while 
 The incremental control uses a down chevron by default because it appends content below the current list. Customize it
 with the `loadMoreIcon` slot.
 
+The loading state remains available for focus and assistive technology while the request runs. Nova dims the complete
+pagination control; Bloom keeps the surrounding navigation at full strength and highlights the active load-more control.
+Both swap the visible content and announce status through the same controller and live region.
+
 ```blade
 <hw:pagination :paginator="$users" incremental append-to="#users-list">
     <x-slot:loadMoreIcon>
