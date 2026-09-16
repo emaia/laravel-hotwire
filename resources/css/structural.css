@@ -965,6 +965,8 @@ html[data-color-scheme-transitioning]::view-transition-new(root) {
             [data-slot="attachment"][data-state="uploading"] [data-slot="attachment-title"]
         ) {
             animation: none !important;
+            color: inherit;
+            background-image: none;
         }
     }
 }

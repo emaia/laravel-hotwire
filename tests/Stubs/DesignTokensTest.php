@@ -689,23 +689,26 @@ it('keeps responsive OEmbed geometry structural and its appearance in Nova', fun
         ->not->toContain('size-full');
 });
 
-it('keeps Text Shimmer legible and gives Toaster a zero-motion fallback', function () {
+it('keeps Text Shimmer legible and gives Toaster a zero-motion fallback', function (string $preset) {
     $structural = File::get(__DIR__.'/../../resources/css/structural.css');
-    $shimmer = File::get(__DIR__.'/../../resources/css/presets/nova/text-shimmer.css');
-    $toaster = File::get(__DIR__.'/../../resources/css/presets/nova/toaster.css');
+    $shimmer = File::get(__DIR__."/../../resources/css/presets/{$preset}/text-shimmer.css");
+    $toaster = File::get(__DIR__."/../../resources/css/presets/{$preset}/toaster.css");
 
     expect($structural)
         ->toContain('[data-shimmer="true"]')
         ->toContain('[data-slot="toast-content"]')
         ->toContain('animation: none !important')
         ->toContain('transition: none !important')
-        ->and($shimmer)
         ->toContain('color: inherit')
         ->toContain('background-image: none')
+        ->and($shimmer)
+        ->not->toContain('color: inherit')
+        ->not->toContain('background-image: none')
         ->not->toContain('animation: none')
+        ->not->toContain('@media (prefers-reduced-motion: reduce)')
         ->and($toaster)
         ->not->toContain('@media (prefers-reduced-motion: reduce)');
-});
+})->with('design presets');
 
 it('keeps multi-select state selectors aligned with controller output', function (string $preset) {
     $css = presetVisualCss($preset);

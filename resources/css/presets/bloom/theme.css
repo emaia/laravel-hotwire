@@ -12,7 +12,7 @@
     /* Control surfaces share one knob: set it to 9999px for pill geometry. */
     --radius-action: var(--radius);
     /* Small square controls (checkbox, indicator, badge) would resolve to a circle at a large radius. */
-    --radius-control: min(calc(var(--radius) * 0.8), 0.5rem);
+    --radius-control: min(var(--radius-md), 0.5rem);
 }
 
 :where(:root:not([data-theme="dark"])),

@@ -104,15 +104,15 @@ Timing props become CSS custom properties:
 for smaller adjustments. To supply an application keyframe while preserving the stagger formula and `backwards` fill,
 set `--reveal-animation`:
 
-Nova uses the structural defaults (`6px` blur, `0.75rem` shift, `520ms` duration and `70ms` stagger). Bloom uses a
-softer authored profile (`12px`, `1.25rem`, `680ms` and `90ms`) with a longer ease-out curve. Explicit `stagger`,
-`duration` and other component props still override the selected preset through inline custom properties.
-
 ```blade
 <hw:reveal style="--reveal-animation: product-enter">
     ...
 </hw:reveal>
 ```
+
+Nova uses the structural defaults (`6px` blur, `0.75rem` shift, `520ms` duration and `70ms` stagger). Bloom uses a
+softer authored profile (`12px`, `1.25rem`, `680ms` and `90ms`) with a longer ease-out curve. Explicit `stagger`,
+`duration` and other component props still override the selected preset through inline custom properties.
 
 ## Render and document scope
 

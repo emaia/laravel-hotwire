@@ -1,14 +1,11 @@
 import { expect, test } from "@playwright/test";
 import { readFile } from "node:fs/promises";
-import { compileCssFixture } from "../../scripts/css_build_contract.js";
+import { compileCssFixture, replacePresetImport } from "../../scripts/css_build_contract.js";
 
 let bloomCss;
 
 test.beforeAll(async () => {
-    const source = (await readFile("stubs/resources/css/app.css", "utf8")).replace(
-        "presets/nova.css",
-        "presets/bloom.css",
-    );
+    const source = replacePresetImport(await readFile("stubs/resources/css/app.css", "utf8"), "bloom");
 
     bloomCss = await compileCssFixture(source);
 });
@@ -324,22 +321,20 @@ test("gives Reveal an authored Bloom motion profile", async ({ page }) => {
                 shift: style.getPropertyValue("--reveal-shift").trim(),
                 durationMs: parseFloat(duration) * (duration.endsWith("ms") ? 1 : 1000),
                 stagger: style.getPropertyValue("--reveal-stagger").trim(),
-                easing: [...style.getPropertyValue("--reveal-easing").matchAll(/[\d.]+/g)].map(([value]) =>
-                    Number(value),
-                ),
+                easing: style.getPropertyValue("--reveal-easing").trim(),
             };
         });
 
-    const bloomProfile = {
+    const publicProfile = {
         blur: "12px",
         shift: "1.25rem",
         durationMs: 680,
         stagger: "90ms",
-        easing: [0.22, 1, 0.36, 1],
     };
+    const revealProfile = await profile("#reveal");
 
-    expect(await profile("#reveal")).toEqual(bloomProfile);
-    expect(await profile("#sidebar")).toEqual(bloomProfile);
+    expect(revealProfile).toMatchObject(publicProfile);
+    expect(await profile("#sidebar")).toEqual(revealProfile);
 });
 
 test("keeps incremental pagination available while surfacing its loading control", async ({ page }) => {

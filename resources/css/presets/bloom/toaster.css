@@ -22,7 +22,6 @@
     [data-slot="toast"][data-type="info"] { @apply border-info/25 bg-[color-mix(in_oklab,var(--popover),var(--info)_12%)]/95; }
     [data-slot="toast"][data-type="info"] [data-slot="toast-icon"] { @apply text-info; mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M12 16v-4'/%3E%3Cpath d='M12 8h.01'/%3E%3C/svg%3E"); }
 
-    /* Close renders as a ghost icon button, matching the reference. */
     [data-slot="toast-close"] { @apply relative inline-flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-action)] text-muted-foreground transition-all outline-none hover:bg-accent hover:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50; }
     [data-slot="toast-close"]::before { @apply size-4 bg-current content-['']; mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 6 6 18'/%3E%3Cpath d='m6 6 12 12'/%3E%3C/svg%3E"); mask-repeat: no-repeat; mask-position: center; mask-size: contain; }
 }

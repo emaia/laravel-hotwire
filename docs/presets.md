@@ -28,7 +28,8 @@ official choices visible beside it:
 
 Switch presets by commenting the active import and uncommenting another one. Alternatively, pass `--preset=bloom`
 during installation; the command writes Bloom as the one active import and leaves Nova commented. Do not enable two
-complete presets in the same CSS entrypoint.
+complete presets in the same CSS entrypoint; `hotwire:check` reports the entrypoint and active preset names when it
+finds more than one.
 
 That public entrypoint imports `foundation.css`, then aggregates the selected preset's ordered visual sources. Their
 grouping and internal paths are implementation details; applications should keep importing the public

@@ -301,6 +301,17 @@ it('accepts a complete preset fallback alongside generated CSS bundles', functio
         ->assertSuccessful();
 });
 
+it('rejects multiple official presets imported by one stylesheet', function () {
+    $nova = shippedPresetImportPath('nova');
+    $bloom = shippedPresetImportPath('bloom');
+    File::ensureDirectoryExists(resource_path('css'));
+    File::put(resource_path('css/app.css'), "@import \"{$nova}\";\n@import \"{$bloom}\";");
+
+    $this->artisan('hotwire:check --no-interaction')
+        ->expectsOutputToContain('imports multiple official presets: nova, bloom')
+        ->assertFailed();
+});
+
 it('does not accept a copied shipped preset with drift inside the foundation facade', function () {
     writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
     $this->artisan('hotwire:styles --components=modal --no-interaction')->assertSuccessful();

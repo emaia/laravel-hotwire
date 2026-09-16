@@ -5,22 +5,22 @@
     },
     "presets": {
         "bloom": {
-            "rawBytes": 321499,
-            "gzipBytes": 31272
+            "rawBytes": 322019,
+            "gzipBytes": 31337
         },
         "nova": {
-            "rawBytes": 302807,
-            "gzipBytes": 29392
+            "rawBytes": 302598,
+            "gzipBytes": 29384
         }
     },
     "selectives": {
         "bloom": {
-            "rawBytes": 75468,
-            "gzipBytes": 10308
+            "rawBytes": 76151,
+            "gzipBytes": 10339
         },
         "nova": {
-            "rawBytes": 72400,
-            "gzipBytes": 9685
+            "rawBytes": 72436,
+            "gzipBytes": 9693
         }
     }
 }
