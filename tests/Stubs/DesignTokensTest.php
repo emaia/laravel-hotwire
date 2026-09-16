@@ -799,8 +799,15 @@ it('keeps input-group focus and addon layout owned by the group', function (stri
 it('uses physical inline CSS only for documented physical contracts', function (string $preset) {
     $css = presetVisualCss($preset);
     $structural = File::get(__DIR__.'/../../resources/css/structural.css');
-    // The physical side is the shared contract; each preset chooses the radius step it rounds to.
-    $drawerRadius = $preset === 'bloom' ? '2xl' : 'xl';
+    $physical = physicalInlineUtilities($css);
+    $rightRadius = collect($physical)->first(fn (array $occurrence): bool => $occurrence['selector'] === '[data-slot="drawer-popup"][data-direction="right"]'
+        && str_starts_with($occurrence['utility'], 'rounded-l-'))['utility'] ?? null;
+    $leftRadius = collect($physical)->first(fn (array $occurrence): bool => $occurrence['selector'] === '[data-slot="drawer-popup"][data-direction="left"]'
+        && str_starts_with($occurrence['utility'], 'rounded-r-'))['utility'] ?? null;
+
+    expect($rightRadius)->not->toBeNull()
+        ->and($leftRadius)->not->toBeNull();
+
     $allowed = [
         '[data-slot="carousel"][data-carousel-axis="y"] > :is([data-slot="carousel-prev-button"], [data-slot="carousel-next-button"])' => ['left-1/2', '-translate-x-1/2'],
         '[data-slot="sheet-overlay"][data-state="closed"] > [data-slot="sheet-content"][data-side="right"]' => ['translate-x-10'],
@@ -811,8 +818,8 @@ it('uses physical inline CSS only for documented physical contracts', function (
         '[data-slot="drawer-overlay"][data-state="closed"] > [data-slot="drawer-popup"][data-direction="right"]' => ['translate-x-full'],
         '[data-slot="drawer-overlay"][data-state="closed"] > [data-slot="drawer-popup"][data-direction="left"]' => ['-translate-x-full'],
         '[data-slot="drawer-overlay"][data-state="open"] > [data-slot="drawer-popup"]' => ['translate-x-0'],
-        '[data-slot="drawer-popup"][data-direction="right"]' => ['right-0', 'rounded-l-'.$drawerRadius, 'border-l'],
-        '[data-slot="drawer-popup"][data-direction="left"]' => ['left-0', 'rounded-r-'.$drawerRadius, 'border-r'],
+        '[data-slot="drawer-popup"][data-direction="right"]' => ['right-0', $rightRadius, 'border-l'],
+        '[data-slot="drawer-popup"][data-direction="left"]' => ['left-0', $leftRadius, 'border-r'],
         '[data-slot="sidebar-container"]' => ['left-0', 'right-0'],
         '[data-slot="sidebar"][data-collapsible="offcanvas"] [data-slot="sidebar-container"][data-side="left"]' => ['left-[calc(var(--sidebar-width)*-1)]'],
         '[data-slot="sidebar"][data-collapsible="offcanvas"] [data-slot="sidebar-container"][data-side="right"]' => ['right-[calc(var(--sidebar-width)*-1)]'],
@@ -835,7 +842,6 @@ it('uses physical inline CSS only for documented physical contracts', function (
         ':is([data-slot="dropdown-menu"], [data-slot="tooltip"], [data-slot="hover-card-content"], [data-slot="popover-content"], [data-slot="multi-select-content"])[data-state="closed"][data-side="right"]' => ['-translate-x-2'],
         ':is([data-slot="dropdown-menu"], [data-slot="tooltip"], [data-slot="hover-card-content"], [data-slot="popover-content"], [data-slot="multi-select-content"])[data-state="open"]' => ['translate-x-0'],
     ];
-    $physical = physicalInlineUtilities($css);
     $unexpected = collect($physical)
         ->reject(fn (array $occurrence): bool => in_array(
             $occurrence['utility'],

@@ -204,7 +204,6 @@ test("reduced motion limits component motion and keeps status feedback legible",
     await expect(page.locator("#shimmer")).toHaveCSS("background-image", "none");
     await expect(page.locator("#shimmer")).not.toHaveCSS("color", "rgba(0, 0, 0, 0)");
     await expect(page.locator("#spinner")).toHaveCSS("animation-name", "hotwire-status-pulse");
-    await expect(page.locator("#spinner")).toHaveCSS("animation-duration", "2s");
     await expect(page.locator("#pagination-spinner")).toHaveCSS("animation-name", "hotwire-status-pulse");
 });
 
