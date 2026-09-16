@@ -6,8 +6,8 @@
     [data-slot="toggle-group"][data-connected="true"] > [data-slot="toggle-group-item"]:focus-visible { @apply relative z-10; }
     [data-slot="toggle-group"][data-connected="true"][data-orientation="horizontal"] > [data-slot="toggle-group-item"] { @apply rounded-e-none; }
     [data-slot="toggle-group"][data-connected="true"][data-orientation="horizontal"] > [data-slot="toggle-group-item"]:not(:has(~ [data-slot="toggle-group-item"])) { @apply rounded-e-[var(--radius-action)]; }
-    [data-slot="toggle-group"][data-connected="true"][data-orientation="horizontal"] > [data-slot="toggle-group-item"] ~ [data-slot="toggle-group-item"] { @apply rounded-s-none border-s-0; }
+    [data-slot="toggle-group"][data-connected="true"][data-orientation="horizontal"] > [data-slot="toggle-group-item"] ~ [data-slot="toggle-group-item"] { @apply -ms-px rounded-s-none; }
     [data-slot="toggle-group"][data-connected="true"][data-orientation="vertical"] > [data-slot="toggle-group-item"] { @apply rounded-b-none; }
     [data-slot="toggle-group"][data-connected="true"][data-orientation="vertical"] > [data-slot="toggle-group-item"]:not(:has(~ [data-slot="toggle-group-item"])) { @apply rounded-b-[var(--radius-action)]; }
-    [data-slot="toggle-group"][data-connected="true"][data-orientation="vertical"] > [data-slot="toggle-group-item"] ~ [data-slot="toggle-group-item"] { @apply rounded-t-none border-t-0; }
+    [data-slot="toggle-group"][data-connected="true"][data-orientation="vertical"] > [data-slot="toggle-group-item"] ~ [data-slot="toggle-group-item"] { @apply -mt-px rounded-t-none; }
 }

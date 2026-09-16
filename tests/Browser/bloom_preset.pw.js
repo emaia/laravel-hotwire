@@ -381,8 +381,8 @@ test("keeps grouped controls on the preset's own outer geometry", async ({ page 
         </div>
         <button id="toggle-solo" data-slot="toggle-group-item" data-size="default">Solo</button>
         <div data-slot="toggle-group" data-connected="true" data-orientation="horizontal">
-            <button id="toggle-first" data-slot="toggle-group-item" data-size="default">A</button>
-            <button id="toggle-last" data-slot="toggle-group-item" data-size="default">B</button>
+            <button id="toggle-first" data-slot="toggle-group-item" data-variant="outline" data-size="default" data-state="off">Item</button>
+            <button id="toggle-last" data-slot="toggle-group-item" data-variant="outline" data-size="default" data-state="on">Item</button>
         </div>
     `);
 
@@ -400,6 +400,19 @@ test("keeps grouped controls on the preset's own outer geometry", async ({ page 
         expect(await corners(`#${family}-first`), `${family} group leading corner`).toEqual([outer, "0px"]);
         expect(await corners(`#${family}-last`), `${family} group trailing corner`).toEqual(["0px", outer]);
     }
+
+    const toggleGeometry = (selector) =>
+        page.locator(selector).evaluate((element) => {
+            const style = getComputedStyle(element);
+
+            return {
+                width: element.getBoundingClientRect().width,
+                borderStart: style.borderInlineStartWidth,
+                borderEnd: style.borderInlineEndWidth,
+            };
+        });
+
+    expect(await toggleGeometry("#toggle-last")).toEqual(await toggleGeometry("#toggle-first"));
 });
 
 test("keeps every text control on one surface metric", async ({ page }) => {
