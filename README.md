@@ -139,8 +139,9 @@ php artisan hotwire:controllers --outdated --force
 
 ## Styling
 
-`hotwire:install` configures Tailwind with Nova by default. Select Bloom for a chromatic, spacious and elevated visual
-language with restrained surface radii over the same components and controllers:
+`hotwire:install` configures Tailwind with Nova by default and lists the other official presets as commented imports in
+`resources/css/app.css`. Uncomment Bloom and comment Nova, or select it while installing, for a chromatic, spacious and
+elevated visual language with restrained surface radii over the same components and controllers:
 
 ```bash
 php artisan hotwire:install --preset=bloom

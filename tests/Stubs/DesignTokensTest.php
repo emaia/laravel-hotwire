@@ -250,6 +250,7 @@ it('keeps the app css stub thin', function () use ($stubPath) {
     expect($css)
         ->toContain('@import "tailwindcss"')
         ->toContain("@import '../../vendor/emaia/laravel-hotwire/resources/css/presets/nova.css'")
+        ->toContain("/* @import '../../vendor/emaia/laravel-hotwire/resources/css/presets/bloom.css'; */")
         ->not->toContain('@source')
         ->not->toContain('resources/views/**/*.blade.php')
         ->not->toContain('src/Components/**/*.php')

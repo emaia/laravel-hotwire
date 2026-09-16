@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
-/* Preset: import one default design system. */
+/* Presets: keep exactly one import active. Nova is the default. */
 @import '../../vendor/emaia/laravel-hotwire/resources/css/presets/nova.css';
+/* @import '../../vendor/emaia/laravel-hotwire/resources/css/presets/bloom.css'; */
 
 /* Your app CSS below: override tokens, add components, or extend a preset. */

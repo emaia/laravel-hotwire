@@ -37,6 +37,10 @@ class InstallCommand extends Command
 
     private const string CSS_STUB_RELATIVE = 'css/app.css';
 
+    private const string CSS_PRESET_MARKER = '/* Presets: keep exactly one import active. Nova is the default. */';
+
+    private const string CSS_APP_MARKER = '/* Your app CSS below: override tokens, add components, or extend a preset. */';
+
     private const array CORE_DEPENDENCIES = [
         '@emaia/stimulus-lazy-loader',
         '@hotwired/stimulus',
@@ -312,14 +316,24 @@ class InstallCommand extends Command
     {
         $preset = (string) $this->option('preset');
         $stub = $this->files->get(__DIR__.'/../../stubs/resources/css/app.css');
-        $import = "@import '../../vendor/emaia/laravel-hotwire/resources/css/presets/{$preset}.css';";
+        $presetBlockStart = strpos($stub, self::CSS_PRESET_MARKER);
+        $appCssStart = strpos($stub, self::CSS_APP_MARKER);
 
-        return (string) preg_replace(
-            "#@import '../../vendor/emaia/laravel-hotwire/resources/css/presets/[^']+\\.css';#",
-            $import,
-            $stub,
-            1,
-        );
+        if ($presetBlockStart === false || $appCssStart === false) {
+            throw new RuntimeException('The CSS install stub is missing its preset markers.');
+        }
+
+        $presetBlockStart += strlen(self::CSS_PRESET_MARKER);
+        $presets = [$preset, ...array_values(array_diff($this->cssPresets->names(), [$preset]))];
+        $imports = array_map(function (string $name) use ($preset): string {
+            $import = "@import '../../vendor/emaia/laravel-hotwire/resources/css/presets/{$name}.css';";
+
+            return $name === $preset ? $import : "/* {$import} */";
+        }, $presets);
+
+        return substr($stub, 0, $presetBlockStart)
+            ."\n".implode("\n", $imports)."\n\n"
+            .substr($stub, $appCssStart);
     }
 
     /**

@@ -129,7 +129,9 @@ describe("public CSS presets", () => {
         const css = contract.outputs.blankScaffold;
         const source = contract.sources.blankScaffold;
 
-        expect(source).toContain('@import "../../../vendor/emaia/laravel-hotwire/resources/css/foundation.css";');
+        expect(source).toContain(
+            '@import "../../../vendor/emaia/laravel-hotwire/resources/css/foundation.css";',
+        );
         expect(source).toMatch(/\[data-slot="button"\] \{\}/);
         expect(css).toContain("--background:");
         expect(css).toMatch(carouselMechanic);
@@ -295,9 +297,7 @@ describe("public CSS presets", () => {
             expect(css).toMatch(slotSelector(slot));
         }
 
-        expect(source).toContain(
-            '@import "../../../vendor/emaia/laravel-hotwire/resources/css/foundation.css";',
-        );
+        expect(source).toContain('@import "../../../vendor/emaia/laravel-hotwire/resources/css/foundation.css";');
         expect(source).not.toContain("@hotwire");
         expect(css).toContain("--background:");
         expect(css).not.toMatch(/@(import|apply|theme)\b/);
@@ -338,8 +338,12 @@ describe("public CSS presets", () => {
 
     test("requires exactly one public preset import in the app stub", () => {
         const presetImport = '@import "../../vendor/emaia/laravel-hotwire/resources/css/presets/nova.css";';
+        const commentedImport = '/* @import "../../vendor/emaia/laravel-hotwire/resources/css/presets/bloom.css"; */';
 
         expect(replacePresetImport(presetImport, "bloom")).toContain("presets/bloom.css");
+        expect(replacePresetImport(`${presetImport}\n${commentedImport}`, "constellation")).toBe(
+            `${presetImport.replace("nova.css", "constellation.css")}\n${commentedImport}`,
+        );
         expect(() => replacePresetImport('@import "tailwindcss";', "bloom")).toThrow(
             /exactly one public preset import/,
         );

@@ -15,13 +15,20 @@ Both style the same Blade markup, semantic slots, controllers and accessibility 
 Bloom re-declares shared tokens and registers a small set of additional status and geometry tokens; shared application
 overrides work the same under either preset — see [`theming.md`](theming.md#preset-owned-tokens).
 
-The installer writes a thin `resources/css/app.css` that imports Tailwind and enables one preset:
+The installer writes a thin `resources/css/app.css` that imports Tailwind, enables one preset and keeps the other
+official choices visible beside it:
 
 ```css
 @import "tailwindcss";
 
+/* Presets: keep exactly one import active. Nova is the default. */
 @import '../../vendor/emaia/laravel-hotwire/resources/css/presets/nova.css';
+/* @import '../../vendor/emaia/laravel-hotwire/resources/css/presets/bloom.css'; */
 ```
+
+Switch presets by commenting the active import and uncommenting another one. Alternatively, pass `--preset=bloom`
+during installation; the command writes Bloom as the one active import and leaves Nova commented. Do not enable two
+complete presets in the same CSS entrypoint.
 
 That public entrypoint imports `foundation.css`, then aggregates the selected preset's ordered visual sources. Their
 grouping and internal paths are implementation details; applications should keep importing the public
