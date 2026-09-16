@@ -980,13 +980,19 @@ html[data-color-scheme-transitioning]::view-transition-new(root) {
  */
 
 @layer hotwire-accessibility {
+    @keyframes hotwire-status-pulse {
+        50% {
+            opacity: 0.5;
+        }
+    }
+
     @media (prefers-reduced-motion: reduce) {
-        :where(
-            [data-slot="skeleton"],
-            [data-slot="spinner"],
-            [data-slot="pagination-next-spinner"]
-        ) {
+        :where([data-slot="skeleton"]) {
             animation: none !important;
+        }
+
+        :where([data-slot="spinner"], [data-slot="pagination-next-spinner"]) {
+            animation: hotwire-status-pulse 2s ease-in-out infinite;
         }
 
         :where(

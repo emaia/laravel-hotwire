@@ -186,13 +186,15 @@ test("Presence opt-outs override later visual motion", async ({ page }) => {
     }
 });
 
-test("reduced motion removes component motion and keeps shimmer text legible", async ({ page }) => {
+test("reduced motion limits component motion and keeps status feedback legible", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.setContent(`
         <style>${presetCss}</style>
         <div id="back-to-top" data-slot="back-to-top" data-visible="true"></div>
         <div id="toast" data-slot="toast"><div id="toast-content" data-slot="toast-content"></div></div>
         <span id="shimmer" data-shimmer="true">Processing</span>
+        <span id="spinner" data-slot="spinner"></span>
+        <span id="pagination-spinner" data-slot="pagination-next-spinner"></span>
     `);
 
     await expect(page.locator("#back-to-top")).toHaveCSS("transition-duration", "0s");
@@ -201,6 +203,20 @@ test("reduced motion removes component motion and keeps shimmer text legible", a
     await expect(page.locator("#shimmer")).toHaveCSS("animation-name", "none");
     await expect(page.locator("#shimmer")).toHaveCSS("background-image", "none");
     await expect(page.locator("#shimmer")).not.toHaveCSS("color", "rgba(0, 0, 0, 0)");
+    await expect(page.locator("#spinner")).toHaveCSS("animation-name", "hotwire-status-pulse");
+    await expect(page.locator("#spinner")).toHaveCSS("animation-duration", "2s");
+    await expect(page.locator("#pagination-spinner")).toHaveCSS("animation-name", "hotwire-status-pulse");
+});
+
+test("application CSS can disable the reduced-motion loading pulse", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.setContent(`
+        <style>${presetCss}</style>
+        <style>[data-slot="spinner"] { animation: none; }</style>
+        <span id="spinner" data-slot="spinner"></span>
+    `);
+
+    await expect(page.locator("#spinner")).toHaveCSS("animation-name", "none");
 });
 
 test("structural component selectors work before their controllers connect", async ({ page }) => {

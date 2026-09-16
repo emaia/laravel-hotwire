@@ -377,7 +377,8 @@ it('selects every available css preset', function (string $preset) {
 
     expect($css)
         ->toMatch('/^'.preg_quote($import($preset), '/').'$/m')
-        ->toContain('/* Presets: keep exactly one import active. Nova is the default. */')
+        ->toContain('/* Presets: keep exactly one import active. */')
+        ->not->toContain('Nova is the default.')
         ->and($active[0])->toBe([$import($preset)]);
 
     foreach ($this->app->make(CssPresetFiles::class)->names() as $available) {

@@ -561,7 +561,7 @@ test("keeps focus, invalid, disabled, checked and indeterminate states observabl
     expect(await state("#mixed")).not.toEqual(await state("#off"));
 });
 
-test("disables decorative preset motion when reduced motion is requested", async ({ page }) => {
+test("disables decorative motion while retaining reduced-motion loading feedback", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.setContent(`
         <style>${bloomCss}</style>
@@ -580,8 +580,9 @@ test("disables decorative preset motion when reduced motion is requested", async
     await expect(page.locator("#menu")).toHaveCSS("transition-duration", "0s");
     await expect(page.locator("#modal")).toHaveCSS("transition-duration", "0s");
     await expect(page.locator("#skeleton")).toHaveCSS("animation-name", "none");
-    await expect(page.locator("#spinner")).toHaveCSS("animation-name", "none");
-    await expect(page.locator("#pagination-spinner")).toHaveCSS("animation-name", "none");
+    await expect(page.locator("#spinner")).toHaveCSS("animation-name", "hotwire-status-pulse");
+    await expect(page.locator("#spinner")).toHaveCSS("animation-duration", "2s");
+    await expect(page.locator("#pagination-spinner")).toHaveCSS("animation-name", "hotwire-status-pulse");
     await expect(page.locator("#progress")).toHaveCSS("transition-duration", "0s");
     await expect(page.locator("#carousel-progress")).toHaveCSS("transition-duration", "0s");
 });

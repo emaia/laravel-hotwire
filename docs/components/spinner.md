@@ -9,7 +9,8 @@ Loading indicator for pending UI states. Pure HTML/CSS, no JavaScript.
 ```
 
 The component renders an accessible SVG status indicator with `data-slot="spinner"`, `role="status"` and
-`aria-label="Loading"`.
+`aria-label="Loading"`. When `prefers-reduced-motion: reduce` is active, the rotating animation becomes a slow opacity
+pulse. Application CSS can disable that pulse by overriding `animation` on the slot.
 
 ## Size
 

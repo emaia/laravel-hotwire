@@ -37,7 +37,7 @@ class InstallCommand extends Command
 
     private const string CSS_STUB_RELATIVE = 'css/app.css';
 
-    private const string CSS_PRESET_MARKER = '/* Presets: keep exactly one import active. Nova is the default. */';
+    private const string CSS_PRESET_MARKER = '/* Presets: keep exactly one import active. */';
 
     private const string CSS_APP_MARKER = '/* Your app CSS below: override tokens, add components, or extend a preset. */';
 

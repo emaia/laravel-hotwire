@@ -21,7 +21,7 @@ official choices visible beside it:
 ```css
 @import "tailwindcss";
 
-/* Presets: keep exactly one import active. Nova is the default. */
+/* Presets: keep exactly one import active. */
 @import '../../vendor/emaia/laravel-hotwire/resources/css/presets/nova.css';
 /* @import '../../vendor/emaia/laravel-hotwire/resources/css/presets/bloom.css'; */
 ```
