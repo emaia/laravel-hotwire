@@ -18,6 +18,7 @@ final readonly class ComponentDefinition
         public Styling $styling = new Styling,
     ) {}
 
+    /** Build the documented short Blade tag for the given prefix. */
     public function tag(string $prefix): string
     {
         return "<{$prefix}:{$this->key}>";

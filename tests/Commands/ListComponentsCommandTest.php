@@ -47,12 +47,23 @@ it('shows blade tags respecting custom prefix', function () {
         ->assertSuccessful();
 });
 
-it('labels component names and blade tags consistently', function () {
+it('keeps component names and blade tags aligned with the docs listing', function () {
     Artisan::call('hotwire:components');
-    $output = Artisan::output();
+    $componentsOutput = Artisan::output();
 
-    expect($output)->toContain('| Name')
-        ->and($output)->toContain('Blade Tag');
+    Artisan::call('hotwire:docs', ['--list' => true, '--component' => true]);
+    $docsOutput = Artisan::output();
+
+    preg_match_all('/^\|\s*(?<name>[^|]+?)\s*\|\s*(?<tag><hw:[^>]+>)\s*\|/m', $componentsOutput, $components);
+    preg_match_all('/^\|\s*Component\s*\|\s*(?<name>[^|]+?)\s*\|\s*(?<tag><hw:[^>]+>)\s*\|/m', $docsOutput, $docs);
+
+    $componentPairs = array_combine(array_map('trim', $components['name']), $components['tag']);
+    $docsPairs = array_combine(array_map('trim', $docs['name']), $docs['tag']);
+    ksort($componentPairs);
+    ksort($docsPairs);
+
+    expect($componentPairs)->toHaveKey('Toast', '<hw:toast>')
+        ->and($componentPairs)->toBe($docsPairs);
 });
 
 it('shows stimulus controller identifiers', function () {

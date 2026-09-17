@@ -10,8 +10,8 @@ function docsListRows(bool $includeControllers, bool $includeComponents): array
     $categoryOrder = array_flip(array_map(fn (Category $category) => $category->value, Category::cases()));
 
     usort($entries, function (array $a, array $b) use ($categoryOrder): int {
-        return [$categoryOrder[$a['category']], $a['type'], $a['type'] === 'component' ? $a['tags'][0] : $a['key']]
-            <=> [$categoryOrder[$b['category']], $b['type'], $b['type'] === 'component' ? $b['tags'][0] : $b['key']];
+        return [$categoryOrder[$a['category']], $a['type'], $a['type'] === 'component' ? $a['title'] : $a['key']]
+            <=> [$categoryOrder[$b['category']], $b['type'], $b['type'] === 'component' ? $b['title'] : $b['key']];
     });
 
     return array_map(fn (array $entry) => [
@@ -149,6 +149,19 @@ it('lists only components with --list --component', function () {
     $this->artisan('hotwire:docs --list --component')
         ->expectsTable(['Type', 'Name', 'Blade Tag', 'Category', 'Description'], docsListRows(false, true))
         ->assertSuccessful();
+});
+
+it('orders component rows by their displayed name', function () {
+    Artisan::call('hotwire:docs --list --component');
+    $output = Artisan::output();
+
+    preg_match('/^\|\s*Component\s*\|\s*Button\s*\|/m', $output, $button, PREG_OFFSET_CAPTURE);
+    preg_match('/^\|\s*Component\s*\|\s*Button Group\s*\|/m', $output, $buttonGroup, PREG_OFFSET_CAPTURE);
+    preg_match('/^\|\s*Component\s*\|\s*Reveal\s*\|/m', $output, $reveal, PREG_OFFSET_CAPTURE);
+    preg_match('/^\|\s*Component\s*\|\s*Reveal Item\s*\|/m', $output, $revealItem, PREG_OFFSET_CAPTURE);
+
+    expect($button[0][1])->toBeLessThan($buttonGroup[0][1])
+        ->and($reveal[0][1])->toBeLessThan($revealItem[0][1]);
 });
 
 it('lists configured and permanent component aliases', function () {

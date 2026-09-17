@@ -283,11 +283,11 @@ class DocsCommand extends Command
             return [
                 $categoryOrder[$a['category']],
                 $a['type'],
-                $a['type'] === 'component' ? $a['tags'][0] : $a['key'],
+                $a['type'] === 'component' ? $a['title'] : $a['key'],
             ] <=> [
                 $categoryOrder[$b['category']],
                 $b['type'],
-                $b['type'] === 'component' ? $b['tags'][0] : $b['key'],
+                $b['type'] === 'component' ? $b['title'] : $b['key'],
             ];
         });
 
