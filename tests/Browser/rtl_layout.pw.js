@@ -61,39 +61,76 @@ test("centered toasts remain centered in RTL", async ({ page }) => {
 });
 
 for (const direction of ["ltr", "rtl"]) {
-    test(`connected controls follow inline order in ${direction.toUpperCase()}`, async ({ page }) => {
+    test(`connected button groups preserve segment borders in ${direction.toUpperCase()}`, async ({ page }) => {
         await page.setContent(`
             <style>${presetCss}</style>
-            <div dir="${direction}" data-slot="button-group" data-orientation="horizontal">
-                <button id="first" data-slot="button" data-size="default" data-variant="outline">First</button>
-                <button id="last" data-slot="button" data-size="default" data-variant="outline">Last</button>
+            <div id="leading" dir="${direction}" data-slot="button-group" data-orientation="horizontal">
+                <button id="leading-current" data-slot="button" data-size="default" data-variant="default" aria-current="page">Current</button>
+                <button data-slot="button" data-size="default" data-variant="outline">Other</button>
+            </div>
+            <div id="trailing" dir="${direction}" data-slot="button-group" data-orientation="horizontal">
+                <button data-slot="button" data-size="default" data-variant="outline">Other</button>
+                <button id="trailing-current" data-slot="button" data-size="default" data-variant="default" aria-current="page">Current</button>
+            </div>
+            <div id="vertical" dir="${direction}" data-slot="button-group" data-orientation="vertical">
+                <button data-slot="button" data-size="default" data-variant="outline">Other</button>
+                <button id="vertical-current" data-slot="button" data-size="default" data-variant="default" aria-current="page">Current</button>
             </div>
         `);
 
-        const corners = await page.locator("#first, #last").evaluateAll((buttons) => buttons.map((button) => {
-            const style = getComputedStyle(button);
+        const metrics = async (selector, axis) =>
+            page.locator(selector).evaluate((group, measuredAxis) => {
+                const children = [...group.children];
+                const size = (element) => {
+                    const box = element.getBoundingClientRect();
 
-            return {
-                borderLeftWidth: style.borderLeftWidth,
-                borderRightWidth: style.borderRightWidth,
-                topLeftRadius: style.borderTopLeftRadius,
-                topRightRadius: style.borderTopRightRadius,
-            };
-        }));
+                    return measuredAxis === "horizontal" ? box.width : box.height;
+                };
 
-        if (direction === "ltr") {
-            expect(corners[0].topLeftRadius).not.toBe("0px");
-            expect(corners[0].topRightRadius).toBe("0px");
-            expect(corners[1].borderLeftWidth).toBe("0px");
-            expect(corners[1].topLeftRadius).toBe("0px");
-            expect(corners[1].topRightRadius).not.toBe("0px");
-        } else {
-            expect(corners[0].topLeftRadius).toBe("0px");
-            expect(corners[0].topRightRadius).not.toBe("0px");
-            expect(corners[1].borderRightWidth).toBe("0px");
-            expect(corners[1].topLeftRadius).not.toBe("0px");
-            expect(corners[1].topRightRadius).toBe("0px");
+                return {
+                    groupSize: size(group),
+                    childrenSize: children.reduce((total, child) => total + size(child), 0),
+                    borderWidths: children.flatMap((child) => {
+                        const style = getComputedStyle(child);
+
+                        return [
+                            style.borderTopWidth,
+                            style.borderRightWidth,
+                            style.borderBottomWidth,
+                            style.borderLeftWidth,
+                        ].map(parseFloat);
+                    }),
+                };
+            }, axis);
+
+        for (const [selector, axis] of [
+            ["#leading", "horizontal"],
+            ["#trailing", "horizontal"],
+            ["#vertical", "vertical"],
+        ]) {
+            const group = await metrics(selector, axis);
+
+            expect(group.groupSize, `${selector} overlaps one shared border`).toBeLessThan(group.childrenSize);
+            expect(group.borderWidths, `${selector} removes a segment border`).not.toContain(0);
         }
+
+        for (const selector of ["#leading-current", "#trailing-current", "#vertical-current"]) {
+            await expect(page.locator(selector), `${selector} has a transparent perimeter`).not.toHaveCSS(
+                "border-top-color",
+                "rgba(0, 0, 0, 0)",
+            );
+        }
+
+        await page.locator("#trailing-current").focus();
+        const stacking = await page.locator("#trailing").evaluate((group) =>
+            [...group.children].map((child) => {
+                const zIndex = getComputedStyle(child).zIndex;
+
+                return zIndex === "auto" ? 0 : Number(zIndex);
+            }),
+        );
+
+        expect(stacking[1]).toBeGreaterThan(stacking[0]);
     });
 
     test(`input addons and switch thumbs follow inline direction in ${direction.toUpperCase()}`, async ({ page }) => {
