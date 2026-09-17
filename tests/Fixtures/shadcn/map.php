@@ -14,7 +14,7 @@
 
 return [
     'reference' => [
-        'commit' => 'b6084839ad452b80c026cc11e588281206d49193',
+        'commit' => '424d49395e7b3163386b6f4d9a19e5fec102da1f',
         'upstream' => '3ba91b1cc83e1bbe4ab35a422ff2a694849c5048',
     ],
 
