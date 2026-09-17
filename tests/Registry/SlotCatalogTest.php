@@ -293,24 +293,48 @@ it('keeps Sidebar content overflow mechanics in the structural stylesheet', func
 it('keeps corpus-invariant component mechanics in the structural stylesheet', function (string $preset) {
     $structural = File::get(__DIR__.'/../../resources/css/structural.css');
     $visual = app(CssPresetFiles::class)->source($preset)->visualCss();
+    $structuralDeclarations = fn (string $selector): string => cssDeclarationsForSelector($structural, $selector);
+    $visualUtilities = fn (string $slot): array => cssAppliedUtilitiesForSlot($visual, $slot);
 
-    expect($structural)
-        ->toContain('[data-slot="attachment"]')
-        ->toContain('[data-slot="attachment-trigger"]')
-        ->toContain('[data-slot="attachment-actions"]')
-        ->toContain('[data-slot="table-container"]')
-        ->toContain('[data-slot="sidebar-gap"]')
+    expect($structuralDeclarations('[data-slot="attachment"]'))
+        ->toContain('position: relative')
+        ->and($structuralDeclarations('[data-slot="attachment-trigger"]'))
+        ->toContain('position: absolute')
+        ->toContain('inset: 0')
+        ->toContain('z-index: 10')
+        ->and($structuralDeclarations('[data-slot="attachment-actions"]'))
+        ->toContain('position: relative')
+        ->toContain('z-index: 20')
+        ->and($structuralDeclarations('[data-slot="table-container"]'))
+        ->toContain('width: 100%')
+        ->toContain('overflow-x: auto')
+        ->and($structuralDeclarations('[data-slot="sidebar-gap"]'))
         ->toContain('width: var(--sidebar-width)')
-        ->toContain('width: var(--sidebar-width-icon)')
-        ->toContain('width: calc(var(--sidebar-width-icon) + 1rem)')
-        ->and($visual)
-        ->not->toContain('[data-slot="attachment"] { @apply relative')
-        ->not->toContain('[data-slot="attachment-actions"] { @apply relative z-20')
-        ->not->toContain('[data-slot="attachment-trigger"] { @apply absolute')
-        ->not->toContain('[data-slot="table-container"] { @apply relative w-full overflow-x-auto')
-        ->not->toContain('[data-slot="sidebar-gap"] { @apply relative w-(--sidebar-width)')
-        ->not->toContain('[data-slot="sidebar"][data-collapsible="offcanvas"] [data-slot="sidebar-gap"]')
-        ->not->toContain('[data-slot="sidebar"][data-mobile-state] > [data-slot="sidebar-gap"]');
+        ->and($visualUtilities('attachment'))
+        ->not->toContain('relative')
+        ->and($visualUtilities('attachment-actions'))
+        ->not->toContain('relative', 'z-20')
+        ->and($visualUtilities('attachment-trigger'))
+        ->not->toContain('absolute', 'inset-0', 'z-10')
+        ->and($visualUtilities('table-container'))
+        ->toContain('relative')
+        ->not->toContain('w-full', 'overflow-x-auto')
+        ->and($visualUtilities('sidebar-gap'))
+        ->not->toContain('w-(--sidebar-width)', 'w-0', 'md:w-(--sidebar-width-icon)', 'hidden')
+        ->and($visualUtilities('sidebar-container'))
+        ->not->toContain(
+            'w-(--sidebar-width)',
+            'md:w-(--sidebar-width-icon)',
+            'md:w-[calc(var(--sidebar-width-icon)+1rem+2px)]',
+            'data-[side=left]:left-0',
+            'data-[side=right]:right-0',
+            'left-[calc(var(--sidebar-width)*-1)]',
+            'right-[calc(var(--sidebar-width)*-1)]',
+        )
+        ->and(cssChainsForSelector($structural, '[data-slot="attachment"]'))
+        ->toContain('@layer components')
+        ->and(cssChainsForSelector($structural, '[data-slot="sidebar-gap"]'))
+        ->toContain('@layer components');
 })->with('slot catalog presets');
 
 it('stops Sidebar icon mode rules at nested providers', function (string $preset) {
@@ -558,6 +582,70 @@ function registryAuditController(array $slots): array
         'category' => 'utility',
         'styling' => ['slots' => $slots],
     ];
+}
+
+function cssDeclarationsForSelector(string $css, string $expected): string
+{
+    $rules = new CssRules;
+    $declarations = [];
+
+    foreach ($rules->parse($rules->stripComments($css)) as $rule) {
+        $selector = trim((string) end($rule['chain']));
+
+        if ($selector === $expected) {
+            $declarations[] = $rule['declarations'];
+        }
+    }
+
+    return implode("\n", $declarations);
+}
+
+/** @return string[] */
+function cssChainsForSelector(string $css, string $expected): array
+{
+    $rules = new CssRules;
+    $chains = [];
+
+    foreach ($rules->parse($rules->stripComments($css)) as $rule) {
+        $selector = trim((string) end($rule['chain']));
+
+        if ($selector === $expected) {
+            $chains = [...$chains, ...$rule['chain']];
+        }
+    }
+
+    return array_values(array_unique($chains));
+}
+
+/** @return array<string, string[]> */
+function cssAppliedUtilitiesBySelector(string $css): array
+{
+    $rules = new CssRules;
+    $utilities = [];
+
+    foreach ($rules->parse($rules->stripComments($css)) as $rule) {
+        $selector = trim((string) end($rule['chain']));
+        preg_match_all('/@apply\s+([^;}]+)/s', $rule['declarations'], $matches);
+
+        foreach ($matches[1] as $application) {
+            $utilities[$selector] = [
+                ...($utilities[$selector] ?? []),
+                ...(preg_split('/\s+/', trim($application)) ?: []),
+            ];
+        }
+    }
+
+    return $utilities;
+}
+
+/** @return string[] */
+function cssAppliedUtilitiesForSlot(string $css, string $slot): array
+{
+    return collect(cssAppliedUtilitiesBySelector($css))
+        ->filter(fn (array $utilities, string $selector): bool => str_contains($selector, '[data-slot="'.$slot.'"]'))
+        ->flatten()
+        ->values()
+        ->all();
 }
 
 /** @return string[] */
