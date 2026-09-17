@@ -30,12 +30,12 @@ it('lists all registered components', function () {
 
 it('shows blade tags with current prefix', function () {
     $this->artisan('hotwire:components')
-        ->expectsOutputToContain('<x-hw::modal>')
-        ->expectsOutputToContain('<x-hw::alert-dialog>')
-        ->expectsOutputToContain('<x-hw::field.group>')
-        ->expectsOutputToContain('<x-hw::toast>')
-        ->expectsOutputToContain('<x-hw::spinner>')
-        ->expectsOutputToContain('<x-hw::scroll-progress>')
+        ->expectsOutputToContain('<hw:modal>')
+        ->expectsOutputToContain('<hw:alert-dialog>')
+        ->expectsOutputToContain('<hw:field.group>')
+        ->expectsOutputToContain('<hw:toast>')
+        ->expectsOutputToContain('<hw:spinner>')
+        ->expectsOutputToContain('<hw:scroll-progress>')
         ->assertSuccessful();
 });
 
@@ -43,8 +43,16 @@ it('shows blade tags respecting custom prefix', function () {
     config()->set('hotwire.prefix', 'h');
 
     $this->artisan('hotwire:components')
-        ->expectsOutputToContain('<x-h::modal>, <x-hw::modal>')
+        ->expectsOutputToContain('<h:modal>, <hw:modal>')
         ->assertSuccessful();
+});
+
+it('labels component names and blade tags consistently', function () {
+    Artisan::call('hotwire:components');
+    $output = Artisan::output();
+
+    expect($output)->toContain('| Name')
+        ->and($output)->toContain('Blade Tag');
 });
 
 it('shows stimulus controller identifiers', function () {

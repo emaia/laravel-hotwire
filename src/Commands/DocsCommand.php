@@ -259,13 +259,14 @@ class DocsCommand extends Command
         $rows = array_map(function (array $entry): array {
             return [
                 ucfirst($entry['type']),
-                $entry['type'] === 'component' ? implode(', ', $entry['tags']) : $entry['key'],
+                $entry['type'] === 'component' ? $entry['title'] : $entry['key'],
+                $entry['type'] === 'component' ? implode(', ', $entry['tags']) : '—',
                 $entry['category'],
                 $entry['description'],
             ];
         }, $this->sortListEntries($entries));
 
-        $this->table(['Type', 'Name', 'Category', 'Description'], $rows);
+        $this->table(['Type', 'Name', 'Blade Tag', 'Category', 'Description'], $rows);
 
         return self::SUCCESS;
     }

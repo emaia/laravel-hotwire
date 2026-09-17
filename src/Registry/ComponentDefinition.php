@@ -20,7 +20,7 @@ final readonly class ComponentDefinition
 
     public function tag(string $prefix): string
     {
-        return "<x-{$prefix}::{$this->key}>";
+        return "<{$prefix}:{$this->key}>";
     }
 
     /**
