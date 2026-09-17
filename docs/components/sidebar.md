@@ -157,7 +157,7 @@ geometry deliberately provides no fallback for them, so an incomplete preset can
 | `--sidebar-width-mobile` | Provider `mobileWidth` prop | Mobile drawer width. |
 | `--sidebar-width-icon` | Provider `iconWidth` prop | Collapsed icon rail width. |
 | `--sidebar-floating-inset` | `0.5rem` | Padding on each inline side of floating/inset containers; set by the preset. |
-| `--sidebar-floating-edge` | `2px` | Total extra inline width for the preset's floating/inset edge treatment. |
+| `--sidebar-floating-edge` | `0px` | Total inline border contribution: use `2px` for two 1px borders, but `0px` for rings and shadows. |
 
 ### Reveal integration
 

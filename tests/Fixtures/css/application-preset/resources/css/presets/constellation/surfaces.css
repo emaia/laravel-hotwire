@@ -1,4 +1,9 @@
 @layer components {
+    [data-slot="fixture-panel"] {
+        --fixture-panel-inset: 0rem;
+        --fixture-panel-edge: 0px;
+    }
+
     :where([data-slot="fixture-panel"], [data-slot="fixture-action"]) {
         @apply border-border bg-background text-foreground border;
     }

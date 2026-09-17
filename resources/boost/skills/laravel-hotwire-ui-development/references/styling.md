@@ -52,7 +52,7 @@ so an open nested overlay does not visually reopen its parent.
 ## Choosing the workflow
 
 - Override only colors/radius: change semantic tokens after the preset import.
-- Start a visual system without inheriting a shipped preset, with empty base rules as an anatomy checklist:
+- Start a visual system without inheriting a shipped preset, with neutral base rules as an anatomy checklist:
   `php artisan hotwire:make-preset brand`.
 - Customize Nova's complete selector structure: `php artisan hotwire:make-preset brand --from=nova`.
 - Customize Bloom's complete selector structure: `php artisan hotwire:make-preset brand --from=bloom`.
@@ -64,8 +64,8 @@ Scaffolds and clones are application-owned snapshots. Compare a fresh temporary 
 relevant slot, preset-base and contract changes manually. `--force` replaces the target; it does not merge. Keep the live
 package `foundation.css` import so shared foundation topology changes flow through automatically, and validate with
 `php artisan hotwire:check --preset=brand --no-interaction`. Then run the application production build and smoke-test the
-result. Static validation catches import, foundation and slot-contract errors; it does not compile Tailwind utilities or
-prove visual, state or accessibility behavior.
+result. Static validation catches import, foundation, slot and required-property contract errors; it does not compile
+Tailwind utilities or prove visual, state or accessibility behavior.
 
 Never edit generated selective bundles. Regenerate them from the command and keep custom rules in separate application
 stylesheets.

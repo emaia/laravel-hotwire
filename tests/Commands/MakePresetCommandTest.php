@@ -30,7 +30,7 @@ it('scaffolds every visual catalog slot once without structural slots', function
         ->flatMap(fn ($definition): array => $definition->styling->structuralSlots())
         ->unique()
         ->values();
-    preg_match_all('/^\s*\[data-slot="([a-z0-9-]+)"\] \{\}$/m', $css, $rules);
+    preg_match_all('/^\s*\[data-slot="([a-z0-9-]+)"\]\s*\{/m', $css, $rules);
 
     expect(File::exists($path))->toBeTrue()
         ->and($css)->toContain('@import "../../../vendor/emaia/laravel-hotwire/resources/css/foundation.css";')
@@ -40,6 +40,7 @@ it('scaffolds every visual catalog slot once without structural slots', function
         ->and($css)->toContain('/* Accordion */')
         ->and($css)->toContain('/* Tooltip */')
         ->and($rules[1])->toEqualCanonicalizing($visualSlots)
+        ->and($css)->toContain("    [data-slot=\"sidebar\"] {\n        --sidebar-floating-inset: 0rem;\n        --sidebar-floating-edge: 0px;\n    }")
         ->and($css)->toEndWith("\n");
 
     foreach ($structuralSlots as $slot) {

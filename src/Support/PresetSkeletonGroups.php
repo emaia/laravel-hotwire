@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Support;
 
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
+use RuntimeException;
 
 /** @internal */
 final class PresetSkeletonGroups
@@ -10,7 +11,7 @@ final class PresetSkeletonGroups
     /**
      * Project registry slots into ordered groups for a preset scaffold.
      *
-     * @return list<array{id: string, label: string, slots: list<string>}>
+     * @return list<array{id: string, label: string, slots: list<string>, properties?: array<string, array<string, string>>}>
      */
     public function project(HotwireRegistry $registry): array
     {
@@ -19,6 +20,7 @@ final class PresetSkeletonGroups
         $componentGroups = [];
         $controllerGroups = [];
         $ownerGroups = [];
+        $slotGroups = [];
 
         foreach ($components as $key => $component) {
             $componentGroups[$key] = count($groups);
@@ -58,6 +60,16 @@ final class PresetSkeletonGroups
 
                     if ($this->firstOccurrence($seen, $slot)) {
                         $groups[$group]['slots'][] = $slot;
+                        $slotGroups[$slot] = $group;
+                    }
+
+                    if (($properties = $component->styling->presetPropertiesFor($slot)) !== []) {
+                        $target = $slotGroups[$slot];
+                        $groups[$target]['properties'][$slot] = $this->mergeProperties(
+                            $groups[$target]['properties'][$slot] ?? [],
+                            $slot,
+                            $properties,
+                        );
                     }
                 }
             }
@@ -67,6 +79,16 @@ final class PresetSkeletonGroups
             foreach ($controller->styling->visualSlots() as $slot) {
                 if ($this->firstOccurrence($seen, $slot)) {
                     $groups[$controllerGroups[$identifier]]['slots'][] = $slot;
+                    $slotGroups[$slot] = $controllerGroups[$identifier];
+                }
+
+                if (($properties = $controller->styling->presetPropertiesFor($slot)) !== []) {
+                    $target = $slotGroups[$slot];
+                    $groups[$target]['properties'][$slot] = $this->mergeProperties(
+                        $groups[$target]['properties'][$slot] ?? [],
+                        $slot,
+                        $properties,
+                    );
                 }
             }
         }
@@ -95,5 +117,25 @@ final class PresetSkeletonGroups
         $seen[$slot] = true;
 
         return true;
+    }
+
+    /**
+     * @param  array<string, string>  $existing
+     * @param  array<string, string>  $properties
+     * @return array<string, string>
+     */
+    private function mergeProperties(array $existing, string $slot, array $properties): array
+    {
+        foreach ($properties as $property => $value) {
+            $current = $existing[$property] ?? null;
+
+            if ($current !== null && $current !== $value) {
+                throw new RuntimeException("Conflicting preset property defaults for [{$slot}] [{$property}].");
+            }
+
+            $existing[$property] = $value;
+        }
+
+        return $existing;
     }
 }

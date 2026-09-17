@@ -336,7 +336,7 @@ test("structural table overflow and Sidebar gap geometry work without a visual p
     await page.locator("#sidebar").evaluate((sidebar) => {
         sidebar.dataset.variant = "floating";
     });
-    await expect(page.locator("#sidebar-gap")).not.toHaveCSS("width", "64px");
+    await expect(page.locator("#sidebar-gap")).toHaveCSS("width", "1024px");
 
     await page.locator("#sidebar").evaluate((sidebar) => {
         sidebar.style.setProperty("--sidebar-floating-inset", "8px");
@@ -384,7 +384,7 @@ test("compiled presets preserve shared Attachment and Sidebar mechanics", async 
 
     await expect(page.locator("#sidebar-gap")).toHaveCSS("width", "72px");
     await expect(page.locator("#sidebar-gap")).toHaveCSS("transition-property", "width");
-    await expect(page.locator("#sidebar-container")).toHaveCSS("width", "74px");
+    await expect(page.locator("#sidebar-container")).toHaveCSS("width", "72px");
     await expect(page.locator("#sidebar-container")).toHaveCSS("padding-left", "12px");
 
     await page.locator("#sidebar").evaluate((sidebar) => {

@@ -154,7 +154,7 @@ it('ships first-paint mechanics separately from preset motion', function () {
         ->and($nova)
         ->toContain('--reveal-blur: 6px')
         ->toContain('--reveal-shift: 0.75rem')
-        ->toContain('@media (min-width: 768px)')
+        ->toContain('@media (width >= 48rem)')
         ->toContain('[data-slot="sidebar"][data-collapsible="icon"] [data-slot="sidebar-group-label"][data-reveal-item]')
         ->toContain('[data-slot="sidebar"][data-collapsible="icon"] [data-reveal-children] > [data-slot="sidebar-group-label"]')
         ->toContain('--reveal-animation: none')

@@ -104,11 +104,11 @@ For a registry-derived custom preset without a shipped preset's selector choices
 php artisan hotwire:make-preset brand
 ```
 
-This emits empty base rules for visual slots: it is an anatomy checklist, not a styled preset. Add `--from=nova` or
-`--from=bloom` only when that preset's full current structure is the intended starting point. Either output is an
-application-owned snapshot: package upgrades do not merge copied visual rules or preset-base changes, and `--force`
-replaces the target file. The live `foundation.css` facade carries shared foundation topology changes without modifying
-the snapshot.
+This emits neutral base rules for visual slots, including required custom-property defaults: it is an anatomy checklist,
+not a styled preset. Add `--from=nova` or `--from=bloom` only when that preset's full current structure is the intended
+starting point. Either output is an application-owned snapshot: package upgrades do not merge copied visual rules or
+preset-base changes, and `--force` replaces the target file. The live `foundation.css` facade carries shared foundation
+topology changes without modifying the snapshot.
 
 For a selective bundle:
 

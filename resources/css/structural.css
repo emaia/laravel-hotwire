@@ -8,7 +8,8 @@
  * Every preset imports this file, so the rules compile into the application stylesheet and hold on
  * the first paint. Shipping them from a controller import instead would leave the geometry to land
  * only once the bundle had run, and leaving them in a preset would mean every new preset had to
- * rediscover them — `hotwire:make-preset` scaffolds preset rules as empty bodies.
+ * rediscover them — `hotwire:make-preset` scaffolds only visual slots and their required neutral
+ * custom properties.
  */
 
 /* Utilities applied at runtime from strings Tailwind cannot see: `hidden` is toggled by
@@ -171,7 +172,7 @@
         right: calc(var(--sidebar-width) * -1);
     }
 
-    @media (min-width: 48rem) {
+    @media (width >= 48rem) {
         @scope ([data-slot="sidebar"][data-collapsible="icon"]) to ([data-slot="sidebar-wrapper"]) {
             :where(:scope[data-slot="sidebar"][data-variant="sidebar"][data-collapsible="icon"] [data-slot="sidebar-gap"]),
             :where(:scope[data-slot="sidebar"][data-variant="sidebar"][data-collapsible="icon"] [data-slot="sidebar-container"]) {
@@ -190,7 +191,7 @@
         }
     }
 
-    @media (max-width: 47.999rem) {
+    @media (width < 48rem) {
         :where([data-slot="sidebar"][data-mobile-state] > [data-slot="sidebar-gap"]) {
             display: none;
         }
@@ -205,7 +206,7 @@
     overflow: auto;
 }
 
-@media (min-width: 48rem) {
+@media (width >= 48rem) {
     @scope ([data-slot="sidebar"][data-collapsible="icon"]) to ([data-slot="sidebar-wrapper"]) {
         :where(:scope)[data-slot="sidebar"][data-collapsible="icon"] [data-slot="sidebar-content"] {
             overflow-x: hidden;

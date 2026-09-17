@@ -856,15 +856,27 @@ it('uses physical inline CSS only for documented physical contracts', function (
         ->reject(fn (array $occurrence): bool => in_array($occurrence, $physical, true))
         ->values()
         ->all();
-    $structuralPhysical = collect(physicalInlineDeclarations($structural))
-        ->filter(fn (array $occurrence): bool => str_contains($occurrence['selector'], '[data-slot="sidebar'))
-        ->values()
-        ->all();
+    $structuralPhysical = physicalInlineDeclarations($structural);
     $structuralAllowed = [
         ':where([data-slot="sidebar-container"][data-side="left"])' => ['left: 0'],
         ':where([data-slot="sidebar-container"][data-side="right"])' => ['right: 0'],
         ':where([data-slot="sidebar"][data-collapsible="offcanvas"] [data-slot="sidebar-container"][data-side="left"])' => ['left: calc(var(--sidebar-width) * -1)'],
         ':where([data-slot="sidebar"][data-collapsible="offcanvas"] [data-slot="sidebar-container"][data-side="right"])' => ['right: calc(var(--sidebar-width) * -1)'],
+        '[data-slot="side-panel-trigger"]' => [
+            'left: var(--side-panel-trigger-left)',
+            'right: var(--side-panel-trigger-right)',
+            'transform: translateX(var(--side-panel-trigger-shift))',
+        ],
+        '[data-slot="side-panel"][data-side="left"]::before' => [
+            'left: var(--side-panel-rail-position)',
+            'transform: translateX(-50%)',
+        ],
+        '[data-slot="side-panel"][data-side="right"]::before' => [
+            'right: var(--side-panel-rail-position)',
+            'transform: translateX(50%)',
+        ],
+        '[data-slot="toast"][data-position$="-center"]' => ['translate: -50% 0'],
+        '[data-slot="toast"][data-position$="-center"]:where(:dir(rtl), [dir="rtl"], [dir="rtl"] *)' => ['translate: 50% 0'],
     ];
     $unexpectedStructural = collect($structuralPhysical)
         ->reject(fn (array $occurrence): bool => in_array(

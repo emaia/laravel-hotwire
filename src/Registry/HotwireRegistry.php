@@ -54,7 +54,11 @@ final class HotwireRegistry
     {
         $resolved = ComponentSlotResolver::resolve($styling['slots'] ?? []);
 
-        return new Styling(slots: $resolved['slots'], slotOwners: $resolved['owners']);
+        return new Styling(
+            slots: $resolved['slots'],
+            slotOwners: $resolved['owners'],
+            presetProperties: $styling['preset_properties'] ?? [],
+        );
     }
 
     /** @param  array{components: array<string, array<string, mixed>>, controllers: array<string, array<string, mixed>>}  $catalog */

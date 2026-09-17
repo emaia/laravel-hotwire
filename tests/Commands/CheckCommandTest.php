@@ -45,7 +45,8 @@ function writeCompleteApplicationPreset(string $name = 'brand'): string
 {
     shippedPresetImportPath();
     $registry = HotwireRegistry::make();
-    $slots = collect([...array_values($registry->components()), ...array_values($registry->controllers())])
+    $definitions = [...array_values($registry->components()), ...array_values($registry->controllers())];
+    $slots = collect($definitions)
         ->flatMap(fn ($definition): array => $definition->styling->visualSlots())
         ->unique()
         ->sort()
@@ -55,12 +56,26 @@ function writeCompleteApplicationPreset(string $name = 'brand'): string
         fn (string $slot): string => "[data-slot=\"{$slot}\"]",
         $slots,
     ));
+    $propertyRules = [];
+
+    foreach ($definitions as $definition) {
+        foreach ($definition->styling->presetProperties() as $slot => $properties) {
+            $declarations = implode(' ', array_map(
+                fn (string $value, string $property): string => "{$property}: {$value};",
+                $properties,
+                array_keys($properties),
+            ));
+            $propertyRules[] = "[data-slot=\"{$slot}\"] { {$declarations} }";
+        }
+    }
+
     $path = resource_path("css/presets/{$name}.css");
     File::ensureDirectoryExists(dirname($path));
     File::put($path, implode("\n", [
         '@import "../../../vendor/emaia/laravel-hotwire/resources/css/foundation.css";',
         '',
         $selectors.' { color: var(--foreground); }',
+        ...$propertyRules,
         '',
     ]));
 
@@ -419,6 +434,15 @@ it('fails when an imported application preset omits required visual slots', func
 
     $this->artisan('hotwire:check --no-interaction')
         ->expectsOutputToContain('resources/css/presets/brand.css  missing visual slots')
+        ->assertFailed();
+});
+
+it('fails when a complete application preset omits a required preset property', function () {
+    $path = writeCompleteApplicationPreset();
+    File::put($path, str_replace('--sidebar-floating-edge: 0px;', '', File::get($path)));
+
+    $this->artisan('hotwire:check', ['--preset' => ['brand'], '--no-interaction' => true])
+        ->expectsOutputToContain('missing required preset property [--sidebar-floating-edge] on [data-slot="sidebar"]')
         ->assertFailed();
 });
 

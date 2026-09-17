@@ -119,7 +119,9 @@ application rules can deliberately replace them. Sidebar keeps each coupled pair
 structural CSS owns zero-specificity gap/container widths and offcanvas offsets, while presets set
 `--sidebar-floating-inset` and `--sidebar-floating-edge` for their visual padding and edge treatment. `@scope` still
 isolates icon geometry from nested providers and participates in cascade proximity ties; wrapping the complete geometry
-selectors in `:where()` avoids relying on such a tie. Nova and Bloom still choose transition timing and easing.
+selectors in `:where()` avoids relying on such a tie. Attachment and Table need no zero-specificity wrapper because
+their simple structural rules already tie a simple slotted application override, which wins by source order. Nova and
+Bloom still choose transition timing and easing.
 
 ## Upstream corpus map
 

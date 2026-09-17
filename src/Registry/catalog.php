@@ -1008,6 +1008,12 @@ return [
                 'slots' => [
                     ['class' => Sidebar::class],
                 ],
+                'preset_properties' => [
+                    'sidebar' => [
+                        '--sidebar-floating-inset' => '0rem',
+                        '--sidebar-floating-edge' => '0px',
+                    ],
+                ],
             ],
         ],
         'skeleton' => [

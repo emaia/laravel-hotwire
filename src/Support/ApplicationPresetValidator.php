@@ -262,10 +262,18 @@ final readonly class ApplicationPresetValidator
         $definitions = [...array_values($registry->components()), ...array_values($registry->controllers())];
         $required = [];
         $declared = [];
+        $requiredProperties = [];
 
         foreach ($definitions as $definition) {
             $required = [...$required, ...$definition->styling->visualSlots()];
             $declared = [...$declared, ...array_keys($definition->styling->slots)];
+
+            foreach ($definition->styling->presetProperties() as $slot => $properties) {
+                $requiredProperties[$slot] = [
+                    ...($requiredProperties[$slot] ?? []),
+                    ...array_keys($properties),
+                ];
+            }
         }
 
         $required = array_values(array_unique($required));
@@ -290,6 +298,16 @@ final readonly class ApplicationPresetValidator
 
         if ($unknown !== []) {
             $errors[] = "Preset [{$name}] references undeclared slots: ".implode(', ', $unknown).'.';
+        }
+
+        foreach ($requiredProperties as $slot => $properties) {
+            $present = $this->slots->customPropertiesFor($css, $slot);
+
+            foreach (array_unique($properties) as $property) {
+                if (! in_array($property, $present, true) && ! in_array($slot, $unvisitedSlots, true)) {
+                    $errors[] = "Preset [{$name}] is missing required preset property [{$property}] on [data-slot=\"{$slot}\"].";
+                }
+            }
         }
 
         return [
