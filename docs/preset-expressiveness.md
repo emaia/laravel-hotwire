@@ -93,6 +93,28 @@ The corpus found no preset-expressiveness blocker in the Alert contract. Sera's 
 destructive treatment remains a variant. The later authoring review added `alert.icon` so the family owns icon layout
 without requiring third-party graphics to emit the generic Icon slot.
 
+### Structural boundary audit
+
+Byte-identical declarations across all eight styles are evidence of a shared convention, not proof that a rule is
+structural. The decisive test remains whether removing the rule breaks component mechanics or only changes appearance.
+Applying that test to the eight corpus-invariant candidates produced these decisions:
+
+| Slot | Decision | Reason |
+| --- | --- | --- |
+| `attachment-trigger` | Split ownership | Full-card positioning and stacking are structural; suppressing the native outline remains preset-owned focus treatment. |
+| `attachment-actions` | Split ownership | Actions must stack above the full-card trigger, while their flex composition, placement, offsets and gaps remain visual. |
+| `table-container` | Split ownership | Full-width horizontal overflow implements the documented responsive wrapper; positioning and the Bloom surface remain visual. |
+| `table-body` | Visual | Removing the final row divider is edge treatment, not table mechanics. |
+| `table-header` | Visual | A row divider distinguishes the header visually; native `thead` semantics do not depend on it. |
+| `sidebar-gap` | Split ownership | Width follows desktop collapse state structurally, but transition timing and easing remain preset-owned motion. |
+| `item-media` | Visual | Sizing, crop, radius, gap and alignment are all legitimate preset choices. |
+| `marker-content` | Visual | Wrapping, link decoration and separator composition change presentation without breaking behavior. |
+
+All eight slots remain `visual` in the registry. The four split slots still have declaration-bearing preset
+participation, while `structural.css` owns only their invariant mechanics. In particular, the Sidebar decision preserves
+the existing motion boundary: structural CSS selects the width that changes, but Nova and Bloom continue to choose the
+transition timing and easing.
+
 ## Upstream corpus map
 
 The family findings above are prose. [`tests/Fixtures/shadcn`](../tests/Fixtures/shadcn) turns the same comparison into

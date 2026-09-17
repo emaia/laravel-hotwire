@@ -290,6 +290,29 @@ it('keeps Sidebar content overflow mechanics in the structural stylesheet', func
         ->not->toContain('md:overflow-hidden');
 })->with('slot catalog presets');
 
+it('keeps corpus-invariant component mechanics in the structural stylesheet', function (string $preset) {
+    $structural = File::get(__DIR__.'/../../resources/css/structural.css');
+    $visual = app(CssPresetFiles::class)->source($preset)->visualCss();
+
+    expect($structural)
+        ->toContain('[data-slot="attachment"]')
+        ->toContain('[data-slot="attachment-trigger"]')
+        ->toContain('[data-slot="attachment-actions"]')
+        ->toContain('[data-slot="table-container"]')
+        ->toContain('[data-slot="sidebar-gap"]')
+        ->toContain('width: var(--sidebar-width)')
+        ->toContain('width: var(--sidebar-width-icon)')
+        ->toContain('width: calc(var(--sidebar-width-icon) + 1rem)')
+        ->and($visual)
+        ->not->toContain('[data-slot="attachment"] { @apply relative')
+        ->not->toContain('[data-slot="attachment-actions"] { @apply relative z-20')
+        ->not->toContain('[data-slot="attachment-trigger"] { @apply absolute')
+        ->not->toContain('[data-slot="table-container"] { @apply relative w-full overflow-x-auto')
+        ->not->toContain('[data-slot="sidebar-gap"] { @apply relative w-(--sidebar-width)')
+        ->not->toContain('[data-slot="sidebar"][data-collapsible="offcanvas"] [data-slot="sidebar-gap"]')
+        ->not->toContain('[data-slot="sidebar"][data-mobile-state] > [data-slot="sidebar-gap"]');
+})->with('slot catalog presets');
+
 it('stops Sidebar icon mode rules at nested providers', function (string $preset) {
     $stylesheets = [
         File::get(__DIR__.'/../../resources/css/structural.css'),

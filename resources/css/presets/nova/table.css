@@ -1,6 +1,6 @@
 @layer components {
     /* Table */
-    [data-slot="table-container"] { @apply relative w-full overflow-x-auto; }
+    [data-slot="table-container"] { @apply relative; }
     [data-slot="table"] { @apply w-full caption-bottom text-sm; }
     [data-slot="table-header"] tr { @apply border-b; }
     [data-slot="table-body"] tr:last-child { @apply border-0; }

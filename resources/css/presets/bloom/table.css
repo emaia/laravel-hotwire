@@ -1,6 +1,6 @@
 @layer components {
     /* Table */
-    [data-slot="table-container"] { @apply relative w-full overflow-x-auto rounded-xl border border-border/70 bg-card shadow-sm; }
+    [data-slot="table-container"] { @apply relative rounded-xl border border-border/70 bg-card shadow-sm; }
     [data-slot="table"] { @apply w-full caption-bottom text-sm; }
     [data-slot="table-header"] tr { @apply border-b; }
     [data-slot="table-body"] tr:last-child { @apply border-0; }

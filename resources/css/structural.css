@@ -61,6 +61,35 @@
 }
 
 /*
+ * --- Shared component mechanics ---
+ *
+ * These visual slots also carry preset-invariant layout. Presets still own their focus treatment,
+ * composition, surfaces and motion, while every application inherits the mechanics below.
+ */
+
+@layer components {
+    [data-slot="attachment"] {
+        position: relative;
+    }
+
+    [data-slot="attachment-trigger"] {
+        position: absolute;
+        inset: 0;
+        z-index: 10;
+    }
+
+    [data-slot="attachment-actions"] {
+        position: relative;
+        z-index: 20;
+    }
+
+    [data-slot="table-container"] {
+        width: 100%;
+        overflow-x: auto;
+    }
+}
+
+/*
  * --- Controller-owned first paint ---
  *
  * These states must be correct before lazy controllers connect. Presets can choose composition and
@@ -97,12 +126,42 @@
 }
 
 /*
- * --- Sidebar content scroll ---
+ * --- Sidebar layout ---
+ *
+ * The empty gap reserves the fixed desktop panel's space and follows its collapsed geometry. Motion
+ * remains preset-owned, so different visual systems can choose their own timing and easing.
  *
  * The content column has to yield within the full-height sidebar before it can scroll. Icon mode
  * clips only the horizontal axis so labels leaving during the width transition cannot create a
  * scrollbar while every navigation item remains vertically reachable.
  */
+
+[data-slot="sidebar-gap"] {
+    width: var(--sidebar-width);
+}
+
+[data-slot="sidebar"][data-collapsible="offcanvas"] [data-slot="sidebar-gap"] {
+    width: 0;
+}
+
+@media (min-width: 768px) {
+    @scope ([data-slot="sidebar"][data-collapsible="icon"]) to ([data-slot="sidebar-wrapper"]) {
+        :where(:scope)[data-slot="sidebar"][data-collapsible="icon"] [data-slot="sidebar-gap"] {
+            width: var(--sidebar-width-icon);
+        }
+
+        :where(:scope)[data-slot="sidebar"][data-variant="floating"][data-collapsible="icon"] [data-slot="sidebar-gap"],
+        :where(:scope)[data-slot="sidebar"][data-variant="inset"][data-collapsible="icon"] [data-slot="sidebar-gap"] {
+            width: calc(var(--sidebar-width-icon) + 1rem);
+        }
+    }
+}
+
+@media (max-width: 767px) {
+    [data-slot="sidebar"][data-mobile-state] > [data-slot="sidebar-gap"] {
+        display: none;
+    }
+}
 
 [data-slot="sidebar-content"] {
     display: flex;
