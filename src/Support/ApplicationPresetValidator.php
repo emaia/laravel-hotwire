@@ -69,7 +69,7 @@ final readonly class ApplicationPresetValidator
         $coverage = $this->axes->inspectCoverage($css);
         $unprovenSlots = array_values(array_unique([
             ...$coverage['unvisitedSlots'],
-            ...$this->axes->unprovableScopeSlots($css),
+            ...$coverage['unprovableScopeSlots'],
         ]));
 
         if (! $coverage['complete']) {

@@ -70,7 +70,11 @@ Selectors whose subject is a pseudo-element no longer satisfy visual-slot covera
 such as `[data-slot="alert"]::before` styles the generated pseudo-element, not the Alert element itself. Maintained presets
 that previously relied on such a rule must add a declaration-bearing rule for the slotted element; the pseudo-element can
 remain as a separate decorative rule. When invalid CSS prevents the check from proving a required property, the check now
-warns instead of silently skipping that contract.
+warns instead of silently skipping that contract. The same warning-only behavior applies when invalid CSS prevents the
+check from proving visual-slot coverage. Warnings do not make `hotwire:check` fail, so a preset whose only missing contract
+is hidden inside an unparseable rule can now exit successfully instead of failing CI. Fix the invalid CSS rather than
+depending on that relaxed exit status; CI that treats incomplete analysis as fatal must promote the reported warning in
+its own policy.
 
 ### Blank preset scaffolds are registry-derived
 
