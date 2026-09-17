@@ -115,9 +115,11 @@ participation in both presets. `table-container` remains visual because its posi
 extension point and Bloom gives it a surface. `structural.css` owns only invariant mechanics.
 
 Those shared mechanics live in `@layer components`. They are package defaults, not a cascade lock: later preset or
-application rules with equal or greater specificity can deliberately replace them. Sidebar keeps each coupled pair on
-the same side of that boundary: structural CSS owns gap/container widths and offcanvas offsets, while presets set
-`--sidebar-floating-inset` and consume it as visual padding. Nova and Bloom still choose transition timing and easing.
+application rules can deliberately replace them. Sidebar keeps each coupled pair on the same side of that boundary:
+structural CSS owns zero-specificity gap/container widths and offcanvas offsets, while presets set
+`--sidebar-floating-inset` and `--sidebar-floating-edge` for their visual padding and edge treatment. `@scope` still
+isolates icon geometry from nested providers and participates in cascade proximity ties; wrapping the complete geometry
+selectors in `:where()` avoids relying on such a tie. Nova and Bloom still choose transition timing and easing.
 
 ## Upstream corpus map
 

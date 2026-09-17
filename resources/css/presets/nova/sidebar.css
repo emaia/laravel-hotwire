@@ -9,7 +9,7 @@
     }
 
     [data-slot="sidebar-wrapper"] { @apply flex min-h-svh w-full bg-background text-sidebar-foreground has-[[data-variant=inset]]:bg-sidebar; }
-    [data-slot="sidebar"] { @apply hidden text-sidebar-foreground md:block; --sidebar-floating-inset: 0.5rem; }
+    [data-slot="sidebar"] { @apply hidden text-sidebar-foreground md:block; --sidebar-floating-inset: 0.5rem; --sidebar-floating-edge: 2px; }
     [data-slot="sidebar"][data-collapsible="none"] { @apply flex h-full w-(--sidebar-width) flex-col bg-sidebar text-sidebar-foreground; }
     [data-slot="sidebar-gap"] { @apply relative bg-transparent transition-[width] duration-200 ease-linear; }
     [data-slot="sidebar"][data-side="right"] [data-slot="sidebar-gap"] { @apply rotate-180; }

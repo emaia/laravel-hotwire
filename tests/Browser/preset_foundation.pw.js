@@ -336,6 +336,12 @@ test("structural table overflow and Sidebar gap geometry work without a visual p
     await page.locator("#sidebar").evaluate((sidebar) => {
         sidebar.dataset.variant = "floating";
     });
+    await expect(page.locator("#sidebar-gap")).not.toHaveCSS("width", "64px");
+
+    await page.locator("#sidebar").evaluate((sidebar) => {
+        sidebar.style.setProperty("--sidebar-floating-inset", "8px");
+        sidebar.style.setProperty("--sidebar-floating-edge", "2px");
+    });
     await expect(page.locator("#sidebar-gap")).toHaveCSS("width", "64px");
 
     await page.setViewportSize({ width: 600, height: 720 });
@@ -398,9 +404,8 @@ test("shared component mechanics yield to later application overrides", async ({
                 [data-slot="attachment-trigger"] { position: relative; }
                 [data-slot="attachment-actions"] { z-index: 30; }
                 [data-slot="table-container"] { overflow-x: visible; }
-                [data-slot="sidebar"][data-variant="sidebar"][data-collapsible="icon"] [data-slot="sidebar-gap"] {
-                    width: 123px;
-                }
+                [data-slot="sidebar-gap"] { width: 123px; }
+                [data-slot="sidebar-container"] { left: 42px; width: 111px; }
             }
         </style>
         <div data-slot="attachment">
@@ -408,15 +413,22 @@ test("shared component mechanics yield to later application overrides", async ({
             <button id="attachment-actions" data-slot="attachment-actions">Remove</button>
         </div>
         <div id="table-container" data-slot="table-container"></div>
-        <div data-slot="sidebar" data-variant="sidebar" data-collapsible="icon">
-            <div id="sidebar-gap" data-slot="sidebar-gap"></div>
+        <div data-slot="sidebar" data-variant="sidebar" data-collapsible="icon" style="--sidebar-width-icon: 48px">
+            <div id="sidebar-icon-gap" data-slot="sidebar-gap"></div>
+        </div>
+        <div data-slot="sidebar" data-variant="sidebar" data-collapsible="offcanvas" style="--sidebar-width: 256px">
+            <div id="sidebar-offcanvas-gap" data-slot="sidebar-gap"></div>
+            <div id="sidebar-offcanvas-container" data-slot="sidebar-container" data-side="left"></div>
         </div>
     `);
 
     await expect(page.locator("#attachment-trigger")).toHaveCSS("position", "relative");
     await expect(page.locator("#attachment-actions")).toHaveCSS("z-index", "30");
     await expect(page.locator("#table-container")).toHaveCSS("overflow-x", "visible");
-    await expect(page.locator("#sidebar-gap")).toHaveCSS("width", "123px");
+    await expect(page.locator("#sidebar-icon-gap")).toHaveCSS("width", "123px");
+    await expect(page.locator("#sidebar-offcanvas-gap")).toHaveCSS("width", "123px");
+    await expect(page.locator("#sidebar-offcanvas-container")).toHaveCSS("width", "111px");
+    await expect(page.locator("#sidebar-offcanvas-container")).toHaveCSS("left", "42px");
 });
 
 test("OEmbed inherits an application aspect ratio without losing structural geometry", async ({ page }) => {

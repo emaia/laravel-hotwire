@@ -856,6 +856,33 @@ it('uses physical inline CSS only for documented physical contracts', function (
         ->reject(fn (array $occurrence): bool => in_array($occurrence, $physical, true))
         ->values()
         ->all();
+    $structuralPhysical = collect(physicalInlineDeclarations($structural))
+        ->filter(fn (array $occurrence): bool => str_contains($occurrence['selector'], '[data-slot="sidebar'))
+        ->values()
+        ->all();
+    $structuralAllowed = [
+        ':where([data-slot="sidebar-container"][data-side="left"])' => ['left: 0'],
+        ':where([data-slot="sidebar-container"][data-side="right"])' => ['right: 0'],
+        ':where([data-slot="sidebar"][data-collapsible="offcanvas"] [data-slot="sidebar-container"][data-side="left"])' => ['left: calc(var(--sidebar-width) * -1)'],
+        ':where([data-slot="sidebar"][data-collapsible="offcanvas"] [data-slot="sidebar-container"][data-side="right"])' => ['right: calc(var(--sidebar-width) * -1)'],
+    ];
+    $unexpectedStructural = collect($structuralPhysical)
+        ->reject(fn (array $occurrence): bool => in_array(
+            $occurrence['declaration'],
+            $structuralAllowed[$occurrence['selector']] ?? [],
+            true,
+        ))
+        ->map(fn (array $occurrence): string => "{$occurrence['selector']} uses {$occurrence['declaration']}")
+        ->values()
+        ->all();
+    $missingStructural = collect($structuralAllowed)
+        ->flatMap(fn (array $declarations, string $selector): array => array_map(
+            fn (string $declaration): array => ['selector' => $selector, 'declaration' => $declaration],
+            $declarations,
+        ))
+        ->reject(fn (array $occurrence): bool => in_array($occurrence, $structuralPhysical, true))
+        ->values()
+        ->all();
     $probe = physicalInlineUtilities(<<<'CSS'
         [data-slot="probe"] {
             @apply md:pr-2
@@ -878,6 +905,8 @@ it('uses physical inline CSS only for documented physical contracts', function (
 
     expect($unexpected)->toBe([])
         ->and($missingAllowed)->toBe([])
+        ->and($unexpectedStructural)->toBe([])
+        ->and($missingStructural)->toBe([])
         ->and($probe)->toBe([
             ['selector' => '[data-slot="probe"]', 'utility' => 'pr-2'],
             ['selector' => '[data-slot="probe"]', 'utility' => '-translate-x-1'],

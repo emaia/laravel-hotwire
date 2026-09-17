@@ -145,6 +145,20 @@ Sidebar is collapsed to icons and keeps it disabled while the label is visible o
 | `revealMotion` | `rise`     | Reveal motion: `rise`, `flat`, or `fade`.                |
 | `revealStagger` / `revealDuration` / `revealDelay` / `revealMaxSteps` | preset | Optional Reveal timing overrides. |
 
+### CSS custom properties
+
+The provider emits the three width properties. A custom preset that pads `floating` or `inset` Sidebar containers must
+also define both floating geometry properties; use `0rem` or `0px` when that treatment has no inset or edge. The shared
+geometry deliberately provides no fallback for them, so an incomplete preset cannot reserve mismatched space silently.
+
+| Property | Shipped preset value | Description |
+| --- | --- | --- |
+| `--sidebar-width` | Provider `width` prop | Expanded desktop panel and reserved gap width. |
+| `--sidebar-width-mobile` | Provider `mobileWidth` prop | Mobile drawer width. |
+| `--sidebar-width-icon` | Provider `iconWidth` prop | Collapsed icon rail width. |
+| `--sidebar-floating-inset` | `0.5rem` | Padding on each inline side of floating/inset containers; set by the preset. |
+| `--sidebar-floating-edge` | `2px` | Total extra inline width for the preset's floating/inset edge treatment. |
+
 ### Reveal integration
 
 Use `reveal` when the sidebar chrome should cascade once per document without adding a wrapper around its layout
