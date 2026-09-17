@@ -349,12 +349,16 @@ it('tracks Tailwind slot variants in parser coverage', function () {
         'total' => 2,
         'unvisitedSlots' => ['ghost'],
         'unvisitedReferences' => ['ghost'],
+        'invalidScopeRoots' => [],
+        'unprovableScopeSlots' => [],
         'complete' => false,
     ])->and($extractor->inspectCoverage($control))->toBe([
         'visited' => 2,
         'total' => 2,
         'unvisitedSlots' => [],
         'unvisitedReferences' => [],
+        'invalidScopeRoots' => [],
+        'unprovableScopeSlots' => [],
         'complete' => true,
     ]);
 });
@@ -368,6 +372,8 @@ it('reports incomplete analysis even when invalid syntax loses no slot mentions'
         'total' => 1,
         'unvisitedSlots' => [],
         'unvisitedReferences' => [],
+        'invalidScopeRoots' => [],
+        'unprovableScopeSlots' => [],
         'complete' => false,
     ]);
 });
@@ -378,6 +384,8 @@ it('distinguishes incomplete slot syntax from complete unvisited references', fu
         'total' => 1,
         'unvisitedSlots' => ['ghost'],
         'unvisitedReferences' => [],
+        'invalidScopeRoots' => [],
+        'unprovableScopeSlots' => [],
         'complete' => false,
     ]);
 });
@@ -391,6 +399,8 @@ it('ignores slot-like strings in discarded rules', function () {
         'total' => 1,
         'unvisitedSlots' => [],
         'unvisitedReferences' => [],
+        'invalidScopeRoots' => [],
+        'unprovableScopeSlots' => [],
         'complete' => false,
     ]);
 });
@@ -403,6 +413,8 @@ it('normalizes comments consistently on both sides of coverage', function () {
         'total' => 0,
         'unvisitedSlots' => [],
         'unvisitedReferences' => [],
+        'invalidScopeRoots' => [],
+        'unprovableScopeSlots' => [],
         'complete' => true,
     ]);
 });
@@ -424,8 +436,13 @@ it('retains a valid scope prelude when a later nested rule is malformed', functi
         }
         CSS;
 
-    expect($extractor->coverage($css))->toBe(['visited' => 1, 'total' => 1])
-        ->and($extractor->unvisitedSlots($css))->toBe([]);
+    $analysis = $extractor->inspectCoverage($css);
+
+    expect($analysis['visited'])->toBe(1)
+        ->and($analysis['total'])->toBe(1)
+        ->and($analysis['unvisitedSlots'])->toBe([])
+        ->and($analysis['invalidScopeRoots'])->toBe(['[data-slot="root"]'])
+        ->and($analysis['unprovableScopeSlots'])->toBe(['root']);
 });
 
 it('retains a valid scope prelude after a malformed declaration in its body', function () {
@@ -437,8 +454,13 @@ it('retains a valid scope prelude after a malformed declaration in its body', fu
         }
         CSS;
 
-    expect($extractor->coverage($css))->toBe(['visited' => 1, 'total' => 1])
-        ->and($extractor->unvisitedSlots($css))->toBe([]);
+    $analysis = $extractor->inspectCoverage($css);
+
+    expect($analysis['visited'])->toBe(1)
+        ->and($analysis['total'])->toBe(1)
+        ->and($analysis['unvisitedSlots'])->toBe([])
+        ->and($analysis['invalidScopeRoots'])->toBe(['[data-slot="root"]'])
+        ->and($analysis['unprovableScopeSlots'])->toBe(['root']);
 });
 
 it('reads every slot occurrence of every shipped preset', function () {

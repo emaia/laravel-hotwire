@@ -67,7 +67,7 @@ final class PresetAxes
     /**
      * Inspect parser coverage and report whether the structural analysis completed.
      *
-     * @return array{visited: int, total: int, unvisitedSlots: string[], unvisitedReferences: string[], complete: bool}
+     * @return array{visited: int, total: int, unvisitedSlots: string[], unvisitedReferences: string[], invalidScopeRoots: string[], unprovableScopeSlots: string[], complete: bool}
      */
     public function inspectCoverage(string $css): array
     {
@@ -88,12 +88,22 @@ final class PresetAxes
         $all = $this->slotCounts($css);
         $visited = $this->slotCounts($visitedSource);
         $visitedCount = $this->accountedFor($all['mentions'], $visited['mentions']);
+        $unprovableScopeSlots = [];
+
+        foreach ($analysis['invalidScopeRoots'] as $root) {
+            $unprovableScopeSlots = [
+                ...$unprovableScopeSlots,
+                ...array_keys($this->slotCounts($root)['mentions']),
+            ];
+        }
 
         return [
             'visited' => $visitedCount,
             'total' => array_sum($all['mentions']),
             'unvisitedSlots' => $this->unvisited($all['mentions'], $visited['mentions']),
             'unvisitedReferences' => $this->unvisited($all['references'], $visited['references']),
+            'invalidScopeRoots' => $analysis['invalidScopeRoots'],
+            'unprovableScopeSlots' => array_values(array_unique($unprovableScopeSlots)),
             'complete' => $analysis['valid'] && $visitedCount === array_sum($all['mentions']),
         ];
     }

@@ -225,7 +225,7 @@ final class CssRules
     /**
      * Analyze valid style rules and block preludes in one structural pass.
      *
-     * @return array{rules: list<array{chain: string[], declarations: string}>, blocks: string[], valid: bool}
+     * @return array{rules: list<array{chain: string[], declarations: string}>, blocks: string[], invalidScopeRoots: string[], valid: bool}
      */
     public function analyze(string $css, bool $includeAtRuleDeclarations = false): array
     {
@@ -233,7 +233,7 @@ final class CssRules
     }
 
     /**
-     * @return array{rules: list<array{chain: string[], declarations: string}>, blocks: string[], valid: bool}
+     * @return array{rules: list<array{chain: string[], declarations: string}>, blocks: string[], invalidScopeRoots: string[], valid: bool}
      */
     private function structuralAnalysis(string $css, bool $includeAtRuleDeclarations, bool $collectBlocks): array
     {
@@ -292,11 +292,14 @@ final class CssRules
             if ($character === '{') {
                 $parent = end($blockFrames);
                 $frameId = count($frames);
-                $chain[] = trim(preg_replace('/\s+/', ' ', $buffer) ?? '');
+                $prelude = trim(preg_replace('/\s+/', ' ', $buffer) ?? '');
+                $chain[] = $prelude;
                 $frames[] = [
                     'parent' => $parent === false ? null : $parent,
                     'start' => $bufferStart,
                     'preludeEnd' => $event['offset'],
+                    'prelude' => $prelude,
+                    'end' => null,
                 ];
                 $blockFrames[] = $frameId;
                 $declarations[] = '';
@@ -316,6 +319,7 @@ final class CssRules
             $body = array_pop($declarations).$buffer;
             $frameId = array_pop($blockFrames);
             $frame = $frames[$frameId];
+            $frames[$frameId]['end'] = $event['offset'];
             $prelude = (string) end($chain);
             $buffer = '';
             $bufferStart = $cursor;
@@ -374,9 +378,21 @@ final class CssRules
 
         ksort($parsedBlocks, SORT_NUMERIC);
 
+        $invalidScopeRoots = [];
+
+        foreach ($frames as $frame) {
+            $root = $this->scopeRoot($frame['prelude']);
+            $end = $frame['end'] ?? max(0, strlen($css) - 1);
+
+            if ($root !== null && $this->hasInvalidOffset($invalidOffsets, $frame['start'], $end)) {
+                $invalidScopeRoots[] = $root;
+            }
+        }
+
         return [
             'rules' => $parsed,
             'blocks' => array_values($parsedBlocks),
+            'invalidScopeRoots' => array_values(array_unique($invalidScopeRoots)),
             'valid' => $scan['valid'],
         ];
     }

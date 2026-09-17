@@ -8,7 +8,8 @@
  * Every preset imports this file, so the rules compile into the application stylesheet and hold on
  * the first paint. Shipping them from a controller import instead would leave the geometry to land
  * only once the bundle had run, and leaving them in a preset would mean every new preset had to
- * rediscover them — `hotwire:make-preset` scaffolds preset rules as empty bodies.
+ * rediscover them — `hotwire:make-preset` scaffolds only visual slots and their required neutral
+ * custom properties.
  */
 
 /* Utilities applied at runtime from strings Tailwind cannot see: `hidden` is toggled by
@@ -61,6 +62,37 @@
 }
 
 /*
+ * --- Shared component mechanics ---
+ *
+ * These visual slots also carry preset-invariant layout. Presets still own their focus treatment,
+ * composition, surfaces and motion, while every application inherits the mechanics below. These
+ * defaults stay in the components layer so later preset or application rules can deliberately
+ * replace them without `!important`; structural ownership is a default, not a cascade lock.
+ */
+
+@layer components {
+    [data-slot="attachment"] {
+        position: relative;
+    }
+
+    [data-slot="attachment-trigger"] {
+        position: absolute;
+        inset: 0;
+        z-index: 10;
+    }
+
+    [data-slot="attachment-actions"] {
+        position: relative;
+        z-index: 20;
+    }
+
+    [data-slot="table-container"] {
+        width: 100%;
+        overflow-x: auto;
+    }
+}
+
+/*
  * --- Controller-owned first paint ---
  *
  * These states must be correct before lazy controllers connect. Presets can choose composition and
@@ -97,12 +129,74 @@
 }
 
 /*
- * --- Sidebar content scroll ---
+ * --- Sidebar layout ---
+ *
+ * The empty gap reserves the fixed desktop panel's space and follows its collapsed geometry. Motion
+ * remains preset-owned, so different visual systems can choose their own timing and easing. Floating
+ * and inset presets set `--sidebar-floating-inset` and `--sidebar-floating-edge`, which keep their
+ * visual padding/edge and the paired gap/container widths on one geometry contract. The geometry
+ * selectors use zero-specificity `:where()` defaults so a later slotted application rule can replace
+ * any state consistently; `@scope` only stops icon-mode rules at a nested provider.
  *
  * The content column has to yield within the full-height sidebar before it can scroll. Icon mode
  * clips only the horizontal axis so labels leaving during the width transition cannot create a
  * scrollbar while every navigation item remains vertically reachable.
  */
+
+@layer components {
+    :where([data-slot="sidebar-gap"]) {
+        width: var(--sidebar-width);
+    }
+
+    :where([data-slot="sidebar-container"]) {
+        width: var(--sidebar-width);
+    }
+
+    :where([data-slot="sidebar-container"][data-side="left"]) {
+        left: 0;
+    }
+
+    :where([data-slot="sidebar-container"][data-side="right"]) {
+        right: 0;
+    }
+
+    :where([data-slot="sidebar"][data-collapsible="offcanvas"] [data-slot="sidebar-gap"]) {
+        width: 0;
+    }
+
+    :where([data-slot="sidebar"][data-collapsible="offcanvas"] [data-slot="sidebar-container"][data-side="left"]) {
+        left: calc(var(--sidebar-width) * -1);
+    }
+
+    :where([data-slot="sidebar"][data-collapsible="offcanvas"] [data-slot="sidebar-container"][data-side="right"]) {
+        right: calc(var(--sidebar-width) * -1);
+    }
+
+    @media (width >= 48rem) {
+        @scope ([data-slot="sidebar"][data-collapsible="icon"]) to ([data-slot="sidebar-wrapper"]) {
+            :where(:scope[data-slot="sidebar"][data-variant="sidebar"][data-collapsible="icon"] [data-slot="sidebar-gap"]),
+            :where(:scope[data-slot="sidebar"][data-variant="sidebar"][data-collapsible="icon"] [data-slot="sidebar-container"]) {
+                width: var(--sidebar-width-icon);
+            }
+
+            :where(:scope[data-slot="sidebar"][data-variant="floating"][data-collapsible="icon"] [data-slot="sidebar-gap"]),
+            :where(:scope[data-slot="sidebar"][data-variant="inset"][data-collapsible="icon"] [data-slot="sidebar-gap"]) {
+                width: calc(var(--sidebar-width-icon) + var(--sidebar-floating-inset) * 2);
+            }
+
+            :where(:scope[data-slot="sidebar"][data-variant="floating"][data-collapsible="icon"] [data-slot="sidebar-container"]),
+            :where(:scope[data-slot="sidebar"][data-variant="inset"][data-collapsible="icon"] [data-slot="sidebar-container"]) {
+                width: calc(var(--sidebar-width-icon) + var(--sidebar-floating-inset) * 2 + var(--sidebar-floating-edge));
+            }
+        }
+    }
+
+    @media (width < 48rem) {
+        :where([data-slot="sidebar"][data-mobile-state] > [data-slot="sidebar-gap"]) {
+            display: none;
+        }
+    }
+}
 
 [data-slot="sidebar-content"] {
     display: flex;
@@ -112,7 +206,7 @@
     overflow: auto;
 }
 
-@media (min-width: 768px) {
+@media (width >= 48rem) {
     @scope ([data-slot="sidebar"][data-collapsible="icon"]) to ([data-slot="sidebar-wrapper"]) {
         :where(:scope)[data-slot="sidebar"][data-collapsible="icon"] [data-slot="sidebar-content"] {
             overflow-x: hidden;

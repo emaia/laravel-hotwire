@@ -290,6 +290,90 @@ it('keeps Sidebar content overflow mechanics in the structural stylesheet', func
         ->not->toContain('md:overflow-hidden');
 })->with('slot catalog presets');
 
+it('keeps corpus-invariant component mechanics in the structural stylesheet', function (string $preset) {
+    $structural = File::get(__DIR__.'/../../resources/css/structural.css');
+    $visual = app(CssPresetFiles::class)->source($preset)->visualCss();
+    $structuralDeclarations = fn (string $selector): string => cssDeclarationsForSelector($structural, $selector);
+    $visualUtilities = fn (string $slot): array => cssAppliedUtilitiesForSlot($visual, $slot);
+    $forbiddenVisualUtilities = [
+        'attachment' => ['relative'],
+        'attachment-actions' => ['relative', 'z-20'],
+        'attachment-trigger' => ['absolute', 'inset-0', 'z-10'],
+        'table-container' => ['w-full', 'overflow-x-auto'],
+        'sidebar-gap' => ['w-(--sidebar-width)', 'w-0', 'md:w-(--sidebar-width-icon)', 'hidden'],
+        'sidebar-container' => [
+            'w-(--sidebar-width)',
+            'md:w-(--sidebar-width-icon)',
+            'md:w-[calc(var(--sidebar-width-icon)+1rem+2px)]',
+            'data-[side=left]:left-0',
+            'data-[side=right]:right-0',
+            'left-[calc(var(--sidebar-width)*-1)]',
+            'right-[calc(var(--sidebar-width)*-1)]',
+        ],
+    ];
+
+    foreach ($forbiddenVisualUtilities as $slot => $utilities) {
+        foreach ($utilities as $utility) {
+            expect($visualUtilities($slot))->not->toContain($utility);
+        }
+    }
+
+    expect($structuralDeclarations('[data-slot="attachment"]'))
+        ->toContain('position: relative')
+        ->and($structuralDeclarations('[data-slot="attachment-trigger"]'))
+        ->toContain('position: absolute')
+        ->toContain('inset: 0')
+        ->toContain('z-index: 10')
+        ->and($structuralDeclarations('[data-slot="attachment-actions"]'))
+        ->toContain('position: relative')
+        ->toContain('z-index: 20')
+        ->and($structuralDeclarations('[data-slot="table-container"]'))
+        ->toContain('width: 100%')
+        ->toContain('overflow-x: auto')
+        ->and($structuralDeclarations(':where([data-slot="sidebar-gap"])'))
+        ->toContain('width: var(--sidebar-width)')
+        ->and($visualUtilities('table-container'))
+        ->toContain('relative')
+        ->and($structural)
+        ->toContain('@media (width >= 48rem)')
+        ->toContain('@media (width < 48rem)')
+        ->not->toContain('@media (min-width: 768px)')
+        ->not->toContain('@media (max-width: 767px)')
+        ->not->toContain('--sidebar-floating-inset,')
+        ->not->toContain('--sidebar-floating-edge,')
+        ->and($visual)
+        ->toContain('@media (width >= 48rem)')
+        ->toContain('@media (width < 48rem)')
+        ->not->toContain('@media (min-width: 768px)')
+        ->not->toContain('@media (max-width: 767px)')
+        ->and($structuralDeclarations(':where([data-slot="sidebar-container"])'))
+        ->toContain('width: var(--sidebar-width)')
+        ->and(cssDeclarationsForSelector($visual, '[data-slot="sidebar"]'))
+        ->toContain('--sidebar-floating-inset: 0.5rem')
+        ->toContain('--sidebar-floating-edge: 0px')
+        ->and($visualUtilities('sidebar-container'))
+        ->toContain('p-(--sidebar-floating-inset)')
+        ->and(File::get(__DIR__.'/../../docs/components/sidebar.md'))
+        ->toContain('`--sidebar-floating-inset`')
+        ->toContain('`--sidebar-floating-edge`')
+        ->and(cssChainsForSelector($structural, '[data-slot="attachment"]'))
+        ->toContain('@layer components')
+        ->and(cssChainsForSelector($structural, ':where([data-slot="sidebar-gap"])'))
+        ->toContain('@layer components');
+})->with('slot catalog presets');
+
+it('collects utilities only when the requested slot is the final slot target', function () {
+    $css = <<<'CSS'
+        [data-slot="attachment"] [data-slot="attachment-description"] { @apply relative; }
+        [data-slot="attachment"][data-state="error"] { @apply border-destructive; }
+        CSS;
+
+    expect(cssAppliedUtilitiesForSlot($css, 'attachment'))
+        ->toBe(['border-destructive'])
+        ->and(cssAppliedUtilitiesForSlot($css, 'attachment-description'))
+        ->toBe(['relative']);
+});
+
 it('stops Sidebar icon mode rules at nested providers', function (string $preset) {
     $stylesheets = [
         File::get(__DIR__.'/../../resources/css/structural.css'),
@@ -535,6 +619,82 @@ function registryAuditController(array $slots): array
         'category' => 'utility',
         'styling' => ['slots' => $slots],
     ];
+}
+
+function cssDeclarationsForSelector(string $css, string $expected): string
+{
+    $rules = new CssRules;
+    $declarations = [];
+
+    foreach ($rules->parse($rules->stripComments($css)) as $rule) {
+        $selector = trim((string) end($rule['chain']));
+
+        if ($selector === $expected) {
+            $declarations[] = $rule['declarations'];
+        }
+    }
+
+    return implode("\n", $declarations);
+}
+
+/** @return string[] */
+function cssChainsForSelector(string $css, string $expected): array
+{
+    $rules = new CssRules;
+    $chains = [];
+
+    foreach ($rules->parse($rules->stripComments($css)) as $rule) {
+        $selector = trim((string) end($rule['chain']));
+
+        if ($selector === $expected) {
+            $chains = [...$chains, ...$rule['chain']];
+        }
+    }
+
+    return array_values(array_unique($chains));
+}
+
+/** @return array<string, string[]> */
+function cssAppliedUtilitiesBySelector(string $css): array
+{
+    $rules = new CssRules;
+    $utilities = [];
+
+    foreach ($rules->parse($rules->stripComments($css)) as $rule) {
+        $selector = trim((string) end($rule['chain']));
+        preg_match_all('/@apply\s+([^;}]+)/s', $rule['declarations'], $matches);
+
+        foreach ($matches[1] as $application) {
+            $utilities[$selector] = [
+                ...($utilities[$selector] ?? []),
+                ...(preg_split('/\s+/', trim($application)) ?: []),
+            ];
+        }
+    }
+
+    return $utilities;
+}
+
+/** @return string[] */
+function cssAppliedUtilitiesForSlot(string $css, string $slot): array
+{
+    $rules = new CssRules;
+
+    return collect(cssAppliedUtilitiesBySelector($css))
+        ->filter(function (array $utilities, string $selector) use ($rules, $slot): bool {
+            foreach ($rules->splitTopLevel($selector, ',') as $branch) {
+                preg_match_all('/\[data-slot\s*=\s*["\']?([a-z][a-z0-9-]*)["\']?\s*\]/', $branch, $matches);
+
+                if (($matches[1][array_key_last($matches[1])] ?? null) === $slot) {
+                    return true;
+                }
+            }
+
+            return false;
+        })
+        ->flatten()
+        ->values()
+        ->all();
 }
 
 /** @return string[] */

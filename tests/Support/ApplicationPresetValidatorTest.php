@@ -65,6 +65,186 @@ it('reports missing visual slots and undeclared slot references as proven errors
         ->toContain('Preset [constellation] references undeclared slots: fixture-stauts.');
 });
 
+it('reports each missing registry-owned preset property', function (string $property) {
+    $path = $this->root.'/resources/css/presets/constellation/surfaces.css';
+    $this->files->put($path, preg_replace(
+        '/^\s*'.preg_quote($property, '/').':[^;]+;\s*$/m',
+        '',
+        $this->files->get($path),
+    ));
+
+    $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
+
+    expect($result['errors'])->toContain(
+        "Preset [constellation] is missing required preset property [{$property}] on [data-slot=\"fixture-panel\"]."
+    );
+})->with(['--fixture-panel-inset', '--fixture-panel-edge']);
+
+it('does not credit required properties declared on a descendant', function () {
+    $path = $this->root.'/resources/css/presets/constellation/surfaces.css';
+    $this->files->put($path, str_replace(
+        '[data-slot="fixture-panel"] {',
+        '[data-slot="fixture-panel"] [data-slot="fixture-action"] {',
+        $this->files->get($path),
+    ));
+
+    $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
+
+    expect($result['errors'])
+        ->toContain('Preset [constellation] is missing required preset property [--fixture-panel-inset] on [data-slot="fixture-panel"].')
+        ->toContain('Preset [constellation] is missing required preset property [--fixture-panel-edge] on [data-slot="fixture-panel"].');
+});
+
+it('does not credit required properties declared on a non-element subject', function (string $selector) {
+    $path = $this->root.'/resources/css/presets/constellation/surfaces.css';
+    $this->files->put($path, str_replace(
+        '[data-slot="fixture-panel"] {',
+        "{$selector} {",
+        $this->files->get($path),
+    ));
+
+    $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
+
+    expect($result['errors'])
+        ->toContain('Preset [constellation] is missing required preset property [--fixture-panel-inset] on [data-slot="fixture-panel"].')
+        ->toContain('Preset [constellation] is missing required preset property [--fixture-panel-edge] on [data-slot="fixture-panel"].');
+})->with([
+    'pseudo-element' => '[data-slot="fixture-panel"]::before',
+    'legacy pseudo-element' => '[data-slot="fixture-panel"]:before',
+    'negated slot' => '[data-slot="fixture-action"]:not([data-slot="fixture-panel"])',
+]);
+
+it('does not count a pseudo-element rule as visual coverage for its slot', function (string $css) {
+    $path = $this->root.'/resources/css/presets/constellation/feedback.css';
+    $this->files->put($path, $css);
+
+    $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
+
+    expect($result['errors'])->toContain('Preset [constellation] is missing visual slots: fixture-status.')
+        ->and($result['styledSlots'])->not->toContain('fixture-status');
+})->with([
+    'direct subject' => '[data-slot="fixture-status"]::before { color: red; }',
+    'nested subject' => '[data-slot="fixture-status"] { &::before { color: red; } }',
+    'scope subject' => '@scope ([data-slot="fixture-status"]) { :scope::before { color: red; } }',
+]);
+
+it('credits required properties on a functional subject selector', function (string $selector) {
+    $path = $this->root.'/resources/css/presets/constellation/surfaces.css';
+    $this->files->put($path, str_replace(
+        '[data-slot="fixture-panel"] {',
+        "{$selector} {",
+        $this->files->get($path),
+    ));
+
+    $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
+
+    expect($result['errors'])->toBe([]);
+})->with([
+    'functional compound' => ':where([data-slot="fixture-panel"]).compact',
+    'functional descendant subject' => '[data-theme] :where([data-slot="fixture-panel"])',
+]);
+
+it('does not credit required properties from a chained functional ancestor', function () {
+    $path = $this->root.'/resources/css/presets/constellation/surfaces.css';
+    $this->files->put($path, <<<'CSS'
+        :where([data-slot="fixture-panel"]) :where([data-slot="fixture-action"]) {
+            color: red;
+            --fixture-panel-inset: 0rem;
+            --fixture-panel-edge: 0px;
+        }
+        CSS);
+
+    $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
+
+    expect($result['errors'])
+        ->toContain('Preset [constellation] is missing required preset property [--fixture-panel-inset] on [data-slot="fixture-panel"].')
+        ->toContain('Preset [constellation] is missing required preset property [--fixture-panel-edge] on [data-slot="fixture-panel"].');
+});
+
+it('credits required properties in a nested refinement of the slot', function (string $nestedSelector) {
+    $path = $this->root.'/resources/css/presets/constellation/surfaces.css';
+    $css = (string) preg_replace(
+        '/\[data-slot="fixture-panel"\]\s*\{\s*--fixture-panel-inset:\s*0rem;\s*--fixture-panel-edge:\s*0px;\s*\}/',
+        <<<CSS
+            [data-slot="fixture-panel"] {
+                {$nestedSelector} {
+                    --fixture-panel-inset: 0rem;
+                    --fixture-panel-edge: 0px;
+                }
+            }
+            CSS,
+        $this->files->get($path),
+    );
+    $this->files->put($path, $css);
+
+    $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
+
+    expect($css)->toContain($nestedSelector)
+        ->and($result['errors'])->toBe([]);
+})->with([
+    'direct refinement' => '&[data-size="compact"]',
+    'reversed context' => '.theme &',
+    'functional nesting subject' => ':where(&).compact',
+    'selector list retaining the parent' => '&, & > .child',
+]);
+
+it('does not credit required properties on a nested child or scoped pseudo-element', function (string $css) {
+    $path = $this->root.'/resources/css/presets/constellation/surfaces.css';
+    $this->files->put($path, $css."\n[data-slot=\"fixture-action\"] { color: red; }");
+
+    $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
+
+    expect($result['errors'])
+        ->toContain('Preset [constellation] is missing required preset property [--fixture-panel-inset] on [data-slot="fixture-panel"].')
+        ->toContain('Preset [constellation] is missing required preset property [--fixture-panel-edge] on [data-slot="fixture-panel"].');
+})->with([
+    'nested child' => <<<'CSS'
+        [data-slot="fixture-panel"] {
+            color: red;
+            & > .child { --fixture-panel-inset: 0rem; --fixture-panel-edge: 0px; }
+        }
+        CSS,
+    'scope pseudo-element' => <<<'CSS'
+        @scope ([data-slot="fixture-panel"]) {
+            :scope { color: red; }
+            :scope::before { --fixture-panel-inset: 0rem; --fixture-panel-edge: 0px; }
+        }
+        CSS,
+]);
+
+it('warns when required preset properties cannot be proven', function () {
+    $path = $this->root.'/resources/css/presets/constellation/surfaces.css';
+    $this->files->put($path, <<<'CSS'
+        [data-slot="fixture-panel"] { color: red; }
+        [data-slot="fixture-panel" { --fixture-panel-inset: 0rem; --fixture-panel-edge: 0px; }
+        [data-slot="fixture-action"] { color: red; }
+        CSS);
+
+    $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
+
+    expect($result['errors'])->toBe([])
+        ->and(implode(' ', $result['warnings']))->toContain('CSS analysis is incomplete')
+        ->and($result['warnings'])
+        ->toContain('Preset [constellation] could not prove required preset properties on [data-slot="fixture-panel"]: --fixture-panel-edge, --fixture-panel-inset.');
+});
+
+it('warns when required preset properties are inside a malformed scoped rule', function () {
+    $path = $this->root.'/resources/css/presets/constellation/surfaces.css';
+    $this->files->put($path, <<<'CSS'
+        @scope ([data-slot="fixture-panel"]) {
+            :scope { color: red; }
+            :scope { --fixture-panel-inset: 0rem; --fixture-panel-edge: 0px; ); }
+        }
+        [data-slot="fixture-action"] { color: red; }
+        CSS);
+
+    $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
+
+    expect($result['errors'])->toBe([])
+        ->and($result['warnings'])
+        ->toContain('Preset [constellation] could not prove required preset properties on [data-slot="fixture-panel"]: --fixture-panel-edge, --fixture-panel-inset.');
+});
+
 it('does not count empty rules as visual coverage', function () {
     $path = $this->root.'/resources/css/presets/constellation/feedback.css';
     $this->files->put($path, <<<'CSS'
@@ -82,7 +262,11 @@ it('counts a scope root styled through the scope pseudo-class as visual coverage
     $path = $this->root.'/resources/css/presets/constellation/surfaces.css';
     $this->files->put($path, <<<'CSS'
         @scope ([data-slot="fixture-panel"]) {
-            :scope { color: red; }
+            :scope {
+                color: red;
+                --fixture-panel-inset: 0rem;
+                --fixture-panel-edge: 0px;
+            }
         }
 
         [data-slot="fixture-action"] { color: red; }
@@ -98,7 +282,11 @@ it('counts functional scope subjects without crediting scoped descendants', func
     $path = $this->root.'/resources/css/presets/constellation/surfaces.css';
     $this->files->put($path, <<<'CSS'
         @scope ([data-slot="fixture-panel"]) {
-            :where(:scope) { color: red; }
+            :where(:scope) {
+                color: red;
+                --fixture-panel-inset: 0rem;
+                --fixture-panel-edge: 0px;
+            }
             :scope:is(.compact, .spacious) [data-slot="fixture-action"] { color: red; }
         }
         CSS);
@@ -146,6 +334,7 @@ it('does not count negated or textual scope mentions as root coverage', function
     'functional descendant' => ':where(:scope [data-slot="fixture-action"])',
     'functional child' => ':is(:scope > [data-slot="fixture-action"])',
     'functional column' => ':where(:scope||[data-slot="fixture-action"])',
+    'functional pseudo-element' => ':where(:scope::before)',
 ]);
 
 it('credits only the nearest root of nested scopes', function () {
@@ -495,10 +684,18 @@ function applicationPresetRegistry(): HotwireRegistry
                 'view' => 'fixture',
                 'docs' => 'fixture.md',
                 'category' => 'display',
-                'styling' => ['slots' => [
-                    'fixture-panel' => 'visual',
-                    'fixture-shell' => 'structural',
-                ]],
+                'styling' => [
+                    'slots' => [
+                        'fixture-panel' => 'visual',
+                        'fixture-shell' => 'structural',
+                    ],
+                    'preset_properties' => [
+                        'fixture-panel' => [
+                            '--fixture-panel-inset' => '0rem',
+                            '--fixture-panel-edge' => '0px',
+                        ],
+                    ],
+                ],
             ],
             'fixture-action' => [
                 'class' => Button::class,

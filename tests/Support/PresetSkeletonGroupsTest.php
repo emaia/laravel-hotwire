@@ -105,25 +105,84 @@ it('uses the first registry entry when a custom registry repeats a component cla
             ]),
             'beta' => fixtureComponent(Button::class, [
                 ['class' => Button::class, 'only' => ['root']],
+            ], [
+                'button' => ['--button-offset' => '0px'],
             ]),
         ],
         'controllers' => [],
     ], __DIR__);
 
     expect((new PresetSkeletonGroups)->project($registry))->toBe([
-        ['id' => 'component:alpha', 'label' => 'Alpha', 'slots' => ['button']],
+        [
+            'id' => 'component:alpha',
+            'label' => 'Alpha',
+            'slots' => ['button'],
+            'properties' => ['button' => ['--button-offset' => '0px']],
+        ],
     ]);
 });
 
-/** @param array<mixed> $slots */
-function fixtureComponent(string $class, array $slots): array
+it('projects required preset properties with their owning slot', function () {
+    $registry = HotwireRegistry::fromCatalog([
+        'components' => [
+            'alpha' => [
+                'class' => Button::class,
+                'view' => 'fixture',
+                'docs' => 'fixture.md',
+                'category' => 'utility',
+                'styling' => [
+                    'slots' => ['alpha' => 'visual'],
+                    'preset_properties' => [
+                        'alpha' => ['--alpha-inset' => '0rem'],
+                    ],
+                ],
+            ],
+        ],
+        'controllers' => [],
+    ], __DIR__);
+
+    expect((new PresetSkeletonGroups)->project($registry))->toBe([
+        [
+            'id' => 'component:alpha',
+            'label' => 'Alpha',
+            'slots' => ['alpha'],
+            'properties' => ['alpha' => ['--alpha-inset' => '0rem']],
+        ],
+    ]);
+});
+
+it('rejects conflicting defaults for a repeated preset property', function () {
+    $registry = HotwireRegistry::fromCatalog([
+        'components' => [
+            'alpha' => fixtureComponent(Button::class, ['button' => 'visual'], [
+                'button' => ['--button-offset' => '0px'],
+            ]),
+            'beta' => fixtureComponent(Button::class, ['button' => 'visual'], [
+                'button' => ['--button-offset' => '1px'],
+            ]),
+        ],
+        'controllers' => [],
+    ], __DIR__);
+
+    expect(fn () => (new PresetSkeletonGroups)->project($registry))
+        ->toThrow(RuntimeException::class, 'Conflicting preset property defaults for [button] [--button-offset].');
+});
+
+/**
+ * @param  array<mixed>  $slots
+ * @param  array<string, array<string, string>>  $presetProperties
+ */
+function fixtureComponent(string $class, array $slots, array $presetProperties = []): array
 {
     return [
         'class' => $class,
         'view' => 'fixture',
         'docs' => 'fixture.md',
         'category' => 'utility',
-        'styling' => ['slots' => $slots],
+        'styling' => [
+            'slots' => $slots,
+            'preset_properties' => $presetProperties,
+        ],
     ];
 }
 

@@ -67,6 +67,10 @@ final readonly class ApplicationPresetValidator
 
         $css = implode("\n\n", $visual);
         $coverage = $this->axes->inspectCoverage($css);
+        $unprovenSlots = array_values(array_unique([
+            ...$coverage['unvisitedSlots'],
+            ...$coverage['unprovableScopeSlots'],
+        ]));
 
         if (! $coverage['complete']) {
             $warnings[] = $coverage['visited'] === $coverage['total']
@@ -80,7 +84,7 @@ final readonly class ApplicationPresetValidator
             $warnings,
             $css,
             $registry,
-            $coverage['unvisitedSlots'],
+            $unprovenSlots,
             $coverage['unvisitedReferences'],
         );
     }
@@ -262,10 +266,18 @@ final readonly class ApplicationPresetValidator
         $definitions = [...array_values($registry->components()), ...array_values($registry->controllers())];
         $required = [];
         $declared = [];
+        $requiredProperties = [];
 
         foreach ($definitions as $definition) {
             $required = [...$required, ...$definition->styling->visualSlots()];
             $declared = [...$declared, ...array_keys($definition->styling->slots)];
+
+            foreach ($definition->styling->presetProperties() as $slot => $properties) {
+                $requiredProperties[$slot] = [
+                    ...($requiredProperties[$slot] ?? []),
+                    ...array_keys($properties),
+                ];
+            }
         }
 
         $required = array_values(array_unique($required));
@@ -290,6 +302,26 @@ final readonly class ApplicationPresetValidator
 
         if ($unknown !== []) {
             $errors[] = "Preset [{$name}] references undeclared slots: ".implode(', ', $unknown).'.';
+        }
+
+        foreach ($requiredProperties as $slot => $properties) {
+            $present = $this->slots->customPropertiesFor($css, $slot);
+            $missingProperties = array_values(array_diff(array_unique($properties), $present));
+
+            if ($missingProperties === []) {
+                continue;
+            }
+
+            if (in_array($slot, $unvisitedSlots, true)) {
+                sort($missingProperties);
+                $warnings[] = "Preset [{$name}] could not prove required preset properties on [data-slot=\"{$slot}\"]: ".implode(', ', $missingProperties).'.';
+
+                continue;
+            }
+
+            foreach ($missingProperties as $property) {
+                $errors[] = "Preset [{$name}] is missing required preset property [{$property}] on [data-slot=\"{$slot}\"].";
+            }
         }
 
         return [

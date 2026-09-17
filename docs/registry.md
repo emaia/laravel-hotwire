@@ -143,6 +143,7 @@ API.
 | Key     | Description                                                                      |
 |---------|----------------------------------------------------------------------------------|
 | `slots` | Ordered family references, each with `class` and optional local-key list `only` |
+| `preset_properties` | Required custom properties by slot, mapped to neutral scaffold values |
 
 References can combine declarations from multiple families. Use `only` when an entry owns a defined subset:
 
@@ -160,6 +161,13 @@ consumer happens to appear first.
 
 Structural slots are containers, assistive nodes or geometry a controller stylesheet already owns; presets are not
 expected to style them, and `hotwire:make-preset` leaves them out of the scaffold.
+
+Use `preset_properties` only when structural CSS consumes a value that every complete preset must define. The registry
+value is the neutral declaration emitted by `hotwire:make-preset`; `hotwire:check` verifies that application presets keep
+the property on the named slot. For example, Sidebar scaffolds zero inset and edge contributions so its icon geometry
+remains valid before the preset author chooses a floating treatment. Those neutral zeros retain the units consumed by
+the structural calculation (`0rem` for inset and `0px` for edge), so each custom property remains a length when combined
+with Sidebar widths through `calc()`.
 
 ## Slots and controller targets
 
@@ -194,9 +202,10 @@ but official presets are not required to expose identical lexical axes.
 compatibility with the component contract. `PresetAxes::inspectCoverage()` additionally reports structural validity
 and the identifiable slot names the parser could not visit, separating complete references from incomplete syntax.
 
-`Support\PresetSkeleton` does not use `PresetAxes` or parse an official preset. It emits one empty base rule for each
-visual slot projected by the registry. Ancestor state, equivalent selectors and Tailwind variants remain authoring
-decisions documented by the component contract and implementation examples.
+`Support\PresetSkeleton` does not use `PresetAxes` or parse an official preset. It emits one base rule for each visual
+slot projected by the registry; rules stay empty unless the slot declares `preset_properties`. Ancestor state,
+equivalent selectors and Tailwind variants remain authoring decisions documented by the component contract and
+implementation examples.
 
 Slot declarations are verified against every shipped preset in
 [`tests/Registry/SlotCatalogTest.php`](../tests/Registry/SlotCatalogTest.php): every visual slot must participate in a

@@ -93,6 +93,36 @@ The corpus found no preset-expressiveness blocker in the Alert contract. Sera's 
 destructive treatment remains a variant. The later authoring review added `alert.icon` so the family owns icon layout
 without requiring third-party graphics to emit the generic Icon slot.
 
+### Structural boundary audit
+
+Byte-identical declarations across all eight styles are evidence of a shared convention, not proof that a rule is
+structural. The decisive test remains whether removing the rule breaks component mechanics or only changes appearance.
+Applying that test to the eight corpus-invariant candidates produced these decisions:
+
+| Slot | Decision | Reason |
+| --- | --- | --- |
+| `attachment-trigger` | Split ownership | Full-card positioning and stacking are structural; suppressing the native outline remains preset-owned focus treatment. |
+| `attachment-actions` | Split ownership | Actions must stack above the full-card trigger, while their flex composition, placement, offsets and gaps remain visual. |
+| `table-container` | Split ownership | Full-width horizontal overflow implements the responsive wrapper. Presets retain `position: relative` as a deliberate positioning context for preset/application ornaments, although no package descendant currently consumes it; Bloom also owns its visible surface. |
+| `table-body` | Visual | Removing the final row divider is edge treatment, not table mechanics. |
+| `table-header` | Visual | A row divider distinguishes the header visually; native `thead` semantics do not depend on it. |
+| `sidebar-gap` | Split ownership | Gap and fixed-container geometry follow desktop collapse state structurally; transition timing, easing and the floating/inset padding value remain preset-owned. |
+| `item-media` | Visual | Sizing, crop, radius, gap and alignment are all legitimate preset choices. |
+| `marker-content` | Visual | Wrapping, link decoration and separator composition change presentation without breaking behavior. |
+
+All eight slots remain `visual` in the registry. Attachment's split slots and `sidebar-gap` retain declaration-bearing
+participation in both presets. `table-container` remains visual because its positioning context is an explicit preset
+extension point and Bloom gives it a surface. `structural.css` owns only invariant mechanics.
+
+Those shared mechanics live in `@layer components`. They are package defaults, not a cascade lock: later preset or
+application rules can deliberately replace them. Sidebar keeps each coupled pair on the same side of that boundary:
+structural CSS owns zero-specificity gap/container widths and offcanvas offsets, while presets set
+`--sidebar-floating-inset` and `--sidebar-floating-edge` for their visual padding and edge treatment. `@scope` still
+isolates icon geometry from nested providers and participates in cascade proximity ties; wrapping the complete geometry
+selectors in `:where()` avoids relying on such a tie. Attachment and Table need no zero-specificity wrapper because
+their simple structural rules already tie a simple slotted application override, which wins by source order. Nova and
+Bloom still choose transition timing and easing.
+
 ## Upstream corpus map
 
 The family findings above are prose. [`tests/Fixtures/shadcn`](../tests/Fixtures/shadcn) turns the same comparison into

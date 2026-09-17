@@ -58,18 +58,35 @@ clamp transition.
 `hotwire:check` now validates application presets imported from `resources/css/presets`. Use
 `hotwire:check --preset=brand --no-interaction` to validate an unimported preset explicitly. A complete preset fails
 when the package foundation facade is missing, duplicated or after visual CSS, when local imports are broken, or when
-registry visual slots are missing or misspelled. The check does not require Nova's selectors or lexical axis vocabulary.
+registry visual slots or required preset custom properties are missing or misspelled. The check does not require Nova's
+selectors or lexical axis vocabulary.
 
 After upgrading, add newly declared visual slots and adopt foundation facade changes before expecting a maintained
 application preset to pass. Run the application's production build separately because static validation does not compile
 Tailwind utilities or certify browser behavior. Generated `hotwire:styles` bundles continue to use their recorded
 selective plan and may omit unrelated components intentionally.
 
+Selectors whose subject is a pseudo-element no longer satisfy visual-slot coverage or required preset properties. A rule
+such as `[data-slot="alert"]::before` styles the generated pseudo-element, not the Alert element itself. Maintained presets
+that previously relied on such a rule must add a declaration-bearing rule for the slotted element; the pseudo-element can
+remain as a separate decorative rule. When invalid CSS prevents the check from proving a required property, the check now
+warns instead of silently skipping that contract. The same warning-only behavior applies when invalid CSS prevents the
+check from proving visual-slot coverage. Warnings do not make `hotwire:check` fail, so a preset whose only missing contract
+is hidden inside an unparseable rule can now exit successfully instead of failing CI. Fix the invalid CSS rather than
+depending on that relaxed exit status; CI that treats incomplete analysis as fatal must promote the reported warning in
+its own policy.
+
 ### Blank preset scaffolds are registry-derived
 
-`hotwire:make-preset brand` now emits one empty base rule per visual slot from the package registry. It no longer
-copies Nova's compound selectors, state rules or at-rules into a blank preset. This keeps the starting point neutral as
-additional official presets adopt different valid selector organizations.
+`hotwire:make-preset brand` now emits one base rule per visual slot from the package registry. Rules are empty unless
+shared structural geometry requires a neutral custom property, such as Sidebar's zero floating inset and edge. It no
+longer copies Nova's compound selectors, state rules or at-rules into a blank preset. This keeps the starting point
+neutral as additional official presets adopt different valid selector organizations.
+
+Nova and Bloom now set `--sidebar-floating-edge: 0px` instead of `2px`. Their floating Sidebar treatment uses a ring and
+shadow, which do not contribute to layout width; the old value made the collapsed floating/inset container 2px wider than
+its rendered box treatment. Maintained presets with two physical 1px inline borders should keep `2px`; presets using only
+rings or shadows should use `0px`.
 
 Use `hotwire:make-preset brand --from=nova` when Nova's complete current selector structure is the intended starting
 point. Existing application presets are unchanged. Scaffolds and clones are application-owned snapshots: only their

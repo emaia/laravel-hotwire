@@ -53,8 +53,25 @@ final class HotwireRegistry
     private static function styling(array $styling): Styling
     {
         $resolved = ComponentSlotResolver::resolve($styling['slots'] ?? []);
+        $definition = new Styling(
+            slots: $resolved['slots'],
+            slotOwners: $resolved['owners'],
+            presetProperties: $styling['preset_properties'] ?? [],
+        );
+        $invalidPropertySlots = array_values(array_diff(
+            array_keys($definition->presetProperties()),
+            $definition->visualSlots(),
+        ));
 
-        return new Styling(slots: $resolved['slots'], slotOwners: $resolved['owners']);
+        if ($invalidPropertySlots !== []) {
+            sort($invalidPropertySlots);
+
+            throw new RuntimeException(
+                'Preset properties target non-visual or undeclared slots: '.implode(', ', $invalidPropertySlots).'.'
+            );
+        }
+
+        return $definition;
     }
 
     /** @param  array{components: array<string, array<string, mixed>>, controllers: array<string, array<string, mixed>>}  $catalog */
