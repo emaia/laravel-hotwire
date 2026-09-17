@@ -136,7 +136,8 @@
  * and inset presets set `--sidebar-floating-inset` and `--sidebar-floating-edge`, which keep their
  * visual padding/edge and the paired gap/container widths on one geometry contract. The geometry
  * selectors use zero-specificity `:where()` defaults so a later slotted application rule can replace
- * any state consistently; `@scope` only stops icon-mode rules at a nested provider.
+ * any state consistently. Offcanvas geometry targets the owning Sidebar's direct children;
+ * `@scope` stops icon-mode rules at a nested provider.
  *
  * The content column has to yield within the full-height sidebar before it can scroll. Icon mode
  * clips only the horizontal axis so labels leaving during the width transition cannot create a
@@ -160,15 +161,15 @@
         right: 0;
     }
 
-    :where([data-slot="sidebar"][data-collapsible="offcanvas"] [data-slot="sidebar-gap"]) {
+    :where([data-slot="sidebar"][data-collapsible="offcanvas"] > [data-slot="sidebar-gap"]) {
         width: 0;
     }
 
-    :where([data-slot="sidebar"][data-collapsible="offcanvas"] [data-slot="sidebar-container"][data-side="left"]) {
+    :where([data-slot="sidebar"][data-collapsible="offcanvas"] > [data-slot="sidebar-container"][data-side="left"]) {
         left: calc(var(--sidebar-width) * -1);
     }
 
-    :where([data-slot="sidebar"][data-collapsible="offcanvas"] [data-slot="sidebar-container"][data-side="right"]) {
+    :where([data-slot="sidebar"][data-collapsible="offcanvas"] > [data-slot="sidebar-container"][data-side="right"]) {
         right: calc(var(--sidebar-width) * -1);
     }
 

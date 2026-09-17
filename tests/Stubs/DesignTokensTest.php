@@ -860,8 +860,8 @@ it('uses physical inline CSS only for documented physical contracts', function (
     $structuralAllowed = [
         ':where([data-slot="sidebar-container"][data-side="left"])' => ['left: 0'],
         ':where([data-slot="sidebar-container"][data-side="right"])' => ['right: 0'],
-        ':where([data-slot="sidebar"][data-collapsible="offcanvas"] [data-slot="sidebar-container"][data-side="left"])' => ['left: calc(var(--sidebar-width) * -1)'],
-        ':where([data-slot="sidebar"][data-collapsible="offcanvas"] [data-slot="sidebar-container"][data-side="right"])' => ['right: calc(var(--sidebar-width) * -1)'],
+        ':where([data-slot="sidebar"][data-collapsible="offcanvas"] > [data-slot="sidebar-container"][data-side="left"])' => ['left: calc(var(--sidebar-width) * -1)'],
+        ':where([data-slot="sidebar"][data-collapsible="offcanvas"] > [data-slot="sidebar-container"][data-side="right"])' => ['right: calc(var(--sidebar-width) * -1)'],
         '[data-slot="side-panel-trigger"]' => [
             'left: var(--side-panel-trigger-left)',
             'right: var(--side-panel-trigger-right)',
