@@ -618,7 +618,15 @@ class CheckCommand extends Command
             }
 
             $imports = $this->completePresetImports($content, $stylesheet);
-            $hasCompletePreset = $hasCompletePreset || $imports['official'];
+            $hasCompletePreset = $hasCompletePreset || $imports['official'] !== [];
+
+            if (count($imports['official']) > 1) {
+                $this->problemLines[] = [
+                    'key' => "styles-presets-{$path}",
+                    'line' => "  <error>✗</error>  {$path}  imports multiple official presets: ".implode(', ', $imports['official']).'  <fg=gray>(keep exactly one complete preset import active)</>',
+                ];
+                $issues++;
+            }
 
             foreach ($imports['application'] as $preset) {
                 $key = $this->comparablePath($preset);
@@ -699,16 +707,16 @@ class CheckCommand extends Command
         return $issues;
     }
 
-    /** @return array{official: bool, application: string[]} */
+    /** @return array{official: string[], application: string[]} */
     private function completePresetImports(string $content, string $stylesheet): array
     {
         $presetDirectory = realpath(resource_path('css/presets'));
 
         if ($presetDirectory !== false && $this->containsPath($presetDirectory, realpath($stylesheet) ?: $stylesheet)) {
-            return ['official' => false, 'application' => []];
+            return ['official' => [], 'application' => []];
         }
 
-        $official = false;
+        $official = [];
         $application = [];
 
         foreach ($this->cssImports->parse($content) as $rule) {
@@ -738,7 +746,7 @@ class CheckCommand extends Command
 
             foreach ($this->presetFiles->names() as $preset) {
                 if ($this->matchesShippedPreset($resolved, $preset)) {
-                    $official = true;
+                    $official[] = $preset;
 
                     continue 2;
                 }

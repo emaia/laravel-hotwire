@@ -6,21 +6,21 @@ use Emaia\LaravelHotwire\Support\CssPresetFiles;
 use Emaia\LaravelHotwire\Support\CssRules;
 use Emaia\LaravelHotwire\Support\PresetAxes;
 
-it('keeps Nova explicit variant and size defaults aligned with component constructors', function () {
-    expect(novaExplicitDefaultGaps(app(CssPresetFiles::class)->source('nova')->visualCss()))->toBe([]);
-});
+it('keeps official preset variant and size defaults aligned with component constructors', function (string $preset) {
+    expect(presetExplicitDefaultGaps(app(CssPresetFiles::class)->source($preset)->visualCss()))->toBe([]);
+})->with(['bloom', 'nova']);
 
-it('keeps each Nova base-styled default exemption load-bearing', function () {
-    $css = app(CssPresetFiles::class)->source('nova')->visualCss();
+it('keeps each base-styled default exemption load-bearing', function (string $preset) {
+    $css = app(CssPresetFiles::class)->source($preset)->visualCss();
     $withExplicitDefaults = $css;
     $withoutBaseRules = $css;
     $explicitDiagnostics = [];
     $missingBaseDiagnostics = [];
 
-    foreach (novaBaseStyledDefaults() as $exemption) {
+    foreach (presetBaseStyledDefaults() as $exemption) {
         ['component' => $component, 'slot' => $slot, 'axis' => $axis, 'default' => $default] = $exemption;
         $withExplicitDefaults .= "\n[data-slot=\"{$slot}\"][data-{$axis}=\"{$default}\"] { color: red; }";
-        ['css' => $withoutBaseRules, 'replacements' => $replacements] = renameNovaBaseSelector($withoutBaseRules, $slot);
+        ['css' => $withoutBaseRules, 'replacements' => $replacements] = renamePresetBaseSelector($withoutBaseRules, $slot);
 
         expect($replacements)->toBeGreaterThan(0, "Base selector for [{$slot}] was not renamed.");
 
@@ -31,10 +31,10 @@ it('keeps each Nova base-styled default exemption load-bearing', function () {
     sort($explicitDiagnostics);
     sort($missingBaseDiagnostics);
 
-    expect(novaObsoleteBaseDefaultExemptions($css))->toBe([])
-        ->and(novaObsoleteBaseDefaultExemptions($withExplicitDefaults))->toBe($explicitDiagnostics)
-        ->and(novaObsoleteBaseDefaultExemptions($withoutBaseRules))->toBe($missingBaseDiagnostics);
-});
+    expect(presetObsoleteBaseDefaultExemptions($css))->toBe([])
+        ->and(presetObsoleteBaseDefaultExemptions($withExplicitDefaults))->toBe($explicitDiagnostics)
+        ->and(presetObsoleteBaseDefaultExemptions($withoutBaseRules))->toBe($missingBaseDiagnostics);
+})->with(['bloom', 'nova']);
 
 it('recognizes unqualified slots in grouped selectors as declaration-bearing base rules', function () {
     $css = <<<'CSS'
@@ -44,13 +44,13 @@ it('recognizes unqualified slots in grouped selectors as declaration-bearing bas
 [data-state="open"] { [data-slot="nested-slot"] { color: purple; } }
 CSS;
 
-    expect(novaHasBaseRule($css, 'avatar'))->toBeTrue()
-        ->and(novaHasBaseRule($css, 'card'))->toBeTrue()
-        ->and(novaHasBaseRule($css, 'marker'))->toBeTrue()
-        ->and(novaHasBaseRule($css, 'dropdown-item'))->toBeFalse()
-        ->and(novaHasBaseRule($css, 'sidebar-menu-button'))->toBeFalse()
-        ->and(novaHasBaseRule($css, 'attachment-media'))->toBeFalse()
-        ->and(novaHasBaseRule($css, 'nested-slot'))->toBeFalse();
+    expect(presetHasBaseRule($css, 'avatar'))->toBeTrue()
+        ->and(presetHasBaseRule($css, 'card'))->toBeTrue()
+        ->and(presetHasBaseRule($css, 'marker'))->toBeTrue()
+        ->and(presetHasBaseRule($css, 'dropdown-item'))->toBeFalse()
+        ->and(presetHasBaseRule($css, 'sidebar-menu-button'))->toBeFalse()
+        ->and(presetHasBaseRule($css, 'attachment-media'))->toBeFalse()
+        ->and(presetHasBaseRule($css, 'nested-slot'))->toBeFalse();
 });
 
 it('renames an unqualified slot inside a multiline grouped base selector', function () {
@@ -62,27 +62,27 @@ it('renames an unqualified slot inside a multiline grouped base selector', funct
 ) { color: red; }
 CSS;
 
-    ['css' => $renamed, 'replacements' => $replacements] = renameNovaBaseSelector($css, 'avatar');
-    ['replacements' => $nestedReplacements] = renameNovaBaseSelector(
+    ['css' => $renamed, 'replacements' => $replacements] = renamePresetBaseSelector($css, 'avatar');
+    ['replacements' => $nestedReplacements] = renamePresetBaseSelector(
         '[data-state="open"] { [data-slot="avatar"] { color: red; } }',
         'avatar',
     );
 
     expect($replacements)->toBeGreaterThan(0)
-        ->and(novaHasBaseRule($renamed, 'avatar'))->toBeFalse()
-        ->and(novaHasBaseRule($renamed, 'card'))->toBeTrue()
+        ->and(presetHasBaseRule($renamed, 'avatar'))->toBeFalse()
+        ->and(presetHasBaseRule($renamed, 'card'))->toBeTrue()
         ->and($nestedReplacements)->toBe(0);
 });
 
 it('keeps Nova defaults that intentionally omit their data attribute load-bearing', function () {
     expect(renderedSlots(renderAxisComponent('drawer')))->toContain('drawer-popup')
         ->and(renderedSlots(renderAxisComponent('sheet')))->toContain('sheet-content')
-        ->and(novaObsoleteNonAttributeDefaultExemptions())->toBe([]);
+        ->and(presetObsoleteNonAttributeDefaultExemptions())->toBe([]);
 
-    $stale = novaNonAttributeDefaults();
+    $stale = presetNonAttributeDefaults();
     $stale[0]['axis'] = 'removed-size';
 
-    expect(novaObsoleteNonAttributeDefaultExemptions($stale))->toBe([
+    expect(presetObsoleteNonAttributeDefaultExemptions($stale))->toBe([
         "drawer: non-attribute exemption for \$removed-size default '' references a missing constructor parameter",
     ]);
 });
@@ -92,7 +92,7 @@ it('reports a non-attribute exemption when the default starts rendering an attri
         ? '<div data-slot="drawer-popup" data-size=""></div>'
         : renderAxisComponent($component);
 
-    expect(novaObsoleteNonAttributeDefaultExemptions(null, $render))->toBe([
+    expect(presetObsoleteNonAttributeDefaultExemptions(null, $render))->toBe([
         "drawer: non-attribute exemption for \$size default '' is obsolete because data-size is now rendered",
     ]);
 });
@@ -102,14 +102,14 @@ it('reports component render failures separately from missing Nova selectors', f
         ? throw new RuntimeException('fixture render failure')
         : renderAxisComponent($component);
 
-    expect(novaExplicitDefaultGaps(app(CssPresetFiles::class)->source('nova')->visualCss(), $render))->toBe([
+    expect(presetExplicitDefaultGaps(app(CssPresetFiles::class)->source('nova')->visualCss(), $render))->toBe([
         "button: could not render while auditing \$size default 'default': fixture render failure",
         "button: could not render while auditing \$variant default 'default': fixture render failure",
     ]);
 });
 
 it('detects a renamed explicit Nova default selector', function () {
-    ['css' => $css, 'replacements' => $replacements] = renameNovaAxisSelector(
+    ['css' => $css, 'replacements' => $replacements] = renamePresetAxisSelector(
         app(CssPresetFiles::class)->source('nova')->visualCss(),
         'navbar',
         'variant',
@@ -117,11 +117,11 @@ it('detects a renamed explicit Nova default selector', function () {
     );
 
     expect($replacements)->toBeGreaterThan(0)
-        ->and(novaExplicitDefaultGaps($css))->toBe(["navbar: \$variant default 'line' is not styled on [data-slot=\"navbar\"]"]);
+        ->and(presetExplicitDefaultGaps($css))->toBe(["navbar: \$variant default 'line' is not styled on [data-slot=\"navbar\"]"]);
 });
 
 it('detects a renamed explicit Nova default selector named default', function () {
-    ['css' => $css, 'replacements' => $replacements] = renameNovaAxisSelector(
+    ['css' => $css, 'replacements' => $replacements] = renamePresetAxisSelector(
         app(CssPresetFiles::class)->source('nova')->visualCss(),
         'button',
         'variant',
@@ -129,11 +129,11 @@ it('detects a renamed explicit Nova default selector named default', function ()
     );
 
     expect($replacements)->toBeGreaterThan(0)
-        ->and(novaExplicitDefaultGaps($css))->toBe(["button: \$variant default 'default' is not styled on [data-slot=\"button\"]"]);
+        ->and(presetExplicitDefaultGaps($css))->toBe(["button: \$variant default 'default' is not styled on [data-slot=\"button\"]"]);
 });
 
 it('detects a renamed explicit Nova default selector named icon', function () {
-    ['css' => $css, 'replacements' => $replacements] = renameNovaAxisSelector(
+    ['css' => $css, 'replacements' => $replacements] = renamePresetAxisSelector(
         app(CssPresetFiles::class)->source('nova')->visualCss(),
         'color-scheme-toggle',
         'size',
@@ -141,11 +141,11 @@ it('detects a renamed explicit Nova default selector named icon', function () {
     );
 
     expect($replacements)->toBeGreaterThan(0)
-        ->and(novaExplicitDefaultGaps($css))->toBe(["color-scheme.toggle: \$size default 'icon' is not styled on [data-slot=\"color-scheme-toggle\"]"]);
+        ->and(presetExplicitDefaultGaps($css))->toBe(["color-scheme.toggle: \$size default 'icon' is not styled on [data-slot=\"color-scheme-toggle\"]"]);
 });
 
 it('checks an explicit Nova default against the subcomponent slot that emits it', function () {
-    ['css' => $css, 'replacements' => $replacements] = renameNovaAxisSelector(
+    ['css' => $css, 'replacements' => $replacements] = renamePresetAxisSelector(
         app(CssPresetFiles::class)->source('nova')->visualCss(),
         'modal-close',
         'variant',
@@ -153,11 +153,11 @@ it('checks an explicit Nova default against the subcomponent slot that emits it'
     );
 
     expect($replacements)->toBeGreaterThan(0)
-        ->and(novaExplicitDefaultGaps($css))->toBe(["modal.close: \$variant default 'outline' is not styled on [data-slot=\"modal-close\"]"]);
+        ->and(presetExplicitDefaultGaps($css))->toBe(["modal.close: \$variant default 'outline' is not styled on [data-slot=\"modal-close\"]"]);
 });
 
 it('checks Toggle Group defaults against its inherited item axes', function () {
-    ['css' => $css, 'replacements' => $replacements] = renameNovaAxisSelector(
+    ['css' => $css, 'replacements' => $replacements] = renamePresetAxisSelector(
         app(CssPresetFiles::class)->source('nova')->visualCss(),
         'toggle-group-item',
         'variant',
@@ -165,11 +165,11 @@ it('checks Toggle Group defaults against its inherited item axes', function () {
     );
 
     expect($replacements)->toBeGreaterThan(0)
-        ->and(novaExplicitDefaultGaps($css))->toBe(["toggle-group: \$variant default 'default' is not styled on [data-slot=\"toggle-group-item\"]"]);
+        ->and(presetExplicitDefaultGaps($css))->toBe(["toggle-group: \$variant default 'default' is not styled on [data-slot=\"toggle-group-item\"]"]);
 });
 
 it('checks Modal size defaults against its positioner', function () {
-    ['css' => $css, 'replacements' => $replacements] = renameNovaAxisSelector(
+    ['css' => $css, 'replacements' => $replacements] = renamePresetAxisSelector(
         app(CssPresetFiles::class)->source('nova')->visualCss(),
         'modal-positioner',
         'size',
@@ -177,24 +177,24 @@ it('checks Modal size defaults against its positioner', function () {
     );
 
     expect($replacements)->toBeGreaterThan(0)
-        ->and(novaExplicitDefaultGaps($css))->toBe(["modal: \$size default 'md' is not styled on [data-slot=\"modal-positioner\"]"]);
+        ->and(presetExplicitDefaultGaps($css))->toBe(["modal: \$size default 'md' is not styled on [data-slot=\"modal-positioner\"]"]);
 });
 
 it('detects removal of an entire explicit Nova axis', function () {
-    ['css' => $css, 'replacements' => $replacements] = renameNovaAxisSelector(
+    ['css' => $css, 'replacements' => $replacements] = renamePresetAxisSelector(
         app(CssPresetFiles::class)->source('nova')->visualCss(),
         'switch',
         'size',
     );
 
     expect($replacements)->toBeGreaterThan(0)
-        ->and(novaExplicitDefaultGaps($css))->toBe(["switch: \$size default 'default' is not styled on [data-slot=\"switch\"]"]);
+        ->and(presetExplicitDefaultGaps($css))->toBe(["switch: \$size default 'default' is not styled on [data-slot=\"switch\"]"]);
 });
 
 /** @return list<array{component: string, slot: string, axis: string, default: string}> */
-function novaBaseStyledDefaults(): array
+function presetBaseStyledDefaults(): array
 {
-    // Nova applies these defaults in each slot's base rule and only selects their alternatives explicitly.
+    // Every official preset applies these defaults in the slot's base rule and only selects alternatives explicitly.
     return [
         ['component' => 'attachment.media', 'slot' => 'attachment-media', 'axis' => 'variant', 'default' => 'icon'],
         ['component' => 'avatar', 'slot' => 'avatar', 'axis' => 'size', 'default' => 'default'],
@@ -206,7 +206,7 @@ function novaBaseStyledDefaults(): array
 }
 
 /** @return list<array{component: string, axis: string, default: string}> */
-function novaNonAttributeDefaults(): array
+function presetNonAttributeDefaults(): array
 {
     // Drawer and Sheet intentionally omit data-size when their unconstrained default is selected.
     return [
@@ -216,16 +216,16 @@ function novaNonAttributeDefaults(): array
 }
 
 /** @return string[] */
-function novaExplicitDefaultGaps(string $css, ?Closure $renderComponent = null): array
+function presetExplicitDefaultGaps(string $css, ?Closure $renderComponent = null): array
 {
-    $baseStyledDefaults = collect(novaBaseStyledDefaults())
+    $baseStyledDefaults = collect(presetBaseStyledDefaults())
         ->keyBy(fn (array $default): string => implode('|', [
             $default['component'],
             $default['slot'],
             $default['axis'],
             $default['default'],
         ]));
-    $nonAttributeDefaults = collect(novaNonAttributeDefaults())
+    $nonAttributeDefaults = collect(presetNonAttributeDefaults())
         ->keyBy(fn (array $default): string => "{$default['component']}|{$default['axis']}");
     $styled = (new PresetAxes)->extract($css);
     $components = HotwireRegistry::make()->components();
@@ -269,14 +269,14 @@ function novaExplicitDefaultGaps(string $css, ?Closure $renderComponent = null):
                 continue;
             }
 
-            $slots = novaAxisTargetSlots($key, $axis, $default, $html);
+            $slots = presetAxisTargetSlots($key, $axis, $default, $html);
 
             if ($slots === []) {
                 $gaps[] = "{$key}: \${$axis} default '{$default}' renders no matching data-{$axis} slot";
             }
 
             foreach ($slots as $slot) {
-                if ($baseStyledDefaults->has("{$key}|{$slot}|{$axis}|{$default}")) {
+                if ($baseStyledDefaults->has("{$key}|{$slot}|{$axis}|{$default}") && presetHasBaseRule($css, $slot)) {
                     continue;
                 }
 
@@ -296,18 +296,18 @@ function novaExplicitDefaultGaps(string $css, ?Closure $renderComponent = null):
 }
 
 /** @return string[] */
-function novaObsoleteBaseDefaultExemptions(string $css, ?Closure $renderComponent = null): array
+function presetObsoleteBaseDefaultExemptions(string $css, ?Closure $renderComponent = null): array
 {
     $styled = (new PresetAxes)->extract($css);
     $components = HotwireRegistry::make()->components();
     $classes = collect($components)->map(fn ($definition): string => $definition->class)
         ->merge(ComponentAliases::subComponents())
         ->all();
-    $baseRuleSlots = novaBaseRuleSlots($css);
+    $baseRuleSlots = presetBaseRuleSlots($css);
     $obsolete = [];
     $renderComponent ??= fn (string $component): string => renderAxisComponent($component);
 
-    foreach (novaBaseStyledDefaults() as $exemption) {
+    foreach (presetBaseStyledDefaults() as $exemption) {
         ['component' => $key, 'slot' => $slot, 'axis' => $axis, 'default' => $default] = $exemption;
         $class = $classes[$key] ?? null;
         $subject = "{$key}: \${$axis} default '{$default}'";
@@ -356,7 +356,7 @@ function novaObsoleteBaseDefaultExemptions(string $css, ?Closure $renderComponen
             continue;
         }
 
-        if (! in_array($slot, novaAxisTargetSlots($key, $axis, $default, $html), true)) {
+        if (! in_array($slot, presetAxisTargetSlots($key, $axis, $default, $html), true)) {
             $obsolete[] = "{$subject} does not render [data-slot=\"{$slot}\"] with data-{$axis}=\"{$default}\"";
 
             continue;
@@ -382,9 +382,9 @@ function novaObsoleteBaseDefaultExemptions(string $css, ?Closure $renderComponen
  * @param  null|list<array{component: string, axis: string, default: string}>  $exemptions
  * @return string[]
  */
-function novaObsoleteNonAttributeDefaultExemptions(?array $exemptions = null, ?Closure $renderComponent = null): array
+function presetObsoleteNonAttributeDefaultExemptions(?array $exemptions = null, ?Closure $renderComponent = null): array
 {
-    $exemptions ??= novaNonAttributeDefaults();
+    $exemptions ??= presetNonAttributeDefaults();
     $components = HotwireRegistry::make()->components();
     $classes = collect($components)->map(fn ($definition): string => $definition->class)
         ->merge(ComponentAliases::subComponents())
@@ -443,13 +443,13 @@ function novaObsoleteNonAttributeDefaultExemptions(?array $exemptions = null, ?C
     return $obsolete;
 }
 
-function novaHasBaseRule(string $css, string $slot): bool
+function presetHasBaseRule(string $css, string $slot): bool
 {
-    return in_array($slot, novaBaseRuleSlots($css), true);
+    return in_array($slot, presetBaseRuleSlots($css), true);
 }
 
 /** @return string[] */
-function novaBaseRuleSlots(string $css): array
+function presetBaseRuleSlots(string $css): array
 {
     $rules = new CssRules;
     $slots = [];
@@ -465,7 +465,7 @@ function novaBaseRuleSlots(string $css): array
             continue;
         }
 
-        foreach (novaTopLevelSelectorBranches($selector) as $branch) {
+        foreach (presetTopLevelSelectorBranches($selector) as $branch) {
             if (preg_match('/^\[data-slot\s*=\s*["\']?([a-z][a-z0-9-]*)["\']?\]$/', $branch, $match) === 1) {
                 $slots[] = $match[1];
             }
@@ -476,15 +476,15 @@ function novaBaseRuleSlots(string $css): array
 }
 
 /** @return string[] */
-function novaTopLevelSelectorBranches(string $selector): array
+function presetTopLevelSelectorBranches(string $selector): array
 {
     $branches = [];
 
-    foreach (novaSplitSelectorList($selector) as $branch) {
+    foreach (presetSplitSelectorList($selector) as $branch) {
         $branch = trim($branch);
 
         if (preg_match('/^:(?:is|where)\((.*)\)$/s', $branch, $group) === 1) {
-            $branches = [...$branches, ...novaTopLevelSelectorBranches($group[1])];
+            $branches = [...$branches, ...presetTopLevelSelectorBranches($group[1])];
         } else {
             $branches[] = $branch;
         }
@@ -494,7 +494,7 @@ function novaTopLevelSelectorBranches(string $selector): array
 }
 
 /** @return string[] */
-function novaSplitSelectorList(string $selector): array
+function presetSplitSelectorList(string $selector): array
 {
     $branches = [''];
     $depth = 0;
@@ -530,11 +530,11 @@ function novaSplitSelectorList(string $selector): array
 }
 
 /** @return array{css: string, replacements: int} */
-function renameNovaBaseSelector(string $css, string $slot): array
+function renamePresetBaseSelector(string $css, string $slot): array
 {
     $css = (new CssRules)->stripComments($css);
 
-    if (! novaHasBaseRule($css, $slot)) {
+    if (! presetHasBaseRule($css, $slot)) {
         return ['css' => $css, 'replacements' => 0];
     }
 
@@ -544,7 +544,7 @@ function renameNovaBaseSelector(string $css, string $slot): array
     $renamed = preg_replace_callback('/([^{}]+)\{/', function (array $match) use ($attribute, $slot, &$replacements): string {
         $selector = trim($match[1]);
 
-        if (! collect(novaTopLevelSelectorBranches($selector))->contains(
+        if (! collect(presetTopLevelSelectorBranches($selector))->contains(
             fn (string $branch): bool => preg_match('/^\[data-slot\s*=\s*["\']?'.preg_quote($slot, '/').'["\']?\]$/', $branch) === 1
         )) {
             return $match[0];
@@ -566,7 +566,7 @@ function renameNovaBaseSelector(string $css, string $slot): array
 }
 
 /** @return array{css: string, replacements: int} */
-function renameNovaAxisSelector(string $css, string $slot, string $axis, ?string $value = null): array
+function renamePresetAxisSelector(string $css, string $slot, string $axis, ?string $value = null): array
 {
     $rules = new CssRules;
     $replacements = 0;
@@ -589,7 +589,7 @@ function renameNovaAxisSelector(string $css, string $slot, string $axis, ?string
 }
 
 /** @return string[] */
-function novaAxisTargetSlots(string $key, string $axis, string $default, string $html): array
+function presetAxisTargetSlots(string $key, string $axis, string $default, string $html): array
 {
     $targets = [
         'modal' => ['size' => ['modal-positioner']],

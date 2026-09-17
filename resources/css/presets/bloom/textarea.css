@@ -1,0 +1,9 @@
+@layer components {
+    /* Textarea */
+    [data-slot="textarea"] { @apply flex min-h-24 w-full rounded-lg border border-input bg-muted/40 px-4 py-3 text-base text-foreground shadow-xs transition-[color,background-color,border-color,box-shadow] outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:bg-background focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-[3px] aria-invalid:ring-destructive/20 md:text-sm; }
+    [data-slot="textarea-counter"] { @apply mt-1 block text-end text-xs text-muted-foreground tabular-nums; }
+
+    @scope ([data-theme="dark"]) to ([data-theme="light"]) {
+        :where(:scope, :scope *)[data-slot="textarea"] { @apply bg-input/40 focus-visible:bg-background disabled:bg-input/80 aria-invalid:border-destructive/50 aria-invalid:ring-destructive/40; }
+    }
+}

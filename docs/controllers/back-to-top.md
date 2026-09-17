@@ -4,7 +4,7 @@ Toggles `data-visible` and `inert` on the controller element as the window scrol
 and exposes a `scrollToTop` action that scrolls smoothly back to the top while respecting
 `prefers-reduced-motion`.
 
-Use the [`<hw:back-to-top>`](../components/back-to-top.md) component for accessible markup and Nova preset styling.
+Use the [`<hw:back-to-top>`](../components/back-to-top.md) component for accessible markup and selected-preset styling.
 The standalone controller ships no styling, so custom markup must provide its own visible states.
 
 **Identifier:** `back-to-top`  

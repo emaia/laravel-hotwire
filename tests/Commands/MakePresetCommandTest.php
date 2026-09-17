@@ -260,11 +260,11 @@ function tokenFilesystem(string $tokens): Filesystem
     };
 }
 
-it('clones a shipped preset with package imports and flattened visual sources', function () {
-    $this->artisan('hotwire:make-preset brand --from=nova --no-interaction')
+it('clones each shipped preset with package imports and flattened visual sources', function (string $preset) {
+    $this->artisan("hotwire:make-preset brand --from={$preset} --no-interaction")
         ->assertSuccessful();
 
-    $source = app(CssPresetFiles::class)->source('nova');
+    $source = app(CssPresetFiles::class)->source($preset);
     $expected = implode("\n", [
         '@import "../../../vendor/emaia/laravel-hotwire/resources/css/foundation.css";',
         '',
@@ -273,7 +273,7 @@ it('clones a shipped preset with package imports and flattened visual sources', 
     ]);
 
     expect(File::get($this->targetDir.'/brand.css'))->toBe($expected);
-});
+})->with(['bloom', 'nova']);
 
 it('clones a synthetic preset without preserving its private source organization', function () {
     $presets = syntheticCssPresetFiles();

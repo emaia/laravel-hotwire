@@ -6,15 +6,30 @@ Laravel Hotwire components render semantic attributes (`data-slot`, `data-varian
 
 ```bash
 php artisan hotwire:install --preset=nova
+php artisan hotwire:install --preset=bloom
 ```
 
-The installer writes a thin `resources/css/app.css` that imports Tailwind and enables one preset:
+Nova remains the default compact, neutral preset. Bloom is the spacious and elevated alternative: a chromatic palette,
+restrained control radii, status-tinted notification surfaces, an offset focus outline and softer motion.
+Both style the same Blade markup, semantic slots, controllers and accessibility states; choose one preset per build.
+Bloom re-declares shared tokens and registers a small set of additional status and geometry tokens; shared application
+overrides work the same under either preset — see [`theming.md`](theming.md#preset-owned-tokens).
+
+The installer writes a thin `resources/css/app.css` that imports Tailwind, enables one preset and keeps the other
+official choices visible beside it:
 
 ```css
 @import "tailwindcss";
 
+/* Presets: keep exactly one import active. */
 @import '../../vendor/emaia/laravel-hotwire/resources/css/presets/nova.css';
+/* @import '../../vendor/emaia/laravel-hotwire/resources/css/presets/bloom.css'; */
 ```
+
+Switch presets by commenting the active import and uncommenting another one. Alternatively, pass `--preset=bloom`
+during installation; the command writes Bloom as the one active import and leaves Nova commented. Do not enable two
+complete presets in the same CSS entrypoint; `hotwire:check` reports the entrypoint and active preset names when it
+finds more than one.
 
 That public entrypoint imports `foundation.css`, then aggregates the selected preset's ordered visual sources. Their
 grouping and internal paths are implementation details; applications should keep importing the public
@@ -105,7 +120,8 @@ components were listed.
 The generated file starts with the package marker and should not be edited. Re-run the same command with `--force`
 after changing the selection or upgrading Laravel Hotwire. Only an existing `hotwire:styles` bundle is replaceable;
 application-owned files and other package-marked CSS are never replaced, even with `--force`. If the complete set of
-dynamic components is not known, keep the public `presets/nova.css` import as the fallback instead of guessing.
+dynamic components is not known, keep the selected public `presets/<name>.css` import as the fallback instead of
+guessing.
 
 Generated bundles also record their canonical component, controller and module selection in a versioned header.
 `hotwire:check` inspects marked bundles under `resources/css` and reports visual components/controllers found in the
@@ -158,10 +174,11 @@ Replace the vendor preset import in `resources/css/app.css` with the line printe
 @import './presets/brand.css';
 ```
 
-To customize Nova instead of starting from empty selectors, clone it into the application:
+To customize an official preset instead of starting from empty selectors, clone Nova or Bloom into the application:
 
 ```bash
 php artisan hotwire:make-preset brand --from=nova
+php artisan hotwire:make-preset brand --from=bloom
 ```
 
 The clone is one application-owned file: the live `foundation.css` import is rewritten to its vendor path, while the

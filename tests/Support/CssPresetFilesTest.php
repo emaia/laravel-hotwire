@@ -20,6 +20,9 @@ it('discovers shipped css presets in sorted order', function () {
 
     expect($presets->all())->toBe($expected)
         ->and($presets->names())->toBe(array_keys($expected))
+        ->and($presets->names())->toBe(['bloom', 'nova'])
+        ->and($presets->path('bloom'))->toBe($expected['bloom'])
+        ->and($presets->source('bloom')?->visualCss())->toContain('[data-slot="button"]')
         ->and($presets->path('nova'))->toBe($expected['nova'])
         ->and($presets->source('nova')?->visualCss())->toContain('[data-slot="button"]')
         ->and($presets->path('missing'))->toBeNull();

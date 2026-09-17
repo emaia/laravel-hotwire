@@ -130,6 +130,24 @@ it('records a canonical regeneration plan with effective modules and controllers
         ->not->toContain('overlay-foundation');
 });
 
+it('generates a selective Bloom bundle with its preset recorded', function () {
+    $this->artisan('hotwire:styles --preset=bloom --components=modal --no-interaction')
+        ->assertSuccessful();
+
+    $css = File::get($this->output);
+    $plan = app(GeneratedStyleBundle::class)->planFromContent($css);
+
+    expect($plan)
+        ->not->toBeNull()
+        ->and($plan['preset'])->toBe('bloom')
+        ->and($css)
+        ->toContain('--radius:')
+        ->toContain('--primary:')
+        ->toContain('[data-slot="modal-panel"]')
+        ->toContain('[data-slot="modal-trigger"]')
+        ->not->toContain('[data-slot="carousel"]');
+});
+
 it('treats equivalent selection order as an idempotent generation', function () {
     $this->artisan('hotwire:styles --components=modal,badge --no-interaction')->assertSuccessful();
 

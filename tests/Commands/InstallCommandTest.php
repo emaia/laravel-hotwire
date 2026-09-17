@@ -372,10 +372,20 @@ it('selects every available css preset', function (string $preset) {
         ->assertSuccessful();
 
     $css = File::get(resource_path('css/app.css'));
+    $import = fn (string $name): string => "@import '../../vendor/emaia/laravel-hotwire/resources/css/presets/{$name}.css';";
+    preg_match_all("#^@import '../../vendor/emaia/laravel-hotwire/resources/css/presets/[^']+\\.css';$#m", $css, $active);
 
     expect($css)
-        ->toContain("@import '../../vendor/emaia/laravel-hotwire/resources/css/presets/{$preset}.css';")
-        ->toContain('/* Preset: import one default design system. */');
+        ->toMatch('/^'.preg_quote($import($preset), '/').'$/m')
+        ->toContain('/* Presets: keep exactly one import active. */')
+        ->not->toContain('Nova is the default.')
+        ->and($active[0])->toBe([$import($preset)]);
+
+    foreach ($this->app->make(CssPresetFiles::class)->names() as $available) {
+        if ($available !== $preset) {
+            expect($css)->toContain('/* '.$import($available).' */');
+        }
+    }
 })->with('css presets');
 
 it('selects synthetic official presets without depending on Nova internals', function (string $preset) {
@@ -385,8 +395,18 @@ it('selects synthetic official presets without depending on Nova internals', fun
     $this->artisan("hotwire:install --only=css --preset={$preset} --no-interaction")
         ->assertSuccessful();
 
-    expect(File::get(resource_path('css/app.css')))
-        ->toContain("@import '../../vendor/emaia/laravel-hotwire/resources/css/presets/{$preset}.css';");
+    $css = File::get(resource_path('css/app.css'));
+    $import = fn (string $name): string => "@import '../../vendor/emaia/laravel-hotwire/resources/css/presets/{$name}.css';";
+    preg_match_all("#^@import '../../vendor/emaia/laravel-hotwire/resources/css/presets/[^']+\\.css';$#m", $css, $active);
+
+    expect($css)->toMatch('/^'.preg_quote($import($preset), '/').'$/m')
+        ->and($active[0])->toBe([$import($preset)]);
+
+    foreach ($this->app->make(CssPresetFiles::class)->names() as $available) {
+        if ($available !== $preset) {
+            expect($css)->toContain('/* '.$import($available).' */');
+        }
+    }
 })->with('synthetic css presets');
 
 it('rejects invalid css presets', function () {

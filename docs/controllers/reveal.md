@@ -4,7 +4,7 @@ Coordinate CSS-owned entrance cascades with per-item viewport observation, finit
 safety, and JavaScript effects that must begin when an item is actually shown.
 
 Use [`<hw:reveal>`](../components/reveal.md) for automatic indexing, first-paint structural CSS, validated options, and
-Nova motion presets.
+selected-preset motion.
 
 **Identifier:** `reveal`
 

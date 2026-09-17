@@ -323,12 +323,14 @@ it('keeps rules that name no slot out of preset modules', function (string $pres
     $css = $source->moduleCss();
     $slotless = [];
 
-    foreach ((new CssRules)->parse((new CssRules)->stripComments($css)) as ['chain' => $chain]) {
+    foreach ((new CssRules)->parse((new CssRules)->stripComments($css)) as ['chain' => $chain, 'declarations' => $declarations]) {
         $selector = (string) end($chain);
 
-        if (! str_contains($selector, 'data-slot') && ! str_ends_with($selector, '%')) {
-            $slotless[] = $selector;
+        if (str_contains($selector, 'data-slot') || str_ends_with($selector, '%')) {
+            continue;
         }
+
+        $slotless[] = $selector;
     }
 
     expect($slotless)->toBe([], "Preset [{$preset}] styles something no component owns. Structural rules belong in resources/css/structural.css.")

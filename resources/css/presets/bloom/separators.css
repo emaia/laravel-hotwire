@@ -1,0 +1,4 @@
+@layer components {
+    /* Separator */
+    [data-slot="separator"], [data-slot="item-separator"], [data-slot="button-group-separator"] { @apply shrink-0 bg-border data-[orientation=horizontal]:h-px data-[orientation=horizontal]:w-full data-[orientation=vertical]:w-px data-[orientation=vertical]:self-stretch; }
+}

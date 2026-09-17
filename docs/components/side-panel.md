@@ -115,11 +115,11 @@ ancestor with `overflow: hidden`.
 Motion properties are inherited from the visual root, while structural CSS keeps ownership of the `inline-size` and
 content-opacity transitions:
 
-| Property                               | Nova default  | Purpose                                            |
-| -------------------------------------- | ------------- | -------------------------------------------------- |
-| `--side-panel-motion-duration`         | `200ms`       | Panel, rail, trigger and trigger-icon transitions. |
-| `--side-panel-content-motion-duration` | `150ms`       | Panel-content opacity transition.                  |
-| `--side-panel-motion-easing`           | `ease-in-out` | Easing shared by the complete motion system.       |
+| Property                               | Nova default  | Bloom default                    | Purpose                                            |
+| -------------------------------------- | ------------- | -------------------------------- | -------------------------------------------------- |
+| `--side-panel-motion-duration`         | `200ms`       | `280ms`                          | Panel, rail, trigger and trigger-icon transitions. |
+| `--side-panel-content-motion-duration` | `150ms`       | `220ms`                          | Panel-content opacity transition.                  |
+| `--side-panel-motion-easing`           | `ease-in-out` | `cubic-bezier(0.22, 1, 0.36, 1)` | Easing shared by the complete motion system.       |
 
 Declare these properties on `data-slot="side-panel"` after importing the preset. Shared reduced-motion CSS disables all
 of these transitions regardless of their configured values.

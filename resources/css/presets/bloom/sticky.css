@@ -1,0 +1,7 @@
+@layer components {
+    /* Navbar */
+    [data-slot="sticky"] { @apply z-30; }
+    [data-slot="sticky"][data-surface="true"] { @apply border-primary/15 bg-card/90 shadow-lg backdrop-blur-xl supports-[backdrop-filter]:bg-card/75; }
+    [data-slot="sticky"][data-surface="true"][data-side="top"] { @apply border-b; }
+    [data-slot="sticky"][data-surface="true"][data-side="bottom"] { @apply border-t; }
+}

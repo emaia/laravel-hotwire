@@ -79,7 +79,7 @@ This is presentation, not lazy loading: all content remains in the document and 
 
 ## Motion and timing
 
-The structural foundation routes three motions, while Nova supplies their visual blur and shift values:
+The structural foundation routes three motions, while the selected preset supplies their visual blur and shift values:
 
 | Motion | Effect |
 | ------ | ------ |
@@ -109,6 +109,10 @@ set `--reveal-animation`:
     ...
 </hw:reveal>
 ```
+
+Nova uses the structural defaults (`6px` blur, `0.75rem` shift, `520ms` duration and `70ms` stagger). Bloom uses a
+softer authored profile (`12px`, `1.25rem`, `680ms` and `90ms`) with a longer ease-out curve. Explicit `stagger`,
+`duration` and other component props still override the selected preset through inline custom properties.
 
 ## Render and document scope
 
@@ -171,18 +175,19 @@ Root tags support `div`, `section`, `main`, `header`, `footer`, `aside`, `nav`, 
 ## Progressive enhancement
 
 Structural CSS contains the visibility, delay formula, armed state, `flat`/`fade` routing, layer-safe fallback keyframes,
-Turbo safeguards, and reduced-motion fallback. Nova supplies visual motion variables. A preset may redefine the named
-fallback keyframes in its own `components` layer without replacing the scheduling machinery. This split means the initial
-cascade starts before the lazy controller chunk connects. If JavaScript is disabled or fails, content still completes its
-CSS animation and remains visible; `trigger="scroll"` simply degrades to the load cascade.
+Turbo safeguards, and reduced-motion fallback. The selected preset supplies visual motion variables. A preset may
+redefine the named fallback keyframes in its own `components` layer without replacing the scheduling machinery. This
+split means the initial cascade starts before the lazy controller chunk connects. If JavaScript is disabled or fails,
+content still completes its CSS animation and remains visible; `trigger="scroll"` simply degrades to the load cascade.
 
 With `prefers-reduced-motion: reduce`, animations are disabled, armed opacity is released, and the controller does not
 observe or restart animated numbers.
 
 Avoid making a Reveal item the same element whose visibility another state controls with `opacity`. CSS animations win
 over normal opacity declarations while running, so a hidden item can flash through the Reveal keyframe and disappear
-when `backwards` fill releases it. Animate a stable wrapper instead, or suppress Reveal in the conflicting state. Nova
-does this for desktop group labels in an icon-collapsed Sidebar while preserving their mobile and expanded entrances.
+when `backwards` fill releases it. Animate a stable wrapper instead, or suppress Reveal in the conflicting state. The
+shipped presets do this for desktop group labels in an icon-collapsed Sidebar while preserving their mobile and expanded
+entrances.
 
 ## Turning the cascade off
 
