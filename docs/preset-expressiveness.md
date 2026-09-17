@@ -93,6 +93,97 @@ The corpus found no preset-expressiveness blocker in the Alert contract. Sera's 
 destructive treatment remains a variant. The later authoring review added `alert.icon` so the family owns icon layout
 without requiring third-party graphics to emit the generic Icon slot.
 
+## Upstream corpus map
+
+The family findings above are prose. [`tests/Fixtures/shadcn`](../tests/Fixtures/shadcn) turns the same comparison into
+data that a test can check: `corpus.php` is the extracted inventory of every `.cn-*` class the eight styles declare, and
+`map.php` records what the package does about each one — plus the opposite direction, so every visual slot answers the
+corpus even when the corpus says nothing about it.
+
+It is study data. It is not a runtime registry, not a compatibility promise and not public API: upstream class names
+never become package API, and a decision recorded here never widens the official presets. `tests/Presets/ShadcnCorpusMapTest.php`
+asserts the package runtime never reads it.
+
+### Method
+
+Both revisions are pinned in the fixtures: shadcn/ui at
+[`3ba91b1c`](https://github.com/shadcn-ui/ui/tree/3ba91b1cc83e1bbe4ab35a422ff2a694849c5048) and the package revision the
+decisions were verified against. The inventory is the union of the eight `style-*.css` files, extracted with the command
+recorded in `corpus.reference.extraction`, which yields 425 classes. The densest single style declares 422 of them, so
+the corpus is deliberately the union rather than any one file.
+
+Each upstream class receives exactly one decision:
+
+| Decision         | Meaning                                                                  | Count |
+| ---------------- | ------------------------------------------------------------------------ | ----- |
+| `equivalent`     | Same part, same name as a declared slot                                   | 141   |
+| `renamed`        | Same part under a different name                                          | 29    |
+| `divergent`      | The package represents the concern, but not as a matching part            | 119   |
+| `not-applicable` | No package counterpart at all                                             | 136   |
+
+Each of the 296 visual slots receives the mirror decision — 141 `equivalent`, 29 `renamed`, 62 `divergent` and 64
+`hotwire-only`, the last where the corpus declares no class for the part. `equivalent` and `renamed` decisions are a
+bijection: exactly one upstream class may claim a slot, and the slot must name that class back.
+
+### Names were verified, not trusted
+
+147 corpus classes share a name with a declared slot. Verification kept 141 of them and demoted six, which is the
+reason the map exists at all rather than a name join:
+
+- `cn-alert-dialog-overlay`, `cn-drawer-overlay` and `cn-sheet-overlay` carry the dimming declarations, so they map to
+  the package's `*-backdrop`. The package's `*-overlay` is the presence layer that hosts the backdrop and the panel.
+- `cn-radio-group-item` is the control itself and maps to `radio-group-input`; the package's `radio-group-item` is the
+  label wrapper around the control and its content.
+- `cn-drawer-content` is the sliding panel in upstream's vaul variant, while the package's `drawer-content` is the
+  scrollable region inside `drawer-popup`. Same name, different part, so the decision is a divergence.
+- `cn-progress` and `cn-progress-track` carry identical bodies for the bar, because upstream names it twice. The
+  package's `progress` is the row holding label, track and value, so only `progress-track` is an equivalence.
+
+The corpus is only the class layer. Upstream also emits `data-slot` attributes and reaches parts such as
+`accordion-trigger-icon`, `checkbox-group`, `input-group-control` and `spinner` through descendant selectors on a
+parent's class. A slot with no class in the corpus is therefore not evidence that upstream lacks the part.
+
+### What the differences are
+
+The decisions group into four kinds of difference, which is the useful output for Bloom and for application presets.
+The counts below add up to the full 425:
+
+- **Common semantics — 170.** The `equivalent` and `renamed` decisions cover Accordion, Alert, Card, Field,
+  Item, Table, Sidebar, Attachment, Progress and the overlay families. Where a rename was needed it was consistent
+  vocabulary, not a different anatomy: `dialog-*` to `modal-*`, `dropdown-menu-*` to `dropdown-*`, `empty-*` to
+  `empty-state-*`, `native-select` to `select`, `tabs-content` to `tabs-panel`, `tooltip-content` to `tooltip`.
+- **Visual technique — 63.** These divergences exist only because upstream spells a value into the class name — `button-size-lg`,
+  `badge-variant-outline`, `item-size-sm`, `separator-horizontal`. The package keeps one part and selects `[data-variant]`,
+  `[data-size]`, `[data-orientation]` or `[data-align]` on it. None of these asks for a new part or a new axis.
+- **React particularity — 130.** 32 classes are React Aria substrate rules, restyling a part for the state attributes
+  React Aria emits — `data-entering`, `data-exiting`, `data-selected`, `data-invalid`, `data-focused`,
+  `data-focus-visible`, `data-placeholder` or `peer-data-disabled`, depending on the part — none of which the package
+  DOM carries. Another 81 belong to components the package does not ship: Menubar, Command palette, Context Menu,
+  Calendar, chat Bubble and Message, input OTP, Navigation Menu and Resizable. The remaining 17 are the
+  application-specific questionnaire block the study already declined to port.
+- **Deliberate divergence — 56.** Decisions, not gaps: native `<select>`, `<input type=range>`, checkbox and radio
+  instead of custom listboxes and indicator children; one `input-group-control` hook instead of one class per nested
+  control type; resolved physical `data-side` instead of logical `inline-start`/`inline-end` motion; a single Dropdown
+  menu surface instead of submenus and checkable items; Multi Select over a native control instead of a Combobox port.
+- **Neither — 6.** `cn-chart-tooltip`, the two vaul drawer swipe handles, `cn-menu-translucent` and the two Scroll Area
+  parts, each recorded as not applicable for its own reason.
+
+The `hotwire-only` slots are mostly package territory upstream has no equivalent for: File Upload, Read More, Reveal,
+Rich Text, Side Panel, Toaster internals, oEmbed, Timeago, Sticky, Back to Top, Scroll Progress and the Turbo-aware
+pagination loading state.
+
+### Guards
+
+`tests/Presets/ShadcnCorpusMapTest.php` fails when a corpus class has no decision, when a decision names a slot the
+registry does not declare, when a new visual slot enters the registry without a comparative decision, when a decided
+slot is no longer visual, and when an upstream class points at a slot recorded as having no upstream counterpart.
+
+Point `HOTWIRE_SHADCN_REFERENCE` at a checkout of the pinned revision and one further test re-runs the extraction and
+compares it to `corpus.php`, refusing to pass on a checkout that drifted from the pinned commit. It skips when no
+checkout is reachable, so the inventory is verified against upstream wherever one exists rather than only against
+itself.
+
+
 ## Recommended preset conformance policy
 
 This section records the policy applied by package tooling and the application-preset validator. Blank scaffolds come
