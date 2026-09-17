@@ -7,11 +7,7 @@ final readonly class CssSlots
 {
     public function __construct(private CssRules $rules) {}
 
-    /**
-     * Return slots participating in a style rule that has declarations.
-     *
-     * @return string[]
-     */
+    /** Return slots whose elements are subjects of declaration-bearing rules. */
     public function withDeclarations(string $css): array
     {
         $styled = [];
@@ -21,17 +17,81 @@ final readonly class CssSlots
                 continue;
             }
 
-            $selectorChain = implode(' ', array_filter($chain, fn (string $block): bool => ! str_starts_with($block, '@')));
-            preg_match_all('/\[data-slot\s*=\s*["\']?([a-z0-9-]+)["\']?\s*\]/', $selectorChain, $matches);
-            $styled = [...$styled, ...$matches[1]];
-
-            if (($root = $this->styledScopeRoot($chain)) !== null) {
-                preg_match_all('/\[data-slot\s*=\s*["\']?([a-z0-9-]+)["\']?\s*\]/', $root, $scopeMatches);
-                $styled = [...$styled, ...$scopeMatches[1]];
-            }
+            $styled = [...$styled, ...$this->participatingSlots($chain)];
         }
 
         return array_values(array_unique($styled));
+    }
+
+    /**
+     * @param  string[]  $chain
+     * @return string[]
+     */
+    private function participatingSlots(array $chain): array
+    {
+        $selectorIndex = count($chain) - 1;
+
+        while ($selectorIndex >= 0 && str_starts_with(trim($chain[$selectorIndex]), '@')) {
+            $selectorIndex--;
+        }
+
+        if ($selectorIndex < 0) {
+            return [];
+        }
+
+        $outerSlots = [];
+
+        for ($index = 0; $index < $selectorIndex; $index++) {
+            if (! str_starts_with(trim($chain[$index]), '@')) {
+                $outerSlots = [...$outerSlots, ...$this->selectorContextSlots($chain[$index])];
+            }
+        }
+
+        $slots = [];
+
+        foreach ($this->rules->splitTopLevel($chain[$selectorIndex], ',') as $single) {
+            $compounds = $this->rules->splitTopLevel($single, ' >+~|');
+            $subject = trim((string) end($compounds));
+            $pseudoElement = $this->compoundHasPseudoElement($subject);
+
+            foreach (array_slice($compounds, 0, -1) as $compound) {
+                $slots = [...$slots, ...$this->compoundSlots($compound)];
+            }
+
+            if (! $pseudoElement) {
+                $slots = [...$slots, ...$this->selectorSubjectSlots($single)];
+            }
+
+            if ($outerSlots !== [] && ! ($pseudoElement && $this->compoundContainsNestingSubject($subject))) {
+                $slots = [...$slots, ...$outerSlots];
+            }
+
+            if (! $pseudoElement && $this->containsScopeSubject($subject)) {
+                for ($ancestor = $selectorIndex - 1; $ancestor >= 0; $ancestor--) {
+                    if (($root = $this->rules->scopeRoot($chain[$ancestor])) !== null) {
+                        $slots = [...$slots, ...$this->selectorSubjectSlots($root)];
+
+                        break;
+                    }
+                }
+            }
+        }
+
+        return array_values(array_unique($slots));
+    }
+
+    /** @return string[] */
+    private function selectorContextSlots(string $selector): array
+    {
+        $slots = [];
+
+        foreach ($this->rules->splitTopLevel($selector, ',') as $single) {
+            foreach ($this->rules->splitTopLevel($single, ' >+~|') as $compound) {
+                $slots = [...$slots, ...$this->compoundSlots($compound)];
+            }
+        }
+
+        return array_values(array_unique($slots));
     }
 
     /**
@@ -83,29 +143,6 @@ final readonly class CssSlots
         }
 
         return array_values(array_unique($properties));
-    }
-
-    /** @param string[] $chain */
-    private function styledScopeRoot(array $chain): ?string
-    {
-        $selector = (string) end($chain);
-
-        foreach ($this->rules->splitTopLevel($selector, ',') as $single) {
-            $compounds = $this->rules->splitTopLevel($single, ' >+~|');
-            $subject = trim((string) end($compounds));
-
-            if (! $this->containsScopeSubject($subject) || $this->compoundHasPseudoElement($subject)) {
-                continue;
-            }
-
-            for ($index = count($chain) - 2; $index >= 0; $index--) {
-                if (($root = $this->rules->scopeRoot($chain[$index])) !== null) {
-                    return $root;
-                }
-            }
-        }
-
-        return null;
     }
 
     private function containsScopeSubject(string $selector): bool

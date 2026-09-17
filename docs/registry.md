@@ -165,7 +165,9 @@ expected to style them, and `hotwire:make-preset` leaves them out of the scaffol
 Use `preset_properties` only when structural CSS consumes a value that every complete preset must define. The registry
 value is the neutral declaration emitted by `hotwire:make-preset`; `hotwire:check` verifies that application presets keep
 the property on the named slot. For example, Sidebar scaffolds zero inset and edge contributions so its icon geometry
-remains valid before the preset author chooses a floating treatment.
+remains valid before the preset author chooses a floating treatment. Those neutral zeros retain the units consumed by
+the structural calculation (`0rem` for inset and `0px` for edge), so each custom property remains a length when combined
+with Sidebar widths through `calc()`.
 
 ## Slots and controller targets
 

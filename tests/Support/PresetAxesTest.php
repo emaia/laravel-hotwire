@@ -425,7 +425,8 @@ it('retains a valid scope prelude when a later nested rule is malformed', functi
         CSS;
 
     expect($extractor->coverage($css))->toBe(['visited' => 1, 'total' => 1])
-        ->and($extractor->unvisitedSlots($css))->toBe([]);
+        ->and($extractor->unvisitedSlots($css))->toBe([])
+        ->and($extractor->unprovableScopeSlots($css))->toBe(['root']);
 });
 
 it('retains a valid scope prelude after a malformed declaration in its body', function () {
@@ -438,7 +439,8 @@ it('retains a valid scope prelude after a malformed declaration in its body', fu
         CSS;
 
     expect($extractor->coverage($css))->toBe(['visited' => 1, 'total' => 1])
-        ->and($extractor->unvisitedSlots($css))->toBe([]);
+        ->and($extractor->unvisitedSlots($css))->toBe([])
+        ->and($extractor->unprovableScopeSlots($css))->toBe(['root']);
 });
 
 it('reads every slot occurrence of every shipped preset', function () {

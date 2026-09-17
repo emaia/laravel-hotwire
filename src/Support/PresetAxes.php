@@ -64,6 +64,18 @@ final class PresetAxes
         return $this->inspectCoverage($css)['unvisitedSlots'];
     }
 
+    /** Return slots rooted at scopes whose bodies contain syntax the parser discarded. */
+    public function unprovableScopeSlots(string $css): array
+    {
+        $slots = [];
+
+        foreach ($this->rules->analyze($css)['invalidScopeRoots'] as $root) {
+            $slots = [...$slots, ...array_keys($this->slotCounts($root)['mentions'])];
+        }
+
+        return array_values(array_unique($slots));
+    }
+
     /**
      * Inspect parser coverage and report whether the structural analysis completed.
      *

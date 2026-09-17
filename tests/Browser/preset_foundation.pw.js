@@ -336,6 +336,7 @@ test("structural table overflow and Sidebar gap geometry work without a visual p
     await page.locator("#sidebar").evaluate((sidebar) => {
         sidebar.dataset.variant = "floating";
     });
+    // Missing preset lengths invalidate calc(), so auto width fills the 1024px viewport.
     await expect(page.locator("#sidebar-gap")).toHaveCSS("width", "1024px");
 
     await page.locator("#sidebar").evaluate((sidebar) => {

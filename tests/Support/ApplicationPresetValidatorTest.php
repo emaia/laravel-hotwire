@@ -114,6 +114,20 @@ it('does not credit required properties declared on a non-element subject', func
     'negated slot' => '[data-slot="fixture-action"]:not([data-slot="fixture-panel"])',
 ]);
 
+it('does not count a pseudo-element rule as visual coverage for its slot', function (string $css) {
+    $path = $this->root.'/resources/css/presets/constellation/feedback.css';
+    $this->files->put($path, $css);
+
+    $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
+
+    expect($result['errors'])->toContain('Preset [constellation] is missing visual slots: fixture-status.')
+        ->and($result['styledSlots'])->not->toContain('fixture-status');
+})->with([
+    'direct subject' => '[data-slot="fixture-status"]::before { color: red; }',
+    'nested subject' => '[data-slot="fixture-status"] { &::before { color: red; } }',
+    'scope subject' => '@scope ([data-slot="fixture-status"]) { :scope::before { color: red; } }',
+]);
+
 it('credits required properties on a functional subject selector', function (string $selector) {
     $path = $this->root.'/resources/css/presets/constellation/surfaces.css';
     $this->files->put($path, str_replace(
@@ -198,7 +212,7 @@ it('does not credit required properties on a nested child or scoped pseudo-eleme
         CSS,
 ]);
 
-it('does not report an unprovable required property as proven missing', function () {
+it('warns when required preset properties cannot be proven', function () {
     $path = $this->root.'/resources/css/presets/constellation/surfaces.css';
     $this->files->put($path, <<<'CSS'
         [data-slot="fixture-panel"] { color: red; }
@@ -209,7 +223,26 @@ it('does not report an unprovable required property as proven missing', function
     $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
 
     expect($result['errors'])->toBe([])
-        ->and(implode(' ', $result['warnings']))->toContain('CSS analysis is incomplete');
+        ->and(implode(' ', $result['warnings']))->toContain('CSS analysis is incomplete')
+        ->and($result['warnings'])
+        ->toContain('Preset [constellation] could not prove required preset properties on [data-slot="fixture-panel"]: --fixture-panel-edge, --fixture-panel-inset.');
+});
+
+it('warns when required preset properties are inside a malformed scoped rule', function () {
+    $path = $this->root.'/resources/css/presets/constellation/surfaces.css';
+    $this->files->put($path, <<<'CSS'
+        @scope ([data-slot="fixture-panel"]) {
+            :scope { color: red; }
+            :scope { --fixture-panel-inset: 0rem; --fixture-panel-edge: 0px; ); }
+        }
+        [data-slot="fixture-action"] { color: red; }
+        CSS);
+
+    $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
+
+    expect($result['errors'])->toBe([])
+        ->and($result['warnings'])
+        ->toContain('Preset [constellation] could not prove required preset properties on [data-slot="fixture-panel"]: --fixture-panel-edge, --fixture-panel-inset.');
 });
 
 it('does not count empty rules as visual coverage', function () {

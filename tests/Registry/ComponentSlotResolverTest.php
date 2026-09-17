@@ -60,6 +60,21 @@ it('rejects conflicting classifications across family references', function () {
     ]), '/tmp'))->toThrow(InvalidArgumentException::class, 'classifies slot [shared-action] as [structural], already classified as [visual]');
 });
 
+it('rejects preset properties for undeclared or structural slots', function (string $slot) {
+    $catalog = slotReferenceCatalog([
+        ['class' => RegistrySlotFamilyFixture::class, 'only' => ['root', 'title']],
+    ]);
+    $catalog['components']['fixture']['styling']['preset_properties'] = [
+        $slot => ['--fixture-property' => '0px'],
+    ];
+
+    expect(fn () => HotwireRegistry::fromCatalog($catalog, '/tmp'))
+        ->toThrow(RuntimeException::class, "Preset properties target non-visual or undeclared slots: {$slot}.");
+})->with([
+    'undeclared slot' => 'fixture-typo',
+    'structural slot' => 'fixture',
+]);
+
 /** @param list<array{class: class-string, only?: list<string>}> $references */
 function slotReferenceCatalog(array $references): array
 {
