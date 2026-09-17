@@ -25,7 +25,7 @@ final readonly class ComponentDefinition
     }
 
     /**
-     * Build the Blade tags for the provided prefixes.
+     * Build the documented short Blade tags for the provided prefixes.
      *
      * @param  list<string>  $prefixes
      * @return list<string>

@@ -160,6 +160,11 @@ it('orders component rows by their displayed name', function () {
     preg_match('/^\|\s*Component\s*\|\s*Reveal\s*\|/m', $output, $reveal, PREG_OFFSET_CAPTURE);
     preg_match('/^\|\s*Component\s*\|\s*Reveal Item\s*\|/m', $output, $revealItem, PREG_OFFSET_CAPTURE);
 
+    expect($button)->not->toBeEmpty()
+        ->and($buttonGroup)->not->toBeEmpty()
+        ->and($reveal)->not->toBeEmpty()
+        ->and($revealItem)->not->toBeEmpty();
+
     expect($button[0][1])->toBeLessThan($buttonGroup[0][1])
         ->and($reveal[0][1])->toBeLessThan($revealItem[0][1]);
 });
