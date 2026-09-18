@@ -120,7 +120,10 @@ final readonly class LaravelIdeaMetadata
     private function controllerLocations(): array
     {
         $package = array_map(
-            fn (ControllerDefinition $controller): string => 'vendor/emaia/laravel-hotwire/'.$controller->source,
+            fn (ControllerDefinition $controller): string => StimulusControllerLocations::withClassDeclarationLine(
+                'vendor/emaia/laravel-hotwire/'.$controller->source,
+                $controller->sourcePath($this->registry->basePath()),
+            ),
             $this->registry->controllers(),
         );
 

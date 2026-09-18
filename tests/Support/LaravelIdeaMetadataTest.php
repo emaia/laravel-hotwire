@@ -57,11 +57,14 @@ it('can generate stimulus controller completions for app-level ide json', functi
     $locations = $metadata['completions'][0]['options']['stringsWithLocation'];
 
     foreach (HotwireRegistry::make()->controllers() as $identifier => $controller) {
-        $location = 'vendor/emaia/laravel-hotwire/'.$controller->source;
+        $source = __DIR__.'/../../'.$controller->source;
+        $path = 'vendor/emaia/laravel-hotwire/'.$controller->source;
+        $lines = file($source, FILE_IGNORE_NEW_LINES);
+        $line = (int) substr($locations[$identifier], strlen($path) + 1);
 
         expect($locations)->toHaveKey($identifier)
-            ->and($locations[$identifier])->toBe($location)
-            ->and(file_exists(__DIR__.'/../../'.$controller->source))->toBeTrue();
+            ->and($locations[$identifier])->toMatch('/^'.preg_quote($path, '/').':\d+$/')
+            ->and(trim($lines[$line - 1]))->toStartWith('export default class');
     }
 
     expect($metadata)->not->toHaveKey('blade');
