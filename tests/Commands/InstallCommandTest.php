@@ -198,7 +198,7 @@ it('reads dependency versions from the package own package.json', function () {
 
 it('warns once and continues scaffolding when the package manifest is missing', function () {
     File::put($this->packageJsonPath, '{"name":"test"}');
-    $packageManifest = realpath(__DIR__.'/../../package.json');
+    $packageManifest = dirname(__DIR__, 2).'/package.json';
     $this->partialMock(Filesystem::class, function ($mock) use ($packageManifest) {
         $mock->shouldReceive('exists')->with($packageManifest)->once()->andReturnFalse();
     });
@@ -217,7 +217,7 @@ it('warns once and continues scaffolding when the package manifest is missing', 
 
 it('reads core dependencies once and tolerates a missing loader version', function () {
     File::put($this->packageJsonPath, '{"name":"test"}');
-    $packageManifest = realpath(__DIR__.'/../../package.json');
+    $packageManifest = dirname(__DIR__, 2).'/package.json';
     $this->partialMock(Filesystem::class, function ($mock) use ($packageManifest) {
         $mock->shouldReceive('get')->with($packageManifest)->once()->andReturn(
             '{"dependencies":{"@hotwired/stimulus":"^3.2.2"}}',
